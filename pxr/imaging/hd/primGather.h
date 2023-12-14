@@ -30,8 +30,8 @@
 #include "pxr/usd/sdf/path.h"
 
 #include <vector>
-#include <tbb/enumerable_thread_specific.h>
-#include <tbb/blocked_range.h>
+#include <OneTBB/tbb/enumerable_thread_specific.h>
+#include <OneTBB/tbb/blocked_range.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -26,7 +26,7 @@
 #include "pxr/base/gf/rotation.h"
 #include "pxr/base/gf/matrix3d.h"
 #include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 #include "pxr/base/gf/ostreamHelpers.h"
 
 #include "pxr/base/tf/diagnosticLite.h"

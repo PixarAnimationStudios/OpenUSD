@@ -29,8 +29,8 @@
 
 {% block includes %}
 #include "pxr/base/gf/homogeneous.h"
-#include "pxr/base/gf/limits.h"
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/pxrlimits.h"
+#include "pxr/base/gf/gfmath.h"
 #include "pxr/base/gf/vec3{{ SCL[0] }}.h"
 {% endblock %}
 

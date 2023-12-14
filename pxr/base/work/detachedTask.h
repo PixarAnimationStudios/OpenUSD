@@ -41,7 +41,7 @@ struct Work_DetachedTask
 {
     explicit Work_DetachedTask(Fn &&fn) : _fn(std::move(fn)) {}
     explicit Work_DetachedTask(Fn const &fn) : _fn(fn) {}
-    void operator()() {
+    void operator()() const {
         TfErrorMark m;
         _fn();
         m.Clear();

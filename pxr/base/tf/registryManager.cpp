@@ -129,7 +129,7 @@
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/symbols.h"
 
-#include <tbb/enumerable_thread_specific.h>
+#include <OneTBB/tbb/enumerable_thread_specific.h>
 
 #include <cstdlib>
 #include <list>

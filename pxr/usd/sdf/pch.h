@@ -225,19 +225,21 @@
 #include <boost/variant.hpp>
 #include <boost/vmd/is_empty.hpp>
 #include <boost/vmd/is_tuple.hpp>
-#include <tbb/atomic.h>
-#include <tbb/blocked_range.h>
-#include <tbb/cache_aligned_allocator.h>
-#include <tbb/concurrent_hash_map.h>
-#include <tbb/concurrent_queue.h>
-#include <tbb/concurrent_vector.h>
-#include <tbb/enumerable_thread_specific.h>
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_for_each.h>
-#include <tbb/queuing_rw_mutex.h>
-#include <tbb/spin_mutex.h>
-#include <tbb/spin_rw_mutex.h>
-#include <tbb/task.h>
+#if WITH_TBB_LEGACY
+#include <OneTBB/tbb/atomic.h>
+#endif // WITH_TBB_LEGACY
+#include <OneTBB/tbb/blocked_range.h>
+#include <OneTBB/tbb/cache_aligned_allocator.h>
+#include <OneTBB/tbb/concurrent_hash_map.h>
+#include <OneTBB/tbb/concurrent_queue.h>
+#include <OneTBB/tbb/concurrent_vector.h>
+#include <OneTBB/tbb/enumerable_thread_specific.h>
+#include <OneTBB/tbb/parallel_for.h>
+#include <OneTBB/tbb/parallel_for_each.h>
+#include <OneTBB/tbb/queuing_rw_mutex.h>
+#include <OneTBB/tbb/spin_mutex.h>
+#include <OneTBB/tbb/spin_rw_mutex.h>
+#include <OneTBB/tbb/task.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

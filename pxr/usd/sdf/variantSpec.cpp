@@ -33,7 +33,7 @@
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/type.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 using std::string;
 

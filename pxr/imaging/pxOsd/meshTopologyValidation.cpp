@@ -27,7 +27,7 @@
 #include "pxr/imaging/pxOsd/meshTopology.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/enum.h"

@@ -27,11 +27,11 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/pathUtils.h"
-#include "pxr/base/tf/tf.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/staticData.h"
-#include "pxr/base/arch/inttypes.h"
-#include "pxr/base/arch/math.h"
+#include "pxr/base/arch/pxrinttypes.h"
+#include "pxr/base/arch/pxrmath.h"
 #include "pxr/base/arch/vsnprintf.h"
 
 #include <algorithm>

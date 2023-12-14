@@ -30,7 +30,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/vt/api.h"
 #include "pxr/base/vt/traits.h"
-#include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pxrinttypes.h"
 #include "pxr/base/gf/declare.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"

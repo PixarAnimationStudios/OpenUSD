@@ -54,8 +54,8 @@
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/usd/ar/resolverScopedCache.h"
 #include "pxr/base/arch/fileSystem.h"
-#include "pxr/base/arch/errno.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/arch/pxrerrno.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
@@ -69,7 +69,7 @@
 #include "pxr/base/tf/stackTrace.h"
 #include "pxr/base/work/withScopedParallelism.h"
 
-#include <tbb/queuing_rw_mutex.h>
+#include <OneTBB/tbb/queuing_rw_mutex.h>
 
 #include <atomic>
 #include <fstream>
@@ -214,7 +214,7 @@ SdfLayer::SdfLayer(
     _MarkCurrentStateAsClean();
 }
 
-SdfLayer::~SdfLayer()
+SdfLayer::~SdfLayer() noexcept
 {
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 

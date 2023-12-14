@@ -32,7 +32,7 @@
 #include "pxr/usd/sdf/predicateLibrary.h"
 #include "pxr/usd/sdf/predicateProgram.h"
 
-#include "pxr/base/arch/regex.h"
+#include "pxr/base/arch/pxrregex.h"
 #include "pxr/base/tf/functionRef.h"
 
 #include <string>

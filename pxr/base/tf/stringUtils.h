@@ -31,7 +31,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/arch/attributes.h"
-#include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pxrinttypes.h"
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/enum.h"
 

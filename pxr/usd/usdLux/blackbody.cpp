@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usd/usdLux/blackbody.h"
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

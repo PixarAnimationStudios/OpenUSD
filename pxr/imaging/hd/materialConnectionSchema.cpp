@@ -28,7 +28,7 @@
 #include "pxr/imaging/hd/materialConnectionSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE

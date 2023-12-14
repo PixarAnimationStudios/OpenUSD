@@ -29,7 +29,7 @@
 #include "pxr/usd/usd/clipSet.h"
 #include "pxr/usd/usd/valueUtils.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

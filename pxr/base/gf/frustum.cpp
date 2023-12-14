@@ -30,7 +30,7 @@
 #include "pxr/base/gf/plane.h"
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/type.h"
 

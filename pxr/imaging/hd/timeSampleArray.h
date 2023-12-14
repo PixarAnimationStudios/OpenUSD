@@ -29,7 +29,7 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/smallVector.h"

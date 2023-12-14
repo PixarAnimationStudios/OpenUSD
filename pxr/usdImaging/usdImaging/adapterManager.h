@@ -28,7 +28,7 @@
 
 #include "pxr/usd/usd/prim.h"
 
-#include <tbb/concurrent_unordered_map.h>
+#include <OneTBB/tbb/concurrent_unordered_map.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

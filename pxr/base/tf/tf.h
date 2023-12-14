@@ -24,164 +24,178 @@
 #ifndef PXR_BASE_TF_TF_H
 #define PXR_BASE_TF_TF_H
 
-/// \file tf/tf.h
-/// A file containing basic constants and definitions.
+#include <pxr/base/tf/api.h>
 
-#if defined(__cplusplus) || defined(doxygen)
+#include <pxr/base/tf/mallocTag.h>
+#include <pxr/base/tf/singleton.h>
 
-#include "pxr/pxr.h"
+#include <pxr/base/tf/fastCompression.h>
 
-#include "pxr/base/arch/buildMode.h"
-#include "pxr/base/arch/math.h"
-#include "pxr/base/arch/inttypes.h"
+#include <pxr/base/tf/hash.h>
+#include <pxr/base/tf/hashset.h>
 
-#include <math.h>
-#include <utility>
+#include <pxr/base/tf/hashmap.h>
+#include <pxr/base/tf/smallVector.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <pxr/base/tf/ostreamMethods.h>
 
-// This constant will only be defined if not defined already. This is because
-// many files need a higher limit and define this constant themselves before
-// including anything else.
+#include <pxr/base/tf/callContext.h>
 
-#ifndef TF_MAX_ARITY
-#  define TF_MAX_ARITY 7
-#endif // TF_MAX_ARITY
+#include <pxr/base/tf/diagnosticLite.h>
+
+#include <pxr/base/tf/diagnosticHelper.h>
+
+#include <pxr/base/tf/diagnostic.h>
+
+#include <pxr/base/tf/preprocessorUtils.h>
+#include <pxr/base/tf/preprocessorUtilsLite.h>
+#include <pxr/base/tf/safeTypeCompare.h>
+#include <pxr/base/tf/templateString.h>
+#include <pxr/base/tf/stringUtils.h>
+
+#include <pxr/base/tf/pointerAndBits.h>
+#include <pxr/base/tf/token.h>
+
+#include <pxr/base/tf/typeFunctions.h>
+
+#include <pxr/base/tf/registryManager.h>
+#include <pxr/base/tf/stopwatch.h>
+
+#include <pxr/base/tf/debug.h>
+
+#include <pxr/base/tf/enum.h>
+
+#include <pxr/base/tf/cxxCast.h>
+
+#include <pxr/base/tf/type.h>
+
+#include <pxr/base/tf/type_Impl.h>
+
+#include <pxr/base/tf/declarePtrs.h>
+
+#include <pxr/base/tf/nullPtr.h>
+
+#include <pxr/base/tf/refCount.h>
+#include <pxr/base/tf/refBase.h>
+
+#include <pxr/base/tf/expiryNotifier.h>
+
+// #include <pxr/base/tf/refPtrTracker.h>
+
+#include <pxr/base/tf/weakBase.h>
+#include <pxr/base/tf/weakPtrFacade.h>
+
+#include <pxr/base/tf/weakPtr.h>
+#include <pxr/base/tf/anyWeakPtr.h>
+
+#include <pxr/base/tf/error.h>
+#include <pxr/base/tf/errorMark.h>
+#include <pxr/base/tf/errorTransport.h>
+
+#include <pxr/base/tf/diagnosticBase.h>
+
+#include <pxr/base/tf/status.h>
+
+#include <pxr/base/tf/diagnosticMgr.h>
+
+#include <pxr/base/tf/anyUniquePtr.h>
+#include <pxr/base/tf/atomicOfstreamWrapper.h>
+#include <pxr/base/tf/atomicRenameUtil.h>
+#include <pxr/base/tf/bigRWMutex.h>
+#include <pxr/base/tf/bitUtils.h>
+
+#include <pxr/base/tf/debugNotice.h>
+#include <pxr/base/tf/denseHashMap.h>
+#include <pxr/base/tf/denseHashSet.h>
+
+#include <pxr/base/tf/dl.h>
+
+#include <pxr/base/tf/envSetting.h>
+
+#include <pxr/base/tf/exception.h>
+#include <pxr/base/tf/fileUtils.h>
+#include <pxr/base/tf/functionRef.h>
+#include <pxr/base/tf/functionTraits.h>
+#include <pxr/base/tf/getenv.h>
+
+// #include <pxr/base/tf/instantiateSingleton.h>
+// #include <pxr/base/tf/instantiateStacked.h>
+// #include <pxr/base/tf/instantiateType.h>
+#include <pxr/base/tf/iterator.h>
+
+#include <pxr/base/tf/pyInterpreter.h>
+
+#include <pxr/base/tf/pyCall.h>
+#include <pxr/base/tf/pyLock.h>
+
+#include <pxr/base/tf/pySafePython.h>
+
+#include <pxr/base/tf/pyError.h>
+#include <pxr/base/tf/pyEnum.h>
+#include <pxr/base/tf/pyArg.h>
+#include <pxr/base/tf/pyInvoke.h>
+#include <pxr/base/tf/pyPolymorphic.h>
+#include <pxr/base/tf/pyUtils.h>
+
+#include <pxr/base/tf/pyResultConversions.h>
+
+#include <pxr/base/tf/pyObjWrapper.h>
+#include <pxr/base/tf/pyTracing.h>
+
+#include <pxr/base/tf/meta.h>
 
 
-/// This value may be used by functions that return a \c size_t to indicate
-/// that a special or error condition has occurred.
-/// \ingroup group_tf_TfError
-#define TF_BAD_SIZE_T SIZE_MAX
+#include <pxr/base/tf/pathUtils.h>
+#include <pxr/base/tf/patternMatcher.h>
 
-/// \addtogroup group_tf_BasicMath
-///@{
+#include <pxr/base/tf/regTest.h>
+#include <pxr/base/tf/safeOutputFile.h>
 
-/// Returns the absolute value of the given \c int value.
-inline int TfAbs(int v) {
-    return (v < 0 ? -v : v);
-}
+#include <pxr/base/tf/scoped.h>
+#include <pxr/base/tf/scopeDescription.h>
+#include <pxr/base/tf/scopeDescriptionPrivate.h>
+#include <pxr/base/tf/scriptModuleLoader.h>
+#include <pxr/base/tf/setenv.h>
 
-/// Returns the absolute value of the given \c double value.
-inline double TfAbs(double v) {
-    return fabs(v);
-}
+#include <pxr/base/tf/span.h>
+#include <pxr/base/tf/spinRWMutex.h>
+#include <pxr/base/tf/stacked.h>
+#include <pxr/base/tf/stackTrace.h>
+#include <pxr/base/tf/staticData.h>
+#include <pxr/base/tf/staticTokens.h>
 
-/// Returns the smaller of the two given \c  values.
-template <class T>
-inline T TfMin(const T& v1, const T& v2) {
-    return (v1 < v2 ? v1 : v2);
-}
+#include <pxr/base/tf/stl.h>
 
-/// Returns the larger of the two given \c  values.
-template <class T>
-inline T TfMax(const T& v1, const T& v2) {
-    return (v1 > v2 ? v1 : v2);
-}
+#include <pxr/base/tf/typeInfoMap.h>
+#include <pxr/base/tf/warning.h>
 
-///@}
+// #include <pxr/base/tf/pxrLZ4/lz4.h>
+// #include <pxr/base/tf/pxrDoubleConversion/bignum-dtoa.h>
+// #include <pxr/base/tf/pxrDoubleConversion/bignum.h>
+// #include <pxr/base/tf/pxrDoubleConversion/cached-powers.h>
+// #include <pxr/base/tf/pxrDoubleConversion/diy-fp.h>
+// #include <pxr/base/tf/pxrDoubleConversion/double-conversion.h>
+// #include <pxr/base/tf/pxrDoubleConversion/fast-dtoa.h>
+// #include <pxr/base/tf/pxrDoubleConversion/fixed-dtoa.h>
+// #include <pxr/base/tf/pxrDoubleConversion/ieee.h>
+// #include <pxr/base/tf/pxrDoubleConversion/strtod.h>
+// #include <pxr/base/tf/pxrDoubleConversion/utils.h>
+// #include <pxr/base/tf/pxrPEGTL/pegtl.h>
+#include <pxr/base/tf/pxrTslRobinMap/robin_growth_policy.h>
+#include <pxr/base/tf/pxrTslRobinMap/robin_hash.h>
+#include <pxr/base/tf/pxrTslRobinMap/robin_map.h>
+#include <pxr/base/tf/pxrTslRobinMap/robin_set.h>
+#include <pxr/base/tf/pxrCLI11/CLI11.h>
 
-/// \struct TfDeleter
-/// Function object for deleting any pointer.
-///
-/// An STL collection of pointers does not automatically delete each
-/// pointer when the collection itself is destroyed. Instead of writing
-/// \code
-///    for (list<Otter*>::iterator i = otters.begin(); i != otters.end(); ++i)
-///         delete *i;
-/// \endcode
-/// you can use \c TfDeleter and simply write
-/// \code
-/// #include <algorithm>
-///
-///    for_each(otters.begin(), otters.end(), TfDeleter());
-/// \endcode
-///
-/// \note \c TfDeleter calls the non-array version of \c delete.
-/// Don't use \c TfDeleter if you allocated your space using \c new[]
-/// (and consider using a \c vector<> in place of a built-in array).
-/// Also, note that you need to put parenthesis after \c TfDeleter
-/// in the call to \c for_each().
-///
-/// Finally, \c TfDeleter also works for map-like collections.
-/// Note that this works as follows: if \c TfDeleter is handed
-/// a datatype of type \c std::pair<T1,T2*>, then the second element
-/// of the pair is deleted, but the first (whether or not it is a pointer)
-/// is left alone.  In other words, if you give \c TfDeleter() a pair of
-/// pointers, it only deletes the second, but never the first.  This is the
-/// desired behavior for maps.
-///
-/// \ingroup group_tf_Stl
-struct TfDeleter {
-    template <class T>
-    void operator() (T* t) const {
-        delete t;
-    }
+#include <pxr/base/tf/pyPtrHelpers.h>
 
-    template <class T1, class T2>
-    void operator() (std::pair<T1, T2*> p) const {
-        delete p.second;
-    }
-};
+#include <pxr/base/tf/notice.h>
+#include <pxr/base/tf/typeNotice.h>
 
-/*
- * The compile-time constants are not part of doxygen; if you know they're here,
- * fine, but they should be used rarely, so we don't go out of our way to
- * advertise them.
- *
- * Here's the idea: you may have an axiom or conditional check which is just too
- * expensive to make part of a release build. Compilers these days will optimize
- * away expressions they can evaluate at compile-time.  So you can do
- *
- *     if (TF_DEV_BUILD)
- *         TF_AXIOM(expensiveConditional);
- *
- * to get a condition axiom.  You can even write
- *
- *     TF_AXIOM(!TF_DEV_BUILD || expensiveConditional);
- *
- * What you CANNOT do is write
- *      #if defined(TF_DEV_BUILD)
- * or
- *      #if TF_DEV_BUILD == 0
- *
- * The former compiles but always yields true; the latter doesn't compile.
- * In other words, you can change the flow of control using these constructs,
- * but we deliberately are prohibiting things like
- *
- * struct Bar {
- * #if ...
- *     int _onlyNeededForChecks;
- * #endif
- * };
- *
- * or creating functions which only show up in some builds.
- */
+#include <pxr/base/tf/noticeRegistry.h>
 
-#define TF_DEV_BUILD ARCH_DEV_BUILD
+#include <pxr/base/tf/pyContainerConversions.h>
 
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // defined(__cplusplus)
-
-/// Stops compiler from producing unused argument or variable warnings.
-/// This is useful mainly in C, because in C++ you can just leave
-/// the variable unnamed.  However, there are situations where this
-/// can be useful even in C++, such as
-/// \code
-/// void
-/// MyClass::Method( int foo )
-/// {
-/// #if defined(__APPLE__)
-///     TF_UNUSED( foo );
-///     // do something that doesn't need foo...
-/// #else
-///     // do something that needs foo
-/// #endif
-/// } 
-/// \endcode
-///
-/// \ingroup group_tf_TfCompilerAids
-#define TF_UNUSED(x)    (void) x
+#include <pxr/base/tf/refPtr.h>
 
 #endif // TF_H

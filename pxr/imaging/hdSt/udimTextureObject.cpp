@@ -34,7 +34,7 @@
 #include "pxr/imaging/hio/image.h"
 
 #include "pxr/base/tf/iterator.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/work/loops.h"
 
 #include "pxr/usd/ar/resolver.h"

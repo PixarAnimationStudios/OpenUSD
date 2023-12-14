@@ -32,7 +32,7 @@
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/arch/systemInfo.h"
 #if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
-#include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pxrinttypes.h"
 #include <sys/types.h>
 #include <sys/ptrace.h>
 #include <sys/stat.h>

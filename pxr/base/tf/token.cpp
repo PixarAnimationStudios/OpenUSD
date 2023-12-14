@@ -37,7 +37,7 @@
 
 #include "pxr/base/arch/align.h"
 
-#include <tbb/spin_mutex.h>
+#include <OneTBB/tbb/spin_mutex.h>
 
 #include <string>
 #include <ostream>

@@ -27,7 +27,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/withScopedParallelism.h"
-#include <tbb/parallel_for.h>
+#include <OneTBB/tbb/parallel_for.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

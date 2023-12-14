@@ -47,7 +47,7 @@
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/hash.h"

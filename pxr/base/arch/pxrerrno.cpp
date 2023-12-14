@@ -23,7 +23,7 @@
 //
 
 #include "pxr/pxr.h"
-#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/pxrerrno.h"
 #include <cerrno>
 #include <cstring>
 #if defined(ARCH_OS_WINDOWS)

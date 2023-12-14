@@ -23,7 +23,7 @@
 //
 
 #include "pxr/pxr.h"
-#include "pxr/base/arch/regex.h"
+#include "pxr/base/arch/pxrregex.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_WINDOWS)
 #include <cstring>

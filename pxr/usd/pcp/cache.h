@@ -35,7 +35,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/pathTable.h"
 
-#include "pxr/usd/ar/ar.h"
+#include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/functionRef.h"

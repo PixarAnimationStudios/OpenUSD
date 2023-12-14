@@ -28,7 +28,7 @@
 /// \ingroup group_gf_LinearAlgebra
 
 #include "pxr/pxr.h"
-#include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pxrinttypes.h"
 #include "pxr/base/gf/vec3i.h"
 #include "pxr/base/gf/api.h" 
 

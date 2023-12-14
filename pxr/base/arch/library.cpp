@@ -24,7 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/library.h"
-#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/pxrerrno.h"
 
 #if defined(ARCH_OS_WINDOWS)
 #include <Windows.h>

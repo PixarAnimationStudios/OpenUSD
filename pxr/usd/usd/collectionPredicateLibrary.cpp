@@ -24,7 +24,7 @@
 #include "pxr/usd/usd/collectionPredicateLibrary.h"
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/kind/registry.h"
-#include "pxr/base/arch/regex.h"
+#include "pxr/base/arch/pxrregex.h"
 
 #include <memory>
 #include <utility>

@@ -26,7 +26,7 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
-#include "pxr/base/tf/tf.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/work/loops.h"
 #include "RixDspy.h"
 #include "hdPrman/rixStrings.h"

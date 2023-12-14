@@ -78,7 +78,7 @@
 #include "pxr/base/tf/pyUtils.h"
 
 #include "pxr/usd/sdf/declareHandles.h"
-#include "pxr/base/tf/tf.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/demangle.h"

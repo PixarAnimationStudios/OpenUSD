@@ -35,7 +35,7 @@
 #include "pxr/base/gf/rotation.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/tf/getenv.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/imaging/hd/mesh.h"

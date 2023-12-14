@@ -27,7 +27,7 @@
 #include "pxr/base/tf/callContext.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <tbb/spin_mutex.h>
+#include <OneTBB/tbb/spin_mutex.h>
 
 #include <set>
 #include <string>

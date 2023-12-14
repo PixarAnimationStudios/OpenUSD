@@ -39,7 +39,7 @@
 #include "pxr/base/tf/pointerAndBits.h"
 #include "pxr/base/tf/safeTypeCompare.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/tf.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/type.h"
 
 #include "pxr/base/vt/api.h"

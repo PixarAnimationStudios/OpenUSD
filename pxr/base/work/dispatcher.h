@@ -33,14 +33,118 @@
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/errorTransport.h"
 
-#include <tbb/concurrent_vector.h>
-#include <tbb/task.h>
+#include <OneTBB/tbb/concurrent_vector.h>
+#include <OneTBB/tbb/task.h>
+#if !WITH_TBB_LEGACY
+#include <OneTBB/tbb/global_control.h>
+#include <OneTBB/tbb/task_group.h>
+#include <OneTBB/tbb/task_scheduler_observer.h>
+#endif /* WITH_TBB_LEGACY */
 
 #include <functional>
 #include <type_traits>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+#if !WITH_TBB_LEGACY
+class WorkDispatcher {
+public:
+  /// Construct a new dispatcher.
+  WORK_API WorkDispatcher();
+
+  /// Wait() for any pending tasks to complete, then destroy the dispatcher.
+  WORK_API ~WorkDispatcher();
+
+  WorkDispatcher(WorkDispatcher const &) = delete;
+  WorkDispatcher &operator=(WorkDispatcher const &) = delete;
+
+#ifdef doxygen
+
+  /// Add work for the dispatcher to run.
+  ///
+  /// Before a call to Wait() is made it is safe for any client to invoke
+  /// Run().  Once Wait() is invoked, it is \b only safe to invoke Run() from
+  /// within the execution of tasks already added via Run().
+  ///
+  /// This function does not block, in general.  It may block if concurrency
+  /// is limited to 1.  The added work may be not yet started, may be started
+  /// but not completed, or may be completed upon return.  No guarantee is
+  /// made.
+  template <class Callable, class A1, class A2, ... class AN>
+  void Run(Callable &&c, A1 &&a1, A2 &&a2, ... AN &&aN);
+
+#else // doxygen
+
+  template <class Callable> inline void Run(Callable &&c) {
+    _tg.run(_InvokerTask<typename std::remove_reference<Callable>::type>(
+        std::forward<Callable>(c), &_errors));
+  }
+
+  template <class Callable, class A0, class... Args>
+  inline void Run(Callable &&c, A0 &&a0, Args &&...args) {
+    Run(std::bind(std::forward<Callable>(c), std::forward<A0>(a0),
+                  std::forward<Args>(args)...));
+  }
+
+#endif // doxygen
+
+  /// Block until the work started by Run() completes.
+  WORK_API void Wait();
+
+  /// Cancel remaining work and return immediately.
+  ///
+  /// Calling this function affects task that are being run directly
+  /// by this dispatcher. If any of these tasks are using their own
+  /// dispatchers to run tasks, these dispatchers will not be affected
+  /// and these tasks will run to completion, unless they are also
+  /// explicitly cancelled.
+  ///
+  /// This call does not block.  Call Wait() after Cancel() to wait for
+  /// pending tasks to complete.
+  WORK_API void Cancel();
+
+private:
+  typedef tbb::concurrent_vector<TfErrorTransport> _ErrorTransports;
+
+  // Function invoker helper that wraps the invocation with an ErrorMark so we
+  // can transmit errors that occur back to the thread that Wait() s for tasks
+  // to complete.
+  template <class Fn> struct _InvokerTask {
+    explicit _InvokerTask(Fn &&fn, _ErrorTransports *err)
+        : _fn(std::move(fn)), _errors(err) {}
+
+    explicit _InvokerTask(Fn const &fn, _ErrorTransports *err)
+        : _fn(fn), _errors(err) {}
+
+    void operator()() const {
+      TfErrorMark m;
+      _fn();
+      if (!m.IsClean())
+        WorkDispatcher::_TransportErrors(m, _errors);
+    }
+
+  private:
+    Fn _fn;
+    _ErrorTransports *_errors;
+  };
+
+  // Helper function that removes errors from \p m and stores them in a new
+  // entry in \p errors.
+  WORK_API static void _TransportErrors(const TfErrorMark &m,
+                                        _ErrorTransports *errors);
+
+  // Task group.
+  tbb::task_group _tg;
+
+  // The error transports we use to transmit errors in other threads back to
+  // this thread.
+  _ErrorTransports _errors;
+
+  // Concurrent calls to Wait() have to serialize certain cleanup operations.
+  std::atomic_flag _waitCleanupFlag;
+};
+#else /* WITH_TBB_LEGACY */
 
 /// \class WorkDispatcher
 ///
@@ -182,7 +286,7 @@ private:
     // Concurrent calls to Wait() have to serialize certain cleanup operations.
     std::atomic_flag _waitCleanupFlag;
 };
-
+#endif /* !WITH_TBB_LEGACY */
 ///////////////////////////////////////////////////////////////////////////////
 
 PXR_NAMESPACE_CLOSE_SCOPE

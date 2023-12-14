@@ -25,7 +25,7 @@ pxr_library(gf
         line2d
         lineSeg
         lineSeg2d
-        math
+        gfmath
         matrixData
         matrix2d
         matrix2f
@@ -71,7 +71,7 @@ pxr_library(gf
         api.h
         declare.h
         ilmbase_halfLimits.h
-        limits.h
+        pxrlimits.h
         traits.h
 
     PRIVATE_CLASSES

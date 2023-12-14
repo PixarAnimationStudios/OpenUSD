@@ -28,7 +28,7 @@
 #include "pxr/imaging/hd/primvarSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/visitValue.h"

@@ -34,7 +34,7 @@
 #include "pxr/usd/usd/schemaRegistry.h"
 
 #include "pxr/usd/sdf/schema.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refBase.h"

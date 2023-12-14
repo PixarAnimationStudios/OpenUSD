@@ -33,7 +33,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
 
-#include <tbb/concurrent_queue.h>
+#include <OneTBB/tbb/concurrent_queue.h>
 
 #include <atomic>
 #include <thread>

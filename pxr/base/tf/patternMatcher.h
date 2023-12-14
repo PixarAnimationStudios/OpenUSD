@@ -30,7 +30,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
-#include "pxr/base/arch/regex.h"
+#include "pxr/base/arch/pxrregex.h"
 
 #include <string>
 

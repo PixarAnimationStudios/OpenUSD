@@ -37,7 +37,7 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/token.h"
 
-#include <tbb/concurrent_unordered_map.h>
+#include <OneTBB/tbb/concurrent_unordered_map.h>
 
 #include <condition_variable>
 #include <memory>

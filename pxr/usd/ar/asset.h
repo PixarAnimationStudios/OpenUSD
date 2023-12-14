@@ -27,7 +27,6 @@
 /// \file ar/asset.h
 
 #include "pxr/pxr.h"
-#include "pxr/usd/ar/ar.h"
 #include "pxr/usd/ar/api.h"
 
 #include <cstdio>

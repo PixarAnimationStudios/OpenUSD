@@ -30,7 +30,7 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/tf/diagnostic.h"
 
-#include <tbb/enumerable_thread_specific.h>
+#include <OneTBB/tbb/enumerable_thread_specific.h>
 #include <memory>
 #include <vector>
 

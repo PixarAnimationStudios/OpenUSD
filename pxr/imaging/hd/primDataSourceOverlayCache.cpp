@@ -23,7 +23,7 @@
 //
 #include "primDataSourceOverlayCache.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/tf/denseHashSet.h"
 #include "pxr/base/work/utils.h"
 

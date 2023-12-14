@@ -49,7 +49,7 @@
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/work/loops.h"
 
-#include <tbb/parallel_reduce.h>
+#include <OneTBB/tbb/parallel_reduce.h>
 
 #include <set>
 #include <string>

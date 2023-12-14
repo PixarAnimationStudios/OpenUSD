@@ -23,7 +23,7 @@
 //
 #include "pxr/usd/usdSkel/topology.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include <unordered_map>
 

@@ -21,44 +21,42 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_BASE_TF_PY_WEAK_OBJECT_H
-#define PXR_BASE_TF_PY_WEAK_OBJECT_H
+#ifndef PXR_BASE_ARCH_INTTYPES_H
+#define PXR_BASE_ARCH_INTTYPES_H
+
+/// \file arch/pxrinttypes.h
+/// \ingroup group_arch_Bits
+/// Define integral types.
+///
+/// By including this file, the "standard" integer types \c int16_t,
+/// \c int32_t, and \c int64_t are all defined, as are their unsigned
+/// counterparts \c uint16_t, \c uint32_t, and \c uint64_t.  This also
+/// includes the macros for limits, constants, and printf format specifiers.
+
+// These defines should in theory not be needed to get the related sized-int
+// macros, as this was not adopted by the C++ committee and was dropped by the C
+// committee, but glibc erroneously "respects" them so we need to have them.
+#ifndef __STDC_LIMIT_MACROS
+#define __STDC_LIMIT_MACROS
+#endif
+#ifndef __STDC_CONSTANT_MACROS
+#define __STDC_CONSTANT_MACROS
+#endif
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
+
+#include <cinttypes>
+#include <cstdint>
 
 #include "pxr/pxr.h"
-
-#include "pxr/base/tf/api.h"
-#include "pxr/base/tf/pyIdentity.h"
-
-#include "pxr/base/tf/hash.h"
-#include "pxr/base/tf/singleton.h"
-#include "pxr/base/tf/weakBase.h"
-#include "pxr/base/tf/weakPtr.h"
-
-#include <boost/python/handle.hpp>
-#include <boost/python/object.hpp>
-
-#include "pxr/base/tf/hashmap.h"
+#include "pxr/base/arch/defines.h"
+#include <sys/types.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef TfWeakPtr<struct Tf_PyWeakObject> Tf_PyWeakObjectPtr;
-
-// A weak pointable weak reference to a python object.
-struct Tf_PyWeakObject : public TfWeakBase
-{
-public:
-    typedef Tf_PyWeakObject This;
-
-    static Tf_PyWeakObjectPtr GetOrCreate(boost::python::object const &obj);
-    boost::python::object GetObject() const;
-    void Delete();
-    
-private:
-    explicit Tf_PyWeakObject(boost::python::object const &obj);
-    
-    boost::python::handle<> _weakRef;
-};
+typedef unsigned char uchar;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_BASE_TF_PY_WEAK_OBJECT_H
+#endif // PXR_BASE_ARCH_INTTYPES_H

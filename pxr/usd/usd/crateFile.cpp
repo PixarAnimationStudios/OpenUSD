@@ -27,9 +27,9 @@
 #include "integerCoding.h"
 
 #include "pxr/base/arch/demangle.h"
-#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/pxrerrno.h"
 #include "pxr/base/arch/fileSystem.h"
-#include "pxr/base/arch/regex.h"
+#include "pxr/base/arch/pxrregex.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/virtualMemory.h"
 #include "pxr/base/gf/half.h"
@@ -65,7 +65,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/dispatcher.h"
@@ -86,7 +86,7 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/types.h"
 
-#include <tbb/concurrent_queue.h>
+#include <OneTBB/tbb/concurrent_queue.h>
 
 #include <iostream>
 #include <memory>
@@ -3677,16 +3677,14 @@ CrateFile::_ReadPathsImpl(Reader reader,
             if (hasSibling) {
                 // Branch off a parallel task for the sibling subtree.
                 auto siblingOffset = reader.template Read<int64_t>();
-                dispatcher.Run(
-                    [this, reader,
-                     siblingOffset, &dispatcher, parentPath]() mutable {
-                        // XXX Remove these tags when bug #132031 is addressed
-                        TfAutoMallocTag tag(
-                            "Usd", "Usd_CrateDataImpl::Open",
-                            "Usd_CrateFile::CrateFile::Open", "_ReadPaths");
-                        reader.Seek(siblingOffset);
-                        _ReadPathsImpl<Header>(reader, dispatcher, parentPath);
-                    });
+                dispatcher.Run([&]() {
+                    // XXX Remove these tags when bug #132031 is addressed
+                    TfAutoMallocTag tag(
+                        "Usd", "Usd_CrateDataImpl::Open",
+                        "Usd_CrateFile::CrateFile::Open", "_ReadPaths");
+                    reader.Seek(siblingOffset);
+                    _ReadPathsImpl<Header>(reader, dispatcher, parentPath);
+                });
             }
             // Have a child (may have also had a sibling). Reset parent path.
             parentPath = _paths[h.index.value];
@@ -3813,17 +3811,15 @@ CrateFile::_BuildDecompressedPathsImpl(
                     return;
                 }
 #endif
-                dispatcher.Run(
-                    [this, &pathIndexes, &elementTokenIndexes, &jumps,
-                     siblingIndex, &dispatcher, parentPath]() mutable {
-                        // XXX Remove these tags when bug #132031 is addressed
-                        TfAutoMallocTag tag(
-                            "Usd", "Usd_CrateDataImpl::Open",
-                            "Usd_CrateFile::CrateFile::Open", "_ReadPaths");
-                        _BuildDecompressedPathsImpl(
-                            pathIndexes, elementTokenIndexes, jumps,
-                            siblingIndex, parentPath, dispatcher);
-                    });
+                dispatcher.Run([&]() {
+                    // XXX Remove these tags when bug #132031 is addressed
+                    TfAutoMallocTag tag(
+                        "Usd", "Usd_CrateDataImpl::Open",
+                        "Usd_CrateFile::CrateFile::Open", "_ReadPaths");
+                    _BuildDecompressedPathsImpl(
+                        pathIndexes, elementTokenIndexes, jumps,
+                        siblingIndex, parentPath, dispatcher);
+                });
             }
             // Have a child (may have also had a sibling). Reset parent path.
             parentPath = _paths[pathIndexes[thisIndex]];

@@ -31,7 +31,7 @@
 
 #include "pxr/base/tf/staticData.h"
 
-#include <tbb/concurrent_vector.h>
+#include <OneTBB/tbb/concurrent_vector.h>
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"

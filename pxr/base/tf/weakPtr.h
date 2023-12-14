@@ -32,7 +32,7 @@
 
 #include "pxr/base/tf/nullPtr.h"
 #include "pxr/base/tf/refPtr.h"
-#include "pxr/base/tf/tf.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/weakPtrFacade.h"
 

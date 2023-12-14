@@ -41,7 +41,7 @@
 #include <string>
 #include <vector>
 
-#include <tbb/concurrent_queue.h>
+#include <OneTBB/tbb/concurrent_queue.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

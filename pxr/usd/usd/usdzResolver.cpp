@@ -31,7 +31,7 @@
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
 
-#include <tbb/concurrent_hash_map.h>
+#include <OneTBB/tbb/concurrent_hash_map.h>
 
 #include <memory>
 

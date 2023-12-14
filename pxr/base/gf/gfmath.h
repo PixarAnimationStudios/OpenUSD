@@ -24,12 +24,12 @@
 #ifndef PXR_BASE_GF_MATH_H
 #define PXR_BASE_GF_MATH_H
 
-/// \file gf/math.h
+/// \file gf/gfmath.h
 /// \ingroup group_gf_BasicMath
 /// Assorted mathematical utility functions.
 
 #include "pxr/pxr.h"
-#include "pxr/base/arch/math.h"
+#include "pxr/base/arch/pxrmath.h"
 #include "pxr/base/gf/api.h"
 #include "pxr/base/gf/traits.h"
 

@@ -35,16 +35,16 @@
 #include "pxr/base/tf/pxrTslRobinMap/robin_set.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/tf.h"
+#include "pxr/base/tf/api.h"
 
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/debugger.h"
 #include "pxr/base/arch/hash.h"
-#include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pxrinttypes.h"
 #include "pxr/base/arch/mallocHook.h"
 #include "pxr/base/arch/stackTrace.h"
 
-#include <tbb/concurrent_hash_map.h>
+#include <OneTBB/tbb/concurrent_hash_map.h>
 
 #include <algorithm>
 #include <atomic>

@@ -28,7 +28,7 @@
 /// \ingroup group_gf_BasicMath
 
 #include "pxr/pxr.h"
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 #include "pxr/base/gf/api.h"
 #include "pxr/base/tf/hash.h"
 

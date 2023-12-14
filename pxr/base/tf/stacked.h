@@ -29,7 +29,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/arch/demangle.h"
 
-#include <tbb/enumerable_thread_specific.h>
+#include <OneTBB/tbb/enumerable_thread_specific.h>
 
 #include <atomic>
 #include <type_traits>

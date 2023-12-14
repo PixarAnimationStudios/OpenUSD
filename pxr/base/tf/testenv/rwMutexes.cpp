@@ -29,8 +29,8 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/stopwatch.h"
 
-#include <tbb/spin_rw_mutex.h>
-#include <tbb/queuing_rw_mutex.h>
+#include <OneTBB/tbb/spin_rw_mutex.h>
+#include <OneTBB/tbb/queuing_rw_mutex.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

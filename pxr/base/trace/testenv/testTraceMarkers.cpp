@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/trace/reporter.h"
 #include "pxr/base/trace/eventTree.h"
 #include "pxr/base/tf/stringUtils.h"

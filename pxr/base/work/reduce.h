@@ -29,9 +29,9 @@
 #include "pxr/base/work/threadLimits.h"
 #include "pxr/base/work/api.h"
 
-#include <tbb/blocked_range.h>
-#include <tbb/parallel_reduce.h>
-#include <tbb/task_group.h>
+#include <OneTBB/tbb/blocked_range.h>
+#include <OneTBB/tbb/parallel_reduce.h>
+#include <OneTBB/tbb/task_group.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -24,7 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/line2d.h"
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 
 #include "pxr/base/tf/type.h"
 

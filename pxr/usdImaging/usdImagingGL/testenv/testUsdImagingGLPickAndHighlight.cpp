@@ -27,7 +27,7 @@
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/frustum.h"
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/range3d.h"

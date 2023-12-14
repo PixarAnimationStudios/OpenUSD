@@ -32,7 +32,7 @@
 #include "pxr/base/vt/wrapArray.h"
 
 #include "pxr/base/arch/demangle.h"
-#include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pxrinttypes.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyResultConversions.h"

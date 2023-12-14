@@ -26,7 +26,7 @@
 #include "pxr/imaging/pxOsd/meshTopology.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
-#include "pxr/base/arch/math.h"
+#include "pxr/base/arch/pxrmath.h"
 #include "pxr/base/vt/types.h"
 
 #include <array>

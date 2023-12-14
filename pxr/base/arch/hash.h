@@ -29,7 +29,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
-#include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pxrinttypes.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

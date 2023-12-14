@@ -30,7 +30,6 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/api.h"
-#include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
 #include "pxr/base/tf/iterator.h"

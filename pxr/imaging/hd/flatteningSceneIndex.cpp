@@ -25,7 +25,7 @@
 #include "pxr/imaging/hd/flattenedDataSourceProvider.h"
 #include "pxr/imaging/hd/invalidatableContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/work/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

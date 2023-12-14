@@ -33,7 +33,7 @@
 
 #include "pxr/imaging/hio/types.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #ifdef PXR_PTEX_SUPPORT_ENABLED
 #include <Ptexture.h>

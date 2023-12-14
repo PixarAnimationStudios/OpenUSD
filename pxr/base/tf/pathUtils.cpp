@@ -29,7 +29,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/fileSystem.h"
-#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/pxrerrno.h"
 
 #include <algorithm>
 #include <cctype>

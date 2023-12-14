@@ -24,13 +24,13 @@
 #ifndef PXR_BASE_ARCH_MATH_H
 #define PXR_BASE_ARCH_MATH_H
 
-/// \file arch/math.h
+/// \file arch/pxrmath.h
 /// \ingroup group_arch_Math
 /// Architecture-specific math function calls.
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
-#include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pxrinttypes.h"
 
 #if defined(ARCH_COMPILER_MSVC)
 #include <intrin.h>

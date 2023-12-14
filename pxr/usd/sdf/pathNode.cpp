@@ -35,10 +35,10 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stl.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
-#include <tbb/concurrent_hash_map.h>
-#include <tbb/spin_mutex.h>
+#include <OneTBB/tbb/concurrent_hash_map.h>
+#include <OneTBB/tbb/spin_mutex.h>
 
 #include <atomic>
 #include <memory>

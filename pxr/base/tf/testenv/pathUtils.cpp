@@ -28,7 +28,7 @@
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/defines.h"
-#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/pxrerrno.h"
 #include "pxr/base/arch/systemInfo.h"
 
 #include <string>

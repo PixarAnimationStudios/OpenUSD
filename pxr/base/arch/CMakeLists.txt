@@ -22,13 +22,13 @@ pxr_library(arch
         demangle
         env
         error
-        errno
+        pxrerrno
         fileSystem
         function
         hash
         library
         mallocHook
-        regex
+        pxrregex
         stackTrace
         symbols
         systemInfo
@@ -44,8 +44,8 @@ pxr_library(arch
         export.h
         functionLite.h
         hints.h
-        inttypes.h
-        math.h
+        pxrinttypes.h
+        pxrmath.h
         pragmas.h
 
     PRIVATE_HEADERS

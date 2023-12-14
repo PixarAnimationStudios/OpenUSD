@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 
-#include "pxr/usd/ar/ar.h"
+#include "pxr/usd/ar/api.h"
 
 #include "pxr/usd/ar/writableAsset.h"
 #include "pxr/base/tf/diagnosticLite.h"

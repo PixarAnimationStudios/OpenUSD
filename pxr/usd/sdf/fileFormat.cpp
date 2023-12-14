@@ -33,7 +33,7 @@
 #include "pxr/usd/sdf/layerHints.h"
 
 #include "pxr/usd/ar/resolver.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"

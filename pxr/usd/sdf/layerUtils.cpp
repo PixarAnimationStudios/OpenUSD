@@ -33,7 +33,7 @@
 #include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/base/tf/pathUtils.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 using std::string;
 

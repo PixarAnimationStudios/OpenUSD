@@ -1,0 +1,4 @@
+module Js {
+ header "../js/js.h"
+ export *
+}

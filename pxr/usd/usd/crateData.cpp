@@ -34,7 +34,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/typeInfoMap.h"
 #include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/loops.h"
@@ -44,8 +44,8 @@
 #include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/schema.h"
 
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_sort.h>
+#include <OneTBB/tbb/parallel_for.h>
+#include <OneTBB/tbb/parallel_sort.h>
 
 #include <algorithm>
 #include <functional>
@@ -803,7 +803,7 @@ private:
                 liveFieldSets[FieldSetIndex(fsBegin-fieldSets.begin())];
                     
             dispatcher.Run(
-                [this, fsBegin, fsEnd, &fields, &fieldValuePairs]() mutable {
+                [this, &fsBegin, fsEnd, &fields, &fieldValuePairs]() {
                     // XXX Won't need first two tags when bug #132031 is
                     // addressed
                     TfAutoMallocTag tag(

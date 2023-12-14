@@ -28,7 +28,6 @@
 /// \ingroup group_tf_String
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/api.h"
 
 #include <cstring>

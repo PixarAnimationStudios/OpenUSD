@@ -56,9 +56,9 @@
 #include "pxr/base/tf/pxrTslRobinMap/robin_set.h"
 #include "pxr/base/tf/hash.h"
 
-#include <tbb/concurrent_queue.h>
-#include <tbb/concurrent_unordered_set.h>
-#include <tbb/parallel_sort.h>
+#include <OneTBB/tbb/concurrent_queue.h>
+#include <OneTBB/tbb/concurrent_unordered_set.h>
+#include <OneTBB/tbb/parallel_sort.h>
 
 #include <algorithm>
 #include <functional>

@@ -44,7 +44,7 @@
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/schema.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/utils.h"
@@ -53,8 +53,8 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/registryManager.h"
 
-#include <tbb/concurrent_queue.h>
-#include <tbb/spin_rw_mutex.h>
+#include <OneTBB/tbb/concurrent_queue.h>
+#include <OneTBB/tbb/spin_rw_mutex.h>
 
 #include <algorithm>
 #include <iostream>

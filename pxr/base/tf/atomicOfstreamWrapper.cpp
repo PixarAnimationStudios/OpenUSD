@@ -28,7 +28,7 @@
 #include "pxr/base/tf/atomicOfstreamWrapper.h"
 
 #include "pxr/base/arch/defines.h"
-#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/pxrerrno.h"
 #include "pxr/base/arch/fileSystem.h"
 
 #include "pxr/base/tf/atomicRenameUtil.h"

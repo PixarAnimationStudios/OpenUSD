@@ -30,8 +30,10 @@
 
 #include <boost/intrusive_ptr.hpp>
 
-#include <tbb/atomic.h>
-#include <tbb/spin_mutex.h>
+#if WITH_TBB_LEGACY
+#include <OneTBB/tbb/atomic.h>
+#endif // WITH_TBB_LEGACY
+#include <OneTBB/tbb/spin_mutex.h>
 
 #include <atomic>
 #include <memory>
@@ -267,7 +269,7 @@ private: // data
         struct _NodeMap;
         static TfStaticData<_NodeMap> _nodeRegistry;
 
-        mutable tbb::atomic<int> _refCount;
+        mutable std::atomic<int> _refCount;
         mutable Value _cachedValue;
         mutable std::set<_Node*> _dependentExpressions;
         Value _valueForVariable;

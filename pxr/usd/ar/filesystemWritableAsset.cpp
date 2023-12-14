@@ -25,7 +25,7 @@
 
 #include "pxr/usd/ar/filesystemWritableAsset.h"
 
-#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/pxrerrno.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/errorMark.h"

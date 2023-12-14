@@ -39,7 +39,7 @@
 #include "pxr/imaging/hgiMetal/shaderProgram.h"
 #include "pxr/imaging/hgiMetal/texture.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/registryManager.h"

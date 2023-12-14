@@ -24,7 +24,7 @@
 
 #include "pxr/imaging/hioOpenVDB/utils.h"
 #include "pxr/imaging/hioOpenVDB/vdbAssetInterface.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolvedPath.h"

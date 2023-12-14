@@ -24,7 +24,7 @@
 #include <boost/python/scope.hpp>
 
 #include "pxr/pxr.h"
-#include "pxr/base/gf/limits.h"
+#include "pxr/base/gf/pxrlimits.h"
 
 using namespace boost::python;
 

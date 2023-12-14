@@ -61,8 +61,8 @@
 #include <mutex>
 #include <unordered_set>
 
-#include <tbb/concurrent_unordered_map.h>
-#include <tbb/concurrent_vector.h>
+#include <OneTBB/tbb/concurrent_unordered_map.h>
+#include <OneTBB/tbb/concurrent_vector.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

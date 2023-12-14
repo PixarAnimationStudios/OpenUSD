@@ -25,7 +25,7 @@
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/env.h"
-#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/pxrerrno.h"
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/export.h"
 #include "pxr/base/arch/hints.h"

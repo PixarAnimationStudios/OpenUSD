@@ -37,7 +37,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/dispatcher.h"
-#include "pxr/usd/ar/ar.h"
+#include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/writableAsset.h"
 #include "pxr/usd/sdf/assetPath.h"
@@ -46,8 +46,8 @@
 
 #include <boost/intrusive_ptr.hpp>
 
-#include <tbb/concurrent_unordered_set.h>
-#include <tbb/spin_rw_mutex.h>
+#include <OneTBB/tbb/concurrent_unordered_set.h>
+#include <OneTBB/tbb/spin_rw_mutex.h>
 
 #include <cstdint>
 #include <iosfwd>
@@ -349,7 +349,7 @@ private:
                 bool operator!=(ZeroCopySource const &other) const {
                     return !(*this == other);
                 }
-                friend size_t tbb_hasher(ZeroCopySource const &z) {
+                friend size_t hash_value(ZeroCopySource const &z) {
                     return TfHash::Combine(
                         reinterpret_cast<uintptr_t>(z._addr),
                         z._numBytes
@@ -422,7 +422,7 @@ private:
             ArchConstFileMapping _mapping;
             char const *_start;
             int64_t _length;
-            tbb::concurrent_unordered_set<ZeroCopySource> _outstandingRanges;
+            tbb::concurrent_unordered_set<ZeroCopySource, _Hasher> _outstandingRanges;
         };
 
     public:

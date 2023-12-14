@@ -36,7 +36,7 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 
-#include <tbb/spin_mutex.h>
+#include <OneTBB/tbb/spin_mutex.h>
 
 #include <unordered_map>
 

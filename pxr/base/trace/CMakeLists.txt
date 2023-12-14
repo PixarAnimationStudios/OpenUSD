@@ -48,7 +48,7 @@ pxr_library(trace
         api.h
         concurrentList.h
         stringHash.h
-        trace.h
+        traceImpl.h
 
     PYTHON_CPPFILES
         moduleDeps.cpp

@@ -141,10 +141,12 @@
 #include <boost/unordered_map.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/weak_ptr.hpp>
-#include <tbb/atomic.h>
-#include <tbb/cache_aligned_allocator.h>
-#include <tbb/concurrent_queue.h>
-#include <tbb/spin_mutex.h>
+#if WITH_TBB_LEGACY
+#include <OneTBB/tbb/atomic.h>
+#endif // WITH_TBB_LEGACY
+#include <OneTBB/tbb/cache_aligned_allocator.h>
+#include <OneTBB/tbb/concurrent_queue.h>
+#include <OneTBB/tbb/spin_mutex.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

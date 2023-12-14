@@ -66,7 +66,7 @@
 #include "pxr/usd/sdf/types.h" 
 #include "pxr/usd/sdf/variableExpression.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
@@ -98,8 +98,8 @@
 
 #include <boost/optional.hpp>
 
-#include <tbb/spin_rw_mutex.h>
-#include <tbb/spin_mutex.h>
+#include <OneTBB/tbb/spin_rw_mutex.h>
+#include <OneTBB/tbb/spin_mutex.h>
 
 #include <algorithm>
 #include <functional>

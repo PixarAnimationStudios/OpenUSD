@@ -1,0 +1,4 @@
+module Trace {
+ header "../trace/trace.h"
+ export *
+}

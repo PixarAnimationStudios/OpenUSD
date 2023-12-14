@@ -24,7 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/authoring.h"
 
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 #include "pxr/base/work/loops.h"
 
 #include "pxr/usd/sdf/layer.h"

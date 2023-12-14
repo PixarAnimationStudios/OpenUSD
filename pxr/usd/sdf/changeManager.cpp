@@ -30,11 +30,13 @@
 #include "pxr/usd/sdf/notice.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/spec.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/stackTrace.h"
 
-#include <tbb/atomic.h>
+#if WITH_TBB_LEGACY
+#include <OneTBB/tbb/atomic.h>
+#endif // WITH_TBB_LEGACY
 
 using std::string;
 using std::vector;
@@ -150,9 +152,9 @@ Sdf_ChangeManager::_ProcessRemoveIfInert(_Data *data)
     TF_VERIFY(data->outermostBlock);
 }
 
-static tbb::atomic<size_t> &
+static std::atomic<size_t> &
 _InitChangeSerialNumber() {
-    static tbb::atomic<size_t> value;
+    static std::atomic<size_t> value;
     value = 1;
     return value;
 }
@@ -191,8 +193,8 @@ Sdf_ChangeManager::_SendNotices(_Data *data)
     }
 
     // Obtain a serial number for this round of change processing.
-    static tbb::atomic<size_t> &changeSerialNumber = _InitChangeSerialNumber();
-    size_t serialNumber = changeSerialNumber.fetch_and_increment();
+    static std::atomic<size_t> &changeSerialNumber = _InitChangeSerialNumber();
+    size_t serialNumber = changeSerialNumber.fetch_add(1);
 
     // Send global notice.
     SdfNotice::LayersDidChange(changes, serialNumber).Send();

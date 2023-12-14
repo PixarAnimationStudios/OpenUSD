@@ -36,8 +36,8 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/type.h"
 
-#include <tbb/enumerable_thread_specific.h>
-#include <tbb/spin_mutex.h>
+#include <OneTBB/tbb/enumerable_thread_specific.h>
+#include <OneTBB/tbb/spin_mutex.h>
 #include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE

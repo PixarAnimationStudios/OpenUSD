@@ -30,7 +30,7 @@
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/env.h"
 #include "pxr/base/arch/error.h"
-#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/pxrerrno.h"
 #include "pxr/base/arch/export.h"
 #if defined(ARCH_OS_WINDOWS)
 // Need to include Winsock2.h BEFORE windows.h - which is included in
@@ -38,7 +38,7 @@
 #include <Winsock2.h>
 #endif
 #include "pxr/base/arch/fileSystem.h"
-#include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pxrinttypes.h"
 #include "pxr/base/arch/symbols.h"
 #include "pxr/base/arch/vsnprintf.h"
 #if defined(ARCH_OS_WINDOWS)

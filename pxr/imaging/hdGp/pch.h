@@ -120,13 +120,15 @@
 #include <boost/utility/enable_if.hpp>
 #include <boost/vmd/is_empty.hpp>
 #include <boost/vmd/is_tuple.hpp>
-#include <tbb/atomic.h>
-#include <tbb/blocked_range.h>
-#include <tbb/concurrent_queue.h>
-#include <tbb/concurrent_unordered_map.h>
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_for_each.h>
-#include <tbb/task.h>
+#if WITH_TBB_LEGACY
+#include <OneTBB/tbb/atomic.h>
+#endif // WITH_TBB_LEGACY
+#include <OneTBB/tbb/blocked_range.h>
+#include <OneTBB/tbb/concurrent_queue.h>
+#include <OneTBB/tbb/concurrent_unordered_map.h>
+#include <OneTBB/tbb/parallel_for.h>
+#include <OneTBB/tbb/parallel_for_each.h>
+#include <OneTBB/tbb/task.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

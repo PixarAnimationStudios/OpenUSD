@@ -38,7 +38,7 @@
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/export.h"
 
-#include <tbb/spin_mutex.h>
+#include <OneTBB/tbb/spin_mutex.h>
 
 #include <atomic>
 #include <algorithm>

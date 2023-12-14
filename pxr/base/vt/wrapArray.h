@@ -32,8 +32,8 @@
 #include "pxr/base/vt/pyOperators.h"
 #include "pxr/base/vt/functions.h"
 
-#include "pxr/base/arch/math.h"
-#include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pxrmath.h"
+#include "pxr/base/arch/pxrinttypes.h"
 #include "pxr/base/arch/pragmas.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -45,7 +45,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/span.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/tf.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
 #include <boost/preprocessor/punctuation/comma_if.hpp>

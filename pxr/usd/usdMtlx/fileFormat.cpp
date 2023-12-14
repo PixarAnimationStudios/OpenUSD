@@ -28,7 +28,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/base/tf/pathUtils.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include <MaterialXCore/Document.h>
 #include <MaterialXFormat/XmlIo.h>

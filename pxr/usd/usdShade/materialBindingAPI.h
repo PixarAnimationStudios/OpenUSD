@@ -36,7 +36,7 @@
 #include "pxr/usd/usd/collectionAPI.h"
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdShade/material.h"
-#include <tbb/concurrent_unordered_map.h>
+#include <OneTBB/tbb/concurrent_unordered_map.h>
 
 #include "pxr/base/vt/value.h"
 

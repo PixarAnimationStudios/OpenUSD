@@ -115,8 +115,8 @@
 #include <boost/type_traits/is_enum.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <tbb/cache_aligned_allocator.h>
-#include <tbb/spin_mutex.h>
+#include <OneTBB/tbb/cache_aligned_allocator.h>
+#include <OneTBB/tbb/spin_mutex.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED
