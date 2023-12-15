@@ -64,9 +64,9 @@ def process_dir(dir_path, required_submodules):
     variables = ldict.get('vars', {})
 
     if deps is None:
-        log(f"ERROR: DEPS file '{deps_path}' does not define a 'deps' variable"
+        log(f"WARNING: DEPS file '{deps_path}' does not define a 'deps' variable"
             )
-        exit(1)
+        return
 
     for submodule in required_submodules:
         if submodule not in deps:

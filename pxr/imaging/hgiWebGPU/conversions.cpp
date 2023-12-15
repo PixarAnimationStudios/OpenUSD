@@ -143,8 +143,12 @@ struct {
             {HgiFormatBC3UNorm8Vec4,    wgpu::VertexFormat::Undefined},
 
             {HgiFormatFloat32UInt8,     wgpu::VertexFormat::Undefined},
-
+#ifdef EMSCRIPTEN
+            // TODO: webgpu_cpp.h header hasn't been updated to support Unorm10_10_10_2
             {HgiFormatPackedInt1010102, wgpu::VertexFormat::Undefined},
+#else
+            {HgiFormatPackedInt1010102, wgpu::VertexFormat::Unorm10_10_10_2},
+#endif
     };
 
 static_assert(TfArraySize(_formatTable) == HgiFormatCount,

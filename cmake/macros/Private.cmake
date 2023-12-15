@@ -1555,7 +1555,6 @@ function(_pxr_library NAME)
     #
 
     if(NOT "${PXR_PREFIX}" STREQUAL "")
-    message(STATUS "---- wf message ---- ${PXR_PREFIX}; ${args_PRECOMPILED_HEADERS} ; name: ${NAME}; ${args_PRECOMPILED_HEADER_NAME}")
         if(args_PRECOMPILED_HEADERS)
             _pxr_enable_precompiled_header(${NAME}
                 SOURCE_NAME "${args_PRECOMPILED_HEADER_NAME}"

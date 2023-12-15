@@ -114,6 +114,7 @@ wgpu::Device GetDevice() {
         wgpu::DeviceDescriptor descriptor;
         std::vector<wgpu::FeatureName> requiredFeatures = {
                 wgpu::FeatureName::Depth32FloatStencil8,
+                wgpu::FeatureName::Float32Filterable
         };
 
         #ifndef EMSCRIPTEN
@@ -130,10 +131,6 @@ wgpu::Device GetDevice() {
             deviceTogglesDesc.enabledToggleCount = enabledToggles.size();
             descriptor.nextInChain = &deviceTogglesDesc;
 
-            // This feature requires toggling the "allow_unsafe_apis" in Chrome at the moment. We can include it
-            // in emscripten after it has been classified as "safe"
-            // In particular we enable this feature to handle Float32 textures used in some cases in IBL
-            requiredFeatures.push_back(wgpu::FeatureName::Float32Filterable);
         #endif
 
         descriptor.requiredFeatures = requiredFeatures.data();

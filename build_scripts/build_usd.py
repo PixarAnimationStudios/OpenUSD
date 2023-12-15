@@ -1415,7 +1415,6 @@ def InstallOpenSubdiv(context, force, buildArgs):
             extraArgs.append('-DBUILD_SHARED_LIB=OFF')
             extraArgs.append('-DCMAKE_CXX_FLAGS="-pthread"')
             extraArgs.append('-DCMAKE_C_FLAGS="-pthread"')
-            extraArgs.append('-DNO_OPENGL=ON')
             extraArgs.append('-DNO_METAL=ON')
 
         # If Ptex support is disabled in USD, disable support in OpenSubdiv
@@ -1626,7 +1625,7 @@ GLSLANG = Dependency("glslang", InstallGlslang, "include/glslang/SPIRV/GlslangTo
 # Tint
 
 TINT_REPO = "https://dawn.googlesource.com/tint"
-TINT_COMMIT = "0c0084b9f89333c0400e57e9f2fbf47a758840b7"
+TINT_COMMIT = "ad53840f61e1b18a4321efd82fafdc5e07d1853c"
 TINT_CMAKE_OPTIONS = [
     '-DTINT_BUILD_SPV_READER=ON',
     '-DTINT_BUILD_SPV_WRITER=OFF',
@@ -1708,7 +1707,7 @@ TINT = Dependency("Tint", InstallTint, "include/tint/tint.h")
 ############################################################
 # DAWN and 3rd parties
 DAWN_REPO = "https://dawn.googlesource.com/dawn"
-DAWN_CHROMIUM_VERSION = "6031"
+DAWN_CHROMIUM_VERSION = "6159"
 
 def InstallDawn(context, force, buildArgs):
     with CurrentWorkingDirectory(context.srcDir):
@@ -1721,6 +1720,7 @@ def InstallDawn(context, force, buildArgs):
 
         with CurrentWorkingDirectory(srcDir):
             required_submodules = [
+                'third_party/protobuf',
                 'third_party/vulkan-deps',
                 'third_party/vulkan-deps/spirv-headers/src',
                 'third_party/vulkan-deps/spirv-tools/src',

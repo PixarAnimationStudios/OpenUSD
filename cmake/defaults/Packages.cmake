@@ -148,15 +148,6 @@ else()
         find_package(Python3 COMPONENTS Interpreter)
         set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
     endif()
- 
-    # --Boost
-    if(NOT PXR_ENABLE_JS_SUPPORT)
-        find_package(Boost
-            COMPONENTS
-                program_options
-            REQUIRED
-        )
-    endif()
 endif()
 
 
@@ -249,6 +240,7 @@ if (PXR_BUILD_IMAGING)
     if (PXR_ENABLE_METAL_SUPPORT)
         add_definitions(-DPXR_METAL_SUPPORT_ENABLED)
     endif()
+
     if (PXR_ENABLE_VULKAN_SUPPORT)
         if (EXISTS $ENV{VULKAN_SDK})
             # Prioritize the VULKAN_SDK includes and packages before any system
@@ -283,11 +275,48 @@ if (PXR_BUILD_IMAGING)
             message(FATAL_ERROR "VULKAN_SDK not valid")
         endif()
     endif()
+
+    if (PXR_ENABLE_WEBGPU_SUPPORT)
+        if (NOT EMSCRIPTEN)
+            find_package(Dawn QUIET REQUIRED
+                COMPONENTS
+                    native
+                    wire
+                    platform
+                    cpp
+            )
+        endif ()
+        set(TINT_COMPONENTS
+            lang_spirv_reader
+        )
+        if (WIN32)
+            list(APPEND TINT_COMPONENTS
+                lang_hlsl_writer
+            )
+        elseif (APPLE)
+            list(APPEND TINT_COMPONENTS
+                lang_msl_writer
+            )
+        else()
+            # TODO: This has not been validated with the correct platform
+            list(APPEND TINT_COMPONENTS
+                lang_glsl_writer
+            )
+        endif ()
+
+        find_package(Tint REQUIRED COMPONENTS ${TINT_COMPONENTS} QUIET)
+        find_package(GLSLang REQUIRED NO_CMAKE_FIND_ROOT_PATH)
+
+        # glslangConfig.cmake defined INTERFACE_INCLUDE_DIRECTORIES incorrectly
+        # so we need to override the property
+        get_target_property(GLSLANG_INCLUDE_DIRECTORY glslang::glslang INTERFACE_INCLUDE_DIRECTORIES)
+        set_target_properties(glslang::SPIRV PROPERTIES
+                INTERFACE_INCLUDE_DIRECTORIES "${GLSLANG_INCLUDE_DIRECTORY}")
+        find_package(SPIRV-Tools REQUIRED NO_CMAKE_FIND_ROOT_PATH)
+        find_package(SPIRV-Tools-opt REQUIRED NO_CMAKE_FIND_ROOT_PATH)
+    endif ()
     # --Opensubdiv
     set(OPENSUBDIV_USE_GPU ${PXR_ENABLE_GL_SUPPORT})
-    if (EMSCRIPTEN)
-        set(OPENSUBDIV_USE_GPU OFF)
-    endif()
     find_package(OpenSubdiv 3 REQUIRED)
     # --Ptex
     if (PXR_ENABLE_PTEX_SUPPORT)

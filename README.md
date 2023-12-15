@@ -27,7 +27,6 @@ To try it out, you can use `usdview` but, due to some limitations for WebGPU,
 some features need to be disabled.
 ```
 export HDST_ENABLE_PIPELINE_DRAW_BATCH_GPU_FRUSTUM_CULLING=0
-export HD_ENABLE_PACKED_NORMALS=0
 export HDX_ENABLE_OIT=0
 export HGI_ENABLE_WEBGPU=1
 ```

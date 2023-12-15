@@ -159,16 +159,16 @@ struct VertexOutput {
         {
             if (navigator["gpu"]) {
                 navigator["gpu"]["requestAdapter"]().then(function (adapter) {
+                    const requestedFeatures = [ "depth32float-stencil8", "float32-filterable" ];
                     const requiredFeatures = [];
-                    if (adapter.features.has('depth32float-stencil8'))
-                    {
-                        requiredFeatures.push('depth32float-stencil8');
-                        console.log("WebGPU adapter supports depth32float-stencil8.");
-                    }
-                    else
-                    {
-                        console.log("WebGPU adapter doesn't support depth32float-stencil8.");
-                    }
+                    requestedFeatures.forEach(feat => {
+                            if (adapter.features.has(feat)) {
+                                requiredFeatures.push(feat);
+                                console.log("WebGPU adapter supports " + feat + ".");
+                            } else {
+                                console.log("WebGPU adapter does not support " + feat + ".");
+                            }
+                    });
                     adapter["requestDevice"]({requiredFeatures}).then( function (device) {
                         Module["preinitializedWebGPUDevice"] = device;
                         const canvasContainer = document.getElementsByClassName("emscripten_border")[0];

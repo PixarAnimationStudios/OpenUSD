@@ -25,6 +25,7 @@
 #include "pxr/imaging/hgiWebGPU/shaderCompiler.h"
 #include "glslang/SPIRV/GlslangToSpv.h"
 #include "glslang/Public/ResourceLimits.h"
+#include "glslang/Public/ShaderLang.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
