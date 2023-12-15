@@ -468,6 +468,7 @@ pxr_build_test(testTf
         testenv/patternMatcher.cpp
         testenv/pointerAndBits.cpp
         testenv/preprocessorUtils.cpp
+        testenv/preprocessorUtilsLite.cpp
         testenv/probe.cpp
         testenv/refPtr.cpp
         testenv/registryManager.cpp
@@ -673,6 +674,9 @@ pxr_register_test(TfPointerAndBits
 )
 pxr_register_test(TfPreprocessorUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPreprocessorUtils"
+)
+pxr_register_test(TfPreprocessorUtilsLite
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPreprocessorUtilsLite"
 )
 pxr_register_test(TfProbe
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfProbe"
