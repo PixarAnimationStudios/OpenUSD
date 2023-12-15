@@ -50,14 +50,12 @@ _NewDrawBatch(HdStDrawItemInstance *drawItemInstance,
     HdStResourceRegistrySharedPtr const &resourceRegistry =
         std::static_pointer_cast<HdStResourceRegistry>(
             index->GetResourceRegistry());
-    HgiCapabilities const *hgiCapabilities =
-        resourceRegistry->GetHgi()->GetCapabilities();
 
     // Since we're just drawing a single full-screen triangle
     // we don't want frustum culling or indirect command encoding.
     bool const allowGpuFrustumCulling = false;
     bool const allowIndirectCommandEncoding = false;
-    if (HdSt_PipelineDrawBatch::IsEnabled(hgiCapabilities)) {
+    if (HdSt_PipelineDrawBatch::IsEnabled(resourceRegistry->GetHgi())) {
         return std::make_shared<HdSt_PipelineDrawBatch>(
                 drawItemInstance,
                 allowGpuFrustumCulling,
