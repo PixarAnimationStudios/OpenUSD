@@ -55,6 +55,17 @@ def PointInstancer "OneInstanceNoSamples" (
     Vec3f[] angularVelocities = [ (0,0,864) ]
 }
 
+def PointInstancer "PrefHalvesOverFloatsNoSamples" (
+    references = </Base>
+) {
+    int[] protoIndices = [ 0 ]
+    Vec3f[] positions = [ (0,0,0) ]
+    Quatf[] orientationsf = [ ]
+    Quath[] orientations = [ (1,0,0,0) ]
+    Vec3f[] velocities = [ (120,240,480) ]
+    Vec3f[] angularVelocities = [ (0,0,864) ]
+}
+
 def PointInstancer "OneInstanceNoVelocities" (
     references = </Base>
 ) {
@@ -79,6 +90,67 @@ def PointInstancer "OneInstance" (
         0: [ (0,0,0) ],
         5: [ (25,50,100) ],
         10: [ (0,0,0) ]
+    }
+    Quath[] orientations.timeSamples = {
+        0: [ (1,0,0,0) ],
+        5: [ (0,0,0,1) ],
+        10: [ (1,0,0,0) ]
+    }
+    Vec3f[] velocities.timeSamples = {
+        0: [ (120,240,480) ],
+        5: [ (-120,-240,-480) ],
+        10: [ (0,0,0) ]
+    }
+    Vec3f[] angularVelocities.timeSamples = {
+        0: [ (0,0,864) ],
+        5: [ (0,0,-864) ],
+        10: [ (0,0,0) ]
+    }
+}
+
+def PointInstancer "PrefOrientationsf" (
+    references = </Base>
+) {
+    int[] protoIndices = [ 0 ]
+    Vec3f[] positions.timeSamples = {
+        0: [ (0,0,0) ],
+        5: [ (25,50,100) ],
+        10: [ (0,0,0) ]
+    }
+    Quatf[] orientationsf.timeSamples = {
+        0: [ (1,0,0,0) ],
+        5: [ (0,0,0,1) ],
+        10: [ (1,0,0,0) ]
+    }
+    Quath[] orientations.timeSamples = {
+        0: [ (0,1,0,0) ],
+        5: [ (0,1,0,0) ],
+        10: [ (0,1,0,0) ]
+    }
+    Vec3f[] velocities.timeSamples = {
+        0: [ (120,240,480) ],
+        5: [ (-120,-240,-480) ],
+        10: [ (0,0,0) ]
+    }
+    Vec3f[] angularVelocities.timeSamples = {
+        0: [ (0,0,864) ],
+        5: [ (0,0,-864) ],
+        10: [ (0,0,0) ]
+    }
+}
+
+def PointInstancer "PrefHalvesOverFloatsTimeSamples" (
+    references = </Base>
+) {
+    int[] protoIndices = [ 0 ]
+    Vec3f[] positions.timeSamples = {
+        0: [ (0,0,0) ],
+        5: [ (25,50,100) ],
+        10: [ (0,0,0) ]
+    }
+    Quatf[] orientationsf.timeSamples = {
+        0: [  ],
+       
     }
     Quath[] orientations.timeSamples = {
         0: [ (1,0,0,0) ],
@@ -417,6 +489,37 @@ def PointInstancer "OneInstanceAcceleration" (
         10: [ (0,0,0) ]
     }
     Quath[] orientations.timeSamples = {
+        0: [ (1,0,0,0) ],
+        5: [ (0,0,0,1) ],
+        10: [ (1,0,0,0) ]
+    }
+    Vec3f[] velocities.timeSamples = {
+        0: [ (120,120,120) ],
+        5: [ (120,240,480) ],
+        10: [ (0,0,0) ]
+    }
+    Vec3f[] angularVelocities.timeSamples = {
+        0: [ (0,0,864) ],
+        5: [ (0,0,-864) ],
+        10: [ (0,0,0) ]
+    }
+    Vec3f[] accelerations.timeSamples = {
+        0: [ (24,24,24) ],
+        5: [ (24,48,72) ],
+        10: [ (0,0,0) ]
+    }
+}
+
+def PointInstancer "OneInstanceAccelerationf" (
+    references = </Base>
+) {
+    int[] protoIndices = [ 0 ]
+    Vec3f[] positions.timeSamples = {
+        0: [ (0,0,0) ],
+        5: [ (25,50,100) ],
+        10: [ (0,0,0) ]
+    }
+    Quatf[] orientationsf.timeSamples = {
         0: [ (1,0,0,0) ],
         5: [ (0,0,0,1) ],
         10: [ (1,0,0,0) ]

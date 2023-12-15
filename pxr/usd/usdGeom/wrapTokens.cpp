@@ -156,6 +156,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "order", UsdGeomTokens->order);
     _AddToken(cls, "orientation", UsdGeomTokens->orientation);
     _AddToken(cls, "orientations", UsdGeomTokens->orientations);
+    _AddToken(cls, "orientationsf", UsdGeomTokens->orientationsf);
     _AddToken(cls, "origin", UsdGeomTokens->origin);
     _AddToken(cls, "orthographic", UsdGeomTokens->orthographic);
     _AddToken(cls, "partition", UsdGeomTokens->partition);
