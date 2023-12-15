@@ -3264,10 +3264,12 @@ UsdStage::_ComposeSubtreesInParallel(
                 }
             }
             catch (...) {
+                _dispatcher->Wait();
                 _dispatcher = std::nullopt;
                 throw;
             }
             
+            _dispatcher->Wait();
             _dispatcher = std::nullopt;
         });
 }
@@ -3421,6 +3423,7 @@ UsdStage::_DestroyPrimsInParallel(const vector<SdfPath>& paths)
                 });
             }
         }
+        _dispatcher->Wait();
         _dispatcher = std::nullopt;
     });
 }
