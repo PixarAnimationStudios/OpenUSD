@@ -84,20 +84,28 @@ HdStInstancer::_SyncPrimvars(HdSceneDelegate *sceneDelegate,
         if (!value.IsEmpty()) {
             HdBufferSourceSharedPtr source;
             if ((primvar.name == HdInstancerTokens->instanceTransform ||
-                 primvar.name == HdInstancerTokens->instanceTransforms) &&
-                TF_VERIFY(value.IsHolding<VtArray<GfMatrix4d> >())) {
-                // Explicitly invoke the c'tor taking a
-                // VtArray<GfMatrix4d> to ensure we properly convert to
-                // the appropriate floating-point matrix type.
-                HgiCapabilities const * capabilities =
-                    resourceRegistry->GetHgi()->GetCapabilities();
-                bool const doublesSupported = capabilities->IsSet(
-                    HgiDeviceCapabilitiesBitsShaderDoublePrecision);
-                source.reset(new HdVtBufferSource(
-                    primvar.name,
-                    value.UncheckedGet<VtArray<GfMatrix4d>>(),
-                    1,
-                    doublesSupported));
+                 primvar.name == HdInstancerTokens->instanceTransforms)) {
+                if (value.IsHolding<VtArray<GfMatrix4d>>()) {
+                    // Explicitly invoke the c'tor taking a
+                    // VtArray<GfMatrix4d> to ensure we properly convert to
+                    // the appropriate floating-point matrix type.
+                    HgiCapabilities const * capabilities =
+                        resourceRegistry->GetHgi()->GetCapabilities();
+                    bool const doublesSupported = capabilities->IsSet(
+                        HgiDeviceCapabilitiesBitsShaderDoublePrecision);
+                    source.reset(new HdVtBufferSource(
+                        primvar.name,
+                        value.UncheckedGet<VtArray<GfMatrix4d>>(),
+                        1,
+                        doublesSupported));
+                }
+                else if (value.IsHolding<VtArray<GfMatrix4f>>()) {
+                    source.reset(new HdVtBufferSource(
+                        primvar.name,
+                        value,
+                        1,
+                        false));
+                }
             }
             else {
                 source.reset(new HdVtBufferSource(primvar.name, value));
