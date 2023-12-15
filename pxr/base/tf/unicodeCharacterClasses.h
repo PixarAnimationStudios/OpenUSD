@@ -52,7 +52,9 @@ public:
     /// @param codePoint The Unicode code point to determine inclusion for.
     /// @return true if the given codePoint is in the XID_Start character
     /// class, false otherwise.
-    bool IsXidStartCodePoint(uint32_t codePoint) const;
+    inline bool IsXidStartCodePoint(uint32_t codePoint) const {
+        return (codePoint < TF_MAX_CODE_POINT) ? _flags[codePoint] : false;
+    }
 
 private:
 
@@ -75,7 +77,9 @@ public:
     /// @param codePoint The Unicode code point to determine inclusion for.
     /// @return true if the given codePoint is in the XID_Continue 
     /// character class false otherwise.
-    bool IsXidContinueCodePoint(uint32_t codePoint) const;
+    inline bool IsXidContinueCodePoint(uint32_t codePoint) const {
+        return (codePoint < TF_MAX_CODE_POINT) ? _flags[codePoint] : false;
+    }
 
 private:
     

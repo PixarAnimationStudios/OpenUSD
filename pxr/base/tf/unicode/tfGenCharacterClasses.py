@@ -68,25 +68,25 @@ def _write_cpp_file(source_template_path : str, destination_directory : str):
     generated_cpp_file_name = os.path.join(destination_directory,
                                            CPP_FILE_NAME)
     with open(generated_cpp_file_name, 'w') as generated_cpp_file:
-        # we need to replace two markers, {xid_start_ranges}
-        # and {xid_continue_ranges} with the content we derived
-        # from DerivedCoreProperties.txt
-        xid_start_range_expression = "ranges = {\n"
-        for x in xid_start_range_pairs:
-            range_expression = "{" + str(x[0]) + ", " + str(x[1]) + "}"
-            xid_start_range_expression += f"        {range_expression},\n"
-        xid_start_range_expression += "    };"
+        # we need to replace markers {xid_start_ranges} and
+        # {xid_continue_ranges} (along with their sizes) with the content we
+        # derived from DerivedCoreProperties.txt
+        xid_start_range_expression = "\n".join(
+            "        {{{}, {}}},".format(str(x[0]), str(x[1]))
+            for x in xid_start_range_pairs)
 
-        xid_continue_range_expression = "ranges = {\n"
-        for x in xid_continue_range_pairs:
-            range_expression = "{" + str(x[0]) + ", " + str(x[1]) + "}"
-            xid_continue_range_expression += f"        {range_expression},\n"
-        xid_continue_range_expression += "    };"
+        xid_continue_range_expression = "\n".join(
+            "        {{{}, {}}},".format(str(x[0]), str(x[1]))
+            for x in xid_continue_range_pairs)
 
         destination_template_content = source_template_content.replace(
             r"{xid_start_ranges}", xid_start_range_expression)
         destination_template_content = destination_template_content.replace(
             r"{xid_continue_ranges}", xid_continue_range_expression)
+        destination_template_content = destination_template_content.replace(
+            r"{xid_start_ranges_size}", str(len(xid_start_range_pairs)))
+        destination_template_content = destination_template_content.replace(
+            r"{xid_continue_ranges_size}", str(len(xid_continue_range_pairs)))
 
         generated_cpp_file.write(destination_template_content)
 
