@@ -214,6 +214,55 @@ TestTF_PP_TUPLE_ELEM()
     return true;
 }
 
+static bool
+TestTF_PP_SEQ_SIZE()
+{
+    static_assert(TF_PP_SEQ_SIZE() == 0);
+    #define EMPTY_SEQUENCE
+    static_assert(TF_PP_SEQ_SIZE(EMPTY_SEQUENCE) == 0);
+    #undef EMPTY_SEQUENCE
+    static_assert(TF_PP_SEQ_SIZE(()) == 1);
+    static_assert(TF_PP_SEQ_SIZE((((())))) == 1);
+    static_assert(TF_PP_SEQ_SIZE((4)) == 1);
+    static_assert(TF_PP_SEQ_SIZE((("hello", "world"))) == 1);
+    static_assert(TF_PP_SEQ_SIZE((("hello", "world"))("goodbye")) == 2);
+    static_assert(TF_PP_SEQ_SIZE((a)(b)(c)(d)(e)(f)(g)(h)(i)(j)(k)(l)(m)(n)(o)(p)(q)(r)(s)(t)(u)(v)(w)(x)(y)(z)) == 26);
+
+    return true;
+}
+
+static bool
+TestTF_PP_SEQ_FOR_EACH()
+{
+    #define EMPTY_SEQUENCE
+    #define ADD(unused, x) x +
+    static_assert(TF_PP_SEQ_FOR_EACH(ADD, ~, EMPTY_SEQUENCE) 1 == 1);
+    static_assert(TF_PP_SEQ_FOR_EACH(ADD, ~, (1)) 1 == 2);
+    static_assert(TF_PP_SEQ_FOR_EACH(ADD, ~, (1)(2)) 1 == 4);
+    static_assert(TF_PP_SEQ_FOR_EACH(ADD, ~, (1)(2)(3)) 1 == 7);
+    #undef ADD
+
+    // Test the "data" argument
+    #define SCALE_ADD(scale, x) (scale * x) +
+    static_assert(TF_PP_SEQ_FOR_EACH(SCALE_ADD, 3, EMPTY_SEQUENCE) 1 == 1);
+    static_assert(TF_PP_SEQ_FOR_EACH(SCALE_ADD, 3, (1)) 1 == 4);
+    static_assert(TF_PP_SEQ_FOR_EACH(SCALE_ADD, 4, (1)(2)) 1 == 13);
+    static_assert(TF_PP_SEQ_FOR_EACH(SCALE_ADD, 2, (1)(2)(3)) 1 == 13);
+    #undef SCALE_ADD
+
+    // Test generating sequences from sequences
+    #define _MAP(unused, elem) ((TF_PP_CAT(elem, Key), "value"))
+    #define _MAPPED_ELEMENTS TF_PP_SEQ_FOR_EACH(_MAP, ~, (x)(y)(z)(w))
+    static_assert(TF_PP_SEQ_SIZE(_MAPPED_ELEMENTS) == 4);
+    #define _MAP_AGAIN(unused, elem) TF_PP_TUPLE_ELEM(1, elem)
+    TF_AXIOM(!strcmp(TF_PP_SEQ_FOR_EACH(_MAP_AGAIN, ~, _MAPPED_ELEMENTS), "valuevaluevaluevalue"));
+    #undef _MAP_AGAIN
+    #undef _MAPPED_ELEMENTS
+    #undef _MAP
+    #undef EMPTY_SEQUENCE
+
+    return true;
+}
 
 static bool
 Test_TfPreprocessorUtils()
@@ -225,7 +274,9 @@ Test_TfPreprocessorUtils()
         TestTF_PP_VARIADIC_SIZE() &&
         TestTF_PP_VARIADIC_ELEM() &&
         TestTF_PP_FOR_EACH() &&
-        TestTF_PP_TUPLE_ELEM()
+        TestTF_PP_TUPLE_ELEM() &&
+        TestTF_PP_SEQ_SIZE() &&
+        TestTF_PP_SEQ_FOR_EACH()
         ;
 }
 
