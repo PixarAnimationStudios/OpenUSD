@@ -136,6 +136,8 @@ pxr_plugin(${PXR_PACKAGE}
         rileyRenderOutputPrim
         rileyRenderTargetPrim
         terminalSceneIndexObserver
+        updateObjectSettingsSceneIndex
+        updateObjectSettingsSceneIndexPlugin
         utils
         virtualStructResolvingSceneIndex
 
