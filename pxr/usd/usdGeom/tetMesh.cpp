@@ -178,3 +178,63 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+PXR_NAMESPACE_OPEN_SCOPE
+
+bool UsdGeomTetMesh::ComputeSurfaceFaces(const UsdGeomTetMesh& tetMesh,
+                                         VtVec3iArray* surfaceFaceIndices,
+                                         const UsdTimeCode timeCode) 
+{
+    
+    if (surfaceFaceIndices == nullptr)
+    {
+        return false;
+    }
+    
+    // The four triangles of the tetrahedron
+    static int tetFaceIndices[4][3] = {
+        {1,2,3},
+        {0,3,2},
+        {0,1,3},
+        {0,2,1}
+    };
+
+    const UsdAttribute& tetVertexIndicesAttr = tetMesh.GetTetVertexIndicesAttr();
+    VtVec4iArray tetVertexIndices;
+    tetVertexIndicesAttr.Get(&tetVertexIndices, timeCode);
+
+    // The surface faces are made of triangles that are not shared between
+    // tetrahedra and only occur once. We create a hashmap from face
+    // triangles to occurence counts and then run through all the triangles
+    // in the tetmesh incrementing the count. When we are done, we sweep
+    // the hashmap and gather the faces with one occurence.
+    TfHashMap<_IndexTri, size_t, 
+              _IndexTriHash, _IndexTriEquals> triangleCounts;
+
+    for (size_t t = 0; t < tetVertexIndices.size(); t++) {
+
+        const GfVec4i& tet = tetVertexIndices[t];
+        
+        for (int tFace = 0; tFace < 4; tFace++) {
+            
+            const _IndexTri faceId(tet[tetFaceIndices[tFace][0]],
+                                   tet[tetFaceIndices[tFace][1]],
+                                   tet[tetFaceIndices[tFace][2]]);            
+            triangleCounts[faceId]++;
+        }  
+    }          
+    
+    // Take a guess and generously reserve one surface face
+    // per tetrahedron.  
+    surfaceFaceIndices->reserve(tetVertexIndices.size());
+
+    TF_FOR_ALL(iter, triangleCounts) {
+        if (iter->second == 1) {
+            const _IndexTri& tri = iter->first;
+            surfaceFaceIndices->push_back(tri.GetUnsortedIndices());
+        }
+    }
+
+    return true;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE    

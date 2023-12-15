@@ -228,6 +228,97 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+    
+    /// ComputeSurfaceFaces determines the vertex indices of the surface faces 
+    /// from tetVertexIndices. The surface faces are the set of faces that occur 
+    /// only once when traversing the faces of all the tetrahedra. The algorithm 
+    /// is O(n) in the number of tetrahedra. Method returns false if 
+    /// surfaceFaceIndices argument is nullptr and returns true otherwise.
+    USDGEOM_API    
+    static bool ComputeSurfaceFaces(const UsdGeomTetMesh& tetMesh,
+                                    VtVec3iArray* surfaceFaceIndices,
+                                    const UsdTimeCode timeCode = UsdTimeCode::Default());     
+
+private:
+    // IndexTri is a helper class used by ComputeSurfaceFaces
+    class _IndexTri
+    {
+    public:
+        _IndexTri(int fv0, int fv1, int fv2):_unsortedIndices(fv0, fv1, fv2),
+                                             _sortedIdx0(fv0),
+                                             _sortedIdx1(fv1),
+                                             _sortedIdx2(fv2)  
+        {
+            // _sortedIdx0, _sortedIdx1 and _sortedIdx2 are 
+            // sorted indices because order is important when determining
+            // face equality.          
+            _SortFVIndices(_sortedIdx0,_sortedIdx1,_sortedIdx2);
+            // .. and this is a perfect hash for a face, provided
+            // there are fewer than 2097152 (2**21) points. But we
+            // keep the sorted indices around to resolve collisions
+            //
+            _hash = _sortedIdx0 << 42 ^ _sortedIdx1 << 21 ^ _sortedIdx2;
+        }      
+
+        size_t GetHash() const {
+            return _hash;
+        }           
+
+        bool operator == (const _IndexTri& other) const {
+          // A face is the same as another if the
+          // three sorted indices are identical.
+          // In practice, this function will only
+          // get called for extremely large meshes.
+          return (_sortedIdx0 == other._sortedIdx0) &&
+                 (_sortedIdx1 == other._sortedIdx1) &&
+                 (_sortedIdx2 == other._sortedIdx2);            
+        }
+
+        const GfVec3i& GetUnsortedIndices() const {
+            return _unsortedIndices;
+        }
+     
+    private:         
+
+        static void _SortFVIndices(size_t& a, size_t& b, size_t& c) {
+            if (a > b) {
+                std::swap(a, b);
+            }
+  
+            if (a > c) {
+                std::swap(a, c);
+            }
+ 
+            if (b > c) {
+                std::swap(b, c);
+            }
+        }
+        
+        // Original unsorted indices
+        const GfVec3i _unsortedIndices;
+
+        // Sorted Indices
+        size_t _sortedIdx0;
+        size_t _sortedIdx1;
+        size_t _sortedIdx2;
+
+        // Precomputed hash
+        size_t _hash;                                 
+    };
+
+    struct _IndexTriHash {
+        size_t operator()(const _IndexTri& tri) const
+        {
+            return tri.GetHash();
+        }
+    };
+
+    struct _IndexTriEquals {
+        bool operator()(const _IndexTri& a, const _IndexTri& b) const
+        {
+            return a == b;
+        }
+    };   
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
