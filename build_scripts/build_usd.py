@@ -421,6 +421,11 @@ def RunCMake(context, force, extraArgs = None):
 
         extraArgs.append('-DCMAKE_OSX_ARCHITECTURES={0}'.format(targetArch))
 
+    if context.ignorePaths:
+        ignoredPaths = ";".join(context.ignorePaths)
+        extraArgs.append("-DCMAKE_IGNORE_PATH={0}".format(ignoredPaths))
+        extraArgs.append("-DCMAKE_IGNORE_PREFIX_PATH={0}".format(ignoredPaths))
+
     # We use -DCMAKE_BUILD_TYPE for single-configuration generators 
     # (Ninja, make), and --config for multi-configuration generators 
     # (Visual Studio); technically we don't need BOTH at the same
@@ -1800,6 +1805,8 @@ group.add_argument("--build-variant", default=BUILD_RELEASE,
                    help=("Build variant for USD and 3rd-party dependencies. "
                          "(default: {})".format(BUILD_RELEASE)))
 
+group.add_argument("--ignore-paths", type=str, nargs="*", default=[],
+                   help="Paths to request CMake to ignore when configuring projects.")
 if MacOS():
     group.add_argument("--build-target",
                        default=apple_utils.GetBuildTargetDefault(),
@@ -1807,6 +1814,11 @@ if MacOS():
                        help=("Build target for macOS cross compilation. "
                              "(default: {})".format(
                                 apple_utils.GetBuildTargetDefault())))
+    if apple_utils.IsHostArm():
+        # Intel Homebrew stores packages in /usr/local which unfortunately can
+        # be where a lot of other things are too. So we only add this flag on arm macs.
+        group.add_argument("--ignore-homebrew", action="store_true",
+                           help="Request CMake to ignore Homebrew packages.")
 
 group.add_argument("--build-args", type=str, nargs="*", default=[],
                    help=("Custom arguments to pass to build system when "
@@ -2092,6 +2104,7 @@ class InstallContext:
         self.buildShared = (args.build_type == SHARED_LIBS)
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
 
+        self.ignorePaths = args.ignore_paths or []
         # Build target and code signing
         if MacOS():
             self.buildTarget = args.build_target
@@ -2100,6 +2113,8 @@ class InstallContext:
             self.macOSCodesign = \
                 (args.macos_codesign if hasattr(args, "macos_codesign")
                  else False)
+            if apple_utils.IsHostArm() and args.ignore_homebrew:
+                self.ignorePaths.append("/opt/homebrew")
         else:
             self.buildTarget = ""
 
