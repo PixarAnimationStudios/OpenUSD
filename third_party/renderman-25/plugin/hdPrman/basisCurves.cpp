@@ -144,7 +144,6 @@ HdPrman_BasisCurves::_ConvertGeometry(HdPrman_RenderParam *renderParam,
                                RtDetailType::k_uniform);
 
     // Points
-    float primvarTime = 0.0f;
     HdPrman_ConvertPointsPrimvar(
         sceneDelegate,
         id,
@@ -160,7 +159,7 @@ HdPrman_BasisCurves::_ConvertGeometry(HdPrman_RenderParam *renderParam,
 
     HdPrman_ConvertPrimvars(
         sceneDelegate, id, primvars, numCurves, vertexPrimvarCount,
-        varyingPrimvarCount, facevaryingPrimvarCount, primvarTime);
+        varyingPrimvarCount, facevaryingPrimvarCount);
 
     return primvars;
 }

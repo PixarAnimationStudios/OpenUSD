@@ -61,6 +61,13 @@ class SdfAssetPath;
 // time samples.
 constexpr int HDPRMAN_MAX_TIME_SAMPLES = 4;
 
+#define HDPRMAN_SHUTTEROPEN_DEFAULT 0.f
+#ifdef PIXAR_ANIM
+#define HDPRMAN_SHUTTERCLOSE_DEFAULT 0.5f
+#else
+#define HDPRMAN_SHUTTERCLOSE_DEFAULT 0.f
+#endif
+
 // Render Param for HdPrman to communicate with an instance of PRMan.
 class HdPrman_RenderParam : public HdRenderParam
 {
@@ -169,11 +176,6 @@ public:
     static void 
     RegisterIntegratorCallbackForCamera(
         IntegratorCameraCallback const& callback);
-
-    // Check if named scene index plugin has been loaded
-    HDPRMAN_API
-    static bool
-    HasSceneIndexPlugin(const TfToken &id);
 
     // Get RIX vs XPU
     bool IsXpu() const { return _xpu; }

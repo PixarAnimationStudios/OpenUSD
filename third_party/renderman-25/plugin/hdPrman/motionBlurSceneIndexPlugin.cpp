@@ -21,22 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
 #include "hdPrman/motionBlurSceneIndexPlugin.h"
 
 #include "hdPrman/debugCodes.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/tokens.h"
 
+#include "pxr/base/vt/array.h"
+#include "pxr/base/vt/typeHeaders.h"
+#include "pxr/base/vt/visitValue.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/xformSchema.h"
-
-#include "pxr/base/vt/array.h"
-#include "pxr/base/vt/typeHeaders.h"
-#include "pxr/base/vt/visitValue.h"
 
 #include <unordered_set>
 
@@ -56,7 +55,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 // XXX: These defaults are pulled from UsdMotionAPI, for which there is not yet
-// a corresponding Hydra schema. 
+// a corresponding Hydra schema.
 static const int     _defaultNonlinearSampleCount = 3;
 static const float   _defaultBlurScale            = 1.0f;
 // There is no canonical source for these defaults. They were previously hard-
@@ -75,8 +74,8 @@ static const float _minimumShutterInterval = 1.0e-10;
 // XXX: Set by HdPrman_MotionBlurSceneIndexPlugin::SetShutterInterval()
 // and needed by _MotionBlurHelper. These are part of our shutter
 // interval workaround. See comments on SetShutterInterval() at bottom of file.
-static float _shutterOpen = 0.0f;
-static float _shutterClose = 0.0f;
+static float _shutterOpen = HDPRMAN_SHUTTEROPEN_DEFAULT;
+static float _shutterClose = HDPRMAN_SHUTTEROPEN_DEFAULT;
 
 using TfTokenSet = std::unordered_set<TfToken, TfToken::HashFunctor>;
 
@@ -96,7 +95,7 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
             _tokens->fps,
             HdRetainedSampledDataSource::New(VtValue(_fps)));
 
-    for( auto const& pluginDisplayName : HdPrman_GetPluginDisplayNames() ) {
+    for(const auto& pluginDisplayName : HdPrman_GetPluginDisplayNames()) {
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
             pluginDisplayName,
             HdPrmanPluginTokens->motionBlur,
@@ -120,53 +119,13 @@ float _GetFps(const HdContainerDataSourceHandle& inputArgs)
     if (!source) {
         return _fps;
     }
-    
+
     const VtValue &value = source->GetValue(0.0f);
     if (!value.IsHolding<float>()) {
         return _fps;
     }
 
     return value.UncheckedGet<float>();
-}
-
-// Unfortunately, when encountering a legacy prim, the scene index emulation
-// calls GetContributingSampleTimesForInterval with startTime and endTime
-// being the smallest and largest finite floating point number. It does this
-// because it cannot query the scene delegate itself.
-//
-// We rely on the UsdImaging knowing the relevant camera and its
-// shutter interval and returning a sample time for the beginning and
-// end of the shutter interval.
-std::pair<HdSampledDataSource::Time, HdSampledDataSource::Time>
-_GetSamplingInterval(
-    const HdSampledDataSourceHandle& samplesSource,
-    const float shutterOpen, const float shutterClose,
-    const HdSampledDataSource::Time startTime,
-    const HdSampledDataSource::Time endTime)
-{
-    if (std::numeric_limits<HdSampledDataSource::Time>::lowest() < startTime &&
-        endTime < std::numeric_limits<HdSampledDataSource::Time>::max()) {
-        // Client gives us a valid shutter interval. Use it.
-        return { startTime, endTime };
-    }
-
-    // Do the shutter interval reconstruction described above.
-
-    std::vector<HdSampledDataSource::Time> sampleTimes;
-    // Ignore return value - just examine sampleTimes instead
-    samplesSource->GetContributingSampleTimesForInterval(
-        startTime, endTime, &sampleTimes);
-
-    // Not enough samples to reconstruct the shutter interval.
-    if (sampleTimes.size() < 2) {
-        // These fallback values are from the camera
-        return { shutterOpen, shutterClose };
-    }
-
-    const auto iteratorPair =
-        std::minmax_element(sampleTimes.cbegin(),
-                            sampleTimes.cend());
-    return { *iteratorPair.first, *iteratorPair.second };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -184,7 +143,7 @@ class _MotionBlurHelper
 {
 public:
     using Time = HdSampledDataSource::Time;
-    
+
     /// samplesSource: the original data source
     /// key: identifying name for samplesSource
     /// primPath: path of sampleSource's parent prim (for diagnostics)
@@ -212,7 +171,7 @@ protected:
         Time startTime,
         Time endTime,
         std::vector<Time>* const outSampleTimes);
-    
+
     VtValue
     _GetValue(Time shutterOffset);
 
@@ -238,7 +197,7 @@ private:
 
     // Retrieves the value of ri:object:mblur from the parent prim.
     bool _GetMblur() const;
-    
+
     // Retrieves the value of ri:object:vblur from the parent prim.
     TfToken _GetVblur() const;
 
@@ -249,7 +208,7 @@ private:
     // Retrieves the value of accelerations from the parent prim.
     VtValue _GetAccelerations() const;
 
-    // Checks whether the parent prim has non-empty velocities (or 
+    // Checks whether the parent prim has non-empty velocities (or
     // angularVelocities if the parent prim is an instancer) of the
     // correct type.
     bool _HasVelocities() const;
@@ -274,7 +233,7 @@ private:
     // velocity motion blur. Currently this is only points on points-based
     // prims and positions & rotations on point instancers.
     bool _IsVelocityBlurablePrimvar() const;
-    
+
     HdSampledDataSourceHandle _samplesSource;
     TfToken _key;
     SdfPath _primPath;
@@ -368,7 +327,7 @@ _MotionBlurHelper::_GetVblur() const
 VtValue
 _MotionBlurHelper::_GetVelocities() const
 {
-    
+
     if (_IsRotations()) {
         static const HdDataSourceLocator locator = {
             _tokens->angularVelocities,
@@ -460,8 +419,8 @@ _MotionBlurHelper::_IsVelocityBlurablePrimvar() const
 
 bool
 _MotionBlurHelper::_GetContributingSampleTimesForInterval(
-    Time givenStartTime,
-    Time givenEndTime,
+    Time /*givenStartTime*/,   // XXX: We *ONLY* use the interval coming to
+    Time /*givenEndTime*/,     //      us from RenderParam::SetRileyOptions()
     std::vector<Time>* const outSampleTimes)
 {
     *outSampleTimes = { 0.0f };
@@ -520,19 +479,12 @@ _MotionBlurHelper::_GetContributingSampleTimesForInterval(
         return false;
     }
 
-    // Try to get valid shutter interval
-    Time startTime, endTime;
-    std::tie(startTime, endTime) = _GetSamplingInterval(
-        _samplesSource,
-        _shutterOpen, _shutterClose,
-        givenStartTime, givenEndTime);
-
     // Check if motion blur is disabled by too small shutter interval
-    if (endTime - startTime < _minimumShutterInterval) {
+    if (_shutterClose - _shutterOpen < _minimumShutterInterval) {
         TF_DEBUG(HDPRMAN_MOTION_BLUR).Msg(
             "<%s.%s> (%s): interval [%f, %f] is too short\n",
             _primPath.GetText(), _key.GetText(), _primType.GetText(),
-            startTime, endTime);
+            _shutterOpen, _shutterClose);
         return false;
     }
 
@@ -565,8 +517,8 @@ _MotionBlurHelper::_GetContributingSampleTimesForInterval(
                 outSampleTimes->clear();
                 for (size_t i = 0; i < size_t(numSamples); ++i) {
                     outSampleTimes->push_back(
-                        (float(m - i) / m) * startTime +
-                        (float(i    ) / m) * endTime);
+                        (float(m - i) / m) * _shutterOpen +
+                        (float(i    ) / m) * _shutterClose);
                 }
                 if (TfDebug::IsEnabled(HDPRMAN_MOTION_BLUR)) {
                     std::string s;
@@ -586,25 +538,15 @@ _MotionBlurHelper::_GetContributingSampleTimesForInterval(
             }
         }
     }
-
+    
+    float startTime = _shutterOpen;
+    float endTime = _shutterClose;
+    
     // No velocity blur. Fall back to ordinary sampling.
     // Scale start and end times by blurScale
     if (blurScale != 1.0f) {
-        // Validate interval
-        if (!(std::numeric_limits<Time>::lowest() < startTime &&
-            endTime < std::numeric_limits<Time>::max())) {
-            static std::once_flag flag;
-            std::call_once(flag, [](){
-                TF_CODING_ERROR("blurScale is not supported when consumer "
-                    "is not specifying interval for contributing sample "
-                    "times. In particular, blurScale is not supported for "
-                    "legacy prims under scene index emulation.");
-            });
-            blurScale = 1.0f;
-        } else {
-            startTime *= blurScale;
-            endTime *= blurScale;
-        }
+        startTime *= blurScale;
+        endTime *= blurScale;
     }
 
     outSampleTimes->clear();
@@ -705,8 +647,8 @@ _MotionBlurHelper::_GetValue(Time givenShutterOffset)
         !_IsVelocityBlurablePrimvar() ||        // slightly less cheap
         !_HasVelocities()) {                    // least cheap
         return _GetSourceValue(shutterOffset);
-    } 
-    
+    }
+
     // Do velocity blur!
     const VtValue sourceValue = _GetSourceValue(0.0f);
     const size_t sourceCount = sourceValue.GetArraySize();
@@ -715,19 +657,21 @@ _MotionBlurHelper::_GetValue(Time givenShutterOffset)
     const float scaledTime = shutterOffset / fps;
     const VtVec3fArray& velocities = velocitiesValue
         .UncheckedGet<VtVec3fArray>();
-    
+    const bool isRotations = _IsRotations();
+
     // Check that we have enough velocities.
     if (velocities.size() != sourceCount) {
-        TF_WARN("Number of angular velocity vectors (%zu) does not "
-            "match number of rotations (%zu).", velocities.size(),
-            sourceCount);
+        TF_WARN("Number of %svelocity vectors (%zu) does not "
+            "match number of %s (%zu).",
+            isRotations ? "angular " : "", velocities.size(),
+            isRotations ? "rotations" : "positions", sourceCount);
         // Be forgiving and only bail if we're short on velocities.
         if (velocities.size() < sourceCount) {
             return _GetSourceValue(shutterOffset);
         }
     }
 
-    if (_IsRotations()) {
+    if (isRotations) {
         // Check the source type
         if (!sourceValue.IsHolding<VtQuathArray>()) {
             TF_WARN("Unexpected type encountered for instance "
@@ -762,7 +706,7 @@ _MotionBlurHelper::_GetValue(Time givenShutterOffset)
         // Get the source
         const VtVec3fArray& positions = sourceValue
             .UncheckedGet<VtVec3fArray>();
-        
+
         // Check for acceleration blur
         bool useAccelerations = vblur == _tokens->ablur_on
             && _GetNonlinearSampleCount() >2
@@ -801,7 +745,7 @@ _MotionBlurHelper::_GetValue(Time givenShutterOffset)
             }
         }
         return VtValue(result);
-    } 
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -927,40 +871,6 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-/// \class _Visitor
-///
-/// VtVisitValue visitor for constructing the right type of typed data source
-///
-struct _Visitor
-{
-    const HdSampledDataSourceHandle samplesSource;
-    const TfToken key;
-    const SdfPath primPath;
-    const TfToken primType;
-    const HdContainerDataSourceHandle primvarsSource;
-    const HdContainerDataSourceHandle inputArgs;
-
-    /// Handler for every type except the fallback VtValue type
-    template <typename T>
-    HdDataSourceBaseHandle
-    operator()(const T&)
-    {
-        return _MotionBlurTypedSampledDataSource<T>::New(
-            samplesSource, key, primPath, primType, primvarsSource, inputArgs);
-    }
-
-    /// Handler for the fallback VtValue type
-    HdDataSourceBaseHandle
-    operator()(const VtValue&)
-    {
-        return _MotionBlurUntypedSampledDataSource::New(
-            samplesSource, key, primPath, primType, primvarsSource, inputArgs);
-    }
-};
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
 /// \class _PrimvarDataSource
 ///
 /// Serves as data source for locator primvars>{name}
@@ -1000,7 +910,15 @@ public:
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override;
-    
+
+#if PXR_VERSION < 2302
+    bool Has(const TfToken &name) override
+    {
+        const TfTokenVector names = GetNames();
+        return std::find(names.begin(), names.end(), name) != names.end();
+    }
+#endif
+
 private:
     HdContainerDataSourceHandle _primvarSource;
     TfToken _primvarName;
@@ -1011,6 +929,40 @@ private:
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(_PrimvarDataSource);
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+/// \class _Visitor
+///
+/// VtVisitValue visitor for constructing the right type of typed data source
+///
+struct _Visitor
+{
+    const HdSampledDataSourceHandle samplesSource;
+    const TfToken key;
+    const SdfPath primPath;
+    const TfToken primType;
+    const HdContainerDataSourceHandle primvarsSource;
+    const HdContainerDataSourceHandle inputArgs;
+
+    /// Handler for every type except the fallback VtValue type
+    template <typename T>
+    HdDataSourceBaseHandle
+    operator()(const T&)
+    {
+        return _MotionBlurTypedSampledDataSource<T>::New(
+            samplesSource, key, primPath, primType, primvarsSource, inputArgs);
+    }
+
+    /// Handler for the fallback VtValue type
+    HdDataSourceBaseHandle
+    operator()(const VtValue&)
+    {
+        return _MotionBlurUntypedSampledDataSource::New(
+            samplesSource, key, primPath, primType, primvarsSource, inputArgs);
+    }
+};
 
 HdDataSourceBaseHandle
 _PrimvarDataSource::Get(const TfToken &name)
@@ -1069,6 +1021,14 @@ public:
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+#if PXR_VERSION < 2302
+    bool Has(const TfToken &name) override
+    {
+        const TfTokenVector names = GetNames();
+        return std::find(names.begin(), names.end(), name) != names.end();
+    }
+#endif
 
 private:
     HdContainerDataSourceHandle _primvarsSource;
@@ -1145,6 +1105,14 @@ public:
 
     HdDataSourceBaseHandle Get(const TfToken& name) override;
 
+#if PXR_VERSION < 2302
+    bool Has(const TfToken &name) override
+    {
+        const TfTokenVector names = GetNames();
+        return std::find(names.begin(), names.end(), name) != names.end();
+    }
+#endif
+
 private:
     HdContainerDataSourceHandle _xformSource;
     SdfPath _primPath;
@@ -1161,12 +1129,12 @@ _XformDataSource::Get(const TfToken& name)
     if (!_xformSource) {
         return nullptr;
     }
-    
+
     const HdDataSourceBaseHandle result = _xformSource->Get(name);
-    
+
     if (name == HdXformSchemaTokens->matrix) {
         if (const auto source = HdSampledDataSource::Cast(result)) {
-            return VtVisitValue(source->GetValue(0.0f), 
+            return VtVisitValue(source->GetValue(0.0f),
                 _Visitor { source, name, _primPath,
                     _primType, _primvarsSource, _inputArgs });
         }
@@ -1206,11 +1174,19 @@ public:
         if (!_primSource) {
             return {};
         }
-        
+
         return _primSource->GetNames();
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+#if PXR_VERSION < 2302
+    bool Has(const TfToken &name) override
+    {
+        const TfTokenVector names = GetNames();
+        return std::find(names.begin(), names.end(), name) != names.end();
+    }
+#endif
 
 private:
     HdContainerDataSourceHandle _primSource;
@@ -1240,7 +1216,13 @@ _PrimDataSource::Get(const TfToken &name)
     if (name == HdXformSchemaTokens->xform) {
         if (const auto xformSource = HdContainerDataSource::Cast(result)) {
             if (const auto primvarsSource = HdContainerDataSource::Cast(
-                _primSource->Get(HdPrimvarsSchema::GetSchemaToken()))) {
+                _primSource->Get(
+#if PXR_VERSION < 2308
+                    HdPrimvarsSchemaTokens->primvars
+#else
+                    HdPrimvarsSchema::GetSchemaToken()
+#endif
+                ))) {
                 return _XformDataSource::New(
                     xformSource, _primPath, _primType,
                     primvarsSource, _inputArgs);
@@ -1326,17 +1308,21 @@ private:
     static bool _PrimIsBlurable(const HdSceneIndexPrim& prim)
     {
         // Transformables, points-based, and instancers are blurable, but
-        // points-based and instancers are always also transformable so 
+        // points-based and instancers are always also transformable so
         // we only check for the xform schema.
 
         // XXX: renderSettings and integrator prim types currently leak
         // through a transformable check, so we also filter out those
         // specific prim types
-
-        if (prim.primType == HdPrimTypeTokens->renderSettings ||
-            prim.primType == HdPrimTypeTokens->integrator) {
+#if PXR_VERSION >= 2208
+        if (prim.primType == HdPrimTypeTokens->renderSettings
+#if PXR_VERSION >= 2308
+            || prim.primType == HdPrimTypeTokens->integrator
+#endif
+        ) {
             return false;
         }
+#endif
         if (const auto container = HdContainerDataSource::Cast(
             prim.dataSource)) {
             if (HdXformSchema::GetFromParent(container)) {
@@ -1367,7 +1353,7 @@ _HdPrmanMotionBlurSceneIndex::_PrimsDirtied(
         return;
     }
 
-    // XXX: Invalidating all primvars is a bit heavy handed, but currently 
+    // XXX: Invalidating all primvars is a bit heavy handed, but currently
     // hdPrman (mostly) refreshes all primvars when any primvar gets
     // invalidated anyway.
 
@@ -1387,7 +1373,7 @@ _HdPrmanMotionBlurSceneIndex::_PrimsDirtied(
         _GetPrimvarValueLocator(_tokens->xformsamples),
         _GetPrimvarValueLocator(HdTokens->nonlinearSampleCount),
         _GetPrimvarValueLocator(HdTokens->blurScale) };
-    
+
     // If any of these changed, we invalidate the xform
     static const HdDataSourceLocatorSet xformRelevantLocators {
         _GetPrimvarValueLocator(_tokens->mblur),
@@ -1410,12 +1396,12 @@ _HdPrmanMotionBlurSceneIndex::_PrimsDirtied(
             }
         }
     }
-    
+
     if (primvarIndices.empty() && xformIndices.empty()) {
          _SendPrimsDirtied(entries);
         return;
     }
-    
+
     HdSceneIndexObserver::DirtiedPrimEntries newEntries(entries);
     for (size_t i : primvarIndices) {
         newEntries[i].dirtyLocators.insert(primvarsLocator);
@@ -1453,6 +1439,8 @@ void
 HdPrman_MotionBlurSceneIndexPlugin::SetShutterInterval(
     float shutterOpen, float shutterClose)
 {
+    TF_DEBUG(HDPRMAN_MOTION_BLUR).Msg("SetShutterInterval(%f, %f)\n",
+        shutterOpen, shutterClose);
     _shutterOpen = shutterOpen;
     _shutterClose = shutterClose;
 }
