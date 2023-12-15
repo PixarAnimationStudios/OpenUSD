@@ -37,8 +37,6 @@
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/preprocessor/seq/for_each.hpp>
-
 #include <cstddef>
 #include <cstring>
 #include <string>
@@ -170,18 +168,18 @@ VT_SCALAR_CLASS_VALUE_TYPES VT_BUILTIN_VALUE_TYPES
 // typedef VtArray<int> VtIntArray;
 // typedef VtArray<double> VtDoubleArray;
 template<typename T> class VtArray;
-#define VT_ARRAY_TYPEDEF(r, unused, elem) \
+#define VT_ARRAY_TYPEDEF(unused, elem) \
 typedef VtArray< VT_TYPE(elem) > \
 TF_PP_CAT(Vt, TF_PP_CAT(VT_TYPE_NAME(elem), Array)) ;
-BOOST_PP_SEQ_FOR_EACH(VT_ARRAY_TYPEDEF, ~, VT_SCALAR_VALUE_TYPES)
+TF_PP_SEQ_FOR_EACH(VT_ARRAY_TYPEDEF, ~, VT_SCALAR_VALUE_TYPES)
 
 // The following preprocessor code generates the boost pp sequence for
 // all array value types (VT_ARRAY_VALUE_TYPES)
-#define VT_ARRAY_TYPE_TUPLE(r, unused, elem) \
+#define VT_ARRAY_TYPE_TUPLE(unused, elem) \
 (( TF_PP_CAT(Vt, TF_PP_CAT(VT_TYPE_NAME(elem), Array)) , \
    TF_PP_CAT(VT_TYPE_NAME(elem), Array) ))
 #define VT_ARRAY_VALUE_TYPES \
-BOOST_PP_SEQ_FOR_EACH(VT_ARRAY_TYPE_TUPLE, ~, VT_SCALAR_VALUE_TYPES)
+TF_PP_SEQ_FOR_EACH(VT_ARRAY_TYPE_TUPLE, ~, VT_SCALAR_VALUE_TYPES)
 
 #define VT_CLASS_VALUE_TYPES \
 VT_ARRAY_VALUE_TYPES VT_SCALAR_CLASS_VALUE_TYPES VT_NONARRAY_VALUE_TYPES
@@ -189,14 +187,14 @@ VT_ARRAY_VALUE_TYPES VT_SCALAR_CLASS_VALUE_TYPES VT_NONARRAY_VALUE_TYPES
 #define VT_VALUE_TYPES \
     VT_BUILTIN_VALUE_TYPES VT_CLASS_VALUE_TYPES
 
-#define _VT_MAP_TYPE_LIST(r, unused, elem) , VT_TYPE(elem)
+#define _VT_MAP_TYPE_LIST(unused, elem) , VT_TYPE(elem)
 
 // Populate a type list from the preprocessor sequence.
 // void is prepended to match the comma for the first type
 // and then dropped by TfMetaTail.
 using Vt_ValueTypeList =
     TfMetaApply<TfMetaTail, TfMetaList<
-        void BOOST_PP_SEQ_FOR_EACH(_VT_MAP_TYPE_LIST, ~, VT_VALUE_TYPES)>>;
+        void TF_PP_SEQ_FOR_EACH(_VT_MAP_TYPE_LIST, ~, VT_VALUE_TYPES)>>;
 
 namespace Vt_KnownValueTypeDetail
 {
@@ -280,14 +278,14 @@ struct VtIsKnownValueType_Workaround
 // None of the VT_VALUE_TYPES are value proxies.  We want to specialize these
 // templates here, since otherwise the VtIsTypedValueProxy will require a
 // complete type to check if it derives VtTypedValueProxyBase.
-#define VT_SPECIALIZE_IS_VALUE_PROXY(r, unused, elem)                          \
+#define VT_SPECIALIZE_IS_VALUE_PROXY(unused, elem)                             \
     template <> struct                                                         \
     VtIsValueProxy< VT_TYPE(elem) > : std::false_type {};                      \
     template <> struct                                                         \
     VtIsTypedValueProxy< VT_TYPE(elem) > : std::false_type {};                 \
     template <> struct                                                         \
     VtIsErasedValueProxy< VT_TYPE(elem) > : std::false_type {};
-BOOST_PP_SEQ_FOR_EACH(VT_SPECIALIZE_IS_VALUE_PROXY, ~, VT_VALUE_TYPES)
+TF_PP_SEQ_FOR_EACH(VT_SPECIALIZE_IS_VALUE_PROXY, ~, VT_VALUE_TYPES)
 #undef VT_SPECIALIZE_IS_VALUE_PROXY
 
 // Free functions to represent "zero" for various base types.  See
