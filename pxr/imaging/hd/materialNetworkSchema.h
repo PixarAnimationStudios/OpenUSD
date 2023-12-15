@@ -36,9 +36,9 @@
 #define PXR_IMAGING_HD_MATERIAL_NETWORK_SCHEMA_H
 
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/vectorSchemaTypeDefs.h"
 
-#include "pxr/imaging/hd/materialInterfaceMappingSchema.h"
-
+#include "pxr/imaging/hd/schema.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
 #include "pxr/imaging/hd/containerSchema.h"
