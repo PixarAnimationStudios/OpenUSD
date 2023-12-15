@@ -53,6 +53,7 @@ pxr_library(usdGeom
         scope
         sphere
         subset
+        tetMesh
         visibilityAPI
         xform
         xformable
@@ -100,6 +101,7 @@ pxr_library(usdGeom
         wrapScope.cpp
         wrapSphere.cpp
         wrapSubset.cpp
+        wrapTetMesh.cpp
         wrapTokens.cpp
         wrapVisibilityAPI.cpp
         wrapXform.cpp

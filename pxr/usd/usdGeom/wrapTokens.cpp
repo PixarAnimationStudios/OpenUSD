@@ -192,7 +192,9 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "smooth", UsdGeomTokens->smooth);
     _AddToken(cls, "stereoRole", UsdGeomTokens->stereoRole);
     _AddToken(cls, "subdivisionScheme", UsdGeomTokens->subdivisionScheme);
+    _AddToken(cls, "surfaceFaceVertexIndices", UsdGeomTokens->surfaceFaceVertexIndices);
     _AddToken(cls, "tangents", UsdGeomTokens->tangents);
+    _AddToken(cls, "tetVertexIndices", UsdGeomTokens->tetVertexIndices);
     _AddToken(cls, "triangleSubdivisionRule", UsdGeomTokens->triangleSubdivisionRule);
     _AddToken(cls, "trimCurveCounts", UsdGeomTokens->trimCurveCounts);
     _AddToken(cls, "trimCurveKnots", UsdGeomTokens->trimCurveKnots);
@@ -255,6 +257,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "PrimvarsAPI", UsdGeomTokens->PrimvarsAPI);
     _AddToken(cls, "Scope", UsdGeomTokens->Scope);
     _AddToken(cls, "Sphere", UsdGeomTokens->Sphere);
+    _AddToken(cls, "TetMesh", UsdGeomTokens->TetMesh);
     _AddToken(cls, "VisibilityAPI", UsdGeomTokens->VisibilityAPI);
     _AddToken(cls, "Xform", UsdGeomTokens->Xform);
     _AddToken(cls, "Xformable", UsdGeomTokens->Xformable);
