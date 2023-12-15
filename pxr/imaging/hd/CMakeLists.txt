@@ -14,6 +14,7 @@ pxr_library(hd
         cameraUtil
         hf
         pxOsd
+        sdr
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS

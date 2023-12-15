@@ -27,6 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/sprim.h"
+#include "pxr/imaging/hd/types.h"
+#include "pxr/usd/sdr/declare.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -190,6 +192,14 @@ HD_API
 HdMaterialNetwork2 HdConvertToHdMaterialNetwork2(
     const HdMaterialNetworkMap & hdNetworkMap,
     bool *isVolume = nullptr);
+
+/// Extracts HdSamplerParameters from the parameters on the HdMaterialNode2 if
+/// present.  Otherwise extracts the sampler parameters from the SdrNode.
+HD_API
+HdSamplerParameters HdGetSamplerParameters(
+    const SdfPath& nodePath,
+    const HdMaterialNode2& node,
+    const SdrShaderNodeConstPtr& sdrNode);
 
 
 // VtValue requirements
