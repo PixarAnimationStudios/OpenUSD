@@ -80,13 +80,17 @@ public:
     explicit HdStField3DAssetSubtextureIdentifier(
         TfToken const &fieldName,
         int fieldIndex,
-        TfToken const &fieldPurpose);
+        TfToken const &fieldPurpose,
+        bool premultiplyAlpha = true);
 
     HDST_API
     std::unique_ptr<HdStSubtextureIdentifier> Clone() const override;
 
     HDST_API
     TfToken const &GetFieldPurpose() const { return _fieldPurpose; }
+
+    HDST_API
+    bool GetPremultiplyAlpha() const { return _premultiplyAlpha; }
 
     HDST_API
     ~HdStField3DAssetSubtextureIdentifier() override;
@@ -97,6 +101,7 @@ protected:
 
 private:
     TfToken _fieldPurpose;
+    bool _premultiplyAlpha;
 };
 
 

@@ -1,0 +1,31 @@
+#usda 1.0
+
+def Xform "Model"
+{
+    def Cube "cube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </mat3d>
+    }
+}
+
+def Material "mat3d"
+{
+    token outputs:surface.connect = </mat3d/texture3dShader.outputs:surface>
+
+    def Shader "texture3d"
+    {
+        uniform token info:id = "UsdUVWTexture"
+        asset inputs:file = @color.memtex3d@
+        float3 outputs:rgb
+    }
+
+    def Shader "texture3dShader"
+    {
+        uniform token info:id = "SampleTexture3D"
+        color3f inputs:color.connect = </mat3d/texture3d.outputs:rgb>
+        token outputs:surface
+    }
+}
+

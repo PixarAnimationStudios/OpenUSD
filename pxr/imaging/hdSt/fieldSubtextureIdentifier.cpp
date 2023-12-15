@@ -62,9 +62,11 @@ HdStOpenVDBAssetSubtextureIdentifier::_Hash() const
 HdStField3DAssetSubtextureIdentifier::HdStField3DAssetSubtextureIdentifier(
     TfToken const &fieldName,
     const int fieldIndex,
-    TfToken const &fieldPurpose)
+    TfToken const &fieldPurpose,
+    bool premultiplyAlpha)
   : HdStFieldBaseSubtextureIdentifier(fieldName, fieldIndex)
   , _fieldPurpose(fieldPurpose)
+  , _premultiplyAlpha(premultiplyAlpha)
 {
 }
 
@@ -75,7 +77,7 @@ std::unique_ptr<HdStSubtextureIdentifier>
 HdStField3DAssetSubtextureIdentifier::Clone() const
 {
     return std::make_unique<HdStField3DAssetSubtextureIdentifier>(
-        GetFieldName(), GetFieldIndex(), GetFieldPurpose());
+        GetFieldName(), GetFieldIndex(), GetFieldPurpose(), GetPremultiplyAlpha());
 }
 
 HdStSubtextureIdentifier::ID
@@ -87,7 +89,8 @@ HdStField3DAssetSubtextureIdentifier::_Hash() const
     return TfHash::Combine(
         typeHash,
         HdStFieldBaseSubtextureIdentifier::_Hash(),
-        _fieldPurpose);
+        _fieldPurpose,
+        _premultiplyAlpha);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

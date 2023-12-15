@@ -1,0 +1,20 @@
+{
+    "Plugins":[
+        {
+            "Info": {
+                "Types": {
+                    "TestShadersDiscoveryPlugin" : {
+                        "bases": ["NdrDiscoveryPlugin"],
+                        "displayName": "USD-based test shader definition discovery plugin."
+                    }
+                },
+                "ShaderResources": "shaders"
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "usdTestShaders",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

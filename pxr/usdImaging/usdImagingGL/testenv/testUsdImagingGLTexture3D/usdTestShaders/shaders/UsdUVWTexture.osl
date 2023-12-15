@@ -1,0 +1,62 @@
+shader UsdUVWTexture
+[[ 
+    string category = "generator",
+    string role = "texture",
+]]
+(
+    // Details : Image source
+    string file = ""
+    [[
+        string widget = "assetIdInput"
+    ]],
+
+    point p = (0.0, 0.0, 0.0)
+        [[ string widget = "null" ]],
+
+    // Details : Fallback value used when no texture is connected.
+    float fallback[4] = {0.0, 0.0, 0.0, 1.0}
+    [[
+        string __SDR__defaultinput = "1",
+    ]],
+
+    // Details : [options] r, g, b, a, rgb, rgba
+    output color rgb = color(0.0, 0.0 ,0.0)
+        [[
+           string widget = "null",
+           string role = "none"
+        ]],
+    output float r = 0.0
+        [[ string widget = "null" ]],
+    output float g = 0.0
+        [[ string widget = "null" ]],
+    output float b = 0.0
+        [[ string widget = "null" ]],
+    output float a = 0.0
+        [[ string widget = "null" ]],
+) 
+{
+    // Create a 'color' type version of each float[4] input.  We will use the
+    // 'color' type versions to perform computations.
+    color fallbackColor = color(fallback[0], fallback[1], fallback[2]);
+    float fallbackAlpha = fallback[3];
+    // Read the texture
+
+    color resultColor = texture3d(
+            file,
+            p,
+            "missingcolor", fallbackColor);
+
+    float resultAlpha = texture3d(
+            file,
+            p,
+            "firstchannel", 3, 
+            "missingcolor", color(fallbackAlpha), 
+            "fill", fallbackAlpha);
+
+    // Output the colors
+    rgb = resultColor;
+    r   = resultColor[0];
+    g   = resultColor[1];
+    b   = resultColor[2];
+    a   = resultAlpha;
+}
