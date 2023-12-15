@@ -40,6 +40,7 @@
 #include "pxr/usd/usd/usdaFileFormat.h"
 
 #include "pxr/base/gf/interval.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <optional>
@@ -929,7 +930,7 @@ Usd_Clip::QueryTimeSample(
     return true;
 }
 
-#define _INSTANTIATE_QUERY_TIME_SAMPLE(r, unused, elem)         \
+#define _INSTANTIATE_QUERY_TIME_SAMPLE(unused, elem)            \
     template bool Usd_Clip::QueryTimeSample(                    \
         const SdfPath&, Usd_Clip::ExternalTime,                 \
         Usd_InterpolatorBase*,                                  \
@@ -939,7 +940,7 @@ Usd_Clip::QueryTimeSample(
         Usd_InterpolatorBase*,                                  \
         SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;
 
-BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_QUERY_TIME_SAMPLE, ~, SDF_VALUE_TYPES)
+TF_PP_SEQ_FOR_EACH(_INSTANTIATE_QUERY_TIME_SAMPLE, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_QUERY_TIME_SAMPLE
 
 template bool Usd_Clip::QueryTimeSample(

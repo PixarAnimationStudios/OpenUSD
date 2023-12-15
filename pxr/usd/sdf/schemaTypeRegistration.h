@@ -130,10 +130,10 @@ template <class Registrar>
 inline void
 SdfRegisterFields(Registrar* reg)
 {
-#define _SDF_REGISTER_FIELDS(r, unused, elem)                        \
+#define _SDF_REGISTER_FIELDS(unused, elem)                                  \
     reg->template RegisterField< _SDF_FIELDS_TYPE(elem) >(_SDF_FIELDS_NAME(elem));
 
-    BOOST_PP_SEQ_FOR_EACH(_SDF_REGISTER_FIELDS, ~, _SDF_FIELDS)
+    TF_PP_SEQ_FOR_EACH(_SDF_REGISTER_FIELDS, ~, _SDF_FIELDS)
 #undef _SDF_REGISTER_FIELDS
 }
 
@@ -151,19 +151,19 @@ inline void
 SdfRegisterTypes(Registrar* reg)
 {
     // Register all of the C++ value types from the field list above.
-#define _SDF_REGISTER_TYPES(r, unused, elem)             \
+#define _SDF_REGISTER_TYPES(unused, elem)                                   \
     reg->template RegisterType< _SDF_FIELDS_TYPE(elem) >();
 
-    BOOST_PP_SEQ_FOR_EACH(_SDF_REGISTER_TYPES, ~, _SDF_FIELDS)
+    TF_PP_SEQ_FOR_EACH(_SDF_REGISTER_TYPES, ~, _SDF_FIELDS)
 #undef _SDF_REGISTER_TYPES
 
    // Also register all of the C++ value types for value types.
-#define _SDF_REGISTER_VALUE_TYPES(r, unused, elem)                     \
+#define _SDF_REGISTER_VALUE_TYPES(unused, elem)                        \
     {                                                                  \
         reg->template RegisterType<SDF_VALUE_CPP_TYPE(elem)>();        \
         reg->template RegisterType<SDF_VALUE_CPP_ARRAY_TYPE(elem)>();  \
     }
-    BOOST_PP_SEQ_FOR_EACH(_SDF_REGISTER_VALUE_TYPES, ~, SDF_VALUE_TYPES)
+    TF_PP_SEQ_FOR_EACH(_SDF_REGISTER_VALUE_TYPES, ~, SDF_VALUE_TYPES)
 #undef _SDF_REGISTER_VALUE_TYPES
 
     // Also register all of the C++ list op types supported for

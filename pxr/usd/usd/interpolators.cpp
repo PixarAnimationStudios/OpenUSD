@@ -28,7 +28,7 @@
 #include "pxr/usd/usd/interpolation.h"
 #include "pxr/usd/usd/stage.h"
 
-#include <boost/preprocessor/seq/for_each.hpp>
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -73,13 +73,13 @@ Usd_UntypedInterpolator::_Interpolate(
         return false;
     }
 
-#define _MAKE_CLAUSE(r, unused, type)                                   \
+#define _MAKE_CLAUSE(unused, type)                                      \
     {                                                                   \
         static const TfType valueType = TfType::Find<type>();           \
         if (attrValueType == valueType) {                               \
             type result;                                                \
             if (Usd_LinearInterpolator<type>(&result).Interpolate(      \
-                    src, path, time, lower, upper)) {                 \
+                    src, path, time, lower, upper)) {                   \
                 *_result = result;                                      \
                 return true;                                            \
             }                                                           \
@@ -87,7 +87,7 @@ Usd_UntypedInterpolator::_Interpolate(
         }                                                               \
     }
 
-    BOOST_PP_SEQ_FOR_EACH(_MAKE_CLAUSE, ~, USD_LINEAR_INTERPOLATION_TYPES)
+    TF_PP_SEQ_FOR_EACH(_MAKE_CLAUSE, ~, USD_LINEAR_INTERPOLATION_TYPES)
 #undef _MAKE_CLAUSE
 
     return Usd_HeldInterpolator<VtValue>(_result).Interpolate(

@@ -85,6 +85,7 @@
 #include "pxr/base/tf/hashset.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/scoped.h"
@@ -9707,7 +9708,7 @@ std::string UsdDescribe(const UsdStageRefPtr &stage) {
 
 // Explicitly instantiate templated getters and setters for all Sdf value
 // types.
-#define _INSTANTIATE_GET(r, unused, elem)                               \
+#define _INSTANTIATE_GET(unused, elem)                                  \
     template bool UsdStage::_GetValue(                                  \
         UsdTimeCode, const UsdAttribute&,                               \
         SDF_VALUE_CPP_TYPE(elem)*) const;                               \
@@ -9729,7 +9730,7 @@ std::string UsdDescribe(const UsdStageRefPtr &stage) {
         UsdTimeCode, const UsdAttribute&,                               \
         const SDF_VALUE_CPP_ARRAY_TYPE(elem)&);
 
-BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
+TF_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET
 
 // In addition to the Sdf value types, _SetValue can also be called with an 
