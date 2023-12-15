@@ -17,7 +17,7 @@ endif()
 if (Imath_FOUND)
     LIST(APPEND __VDB_IMATH_LIBS "Imath::Imath")
 else()
-    LIST(APPEND __VDB_IMATH_LIBS ${OPENEXR_Half_LIBRARY})
+    LIST(APPEND __VDB_IMATH_LIBS "IlmBase::Half")
 endif()
 
 pxr_library(hioOpenVDB

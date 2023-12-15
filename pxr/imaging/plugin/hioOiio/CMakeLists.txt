@@ -11,8 +11,7 @@ endif()
 if (Imath_FOUND)
     set(__OIIO_IMATH_LIBS "Imath::Imath")
 else()
-    set(__OIIO_IMATH_INCLUDE ${OPENEXR_INCLUDE_DIRS})
-    set(__OIIO_IMATH_LIBS ${OPENEXR_LIBRARIES})
+    set(__OIIO_IMATH_LIBS "OpenEXR::IlmImf")
 endif()
 
 pxr_plugin(hioOiio
@@ -22,12 +21,8 @@ pxr_plugin(hioOiio
         gf
         hio
         tf
-        ${OIIO_LIBRARIES}
+        OpenImageIO::OpenImageIO
         ${__OIIO_IMATH_LIBS}
-
-    INCLUDE_DIRS
-        ${OIIO_INCLUDE_DIRS}
-        ${__OIIO_IMATH_INCLUDE}
 
     CPPFILES
         oiioImage.cpp
