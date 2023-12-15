@@ -45,11 +45,10 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/dispatcher.h"
 
-#include <boost/optional.hpp>
-
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <vector>
@@ -1956,7 +1955,7 @@ private:
 
     // This is an optional<bool> that is only set once initialization
     // is complete, before _initializationComplete is set.
-    boost::optional<bool> _initializationWasSuccessful;
+    std::optional<bool> _initializationWasSuccessful;
 
     // remembers the last 'IsDirty' state.
     mutable bool _lastDirtyState;
