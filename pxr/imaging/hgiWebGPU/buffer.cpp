@@ -72,10 +72,7 @@ HgiWebGPUBuffer::HgiWebGPUBuffer(HgiWebGPU *hgi, HgiBufferDesc const & desc)
 
 HgiWebGPUBuffer::~HgiWebGPUBuffer()
 {
-    if (_bufferHandle) {
-        _bufferHandle.Unmap();
-        _bufferHandle.Destroy();
-    }
+    _bufferHandle = nullptr;
 }
 
 size_t

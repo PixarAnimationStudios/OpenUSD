@@ -929,10 +929,6 @@ def InstallBoost(context, force, buildArgs):
     try:
         InstallBoost_Helper(context, force, buildArgs)
 
-        # Copy boost headers to align with other platforms
-        if Windows():
-            with CurrentWorkingDirectory(context.instDir):
-                CopyDirectory(context, "include\\boost-1_78\\boost", "include\\boost")
     except:
         for versionHeader in [
             os.path.join(context.instDir, f) for f in BOOST_VERSION_FILES
