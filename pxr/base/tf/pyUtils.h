@@ -128,10 +128,10 @@ inline void TfPyThrowTypeError(std::string const &msg)
     TfPyThrowTypeError(msg.c_str());
 }
 
-/// Return true iff \a obj is None.
+/// Return true if \a obj is None.
 TF_API bool TfPyIsNone(boost::python::object const &obj);
 
-/// Return true iff \a obj is None.
+/// Return true if \a obj is None.
 TF_API bool TfPyIsNone(boost::python::handle<> const &obj);
 
 // Helper for \c TfPyObject().

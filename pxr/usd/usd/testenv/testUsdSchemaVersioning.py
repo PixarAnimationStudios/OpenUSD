@@ -974,21 +974,21 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         # values given the instances for the given schema it is expected to have
         def _VerifyHasAPIInstances(prim, schemaInfo, expectedHasInstanceNames):
             # Verify the return value for all calls to HasAPI without a 
-            # specified instance name. We expect these to return true iff we
+            # specified instance name. We expect these to return true if we
             # expect the prim to have any instances of the schema.
             if expectedHasInstanceNames:
                 self._VerifyHasAPI(prim, schemaInfo)
             else:
                 self._VerifyNotHasAPI(prim, schemaInfo)
             
-            # Verify all calls to HasAPI "foo" return true iff we expect the
+            # Verify all calls to HasAPI "foo" return true if we expect the
             # prim to have a "foo" instance of the schema.
             if "foo" in expectedHasInstanceNames:
                 self._VerifyHasAPIInstance(prim, schemaInfo, "foo")
             else:
                 self._VerifyNotHasAPIInstance(prim, schemaInfo, "foo")
 
-            # Verify all calls to HasAPI "bar" return true iff we expect the
+            # Verify all calls to HasAPI "bar" return true if we expect the
             # prim to have a "bar" instance of the schema.
             if "bar" in expectedHasInstanceNames:
                 self._VerifyHasAPIInstance(prim, schemaInfo, "bar")
@@ -1002,7 +1002,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                 prim, schemaInfo, versionPolicy, expectedHasInstanceNames):
             # Verify the return value for all calls to HasAPIInFamily
             # without a specified instance name. We expect these to return true
-            # iff we expect the prim to have any instances of the schema.
+            # if we expect the prim to have any instances of the schema.
             if expectedHasInstanceNames:
                 self._VerifyHasAPIInFamily(
                     prim, schemaInfo, versionPolicy)
@@ -1010,7 +1010,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                 self._VerifyNotHasAPIInFamily(
                     prim, schemaInfo, versionPolicy)
             
-            # Verify all calls to HasAPIInFamily "foo" return true iff
+            # Verify all calls to HasAPIInFamily "foo" return true if
             # we expect the# prim to have a "foo" instance of the schema.
             if "foo" in expectedHasInstanceNames:
                 self._VerifyHasAPIInFamilyInstance(
@@ -1019,7 +1019,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                 self._VerifyNotHasAPIInFamilyInstance(
                     prim, schemaInfo, versionPolicy, "foo")
 
-            # Verify all calls to HasAPIInFamily "bar" return true iff
+            # Verify all calls to HasAPIInFamily "bar" return true if
             # we expect the prim to have a "bar" instance of the schema.
             if "bar" in expectedHasInstanceNames:
                 self._VerifyHasAPIInFamilyInstance(

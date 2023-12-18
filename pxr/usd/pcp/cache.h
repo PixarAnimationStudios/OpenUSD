@@ -398,7 +398,7 @@ public:
     /// this will compose relationship targets from local nodes only.  If
     /// \p stopProperty is not \c NULL then this will stop composing
     /// relationship targets at \p stopProperty, including \p stopProperty
-    /// iff \p includeStopProperty is \c true.  If not \c NULL, \p deletedPaths
+    /// if \p includeStopProperty is \c true.  If not \c NULL, \p deletedPaths
     /// will be populated with target paths whose deletion contributed to
     /// the computed result.  \p allErrors will contain any errors encountered
     /// while performing this operation.
@@ -417,7 +417,7 @@ public:
     /// this will compose attribute connections from local nodes only.  If
     /// \p stopProperty is not \c NULL then this will stop composing
     /// attribute connections at \p stopProperty, including \p stopProperty
-    /// iff \p includeStopProperty is \c true.  If not \c NULL, \p deletedPaths
+    /// if \p includeStopProperty is \c true.  If not \c NULL, \p deletedPaths
     /// will be populated with connection paths whose deletion contributed to
     /// the computed result.  \p allErrors will contain any errors encountered
     /// while performing this operation.

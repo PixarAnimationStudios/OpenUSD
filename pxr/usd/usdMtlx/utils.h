@@ -95,7 +95,7 @@ UsdMtlxGetDocumentFromString(const std::string &mtlxXml);
 // Return the version of the mtlx element.  If the version cannot be
 // found then return an invalid default version.  If implicitDefault
 // isn't null then we do to two things:  we set implicitDefault to
-// false iff the isdefaultversion attribute exists and isn't empty,
+// false if the isdefaultversion attribute exists and isn't empty,
 // otherwise we set it to true;  and we return the version as a
 // default if isdefaultversion exists and is set to "true".
 USDMTLX_API
@@ -137,7 +137,7 @@ struct UsdMtlxUsdTypeInfo {
     /// then zero.  For "dynamic arrays" this will be zero.
     int arraySize;
 
-    /// \c true iff the value type name is an exact match to the
+    /// \c true if the value type name is an exact match to the
     /// MaterialX type.
     bool valueTypeNameIsExact;
 };

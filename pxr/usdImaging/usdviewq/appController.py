@@ -1719,7 +1719,7 @@ class AppController(QtCore.QObject):
 
         # Usage of OCIO is driven by the OCIO env var.
         # * Disable OCIO color management option if env var isn't set.
-        # * Populate the OCIO menu items iff PyOpenColorIO module and
+        # * Populate the OCIO menu items if PyOpenColorIO module and
         #   a valid config file was found.
         if not os.environ.get('OCIO'):
             self._disableOCIOAction()

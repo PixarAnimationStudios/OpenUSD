@@ -199,7 +199,7 @@ class GfFrustum {
         );
     }
 
-    // Equality operator. true iff all parts match.
+    // Equality operator. true if all parts match.
     bool operator ==(const GfFrustum& f) const {
         if (_position       != f._position)        return false;
         if (_rotation       != f._rotation)        return false;
@@ -211,7 +211,7 @@ class GfFrustum {
         return true;
     }
 
-    // Inequality operator. true iff not equality.
+    // Inequality operator. true if not equality.
     bool operator !=(const GfFrustum& f) const {
         return !(*this == f);
     }

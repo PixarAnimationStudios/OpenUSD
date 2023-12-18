@@ -1123,7 +1123,7 @@ _ResizeInfluences(VtArray<T>* array, int srcNumInfluencesPerComponent,
         array->resize(numComponents*newNumInfluencesPerComponent);
     } else {
         // Expand influences in-place.
-        // This is possible IFF all elements are copied in *reverse order*
+        // This is possible IF all elements are copied in *reverse order*
         array->resize(numComponents*newNumInfluencesPerComponent);
 
         auto* data = array->data();

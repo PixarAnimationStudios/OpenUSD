@@ -65,7 +65,7 @@ In general, you should use CreateXXXAttr() when authoring scene description,
 and GetXXXAttr() when reading/importing scene description.  CreateXXXAttr() 
 also allows you to specify a default value to assign to the attribute, which
 you can specify to author sparsely, which means that we will refrain from
-authoring the provided value iff:
+authoring the provided value if:
 \li there is currently no authored value for the attribute on the composed
 prim
 \li the attribute has a fallback value on the composed prim, and the fallback

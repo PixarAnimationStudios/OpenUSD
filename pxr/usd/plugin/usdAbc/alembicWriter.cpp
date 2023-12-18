@@ -133,13 +133,13 @@ public:
     /// Returns a path.
     SdfPath GetPath() const;
 
-    /// Returns \c true iff there are no samples.
+    /// Returns \c true if there are no samples.
     bool IsEmpty() const;
 
     /// Returns the number of samples.
     size_t GetNumSamples() const;
 
-    /// Returns \c true iff the property is time sampled, \c false if
+    /// Returns \c true if the property is time sampled, \c false if
     /// the value was taken from the default or if there were no opinions.
     bool IsTimeSampled() const;
 
@@ -561,10 +561,10 @@ public:
         return AddType(TfToken());
     }
 
-    /// Returns \c true iff the samples are valid.
+    /// Returns \c true if the samples are valid.
     bool IsValid(const UsdSamples&) const;
 
-    /// Returns \c true iff the samples are a shaped type.
+    /// Returns \c true if the samples are a shaped type.
     bool IsShaped(const UsdSamples&) const;
 
     /// Returns the Alembic DataType suitable for the values in \p samples.
@@ -687,7 +687,7 @@ public:
     /// Sets or resets the flag named \p flagName.
     void SetFlag(const TfToken& flagName, bool set);
 
-    /// Returns \c true iff a flag is in the set.
+    /// Returns \c true if a flag is in the set.
     bool IsFlagSet(const TfToken& flagName) const;
 
     /// Adds/returns a time sampling.

@@ -228,10 +228,10 @@ public:
     /// Returns the focus distance in world units.
     GF_API float GetFocusDistance() const;
 
-    /// Equality operator. true iff all parts match.
+    /// Equality operator. true if all parts match.
     GF_API bool operator==(const GfCamera& other) const;
 
-    // Inequality operator. true iff not equality.
+    // Inequality operator. true if not equality.
     GF_API bool operator!=(const GfCamera& other) const;
 
 private:

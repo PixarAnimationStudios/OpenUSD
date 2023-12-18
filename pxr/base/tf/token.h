@@ -301,10 +301,10 @@ public:
     /// Allow \c TfToken to be auto-converted to \c string
     operator std::string const& () const { return GetString(); }
     
-    /// Returns \c true iff this token contains the empty string \c ""
+    /// Returns \c true if this token contains the empty string \c ""
     bool IsEmpty() const { return _rep.GetLiteral() == 0; }
 
-    /// Returns \c true iff this is an immortal token.  Note that a return of \c
+    /// Returns \c true if this is an immortal token.  Note that a return of \c
     /// false could be instantly stale if another thread races to immortalize
     /// this token.  A return of \c true is always valid since tokens cannot
     /// lose immortality.

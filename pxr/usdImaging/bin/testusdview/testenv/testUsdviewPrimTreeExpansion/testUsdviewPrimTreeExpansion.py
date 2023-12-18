@@ -168,7 +168,7 @@ def _testAllExpanded(appController):
     
     # If we have a selected prim, and the stage mutates such that that prim 
     # no longer exists on the stage, it should be safely pruned from the 
-    # selection, which should revert to the pseudoroot iff there are no other
+    # selection, which should revert to the pseudoroot if there are no other
     # remaining selected prims
     _expandPrims(appController, ["/spheres", "/A", "/A/B", "/A/B/C"])
     _selectAndSetActive(appController, True, ["/A/B/C"])

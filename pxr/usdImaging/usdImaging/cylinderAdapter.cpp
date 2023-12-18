@@ -151,7 +151,7 @@ UsdImagingCylinderAdapter::TrackVariability(UsdPrim const& prim,
     // attribute is _not_ varying.  Since we have multiple attributes (and the
     // base adapter invocation) that might result in the bit being set, we need
     // to be careful not to reset it.  Translation: only check _IsVarying for a
-    // given cause IFF the bit wasn't already set by a previous invocation.
+    // given cause IF the bit wasn't already set by a previous invocation.
     if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
         _IsVarying(prim, UsdGeomTokens->height,
                    HdChangeTracker::DirtyPoints,

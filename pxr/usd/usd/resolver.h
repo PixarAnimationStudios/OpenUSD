@@ -80,7 +80,7 @@ public:
     /// Advances the resolver to the next weaker Layer in the layer
     /// stack, if the current LayerStack has no more layers, the resolver will
     /// be advanced to the next weaker PcpNode. If no layers are available, the
-    /// resolver will be marked as invalid.  Returns \c true iff the resolver
+    /// resolver will be marked as invalid.  Returns \c true if the resolver
     /// advanced to another node or became invalid.
     ///
     /// If the resolver is already invalid, the behavior of this function is 

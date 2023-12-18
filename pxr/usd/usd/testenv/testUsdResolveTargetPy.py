@@ -52,7 +52,7 @@ class TestUsdResolveTargetPy(unittest.TestCase):
         self.assertEqual(attrQuery.GetTimeSamples(), expectedTimeSampleTimes)
 
         # Since this test currently doesn't involve clips, we expect 
-        # ValueMightBeTimeVarying to be true iff we expect more than one time 
+        # ValueMightBeTimeVarying to be true if we expect more than one time
         # sample.
         if len(expectedTimeSampleTimes) > 1:
             self.assertTrue(attrQuery.ValueMightBeTimeVarying())

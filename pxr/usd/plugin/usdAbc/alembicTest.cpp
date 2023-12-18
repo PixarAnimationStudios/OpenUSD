@@ -85,7 +85,7 @@ public:
     }
 
 protected:
-    /// Iff this returns \c true, \p id is passed to the wrapped visitor.
+    /// If this returns \c true, \p id is passed to the wrapped visitor.
     /// The default returns \c true.
     virtual bool _Pass(const SdfAbstractData& data,
                        const SdfPath& id) {

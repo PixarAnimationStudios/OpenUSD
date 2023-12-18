@@ -131,12 +131,12 @@ public:
     SDF_API
     SdfValueTypeName GetArrayType() const;
 
-    /// Returns \c true iff this type is a scalar.  The invalid type is
+    /// Returns \c true if this type is a scalar.  The invalid type is
     /// considered neither scalar nor array.
     SDF_API
     bool IsScalar() const;
 
-    /// Returns \c true iff this type is an array.  The invalid type is
+    /// Returns \c true if this type is an array.  The invalid type is
     /// considered neither scalar nor array.
     SDF_API
     bool IsArray() const;

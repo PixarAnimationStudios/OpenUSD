@@ -720,7 +720,7 @@ public:
     /// \name Reader caching
     /// @{
 
-    /// Returns \c true iff a flag is in the set.
+    /// Returns \c true if a flag is in the set.
     bool IsFlagSet(const TfToken& flagName) const;
 
     /// Creates and returns the prim cache for path \p path.

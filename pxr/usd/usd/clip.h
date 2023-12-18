@@ -184,7 +184,7 @@ public:
     /// been opened already.
     SdfLayerHandle GetLayer() const;
 
-    /// Return the layer associated with this clip iff it has already been
+    /// Return the layer associated with this clip if it has already been
     /// opened successfully.
     ///
     /// USD tries to be as lazy as possible about opening clip layers to

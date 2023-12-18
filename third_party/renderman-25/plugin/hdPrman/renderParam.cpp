@@ -3075,7 +3075,7 @@ HdPrman_RenderParam::UpdateQuickIntegrator(
 // delegate construction. See HdPrmanExperimentalRenderSpecTokens->camera
 // and _tokens->renderCameraPath (latter is used by Solaris).
 //
-// When the said camera is sync'd, we commit its shutter interval IFF it is
+// When the said camera is sync'd, we commit its shutter interval IF it is
 // the one to use for rendering. See HdPrman_Camera::Sync.
 //
 // This "shutter interval discovery" issue may not be relevant when using the

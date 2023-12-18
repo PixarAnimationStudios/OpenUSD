@@ -117,7 +117,7 @@ public:
     //! Get the error offset, if \ref IsError(), 0 otherwise.
     size_t Offset() const { return offset_; }
 
-    //! Explicit conversion to \c bool, returns \c true, iff !\ref IsError().
+    //! Explicit conversion to \c bool, returns \c true, if !\ref IsError().
     operator BooleanType() const { return !IsError() ? &ParseResult::IsError : NULL; }
     //! Whether the result is an error.
     bool IsError() const { return code_ != kParseErrorNone; }

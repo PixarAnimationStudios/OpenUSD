@@ -117,7 +117,7 @@ public:
     
     /// \anchor UsdGeomConstraintTarget_explicit_bool
     /// Explicit bool conversion operator. A ConstraintTarget object converts
-    /// to \c true iff it is valid for querying and authoring values and 
+    /// to \c true if it is valid for querying and authoring values and
     /// metadata (which is identically equivalent to IsDefined()). It converts
     /// to \c false otherwise.
     explicit operator bool() const {

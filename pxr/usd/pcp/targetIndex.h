@@ -75,7 +75,7 @@ PcpBuildTargetIndex(
 /// If \p localOnly is \c true then this will compose relationship
 /// targets from local nodes only. If \p stopProperty is not \c
 /// NULL then this will stop composing relationship targets at \p
-/// stopProperty, including \p stopProperty iff \p includeStopProperty
+/// stopProperty, including \p stopProperty if \p includeStopProperty
 /// is \c true.
 ///
 /// \p cacheForValidation is a PcpCache that will be used to compute

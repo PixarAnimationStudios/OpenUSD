@@ -151,7 +151,7 @@ public:
     // Replace the list of matches.
     void SetMatchList(const std::string& matchList);
 
-    // Return \c true iff \p s matches the most recently set match list.
+    // Return \c true if \p s matches the most recently set match list.
     bool Match(const char* s) const;
 
 private:

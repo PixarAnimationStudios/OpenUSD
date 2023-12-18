@@ -246,13 +246,13 @@ public:
         return std::visit(_SetTyped<Type>(rhs), _valuePtr);
     }
 
-    /// Returns \c true iff constructed with a NULL pointer.
+    /// Returns \c true if constructed with a NULL pointer.
     bool IsEmpty() const
     {
         return _valuePtr.index() == 0;
     }
 
-    /// Explicit bool conversion operator. Converts to true iff this object was 
+    /// Explicit bool conversion operator. Converts to true if this object was 
     /// constructed with a non-NULL pointer.
     explicit operator bool() const
     {
@@ -430,7 +430,7 @@ public:
         return _value.IsError(message);
     }
 
-    /// Explicit bool conversion operator. Converts to \c true iff the data is 
+    /// Explicit bool conversion operator. Converts to \c true if the data is 
     /// valid.
     explicit operator bool() const
     {

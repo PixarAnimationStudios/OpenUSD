@@ -238,10 +238,10 @@ public:
         return _edits;
     }
 
-    /// Functor that returns \c true iff an object exists at the given path.
+    /// Functor that returns \c true if an object exists at the given path.
     typedef std::function<bool(const SdfPath&)> HasObjectAtPath;
 
-    /// Functor that returns \c true iff the namespace edit will succeed.
+    /// Functor that returns \c true if the namespace edit will succeed.
     /// If not it returns \c false and sets the string argument.
     typedef std::function<bool(const SdfNamespaceEdit&,std::string*)> CanEdit;
 
@@ -259,9 +259,9 @@ public:
     ///
     /// This function needs help to determine if edits are allowed.  The
     /// callbacks provide that help.  \p hasObjectAtPath returns \c true
-    /// iff there's an object at the given path.  This path will be in the
+    /// if there's an object at the given path.  This path will be in the
     /// original namespace not any intermediate or final namespace.
-    /// \p canEdit returns \c true iff the object at the current path can
+    /// \p canEdit returns \c true if the object at the current path can
     /// be namespace edited to the new path, ignoring whether an object
     /// already exists at the new path.  Both paths are in the original
     /// namespace.  If it returns \c false it should set the string to the

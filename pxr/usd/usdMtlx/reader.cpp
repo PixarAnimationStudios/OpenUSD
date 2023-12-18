@@ -1394,13 +1394,13 @@ _Context::AddVariants(const mx::ConstElementPtr& mtlx)
                 variant[_Name(mtlxValue)] = mtlxValue;
             }
 
-            // Keep the variant iff there was something in it.
+            // Keep the variant if there was something in it.
             if (!variant.empty()) {
                 variantSet[_Name(mtlxVariant)] = std::move(variant);
             }
         }
 
-        // Keep the variant set iff there was something in it.
+        // Keep the variant set if there was something in it.
         if (!variantSet.empty()) {
             auto& variantSetName = _Name(mtlxVariantSet);
             _variantSets[variantSetName] = std::move(variantSet);

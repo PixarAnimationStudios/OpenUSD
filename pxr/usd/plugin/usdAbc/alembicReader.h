@@ -120,7 +120,7 @@ public:
         /// Swaps the contents of this with \p other.
         void Swap(TimeSamples& other);
 
-        /// Returns \c true iff there are no samples.
+        /// Returns \c true if there are no samples.
         bool IsEmpty() const;
 
         /// Returns the number of samples.

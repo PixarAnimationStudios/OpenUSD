@@ -281,7 +281,7 @@ public:
     PCP_API
     void Swap(PcpChanges& other);
 
-    /// Returns \c true iff there are no changes.
+    /// Returns \c true if there are no changes.
     PCP_API
     bool IsEmpty() const;
 

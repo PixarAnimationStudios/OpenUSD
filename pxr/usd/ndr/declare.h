@@ -112,7 +112,7 @@ public:
     /// Return the minor version number or zero for an invalid version.
     NDR_API
     int GetMinor() const { return _minor; }
-    /// Return true iff this version is marked as default.
+    /// Return true if this version is marked as default.
     NDR_API
     bool IsDefault() const { return _isDefault; }
 
@@ -132,35 +132,35 @@ public:
                 static_cast<std::size_t>(_minor);
     }
 
-    /// Return true iff the version is valid.
+    /// Return true if the version is valid.
     NDR_API
     explicit operator bool() const
     {
         return !!*this;
     }
 
-    /// Return true iff the version is invalid.
+    /// Return true if the version is invalid.
     NDR_API
     bool operator!() const
     {
         return _major == 0 && _minor == 0;
     }
 
-    /// Return true iff versions are equal.
+    /// Return true if versions are equal.
     NDR_API
     friend bool operator==(const NdrVersion& lhs, const NdrVersion& rhs)
     {
         return lhs._major == rhs._major && lhs._minor == rhs._minor;
     }
 
-    /// Return true iff versions are not equal.
+    /// Return true if versions are not equal.
     NDR_API
     friend bool operator!=(const NdrVersion& lhs, const NdrVersion& rhs)
     {
         return !(lhs == rhs);
     }
 
-    /// Return true iff the left side is less than the right side.
+    /// Return true if the left side is less than the right side.
     NDR_API
     friend bool operator<(const NdrVersion& lhs, const NdrVersion& rhs)
     {
@@ -168,7 +168,7 @@ public:
                (lhs._major == rhs._major && lhs._minor < rhs._minor);
     }
 
-    /// Return true iff the left side is less than or equal to the right side.
+    /// Return true if the left side is less than or equal to the right side.
     NDR_API
     friend bool operator<=(const NdrVersion& lhs, const NdrVersion& rhs)
     {
@@ -176,14 +176,14 @@ public:
                (lhs._major == rhs._major && lhs._minor <= rhs._minor);
     }
 
-    /// Return true iff the left side is greater than the right side.
+    /// Return true if the left side is greater than the right side.
     NDR_API
     friend bool operator>(const NdrVersion& lhs, const NdrVersion& rhs)
     {
         return !(lhs <= rhs);
     }
 
-    /// Return true iff the left side is greater than or equal to the right side.
+    /// Return true if the left side is greater than or equal to the right side.
     NDR_API
     friend bool operator>=(const NdrVersion& lhs, const NdrVersion& rhs)
     {

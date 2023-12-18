@@ -376,7 +376,7 @@ class ConfigManager:
         ----------
         newName : str
             The name of the config we will be saving to (it may or may not
-            exist in the _configDirPath). Iff same as defaultConfig, we save on
+            exist in the _configDirPath). If same as defaultConfig, we save on
             application close.
         """
         if newName:

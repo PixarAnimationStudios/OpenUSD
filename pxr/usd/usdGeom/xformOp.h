@@ -338,7 +338,7 @@ public:
 public:
     /// \anchor UsdGeomXformOp_explicit_bool
     /// Explicit bool conversion operator. An XformOp object converts to 
-    /// \c true iff it is valid for querying and authoring values and metadata, 
+    /// \c true if it is valid for querying and authoring values and metadata,
     /// (which is identically equivalent to IsDefined()), and converts to 
     /// \c false otherwise.
     explicit operator bool() const {

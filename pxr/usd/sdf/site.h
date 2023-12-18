@@ -79,7 +79,7 @@ public:
         return !(*this < other);
     }
 
-    /// Explicit bool conversion operator. A site object converts to \c true iff 
+    /// Explicit bool conversion operator. A site object converts to \c true if
     /// both the layer and path fields are filled with valid values, \c false
     /// otherwise.
     /// This does NOT imply that there are opinions in the layer at that path.

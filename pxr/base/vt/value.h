@@ -1082,7 +1082,7 @@ public:
         return _info.GetLiteral() && _TypeIs<T>();
     }
 
-    /// Returns true iff this is holding an array type (see VtIsArray<>).
+    /// Returns true if this is holding an array type (see VtIsArray<>).
     VT_API bool IsArrayValued() const;
 
     /// Return the number of elements in the held value if IsArrayValued(),
@@ -1295,7 +1295,7 @@ public:
         return _CanCast(GetTypeid(), type);
     }
 
-    /// Returns true iff this value is empty.
+    /// Returns true if this value is empty.
     bool IsEmpty() const { return _info.GetLiteral() == 0; }
 
     /// Return true if the held object provides a hash implementation.

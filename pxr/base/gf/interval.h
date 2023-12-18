@@ -160,7 +160,7 @@ public:
         return IsMaxFinite() && IsMinFinite();
     }
 
-    /// Return true iff the interval is empty.
+    /// Return true if the interval is empty.
     bool IsEmpty() const {
         return (_min.value > _max.value) ||
             ((_min.value == _max.value)
@@ -176,7 +176,7 @@ public:
     // For 2x compatibility
     double Size() const { return GetSize(); }
 
-    /// Return true iff the value d is contained in the interval.
+    /// Return true if the value d is contained in the interval.
     /// An empty interval contains no values.
     bool Contains(double d) const {
         return ((d > _min.value) || (d == _min.value && _min.closed))
@@ -186,14 +186,14 @@ public:
     // For 2x compatibility
     bool In(double d) const { return Contains(d); }
 
-    /// Return true iff the interval i is entirely contained in the interval.
+    /// Return true if the interval i is entirely contained in the interval.
     /// An empty interval contains no intervals, not even other
     /// empty intervals.
     bool Contains(const GfInterval &i) const {
         return (*this & i) == i;
     }
 
-    /// Return true iff the given interval i intersects this interval.
+    /// Return true if the given interval i intersects this interval.
     bool Intersects(const GfInterval &i) const {
         return !(*this & i).IsEmpty();
     }

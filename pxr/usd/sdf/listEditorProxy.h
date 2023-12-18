@@ -393,7 +393,7 @@ public:
     }
 
     /// Explicit bool conversion operator. A ListEditorProxy object 
-    /// converts to \c true iff the list editor is valid, converts to \c false 
+    /// converts to \c true if the list editor is valid, converts to \c false
     /// otherwise.
     explicit operator bool() const
     {

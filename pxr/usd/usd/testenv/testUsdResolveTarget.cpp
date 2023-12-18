@@ -218,7 +218,7 @@ _VerifyQuery(
         TfStringify(expectedTimeSampleTimes).c_str());
 
     // Since this test currently doesn't involve clips, we expect 
-    // ValueMightBeTimeVarying to be true iff we expect more than one time 
+    // ValueMightBeTimeVarying to be true if we expect more than one time
     // sample.
     if (expectedTimeSampleValues.size() > 1) {
         TF_VERIFY(attrQuery.ValueMightBeTimeVarying());
