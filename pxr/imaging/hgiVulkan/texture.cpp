@@ -553,6 +553,9 @@ HgiVulkanTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
     case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
         srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
         break;
+    default:
+        srcAccessMask = VK_ACCESS_NONE;
+        break;
     }
 
     switch (newVkLayout) {
@@ -575,6 +578,10 @@ HgiVulkanTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
         srcAccessMask =
             VK_ACCESS_SHADER_READ_BIT;
         dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        break;
+    default:
+        srcAccessMask = VK_ACCESS_NONE;
+        dstAccessMask = VK_ACCESS_NONE;
         break;
     }
 

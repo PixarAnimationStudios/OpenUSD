@@ -33,6 +33,7 @@
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/capabilities.h"
+#include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -458,6 +459,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     HgiBufferHandle newBuf;
 
     Hgi* hgi = _resourceRegistry->GetHgi();
+    bool const isVulkanEnabled = (hgi->GetAPIName() == HgiTokens->Vulkan);
 
     // Skip buffers of zero size.
     if (totalSize > 0) {
@@ -466,7 +468,12 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
         bufDesc.byteSize = totalSize;
         // Vulkan Validation layer is raising an error here because
         // a usage flag of Uniform is applied to a buffer bound as storage
-        bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageStorage;
+        if (isVulkanEnabled) {
+            bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageStorage;
+        }
+        else {
+            bufDesc.usage = HgiBufferUsageUniform;
+        }        
         newBuf = hgi->CreateBuffer(bufDesc);
     }
 

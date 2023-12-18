@@ -39,6 +39,7 @@
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -275,6 +276,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
 
     // Use blit work to record resource copy commands.
     Hgi* hgi = _resourceRegistry->GetHgi();
+    bool const isVulkanEnabled = (hgi->GetAPIName() == HgiTokens->Vulkan);
     HgiBlitCmds* blitCmds = _resourceRegistry->GetGlobalBlitCmds();
     blitCmds->PushDebugGroup(__ARCH_PRETTY_FUNCTION__);
     
@@ -294,7 +296,13 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
         bufDesc.byteSize = bufferSize;
         // Vulkan Validation layer is raising an error here because
         // a usage flag of Uniform is applied to a buffer bound as storage
-        bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageStorage;
+        if (isVulkanEnabled) {
+            bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageStorage;
+        }
+        else {
+            bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageVertex;
+        }
+        
         bufDesc.vertexStride = bytesPerElement;
         bufDesc.debugName = bresIt->first.GetText();
         newBuf = hgi->CreateBuffer(bufDesc);
