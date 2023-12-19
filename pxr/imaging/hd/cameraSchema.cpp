@@ -33,6 +33,7 @@
 /* ************************************************************************** */
 
 #include "pxr/imaging/hd/cameraSchema.h"
+
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/base/trace/trace.h"
@@ -47,9 +48,6 @@ TF_DEFINE_PUBLIC_TOKENS(HdCameraSchemaTokens,
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
-
-
-
 
 HdTokenDataSourceHandle
 HdCameraSchema::GetProjection()
@@ -196,6 +194,7 @@ HdCameraSchema::BuildRetained(
     HdDataSourceBaseHandle _values[17];
 
     size_t _count = 0;
+
     if (projection) {
         _names[_count] = HdCameraSchemaTokens->projection;
         _values[_count++] = projection;
@@ -280,75 +279,7 @@ HdCameraSchema::BuildRetained(
         _names[_count] = HdCameraSchemaTokens->lensDistortion;
         _values[_count++] = lensDistortion;
     }
-
     return HdRetainedContainerDataSource::New(_count, _names, _values);
-}
-
-/*static*/
-HdCameraSchema
-HdCameraSchema::GetFromParent(
-        const HdContainerDataSourceHandle &fromParentContainer)
-{
-    return HdCameraSchema(
-        fromParentContainer
-        ? HdContainerDataSource::Cast(fromParentContainer->Get(
-                HdCameraSchemaTokens->camera))
-        : nullptr);
-}
-
-/*static*/
-const TfToken &
-HdCameraSchema::GetSchemaToken()
-{
-    return HdCameraSchemaTokens->camera;
-}
-
-/*static*/
-const HdDataSourceLocator &
-HdCameraSchema::GetDefaultLocator()
-{
-    static const HdDataSourceLocator locator(GetSchemaToken());
-    return locator;
-} 
-
-/* static */
-const HdDataSourceLocator &
-HdCameraSchema::GetShutterOpenLocator()
-{
-    static const HdDataSourceLocator locator =
-        GetDefaultLocator().Append(
-            HdCameraSchemaTokens->shutterOpen);
-    return locator;
-}
-
-/* static */
-const HdDataSourceLocator &
-HdCameraSchema::GetShutterCloseLocator()
-{
-    static const HdDataSourceLocator locator =
-        GetDefaultLocator().Append(
-            HdCameraSchemaTokens->shutterClose);
-    return locator;
-}
-
-/*static*/
-HdTokenDataSourceHandle
-HdCameraSchema::BuildProjectionDataSource(
-    const TfToken &projection)
-{
-
-    if (projection == HdCameraSchemaTokens->perspective) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(projection);
-        return ds;
-    }
-    if (projection == HdCameraSchemaTokens->orthographic) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(projection);
-        return ds;
-    }
-    // fallback for unknown token
-    return HdRetainedTypedSampledDataSource<TfToken>::New(projection);
 }
 
 HdCameraSchema::Builder &
@@ -511,5 +442,71 @@ HdCameraSchema::Builder::Build()
     );
 }
 
+/*static*/
+HdCameraSchema
+HdCameraSchema::GetFromParent(
+        const HdContainerDataSourceHandle &fromParentContainer)
+{
+    return HdCameraSchema(
+        fromParentContainer
+        ? HdContainerDataSource::Cast(fromParentContainer->Get(
+                HdCameraSchemaTokens->camera))
+        : nullptr);
+}
+
+/*static*/
+const TfToken &
+HdCameraSchema::GetSchemaToken()
+{
+    return HdCameraSchemaTokens->camera;
+}
+
+/*static*/
+const HdDataSourceLocator &
+HdCameraSchema::GetDefaultLocator()
+{
+    static const HdDataSourceLocator locator(GetSchemaToken());
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdCameraSchema::GetShutterOpenLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdCameraSchemaTokens->shutterOpen);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdCameraSchema::GetShutterCloseLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdCameraSchemaTokens->shutterClose);
+    return locator;
+}
+
+/*static*/
+HdTokenDataSourceHandle
+HdCameraSchema::BuildProjectionDataSource(
+    const TfToken &projection)
+{
+
+    if (projection == HdCameraSchemaTokens->perspective) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(projection);
+        return ds;
+    }
+    if (projection == HdCameraSchemaTokens->orthographic) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(projection);
+        return ds;
+    }
+    // fallback for unknown token
+    return HdRetainedTypedSampledDataSource<TfToken>::New(projection);
+} 
 
 PXR_NAMESPACE_CLOSE_SCOPE
