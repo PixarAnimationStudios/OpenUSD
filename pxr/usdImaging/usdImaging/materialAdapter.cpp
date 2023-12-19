@@ -58,6 +58,12 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
     }
 
+    {
+    typedef UsdImagingNodeGraphAdapter Adapter;
+    TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
+    t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
+    }
+
 }
 
 UsdImagingMaterialAdapter::~UsdImagingMaterialAdapter()

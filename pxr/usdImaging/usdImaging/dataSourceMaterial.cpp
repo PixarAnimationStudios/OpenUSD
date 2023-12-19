@@ -430,12 +430,13 @@ public:
             } else if (UsdLuxLightFilter lightFilter =
                     UsdLuxLightFilter(_shaderNode.GetPrim())) {
                 nodeId = lightFilter.GetShaderId({});
-
             } else if (UsdLuxLightAPI light =
                     UsdLuxLightAPI(_shaderNode.GetPrim())) {
                 nodeId = light.GetShaderId({});
+            } else if (UsdShadeNodeGraph nodegraph = 
+                    UsdShadeNodeGraph(_shaderNode.GetPrim())) {
+                nodeId = TfToken();
             }
-
             _shaderNode.GetShaderId(&nodeId);
             return HdRetainedTypedSampledDataSource<TfToken>::New(nodeId);
         }
@@ -454,6 +455,7 @@ public:
             return nullptr;
             
         }
+        
         if (name == HdMaterialNodeSchemaTokens->nodeTypeInfo) {
             if (_shaderNode.GetImplementationSource() != UsdShadeTokens->id) {
                 return _UsdImagingNodeTypeInfoSource::New(
@@ -591,7 +593,6 @@ _WalkGraph(
                 materialPrefix);
         }
     }
-
 }
 
 static
@@ -604,7 +605,6 @@ _BuildNetwork(
     const SdfPath &sceneIndexPath,
     const HdDataSourceLocator &locatorPrefix)
 {
-
     _TokenDataSourceMap nodeDataSources;
     _WalkGraph(terminalNode,
                 &nodeDataSources,
@@ -655,6 +655,29 @@ _BuildNetwork(
 
 }
 
+static
+UsdShadeConnectableAPI
+_ComputeOutputSource(
+    const UsdShadeMaterial &usdMat,
+    const TfToken &outputName,
+    const TfTokenVector &renderContext,
+    UsdShadeConnectionSourceInfo sourceInfo) 
+{
+    if (outputName == UsdShadeTokens->surface) {
+        return UsdShadeConnectableAPI(usdMat.ComputeSurfaceSource(
+            renderContext, &sourceInfo.sourceName, &sourceInfo.sourceType));
+    }
+    if (outputName == UsdShadeTokens->displacement) {
+        return UsdShadeConnectableAPI(usdMat.ComputeDisplacementSource(
+            renderContext, &sourceInfo.sourceName, &sourceInfo.sourceType));        
+    }
+    if (outputName == UsdShadeTokens->volume) {
+        return UsdShadeConnectableAPI(usdMat.ComputeVolumeSource(
+            renderContext, &sourceInfo.sourceName, &sourceInfo.sourceType));        
+    }
+    return UsdShadeConnectableAPI(sourceInfo.source.GetPrim());
+}
+
 static 
 HdDataSourceBaseHandle
 _BuildMaterial(
@@ -701,7 +724,8 @@ _BuildMaterial(
                 continue;
             }
 
-            UsdShadeConnectableAPI upstreamShader(sourceInfo.source.GetPrim());
+            UsdShadeConnectableAPI upstreamShader = _ComputeOutputSource(
+                UsdShadeMaterial(usdMat), outputName, {context}, sourceInfo);
 
             _WalkGraph(upstreamShader,
                 &nodeDataSources,
