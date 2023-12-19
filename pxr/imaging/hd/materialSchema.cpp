@@ -33,10 +33,13 @@
 /* ************************************************************************** */
 
 #include "pxr/imaging/hd/materialSchema.h"
+
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/base/trace/trace.h"
 
+// --(BEGIN CUSTOM CODE: Includes)--
+// --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -65,9 +68,6 @@ HdMaterialSchema::GetMaterialNetwork(TfToken const &context)
 }
 
 // --(END CUSTOM CODE: Schema Methods)--
-
-
-
 
 /*static*/
 HdContainerDataSourceHandle
@@ -102,9 +102,8 @@ HdMaterialSchema::GetSchemaToken()
 const HdDataSourceLocator &
 HdMaterialSchema::GetDefaultLocator()
 {
-    static const HdDataSourceLocator locator(
-        HdMaterialSchemaTokens->material
-    );
+    static const HdDataSourceLocator locator(GetSchemaToken());
     return locator;
 } 
+
 PXR_NAMESPACE_CLOSE_SCOPE

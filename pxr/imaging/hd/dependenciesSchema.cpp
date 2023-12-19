@@ -33,6 +33,7 @@
 /* ************************************************************************** */
 
 #include "pxr/imaging/hd/dependenciesSchema.h"
+
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/base/trace/trace.h"
@@ -69,8 +70,15 @@ HdDependenciesSchema::GetEntries()
 
 // --(END CUSTOM CODE: Schema Methods)--
 
-
-
+/*static*/
+HdContainerDataSourceHandle
+HdDependenciesSchema::BuildRetained(
+    const size_t count,
+    const TfToken * const names,
+    const HdDataSourceBaseHandle * const values)
+{
+    return HdRetainedContainerDataSource::New(count, names, values);
+}
 
 /*static*/
 HdDependenciesSchema
@@ -98,4 +106,5 @@ HdDependenciesSchema::GetDefaultLocator()
     static const HdDataSourceLocator locator(GetSchemaToken());
     return locator;
 } 
+
 PXR_NAMESPACE_CLOSE_SCOPE
