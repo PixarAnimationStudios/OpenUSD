@@ -51,6 +51,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <optional>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -127,7 +128,7 @@ VtValue
 _Reduce(const SdfListOp<T> &lhs, const SdfListOp<T> &rhs)
 {
     // We assume the caller has already applied _FixListOp()
-    if (boost::optional<SdfListOp<T>> r = lhs.ApplyOperations(rhs)) {
+    if (std::optional<SdfListOp<T>> r = lhs.ApplyOperations(rhs)) {
         return VtValue(*r);
     }
     // The approximation used should always be composable,
@@ -244,13 +245,13 @@ _ApplyLayerOffsetToClipInfo(
 }
 
 template <class RefOrPayloadType>
-static boost::optional<RefOrPayloadType>
+static std::optional<RefOrPayloadType>
 _ApplyLayerOffsetToRefOrPayload(const SdfLayerOffset &offset,
                                 const RefOrPayloadType &refOrPayload)
 {
     RefOrPayloadType result = refOrPayload;
     result.SetLayerOffset(offset * refOrPayload.GetLayerOffset());
-    return boost::optional<RefOrPayloadType>(result);
+    return std::optional<RefOrPayloadType>(result);
 }
 
 // Apply layer offsets (time remapping) to time-keyed metadata.
@@ -312,7 +313,7 @@ using _ResolveAssetPathFn = std::function<
                 const std::string& assetPath)>;
 
 template <class RefOrPayloadType>
-static boost::optional<RefOrPayloadType>
+static std::optional<RefOrPayloadType>
 _FixReferenceOrPayload(const _ResolveAssetPathFn& resolveAssetPathFn,
                        const SdfLayerHandle &sourceLayer,
                        const RefOrPayloadType &refOrPayload)
@@ -320,7 +321,7 @@ _FixReferenceOrPayload(const _ResolveAssetPathFn& resolveAssetPathFn,
     RefOrPayloadType result = refOrPayload;
     result.SetAssetPath(
         resolveAssetPathFn(sourceLayer, refOrPayload.GetAssetPath()));
-    return boost::optional<RefOrPayloadType>(result);
+    return std::optional<RefOrPayloadType>(result);
 }
 
 static void

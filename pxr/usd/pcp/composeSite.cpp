@@ -105,7 +105,7 @@ _PcpComposeSiteReferencesOrPayloads(
         // relative to the layer where they were expressed.
         curListOp.ApplyOperations(result,
             [&](SdfListOpType opType, const RefOrPayloadType& refOrPayload)
-            -> boost::optional<RefOrPayloadType>
+            -> std::optional<RefOrPayloadType>
             {
                 // Fill in the result reference or payload with the anchored
                 // asset path instead of the authored asset path. This 
@@ -126,7 +126,7 @@ _PcpComposeSiteReferencesOrPayloads(
                     // layer. If the empty result was due to an error, that
                     // will have already been saved to the errors list above.
                     if (authoredAssetPath.empty()) {
-                        return boost::none;
+                        return std::nullopt;
                     }
 
                     assetPath = SdfComputeAssetPathRelativeToLayer(

@@ -39,6 +39,7 @@
 #include "pxr/base/trace/trace.h"
 
 #include <functional>
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -145,7 +146,7 @@ SdfRelationshipSpec::ClearTargetPathList() const
     GetTargetPathList().ClearEdits();
 }
 
-static boost::optional<SdfPath>
+static std::optional<SdfPath>
 _ReplacePath(
     const SdfPath &oldPath, const SdfPath &newPath, const SdfPath &path)
 {
@@ -155,7 +156,7 @@ _ReplacePath(
         return newPath;
     }
     if (path == newPath) {
-        return boost::none;
+        return std::nullopt;
     }
     return path;
 }
