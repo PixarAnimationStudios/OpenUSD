@@ -194,6 +194,8 @@ public:
     /// \name Schema construction
     /// @{
 
+    /// \deprecated Use Builder instead.
+    ///
     /// Builds a container data source which includes the provided child data
     /// sources. Parameters with nullptr values are excluded. This is a
     /// low-level interface. For cases in which it's desired to define
