@@ -227,12 +227,17 @@ bool UsdGeomTetMesh::ComputeSurfaceFaces(const UsdGeomTetMesh& tetMesh,
     // per tetrahedron.  
     surfaceFaceIndices->reserve(tetVertexIndices.size());
 
-    TF_FOR_ALL(iter, triangleCounts) {
-        if (iter->second == 1) {
-            const _IndexTri& tri = iter->first;
+    for(auto&& [first, second] : triangleCounts) {
+        if (second == 1) {
+            const _IndexTri& tri = first;
             surfaceFaceIndices->push_back(tri.GetUnsortedIndices());
         }
     }
+    // Need to sort results for deterministic behavior across different 
+    // compiler/OS versions 
+    FaceVertexIndicesCompare comparator;
+    std::sort(surfaceFaceIndices->begin(), 
+              surfaceFaceIndices->end(), comparator);
 
     return true;
 }
