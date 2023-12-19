@@ -906,7 +906,7 @@ class ComplianceChecker(object):
                       ARKitMaterialBindingChecker,
                       ARKitFileExtensionChecker, 
                       ARKitPackageEncapsulationChecker]
-        if not skipARKitRootLayerCheck:
+        if skipARKitRootLayerCheck:
             warnings.warn("skipARKitRootLayerCheck is no longer supported. It will be removed in a future version",
                           PendingDeprecationWarning)
         return arkitRules
