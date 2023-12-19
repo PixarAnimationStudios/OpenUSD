@@ -271,7 +271,12 @@ class TestPcpLayerMuting(unittest.TestCase):
             # To avoid this, we're going to mute the sublayer before we
             # compose anything.
             pcp.RequestLayerMuting([mutedId], [])
-            self.assertEqual(pcp.GetMutedLayers(), [expectMutedLayerId])
+            # NOTE: We use os.path.normcase() to ensure the paths can be 
+            # accurately compared.  On Windows this will change forward slash 
+            # directory separators to backslashes.
+            mutedLayers = [os.path.normcase(mutedLayer) for mutedLayer in \
+                    pcp.GetMutedLayers()]
+            self.assertEqual(mutedLayers, [os.path.normcase(expectMutedLayerId)])
 
             # Compute prim index. We should not get an invalid sublayer error
             # because the sublayer was muted above.
