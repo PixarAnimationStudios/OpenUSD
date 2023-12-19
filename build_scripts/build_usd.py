@@ -842,6 +842,7 @@ def InstallBoost_Helper(context, force, buildArgs):
             b2_settings.append("--with-date_time")
 
         if context.buildOIIO or context.enableOpenVDB:
+            b2_settings.append("--with-chrono")
             b2_settings.append("--with-system")
             b2_settings.append("--with-thread")
 
@@ -1244,7 +1245,7 @@ OPENVDB = Dependency("OpenVDB", InstallOpenVDB, "include/openvdb/openvdb.h")
 ############################################################
 # OpenImageIO
 
-OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/refs/tags/v2.3.21.0.zip"
+OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/refs/tags/v2.5.6.0.zip"
 
 def InstallOpenImageIO(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OIIO_URL, context, force)):
