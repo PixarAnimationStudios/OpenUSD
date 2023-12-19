@@ -147,18 +147,18 @@ void wrapUsdGeomTetMesh()
 namespace {
   
     static object
-    _ComputeSurfaceFacesHelper(const UsdGeomTetMesh &self, 
+    _ComputeSurfaceFacesHelper(const UsdGeomTetMesh &tetMesh, 
                                const UsdTimeCode timeCode = UsdTimeCode::Default())
     {           
         VtVec3iArray surfaceFacesArray; 
-        self.ComputeSurfaceFaces(self, &surfaceFacesArray, timeCode);  
+        UsdGeomTetMesh::ComputeSurfaceFaces(tetMesh, &surfaceFacesArray, timeCode);  
         return object(surfaceFacesArray);      
     }
 
 WRAP_CUSTOM {
      scope s = _class
          .def("ComputeSurfaceFaces", _ComputeSurfaceFacesHelper, 
-             (arg("timeCode")=UsdTimeCode::Default()))
+             (arg("tetMesh"), arg("timeCode")=UsdTimeCode::Default()))
          .staticmethod("ComputeSurfaceFaces")
 
      ;
