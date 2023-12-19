@@ -81,10 +81,10 @@ HdCategoriesSchema::IsIncludedInCategory(const TfToken &categoryName)
 
 HdContainerDataSourceHandle
 HdCategoriesSchema::BuildRetained(
-    size_t includedNameCount,
-    TfToken *includedNames,
-    size_t excludedNameCount,
-    TfToken *excludedNames)
+    const size_t includedNameCount,
+    const TfToken * const includedNames,
+    const size_t excludedNameCount,
+    const TfToken * const excludedNames)
 {
     TRACE_FUNCTION();
 

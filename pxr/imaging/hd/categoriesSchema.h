@@ -64,9 +64,9 @@ public:
 
     static HdContainerDataSourceHandle BuildRetained(
         size_t includedNameCount,
-        TfToken *includedNames,
+        const TfToken *includedNames,
         size_t excludedNameCount,
-        TfToken *excludedNames);
+        const TfToken *excludedNames);
 
 // --(END CUSTOM CODE: Schema Methods)--
 

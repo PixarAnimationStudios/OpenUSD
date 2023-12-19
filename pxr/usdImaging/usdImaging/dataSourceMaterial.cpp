@@ -280,9 +280,15 @@ public:
                 .GetToken());
             const TfToken outputName = UsdShadeOutput(attr).GetBaseName();
 
-            elements.push_back(HdMaterialConnectionSchema::BuildRetained(
-                HdRetainedTypedSampledDataSource<TfToken>::New(outputPath),
-                HdRetainedTypedSampledDataSource<TfToken>::New(outputName)));
+            elements.push_back(
+                HdMaterialConnectionSchema::Builder()
+                    .SetUpstreamNodePath(
+                        HdRetainedTypedSampledDataSource<TfToken>::New(
+                            outputPath))
+                    .SetUpstreamNodeOutputName(
+                        HdRetainedTypedSampledDataSource<TfToken>::New(
+                            outputName))
+                    .Build());
         }
 
         return HdRetainedSmallVectorDataSource::New(
@@ -628,11 +634,14 @@ _BuildNetwork(
     HdContainerDataSourceHandle terminalsDs = 
         HdRetainedContainerDataSource::New(
             terminalName,
-            HdMaterialConnectionSchema::BuildRetained(
-                HdRetainedTypedSampledDataSource<TfToken>::New(
-                    terminalNode.GetPrim().GetPath().GetToken()),
-                HdRetainedTypedSampledDataSource<TfToken>::New(
-                    terminalName)));
+            HdMaterialConnectionSchema::Builder()
+                .SetUpstreamNodePath(
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        terminalNode.GetPrim().GetPath().GetToken()))
+                .SetUpstreamNodeOutputName(
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        terminalName))
+                .Build());
 
     HdContainerDataSourceHandle nodesDs = 
         HdRetainedContainerDataSource::New(
@@ -743,11 +752,15 @@ _BuildMaterial(
             SdfPath upstreamPath =
                 _RelativePath(materialPrefix, upstreamShader.GetPath());
 
-            terminalsValues.push_back(HdMaterialConnectionSchema::BuildRetained(
-                HdRetainedTypedSampledDataSource<TfToken>::New(
-                    upstreamPath.GetToken()),
-                HdRetainedTypedSampledDataSource<TfToken>::New(
-                    sourceInfo.sourceName)));
+            terminalsValues.push_back(
+                HdMaterialConnectionSchema::Builder()
+                    .SetUpstreamNodePath(
+                        HdRetainedTypedSampledDataSource<TfToken>::New(
+                            upstreamPath.GetToken()))
+                    .SetUpstreamNodeOutputName(
+                        HdRetainedTypedSampledDataSource<TfToken>::New(
+                            sourceInfo.sourceName))
+                    .Build());
         }
     }
 
