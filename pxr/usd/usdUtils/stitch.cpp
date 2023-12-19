@@ -107,7 +107,7 @@ _MergeValue(
     const TfToken& field, const VtValue& fallback,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath,
-    boost::optional<VtValue>* valueToCopy)
+    std::optional<VtValue>* valueToCopy)
 {
     if (!fallback.IsHolding<T>()) {
         return false;
@@ -134,7 +134,7 @@ _MergeValueFn(
     SdfSpecType specType, const TfToken& field,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
-    boost::optional<VtValue>* valueToCopy,
+    std::optional<VtValue>* valueToCopy,
     const UsdUtilsStitchValueFn& stitchFn)
 {
     TF_VERIFY(srcPath == dstPath);
@@ -292,8 +292,8 @@ _DontCopyChildrenFn(
     const TfToken& childrenField,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool childrenInSrc,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool childrenInDst,
-    boost::optional<VtValue>* srcChildren, 
-    boost::optional<VtValue>* dstChildren)
+    std::optional<VtValue>* srcChildren,
+    std::optional<VtValue>* dstChildren)
 {
     return false;
 }
@@ -304,8 +304,8 @@ _MergeChildren(
     const TfToken& field, const VtValue& fallback,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath,
-    boost::optional<VtValue>* finalSrcValue, 
-    boost::optional<VtValue>* finalDstValue)
+    std::optional<VtValue>* finalSrcValue,
+    std::optional<VtValue>* finalDstValue)
 {
     if (!fallback.IsHolding<T>()) {
         return false;
@@ -344,8 +344,8 @@ _MergeChildrenFn(
     const TfToken& childrenField,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool childrenInSrc,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool childrenInDst,
-    boost::optional<VtValue>* finalSrcChildren, 
-    boost::optional<VtValue>* finalDstChildren)
+    std::optional<VtValue>* finalSrcChildren,
+    std::optional<VtValue>* finalDstChildren)
 {
     if (!childrenInSrc) {
         // Children on the destination spec are never cleared if the

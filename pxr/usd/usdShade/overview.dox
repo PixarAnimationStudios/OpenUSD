@@ -632,4 +632,23 @@ bits.
     }
 ~~~~~~~~~~~~~
 
+# Using Shader Networks with Geometry {#UsdShadeMaterialBinding}
+
+Imageable prims bind to a UsdShadeMaterial to subscribe to the "look" 
+described by the material's shading networks. Prims that need to bind to 
+materials must apply the UsdShadeMaterialBindingAPI schema, otherwise the 
+bindings will not be used by renderers. Material bindings inherit down the prim 
+namespace and come in two forms:
+
+  - Direct bindings, in which a prim directly names (via relationship) the 
+  material it wants to bind.
+  - Collection-based bindings, in which a collection identifies a set of prims, 
+  and the binding (again, a relationship) names both the collection and the 
+  material to which the collected prims should be bound. 
+
+Additional characteristics of the binding, such as the "material purpose" of the 
+binding or the binding strength for collection-based bindings, can be 
+specified. See UsdShadeMaterialBindingAPI for more details on material bindings 
+and how bindings get resolved.
+
 */

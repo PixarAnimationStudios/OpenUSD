@@ -424,37 +424,10 @@ HgiInteropMetal::HgiInteropMetal(Hgi* hgi)
             [errStr UTF8String]);
     }
 
-    CVReturn cvret;
-
-    // Create the texture caches
-    cvret = CVMetalTextureCacheCreate(
-        kCFAllocatorDefault, nil, _device, nil, &_cvmtlTextureCache);
-    if (cvret != kCVReturnSuccess) {
-        TF_FATAL_CODING_ERROR(
-            "Failed to create a Metal texture cache for Metal/GL interop");
-    }
-
-    _cvmtlColorTexture = nil;
-    _cvmtlDepthTexture = nil;
-    
     _mtlAliasedColorTexture = nil;
     _mtlAliasedDepthRegularFloatTexture = nil;
-    
-    CGLContextObj glctx = [_currentOpenGLContext CGLContextObj];
-    CGLPixelFormatObj glPixelFormat =
-        [[[NSOpenGLContext currentContext] pixelFormat] CGLPixelFormatObj];
-    cvret = CVOpenGLTextureCacheCreate(
-        kCFAllocatorDefault, nil, (__bridge CGLContextObj _Nonnull)(glctx),
-        glPixelFormat, nil, &_cvglTextureCache);
-    if (cvret != kCVReturnSuccess) {
-        TF_FATAL_CODING_ERROR(
-            "Failed to create an OpenGL texture cache for Metal/GL interop");
-    }
-    
     _pixelBuffer = nil;
     _depthBuffer = nil;
-    _cvglColorTexture = nil;
-    _cvglDepthTexture = nil;
     _glColorTexture = 0;
     _glDepthTexture = 0;
     
@@ -464,15 +437,6 @@ HgiInteropMetal::HgiInteropMetal(Hgi* hgi)
 HgiInteropMetal::~HgiInteropMetal()
 {
 	_FreeTransientTextureCacheRefs();
-
-    if (_cvglTextureCache) {
-        CFRelease(_cvglTextureCache);
-        _cvglTextureCache = nil;
-    }
-    if (_cvmtlTextureCache) {
-        CFRelease(_cvmtlTextureCache);
-        _cvmtlTextureCache = nil;
-    }
 }
 
 void
@@ -496,20 +460,10 @@ HgiInteropMetal::_FreeTransientTextureCacheRefs()
         _mtlAliasedDepthRegularFloatTexture = nil;
     }
 
-    _cvmtlColorTexture = nil;
-    _cvmtlDepthTexture = nil;
-
-    _cvglColorTexture = nil;
-    _cvglDepthTexture = nil;
-
-    if (_pixelBuffer) {
-        CFRelease(_pixelBuffer);
-        _pixelBuffer = nil;
-    }
-    if (_depthBuffer) {
-        CFRelease(_depthBuffer);
-        _depthBuffer = nil;
-    }
+    CVPixelBufferRelease(_pixelBuffer);
+    _pixelBuffer = nil;
+    CVPixelBufferRelease(_depthBuffer);
+    _depthBuffer = nil;
 }
 
 void
@@ -532,6 +486,10 @@ HgiInteropMetal::_SetAttachmentSize(int width, int height)
         }
     }
     
+    // Ensure previous buffers are currently not in use by the GPU
+    _hgiMetal->CommitPrimaryCommandBuffer(
+        HgiMetal::CommitCommandBuffer_WaitUntilCompleted);
+    
     _ValidateGLContext();
 
     NSDictionary* cvBufferProperties = @{
@@ -540,11 +498,9 @@ HgiInteropMetal::_SetAttachmentSize(int width, int height)
     };
     
     _FreeTransientTextureCacheRefs();
-    
-    CVReturn cvret;
 
     // Create the IOSurface backed pixel buffers to hold the color and depth
-    // data in OpenGL
+    // data in OpenGL and Metal
     CVPixelBufferCreate(
         kCFAllocatorDefault,
         width,
@@ -560,89 +516,58 @@ HgiInteropMetal::_SetAttachmentSize(int width, int height)
         kCVPixelFormatType_32BGRA,
         (__bridge CFDictionaryRef)cvBufferProperties,
         &_depthBuffer);
+
+    IOSurfaceRef pixelIOSurface = CVPixelBufferGetIOSurface(_pixelBuffer);
+    IOSurfaceRef depthIOSurface = CVPixelBufferGetIOSurface(_depthBuffer);
+
+    CGLContextObj glctx = [_currentOpenGLContext CGLContextObj];
     
-    // Create the OpenGL texture for the color buffer
-    cvret = CVOpenGLTextureCacheCreateTextureFromImage(
-        kCFAllocatorDefault,
-        _cvglTextureCache,
-        _pixelBuffer,
-        nil,
-        &_cvglColorTexture);
-    if (cvret != kCVReturnSuccess) {
-        TF_FATAL_CODING_ERROR(
-            "Failed to create the shared OpenGL color texture "
-            "for Metal/GL interop");
-    }
-    _glColorTexture = CVOpenGLTextureGetName(_cvglColorTexture);
+    // Create the GL texture for the color buffer
+    glGenTextures(1, &_glColorTexture);
+    glBindTexture(GL_TEXTURE_RECTANGLE, _glColorTexture);
+    int err = CGLTexImageIOSurface2D(glctx, GL_TEXTURE_RECTANGLE,
+                                     GL_RGBA16F,
+                                     width, height,
+                                     GL_RGBA, GL_HALF_FLOAT,
+                                     pixelIOSurface, 0);
+
+    // Create the GL texture for the depth buffer
+    glGenTextures(1, &_glDepthTexture);
+    glBindTexture(GL_TEXTURE_RECTANGLE, _glDepthTexture);
+    err |= CGLTexImageIOSurface2D(glctx, GL_TEXTURE_RECTANGLE,
+                                  GL_RGBA, /* Internal format */
+                                  width, height, /* width, height */
+                                  GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV,
+                                  depthIOSurface, 0);
+
+    glBindTexture(GL_TEXTURE_RECTANGLE, 0);
     
-    // Create the OpenGL texture for the depth buffer
-    cvret = CVOpenGLTextureCacheCreateTextureFromImage(
-       kCFAllocatorDefault,
-       _cvglTextureCache,
-       _depthBuffer,
-       nil,
-       &_cvglDepthTexture);
-    if (cvret != kCVReturnSuccess) {
-        TF_FATAL_CODING_ERROR(
-            "Failed to create the shared OpenGL depth texture "
-            "for Metal/GL interop");
+    if (err != kCGLNoError) {
+        TF_CODING_ERROR(
+            "Failed to create OpenGL textures from IOSurfaces");
+        return;
     }
-    _glDepthTexture = CVOpenGLTextureGetName(_cvglDepthTexture);
     
-    // Create the metal texture for the color buffer
-    NSDictionary* metalTextureProperties = @{
-        (__bridge NSString*)kCVMetalTextureCacheMaximumTextureAgeKey : @0,
-    };
-    cvret = CVMetalTextureCacheCreateTextureFromImage(
-        kCFAllocatorDefault,
-        _cvmtlTextureCache,
-        _pixelBuffer,
-        (__bridge CFDictionaryRef)metalTextureProperties,
-        MTLPixelFormatRGBA16Float,
-        width,
-        height,
-        0,
-        &_cvmtlColorTexture);
-    if (cvret != kCVReturnSuccess) {
-        TF_FATAL_CODING_ERROR(
-            "Failed to create the shared Metal color texture "
-            "for Metal/GL interop");
-    }
-    _mtlAliasedColorTexture = CVMetalTextureGetTexture(_cvmtlColorTexture);
+    MTLTextureDescriptor *mtlDesc =
+        [MTLTextureDescriptor
+         texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA16Float
+                                      width:width
+                                     height:height
+                                  mipmapped:NO];
+    mtlDesc.usage = MTLTextureUsageShaderWrite;
+    
+    // Create the Metal texture for the color buffer
+    _mtlAliasedColorTexture =
+        [_device newTextureWithDescriptor:mtlDesc
+                                iosurface:pixelIOSurface
+                                    plane:0];
     
     // Create the Metal texture for the depth buffer
-    cvret = CVMetalTextureCacheCreateTextureFromImage(
-        kCFAllocatorDefault,
-        _cvmtlTextureCache,
-        _depthBuffer,
-        (__bridge CFDictionaryRef)metalTextureProperties,
-        MTLPixelFormatBGRA8Unorm,
-        width,
-        height,
-        0,
-        &_cvmtlDepthTexture);
-    if (cvret != kCVReturnSuccess) {
-        TF_FATAL_CODING_ERROR(
-            "Failed to create the shared Metal depth texture "
-            "for Metal/GL interop");
-    }
+    mtlDesc.pixelFormat = MTLPixelFormatBGRA8Unorm;
     _mtlAliasedDepthRegularFloatTexture =
-        CVMetalTextureGetTexture(_cvmtlDepthTexture);
-
-    MTLTextureDescriptor *depthTexDescriptor =
-        [MTLTextureDescriptor
-         texture2DDescriptorWithPixelFormat:MTLPixelFormatR32Float
-         width:width
-         height:height
-         mipmapped:false];
-    depthTexDescriptor.usage =
-        MTLTextureUsageShaderRead|MTLTextureUsageShaderWrite;
-    depthTexDescriptor.resourceOptions =
-        MTLResourceCPUCacheModeDefaultCache | MTLResourceStorageModePrivate;
-    
-    // Flush the caches
-    CVOpenGLTextureCacheFlush(_cvglTextureCache, 0);
-    CVMetalTextureCacheFlush(_cvmtlTextureCache, 0);
+        [_device newTextureWithDescriptor:mtlDesc
+                                iosurface:depthIOSurface
+                                    plane:0];
 }
 
 void

@@ -121,14 +121,6 @@ private:
 
     CVPixelBufferRef _pixelBuffer;
     CVPixelBufferRef _depthBuffer;
-    CVMetalTextureCacheRef _cvmtlTextureCache;
-    CVMetalTextureRef _cvmtlColorTexture;
-    CVMetalTextureRef _cvmtlDepthTexture;
-
-    CVOpenGLTextureCacheRef _cvglTextureCache;
-    CVOpenGLTextureRef _cvglColorTexture;
-    CVOpenGLTextureRef _cvglDepthTexture;
-
     uint32_t _glColorTexture;
     uint32_t _glDepthTexture;
     

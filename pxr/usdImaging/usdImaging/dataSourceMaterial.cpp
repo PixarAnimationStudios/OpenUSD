@@ -42,6 +42,7 @@
 #include "pxr/imaging/hd/materialNodeSchema.h"
 #include "pxr/imaging/hd/materialNodeParameterSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
+#include "pxr/imaging/hd/materialInterfaceMappingSchema.h"
 
 #include "pxr/base/work/utils.h"
 #include "pxr/base/tf/staticTokens.h"

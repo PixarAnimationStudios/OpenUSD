@@ -43,7 +43,7 @@ public:
 
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
-    TfTokenVector const &GetBuiltinPrimvarNames() const;
+    TfTokenVector const &GetBuiltinPrimvarNames() const override;
 
 protected:
     RtPrimVarList

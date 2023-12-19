@@ -1223,6 +1223,49 @@ class Mesh "Mesh" (
         perfectly sharp crease.""")
 }
 
+class TetMesh "TetMesh" (
+    inherits = </PointBased>
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usd/timeCode.h" """
+    }
+    doc="""Encodes a tetrahedral mesh. A tetrahedral mesh is defined as a set of 
+    tetrahedra. Each tetrahedron is defined by a set of 4 points, with the 
+    triangles of the tetrahedron determined from these 4 points as described in 
+    the <b>tetVertexIndices</b> attribute description. The mesh surface faces 
+    are encoded as triangles. Surface faces must be provided for consumers 
+    that need to do surface calculations, such as renderers or consumers using 
+    physics attachments. Both tetrahedra and surface face definitions use 
+    indices into the TetMesh's <b>points</b> attribute, inherited from 
+    UsdGeomPointBased."""
+) {
+    #
+    # Common Properties
+    #
+    int4[] tetVertexIndices (
+        doc = """Flat list of the index (into the <b>points<\b> attribute) of 
+        each vertex of each tetrahedron in the mesh. Each int4 corresponds to the
+        indices of a single tetrahedron. Users should set the <b>orientation<\b>
+        attribute of UsdGeomPrim accordingly. That is if the <b>orientation<\b> 
+        is "rightHanded", the CCW face ordering of a tetrahedron is
+        [123],[032],[013],[021] with respect to the int4. This results in the
+        normals facing outward from the center of the tetrahedron. If the
+        <b>orientation<\b> attribute is set to "leftHanded" the face ordering of 
+        the tetrahedron is [321],[230],[310],[120] and the leftHanded CW face 
+        normals point outward from the center of the tetrahedron. Setting the 
+        <b>orientation<\b> attribute to align with the ordering of the int4 for  
+        the tetrahedrons is the responsibility of the user."""
+    )
+
+    int3[] surfaceFaceVertexIndices (
+        doc = """<b>surfaceFaceVertexIndices<\b> defines the triangle
+        surface faces indices wrt. <b>points<\b> of the tetmesh surface. Again 
+        the <b>orientation<\b> attribute inherited from UsdGeomPrim should be 
+        set accordingly. The <b>orientation<\b> for faces of tetrahedra and  
+        surface faces must match."""
+    )
+}
+
 class GeomSubset "GeomSubset" (
     inherits = </Typed>
     doc = """Encodes a subset of a piece of geometry (i.e. a UsdGeomImageable) 
@@ -2110,6 +2153,22 @@ class PointInstancer "PointInstancer" (
       it will not make any attempt to select the "better (for interpolation
       with respect to neighboring samples)" of the two possible quaternions
       that encode the rotation. 
+      
+      See also \\ref UsdGeomPointInstancer_transform ."""  )
+  
+  quatf[] orientationsf (
+      doc="""If authored, per-instance orientation of each instance about its 
+      prototype's origin, represented as a unit length quaternion, encoded
+      as a GfQuatf to support higher precision computations.
+      
+      It is client's responsibility to ensure that authored quaternions are
+      unit length; the convenience API below for authoring orientations from
+      rotation matrices will ensure that quaternions are unit length, though
+      it will not make any attempt to select the "better (for interpolation
+      with respect to neighboring samples)" of the two possible quaternions
+      that encode the rotation. Note that if the earliest time sample (or
+      default value if there are no time samples) of orientationsf is not empty
+      orientationsf will be preferred over orientations if both are authored.
       
       See also \\ref UsdGeomPointInstancer_transform ."""  )
 

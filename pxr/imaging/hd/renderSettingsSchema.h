@@ -36,8 +36,12 @@
 #define PXR_IMAGING_HD_RENDER_SETTINGS_SCHEMA_H
 
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/vectorSchemaTypeDefs.h"
 
-#include "pxr/imaging/hd/schema.h" 
+#include "pxr/imaging/hd/schema.h"
+
+// --(BEGIN CUSTOM CODE: Includes)--
+// --(END CUSTOM CODE: Includes)--
 
 // --(BEGIN CUSTOM CODE: Includes)--
 // --(END CUSTOM CODE: Includes)--

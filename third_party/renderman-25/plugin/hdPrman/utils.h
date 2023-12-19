@@ -111,14 +111,52 @@ GetDefaultRileyOptions();
 RtParamList
 GetRileyOptionsFromEnvironment();
 
-/// Return a param list with params in \p a composed over \p b. This means that
-/// for params in both lists, \p a's opinion would trump \p b.
-RtParamList
-Compose(
-    RtParamList const &a,
-    RtParamList const &b);
+/// Missing from std until C++20
+template<typename T>
+struct remove_cvref
+{
+    typedef std::remove_cv_t<std::remove_reference_t<T>> type;
+};
 
+/// Missing from std until C++20
+template< class T >
+using remove_cvref_t = typename remove_cvref<T>::type;
+
+/// Return a new ParamList (or PrimVarList) by composing together all the given
+/// \p args, which must be of the same type. Where a given param or primvar is
+/// present in multiple lists in \p args, the opinion from the earliest such
+/// list wins. Each input list in \p args must be passable by reference and may
+/// be const or non-const.
+template <
+    typename ...Ts,
+    typename T = remove_cvref_t<std::tuple_element_t<0,std::tuple<Ts...>>>>
+T
+Compose(Ts&& ...args)
+{
+    static_assert(
+        std::conjunction<
+            std::disjunction<
+                std::is_same<RtParamList, T>, std::is_same<RtPrimVarList, T>>,
+            std::is_reference<Ts>...,
+            std::is_same<T, remove_cvref_t<Ts>>...>::value,
+        "Arguments must be all RtParamList& or all RtPrimVarList&");
+    const size_t n = sizeof...(Ts);
+    T result;
+    if (n == 0) {
+        return result;
+    }
+    std::vector<std::reference_wrapper<const T>> list
+        { std::forward<Ts>(args)... };
+    std::reverse(list.begin(), list.end());
+    for (const T& b : list) {
+        if (b.GetNumParams() != 0) {
+            result.Update(b);
+        }
+    }
+    return result;
 }
+
+} // namespace HdPrman_Utils
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

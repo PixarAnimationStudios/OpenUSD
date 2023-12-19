@@ -37,6 +37,7 @@
 #include "pxr/base/arch/pragmas.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 
 #include <algorithm>
 #include <atomic>
@@ -932,9 +933,9 @@ class VtArray : public Vt_ArrayBase {
 
 // Declare basic array instantiations as extern templates.  They are explicitly
 // instantiated in array.cpp.
-#define VT_ARRAY_EXTERN_TMPL(r, unused, elem) \
+#define VT_ARRAY_EXTERN_TMPL(unused, elem) \
     VT_API_TEMPLATE_CLASS(VtArray< VT_TYPE(elem) >);
-BOOST_PP_SEQ_FOR_EACH(VT_ARRAY_EXTERN_TMPL, ~, VT_SCALAR_VALUE_TYPES)
+TF_PP_SEQ_FOR_EACH(VT_ARRAY_EXTERN_TMPL, ~, VT_SCALAR_VALUE_TYPES)
 
 template <class HashState, class ELEM>
 inline std::enable_if_t<VtIsHashable<ELEM>()>

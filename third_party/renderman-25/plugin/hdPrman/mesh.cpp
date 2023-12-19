@@ -157,7 +157,6 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
     //
     // Point positions (P)
     //
-    float primvarTime = 0.0f;
     HdPrman_ConvertPointsPrimvar(
         sceneDelegate,
         id,
@@ -318,7 +317,7 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
 
     HdPrman_ConvertPrimvars(
         sceneDelegate, id, primvars, nverts.size(), npoints, npoints,
-        verts.size(), primvarTime);
+        verts.size());
 
     return primvars;
 }

@@ -669,10 +669,10 @@ HdGpGenerativeProceduralResolvingSceneIndex::_UpdateProceduralDependencies(
 
         // give the procedural a chance to become asychronous following an
         // update if we aren't already
-        if (proc && _attemptAsync &&
+        if (procEntry.proc && _attemptAsync &&
                 _activeSyncProcedurals.find(proceduralPrimPath)
                     == _activeSyncProcedurals.end()) {
-            if (proc->AsyncBegin(true)) {
+            if (procEntry.proc->AsyncBegin(true)) {
                 _activeSyncProcedurals[proceduralPrimPath] =
                     TfCreateWeakPtr(&procEntry);
             }

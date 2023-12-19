@@ -27,6 +27,7 @@
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/vectorSchema.h"
 #include "pxr/base/gf/range3d.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

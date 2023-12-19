@@ -21,44 +21,37 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
 #include "hdPrman/utils.h"
+
 #include "hdPrman/debugCodes.h"
-#if PXR_VERSION < 2211 // HdPrman_RenderParam::SetParamFromVtValue()
-#include "hdPrman/renderParam.h"
-#endif
+#include "hdPrman/renderParam.h" // HDPRMAN_SHUTTER{OPEN,CLOSE}_DEFAULT
+#include "hdPrman/rixStrings.h"
 
 #include "pxr/base/arch/env.h"
 #include "pxr/base/arch/library.h"
 #include "pxr/base/gf/matrix4f.h"
-#include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec2d.h"
-#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3d.h"
-#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4d.h"
-#include "pxr/base/plug/registry.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
-#include "pxr/base/tf/pathUtils.h"  // Extract extension from tf token
+#include "pxr/base/tf/pathUtils.h"  // ARCH_PATH_LIST_SEP
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
-#if PXR_VERSION >= 2211 // VtVisitValue
-#include "pxr/base/vt/visitValue.h"
-#endif
 #include "pxr/base/vt/value.h"
+#include "pxr/base/vt/visitValue.h"
 #include "pxr/base/work/threadLimits.h"
-
+#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hio/imageRegistry.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ndr/declare.h"
 #include "pxr/usd/sdf/assetPath.h"
-
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hio/imageRegistry.h"
-
-#include "hdPrman/rixStrings.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -74,279 +67,6 @@ extern TfEnvSetting<int> HD_PRMAN_OSL_VERBOSE;
 
 namespace {
 
-#if PXR_VERSION < 2211
-// This duplicates what's in renderParam.cpp prior to 22.11 but never exported.
-static bool
-_SetPrimVarValue(RtUString const& name,
-               VtValue const& val,
-               RtDetailType const& detail,
-               TfToken const& role,
-               RtPrimVarList& params)
-{
-    if (val.IsHolding<float>()) {
-        float v = val.UncheckedGet<float>();
-        params.SetFloat(name, v);
-    } else if (val.IsHolding<double>()) {
-        double v = val.UncheckedGet<double>();
-        params.SetFloat(name, static_cast<float>(v));
-    } else if (val.IsHolding<VtArray<float>>()) {
-        const VtArray<float>& v = val.UncheckedGet<VtArray<float>>();
-        if (detail == RtDetailType::k_constant) {
-            params.SetFloatArray(name, v.cdata(), v.size());
-        } else {
-            params.SetFloatDetail(name, v.cdata(), detail);
-        }
-    } else if (val.IsHolding<VtArray<double>>()) {
-        const VtArray<double>& vd = val.UncheckedGet<VtArray<double>>();
-        // Convert double->float
-        VtArray<float> v;
-        v.resize(vd.size());
-        for (size_t i=0,n=vd.size(); i<n; ++i) {
-            v[i] = float(vd[i]);
-        }
-        if (detail == RtDetailType::k_constant) {
-            params.SetFloatArray(name, v.cdata(), v.size());
-        } else {
-            params.SetFloatDetail(name, v.cdata(), detail);
-        }
-    } else if (val.IsHolding<int>()) {
-        int v = val.UncheckedGet<int>();
-        params.SetInteger(name, v);
-    } else if (val.IsHolding<VtArray<int>>()) {
-        const VtArray<int>& v = val.UncheckedGet<VtArray<int>>();
-        if (detail == RtDetailType::k_constant) {
-            params.SetIntegerArray(name, v.cdata(), v.size());
-        } else {
-            params.SetIntegerDetail(name, v.cdata(), detail);
-        }
-    } else if (val.IsHolding<long>()) {
-        long v = val.UncheckedGet<long>();
-        params.SetInteger(name, (int)v);
-    } else if (val.IsHolding<long long>()) {
-        long long v = val.UncheckedGet<long long>();
-        params.SetInteger(name, (int)v);
-    } else if (val.IsHolding<GfVec2i>()) {
-        GfVec2i v = val.UncheckedGet<GfVec2i>();
-        params.SetIntegerArray(
-            name, reinterpret_cast<const int*>(&v), 2);        
-    } else if (val.IsHolding<GfVec2f>()) {
-        GfVec2f v = val.UncheckedGet<GfVec2f>();
-        params.SetFloatArray(
-            name, reinterpret_cast<const float*>(&v), 2);
-    } else if (val.IsHolding<VtArray<GfVec2f>>()) {
-        const VtArray<GfVec2f>& v = val.UncheckedGet<VtArray<GfVec2f>>();
-        params.SetFloatArrayDetail(name,
-            reinterpret_cast<const float*>(v.cdata()), 2, detail);
-    } else if (val.IsHolding<GfVec2d>()) {
-        GfVec2d vd = val.UncheckedGet<GfVec2d>();
-        float v[2] = {float(vd[0]), float(vd[1])};
-        params.SetFloatArray(name, v, 2);
-    } else if (val.IsHolding<VtArray<GfVec2d>>()) {
-        const VtArray<GfVec2d>& vd = val.UncheckedGet<VtArray<GfVec2d>>();
-        // Convert double->float
-        VtArray<GfVec2f> v;
-        v.resize(vd.size());
-        for (size_t i=0,n=vd.size(); i<n; ++i) {
-            v[i] = GfVec2f(vd[i]);
-        }
-        params.SetFloatArrayDetail(name,
-            reinterpret_cast<const float*>(v.cdata()), 2, detail);
-    } else if (val.IsHolding<GfVec3f>()) {
-        GfVec3f v = val.UncheckedGet<GfVec3f>();
-        if (role == HdPrimvarRoleTokens->color) {
-            params.SetColor(name, RtColorRGB(v[0], v[1], v[2]));
-        } else if (role == HdPrimvarRoleTokens->point) {
-            params.SetPoint(name, RtPoint3(v[0], v[1], v[2]));
-        } else if (role == HdPrimvarRoleTokens->normal) {
-            params.SetNormal(name, RtNormal3(v[0], v[1], v[2]));
-        } else if (role == HdPrimvarRoleTokens->vector) {
-            params.SetVector(name, RtVector3(v[0], v[1], v[2]));
-        } else {
-            params.SetFloatArray(name,
-                reinterpret_cast<const float*>(&v), 3);
-        }
-    } else if (val.IsHolding<VtArray<GfVec3f>>()) {
-        const VtArray<GfVec3f>& v = val.UncheckedGet<VtArray<GfVec3f>>();
-        if (role == HdPrimvarRoleTokens->color) {
-            params.SetColorDetail(
-                name, reinterpret_cast<const RtColorRGB*>(v.cdata()),
-                detail);
-        } else if (role == HdPrimvarRoleTokens->point) {
-            params.SetPointDetail(
-                name, reinterpret_cast<const RtPoint3*>(v.cdata()),
-                detail);
-        } else if (role == HdPrimvarRoleTokens->normal) {
-            params.SetNormalDetail(
-                name, reinterpret_cast<const RtNormal3*>(v.cdata()),
-                detail);
-        } else if (role == HdPrimvarRoleTokens->vector) {
-            params.SetVectorDetail(
-                name, reinterpret_cast<const RtVector3*>(v.cdata()),
-                detail);
-        } else {
-            params.SetFloatArrayDetail(
-                name, reinterpret_cast<const float*>(v.cdata()),
-                3, detail);
-        }
-    } else if (val.IsHolding<GfVec3d>()) {
-        // double->float
-        GfVec3f v(val.UncheckedGet<GfVec3d>());
-        if (role == HdPrimvarRoleTokens->color) {
-            params.SetColor(name, RtColorRGB(v[0], v[1], v[2]));
-        } else if (role == HdPrimvarRoleTokens->point) {
-            params.SetPoint(name, RtPoint3(v[0], v[1], v[2]));
-        } else if (role == HdPrimvarRoleTokens->normal) {
-            params.SetNormal(name, RtNormal3(v[0], v[1], v[2]));
-        } else if (role == HdPrimvarRoleTokens->vector) {
-            params.SetVector(name, RtVector3(v[0], v[1], v[2]));
-        } else {
-            params.SetFloatArray(name,
-                reinterpret_cast<const float*>(&v), 3);
-        }
-    } else if (val.IsHolding<VtArray<GfVec3d>>()) {
-        const VtArray<GfVec3d>& vd = val.UncheckedGet<VtArray<GfVec3d>>();
-        // double->float
-        VtArray<GfVec3f> v;
-        v.resize(vd.size());
-        for (size_t i=0,n=vd.size(); i<n; ++i) {
-            v[i] = GfVec3f(vd[i]);
-        }
-        if (role == HdPrimvarRoleTokens->color) {
-            params.SetColorDetail(
-                name, reinterpret_cast<const RtColorRGB*>(v.cdata()),
-                detail);
-        } else if (role == HdPrimvarRoleTokens->point) {
-            params.SetPointDetail(
-                name, reinterpret_cast<const RtPoint3*>(v.cdata()),
-                detail);
-        } else if (role == HdPrimvarRoleTokens->normal) {
-            params.SetNormalDetail(
-                name, reinterpret_cast<const RtNormal3*>(v.cdata()),
-                detail);
-        } else if (role == HdPrimvarRoleTokens->vector) {
-            params.SetVectorDetail(
-                name, reinterpret_cast<const RtVector3*>(v.cdata()),
-                detail);
-        } else {
-            params.SetFloatArrayDetail(
-                name, reinterpret_cast<const float*>(v.cdata()),
-                3, detail);
-        }
-    } else if (val.IsHolding<GfVec4f>()) {
-        GfVec4f v = val.UncheckedGet<GfVec4f>();
-        params.SetFloatArray(
-            name, reinterpret_cast<const float*>(&v), 4);
-    } else if (val.IsHolding<VtArray<GfVec4f>>()) {
-        const VtArray<GfVec4f>& v = val.UncheckedGet<VtArray<GfVec4f>>();
-        params.SetFloatArrayDetail(
-            name, reinterpret_cast<const float*>(v.cdata()), 4, detail);
-    } else if (val.IsHolding<GfVec4d>()) {
-        // double->float
-        GfVec4f v(val.UncheckedGet<GfVec4d>());
-        params.SetFloatArray(
-            name, reinterpret_cast<const float*>(&v), 4);
-    } else if (val.IsHolding<VtArray<GfVec4d>>()) {
-        const VtArray<GfVec4d>& vd = val.UncheckedGet<VtArray<GfVec4d>>();
-        // double->float
-        VtArray<GfVec4f> v;
-        v.resize(vd.size());
-        for (size_t i=0,n=vd.size(); i<n; ++i) {
-            v[i] = GfVec4f(vd[i]);
-        }
-        params.SetFloatArrayDetail(
-            name, reinterpret_cast<const float*>(v.cdata()), 4, detail);
-    } else if (val.IsHolding<GfMatrix4d>()) {
-        GfMatrix4d v = val.UncheckedGet<GfMatrix4d>();
-        params.SetMatrix(name, HdPrman_Utils::GfMatrixToRtMatrix(v));
-    } else if (val.IsHolding<int>()) {
-        int v = val.UncheckedGet<int>();
-        params.SetInteger(name, v);
-    } else if (val.IsHolding<VtArray<int>>()) {
-        const VtArray<int>& v = val.UncheckedGet<VtArray<int>>();
-        params.SetIntegerArrayDetail(
-            name, reinterpret_cast<const int*>(v.cdata()), 1, detail);
-    } else if (val.IsHolding<bool>()) {
-        // bool->integer
-        int v = val.UncheckedGet<bool>();
-        params.SetInteger(name, v);
-    } else if (val.IsHolding<VtArray<bool>>()) {
-        const VtArray<bool>& vb = val.UncheckedGet<VtArray<bool>>();
-        // bool->integer
-        VtArray<int> v;
-        v.resize(vb.size());
-        for (size_t i=0,n=vb.size(); i<n; ++i) {
-            v[i] = int(vb[i]);
-        }
-        params.SetIntegerArrayDetail(
-            name, reinterpret_cast<const int*>(v.cdata()), 1, detail);
-    } else if (val.IsHolding<TfToken>()) {
-        TfToken v = val.UncheckedGet<TfToken>();
-        params.SetString(name, RtUString(v.GetText()));
-    } else if (val.IsHolding<std::string>()) {
-        std::string v = val.UncheckedGet<std::string>();
-        params.SetString(name, RtUString(v.c_str()));
-    } else if (val.IsHolding<SdfAssetPath>()) {
-        // Since we can't know how the primvar will be consumed,
-        // go with the default of flipping textures
-        const bool flipTexture = true;
-        SdfAssetPath asset = val.UncheckedGet<SdfAssetPath>();
-        RtUString v = HdPrman_Utils::ResolveAssetToRtUString(
-            asset, flipTexture, _tokens->primvar.GetText());
-        params.SetString(name, v);
-    } else if (val.IsHolding<VtArray<std::string>>()) {
-        // Convert to RtUString.
-        const VtArray<std::string>& v =
-            val.UncheckedGet<VtArray<std::string>>();
-        std::vector<RtUString> us;
-        us.reserve(v.size());
-        for (std::string const& s: v) {
-            us.push_back(RtUString(s.c_str()));
-        }
-        if (detail == RtDetailType::k_constant) {
-            params.SetStringArray(name, us.data(), us.size());
-        } else {
-            params.SetStringDetail(name, us.data(), detail);
-        }
-    } else if (val.IsHolding<VtArray<TfToken>>()) {
-        // Convert to RtUString.
-        const VtArray<TfToken>& v =
-            val.UncheckedGet<VtArray<TfToken>>();
-        std::vector<RtUString> us;
-        us.reserve(v.size());
-        for (TfToken const& s: v) {
-            us.push_back(RtUString(s.GetText()));
-        }
-        if (detail == RtDetailType::k_constant) {
-            params.SetStringArray(name, us.data(), us.size());
-        } else {
-            params.SetStringDetail(name, us.data(), detail);
-        }
-    } else if (val.IsHolding<VtArray<SdfAssetPath>>()) {
-        // Convert to RtUString.
-        // Since we can't know how the primvar will be consumed,
-        // go with the default of flipping textures
-        const bool flipTexture = true;
-        const VtArray<SdfAssetPath>& v =
-            val.UncheckedGet<VtArray<SdfAssetPath>>();
-        std::vector<RtUString> us;
-        us.reserve(v.size());
-        for (SdfAssetPath const& asset: v) {
-            us.push_back(HdPrman_Utils::ResolveAssetToRtUString(
-                asset, flipTexture, _tokens->primvar.GetText()));
-        }
-        if (detail == RtDetailType::k_constant) {
-            params.SetStringArray(name, us.data(), us.size());
-        } else {
-            params.SetStringDetail(name, us.data(), detail);
-        }
-    } else {
-        // Unhandled type
-        return false;
-    }
-
-    return true;
-}
-#else
 // _VtValueToRtParamList is a helper used with VtVisitValue to handle
 // type dispatch for converting VtValues to RtParamList entries.
 struct _VtValueToRtParamList
@@ -363,6 +83,9 @@ struct _VtValueToRtParamList
     }
     bool operator()(const float &v) {
         return params->SetFloat(name, v);
+    }
+    bool operator()(const long &v) {
+        return params->SetInteger(name, static_cast<int>(v));
     }
     bool operator()(const double &v) {
         return params->SetFloat(name, static_cast<float>(v));
@@ -423,6 +146,15 @@ struct _VtValueToRtParamList
     }
     bool operator()(const VtArray<float> &v) {
         return params->SetFloatArray(name, v.cdata(), v.size());
+    }
+    bool operator()(const VtArray<long> &vl) {
+        // convert long->int
+        VtArray<int> v;
+        v.resize(vl.size());
+        for (size_t i=0,n=vl.size(); i<n; ++i) {
+            v[i] = int(vl[i]);
+        }
+        return (*this)(v);
     }
     bool operator()(const VtArray<double> &vd) {
         // Convert double->float
@@ -617,6 +349,15 @@ struct _VtValueToRtPrimVar : _VtValueToRtParamList
             return primvars->SetFloatDetail(name, v.cdata(), detail);
         }
     }
+    bool operator()(const VtArray<long> &vl) {
+        // Convert double->int
+        VtArray<int> v;
+        v.resize(vl.size());
+        for (size_t i=0,n=vl.size(); i<n; ++i) {
+            v[i] = int(vl[i]);
+        }
+        return (*this)(v);
+    }
     bool operator()(const VtArray<double> &vd) {
         // Convert double->float
         VtArray<float> v;
@@ -746,7 +487,6 @@ struct _VtValueToRtPrimVar : _VtValueToRtParamList
         }
     }
 };
-#endif
 
 bool
 _IsNativeRenderManFormat(std::string const &path)
@@ -876,11 +616,7 @@ SetParamFromVtValue(
     if (ARCH_UNLIKELY(!params)) {
         return false;
     }
-#if PXR_VERSION < 2211
-    return HdPrman_RenderParam::SetParamFromVtValue(name, val, role, *params);
-#else
     return VtVisitValue(val, _VtValueToRtParamList{name, role, params});
-#endif
 }
 
 RtParamList
@@ -916,12 +652,8 @@ SetPrimVarFromVtValue(
     if (ARCH_UNLIKELY(!params)) {
         return false;
     }
-#if PXR_VERSION < 2211
-    return _SetPrimVarValue(name, val, detail, role, *params);
-#else
     return VtVisitValue(val, _VtValueToRtPrimVar(
         name, detail, role, params));
-#endif
 }
 
 RtUString
@@ -1006,9 +738,10 @@ GetDefaultRileyOptions()
     options.SetFloat(RixStr.k_Ri_PixelVariance, 0.001f);
     options.SetString(RixStr.k_bucket_order, RtUString("circle"));
     
-     // Default shutter settings from studio katana defaults:
-    // - /root.renderSettings.shutter{Open,Close}
-    float shutterInterval[2] = { 0.0f, 0.5f };
+    float shutterInterval[2] = {
+        HDPRMAN_SHUTTEROPEN_DEFAULT,
+        HDPRMAN_SHUTTERCLOSE_DEFAULT
+    };
     options.SetFloatArray(RixStr.k_Ri_Shutter, shutterInterval, 2);
 
     return options;
@@ -1049,23 +782,6 @@ GetRileyOptionsFromEnvironment()
     return options;
 }
 
-RtParamList
-Compose(
-    RtParamList const &a,
-    RtParamList const &b)
-{
-    if (b.GetNumParams() == 0) {
-        return a;
-    }
-    if (a.GetNumParams() == 0) {
-        return b;
-    }
-
-    RtParamList result = b;
-    result.Update(a);
-    return result;
-}
-
-}
+} // namespace HdPrman_Utils
 
 PXR_NAMESPACE_CLOSE_SCOPE

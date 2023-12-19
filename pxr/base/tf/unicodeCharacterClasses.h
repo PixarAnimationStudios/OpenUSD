@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // but we need the flags to be contiguous
 constexpr uint32_t TF_MAX_CODE_POINT = 1114112;
 
-/// @brief 
+/// \brief 
 /// Provides static initialization of the whether a Unicode code
 /// point is contained with the XID_Start set of Unicode character
 /// classes.
@@ -47,19 +47,21 @@ public:
 
     TfUnicodeXidStartFlagData();
 
-    /// @brief Determines whether the given code point is contained within
+    /// \brief Determines whether the given code point is contained within
     /// the XID_Start character class.
-    /// @param codePoint The Unicode code point to determine inclusion for.
-    /// @return true if the given codePoint is in the XID_Start character
+    /// \param codePoint The Unicode code point to determine inclusion for.
+    /// \return true if the given codePoint is in the XID_Start character
     /// class, false otherwise.
-    bool IsXidStartCodePoint(uint32_t codePoint) const;
+    inline bool IsXidStartCodePoint(uint32_t codePoint) const {
+        return (codePoint < TF_MAX_CODE_POINT) ? _flags[codePoint] : false;
+    }
 
 private:
 
     std::bitset<TF_MAX_CODE_POINT> _flags;
 };
 
-/// @brief 
+/// \brief 
 /// Provides static initialization of the whether a Unicode code
 /// point is contained with the XID_Continue set of Unicode character
 /// classes.
@@ -70,25 +72,27 @@ public:
 
     TfUnicodeXidContinueFlagData();
 
-    /// @brief Determines whether the given code point is contained within
+    /// \brief Determines whether the given code point is contained within
     /// the XID_Continue character class.
-    /// @param codePoint The Unicode code point to determine inclusion for.
-    /// @return true if the given codePoint is in the XID_Continue 
+    /// \param codePoint The Unicode code point to determine inclusion for.
+    /// \return true if the given codePoint is in the XID_Continue 
     /// character class false otherwise.
-    bool IsXidContinueCodePoint(uint32_t codePoint) const;
+    inline bool IsXidContinueCodePoint(uint32_t codePoint) const {
+        return (codePoint < TF_MAX_CODE_POINT) ? _flags[codePoint] : false;
+    }
 
 private:
     
     std::bitset<TF_MAX_CODE_POINT> _flags;
 };
 
-/// @brief Retreives character class data for XID_Start.
-/// @return An object which can be used to interrogate whether a code point
+/// \brief Retrieves character class data for XID_Start.
+/// \return An object which can be used to interrogate whether a code point
 /// is contained within the XID_Start character class.
 const TfUnicodeXidStartFlagData& TfUnicodeGetXidStartFlagData();
 
-/// @brief Retreives character class data for XID_Continue.
-/// @return An object which can be used to interrogate whether a code point
+/// \brief Retrieves character class data for XID_Continue.
+/// \return An object which can be used to interrogate whether a code point
 /// is contained within the XID_Continue character class.
 const TfUnicodeXidContinueFlagData& TfUnicodeGetXidContinueFlagData();
 

@@ -33,6 +33,7 @@
 /* ************************************************************************** */
 
 #include "pxr/imaging/hd/instancerTopologySchema.h"
+
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/base/trace/trace.h"
@@ -202,9 +203,7 @@ HdInstancerTopologySchema::GetSchemaToken()
 const HdDataSourceLocator &
 HdInstancerTopologySchema::GetDefaultLocator()
 {
-    static const HdDataSourceLocator locator(
-        HdInstancerTopologySchemaTokens->instancerTopology
-    );
+    static const HdDataSourceLocator locator(GetSchemaToken());
     return locator;
 } 
 HdInstancerTopologySchema::Builder &

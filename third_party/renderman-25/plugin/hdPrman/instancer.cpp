@@ -20,7 +20,7 @@
 // distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
-
+//
 #include "hdPrman/instancer.h"
 
 #include "hdPrman/debugCodes.h"
@@ -29,19 +29,15 @@
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/utils.h"
 
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/getenv.h"
+#include "pxr/base/vt/typeHeaders.h"
+#include "pxr/base/vt/visitValue.h"
+#include "pxr/base/work/loops.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/base/gf/matrix4d.h"
-
-#include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/getenv.h"
-
-#if PXR_VERSION >= 2211 // VtVisitValue
-#include "pxr/base/vt/typeHeaders.h"
-#include "pxr/base/vt/visitValue.h"
-#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -70,7 +66,6 @@ void _AccumulateSampleTimes(
     }
 }
 
-#if PXR_VERSION >= 2211
 // Visitor for VtVisitValue; will retrieve the value at the specified
 // index as a VtValue when the visited value is array-typed. Returns
 // empty VtValue when the visited value is not array-typed, or when the
@@ -92,36 +87,6 @@ struct _GetValueAtIndex {
 private:
     size_t _index;
 };
-#endif
-
-VtValue
-_ExtractVtValueAtIndex(const VtValue& val, const size_t idx)
-{
-#if PXR_VERSION < 2211
-    if (val.IsHolding<VtArray<float>>()) {
-        return VtValue(val.UncheckedGet<VtArray<float>>()[idx]);
-    } else if (val.IsHolding<VtArray<int>>()) {
-        return VtValue(val.UncheckedGet<VtArray<int>>()[idx]);
-    } else if (val.IsHolding<VtArray<GfVec2f>>()) {
-        return VtValue(val.UncheckedGet<VtArray<GfVec2f>>()[idx]);
-    } else if (val.IsHolding<VtArray<GfVec3f>>()) {
-        return VtValue(val.UncheckedGet<VtArray<GfVec3f>>()[idx]);
-    } else if (val.IsHolding<VtArray<GfVec4f>>()) {
-        return VtValue(val.UncheckedGet<VtArray<GfVec4f>>()[idx]);
-    } else if (val.IsHolding<VtArray<GfMatrix4d>>()) {
-        return VtValue(val.UncheckedGet<VtArray<GfMatrix4d>>()[idx]);
-    } else if (val.IsHolding<VtArray<std::string>>()) {
-        return VtValue(val.UncheckedGet<VtArray<std::string>>()[idx]);
-    } else if (val.IsHolding<VtArray<TfToken>>()) {
-        return VtValue(val.UncheckedGet<VtArray<TfToken>>()[idx]);
-    } else {
-        TF_WARN("Unhandled type: %s\n", val.GetTypeName().c_str());
-        return VtValue();
-    }
-#else
-    return VtVisitValue(val, _GetValueAtIndex(idx));
-#endif
-}
 
 template <typename M>
 M _ConvertMatrix(GfMatrix4d&& src);
@@ -216,6 +181,18 @@ _FixupParamName(const TfToken& name) {
         rtname = RtUString(TfStringPrintf("user:%s", name.GetText()).c_str());
     }
     return rtname;
+}
+
+// Save one code indentation level when we don't have anything to
+// amortize across a batch.
+template <typename Fn>
+void
+_ParallelFor(size_t n, Fn &&cb, size_t grainSize = 1) {
+    return WorkParallelForN(n, [&cb](size_t begin, size_t end) {
+        for (size_t i = begin; i < end; ++i) {
+            std::forward<Fn>(cb)(i);
+        }
+    }, grainSize);
 }
 
 } // anonymous namespace
@@ -348,13 +325,14 @@ HdPrmanInstancer::Finalize(HdRenderParam *renderParam)
     _protoMap.citerate([riley](const SdfPath& path, const _ProtoMapEntry& entry) {
         for (const auto& rp : entry.map) {
             const _InstanceIdVec& ids = rp.second;
-            for (const _RileyInstanceId& ri : ids) {
+            _ParallelFor(ids.size(), [&](size_t i) {
+                const _RileyInstanceId& ri = ids[i];
                 if (ri.lightInstanceId != riley::LightInstanceId::InvalidId()) {
                     riley->DeleteLightInstance(ri.groupId, ri.lightInstanceId);
                 } else if (ri.geoInstanceId != riley::GeometryInstanceId::InvalidId()) {
                     riley->DeleteGeometryInstance(ri.groupId, ri.geoInstanceId);
                 }
-            }
+            });
         }
     });
 
@@ -476,7 +454,7 @@ void HdPrmanInstancer::_SyncPrimvars(
 
     // XXX: When removing these in 24.05, eliminate the variables. Replace
     // their usages with the appropriate HdInstancerTokens.
-#if HD_API_VERSION < 56
+#if HD_API_VERSION < 56  // USD_VERSION < 23.05
     TfToken instanceTranslationsToken = HdInstancerTokens->translate;
     TfToken instanceRotationsToken = HdInstancerTokens->rotate;
     TfToken instanceScalesToken = HdInstancerTokens->scale;
@@ -534,7 +512,7 @@ HdPrmanInstancer::_SyncTransforms(
     // XXX: When removing these in 24.05, eliminate the variables. Replace
     // their usages with the appropriate HdInstancerTokens. Don't forget to
     // reformat the "not ... expected type" warning messages, too!
-#if HD_API_VERSION < 56
+#if HD_API_VERSION < 56 // USD_VERSION < 23.05
     TfToken instanceTranslationsToken = HdInstancerTokens->translate;
     TfToken instanceRotationsToken = HdInstancerTokens->rotate;
     TfToken instanceScalesToken = HdInstancerTokens->scale;
@@ -1061,7 +1039,7 @@ HdPrmanInstancer::_PopulateInstances(
             protoFlats);
 
         // Prepare each instance to be sent to riley
-        for (size_t i = 0; i < instances.size(); ++i) {
+        _ParallelFor(instances.size(), [&](size_t i) {
             const _InstanceData& instance = instances[i];
 
             // Multiply the prototype transform by the instance transform. If
@@ -1084,7 +1062,6 @@ HdPrmanInstancer::_PopulateInstances(
             // prototypes (e.g., in the case of GeomSubsets), we must make 
             // one riley instance for each riley prototype
             for (size_t j = 0; j < rileyPrototypeIds.size(); ++j) {
-                
                 // This is expected to be InvalidId for analytic lights
                 const riley::GeometryPrototypeId& protoId = 
                     rileyPrototypeIds[j];
@@ -1242,7 +1219,7 @@ HdPrmanInstancer::_PopulateInstances(
                     }
                 }
             }
-        }
+        });
 
         // We have now fully processed all changes from the last time the
         // instancer was synced down to the riley instances for this particular
@@ -1328,7 +1305,7 @@ HdPrmanInstancer::_ComposeInstances(
     instances.clear();
     if (subInstances.empty()) {
         instances.resize(indices.size());
-        for (size_t i = 0; i < indices.size(); ++i) {
+        _ParallelFor(indices.size(), [&](size_t i) {
             const int index = indices[i];
             _InstanceData& instance = instances[i];
             _GetInstanceParams(index, instance.params);
@@ -1336,33 +1313,38 @@ HdPrmanInstancer::_ComposeInstances(
             _BuildStatsId(id, index, protoId, instance.params);
             _ComposeInstanceFlattenData(index, instance.params, instance.flattenData);
             _GetInstanceTransform(index, instance.transform);
-        }
+        });
     } else {
         instances.resize(indices.size() * subInstances.size());
         // Iteration order is critical to selection. identifier:id2 must
         // increment in subInstance-major order. So we slow-iterate through
         // this level's instances and fast-iterate through the subInstances.
-        for (size_t i = 0; i < indices.size(); ++i) {
-            const int index = indices[i];
-            for (size_t si = 0; si < subInstances.size(); ++si) {
-                const _InstanceData& subInstance  = subInstances[si];
-                const int ii = i * subInstances.size() + si;
-                _InstanceData& instance = instances[ii];
-                _GetInstanceParams(index, instance.params);
-                instance.params.Update(subInstance.params);
-                instance.params.SetInteger(RixStr.k_identifier_id2, int(ii));
-                _BuildStatsId(id, index, protoId, instance.params);
-                _ComposeInstanceFlattenData(
-                    index, 
-                    instance.params, 
-                    instance.flattenData, 
-                    subInstance.flattenData);
-                _GetInstanceTransform(
-                    index,
-                    instance.transform,
-                    subInstance.transform);
-            }
-        }
+        // Note: Just to express things as clearly as possible, since this is
+        // a parallel loop as written now, it is actually the choice of index
+        // for the identifier:id2 parameter and the ordering of the *indexing*
+        // that is critical: the parallel for loop is free to set the values
+        // in whatever temporal order is most efficient/fastest, as long as the
+        // choice we make for the value of identifier:id2 is the same.
+        _ParallelFor(indices.size() * subInstances.size(), [&](size_t ii) {
+            const size_t i = ii / subInstances.size();
+            const size_t index = indices[i];
+            const size_t si = ii % subInstances.size();
+            const _InstanceData& subInstance  = subInstances[si];
+            _InstanceData& instance = instances[ii];
+            _GetInstanceParams(index, instance.params);
+            instance.params.Update(subInstance.params);
+            instance.params.SetInteger(RixStr.k_identifier_id2, int(ii));
+            _BuildStatsId(id, index, protoId, instance.params);
+            _ComposeInstanceFlattenData(
+                index, 
+                instance.params, 
+                instance.flattenData, 
+                subInstance.flattenData);
+            _GetInstanceTransform(
+                index,
+                instance.transform,
+                subInstance.transform);
+        });
     }
 }
 
@@ -1520,16 +1502,21 @@ HdPrmanInstancer::_ResizeProtoMap(
     for (riley::GeometryPrototypeId protoId : rileyPrototypeIds) {
         _InstanceIdVec& instIdVec = protoInstMap[protoId];
         const size_t oldSize = instIdVec.size();
-        for (size_t i = newSize; i < oldSize; ++i) {
-            const _RileyInstanceId& id = instIdVec[i];
-            if (id.lightInstanceId != riley::LightInstanceId::InvalidId()) {
-                riley->DeleteLightInstance(id.groupId, id.lightInstanceId);
-                _groupCounters.get(id.groupId)--;
-            }
-            if (id.geoInstanceId != riley::GeometryInstanceId::InvalidId()) {
-                riley->DeleteGeometryInstance(id.groupId, id.geoInstanceId);
-                _groupCounters.get(id.groupId)--;
-            }
+        if (newSize < oldSize) {
+            // XXX: We loop over the range [newSize, oldSize), for a total of
+            // (oldSize - newSize) elements.
+            _ParallelFor(oldSize - newSize, [&](size_t ii) {
+                size_t i = ii + newSize; // Offset the index by 'newSize'
+                const _RileyInstanceId& id = instIdVec[i];
+                if (id.lightInstanceId != riley::LightInstanceId::InvalidId()) {
+                    riley->DeleteLightInstance(id.groupId, id.lightInstanceId);
+                    _groupCounters.get(id.groupId)--;
+                }
+                if (id.geoInstanceId != riley::GeometryInstanceId::InvalidId()) {
+                    riley->DeleteGeometryInstance(id.groupId, id.geoInstanceId);
+                    _groupCounters.get(id.groupId)--;
+                }
+            });
         }
         if (oldSize != newSize) {
             instIdVec.resize(newSize);
@@ -1721,7 +1708,7 @@ HdPrmanInstancer::_GetInstanceParams(
         // If the interpolation is not constant or uniform and the value is
         // an array, extract just the value of interest.
         if ((!isConstantRate) && val.IsArrayValued()) {
-            val = _ExtractVtValueAtIndex(val, instanceIndex);
+            val = VtVisitValue(val, _GetValueAtIndex(instanceIndex));
         }
 
         const RtUString name = _FixupParamName(entry.first);

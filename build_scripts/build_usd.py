@@ -702,22 +702,23 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 # the naming of the dlls and so it is best to rely on boost's most default
 # settings for maximum compatibility.
 #
-# On behalf of versions of visual studio prior to vs2022, we still support
-# boost 1.76. We don't completely know if boost 1.78 is in play on Windows, 
-# until we have determined whether Python 3 has been selected as a target. 
-# That isn't known at this point in the script, so we simplify the logic by 
-# checking for any of the possible boost header locations that are possible
-# outcomes from running this script.
+# It's tricky to determine which version of boost we'll be using at this
+# point in the script, so we simplify the logic by checking for any of the
+# possible boost header locations that are possible outcomes from running
+# this script.
 BOOST_VERSION_FILES = [
     "include/boost/version.hpp",
     "include/boost-1_76/boost/version.hpp",
-    "include/boost-1_78/boost/version.hpp"
+    "include/boost-1_78/boost/version.hpp",
+    "include/boost-1_82/boost/version.hpp"
 ]
 
 def InstallBoost_Helper(context, force, buildArgs):
     # In general we use boost 1.76.0 to adhere to VFX Reference Platform CY2022.
     # However, there are some cases where a newer version is required.
-    # - Building with Python 3.10 requires boost 1.76.0 or newer.
+    # - Building with Python 3.11 requires boost 1.82.0 or newer
+    #   (https://github.com/boostorg/python/commit/a218ba)
+    # - Building with Python 3.10 requires boost 1.76.0 or newer
     #   (https://github.com/boostorg/python/commit/cbd2d9)
     #   XXX: Due to a typo we've been using 1.78.0 in this case for a while.
     #        We're leaving it that way to minimize potential disruption.
@@ -727,7 +728,9 @@ def InstallBoost_Helper(context, force, buildArgs):
     #   compatibility issues on Big Sur and Monterey.
     pyInfo = GetPythonInfo(context)
     pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
-    if context.buildPython and pyVer >= (3, 10):
+    if context.buildPython and pyVer >= (3, 11):
+        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip"
+    elif context.buildPython and pyVer >= (3, 10):
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
     elif IsVisualStudio2022OrGreater():
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
@@ -2278,7 +2281,11 @@ if which("cmake"):
     # Check cmake minimum version requirements
     pyInfo = GetPythonInfo(context)
     pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
-    if context.buildPython and pyVer >= (3, 10):
+    if context.buildPython and pyVer >= (3, 11):
+        # Python 3.11 requires boost 1.82.0, which is not supported prior
+        # to 3.27
+        cmake_required_version = (3, 27)
+    elif context.buildPython and pyVer >= (3, 10):
         # Python 3.10 is not supported prior to 3.24
         cmake_required_version = (3, 24)
     elif IsVisualStudio2022OrGreater():

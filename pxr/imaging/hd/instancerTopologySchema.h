@@ -36,8 +36,9 @@
 #define PXR_IMAGING_HD_INSTANCER_TOPOLOGY_SCHEMA_H
 
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/vectorSchemaTypeDefs.h"
 
-#include "pxr/imaging/hd/schema.h" 
+#include "pxr/imaging/hd/schema.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
 // --(END CUSTOM CODE: Includes)--

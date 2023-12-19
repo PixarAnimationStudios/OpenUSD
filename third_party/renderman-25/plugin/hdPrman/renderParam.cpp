@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
 #include "hdPrman/renderParam.h"
+
 #include "hdPrman/camera.h"
 #include "hdPrman/cameraContext.h"
 #include "hdPrman/coordSys.h"
@@ -31,32 +31,32 @@
 #include "hdPrman/framebuffer.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
-#include "hdPrman/prmanArchDefs.h"
+#include "hdPrman/motionBlurSceneIndexPlugin.h"
+#include "hdPrman/prmanArchDefs.h" // required for stats/Session.h
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/renderSettings.h"
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/tokens.h"
 #include "hdPrman/utils.h"
-#include "hdPrman/motionBlurSceneIndexPlugin.h"
 
 #include "pxr/base/arch/library.h"
-#include "pxr/base/plug/registry.h"
 #include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/pathUtils.h"  // Extract extension from tf token
 #include "pxr/base/tf/scopeDescription.h"
-#include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/hd/extComputationUtils.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderThread.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+#include "pxr/usd/sdf/path.h"
 
-#include "stats/Session.h"
 #include "Riley.h"
 #include "RiTypesHelper.h"
 #include "RixRiCtl.h"
+#include "stats/Session.h"
 
 #include <thread>
 
@@ -94,12 +94,12 @@ TF_DEFINE_ENV_SETTING(HD_PRMAN_DEFER_SET_OPTIONS, true,
                       "Defer first SetOptions call to render settings prim sync.");
 
 extern TfEnvSetting<bool> HD_PRMAN_ENABLE_QUICKINTEGRATE;
+
 static bool _enableQuickIntegrate =
     TfGetEnvSetting(HD_PRMAN_ENABLE_QUICKINTEGRATE);
 
 // Used when Creating Riley RenderView from the RenderSettings or RenderSpec
 static GfVec2i _fallbackResolution = GfVec2i(512,512);
-static GfVec2f _fallbackShutter = GfVec2f(0.0f, 0.5f); // 180' shutter
 
 TF_MAKE_STATIC_DATA(std::vector<HdPrman_RenderParam::IntegratorCameraCallback>,
                     _integratorCameraCallbacks)
@@ -118,7 +118,7 @@ HdPrman_RenderParam::HdPrman_RenderParam(
     _statsSession(nullptr),
     _riley(nullptr),
     _sceneLightCount(0),
-    _shutterInterval(_fallbackShutter),
+    _shutterInterval(HDPRMAN_SHUTTEROPEN_DEFAULT, HDPRMAN_SHUTTERCLOSE_DEFAULT),
     _initRileyOptions(false),
     _sampleFiltersId(riley::SampleFilterId::InvalidId()),
     _displayFiltersId(riley::DisplayFilterId::InvalidId()),
@@ -205,20 +205,14 @@ _ConvertPointsPrimvar(
     const size_t * npointsHint)
 {
     HdExtComputationPrimvarDescriptorVector compPrimvar;
-    if (!HdPrman_RenderParam::HasSceneIndexPlugin(
-            HdPrmanPluginTokens->extComp )) {
-        // Check if points is a ext computed primvar
-        {
-            HdExtComputationPrimvarDescriptorVector compPrimvars
-                = sceneDelegate->GetExtComputationPrimvarDescriptors(
-                    id, HdInterpolationVertex);
-            for (auto const& pv : compPrimvars) {
-                if (pv.name == HdTokens->points) {
-                    compPrimvar.emplace_back(pv);
-                }
-            }
+#if PXR_VERSION < 2402
+    for (auto const& pv : sceneDelegate->GetExtComputationPrimvarDescriptors(
+        id, HdInterpolationVertex)) {
+        if (pv.name == HdTokens->points) {
+            compPrimvar.emplace_back(pv);
         }
     }
+#endif
 
     // Get points time samples
     HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES> points;
@@ -299,7 +293,6 @@ HdPrman_ConvertPointsPrimvarForPoints(
         sceneDelegate, id, shutterInterval, primvars, nullptr);
 }
 
-
 inline static RtDetailType
 _RixDetailForHdInterpolation(HdInterpolation interp)
 {
@@ -321,27 +314,6 @@ _RixDetailForHdInterpolation(HdInterpolation interp)
         TF_CODING_ERROR("Unknown HdInterpolation value");
         return RtDetailType::k_constant;
     }
-}
-
-static bool
-_SetParamValue(RtUString const& name,
-               VtValue const& val,
-               TfToken const& role,
-               RtParamList& params)
-{
-    return HdPrman_Utils::SetParamFromVtValue(name, val, role, &params);
-}
-
-
-static bool
-_SetPrimVarValue(RtUString const& name,
-               VtValue const& val,
-               RtDetailType const& detail,
-               TfToken const& role,
-               RtPrimVarList& params)
-{
-    return HdPrman_Utils::SetPrimVarFromVtValue(
-        name, val, detail, role, &params);
 }
 
 static RtUString
@@ -522,8 +494,8 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                     continue;
                 }
 
-                if (!_SetPrimVarValue(name, val, detail,
-                                    compPrimvar.role, params)) {
+                if (!HdPrman_Utils::SetPrimVarFromVtValue(name, val, detail,
+                                    compPrimvar.role, &params)) {
                     TF_WARN("Ignoring unhandled primvar of type %s for %s.%s\n",
                         val.GetTypeName().c_str(), id.GetText(),
                         compPrimvar.name.GetText());
@@ -642,10 +614,11 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
         // sample at offset 0 is returned for any primvar on which Prman does
         // not support motion samples. Currently, that's all primvars except P.
         // We call Resample() here because HdPrman also does not yet support
-        // time-sampled primvars other than P: _SetPrimVarValue expects a single
-        // VtValue and no mechanism exists to ensure all primvars are sampled
-        // at the same set of times, which would be a Prman requirement since
-        // times are a property of the whole RtPrimVarList.
+        // time-sampled primvars other than P.
+        // HdPrman_Utils::SetPrimVarFromVtValue expects a single VtValue and no
+        // mechanism exists to ensure all primvars are sampled at the same set
+        // of times, which would be a Prman requirement since times are a
+        // property of the whole RtPrimVarList.
         VtValue val = samples.Resample(time);
 
         TF_DEBUG(HDPRMAN_PRIMVARS)
@@ -670,13 +643,15 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
             continue;
         }
         if constexpr(std::is_same<RtPrimVarList, T>()) {
-            if (!_SetPrimVarValue(name, val, detail, primvar.role, params)) {
+            if (!HdPrman_Utils::SetPrimVarFromVtValue(name, val, detail,
+                primvar.role, &params)) {
                 TF_WARN("Ignoring unhandled primvar of type %s for %s.%s\n",
                     val.GetTypeName().c_str(), id.GetText(),
                     primvar.name.GetText());
             }
         } else {
-            if (!_SetParamValue(name, val, primvar.role, params)) {
+            if (!HdPrman_Utils::SetParamFromVtValue(name, val, primvar.role,
+                &params)) {
                 TF_WARN("Ignoring unhandled attribute of type %s for %s.%s\n",
                     val.GetTypeName().c_str(), id.GetText(),
                     primvar.name.GetText());
@@ -734,9 +709,9 @@ HdPrman_TransferMaterialPrimvarOpinions(HdSceneDelegate *sceneDelegate,
                             RtUString paramName = 
                                 RtUString(param.first.GetText());
                             if (!primvars.GetParamId(paramName, paramId)) {
-                                _SetPrimVarValue(paramName, param.second,
-                                    RtDetailType::k_constant,
-                                    /*role*/TfToken(), primvars);
+                                HdPrman_Utils::SetPrimVarFromVtValue(paramName,
+                                    param.second, RtDetailType::k_constant,
+                                    /*role*/TfToken(), &primvars);
                             }
                         }
                     }
@@ -1040,7 +1015,7 @@ HdPrman_RenderParam::UpdateLegacyOptions()
             // XXX there is currently no way to distinguish the type of a 
             // float3 setting (color, point, vector).  All float3 settings are
             // treated as float[3] until we have a way to determine the type. 
-            _SetParamValue(riName, val, TfToken(), options);
+            HdPrman_Utils::SetParamFromVtValue(riName, val, TfToken(), &options);
         } else {
             
             // ri: namespaced settings win over custom settings tokens when
@@ -1116,7 +1091,8 @@ HdPrman_RenderParam::SetIntegratorParamsFromRenderSettingsMap(
         if (TfStringStartsWith(entry.first.GetText(), prefix.GetText())) {
             // Strip namespace prefix from USD.
             RtUString riName(entry.first.GetText() + prefix.size());
-            _SetParamValue(riName, entry.second, TfToken(), params);
+            HdPrman_Utils::SetParamFromVtValue(riName, entry.second,
+                TfToken(), &params);
         }
     }        
 }
@@ -1232,12 +1208,6 @@ HdPrman_RenderParam::RegisterIntegratorCallbackForCamera(
     IntegratorCameraCallback const& callback)
 {
    _integratorCameraCallbacks->push_back(callback);
-}
-
-bool
-HdPrman_RenderParam::HasSceneIndexPlugin(const TfToken &id)
-{
-    return HdSceneIndexPluginRegistry::GetInstance().IsRegisteredPlugin(id);
 }
 
 void
@@ -1401,7 +1371,7 @@ RtParamList
 _ToRtParamList(VtDictionary const& dict)
 {
     RtParamList params;
-
+    // TODO: Replace with VtVisitValue()
     for (auto const& entry: dict) {
         RtUString riName(entry.first.c_str());
 
@@ -1779,8 +1749,8 @@ HdPrman_RenderParam::_ComputeIntegratorNode(
             // Strip the 'ri' namespace before setting the param
             if (TfStringStartsWith(param.first.GetText(), prefix.GetText())) {
                 RtUString riName(param.first.GetText() + prefix.size());
-                _SetParamValue(
-                    riName, param.second, TfToken(), rileyIntegratorNode.params);
+                HdPrman_Utils::SetParamFromVtValue(riName, param.second,
+                    TfToken(), &rileyIntegratorNode.params);
             }
         }
 
@@ -1804,8 +1774,8 @@ HdPrman_RenderParam::_ComputeIntegratorNode(
     // If the settings map / env var say to use PbsPathTracer,
     // we'll turn on volume aggregate rendering.
     if (integratorName == HdPrmanIntegratorTokens->PbsPathTracer.GetString()) {
-        _SetParamValue(RtUString("volumeAggregate"), VtValue(4),
-            TfToken(), _integratorParams);
+        HdPrman_Utils::SetParamFromVtValue(RtUString("volumeAggregate"),
+            VtValue(4), TfToken(), &_integratorParams);
     }
 
     SetIntegratorParamsFromRenderSettingsMap(
@@ -2024,18 +1994,6 @@ HdPrman_RenderParam::_DeleteInternalPrims()
     _DeleteAndResetDisplayFilter(riley, &_displayFiltersId);
 }
 
-static RtParamList
-_Compose(
-    RtParamList const &a,
-    RtParamList const &b,
-    RtParamList const &c,
-    RtParamList const &d)
-{
-    return
-        HdPrman_Utils::Compose(
-            a, HdPrman_Utils::Compose(b, HdPrman_Utils::Compose(c,d)));
-}
-
 void
 HdPrman_RenderParam::SetRenderSettingsPrimOptions(
     RtParamList const &params)
@@ -2095,11 +2053,11 @@ HdPrman_RenderParam::SetRileyOptions()
         // all sources of options for initialization and subsequent updates.
         // Ideally, the latter would require just the legacy and prim options.
 
-        RtParamList composedParams =
-            _Compose(_envOptions,
-                    _renderSettingsPrimOptions, 
-                    GetLegacyOptions(),
-                    _fallbackOptions);
+        RtParamList composedParams = HdPrman_Utils::Compose(
+            _envOptions,
+            _renderSettingsPrimOptions, 
+            GetLegacyOptions(),
+            _fallbackOptions);
 
         RtParamList prunedOptions = HdPrman_Utils::PruneDeprecatedOptions(
                     composedParams);
@@ -2403,7 +2361,8 @@ _GetOutputParamsAndUpdateRmanNames(
             if (name == RixStr.k_name) {
                 hdAovName = settingVal.UncheckedGet<TfToken>();
             } else {
-                _SetParamValue(name, settingVal, TfToken(), params);
+                HdPrman_Utils::SetParamFromVtValue(name, settingVal,
+                    TfToken(), &params);
             }
         }
     }
@@ -2904,7 +2863,8 @@ HdPrman_RenderParam::CreateRenderViewFromLegacyProducts(
             auto val = renderProduct.find(paramName);
             if (val != renderProduct.end()) {
                 const RtUString name(TfStringGetSuffix(paramName, ':').c_str());
-                _SetParamValue(name, val->second, TfToken(), displayParams);
+                HdPrman_Utils::SetParamFromVtValue(name, val->second,
+                    TfToken(), &displayParams);
             }
         }
 
@@ -3137,8 +3097,11 @@ HdPrman_RenderParam::SetRileyShutterIntervalFromCameraContextCameraPath(
     const HdRenderIndex * const renderIndex)
 {
     // Fallback shutter interval.
-    float shutterInterval[2] = { 0.0f, 0.5f };
-    
+    float shutterInterval[2] = {
+        HDPRMAN_SHUTTEROPEN_DEFAULT,
+        HDPRMAN_SHUTTERCLOSE_DEFAULT
+    };
+
     // Handle legacy render setting.
     const bool disableMotionBlur =
         renderIndex->GetRenderDelegate()->GetRenderSetting<bool>(

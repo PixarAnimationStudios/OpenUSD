@@ -307,7 +307,7 @@ SdfLayer::_WaitForInitializationAndCheckIfSuccessful()
     // The callers of this method are responsible for checking the result
     // and dropping any references they hold.  As a convenience to them,
     // we return the value here.
-    return _initializationWasSuccessful.get();
+    return _initializationWasSuccessful.value();
 }
 
 static bool
@@ -2954,7 +2954,7 @@ SdfLayer::_ShouldNotify() const
 {
     // Only notify if this layer has been successfully initialized.
     // (If initialization is not yet complete, do not notify.)
-    return _initializationWasSuccessful.get_value_or(false);
+    return _initializationWasSuccessful.value_or(false);
 }
 
 void

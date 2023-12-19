@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
+#include "pxr/imaging/hd/materialInterfaceMappingSchema.h"
 
 #include "pxr/imaging/hd/tokens.h"
 

@@ -33,6 +33,7 @@
 /* ************************************************************************** */
 
 #include "pxr/imaging/hd/renderProductSchema.h"
+
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/base/trace/trace.h"
