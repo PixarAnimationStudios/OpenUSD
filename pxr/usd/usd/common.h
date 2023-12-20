@@ -122,7 +122,9 @@ enum UsdLoadPolicy {
 
 /// \enum UsdSchemaKind
 ///
-/// An enum representing which kind of schema a given schema class belongs to
+/// An enum representing which kind of schema a given schema class belongs to.
+/// For more details on the different kinds of schemas, see 
+/// \ref Usd_Page_GeneratingSchemas.
 ///
 enum class UsdSchemaKind {
     /// Invalid or unknown schema kind.
