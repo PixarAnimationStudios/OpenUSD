@@ -1963,6 +1963,7 @@ class AppController(QtCore.QObject):
             self._updateCompositionView()
 
             if self._stageView:
+                self._stageView.updateSelection()
                 self._stageView.update()
 
     def updateGUI(self):

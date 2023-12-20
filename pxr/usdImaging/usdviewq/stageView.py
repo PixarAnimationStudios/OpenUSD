@@ -892,6 +892,9 @@ class StageView(QGLWidget):
         self._renderPauseState = False
         self._renderStopState = False
         self._reportedContextError = False
+
+        self._rendererSelectionNeedsUpdate = True
+
         self._renderModeDict = {
             RenderModes.WIREFRAME: UsdImagingGL.DrawMode.DRAW_WIREFRAME,
             RenderModes.WIREFRAME_ON_SURFACE: 
@@ -1367,6 +1370,14 @@ class StageView(QGLWidget):
         self.updateGL()
 
     def updateSelection(self):
+        self._rendererSelectionNeedsUpdate = True
+        self.update()
+
+    def _processSelection(self):
+        if not self._rendererSelectionNeedsUpdate:
+            return
+        self._rendererSelectionNeedsUpdate = False
+
         try:
             renderer = self._getRenderer()
             if not renderer:
@@ -1468,6 +1479,7 @@ class StageView(QGLWidget):
             self._dataModel.viewSettings.domeLightTexturesVisible)
 
         self._processBBoxes()
+        self._processSelection()
 
         try:
             renderer.Render(pseudoRoot, self._renderParams)
