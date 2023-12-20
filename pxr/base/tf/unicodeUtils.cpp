@@ -23,6 +23,7 @@
 //
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/unicodeCharacterClasses.h"
 #include "pxr/base/tf/unicodeUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -220,6 +221,16 @@ uint32_t TfUtf8CodePointIterator::_GetCodePoint() const
                ((byte3 & 0x3f) << 6) + (byte4 & 0x3f);
     }
     return TfUtf8InvalidCodePoint.AsUInt32();
+}
+
+bool TfIsUtf8CodePointXidStart(uint32_t codePoint)
+{
+    return TfUnicodeGetXidStartFlagData().IsXidStartCodePoint(codePoint);
+}
+
+bool TfIsUtf8CodePointXidContinue(uint32_t codePoint)
+{
+    return TfUnicodeGetXidContinueFlagData().IsXidContinueCodePoint(codePoint);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
