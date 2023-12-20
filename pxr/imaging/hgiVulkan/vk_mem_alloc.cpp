@@ -21,12 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGIVULKAN_SPIRV_REFLECT_H
-#define PXR_IMAGING_HGIVULKAN_SPIRV_REFLECT_H
+#include "pxr/imaging/hgiVulkan/vk_mem_alloc.h"
 
-// This is an implementation of SPIRV-Reflect included
-// from the Vulkan SDK.
-
-#include <SPIRV-Reflect/spirv_reflect.h>
-
-#endif
+#define VMA_IMPLEMENTATION
+#include <vma/vk_mem_alloc.h>
