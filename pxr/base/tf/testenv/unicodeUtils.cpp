@@ -217,6 +217,41 @@ TestUtf8CodePointSurrogateRange()
     return true;
 }
 
+/// Ensure that code points outside of the ASCII range are ordered by
+/// code point value.
+static bool
+TestUtf8DictionaryLessThanOrdering()
+{
+    // All ASCII code points should be less than the first non-ASCII
+    // code point.
+    for (uint32_t value = 0; value <= 127; value++) {
+        const TfUtf8CodePoint asciiCodePoint(value);
+        TF_AXIOM(TfDictionaryLessThan{}(
+            TfStringify(asciiCodePoint),
+            TfStringify(TfUtf8CodePoint{128})));
+    }
+    // All non-ASCII code points should be numerically ordered.
+    for (uint32_t value = 129;
+         value <= TfUtf8CodePoint::MaximumValue; value++) {
+        if ((value < TfUtf8CodePoint::SurrogateRange.first) ||
+            (value > TfUtf8CodePoint::SurrogateRange.second + 1)) {
+           const TfUtf8CodePoint codePoint(value);
+           const TfUtf8CodePoint previousCodePoint(value-1);
+           TF_AXIOM(TfDictionaryLessThan{}(
+                TfStringify(previousCodePoint),
+                TfStringify(codePoint))
+            );
+        }
+    }
+    // Test that the first value after the surrogate range is greater than
+    // the last value before the surrogate range.
+    TF_AXIOM(TfDictionaryLessThan{}(
+        TfStringify(TfUtf8CodePoint::SurrogateRange.first - 1),
+        TfStringify(TfUtf8CodePoint::SurrogateRange.second + 1))
+    );
+    return true;
+}
+
 static bool
 TestCharacterClasses()
 {
@@ -385,7 +420,8 @@ Test_TfUnicodeUtils()
            TestUtf8CodePointView() &&
            TestCharacterClasses() &&
            TestUtf8CodePointReflection() &&
-           TestUtf8CodePointSurrogateRange();
+           TestUtf8CodePointSurrogateRange() &&
+           TestUtf8DictionaryLessThanOrdering();
 }
 
 TF_ADD_REGTEST(TfUnicodeUtils);
