@@ -171,7 +171,9 @@
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/utility/enable_if.hpp>
+#ifndef PXR_ONETBB_SUPPORT_ENABLED
 #include <tbb/atomic.h>
+#endif 
 #include <tbb/cache_aligned_allocator.h>
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/enumerable_thread_specific.h>
