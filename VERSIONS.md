@@ -13,7 +13,7 @@ Our test machines have the following software versions installed.
 
 | Software      | Linux                | macOS                        | Windows                        |
 | ------------- | -------------------- | ---------------------------- | ------------------------------ |
-| OS            | CentOS Linux 7       | 10.15.7                      | Windows 10                     |
+| OS            | CentOS Linux 7       | 12.6.3                       | Windows 10                     |
 | C++ Compiler  | gcc 9.3.1            | Apple clang 13.1.6 (Xcode 13.3) | Visual Studio 2017 15.9     |
 | CMake         | 3.17.5               | 3.19.5                       | 3.25.3                         |
 | Python        | 3.9.16               | 3.9.13                       | 3.9.13                         |
