@@ -215,16 +215,20 @@ if(NOT TBB_FOUND)
   ##################################
   # Find TBB components
   ##################################
+  set(TBB_TARGET_COMPONENT tbb)
+  if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(TBB_TARGET_COMPONENT tbb12)
+  endif()
 
   if(TBB_VERSION VERSION_LESS 4.3)
-    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc tbb)
+    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc ${TBB_TARGET_COMPONENT})
   else()
-    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc_proxy tbbmalloc tbb)
+    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc_proxy tbbmalloc ${TBB_TARGET_COMPONENT})
   endif()
 
   # Find each component
   foreach(_comp ${TBB_SEARCH_COMPOMPONENTS})
-    if(";${TBB_FIND_COMPONENTS};tbb;" MATCHES ";${_comp};")
+    if(";${TBB_FIND_COMPONENTS};${TBB_TARGET_COMPONENT};" MATCHES ";${_comp};")
 
       # Search for the libraries
       find_library(TBB_${_comp}_LIBRARY_RELEASE ${_comp}
@@ -239,12 +243,15 @@ if(NOT TBB_FOUND)
 
       if(TBB_${_comp}_LIBRARY_DEBUG)
         list(APPEND TBB_LIBRARIES_DEBUG "${TBB_${_comp}_LIBRARY_DEBUG}")
+        set(TBB_tbb_LIBRARY_DEBUG "${TBB_${_comp}_LIBRARY_DEBUG}")
       endif()
       if(TBB_${_comp}_LIBRARY_RELEASE)
         list(APPEND TBB_LIBRARIES_RELEASE "${TBB_${_comp}_LIBRARY_RELEASE}")
+        set(TBB_tbb_LIBRARY_RELEASE "${TBB_${_comp}_LIBRARY_RELEASE}")
       endif()
       if(TBB_${_comp}_LIBRARY_${TBB_BUILD_TYPE} AND NOT TBB_${_comp}_LIBRARY)
         set(TBB_${_comp}_LIBRARY "${TBB_${_comp}_LIBRARY_${TBB_BUILD_TYPE}}")
+        set(TBB_tbb_LIBRARY "${TBB_${_comp}_LIBRARY_${TBB_BUILD_TYPE}}")
       endif()
 
       if(TBB_${_comp}_LIBRARY AND EXISTS "${TBB_${_comp}_LIBRARY}")
@@ -257,6 +264,7 @@ if(NOT TBB_FOUND)
       mark_as_advanced(TBB_${_comp}_LIBRARY_RELEASE)
       mark_as_advanced(TBB_${_comp}_LIBRARY_DEBUG)
       mark_as_advanced(TBB_${_comp}_LIBRARY)
+      mark_as_advanced(TBB_tbb_LIBRARY)
 
     endif()
   endforeach()
@@ -289,12 +297,12 @@ if(NOT TBB_FOUND)
   ##################################
 
   if(NOT CMAKE_VERSION VERSION_LESS 3.0 AND TBB_FOUND)
-    add_library(TBB::tbb SHARED IMPORTED)
-    set_target_properties(TBB::tbb PROPERTIES
+    add_library(TBB::${TBB_TARGET_COMPONENT} SHARED IMPORTED)
+    set_target_properties(TBB::${TBB_TARGET_COMPONENT} PROPERTIES
           INTERFACE_INCLUDE_DIRECTORIES  ${TBB_INCLUDE_DIRS}
           IMPORTED_LOCATION              ${TBB_LIBRARIES})
     if(TBB_LIBRARIES_RELEASE AND TBB_LIBRARIES_DEBUG)
-      set_target_properties(TBB::tbb PROPERTIES
+      set_target_properties(TBB::${TBB_TARGET_COMPONENT} PROPERTIES
           INTERFACE_COMPILE_DEFINITIONS "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:TBB_USE_DEBUG=1>"
           IMPORTED_LOCATION_DEBUG          ${TBB_LIBRARIES_DEBUG}
           IMPORTED_LOCATION_RELWITHDEBINFO ${TBB_LIBRARIES_DEBUG}
@@ -302,9 +310,9 @@ if(NOT TBB_FOUND)
           IMPORTED_LOCATION_MINSIZEREL     ${TBB_LIBRARIES_RELEASE}
           )
     elseif(TBB_LIBRARIES_RELEASE)
-      set_target_properties(TBB::tbb PROPERTIES IMPORTED_LOCATION ${TBB_LIBRARIES_RELEASE})
+      set_target_properties(TBB::${TBB_TARGET_COMPONENT} PROPERTIES IMPORTED_LOCATION ${TBB_LIBRARIES_RELEASE})
     else()
-      set_target_properties(TBB::tbb PROPERTIES
+      set_target_properties(TBB::${TBB_TARGET_COMPONENT} PROPERTIES
           INTERFACE_COMPILE_DEFINITIONS "${TBB_DEFINITIONS_DEBUG}"
           IMPORTED_LOCATION              ${TBB_LIBRARIES_DEBUG}
           )

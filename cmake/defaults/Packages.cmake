@@ -153,11 +153,17 @@ endif()
 
 # --TBB
 option(OneTBB_CMAKE_ENABLE "Disable cmake build for oneTbb defaultly" OFF)
-find_package(TBB REQUIRED COMPONENTS tbb)
+if(WIN32)
+    find_package(TBB REQUIRED COMPONENTS tbb12)
+else()
+    find_package(TBB REQUIRED COMPONENTS tbb)
+endif()
+
 add_definitions(${TBB_DEFINITIONS})
 if(OneTBB_CMAKE_ENABLE)
     add_definitions(-DPXR_ONETBB_SUPPORT_ENABLED)
 endif()
+message("OpenUSD find tbb libraries ${TBB_LIBRARIES}")
 
 # --math
 if(WIN32)

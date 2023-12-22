@@ -123,4 +123,8 @@
 #include <tbb/spin_rw_mutex.h>
 #include <tbb/task.h>
 #include <tbb/task_arena.h>
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+#include <tbb/global_control.h>
+#else 
 #include <tbb/task_scheduler_init.h>
+#endif 
