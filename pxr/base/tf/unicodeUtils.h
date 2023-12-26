@@ -98,93 +98,6 @@ TF_API std::ostream& operator<<(std::ostream&, const TfUtf8CodePoint);
 constexpr TfUtf8CodePoint TfUtf8InvalidCodePoint{
     TfUtf8CodePoint::ReplacementValue};
 
-class TfUtf8CodePointIterator;
-
-/// \class TfUtf8CodePointView
-/// \ingroup group_tf_String
-///
-/// Wrapper for a UTF-8 encoded `std::string_view` that can be iterated over
-/// as code points instead of bytes.
-///
-/// Because of the variable length encoding, the `TfUtf8CodePointView` iterator
-/// is a ForwardIterator and is read only.
-///
-/// \code{.cpp}
-/// std::string value{"∫dx"};
-/// for (const uint32_t codePoint : TfUtf8CodePointView{value}) {
-///     if (codePoint == TfUtf8InvalidCodePoint.AsUInt32()) {
-///         TF_WARN("String cannot be decoded.");
-///         break;
-///     }
-/// }
-/// \endcode
-///
-/// The `TfUtf8CodePointView`'s sentinel `end()` is compatible with range
-/// based for loops and the forthcoming STL ranges library; it avoids
-/// triplicating the storage for the end iterator. `EndAsIterator()`
-/// can be used for algorithms that require the begin and end iterators to be
-/// of the same type but necessarily stores redundant copies of the endpoint.
-///
-/// \code{.cpp}
-/// if (std::any_of(std::cbegin(codePointView), codePointView.EndAsIterator(),
-///     [](const auto c) { return c == TfUtf8InvalidCodePoint.AsUInt32(); }))
-/// {
-///     TF_WARN("String cannot be decoded");
-/// }
-/// \endcode
-class TfUtf8CodePointView final {
-public:
-    using const_iterator = TfUtf8CodePointIterator;
-
-    /// Model iteration ending when the underlying `string_view`'s end iterator
-    /// has been exceeded. This guards against strings whose variable length
-    /// encoding pushes the iterator past the end of the underlying
-    /// `string_view`.
-    class PastTheEndSentinel final {};
-
-    TfUtf8CodePointView() = default;
-    explicit TfUtf8CodePointView(const std::string_view& view) : _view(view) {}
-
-    inline const_iterator begin() const;
-
-    /// The sentinel will compare as equal with any iterator at the end
-    /// of the underlying `string_view`
-    PastTheEndSentinel end() const
-    {
-        return PastTheEndSentinel{};
-    }
-
-    inline const_iterator cbegin() const;
-
-    /// The sentinel will compare as equal with any iterator at the end
-    /// of the underlying `string_view`
-    PastTheEndSentinel cend() const
-    {
-        return end();
-    }
-
-    /// Returns true if the underlying view is empty
-    bool empty() const
-    {
-        return _view.empty();
-    }
-
-    /// Returns an iterator of the same type as `begin` that identifies the end
-    /// of the string.
-    ///
-    /// As the end iterator is stored three times, this is slightly heavier
-    /// than using the `PastTheEndSentinel` and should be avoided in performance
-    /// critical code paths. It is provided for convenience when an algorithm
-    /// restricts the iterators to have the same type.
-    ///
-    /// As C++20 ranges exposes more sentinel friendly algorithms, this can
-    /// likely be deprecated in the future.
-    inline const_iterator EndAsIterator() const;
-
-private:
-    std::string_view _view;
-};
-
 /// Defines an iterator over a UTF-8 encoded string that extracts unicode
 /// code point values.
 ///
@@ -199,6 +112,23 @@ public:
     using difference_type = std::ptrdiff_t;
     using pointer = void;
     using reference = uint32_t;
+
+    /// Model iteration ending when the underlying iterator's end condition
+    /// has been met.
+    class PastTheEndSentinel final {};
+
+    /// Constructs an iterator that can read UTF-8 character sequences from
+    /// the given starting string_view iterator \a it. \a end is used as a
+    /// guard against reading byte sequences past the end of the source string.
+    ///
+    /// When working with views of substrings, \a end must not point to a
+    /// continuation byte in a valid UTF-8 byte sequence to avoid decoding
+    /// errors.
+    TfUtf8CodePointIterator(
+        const std::string_view::const_iterator& it,
+        const std::string_view::const_iterator& end) : _it(it), _end(end) {
+            TF_DEV_AXIOM(_it <= _end);
+        }
 
     /// Retrieves the current UTF-8 character in the sequence as its Unicode
     /// code point value. Returns `TfUtf8InvalidCodePoint.AsUInt32()` when the
@@ -282,42 +212,29 @@ public:
     /// Checks if the `lhs` iterator is at or past the end for the
     /// underlying `string_view`
     friend bool operator==(const TfUtf8CodePointIterator& lhs,
-                           TfUtf8CodePointView::PastTheEndSentinel)
+                           PastTheEndSentinel)
     {
         return lhs._IsPastTheEnd();
     }
 
-    friend bool operator==(TfUtf8CodePointView::PastTheEndSentinel lhs,
+    friend bool operator==(PastTheEndSentinel lhs,
                            const TfUtf8CodePointIterator& rhs)
     {
         return rhs == lhs;
     }
 
     friend bool operator!=(const TfUtf8CodePointIterator& lhs,
-                           TfUtf8CodePointView::PastTheEndSentinel rhs)
+                           PastTheEndSentinel rhs)
     {
         return !(lhs == rhs);
     }
-    friend bool operator!=(TfUtf8CodePointView::PastTheEndSentinel lhs,
-                           TfUtf8CodePointIterator rhs)
+    friend bool operator!=(PastTheEndSentinel lhs,
+                           const TfUtf8CodePointIterator& rhs)
     {
         return !(lhs == rhs);
     }
 
 private:
-    // Constructs an iterator that can read UTF-8 character sequences from
-    // the given starting string_view iterator \a it. \a end is used as a
-    // guard against reading byte sequences past the end of the source string.
-    //
-    // When working with views of substrings, \a end must not point to a
-    // continuation byte in a valid UTF-8 byte sequence to avoid decoding
-    // errors.
-    TfUtf8CodePointIterator(
-        const std::string_view::const_iterator& it,
-        const std::string_view::const_iterator& end) : _it(it), _end(end) {
-            TF_DEV_AXIOM(_it <= _end);
-        }
-
     using _EncodingLength = unsigned char;
 
     // Retrieves the variable encoding length of the UTF-8 character
@@ -376,26 +293,95 @@ private:
 
     std::string_view::const_iterator _it;
     std::string_view::const_iterator _end;
-
-    friend class TfUtf8CodePointView;
 };
 
-inline TfUtf8CodePointView::const_iterator TfUtf8CodePointView::begin() const
-{
-    return TfUtf8CodePointView::const_iterator{
-        std::cbegin(_view), std::cend(_view)};
-}
+/// \class TfUtf8CodePointView
+/// \ingroup group_tf_String
+///
+/// Wrapper for a UTF-8 encoded `std::string_view` that can be iterated over
+/// as code points instead of bytes.
+///
+/// Because of the variable length encoding, the `TfUtf8CodePointView` iterator is
+/// a ForwardIterator and is read only.
+///
+/// \code{.cpp}
+/// std::string value{"∫dx"};
+/// for (const uint32_t codePoint : TfUtf8CodePointView{value}) {
+///     if (codePoint == TfUtf8InvalidCodePoint.AsUInt32()) {
+///         TF_WARN("String cannot be decoded.");
+///         break;
+///     }
+/// }
+/// \endcode
+///
+/// The `TfUtf8CodePointView`'s sentinel `end()` is compatible with range
+/// based for loops and the forthcoming STL ranges library; it avoids
+/// triplicating the storage for the end iterator. `EndAsIterator()`
+/// can be used for algorithms that require the begin and end iterators to be
+/// of the same type but necessarily stores redundant copies of the endpoint.
+///
+/// \code{.cpp}
+/// if (std::any_of(std::cbegin(codePointView), codePointView.EndAsIterator(),
+///     [](const auto c) { return c == TfUtf8InvalidCodePoint.AsUInt32(); }))
+/// {
+///     TF_WARN("String cannot be decoded");
+/// }
+/// \endcode
+class TfUtf8CodePointView final {
+public:
+    using const_iterator = TfUtf8CodePointIterator;
 
-inline TfUtf8CodePointView::const_iterator TfUtf8CodePointView::cbegin() const
-{
-    return begin();
-}
+    TfUtf8CodePointView() = default;
+    explicit TfUtf8CodePointView(const std::string_view& view) : _view(view) {}
 
-inline TfUtf8CodePointView::const_iterator
-TfUtf8CodePointView::EndAsIterator() const
-{
-    return const_iterator(std::cend(_view), std::cend(_view));
-}
+    inline const_iterator begin() const
+    {
+        return const_iterator{std::cbegin(_view), std::cend(_view)};
+    }
+
+    /// The sentinel will compare as equal to any iterator at the end
+    /// of the underlying `string_view`
+    TfUtf8CodePointIterator::PastTheEndSentinel end() const
+    {
+        return TfUtf8CodePointIterator::PastTheEndSentinel{};
+    }
+
+    inline const_iterator cbegin() const
+    {
+        return begin();
+    }
+
+    /// The sentinel will compare as equal to any iterator at the end
+    /// of the underlying `string_view`
+    TfUtf8CodePointIterator::PastTheEndSentinel cend() const
+    {
+        return end();
+    }
+
+    /// Returns true if the underlying view is empty
+    bool empty() const
+    {
+        return _view.empty();
+    }
+
+    /// Returns an iterator of the same type as `begin` that identifies the end
+    /// of the string.
+    ///
+    /// As the end iterator is stored three times, this is slightly heavier
+    /// than using the `PastTheEndSentinel` and should be avoided in performance
+    /// critical code paths. It is provided for convenience when an algorithm
+    /// restricts the iterators to have the same type.
+    ///
+    /// As C++20 ranges exposes more sentinel friendly algorithms, this can
+    /// likely be deprecated in the future.
+    inline const_iterator EndAsIterator() const
+    {
+        return const_iterator(std::cend(_view), std::cend(_view));
+    }
+
+private:
+    std::string_view _view;
+};
 
 /// Determines whether the given Unicode \a codePoint is in the XID_Start
 /// character class.
