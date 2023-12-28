@@ -226,6 +226,7 @@ pxr_library(tf
         callContext.h
         cxxCast.h
         declarePtrs.h
+        delegatedCountPtr.h
         diagnosticLite.h
         functionTraits.h
         functionRef.h
@@ -489,6 +490,7 @@ pxr_build_test(testTf
         testenv/staticTokens.cpp
         testenv/templateString.cpp
         testenv/token.cpp
+        testenv/delegatedCountPtr.cpp
         testenv/type.cpp
         testenv/typeMultipleInheritance.cpp
         testenv/typeInfoMap.cpp
@@ -750,6 +752,9 @@ pxr_register_test(testTfTemplateString
 )
 pxr_register_test(TfToken
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfToken"
+)
+pxr_register_test(TfDelegatedCountPtr
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDelegatedCountPtr"
 )
 pxr_register_test(TfType
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfType"
