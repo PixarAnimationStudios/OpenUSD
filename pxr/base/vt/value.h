@@ -36,6 +36,7 @@
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/arch/pragmas.h"
 #include "pxr/base/tf/anyUniquePtr.h"
+#include "pxr/base/tf/delegatedCountPtr.h"
 #include "pxr/base/tf/pointerAndBits.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/safeTypeCompare.h"
@@ -48,8 +49,6 @@
 #include "pxr/base/vt/streamOut.h"
 #include "pxr/base/vt/traits.h"
 #include "pxr/base/vt/types.h"
-
-#include <boost/intrusive_ptr.hpp>
 
 #include <iosfwd>
 #include <typeinfo>
@@ -180,10 +179,10 @@ class VtValue
         T _obj;
         mutable std::atomic<int> _refCount;
 
-        friend inline void intrusive_ptr_add_ref(_Counted const *d) {
+        friend inline void TfDelegatedCountIncrement(_Counted const *d) {
             d->_refCount.fetch_add(1, std::memory_order_relaxed);
         }
-        friend inline void intrusive_ptr_release(_Counted const *d) {
+        friend inline void TfDelegatedCountDecrement(_Counted const *d) noexcept {
             if (d->_refCount.fetch_sub(1, std::memory_order_release) == 1) {
                 std::atomic_thread_fence(std::memory_order_acquire);
                 delete d;
@@ -764,30 +763,31 @@ class VtValue
 
     ////////////////////////////////////////////////////////////////////////
     // Remote-storage type info implementation.  The container is an
-    // intrusive_ptr to an object holder: _Counted<T>.
+    // TfDelegatedCountPtr to an object holder: _Counted<T>.
     template <class T>
     struct _RemoteTypeInfo : _TypeInfoImpl<
-        T,                                  // type
-        boost::intrusive_ptr<_Counted<T> >, // container
-        _RemoteTypeInfo<T>                  // CRTP
+        T,                                   // type
+        TfDelegatedCountPtr<_Counted<T>>, // container
+        _RemoteTypeInfo<T>                   // CRTP
         >
     {
         constexpr _RemoteTypeInfo()
             : _TypeInfoImpl<
-                  T, boost::intrusive_ptr<_Counted<T>>, _RemoteTypeInfo<T>>()
+                  T, TfDelegatedCountPtr<_Counted<T>>, _RemoteTypeInfo<T>>()
         {}
 
-        typedef boost::intrusive_ptr<_Counted<T> > Ptr;
+        using Ptr = TfDelegatedCountPtr<_Counted<T>>;
         // Get returns object stored in the pointed-to _Counted<T>.
         static T &_GetMutableObj(Ptr &ptr) {
-            if (!ptr->IsUnique())
-                ptr.reset(new _Counted<T>(ptr->Get()));
+            if (!ptr->IsUnique()) {
+                ptr = TfMakeDelegatedCountPtr<_Counted<T>>(ptr->Get());
+            }
             return ptr->GetMutable();
         }
         static T const &_GetObj(Ptr const &ptr) { return ptr->Get(); }
         // PlaceCopy() allocates a new _Counted<T> with a copy of the object.
         static void _PlaceCopy(Ptr *dst, T const &src) {
-            new (dst) Ptr(new _Counted<T>(src));
+            new (dst) Ptr(TfDelegatedCountIncrementTag, new _Counted<T>(src));
         }
     };
 
