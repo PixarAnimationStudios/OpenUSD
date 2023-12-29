@@ -84,10 +84,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define _TF_DECLARE_PUBLIC_TOKENS3(key, eiapi, seq)                         \
     _TF_DECLARE_TOKENS3(key, seq, eiapi)                                    \
-    extern eiapi TfStaticData<_TF_TOKENS_STRUCT_NAME(key)> key
+    extern eiapi PXR_NS::TfStaticData<_TF_TOKENS_STRUCT_NAME(key)> key
 #define _TF_DECLARE_PUBLIC_TOKENS2(key, seq)                                \
     _TF_DECLARE_TOKENS2(key, seq)                                           \
-    extern TfStaticData<_TF_TOKENS_STRUCT_NAME(key)> key
+    extern PXR_NS::TfStaticData<_TF_TOKENS_STRUCT_NAME(key)> key
 #define _TF_DECLARE_PUBLIC_TOKENS(N) _TF_DECLARE_PUBLIC_TOKENS##N
 #define _TF_DECLARE_PUBLIC_TOKENS_EVAL(N) _TF_DECLARE_PUBLIC_TOKENS(N)
 #define _TF_DECLARE_PUBLIC_TOKENS_EXPAND(x) x
@@ -102,7 +102,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \hideinitializer
 #define TF_DEFINE_PUBLIC_TOKENS(key, seq)                                   \
     _TF_DEFINE_TOKENS(key)                                                  \
-    TfStaticData<_TF_TOKENS_STRUCT_NAME(key)> key
+    PXR_NS::TfStaticData<_TF_TOKENS_STRUCT_NAME(key)> key
 
 /// Macro to define private tokens.
 /// \hideinitializer
@@ -113,7 +113,7 @@ PXR_NAMESPACE_OPEN_SCOPE
         _TF_TOKENS_DECLARE_MEMBERS(seq)                                     \
     };                                                                      \
     }                                                                       \
-    static TfStaticData<_TF_TOKENS_STRUCT_NAME_PRIVATE(key)> key
+    static PXR_NS::TfStaticData<_TF_TOKENS_STRUCT_NAME_PRIVATE(key)> key
 
 ///////////////////////////////////////////////////////////////////////////////
 // Private Macros
@@ -139,17 +139,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 // be a tuple on the form (name, value) or just a name.
 //
 #define _TF_TOKENS_DECLARE_MEMBER(unused, elem)                             \
-    TfToken _TF_PP_IFF(TF_PP_IS_TUPLE(elem),                                \
+    PXR_NS::TfToken _TF_PP_IFF(TF_PP_IS_TUPLE(elem),                        \
         TF_PP_TUPLE_ELEM(0, elem), elem){                                   \
             _TF_PP_IFF(TF_PP_IS_TUPLE(elem),                                \
                 TF_PP_TUPLE_ELEM(1, elem), TF_PP_STRINGIZE(elem)),          \
-            TfToken::Immortal};
+            PXR_NS::TfToken::Immortal};
 #define _TF_TOKENS_DECLARE_TOKEN_MEMBERS(seq)                               \
     TF_PP_SEQ_FOR_EACH(_TF_TOKENS_DECLARE_MEMBER, ~, seq)
 
 #define _TF_TOKENS_FORWARD_TOKEN(unused, elem) TF_PP_TUPLE_ELEM(0, elem),
 #define _TF_TOKENS_DECLARE_ALL_TOKENS(seq)                                  \
-    std::vector<TfToken> allTokens =                                        \
+    std::vector<PXR_NS::TfToken> allTokens =                                \
         {TF_PP_SEQ_FOR_EACH(_TF_TOKENS_FORWARD_TOKEN, ~, seq)};
 
 // Private macro used to declare the list of members as TfTokens
