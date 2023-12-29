@@ -87,21 +87,10 @@ class TestArURIResolver(unittest.TestCase):
         invalid_utf8_path = "test-π-utf8:/abc.xyz"
         invalid_numeric_prefix_path = "113-test:/abc.xyz"
         invalid_colon_path = "other:test:/abc.xyz"
-        if Tf.GetEnvSetting("PXR_AR_DISABLE_STRICT_SCHEME_VALIDATION"):
-            self.assertEqual(resolver.Resolve(invalid_underbar_path),
-                             invalid_underbar_path)
-            self.assertEqual(resolver.Resolve(invalid_utf8_path),
-                             invalid_utf8_path)
-            self.assertEqual(resolver.Resolve(invalid_numeric_prefix_path),
-                             invalid_numeric_prefix_path)
-            # Even when strict scheme validation mode is disabled
-            # schemes with colons in them may fail to resolve
-            self.assertFalse(resolver.Resolve(invalid_colon_path))
-        else:
-            self.assertFalse(resolver.Resolve(invalid_underbar_path))
-            self.assertFalse(resolver.Resolve(invalid_utf8_path))
-            self.assertFalse(resolver.Resolve(invalid_numeric_prefix_path))
-            self.assertFalse(resolver.Resolve(invalid_colon_path))
+        self.assertFalse(resolver.Resolve(invalid_underbar_path))
+        self.assertFalse(resolver.Resolve(invalid_utf8_path))
+        self.assertFalse(resolver.Resolve(invalid_numeric_prefix_path))
+        self.assertFalse(resolver.Resolve(invalid_colon_path))
 
     def testGetRegisteredURISchemes(self):
         "Tests that all URI schemes for discovered plugins are returned"
