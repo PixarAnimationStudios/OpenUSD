@@ -1323,13 +1323,7 @@ private:
             return false;
         }
 #endif
-        if (const auto container = HdContainerDataSource::Cast(
-            prim.dataSource)) {
-            if (HdXformSchema::GetFromParent(container)) {
-                return true;
-            }
-        }
-        return false;
+        return bool(HdXformSchema::GetFromParent(prim.dataSource));
     };
 
     HdContainerDataSourceHandle _inputArgs;
