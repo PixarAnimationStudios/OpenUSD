@@ -611,11 +611,15 @@ pxr_install_test_dir(
     DEST testUsdImagingGLGeomSubsets
 )
 
+pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLInvalidMaterial
+    DEST testUsdImagingGLInvalidMaterial
+)
+
 #
 # Register tests that don't depend on build configuration or external libraries
 # (such as MaterialX, OpenVDB, PTEX).
 #
-
 pxr_register_test(testUsdImagingGLBasicDrawing
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage basicDrawing/basicDrawing.usda -write testUsdImagingGLBasicDrawing.png"
     IMAGE_DIFF_COMPARE
@@ -4564,6 +4568,17 @@ pxr_register_test(testUsdImagingGLAovVisualization_Storm_depth
     WARN_PERCENT 0.002
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLAovVisualization
+)
+
+pxr_register_test(testUsdImagingGLInvalidMaterial
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth  -frameAll -stage invalidMaterial.usda -write testUsdImagingGLInvalidMaterial.png"
+    IMAGE_DIFF_COMPARE
+    testUsdImagingGLInvalidMaterial.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLInvalidMaterial
 )
 
 #

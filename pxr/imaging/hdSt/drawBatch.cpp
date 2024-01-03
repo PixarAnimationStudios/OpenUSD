@@ -41,8 +41,8 @@
 
 #include "pxr/imaging/hio/glslfx.h"
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
-
 #include "pxr/base/tf/hash.h"
 
 #include <mutex>
@@ -50,8 +50,21 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_BROKEN_SHADER_VISUAL_FEEDBACK, false,
+    "Provide visual feedback for prims when the composed shader fails to "
+    "compile or link by using the invalid material shader.");
+
 namespace
 {
+
+bool
+_ProvideVisualFeedbackForBrokenShaders()
+{
+    static const bool enabled =
+        TfGetEnvSetting(HDST_ENABLE_BROKEN_SHADER_VISUAL_FEEDBACK);
+    return enabled;
+}
+
 const std::string&
 _GetPrimPathSubstringForDebugLogging()
 {
@@ -277,6 +290,24 @@ _GetFallbackMaterialNetworkShader()
     return fallbackShader;
 }
 
+static
+HdSt_MaterialNetworkShaderSharedPtr
+_GetInvalidMaterialNetworkShader()
+{
+    static std::once_flag once;
+    static HdSt_MaterialNetworkShaderSharedPtr invalidShader;
+   
+    std::call_once(once, [](){
+        HioGlslfxSharedPtr glslfx =
+            std::make_shared<HioGlslfx>(
+                HdStPackageInvalidMaterialNetworkShader());
+
+        invalidShader.reset(new HdStGLSLFXShader(glslfx));
+    });
+
+    return invalidShader;
+}
+
 HdSt_DrawBatch::_DrawingProgram &
 HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
                                  HdStResourceRegistrySharedPtr const &resourceRegistry)
@@ -333,24 +364,30 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
             TF_CODING_ERROR("Failed to compile shader for prim %s.",
                             firstDrawItem->GetRprimID().GetText());
 
-
             // If we failed to compile the material network, replace it
-            // with the fallback material network shader and try again.
+            // either with the invalid material network shader OR the
+            // fallback material network shader and try again.
             // XXX: Note that we only say "material network shader" here
             // because it is currently the only one for which we allow
             // customization.  We expect all the other shaders to compile
             // or else the shipping code is broken and needs to be fixed.
             // When we open up more shaders for customization, we will
             // need to check them as well.
-            
-            _program.SetMaterialNetworkShader(
-                _GetFallbackMaterialNetworkShader());
+
+            const HdSt_MaterialNetworkShaderSharedPtr shader =
+                _ProvideVisualFeedbackForBrokenShaders()
+                ? _GetInvalidMaterialNetworkShader()
+                : _GetFallbackMaterialNetworkShader();
+                
+            _program.SetMaterialNetworkShader(shader);
 
             bool res = _program.CompileShader(firstDrawItem, 
                                               resourceRegistry,
                                               logCacheLookup);
-            // We expect the fallback shader to always compile.
-            TF_VERIFY(res, "Failed to compile with fallback material network");
+
+            // We expect the invalid/fallback shader to always compile.
+            TF_VERIFY(res, "Failed to compile with the invalid/fallback "
+                           "material network shader.");
         }
 
         _shaderHash = shaderHash;

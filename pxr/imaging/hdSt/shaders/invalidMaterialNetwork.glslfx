@@ -1,7 +1,7 @@
 -- glslfx version 0.1
 
 //
-// Copyright 2016 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -25,38 +25,44 @@
 //
 
 --- This is what an import might look like.
---- #import $TOOLS/hdSt/shaders/fallbackMaterialNetwork.glslfx
+--- #import $TOOLS/hdSt/shaders/invalidMaterialNetwork.glslfx
 
 ---
---- The fallback shader is used as a replacement shader if no material binding
---- was provided. It needs to define both the surfaceShader() and
---- displacementShader() terminals.
+--- The invalid shader is used as a replacement shader if the
+--- original material shader failed to compile. It needs to
+--- define both the surfaceShader() and displacementShader() terminals.
 ---
 -- configuration
 {
     "techniques": {
         "default": {
             "displacementShader": {
-                "source": [ "Fallback.Displacement" ]
+                "source": [ "Invalid.Displacement" ]
             },
             "surfaceShader": {
-                "source": [ "Fallback.Surface" ]
+                "source": [ "Invalid.Surface" ]
             }
         }
     }
 }
 
 --- --------------------------------------------------------------------------
--- glsl Fallback.Surface
+-- glsl Invalid.Surface
 
 vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
-    // lighting
-    color.rgb = FallbackLighting(Peye.xyz, Neye, color.rgb);
-    return color;
+    vec2 t = gl_FragCoord.xy;
+    float v = mod(round(t.x + t.y), 16.0);
+
+    const vec4 invalidColor = vec4(0.7, 0.3, 0.3, 1.0);
+    return mix(color, invalidColor, v);
+
+    // Alt look:
+    // Override the color to a bright red. Don't light it.
+    // return vec4(0.9, 0.0, 0.0, 1.0);
 }
 --- --------------------------------------------------------------------------
--- glsl Fallback.Displacement
+-- glsl Invalid.Displacement
 
 vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
 {

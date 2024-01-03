@@ -104,6 +104,13 @@ HdStPackageFallbackMaterialNetworkShader()
 }
 
 TfToken
+HdStPackageInvalidMaterialNetworkShader()
+{
+    static TfToken s = _GetShaderPath("invalidMaterialNetwork.glslfx");
+    return s;
+}
+
+TfToken
 HdStPackageFallbackVolumeShader()
 {
     static TfToken s = _GetShaderPath("fallbackVolume.glslfx");
