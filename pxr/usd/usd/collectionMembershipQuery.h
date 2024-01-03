@@ -29,8 +29,11 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/pathExpression.h"
+#include "pxr/usd/sdf/pathExpressionEval.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/primFlags.h"
+#include "pxr/usd/usd/collectionPredicateLibrary.h"
 
 #include <unordered_map>
 
@@ -49,6 +52,76 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdCollectionMembershipQuery
 {
 public:
+
+    /// \class ExpressionEvaluator
+    ///
+    /// \brief Evaluates SdfPathExpressions with objects from a given UsdStage.
+    class ExpressionEvaluator {
+        struct ObjToPath {
+            SdfPath operator()(UsdObject const &obj) const {
+                return obj.GetPath();
+            }
+        };
+        
+        struct PathToObj {
+            UsdObject operator()(SdfPath const &path) const {
+                return stage->GetObjectAtPath(path);
+            }
+            UsdStageWeakPtr stage;
+        };
+        
+    public:
+        using PathExprEval = SdfPathExpressionEval<UsdObject>;
+        using IncrementalSearcher =
+            typename PathExprEval::IncrementalSearcher<ObjToPath, PathToObj>;
+
+        /// Construct an empty evaluator.
+        ExpressionEvaluator() = default;
+
+        /// Construct an evaluator that evalutates \p expr on objects from \p
+        /// statge.  The \p expr must be "complete" (see
+        /// SdfPathExpression::IsComplete()).
+        ///
+        /// Typically these objects are not constructed directly, but instead
+        /// are created by UsdCollectionAPI::ComputeMembershipQuery() for
+        /// UsdCollectionMembershipQuery's use.  However it is possible to
+        /// construct them directly if one wishes.  Consider calling
+        /// UsdCollectionAPI::ResolveCompleteMembershipExpression() to produce
+        /// an approprate expression.
+        SDF_API
+        ExpressionEvaluator(UsdStageWeakPtr const &stage,
+                            SdfPathExpression const &expr);
+
+        /// Return true if this evaluator has an invalid stage or an empty
+        /// underlying SdfPathExpressionEval object.
+        bool IsEmpty() const {
+            return !_stage || _evaluator.IsEmpty();
+        }
+
+        /// Return the stage this object was constructed with, or nullptr if it
+        /// was default constructed.
+        UsdStageWeakPtr const &GetStage() const { return _stage; }
+
+        /// Return the result of evaluating the expression against \p object.
+        SDF_API
+        SdfPredicateFunctionResult
+        Match(UsdObject const &object) const;
+
+        /// Create an incremental searcher from this evaluator.  See
+        /// SdfPathExpressionEval::IncrementalSearcher for more info and API.
+        ///
+        /// The returned IncrementalSearcher refers to the evaluator object
+        /// owned by this UsdCollectionMembershipExpressionEval object.  This
+        /// means that the IncrementalSearcher must not be used after this
+        /// UsdCollectionMembershipExpressionEval object's lifetime ends.
+        SDF_API
+        IncrementalSearcher MakeIncrementalSearcher() const;
+        
+    private:
+        UsdStageWeakPtr _stage;
+        PathExprEval _evaluator;
+    };
+    
     /// Holds an unordered map describing membership of paths in this collection
     /// and the associated expansionRule for how the paths are to be expanded.
     /// Valid expansionRules are UsdTokens->explicitOnly,
@@ -77,6 +150,22 @@ public:
         PathExpansionRuleMap&& pathExpansionRuleMap,
         SdfPathSet&& includedCollections);
 
+    /// Constructor that additionally takes an additional expression evaluator
+    /// and a top-level expansion rule.
+    UsdCollectionMembershipQuery(
+        const PathExpansionRuleMap& pathExpansionRuleMap,
+        const SdfPathSet& includedCollections,
+        const ExpressionEvaluator &exprEval,
+        const TfToken &topExpansionRule);
+
+    /// Constructor that additionally takes an additional expression evaluator
+    /// as an rvalue reference and a top-level expansion rule.
+    UsdCollectionMembershipQuery(
+        PathExpansionRuleMap&& pathExpansionRuleMap,
+        SdfPathSet&& includedCollections,
+        ExpressionEvaluator &&exprEval,
+        TfToken const &topExpansionRule);
+    
     /// \overload
     /// Returns whether the given path is included in the collection from
     /// which this UsdCollectionMembershipQuery object was computed. This is the
@@ -122,16 +211,23 @@ public:
                         TfToken *expansionRule=nullptr) const;
 
     /// Returns true if the collection excludes one or more paths below an
-    /// included path.
+    /// included path via the excludes relationship (see
+    /// UsdCollectionAPI::GetExcludesRel()).
     bool HasExcludes() const {
         return _hasExcludes;
     }
-
+    
     /// Equality operator
     bool operator==(UsdCollectionMembershipQuery const& rhs) const {
-        return _hasExcludes == rhs._hasExcludes &&
-            _pathExpansionRuleMap == rhs._pathExpansionRuleMap &&
-            _includedCollections == rhs._includedCollections;
+        // Note that MembershipQuery objects that have non-empty _exprEval never
+        // compare equal to each other.  This is because the evaluator objects
+        // run code, and there's no good way to determine equivalence.
+        return _topExpansionRule == rhs._topExpansionRule &&
+        _hasExcludes == rhs._hasExcludes &&
+        _pathExpansionRuleMap == rhs._pathExpansionRuleMap &&
+        _includedCollections == rhs._includedCollections &&
+        _exprEval.IsEmpty() == rhs._exprEval.IsEmpty();
+        ;
     }
 
     /// Inequality operator
@@ -167,10 +263,36 @@ public:
         return _includedCollections;
     }
 
+    /// Return the expression evaluator associated with this query object.  This
+    /// may be an empty evaluator.  See HasExpression().
+    ExpressionEvaluator const &
+    GetExpressionEvaluator() const {
+        return _exprEval;
+    }
+
+    /// Return true if the expression evaluator associated with this query
+    /// object is not empty.  See GetExpressionEvaluator().
+    bool HasExpression() const {
+        return !_exprEval.IsEmpty();
+    }
+
+    /// Return the top expansion rule for this query object.  This rule is the
+    /// expansion rule from the UsdCollectionAPI instance that was used to build
+    /// this query object.  The top expansion rule is used when evaluating the
+    /// expression associated with this query, to determine whether it should
+    /// match prims only, or both prims and properties.
+    TfToken GetTopExpansionRule() const {
+        return _topExpansionRule;
+    }
+
 private:
+    TfToken _topExpansionRule;
+    
     PathExpansionRuleMap _pathExpansionRuleMap;
 
     SdfPathSet _includedCollections;
+
+    ExpressionEvaluator _exprEval;
 
     // A cached flag indicating whether _pathExpansionRuleMap contains
     // any exclude rules.

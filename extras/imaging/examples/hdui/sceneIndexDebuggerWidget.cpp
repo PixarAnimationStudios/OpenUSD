@@ -44,15 +44,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// XXX stevel: low-tech temporary symbol name demangling until we manage these
-// via a formal plug-in/type registry
-static
-std::string
-Hdui_StripNumericPrefix(const std::string &s)
-{
-    return TfStringTrimLeft(s, "0123456789");
-}
-
 HduiSceneIndexDebuggerWidget::HduiSceneIndexDebuggerWidget(QWidget *parent)
 : QWidget(parent)
 {
@@ -156,8 +147,7 @@ HduiSceneIndexDebuggerWidget::SetSceneIndex(const std::string &displayName,
     std::ostringstream buffer;
     if (sceneIndex) {
         buffer << "<b><i>(";
-        std::string typeName = typeid(*sceneIndex).name();
-        buffer << Hdui_StripNumericPrefix(typeName);
+        buffer << sceneIndex->GetDisplayName();
         buffer << ")</i></b> ";
     }
     buffer << displayName;
@@ -238,7 +228,8 @@ HduiSceneIndexDebuggerWidget::_AddSceneIndexToTreeMenu(
     if (includeSelf) {
         _InputSelectionItem *item = new _InputSelectionItem(parentItem);
         item->setText(0,
-            Hdui_StripNumericPrefix(typeid(*sceneIndex).name()).c_str());
+            sceneIndex->GetDisplayName().c_str());
+
         item->sceneIndex = sceneIndex;
         
         parentItem = item;

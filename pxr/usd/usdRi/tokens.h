@@ -66,10 +66,18 @@ struct UsdRiTokensType {
     /// 
     /// UsdSplineAPI - BSpline spline interpolation
     const TfToken bspline;
+    /// \brief "cameraVisibility"
+    /// 
+    ///  UsdRenderPassAPI - This token represents the collection  name to use with UsdCollectionAPI to set the camera visibility attribute on the prims in the collection for the RenderPass. 
+    const TfToken cameraVisibility;
     /// \brief "catmull-rom"
     /// 
     /// UsdSplineAPI - Catmull-Rom spline interpolation
     const TfToken catmullRom;
+    /// \brief "collection:cameraVisibility:includeRoot"
+    /// 
+    /// UsdRiRenderPassAPI
+    const TfToken collectionCameraVisibilityIncludeRoot;
     /// \brief "constant"
     /// 
     /// UsdSplineAPI - Constant-value spline interpolation
@@ -82,6 +90,10 @@ struct UsdRiTokensType {
     /// 
     /// UsdSplineAPI - Linear spline interpolation
     const TfToken linear;
+    /// \brief "matte"
+    /// 
+    ///  UsdRenderPassAPI - This token represents the collection  name to use with UsdCollectionAPI to set the matte attribute on the prims in the collection for the RenderPass. 
+    const TfToken matte;
     /// \brief "outputs:ri:displacement"
     /// 
     /// UsdRiMaterialAPI
@@ -110,6 +122,22 @@ struct UsdRiTokensType {
     /// 
     /// UsdSplineAPI - values attribute name
     const TfToken values;
+    /// \brief "RiMaterialAPI"
+    /// 
+    /// Schema identifer and family for UsdRiMaterialAPI
+    const TfToken RiMaterialAPI;
+    /// \brief "RiRenderPassAPI"
+    /// 
+    /// Schema identifer and family for UsdRiRenderPassAPI
+    const TfToken RiRenderPassAPI;
+    /// \brief "RiSplineAPI"
+    /// 
+    /// Schema identifer and family for UsdRiSplineAPI
+    const TfToken RiSplineAPI;
+    /// \brief "StatementsAPI"
+    /// 
+    /// Schema identifer and family for UsdRiStatementsAPI
+    const TfToken StatementsAPI;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

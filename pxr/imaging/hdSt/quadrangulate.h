@@ -25,11 +25,9 @@
 #define PXR_IMAGING_HD_ST_QUADRANGULATE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hdSt/computation.h"
+
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/computation.h"
-#include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/vt/array.h"
 #include "pxr/base/tf/token.h"
@@ -112,10 +110,10 @@ class HdSt_MeshTopology;
 class HdSt_QuadInfoBuilderComputation : public HdNullBufferSource {
 public:
     HdSt_QuadInfoBuilderComputation(HdSt_MeshTopology *topology, SdfPath const &id);
-    virtual bool Resolve() override;
+    bool Resolve() override;
 
 protected:
-    virtual bool _CheckValid() const override;
+    bool _CheckValid() const override;
 
 private:
     SdfPath const _id;
@@ -147,14 +145,14 @@ public:
         HdSt_MeshTopology *topology,
         HdSt_QuadInfoBuilderComputationSharedPtr const &quadInfoBuilder,
         SdfPath const &id);
-    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
-    virtual bool Resolve() override;
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    bool Resolve() override;
 
-    virtual bool HasChainedBuffer() const override;
-    virtual HdBufferSourceSharedPtrVector GetChainedBuffers() const override;
+    bool HasChainedBuffer() const override;
+    HdBufferSourceSharedPtrVector GetChainedBuffers() const override;
 
 protected:
-    virtual bool _CheckValid() const override;
+    bool _CheckValid() const override;
 
 private:
     SdfPath const _id;
@@ -173,11 +171,11 @@ public:
     HdSt_QuadrangulateTableComputation(
         HdSt_MeshTopology *topology,
         HdBufferSourceSharedPtr const &quadInfoBuilder);
-    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
-    virtual bool Resolve() override;
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    bool Resolve() override;
 
 protected:
-    virtual bool _CheckValid() const override;
+    bool _CheckValid() const override;
 
 private:
     SdfPath const _id;
@@ -195,16 +193,16 @@ public:
                                 HdBufferSourceSharedPtr const &source,
                                 HdBufferSourceSharedPtr const &quadInfoBuilder,
                                 SdfPath const &id);
-    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
-    virtual bool Resolve() override;
-    virtual HdTupleType GetTupleType() const override;
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    bool Resolve() override;
+    HdTupleType GetTupleType() const override;
 
-    virtual bool HasPreChainedBuffer() const override;
-    virtual HdBufferSourceSharedPtr GetPreChainedBuffer() const override;
+    bool HasPreChainedBuffer() const override;
+    HdBufferSourceSharedPtr GetPreChainedBuffer() const override;
 
 
 protected:
-    virtual bool _CheckValid() const override;
+    bool _CheckValid() const override;
 
 private:
     SdfPath const _id;
@@ -223,11 +221,11 @@ public:
                                            HdBufferSourceSharedPtr const &source,
                                            SdfPath const &id);
 
-    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
-    virtual bool Resolve() override;
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    bool Resolve() override;
 
 protected:
-    virtual bool _CheckValid() const override;
+    bool _CheckValid() const override;
 
 private:
     SdfPath const _id;
@@ -239,17 +237,17 @@ private:
 ///
 /// GPU quadrangulation.
 ///
-class HdSt_QuadrangulateComputationGPU : public HdComputation {
+class HdSt_QuadrangulateComputationGPU : public HdStComputation {
 public:
     /// This computaion doesn't generate buffer source (i.e. 2nd phase)
     HdSt_QuadrangulateComputationGPU(HdSt_MeshTopology *topology,
                                TfToken const &sourceName,
                                HdType dataType,
                                SdfPath const &id);
-    virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
-                         HdResourceRegistry *resourceRegistry) override;
-    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
-    virtual int GetNumOutputElements() const override;
+    void Execute(HdBufferArrayRangeSharedPtr const &range,
+                 HdResourceRegistry *resourceRegistry) override;
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    int GetNumOutputElements() const override;
 
 private:
     SdfPath const _id;

@@ -198,9 +198,9 @@ UsdAttribute::HasValue() const
 bool
 UsdAttribute::HasFallbackValue() const
 {
-    SdfAttributeSpecHandle attrDef =
-        _GetStage()->_GetSchemaAttributeSpec(*this);
-    return attrDef && attrDef->HasDefaultValue();
+    UsdPrimDefinition::Attribute attrDef =
+        _GetStage()->_GetSchemaAttribute(*this);
+    return attrDef && attrDef.GetFallbackValue<VtValue>(nullptr);
 }
 
 bool 

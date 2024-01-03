@@ -47,7 +47,7 @@ _Repr(const ArResolvedPath& p)
 }
 
 static bool
-_NonZero(const ArResolvedPath& p)
+_IsValid(const ArResolvedPath& p)
 {
     return static_cast<bool>(p);
 }
@@ -75,7 +75,7 @@ wrapResolvedPath()
         .def(self <= std::string())
         .def(self >= std::string())
 
-        .def(TfPyBoolBuiltinFuncName, _NonZero)
+        .def("__bool__", _IsValid)
         .def("__hash__", &This::GetHash)
         .def("__repr__", &_Repr)
         .def("__str__", &This::GetPathString,

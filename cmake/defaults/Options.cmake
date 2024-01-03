@@ -39,8 +39,8 @@ option(PXR_BUILD_DRACO_PLUGIN "Build the Draco plugin for USD" OFF)
 option(PXR_BUILD_PRMAN_PLUGIN "Build the PRMan imaging plugin" OFF)
 option(PXR_ENABLE_MATERIALX_SUPPORT "Enable MaterialX support" OFF)
 option(PXR_BUILD_DOCUMENTATION "Generate doxygen documentation" OFF)
+option(PXR_BUILD_PYTHON_DOCUMENTATION "Generate Python documentation" OFF)
 option(PXR_ENABLE_PYTHON_SUPPORT "Enable Python based components for USD" ON)
-option(PXR_USE_PYTHON_3 "Build Python bindings for Python 3" ON)
 option(PXR_USE_DEBUG_PYTHON "Build with debug python" OFF)
 option(PXR_ENABLE_HDF5_SUPPORT "Enable HDF5 backend in the Alembic plugin for USD" OFF)
 option(PXR_ENABLE_OSL_SUPPORT "Enable OSL (OpenShadingLanguage) based components" OFF)
@@ -197,4 +197,20 @@ endif()
 if (${PXR_BUILD_DRACO_PLUGIN} AND ${PXR_BUILD_MONOLITHIC} AND WIN32)
     message(FATAL_ERROR 
         "Draco plugin can not be enabled for monolithic builds on Windows")
+endif()
+
+# Make sure PXR_BUILD_DOCUMENTATION and PXR_ENABLE_PYTHON_SUPPORT are enabled 
+# if PXR_BUILD_PYTHON_DOCUMENTATION is enabled
+if (${PXR_BUILD_PYTHON_DOCUMENTATION})
+    if (NOT ${PXR_BUILD_DOCUMENTATION})
+        message(STATUS
+            "Setting PXR_BUILD_PYTHON_DOCUMENTATION=OFF because "
+            "PXR_BUILD_DOCUMENTATION=OFF")
+        set(PXR_BUILD_PYTHON_DOCUMENTATION "OFF" CACHE BOOL "" FORCE)
+    elseif (NOT ${PXR_ENABLE_PYTHON_SUPPORT})
+        message(STATUS
+            "Setting PXR_BUILD_PYTHON_DOCUMENTATION=OFF because "
+            "PXR_ENABLE_PYTHON_SUPPORT=OFF")
+        set(PXR_BUILD_PYTHON_DOCUMENTATION "OFF" CACHE BOOL "" FORCE)
+    endif()
 endif()

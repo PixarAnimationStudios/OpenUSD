@@ -41,6 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HDSELECTION_SCHEMA_TOKENS \
     (fullySelected) \
+    (nestedInstanceIndices) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdSelectionSchemaTokens, HD_API,
     HDSELECTION_SCHEMA_TOKENS);
@@ -58,6 +59,11 @@ public:
     HD_API
     HdBoolDataSourceHandle GetFullySelected();
 
+    // Starting with the outer most, list for each nesting level of
+    // instancing what instances are selected.
+    HD_API
+    HdInstanceIndicesVectorSchema GetNestedInstanceIndices();
+
     // RETRIEVING AND CONSTRUCTING
 
     /// Builds a container data source which includes the provided child data
@@ -68,7 +74,8 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdBoolDataSourceHandle &fullySelected
+        const HdBoolDataSourceHandle &fullySelected,
+        const HdVectorDataSourceHandle &nestedInstanceIndices
     );
 
     /// \class HdSelectionSchema::Builder
@@ -83,6 +90,9 @@ public:
         HD_API
         Builder &SetFullySelected(
             const HdBoolDataSourceHandle &fullySelected);
+        HD_API
+        Builder &SetNestedInstanceIndices(
+            const HdVectorDataSourceHandle &nestedInstanceIndices);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -90,6 +100,7 @@ public:
 
     private:
         HdBoolDataSourceHandle _fullySelected;
+        HdVectorDataSourceHandle _nestedInstanceIndices;
     };
 
 };

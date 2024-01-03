@@ -15,6 +15,10 @@ class "AbstractTest" (
         doc = "Testing documentation metadata"
         hidden = true
         testCustomMetadata = "garply"
+        testDictionaryMetadata = {
+            string name = "bar"
+            int value = 3
+        }
     )
 }
 
@@ -22,6 +26,10 @@ class MetadataTest "MetadataTest" (
     doc = "Testing documentation metadata"
     hidden = true
     testCustomMetadata = "garply"
+    testDictionaryMetadata = {
+        string name = "foo"
+        int value = 2
+    }
 )
 {
     string testAttr = "foo" (
@@ -31,6 +39,10 @@ class MetadataTest "MetadataTest" (
         doc = "Testing documentation metadata"
         hidden = true
         testCustomMetadata = "garply"
+        testDictionaryMetadata = {
+            string name = "bar"
+            int value = 3
+        }
     )
     rel testRel (
         displayGroup = "Display Group"
@@ -38,6 +50,10 @@ class MetadataTest "MetadataTest" (
         doc = "Testing documentation metadata"
         hidden = true
         testCustomMetadata = "garply"
+        testDictionaryMetadata = {
+            string name = "baz"
+            int value = 5
+        }
     )
 }
 

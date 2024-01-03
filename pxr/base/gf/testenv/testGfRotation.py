@@ -113,6 +113,13 @@ class TestGfRotation(unittest.TestCase):
         self.assertTrue(len(str(r)))
 
     def test_Operators(self):
+
+        def AssertRotationIsClose(rot1, rot2, epsilon=1e-15):
+            axis1 = rot1.GetAxis()
+            axis2 = rot2.GetAxis()
+            self.assertTrue(Gf.IsClose(axis1, axis2, epsilon))
+            self.assertAlmostEqual(rot1.GetAngle(), rot2.GetAngle())
+
         r1 = Gf.Rotation(Gf.Vec3d(1,1,1), 30)
         r2 = Gf.Rotation(Gf.Vec3d(1,1,1), 30)
         r3 = Gf.Rotation(Gf.Vec3d(1,0,0), 60)
@@ -165,7 +172,7 @@ class TestGfRotation(unittest.TestCase):
 
         # check for associativity
         r6 = Gf.Rotation(Gf.Vec3d(0,0,1), 45)
-        self.assertEqual((r1*r2)*r6, r1*(r2*r6))
+        AssertRotationIsClose((r1*r2)*r6, r1*(r2*r6))
 
         # Test that setting via a quaternion gives a valid repr.
         m = Gf.Matrix4d().SetRotate(Gf.Rotation(Gf.Vec3d(1,1,1), 30))
@@ -204,6 +211,11 @@ class TestGfRotation(unittest.TestCase):
         rot = Gf.Rotation.RotateOntoProjected(v1, v2, axis)
         self.assertTrue(Gf.IsClose(rot.angle, -1.91983, 0.00001))
         self.assertEqual(rot.axis, axis.GetNormalized())
+
+    def test_Hash(self):
+        rot = Gf.Rotation(Gf.Vec3d(1.0, 0.0, 0.0), 40.0)
+        self.assertEqual(hash(rot), hash(rot))
+        self.assertEqual(hash(rot), hash(Gf.Rotation(rot)))
 
 if __name__ == '__main__':
     unittest.main()

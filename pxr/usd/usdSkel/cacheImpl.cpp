@@ -190,17 +190,6 @@ _MakeIndent(size_t count, int indentSize=2)
     return std::string(count*indentSize, ' ');
 }
 
-void
-_DeprecatedBindingCheck(bool hasBindingAPI, const UsdProperty& prop)
-{
-    if (!hasBindingAPI) {
-        TF_WARN("Found binding property <%s>, but the SkelBindingAPI was not "
-                "applied on the owning prim. In the future, binding properties "
-                "will be ignored unless the SkelBindingAPI is applied "
-                "(see UsdSkelBindingAPI::Apply)", prop.GetPath().GetText());
-    }
-}
-
 /// If \p attr is an attribute on an instance proxy, return the attr on the
 /// instance prototype. Otherwise return the original attr.
 UsdAttribute
@@ -265,84 +254,73 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root,
             it.PruneChildren();
             continue;
         }
-
-        // XXX: For backwards-compatibility, must potentially look for
-        // UsdSkelBindingAPI properties, even if the API schema was not
-        // applied to the prim.
-        
-        const bool hasBindingAPI = it->HasAPI<UsdSkelBindingAPI>();
         
         _SkinningQueryKey key(stack.back().first);
-
-        const UsdSkelBindingAPI binding(*it);
-
-        UsdSkelSkeleton skel;
-        if (binding.GetSkeleton(&skel)) {
-            key.skel = skel.GetPrim();
-        }
 
         // XXX: When looking for binding properties, only include
         // properties that have an authored value. Properties with
         // no authored value are treated as if they do not exist.
-
-        if (UsdAttribute attr = _GetAttrInPrototype(
-                binding.GetJointIndicesAttr())) {
-            if (attr.HasAuthoredValue()) {
-                _DeprecatedBindingCheck(hasBindingAPI, attr);
-                key.jointIndicesAttr = std::move(attr);
-            }
-        }
-
-        if (UsdAttribute attr = _GetAttrInPrototype(
-                binding.GetJointWeightsAttr())) {
-            if (attr.HasAuthoredValue()) {
-                _DeprecatedBindingCheck(hasBindingAPI, attr);
-                key.jointWeightsAttr = std::move(attr);
-            }
-        }
-
-        if (UsdAttribute attr = binding.GetSkinningMethodAttr()) {
-            if (attr.HasAuthoredValue()) {
-                _DeprecatedBindingCheck(hasBindingAPI, attr);
-                key.skinningMethodAttr = std::move(attr);
-            }
-        }
-
-        if (UsdAttribute attr = _GetAttrInPrototype(
-                binding.GetGeomBindTransformAttr())) {
-            if (attr.HasAuthoredValue()) {
-                _DeprecatedBindingCheck(hasBindingAPI, attr);
-                key.geomBindTransformAttr = std::move(attr);
-            }
-        }
-
-        if (UsdAttribute attr = _GetAttrInPrototype(
-                binding.GetJointsAttr())) {
-            if (attr.HasAuthoredValue()) {
-                _DeprecatedBindingCheck(hasBindingAPI, attr);
-                key.jointsAttr = std::move(attr);
-            }
-        }
-
+        const bool hasSkelBindingAPI = it->HasAPI<UsdSkelBindingAPI>();
         const bool isSkinnable = UsdSkelIsSkinnablePrim(*it);
+        
+        if (hasSkelBindingAPI) {
+            const UsdSkelBindingAPI binding(*it);
 
-        // Unlike other binding properties above, skel:blendShapes and
-        // skel:blendShapeTargets are *not* inherited, so we only check
-        // for them on skinnable prims.
-        if (isSkinnable) {
+            UsdSkelSkeleton skel;
+            if (binding.GetSkeleton(&skel)) {
+                key.skel = skel.GetPrim();
+            }
+
             if (UsdAttribute attr = _GetAttrInPrototype(
-                    binding.GetBlendShapesAttr())) {
+                    binding.GetJointIndicesAttr())) {
                 if (attr.HasAuthoredValue()) {
-                    _DeprecatedBindingCheck(hasBindingAPI, attr);
-                    key.blendShapesAttr = std::move(attr);
+                    key.jointIndicesAttr = std::move(attr);
                 }
             }
 
-            if (UsdRelationship rel = _GetRelInPrototype(
-                    binding.GetBlendShapeTargetsRel())) {
-                if (rel.HasAuthoredTargets()) {
-                    _DeprecatedBindingCheck(hasBindingAPI, rel);
-                    key.blendShapeTargetsRel = std::move(rel);
+            if (UsdAttribute attr = _GetAttrInPrototype(
+                    binding.GetJointWeightsAttr())) {
+                if (attr.HasAuthoredValue()) {
+                    key.jointWeightsAttr = std::move(attr);
+                }
+            }
+
+            if (UsdAttribute attr = binding.GetSkinningMethodAttr()) {
+                if (attr.HasAuthoredValue()) {
+                    key.skinningMethodAttr = std::move(attr);
+                }
+            }
+
+            if (UsdAttribute attr = _GetAttrInPrototype(
+                    binding.GetGeomBindTransformAttr())) {
+                if (attr.HasAuthoredValue()) {
+                    key.geomBindTransformAttr = std::move(attr);
+                }
+            }
+
+            if (UsdAttribute attr = _GetAttrInPrototype(
+                    binding.GetJointsAttr())) {
+                if (attr.HasAuthoredValue()) {
+                    key.jointsAttr = std::move(attr);
+                }
+            }
+
+            // Unlike other binding properties above, skel:blendShapes and
+            // skel:blendShapeTargets are *not* inherited, so we only check
+            // for them on skinnable prims.
+            if (isSkinnable) {
+                if (UsdAttribute attr = _GetAttrInPrototype(
+                        binding.GetBlendShapesAttr())) {
+                    if (attr.HasAuthoredValue()) {
+                        key.blendShapesAttr = std::move(attr);
+                    }
+                }
+
+                if (UsdRelationship rel = _GetRelInPrototype(
+                        binding.GetBlendShapeTargetsRel())) {
+                    if (rel.HasAuthoredTargets()) {
+                        key.blendShapeTargetsRel = std::move(rel);
+                    }
                 }
             }
         }

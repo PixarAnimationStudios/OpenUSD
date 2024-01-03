@@ -96,40 +96,8 @@ object _GetPendingNotices(UsdviewqHydraObserver &self)
 }
 
 static
-bool
-_WrapLocatorSetIntersectsLocator(HdDataSourceLocatorSet &self,
-    const HdDataSourceLocator &loc)
-{
-    return self.Intersects(loc);
-}
-
-static
-bool
-_WrapLocatorSetIntersectsLocatorSet(HdDataSourceLocatorSet &self,
-    const HdDataSourceLocatorSet &locSet)
-{
-    return self.Intersects(locSet);
-}
-
-static
-void
-_WrapLocatorSetInsertLocator(HdDataSourceLocatorSet &self,
-    const HdDataSourceLocator &loc)
-{
-    self.insert(loc);
-}
-
-static
-void
-_WrapLocatorSetInsertLocatorSet(HdDataSourceLocatorSet &self,
-    const HdDataSourceLocatorSet &locSet)
-{
-    self.insert(locSet);
-}
-
-static
 std::string
-_WrapLocatorSetAsString(HdDataSourceLocatorSet &self)
+_WrapLocatorSetAsString(const HdDataSourceLocatorSet &self)
 {
     std::ostringstream buffer;
     for (const HdDataSourceLocator &locator : self) {
@@ -141,7 +109,7 @@ _WrapLocatorSetAsString(HdDataSourceLocatorSet &self)
 
 static
 list
-_WrapContainerDataSourceGetNames(HdContainerDataSourceHandle &self)
+_WrapContainerDataSourceGetNames(const HdContainerDataSourceHandle &self)
 {
     list result;
 
@@ -179,7 +147,8 @@ _CastDataSource(const HdDataSourceBaseHandle &ds)
 
 static
 object
-_WrapContainerDataSourceGet(HdContainerDataSourceHandle &self,
+_WrapContainerDataSourceGet(
+    const HdContainerDataSourceHandle &self,
     const TfToken &name)
 {
     if (!self) {
@@ -192,7 +161,8 @@ _WrapContainerDataSourceGet(HdContainerDataSourceHandle &self,
 
 static
 object
-_WrapContainerDataSourceGetGetFromLocator(HdContainerDataSourceHandle &self,
+_WrapContainerDataSourceGetGetFromLocator(
+    const HdContainerDataSourceHandle &self,
     const HdDataSourceLocator &loc)
 {
 
@@ -201,7 +171,7 @@ _WrapContainerDataSourceGetGetFromLocator(HdContainerDataSourceHandle &self,
 }
 
 size_t
-_WrapVectorDataSourceGetNumElements(HdVectorDataSourceHandle &self)
+_WrapVectorDataSourceGetNumElements(const HdVectorDataSourceHandle &self)
 {
     if (!self) {
         return 0;
@@ -212,7 +182,7 @@ _WrapVectorDataSourceGetNumElements(HdVectorDataSourceHandle &self)
 
 static
 object
-_WrapVectorDataSourceGetElement(HdVectorDataSourceHandle &self, size_t i)
+_WrapVectorDataSourceGetElement(const HdVectorDataSourceHandle &self, size_t i)
 {
     if (!self) {
         return object();
@@ -223,7 +193,7 @@ _WrapVectorDataSourceGetElement(HdVectorDataSourceHandle &self, size_t i)
 
 static
 object
-_WrapSampledDataSourceGetValue(HdSampledDataSourceHandle &self,
+_WrapSampledDataSourceGetValue(const HdSampledDataSourceHandle &self,
     HdSampledDataSource::Time shutterOffset)
 {
     if (!self) {
@@ -249,8 +219,8 @@ _WrapSampledDataSourceGetValue(HdSampledDataSourceHandle &self,
 }
 
 static
-const char *
-_WrapSampledDataSourceGetTypeString(HdSampledDataSourceHandle &self)
+std::string
+_WrapSampledDataSourceGetTypeString(const HdSampledDataSourceHandle &self)
 {
     if (!self) {
         return "";
@@ -261,12 +231,12 @@ _WrapSampledDataSourceGetTypeString(HdSampledDataSourceHandle &self)
         return "";
     }
 
-    return v.GetTypeName().c_str();
+    return v.GetTypeName();
 }
 
 static
 TfToken
-_WrapLocatorGetElement(HdDataSourceLocator &self, size_t i)
+_WrapLocatorGetElement(const HdDataSourceLocator &self, size_t i)
 {
     if (i >= self.GetElementCount()) {
         return TfToken();
@@ -276,7 +246,7 @@ _WrapLocatorGetElement(HdDataSourceLocator &self, size_t i)
 
 static
 TfToken
-_WrapLocatorGetFirstElement(HdDataSourceLocator &self)
+_WrapLocatorGetFirstElement(const HdDataSourceLocator &self)
 {
     if (self.GetElementCount() == 0) {
         return TfToken();
@@ -286,7 +256,7 @@ _WrapLocatorGetFirstElement(HdDataSourceLocator &self)
 
 static
 TfToken
-_WrapLocatorGetLastElement(HdDataSourceLocator &self)
+_WrapLocatorGetLastElement(const HdDataSourceLocator &self)
 {
     if (self.GetElementCount() == 0) {
         return TfToken();
@@ -295,116 +265,138 @@ _WrapLocatorGetLastElement(HdDataSourceLocator &self)
 }
 
 static
-HdDataSourceLocator
-_WrapLocatorAppendToken(HdDataSourceLocator &self, const TfToken &name)
+std::string
+_WrapHdDataSourceLocatorStr(const HdDataSourceLocator &self)
 {
-    return self.Append(name);
+    std::ostringstream buffer;
+    buffer << self;
+    return buffer.str();
 }
 
 static
-HdDataSourceLocator
-_WrapLocatorAppendLocator(HdDataSourceLocator &self,
-    const HdDataSourceLocator &loc)
+std::string
+_WrapHdDataSourceLocatorSetStr(const HdDataSourceLocatorSet &self)
 {
-    return self.Append(loc);
+    std::ostringstream buffer;
+    buffer << self;
+    return buffer.str();
 }
 
 void wrapHydraObserver()
 {
-    typedef UsdviewqHydraObserver This;
+    {
+        using This = UsdviewqHydraObserver;
 
-    class_<This> ("HydraObserver", init<>())
-        .def("GetRegisteredSceneIndexNames",
-                &This::GetRegisteredSceneIndexNames)
+        class_<This> ("HydraObserver", init<>())
+            .def("GetRegisteredSceneIndexNames",
+                 &This::GetRegisteredSceneIndexNames)
             .staticmethod("GetRegisteredSceneIndexNames")
 
-        .def("TargetToNamedSceneIndex", &This::TargetToNamedSceneIndex)
-        .def("TargetToInputSceneIndex", &This::TargetToInputSceneIndex)
+            .def("TargetToNamedSceneIndex", &This::TargetToNamedSceneIndex)
+            .def("TargetToInputSceneIndex", &This::TargetToInputSceneIndex)
 
-        .def("GetDisplayName",
-                &This::GetDisplayName)
+            .def("GetDisplayName", &This::GetDisplayName)
 
-        .def("GetInputDisplayNames",
-                &This::GetInputDisplayNames)
+            .def("GetInputDisplayNames", &This::GetInputDisplayNames)
 
-        .def("GetChildPrimPaths",
-                &This::GetChildPrimPaths)
-        .def("GetPrim",
-                &_WrapGetPrim)
+            .def("GetChildPrimPaths", &This::GetChildPrimPaths)
+            .def("GetPrim", &_WrapGetPrim)
 
-        .def("HasPendingNotices", &This::HasPendingNotices)
-        .def("GetPendingNotices", &_GetPendingNotices)
-        .def("ClearPendingNotices", &This::ClearPendingNotices)
-    ;
+            .def("HasPendingNotices", &This::HasPendingNotices)
+            .def("GetPendingNotices", &_GetPendingNotices)
+            .def("ClearPendingNotices", &This::ClearPendingNotices)
+            ;
+    }
 
-    typedef HdDataSourceLocator Loc;
+    {
+        using This = HdDataSourceLocator;
 
-    class_<Loc> ("DataSourceLocator", init<>())
-        .def( init<const TfToken &>() )
-        .def( init<const TfToken &, const TfToken &>() )
-        .def( init<const TfToken &, const TfToken &, const TfToken &>() )
-        .def( init<const TfToken &, const TfToken &, const TfToken &,
-            const TfToken &>())
-        .def( init<const TfToken &, const TfToken &, const TfToken &,
-            const TfToken &, const TfToken &>())
-        .def( init<const TfToken &, const TfToken &, const TfToken &,
-            const TfToken &, const TfToken &, const TfToken &>())
-        .def("IsEmpty", &Loc::IsEmpty)
-        .def("GetElementCount", &Loc::GetElementCount)
-        .def("GetElement", &_WrapLocatorGetElement)
-        .def("GetFirstElement", &_WrapLocatorGetFirstElement)
-        .def("GetLastElement", &_WrapLocatorGetLastElement)
-        .def("ReplaceLastElement", &Loc::ReplaceLastElement)
-        .def("RemoveLastElement", &Loc::RemoveLastElement)
-        .def("RemoveFirstElement", &Loc::RemoveFirstElement)
-        .def("Append", &_WrapLocatorAppendToken)
-        .def("Append", &_WrapLocatorAppendLocator)
-        .def("HasPrefix", &Loc::HasPrefix)
-        .def("GetCommonPrefix", &Loc::GetCommonPrefix)
-        .def("ReplacePrefix", &Loc::ReplacePrefix)
-        .def("Intersects", &Loc::Intersects)
-        .def("GetString", &Loc::GetString)
-        
-        .def(self == self)
-        .def(self != self)
-        .def("__hash__", &Loc::Hash)
+        using Sig1 = This(This::*)(const TfToken &) const;
+        using Sig2 = This(This::*)(const This &) const; 
 
-        // TODO, further methods not needed for browser case
-    ;
+        class_<This> ("DataSourceLocator", init<>())
+            .def( init<const TfToken &>() )
+            .def( init<const TfToken &, const TfToken &>() )
+            .def( init<const TfToken &, const TfToken &, const TfToken &>() )
+            .def( init<const TfToken &, const TfToken &, const TfToken &,
+                  const TfToken &>())
+            .def( init<const TfToken &, const TfToken &, const TfToken &,
+                  const TfToken &, const TfToken &>())
+            .def( init<const TfToken &, const TfToken &, const TfToken &,
+                  const TfToken &, const TfToken &, const TfToken &>())
+            .def("IsEmpty", &This::IsEmpty)
+            .def("GetElementCount", &This::GetElementCount)
+            .def("GetElement", &_WrapLocatorGetElement)
+            .def("GetFirstElement", &_WrapLocatorGetFirstElement)
+            .def("GetLastElement", &_WrapLocatorGetLastElement)
+            .def("ReplaceLastElement", &This::ReplaceLastElement)
+            .def("RemoveLastElement", &This::RemoveLastElement)
+            .def("RemoveFirstElement", &This::RemoveFirstElement)
+            .def("Append", (Sig1)&This::Append)
+            .def("Append", (Sig2)&This::Append)
+            .def("HasPrefix", &This::HasPrefix)
+            .def("GetCommonPrefix", &This::GetCommonPrefix)
+            .def("ReplacePrefix", &This::ReplacePrefix)
+            .def("Intersects", &This::Intersects)
+            .def("GetString", &This::GetString)
+            
+            .def(self == self)
+            .def(self != self)
+            .def("__hash__", &This::Hash)
+            .def("__str__", &_WrapHdDataSourceLocatorStr)
+            // TODO, further methods not needed for browser case
+            ;
+    }
 
-    typedef HdDataSourceLocatorSet LocSet;
-    class_<LocSet> ("DataSourceLocatorSet", init<>())
-        .def("Intersects", &_WrapLocatorSetIntersectsLocator)
-        .def("Intersects", &_WrapLocatorSetIntersectsLocatorSet)
-        .def("IsEmpty", &LocSet::IsEmpty)
-        .def("Contains", &LocSet::Contains)
-        .def("insert", &_WrapLocatorSetInsertLocator)
-        .def("insert", &_WrapLocatorSetInsertLocatorSet)
-        .def("AsString", &_WrapLocatorSetAsString)
-        
-        // TODO, further methods not needed for browser case
-    ;
+    {
+        using This = HdDataSourceLocatorSet;
 
-    typedef HdDataSourceBaseHandle Ds;
-    class_<Ds> ("DataSourceBase", no_init)
-    ;
+        using Sig1 = bool(This::*)(const HdDataSourceLocator &) const;
+        using Sig2 = bool(This::*)(const This &) const;
+        using Sig3 = void(This::*)(const HdDataSourceLocator &);
+        using Sig4 = void(This::*)(const This &);
 
-    typedef HdContainerDataSourceHandle Cds;
-    class_<Cds> ("ContainerDataSource", no_init)
-        .def("GetNames", &_WrapContainerDataSourceGetNames)
-        .def("Get", &_WrapContainerDataSourceGet)
-        .def("Get", &_WrapContainerDataSourceGetGetFromLocator)
-    ;
+        class_<This> ("DataSourceLocatorSet", init<>())
+            .def("Intersects", (Sig1)&This::Intersects)
+            .def("Intersects", (Sig2)&This::Intersects)
+            .def("IsEmpty", &This::IsEmpty)
+            .def("Contains", &This::Contains)
+            .def("insert", (Sig3)&This::insert)
+            .def("insert", (Sig4)&This::insert)
+            .def("AsString", &_WrapLocatorSetAsString)
+            .def("__str__", &_WrapHdDataSourceLocatorSetStr)
+            // TODO, further methods not needed for browser case
+            ;
+    }
 
-    typedef HdVectorDataSourceHandle Vds;
-    class_<Vds> ("VectorDataSource", no_init)
-        .def("GetNumElements", &_WrapVectorDataSourceGetNumElements)
-        .def("GetElement", &_WrapVectorDataSourceGetElement)
-    ;
+    {
+        using ThisHandle = HdDataSourceBaseHandle;
+        class_<ThisHandle> ("DataSourceBase", no_init)
+            ;
+    }
 
-    typedef HdSampledDataSourceHandle Sds;
-    class_<Sds> ("SampledDataSource", no_init)
-        .def("GetValue", &_WrapSampledDataSourceGetValue)
-        .def("GetTypeString", &_WrapSampledDataSourceGetTypeString)
-    ;
+    {
+        using ThisHandle = HdContainerDataSourceHandle;
+        class_<ThisHandle> ("ContainerDataSource", no_init)
+            .def("GetNames", &_WrapContainerDataSourceGetNames)
+            .def("Get", &_WrapContainerDataSourceGet)
+            .def("Get", &_WrapContainerDataSourceGetGetFromLocator)
+            ;
+    }
+
+    {
+        using ThisHandle = HdVectorDataSourceHandle;
+        class_<ThisHandle> ("VectorDataSource", no_init)
+            .def("GetNumElements", &_WrapVectorDataSourceGetNumElements)
+            .def("GetElement", &_WrapVectorDataSourceGetElement)
+            ;
+    }
+
+    {
+        using ThisHandle = HdSampledDataSourceHandle;
+        class_<ThisHandle> ("SampledDataSource", no_init)
+            .def("GetValue", &_WrapSampledDataSourceGetValue)
+            .def("GetTypeString", &_WrapSampledDataSourceGetTypeString)
+            ;
+    }
 }

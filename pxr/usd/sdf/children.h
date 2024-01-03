@@ -29,7 +29,6 @@
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 
-#include <boost/iterator/iterator_facade.hpp>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE

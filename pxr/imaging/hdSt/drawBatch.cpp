@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/hdSt/binding.h"
 #include "pxr/imaging/hdSt/codeGen.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
@@ -34,7 +35,6 @@
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
-#include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -43,9 +43,60 @@
 
 #include "pxr/base/tf/getenv.h"
 
+#include <boost/functional/hash.hpp>
+
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+namespace
+{
+const std::string&
+_GetPrimPathSubstringForDebugLogging()
+{
+    // To aid debugging of shader programs and caching behavior in Storm,
+    // use the env var HDST_DEBUG_SHADER_PROGRAM_FOR_PRIM to provide a prim path
+    // substring to limit logging of drawing (i.e. non-compute) shader program 
+    // caching behavior to just those draw batches with draw items for prims
+    // matching the substring.
+    //
+    static const std::string substring =
+        TfGetenv("HDST_DEBUG_SHADER_PROGRAM_FOR_PRIM");
+    return substring;
+}
+
+bool
+_LogShaderCacheLookupForDrawBatch(
+    std::vector<HdStDrawItemInstance const*> const &_drawItemInstances)
+{
+    const std::string &substring = _GetPrimPathSubstringForDebugLogging();
+    if (substring.empty()) {
+        return true; // log all batches.
+    }
+
+    for (auto const &drawItemInstance : _drawItemInstances) {
+        HdStDrawItem const *drawItem = drawItemInstance->GetDrawItem();
+        if (TF_VERIFY(drawItem)) {
+            if (drawItem->GetRprimID().GetString().find(substring)
+                    != std::string::npos) {
+                
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool
+_LogShaderCacheLookup()
+{
+    return TfDebug::IsEnabled(HDST_LOG_DRAWING_SHADER_PROGRAM_MISSES) ||
+           TfDebug::IsEnabled(HDST_LOG_DRAWING_SHADER_PROGRAM_HITS);
+}
+
+}
 
 
 HdSt_DrawBatch::HdSt_DrawBatch(HdStDrawItemInstance * drawItemInstance)
@@ -269,9 +320,14 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
         
         _program.SetMaterialNetworkShader(materialNetworkShader);
 
+        const bool logCacheLookup =
+            _LogShaderCacheLookup() &&
+            _LogShaderCacheLookupForDrawBatch(_drawItemInstances);
+
         // Try to compile the shader and if it fails to compile we go back
         // to use the specified fallback material network shader.
-        if (!_program.CompileShader(firstDrawItem, resourceRegistry)){
+        if (!_program.CompileShader(
+                firstDrawItem, resourceRegistry, logCacheLookup)){
 
             // While the code should gracefully handle shader compilation
             // failures, it is also undesirable for shaders to silently fail.
@@ -292,7 +348,8 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
                 _GetFallbackMaterialNetworkShader());
 
             bool res = _program.CompileShader(firstDrawItem, 
-                                              resourceRegistry);
+                                              resourceRegistry,
+                                              logCacheLookup);
             // We expect the fallback shader to always compile.
             TF_VERIFY(res, "Failed to compile with fallback material network");
         }
@@ -312,7 +369,8 @@ HdSt_DrawBatch::_DrawingProgram::IsValid() const
 bool
 HdSt_DrawBatch::_DrawingProgram::CompileShader(
         HdStDrawItem const *drawItem,
-        HdStResourceRegistrySharedPtr const &resourceRegistry)
+        HdStResourceRegistrySharedPtr const &resourceRegistry,
+        bool logCacheLookup /* = false */)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -323,7 +381,7 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
     }
 
     // determine binding points and populate metaData
-    HdBindingRequestVector customBindings;
+    HdStBindingRequestVector customBindings;
     bool instanceDraw = true;
     _GetCustomBindings(&customBindings, &instanceDraw);
 
@@ -355,11 +413,30 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
                                 resourceRegistry->RegisterGLSLProgram(hash);
 
         if (programInstance.IsFirstInstance()) {
+
+            if (TfDebug::IsEnabled(HDST_LOG_DRAWING_SHADER_PROGRAM_MISSES) &&
+                logCacheLookup) {
+
+                TfDebug::Helper().Msg(
+                    "(MISS) First program instance for batch with head draw "
+                    "item %s (hash = %zu)\n",
+                    drawItem->GetRprimID().GetText(), hash);
+            }
+
             HdStGLSLProgramSharedPtr glslProgram = codeGen.Compile(
                 resourceRegistry.get());
             if (glslProgram && _Link(glslProgram)) {
                 // store the program into the program registry.
                 programInstance.SetValue(glslProgram);
+            }
+        } else {
+            if (TfDebug::IsEnabled(HDST_LOG_DRAWING_SHADER_PROGRAM_HITS) &&
+                logCacheLookup) {
+            
+                TfDebug::Helper().Msg(
+                    "(HIT) Found program instance with hash = %zu for batch "
+                    "with head draw item %s\n",
+                    hash, drawItem->GetRprimID().GetText());
             }
         }
 
@@ -376,7 +453,7 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
 /* virtual */
 void
 HdSt_DrawBatch::_DrawingProgram::_GetCustomBindings(
-    HdBindingRequestVector *customBindings,
+    HdStBindingRequestVector *customBindings,
     bool *enableInstanceDraw) const
 {
     if (!TF_VERIFY(enableInstanceDraw)) return;

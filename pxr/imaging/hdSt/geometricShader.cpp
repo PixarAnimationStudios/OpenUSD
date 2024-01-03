@@ -24,10 +24,10 @@
 
 #include "pxr/imaging/hdSt/geometricShader.h"
 
+#include "pxr/imaging/hdSt/binding.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/shaderKey.h"
 
-#include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hio/glslfx.h"
@@ -101,6 +101,66 @@ HdSt_GeometricShader::_GetGlslfx() const
     return _glslfx.get();
 }
 
+// Note: The geometric shader may override the state if necessary, including
+// disabling h/w culling altogether.  This is required to handle instancing
+// since instanceScale / instanceTransform can flip the xform handedness.
+HgiCullMode
+HdSt_GeometricShader::ResolveCullMode(
+    HdCullStyle const renderStateCullStyle) const
+{
+    if (!_useHardwareFaceCulling) {
+        // Use fragment shader culling via discard.
+        return HgiCullModeNone;
+    }
+
+    // If the Rprim has an opinion, that wins, else use the render state style.
+    HdCullStyle const resolvedCullStyle =
+        _cullStyle == HdCullStyleDontCare ? renderStateCullStyle : _cullStyle;
+
+    HgiCullMode resolvedCullMode = HgiCullModeNone;
+
+    switch (resolvedCullStyle) {
+        case HdCullStyleFront:
+            if (_hasMirroredTransform) {
+                resolvedCullMode = HgiCullModeBack;
+            } else {
+                resolvedCullMode = HgiCullModeFront;
+            }
+            break;
+        case HdCullStyleFrontUnlessDoubleSided:
+            if (!_doubleSided) {
+                if (_hasMirroredTransform) {
+                    resolvedCullMode = HgiCullModeBack;
+                } else {
+                    resolvedCullMode = HgiCullModeFront;
+                }
+            }
+            break;
+        case HdCullStyleBack:
+            if (_hasMirroredTransform) {
+                resolvedCullMode = HgiCullModeFront;
+            } else {
+                resolvedCullMode = HgiCullModeBack;
+            }
+            break;
+        case HdCullStyleBackUnlessDoubleSided:
+            if (!_doubleSided) {
+                if (_hasMirroredTransform) {
+                    resolvedCullMode = HgiCullModeFront;
+                } else {
+                    resolvedCullMode = HgiCullModeBack;
+                }
+            }
+            break;
+        case HdCullStyleNothing:
+        default:
+            resolvedCullMode = HgiCullModeNone;
+            break;
+    }
+
+    return resolvedCullMode;
+}
+
 /* virtual */
 HdStShaderCode::ID
 HdSt_GeometricShader::ComputeHash() const
@@ -131,7 +191,7 @@ HdSt_GeometricShader::UnbindResources(const int program,
 
 /*virtual*/
 void
-HdSt_GeometricShader::AddBindings(HdBindingRequestVector *customBindings)
+HdSt_GeometricShader::AddBindings(HdStBindingRequestVector *customBindings)
 {
     // no-op
 }

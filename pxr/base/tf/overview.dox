@@ -74,7 +74,6 @@
 \page tf_page_front Tf: Tools Foundations
 \if ( PIXAR_MFB_BUILD )
 \mainpage Tf : Tools Foundations
-\publicLib
 \endif
 
 \anchor mainpage_tf

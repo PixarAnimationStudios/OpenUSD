@@ -98,6 +98,9 @@ public:
         /// size of the file as stored in the zip archive.
         size_t uncompressedSize = 0;
 
+        /// CRC-32 value of the uncompressed file.
+        size_t crc = 0;
+
         /// Compression method for this file. See section 4.4.5 of the zip
         /// file specification for valid values. In particular, a value of 0
         /// means this file is stored with no compression.

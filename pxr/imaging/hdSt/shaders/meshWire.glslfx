@@ -44,18 +44,7 @@ vec3 GetPrimitiveEdgeMask()
 {
     // A value of one in this mask hides the corresponding edge.
     // (See hd/meshUtil.cpp)
-    return vec3(1, 0, GetEdgeFlag() != 0);
-}
-
---- --------------------------------------------------------------------------
--- glsl MeshWire.Fragment.EdgeMaskPTVSTriQuad
-
-vec4 GetFlaggedPrimitiveEdgeDistance(vec4 edgeDistance)
-{
-    if (GetEdgeFlag() != 0) {
-        edgeDistance.yz += vec2(2.0);
-    } 
-    return edgeDistance;
+    return vec3(GetEdgeFlag() != 0, 1, 0);
 }
 
 --- --------------------------------------------------------------------------
@@ -73,28 +62,12 @@ vec3 GetPrimitiveEdgeMask()
 }
 
 --- --------------------------------------------------------------------------
--- glsl MeshWire.Fragment.EdgeMaskMetalRefinedTriQuad
-
-vec3 GetPrimitiveEdgeMask()
-{
-    return vec3(0, 1, 0);
-}
-
---- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.EdgeMaskRefinedQuad
 
 vec3 GetPrimitiveEdgeMask()
 {
     // Hide the common edge between the pair of rasterized triangles.
-    return vec3(1,0,0);
-}
-
---- --------------------------------------------------------------------------
--- glsl MeshWire.Fragment.EdgeMaskPTVSRefinedTriQuad
-
-vec4 GetFlaggedPrimitiveEdgeDistance(vec4 edgeDistance)
-{
-    return edgeDistance;
+    return vec3(0,1,0);
 }
 
 --- --------------------------------------------------------------------------
@@ -130,21 +103,23 @@ float GetEdgeOpacity() {
 }
 
 --- --------------------------------------------------------------------------
--- glsl MeshWire.Fragment.EdgeRefinedTriquad
+-- glsl MeshWire.Fragment.EdgeTriQuadPTVS
 
 // Returns the distance of the current fragment (in viewport pixel units) from
 // the nearest edge.
 float GetMinEdgeDistance()
 {
-    vec2 leftBottom = GetEdgeCoord();
+    vec2 leftBottom = GetEdgeCoord().xy;
     vec2 rightTop = vec2(1.0) - leftBottom;
+
     vec4 param = vec4(leftBottom.y, rightTop.x, rightTop.y, leftBottom.x);
     vec4 edgeDistance = max(vec4(0.0), param / fwidth(param));
-    edgeDistance = GetFlaggedPrimitiveEdgeDistance(edgeDistance);
-    return min(
-        min(edgeDistance.x, edgeDistance.y),
-        min(edgeDistance.z, edgeDistance.w)
-    );
+
+    // Hide internal edges introduced by quadrangulation
+    if (GetEdgeFlag() != 0) edgeDistance.yz += vec2(2.0);
+
+    return min(min(edgeDistance.x, edgeDistance.y),
+               min(edgeDistance.z, edgeDistance.w));
 }
 
 // Use edge distance to compute a smooth opacity falloff for good looking edges.
@@ -238,6 +213,23 @@ float GetEdgeOpacityForPatch()
 }
 
 --- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.FinalEdgeOpacityNoForce
+
+vec4 ApplyFinalEdgeOpacity(vec4 Cfill)
+{
+    return Cfill;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.FinalEdgeOpacityForce
+
+vec4 ApplyFinalEdgeOpacity(vec4 Cfill)
+{
+    Cfill.a = 1.0;
+    return Cfill;
+}
+
+--- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.NoEdge
 
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
@@ -266,7 +258,7 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     vec4 Cedge = vec4(mix(Cfill.rgb, wireColor.rgb, wireColor.a), 1);
     Cfill.rgb = mix(Cfill.rgb, Cedge.rgb, p);
 
-    return Cfill;
+    return ApplyFinalEdgeOpacity(Cfill);
 }
 
 --- --------------------------------------------------------------------------
@@ -282,9 +274,8 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     // If wireColor is unset (zero), ignore it altogether
     
     Cfill.rgb = mix(Cfill.rgb, wireColor.rgb, wireColor.a);
-    Cfill.a = 1.0; // edges ignore input opacity and are opaque.
 
-    return Cfill;
+    return ApplyFinalEdgeOpacity(Cfill);
 }
 
 --- --------------------------------------------------------------------------
@@ -295,8 +286,7 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     float p = GetEdgeOpacity();
     if (p < 0.5) discard;
 
-    Cfill.a = 1.0; // edges ignore input opacity and are opaque.
-    return Cfill;
+    return ApplyFinalEdgeOpacity(Cfill);
 }
 
 --- --------------------------------------------------------------------------
@@ -308,19 +298,19 @@ vec3 GetEdgeCoord()
 }
 
 --- --------------------------------------------------------------------------
--- glsl MeshWire.Fragment.EdgeCoord.PostTessPositionInPatch.Triangle
-
-vec3 GetEdgeCoord()
-{
-    return ptvsBarycentricCoord;
-}
-
---- --------------------------------------------------------------------------
--- glsl MeshWire.Fragment.EdgeCoord.PostTessPositionInPatch.Quad
+-- glsl MeshWire.Fragment.EdgeCoord.Tess
 
 vec2 GetEdgeCoord()
 {
-    return ptvsBarycentricCoord;
+    return GetTessCoord();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeCoord.TessTriangle
+
+vec3 GetEdgeCoord()
+{
+    return GetTessCoordTriangle();
 }
 
 --- --------------------------------------------------------------------------
@@ -338,7 +328,7 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     vec4 Cedge = vec4(mix(Cfill.rgb, wireColor.rgb, wireColor.a), 1);
     Cfill.rgb = mix(Cfill.rgb, Cedge.rgb, p);
 
-    return Cfill;
+    return ApplyFinalEdgeOpacity(Cfill);
 }
 
 --- --------------------------------------------------------------------------
@@ -349,7 +339,5 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     float p = GetEdgeOpacity();
     if (p < 0.5) discard;
 
-    Cfill.a = 1.0; // edges ignore input opacity and are opaque.
-
-    return Cfill;
+    return ApplyFinalEdgeOpacity(Cfill);
 }

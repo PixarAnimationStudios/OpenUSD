@@ -309,20 +309,10 @@ class Vt_CastRegistry {
     using _ConversionSourceToTarget =
         std::pair<std::type_index, std::type_index>;
 
-    struct _ConversionSourceToTargetHash
-    {
-        std::size_t operator()(_ConversionSourceToTarget p) const
-        {
-            std::size_t h = p.first.hash_code();
-            boost::hash_combine(h, p.second.hash_code());
-            return h;
-        }
-    };
-
     using _Conversions = tbb::concurrent_unordered_map<
         _ConversionSourceToTarget,
         VtValue (*)(VtValue const &),
-        _ConversionSourceToTargetHash>;
+        TfHash>;
 
     _Conversions _conversions;
     

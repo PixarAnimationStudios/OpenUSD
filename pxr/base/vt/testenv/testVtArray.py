@@ -60,6 +60,19 @@ class TestVtArray(unittest.TestCase):
         with self.assertRaises(TypeError):
             a = d['foo']
 
+    def test_NegativeIndexes(self):
+        d = Vt.DoubleArray([1.0, 3.0, 5.0])
+        d[-1] = 2.0
+        d[-2] = 4.0
+        self.assertEqual(d, [1.0, 4.0, 2.0])
+
+        # Indexing off-the-end with negative indexes should raise.
+        with self.assertRaises(IndexError):
+            d[-4] = 6.0
+
+        with self.assertRaises(IndexError):
+            x = d[-4]
+
     def test_TooFewElements(self):
         d = Vt.DoubleArray(4)
         with self.assertRaises(ValueError):
@@ -359,10 +372,6 @@ class TestVtArray(unittest.TestCase):
         _TestDivision(Vt.QuatdArray, Gf.Quatd, Gf.Vec3d)
         _TestDivision(Vt.QuaternionArray, Gf.Quaternion, Gf.Vec3d)
 
-    # The test is disabled for py2 because array in py2 doesn't support old py2
-    # buffer protocol.
-    @unittest.skipIf(sys.version_info.major == 2,
-            "Array in py2 doesn't support old py2 buffer protocol")
     def test_LargeBuffer(self):
         '''VtArray can be created from a buffer with item count
            greater than maxint'''

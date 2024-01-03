@@ -29,7 +29,7 @@ from __future__ import print_function
 
 from .qt import QtCore, QtGui, QtWidgets
 import os, time, sys, platform, math
-from pxr import Ar, Tf, Sdf, Kind, Usd, UsdGeom, UsdShade
+from pxr import Ar, Tf, Trace, Sdf, Kind, Usd, UsdGeom, UsdShade
 from .customAttributes import CustomAttribute
 from pxr.UsdUtils.constantsGroup import ConstantsGroup
 
@@ -530,6 +530,7 @@ class Timer(object):
         self._isValid = False
 
     def __enter__(self):
+        Trace.Collector().BeginEvent(self._label)
         self._stopwatch = Tf.Stopwatch()
         self._stopwatch.Start()
         self._isValid = True
@@ -545,6 +546,7 @@ class Timer(object):
         return self
 
     def __exit__(self, excType, excVal, excTB):
+        Trace.Collector().EndEvent(self._label)
         self._stopwatch.Stop()
         self.interval = self._stopwatch.seconds
         # Annotate for performance tools if we're in the Pixar environment

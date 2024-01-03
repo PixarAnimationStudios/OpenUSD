@@ -24,7 +24,6 @@
 #include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
-#include "pxr/usd/usd/tokens.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
@@ -38,11 +37,6 @@ TF_REGISTRY_FUNCTION(TfType)
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _schemaTokens,
-    (MaterialBindingAPI)
-);
 
 /* virtual */
 UsdShadeMaterialBindingAPI::~UsdShadeMaterialBindingAPI()
@@ -138,20 +132,17 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// XXX: The default here is being changed to warnOnMissingAPI instead of strict,
-// to give some buffer of couple of USD releases for external clients to update 
-// their assets. 
-TF_DEFINE_ENV_SETTING(USD_SHADE_MATERIAL_BINDING_API_CHECK, "warnOnMissingAPI",
-        "When querying material bindings on a prim, this environment variable"
-        "controls if an early return will happen if the prim has "
-        "MaterialBindingAPI applied or not. Current (temp) default is "
-        "'warnOnMissingAPI', which warns when API schema is not applied and "
-        "material binding is provided. Default behavior will be updated to "
-        "'strict' (in some future USD release), to do an early return if "
-        "MaterialBindingAPI is not applied. Otherwise depending on if the value "
-        "of the environment variable is 'warnOnMissingAPI' or 'allowMissingAPI'"
-        "will allow bindings to be queried with or without warnings "
-        "respectively.");
+// Environment variable to suppress warnings emitted when MaterialBindingAPI is
+// not applied in legacy behavior mode. The default here is to warn the clients
+// to update the assets to apply MaterialBindingAPI appropriately on prims
+// providing the material bindings.
+TF_DEFINE_ENV_SETTING(USD_SHADE_WARN_ON_MISSING_MATERIAL_BINDING_API, true,
+        "In legacy mode, we allow material bindings computations on prims "
+        "which do not have MaterialBindingAPI applied. But since this is "
+        "sub-optimal and we want the clients to experience optimized material "
+        "binding computation, we also warn about missing MaterialBindingAPI. "
+        "Clients can override this environment variable to suppress these "
+        "warnings.");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -160,10 +151,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((materialBindingCollectionFull, "material:binding:collection:full"))
     ((materialBindingCollectionPreview, "material:binding:collection:preview"))
-    // token values for USD_SHADE_MATERIAL_BINDING_API_CHECK
-    (strict)
-    (allowMissingAPI)
-    (warnOnMissingAPI)
 );
 
 static 
@@ -239,13 +226,15 @@ _GetMaterialPurpose(const UsdRelationship &bindingRel)
 UsdShadeMaterialBindingAPI::DirectBinding::DirectBinding(
     const UsdRelationship &directBindingRel):
     _bindingRel(directBindingRel),
-    _materialPurpose(_GetMaterialPurpose(directBindingRel))
+    _materialPurpose(_GetMaterialPurpose(directBindingRel)),
+    _isBound(false)
 {
     SdfPathVector targetPaths;
     _bindingRel.GetForwardedTargets(&targetPaths);
     if (targetPaths.size() == 1 && 
         targetPaths.front().IsPrimPath()) {
         _materialPath = targetPaths.front();
+        _isBound = true;
     }
 }
 
@@ -602,28 +591,15 @@ _GetCollectionBindingPropertyNames(
 }
 
 UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
-    const UsdPrim &prim, const TfToken &materialPurpose)
+    const UsdPrim &prim, const TfToken &materialPurpose, 
+    bool supportLegacyBindings)
 {
-    auto MaterialBindingAPIChecker = []() {
-        // 0: strict
-        // 1: warnOnMissingAPI
-        // 2: allowMissingAPI
-        const std::string usdShadeMaterialBindingAPI = 
-            TfGetEnvSetting(USD_SHADE_MATERIAL_BINDING_API_CHECK);
-        return (usdShadeMaterialBindingAPI == _tokens->strict.GetString()) ? 0 : 
-            (usdShadeMaterialBindingAPI == 
-                _tokens->warnOnMissingAPI.GetString()) ? 1 :
-            (usdShadeMaterialBindingAPI == 
-                _tokens->allowMissingAPI.GetString()) ? 2 : 0;
-    };
-    static const int materialBindingAPICheck = MaterialBindingAPIChecker();
-
     const bool materialBindingAPIApplied = 
         prim.HasAPI<UsdShadeMaterialBindingAPI>();
 
-    // Return if MaterialBindingAPI is not applied on the prim and
-    // USD_SHADE_MATERIAL_BINDING_API_CHECK is set to default "strict" option
-    if (materialBindingAPICheck == 0 && !materialBindingAPIApplied) {
+    // Early return if material binding api is not applied and we are not
+    // operating in legacy mode.
+    if (!supportLegacyBindings && !materialBindingAPIApplied) {
         return;
     }
 
@@ -698,9 +674,12 @@ UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
             bindingAPI._GetCollectionBindings(collBindingPropertyNames);
     }
 
-    // Conditional warning if material bindings are found when
-    // USD_SHADE_MATERIAL_BINDING_API_CHECK is set to warnOnMissingAPI (1)
-    if (materialBindingAPICheck == 1 && !materialBindingAPIApplied &&
+    // We would have already done an early return if no materialBindingAPI is
+    // applied and we are not operating in legacy mode. Else in legacy mode 
+    // Warn if USD_SHADE_WARN_ON_MISSING_MATERIAL_BINDING_API environment
+    // variable is set.
+    if (!materialBindingAPIApplied && 
+        TfGetEnvSetting(USD_SHADE_WARN_ON_MISSING_MATERIAL_BINDING_API) &&
         (directBinding || 
         !restrictedPurposeCollBindings.empty() || 
         !allPurposeCollBindings.empty())) {
@@ -740,7 +719,8 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
     BindingsCache *bindingsCache,
     CollectionQueryCache *collectionQueryCache,
     const TfToken &materialPurpose,
-    UsdRelationship *bindingRel) const
+    UsdRelationship *bindingRel,
+    bool supportLegacyBindings) const
 {
     if (!GetPrim()) {
         TF_CODING_ERROR("Invalid prim (%s)", UsdDescribe(GetPrim()).c_str());
@@ -768,7 +748,8 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
                         "(BindingsCache)");
 
                 std::unique_ptr<BindingsAtPrim> bindingsAtP(
-                    new BindingsAtPrim(p, materialPurpose));
+                    new BindingsAtPrim(p, materialPurpose, 
+                        supportLegacyBindings));
                     
                 // XXX: emplace does not work here due to a tbb bug.
                 // see https://software.intel.com/en-us/forums/
@@ -878,14 +859,16 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
 UsdShadeMaterial 
 UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
     const TfToken &materialPurpose,
-    UsdRelationship *bindingRel) const
+    UsdRelationship *bindingRel,
+    bool supportLegacyBindings) const
 {
     BindingsCache bindingsCache;
     CollectionQueryCache collQueryCache;
     return ComputeBoundMaterial(&bindingsCache, 
                                 &collQueryCache, 
                                 materialPurpose, 
-                                bindingRel);
+                                bindingRel,
+                                supportLegacyBindings);
 }
 
 /* static */
@@ -893,7 +876,8 @@ std::vector<UsdShadeMaterial>
 UsdShadeMaterialBindingAPI::ComputeBoundMaterials(
     const std::vector<UsdPrim> &prims, 
     const TfToken &materialPurpose,
-    std::vector<UsdRelationship> *bindingRels)
+    std::vector<UsdRelationship> *bindingRels,
+    bool supportLegacyBindings)
 {
     std::vector<UsdShadeMaterial> materials(prims.size());
 
@@ -917,7 +901,8 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterials(
                         bindingRels ? &((*bindingRels)[i]) : nullptr;
                 materials[i] = UsdShadeMaterialBindingAPI(prim).
                     ComputeBoundMaterial(&bindingsCache, &collQueryCache, 
-                                         materialPurpose, bindingRel);
+                                         materialPurpose, bindingRel, 
+                                         supportLegacyBindings);
             }
         });
 

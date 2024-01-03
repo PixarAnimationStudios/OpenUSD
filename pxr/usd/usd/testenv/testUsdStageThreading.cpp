@@ -39,8 +39,7 @@
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/withScopedParallelism.h"
 
-#include <boost/random.hpp>
-
+#include <random>
 #include <thread>
 
 using std::string;
@@ -151,18 +150,13 @@ _WorkTask(size_t msecsToRun, bool runForever)
     // Use a local random number generator to minimize synchronization
     // between threads, as would happen with using libc's random().
     const std::thread::id threadId = std::this_thread::get_id();
-    boost::mt19937 mt(std::hash<std::thread::id>()(threadId));
-    boost::uniform_int<unsigned int> dist(0, _testCases.size()-1);
-    boost::variate_generator< boost::mt19937, boost::uniform_int<unsigned int> >
-        gen(mt, dist);
+    std::mt19937 mt(std::hash<std::thread::id>()(threadId));
+    std::uniform_int_distribution<unsigned int> dist(0, _testCases.size()-1);
 
     while (runForever || static_cast<size_t>(sw.GetMilliseconds()) < msecsToRun) {
         sw.Start();
-        const int i = gen();
+        const int i = dist(mt);
 
-        printf("  Thread %s running test case %d\n",
-               TfStringify(threadId).c_str(), i);
-                                    
         const _Result & expected = _testCases[i].second;
         const _Result & actual   = _ComputeResult(_testCases[i].first);
         TF_VERIFY(actual.didLoad == expected.didLoad);
@@ -194,9 +188,11 @@ int main(int argc, char const **argv)
 
     // Pull on the schema registry to create any schema layers so we can get a
     // baseline of # of loaded layers.
+    printf("pulling schema registry\n");
     UsdSchemaRegistry::GetInstance();
     size_t baselineNumLayers = SdfLayer::GetLoadedLayers().size();
-
+    printf("done\n");
+    
     printf("==================================================\n");
     printf("SETUP PHASE (MAIN THREAD ONLY)\n");
     for (const auto& assetPath : *_testPaths) {
@@ -226,16 +222,15 @@ int main(int argc, char const **argv)
     TfStopwatch sw;
     sw.Start();
 
-    WorkWithScopedParallelism([&]() {
-            WorkDispatcher wd;
-            auto localMsecsToRun = msecsToRun;
-            auto localRunForever = runForever;
-            for (size_t i = 0; i < numThreads; ++i) {
-                wd.Run([localMsecsToRun, localRunForever]() {
-                        _WorkTask(localMsecsToRun, localRunForever);
-                    });
-            }
-        });
+    WorkWithScopedDispatcher([&](WorkDispatcher &wd) {
+        auto localMsecsToRun = msecsToRun;
+        auto localRunForever = runForever;
+        for (size_t i = 0; i < numThreads; ++i) {
+            wd.Run([localMsecsToRun, localRunForever]() {
+                _WorkTask(localMsecsToRun, localRunForever);
+            });
+        }
+    });
 
     sw.Stop();
 

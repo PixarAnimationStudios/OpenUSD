@@ -144,13 +144,59 @@ public:
     }
 };
 
-// Test resolver that handles asset paths of the form "test_other://...."
+// Test resolver that handles asset paths of the form "test-other://...."
 class _TestOtherURIResolver
     : public _TestURIResolverBase
 {
 public:
     _TestOtherURIResolver()
+        : _TestURIResolverBase("test-other")
+    {
+    }
+};
+
+// Underbar characters should cause a failure to register under strict mode
+class _TestInvalidUnderbarURIResolver
+    : public _TestURIResolverBase
+{
+public:
+    _TestInvalidUnderbarURIResolver()
         : _TestURIResolverBase("test_other")
+    {
+    }
+};
+
+// A colon in the scheme could cause problems when parsing an asset path.
+// This should cause a failure to register under strict mode.
+class _TestInvalidColonURIResolver
+    : public _TestURIResolverBase
+{
+public:
+    _TestInvalidColonURIResolver()
+        : _TestURIResolverBase("other:test")
+    {
+    }
+};
+
+// UTF-8 characters should cause a failure to register under strict mode
+class _TestInvalidNonAsciiURIResolver
+    : public _TestURIResolverBase
+{
+public:
+    _TestInvalidNonAsciiURIResolver()
+        : _TestURIResolverBase("test-π-utf8")
+    {
+    }
+};
+
+// Schemes starting with numeric characters should cause a failure to
+// register under strict mode
+class _TestInvalidNumericPrefixResolver
+    : public _TestURIResolverBase
+{
+public:
+    _TestInvalidNumericPrefixResolver()
+        : _TestURIResolverBase("113-test")
     {
     }
 };
@@ -165,3 +211,7 @@ TF_REGISTRY_FUNCTION(TfType)
 
 AR_DEFINE_RESOLVER(_TestURIResolver, _TestURIResolverBase);
 AR_DEFINE_RESOLVER(_TestOtherURIResolver, _TestURIResolverBase);
+AR_DEFINE_RESOLVER(_TestInvalidUnderbarURIResolver, _TestURIResolverBase);
+AR_DEFINE_RESOLVER(_TestInvalidColonURIResolver, _TestURIResolverBase);
+AR_DEFINE_RESOLVER(_TestInvalidNonAsciiURIResolver, _TestURIResolverBase);
+AR_DEFINE_RESOLVER(_TestInvalidNumericPrefixResolver, _TestURIResolverBase);

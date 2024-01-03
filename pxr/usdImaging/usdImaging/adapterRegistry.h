@@ -70,9 +70,16 @@ class UsdImagingAdapterRegistry : public TfSingleton<UsdImagingAdapterRegistry>
     _TypeMap _apiSchemaTypeMap;
     TfTokenVector _apiSchemaAdapterKeys;
 
+    typedef std::vector<TfType> _TypeVector;
+    _TypeVector _keylessApiSchemaAdapterTypes;
+
     template <typename T, typename factoryT>
     std::shared_ptr<T> _ConstructAdapter(
         TfToken const& adapterKey, const _TypeMap &tm);
+
+    template <typename T, typename factoryT>
+    std::shared_ptr<T> _ConstructAdapter(
+        TfToken const& adapterKey, const TfType &adapterType);
 
 public:
 
@@ -126,6 +133,12 @@ public:
     USDIMAGING_API
     const TfTokenVector& GetAPISchemaAdapterKeys();
 
+    using ApiSchemaAdapters = std::vector<UsdImagingAPISchemaAdapterSharedPtr>;
+
+    /// Constructs instances of "keyless" api schema adapters which are
+    /// intended to run for every prim.
+    USDIMAGING_API
+    ApiSchemaAdapters ConstructKeylessAPISchemaAdapters();
 
 };
 

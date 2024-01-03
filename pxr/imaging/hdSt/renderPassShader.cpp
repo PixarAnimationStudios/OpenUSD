@@ -22,10 +22,10 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/aov.h"
-#include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hdSt/binding.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/renderBuffer.h"
@@ -209,14 +209,9 @@ HdStRenderPassShader::UnbindResources(const int program,
 }
 
 void
-HdStRenderPassShader::AddBufferBinding(HdBindingRequest const& req)
+HdStRenderPassShader::AddBufferBinding(HdStBindingRequest const& req)
 {
-    auto it = _customBuffers.insert({req.GetName(), req});
-    // Entry already existed and was equal to what we want to set it.
-    if (!it.second && it.first->second == req) {
-        return;
-    }
-    it.first->second = req;
+    _customBuffers[req.GetName()] = req;
     _hashValid = false;
 }
 
@@ -236,7 +231,7 @@ HdStRenderPassShader::ClearBufferBindings()
 
 /*virtual*/
 void
-HdStRenderPassShader::AddBindings(HdBindingRequestVector *customBindings)
+HdStRenderPassShader::AddBindings(HdStBindingRequestVector *customBindings)
 {
     // note: be careful, the logic behind this function is tricky.
     //

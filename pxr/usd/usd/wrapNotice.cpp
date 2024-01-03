@@ -45,18 +45,6 @@ TF_INSTANTIATE_NOTICE_WRAPPER(UsdNotice::StageEditTargetChanged,
 TF_INSTANTIATE_NOTICE_WRAPPER(UsdNotice::LayerMutingChanged,
                                 UsdNotice::StageNotice);
 
-SdfPathVector
-_GetResyncedPaths(const UsdNotice::ObjectsChanged& n)
-{
-    return SdfPathVector(n.GetResyncedPaths());
-}
-
-SdfPathVector
-_GetChangedInfoOnlyPaths(const UsdNotice::ObjectsChanged& n)
-{
-    return SdfPathVector(n.GetChangedInfoOnlyPaths());
-}
-
 } // anonymous namespace 
 
 void wrapUsdNotice()
@@ -76,11 +64,22 @@ void wrapUsdNotice()
         UsdNotice::ObjectsChanged, UsdNotice::StageNotice>::Wrap()
             .def("AffectedObject", &UsdNotice::ObjectsChanged::AffectedObject)
             .def("ResyncedObject", &UsdNotice::ObjectsChanged::ResyncedObject)
+            .def("ResolvedAssetPathsResynced",
+                 &UsdNotice::ObjectsChanged::ResolvedAssetPathsResynced)
             .def("ChangedInfoOnly", &UsdNotice::ObjectsChanged::ChangedInfoOnly)
-            .def("GetResyncedPaths", &_GetResyncedPaths,
-                 return_value_policy<return_by_value>())
-            .def("GetChangedInfoOnlyPaths", &_GetChangedInfoOnlyPaths,
-                 return_value_policy<return_by_value>())
+            .def("GetResyncedPaths",
+                +[](const UsdNotice::ObjectsChanged& n) {
+                    return SdfPathVector(n.GetResyncedPaths());
+                })
+            .def("GetChangedInfoOnlyPaths",
+                +[](const UsdNotice::ObjectsChanged& n) {
+                    return SdfPathVector(n.GetChangedInfoOnlyPaths());
+                })
+            .def("GetResolvedAssetPathsResyncedPaths", 
+                +[](const UsdNotice::ObjectsChanged& n) {
+                    return SdfPathVector(
+                        n.GetResolvedAssetPathsResyncedPaths());
+                })
             .def("GetChangedFields", 
                  (TfTokenVector (UsdNotice::ObjectsChanged::*)
                      (const UsdObject&) const)

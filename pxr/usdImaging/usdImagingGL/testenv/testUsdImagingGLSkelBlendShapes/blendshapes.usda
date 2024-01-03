@@ -37,7 +37,9 @@ def Xform "GroundTruth"
     }
 }
 
-def SkelRoot "TestPlane"
+def SkelRoot "TestPlane"(
+    prepend apiSchemas = ["SkelBindingAPI"]
+)
 {
     uniform token[] xformOpOrder = ["xformOp:rotateX"]
     double xformOp:rotateX = 180
@@ -52,7 +54,7 @@ def SkelRoot "TestPlane"
     }
 
     def Mesh "Mesh" (
-        apiSchemas = ["SkelBindingAPI"]
+        prepend apiSchemas = ["SkelBindingAPI"]
     )
     {
         custom rel material:binding = </Materials/lambert1>
@@ -129,7 +131,9 @@ def SkelRoot "TestPlane"
         }
     }
 
-    def Skeleton "Skel"
+    def Skeleton "Skel"(
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         rel skel:animationSource = <Anim>
 

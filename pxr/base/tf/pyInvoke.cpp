@@ -28,7 +28,6 @@
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/errorMark.h"
-#include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/stringUtils.h"
 
@@ -74,7 +73,7 @@ bool Tf_PyInvokeImpl(
     // No need for TfScriptModuleLoader; our python code performs import.
     boost::python::dict globals;
     boost::python::handle<> modHandle(
-        PyImport_ImportModule(TfPyBuiltinModuleName));
+        PyImport_ImportModule("builtins"));
     globals["__builtins__"] = boost::python::object(modHandle);
     globals[listVarName] = posArgs;
     globals[dictVarName] = kwArgs;

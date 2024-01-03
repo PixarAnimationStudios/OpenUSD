@@ -243,7 +243,7 @@ def Xform "Parent" (
                 custom float[] primvars:ptexFaceIndex = [0] (
                     interpolation = "uniform"
                 )
-                custom int primvars:ptexFaceOffset = 67 (
+                custom int primvars:ptexFaceOffset = 16 (
                     interpolation = "constant"
                 )
                 uniform token subdivisionScheme = "catmullClark"
@@ -265,7 +265,7 @@ def Xform "Parent" (
                 custom float[] primvars:ptexFaceIndex = [0] (
                     interpolation = "uniform"
                 )
-                custom int primvars:ptexFaceOffset = 66 (
+                custom int primvars:ptexFaceOffset = 0 (
                     interpolation = "constant"
                 )
                 uniform token subdivisionScheme = "catmullClark"

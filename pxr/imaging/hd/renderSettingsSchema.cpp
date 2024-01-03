@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -41,42 +41,107 @@ TF_DEFINE_PUBLIC_TOKENS(HdRenderSettingsSchemaTokens,
 
 
 
-HdPathArrayDataSourceHandle
-HdRenderSettingsSchema::GetSampleFilters()
+HdContainerDataSourceHandle
+HdRenderSettingsSchema::GetNamespacedSettings()
 {
-    return _GetTypedDataSource<HdPathArrayDataSource>(
-        HdRenderSettingsSchemaTokens->sampleFilters);
+    return _GetTypedDataSource<HdContainerDataSource>(
+        HdRenderSettingsSchemaTokens->namespacedSettings);
 }
 
-HdPathArrayDataSourceHandle
-HdRenderSettingsSchema::GetDisplayFilters()
+HdBoolDataSourceHandle
+HdRenderSettingsSchema::GetActive()
 {
-    return _GetTypedDataSource<HdPathArrayDataSource>(
-        HdRenderSettingsSchemaTokens->displayFilters);
+    return _GetTypedDataSource<HdBoolDataSource>(
+        HdRenderSettingsSchemaTokens->active);
+}
+
+HdRenderProductVectorSchema
+HdRenderSettingsSchema::GetRenderProducts()
+{
+    return HdRenderProductVectorSchema(_GetTypedDataSource<HdVectorDataSource>(
+        HdRenderSettingsSchemaTokens->renderProducts));
+}
+
+HdTokenArrayDataSourceHandle
+HdRenderSettingsSchema::GetIncludedPurposes()
+{
+    return _GetTypedDataSource<HdTokenArrayDataSource>(
+        HdRenderSettingsSchemaTokens->includedPurposes);
+}
+
+HdTokenArrayDataSourceHandle
+HdRenderSettingsSchema::GetMaterialBindingPurposes()
+{
+    return _GetTypedDataSource<HdTokenArrayDataSource>(
+        HdRenderSettingsSchemaTokens->materialBindingPurposes);
+}
+
+HdTokenDataSourceHandle
+HdRenderSettingsSchema::GetRenderingColorSpace()
+{
+    return _GetTypedDataSource<HdTokenDataSource>(
+        HdRenderSettingsSchemaTokens->renderingColorSpace);
+}
+
+HdVec2dDataSourceHandle
+HdRenderSettingsSchema::GetShutterInterval()
+{
+    return _GetTypedDataSource<HdVec2dDataSource>(
+        HdRenderSettingsSchemaTokens->shutterInterval);
 }
 
 /*static*/
 HdContainerDataSourceHandle
 HdRenderSettingsSchema::BuildRetained(
-        const HdPathArrayDataSourceHandle &sampleFilters,
-        const HdPathArrayDataSourceHandle &displayFilters
+        const HdContainerDataSourceHandle &namespacedSettings,
+        const HdBoolDataSourceHandle &active,
+        const HdVectorDataSourceHandle &renderProducts,
+        const HdTokenArrayDataSourceHandle &includedPurposes,
+        const HdTokenArrayDataSourceHandle &materialBindingPurposes,
+        const HdTokenDataSourceHandle &renderingColorSpace,
+        const HdVec2dDataSourceHandle &shutterInterval
 )
 {
-    TfToken names[2];
-    HdDataSourceBaseHandle values[2];
+    TfToken _names[7];
+    HdDataSourceBaseHandle _values[7];
 
-    size_t count = 0;
-    if (sampleFilters) {
-        names[count] = HdRenderSettingsSchemaTokens->sampleFilters;
-        values[count++] = sampleFilters;
+    size_t _count = 0;
+    if (namespacedSettings) {
+        _names[_count] = HdRenderSettingsSchemaTokens->namespacedSettings;
+        _values[_count++] = namespacedSettings;
     }
 
-    if (displayFilters) {
-        names[count] = HdRenderSettingsSchemaTokens->displayFilters;
-        values[count++] = displayFilters;
+    if (active) {
+        _names[_count] = HdRenderSettingsSchemaTokens->active;
+        _values[_count++] = active;
     }
 
-    return HdRetainedContainerDataSource::New(count, names, values);
+    if (renderProducts) {
+        _names[_count] = HdRenderSettingsSchemaTokens->renderProducts;
+        _values[_count++] = renderProducts;
+    }
+
+    if (includedPurposes) {
+        _names[_count] = HdRenderSettingsSchemaTokens->includedPurposes;
+        _values[_count++] = includedPurposes;
+    }
+
+    if (materialBindingPurposes) {
+        _names[_count] = HdRenderSettingsSchemaTokens->materialBindingPurposes;
+        _values[_count++] = materialBindingPurposes;
+    }
+
+    if (renderingColorSpace) {
+        _names[_count] = HdRenderSettingsSchemaTokens->renderingColorSpace;
+        _values[_count++] = renderingColorSpace;
+    }
+
+    if (shutterInterval) {
+        _names[_count] = HdRenderSettingsSchemaTokens->shutterInterval;
+        _values[_count++] = shutterInterval;
+    }
+
+    return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
 
 /*static*/
@@ -92,6 +157,13 @@ HdRenderSettingsSchema::GetFromParent(
 }
 
 /*static*/
+const TfToken &
+HdRenderSettingsSchema::GetSchemaToken()
+{
+    return HdRenderSettingsSchemaTokens->renderSettings;
+}
+
+/*static*/
 const HdDataSourceLocator &
 HdRenderSettingsSchema::GetDefaultLocator()
 {
@@ -100,19 +172,137 @@ HdRenderSettingsSchema::GetDefaultLocator()
     );
     return locator;
 } 
-HdRenderSettingsSchema::Builder &
-HdRenderSettingsSchema::Builder::SetSampleFilters(
-    const HdPathArrayDataSourceHandle &sampleFilters)
+/*static*/
+const HdDataSourceLocator &
+HdRenderSettingsSchema::GetNamespacedSettingsLocator()
 {
-    _sampleFilters = sampleFilters;
+    static const HdDataSourceLocator locator(
+        HdRenderSettingsSchemaTokens->renderSettings,
+        HdRenderSettingsSchemaTokens->namespacedSettings
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+HdRenderSettingsSchema::GetActiveLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdRenderSettingsSchemaTokens->renderSettings,
+        HdRenderSettingsSchemaTokens->active
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+HdRenderSettingsSchema::GetRenderProductsLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdRenderSettingsSchemaTokens->renderSettings,
+        HdRenderSettingsSchemaTokens->renderProducts
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+HdRenderSettingsSchema::GetIncludedPurposesLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdRenderSettingsSchemaTokens->renderSettings,
+        HdRenderSettingsSchemaTokens->includedPurposes
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+HdRenderSettingsSchema::GetMaterialBindingPurposesLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdRenderSettingsSchemaTokens->renderSettings,
+        HdRenderSettingsSchemaTokens->materialBindingPurposes
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+HdRenderSettingsSchema::GetRenderingColorSpaceLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdRenderSettingsSchemaTokens->renderSettings,
+        HdRenderSettingsSchemaTokens->renderingColorSpace
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+HdRenderSettingsSchema::GetShutterIntervalLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdRenderSettingsSchemaTokens->renderSettings,
+        HdRenderSettingsSchemaTokens->shutterInterval
+    );
+    return locator;
+}
+
+
+HdRenderSettingsSchema::Builder &
+HdRenderSettingsSchema::Builder::SetNamespacedSettings(
+    const HdContainerDataSourceHandle &namespacedSettings)
+{
+    _namespacedSettings = namespacedSettings;
     return *this;
 }
 
 HdRenderSettingsSchema::Builder &
-HdRenderSettingsSchema::Builder::SetDisplayFilters(
-    const HdPathArrayDataSourceHandle &displayFilters)
+HdRenderSettingsSchema::Builder::SetActive(
+    const HdBoolDataSourceHandle &active)
 {
-    _displayFilters = displayFilters;
+    _active = active;
+    return *this;
+}
+
+HdRenderSettingsSchema::Builder &
+HdRenderSettingsSchema::Builder::SetRenderProducts(
+    const HdVectorDataSourceHandle &renderProducts)
+{
+    _renderProducts = renderProducts;
+    return *this;
+}
+
+HdRenderSettingsSchema::Builder &
+HdRenderSettingsSchema::Builder::SetIncludedPurposes(
+    const HdTokenArrayDataSourceHandle &includedPurposes)
+{
+    _includedPurposes = includedPurposes;
+    return *this;
+}
+
+HdRenderSettingsSchema::Builder &
+HdRenderSettingsSchema::Builder::SetMaterialBindingPurposes(
+    const HdTokenArrayDataSourceHandle &materialBindingPurposes)
+{
+    _materialBindingPurposes = materialBindingPurposes;
+    return *this;
+}
+
+HdRenderSettingsSchema::Builder &
+HdRenderSettingsSchema::Builder::SetRenderingColorSpace(
+    const HdTokenDataSourceHandle &renderingColorSpace)
+{
+    _renderingColorSpace = renderingColorSpace;
+    return *this;
+}
+
+HdRenderSettingsSchema::Builder &
+HdRenderSettingsSchema::Builder::SetShutterInterval(
+    const HdVec2dDataSourceHandle &shutterInterval)
+{
+    _shutterInterval = shutterInterval;
     return *this;
 }
 
@@ -120,8 +310,13 @@ HdContainerDataSourceHandle
 HdRenderSettingsSchema::Builder::Build()
 {
     return HdRenderSettingsSchema::BuildRetained(
-        _sampleFilters,
-        _displayFilters
+        _namespacedSettings,
+        _active,
+        _renderProducts,
+        _includedPurposes,
+        _materialBindingPurposes,
+        _renderingColorSpace,
+        _shutterInterval
     );
 }
 

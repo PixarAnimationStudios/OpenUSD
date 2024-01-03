@@ -165,6 +165,25 @@ HduiSceneIndexObserverLoggingTreeView::_ObserverModel::PrimsDirtied(
     endInsertRows();
 }
 
+void
+HduiSceneIndexObserverLoggingTreeView::_ObserverModel::PrimsRenamed(
+    const HdSceneIndexBase &sender,
+    const RenamedPrimEntries &entries)
+{
+    if (!_isRecording) {
+        return;
+    }
+
+    std::unique_ptr<_RenamedPrimsNoticeModel> notice(
+        new _RenamedPrimsNoticeModel);
+    notice->_entries = entries;
+    notice->_index = _notices.size();
+
+    beginInsertRows(QModelIndex(), _notices.size(), _notices.size());
+    _notices.push_back(std::move(notice));
+    endInsertRows();
+}
+
 //-----------------------------------------------------------------------------
 
 HduiSceneIndexObserverLoggingTreeView::_ObserverModel::_NoticeModelBase *
@@ -382,6 +401,44 @@ HduiSceneIndexObserverLoggingTreeView::_ObserverModel::_RemovedPrimsNoticeModel
     if (index.column() == 0) {
         return QVariant(
             QString(_entries[index.row()].primPath.GetString().c_str()));
+    }
+
+    return QVariant();
+}
+
+//-----------------------------------------------------------------------------
+
+const char *
+HduiSceneIndexObserverLoggingTreeView::_ObserverModel::_RenamedPrimsNoticeModel
+::noticeTypeString()
+{
+    static const char *s = "Renamed";
+    return s;
+}
+
+int
+HduiSceneIndexObserverLoggingTreeView::_ObserverModel::_RenamedPrimsNoticeModel
+::rowCount()
+{
+    return static_cast<int>(_entries.size());
+}
+
+QVariant
+HduiSceneIndexObserverLoggingTreeView::_ObserverModel::_RenamedPrimsNoticeModel
+::data(const QModelIndex &index, int role)
+{
+    if (index.row() >= static_cast<int>(_entries.size())) {
+        return QVariant();
+    }
+
+    if (index.column() == 0) {
+        return QVariant(
+            QString(_entries[index.row()].oldPrimPath.GetString().c_str()));
+    }
+
+    if (index.column() == 1) {
+        return QVariant(
+            QString(_entries[index.row()].newPrimPath.GetString().c_str()));
     }
 
     return QVariant();

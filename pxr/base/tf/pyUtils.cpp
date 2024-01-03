@@ -52,50 +52,44 @@ using std::vector;
 PXR_NAMESPACE_OPEN_SCOPE
 
 void
-TfPyThrowIndexError(string const &msg)
+TfPyThrowIndexError(const char* msg)
 {
-    TfPyLock pyLock;
-    PyErr_SetString(PyExc_IndexError, msg.c_str());
+    PyErr_SetString(PyExc_IndexError, msg);
     boost::python::throw_error_already_set();
 }
 
 void
-TfPyThrowRuntimeError(string const &msg)
+TfPyThrowRuntimeError(const char *msg)
 {
-    TfPyLock pyLock;
-    PyErr_SetString(PyExc_RuntimeError, msg.c_str());
+    PyErr_SetString(PyExc_RuntimeError, msg);
     boost::python::throw_error_already_set();
 }
 
 void
-TfPyThrowStopIteration(string const &msg)
+TfPyThrowStopIteration(const char *msg)
 {
-    TfPyLock pyLock;
-    PyErr_SetString(PyExc_StopIteration, msg.c_str());
+    PyErr_SetString(PyExc_StopIteration, msg);
     boost::python::throw_error_already_set();
 }
 
 void
-TfPyThrowKeyError(string const &msg)
+TfPyThrowKeyError(const char *msg)
 {
-    TfPyLock pyLock;
-    PyErr_SetString(PyExc_KeyError, msg.c_str());
+    PyErr_SetString(PyExc_KeyError, msg);
     boost::python::throw_error_already_set();
 }
 
 void
-TfPyThrowValueError(string const &msg)
+TfPyThrowValueError(const char *msg)
 {
-    TfPyLock pyLock;
-    PyErr_SetString(PyExc_ValueError, msg.c_str());
+    PyErr_SetString(PyExc_ValueError, msg);
     boost::python::throw_error_already_set();
 }
 
 void
-TfPyThrowTypeError(string const &msg)
+TfPyThrowTypeError(const char *msg)
 {
-    TfPyLock pyLock;
-    PyErr_SetString(PyExc_TypeError, msg.c_str());
+    PyErr_SetString(PyExc_TypeError, msg);
     boost::python::throw_error_already_set();
 }
 
@@ -186,7 +180,7 @@ TfPyEvaluate(std::string const &expr, dict const& extraGlobals)
             TfScriptModuleLoader::GetInstance().GetModulesDict();
 
         // Make sure the builtins are available
-        handle<> modHandle(PyImport_ImportModule(TfPyBuiltinModuleName));
+        handle<> modHandle(PyImport_ImportModule("builtins"));
         modulesDict["__builtins__"] = object(modHandle);
         modulesDict.update(extraGlobals);
 

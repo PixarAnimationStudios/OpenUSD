@@ -1152,5 +1152,54 @@ class TestUsdPrim(unittest.TestCase):
                 isinstance(child.GetPropertyAtPath("Grandchild.y"),
                 Usd.Relationship))
 
+    def test_GetDescription(self):
+        rootLayer = Sdf.Layer.CreateAnonymous(".usda")
+        rootLayer.ImportFromString("""
+        #usda 1.0
+
+        def Scope "Ref"
+        { 
+            def Scope "Child"
+            {
+            }
+        }
+
+        def Scope "Instance" (
+            instanceable = True
+            references = </Ref>
+        )
+        {
+        }
+        """.strip())
+
+        s = Usd.Stage.Open(rootLayer)
+
+        basic = s.GetPrimAtPath("/Ref")
+        basicChild = basic.GetChild("Child")
+
+        instance = s.GetPrimAtPath("/Instance")
+        instanceProxyChild = instance.GetChild("Child")
+
+        prototype = instance.GetPrototype()
+        prototypeChild = prototype.GetChild("Child")
+
+        print(basic.GetDescription())
+        print(basicChild.GetDescription())
+        print(instance.GetDescription())
+        print(instanceProxyChild.GetDescription())
+        print(prototype.GetDescription())
+        print(prototypeChild.GetDescription())
+
+        # Drop the Usd.Stage and ensure GetDescription on the now-expired
+        # Usd.Prims does not crash.
+        del s
+
+        print(basic.GetDescription())
+        print(basicChild.GetDescription())
+        print(instance.GetDescription())
+        print(instanceProxyChild.GetDescription())
+        print(prototype.GetDescription())
+        print(prototypeChild.GetDescription())
+
 if __name__ == "__main__":
     unittest.main()

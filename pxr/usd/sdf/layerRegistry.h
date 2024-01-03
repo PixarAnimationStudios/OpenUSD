@@ -33,7 +33,6 @@
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/identity.hpp>
-#include <boost/noncopyable.hpp>
 
 #include <string>
 #include <iosfwd>
@@ -49,8 +48,10 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// is inserted into the layer registry. This allows SdfLayer::Find/FindOrOpen
 /// to locate loaded layers.
 ///
-class Sdf_LayerRegistry : boost::noncopyable
+class Sdf_LayerRegistry
 {
+    Sdf_LayerRegistry(const Sdf_LayerRegistry&) = delete;
+    Sdf_LayerRegistry& operator=(const Sdf_LayerRegistry&) = delete;
 public:
     /// Constructor.
     Sdf_LayerRegistry();
@@ -70,15 +71,14 @@ public:
     SdfLayerHandle Find(const std::string &layerPath,
                         const std::string &resolvedPath=std::string()) const;
 
-    /// Returns a layer from the registry, consulting the by_identifier index
-    /// with the \p layerPath as provided.
-    SdfLayerHandle FindByIdentifier(const std::string& layerPath) const;
-
     /// Returns all valid layers held in the registry as a set.
     SdfLayerHandleSet GetLayers() const;
 
 private:
-    
+    // Returns a layer from the registry, consulting the by_identifier index
+    // with the \p layerPath as provided.
+    SdfLayerHandle _FindByIdentifier(const std::string& layerPath) const;
+
     // Returns a layer from the registry, consulting the by_repository_path
     // index with the \p layerPath as provided.
     SdfLayerHandle _FindByRepositoryPath(const std::string& layerPath) const;

@@ -34,8 +34,11 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usd/collectionAPI.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
+#include "pxr/usd/usdLux/lightAPI.h"
+#include "pxr/usd/usdLux/lightFilter.h"
 #include "pxr/usd/usdRender/settingsBase.h"
 
+#include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 
@@ -119,10 +122,12 @@ HdDataSourceLocatorSet
 UsdImagingPrimAdapter::InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (subprim.IsEmpty()) {
-        return UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
+        return UsdImagingDataSourcePrim::Invalidate(
+            prim, subprim, properties, invalidationType);
     }
 
     return HdDataSourceLocatorSet();
@@ -139,9 +144,11 @@ UsdImagingPrimAdapter::InvalidateImagingSubprimFromDescendent(
         UsdPrim const& prim,
         UsdPrim const& descendentPrim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
-    return InvalidateImagingSubprim(descendentPrim, subprim, properties);
+    return InvalidateImagingSubprim(
+        descendentPrim, subprim, properties, invalidationType);
 }
 
 // ----------------------------------------------------------------------------
@@ -617,6 +624,141 @@ UsdImagingPrimAdapter::GetVolumeFieldDescriptors(UsdPrim const& usdPrim,
     return HdVolumeFieldDescriptorVector();
 }
 
+static VtValue
+_GetUsdPrimAttribute(
+    const UsdPrim& prim,
+    const TfToken& attrName,
+    UsdTimeCode time)
+{
+    VtValue value;
+    if (prim.HasAttribute(attrName)) {
+        UsdAttribute attr = prim.GetAttribute(attrName);
+        attr.Get(&value, time);
+    }
+    return value;
+}
+
+/*static*/
+UsdAttribute
+UsdImagingPrimAdapter::LookupLightParamAttribute(
+    UsdPrim const& prim,
+    TfToken const& paramName)
+{
+    // Fallback to USD attributes.
+    static const std::unordered_map<TfToken, TfToken, TfHash> paramToAttrName({
+        { HdLightTokens->angle, UsdLuxTokens->inputsAngle },
+        { HdLightTokens->color, UsdLuxTokens->inputsColor },
+        { HdLightTokens->colorTemperature, 
+            UsdLuxTokens->inputsColorTemperature },
+        { HdLightTokens->diffuse, UsdLuxTokens->inputsDiffuse },
+        { HdLightTokens->enableColorTemperature, 
+            UsdLuxTokens->inputsEnableColorTemperature },
+        { HdLightTokens->exposure, UsdLuxTokens->inputsExposure },
+        { HdLightTokens->height, UsdLuxTokens->inputsHeight },
+        { HdLightTokens->intensity, UsdLuxTokens->inputsIntensity },
+        { HdLightTokens->length, UsdLuxTokens->inputsLength },
+        { HdLightTokens->normalize, UsdLuxTokens->inputsNormalize },
+        { HdLightTokens->radius, UsdLuxTokens->inputsRadius },
+        { HdLightTokens->specular, UsdLuxTokens->inputsSpecular },
+        { HdLightTokens->textureFile, UsdLuxTokens->inputsTextureFile },
+        { HdLightTokens->textureFormat, UsdLuxTokens->inputsTextureFormat },
+        { HdLightTokens->width, UsdLuxTokens->inputsWidth },
+
+        { HdLightTokens->shapingFocus, UsdLuxTokens->inputsShapingFocus },
+        { HdLightTokens->shapingFocusTint, 
+            UsdLuxTokens->inputsShapingFocusTint },
+        { HdLightTokens->shapingConeAngle, 
+            UsdLuxTokens->inputsShapingConeAngle },
+        { HdLightTokens->shapingConeSoftness, 
+            UsdLuxTokens->inputsShapingConeSoftness },
+        { HdLightTokens->shapingIesFile, UsdLuxTokens->inputsShapingIesFile },
+        { HdLightTokens->shapingIesAngleScale, 
+            UsdLuxTokens->inputsShapingIesAngleScale },
+        { HdLightTokens->shapingIesNormalize, 
+            UsdLuxTokens->inputsShapingIesNormalize },
+        { HdLightTokens->shadowEnable, UsdLuxTokens->inputsShadowEnable },
+        { HdLightTokens->shadowColor, UsdLuxTokens->inputsShadowColor },
+        { HdLightTokens->shadowDistance, UsdLuxTokens->inputsShadowDistance },
+        { HdLightTokens->shadowFalloff, UsdLuxTokens->inputsShadowFalloff },
+        { HdLightTokens->shadowFalloffGamma, 
+            UsdLuxTokens->inputsShadowFalloffGamma }
+    });
+
+    const TfToken *attrName = TfMapLookupPtr(paramToAttrName, paramName);
+
+    if (prim.HasAttribute(attrName ? *attrName : paramName)) {
+        return prim.GetAttribute(attrName ? *attrName : paramName);
+    }
+
+    return UsdAttribute();
+}
+
+VtValue
+UsdImagingPrimAdapter::GetLightParamValue(
+    const UsdPrim& prim,
+    const SdfPath& cachePath,
+    const TfToken& paramName,
+    UsdTimeCode time) const
+{
+    UsdLuxLightAPI light = UsdLuxLightAPI(prim);
+    UsdImaging_CollectionCache& collectionCache = _GetCollectionCache();
+    if (!light) {
+        // Its ok that this is not a light. Lets assume its a light filter.
+        // Asking for the lightFilterType is the render delegates way of
+        // determining the type of the light filter.
+        if (paramName == HdTokens->lightFilterType) {
+            // Use the schema type name from the prim type info which is the
+            // official type of the prim.
+            return VtValue(prim.GetPrimTypeInfo().GetSchemaTypeName());
+        }
+        if (paramName == HdTokens->lightFilterLink) {
+            UsdLuxLightFilter lightFilter = UsdLuxLightFilter(prim);
+            UsdCollectionAPI lightFilterLink =
+                lightFilter.GetFilterLinkCollectionAPI();
+            return VtValue(collectionCache.GetIdForCollection(
+                lightFilterLink));
+        }
+        // fallback to usd attributes
+        return _GetUsdPrimAttribute(prim, paramName, time);
+    }
+
+    if (paramName == HdTokens->lightLink) {
+        UsdCollectionAPI lightLink = light.GetLightLinkCollectionAPI();
+        return VtValue(collectionCache.GetIdForCollection(lightLink));
+    } else if (paramName == HdTokens->filters) {
+        SdfPathVector filterPaths;
+        light.GetFiltersRel().GetForwardedTargets(&filterPaths);
+        return VtValue(filterPaths);
+    } else if (paramName == HdTokens->shadowLink) {
+        UsdCollectionAPI shadowLink = light.GetShadowLinkCollectionAPI();
+        return VtValue(collectionCache.GetIdForCollection(shadowLink));
+    } else if (paramName == HdLightTokens->intensity) {
+        // return 0.0 intensity if scene lights are not enabled
+        if (!_GetSceneLightsEnabled()) {
+            return VtValue(0.0f);
+        }
+
+        // return 0.0 intensity if the scene lights are not visible
+        if (!GetVisible(prim, cachePath, time)) {
+            return VtValue(0.0f);
+        }
+    } else if (paramName == HdTokens->isLight) {
+        return VtValue(!!light);
+    } else if (paramName == HdTokens->materialSyncMode) {
+        VtValue val;
+        light.GetMaterialSyncModeAttr().Get(&val, time);
+        return val;
+    }
+
+    // Fallback to USD attributes.
+    VtValue value;
+    if (UsdAttribute attr = LookupLightParamAttribute(prim, paramName)) {
+        attr.Get(&value, time);
+    }
+
+    return value;
+}
+
 void
 UsdImagingPrimAdapter::SetDelegate(UsdImagingDelegate* delegate)
 {
@@ -750,6 +892,13 @@ UsdImagingPrimAdapter::_GetMaterialRenderContexts() const
 {
     return _delegate->GetRenderIndex().GetRenderDelegate()->
         GetMaterialRenderContexts();
+}
+
+TfTokenVector
+UsdImagingPrimAdapter::_GetRenderSettingsNamespaces() const
+{
+    return _delegate->GetRenderIndex().GetRenderDelegate()->
+        GetRenderSettingsNamespaces();
 }
 
 bool 
@@ -1332,6 +1481,63 @@ TfToken
 UsdImagingPrimAdapter::GetModelDrawMode(UsdPrim const& prim)
 {
     return _delegate->_GetModelDrawMode(prim);
+}
+
+namespace {
+template<typename T>
+T
+_GetAttrValue(UsdAttribute const& attr, T defaultVal) {
+    if (attr) {
+        VtValue val;
+        attr.Get(&val);
+        if (!val.IsEmpty()) {
+            return val.UncheckedGet<T>();
+        }
+    }
+    return defaultVal;
+}
+} // anonymous namespace
+
+HdModelDrawMode
+UsdImagingPrimAdapter::GetFullModelDrawMode(UsdPrim const& prim)
+{
+    HdModelDrawMode modelDrawMode;
+
+    if (!prim.IsModel()) {
+        return modelDrawMode;
+    }
+
+    // Use UsdImagingDelegate methods for consistency of logic.
+    modelDrawMode.drawMode = GetModelDrawMode(prim);
+    modelDrawMode.applyDrawMode = _delegate->_IsDrawModeApplied(prim);
+
+    UsdGeomModelAPI geomModelAPI(prim);
+
+    modelDrawMode.drawModeColor = _GetAttrValue<GfVec3f>(
+        geomModelAPI.GetModelDrawModeColorAttr(), GfVec3f(0.18));
+
+    modelDrawMode.cardGeometry = _GetAttrValue<TfToken>(
+        geomModelAPI.GetModelCardGeometryAttr(), modelDrawMode.cardGeometry);
+
+    modelDrawMode.cardTextureXPos = _GetAttrValue<SdfAssetPath>(
+        geomModelAPI.GetModelCardTextureXPosAttr(), SdfAssetPath());
+    
+    modelDrawMode.cardTextureYPos = _GetAttrValue<SdfAssetPath>(
+        geomModelAPI.GetModelCardTextureYPosAttr(), SdfAssetPath());
+    
+    modelDrawMode.cardTextureZPos = _GetAttrValue<SdfAssetPath>(
+        geomModelAPI.GetModelCardTextureZPosAttr(), SdfAssetPath());
+    
+    modelDrawMode.cardTextureXNeg = _GetAttrValue<SdfAssetPath>(
+        geomModelAPI.GetModelCardTextureXNegAttr(), SdfAssetPath());
+    
+    modelDrawMode.cardTextureYNeg = _GetAttrValue<SdfAssetPath>(
+        geomModelAPI.GetModelCardTextureYNegAttr(), SdfAssetPath());
+    
+    modelDrawMode.cardTextureZNeg = _GetAttrValue<SdfAssetPath>(
+        geomModelAPI.GetModelCardTextureZNegAttr(), SdfAssetPath());  
+
+    return modelDrawMode;
 }
 
 /*virtual*/ 

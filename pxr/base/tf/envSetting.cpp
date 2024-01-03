@@ -40,9 +40,8 @@
 #include "pxr/base/tf/pyUtils.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
-#include <boost/variant/get.hpp>
-#include <boost/variant/variant.hpp>
 #include <mutex>
+#include <variant>
 
 using std::string;
 
@@ -119,7 +118,7 @@ public:
         TfRegistryManager::GetInstance().SubscribeTo<Tf_EnvSettingRegistry>();
     }
 
-    using VariantType = boost::variant<int, bool, std::string>;
+    using VariantType = std::variant<int, bool, std::string>;
 
     template <typename U>
     bool Define(string const& varName,
@@ -133,13 +132,15 @@ public:
             // lock.  It's entirely possible that another thread may have
             // initialized our TfEnvSetting while we were waiting.
             if (cachedValue->load()) {
-                return _printAlerts;
+                // Only the caller that successfully set the value
+                // should print the alert.
+                return false;
             }
 
             TfHashMap<string, VariantType, TfHash>::iterator it;
             std::tie(it, inserted) = _valuesByName.insert({varName, value});
 
-            U* entryPointer = boost::get<U>(&(it->second));
+            U* entryPointer = std::get_if<U>(std::addressof(it->second));
             cachedValue->store(entryPointer);
         }
 
@@ -226,21 +227,10 @@ template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<int> *);
 template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<string> *);
 
 TF_API
-boost::variant<int, bool, std::string> const *
+std::variant<int, bool, std::string> const *
 Tf_GetEnvSettingByName(std::string const& name)
 {
     return Tf_EnvSettingRegistry::GetInstance().LookupByName(name);
-}
-
-void TF_API Tf_InitEnvSettings()
-{
-    // Cause the registry to be created.  Crucially, this subscribes to
-    // Tf_EnvSettingRegistry, ensuring that all env settings are defined
-    // before we return.  If we don't do this TfGetEnvSetting() will call
-    // Tf_InitializeEnvSetting() which will do the subscribe which will
-    // call TfGetEnvSetting() again which will do Tf_InitializeEnvSetting()
-    // and both Tf_InitializeEnvSetting() will try to define the setting.
-    Tf_EnvSettingRegistry::GetInstance();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

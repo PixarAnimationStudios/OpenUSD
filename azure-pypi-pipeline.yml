@@ -1,10 +1,18 @@
 name: PyPI_Packaging
 
-# Trigger this build whenever this pipeline file is changed, or when setup.py
-# or other supporting files are updated. This way we will build new pypi
-# packages each time we update the version number, or any other information
-# listed here or in setup.py, like supported python versions.
+# Trigger this build whenever the dev or release branches are updated,
+# or on pull requests that affect PyPI-related files.
+#
+# Ideally we'd run this pipeline for all pull requests, but doing so consumes
+# our limited number of slots on Azure and almost always just duplicates the
+# build done in the main pipeline.
 trigger:
+    branches:
+        include:
+        - dev
+        - release
+
+pr:
     branches:
         include:
         - dev
@@ -14,8 +22,6 @@ trigger:
         - azure-pypi-pipeline.yml
         - build_scripts/pypi/*.py
         - build_scripts/pypi/package_files/*
-        exclude:
-        - /
 
 # Azure does not support an empty string as a default argument, so we use a
 # special 'none' string for post_release_tag.
@@ -78,7 +84,7 @@ stages:
         # PXR_PY_UNDEFINED_DYNAMIC_LOOKUP flag will ensure that we never try to
         # link against this library anyway, so it doesn't matter.
         docker exec usdmanylinux $(PYTHON_INTERPRETER) -c "import pathlib,sysconfig; pathlib.Path(sysconfig.get_config_var('LIBDIR'), sysconfig.get_config_var('LDLIBRARY')).touch()"
-        docker exec usdmanylinux $(PYTHON_INTERPRETER)  build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-imaging --no-examples --no-tutorials --build /opt/USD/gen/build --src /opt/USD/gen/src /opt/USD/inst -v
+        docker exec usdmanylinux $(PYTHON_INTERPRETER)  build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --build /opt/USD/gen/build --src /opt/USD/gen/src /opt/USD/inst -v
       displayName: 'Building USD'
     - bash: |
         docker exec usdmanylinux mkdir ./packaging
@@ -134,7 +140,7 @@ stages:
         call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat
         set BOOST_ROOT=
         python --version
-        python build_scripts/build_usd.py --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF -DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-imaging --no-examples --no-tutorials --build %HOME%/USDgen/build --src %HOME%/USDgen/src %HOME%/USDinst -v
+        python build_scripts/build_usd.py --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF -DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --build %HOME%/USDgen/build --src %HOME%/USDgen/src %HOME%/USDinst -v
       displayName: 'Building USD'
     - script: |
         dir
@@ -191,7 +197,7 @@ stages:
         addToPath: true
     - script: |
         sudo xcode-select -s /Applications/Xcode_13.2.app/Contents/Developer
-        $(PYTHON_INTERPRETER) build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pluginfo" --no-imaging --no-examples --no-tutorials --generator Xcode --build-target universal --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst -v
+        $(PYTHON_INTERPRETER) build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --generator Xcode --build-target universal --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst -v
       displayName: 'Building USD'
     - bash: |
         $(PYTHON_INTERPRETER) -m pip install delocate wheel

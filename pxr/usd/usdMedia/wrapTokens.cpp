@@ -83,4 +83,6 @@ void wrapUsdMediaTokens()
     _AddToken(cls, "spatial", UsdMediaTokens->spatial);
     _AddToken(cls, "startTime", UsdMediaTokens->startTime);
     _AddToken(cls, "thumbnails", UsdMediaTokens->thumbnails);
+    _AddToken(cls, "AssetPreviewsAPI", UsdMediaTokens->AssetPreviewsAPI);
+    _AddToken(cls, "SpatialAudio", UsdMediaTokens->SpatialAudio);
 }

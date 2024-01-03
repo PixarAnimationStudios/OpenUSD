@@ -33,7 +33,6 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/spec.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
 #include <functional>
@@ -50,8 +49,9 @@ SDF_DECLARE_HANDLES(SdfSpec);
 ///
 template <class TypePolicy>
 class Sdf_ListEditor
-    : public boost::noncopyable 
 {
+    Sdf_ListEditor(const Sdf_ListEditor&) = delete;
+    Sdf_ListEditor& operator=(const Sdf_ListEditor&) = delete;
 private:
     typedef Sdf_ListEditor<TypePolicy> This;
 

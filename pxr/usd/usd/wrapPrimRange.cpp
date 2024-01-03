@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/primRange.h"
+#include "pxr/base/tf/pyUtils.h"
 
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
@@ -162,11 +163,9 @@ public:
         // exception.
         _RaiseIfAtEnd();
         if (!curPrim) {
-            PyErr_SetString(
-                PyExc_RuntimeError,
+            TfPyThrowRuntimeError(
                 TfStringPrintf("Iterator points to %s",
-                               curPrim.GetDescription().c_str()).c_str());
-            throw_error_already_set();
+                               curPrim.GetDescription().c_str()));
         }
         if (didFirst) {
             ++iter;
@@ -180,8 +179,7 @@ public:
 
     void _RaiseIfAtEnd() const {
         if (iter == range->_rng.end()) {
-            PyErr_SetString(PyExc_StopIteration, "PrimRange at end");
-            throw_error_already_set();
+            TfPyThrowStopIteration("PrimRange at end");
         }
     }
 
@@ -195,10 +193,9 @@ Usd_PyPrimRangeIterator
 Usd_PyPrimRange::__iter__() const
 {
     if (!_rng.empty() && !_startPrim) {
-        PyErr_SetString(
-            PyExc_RuntimeError,
+        TfPyThrowRuntimeError(
             TfStringPrintf("Invalid range starting with %s",
-                           _startPrim.GetDescription().c_str()).c_str());
+                           _startPrim.GetDescription().c_str()));
     }
     return Usd_PyPrimRangeIterator(this);
 }
@@ -264,7 +261,7 @@ void wrapUsdPrimRange()
             // All we want is to return 'self'.
             .def("__iter__", static_cast<void (*)(Usd_PyPrimRangeIterator)>
                      ([](Usd_PyPrimRangeIterator){}), return_self<>())
-            .def(TfPyIteratorNextMethodName, &Usd_PyPrimRangeIterator::next)
+            .def("__next__", &Usd_PyPrimRangeIterator::next)
             .def("IsPostVisit", &Usd_PyPrimRangeIterator::IsPostVisit)
             .def("PruneChildren", &Usd_PyPrimRangeIterator::PruneChildren)
             .def("IsValid", &Usd_PyPrimRangeIterator::IsValid,

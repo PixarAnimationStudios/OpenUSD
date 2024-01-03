@@ -100,7 +100,7 @@ _GetTimeSamplesInInterval(const UsdGeomPrimvar &self,
     return result;
 }
 
-static size_t __hash__(const UsdGeomPrimvar &self) { return hash_value(self); }
+static size_t __hash__(const UsdGeomPrimvar &self) { return TfHash{}(self); }
 
 // We override __getattribute__ for UsdGeomPrimvar to check object validity
 // and raise an exception instead of crashing from Python.

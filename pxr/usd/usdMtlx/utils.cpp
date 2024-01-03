@@ -237,30 +237,14 @@ UsdMtlxStandardFileExtensions()
 static void
 _ReadFromAsset(mx::DocumentPtr doc, const ArResolvedPath& resolvedPath,
                const mx::FileSearchPath& searchPath = mx::FileSearchPath(),
-               const mx::XmlReadOptions* readOptionsIn = nullptr)
+               const mx::XmlReadOptions* readOptionsIn = nullptr);
+
+static void
+_ReadFromString(mx::DocumentPtr doc, const std::string& s,
+                const ArResolvedPath& resolvedPath = ArResolvedPath(),
+                const mx::FileSearchPath& searchPath = mx::FileSearchPath(),
+                const mx::XmlReadOptions* readOptionsIn = nullptr)
 {
-    std::shared_ptr<const char> buffer;
-    size_t bufferSize = 0;
-
-    std::tie(buffer, bufferSize) = [&resolvedPath]() {
-        const std::shared_ptr<ArAsset> asset = 
-            ArGetResolver().OpenAsset(resolvedPath);
-        return asset ?
-            std::make_pair(asset->GetBuffer(), asset->GetSize()) :
-            std::make_pair(std::shared_ptr<const char>(), 0ul);
-    }();
-
-    if (!buffer) {
-        TF_RUNTIME_ERROR("Unable to open MaterialX document '%s'",
-                         resolvedPath.GetPathString().c_str());
-        return;
-    }
-
-    // Copy contents of file into a string to pass to MaterialX. 
-    // MaterialX does have a std::istream-based API so we could try to use that
-    // if the string copy becomes a burden.
-    const std::string s(buffer.get(), bufferSize);
-
     // Set up an XmlReadOptions with a callback to this function so that we
     // can also handle any XInclude paths using the ArAsset API.
     mx::XmlReadOptions readOptions =
@@ -313,6 +297,34 @@ _ReadFromAsset(mx::DocumentPtr doc, const ArResolvedPath& resolvedPath,
     mx::readFromXmlString(doc, s, searchPath, &readOptions);
 }
 
+static void
+_ReadFromAsset(mx::DocumentPtr doc, const ArResolvedPath& resolvedPath,
+               const mx::FileSearchPath& searchPath,
+               const mx::XmlReadOptions* readOptionsIn)
+{
+    std::shared_ptr<const char> buffer;
+    size_t bufferSize = 0;
+
+    if (std::shared_ptr<ArAsset> const asset = 
+                                ArGetResolver().OpenAsset(resolvedPath)) {
+        buffer = asset->GetBuffer();
+        bufferSize = asset->GetSize();
+    }
+
+    if (!buffer) {
+        TF_RUNTIME_ERROR("Unable to open MaterialX document '%s'",
+                         resolvedPath.GetPathString().c_str());
+        return;
+    }
+
+    // Copy contents of file into a string to pass to MaterialX. 
+    // MaterialX does have a std::istream-based API so we could try to use that
+    // if the string copy becomes a burden.
+    const std::string s(buffer.get(), bufferSize);
+
+    _ReadFromString(doc, s, resolvedPath, searchPath, readOptionsIn);
+}
+
 mx::DocumentPtr
 UsdMtlxReadDocument(const std::string& resolvedPath)
 {
@@ -351,7 +363,8 @@ UsdMtlxReadDocument(const std::string& resolvedPath)
 mx::ConstDocumentPtr 
 UsdMtlxGetDocumentFromString(const std::string &mtlxXml)
 {
-    std::string hashStr = std::to_string(std::hash<std::string>{}(mtlxXml));
+    const std::string hashStr =
+        std::to_string(std::hash<std::string>{}(mtlxXml));
     // Look up in the cache, inserting a null document if missing.
     auto insertResult = _GetCache().emplace(hashStr, nullptr);
     auto& document = insertResult.first->second;
@@ -359,7 +372,7 @@ UsdMtlxGetDocumentFromString(const std::string &mtlxXml)
         // cache miss
         try {
             auto doc = mx::createDocument();
-            mx::readFromXmlString(doc, mtlxXml);
+            _ReadFromString(doc, mtlxXml);
             document = doc;
         }
         catch (mx::Exception& x) {
@@ -372,7 +385,7 @@ UsdMtlxGetDocumentFromString(const std::string &mtlxXml)
 }
 
 static void
-_ImportLibraries(mx::DocumentPtr *document, const NdrStringVec &searchPaths)
+_ImportLibraries(const NdrStringVec& searchPaths, mx::Document* document)
 {
     for (auto&& fileResult : NdrFsHelpersDiscoverFiles(searchPaths,
                                 UsdMtlxStandardFileExtensions(), false)) {
@@ -388,7 +401,7 @@ _ImportLibraries(mx::DocumentPtr *document, const NdrStringVec &searchPaths)
             // Merge this document into the global library
             // This properly sets the attributes on the destination 
             // elements, like source URI and namespace
-            (*document)->importLibrary(doc);
+            document->importLibrary(doc);
         }
         catch (mx::Exception& x) {
             TF_RUNTIME_ERROR("MaterialX error reading '%s': %s",
@@ -414,8 +427,8 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
     // Read the file or the standard library files.
     if (resolvedUri.empty()) {
         document = mx::createDocument();
-        _ImportLibraries(&document, UsdMtlxStandardLibraryPaths());
-        _ImportLibraries(&document, UsdMtlxCustomSearchPaths());
+        _ImportLibraries(UsdMtlxStandardLibraryPaths(), document.get());
+        _ImportLibraries(UsdMtlxCustomSearchPaths(), document.get());
     }
     else {
         document = UsdMtlxReadDocument(resolvedUri);
@@ -586,7 +599,12 @@ UsdMtlxGetPackedUsdValues(const std::string& values, const std::string& type)
 std::vector<std::string>
 UsdMtlxSplitStringArray(const std::string& s)
 {
-    return mx::splitString(s, mx::ARRAY_VALID_SEPARATORS);
+    static const std::string _CommaSeparator = ",";
+    std::vector<std::string> strs = mx::splitString(s, _CommaSeparator);
+    for (std::string &str : strs) {
+        str = mx::trimSpaces(str);
+    }
+    return strs;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

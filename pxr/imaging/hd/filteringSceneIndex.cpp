@@ -69,6 +69,19 @@ HdSingleInputFilteringSceneIndexBase::GetInputScenes() const
     return {_inputSceneIndex};
 }
 
+void HdSingleInputFilteringSceneIndexBase::_PrimsRenamed(
+        const HdSceneIndexBase &sender,
+        const HdSceneIndexObserver::RenamedPrimEntries &entries)
+{
+    HdSceneIndexObserver::RemovedPrimEntries removed;
+    HdSceneIndexObserver::AddedPrimEntries added;
+    HdSceneIndexObserver::ConvertPrimsRenamedToRemovedAndAdded(
+        sender, entries, &removed, &added);
+
+    _PrimsRemoved(sender, removed);
+    _PrimsAdded(sender, added);
+}
+
 void
 HdSingleInputFilteringSceneIndexBase::_Observer::PrimsAdded(
         const HdSceneIndexBase &sender,
@@ -92,5 +105,14 @@ HdSingleInputFilteringSceneIndexBase::_Observer::PrimsDirtied(
 {
     _owner->_PrimsDirtied(sender, entries);
 }
+
+void
+HdSingleInputFilteringSceneIndexBase::_Observer::PrimsRenamed(
+    const HdSceneIndexBase &sender,
+    const HdSceneIndexObserver::RenamedPrimEntries &entries)
+{
+    _owner->_PrimsRenamed(sender, entries);
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

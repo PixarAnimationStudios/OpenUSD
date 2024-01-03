@@ -38,6 +38,7 @@
 #include <iosfwd>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -49,6 +50,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(Pcp_LayerStackRegistry);
 class ArResolverContext;
 class Pcp_LayerStackRegistry;
 class Pcp_MutedLayers;
+class PcpExpressionVariables;
 class PcpLayerStackChanges;
 class PcpLifeboat;
 
@@ -122,6 +124,17 @@ public:
     bool HasLayer(const SdfLayerHandle& layer) const;
     PCP_API
     bool HasLayer(const SdfLayerRefPtr& layer) const;
+
+    /// Return the composed expression variables for this layer stack.
+    const PcpExpressionVariables& GetExpressionVariables() const
+    { return *_expressionVariables; }
+
+    /// Return the set of expression variables used during the computation
+    /// of this layer stack. For example, this may include the variables
+    /// used in expression variable expressions in sublayer asset paths.
+    const std::unordered_set<std::string>&
+    GetExpressionVariableDependencies() const 
+    { return _expressionVariableDependencies; }
 
     /// Return the time codes per second value of the layer stack. This is 
     /// usually the same as the computed time codes per second of the root layer
@@ -206,11 +219,12 @@ private:
     // Needs access to _sublayerSourceInfo
     friend bool Pcp_NeedToRecomputeDueToAssetPathChange(const PcpLayerStackPtr&);
 
-    // It's a coding error to construct a layer stack with a NULL root layer.
+    // Construct a layer stack for the given \p identifier that will be
+    // installed into \p registry. This installation is managed by
+    // \p registry and does not occur within the c'tor. See comments on
+    // _registry for more details.
     PcpLayerStack(const PcpLayerStackIdentifier &identifier,
-                  const std::string &fileFormatTarget,
-                  const Pcp_MutedLayers &mutedLayers,
-                  bool isUsd);
+                  const Pcp_LayerStackRegistry &registry);
 
     void _BlowLayers();
     void _BlowRelocations();
@@ -231,6 +245,7 @@ private:
 private:
     /// The identifier that uniquely identifies this layer stack.
     const PcpLayerStackIdentifier _identifier;
+
     /// The registry (1:1 with a PcpCache) this layer stack belongs to.  This
     /// may not be set, particularly when a registry is creating a layer stack
     /// but before it's been installed in the registry.
@@ -264,6 +279,7 @@ private:
 
     /// Tracks information used to compute sublayer asset paths.
     struct _SublayerSourceInfo {
+        _SublayerSourceInfo() = default;
         _SublayerSourceInfo(
             const SdfLayerHandle& layer_,
             const std::string& authoredSublayerPath_,
@@ -304,6 +320,12 @@ private:
 
     /// List of all prim spec paths where relocations were found.
     SdfPathVector _relocatesPrimPaths;
+
+    /// Composed expression variables.
+    std::shared_ptr<PcpExpressionVariables> _expressionVariables;
+
+    /// Set of expression variables this layer stack depends on.
+    std::unordered_set<std::string> _expressionVariableDependencies;
 
     bool _isUsd;
 };

@@ -810,10 +810,33 @@ HgiMetalStructTypeDeclarationShaderSection::WriteDeclaration(
     ss << " ";
     WriteIdentifier(ss);
     ss << " {\n";
+
+    // For struct declaration of the post-tess control or post-tess vertex 
+    // shader input, don't shadergen the array size for the struct members. The 
+    // array size in THIS specific context refers to the number of structs, 
+    // not struct members.
+    // e.g. we DON'T want to generate:
+    // struct MSLTcInput {
+    //     vec3 points[[attribute(0)]][VERTEX_CONTROL_POINTS_PER_PATCH];
+    //};
+    // here since points is not actually array-valued within the PTCS shader 
+    // input struct. Rather, it is MSLTcInput that we have multiple of.
+    // Keep in mind that the struct members here might actually be array-valued 
+    // within their corresponding scope member declaration.
+    // e.g. In the PTCS scope member declaration, we want to shadergen:
+    // vec3 points[VERTEX_CONTROL_POINTS_PER_PATCH];
+
+    const std::string &identifier = GetIdentifier();
+    const bool PTCSOrPTVS =
+        identifier == "MSLTcInput" || identifier == "MSLTvInput";
+
     for (HgiMetalShaderSection* member : _members) {
         member->WriteParameter(ss);
         if (!member->HasBlockInstanceIdentifier()) {
             member->WriteAttributesWithIndex(ss);
+        }
+        if (!PTCSOrPTVS) {
+            member->WriteArraySize(ss);
         }
         ss << ";\n";
     }
@@ -1104,16 +1127,34 @@ HgiMetalStageOutputShaderSection::VisitEntryPointFunctionExecutions(
             ss << "\n";
         }
         HgiShaderSection *member = structTypeDeclMembers[i];
-        WriteIdentifier(ss);
-        ss << ".";
-        member->WriteIdentifier(ss);
-        ss << " = " << scopeInstanceName << ".";
-        if (member->HasBlockInstanceIdentifier()) {
-            member->WriteBlockInstanceIdentifier(ss);
+        
+        const std::string &arraySize = member->GetArraySize();
+        if (arraySize.empty()) {
+            WriteIdentifier(ss);
             ss << ".";
+            member->WriteIdentifier(ss);
+            ss << " = " << scopeInstanceName << ".";
+            if (member->HasBlockInstanceIdentifier()) {
+                member->WriteBlockInstanceIdentifier(ss);
+                ss << ".";
+            }
+            member->WriteIdentifier(ss);
+            ss << ";";
+        } else {
+            ss << "for (int arrInd = 0; arrInd < " << arraySize <<
+                "; arrInd++) {\n";
+            WriteIdentifier(ss);
+            ss << ".";
+            member->WriteIdentifier(ss);
+            ss << "[arrInd]";
+            ss << " = " << scopeInstanceName << ".";
+            if (member->HasBlockInstanceIdentifier()) {
+                member->WriteBlockInstanceIdentifier(ss);
+                ss << ".";
+            }
+            member->WriteIdentifier(ss);
+            ss << "[arrInd];\n}";
         }
-        member->WriteIdentifier(ss);
-        ss << ";";
     }
     return true;
 }

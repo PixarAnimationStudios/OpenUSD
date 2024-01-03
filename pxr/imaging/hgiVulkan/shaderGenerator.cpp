@@ -240,6 +240,8 @@ HgiVulkanShaderGenerator::_WriteMacros(std::ostream &ss)
           "#define ATOMIC_STORE(a, v) (a) = (v)\n"
           "#define ATOMIC_ADD(a, v) atomicAdd(a, v)\n"
           "#define ATOMIC_EXCHANGE(a, v) atomicExchange(a, v)\n"
+          "#define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, "
+          "expected, desired)\n"
           "#define atomic_int int\n"
           "#define atomic_uint uint\n";
 
@@ -359,8 +361,13 @@ HgiVulkanShaderGenerator::_WriteInOuts(
         "gl_FragColor",
         "gl_FragDepth",
         "gl_PointSize",
-        "gl_ClipDistance",
         "gl_CullDistance",
+    };
+
+    // Some params are built-in, but we may want to declare them in the shader 
+    // anyway, such as to declare their array size.
+    const static std::set<std::string> takenOutParamsToDeclare {
+        "gl_ClipDistance"
     };
 
     const static std::unordered_map<std::string, std::string> takenInParams {
@@ -390,6 +397,20 @@ HgiVulkanShaderGenerator::_WriteInOuts(
         const std::string &paramName = param.nameInShader;
         if (out_qualifier &&
                 takenOutParams.find(paramName) != takenOutParams.end()) {
+            continue;
+        }
+        if (out_qualifier && takenOutParamsToDeclare.find(paramName) !=
+                             takenOutParamsToDeclare.end()) {
+            CreateShaderSection<HgiVulkanMemberShaderSection>(
+                paramName,
+                param.type,
+                param.interpolation,
+                param.sampling,
+                param.storage,
+                HgiShaderSectionAttributeVector(),
+                qualifier,
+                std::string(),
+                param.arraySize);
             continue;
         }
         if (in_qualifier) {

@@ -46,6 +46,8 @@ class HdRenderPass;
 class HdInstancer;
 class HdDriver;
 
+TF_DECLARE_REF_PTRS(HdSceneIndexBase);
+
 using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
 using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
 using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
@@ -413,6 +415,14 @@ public:
     HD_API
     virtual TfTokenVector GetMaterialRenderContexts() const;
 
+    /// Returns a list of namespace prefixes for render settings attributes 
+    /// relevant to a render delegate. This list is used to gather just the 
+    /// relevant attributes from render settings scene description. The default
+    /// is an empty list, which will gather all custom (non-schema) attributes.
+    ///
+    HD_API
+    virtual TfTokenVector GetRenderSettingsNamespaces() const;
+
     ///
     /// Return true to indicate that the render delegate wants rprim primvars
     /// to be filtered by the scene delegate to reduce the amount of primvars
@@ -475,6 +485,34 @@ public:
     const std::string &GetRendererDisplayName() {
         return _displayName;
     }
+
+    ////////////////////////////////////////////////////////////////////////////
+    ///
+    /// Hydra 2.0 API
+    ///
+    /// \note The following methods aid in migrating existing 1.0 based
+    ///       render delegates to the Hydra 2.0 API.
+    ///
+    ////////////////////////////////////////////////////////////////////////////
+    
+    /// Called after the scene index graph is created during render index
+    /// construction, providing a hook point for the render delegate to
+    /// register an observer of the terminal scene index.
+    ///
+    /// \note Render delegates should not assume that the scene index is fully
+    ///       populated at this point.
+    ///
+    HD_API
+    virtual void SetTerminalSceneIndex(
+        const HdSceneIndexBaseRefPtr &terminalSceneIndex);
+
+    /// Called at the beginning of HdRenderIndex::SyncAll, before render index
+    /// prim sync, to provide the render delegate an opportunity to directly
+    /// process change notices from observing the terminal scene index,
+    /// rather than using the Hydra 1.0 Sync algorithm.
+    ///
+    HD_API
+    virtual void Update();
 
 protected:
     /// This class must be derived from.

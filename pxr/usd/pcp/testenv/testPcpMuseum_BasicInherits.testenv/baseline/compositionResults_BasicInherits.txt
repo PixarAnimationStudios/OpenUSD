@@ -143,3 +143,35 @@ Prim Stack:
     root.sdf             /ParentClass/SubrootClass
     root.sdf             /RootClass
 
+------------------------------------------------------------------------
+Results for composing </ModelWithVariant>
+
+Prim Stack:
+    root.sdf             /ModelWithVariant
+    root.sdf             /ModelWithVariant{vset=vsel}
+
+Variant Selections:
+    {vset = vsel}
+
+Child names:
+     ['_class', 'InvalidInherit', 'ValidInherit']
+
+------------------------------------------------------------------------
+Results for composing </ModelWithVariant/_class>
+
+Prim Stack:
+    root.sdf             /ModelWithVariant{vset=vsel}_class
+
+------------------------------------------------------------------------
+Results for composing </ModelWithVariant/InvalidInherit>
+
+Prim Stack:
+    root.sdf             /ModelWithVariant{vset=vsel}InvalidInherit
+
+------------------------------------------------------------------------
+Results for composing </ModelWithVariant/ValidInherit>
+
+Prim Stack:
+    root.sdf             /ModelWithVariant{vset=vsel}ValidInherit
+    root.sdf             /ModelWithVariant{vset=vsel}_class
+

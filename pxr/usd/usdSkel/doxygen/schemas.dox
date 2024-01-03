@@ -251,7 +251,7 @@ def "Model" (
 
 When a _skel:animationSource_ property is defined, it is "inherited" down
 namespace, onto any _Skeleton_ primitive beneath it. So in the above example,
-`</Model/Skel>` will be affected by the SkelAnimation at `</Model/Anim>`.
+`</Model/Skel>` will be affected by the SkelAnimation at `</Anim>`.
 
 There are a couple reasons why data is separated in this manner:
 - Encoding animation separately means that different schemes can be developed
@@ -385,7 +385,7 @@ So at a weight value of -0.25, the shape at 0.25 is applied with a weight of -1.
 
 \section UsdSkel_BindingAPI Binding API Schema
 
-The UsdSkelBindingAPI schema provides a means of bindingboth _Skeleton_ and
+The UsdSkelBindingAPI schema provides a means of binding both _Skeleton_ and
 _SkelAnimation_ into a geometry hierarchy. This schema is also responsible
 for defining joint influences, as well as an optional _geomBindTransform_
 property to define the space for skinning.  Whenever using a UsdSkelBindingAPI
@@ -525,7 +525,7 @@ effect.
 
 Joint influences for skinning points are defined by setting the
 _primvars:skel:jointIndices_ and _primvars:skel:jointWeights_ 
-<a href="https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Primvar">primvars</a>,
+<a href="https://openusd.org/release/glossary.html#usdglossary-primvar">primvars</a>,
 using the UsdSkelBindingAPI. The _jointIndices_ primvar provides an array giving
 the joint index of an influence, while the _jointWeights_ primvar provides a
 weight value corresponding to each of those indices.
@@ -651,7 +651,7 @@ allowing a skinning kernel to exit from a point-deformation loop early.
 \subsection UsdSkel_BindingAPI_GeomBindTransform BindingAPI: GeomBindTransform
 
 For skinning to apply correctly, the constant _primvars:skel:geomBindTransform_ 
-<a href="https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Primvar">primvar</a>
+<a href="https://openusd.org/release/glossary.html#usdglossary-primvar">primvar</a>
 should be authored on each skinnable primitive, using the UsdSkelBindingAPI.
 This primvar stores the world space transform of a skinned primitive at bind
 time. When skinning is applied, points of each skinnable primitive are
@@ -723,12 +723,13 @@ blend shapes than are actually used on `</Mesh>`. This is because an animation
 source is providing animation data for a **complete model** (I.e., multiple
 geometric primitives). The _skel:blendShape_ attribute, as defined on `</Mesh>`,
 provides a mapping between the _blendShapeWeights_ animation data on `</Anim`>
--- which holds weight animation for multiple geometric primitives. The set
+-- which holds weight animation for multiple geometric primitives (although in 
+this example _blendShapeWeights_ is not animated). The set
 of blend shape targets specified by the _skel:blendShapeTargets_ rel identifies,
 for each mapped blend shape token in _skel:blendShapes_, the target
 UsdSkelBlendShape primitive to which animation data should apply.
 
-From the example above, shape `</Mesh/Foo>` is using shapes `['B', 'A']` (in that
+From the example above, `</Mesh>` is using shapes mapped to `['B', 'A']` (in that
 order). First we map the _blendShapeWeights_ from the ordering specified by
 `</Anim.blendShapes>` to the ordering on `</Mesh.blendShapes>`, which gives
 local weight values of [0.75,1.0]. For each token in `</Mesh.blendShapes>`,

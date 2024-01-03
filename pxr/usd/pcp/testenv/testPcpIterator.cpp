@@ -156,6 +156,31 @@ _IterateAndPrintPrimIndex(
 }
 
 static void
+_IterateAndPrintPrimIndexSubtreeRanges(
+    std::ostream& out,
+    PcpCache* cache,
+    const SdfPath& primPath)
+{
+    PcpErrorVector errors;
+    const PcpPrimIndex& primIndex = cache->ComputePrimIndex(primPath, &errors);
+    PcpRaiseErrors(errors);
+
+    for (const auto &node : primIndex.GetNodeRange()) {
+        out << std::endl;
+        out << "Subtree iterating over subtree nodes starting at node " 
+            << Pcp_FormatSite(node.GetSite()) << ":"
+            << std::endl;
+
+        for (const PcpNodeRef &subtreeNode : primIndex.GetNodeSubtreeRange(node)) {
+            out << " ";
+            _ValidateAndPrintNode(out, subtreeNode);
+            out << std::endl;
+        }
+    }
+}
+
+
+static void
 _IterateAndPrintPropertyIndex(
     std::ostream& out,
     PcpCache* cache,
@@ -222,6 +247,30 @@ _TestRandomAccessOperations(IteratorType first, IteratorType last)
         TF_AXIOM(it - idx == first);
         TF_AXIOM(it == first + idx);
     }
+}
+
+// Ensure that using increment/decrement operators and std::prev / std::next
+// produce symmetrical results
+template <class IteratorType>
+static void
+_TestIncrementAndAdvanceSymmetry(IteratorType first, IteratorType last)
+{
+    TF_AXIOM(first != last);
+    TF_AXIOM(std::distance(first, last) > 2);
+
+    IteratorType byIncrement = first;
+    ++byIncrement;
+    ++byIncrement;
+    --byIncrement;
+
+    IteratorType byAdvance = std::prev(std::next(first, 2));
+
+    TF_AXIOM(std::distance(first, byIncrement) == 1);
+    TF_AXIOM(std::distance(first, byAdvance) == 1);
+    TF_AXIOM(std::distance(byIncrement, first) == -1);
+    TF_AXIOM(std::distance(byAdvance, first) == -1);
+    TF_AXIOM(std::distance(byAdvance, byIncrement) == 0);
+    TF_AXIOM(byIncrement == byAdvance);
 }
 
 static std::unique_ptr<PcpCache>
@@ -296,6 +345,27 @@ main(int argc, char** argv)
         _TestComparisonOperations(propRange.first, propRange.second);
     }
 
+    std::cout << "Testing Increment / Advance Symmetry" << std::endl;
+    {
+        PcpErrorVector errors;
+        const PcpPrimIndex& primIndex =
+            cache->ComputePrimIndex(SdfPath("/Model"), &errors);
+        PcpRaiseErrors(errors);
+
+        const PcpNodeRange nodeRange = primIndex.GetNodeRange();
+        _TestIncrementAndAdvanceSymmetry(nodeRange.first, nodeRange.second);
+
+        const PcpPrimRange primRange = primIndex.GetPrimRange();
+        _TestIncrementAndAdvanceSymmetry(primRange.first, primRange.second);
+
+        const PcpPropertyIndex& propIndex =
+            cache->ComputePropertyIndex(SdfPath("/Model.a"), &errors);
+        PcpRaiseErrors(errors);
+
+        const PcpPropertyRange propRange = propIndex.GetPropertyRange();
+        _TestIncrementAndAdvanceSymmetry(propRange.first, propRange.second);
+    }
+
     std::cout << "Testing random access operations..." << std::endl;
     {
         PcpErrorVector errors;
@@ -359,6 +429,13 @@ main(int argc, char** argv)
                     << "====================" << std::endl 
                     << std::endl;
         }
+
+        _IterateAndPrintPrimIndexSubtreeRanges(
+            outfile, cache.get(), SdfPath("/Model"));
+
+        outfile << std::endl 
+                << "====================" << std::endl 
+                << std::endl;
 
         _IterateAndPrintPropertyIndex(
             outfile, cache.get(), SdfPath("/Model.a"), /* localOnly */ true);

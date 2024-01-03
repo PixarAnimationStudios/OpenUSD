@@ -33,7 +33,6 @@
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/inttypes.h"
-#include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyResultConversions.h"
@@ -178,26 +177,10 @@ struct Vt_ValueFromPython {
         }
         if (PyBool_Check(obj_ptr)) {
             // Python bool -> C++ bool.
-            new (storage) VtValue(bool(TfPyInt_AS_LONG(obj_ptr)));
+            new (storage) VtValue(bool(PyLong_AsLong(obj_ptr)));
             data->convertible = storage;
             return;
         }
-#if PY_MAJOR_VERSION == 2
-        if (PyInt_Check(obj_ptr)) {
-            // Python int -> either c++ int or long depending on range.
-            // In Python 3 it will always be a long, so we want to be sure
-            // we fall into the "long" clause below
-            long val = PyInt_AS_LONG(obj_ptr);
-            if (std::numeric_limits<int>::min() <= val && 
-                val <= std::numeric_limits<int>::max()) {
-                new (storage) VtValue(boost::numeric_cast<int>(val));
-            } else {
-                new (storage) VtValue(boost::numeric_cast<long>(val));
-            }
-            data->convertible = storage;
-            return;
-        }
-#endif
         if (PyLong_Check(obj_ptr)) {
             // Python long -> either c++ int or long or unsigned long or long
             // long or unsigned long long or fail, depending on range.
@@ -233,7 +216,7 @@ struct Vt_ValueFromPython {
             data->convertible = storage;
             return;
         }
-        if (TfPyBytes_Check(obj_ptr) || PyUnicode_Check(obj_ptr)) {
+        if (PyBytes_Check(obj_ptr) || PyUnicode_Check(obj_ptr)) {
             // Py string or unicode -> std::string.
             new (storage) VtValue(std::string(extract<std::string>(obj_ptr)));
             data->convertible = storage;

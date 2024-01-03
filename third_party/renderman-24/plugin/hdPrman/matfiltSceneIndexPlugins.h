@@ -73,25 +73,6 @@ protected:
 };
 
 /// ----------------------------------------------------------------------------
-/// \class HdPrman_TerminalsResolvingSceneIndexPlugin
-///
-/// Plugin that provides a scene index that renames termianls (typically
-/// prefixed with "ri:") to the standard Hd terminal tokens.
-///
-/// This plugin is registered with the scene index plugin registry for Prman.
-///
-class HdPrman_TerminalsResolvingSceneIndexPlugin : public HdSceneIndexPlugin
-{
-public:
-    HdPrman_TerminalsResolvingSceneIndexPlugin();
-
-protected:
-    HdSceneIndexBaseRefPtr _AppendSceneIndex(
-        const HdSceneIndexBaseRefPtr &inputScene,
-        const HdContainerDataSourceHandle &inputArgs) override;
-};
-
-/// ----------------------------------------------------------------------------
 /// \class HdPrman_VirtualStructResolvingSceneIndexPlugin
 ///
 /// Plugin that provides a scene index that expands "virtual struct"

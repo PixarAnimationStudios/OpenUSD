@@ -62,5 +62,12 @@ class TestSdfFileFormat(unittest.TestCase):
         exts = Sdf.FileFormat.FindAllFileFormatExtensions()
         self.assertTrue('sdf' in exts)
 
+        # FindAllDerivedFileFormatExtensions
+        exts = Sdf.FileFormat.FindAllDerivedFileFormatExtensions(
+            Tf.Type.FindByName('SdfTextFileFormat'))
+        self.assertTrue('sdf' in exts)
+        with self.assertRaises(Tf.ErrorException):
+            Sdf.FileFormat.FindAllDerivedFileFormatExtensions(Tf.Type())
+
 if __name__ == "__main__":
     unittest.main()

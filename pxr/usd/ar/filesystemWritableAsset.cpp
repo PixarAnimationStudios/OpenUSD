@@ -40,7 +40,9 @@ ArFilesystemWritableAsset::Create(
     ArResolver::WriteMode writeMode)
 {
     const std::string dir = TfGetPathName(resolvedPath);
-    if (!dir.empty() && !TfIsDir(dir) && !TfMakeDirs(dir)) {
+    // Call TfMakedirs with existOk = true so we don't fail if the directory is
+    // created by another thread or process at the same time.
+    if (!dir.empty() && !TfIsDir(dir) && !TfMakeDirs(dir, -1, true)) {
         TF_RUNTIME_ERROR(
             "Could not create directory '%s' for asset '%s'", 
             dir.c_str(), resolvedPath.GetPathString().c_str());

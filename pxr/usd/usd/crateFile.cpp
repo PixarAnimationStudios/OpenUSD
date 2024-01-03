@@ -79,6 +79,7 @@
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/pathTable.h"
 #include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/reference.h"
@@ -319,10 +320,13 @@ namespace Usd_CrateFile {
 
 // XXX: These checks ensure VtValue can hold ValueRep in the lightest
 // possible way -- WBN not to rely on internal knowledge of that.
-static_assert(boost::has_trivial_constructor<ValueRep>::value, "");
-static_assert(boost::has_trivial_copy<ValueRep>::value, "");
-static_assert(boost::has_trivial_assign<ValueRep>::value, "");
-static_assert(boost::has_trivial_destructor<ValueRep>::value, "");
+static_assert(std::is_trivially_constructible<ValueRep>::value, "");
+static_assert(std::is_trivially_copyable<ValueRep>::value, "");
+// In C++17, std::is_trivially_copy_assignable<T> could be used in place of
+// std::is_trivially_assignable
+static_assert(std::is_trivially_assignable<ValueRep&, const ValueRep&>::value,
+              "");
+static_assert(std::is_trivially_destructible<ValueRep>::value, "");
 
 using namespace Usd_CrateValueInliners;
 
@@ -334,21 +338,22 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
-// 0.9.0: Added support for the timecode and timecode[] value types.
-// 0.8.0: Added support for SdfPayloadListOp values and SdfPayload values with
-//        layer offsets.
-// 0.7.0: Array sizes written as 64 bit ints.
-// 0.6.0: Compressed (scalar) floating point arrays that are either all ints or
-//        can be represented efficiently with a lookup table.
-// 0.5.0: Compressed (u)int & (u)int64 arrays, arrays no longer store '1' rank.
-// 0.4.0: Compressed structural sections.
-// 0.3.0: (broken, unused)
-// 0.2.0: Added support for prepend and append fields of SdfListOp.
-// 0.1.0: Fixed structure layout issue encountered in Windows port.
-//        See _PathItemHeader_0_0_1.
-// 0.0.1: Initial release.
+// 0.10.0: Added support for the pathExpression value type.
+//  0.9.0: Added support for the timecode and timecode[] value types.
+//  0.8.0: Added support for SdfPayloadListOp values and SdfPayload values with
+//         layer offsets.
+//  0.7.0: Array sizes written as 64 bit ints.
+//  0.6.0: Compressed (scalar) floating point arrays that are either all ints or
+//         can be represented efficiently with a lookup table.
+//  0.5.0: Compressed (u)int & (u)int64 arrays, arrays no longer store '1' rank.
+//  0.4.0: Compressed structural sections.
+//  0.3.0: (broken, unused)
+//  0.2.0: Added support for prepend and append fields of SdfListOp.
+//  0.1.0: Fixed structure layout issue encountered in Windows port.
+//         See _PathItemHeader_0_0_1.
+//  0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 9;
+constexpr uint8_t USDC_MINOR = 10;
 constexpr uint8_t USDC_PATCH = 0;
 
 CrateFile::Version
@@ -1049,7 +1054,9 @@ public:
     T GetUninlinedValue(uint32_t x, T *) const {
         static_assert(sizeof(T) <= sizeof(x), "");
         T r;
-        memcpy(&r, &x, sizeof(r));
+        char const *srcBytes = reinterpret_cast<char const *>(&x);
+        char *dstBytes = reinterpret_cast<char *>(&r);
+        memcpy(dstBytes, srcBytes, sizeof(r));
         return r;
     }
 
@@ -1160,6 +1167,9 @@ public:
         return SdfAssetPath(Read<string>());
     }
     SdfTimeCode Read(SdfTimeCode *) { return SdfTimeCode(Read<double>()); }
+    SdfPathExpression Read(SdfPathExpression *) {
+        return SdfPathExpression(Read<std::string>());
+    }
     SdfUnregisteredValue Read(SdfUnregisteredValue *) {
         VtValue val = Read<VtValue>();
         if (val.IsHolding<string>())
@@ -1417,9 +1427,16 @@ public:
     void Write(SdfTimeCode const &tc) { 
         crate->_packCtx->RequestWriteVersionUpgrade(
             Version(0, 9, 0),
-            "A timecode or timecode[] value type was detected, which requires "
+            "A timecode or timecode[] value type was detected which requires "
             "crate version 0.9.0.");
         Write(tc.GetValue()); 
+    }
+    void Write(SdfPathExpression const &pathExpr) {
+        crate->_packCtx->RequestWriteVersionUpgrade(
+            Version(0,10,0),
+            "A pathExpression value type was detected which requires crate "
+            "version 0.10.0.");
+        Write(pathExpr.GetText());
     }
     void Write(SdfUnregisteredValue const &urv) { Write(urv.GetValue()); }
     void Write(SdfVariantSelectionMap const &vsmap) { WriteMap(vsmap); }
@@ -2624,7 +2641,7 @@ CrateFile::_AddDeferredSpecs()
 {
     // A map from sample time to VtValues within TimeSamples instances in
     // _deferredSpecs.
-    boost::container::flat_map<double, vector<VtValue *>> allValuesAtAllTimes;
+    pxr_tsl::robin_map<double, vector<VtValue *>> allValuesAtAllTimes;
 
     // Search for the TimeSamples, add to the allValuesAtAllTimes.
     for (auto &spec: _deferredSpecs) {
@@ -2638,12 +2655,22 @@ CrateFile::_AddDeferredSpecs()
         }
     }
 
+    // Create a sorted view of the underlying map keys.
+    std::vector<double> orderedTimes(allValuesAtAllTimes.size());
+    std::transform(std::cbegin(allValuesAtAllTimes),
+                   std::cend(allValuesAtAllTimes),
+                   std::begin(orderedTimes),
+                   [](const auto& element) { return element.first; });
+    std::sort(orderedTimes.begin(), orderedTimes.end());
+
     // Now walk through allValuesAtAllTimes in order and pack all the values,
     // swapping them out with the resulting reps.  This ensures that when we
     // pack the specs, which will re-pack the values, they'll be noops since
     // they are just holding value reps that point into the file.
-    for (auto const &p: allValuesAtAllTimes) {
-        for (VtValue *val: p.second)
+    for (auto const &t: orderedTimes) {
+        auto it = allValuesAtAllTimes.find(t);
+        TF_DEV_AXIOM(it != allValuesAtAllTimes.end());
+        for (VtValue *val: it->second)
             *val = _PackValue(*val);
     }
 
@@ -3226,6 +3253,53 @@ CrateFile::_ReadStructuralSections(Reader reader, int64_t fileSize)
     if (m.IsClean()) _ReadFieldSets(reader);
     if (m.IsClean()) _ReadPaths(reader);
     if (m.IsClean()) _ReadSpecs(reader);
+
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED
+    if (m.IsClean()) {
+        auto errorAndClear = [this]() {
+            TF_RUNTIME_ERROR("Corrupt asset @%s@", _assetPath.c_str());
+            _specs.clear();
+            _fieldSets.clear();
+            _fields.clear();
+        };
+        
+        // Sanity check structural validity.
+
+        // Fields.
+        for (Field const &f: _fields) {
+            if (f.tokenIndex.value >= _tokens.size()) {
+                errorAndClear();
+                return;
+            }
+        }
+
+        // FieldSets.
+        for (FieldIndex fi: _fieldSets) {
+            // Default-constructed FieldIndex terminates field runs, otherwise
+            // must index into _fields.
+            if (fi != FieldIndex() && fi.value >= _fields.size()) {
+                errorAndClear();
+                return;
+            }
+        }
+
+        // Specs.
+        for (Spec const &spec: _specs) {
+            // Range check path indexes, fieldSet indexes, spec types.
+            // Additionally, a fieldSetIndex must either be 0, or the element at
+            // the prior index must be a default-constructed FieldIndex.
+            if (spec.pathIndex.value >= _paths.size() ||
+                spec.fieldSetIndex.value >= _fieldSets.size() ||
+                (spec.fieldSetIndex.value &&
+                 _fieldSets[spec.fieldSetIndex.value-1] != FieldIndex()) ||
+                spec.specType == SdfSpecTypeUnknown ||
+                spec.specType >= SdfNumSpecTypes) {
+                errorAndClear();
+                return;
+            }
+        }
+    }
+#endif // PXR_PREFER_SAFETY_OVER_SPEED
 }
 
 template <class ByteStream>
@@ -3658,7 +3732,8 @@ CrateFile::_ReadCompressedPaths(Reader reader,
     cr.Read(reader, elementTokenIndexes.data(), numPaths);
 
 #ifdef PXR_PREFER_SAFETY_OVER_SPEED
-    // Range check the pathIndexes, which index (by absolute value) into _tokens.
+    // Range check the pathIndexes, which index (by absolute value) into
+    // _tokens.
     for (const int32_t elementTokenIndex: elementTokenIndexes) {
         if (static_cast<size_t>(
                 std::abs(elementTokenIndex)) >= _tokens.size()) {
@@ -3693,6 +3768,15 @@ CrateFile::_BuildDecompressedPathsImpl(
     bool hasChild = false, hasSibling = false;
     do {
         auto thisIndex = curIndex++;
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED
+        // Range check thisIndex.
+        if (thisIndex >= pathIndexes.size()) {
+            TF_RUNTIME_ERROR("Corrupt paths encoding in crate file "
+                             "(index:%zu >= %zu)",
+                             thisIndex, pathIndexes.size());
+            return;
+        }
+#endif // PXR_PREFER_SAFETY_OVER_SPEED
         if (parentPath.IsEmpty()) {
             parentPath = SdfPath::AbsoluteRootPath();
             _paths[pathIndexes[thisIndex]] = parentPath;
@@ -3933,29 +4017,47 @@ template <class T>
 void
 CrateFile::_UnpackValue(ValueRep rep, T *out) const
 {
-    auto const &h = _GetValueHandler<T>();
-    if (_useMmap) {
-        h.Unpack(_MakeReader(_MakeMmapStream(
-                                 &_mmapSrc, _debugPageMap.get())), rep, out);
-    } else if (_preadSrc) {
-        h.Unpack(_MakeReader(_PreadStream(_preadSrc)), rep, out);
-    } else {
-        h.Unpack(_MakeReader(_AssetStream(_assetSrc)), rep, out);
+    try {
+        auto const &h = _GetValueHandler<T>();
+        if (_useMmap) {
+            h.Unpack(_MakeReader(_MakeMmapStream(
+                                     &_mmapSrc, _debugPageMap.get())), rep, out);
+        } else if (_preadSrc) {
+            h.Unpack(_MakeReader(_PreadStream(_preadSrc)), rep, out);
+        } else {
+            h.Unpack(_MakeReader(_AssetStream(_assetSrc)), rep, out);
+        }
+    }
+    catch (...) {
+        TF_RUNTIME_ERROR("Corrupt asset <%s>: exception raised unpacking a "
+                         "%s, returning a value-initialized object",
+                         GetAssetPath().c_str(),
+                         ArchGetDemangled<T>().c_str());
+        *out = T();
     }
 }
 
 template <class T>
 void
 CrateFile::_UnpackValue(ValueRep rep, VtArray<T> *out) const {
-    auto const &h = _GetValueHandler<T>();
-    if (_useMmap) {
-        h.UnpackArray(_MakeReader(
-                          _MakeMmapStream(
-                              &_mmapSrc, _debugPageMap.get())), rep, out);
-    } else if (_preadSrc) {
-        h.UnpackArray(_MakeReader(_PreadStream(_preadSrc)), rep, out);
-    } else {
-        h.UnpackArray(_MakeReader(_AssetStream(_assetSrc)), rep, out);
+    try {
+        auto const &h = _GetValueHandler<T>();
+        if (_useMmap) {
+            h.UnpackArray(_MakeReader(
+                              _MakeMmapStream(
+                                  &_mmapSrc, _debugPageMap.get())), rep, out);
+        } else if (_preadSrc) {
+            h.UnpackArray(_MakeReader(_PreadStream(_preadSrc)), rep, out);
+        } else {
+            h.UnpackArray(_MakeReader(_AssetStream(_assetSrc)), rep, out);
+        }
+    }
+    catch (...) {
+        TF_RUNTIME_ERROR("Corrupt asset <%s>: exception raised unpacking a "
+                         "VtArray<%s>, returning an empty array",
+                         GetAssetPath().c_str(),
+                         ArchGetDemangled<T>().c_str());
+        *out = VtArray<T>();
     }
 }
 
@@ -3968,13 +4070,21 @@ CrateFile::_UnpackValue(ValueRep rep, VtValue *result) const {
                         static_cast<int>(repType));
         return;
     }
-    auto index = static_cast<int>(repType);
-    if (_useMmap) {
-        _unpackValueFunctionsMmap[index](rep, result);
-    } else if (_preadSrc) {
-        _unpackValueFunctionsPread[index](rep, result);
-    } else {
-        _unpackValueFunctionsAsset[index](rep, result);
+    try {
+        auto index = static_cast<int>(repType);
+        if (_useMmap) {
+            _unpackValueFunctionsMmap[index](rep, result);
+        } else if (_preadSrc) {
+            _unpackValueFunctionsPread[index](rep, result);
+        } else {
+            _unpackValueFunctionsAsset[index](rep, result);
+        }
+    }
+    catch (...) {
+        TF_RUNTIME_ERROR("Corrupt asset <%s>: exception raised unpacking a "
+                         "value, returning an empty VtValue",
+                         GetAssetPath().c_str());
+        *result = VtValue();
     }
 }
 

@@ -2,7 +2,6 @@
 \page hd_page_front Hd : The Hydra Framework
 \if ( PIXAR_MFB_BUILD )
 \mainpage  Hd : The Hydra Framework
-\publicLib
 \endif
 
 Hd is a framework that enables the communication between multiple scene graphs 

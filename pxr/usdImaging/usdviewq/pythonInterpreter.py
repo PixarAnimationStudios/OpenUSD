@@ -81,20 +81,13 @@ class _Completer(object):
         Return a list of all keywords, built-in functions and names
         currently defines in __main__ that match.
         """
-        builtin_mod = None
 
-        if sys.version_info.major >= 3:
-            import builtins
-            builtin_mod = builtins
-        else:
-            import __builtin__
-            builtin_mod = __builtin__
-
+        import builtins
         import __main__
 
         matches = set()
         n = len(text)
-        for l in [keyword.kwlist,builtin_mod.__dict__.keys(),
+        for l in [keyword.kwlist,builtins.__dict__.keys(),
                   __main__.__dict__.keys(), self.locals.keys()]:
             for word in l:
                 if word[:n] == text and word != "__builtins__":
@@ -440,7 +433,7 @@ class Controller(QtCore.QObject):
     def _GetStringLengthInPixels(cf, string):
         font = cf.font()
         fm = QtGui.QFontMetrics(font)
-        strlen = fm.width(string)
+        strlen = fm.boundingRect(string).width()
         return strlen
 
     def _CompleteSlot(self):

@@ -47,7 +47,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    typedef UsdProcImagingGenerativeProceduralAdapter Adapter;
+    using Adapter = UsdProcImagingGenerativeProceduralAdapter;
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
@@ -95,7 +95,8 @@ HdDataSourceLocatorSet
 UsdProcImagingGenerativeProceduralAdapter::InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (subprim.IsEmpty()) {
         for (const TfToken &name : properties) {
@@ -109,7 +110,8 @@ UsdProcImagingGenerativeProceduralAdapter::InvalidateImagingSubprim(
         }
 
         HdDataSourceLocatorSet result = 
-            UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
+            UsdImagingDataSourcePrim::Invalidate(
+                prim, subprim, properties, invalidationType);
 
         return result;
     }

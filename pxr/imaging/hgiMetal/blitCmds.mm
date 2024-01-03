@@ -443,14 +443,49 @@ HgiMetalBlitCmds::FillBuffer(HgiBufferHandle const& buffer, uint8_t value)
     }
 }
 
+static bool
+_HgiTextureCanBeFiltered(HgiTextureDesc const &descriptor)
+{
+    HgiFormat const componentFormat =
+        HgiGetComponentBaseFormat(descriptor.format);
+
+    if (componentFormat == HgiFormatInt16 ||
+        componentFormat == HgiFormatUInt16 ||
+        componentFormat == HgiFormatInt32) {
+        return false;
+    }
+
+    GfVec3i const dims = descriptor.dimensions;
+    switch (descriptor.type) {
+        case HgiTextureType1D:
+        case HgiTextureType1DArray:
+            return (dims[0] > 1);
+
+        case HgiTextureType2D:
+        case HgiTextureType2DArray:
+            return (dims[0] > 1 || dims[1] > 1);
+
+        case HgiTextureType3D:
+            return (dims[0] > 1 || dims[1] > 1 || dims[2] > 1);
+
+        default:
+            TF_CODING_ERROR("Unsupported HgiTextureType enum value");
+            return false;
+    }
+
+    return false;
+}
+
 void
 HgiMetalBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 {
     HgiMetalTexture* metalTex = static_cast<HgiMetalTexture*>(texture.Get());
+
     if (metalTex) {
-        _CreateEncoder();
-        
-        [_blitEncoder generateMipmapsForTexture:metalTex->GetTextureId()];
+        if (_HgiTextureCanBeFiltered(metalTex->GetDescriptor())) {
+            _CreateEncoder();
+            [_blitEncoder generateMipmapsForTexture:metalTex->GetTextureId()];
+        }
     }
 }
 

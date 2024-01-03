@@ -26,12 +26,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
-#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hdSt/strategyBase.h"
+
 #include "pxr/imaging/hd/bufferArray.h"
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/strategyBase.h"
 
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/token.h"
@@ -47,11 +47,11 @@ class HdStResourceRegistry;
 ///
 /// VBO memory manager.
 ///
-class HdStVBOMemoryManager : public HdAggregationStrategy
+class HdStVBOMemoryManager : public HdStAggregationStrategy
 {
 public:
     HdStVBOMemoryManager(HdStResourceRegistry *resourceRegistry)
-    : HdAggregationStrategy()
+    : HdStAggregationStrategy()
     , _resourceRegistry(resourceRegistry) {}
 
     /// Factory for creating HdBufferArray managed by
@@ -280,13 +280,8 @@ protected:
             _needsCompaction = true;
         }
 
-        /// TODO: We need to distinguish between the primvar types here, we should
-        /// tag each HdBufferSource and HdBufferResource with Constant, Uniform,
-        /// Varying, Vertex, or FaceVarying and provide accessors for the specific
-        /// buffer types.
-
-        /// Returns the GPU resource. If the buffer array contains more than one
-        /// resource, this method raises a coding error.
+        /// Returns the GPU resource. If the buffer array contains more
+        /// than one resource, this method raises a coding error.
         HDST_API
         HdStBufferResourceSharedPtr GetResource() const;
 

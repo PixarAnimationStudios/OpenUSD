@@ -7,6 +7,7 @@ pxr_library(usdRender
         tf
         usd
         usdGeom
+        usdShade
 
     PUBLIC_CLASSES
         denoisePass
@@ -48,4 +49,5 @@ pxr_library(usdRender
         images/dataWindow.svg
         images/nonSquarePixels.svg
         images/pixelAspectRatio.svg
+        doxygen/renderSettings.usda
 )

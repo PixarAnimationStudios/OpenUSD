@@ -524,6 +524,36 @@ and renderable by Hydra.
      -v, --verbose         Enable verbose output mode.
 
 ******************
+usdfixbrokenpixarschemas
+******************
+
+:program:`usdfixbrokenpixarschemas` attempts to fix usd(a|c|z) layers for any
+updates introduced by newer Pixar schema revisions. Note that this does not 
+provide a fixing mechanism for all validation tests listed in `usdchecker`_.
+
+.. code-block:: none
+
+    > usdfixbrokenpixarschemas -h
+    usage: usdfixbrokenpixarschemas [-h] [--backup BACKUPFILE] [-v] [inputFile]
+
+    Fixes usd / usdz layer by applying appropriate fixes defined in the
+    UsdUtils.FixBrokenPixarSchemas. If the given usd file has any fixes to be
+    saved, a backup is created for that file. If a usdz package is provided, it 
+    is extracted recursively at a temp location, and fixes are applied on each 
+    layer individually, which are then packaged into a new usdz package, while 
+    creating a backup of the original.
+
+    positional arguments:
+      inputFile            Name of the input file to inspect and fix.
+
+    optional arguments:
+      -h, --help           show this help message and exit
+      --backup BACKUPFILE  optional backup file path, if none provided creates a
+                           <inputFile>.bck.<usda|usdc|usdz> at the inputFile
+                           location
+      -v, --verbose        Enable verbose mode.
+
+******************
 usdstitch
 ******************
 

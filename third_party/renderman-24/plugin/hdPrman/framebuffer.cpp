@@ -129,7 +129,7 @@ static PtDspyError HydraDspyImageData(
     int ymin,
     int ymax_plusone,
     int entrysize,
-    const unsigned char *data)
+    const unsigned char* data)
 {
     // XXX: This assumes the AOV list matches what was declared to riley
     // in hdPrman/renderParam.cpp CreateDisplays
@@ -137,17 +137,13 @@ static PtDspyError HydraDspyImageData(
 
     HdPrmanFramebuffer* buf = reinterpret_cast<HdPrmanFramebuffer*>(handle);
 
-    std::lock_guard<std::mutex> lock(buf->mutex);
-
-    if(buf->w == 0 || buf->h == 0)
-    {
+    if (buf->w == 0 || buf->h == 0) {
         return PkDspyErrorBadParams;
     }
 
     buf->newData = true;
 
-    if (buf->pendingClear)
-    {
+    if (buf->pendingClear) {
         buf->pendingClear = false;
         buf->Clear();
     }
@@ -156,81 +152,140 @@ static PtDspyError HydraDspyImageData(
     int xmax_plusorigin = xmax_plusone + buf->cropOrigin[0];
     int ymin_plusorigin = ymin + buf->cropOrigin[1];
     int ymax_plusorigin = ymax_plusone + buf->cropOrigin[1];
-    
-    float *data_f32 = (float*) data;
-    int32_t *data_i32 = (int32_t*) data;
-    for (int y=ymin_plusorigin; y < ymax_plusorigin; y++) {
-        // Flip y-axis
-        int offset = (buf->h-1-y)*buf->w+xmin_plusorigin;
-        int pixelOffset = 0;
-        for (int x=xmin_plusorigin; x < xmax_plusorigin; x++) {
-            int dataIdx = 0;
-            int32_t primIdVal = 0;
-            for(HdPrmanFramebuffer::AovBuffer &aovBuffer : buf->aovBuffers) {
-                const HdPrmanFramebuffer::AovDesc &aovDesc = aovBuffer.desc;
-                const int cc = HdGetComponentCount(aovDesc.format);
-                if(aovDesc.format == HdFormatInt32)
-                {
-                    int32_t* const aovData = reinterpret_cast<int32_t*>(
-                        &aovBuffer.pixels[offset * cc + pixelOffset * cc]);
 
-                    if(aovDesc.name == HdAovTokens->primId)
-                    {
-                        aovData[0] = (data_i32[dataIdx++]-1);
-                        primIdVal = aovData[0];
-                    }
-                    else if((aovDesc.name == HdAovTokens->instanceId ||
-                             aovDesc.name == HdAovTokens->elementId) &&
-                            // Note, this will always fail if primId
-                            // isn't in the AOV list"
-                            primIdVal == -1)
-                    {
-                        aovData[0] = -1;
-                        dataIdx++;
-                    }
-                    else
-                    {
-                        aovData[0] = data_i32[dataIdx++];
-                    }
-                }
-                else
-                {
-                    float* const aovData = reinterpret_cast<float*>(
-                        &aovBuffer.pixels[offset*cc + pixelOffset * cc]);
-                    if(aovDesc.name == HdAovTokens->depth)
-                    {
-                        aovData[0] = _ConvertAovDepth(
-                            buf->proj, data_f32[dataIdx++]);
-                    }
-                    else if(cc == 4)
-                    {
-                        // Premultiply color with alpha
-                        // to blend pixels with background.
-                        float alphaInv = 1-data_f32[3];
-                        GfVec4f const& clear = aovDesc.clearValue.Get<GfVec4f>();
-                        aovData[0] = data_f32[dataIdx++] +
-                            (alphaInv) * clear[0]; // R
-                        aovData[1] = data_f32[dataIdx++] +
-                            (alphaInv) * clear[1]; // G
-                        aovData[2] = data_f32[dataIdx++] +
-                            (alphaInv) * clear[2]; // B
-                        aovData[3] = data_f32[dataIdx++]; // A
-                    }
-                    else
-                    {
-                        aovData[0] = data_f32[dataIdx++];
-                        if(cc >=3)
-                        {
-                            aovData[1] = data_f32[dataIdx++];
-                            aovData[2] = data_f32[dataIdx++];
-                        }
+    // Looping over aov buffers first (rather than data) reduces
+    // branching and gives more consistant memory access.
+    int dataOffset = 0;
+    HdPrmanFramebuffer::AovBuffer* primAovBuffer = nullptr;
+    for (HdPrmanFramebuffer::AovBuffer& aovBuffer : buf->aovBuffers) {
+        const HdPrmanFramebuffer::AovDesc& aovDesc = aovBuffer.desc;
+        const int cc = HdGetComponentCount(aovDesc.format);
+
+        if (aovDesc.format == HdFormatInt32) {
+            int32_t* data_i32 = (int32_t*)data + dataOffset;
+
+            if (aovDesc.name == HdAovTokens->primId) {
+                primAovBuffer = &aovBuffer;
+
+                for (int y = ymin_plusorigin; y < ymax_plusorigin; y++) {
+                    // Flip y-axis
+                    int offset = (buf->h - 1 - y) * buf->w + xmin_plusorigin;
+                    int32_t* aovData = reinterpret_cast<int32_t*>(
+                        &aovBuffer.pixels[offset * cc]);
+                    for (int x = xmin_plusorigin; x < xmax_plusorigin; x++) {
+                        *aovData = (*data_i32 - 1);
+                        aovData++;
+                        data_i32 += nComponents;
                     }
                 }
             }
-            pixelOffset++;
-            data_f32 += nComponents;
-            data_i32 += nComponents;
+
+            else if (
+                (aovDesc.name == HdAovTokens->instanceId
+                 || aovDesc.name == HdAovTokens->elementId)
+                && primAovBuffer) {
+                // There is a dependency on primId being declared before
+                // instance/element Id.
+                for (int y = ymin_plusorigin; y < ymax_plusorigin; y++) {
+                    // Flip y-axis
+                    int offset = (buf->h - 1 - y) * buf->w + xmin_plusorigin;
+                    int32_t* primIdAovData = reinterpret_cast<int32_t*>(
+                        &primAovBuffer->pixels[offset * cc]);
+                    int32_t* aovData = reinterpret_cast<int32_t*>(
+                        &aovBuffer.pixels[offset * cc]);
+                    for (int x = xmin_plusorigin; x < xmax_plusorigin; x++) {
+                        *aovData = (*primIdAovData == -1) ? -1 : *data_i32;
+                        primIdAovData++;
+                        aovData++;
+                        data_i32 += nComponents;
+                    }
+                }
+            }
+
+            else {
+                for (int y = ymin_plusorigin; y < ymax_plusorigin; y++) {
+                    // Flip y-axis
+                    int offset = (buf->h - 1 - y) * buf->w + xmin_plusorigin;
+                    int32_t* aovData = reinterpret_cast<int32_t*>(
+                        &aovBuffer.pixels[offset * cc]);
+                    for (int x = xmin_plusorigin; x < xmax_plusorigin; x++) {
+                        *aovData = *data_i32;
+                        aovData++;
+                        data_i32 += nComponents;
+                    }
+                }
+            }
         }
+        else {
+            float* data_f32 = (float*)data + dataOffset;
+
+            if (aovDesc.name == HdAovTokens->depth) {
+                for (int y = ymin_plusorigin; y < ymax_plusorigin; y++) {
+                    // Flip y-axis
+                    int offset = (buf->h - 1 - y) * buf->w + xmin_plusorigin;
+                    float* aovData = reinterpret_cast<float*>(
+                        &aovBuffer.pixels[offset * cc]);
+                    for (int x = xmin_plusorigin; x < xmax_plusorigin; x++) {
+                        *aovData = _ConvertAovDepth(
+                            buf->proj, *data_f32);
+                        aovData += cc;
+                        data_f32 += nComponents;
+                    }
+                }
+            }
+
+            else if (cc == 4) {
+                for (int y = ymin_plusorigin; y < ymax_plusorigin; y++) {
+                    // Flip y-axis
+                    int offset = (buf->h - 1 - y) * buf->w + xmin_plusorigin;
+                    float* aovData = reinterpret_cast<float*>(
+                        &aovBuffer.pixels[offset * cc]);
+                    for (int x = xmin_plusorigin; x < xmax_plusorigin; x++) {
+                        // Premultiply color with alpha to blend pixels with
+                        // background.
+                        const float alphaInv = 1.f - data_f32[3];
+                        GfVec4f const& clear
+                            = aovDesc.clearValue.Get<GfVec4f>();
+                        for (int i = 0; i < 3; i++) // RGB
+                            aovData[i] = data_f32[i] + (alphaInv)*clear[i];
+                        aovData[3] = data_f32[3]; // A
+                        aovData += 4;
+                        data_f32 += nComponents;
+                    }
+                }
+            }
+
+            else if (cc == 3) {
+                for (int y = ymin_plusorigin; y < ymax_plusorigin; y++) {
+                    // Flip y-axis
+                    int offset = (buf->h - 1 - y) * buf->w + xmin_plusorigin;
+                    float* aovData = reinterpret_cast<float*>(
+                        &aovBuffer.pixels[offset * cc]);
+                    for (int x = xmin_plusorigin; x < xmax_plusorigin; x++) {
+                        for (int i = 0; i < 3; i++)
+                            aovData[i] = data_f32[i];
+                        aovData += 3;
+                        data_f32 += nComponents;
+                    }
+                }
+            }
+
+            else if (cc == 1) {
+                for (int y = ymin_plusorigin; y < ymax_plusorigin; y++) {
+                    // Flip y-axis
+                    int offset = (buf->h - 1 - y) * buf->w + xmin_plusorigin;
+                    float* aovData = reinterpret_cast<float*>(
+                        &aovBuffer.pixels[offset * cc]);
+                    for (int x = xmin_plusorigin; x < xmax_plusorigin; x++) {
+                        *aovData = *data_f32;
+                        aovData++;
+                        data_f32 += nComponents;
+                    }
+                }
+            }
+        }
+
+        dataOffset += cc;
     }
     return PkDspyErrorNone;
 }

@@ -24,10 +24,11 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
 #include "pxr/usdImaging/usdImaging/adapterRegistry.h"
+#include "pxr/usdImaging/usdImaging/coordSysAdapter.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
-#include "pxr/usdImaging/usdImaging/coordSysAdapter.h"
 #include "pxr/usdImaging/usdImaging/instanceAdapter.h"
+#include "pxr/usdImaging/usdImaging/materialAdapter.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
@@ -231,10 +232,11 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
     //    threads.
 
     TfToken adapterKey;
-    if (_displayUnloadedPrimsWithBounds && !prim.IsLoaded()) {
-        adapterKey = UsdImagingAdapterKeyTokens->drawModeAdapterKey;
-    } else if (!ignoreInstancing && prim.IsInstance()) {
+
+    if (!ignoreInstancing && prim.IsInstance()) {
         adapterKey = UsdImagingAdapterKeyTokens->instanceAdapterKey;
+    } else if (_displayUnloadedPrimsWithBounds && !prim.IsLoaded()) {
+        adapterKey = UsdImagingAdapterKeyTokens->drawModeAdapterKey;
     } else if (_hasDrawModeAdapter && _enableUsdDrawModes &&
                _IsDrawModeApplied(prim)) {
         adapterKey = UsdImagingAdapterKeyTokens->drawModeAdapterKey;
@@ -1193,7 +1195,7 @@ _HasConnectionChanged(const SdfPath &path, const PathRange &pathRange)
 {
     PathRange::const_iterator itr = pathRange.find(path);
     if (itr != pathRange.end()) {
-        for (const SdfChangeList::Entry *entry : itr.base()->second) {
+        for (const SdfChangeList::Entry *entry : itr.GetBase()->second) {
             if (entry->flags.didChangeAttributeConnection) {
                 return true;
             }
@@ -1228,6 +1230,18 @@ UsdImagingDelegate::_OnUsdObjectsChanged(
         } else {
             _usdPathsToResync.emplace_back(path);
         }
+    }
+
+    // These paths represent the root of subtrees containing asset path values
+    // that may now resolve to different locations than previously, even though
+    // the authored values themselves have not changed. We currently do not the
+    // precise locations of asset path values we have pulled on, so we can't do
+    // a sparse invalidation. Instead, we treat this as a full resync to ensure
+    // anything that may depend on affected asset paths gets repopulated.
+    const PathRange assetPathsToResync =
+        notice.GetResolvedAssetPathsResyncedPaths();
+    for (const auto& path : assetPathsToResync) {
+        _usdPathsToResync.emplace_back(path);
     }
 
     // These paths represent objects which have been modified in a 
@@ -1281,6 +1295,14 @@ bool _IsCoordSysAdapter(const UsdImagingPrimAdapterSharedPtr &adapter)
     return dynamic_cast<UsdImagingCoordSysAdapter *>(adapter.get());
 }
 
+// We also need to check if a prim adapter is a material adapter to ensure we
+// perform the resync correctly in _ResyncUsdPrim.
+static
+bool _IsMaterialAdapter(const UsdImagingPrimAdapterSharedPtr& adapter)
+{
+    return dynamic_cast<UsdImagingMaterialAdapter*>(adapter.get());
+}
+
 void 
 UsdImagingDelegate::_ResyncUsdPrim(
     SdfPath const& usdPath,
@@ -1313,7 +1335,7 @@ UsdImagingDelegate::_ResyncUsdPrim(
     // There's an additional exception with regards to the targets of coord 
     // system bindings. Coord systems target and are dependent on Xform prims 
     // that can be anywhere within the hierarchy of the tree. The hydra prims 
-    // for coordinate systems that are denpendant on the resynced path or any
+    // for coordinate systems that are dependent on the resynced path or any
     // of its descendants are always individually resynced.
     //
     // The resync function has three phases, with each phase dropping through
@@ -1329,8 +1351,8 @@ UsdImagingDelegate::_ResyncUsdPrim(
     //  -- If case (1) applies, proceed to (2a), otherwise (2b) --
     //
     // (2a) If the resync target is a child of a "leaf" hydra prim, check 
-    //      if it's a parent of any coordinate system prims. If so, we need to 
-    //      resync the coordinate system prims as they're independent from their
+    //      if it's a parent of any coordinate system or material prims. If so,
+    //      we need to resync the child prims as they're independent from their
     //      parents. From here, we're done so return.
     // (2b) Otherwise, since the resync target isn't a child of a "leaf" hydra 
     //      prim, check if it's a parent of any hydra prims.  If so, we need to 
@@ -1378,11 +1400,11 @@ UsdImagingDelegate::_ResyncUsdPrim(
             if (primInfo != nullptr &&
                 TF_VERIFY(primInfo->adapter != nullptr)) {
                 // Skip any coord system prims as they're synced independently
-                // from prims it their hierarchy.
+                // from prims in their hierarchy.
                 if (!_IsCoordSysAdapter(primInfo->adapter)) {
                     // Process the prim and mark that we found a prim that 
                     // "prunes" the need to process any non coordinate system
-                    // prims below it.
+                    // or material prims below it.
                     primInfo->adapter->ProcessPrimResync(cachePath, proxy);
                     foundPruningPrim = true;
                 }
@@ -1393,11 +1415,13 @@ UsdImagingDelegate::_ResyncUsdPrim(
     // Whether the resync target is below a populated prim or not, we still 
     // search the resync subtree for affected prims. In the case where the 
     // target is below a populated prim, we're only looking for affected 
-    // dependent prims that are related to coordinate systems. Coordinate 
-    // systems are independent of their parent prims so we resync each 
-    // coordinate system in the subtree individually
+    // dependent prims that are related to coordinate systems or materials.
+    // Coordinate systems are independent of their parent prims so we resync
+    // each coordinate system in the subtree individually.  Referenced Material
+    // prims under a populated prim, e.g., a point instancer, also need to be
+    // resynced.
     // 
-    // It the case where the resync target is not below a populated prim, we 
+    // In the case where the resync target is not below a populated prim, we 
     // search the resync subtree for all affected prims. If there are any 
     // affected dependent prims, this subtree has been populated and we can 
     // resync affected prims individually. If we do this, we also need to walk 
@@ -1422,7 +1446,8 @@ UsdImagingDelegate::_ResyncUsdPrim(
                 // ProcessPrimResync to add Repopulate calls for objects not
                 // under "usdPath" (such as sibling native instances).
                 if (!foundPruningPrim || 
-                        _IsCoordSysAdapter(primInfo->adapter)) {
+                        _IsCoordSysAdapter(primInfo->adapter) ||
+                        _IsMaterialAdapter(primInfo->adapter)) {
                     primInfo->adapter->ProcessPrimResync(
                         affectedCachePath, proxy);
                 }
@@ -1586,9 +1611,15 @@ UsdImagingDelegate::_RefreshUsdObject(
             _ResyncUsdPrim(usdPrimPath, cache, proxy, true);
             resyncNeeded = true;
 
-        } else if (usdPrim && usdPrim.IsA<UsdShadeShader>()) {
-            // Shader edits get forwarded to parent material.
-            while (usdPrim && !usdPrim.IsA<UsdShadeMaterial>()) {
+        } else if (usdPrim && (usdPrim.IsA<UsdShadeShader>() || 
+                               usdPrim.IsA<UsdShadeNodeGraph>())) {
+            // Shader edits get forwarded to parent material. Note if the
+            // material is native instanced, we need to stop the traversal
+            // at the prototype, since the corresponding instance prim will be
+            // of type material but the prototype is typeless.
+            while (usdPrim &&
+                   !usdPrim.IsA<UsdShadeMaterial>() &&
+                   !usdPrim.IsPrototype()) {
                 usdPrim = usdPrim.GetParent();
             }
             if (usdPrim) {
@@ -1691,24 +1722,6 @@ UsdImagingDelegate::_RefreshUsdObject(
 // -------------------------------------------------------------------------- //
 // Data Collection
 // -------------------------------------------------------------------------- //
-
-VtValue
-UsdImagingDelegate::_GetUsdPrimAttribute(SdfPath const& cachePath,
-                                         TfToken const &attrName)
-{
-    VtValue value;
-
-    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
-    if (TF_VERIFY(primInfo, "%s\n", cachePath.GetText())) {
-        UsdPrim const& prim = primInfo->usdPrim;
-        if (prim.HasAttribute(attrName)) {
-            UsdAttribute attr = prim.GetAttribute(attrName);
-            attr.Get(&value, GetTime());
-        }
-    }
-
-    return value;
-}
 
 void
 UsdImagingDelegate::_UpdateSingleValue(SdfPath const& cachePath,
@@ -2121,6 +2134,21 @@ UsdImagingDelegate::GetDisplayStyle(SdfPath const& id)
     return HdDisplayStyle(GetRefineLevelFallback());
 }
 
+/*virtual*/ 
+HdModelDrawMode 
+UsdImagingDelegate::GetModelDrawMode(SdfPath const& id) 
+{
+    HdModelDrawMode model;
+    SdfPath cachePath = ConvertIndexPathToCachePath(id);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+
+    if (TF_VERIFY(primInfo)) {
+        model = primInfo->adapter->GetFullModelDrawMode(primInfo->usdPrim);
+    }
+    
+    return model;
+}
+
 void
 UsdImagingDelegate::SetRefineLevelFallback(int level) 
 { 
@@ -2326,8 +2354,8 @@ UsdImagingDelegate::SetRigidXformOverrides(
     if (_rigidXformOverrides == rigidXformOverrides) {
         return;
     }
-
-    TfHashMap<UsdPrim, GfMatrix4d, boost::hash<UsdPrim> > overridesToUpdate;
+    
+    UsdImaging_XformCache::ValueOverridesMap overridesToUpdate;
 
     // Compute the set of overrides to update and update their values in the 
     // inherited xform cache.
@@ -2412,6 +2440,29 @@ UsdImagingDelegate::SetRootVisibility(bool isVisible)
             primInfo.adapter->MarkVisibilityDirty(primInfo.usdPrim,
                                                   cachePath,
                                                   &indexProxy);
+        }
+    }
+}
+
+void
+UsdImagingDelegate::SetRootInstancerId(SdfPath const& instancerId)
+{
+    if (instancerId == _rootInstancerId) {
+        return;
+    }
+    _rootInstancerId = instancerId;
+
+    UsdImagingIndexProxy indexProxy(this, nullptr);
+
+    // Mark dirty.
+    TF_FOR_ALL(it, _hdPrimInfoMap) {
+        const SdfPath &cachePath = it->first;
+        _HdPrimInfo &primInfo = it->second;
+        if (TF_VERIFY(primInfo.adapter, "%s", cachePath.GetText())) {
+            primInfo.adapter->MarkDirty(primInfo.usdPrim,
+                                        cachePath,
+                                        HdChangeTracker::DirtyInstancer,
+                                        &indexProxy);
         }
     }
 }
@@ -2897,7 +2948,13 @@ UsdImagingDelegate::GetInstancerId(SdfPath const &primId)
             primInfo->adapter->GetInstancerId(primInfo->usdPrim, cachePath);
     }
 
-    return ConvertCachePathToIndexPath(pathValue);
+    pathValue = ConvertCachePathToIndexPath(pathValue);
+
+    if (pathValue.IsEmpty()) {
+        return _rootInstancerId;
+    }
+
+    return pathValue;
 }
 
 /*virtual*/
@@ -2928,7 +2985,8 @@ UsdImagingDelegate::GetMaterialId(SdfPath const &rprimId)
 
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
 
-    if (TF_VERIFY(primInfo)) {
+    if (TF_VERIFY(primInfo, "No primInfo for <%s> <%s>",
+        rprimId.GetText(), cachePath.GetText())) {
         pathValue = primInfo->adapter->GetMaterialId(
             primInfo->usdPrim, cachePath, _time);
     }
@@ -2959,99 +3017,13 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     }
 
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
-
-    // XXX(UsdImaging): We use the cachePath directly as a usdPath here
-    // but should do the proper transformation.  Maybe we can use
-    // the primInfo.usdPrim
-    UsdPrim prim = _GetUsdPrim(cachePath);
-    if (!TF_VERIFY(prim)) {
+    _HdPrimInfo* primInfo = _GetHdPrimInfo(cachePath);
+    if (!TF_VERIFY(primInfo)) {
         return VtValue();
     }
-    UsdLuxLightAPI light = UsdLuxLightAPI(prim);
-    if (!light) {
-        // Its ok that this is not a light. Lets assume its a light filter.
-        // Asking for the lightFilterType is the render delegates way of
-        // determining the type of the light filter.
-        if (paramName == _tokens->lightFilterType) {
-            // Use the schema type name from the prim type info which is the
-            // official type of the prim.
-            return VtValue(prim.GetPrimTypeInfo().GetSchemaTypeName());
-        }
-        if (paramName == HdTokens->lightFilterLink) {
-            UsdLuxLightFilter lightFilter = UsdLuxLightFilter(prim);
-            UsdCollectionAPI lightFilterLink =
-                            lightFilter.GetFilterLinkCollectionAPI();
-            return VtValue(_collectionCache.GetIdForCollection(
-                                                    lightFilterLink));
-        }
-        // Fallback to USD attributes.
-        return _GetUsdPrimAttribute(cachePath, paramName);
-    }
 
-    if (paramName == HdTokens->lightLink) {
-        UsdCollectionAPI lightLink = light.GetLightLinkCollectionAPI();
-        return VtValue(_collectionCache.GetIdForCollection(lightLink));
-    } else if (paramName == HdTokens->filters) {
-        SdfPathVector filterPaths;
-        light.GetFiltersRel().GetForwardedTargets(&filterPaths);
-        return VtValue(filterPaths);
-    } else if (paramName == HdTokens->shadowLink) {
-        UsdCollectionAPI shadowLink = light.GetShadowLinkCollectionAPI();
-        return VtValue(_collectionCache.GetIdForCollection(shadowLink));
-    } else if (paramName == HdLightTokens->intensity) {
-        // return 0.0 intensity if scene lights are not enabled
-        if (!_sceneLightsEnabled) {
-            return VtValue(0.0f);
-        }
-
-        // return 0.0 intensity if the scene lights are not visible
-        if (!GetVisible(cachePath)) {
-            return VtValue(0.0f);
-        }
-    }
-
-    // Fallback to USD attributes.
-    static const std::unordered_map<TfToken, TfToken, TfHash> paramToAttrName({
-        { HdLightTokens->angle, UsdLuxTokens->inputsAngle },
-        { HdLightTokens->color, UsdLuxTokens->inputsColor },
-        { HdLightTokens->colorTemperature, 
-            UsdLuxTokens->inputsColorTemperature },
-        { HdLightTokens->diffuse, UsdLuxTokens->inputsDiffuse },
-        { HdLightTokens->enableColorTemperature, 
-            UsdLuxTokens->inputsEnableColorTemperature },
-        { HdLightTokens->exposure, UsdLuxTokens->inputsExposure },
-        { HdLightTokens->height, UsdLuxTokens->inputsHeight },
-        { HdLightTokens->intensity, UsdLuxTokens->inputsIntensity },
-        { HdLightTokens->length, UsdLuxTokens->inputsLength },
-        { HdLightTokens->normalize, UsdLuxTokens->inputsNormalize },
-        { HdLightTokens->radius, UsdLuxTokens->inputsRadius },
-        { HdLightTokens->specular, UsdLuxTokens->inputsSpecular },
-        { HdLightTokens->textureFile, UsdLuxTokens->inputsTextureFile },
-        { HdLightTokens->textureFormat, UsdLuxTokens->inputsTextureFormat },
-        { HdLightTokens->width, UsdLuxTokens->inputsWidth },
-
-        { HdLightTokens->shapingFocus, UsdLuxTokens->inputsShapingFocus },
-        { HdLightTokens->shapingFocusTint, 
-            UsdLuxTokens->inputsShapingFocusTint },
-        { HdLightTokens->shapingConeAngle, 
-            UsdLuxTokens->inputsShapingConeAngle },
-        { HdLightTokens->shapingConeSoftness, 
-            UsdLuxTokens->inputsShapingConeSoftness },
-        { HdLightTokens->shapingIesFile, UsdLuxTokens->inputsShapingIesFile },
-        { HdLightTokens->shapingIesAngleScale, 
-            UsdLuxTokens->inputsShapingIesAngleScale },
-        { HdLightTokens->shapingIesNormalize, 
-            UsdLuxTokens->inputsShapingIesNormalize },
-        { HdLightTokens->shadowEnable, UsdLuxTokens->inputsShadowEnable },
-        { HdLightTokens->shadowColor, UsdLuxTokens->inputsShadowColor },
-        { HdLightTokens->shadowDistance, UsdLuxTokens->inputsShadowDistance },
-        { HdLightTokens->shadowFalloff, UsdLuxTokens->inputsShadowFalloff },
-        { HdLightTokens->shadowFalloffGamma, 
-            UsdLuxTokens->inputsShadowFalloffGamma }
-    });
-
-    const TfToken *attrName = TfMapLookupPtr(paramToAttrName, paramName);
-    return _GetUsdPrimAttribute(cachePath, attrName ? *attrName : paramName);
+    return primInfo->adapter->GetLightParamValue(primInfo->usdPrim,
+        cachePath, paramName, _time);
 }
 
 VtValue 

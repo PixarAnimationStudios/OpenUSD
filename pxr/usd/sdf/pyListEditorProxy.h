@@ -155,7 +155,9 @@ private:
             .add_property("orderedItems",
                 &Type::GetOrderedItems,
                 &This::_SetOrderedProxy)
-            .def("GetAddedOrExplicitItems", &Type::GetAddedOrExplicitItems,
+            .def("GetAddedOrExplicitItems", &Type::GetAppliedItems,
+                return_value_policy<TfPySequenceToTuple>()) // deprecated
+            .def("GetAppliedItems", &Type::GetAppliedItems,
                 return_value_policy<TfPySequenceToTuple>())
             .add_property("isExplicit", &Type::IsExplicit)
             .add_property("isOrderedOnly", &Type::IsOrderedOnly)
@@ -198,8 +200,7 @@ private:
 
     static std::string _GetStr(const Type& x)
     {
-        return x._listEditor ? 
-            boost::lexical_cast<std::string>(*x._listEditor) : std::string();
+        return x._listEditor ? TfStringify(*x._listEditor) : std::string();
     }
 
     static void _SetExplicitProxy(Type& x, const value_vector_type& v)

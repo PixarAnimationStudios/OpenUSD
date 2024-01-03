@@ -1,0 +1,12 @@
+#sdf 1.4.32
+(
+    expressionVariables = {
+        string REF_VAR_SEL = "x"
+    }
+)
+
+def "OverrideRef" (
+    references = @./ref.sdf@</Ref>
+)
+{
+}

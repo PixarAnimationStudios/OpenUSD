@@ -30,6 +30,9 @@
 // XXX: Need to isolate symbols here?
 #include "pxrLZ4/lz4.h"
 
+#include <algorithm>
+#include <cstring>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using namespace pxr_lz4;
@@ -86,7 +89,7 @@ TfFastCompression::CompressToBuffer(
             output += sizeof(int32_t);
             int32_t n = LZ4_compress_default(
                 input, output, size, LZ4_compressBound(size));
-            memcpy(o, &n, sizeof(n));
+            std::memcpy(o, &n, sizeof(n));
             output += n;
             input += size;
         };
@@ -123,7 +126,7 @@ TfFastCompression::DecompressFromBuffer(
         size_t totalDecompressed = 0;
         for (int i = 0; i != nChunks; ++i) {
             int32_t chunkSize = 0;
-            memcpy(&chunkSize, compressed, sizeof(chunkSize));
+            std::memcpy(&chunkSize, compressed, sizeof(chunkSize));
             compressed += sizeof(chunkSize);
             int nDecompressed = LZ4_decompress_safe(
                 compressed, output, chunkSize,

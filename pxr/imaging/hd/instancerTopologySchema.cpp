@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -40,6 +40,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdInstancerTopologySchemaTokens,
     HDINSTANCERTOPOLOGY_SCHEMA_TOKENS);
 
 
+
 VtArray<int>
 HdInstancerTopologySchema::ComputeInstanceIndicesForProto(SdfPath const &path)
 {
@@ -49,8 +50,8 @@ HdInstancerTopologySchema::ComputeInstanceIndicesForProto(SdfPath const &path)
     VtArray<int> matchingPrototypes;
 
     // If we can't get the instance indices datasource, not much point...
-    HdVectorDataSourceHandle indicesVecDs = GetInstanceIndices();
-    if (!indicesVecDs) {
+    HdIntArrayVectorSchema indicesSchema = GetInstanceIndices();
+    if (!indicesSchema) {
         return result;
     }
 
@@ -74,8 +75,8 @@ HdInstancerTopologySchema::ComputeInstanceIndicesForProto(SdfPath const &path)
     // Map from matchingPrototypes -> instanceIndices, taking mask into account.
     for (int protoIndex : matchingPrototypes) {
         VtArray<int> instanceIndices;
-        if (HdIntArrayDataSourceHandle indicesDs = HdIntArrayDataSource::Cast(
-                indicesVecDs->GetElement(protoIndex))) {
+        if (HdIntArrayDataSourceHandle indicesDs =
+                indicesSchema.GetElement(protoIndex)) {
             instanceIndices = indicesDs->GetTypedValue(0);
         }
 
@@ -93,7 +94,8 @@ HdInstancerTopologySchema::ComputeInstanceIndicesForProto(SdfPath const &path)
             }
         } else {
             for (int instanceIndex : instanceIndices) {
-                if (mask[instanceIndex]) {
+                if (instanceIndex >= static_cast<int>(mask.size()) ||
+                        mask[instanceIndex]) {
                     result.push_back(instanceIndex);
                 }
             }
@@ -110,11 +112,11 @@ HdInstancerTopologySchema::GetPrototypes()
         HdInstancerTopologySchemaTokens->prototypes);
 }
 
-HdVectorDataSourceHandle
+HdIntArrayVectorSchema
 HdInstancerTopologySchema::GetInstanceIndices()
 {
-    return _GetTypedDataSource<HdVectorDataSource>(
-        HdInstancerTopologySchemaTokens->instanceIndices);
+    return HdIntArrayVectorSchema(_GetTypedDataSource<HdVectorDataSource>(
+        HdInstancerTopologySchemaTokens->instanceIndices));
 }
 
 HdBoolArrayDataSourceHandle
@@ -179,6 +181,12 @@ HdInstancerTopologySchema::GetFromParent(
         : nullptr);
 }
 
+/*static*/
+const TfToken &
+HdInstancerTopologySchema::GetSchemaToken()
+{
+    return HdInstancerTopologySchemaTokens->instancerTopology;
+} 
 /*static*/
 const HdDataSourceLocator &
 HdInstancerTopologySchema::GetDefaultLocator()

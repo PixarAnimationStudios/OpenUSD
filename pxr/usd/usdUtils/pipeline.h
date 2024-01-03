@@ -73,19 +73,15 @@ TfToken UsdUtilsGetModelNameFromRootLayer(const SdfLayerHandle& rootLayer);
 /// UsdUtilsPipeline group like the following:
 /// \code{json}
 ///    "UsdUtilsPipeline": {
-///        "RegisteredVariantSets": [
+///        "RegisteredVariantSets": {
 ///            "modelingVariant": {
-///                "selectionExportPolicy": {
-///                    "always"
-///                }
+///                "selectionExportPolicy": "always"
 ///            },
 ///            "standin": {
-///                "selectionExportPolicy": {
-///                    "never"
-///                }
+///                "selectionExportPolicy": "never"
 ///            }
-///        ]
-///    }
+///        }
+///    }    
 /// \endcode
 ///
 /// After the above variantSets are registered, this will then load any plugin 

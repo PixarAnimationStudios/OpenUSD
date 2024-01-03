@@ -77,6 +77,10 @@ private:
             const HdSceneIndexBase &sender,
             const DirtiedPrimEntries &entries) override;
 
+        void PrimsRenamed(
+            const HdSceneIndexBase &sender,
+            const RenamedPrimEntries &entries) override;
+
         // satisfying QAbstractItemModel
         QVariant data(const QModelIndex &index, int role = Qt::DisplayRole)
             const override;
@@ -137,6 +141,16 @@ private:
                 int role = Qt::DisplayRole) override;
 
             RemovedPrimEntries _entries;
+        };
+
+        struct _RenamedPrimsNoticeModel : _NoticeModelBase
+        {
+            const char * noticeTypeString() override;
+            int rowCount() override;
+            QVariant data(const QModelIndex &index,
+                int role = Qt::DisplayRole) override;
+
+            RenamedPrimEntries _entries;
         };
 
         _NoticeModelBase * _GetModelBase(void *ptr) const;

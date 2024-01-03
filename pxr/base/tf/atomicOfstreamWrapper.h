@@ -30,8 +30,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
 
-#include <boost/noncopyable.hpp>
-
 #include <fstream>
 #include <string>
 
@@ -76,8 +74,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// // called, and the temporary file is removed.
 /// \endcode
 ///
-class TfAtomicOfstreamWrapper : boost::noncopyable
+class TfAtomicOfstreamWrapper
 {
+    TfAtomicOfstreamWrapper(const TfAtomicOfstreamWrapper&) = delete;
+    TfAtomicOfstreamWrapper& operator=(
+        const TfAtomicOfstreamWrapper&) = delete;
 public:
     /// Constructor.
     TF_API explicit TfAtomicOfstreamWrapper(const std::string& filePath);

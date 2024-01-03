@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Camera "main_cam"
+{
+    float focalLength = 10
+    float focusDistance = 10
+    double3 xformOp:rotateXYZ = (-10, 30, 0)
+    double3 xformOp:translate = (0, 0, 4)
+    token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+}
+
+def PointInstancer "PointInstancer" (
+    prepend variantSets = "InstanceVariation"
+    variants = {
+        string InstanceVariation = "A"
+    }
+) {
+    rel prototypes = [ <Protos/ProtoBlue> ]
+    int[] protoIndices = [ 0 ] 
+    PointFloat[] positions = [ (0, 0, 0) ]
+
+    variantSet "InstanceVariation" = {
+        "A" {
+        }
+        "B" {
+        }
+    }
+
+    def "Protos" {
+        def Cube "ProtoBlue" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = <material>
+
+            def Material "material"
+            {
+                token outputs:surface.connect = <shader.outputs:surface>
+
+                def Shader "shader"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0, 0, 1)
+                    token outputs:surface
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,76 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+def Sphere "MaterialXSphere" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/Default_White>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1.5, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Sphere "UsdSphere" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </Materials/Usd_White>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1.5, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Scope "Materials" {
+    def "MaterialX" (
+        references = [
+            @./mtlxFiles/standard_surface_default.mtlx@</MaterialX>,
+        ]
+    )
+    {
+    }
+    def Material "Usd_White"
+    {
+        token outputs:surface.connect = </Materials/Usd_White/PreviewSurface.outputs:surface>
+
+        def Shader "PreviewSurface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (1,1,1)
+            float inputs:roughness = 0.01
+            token outputs:surface
+        }
+    }
+}
+
+def Xform "lights" 
+{
+    uniform token purpose = "render"
+
+    def DistantLight "DistantLight1"
+    {
+        color3f inputs:color = (0,0,1)
+        float inputs:angle = 50
+        float inputs:intensity = 5
+        float3 xformOp:rotateXYZ = (0, 90, -45)
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+    }
+    def DistantLight "DistantLight2"
+    {
+        color3f inputs:color = (1,0,0)
+        float inputs:angle = 50
+        float inputs:intensity = 5
+        float3 xformOp:rotateXYZ = (90, 0, -45)
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+    }
+    def DiskLight "DiskLight"
+    {
+        color3f inputs:color = (0,1,0)
+        float inputs:intensity = 50
+        float inputs:radius = 1
+        double3 xformOp:translate = (0, 10, 5)
+        float3 xformOp:rotateXYZ = (-45, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+}

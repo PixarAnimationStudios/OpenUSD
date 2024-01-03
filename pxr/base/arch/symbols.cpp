@@ -26,6 +26,7 @@
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/symbols.h"
 #include "pxr/base/arch/defines.h"
+
 #if defined(ARCH_OS_LINUX)
 #include <dlfcn.h>
 #elif defined(ARCH_OS_DARWIN)
@@ -87,9 +88,9 @@ ArchGetAddressInfo(
     }
 
     if (objectPath) {
-        char modName[MAX_PATH] = {0};
-        if (GetModuleFileName(module, modName, MAX_PATH)) {
-            objectPath->assign(modName);
+        wchar_t modName[ARCH_PATH_MAX] = {0};
+        if (GetModuleFileNameW(module, modName, ARCH_PATH_MAX)) {
+            objectPath->assign(ArchWindowsUtf16ToUtf8(modName));
         }
     }
 

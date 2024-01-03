@@ -1,8 +1,8 @@
 root.usdc
-attr_c.usd
-attr_b.usd
 attr_a.usd
-meta_c.usd
-meta_b.usd
-meta_a.usd
+attr_b.usd
+attr_c.usd
 base_a.usd
+meta_a.usd
+meta_b.usd
+meta_c.usd

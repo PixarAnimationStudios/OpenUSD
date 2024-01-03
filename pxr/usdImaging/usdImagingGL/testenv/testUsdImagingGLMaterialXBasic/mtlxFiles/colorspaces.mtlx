@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<materialx version="1.38" colorspace="lin_rec709">
+
+  <!-- No specified Colorspace, just using the default source colorspace -->
+  <standard_surface name="SR_copper" type="surfaceshader">
+    <input name="base" type="float" value="0.25" />
+    <input name="base_color" type="color3" value="1, 1, 1" />
+    <input name="specular" type="float" value="0" />
+    <input name="specular_roughness" type="float" value="0.25" />
+    <input name="metalness" type="float" value="0.5" />
+    <input name="coat" type="float" value="1" />
+    <input name="coat_color" type="color3" value="0.96467984, 0.37626296, 0.25818297" />
+    <input name="coat_roughness" type="float" value="0.5" />
+  </standard_surface>
+  <surfacematerial name="Copper_linRec709" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_copper" />
+  </surfacematerial>
+
+  <!-- Specify srgb colorspace on the surfaceshader node, this will apply the
+       srgb colorspace to all color inputs -->
+  <standard_surface name="SR_copper1" type="surfaceshader" colorspace="srgb_texture">
+    <input name="base" type="float" value="0.25" />
+    <input name="base_color" type="color3" value="1, 1, 1" />
+    <input name="specular" type="float" value="0" />
+    <input name="specular_roughness" type="float" value="0.25" />
+    <input name="metalness" type="float" value="0.5" />
+    <input name="coat" type="float" value="1" />
+    <input name="coat_color" type="color3" value="0.96467984, 0.37626296, 0.25818297" />
+    <input name="coat_roughness" type="float" value="0.5" />
+  </standard_surface>
+  <surfacematerial name="Copper_srgb1" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_copper1" />
+  </surfacematerial>
+
+  <!-- Specify srgb colorspace on the only the coat_color input -->
+  <standard_surface name="SR_copper2" type="surfaceshader">
+    <input name="base" type="float" value="0.25" />
+    <input name="base_color" type="color3" value="1, 1, 1" />
+    <input name="specular" type="float" value="0" />
+    <input name="specular_roughness" type="float" value="0.25" />
+    <input name="metalness" type="float" value="0.5" />
+    <input name="coat" type="float" value="1" />
+    <input name="coat_color" type="color3" value="0.96467984, 0.37626296, 0.25818297" colorspace="srgb_texture"/>
+    <input name="coat_roughness" type="float" value="0.5" />
+  </standard_surface>
+  <surfacematerial name="Copper_srgb2" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_copper2" />
+  </surfacematerial>
+
+</materialx>

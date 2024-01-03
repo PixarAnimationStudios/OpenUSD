@@ -157,19 +157,9 @@ private:
             .def("insert", &This::_InsertItemByIndex, TfPyRaiseOnError<>())
             .def("get", &This::_PyGet, TfPyRaiseOnError<>())
             .def("get", &This::_PyGetDefault, TfPyRaiseOnError<>())
-#if PY_MAJOR_VERSION < 3
-            .def("has_key", &This::_HasKey, TfPyRaiseOnError<>())
-            .def("itervalues", &This::_GetValueIterator, TfPyRaiseOnError<>())
-            .def("iterkeys",   &This::_GetKeyIterator, TfPyRaiseOnError<>())
-            .def("iteritems",  &This::_GetItemIterator, TfPyRaiseOnError<>())
-            .def("items", &This::_GetItems, TfPyRaiseOnError<>())
-            .def("keys", &This::_GetKeys, TfPyRaiseOnError<>())
-            .def("values", &This::_GetValues, TfPyRaiseOnError<>())
-#else
             .def("items", &This::_GetItemIterator, TfPyRaiseOnError<>())
             .def("keys", &This::_GetKeyIterator, TfPyRaiseOnError<>())
             .def("values", &This::_GetValueIterator, TfPyRaiseOnError<>())
-#endif
             .def("index", &This::_FindIndexByKey, TfPyRaiseOnError<>())
             .def("index", &This::_FindIndexByValue, TfPyRaiseOnError<>())
             .def("__eq__", &This::operator==, TfPyRaiseOnError<>())
@@ -179,19 +169,19 @@ private:
         class_<_Iterator<_ExtractItem> >
             ((name + "_Iterator").c_str(), no_init)
             .def("__iter__", &This::template _Iterator<_ExtractItem>::GetCopy)
-            .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractItem>::GetNext)
+            .def("__next__", &This::template _Iterator<_ExtractItem>::GetNext)
             ;
 
         class_<_Iterator<_ExtractKey> >
             ((name + "_KeyIterator").c_str(), no_init)
             .def("__iter__", &This::template _Iterator<_ExtractKey>::GetCopy)
-            .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractKey>::GetNext)
+            .def("__next__", &This::template _Iterator<_ExtractKey>::GetNext)
             ;
 
         class_<_Iterator<_ExtractValue> >
             ((name + "_ValueIterator").c_str(), no_init)
             .def("__iter__", &This::template _Iterator<_ExtractValue>::GetCopy)
-            .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractValue>::GetNext)
+            .def("__next__", &This::template _Iterator<_ExtractValue>::GetNext)
             ;
     }
 
@@ -359,23 +349,6 @@ private:
         }
         return result;
     }
-
-#if PY_MAJOR_VERSION < 3
-    boost::python::list _GetItems() const
-    {
-        return _Get<_ExtractItem>();
-    }
-
-    boost::python::list _GetKeys() const
-    {
-        return _Get<_ExtractKey>();
-    }
-
-    boost::python::list _GetValues() const
-    {
-        return _Get<_ExtractValue>();
-    }
-#endif
 
     int _FindIndexByKey(const key_type& key) const
     {

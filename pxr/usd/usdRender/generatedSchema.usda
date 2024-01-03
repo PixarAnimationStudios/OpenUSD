@@ -376,6 +376,10 @@ class RenderProduct "RenderProduct" (
 }
 
 class RenderPass "RenderPass" (
+    apiSchemas = ["CollectionAPI:renderVisibility"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:renderVisibility:includeRoot"]
+    }
     doc = """A RenderPass prim encapsulates the necessary information
     to generate multipass renders.  It houses properties for generating
     dependencies and the necessary commands to run to generate renders, as 
@@ -389,10 +393,22 @@ class RenderPass "RenderPass" (
     translates between usdRender prims and the pipeline's resource scheduling
     software.  We'll refer to the latter as 'job submission code'.
 
+    \\anchor usdRender_renderVisibility
+    The objects that are relevant to the render is specified via the 
+    renderVisibility collection (UsdCollectionAPI) and can be accessed via 
+    GetRenderVisibilityCollectionAPI(). This collection has includeRoot set to 
+    true so that all objects participate in the render by default. To render 
+    only a specific set of objects, there are two options. One is to modify the 
+    collection paths to explicitly exclude objects that don't participate in 
+    the render, assuming it is known; the other option is to set includeRoot to 
+    false and explicitly include the desired objects. These are complementary 
+    approaches that may each be preferable depending on the scenario.
+
     The name of the prim is used as the pass's name.
     """
 )
 {
+    uniform bool collection:renderVisibility:includeRoot = 1
     uniform string[] command (
         doc = '''The command to run in order to generate
         renders for this pass.  The job submission code can use

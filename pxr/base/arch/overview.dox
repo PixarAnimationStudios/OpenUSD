@@ -31,7 +31,6 @@
 \page arch_page_front Arch: Architecture Dependent
 \if ( PIXAR_MFB_BUILD )
 \mainpage  Arch: Architecture Dependent
-\publicLib
 \endif
 
 \section arch_overview Overview

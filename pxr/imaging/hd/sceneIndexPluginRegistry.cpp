@@ -87,7 +87,8 @@ HdSceneIndexBaseRefPtr
 HdSceneIndexPluginRegistry::_AppendForPhases(
     const HdSceneIndexBaseRefPtr &inputScene,
     const _PhasesMap &phasesMap,
-    const HdContainerDataSourceHandle &argsUnderlay)
+    const HdContainerDataSourceHandle &argsUnderlay,
+    const std::string &renderInstanceId)
 {
     HdSceneIndexBaseRefPtr result = inputScene;
     for (const auto &phasesPair : phasesMap) {
@@ -110,8 +111,13 @@ HdSceneIndexPluginRegistry::_AppendForPhases(
                 args = argsUnderlay;
             }
 
-            result = AppendSceneIndex(
-                entry.sceneIndexPluginId, result, args);
+            if (entry.callback) {
+                result = entry.callback(renderInstanceId, result, args);
+            } else {
+                result = AppendSceneIndex(
+                    entry.sceneIndexPluginId, result, args);
+            }
+
         }
     }
     return result;
@@ -141,7 +147,8 @@ HdSceneIndexPluginRegistry::_CollectAdditionalMetadata(
 HdSceneIndexBaseRefPtr
 HdSceneIndexPluginRegistry::AppendSceneIndicesForRenderer(
     const std::string &rendererDisplayName,
-    const HdSceneIndexBaseRefPtr &inputScene)
+    const HdSceneIndexBaseRefPtr &inputScene,
+    const std::string &renderInstanceId)
 {
 
     // Preload any renderer plug-ins which have been tagged (via plugInfo) to
@@ -177,7 +184,8 @@ HdSceneIndexPluginRegistry::AppendSceneIndicesForRenderer(
     // append scene indices registered to run for all renderers first
     _RenderersMap::const_iterator it = _sceneIndicesForRenderers.find("");
     if (it != _sceneIndicesForRenderers.end()) {
-        result = _AppendForPhases(result, it->second, underlayArgs);
+        result = _AppendForPhases(result, it->second, underlayArgs,
+            renderInstanceId);
     }
 
     // then check for the specific renderer
@@ -187,7 +195,8 @@ HdSceneIndexPluginRegistry::AppendSceneIndicesForRenderer(
 
     it = _sceneIndicesForRenderers.find(rendererDisplayName);
     if (it != _sceneIndicesForRenderers.end()) {
-        result = _AppendForPhases(result, it->second, underlayArgs);
+        result = _AppendForPhases(result, it->second, underlayArgs,
+            renderInstanceId);
     }
 
     return result;
@@ -209,8 +218,24 @@ HdSceneIndexPluginRegistry::RegisterSceneIndexForRenderer(
     } else {
         entryList.emplace_back(sceneIndexPluginId, inputArgs);
     }
+}
 
+void
+HdSceneIndexPluginRegistry::RegisterSceneIndexForRenderer(
+    const std::string &rendererDisplayName,
+    SceneIndexAppendCallback callback,
+    const HdContainerDataSourceHandle &inputArgs,
+    InsertionPhase insertionPhase,
+    InsertionOrder insertionOrder)
+{
+    _EntryList &entryList =
+        _sceneIndicesForRenderers[rendererDisplayName][insertionPhase];
 
+    if (insertionOrder == InsertionOrderAtStart) {
+        entryList.insert(entryList.begin(), _Entry{callback, inputArgs});
+    } else {
+        entryList.emplace_back(callback, inputArgs);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

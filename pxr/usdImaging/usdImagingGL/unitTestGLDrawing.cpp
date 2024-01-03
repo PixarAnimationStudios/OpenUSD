@@ -380,12 +380,15 @@ UsdImagingGL_UnitTestGLDrawing::WriteAovToFile(
 struct UsdImagingGL_UnitTestGLDrawing::_Args {
     _Args()
       : offscreen(false)
+      , shading("smooth")
+      , cullStyle("nothing")
       , clearColor{1.0f, 0.5f, 0.1f, 1.0f}
       , translate{0.0f, -1000.0f, -2500.0f}
       , widgetSize{640, 480}
       , pixelAspectRatio(1.0f)
       , dataWindow{0, 0, 0, 0}
       , displayWindow{0.0f, 0.0f, 0.0f, 0.0f}
+      , windowPolicy{CameraUtilMatchVertically}
     {
     }
 
@@ -401,6 +404,7 @@ struct UsdImagingGL_UnitTestGLDrawing::_Args {
     float pixelAspectRatio;
     int dataWindow[4];
     float displayWindow[4];
+    CameraUtilConformWindowPolicy windowPolicy;
 };
 
 static void Die(const char* fmt, ...) ARCH_PRINTF_FUNCTION(1, 2);
@@ -467,7 +471,7 @@ static void Usage(int argc, char *argv[])
 "                      Set the fallback complexity [1]\n"
 "  -renderer rendererName\n"
 "                      use the specified renderer plugin []\n"
-"  -shading [flat|smooth|wire|wireOnSurface]\n"
+"  -shading [flat|smooth|wire|wireOnSurface|points]\n"
 "                      force specific type of shading\n"
 "                      [flat|smooth|wire|wireOnSurface|points] []\n"
 "  -frameAll           set the view to frame all root prims on the stage\n"
@@ -505,6 +509,9 @@ static void Usage(int argc, char *argv[])
 "                      Specifies data window for rendering\n"
 "  -displayWindow x y width height\n"
 "                      Specifies display window for rendering\n"
+"  -windowPolicy [matchVertically|matchHorizontally|fit|crop|dontConform]\n"
+"                      Forces the window policy\n"
+"                      (defaults to matchVertically to match usdview)\n"
 ;
 
     Die(usage, TfGetBaseName(argv[0]).c_str());
@@ -737,6 +744,28 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
             args->displayWindow[2] = (float)ParseDouble(i, argc, argv);
             args->displayWindow[3] = (float)ParseDouble(i, argc, argv);
         }
+        else if (strcmp(argv[i], "-windowPolicy") == 0) {
+            CheckForMissingArguments(i, 1, argc, argv);
+            const char * const policy = ParseString(i, argc, argv);
+            if (strcmp(policy, "matchVertically") == 0) {
+                args->windowPolicy = CameraUtilMatchVertically;
+            }
+            else if (strcmp(policy, "matchHorizontally") == 0) {
+                args->windowPolicy = CameraUtilMatchHorizontally;
+            }
+            else if (strcmp(policy, "fit") == 0) {
+                args->windowPolicy = CameraUtilFit;
+            }
+            else if (strcmp(policy, "crop") == 0) {
+                args->windowPolicy = CameraUtilCrop;
+            }
+            else if (strcmp(policy, "dontConform") == 0) {
+                args->windowPolicy = CameraUtilDontConform;
+            }
+            else {
+                ParseError(argv[0], "Unknown window policy '%s'", policy);
+            }
+        }
         else if (strcmp(argv[i], "-renderSetting") == 0) {
             CheckForMissingArguments(i, 2, argc, argv);
             const char * const key = ParseString(i, argc, argv);
@@ -812,29 +841,34 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
     _dataWindow = GfRect2i(
         GfVec2i(args.dataWindow[0], args.dataWindow[1]),
         args.dataWindow[2], args.dataWindow[3]);
+    _windowPolicy = args.windowPolicy;
 
     _drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
 
-    if (args.shading.compare("wireOnSurface") == 0) {
+    if (args.shading.compare("points") == 0 ) {
+        _drawMode = UsdImagingGLDrawMode::DRAW_POINTS;
+    } else if (args.shading.compare("wire") == 0 ) {
+        _drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
+    } else if (args.shading.compare("wireOnSurface") == 0) {
         _drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME_ON_SURFACE;
     } else if (args.shading.compare("flat") == 0 ) {
         _drawMode = UsdImagingGLDrawMode::DRAW_SHADED_FLAT;
-    } else if (args.shading.compare("wire") == 0 ) {
-        _drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
-    } else if (args.shading.compare("points") == 0 ) {
-        _drawMode = UsdImagingGLDrawMode::DRAW_POINTS;
+    } else if (args.shading.compare("smooth") == 0 ) {
+        _drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
     } else {
-        TF_WARN("Draw mode %s not supported!", args.shading.c_str());
+        TF_WARN("Shading mode %s not supported!", args.shading.c_str());
     }
 
     _cullStyle = UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
 
-    if (args.cullStyle.compare("back") == 0) {
+    if (args.cullStyle.compare("nothing") == 0) {
+        _cullStyle = UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
+    } else if (args.cullStyle.compare("back") == 0) {
         _cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK;
-    } else if (args.cullStyle.compare("backUnlessDoubleSided") == 0 ) {
-        _cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
     } else if (args.cullStyle.compare("front") == 0 ) {
         _cullStyle = UsdImagingGLCullStyle::CULL_STYLE_FRONT;
+    } else if (args.cullStyle.compare("backUnlessDoubleSided") == 0 ) {
+        _cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
     } else {
         TF_WARN("Cull style %s not supported!", args.cullStyle.c_str());
     }

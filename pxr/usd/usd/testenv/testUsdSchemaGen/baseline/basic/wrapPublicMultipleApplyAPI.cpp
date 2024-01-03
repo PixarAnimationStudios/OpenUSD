@@ -63,6 +63,13 @@ _CreateTestAttrTwoAttr(UsdContrivedPublicMultipleApplyAPI &self,
     return self.CreateTestAttrTwoAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
+        
+static UsdAttribute
+_CreatePublicAPIAttr(UsdContrivedPublicMultipleApplyAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreatePublicAPIAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Opaque), writeSparsely);
+}
 
 static bool _WrapIsPublicMultipleApplyAPIPath(const SdfPath &path) {
     TfToken collectionName;
@@ -74,7 +81,7 @@ static std::string
 _Repr(const UsdContrivedPublicMultipleApplyAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
-    std::string instanceName = self.GetName();
+    std::string instanceName = TfPyRepr(self.GetName());
     return TfStringPrintf(
         "UsdContrived.PublicMultipleApplyAPI(%s, '%s')",
         primRepr.c_str(), instanceName.c_str());
@@ -108,8 +115,8 @@ void wrapUsdContrivedPublicMultipleApplyAPI()
         cls("PublicMultipleApplyAPI");
 
     cls
-        .def(init<UsdPrim, TfToken>())
-        .def(init<UsdSchemaBase const&, TfToken>())
+        .def(init<UsdPrim, TfToken>((arg("prim"), arg("name"))))
+        .def(init<UsdSchemaBase const&, TfToken>((arg("schemaObj"), arg("name"))))
         .def(TfTypePythonClass())
 
         .def("Get",
@@ -167,6 +174,13 @@ void wrapUsdContrivedPublicMultipleApplyAPI()
              &This::GetTestAttrTwoAttr)
         .def("CreateTestAttrTwoAttr",
              &_CreateTestAttrTwoAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetPublicAPIAttr",
+             &This::GetPublicAPIAttr)
+        .def("CreatePublicAPIAttr",
+             &_CreatePublicAPIAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

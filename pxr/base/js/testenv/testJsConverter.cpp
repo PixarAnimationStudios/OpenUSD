@@ -31,8 +31,7 @@
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/staticData.h"
 
-#include <boost/any.hpp>
-
+#include <any>
 #include <iostream>
 #include <fstream>
 #include <map>
@@ -45,7 +44,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 // Generic types and functions.
-typedef boost::any _Any;
+typedef std::any _Any;
 typedef std::vector<_Any> _AnyVector;
 typedef std::map<string, _Any> _Dictionary;
 inline const std::type_info* GetType(const _Any& any)
@@ -54,17 +53,17 @@ inline const std::type_info* GetType(const _Any& any)
 }
 bool IsEmpty(const _Any& any)
 {
-    return any.empty();
+    return !any.has_value();
 }
 template <class T>
 bool IsHolding(const _Any& any)
 {
-    return boost::any_cast<T>(&any) != 0;
+    return std::any_cast<T>(&any) != 0;
 }
 template <class T>
 T Get(const _Any& any)
 {
-    return boost::any_cast<const T&>(any);
+    return std::any_cast<const T&>(any);
 }
 
 // This is a simplified version of TfIndenter.
@@ -335,6 +334,20 @@ int main(int argc, char const *argv[])
             indent << "checking null conversion" << std::endl;
             TF_AXIOM(object[p.first].IsNull());
             TF_AXIOM(IsEmpty(p.second));
+        } else if (p.first == "ArrayOfObjects") {
+            indent << "checking array of object conversion" << std::endl;
+            TF_AXIOM(object[p.first].IsArray());
+            TF_AXIOM(object[p.first].Is<JsArray>());
+            const auto arrayOfObjects = object[p.first].Get<JsArray>();
+            TF_AXIOM(arrayOfObjects.size() == 2);
+            TF_AXIOM(arrayOfObjects[0].IsObject());
+            TF_AXIOM(arrayOfObjects[1].IsObject());
+            // Test coverage for equivalence of nested structures
+            const static JsArray EXPECTED = {
+                JsObject({{"String", JsValue{"value1"}}}),
+                JsObject({{"Real", JsValue{5.0}}})
+            };
+            TF_AXIOM(arrayOfObjects == EXPECTED);
         }
     }
 

@@ -37,8 +37,7 @@
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/traits.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <cfloat>
 #include <cstddef>
@@ -88,6 +87,11 @@ public:
         : _min(min), _max(max)
     {
     }
+
+
+    /// Construct from GfRange2d.
+    GF_API
+    explicit GfRange2f(class GfRange2d const &other);
 
     /// Returns the minimum value of the range.
     const GfVec2f &GetMin() const { return _min; }
@@ -295,10 +299,7 @@ public:
 
     /// hash.
     friend inline size_t hash_value(const GfRange2f &r) {
-        size_t h = 0;
-        boost::hash_combine(h, r._min);
-        boost::hash_combine(h, r._max);
-        return h;
+        return TfHash::Combine(r._min, r._max);
     }
 
     /// The min and max points must match exactly for equality.

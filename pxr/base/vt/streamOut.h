@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/vt/api.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/functionRef.h"
 
 #include <iosfwd>
 #include <typeinfo>
@@ -84,16 +85,10 @@ VT_API std::ostream &VtStreamOut(signed char const &, std::ostream &);
 VT_API std::ostream &VtStreamOut(float const &, std::ostream &);
 VT_API std::ostream &VtStreamOut(double const &, std::ostream &);
 
-class VtStreamOutIterator {
-public:
-    VT_API virtual ~VtStreamOutIterator();
-    virtual void Next(std::ostream&) = 0;
-};
-
 struct Vt_ShapeData;
 
-VT_API void VtStreamOutArray(VtStreamOutIterator*, size_t size,
-                             const Vt_ShapeData*, std::ostream&);
+VT_API void VtStreamOutArray(std::ostream&, const Vt_ShapeData*,
+                             TfFunctionRef<void(std::ostream&)>);
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 VT_API std::ostream &VtStreamOut(class TfPyObjWrapper const &, std::ostream &);

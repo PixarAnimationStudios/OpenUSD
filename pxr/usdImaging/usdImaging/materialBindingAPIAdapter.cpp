@@ -23,7 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/materialBindingAPIAdapter.h"
 #include "pxr/usd/usdShade/materialBindingAPI.h"
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -40,13 +40,13 @@ TF_REGISTRY_FUNCTION(TfType)
 namespace
 {
 
-class _MaterialBindingContainerDataSource : public HdContainerDataSource
+class _MaterialBindingsContainerDataSource : public HdContainerDataSource
 {
 public:
 
-    HD_DECLARE_DATASOURCE(_MaterialBindingContainerDataSource);
+    HD_DECLARE_DATASOURCE(_MaterialBindingsContainerDataSource);
 
-    _MaterialBindingContainerDataSource(const UsdPrim &prim)
+    _MaterialBindingsContainerDataSource(const UsdPrim &prim)
     : _mbApi(prim) {
     }
 
@@ -55,20 +55,33 @@ public:
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
-        if (UsdRelationship bindingRel = _mbApi.GetDirectBindingRel(name)) {
-            UsdShadeMaterialBindingAPI::DirectBinding db(bindingRel);
-
-            return HdRetainedTypedSampledDataSource<SdfPath>::New(
-                db.GetMaterialPath());
+        UsdRelationship bindingRel = _mbApi.GetDirectBindingRel(name);
+        if (!bindingRel) {
+            return nullptr;
         }
-        return nullptr;
+
+        UsdShadeMaterialBindingAPI::DirectBinding db(bindingRel);
+        if (!db.IsBound()) {
+            return nullptr;
+        }
+
+        return
+            HdMaterialBindingSchema::Builder()
+                .SetPath(
+                    HdRetainedTypedSampledDataSource<SdfPath>::New(
+                        db.GetMaterialPath()))
+                .SetBindingStrength(
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        UsdShadeMaterialBindingAPI::GetMaterialBindingStrength(
+                            bindingRel)))
+                .Build();
     }
 
 private:
     UsdShadeMaterialBindingAPI _mbApi;
 };
 
-HD_DECLARE_DATASOURCE_HANDLES(_MaterialBindingContainerDataSource);
+HD_DECLARE_DATASOURCE_HANDLES(_MaterialBindingsContainerDataSource);
 
 } // anonymous namespace
 
@@ -86,8 +99,8 @@ UsdImagingMaterialBindingAPIAdapter::GetImagingSubprimData(
     }
 
     return HdRetainedContainerDataSource::New(
-        HdMaterialBindingSchemaTokens->materialBinding,
-        _MaterialBindingContainerDataSource::New(prim)
+        HdMaterialBindingsSchema::GetSchemaToken(),
+        _MaterialBindingsContainerDataSource::New(prim)
     );
 }
 
@@ -96,7 +109,8 @@ UsdImagingMaterialBindingAPIAdapter::InvalidateImagingSubprim(
     UsdPrim const& prim,
     TfToken const& subprim,
     TfToken const& appliedInstanceName,
-    TfTokenVector const& properties)
+    TfTokenVector const& properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
 
     // QUESTION: We aren't ourselves creating any subprims but do we need to
@@ -107,7 +121,7 @@ UsdImagingMaterialBindingAPIAdapter::InvalidateImagingSubprim(
 
     for (const TfToken &propertyName : properties) {
         if (UsdShadeMaterialBindingAPI::CanContainPropertyName(propertyName)) {
-            return HdMaterialBindingSchema::GetDefaultLocator();
+            return HdMaterialBindingsSchema::GetDefaultLocator();
         }
     }
 

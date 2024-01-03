@@ -148,17 +148,40 @@ bool ShouldDiscardByAlpha(vec4 color)
     return (color.a < alphaThreshold);
 }
 
+vec2 ApplyAxisAlignedAffineTransform(vec4 t, vec2 pt)
+{
+    return t.xy * pt + t.zw;
+}
+
+-- glsl RenderPass.CameraFS
+
+vec2 HorizontallyNormalizedFilmbackCoordinates()
+{
+    const vec4 transform =
+#ifdef HD_HAS_imageToHorizontallyNormalizedFilmback
+        HdGet_imageToHorizontallyNormalizedFilmback();
+#else
+        vec4(vec2(1.0), vec2(0.0));
+#endif
+    return ApplyAxisAlignedAffineTransform(transform, gl_FragCoord.xy);
+}
+
 -- glsl RenderPass.ApplyClipPlanes
 
 void ApplyClipPlanes(vec4 Peye)
 {
+#if defined(HD_HAS_numClipPlanes)
 #if defined(HD_HAS_clipPlanes)
-#if defined(HD_NUM_clipPlanes) // more than 1 (clipPlanes[N])
     for (int i=0; i<HD_NUM_clipPlanes; ++i) {
-        gl_ClipDistance[i] = dot(HdGet_clipPlanes(i), Peye);
+        // For Hgi backends like Metal, we declare a shader stage output of 
+        // gl_ClipDistance[HD_NUM_clipPlanes], since we need to know the array 
+        // size at compile time. To avoid having any uninitialized values in 
+        // that array, we initialize them all to zero first.
+        gl_ClipDistance[i] = 0;
+        if (i < HdGet_numClipPlanes()) {
+            gl_ClipDistance[i] = dot(HdGet_clipPlanes(i), Peye);
+        }
     }
-#else                          // only 1      (clipPlanes)
-    gl_ClipDistance[0] = dot(HdGet_clipPlanes(), Peye);
 #endif
 #endif
 }

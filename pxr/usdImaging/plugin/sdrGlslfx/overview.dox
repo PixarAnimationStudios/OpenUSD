@@ -2,7 +2,6 @@
 \page sdrGlslfx_page_front SdrGlslfx : Glslfx parser for Sdr
 \if ( PIXAR_MFB_BUILD )
 \mainpage SdrGlslfx : Glslfx parser for Sdr
-\publicLib
 \endif
 
 \section sdrGlslfx_overview Overview

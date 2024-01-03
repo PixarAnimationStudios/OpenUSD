@@ -33,6 +33,8 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdRender/tokens.h"
 
+#include "pxr/usd/usd/collectionAPI.h" 
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -64,6 +66,17 @@ class SdfAssetPath;
 /// generates images from usdRender prims, and pipeline specific code that
 /// translates between usdRender prims and the pipeline's resource scheduling
 /// software.  We'll refer to the latter as 'job submission code'.
+/// 
+/// \anchor usdRender_renderVisibility
+/// The objects that are relevant to the render is specified via the 
+/// renderVisibility collection (UsdCollectionAPI) and can be accessed via 
+/// GetRenderVisibilityCollectionAPI(). This collection has includeRoot set to 
+/// true so that all objects participate in the render by default. To render 
+/// only a specific set of objects, there are two options. One is to modify the 
+/// collection paths to explicitly exclude objects that don't participate in 
+/// the render, assuming it is known; the other option is to set includeRoot to 
+/// false and explicitly include the desired objects. These are complementary 
+/// approaches that may each be preferable depending on the scenario.
 /// 
 /// The name of the prim is used as the pass's name.
 /// 
@@ -367,6 +380,13 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Return the UsdCollectionAPI interface used for examining and
+    /// modifying the render visibility of this prim.
+    // For more information, see 
+    // \\ref usdRender_renderVisibility "Render Visibility"
+    USDRENDER_API
+    UsdCollectionAPI GetRenderVisibilityCollectionAPI() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

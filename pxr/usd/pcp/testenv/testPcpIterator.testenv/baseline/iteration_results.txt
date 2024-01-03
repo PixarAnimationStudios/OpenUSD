@@ -228,6 +228,56 @@ Reverse iterating over stronger than payload prim specs for </Model>:
 
 ====================
 
+
+Subtree iterating over subtree nodes starting at node @root.sdf@</Model>:
+ @root.sdf@</Model>	root
+ @root.sdf@</Class>	inherit
+ @mcat.sdf@</Model>	reference
+ @mcat.sdf@</Class>	inherit
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @model_latest.sdf@</Model>	reference
+ @model_latest_payload.sdf@</Model>	payload
+ @mcat.sdf@</Specializes>	specialize
+ @root.sdf@</Specializes>	specialize
+ @mcat.sdf@</Specializes>	specialize
+
+Subtree iterating over subtree nodes starting at node @root.sdf@</Class>:
+ @root.sdf@</Class>	inherit
+
+Subtree iterating over subtree nodes starting at node @mcat.sdf@</Model>:
+ @mcat.sdf@</Model>	reference
+ @mcat.sdf@</Class>	inherit
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @model_latest.sdf@</Model>	reference
+ @model_latest_payload.sdf@</Model>	payload
+ @mcat.sdf@</Specializes>	specialize
+
+Subtree iterating over subtree nodes starting at node @mcat.sdf@</Class>:
+ @mcat.sdf@</Class>	inherit
+
+Subtree iterating over subtree nodes starting at node @mcat.sdf@</Model{pin=latest}>:
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @model_latest.sdf@</Model>	reference
+ @model_latest_payload.sdf@</Model>	payload
+
+Subtree iterating over subtree nodes starting at node @model_latest.sdf@</Model>:
+ @model_latest.sdf@</Model>	reference
+ @model_latest_payload.sdf@</Model>	payload
+
+Subtree iterating over subtree nodes starting at node @model_latest_payload.sdf@</Model>:
+ @model_latest_payload.sdf@</Model>	payload
+
+Subtree iterating over subtree nodes starting at node @mcat.sdf@</Specializes>:
+ @mcat.sdf@</Specializes>	specialize
+
+Subtree iterating over subtree nodes starting at node @root.sdf@</Specializes>:
+ @root.sdf@</Specializes>	specialize
+
+Subtree iterating over subtree nodes starting at node @mcat.sdf@</Specializes>:
+ @mcat.sdf@</Specializes>	specialize
+
+====================
+
 Iterating over local property specs for </Model.a>:
  @root.sdf@</Model.a> from node @root.sdf@</Model>	root
 

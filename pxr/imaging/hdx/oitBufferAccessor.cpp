@@ -87,38 +87,38 @@ HdxOitBufferAccessor::AddOitBufferBindings(
 
     if (counterBar && dataBar && depthBar && indexBar && uniformBar) {
         shader->AddBufferBinding(
-            HdBindingRequest(HdBinding::SSBO,
-                             HdxTokens->oitCounterBufferBar,
-                             counterBar,
-                             /*interleave = */ false,
-                             /*writable = */ true));
+            HdStBindingRequest(HdStBinding::SSBO,
+                               HdxTokens->oitCounterBufferBar,
+                               counterBar,
+                               /*interleave = */ false,
+                               /*writable = */ true));
 
         shader->AddBufferBinding(
-            HdBindingRequest(HdBinding::SSBO,
-                             HdxTokens->oitDataBufferBar,
-                             dataBar,
-                             /*interleave = */ false,
-                             /*writable = */ true));
+            HdStBindingRequest(HdStBinding::SSBO,
+                               HdxTokens->oitDataBufferBar,
+                               dataBar,
+                               /*interleave = */ false,
+                               /*writable = */ true));
         
         shader->AddBufferBinding(
-            HdBindingRequest(HdBinding::SSBO,
-                             HdxTokens->oitDepthBufferBar,
-                             depthBar,
-                             /*interleave = */ false,
-                             /*writable = */ true));
+            HdStBindingRequest(HdStBinding::SSBO,
+                               HdxTokens->oitDepthBufferBar,
+                               depthBar,
+                               /*interleave = */ false,
+                               /*writable = */ true));
         
         shader->AddBufferBinding(
-            HdBindingRequest(HdBinding::SSBO,
-                             HdxTokens->oitIndexBufferBar,
-                             indexBar,
-                             /*interleave = */ false,
-                             /*writable = */ true));
+            HdStBindingRequest(HdStBinding::SSBO,
+                               HdxTokens->oitIndexBufferBar,
+                               indexBar,
+                               /*interleave = */ false,
+                               /*writable = */ true));
         
         shader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, 
-                             HdxTokens->oitUniformBar,
-                             uniformBar,
-                             /*interleave = */ true));
+            HdStBindingRequest(HdStBinding::UBO, 
+                               HdxTokens->oitUniformBar,
+                               uniformBar,
+                               /*interleave = */ true));
         return true;
     } else {
         shader->RemoveBufferBinding(HdxTokens->oitCounterBufferBar);

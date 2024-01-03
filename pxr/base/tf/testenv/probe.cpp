@@ -25,7 +25,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/notice.h"
-#include "pxr/base/tf/noticeRegistry.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/arch/systemInfo.h"
@@ -118,10 +117,10 @@ Test_TfProbe()
 
     TfNotice::Register(wl1, &ProbeListener::ProcessNotice);
 
-    Tf_NoticeRegistry::_GetInstance()._InsertProbe(TfCreateWeakPtr( &_probe ));
+    TfNotice::InsertProbe(TfCreateWeakPtr( &_probe ));
 
     ProbeNotice("first").Send();
-    Tf_NoticeRegistry::_GetInstance()._RemoveProbe(TfCreateWeakPtr( &_probe ));
+    TfNotice::RemoveProbe(TfCreateWeakPtr( &_probe ));
 
     ProbeNotice("second").Send();
 

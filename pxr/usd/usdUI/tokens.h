@@ -110,6 +110,18 @@ struct UsdUITokensType {
     /// 
     /// UsdUINodeGraphNodeAPI
     const TfToken uiNodegraphNodeStackingOrder;
+    /// \brief "Backdrop"
+    /// 
+    /// Schema identifer and family for UsdUIBackdrop
+    const TfToken Backdrop;
+    /// \brief "NodeGraphNodeAPI"
+    /// 
+    /// Schema identifer and family for UsdUINodeGraphNodeAPI
+    const TfToken NodeGraphNodeAPI;
+    /// \brief "SceneGraphPrimAPI"
+    /// 
+    /// Schema identifer and family for UsdUISceneGraphPrimAPI
+    const TfToken SceneGraphPrimAPI;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

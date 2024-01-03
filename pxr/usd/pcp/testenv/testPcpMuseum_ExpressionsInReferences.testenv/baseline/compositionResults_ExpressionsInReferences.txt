@@ -1,0 +1,41 @@
+Loading @ExpressionsInReferences/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </SingleRef>
+
+Prim Stack:
+    root.sdf             /SingleRef
+    A.sdf                /A
+
+------------------------------------------------------------------------
+Results for composing </ChainedRef>
+
+Prim Stack:
+    root.sdf             /ChainedRef
+    ref2.sdf             /Ref2
+    B.sdf                /B
+
+------------------------------------------------------------------------
+Results for composing </ChainedRefOverride>
+
+Prim Stack:
+    root.sdf             /ChainedRefOverride
+    ref3.sdf             /Ref3
+    ref2.sdf             /Ref2
+    A.sdf                /A
+
+------------------------------------------------------------------------
+Results for composing </MultiRef>
+
+Prim Stack:
+    root.sdf             /MultiRef
+    ref3.sdf             /Ref3
+    ref2.sdf             /Ref2
+    A.sdf                /A
+    ref2.sdf             /Ref2
+    B.sdf                /B
+

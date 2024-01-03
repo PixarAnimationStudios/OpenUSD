@@ -55,7 +55,9 @@ MAT4 GetRotationMatrix(vec4 q)
 MAT4 GetInstanceTransform(int level)
 {
     MAT4 m = MAT4(1);
-#ifdef HD_HAS_INSTANCE_instanceTransform
+#ifdef HD_HAS_INSTANCE_hydra_instanceTransforms
+    m = HdGetInstance_hydra_instanceTransforms(level, MAT4(1)) * m;
+#elif defined(HD_HAS_INSTANCE_instanceTransform)
     m = HdGetInstance_instanceTransform(level, MAT4(1)) * m;
 #endif
 
@@ -63,7 +65,13 @@ MAT4 GetInstanceTransform(int level)
     //   scale then rotate then translate
     //   i.e. (T * R * S) * position
 
-#ifdef HD_HAS_INSTANCE_scale
+#ifdef HD_HAS_INSTANCE_hydra_instanceScales
+    vec3 s = HdGetInstance_hydra_instanceScales(level, /*default=*/vec3(1));
+    m = MAT4(s.x,   0,   0, 0,
+               0, s.y,   0, 0,
+               0,   0, s.z, 0,
+               0,   0,   0, 1) * m;
+#elif defined(HD_HAS_INSTANCE_instanceScale)
     vec3 s = HdGetInstance_scale(level, /*default=*/vec3(1));
     m = MAT4(s.x,   0,   0, 0,
                0, s.y,   0, 0,
@@ -71,12 +79,21 @@ MAT4 GetInstanceTransform(int level)
                0,   0,   0, 1) * m;
 #endif
 
-#ifdef HD_HAS_INSTANCE_rotate // GfQuat(ix, iy, iz, real)
+#ifdef HD_HAS_INSTANCE_hydra_instanceRotations // GfQuat(ix, iy, iz, real)
+    vec4 q = HdGetInstance_hydra_instanceRotations(level, /*default=*/vec4(0));
+    m = GetRotationMatrix(q) * m;
+#elif defined(HD_HAS_INSTANCE_rotate)
     vec4 q = HdGetInstance_rotate(level, /*default=*/vec4(0));
     m = GetRotationMatrix(q) * m;
 #endif
 
-#ifdef HD_HAS_INSTANCE_translate
+#ifdef HD_HAS_INSTANCE_hydra_instanceTranslations
+    vec3 t = HdGetInstance_hydra_instanceTranslations(level, /*default=*/vec3(0));
+    m = MAT4(  1,   0,   0,  0,
+               0,   1,   0,  0,
+               0,   0,   1,  0,
+             t.x, t.y, t.z,  1) * m;
+#elif defined(HD_HAS_INSTANCE_translate)
     vec3 t = HdGetInstance_translate(level, /*default=*/vec3(0));
     m = MAT4(  1,   0,   0,  0,
                0,   1,   0,  0,
@@ -90,11 +107,19 @@ MAT4 GetInstanceTransformInverse(int level)
 {
     MAT4 m = MAT4(1);
 
-#ifdef HD_HAS_INSTANCE_instanceTransform
+#ifdef HD_HAS_INSTANCE_hydra_instanceTransforms
+    m = inverse(HdGetInstance_hydra_instanceTransforms(level, MAT4(1))) * m;
+#elif defined(HD_HAS_INSTANCE_instanceTransform)
     m = inverse(HdGetInstance_instanceTransform(level, MAT4(1))) * m;
 #endif
 
-#ifdef HD_HAS_INSTANCE_translate
+#ifdef HD_HAS_INSTANCE_hydra_instanceTranslations
+    vec3 it = -HdGetInstance_hydra_instanceTranslations(level, /*default=*/vec3(0)); // negate
+    m = MAT4(   1,    0,    0, 0,
+                0,    1,    0, 0,
+                0,    0,    1, 0,
+             it.x, it.y, it.z, 1) * m;
+#elif defined(HD_HAS_INSTANCE_translate)
     vec3 it = -HdGetInstance_translate(level, /*default=*/vec3(0)); // negate
     m = MAT4(   1,    0,    0, 0,
                 0,    1,    0, 0,
@@ -102,13 +127,23 @@ MAT4 GetInstanceTransformInverse(int level)
              it.x, it.y, it.z, 1) * m;
 #endif
 
-#ifdef HD_HAS_INSTANCE_rotate
+#ifdef HD_HAS_INSTANCE_hydra_instanceRotations
+    vec4 q = HdGetInstance_hydra_instanceRotations(level, /*default=*/vec4(0));
+    q.xyz = -q.xyz; // inverse rotataion axis
+    m = GetRotationMatrix(q) * m;
+#elif defined(HD_HAS_INSTANCE_rotate)
     vec4 q = HdGetInstance_rotate(level, /*default=*/vec4(0));
     q.xyz = -q.xyz; // inverse rotataion axis
     m = GetRotationMatrix(q) * m;
 #endif
 
-#ifdef HD_HAS_INSTANCE_scale
+#ifdef HD_HAS_INSTANCE_hydra_instanceScales
+    vec3 is = 1.0/HdGetInstance_hydra_instanceScales(level, /*default=*/vec3(1)); // inverse scale
+    m = MAT4(is.x,    0,    0,  0,
+                0, is.y,    0,  0,
+                0,    0, is.z,  0,
+                0,    0,    0,  1) * m;
+#elif defined(HD_HAS_INSTANCE_scale)
     vec3 is = 1.0/HdGetInstance_scale(level, /*default=*/vec3(1)); // inverse scale
     m = MAT4(is.x,    0,    0,  0,
                 0, is.y,    0,  0,
@@ -171,14 +206,24 @@ bool IsFlipped()
     bool flip = false;
 #endif
 
-#ifdef HD_HAS_INSTANCE_scale
+#ifdef HD_HAS_INSTANCE_hydra_instanceScales
+    for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
+        vec3 scale = HdGetInstance_hydra_instanceScales(i, /*default=*/vec3(1));
+        flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
+    }
+#elif defined(HD_HAS_INSTANCE_scale)
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_scale(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
     }
 #endif
 
-#ifdef HD_HAS_INSTANCE_instanceTransform
+#ifdef HD_HAS_INSTANCE_hydra_instanceTransforms
+    for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
+        MAT4 m = HdGetInstance_hydra_instanceTransforms(i, MAT4(1));
+        flip = flip != (determinant(m) < 0.0);
+    }
+#elif defined(HD_HAS_INSTANCE_instanceTransform)
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_instanceTransform(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);

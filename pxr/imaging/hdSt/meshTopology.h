@@ -48,7 +48,7 @@ using HdBufferSourceSharedPtr =
 using HdBufferArrayRangeSharedPtr =
     std::shared_ptr<class HdBufferArrayRange>;
 
-using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
+using HdStComputationSharedPtr = std::shared_ptr<class HdStComputation>;
 
 using HdSt_AdjacencyBuilderComputationPtr = 
     std::weak_ptr<class HdSt_AdjacencyBuilderComputation>;
@@ -142,7 +142,7 @@ public:
         HdBufferSourceSharedPtr const &source, SdfPath const &id);
 
     /// Returns the GPU quadrangulate computation.
-    HdComputationSharedPtr GetQuadrangulateComputationGPU(
+    HdStComputationSharedPtr GetQuadrangulateComputationGPU(
         TfToken const &name, HdType dataType, SdfPath const &id);
 
     /// Returns the CPU face-varying quadrangulate computation
@@ -226,7 +226,7 @@ public:
         int fvarChannel = 0);
 
     /// Returns the subdivision primvar refine computation on GPU.
-    HdComputationSharedPtr GetOsdRefineComputationGPU(
+    HdStComputationSharedPtr GetOsdRefineComputationGPU(
         TfToken const &name,
         HdType dataType,
         HdStResourceRegistry *resourceRegistry,

@@ -138,7 +138,8 @@ protected:
         HDST_API
         bool CompileShader(
                 HdStDrawItem const *drawItem,
-                HdStResourceRegistrySharedPtr const &resourceRegistry);
+                HdStResourceRegistrySharedPtr const &resourceRegistry,
+                bool logCacheLookup = false);
 
         HdStGLSLProgramSharedPtr GetGLSLProgram() const {
             return _glslProgram;
@@ -216,7 +217,7 @@ protected:
         // enabled or not.
         HDST_API
         virtual void _GetCustomBindings(
-            HdBindingRequestVector *customBindings,
+            HdStBindingRequestVector *customBindings,
             bool *enableInstanceDraw) const;
 
         HDST_API

@@ -34,9 +34,6 @@
 #include "pxr/base/arch/math.h"
 #include "pxr/base/arch/vsnprintf.h"
 
-#include <boost/type_traits/is_signed.hpp>
-#include <boost/utility/enable_if.hpp>
-
 #include <algorithm>
 #include <climits>
 #include <cstdarg>
@@ -45,6 +42,7 @@
 #include <string>
 #include <utility>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 #include <memory>
 
@@ -125,7 +123,7 @@ TfStringToDouble(const string& s)
 // return that minimum representable value and set *outOfRange to true (if
 // outOfRange is not NULL).
 template <class Int>
-static typename boost::enable_if<boost::is_signed<Int>, Int>::type
+static std::enable_if_t<std::is_signed<Int>::value, Int>
 _StringToNegative(const char *p, bool *outOfRange)
 {
     const Int M = std::numeric_limits<Int>::min();

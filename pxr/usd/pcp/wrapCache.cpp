@@ -306,13 +306,26 @@ wrapCache()
         .def("IsInvalidSublayerIdentifier", 
              &PcpCache::IsInvalidSublayerIdentifier)
 
-        .def("HasAnyDynamicFileFormatArgumentDependencies", 
-             &PcpCache::HasAnyDynamicFileFormatArgumentDependencies)
+        .def("HasAnyDynamicFileFormatArgumentFieldDependencies", 
+             &PcpCache::HasAnyDynamicFileFormatArgumentFieldDependencies)
+        .def("HasAnyDynamicFileFormatArgumentAttributeDependencies", 
+             &PcpCache::HasAnyDynamicFileFormatArgumentAttributeDependencies)
         .def("IsPossibleDynamicFileFormatArgumentField", 
              &PcpCache::IsPossibleDynamicFileFormatArgumentField)
+        .def("IsPossibleDynamicFileFormatArgumentAttribute", 
+             &PcpCache::IsPossibleDynamicFileFormatArgumentAttribute)
         .def("GetDynamicFileFormatArgumentDependencyData", 
              &PcpCache::GetDynamicFileFormatArgumentDependencyData,
              return_value_policy<reference_existing_object>())
+
+        .def("GetPrimsUsingExpressionVariablesFromLayerStack",
+             &PcpCache::GetPrimsUsingExpressionVariablesFromLayerStack,
+             (args("layerStack")),
+             return_value_policy<TfPySequenceToList>())
+        .def("GetExpressionVariablesFromLayerStackUsedByPrim",
+             &PcpCache::GetExpressionVariablesFromLayerStackUsedByPrim,
+             (args("layerStack"), args("primIndexPath")),
+             return_value_policy<TfPySequenceToList>())
 
         .def("PrintStatistics", &PcpCache::PrintStatistics)
         .def("Reload", &_Reload)

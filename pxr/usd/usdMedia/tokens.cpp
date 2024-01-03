@@ -45,6 +45,8 @@ UsdMediaTokensType::UsdMediaTokensType() :
     spatial("spatial", TfToken::Immortal),
     startTime("startTime", TfToken::Immortal),
     thumbnails("thumbnails", TfToken::Immortal),
+    AssetPreviewsAPI("AssetPreviewsAPI", TfToken::Immortal),
+    SpatialAudio("SpatialAudio", TfToken::Immortal),
     allTokens({
         auralMode,
         defaultImage,
@@ -64,7 +66,9 @@ UsdMediaTokensType::UsdMediaTokensType() :
         previewThumbnailsDefault,
         spatial,
         startTime,
-        thumbnails
+        thumbnails,
+        AssetPreviewsAPI,
+        SpatialAudio
     })
 {
 }
