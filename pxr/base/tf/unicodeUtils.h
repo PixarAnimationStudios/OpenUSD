@@ -30,7 +30,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/unicodeCharacterClasses.h"
 
 #include <ostream>
 #include <string>
@@ -382,10 +381,7 @@ TfUtf8CodePointView::EndAsIterator() const
 /// That is, the character must have a category of Lu | Ll | Lt | Lm | Lo | Nl
 ///
 TF_API
-inline bool TfIsUtf8CodePointXidStart(uint32_t codePoint)
-{
-    return TfUnicodeGetXidStartFlagData().IsXidStartCodePoint(codePoint);
-}
+bool TfIsUtf8CodePointXidStart(uint32_t codePoint);
 
 /// Determines whether the given Unicode \a codePoint is in the XID_Continue
 /// character class.
@@ -397,10 +393,7 @@ inline bool TfIsUtf8CodePointXidStart(uint32_t codePoint)
 /// XID_Start | Nd | Mn | Mc | Pc
 ///
 TF_API
-inline bool TfIsUtf8CodePointXidContinue(uint32_t codePoint)
-{
-    return TfUnicodeGetXidContinueFlagData().IsXidContinueCodePoint(codePoint);
-}
+bool TfIsUtf8CodePointXidContinue(uint32_t codePoint);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

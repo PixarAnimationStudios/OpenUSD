@@ -405,10 +405,12 @@ TestCharacterClasses()
     TF_AXIOM(!TfIsUtf8CodePointXidContinue(
         std::numeric_limits<uint32_t>::max()));
 
-    // also TF_MAX_CODE_POINT is our upper limit, and should be an invalid
-    // code point due to its being reserved
-    TF_AXIOM(!TfIsUtf8CodePointXidStart(TF_MAX_CODE_POINT));
-    TF_AXIOM(!TfIsUtf8CodePointXidContinue(TF_MAX_CODE_POINT));
+    // Test TfUtf8CodePoint::MaximumValue (the last valid) and
+    // TfUtf8CodePoint::MaximumValue + 1 (the first invalid)
+    TF_AXIOM(!TfIsUtf8CodePointXidStart(TfUtf8CodePoint::MaximumValue));
+    TF_AXIOM(!TfIsUtf8CodePointXidContinue(TfUtf8CodePoint::MaximumValue));
+    TF_AXIOM(!TfIsUtf8CodePointXidStart(TfUtf8CodePoint::MaximumValue + 1));
+    TF_AXIOM(!TfIsUtf8CodePointXidContinue(TfUtf8CodePoint::MaximumValue + 1));
 
     return true;
 }
