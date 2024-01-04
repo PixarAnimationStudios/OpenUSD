@@ -435,9 +435,16 @@ Unity
 =====
 
 `Unity <https://unity.com>`_ is a real time 3D engine and editor.
-It includes an `open source USD Package <https://github.com/Unity-Technologies/usd-unity-sdk>`_.
 
-`Unity USD Documentation <https://docs.unity3d.com/Packages/com.unity.formats.usd@3.0/manual/index.html>`_
+It provides 3 USD packages for import, export and USD C# bindings.
+
+Documentation:
+
+* `USD Importer <https://docs.unity3d.com/Packages/com.unity.importer.usd@latest>`_
+* `USD Exporter <https://docs.unity3d.com/Packages/com.unity.exporter.usd@latest>`_
+* `USD C# bindings <https://docs.unity3d.com/Packages/com.unity.usd.core@latest>`_
+
+Formerly an `open source USD Package <https://github.com/Unity-Technologies/usd-unity-sdk>`_ was available.
 
 --------
 
