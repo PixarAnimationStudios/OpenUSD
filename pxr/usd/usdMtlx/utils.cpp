@@ -44,6 +44,8 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/thisPlugin.h"
 #include <MaterialXCore/Util.h>
 #include <MaterialXFormat/XmlIo.h>
 #include <map>
@@ -198,6 +200,16 @@ _ComputeStdlibSearchPaths()
     stdlibSearchPaths =
         _MergeSearchPaths(stdlibSearchPaths, { PXR_MATERIALX_STDLIB_DIR });
 #endif
+
+    // The MaterialX plugin resources contains the MaterialX standard
+    // library in the libraries location
+    // Append it as the lowest priority path so the system can override
+    // with environment variables if it prefers to
+    static PlugPluginPtr plugin = PLUG_THIS_PLUGIN;
+    const std::string resourceMtlxLibrary = PlugFindPluginResource(plugin,
+            "libraries");
+    stdlibSearchPaths =
+        _MergeSearchPaths(stdlibSearchPaths, { resourceMtlxLibrary });
     return stdlibSearchPaths;
 }
 
