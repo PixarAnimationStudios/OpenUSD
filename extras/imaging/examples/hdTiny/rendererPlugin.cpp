@@ -54,7 +54,7 @@ HdTinyRendererPlugin::DeleteRenderDelegate(HdRenderDelegate *renderDelegate)
 }
 
 bool 
-HdTinyRendererPlugin::IsSupported(bool /* gpuEnabled */) const
+HdTinyRendererPlugin::IsSupported(bool /* gpuEnabled */, TfToken /*hgiToken*/) const
 {
     // Nothing more to check for now, we assume if the plugin loads correctly
     // it is supported.

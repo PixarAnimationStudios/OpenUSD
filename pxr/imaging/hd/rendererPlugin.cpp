@@ -60,7 +60,14 @@ HdRendererPlugin::~HdRendererPlugin() = default;
 HdPluginRenderDelegateUniqueHandle
 HdRendererPlugin::CreateDelegate(HdRenderSettingsMap const& settingsMap)
 {
-    if (!IsSupported()) {
+    TfToken backendToken;
+
+    auto iter = settingsMap.find(TfToken("HgiBackend"));
+    if (iter != settingsMap.end()) {
+        backendToken = iter->second.Get<TfToken>();
+    }
+
+    if (!IsSupported(true, backendToken)) {
         return nullptr;
     }
 

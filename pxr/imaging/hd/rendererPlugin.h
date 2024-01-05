@@ -103,7 +103,7 @@ public:
     /// parameter indicates if the GPU is available for use by the plugin in
     /// case this information is necessary to make this determination.
     ///
-    virtual bool IsSupported(bool gpuEnabled = true) const = 0;
+    virtual bool IsSupported(bool gpuEnabled = true, TfToken token = TfToken("")) const = 0;
 
 protected:
     HdRendererPlugin() = default;

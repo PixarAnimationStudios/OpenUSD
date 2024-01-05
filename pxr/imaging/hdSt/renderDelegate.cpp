@@ -546,9 +546,9 @@ HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
 }
 
 bool
-HdStRenderDelegate::IsSupported()
+HdStRenderDelegate::IsSupported(const TfToken& hgiToken)
 {
-    return Hgi::IsSupported();
+    return Hgi::IsSupported(hgiToken);
 }
 
 TfTokenVector
