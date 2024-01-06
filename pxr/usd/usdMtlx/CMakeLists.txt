@@ -13,16 +13,16 @@ foreach(file ${MATERIALX_STD_LIB_FILES})
     file(RELATIVE_PATH _resource_relative ${MATERIALX_STDLIB_DIR} ${file})
 
     # XXX Create the path for the source file relative to the current source
-    # source directory. This is done to avoid absolute paths which is not compatible with
-    # Private.cmake:_install_resource_files which uses : as a separator which breaks for
-    # absolute paths on windows which have paths such as c:\blah
+    # directory. This is done to avoid absolute paths which is not compatible with
+    # _install_resource_files in Private.cmake which uses : as a separator. This breaks 
+    # for absolute paths on windows which uses them for drive letters (c:\blah)
     # This will still fail if MATERIALX_STDLIB_DIR points to assets on a different
-    # drive than the usd source directory
+    # drive than the usd source directory on windows
     file(RELATIVE_PATH _source_relative ${CMAKE_CURRENT_SOURCE_DIR} ${file})
 
     # Make a list of : separated paths of source files and destination files for
     # the materialx library files so they can be installed in the resource
-    # directory
+    # directory for the plugin
     list(APPEND MATERIALX_STD_LIB_RESOURCES "${_source_relative}:libraries/${_resource_relative}")
 endforeach()
 

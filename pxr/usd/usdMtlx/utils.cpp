@@ -201,10 +201,10 @@ _ComputeStdlibSearchPaths()
         _MergeSearchPaths(stdlibSearchPaths, { PXR_MATERIALX_STDLIB_DIR });
 #endif
 
-    // The MaterialX plugin resources contains the MaterialX standard
-    // library in the libraries location
-    // Append it as the lowest priority path so the system can override
-    // with environment variables if it prefers to
+    // The MaterialX plugin contains the MaterialX standard
+    // library under the libraries location in its resource folder
+    // Append it as the lowest priority path so it can be overridden
+    // with environment variables
     static PlugPluginPtr plugin = PLUG_THIS_PLUGIN;
     const std::string resourceMtlxLibrary = PlugFindPluginResource(plugin,
             "libraries");
