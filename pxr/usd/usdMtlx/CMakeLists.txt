@@ -1,30 +1,34 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdMtlx)
 
+set(MATERIALX_STD_LIB_RESOURCES "")
 if (MATERIALX_STDLIB_DIR)
     add_definitions(-DPXR_MATERIALX_STDLIB_DIR="${MATERIALX_STDLIB_DIR}")
+
+    # Gather all the files in the materialx standard library
+    file(GLOB_RECURSE MATERIALX_STD_LIB_FILES "${MATERIALX_STDLIB_DIR}/*")
+    # Exclude files matching .txt and .md extensions to avoid installing
+    # CMakeLists and documentation files
+    list(FILTER MATERIALX_STD_LIB_FILES EXCLUDE REGEX ".*\\.(txt|md)$")
+
+    foreach(file ${MATERIALX_STD_LIB_FILES})
+        # Create the relative path for the destination in the resource destination
+        file(RELATIVE_PATH _resource_relative ${MATERIALX_STDLIB_DIR} ${file})
+
+        # XXX Create the path for the source file relative to the current source
+        # directory. This is done to avoid absolute paths which is not compatible with
+        # _install_resource_files in Private.cmake which uses : as a separator. This breaks 
+        # for absolute paths on windows which uses them for drive letters (c:\blah)
+        # This will still fail if MATERIALX_STDLIB_DIR points to assets on a different
+        # drive than the usd source directory on windows
+        file(RELATIVE_PATH _source_relative ${CMAKE_CURRENT_SOURCE_DIR} ${file})
+
+        # Make a list of : separated paths of source files and destination files for
+        # the materialx library files so they can be installed in the resource
+        # directory for the plugin
+        list(APPEND MATERIALX_STD_LIB_RESOURCES "${_source_relative}:libraries/${_resource_relative}")
+    endforeach()
 endif()
-
-# Gather all the files in the materialx standard library
-file(GLOB_RECURSE MATERIALX_STD_LIB_FILES "${MATERIALX_STDLIB_DIR}/*")
-set(MATERIALX_STD_LIB_RESOURCES "")
-foreach(file ${MATERIALX_STD_LIB_FILES})
-    # Create the relative path for the destination in the resource destination
-    file(RELATIVE_PATH _resource_relative ${MATERIALX_STDLIB_DIR} ${file})
-
-    # XXX Create the path for the source file relative to the current source
-    # directory. This is done to avoid absolute paths which is not compatible with
-    # _install_resource_files in Private.cmake which uses : as a separator. This breaks 
-    # for absolute paths on windows which uses them for drive letters (c:\blah)
-    # This will still fail if MATERIALX_STDLIB_DIR points to assets on a different
-    # drive than the usd source directory on windows
-    file(RELATIVE_PATH _source_relative ${CMAKE_CURRENT_SOURCE_DIR} ${file})
-
-    # Make a list of : separated paths of source files and destination files for
-    # the materialx library files so they can be installed in the resource
-    # directory for the plugin
-    list(APPEND MATERIALX_STD_LIB_RESOURCES "${_source_relative}:libraries/${_resource_relative}")
-endforeach()
 
 pxr_library(usdMtlx
     LIBRARIES
