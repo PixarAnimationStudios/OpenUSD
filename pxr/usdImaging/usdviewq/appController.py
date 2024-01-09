@@ -2203,6 +2203,10 @@ class AppController(QtCore.QObject):
 
     # Prim/Attribute search functionality =====================================
 
+    # Defaults to NFKC for ease of use for users. NFKC has a compatbility decomposition that NFC does not.
+    # This makes it much easier to search with just ASCII characters.
+    # Some information is lost with the additional decomposition,
+    # but it's intentional to enable simpler searching.
     def _normalize_unicode(self, str: str, form = 'NFKC'):
         return unicodedata.normalize(form, str) 
 
