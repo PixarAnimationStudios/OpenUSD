@@ -470,7 +470,7 @@ Specifically:
         if not valueProducingAttrs or len(valueProducingAttrs) != 1:
             return None
         # We require an input parameter producing the value.
-        if not UsdShade.Tokens.inputs.startswith(valueProducingAttrs[0].GetNamespace()):
+        if not UsdShade.Input.IsInput(valueProducingAttrs[0]):
             return None
         return valueProducingAttrs[0].Get(Usd.TimeCode.EarliestTime())
 
