@@ -883,12 +883,12 @@ HdxColorCorrectionTask::_CreateBufferResources()
               {  3, -1, 0, 1,     2, 0 } };
 
     // Vulkan back-end needs the UVs inverted along the y axis
-    if (_GetHgi()->GetAPIName() == HgiTokens->Vulkan)
-    {
-        vertData[0][5] = 1.0f - vertData[0][5];
-        vertData[1][5] = 1.0f - vertData[1][5];
-        vertData[2][5] = 1.0f - vertData[2][5];
-    }
+    //if (_GetHgi()->GetAPIName() == HgiTokens->Vulkan)
+    //{
+    //    vertData[0][5] = 1.0f - vertData[0][5];
+    //    vertData[1][5] = 1.0f - vertData[1][5];
+    //    vertData[2][5] = 1.0f - vertData[2][5];
+    //}
 
     HgiBufferDesc vboDesc;
     vboDesc.debugName = "HdxColorCorrectionTask VertexBuffer";

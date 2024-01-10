@@ -67,15 +67,10 @@ HgiVulkanInstance::HgiVulkanInstance()
         VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
     };
 
-    std::vector<const char*> instanceLayerList;
     // Enable validation layers extension.
     // Requires VK_LAYER_PATH to be set.
     if (HgiVulkanIsDebugEnabled()) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        instanceLayerList.push_back("VK_LAYER_KHRONOS_validation");
-
-        createInfo.ppEnabledLayerNames = instanceLayerList.data();
-        createInfo.enabledLayerCount = (uint32_t)instanceLayerList.size();
     }
 
     createInfo.ppEnabledExtensionNames = extensions.data();
