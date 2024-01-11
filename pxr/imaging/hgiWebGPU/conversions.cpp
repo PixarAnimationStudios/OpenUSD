@@ -256,8 +256,6 @@ struct {
     {HgiShaderStageCustomBitsBegin, wgpu::ShaderStage::None},
 };
 
-static_assert(HgiBufferUsageCustomBitsBegin == 1 << 4, "");
-
 //
 // HgiCullMode
 //
