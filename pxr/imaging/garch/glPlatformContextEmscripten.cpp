@@ -41,7 +41,6 @@ GarchEmscriptenContextState::GarchEmscriptenContextState() :
     draw(eglGetCurrentSurface(EGL_DRAW)),
     _defaultCtor(true)
 {
-    std::cout << "GarchEmscriptenContextState::GarchEmscriptenContextState without params" << std::endl;
     // Do nothing
 }
 
@@ -50,16 +49,12 @@ GarchEmscriptenContextState::GarchEmscriptenContextState(
     display(display_), draw(draw_), context(context_),
      _defaultCtor(false)
 {
-    std::cout << "GarchEmscriptenContextState::GarchEmscriptenContextState with params" << std::endl;
     // Do nothing
 }
 
 bool
 GarchEmscriptenContextState::operator==(const GarchEmscriptenContextState& rhs) const
 {
-    std::cout << "GarchEmscriptenContextState::==" << (display  == rhs.display  &&
-                                                       draw == rhs.draw &&
-                                                       context  == rhs.context) << std::endl;
     return display  == rhs.display  &&
            draw == rhs.draw &&
            context  == rhs.context;
@@ -68,7 +63,6 @@ GarchEmscriptenContextState::operator==(const GarchEmscriptenContextState& rhs) 
 size_t
 GarchEmscriptenContextState::GetHash() const
 {
-    std::cout << "GarchEmscriptenContextState::GetHash" << std::endl;
     size_t result = 0;
     boost::hash_combine(result, display);
     boost::hash_combine(result, draw);
@@ -80,14 +74,12 @@ GarchEmscriptenContextState::GetHash() const
 bool
 GarchEmscriptenContextState::IsValid() const
 {
-    std::cout << "GarchEmscriptenContextState::IsValid\ndisplay:" << (display && true) << "\ndraw: " << (draw && true) << "\ncontext:" << (context && true) << std::endl;
     return display && draw && context;
 }
 
 void
 GarchEmscriptenContextState::MakeCurrent()
 {
-    std::cout << "GarchEmscriptenContextState::MakeCurrent" << std::endl;
     if (IsValid()) {
         eglMakeCurrent(display, draw, draw, context);
     }
@@ -99,7 +91,6 @@ GarchEmscriptenContextState::MakeCurrent()
 void
 GarchEmscriptenContextState::DoneCurrent()
 {
-    std::cout << "GarchEmscriptenContextState::DoneCurrent" << std::endl;
     if (EGLDisplay display = eglGetCurrentDisplay()) {
         eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     }
@@ -108,7 +99,6 @@ GarchEmscriptenContextState::DoneCurrent()
 GarchEmscriptenContextState
 GarchGetNullGLPlatformContextState()
 {
-    std::cout << "GarchEmscriptenContextState::GarchGetNullGLPlatformContextState" << std::endl;
     return GarchEmscriptenContextState(EGL_NO_DISPLAY,EGL_NO_SURFACE, EGL_NO_CONTEXT);
 }
 

@@ -49,9 +49,6 @@ public:
 private:
     bool _running;
     GarchGLDebugWindow *_callback;
-    /*Display *_display;
-    Window _window;
-    GLXContext _glContext;*/
     GarchGLPlatformDebugContextRefPtr _glDebugContext;
 };
 
