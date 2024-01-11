@@ -1769,7 +1769,7 @@ def InstallDawn(context, force, buildArgs):
         # Simply copy headers and pre-built binaries to the appropriate location.
         # For Windows, Dawn has Release or Debug folders; For macOS, there is not
         if Windows():
-            buildConfigFolder = "Debug/" if context.buildDebug else "Release/"
+            buildConfigFolder = "Debug/" if context.buildDebug else "RelWithDebInfo/" if context.buildRelWithDebug else "Release/"
         else:
             buildConfigFolder = ''
 
