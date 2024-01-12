@@ -145,6 +145,7 @@ class PropertyViewDataRoles(ConstantsGroup):
     TARGET = "Tgt"
     CONNECTION = "Conn"
     COMPOSED = "Cmp"
+    NORMALIZED_NAME = QtCore.Qt.UserRole + 1
 
 class RenderModes(ConstantsGroup):
     # Render modes
