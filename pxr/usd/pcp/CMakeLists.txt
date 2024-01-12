@@ -1187,7 +1187,6 @@ pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits_graph
     TESTENV testPcpMuseum_ImpliedAndAncestralInherits
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --dumpPath /World/CharGroup/Sim/includes/Hand/Geom --dumpMaps ImpliedAndAncestralInherits/root.sdf" 
     STDOUT_REDIRECT compositionResults_ImpliedAndAncestralInherits_graph.txt
-    CLEAN_OUTPUT "[^@]*/ImpliedAndAncestralInherits/"
     DIFF_COMPARE compositionResults_ImpliedAndAncestralInherits_graph.txt 
 )
 
