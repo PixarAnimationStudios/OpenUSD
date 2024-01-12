@@ -458,13 +458,21 @@ Specifically:
         ext = Ar.GetResolver().GetExtension(asset.resolvedPath)
         # not an exhaustive list, but ones we typically can read
         return ext in ["bmp", "tga", "jpg", "jpeg", "png", "tif"]
-        
+
     def _GetInputValue(self, shader, inputName):
-        from pxr import Usd
+        from pxr import Usd, UsdShade
         input = shader.GetInput(inputName)
         if not input:
             return None
-        return input.Get(Usd.TimeCode.EarliestTime())
+        # Query value producing attributes for input values.
+        # This has to be a length of 1, otherwise no attribute is producing a value.
+        valueProducingAttrs = UsdShade.Utils.GetValueProducingAttributes(input)
+        if not valueProducingAttrs or len(valueProducingAttrs) != 1:
+            return None
+        # We require an input parameter producing the value.
+        if not UsdShade.Input.IsInput(valueProducingAttrs[0]):
+            return None
+        return valueProducingAttrs[0].Get(Usd.TimeCode.EarliestTime())
 
     def CheckPrim(self, prim):
         from pxr import UsdShade, Gf
