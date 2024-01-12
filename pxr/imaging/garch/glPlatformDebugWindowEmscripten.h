@@ -45,11 +45,6 @@ public:
     void Init(const char *title, int width, int height, int nSamples=1);
     void Run();
     void ExitApp();
-
-private:
-    bool _running;
-    GarchGLDebugWindow *_callback;
-    GarchGLPlatformDebugContextRefPtr _glDebugContext;
 };
 
 

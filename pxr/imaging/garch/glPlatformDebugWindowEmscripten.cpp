@@ -39,36 +39,16 @@ void
 Garch_GLPlatformDebugWindow::Init(const char *title,
                                   int width, int height, int nSamples)
 {
-    // TODO
-    _callback->OnInitializeGL();
-}
-
-static int
-Garch_GetButton(unsigned int button)
-{
-    // TODO
-    return 0;
-}
-
-static int
-Garch_GetModifierKeys(int state)
-{
-    // TODO
-    int keys = 0;
-    return keys;
 }
 
 void
 Garch_GLPlatformDebugWindow::Run()
 {
-    // TODO
-    _running = true;
 }
 
 void
 Garch_GLPlatformDebugWindow::ExitApp()
 {
-    _running = false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
