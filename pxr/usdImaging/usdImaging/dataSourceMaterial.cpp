@@ -280,9 +280,15 @@ public:
                 .GetToken());
             const TfToken outputName = UsdShadeOutput(attr).GetBaseName();
 
-            elements.push_back(HdMaterialConnectionSchema::BuildRetained(
-                HdRetainedTypedSampledDataSource<TfToken>::New(outputPath),
-                HdRetainedTypedSampledDataSource<TfToken>::New(outputName)));
+            elements.push_back(
+                HdMaterialConnectionSchema::Builder()
+                    .SetUpstreamNodePath(
+                        HdRetainedTypedSampledDataSource<TfToken>::New(
+                            outputPath))
+                    .SetUpstreamNodeOutputName(
+                        HdRetainedTypedSampledDataSource<TfToken>::New(
+                            outputName))
+                    .Build());
         }
 
         return HdRetainedSmallVectorDataSource::New(
@@ -430,12 +436,13 @@ public:
             } else if (UsdLuxLightFilter lightFilter =
                     UsdLuxLightFilter(_shaderNode.GetPrim())) {
                 nodeId = lightFilter.GetShaderId({});
-
             } else if (UsdLuxLightAPI light =
                     UsdLuxLightAPI(_shaderNode.GetPrim())) {
                 nodeId = light.GetShaderId({});
+            } else if (UsdShadeNodeGraph nodegraph = 
+                    UsdShadeNodeGraph(_shaderNode.GetPrim())) {
+                nodeId = TfToken();
             }
-
             _shaderNode.GetShaderId(&nodeId);
             return HdRetainedTypedSampledDataSource<TfToken>::New(nodeId);
         }
@@ -454,6 +461,7 @@ public:
             return nullptr;
             
         }
+        
         if (name == HdMaterialNodeSchemaTokens->nodeTypeInfo) {
             if (_shaderNode.GetImplementationSource() != UsdShadeTokens->id) {
                 return _UsdImagingNodeTypeInfoSource::New(
@@ -591,7 +599,6 @@ _WalkGraph(
                 materialPrefix);
         }
     }
-
 }
 
 static
@@ -604,7 +611,6 @@ _BuildNetwork(
     const SdfPath &sceneIndexPath,
     const HdDataSourceLocator &locatorPrefix)
 {
-
     _TokenDataSourceMap nodeDataSources;
     _WalkGraph(terminalNode,
                 &nodeDataSources,
@@ -628,11 +634,14 @@ _BuildNetwork(
     HdContainerDataSourceHandle terminalsDs = 
         HdRetainedContainerDataSource::New(
             terminalName,
-            HdMaterialConnectionSchema::BuildRetained(
-                HdRetainedTypedSampledDataSource<TfToken>::New(
-                    terminalNode.GetPrim().GetPath().GetToken()),
-                HdRetainedTypedSampledDataSource<TfToken>::New(
-                    terminalName)));
+            HdMaterialConnectionSchema::Builder()
+                .SetUpstreamNodePath(
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        terminalNode.GetPrim().GetPath().GetToken()))
+                .SetUpstreamNodeOutputName(
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        terminalName))
+                .Build());
 
     HdContainerDataSourceHandle nodesDs = 
         HdRetainedContainerDataSource::New(
@@ -653,6 +662,29 @@ _BuildNetwork(
                 }))
             .Build();
 
+}
+
+static
+UsdShadeConnectableAPI
+_ComputeOutputSource(
+    const UsdShadeMaterial &usdMat,
+    const TfToken &outputName,
+    const TfTokenVector &renderContext,
+    UsdShadeConnectionSourceInfo sourceInfo) 
+{
+    if (outputName == UsdShadeTokens->surface) {
+        return UsdShadeConnectableAPI(usdMat.ComputeSurfaceSource(
+            renderContext, &sourceInfo.sourceName, &sourceInfo.sourceType));
+    }
+    if (outputName == UsdShadeTokens->displacement) {
+        return UsdShadeConnectableAPI(usdMat.ComputeDisplacementSource(
+            renderContext, &sourceInfo.sourceName, &sourceInfo.sourceType));        
+    }
+    if (outputName == UsdShadeTokens->volume) {
+        return UsdShadeConnectableAPI(usdMat.ComputeVolumeSource(
+            renderContext, &sourceInfo.sourceName, &sourceInfo.sourceType));        
+    }
+    return UsdShadeConnectableAPI(sourceInfo.source.GetPrim());
 }
 
 static 
@@ -701,7 +733,8 @@ _BuildMaterial(
                 continue;
             }
 
-            UsdShadeConnectableAPI upstreamShader(sourceInfo.source.GetPrim());
+            UsdShadeConnectableAPI upstreamShader = _ComputeOutputSource(
+                UsdShadeMaterial(usdMat), outputName, {context}, sourceInfo);
 
             _WalkGraph(upstreamShader,
                 &nodeDataSources,
@@ -719,11 +752,15 @@ _BuildMaterial(
             SdfPath upstreamPath =
                 _RelativePath(materialPrefix, upstreamShader.GetPath());
 
-            terminalsValues.push_back(HdMaterialConnectionSchema::BuildRetained(
-                HdRetainedTypedSampledDataSource<TfToken>::New(
-                    upstreamPath.GetToken()),
-                HdRetainedTypedSampledDataSource<TfToken>::New(
-                    sourceInfo.sourceName)));
+            terminalsValues.push_back(
+                HdMaterialConnectionSchema::Builder()
+                    .SetUpstreamNodePath(
+                        HdRetainedTypedSampledDataSource<TfToken>::New(
+                            upstreamPath.GetToken()))
+                    .SetUpstreamNodeOutputName(
+                        HdRetainedTypedSampledDataSource<TfToken>::New(
+                            sourceInfo.sourceName))
+                    .Build());
         }
     }
 

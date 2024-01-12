@@ -147,6 +147,17 @@ Pcp_GetArgumentsForFileFormatTarget(
     return *localArgs;
 }
 
+void
+Pcp_StripFileFormatTarget(
+    const std::string& target,
+    SdfLayer::FileFormatArguments* args)
+{
+    auto targetIt = args->find(SdfFileFormatTokens->TargetArg);
+    if (targetIt != args->end() && targetIt->second == target) {
+        args->erase(targetIt);
+    }
+}
+
 std::pair<PcpNodeRef, PcpNodeRef>
 Pcp_FindStartingNodeOfClassHierarchy(const PcpNodeRef& n)
 {

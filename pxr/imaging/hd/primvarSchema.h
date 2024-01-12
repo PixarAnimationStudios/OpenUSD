@@ -37,12 +37,17 @@
 
 #include "pxr/imaging/hd/api.h"
 
-#include "pxr/imaging/hd/schema.h" 
+#include "pxr/imaging/hd/schema.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
 // --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+//-----------------------------------------------------------------------------
+
+// --(BEGIN CUSTOM CODE: Declares)--
+// --(END CUSTOM CODE: Declares)--
 
 //-----------------------------------------------------------------------------
 
@@ -52,6 +57,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (indices) \
     (interpolation) \
     (role) \
+    (transform) \
     (constant) \
     (uniform) \
     (varying) \
@@ -66,12 +72,12 @@ PXR_NAMESPACE_OPEN_SCOPE
     (edgeIndex) \
     (faceIndex) \
     (textureCoordinate) \
-    (transform) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrimvarSchemaTokens, HD_API,
     HD_PRIMVAR_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
+
 
 class HdPrimvarSchema : public HdSchema
 {
@@ -80,6 +86,16 @@ public:
     : HdSchema(container) {}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
+
+    // If the primvar does not have indices, GetPrimvarValue() and
+    // GetIndexedPrimvarValue() will return the same thing. If the primvar
+    // does has indices, GetPrimvarValue() will return the flattened value,
+    // while GetIndexedPrimvarValue() will return the unflattened value.
+    HD_API
+    HdSampledDataSourceHandle GetPrimvarValue();
+
+    HD_API
+    HdSampledDataSourceHandle GetIndexedPrimvarValue();
 
     // Returns true if it contains data sources for an indexed primvar value
     // and for indices.
@@ -107,27 +123,12 @@ public:
 
     //ACCESSORS
 
-
-
-    // If the primvar does not have indices, GetPrimvarValue() and
-    // GetIndexedPrimvarValue() will return the same thing. If the primvar
-    // does has indices, GetPrimvarValue() will return the flattened value,
-    // while GetIndexedPrimvarValue() will return the unflattened value.
-
-    HD_API
-    HdSampledDataSourceHandle GetPrimvarValue();
-
-    HD_API
-    HdSampledDataSourceHandle GetIndexedPrimvarValue();
-
     HD_API
     HdIntArrayDataSourceHandle GetIndices();
-
     HD_API
     HdTokenDataSourceHandle GetInterpolation();
-
     HD_API
-    HdTokenDataSourceHandle GetRole();
+    HdTokenDataSourceHandle GetRole(); 
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -181,6 +182,7 @@ public:
         HdIntArrayDataSourceHandle _indices;
         HdTokenDataSourceHandle _interpolation;
         HdTokenDataSourceHandle _role;
+
     };
 
     /// Returns token data source for use as interpolation value.
@@ -195,6 +197,7 @@ public:
     HD_API
     static HdTokenDataSourceHandle BuildInterpolationDataSource(
         const TfToken &interpolation);
+
     /// Returns token data source for use as role value.
     /// Values of...
     /// - HdPrimvarSchemaTokens->point
@@ -209,7 +212,6 @@ public:
     HD_API
     static HdTokenDataSourceHandle BuildRoleDataSource(
         const TfToken &role);
-
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

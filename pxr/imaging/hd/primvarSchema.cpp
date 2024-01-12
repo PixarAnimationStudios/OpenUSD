@@ -33,6 +33,7 @@
 /* ************************************************************************** */
 
 #include "pxr/imaging/hd/primvarSchema.h"
+
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/base/trace/trace.h"
@@ -163,41 +164,6 @@ private:
 }
 
 HdSampledDataSourceHandle
-HdPrimvarSchema::GetFlattenedPrimvarValue()
-{
-    if (!_container) {
-        return nullptr;
-    }
-
-    if (HdSampledDataSourceHandle sds =
-        _GetTypedDataSource<HdSampledDataSource>(
-            HdPrimvarSchemaTokens->primvarValue)) {
-        // Non-indexed case.
-        return sds;
-    } else {
-        // Indexed case, we need to flatten.
-
-        HdSampledDataSourceHandle ivds =
-            _GetTypedDataSource<HdSampledDataSource>(
-                HdPrimvarSchemaTokens->indexedPrimvarValue);
-        if (!ivds) {
-            return nullptr;
-        }
-
-        HdTypedSampledDataSource<VtIntArray>::Handle ids = 
-            _GetTypedDataSource<HdTypedSampledDataSource<VtIntArray>>(
-                HdPrimvarSchemaTokens->indices);
-        if (!ids) {
-            return nullptr;
-        }
-
-        return _HdDataSourceFlattenedPrimvarValue::New(ivds, ids);
-    }
-}
-
-// --(END CUSTOM CODE: Schema Methods)--
-
-HdSampledDataSourceHandle
 HdPrimvarSchema::GetPrimvarValue()
 {
     // overriden definition from primvarSchemaGetValue.template.cpp
@@ -236,6 +202,41 @@ HdPrimvarSchema::GetIndexedPrimvarValue()
     }
 }
 
+HdSampledDataSourceHandle
+HdPrimvarSchema::GetFlattenedPrimvarValue()
+{
+    if (!_container) {
+        return nullptr;
+    }
+
+    if (HdSampledDataSourceHandle sds =
+        _GetTypedDataSource<HdSampledDataSource>(
+            HdPrimvarSchemaTokens->primvarValue)) {
+        // Non-indexed case.
+        return sds;
+    } else {
+        // Indexed case, we need to flatten.
+
+        HdSampledDataSourceHandle ivds =
+            _GetTypedDataSource<HdSampledDataSource>(
+                HdPrimvarSchemaTokens->indexedPrimvarValue);
+        if (!ivds) {
+            return nullptr;
+        }
+
+        HdTypedSampledDataSource<VtIntArray>::Handle ids = 
+            _GetTypedDataSource<HdTypedSampledDataSource<VtIntArray>>(
+                HdPrimvarSchemaTokens->indices);
+        if (!ids) {
+            return nullptr;
+        }
+
+        return _HdDataSourceFlattenedPrimvarValue::New(ivds, ids);
+    }
+}
+
+// --(END CUSTOM CODE: Schema Methods)--
+
 HdIntArrayDataSourceHandle
 HdPrimvarSchema::GetIndices()
 {
@@ -271,6 +272,7 @@ HdPrimvarSchema::BuildRetained(
     HdDataSourceBaseHandle _values[5];
 
     size_t _count = 0;
+
     if (primvarValue) {
         _names[_count] = HdPrimvarSchemaTokens->primvarValue;
         _values[_count++] = primvarValue;
@@ -295,101 +297,7 @@ HdPrimvarSchema::BuildRetained(
         _names[_count] = HdPrimvarSchemaTokens->role;
         _values[_count++] = role;
     }
-
     return HdRetainedContainerDataSource::New(_count, _names, _values);
-}
-
-
-
-/*static*/
-HdTokenDataSourceHandle
-HdPrimvarSchema::BuildInterpolationDataSource(
-    const TfToken &interpolation)
-{
-    if (interpolation == HdPrimvarSchemaTokens->constant) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(interpolation);
-        return ds;
-    }
-    if (interpolation == HdPrimvarSchemaTokens->uniform) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(interpolation);
-        return ds;
-    }
-    if (interpolation == HdPrimvarSchemaTokens->varying) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(interpolation);
-        return ds;
-    }
-    if (interpolation == HdPrimvarSchemaTokens->vertex) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(interpolation);
-        return ds;
-    }
-    if (interpolation == HdPrimvarSchemaTokens->faceVarying) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(interpolation);
-        return ds;
-    }
-    if (interpolation == HdPrimvarSchemaTokens->instance) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(interpolation);
-        return ds;
-    }
-
-    // fallback for unknown token
-    return HdRetainedTypedSampledDataSource<TfToken>::New(interpolation);
-}
-
-
-/*static*/
-HdTokenDataSourceHandle
-HdPrimvarSchema::BuildRoleDataSource(
-    const TfToken &role)
-{
-    if (role == HdPrimvarSchemaTokens->point) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(role);
-        return ds;
-    }
-    if (role == HdPrimvarSchemaTokens->normal) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(role);
-        return ds;
-    }
-    if (role == HdPrimvarSchemaTokens->vector) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(role);
-        return ds;
-    }
-    if (role == HdPrimvarSchemaTokens->color) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(role);
-        return ds;
-    }
-    if (role == HdPrimvarSchemaTokens->pointIndex) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(role);
-        return ds;
-    }
-    if (role == HdPrimvarSchemaTokens->edgeIndex) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(role);
-        return ds;
-    }
-    if (role == HdPrimvarSchemaTokens->faceIndex) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(role);
-        return ds;
-    }
-    if (role == HdPrimvarSchemaTokens->textureCoordinate) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(role);
-        return ds;
-    }
-
-    // fallback for unknown token
-    return HdRetainedTypedSampledDataSource<TfToken>::New(role);
 }
 
 HdPrimvarSchema::Builder &
@@ -444,5 +352,94 @@ HdPrimvarSchema::Builder::Build()
     );
 }
 
+/*static*/
+HdTokenDataSourceHandle
+HdPrimvarSchema::BuildInterpolationDataSource(
+    const TfToken &interpolation)
+{
+
+    if (interpolation == HdPrimvarSchemaTokens->constant) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(interpolation);
+        return ds;
+    }
+    if (interpolation == HdPrimvarSchemaTokens->uniform) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(interpolation);
+        return ds;
+    }
+    if (interpolation == HdPrimvarSchemaTokens->varying) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(interpolation);
+        return ds;
+    }
+    if (interpolation == HdPrimvarSchemaTokens->vertex) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(interpolation);
+        return ds;
+    }
+    if (interpolation == HdPrimvarSchemaTokens->faceVarying) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(interpolation);
+        return ds;
+    }
+    if (interpolation == HdPrimvarSchemaTokens->instance) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(interpolation);
+        return ds;
+    }
+    // fallback for unknown token
+    return HdRetainedTypedSampledDataSource<TfToken>::New(interpolation);
+}
+
+/*static*/
+HdTokenDataSourceHandle
+HdPrimvarSchema::BuildRoleDataSource(
+    const TfToken &role)
+{
+
+    if (role == HdPrimvarSchemaTokens->point) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(role);
+        return ds;
+    }
+    if (role == HdPrimvarSchemaTokens->normal) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(role);
+        return ds;
+    }
+    if (role == HdPrimvarSchemaTokens->vector) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(role);
+        return ds;
+    }
+    if (role == HdPrimvarSchemaTokens->color) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(role);
+        return ds;
+    }
+    if (role == HdPrimvarSchemaTokens->pointIndex) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(role);
+        return ds;
+    }
+    if (role == HdPrimvarSchemaTokens->edgeIndex) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(role);
+        return ds;
+    }
+    if (role == HdPrimvarSchemaTokens->faceIndex) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(role);
+        return ds;
+    }
+    if (role == HdPrimvarSchemaTokens->textureCoordinate) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(role);
+        return ds;
+    }
+    // fallback for unknown token
+    return HdRetainedTypedSampledDataSource<TfToken>::New(role);
+} 
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -114,6 +114,12 @@
                         "primTypeName": "Shader"
                     },
 
+                    "UsdImagingNodeGraphAdapter" : {
+                        "bases": ["UsdImagingRepresentedByAncestorPrimAdapter"],
+                        "isInternal": true,
+                        "primTypeName": "NodeGraph"
+                    },
+
                     "UsdImagingMaterialBindingAPIAdapter" : {
                         "bases": ["UsdImagingAPISchemaAdapter"],
                         "isInternal": true,

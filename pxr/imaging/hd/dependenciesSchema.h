@@ -36,14 +36,19 @@
 #define PXR_IMAGING_HD_DEPENDENCIES_SCHEMA_H
 
 #include "pxr/imaging/hd/api.h"
-
 #include "pxr/imaging/hd/dependencySchema.h"
 
+#include "pxr/imaging/hd/schema.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
 // --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+//-----------------------------------------------------------------------------
+
+// --(BEGIN CUSTOM CODE: Declares)--
+// --(END CUSTOM CODE: Declares)--
 
 //-----------------------------------------------------------------------------
 
@@ -54,6 +59,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdDependenciesSchemaTokens, HD_API,
     HD_DEPENDENCIES_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
+
 
 class HdDependenciesSchema : public HdSchema
 {
@@ -69,6 +75,18 @@ public:
     EntryVector GetEntries();
 
 // --(END CUSTOM CODE: Schema Methods)--
+
+    //ACCESSORS
+ 
+
+    // RETRIEVING AND CONSTRUCTING
+
+    HD_API
+    static HdContainerDataSourceHandle
+    BuildRetained(
+        size_t count,
+        const TfToken *names,
+        const HdDataSourceBaseHandle *values);
 
 
     /// Retrieves a container data source with the schema's default name token
@@ -89,7 +107,6 @@ public:
     /// where the container representing this schema is found by default.
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
-
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

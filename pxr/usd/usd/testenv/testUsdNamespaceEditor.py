@@ -1153,9 +1153,9 @@ class TestUsdNamespaceEditor(unittest.TestCase):
             "The prim to edit is a prototype proxy descendant of an instance "
             "prim")
         _VerifyCannotApplyDeletePrim(nonInstancePrim.GetChild("B"), 
-            "The prim to delete requires deactivation to be deleted because of "
-            "specs introduced across an ancestral composition arc; deletion "
-            "via deactivation is not supported yet")
+            "The prim to delete must be deactivated rather than deleted since "
+            "it composes opinions introduced by ancestral composition arcs; "
+            "deletion via deactivation is not yet supported")
 
         # Like with delete, we can rename any of the instance and non-instance 
         # prims (as long as the new name is valid).
@@ -1175,9 +1175,9 @@ class TestUsdNamespaceEditor(unittest.TestCase):
             "The prim to edit is a prototype proxy descendant of an instance "
             "prim")
         _VerifyCannotApplyRenamePrim(nonInstancePrim.GetChild("B"), "NewB", 
-            "The prim to move requires relocates to be moved because of "
-            "specs introduced across an ancestral composition arc; relocates "
-            "are not supported yet")
+            "The prim to move requires authoring relocates since it composes "
+            "opinions introduced by ancestral composition arcs; authoring "
+            "relocates is not yet supported")
 
         # We can reparent an instance prim under a non-instance prim
         instance1 = _VerifyCanMovePrimAtPath(
@@ -1343,13 +1343,14 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         # Helper to verify that the prim cannot be deleted nor moved.
         def _VerifyCannotEditPrimAtPath(primPath):
             _VerifyCannotApplyDeletePrimAtPath(primPath,
-                "The prim to delete requires deactivation to be deleted "
-                "because of specs introduced across an ancestral composition "
-                "arc; deletion via deactivation is not supported yet")
+                "The prim to delete must be deactivated rather than deleted "
+                "since it composes opinions introduced by ancestral "
+                "composition arcs; deletion via deactivation is not yet "
+                "supported")
             _VerifyCannotApplyMovePrimAtPath(primPath, "/Foo",
-                "The prim to move requires relocates to be moved because "
-                "of specs introduced across an ancestral composition arc; "
-                "relocates are not supported yet")
+                "The prim to move requires authoring relocates since it "
+                "composes opinions introduced by ancestral composition arcs; "
+                "authoring relocates is not yet supported")
 
         # A prim with a direct reference to another prim can be edited.
         _VerifyCanEditPrimAtPath("/PrimWithReference")

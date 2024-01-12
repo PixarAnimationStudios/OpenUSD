@@ -36,11 +36,19 @@
 #define PXR_IMAGING_HD_MATERIAL_BINDINGS_SCHEMA_H
 
 #include "pxr/imaging/hd/api.h"
-
 #include "pxr/imaging/hd/materialBindingSchema.h"
 
+#include "pxr/imaging/hd/schema.h"
+
+// --(BEGIN CUSTOM CODE: Includes)--
+// --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+//-----------------------------------------------------------------------------
+
+// --(BEGIN CUSTOM CODE: Declares)--
+// --(END CUSTOM CODE: Declares)--
 
 //-----------------------------------------------------------------------------
 
@@ -52,6 +60,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialBindingsSchemaTokens, HD_API,
     HD_MATERIAL_BINDINGS_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
+
 
 class HdMaterialBindingsSchema : public HdSchema
 {
@@ -68,6 +77,11 @@ public:
     HdMaterialBindingSchema GetMaterialBinding(TfToken const &purpose);
 
 // --(END CUSTOM CODE: Schema Methods)--
+
+    //ACCESSORS
+ 
+
+    // RETRIEVING AND CONSTRUCTING
 
     HD_API
     static HdContainerDataSourceHandle
@@ -95,7 +109,6 @@ public:
     /// where the container representing this schema is found by default.
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
-
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

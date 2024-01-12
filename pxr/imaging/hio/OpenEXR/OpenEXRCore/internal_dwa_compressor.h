@@ -1047,7 +1047,7 @@ DwaCompressor_uncompress (
                 me->alloc_fn, me->free_fn, &(cd->_dctData), outBufferEnd);
             if (rv != EXR_ERR_SUCCESS) return rv;
 
-	    cd->_dctData._type = chan->data_type;
+            cd->_dctData._type = chan->data_type;
             outBufferEnd += chan->width * chan->bytes_per_element;
         }
     }

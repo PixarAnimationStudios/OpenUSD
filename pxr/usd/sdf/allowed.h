@@ -30,9 +30,9 @@
 #include "pxr/usd/sdf/api.h"
 #include "pxr/base/tf/diagnostic.h"
 
+#include <optional>
 #include <string>
 #include <utility>
-#include <boost/optional.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -45,7 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class SdfAllowed {
 private:
-    typedef boost::optional<std::string> _State;
+    typedef std::optional<std::string> _State;
 
 public:
     typedef std::pair<bool, std::string> Pair;
@@ -60,12 +60,13 @@ public:
     SdfAllowed(const std::string& whyNot) : _state(whyNot) { }
     /// Construct in \p condition with annotation \p whyNot if \c false.
     SdfAllowed(bool condition, const char* whyNot) :
-        _state(!condition, std::string(whyNot)) { }
+        SdfAllowed(condition, std::string(whyNot)) { }
     /// Construct in \p condition with annotation \p whyNot if \c false.
     SdfAllowed(bool condition, const std::string& whyNot) :
-        _state(!condition, whyNot) { }
+        _state(condition ? std::nullopt :
+               std::make_optional(whyNot)) { }
     /// Construct from bool,string pair \p x.
-    SdfAllowed(const Pair& x) : _state(!x.first, x.second) { }
+    SdfAllowed(const Pair& x) : SdfAllowed(x.first, x.second) { }
     ~SdfAllowed() { }
 
 #if !defined(doxygen)

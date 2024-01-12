@@ -23,9 +23,47 @@
 //
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/unicodeCharacterClasses.h"
 #include "pxr/base/tf/unicodeUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+std::ostream&
+operator<<(std::ostream& stream, const TfUtf8CodePoint codePoint)
+{
+    const auto value = codePoint.AsUInt32();
+    if (value < 0x80)
+    {
+        // 1-byte UTF-8 encoding
+        stream << static_cast<char>(value);
+    }
+    else if (value < 0x800)
+    {
+        // 2-byte UTF-8 encoding
+        stream << (static_cast<char>(static_cast<unsigned char>((value >> 6) | 0xc0)));
+        stream << (static_cast<char>(static_cast<unsigned char>((value & 0x3f) | 0x80)));
+    }
+    else if (value < 0x10000)
+    {
+        // 3-byte UTF-8 encoding
+        stream << (static_cast<char>(static_cast<unsigned char>((value >> 12) | 0xe0)));
+        stream << (static_cast<char>(static_cast<unsigned char>(((value >> 6) & 0x3f) | 0x80)));
+        stream << (static_cast<char>(static_cast<unsigned char>((value & 0x3f) | 0x80)));
+    }
+    else if (value < 0x110000)
+    {
+        // 4-byte UTF-8 encoding
+        stream << (static_cast<char>(static_cast<unsigned char>((value >> 18) | 0xf0)));
+        stream << (static_cast<char>(static_cast<unsigned char>(((value >> 12) & 0x3f) | 0x80)));
+        stream << (static_cast<char>(static_cast<unsigned char>(((value >> 6) & 0x3f) | 0x80)));
+        stream << (static_cast<char>(static_cast<unsigned char>((value & 0x3f) | 0x80)));
+    }
+    else
+    {
+        stream << TfUtf8InvalidCodePoint;
+    }
+    return stream;
+}
 
 uint32_t TfUtf8CodePointIterator::_GetCodePoint() const
 {
@@ -33,7 +71,7 @@ uint32_t TfUtf8CodePointIterator::_GetCodePoint() const
     _EncodingLength encodingLength = this->_GetEncodingLength();
     if (encodingLength > std::distance(_it, _end)) {
         // error condition, would read bytes past the end of the range
-        return INVALID_CODE_POINT;
+        return TfUtf8InvalidCodePoint.AsUInt32();
     }
     if (encodingLength == 1)
     {
@@ -49,12 +87,12 @@ uint32_t TfUtf8CodePointIterator::_GetCodePoint() const
         if (byte1 < static_cast<unsigned char>('\xc2') ||
             byte1 > static_cast<unsigned char>('\xdf'))
         {
-            return INVALID_CODE_POINT;
+            return TfUtf8InvalidCodePoint.AsUInt32();
         }
         if (byte2 < static_cast<unsigned char>('\x80') ||
             byte2 > static_cast<unsigned char>('\xbf'))
         {
-            return INVALID_CODE_POINT;
+            return TfUtf8InvalidCodePoint.AsUInt32();
         }
 
         // the code point is constructed from the last 5 bits of byte1
@@ -77,7 +115,7 @@ uint32_t TfUtf8CodePointIterator::_GetCodePoint() const
                 byte3 < static_cast<unsigned char>('\x80') ||
                 byte3 > static_cast<unsigned char>('\xbf'))
             {
-                return INVALID_CODE_POINT;
+                return TfUtf8InvalidCodePoint.AsUInt32();
             }
         }
         else if ((byte1 >= static_cast<unsigned char>('\xe1') &&
@@ -92,7 +130,7 @@ uint32_t TfUtf8CodePointIterator::_GetCodePoint() const
                 byte3 < static_cast<unsigned char>('\x80') ||
                 byte3 > static_cast<unsigned char>('\xbf'))
             {
-                return INVALID_CODE_POINT;
+                return TfUtf8InvalidCodePoint.AsUInt32();
             }
         }
         else if (byte1 == static_cast<unsigned char>('\xed'))
@@ -104,13 +142,13 @@ uint32_t TfUtf8CodePointIterator::_GetCodePoint() const
                 byte3 < static_cast<unsigned char>('\x80') ||
                 byte3 > static_cast<unsigned char>('\xbf'))
             {
-                return INVALID_CODE_POINT;
+                return TfUtf8InvalidCodePoint.AsUInt32();
             }
         }
         else
         {
             // byte 1 invalid
-            return INVALID_CODE_POINT;
+            return TfUtf8InvalidCodePoint.AsUInt32();
         }
 
         // code point is constructed from the last 4 bits of byte1
@@ -137,7 +175,7 @@ uint32_t TfUtf8CodePointIterator::_GetCodePoint() const
                 byte4 < static_cast<unsigned char>('\x80') ||
                 byte4 > static_cast<unsigned char>('\xbf'))
             {
-                return INVALID_CODE_POINT;
+                return TfUtf8InvalidCodePoint.AsUInt32();
             }
         }
         else if (byte1 >= static_cast<unsigned char>('\xf1') &&
@@ -153,7 +191,7 @@ uint32_t TfUtf8CodePointIterator::_GetCodePoint() const
                 byte4 < static_cast<unsigned char>('\x80') ||
                 byte4 > static_cast<unsigned char>('\xbf'))
             {
-                return INVALID_CODE_POINT;
+                return TfUtf8InvalidCodePoint.AsUInt32();
             }
         }
         else if (byte1 == static_cast<unsigned char>('\xf4'))
@@ -168,13 +206,13 @@ uint32_t TfUtf8CodePointIterator::_GetCodePoint() const
                 byte4 < static_cast<unsigned char>('\x80') ||
                 byte4 > static_cast<unsigned char>('\xbf'))
             {
-                return INVALID_CODE_POINT;
+                return TfUtf8InvalidCodePoint.AsUInt32();
             }
         }
         else
         {
             // byte 1 is invalid
-            return INVALID_CODE_POINT;
+            return TfUtf8InvalidCodePoint.AsUInt32();
         }
 
         // code point is constructed from the last 3 bits of byte 1
@@ -182,7 +220,17 @@ uint32_t TfUtf8CodePointIterator::_GetCodePoint() const
         return ((byte1 & 0x7) << 18) + ((byte2 & 0x3f) << 12) +
                ((byte3 & 0x3f) << 6) + (byte4 & 0x3f);
     }
-    return INVALID_CODE_POINT;
+    return TfUtf8InvalidCodePoint.AsUInt32();
+}
+
+bool TfIsUtf8CodePointXidStart(uint32_t codePoint)
+{
+    return TfUnicodeGetXidStartFlagData().IsXidStartCodePoint(codePoint);
+}
+
+bool TfIsUtf8CodePointXidContinue(uint32_t codePoint)
+{
+    return TfUnicodeGetXidContinueFlagData().IsXidContinueCodePoint(codePoint);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

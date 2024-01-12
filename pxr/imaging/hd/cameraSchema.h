@@ -35,23 +35,21 @@
 #ifndef PXR_IMAGING_HD_CAMERA_SCHEMA_H
 #define PXR_IMAGING_HD_CAMERA_SCHEMA_H
 
-#include "pxr/imaging/hd/api.h"
+/// \file
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/splitDiopterSchema.h"
 #include "pxr/imaging/hd/lensDistortionSchema.h"
 
+#include "pxr/imaging/hd/schema.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
 // --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//-----------------------------------------------------------------------------
-
 // --(BEGIN CUSTOM CODE: Declares)--
 // --(END CUSTOM CODE: Declares)--
-
-//-----------------------------------------------------------------------------
 
 #define HD_CAMERA_SCHEMA_TOKENS \
     (camera) \
@@ -79,17 +77,33 @@ TF_DECLARE_PUBLIC_TOKENS(HdCameraSchemaTokens, HD_API,
     HD_CAMERA_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
+
+
 class HdCameraSchema : public HdSchema
 {
 public:
+    /// \name Schema retrieval
+    /// @{
+
     HdCameraSchema(HdContainerDataSourceHandle container)
-    : HdSchema(container) {}
+      : HdSchema(container) {}
+
+    /// Retrieves a container data source with the schema's default name token
+    /// "camera" from the parent container and constructs a
+    /// HdCameraSchema instance.
+    /// Because the requested container data source may not exist, the result
+    /// should be checked with IsDefined() or a bool comparison before use.
+    HD_API
+    static HdCameraSchema GetFromParent(
+        const HdContainerDataSourceHandle &fromParentContainer);
+
+    /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
 
-    //ACCESSORS
-
+    /// \name Member accessor
+    /// @{
 
     HD_API
     HdTokenDataSourceHandle GetProjection();
@@ -140,10 +154,48 @@ public:
     HdSplitDiopterSchema GetSplitDiopter();
 
     HD_API
-    HdLensDistortionSchema GetLensDistortion();
+    HdLensDistortionSchema GetLensDistortion(); 
 
-    // RETRIEVING AND CONSTRUCTING
+    /// @}
 
+    /// \name Schema location
+    /// @{
+
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    HD_API
+    static const TfToken &GetSchemaToken();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the container representing this schema is found by default.
+    HD_API
+    static const HdDataSourceLocator &GetDefaultLocator();
+
+    /// @}
+
+    /// \name Data source locators for members
+    ///
+    /// The following methods return an HdDataSourceLocator (relative to the
+    /// prim-level data source) where the data source for a member can be found.
+    ///
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    /// @{
+
+    /// Prim-level relative data source locator to locate shutterOpen.
+    HD_API
+    static const HdDataSourceLocator &GetShutterOpenLocator();
+
+    /// Prim-level relative data source locator to locate shutterClose.
+    HD_API
+    static const HdDataSourceLocator &GetShutterCloseLocator();
+    /// @} 
+
+    /// \name Schema construction
+    /// @{
+
+    /// \deprecated Use Builder instead.
+    ///
     /// Builds a container data source which includes the provided child data
     /// sources. Parameters with nullptr values are excluded. This is a
     /// low-level interface. For cases in which it's desired to define
@@ -254,54 +306,20 @@ public:
         HdFloatDataSourceHandle _dofAspect;
         HdContainerDataSourceHandle _splitDiopter;
         HdContainerDataSourceHandle _lensDistortion;
+
     };
 
-    /// Retrieves a container data source with the schema's default name token
-    /// "camera" from the parent container and constructs a
-    /// HdCameraSchema instance.
-    /// Because the requested container data source may not exist, the result
-    /// should be checked with IsDefined() or a bool comparison before use.
-    HD_API
-    static HdCameraSchema GetFromParent(
-        const HdContainerDataSourceHandle &fromParentContainer);
-
-    /// Returns a token where the container representing this schema is found in
-    /// a container by default.
-    HD_API
-    static const TfToken &GetSchemaToken();
-
-    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
-    /// where the container representing this schema is found by default.
-    HD_API
-    static const HdDataSourceLocator &GetDefaultLocator();
-
-    // DATA SOURCE LOCATORS FOR MEMBERS
-    //
-    // The following methods return an HdDataSourceLocator (relative to the
-    // prim-level data source) where the data source for a member can be found.
-    //
-    // This is often useful for checking intersection against the
-    // HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
-
-
-    /// Prim-level relative data source locator to locate shutterOpen.
-    HD_API
-    static const HdDataSourceLocator &GetShutterOpenLocator();
-
-    /// Prim-level relative data source locator to locate shutterClose.
-    HD_API
-    static const HdDataSourceLocator &GetShutterCloseLocator();
-
-
     /// Returns token data source for use as projection value.
-    /// Values of...
+    ///
+    /// The following values will be stored statically and reused for future
+    /// calls:
     /// - HdCameraSchemaTokens->perspective
     /// - HdCameraSchemaTokens->orthographic
-    ///     ...will be stored statically and reused for future calls.
     HD_API
     static HdTokenDataSourceHandle BuildProjectionDataSource(
         const TfToken &projection);
 
+    /// @}
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

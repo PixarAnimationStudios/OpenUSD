@@ -1199,17 +1199,18 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
         # instancing.
         def _VerifyCannotEditPropertyWithoutRelocates(prop):
             _VerifyCannotApplyDeleteProperty(prop, 
-                "The property to delete requires deactivation to be deleted "
-                "because of specs introduced across a composition arc; "
-                "deletion via deactivation is not supported yet")
+                "The property to delete must be deactivated rather than "
+                "deleted since it composes opinions introduced by ancestral "
+                "composition arcs; deletion via deactivation is not yet "
+                "supported")
             _VerifyCannotApplyRenameProperty(prop, "New_Attr", 
-                "The property to move requires relocates to be moved because "
-                "of specs introduced across a composition arc; relocates are "
-                "not supported for properties")
+                "The property to move requires authoring relocates since it "
+                "composes opinions introduced by ancestral composition arcs; "
+                "authoring relocates is not supported for properties")
             _VerifyCannotApplyReparentProperty(prop, basicRootPrim, 
-                "The property to move requires relocates to be moved "
-                "because of specs introduced across a composition arc; "
-                "relocates are not supported for properties")
+                "The property to move requires authoring relocates since it "
+                "composes opinions introduced by ancestral composition arcs; "
+                "authoring relocates is not supported for properties")
 
         # Open the stage and get the prims to test.
         stage, instance1, instance2, nonInstancePrim, prototypePrim = \
@@ -1467,17 +1468,18 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
                 Sdf.Path("/BasicRootPrim").AppendProperty(propPath.name)
 
             _VerifyCannotApplyDeletePropertyAtPath(propPath,
-                "The property to delete requires deactivation to be deleted "
-                "because of specs introduced across a composition arc; "
-                "deletion via deactivation is not supported yet")
+                "The property to delete must be deactivated rather than "
+                "deleted since it composes opinions introduced by ancestral "
+                "composition arcs; deletion via deactivation is not yet "
+                "supported")
             _VerifyCannotApplyMovePropertyAtPath(propPath, renamedPropPath,
-                "The property to move requires relocates to be moved because "
-                "of specs introduced across a composition arc; relocates are "
-                "not supported for properties")
+                "The property to move requires authoring relocates since it "
+                "composes opinions introduced by ancestral composition arcs; "
+                "authoring relocates is not supported for properties")
             _VerifyCannotApplyMovePropertyAtPath(propPath, reparentedPropPath,
-                "The property to move requires relocates to be moved "
-                "because of specs introduced across a composition arc; "
-                "relocates are not supported for properties")
+                "The property to move requires authoring relocates since it "
+                "composes opinions introduced by ancestral composition arcs; "
+                "authoring relocates is not supported for properties")
 
         # /PrimWithReference has a direct reference to @ref.usda@</ReferencePrim>
 

@@ -192,6 +192,7 @@ pxr_library(hdSt
         shaders/frustumCull.glslfx
         shaders/imageShader.glslfx
         shaders/instancing.glslfx
+        shaders/invalidMaterialNetwork.glslfx
         shaders/mesh.glslfx
         shaders/meshFaceCull.glslfx
         shaders/meshNormal.glslfx

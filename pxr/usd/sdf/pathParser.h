@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/unicodeUtils.h"
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/tf/pxrPEGTL/pegtl.h"
@@ -40,6 +41,60 @@ namespace Sdf_PathParser {
 namespace PEGTL_NS = tao::TAO_PEGTL_NAMESPACE;
 
 ////////////////////////////////////////////////////////////////////////
+// Helper rules for parsing UTF8 content
+struct XidStart
+{
+    template <typename ParseInput>
+    static bool match(ParseInput& in)
+    {
+        if (!in.empty())
+        {
+            // peek at the next character in the input
+            // if the size is not 0, it was a valid code point
+            auto utf8_char = tao::TAO_PEGTL_NAMESPACE::internal::peek_utf8::peek(in);
+            if (utf8_char.size != 0)
+            {
+                // valid utf8_char, data has the code point
+                if (TfIsUtf8CodePointXidStart(static_cast<uint32_t>(utf8_char.data)))
+                {
+                    // it has the property we want, consume the input
+                    in.bump(utf8_char.size);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+};
+
+struct XidContinue
+{
+    template <typename ParseInput>
+    static bool match(ParseInput& in)
+    {
+        if (!in.empty())
+        {
+            // peek at the next character in the input
+            // if the size is not 0, it was a valid code point
+            auto utf8_char = tao::TAO_PEGTL_NAMESPACE::internal::peek_utf8::peek(in);
+            if (utf8_char.size != 0)
+            {
+                // valid utf8_char, data has the code point
+                if (TfIsUtf8CodePointXidContinue(static_cast<uint32_t>(utf8_char.data)))
+                {
+                    // it has the property we want, consume the input
+                    in.bump(utf8_char.size); 
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+};
+
+////////////////////////////////////////////////////////////////////////
 // SdfPath grammar:
 
 struct Slash : PEGTL_NS::one<'/'> {};
@@ -51,21 +106,31 @@ struct ReflexiveRelative : Dot {};
 
 struct DotDots : PEGTL_NS::list<DotDot, Slash> {};
 
-struct PrimName : PEGTL_NS::identifier {};
+// valid identifiers start with an '_' character or anything in the XidStart
+// character class, then continue with zero or more characters in the
+// XidContinue character class
+struct Utf8IdentifierStart : PEGTL_NS::sor<
+    PEGTL_NS::one<'_'>,
+    XidStart> {};
+struct Utf8Identifier : PEGTL_NS::seq<
+    Utf8IdentifierStart,
+    PEGTL_NS::star<XidContinue>> {};
+
+struct PrimName : Utf8Identifier {};
 
 // XXX This replicates old behavior where '-' chars are allowed in variant set
 // names in SdfPaths, but variant sets in layers cannot have '-' in their names.
 // For now we preserve the behavior. Internal bug USD-8321 tracks removing
 // support for '-' characters in variant set names in SdfPath.
 struct VariantSetName :
-    PEGTL_NS::seq<PEGTL_NS::identifier_first,
+    PEGTL_NS::seq<Utf8IdentifierStart,
     PEGTL_NS::star<PEGTL_NS::sor<
-    PEGTL_NS::identifier_other, PEGTL_NS::one<'-'>>>> {};
+    XidContinue, PEGTL_NS::one<'-'>>>> {};
 
 struct VariantName :
     PEGTL_NS::seq<PEGTL_NS::opt<
     PEGTL_NS::one<'.'>>, PEGTL_NS::star<
-    PEGTL_NS::sor<PEGTL_NS::identifier_other,
+    PEGTL_NS::sor<XidContinue,
     PEGTL_NS::one<'|', '-'>>>> {};
 
 struct VarSelOpen : PEGTL_NS::pad<PEGTL_NS::one<'{'>, PEGTL_NS::blank> {};
@@ -88,7 +153,7 @@ struct PrimElts : PEGTL_NS::seq<
     LookaheadList<PrimName, PEGTL_NS::sor<Slash, VariantSelections>>,
     PEGTL_NS::opt<VariantSelections>> {};
 
-struct PropertyName : PEGTL_NS::list<PEGTL_NS::identifier, PEGTL_NS::one<':'>> {};
+struct PropertyName : PEGTL_NS::list<Utf8Identifier, PEGTL_NS::one<':'>> {};
 
 struct MapperPath;
 struct TargetPath;

@@ -402,7 +402,7 @@ HdStGLConversions::GetGLSLIdentifier(TfToken const& identifier)
         return identifier;
     }
 
-    return TfToken(result);
+    return TfToken(result, TfToken::Immortal);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

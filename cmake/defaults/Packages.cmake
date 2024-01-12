@@ -236,6 +236,7 @@ if (PXR_BUILD_IMAGING)
         else ()
             find_package(OpenGL REQUIRED)
         endif()
+        add_definitions(-DPXR_GL_SUPPORT_ENABLED)
     endif()
     # --Metal
     if (PXR_ENABLE_METAL_SUPPORT)

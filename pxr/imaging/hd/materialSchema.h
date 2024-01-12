@@ -37,9 +37,17 @@
 
 #include "pxr/imaging/hd/api.h"
 
-#include "pxr/imaging/hd/schema.h" 
+#include "pxr/imaging/hd/schema.h"
+
+// --(BEGIN CUSTOM CODE: Includes)--
+// --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+//-----------------------------------------------------------------------------
+
+// --(BEGIN CUSTOM CODE: Declares)--
+// --(END CUSTOM CODE: Declares)--
 
 //-----------------------------------------------------------------------------
 
@@ -51,6 +59,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialSchemaTokens, HD_API,
     HD_MATERIAL_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
+
 
 class HdMaterialSchema : public HdSchema
 {
@@ -67,6 +76,11 @@ public:
     HdContainerDataSourceHandle GetMaterialNetwork(TfToken const &context);
 
 // --(END CUSTOM CODE: Schema Methods)--
+
+    //ACCESSORS
+ 
+
+    // RETRIEVING AND CONSTRUCTING
 
     HD_API
     static HdContainerDataSourceHandle
@@ -94,7 +108,6 @@ public:
     /// where the container representing this schema is found by default.
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
-
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

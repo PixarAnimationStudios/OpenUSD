@@ -105,6 +105,13 @@ Pcp_GetArgumentsForFileFormatTarget(
     const SdfLayer::FileFormatArguments* defaultArgs,
     SdfLayer::FileFormatArguments* localArgs);
 
+// Removes the "target" argument from \p args if it exists and its value
+// is the same as \p target.
+void
+Pcp_StripFileFormatTarget(
+    const std::string& target,
+    SdfLayer::FileFormatArguments* args);
+
 // Find the starting node of the class hierarchy of which node n is a part.
 // This is the prim that starts the class chain, aka the 'instance' of the
 // class hierarchy. Also returns the node for the first class in the

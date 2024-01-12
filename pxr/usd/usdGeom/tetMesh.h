@@ -232,8 +232,11 @@ public:
     /// ComputeSurfaceFaces determines the vertex indices of the surface faces 
     /// from tetVertexIndices. The surface faces are the set of faces that occur 
     /// only once when traversing the faces of all the tetrahedra. The algorithm 
-    /// is O(n) in the number of tetrahedra. Method returns false if 
+    /// is O(nlogn) in the number of tetrahedra. Method returns false if 
     /// surfaceFaceIndices argument is nullptr and returns true otherwise.
+    /// The algorithm can't be O(n) because we need to sort the resulting
+    /// surface faces for deterministic behavior across different compilers 
+    /// and OS. 
     USDGEOM_API    
     static bool ComputeSurfaceFaces(const UsdGeomTetMesh& tetMesh,
                                     VtVec3iArray* surfaceFaceIndices,
@@ -319,6 +322,25 @@ private:
             return a == b;
         }
     };   
+
+    class FaceVertexIndicesCompare {
+    public:
+        // Comparator function
+        inline bool operator()(const GfVec3i& f1, const GfVec3i f2)
+        {
+              if (f1[0] == f2[0])
+              {
+                  if (f1[1] == f2[1])
+                  {
+                      return f1[2] < f2[2];
+                  }
+      
+                  return f1[1] < f2[1];
+              }
+      
+              return f1[0] < f2[0];
+        }
+    };    
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

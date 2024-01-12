@@ -107,6 +107,19 @@ struct Vt_ValueWrapper {
     template <typename T> explicit Vt_ValueWrapper(T val) : _val(val) {}
 
     VtValue const &GetValue() const { return _val; }
+
+    bool operator==(const Vt_ValueWrapper &other) {
+        return _val == other._val;
+    }
+
+    bool operator!=(const Vt_ValueWrapper &other) {
+        return _val != other._val;
+    }
+
+    std::string GetAsString() {
+        return TfStringPrintf(
+            "%s(%s)", _val.GetTypeName().c_str(), TfStringify(_val).c_str());
+    }
     
   private:
     VtValue _val;
@@ -252,7 +265,12 @@ void wrapValue()
     Vt_ValueFromPython();
     Vt_ValueWrapperFromPython();
 
-    class_<Vt_ValueWrapper>("_ValueWrapper", no_init);
+    class_<Vt_ValueWrapper>("_ValueWrapper", no_init)
+        .def(self == self)
+        .def(self != self)
+        .def("__str__", &Vt_ValueWrapper::GetAsString)
+        .def("__repr__", &Vt_ValueWrapper::GetAsString)
+        ;
 
     static char const *funcDocString = "%s(value) -> _ValueWrapper\n\n"
         "value : %s\n\n"

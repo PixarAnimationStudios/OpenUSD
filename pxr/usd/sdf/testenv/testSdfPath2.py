@@ -504,11 +504,18 @@ class TestSdfPath2(unittest.TestCase):
         self.assertEqual(p.StripAllVariantSelections(), Sdf.Path('/foo/bar/baz/frob'))
         p = Sdf.Path('/foo{bond=connery}bar{captain=picard}baz/frob{doctor=tennent}')
         self.assertEqual(p.StripAllVariantSelections(), Sdf.Path('/foo/bar/baz/frob'))
+        p = Sdf.Path('/ᄆfoo{刷ꡟ=鞏bar}bar/baz/𓌘ascii𓋏')
+        self.assertEqual(p.StripAllVariantSelections(), Sdf.Path('/ᄆfoo/bar/baz/𓌘ascii𓋏'))
         
         self.assertEqual(Sdf.Path.TokenizeIdentifier(""), [])
         self.assertEqual(Sdf.Path.TokenizeIdentifier("foo"), ["foo"])
         self.assertEqual(Sdf.Path.TokenizeIdentifier("foo::baz"), [])
         self.assertEqual(Sdf.Path.TokenizeIdentifier("foo:bar:baz"), ["foo","bar","baz"])
+        self.assertEqual(Sdf.Path.TokenizeIdentifier("ᄆfoo::鞏bar"), [])
+        self.assertEqual(Sdf.Path.TokenizeIdentifier("ᄆfoo:鞏bar:ascii𓋏"), ["ᄆfoo", "鞏bar", "ascii𓋏"])
+        self.assertEqual(Sdf.Path.TokenizeIdentifier(":"), [])
+        self.assertEqual(Sdf.Path.TokenizeIdentifier(":abcdef"), [])
+        self.assertEqual(Sdf.Path.TokenizeIdentifier("0:abc"), [])
         
         self.assertEqual(Sdf.Path.JoinIdentifier([]), "")
         self.assertEqual(Sdf.Path.JoinIdentifier(["foo"]), "foo")
