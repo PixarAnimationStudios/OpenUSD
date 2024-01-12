@@ -148,6 +148,14 @@ pxr_build_test(testUsdImagingGLSurfaceShader
         testenv/testUsdImagingGLSurfaceShader.cpp
 )
 
+pxr_build_test(testUsdImagingGLTaskController
+    LIBRARIES
+        ${TEST_LIBS}
+    CPPFILES
+        unitTestGLDrawing.cpp
+        testenv/testUsdImagingGLTaskController.cpp
+)
+
 if (${PXR_HEADLESS_TEST_MODE})
     message(STATUS "Skipping ${PXR_PACKAGE} tests because PXR_HEADLESS_TEST_MODE is ON")
     return()
@@ -614,6 +622,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdImagingGLInvalidMaterial
     DEST testUsdImagingGLInvalidMaterial
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLDomeLightTaskController
+    DEST testUsdImagingGLDomeLightTaskController
 )
 
 #
@@ -4579,6 +4592,18 @@ pxr_register_test(testUsdImagingGLInvalidMaterial
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLInvalidMaterial
+)
+
+pxr_register_test(testUsdImagingGLDomeLightTaskController
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLTaskController --lightTexture testImage.png --stage test.usda"
+    IMAGE_DIFF_COMPARE
+        initialDome.png
+        rotatedDome.png
+    FAIL 0.01
+    FAIL_PERCENT 0.2
+    WARN 0.02
+    WARN_PERCENT 0.005
+    TESTENV testUsdImagingGLDomeLightTaskController
 )
 
 #
