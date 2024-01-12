@@ -78,6 +78,7 @@ static _FactoryMap _CreateFactoryMap()
     map[SdfValueTypeNames->Matrix4d] = _FactoryImpl<GfMatrix4d>;
     map[SdfValueTypeNames->Normal3fArray] = _FactoryImpl<VtArray<GfVec3f>>;
     map[SdfValueTypeNames->Normal3f] = _FactoryImpl<GfVec3f>;
+    map[SdfValueTypeNames->PathExpression] = _FactoryImpl<SdfPathExpression>;
     map[SdfValueTypeNames->Point3fArray] = _FactoryImpl<VtArray<GfVec3f>>;
     map[SdfValueTypeNames->Point3f] = _FactoryImpl<GfVec3f>;
     map[SdfValueTypeNames->Quath] = _FactoryImpl<GfQuath>;
