@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HD_FLATTENED_MATERIAL_BINDINGS_DATA_SOURCE_PROVIDER_H
-#define PXR_IMAGING_HD_FLATTENED_MATERIAL_BINDINGS_DATA_SOURCE_PROVIDER_H
+#ifndef PXR_USD_IMAGING_USD_IMAGING_FLATTENED_MATERIAL_BINDINGS_DATA_SOURCE_PROVIDER_H
+#define PXR_USD_IMAGING_USD_IMAGING_FLATTENED_MATERIAL_BINDINGS_DATA_SOURCE_PROVIDER_H
 
 #include "pxr/imaging/hd/api.h"
 
@@ -30,7 +30,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdFlattenedMaterialBindingsDataSourceProvider : public HdFlattenedDataSourceProvider
+class UsdImagingFlattenedDirectMaterialBindingsDataSourceProvider
+    : public HdFlattenedDataSourceProvider
 {
     HD_API
     HdContainerDataSourceHandle GetFlattenedDataSource(
@@ -43,4 +44,4 @@ class HdFlattenedMaterialBindingsDataSourceProvider : public HdFlattenedDataSour
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_IMAGING_HD_FLATTENED_MATERIAL_BINDINGS_DATA_SOURCE_PROVIDER_H
+#endif // PXR_USD_IMAGING_USD_IMAGING_FLATTENED_MATERIAL_BINDINGS_DATA_SOURCE_PROVIDER_H

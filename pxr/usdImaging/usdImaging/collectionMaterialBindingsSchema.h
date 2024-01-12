@@ -32,14 +32,17 @@
 /* **                                                                      ** */
 /* ************************************************************************** */
 
-#ifndef PXR_IMAGING_HD_MATERIAL_BINDING_SCHEMA_H
-#define PXR_IMAGING_HD_MATERIAL_BINDING_SCHEMA_H
+#ifndef PXR_USD_IMAGING_USD_IMAGING_COLLECTION_MATERIAL_BINDINGS_SCHEMA_H
+#define PXR_USD_IMAGING_USD_IMAGING_COLLECTION_MATERIAL_BINDINGS_SCHEMA_H
 
-#include "pxr/imaging/hd/api.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 
 #include "pxr/imaging/hd/schema.h" 
 
 // --(BEGIN CUSTOM CODE: Includes)--
+
+#include "pxr/imaging/hd/vectorSchema.h"
+
 // --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -47,65 +50,64 @@ PXR_NAMESPACE_OPEN_SCOPE
 //-----------------------------------------------------------------------------
 
 // --(BEGIN CUSTOM CODE: Declares)--
+
+using UsdImagingCollectionMaterialBindingVectorSchema =
+    HdSchemaBasedVectorSchema<class UsdImagingCollectionMaterialBindingSchema>;
+
 // --(END CUSTOM CODE: Declares)--
 
 //-----------------------------------------------------------------------------
 
-#define HD_MATERIAL_BINDING_SCHEMA_TOKENS \
-    (path) \
+#define USD_IMAGING_COLLECTION_MATERIAL_BINDINGS_SCHEMA_TOKENS \
+    (collectionMaterialBindings) \
+    ((allPurpose, "")) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdMaterialBindingSchemaTokens, HD_API,
-    HD_MATERIAL_BINDING_SCHEMA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdImagingCollectionMaterialBindingsSchemaTokens, USDIMAGING_API,
+    USD_IMAGING_COLLECTION_MATERIAL_BINDINGS_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
-class HdMaterialBindingSchema : public HdSchema
+class UsdImagingCollectionMaterialBindingsSchema : public HdSchema
 {
 public:
-    HdMaterialBindingSchema(HdContainerDataSourceHandle container)
+    UsdImagingCollectionMaterialBindingsSchema(HdContainerDataSourceHandle container)
     : HdSchema(container) {}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
+
+    /// Returns the purposes for which bindings may be available.
+    /// \note This API is preferable to schema.GetContainer()->GetNames().
+    USDIMAGING_API
+    TfTokenVector GetPurposes();
+
+    /// Returns the bindings for 'allPurpose'.
+    UsdImagingCollectionMaterialBindingVectorSchema
+    GetCollectionMaterialBindings();
+
+    /// Returns the bindings for the requested purpose.
+    UsdImagingCollectionMaterialBindingVectorSchema
+    GetCollectionMaterialBindings(const TfToken &purpose);
+
 // --(END CUSTOM CODE: Schema Methods)--
 
-    //ACCESSORS
 
+    /// Retrieves a container data source with the schema's default name token
+    /// "collectionMaterialBindings" from the parent container and constructs a
+    /// UsdImagingCollectionMaterialBindingsSchema instance.
+    /// Because the requested container data source may not exist, the result
+    /// should be checked with IsDefined() or a bool comparison before use.
+    USDIMAGING_API
+    static UsdImagingCollectionMaterialBindingsSchema GetFromParent(
+        const HdContainerDataSourceHandle &fromParentContainer);
 
-    HD_API
-    HdPathDataSourceHandle GetPath();
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    USDIMAGING_API
+    static const TfToken &GetSchemaToken();
 
-    // RETRIEVING AND CONSTRUCTING
-
-    /// Builds a container data source which includes the provided child data
-    /// sources. Parameters with nullptr values are excluded. This is a
-    /// low-level interface. For cases in which it's desired to define
-    /// the container with a sparse set of child fields, the Builder class
-    /// is often more convenient and readable.
-    HD_API
-    static HdContainerDataSourceHandle
-    BuildRetained(
-        const HdPathDataSourceHandle &path
-    );
-
-    /// \class HdMaterialBindingSchema::Builder
-    /// 
-    /// Utility class for setting sparse sets of child data source fields to be
-    /// filled as arguments into BuildRetained. Because all setter methods
-    /// return a reference to the instance, this can be used in the "builder
-    /// pattern" form.
-    class Builder
-    {
-    public:
-        HD_API
-        Builder &SetPath(
-            const HdPathDataSourceHandle &path);
-
-        /// Returns a container data source containing the members set thus far.
-        HD_API
-        HdContainerDataSourceHandle Build();
-
-    private:
-        HdPathDataSourceHandle _path;
-    };
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the container representing this schema is found by default.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetDefaultLocator();
 
 };
 

@@ -32,10 +32,10 @@
 /* **                                                                      ** */
 /* ************************************************************************** */
 
-#ifndef PXR_IMAGING_HD_MATERIAL_BINDING_SCHEMA_H
-#define PXR_IMAGING_HD_MATERIAL_BINDING_SCHEMA_H
+#ifndef PXR_USD_IMAGING_USD_IMAGING_COLLECTION_MATERIAL_BINDING_SCHEMA_H
+#define PXR_USD_IMAGING_USD_IMAGING_COLLECTION_MATERIAL_BINDING_SCHEMA_H
 
-#include "pxr/imaging/hd/api.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 
 #include "pxr/imaging/hd/schema.h" 
 
@@ -51,17 +51,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
 
-#define HD_MATERIAL_BINDING_SCHEMA_TOKENS \
-    (path) \
+#define USD_IMAGING_COLLECTION_MATERIAL_BINDING_SCHEMA_TOKENS \
+    (collectionMaterialBinding) \
+    (collectionPath) \
+    (materialPath) \
+    (bindingStrength) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdMaterialBindingSchemaTokens, HD_API,
-    HD_MATERIAL_BINDING_SCHEMA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdImagingCollectionMaterialBindingSchemaTokens, USDIMAGING_API,
+    USD_IMAGING_COLLECTION_MATERIAL_BINDING_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
-class HdMaterialBindingSchema : public HdSchema
+class UsdImagingCollectionMaterialBindingSchema : public HdSchema
 {
 public:
-    HdMaterialBindingSchema(HdContainerDataSourceHandle container)
+    UsdImagingCollectionMaterialBindingSchema(HdContainerDataSourceHandle container)
     : HdSchema(container) {}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
@@ -70,8 +73,14 @@ public:
     //ACCESSORS
 
 
-    HD_API
-    HdPathDataSourceHandle GetPath();
+    USDIMAGING_API
+    HdPathDataSourceHandle GetCollectionPath();
+
+    USDIMAGING_API
+    HdPathDataSourceHandle GetMaterialPath();
+
+    USDIMAGING_API
+    HdTokenDataSourceHandle GetBindingStrength();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -80,13 +89,15 @@ public:
     /// low-level interface. For cases in which it's desired to define
     /// the container with a sparse set of child fields, the Builder class
     /// is often more convenient and readable.
-    HD_API
+    USDIMAGING_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdPathDataSourceHandle &path
+        const HdPathDataSourceHandle &collectionPath,
+        const HdPathDataSourceHandle &materialPath,
+        const HdTokenDataSourceHandle &bindingStrength
     );
 
-    /// \class HdMaterialBindingSchema::Builder
+    /// \class UsdImagingCollectionMaterialBindingSchema::Builder
     /// 
     /// Utility class for setting sparse sets of child data source fields to be
     /// filled as arguments into BuildRetained. Because all setter methods
@@ -95,17 +106,44 @@ public:
     class Builder
     {
     public:
-        HD_API
-        Builder &SetPath(
-            const HdPathDataSourceHandle &path);
+        USDIMAGING_API
+        Builder &SetCollectionPath(
+            const HdPathDataSourceHandle &collectionPath);
+        USDIMAGING_API
+        Builder &SetMaterialPath(
+            const HdPathDataSourceHandle &materialPath);
+        USDIMAGING_API
+        Builder &SetBindingStrength(
+            const HdTokenDataSourceHandle &bindingStrength);
 
         /// Returns a container data source containing the members set thus far.
-        HD_API
+        USDIMAGING_API
         HdContainerDataSourceHandle Build();
 
     private:
-        HdPathDataSourceHandle _path;
+        HdPathDataSourceHandle _collectionPath;
+        HdPathDataSourceHandle _materialPath;
+        HdTokenDataSourceHandle _bindingStrength;
     };
+
+    /// Retrieves a container data source with the schema's default name token
+    /// "collectionMaterialBinding" from the parent container and constructs a
+    /// UsdImagingCollectionMaterialBindingSchema instance.
+    /// Because the requested container data source may not exist, the result
+    /// should be checked with IsDefined() or a bool comparison before use.
+    USDIMAGING_API
+    static UsdImagingCollectionMaterialBindingSchema GetFromParent(
+        const HdContainerDataSourceHandle &fromParentContainer);
+
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    USDIMAGING_API
+    static const TfToken &GetSchemaToken();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the container representing this schema is found by default.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetDefaultLocator();
 
 };
 

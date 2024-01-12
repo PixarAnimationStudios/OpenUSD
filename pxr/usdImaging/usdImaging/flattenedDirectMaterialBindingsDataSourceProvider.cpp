@@ -21,7 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/flattenedMaterialBindingsDataSourceProvider.h"
+#include "pxr/usdImaging/usdImaging/flattenedDirectMaterialBindingsDataSourceProvider.h"
+
+#include "pxr/usdImaging/usdImaging/directMaterialBindingSchema.h"
+#include "pxr/usdImaging/usdImaging/directMaterialBindingsSchema.h"
 
 #include "pxr/imaging/hd/materialBindingsSchema.h"
 
@@ -50,21 +53,23 @@ public:
     HD_DECLARE_DATASOURCE(_MaterialBindingsDataSource);
 
     TfTokenVector GetNames() override {
-        TfDenseHashSet<TfToken, TfToken::HashFunctor> allNames;
+        TfDenseHashSet<TfToken, TfToken::HashFunctor> allPurposes;
         {
-            for (const TfTokenVector &names :
+            for (const TfTokenVector &purposes :
                     {_primBindings->GetNames(), _parentBindings->GetNames()} ) {
-                allNames.insert(names.begin(), names.end());
+                allPurposes.insert(purposes.begin(), purposes.end());
             }
         }
 
-        return { allNames.begin(), allNames.end() };
+        return { allPurposes.begin(), allPurposes.end() };
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
-        HdMaterialBindingSchema parentSchema(
-            HdContainerDataSource::Cast(
-                _parentBindings->Get(name)));
+        const TfToken &purpose = name;
+        
+        UsdImagingDirectMaterialBindingSchema parentSchema(
+            HdContainerDataSource::Cast(_parentBindings->Get(purpose)));
+
         if (HdTokenDataSourceHandle const strengthDs =
                 parentSchema.GetBindingStrength()) {
             const TfToken strength = strengthDs->GetTypedValue(0.0f);
@@ -72,7 +77,8 @@ public:
                 return parentSchema.GetContainer();
             }
         }
-        if (HdDataSourceBaseHandle const bindingDs = _primBindings->Get(name)) {
+        if (HdDataSourceBaseHandle const bindingDs =
+                _primBindings->Get(purpose)) {
             return bindingDs;
         }
         return parentSchema.GetContainer();
@@ -113,7 +119,8 @@ private:
 }
 
 HdContainerDataSourceHandle
-HdFlattenedMaterialBindingsDataSourceProvider::GetFlattenedDataSource(
+UsdImagingFlattenedDirectMaterialBindingsDataSourceProvider::
+GetFlattenedDataSource(
     const Context &ctx) const
 {
     return 
@@ -123,7 +130,8 @@ HdFlattenedMaterialBindingsDataSourceProvider::GetFlattenedDataSource(
 }
 
 void
-HdFlattenedMaterialBindingsDataSourceProvider::ComputeDirtyLocatorsForDescendants(
+UsdImagingFlattenedDirectMaterialBindingsDataSourceProvider::
+ComputeDirtyLocatorsForDescendants(
     HdDataSourceLocatorSet * const locators) const
 {
     // Any locator of the form BindingPurpose:Foo will be turned into

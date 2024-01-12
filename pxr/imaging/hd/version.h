@@ -88,9 +88,9 @@
 //           Note that in an upcoming change,
 //           HdPrimvarSchema::GetPrimvarValue() might change and
 //           simply return the data source source at primvarValue.
-//
+// 61 -> 62: Remove 'bindingStrength' from HdMaterialBindingSchema.
 
-#define HD_API_VERSION 61
+#define HD_API_VERSION 62
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

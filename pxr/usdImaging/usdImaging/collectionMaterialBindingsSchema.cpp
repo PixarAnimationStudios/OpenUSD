@@ -32,66 +32,78 @@
 /* **                                                                      ** */
 /* ************************************************************************** */
 
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/usdImaging/usdImaging/collectionMaterialBindingsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/base/trace/trace.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
+
+#include "pxr/usdImaging/usdImaging/collectionMaterialBindingSchema.h"
+
 // --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(HdMaterialBindingSchemaTokens,
-    HD_MATERIAL_BINDING_SCHEMA_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(UsdImagingCollectionMaterialBindingsSchemaTokens,
+    USD_IMAGING_COLLECTION_MATERIAL_BINDINGS_SCHEMA_TOKENS);
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
+
+TfTokenVector
+UsdImagingCollectionMaterialBindingsSchema::GetPurposes()
+{
+    if (HdContainerDataSourceHandle h = GetContainer()) {
+        return h->GetNames();
+    }
+
+    return {};
+}
+
+UsdImagingCollectionMaterialBindingVectorSchema
+UsdImagingCollectionMaterialBindingsSchema::GetCollectionMaterialBindings()
+{
+    return GetCollectionMaterialBindings(
+            UsdImagingCollectionMaterialBindingsSchemaTokens->allPurpose);
+}
+
+UsdImagingCollectionMaterialBindingVectorSchema
+UsdImagingCollectionMaterialBindingsSchema::GetCollectionMaterialBindings(
+    TfToken const &purpose)
+{
+    return UsdImagingCollectionMaterialBindingVectorSchema(
+            _GetTypedDataSource<HdVectorDataSource>(purpose));
+}
+
 // --(END CUSTOM CODE: Schema Methods)--
 
 
 
 
-HdPathDataSourceHandle
-HdMaterialBindingSchema::GetPath()
+/*static*/
+UsdImagingCollectionMaterialBindingsSchema
+UsdImagingCollectionMaterialBindingsSchema::GetFromParent(
+        const HdContainerDataSourceHandle &fromParentContainer)
 {
-    return _GetTypedDataSource<HdPathDataSource>(
-        HdMaterialBindingSchemaTokens->path);
+    return UsdImagingCollectionMaterialBindingsSchema(
+        fromParentContainer
+        ? HdContainerDataSource::Cast(fromParentContainer->Get(
+                UsdImagingCollectionMaterialBindingsSchemaTokens->collectionMaterialBindings))
+        : nullptr);
 }
 
 /*static*/
-HdContainerDataSourceHandle
-HdMaterialBindingSchema::BuildRetained(
-        const HdPathDataSourceHandle &path
-)
+const TfToken &
+UsdImagingCollectionMaterialBindingsSchema::GetSchemaToken()
 {
-    TfToken _names[1];
-    HdDataSourceBaseHandle _values[1];
-
-    size_t _count = 0;
-    if (path) {
-        _names[_count] = HdMaterialBindingSchemaTokens->path;
-        _values[_count++] = path;
-    }
-
-    return HdRetainedContainerDataSource::New(_count, _names, _values);
+    return UsdImagingCollectionMaterialBindingsSchemaTokens->collectionMaterialBindings;
 }
 
-
-HdMaterialBindingSchema::Builder &
-HdMaterialBindingSchema::Builder::SetPath(
-    const HdPathDataSourceHandle &path)
+/*static*/
+const HdDataSourceLocator &
+UsdImagingCollectionMaterialBindingsSchema::GetDefaultLocator()
 {
-    _path = path;
-    return *this;
-}
-
-HdContainerDataSourceHandle
-HdMaterialBindingSchema::Builder::Build()
-{
-    return HdMaterialBindingSchema::BuildRetained(
-        _path
-    );
-}
-
-
+    static const HdDataSourceLocator locator(GetSchemaToken());
+    return locator;
+} 
 PXR_NAMESPACE_CLOSE_SCOPE

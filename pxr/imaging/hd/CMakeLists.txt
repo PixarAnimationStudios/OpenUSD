@@ -76,7 +76,6 @@ pxr_library(hd
         flattenedDataSourceProvider
         flattenedDataSourceProviders
         flattenedOverlayDataSourceProvider
-        flattenedMaterialBindingsDataSourceProvider
         flattenedPrimvarsDataSourceProvider
         flattenedPurposeDataSourceProvider
         flattenedVisibilityDataSourceProvider

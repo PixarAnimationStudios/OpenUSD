@@ -32,14 +32,17 @@
 /* **                                                                      ** */
 /* ************************************************************************** */
 
-#ifndef PXR_IMAGING_HD_MATERIAL_BINDING_SCHEMA_H
-#define PXR_IMAGING_HD_MATERIAL_BINDING_SCHEMA_H
+#ifndef PXR_USD_IMAGING_USD_IMAGING_DIRECT_MATERIAL_BINDINGS_SCHEMA_H
+#define PXR_USD_IMAGING_USD_IMAGING_DIRECT_MATERIAL_BINDINGS_SCHEMA_H
 
-#include "pxr/imaging/hd/api.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 
 #include "pxr/imaging/hd/schema.h" 
 
 // --(BEGIN CUSTOM CODE: Includes)--
+
+#include "pxr/usdImaging/usdImaging/directMaterialBindingSchema.h"
+
 // --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -51,61 +54,65 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
 
-#define HD_MATERIAL_BINDING_SCHEMA_TOKENS \
-    (path) \
+#define USD_IMAGING_DIRECT_MATERIAL_BINDINGS_SCHEMA_TOKENS \
+    (directMaterialBindings) \
+    ((allPurpose, "")) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdMaterialBindingSchemaTokens, HD_API,
-    HD_MATERIAL_BINDING_SCHEMA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdImagingDirectMaterialBindingsSchemaTokens, USDIMAGING_API,
+    USD_IMAGING_DIRECT_MATERIAL_BINDINGS_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
-class HdMaterialBindingSchema : public HdSchema
+class UsdImagingDirectMaterialBindingsSchema : public HdSchema
 {
 public:
-    HdMaterialBindingSchema(HdContainerDataSourceHandle container)
+    UsdImagingDirectMaterialBindingsSchema(HdContainerDataSourceHandle container)
     : HdSchema(container) {}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
+
+    /// Returns the purposes for which bindings may be available.
+    /// \note This API is preferable to schema.GetContainer()->GetNames().
+    USDIMAGING_API
+    TfTokenVector GetPurposes();
+
+    /// Returns the 'allPurpose' binding.
+    USDIMAGING_API
+    UsdImagingDirectMaterialBindingSchema
+    GetDirectMaterialBinding();
+
+    /// Returns the binding for the requested purpose.
+    USDIMAGING_API
+    UsdImagingDirectMaterialBindingSchema
+    GetDirectMaterialBinding(const TfToken &purpose);
+
 // --(END CUSTOM CODE: Schema Methods)--
 
-    //ACCESSORS
-
-
-    HD_API
-    HdPathDataSourceHandle GetPath();
-
-    // RETRIEVING AND CONSTRUCTING
-
-    /// Builds a container data source which includes the provided child data
-    /// sources. Parameters with nullptr values are excluded. This is a
-    /// low-level interface. For cases in which it's desired to define
-    /// the container with a sparse set of child fields, the Builder class
-    /// is often more convenient and readable.
-    HD_API
+    USDIMAGING_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdPathDataSourceHandle &path
-    );
+        size_t count,
+        const TfToken *names,
+        const HdDataSourceBaseHandle *values);
 
-    /// \class HdMaterialBindingSchema::Builder
-    /// 
-    /// Utility class for setting sparse sets of child data source fields to be
-    /// filled as arguments into BuildRetained. Because all setter methods
-    /// return a reference to the instance, this can be used in the "builder
-    /// pattern" form.
-    class Builder
-    {
-    public:
-        HD_API
-        Builder &SetPath(
-            const HdPathDataSourceHandle &path);
 
-        /// Returns a container data source containing the members set thus far.
-        HD_API
-        HdContainerDataSourceHandle Build();
+    /// Retrieves a container data source with the schema's default name token
+    /// "directMaterialBindings" from the parent container and constructs a
+    /// UsdImagingDirectMaterialBindingsSchema instance.
+    /// Because the requested container data source may not exist, the result
+    /// should be checked with IsDefined() or a bool comparison before use.
+    USDIMAGING_API
+    static UsdImagingDirectMaterialBindingsSchema GetFromParent(
+        const HdContainerDataSourceHandle &fromParentContainer);
 
-    private:
-        HdPathDataSourceHandle _path;
-    };
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    USDIMAGING_API
+    static const TfToken &GetSchemaToken();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the container representing this schema is found by default.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetDefaultLocator();
 
 };
 

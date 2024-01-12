@@ -30,6 +30,10 @@ pxr_library(usdImaging
     PUBLIC_CLASSES
         adapterRegistry
         collectionCache
+        collectionMaterialBindingSchema
+        collectionMaterialBindingsSchema
+        directMaterialBindingSchema
+        directMaterialBindingsSchema
         dataSourceAttribute
         dataSourceAttributeColorSpace
         dataSourceBasisCurves
@@ -83,6 +87,7 @@ pxr_library(usdImaging
         fieldAdapter
         flattenedDataSourceProviders
         flattenedGeomModelDataSourceProvider
+        flattenedDirectMaterialBindingsDataSourceProvider
         geometryLightAdapter
         geomModelAPIAdapter
         gprimAdapter
@@ -94,6 +99,7 @@ pxr_library(usdImaging
         lightFilterAdapter
         materialAdapter
         materialBindingAPIAdapter
+        materialBindingsResolvingSceneIndex
         meshAdapter
         niPrototypePropagatingSceneIndex
         nurbsCurvesAdapter
