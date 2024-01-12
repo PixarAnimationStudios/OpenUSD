@@ -1,17 +1,30 @@
 #usda 1.0
+(
+    upAxis = "Y"
+)
 
-def Camera "camera"
+# Two-level nested native instancing test with material binding authored only
+# on the prototype. The material lives outside the prototype hierarchy.
+#
+# All 9 spheres should appear green.
+#
+def Camera "main_cam"
 {
-     point3f xformOp:translate = (5,8,20)
-     float xformOp:rotateX = -20
+     point3f xformOp:translate = (0,5,28)
+     float xformOp:rotateX = -10
      uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX"]
+}
+
+def DistantLight "Sun"
+{
+    # Use default intensity and direction (light is emitted along -Z).
+    # The latter is fine since the stage is Y up.
 }
 
 def Xform "World"
 {
     def Xform "NI_NI"
     {
-        point3f xformOp:translate = (5,0,0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
 
         def Xform "Outer"
@@ -25,7 +38,7 @@ def Xform "World"
                         prepend apiSchemas = [ "MaterialBindingAPI" ]
                     )
                     {
-                        float3 xformOp:translate = (0, 1, 0)
+                        float3 xformOp:translate = (0, 0, 0)
                         uniform token[] xformOpOrder = ["xformOp:translate"]
 
                         rel material:binding = </Looks/Green>
@@ -38,7 +51,7 @@ def Xform "World"
                     references = </World/NI_NI/Outer/Inner/Prototype>
                 )
                 {
-                    float3 xformOp:translate = (0,0,-3)
+                    float3 xformOp:translate = (0,-3,0)
                     uniform token[] xformOpOrder = ["xformOp:translate"]
                 }
 
@@ -48,7 +61,7 @@ def Xform "World"
                     references = </World/NI_NI/Outer/Inner/Prototype>
                 )
                 {
-                    float3 xformOp:translate = (0,0,3)
+                    float3 xformOp:translate = (0,3,0)
                     uniform token[] xformOpOrder = ["xformOp:translate"]
                 }
             }

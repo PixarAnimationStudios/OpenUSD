@@ -191,6 +191,12 @@ HdRenderDelegate::GetRenderStats() const
     return VtDictionary();
 }
 
+HdContainerDataSourceHandle
+HdRenderDelegate::GetCapabilities() const
+{
+    return nullptr;
+}
+
 void
 HdRenderDelegate::_PopulateDefaultSettings(
     HdRenderSettingDescriptorList const& defaultSettings)
@@ -224,6 +230,15 @@ HdRenderDelegate::IsPaused() const
 bool
 HdRenderDelegate::Pause()
 {
+    return false;
+}
+
+bool HdRenderDelegate::IsParallelSyncEnabled(
+    TfToken primType) const
+{
+    if (primType == HdPrimTypeTokens->extComputation) {
+        return true;
+    }
     return false;
 }
 

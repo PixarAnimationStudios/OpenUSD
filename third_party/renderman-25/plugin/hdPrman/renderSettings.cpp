@@ -24,7 +24,10 @@
 #include "hdPrman/renderSettings.h"
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/debugUtil.h"
+#include "hdPrman/camera.h"
+#include "hdPrman/cameraContext.h"
 #include "hdPrman/renderParam.h"
+#include "hdPrman/renderViewContext.h"
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/utils.h"
 
@@ -43,9 +46,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// This env var exists only to compare results from driving the render pass 
+// using the task's aov bindings v/s using the render settings prim.
+// This is currently relevant and limited to non-interactive rendering
+// (e.g., in an application like usdrecord).
+//
+// See DriveRenderPass(..) below for more info.
+// 
 TF_DEFINE_ENV_SETTING(HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS, false,
                       "Drive the render pass using the first RenderProduct on "
-                      "the render settings prim.");
+                      "the render settings prim when the render pass has "
+                      "AOV bindings.");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _renderTerminalTokens, // properties in PxrRenderTerminalsAPI
@@ -103,6 +114,13 @@ _GenerateParamList(VtDictionary const &settings)
     return options;
 }
 
+GfVec2i
+_MultiplyAndRound(const GfVec2f &a, const GfVec2i &b)
+{
+    return GfVec2i(std::roundf(a[0] * b[0]),
+                   std::roundf(a[1] * b[1]));
+}
+
 bool
 _HasNonFallbackRenderSettingsPrim(const HdSceneIndexBaseRefPtr &si)
 {
@@ -124,7 +142,134 @@ _HasNonFallbackRenderSettingsPrim(const HdSceneIndexBaseRefPtr &si)
     return false;
 }
 
+// Update the camera path, framing and shutter curve on the camera context from
+// the render product.
+void
+_UpdateCameraContextFromProduct(
+    HdRenderSettings::RenderProduct const &product,
+    HdPrman_CameraContext *cameraContext)
+{
+    TF_DEBUG(HDPRMAN_RENDER_PASS).Msg(
+        "Updating camera context from product %s\n", product.name.GetText());
+
+    GfVec2i const &resolution = product.resolution;
+    const GfRange2f displayWindow(GfVec2f(0.0f), GfVec2f(resolution));
+    const GfRange2f dataWindowNDC = product.dataWindowNDC;
+    const GfRect2i dataWindow(
+        _MultiplyAndRound(dataWindowNDC.GetMin(), resolution),
+        _MultiplyAndRound(dataWindowNDC.GetMax(), resolution) - GfVec2i(1));
+
+    // Set the camera path to allow UpdateRileyCameraAndClipPlanes to fetch
+    // necessary data from the camera Sprim.
+    cameraContext->SetCameraPath(product.cameraPath);
+    cameraContext->SetFraming(
+        CameraUtilFraming(
+            displayWindow, dataWindow, product.pixelAspectRatio));
+    cameraContext->SetWindowPolicy(
+        HdUtils::ToConformWindowPolicy(product.aspectRatioConformPolicy));
 }
+
+// Update the riley camera params using state on the camera Sprim and the
+// camera context.
+void
+_UpdateRileyCamera(
+    riley::Riley *riley,
+    const HdRenderIndex *renderIndex,
+    const SdfPath &cameraPathFromProduct,
+    bool interactive,
+    HdPrman_CameraContext *cameraContext)
+{
+    if (cameraContext->IsInvalid()) {
+        TF_DEBUG(HDPRMAN_RENDER_PASS).Msg(
+            "Updating riley camera %u using camera prim %s\n",
+            cameraContext->GetCameraId().AsUInt32(),
+            cameraContext->GetCameraPath().GetText());
+
+        // XXX This should come from the camera Sprim instead and should be
+        //     folded into UpdateRileyCameraAndClipPlanes.
+        //
+        cameraContext->SetFallbackShutterCurve(interactive);
+
+        cameraContext->UpdateRileyCameraAndClipPlanes(riley, renderIndex);
+        cameraContext->MarkValid();
+    }
+}
+
+// Create/update the render view and associated resources based on the
+// render product.
+void
+_UpdateRenderViewContext(
+    HdRenderSettings::RenderProduct const &product,
+    HdPrman_RenderParam *param,
+    HdPrman_RenderViewContext *renderViewContext)
+{
+    // The (lone) render view is managed by render param currently.
+    param->CreateRenderViewFromRenderSettingsProduct(
+        product, renderViewContext);
+}
+
+// Factor the product's motion blur opinion and camera's shutter.
+GfVec2f
+_ResolveShutterInterval(
+    HdRenderSettings::RenderProduct const &product,
+    HdPrman_CameraContext const &cameraContext,
+    HdRenderIndex const *renderIndex)
+{
+    if (product.disableMotionBlur) {
+        return GfVec2f(0.f);
+    }
+
+    GfVec2f shutter(0.0f, 0.5f); // fallback 180' shutter.
+    if (const HdCamera * const camera =
+            cameraContext.GetCamera(renderIndex)) {
+        shutter[0] = camera->GetShutterOpen();
+        shutter[1] = camera->GetShutterClose();
+    }
+    return shutter;
+}
+
+bool
+_SetOptionsAndRender(
+    const HdPrman_CameraContext &cameraContext,
+    const HdPrman_RenderViewContext &renderViewContext,
+    RtParamList renderSettingsPrimOptions,
+    GfVec2f const &shutter,
+    bool interactive,
+    HdPrman_RenderParam *param)
+{
+    const riley::RenderViewId rvId = renderViewContext.GetRenderViewId();
+    if (rvId == riley::RenderViewId::InvalidId()) {
+        TF_CODING_ERROR("Invalid render view provided.\n");
+        return false;
+    }
+
+    // NOTE: renderSettingsPrimOptions is passed by value on purpose to let us
+    // override the shutter without stomping over the prim's copy.
+    cameraContext.SetRileyOptions(&renderSettingsPrimOptions);
+    renderSettingsPrimOptions.SetFloatArray(
+        RixStr.k_Ri_Shutter, shutter.data(), 2);
+
+    param->SetRenderSettingsPrimOptions(renderSettingsPrimOptions);
+    param->SetRileyOptions();
+
+    const riley::RenderViewId renderViews[] = { rvId };
+    
+    RtParamList renderOptions;
+    static RtUString const US_RENDERMODE("renderMode");
+    static RtUString const US_BATCH("batch");
+    static RtUString const US_INTERACTIVE = RtUString("interactive");
+
+    renderOptions.SetString(
+        US_RENDERMODE, interactive? US_INTERACTIVE : US_BATCH);
+    
+    param->AcquireRiley()->Render(
+        {static_cast<uint32_t>(TfArraySize(renderViews)), renderViews},
+        renderOptions);
+
+    return true;
+}
+
+} // end anonymous namespace
 
 
 HdPrman_RenderSettings::HdPrman_RenderSettings(SdfPath const& id)
@@ -134,21 +279,155 @@ HdPrman_RenderSettings::HdPrman_RenderSettings(SdfPath const& id)
 
 HdPrman_RenderSettings::~HdPrman_RenderSettings() = default;
 
-/* static */
 bool
-HdPrman_RenderSettings::DriveRenderPass() 
+HdPrman_RenderSettings::DriveRenderPass(
+    bool interactive,
+    bool renderPassHasAovBindings) const
 {
-    // Currently the ability to drive the RenderPass with the RenderSettings
-    // and RenderProducts is behind this env var.
-    // XXX This should eventually be replaced with an attribute on the 
-    // RenderSettings prim itself.
-    static bool useRenderSettingsPrim =
+    // As of this writing, the scenarios where we use the render settings prim
+    // to drive render pass execution are:
+    // 1. In an application like usdrecord wherein the render delegate is
+    //    not interactive and the render task has AOV bindings by enabling the
+    //    setting HD_PRMAN_RENDER_SETTINGS_PRIM_DRIVE_RENDER_PASS.
+    //
+    // 2. The hdPrman test harness where the task does not have AOV bindings.
+    // 
+    // XXX Interactive viewport rendering using hdPrman currently relies on 
+    // AOV bindings from the task and uses the "hydra" Display Driver to write 
+    // rendered pixels into an intermediate framebuffer which is then blit 
+    // into the Hydra AOVs. Using the render settings prim to drive the render 
+    // pass in an interactive viewport setting is not yet supported.
+    //
+
+    static const bool driveRenderPassWithAovBindings =
         TfGetEnvSetting(HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS);
-    return useRenderSettingsPrim;
+
+    const bool result =
+        IsValid() &&
+        (driveRenderPassWithAovBindings || !renderPassHasAovBindings) &&
+        !interactive;
+
+    TF_DEBUG(HDPRMAN_RENDER_PASS).Msg(
+        "Drive with RenderSettingsPrim = %d\n"
+        " - HD_PRMAN_RENDER_SETTINGS_PRIM_DRIVE_RENDER_PASS = %d\n"
+        " - valid = %d\n"
+        " - interactive renderDelegate %d\n",
+        result, driveRenderPassWithAovBindings, IsValid(), interactive);
+
+    return result;
+}
+
+bool
+HdPrman_RenderSettings::UpdateAndRender(
+    const HdRenderIndex *renderIndex,
+    bool interactive,
+    HdPrman_RenderParam *param)
+{
+    TF_DEBUG(HDPRMAN_RENDER_PASS).Msg(
+        "UpdateAndRender called for render settings prim %s\n.",
+        GetId().GetText());
+
+    if (!IsValid()) {
+        TF_CODING_ERROR(
+            "Render settings prim %s does not have valid render products.\n",
+            GetId().GetText());
+        return false;
+    }
+    if (interactive) {
+        TF_CODING_ERROR(
+            "Support for driving interactive renders using a render settings "
+            "prim is not yet available.\n");
+        return false;
+    }
+
+    bool success = true;
+
+    const size_t numProducts = GetRenderProducts().size();
+
+    // The camera and render view contexts are currently managed by render
+    // param. We have only one instance of each, so we process the products
+    // sequentially, updating the riley resources associated with each of the
+    // contexts, prior to invoking _Render. This isn't a big concern in
+    // non-interactive rendering, but will be for an interactive usage.
+    //
+    // We can avoid thrashing the Riley resources by managing a camera context
+    // and render view context per-product.
+    //
+    HdPrman_CameraContext &cameraContext = param->GetCameraContext();
+    HdPrman_RenderViewContext &renderViewContext =
+        param->GetRenderViewContext();
+
+    for (size_t prodIdx = 0; prodIdx < numProducts; prodIdx++) {
+        auto const &product = GetRenderProducts().at(prodIdx);
+
+        TF_DEBUG(HDPRMAN_RENDER_PASS).Msg(
+            "--- Processing render product %s ...\n", product.name.GetText()); 
+
+        // XXX This can be moved to _Sync once we have a camera context
+        //     per-product.
+        _UpdateCameraContextFromProduct(product, &cameraContext);
+
+        // This _cannot_ be moved to Sync since the camera Sprim wouldn't have
+        // been updated.
+        _UpdateRileyCamera(
+            param->AcquireRiley(),
+            renderIndex,
+            product.cameraPath,
+            interactive,
+            &cameraContext);
+        
+        const GfVec2f shutter =
+            _ResolveShutterInterval(product, cameraContext, renderIndex);
+
+        // This _cannot_ be moved to Sync either because the render terminal
+        // Sprims wouldn't have been updated.
+        _UpdateRenderViewContext(product, param, &renderViewContext);
+        
+        bool result =
+            _SetOptionsAndRender(
+                cameraContext,
+                renderViewContext,
+                _settingsOptions,
+                shutter,
+                interactive,
+                param);
+        
+        if (TfDebug::IsEnabled(HDPRMAN_RENDER_PASS)) {
+            if (result) {
+                TfDebug::Helper().Msg(
+                    "--- Rendered product %s.\n", product.name.GetText()); 
+            } else {
+                TfDebug::Helper().Msg(
+                    "!!! Did not render product %s.\n", product.name.GetText()); 
+            }
+        }
+
+        success = success && result;
+    }
+
+    return success;
 }
 
 void HdPrman_RenderSettings::Finalize(HdRenderParam *renderParam)
 {
+    HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(renderParam);
+    if (param->GetDrivingRenderSettingsPrimPath() == GetId()) {
+        // Could set it to the fallback, but it isn't well-formed as of this
+        // writing and serves only to set composed scene options.
+        // i.e.
+        // if (HdPrmanRenderParam::HasSceneIndexPlugin(
+        //         HdPrmanPluginTokens->renderSettings)) {
+        //     renderParam->SetDrivingRenderSettingsPrimPath(
+        //         HdsiRenderSettingsFilteringSceneIndex::GetFallbackPrimPath());
+        // }
+
+        // For now, just reset to an empty path.
+        param->SetDrivingRenderSettingsPrimPath(SdfPath::EmptyPath());
+
+        // XXX
+        // Once management of contexts is moved local to the prim, this should
+        // be updated to destroy associated riley resources.
+    }
 }
 
 void HdPrman_RenderSettings::_Sync(
@@ -186,7 +465,7 @@ void HdPrman_RenderSettings::_Sync(
     if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings) {
         // Note: We don't get fine-grained invalidation per-setting, so we
         //       recompute all settings. Since this resets the param list, we
-        //       readd the shutter interval param explicitly below.
+        //       re-add the shutter interval param explicitly below.
         _settingsOptions = _GenerateParamList(GetNamespacedSettings());
     }
 
@@ -216,6 +495,8 @@ void HdPrman_RenderSettings::_Sync(
     
     if (IsActive() || !hasActiveRsp) {
 
+        param->SetDrivingRenderSettingsPrimPath(GetId());
+
         if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings ||
             *dirtyBits & HdRenderSettings::DirtyActive ||
             *dirtyBits & HdRenderSettings::DirtyShutterInterval) {
@@ -229,55 +510,81 @@ void HdPrman_RenderSettings::_Sync(
         if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings ||
             *dirtyBits & HdRenderSettings::DirtyActive) {
 
-            const VtDictionary& namespacedSettings = GetNamespacedSettings();
-            // Set the integrator connected to this Render Settings prim
-            {
-                // XXX Should use SdfPath rather than a vector.
-                const SdfPathVector paths = VtDictionaryGet<SdfPathVector>(
-                    namespacedSettings,
-                    _renderTerminalTokens->outputsRiIntegrator.GetString(),
-                    VtDefault = SdfPathVector());
-
-                param->SetRenderSettingsIntegratorPath(sceneDelegate,
-                    paths.empty()? SdfPath::EmptyPath() : paths.front());
-            }
-
-            // Set the SampleFilters connected to this Render Settings prim
-            {
-                const SdfPathVector paths = VtDictionaryGet<SdfPathVector>(
-                    namespacedSettings,
-                    _renderTerminalTokens->outputsRiSampleFilters.GetString(),
-                    VtDefault = SdfPathVector());
-
-                param->SetConnectedSampleFilterPaths(sceneDelegate, paths);
-            }
-
-            // Set the DisplayFilters connected to this Render Settings prim
-            {
-                const SdfPathVector paths = VtDictionaryGet<SdfPathVector>(
-                    namespacedSettings,
-                    _renderTerminalTokens->outputsRiDisplayFilters.GetString(),
-                    VtDefault = SdfPathVector());
-
-                param->SetConnectedDisplayFilterPaths(sceneDelegate, paths);
-            }
+            _ProcessRenderTerminals(sceneDelegate, param);
         }
-    }
 
-    // Set the camera path here so that HdPrmanCamera::Sync can detect
-    // whether it is syncing the current camera
-    // and needs to set the riley shutter interval
-    // which needs to be set before any time-sampled primvars are synced.
-    const HdRenderSettings::RenderProducts &renderProducts =
-        GetRenderProducts();
-    if(!renderProducts.empty()) {
-        SdfPath cameraPath = renderProducts.at(0).cameraPath;
-        param->GetCameraContext().SetCameraPath(cameraPath);
+        if (*dirtyBits & HdRenderSettings::DirtyRenderProducts) {
+            _ProcessRenderProducts(param);
+        }
     }
 
     TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
         "}\nDone syncing render settings prim %s.\n", GetId().GetText());
         
+}
+
+void
+HdPrman_RenderSettings::_ProcessRenderTerminals(
+    HdSceneDelegate *sceneDelegate,
+    HdPrman_RenderParam *param)
+{
+    const VtDictionary& namespacedSettings = GetNamespacedSettings();
+
+    // Set the integrator connected to this Render Settings prim
+    {
+        // XXX Should use SdfPath rather than a vector.
+        const SdfPathVector paths = VtDictionaryGet<SdfPathVector>(
+            namespacedSettings,
+            _renderTerminalTokens->outputsRiIntegrator.GetString(),
+            VtDefault = SdfPathVector());
+
+        param->SetRenderSettingsIntegratorPath(sceneDelegate,
+            paths.empty()? SdfPath::EmptyPath() : paths.front());
+    }
+
+    // Set the SampleFilters connected to this Render Settings prim
+    {
+        const SdfPathVector paths = VtDictionaryGet<SdfPathVector>(
+            namespacedSettings,
+            _renderTerminalTokens->outputsRiSampleFilters.GetString(),
+            VtDefault = SdfPathVector());
+
+        param->SetConnectedSampleFilterPaths(sceneDelegate, paths);
+    }
+
+    // Set the DisplayFilters connected to this Render Settings prim
+    {
+        const SdfPathVector paths = VtDictionaryGet<SdfPathVector>(
+            namespacedSettings,
+            _renderTerminalTokens->outputsRiDisplayFilters.GetString(),
+            VtDefault = SdfPathVector());
+
+        param->SetConnectedDisplayFilterPaths(sceneDelegate, paths);
+    }
+}
+
+void
+HdPrman_RenderSettings::_ProcessRenderProducts(
+    HdPrman_RenderParam *param)
+{
+    const bool hasRenderProducts = !GetRenderProducts().empty();
+
+    // Fallback path for apps using an older version of Hydra wherein 
+    // the computed "unioned shutter interval" on the render settings 
+    // prim via HdsiRenderSettingsFilteringSceneIndex is not available.
+    // In this scenario, the *legacy* scene options param list is updated
+    // with the camera shutter interval of the first render product
+    // during HdPrmanCamera::Sync. The riley shutter interval needs to
+    // be set before any time-sampled primvars are synced.
+    // 
+    if (GetShutterInterval().IsEmpty() && hasRenderProducts) {
+        // Set the camera path here so that HdPrmanCamera::Sync can detect
+        // whether it is syncing the current camera to set the riley shutter
+        // interval. See SetRileyShutterIntervalFromCameraContextCameraPath
+        // for additional context.
+        const SdfPath &cameraPath = GetRenderProducts().at(0).cameraPath;
+        param->GetCameraContext().SetCameraPath(cameraPath);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

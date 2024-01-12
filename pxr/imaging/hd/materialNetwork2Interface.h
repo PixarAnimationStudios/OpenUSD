@@ -49,8 +49,14 @@ public:
     , _lastAccessedNode(nullptr)
     {}
 
+    HD_API
     SdfPath GetMaterialPrimPath() const override {
         return _materialPrimPath;
+    }
+
+    HD_API
+    std::string GetModelAssetName() const override {
+        return std::string();
     }
 
     HD_API
@@ -72,6 +78,11 @@ public:
     
     HD_API
     VtValue GetNodeParameterValue(
+        const TfToken &nodeName,
+        const TfToken &paramName) const override;
+    
+    HD_API
+    NodeParamData GetNodeParameterData(
         const TfToken &nodeName,
         const TfToken &paramName) const override;
 
@@ -97,6 +108,12 @@ public:
         const TfToken &nodeName,
         const TfToken &paramName,
         const VtValue &value) override;
+
+    HD_API
+    void SetNodeParameterData(
+        const TfToken &nodeName,
+        const TfToken &paramName,
+        const NodeParamData &paramData) override;
 
     HD_API
     void DeleteNodeParameter(

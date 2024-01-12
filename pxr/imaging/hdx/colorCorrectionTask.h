@@ -36,7 +36,6 @@
 #include "pxr/imaging/hgi/resourceBindings.h"
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/texture.h"
-#include "pxr/base/work/dispatcher.h"
 
 #include <string>
 
@@ -224,7 +223,7 @@ private: // data
     HgiGraphicsPipelineHandle _pipeline;
     float _screenSize[2];
 
-    WorkDispatcher _workDispatcher;
+    std::unique_ptr<class WorkDispatcher> _workDispatcher;
 };
 
 // VtValue requirements

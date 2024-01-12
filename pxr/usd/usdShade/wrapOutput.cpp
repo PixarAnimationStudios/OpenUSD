@@ -145,7 +145,8 @@ void wrapUsdShadeOutput()
         .def("ClearSdrMetadataByKey", 
              &Output::ClearSdrMetadataByKey, (arg("key")))
 
-        .def("GetAttr", &Output::GetAttr)
+        .def("GetAttr", &Output::GetAttr,
+                return_value_policy<return_by_value>())
 
         .def("CanConnect", CanConnect_1,
             (arg("source")))

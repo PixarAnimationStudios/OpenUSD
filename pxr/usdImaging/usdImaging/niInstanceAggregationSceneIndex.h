@@ -142,7 +142,7 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///             prototypes: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/UsdNiPrototype ]
 ///             instanceLocations: [ /Cube_1 ] # for picking
 ///         primvars:
-///             instanceTransform:
+///             hydra:instanceTransforms:
 ///                 primvarValue: [ identity matrix ]
 ///                 interpolation: instance
 ///
@@ -186,7 +186,7 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///             prototypes: [ /UsdNiPropagatedPrototypes/Binding312...436/__Prototype_1/UsdNiInstancer/UsdNiPrototype ]
 ///             instanceLocations: [ /Cube_1 ] # for picking
 ///         primvars:
-///             instanceTransform:
+///             hydra:instanceTransforms:
 ///                 primvarValue: [ identity matrix ]
 ///                 interpolation: instance
 ///
@@ -237,7 +237,7 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///             prototypes: [ /MyPointInstancer/MyPointPrototype/ForInstancer434...256/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/UsdNiPrototype ]
 ///             instanceLocations: [ /Cube_1 ] # for picking
 ///         primvars:
-///             instanceTransform:
+///             hydra:instanceTransforms:
 ///                 primvarValue: [ identity matrix ]
 ///                 interpolation: instance
 ///

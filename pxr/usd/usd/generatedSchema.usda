@@ -193,7 +193,7 @@ class "CollectionAPI" (
 
     <b>Creating collections in C++</b>
     
-    \\snippet examples.cpp ApplyCollections
+    \\snippet examples_usd.cpp ApplyCollections
     """
 )
 {

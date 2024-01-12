@@ -1049,6 +1049,11 @@ class DomeLight_1 "DomeLight_1" (
 }
 
 class PortalLight "PortalLight" (
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = 1
+        }
+    }
     inherits = </BoundableLightBase>
     doc = """A rectangular portal in the local XY plane that guides sampling
     of a dome light.  Transmits light in the -Z direction.
@@ -1059,11 +1064,21 @@ class PortalLight "PortalLight" (
             bool apiSchemaOverride = true
         }
     )
-    float3[] extent = [(-0.5, -0.5, 0.0), (0.5, 0.5, 0.0)] (
-        doc = """Boundary extent of the unit rectangle in the XY plane that 
-        defines the portal."""
+    float inputs:width = 1 (
+        displayGroup = "Geometry"
+        displayName = "Width"
+        doc = "Width of the portal rectangle in the local X axis."
         customData = {
-            token apiName = ""
+            token apiName = "width"
+        }
+
+    )
+    float inputs:height = 1 (
+        displayGroup = "Geometry"
+        displayName = "Height"
+        doc = "Height of the portal rectangle in the local Y axis."
+        customData = {
+            token apiName = "height"
         }
     )
 }

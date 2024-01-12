@@ -43,7 +43,7 @@ HdPrman_RenderViewContext::CreateRenderView(
     const HdPrman_RenderViewDesc &desc,
     riley::Riley * const riley)
 {
-    _DestroyRenderView(riley);
+    DeleteRenderView(riley);
 
     using RenderOutputDesc = HdPrman_RenderViewDesc::RenderOutputDesc;
 
@@ -114,7 +114,7 @@ HdPrman_RenderViewContext::CreateRenderView(
 }
 
 void
-HdPrman_RenderViewContext::_DestroyRenderView(
+HdPrman_RenderViewContext::DeleteRenderView(
     riley::Riley * const riley)
 {
     if (_renderViewId != riley::RenderViewId::InvalidId()) {

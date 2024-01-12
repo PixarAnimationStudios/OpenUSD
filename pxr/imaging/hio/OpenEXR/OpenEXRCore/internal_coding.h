@@ -6,7 +6,7 @@
 #ifndef OPENEXR_CORE_UNPACK_H
 #define OPENEXR_CORE_UNPACK_H
 
-#include "openexr_conf.h"
+#include "openexr_config.h"
 #include "openexr_decode.h"
 #include "openexr_encode.h"
 

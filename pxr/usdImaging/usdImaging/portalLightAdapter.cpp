@@ -49,6 +49,22 @@ UsdImagingPortalLightAdapter::IsSupported(UsdImagingIndexProxy const* index) con
     return false;
 }
 
+TfTokenVector
+UsdImagingPortalLightAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingPortalLightAdapter::GetImagingSubprimType(
+    UsdPrim const& prim, TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->light;
+    }
+    return TfToken();
+}
+
 SdfPath
 UsdImagingPortalLightAdapter::Populate(UsdPrim const& prim, 
                             UsdImagingIndexProxy* index,

@@ -54,7 +54,7 @@ common terminology:
 - \anchor UsdSkel_Term_Skeleton **Skeleton**:
 
   An encoding of an animated joint hierarchy.
-  A Skeleton may additional hold other properties that affect deformations,
+  A Skeleton may additionally hold other properties that affect deformations,
   such as weights for a set of blend shapes.
 
 - \anchor UsdSkel_Term_SkeletonTopology **Skeleton Topology**:

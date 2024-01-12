@@ -307,5 +307,12 @@ class TestUsdEditTarget(unittest.TestCase):
         self.assertEqual(stage.GetRootLayer().GetAttributeAtPath(
             '/Class/Child.testAttr').default, "foo")
 
+    def test_InvalidStage(self):
+        # Check that constructing an EditContext with an invalid stage
+        # raises an exception
+        with self.assertRaises(RuntimeError):
+            with Usd.EditContext(None):
+                pass
+
 if __name__ == "__main__":
     unittest.main()

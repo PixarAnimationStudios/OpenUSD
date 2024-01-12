@@ -214,7 +214,8 @@ struct ArchIntervalTimer
             :
             // rdtscp writes rcx
             : "rcx");
-        return (uint64_t(stopHigh - _startHigh) << 32) + (stopLow - _startLow);
+        return ((uint64_t(stopHigh) << 32) + stopLow) -
+            ((uint64_t(_startHigh) << 32) + _startLow);
     }
 private:
     bool _started = false;
@@ -313,23 +314,23 @@ double ArchGetNanosecondsPerTick();
 
 ARCH_API
 uint64_t
-Arch_MeasureExecutionTime(uint64_t maxMicroseconds, bool *reachedConsensus,
+Arch_MeasureExecutionTime(uint64_t maxTicks, bool *reachedConsensus,
                           void const *m, uint64_t (*callM)(void const *, int));
 
 /// Run \p fn repeatedly attempting to determine a consensus fastest execution
-/// time with low noise, for up to \p maxMicroseconds, then return the consensus
+/// time with low noise, for up to \p maxTicks, then return the consensus
 /// fastest execution time.  If a consensus is not reached in that time, return
 /// a best estimate instead.  If \p reachedConsensus is not null, set it to
 /// indicate whether or not a consensus was reached.  This function ignores \p
-/// maxMicroseconds greater than 5 seconds and runs for up to 5 seconds instead.
-/// The \p fn will run for an indeterminate number of times, so it should be
-/// side-effect free.  Also, it should do essentially the same work on every
-/// invocation so that timing its execution makes sense.
+/// maxTicks greater than 5 billion ticks and runs for up to 5 billion ticks
+/// instead. The \p fn will run for an indeterminate number of times, so it 
+/// should be side-effect free.  Also, it should do essentially the same work 
+/// on every invocation so that timing its execution makes sense.
 template <class Fn>
 uint64_t
 ArchMeasureExecutionTime(
     Fn const &fn,
-    uint64_t maxMicroSeconds = 10000, /* 10 msec */
+    uint64_t maxTicks = 1e7,
     bool *reachedConsensus = nullptr)
 {
     auto measureN = [&fn](int nTimes) -> uint64_t {
@@ -345,7 +346,7 @@ ArchMeasureExecutionTime(
     using MeasureNType = decltype(measureN);
     
     return Arch_MeasureExecutionTime(
-        maxMicroSeconds, reachedConsensus,
+        maxTicks, reachedConsensus,
         static_cast<void const *>(&measureN),
         [](void const *mN, int nTimes) {
             return (*static_cast<MeasureNType const *>(mN))(nTimes);

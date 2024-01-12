@@ -22,8 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/testGLContext.h"
 #include "pxr/base/gf/frustum.h"
@@ -64,7 +62,6 @@ int main(int argc, char *argv[])
 
     // prepare GL context
     GlfTestGLContext::RegisterGLContextCallbacks();
-    GarchGLApiLoad();
     GlfSharedGLContextScopeHolder sharedContext;
 
     // Hgi and HdDriver should be constructed before HdEngine to ensure they
@@ -95,7 +92,7 @@ int main(int argc, char *argv[])
     {
         HdRenderBufferDescriptor desc;
         desc.dimensions = GfVec3i(512, 512, 1);
-        desc.format = HdFormatFloat32UInt8;
+        desc.format = HdFormatFloat32;
         desc.multiSampled = false;
         delegate->AddRenderBuffer(depthBuffer, desc);
     }

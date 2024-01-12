@@ -60,7 +60,6 @@
 #include "pxr/base/tf/hashset.h"
 #include "pxr/base/tf/denseHashSet.h"
 
-#include <boost/container/flat_map.hpp>
 #include <tbb/spin_rw_mutex.h>
 #include <map>
 #include <string>
@@ -74,8 +73,6 @@ typedef std::vector<UsdPrim> UsdPrimVector;
 class UsdImagingPrimAdapter;
 class UsdImagingIndexProxy;
 class UsdImagingInstancerContext;
-
-typedef boost::container::flat_map<SdfPath, bool> PickabilityMap;
 
 using UsdImagingPrimAdapterSharedPtr = std::shared_ptr<UsdImagingPrimAdapter>;
 
@@ -224,18 +221,6 @@ public:
     /// Set transform value overrides on a set of paths.
     USDIMAGING_API
     void SetRigidXformOverrides(RigidXformOverridesMap const &overrides);
-
-    /// Returns the root paths of pickable objects.
-    USDIMAGING_API
-    PickabilityMap GetPickabilityMap() const;
-
-    /// Sets pickability for a specific path.
-    USDIMAGING_API
-    void SetPickability(SdfPath const& path, bool pickable);
-
-    /// Clears any pickability opinions that this delegates might have.
-    USDIMAGING_API
-    void ClearPickabilityMap();
 
     /// Sets display of prims with purpose "render"
     USDIMAGING_API
@@ -788,9 +773,6 @@ private:
     UsdImaging_PointInstancerIndicesCache _pointInstancerIndicesCache;
     UsdImaging_NonlinearSampleCountCache _nonlinearSampleCountCache;
     UsdImaging_BlurScaleCache _blurScaleCache;
-
-    // Pickability
-    PickabilityMap _pickablesMap;
 
     // Purpose-based rendering toggles
     bool _displayRender;

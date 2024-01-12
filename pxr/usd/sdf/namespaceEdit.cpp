@@ -30,11 +30,11 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/ptr_container/ptr_set.hpp>
-#include <boost/variant.hpp>
 
 #include <memory>
 #include <ostream>
+#include <set>
+#include <variant>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -91,7 +91,7 @@ private:
     // A key for a _Node.  _RootKey is for the root, SdfPath is for attribute
     // connections and relationship targets, and TfToken for prim and property
     // children.
-    typedef boost::variant<_RootKey, TfToken, SdfPath> _Key;
+    using _Key = std::variant<_RootKey, TfToken, SdfPath>;
 
     struct _TargetKey {
         _TargetKey(const SdfPath& path) : key(path) { }
@@ -106,10 +106,29 @@ private:
     class _Node {
         _Node(const _Node&) = delete;
         _Node& operator=(const _Node&) = delete;
-        typedef boost::ptr_set<_Node> _Children;
+        struct _PtrCompare {
+            bool operator()(const std::unique_ptr<_Node>& lhs,
+                            const std::unique_ptr<_Node>& rhs) const {
+                return *lhs < *rhs;
+            }
+            bool operator()(const _Node& lhs,
+                            const std::unique_ptr<_Node>& rhs) const {
+                return lhs < *rhs;
+            }
+            bool operator()(const std::unique_ptr<_Node>& lhs,
+                            const _Node& rhs) const {
+                return *lhs < rhs;
+            }
+            // Setting is_transparent allows `std::set::find` to work
+            // on `_Node` references even though it stores
+            // `std::unique_ptr<_Node>`
+            using is_transparent = void;
+        };
+        using _Children = std::set<std::unique_ptr<_Node>, _PtrCompare>;
     public:
         // Create the root node.
-        _Node() : _key(_RootKey()), _parent(NULL), _children(new _Children),
+        _Node() : _key(_RootKey()), _parent(nullptr),
+            _children(std::make_unique<_Children>()),
             _originalPath(SdfPath::AbsoluteRootPath()) { }
 
         // Create key nodes.  These nodes must not be used as children.
@@ -161,7 +180,7 @@ private:
         // Test if the node was removed.  This returns true for key nodes.
         bool IsRemoved() const
         {
-            return !_parent && _key.which() != 0;
+            return !_parent && _key.index() != 0;
         }
 
         // Remove the node from its parent.  After this call returns \c true
@@ -175,7 +194,8 @@ private:
 
     private:
         _Node(_Node* parent, const _Key& key, const SdfPath& originalPath) :
-            _key(key), _parent(parent), _children(new _Children),
+            _key(key), _parent(parent),
+            _children(std::make_unique<_Children>()),
             _originalPath(originalPath)
         {
             // Do nothing
@@ -237,11 +257,14 @@ private:
     // Remove backpointers to \p path and descendants.
     void _RemoveBackpointers(const SdfPath& path);
 
-    // Add \p path to _deadspace, removing any descendants.
+    // Add \p path to _deadspace.
     void _AddDeadspace(const SdfPath& path);
 
-    // Remove \p path and any descendants from _deadspace.
+    // Remove \p path from _deadspace.
     void _RemoveDeadspace(const SdfPath& path);
+
+    // Move all deadspace descendants from the \p from path to the \p to path.
+    void _MoveDeadspaceDescendants(const SdfPath &from, const SdfPath &to);
 
     // Returns \c true if \p path is in _deadspace.
     bool _IsDeadspace(const SdfPath& path) const;
@@ -272,7 +295,7 @@ SdfNamespaceEdit_Namespace::_Node::GetChild(const SdfPath& path)
     _Node keyNode(path);
 
     _Children::iterator i = _children->find(keyNode);
-    return (i == _children->end()) ? NULL : &*i;
+    return (i == _children->end()) ? nullptr : i->get();
 }
 
 const SdfNamespaceEdit_Namespace::_Node*
@@ -283,7 +306,7 @@ SdfNamespaceEdit_Namespace::_Node::GetChild(const SdfPath& path) const
     _Node keyNode(path);
 
     _Children::const_iterator i = _children->find(keyNode);
-    return (i == _children->end()) ? NULL : &*i;
+    return (i == _children->end()) ? nullptr : i->get();
 }
 
 SdfNamespaceEdit_Namespace::_Node*
@@ -297,10 +320,10 @@ SdfNamespaceEdit_Namespace::_Node::FindOrCreateChild(const SdfPath& path)
     if (i == _children->end()) {
         SdfPath originalPath =
             path.ReplacePrefix(path.GetParentPath(), GetOriginalPath());
-        i = _children->insert(new _Node(this, keyNode.GetKey(),
-                                        originalPath)).first;
+        i = _children->emplace(new _Node(this, keyNode.GetKey(),
+                                         originalPath)).first;
     }
-    return &*i;
+    return i->get();
 }
 
 SdfNamespaceEdit_Namespace::_Node*
@@ -315,10 +338,10 @@ SdfNamespaceEdit_Namespace::_Node::FindOrCreateChild(
     _Children::iterator i = _children->find(keyNode);
     if ((*created = (i == _children->end()))) {
         SdfPath originalPath = GetOriginalPath().AppendTarget(originalTarget);
-        i = _children->insert(new _Node(this, keyNode.GetKey(),
-                                        originalPath)).first;
+        i = _children->emplace(new _Node(this, keyNode.GetKey(),
+                                         originalPath)).first;
     }
-    return &*i;
+    return i->get();
 }
 
 bool
@@ -339,17 +362,16 @@ SdfNamespaceEdit_Namespace::_Node::Remove(std::string* whyNot)
         return false;
     }
 
-    // Release the node from the parent.  After this call node is not
-    // owned by any object.
-    if (!TF_VERIFY(_parent->_children->release(i).release() == this)) {
+    if (!TF_VERIFY(i->get() == this)) {
         *whyNot = "Coding error: Found wrong node by key";
-
-        // Try to recover.
-        _parent->_children->insert(this);
         return false;
     }
 
-    _parent = NULL;
+    // Release the node from the parent.  After this call node is not
+    // owned by any object.
+    auto handle = _parent->_children->extract(i);
+    handle.value().release();
+    _parent = nullptr;
     return true;
 }
 
@@ -385,7 +407,7 @@ SdfNamespaceEdit_Namespace::_Node::Reparent(
     node->_key = keyNode.GetKey();
 
     // Insert the node into our children, taking ownership.
-    TF_VERIFY(_children->insert(node).second);
+    TF_VERIFY(_children->emplace(node).second);
     node->_parent = this;
 
     return true;
@@ -543,7 +565,12 @@ SdfNamespaceEdit_Namespace::_Move(
         _FixBackpointers(currentPath, newPath);
     }
 
-    // Fix deadspace.  First add then remove in case this is a no-op move.
+    // Move any existing deadspace under the current path to the new path
+    _MoveDeadspaceDescendants(currentPath, newPath);
+
+    // Add deadspace for the current path, and remove newPath from deadspace.
+    //
+    // Be sure to add before removing in case this is a no-op move.
     _AddDeadspace(currentPath);
     _RemoveDeadspace(newPath);
 
@@ -567,7 +594,7 @@ SdfNamespaceEdit_Namespace::_FixBackpointers(
     for (_BackpointerMap::iterator j = i; j != n; ++j) {
         for (auto node : j->second) {
             node->SetKey(
-                boost::get<SdfPath>(node->GetKey()).
+                std::get<SdfPath>(node->GetKey()).
                     ReplacePrefix(currentPath, newPath, !fixTargetPaths));
         }
     }
@@ -619,7 +646,6 @@ SdfNamespaceEdit_Namespace::_AddDeadspace(const SdfPath& path)
         return;
     }
 
-    _RemoveDeadspace(path);
     _deadspace.insert(path);
 }
 
@@ -631,15 +657,35 @@ SdfNamespaceEdit_Namespace::_RemoveDeadspace(const SdfPath& path)
         return;
     }
 
-    // Find the extent of the subtree with path as a prefix.
-    SdfPathSet::iterator i = _deadspace.lower_bound(path);
-    SdfPathSet::iterator n = i;
-    while (n != _deadspace.end() && n->HasPrefix(path)) {
-        ++n;
+    // Only erase the path given, but keep any descendant paths.
+    //
+    // If there's a descendant path in the deadspace set, then that means that 
+    // path was previously moved or removed before this path was moved/removed.
+    // If this path were to move back, then the deadspace previously descendant 
+    // deadspace paths should still exist.
+    _deadspace.erase(path);
+}
+
+void 
+SdfNamespaceEdit_Namespace::_MoveDeadspaceDescendants(
+    const SdfPath &from, 
+    const SdfPath &to)
+{
+    // Never move to or from the absolute root path.
+    if (!TF_VERIFY(from != SdfPath::AbsoluteRootPath()) ||
+        !TF_VERIFY(to != SdfPath::AbsoluteRootPath())) {
+        return;
     }
 
-    // Remove the subtree.
-    _deadspace.erase(i, n);
+    const auto [begin, end] = 
+        SdfPathFindPrefixedRange(_deadspace.begin(), _deadspace.end(), from);
+    SdfPathVector newDeadspacePaths;
+    for (auto it = begin; it != end; it++) {
+        newDeadspacePaths.push_back(it->ReplacePrefix(from, to));
+    }
+
+    _deadspace.erase(begin, end);
+    _deadspace.insert(newDeadspacePaths.begin(), newDeadspacePaths.end());
 }
 
 bool

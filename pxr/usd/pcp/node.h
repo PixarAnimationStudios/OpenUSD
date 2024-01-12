@@ -290,6 +290,24 @@ public:
     /// for composition, false otherwise.
     PCP_API
     bool CanContributeSpecs() const;
+
+    /// Returns the namespace depth (i.e., the path element count) of
+    /// this node's path when it was restricted from contributing
+    /// opinions for composition. If this spec has no such restriction,
+    /// returns 0. 
+    ///
+    /// Note that unlike the value returned by GetNamespaceDepth,
+    /// this value *does* include variant selections.
+    PCP_API
+    size_t GetSpecContributionRestrictedDepth() const;
+
+    /// Set this node's contribution restriction depth.
+    ///
+    /// Note that this function typically does not need to be called,
+    /// since functions that restrict contributions (e.g., SetInert)
+    /// automatically set the restriction depth appropriately.
+    PCP_API
+    void SetSpecContributionRestrictedDepth(size_t depth);
     
     /// Returns true if this node has opinions authored
     /// for composition, false otherwise.
@@ -323,6 +341,12 @@ private:
 
     inline size_t _GetParentIndex() const;
     inline size_t _GetOriginIndex() const;
+
+    inline void _SetInert(bool inert);
+    inline void _SetRestricted(bool restricted);
+
+    enum class _Restricted { Yes, Unknown };
+    void _RecordRestrictionDepth(_Restricted isRestricted);
 
 private: // Data
     PcpPrimIndex_Graph* _graph;

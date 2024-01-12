@@ -391,18 +391,20 @@ private:
         _UnsharedData()
             : hasSpecs(false), culled(false), isDueToAncestor(false) {}
         explicit _UnsharedData(SdfPath const &p)
-            : sitePath(p)
-            , hasSpecs(false)
-            , culled(false)
-            , isDueToAncestor(false) {}
+            : _UnsharedData(SdfPath(p)) {}
         explicit _UnsharedData(SdfPath &&p)
             : sitePath(std::move(p))
+            , restrictionDepth(0)
             , hasSpecs(false)
             , culled(false)
             , isDueToAncestor(false) {}
 
         // The site path for a particular node.
         SdfPath sitePath;
+
+        // Absolute depth in namespace of this node at which it was
+        // restricted from contributing opinions.
+        uint16_t restrictionDepth;
 
         // Whether or not a particular node has any specs to contribute to the
         // composed prim.

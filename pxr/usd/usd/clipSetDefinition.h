@@ -33,8 +33,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/hash.h"
 
-#include <boost/optional.hpp>
-
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -110,12 +109,12 @@ public:
         h.Append(definition.GetHash());
     }
 
-    boost::optional<VtArray<SdfAssetPath> > clipAssetPaths;
-    boost::optional<SdfAssetPath> clipManifestAssetPath;
-    boost::optional<std::string> clipPrimPath;
-    boost::optional<VtVec2dArray> clipActive;
-    boost::optional<VtVec2dArray> clipTimes;
-    boost::optional<bool> interpolateMissingClipValues;
+    std::optional<VtArray<SdfAssetPath>> clipAssetPaths;
+    std::optional<SdfAssetPath> clipManifestAssetPath;
+    std::optional<std::string> clipPrimPath;
+    std::optional<VtVec2dArray> clipActive;
+    std::optional<VtVec2dArray> clipTimes;
+    std::optional<bool> interpolateMissingClipValues;
 
     PcpLayerStackPtr sourceLayerStack;
     SdfPath sourcePrimPath;

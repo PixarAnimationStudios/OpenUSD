@@ -492,6 +492,23 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
             stage.GetPrimAtPath(primPath).GetMetadata("assetInfo").get("assetRefArr"), 
             flatStage.GetPrimAtPath(primPath).GetMetadata("assetInfo").get("assetRefArr"))
 
+    def test_ListOpAdd(self):
+        src_stage = Usd.Stage.Open('listOp_add.usda')
+        src_layer_stack = src_stage._GetPcpCache().layerStack
+        layer = Usd.FlattenLayerStack(src_layer_stack)
+        
+        # Confirm that "add" targets were converted to "append"
+        attrSpec = layer.GetObjectAtPath('/B.test')
+        expectedTargets = Sdf.PathListOp()
+        expectedTargets.appendedItems = [Sdf.Path('/A')]
+        self.assertEqual(attrSpec.GetInfo('targetPaths'), expectedTargets)
+        
+        # Confirm that "explicit list" targets were stay explicit
+        attrSpec = layer.GetObjectAtPath('/C.test')
+        expectedTargets = Sdf.PathListOp()
+        expectedTargets.explicitItems = [Sdf.Path('/A')]
+        self.assertEqual(attrSpec.GetInfo('targetPaths'), expectedTargets)
+
 if __name__=="__main__":
     # Register test plugin defining timecode metadata fields.
     testDir = os.path.abspath(os.getcwd())

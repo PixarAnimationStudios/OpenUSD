@@ -23,21 +23,14 @@
 //
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/codeGen.h"
+#include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/extCompGpuComputationResource.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-static size_t _Hash(HdBufferSpecVector const &specs) {
-    size_t result = 0;
-    for (HdBufferSpec const &spec : specs) {
-        boost::hash_combine(result, spec.Hash());
-    }
-    return result;
-}
 
 HdStExtCompGpuComputationResource::HdStExtCompGpuComputationResource(
         HdBufferSpecVector const &outputBufferSpecs,
@@ -72,10 +65,11 @@ HdStExtCompGpuComputationResource::_Resolve()
     // We can shortcut the codegen by using a heuristic for determining that
     // the output source would be identical given a certain destination buffer
     // range.
-    size_t shaderSourceHash = 0;
-    boost::hash_combine(shaderSourceHash, _kernel->ComputeHash());
-    boost::hash_combine(shaderSourceHash, _Hash(_outputBufferSpecs));
-    boost::hash_combine(shaderSourceHash, _Hash(inputBufferSpecs));
+    size_t shaderSourceHash = TfHash::Combine(
+        _kernel->ComputeHash(),
+        _outputBufferSpecs,
+        inputBufferSpecs
+    );
     
     // XXX we'll need to test for hash collisions as they could be fatal in the
     // case of shader sources. Adjust based on pref vs correctness needs.
@@ -111,6 +105,13 @@ HdStExtCompGpuComputationResource::_Resolve()
                                 _registry->RegisterGLSLProgram(registryID);
 
             if (programInstance.IsFirstInstance()) {
+                TRACE_SCOPE("ExtComp Link");
+
+                TF_DEBUG(HDST_LOG_COMPUTE_SHADER_PROGRAM_MISSES).Msg(
+                    "(MISS) First ext comp program instance for %s "
+                    "(hash = %zu)\n",
+                    _kernel->GetExtComputationId().GetText(), registryID);
+
                 HdStGLSLProgramSharedPtr glslProgram =
                     codeGen.CompileComputeProgram(_registry.get());
                 if (!TF_VERIFY(glslProgram)) {
@@ -131,6 +132,11 @@ HdStExtCompGpuComputationResource::_Resolve()
                 TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg(
                     "Compiled and linked compute program for computation %s\n ",
                     _kernel->GetExtComputationId().GetText());
+            } else {
+                TF_DEBUG(HDST_LOG_COMPUTE_SHADER_PROGRAM_HITS).Msg(
+                    "(HIT) Found ext comp program instance for %s "
+                    "(hash = %zu)\n",
+                    _kernel->GetExtComputationId().GetText(), registryID);
             }
 
             _computeProgram = programInstance.GetValue();

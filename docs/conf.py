@@ -77,7 +77,8 @@ release = version
 extensions = [
     'sphinx.ext.autosectionlabel',
     'sphinxcontrib.doxylink',
-    'sphinx_panels'
+    'sphinx_panels',
+    'myst_parser'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

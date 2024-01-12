@@ -379,7 +379,7 @@ TfScopeDescription::SetDescription(std::string const &msg)
         tbb::spin_mutex::scoped_lock lock(stack.mutex);
         _description = msg.c_str();
     }
-    _ownedString = boost::none;
+    _ownedString = std::nullopt;
 }
 
 void
@@ -399,7 +399,7 @@ TfScopeDescription::SetDescription(char const *msg)
         tbb::spin_mutex::scoped_lock lock(stack.mutex);
         _description = msg;
     }
-    _ownedString = boost::none;
+    _ownedString = std::nullopt;
 }
 
 static

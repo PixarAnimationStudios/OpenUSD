@@ -26,22 +26,23 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/vectorSchema.h"
-
-#include "pxr/base/vt/array.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Numeric
-using HdIntArrayVectorSchema = HdTypedVectorSchema<VtIntArray>;
+using HdIntArrayVectorSchema = HdTypedVectorSchema<HdIntArrayDataSource>;
 
 // Schema types
 using HdRenderProductVectorSchema =
-    HdTypedVectorSchema<class HdRenderProductSchema>;
+    HdSchemaBasedVectorSchema<class HdRenderProductSchema>;
 using HdRenderVarVectorSchema =
-    HdTypedVectorSchema<class HdRenderVarSchema>;
+    HdSchemaBasedVectorSchema<class HdRenderVarSchema>;
 using HdInstanceIndicesVectorSchema =
     HdSchemaBasedVectorSchema<class HdInstanceIndicesSchema>;
+using HdMaterialInterfaceMappingVectorSchema =
+    HdSchemaBasedVectorSchema<class HdMaterialInterfaceMappingSchema>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

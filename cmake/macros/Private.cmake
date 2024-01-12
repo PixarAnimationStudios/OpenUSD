@@ -54,9 +54,9 @@ function(_copy_headers LIBRARY_NAME)
             get_filename_component(dir_to_create "${outfile}" PATH)
             add_custom_command(
                 OUTPUT ${outfile}
-                COMMAND ${CMAKE_COMMAND} -E make_directory "${dir_to_create}"
-                COMMAND ${CMAKE_COMMAND} -Dinfile="${infile}" -Doutfile="${outfile}" -P "${PROJECT_SOURCE_DIR}/cmake/macros/copyHeaderForBuild.cmake"
-                MAIN_DEPENDENCY "${infile}"
+                COMMAND ${CMAKE_COMMAND} -E make_directory ${dir_to_create}
+                COMMAND ${CMAKE_COMMAND} -Dinfile=${infile} -Doutfile=${outfile} -P "${PROJECT_SOURCE_DIR}/cmake/macros/copyHeaderForBuild.cmake"
+                MAIN_DEPENDENCY ${infile}
                 COMMENT "Copying ${f} ..."
                 VERBATIM
             )
@@ -756,19 +756,19 @@ function(_pxr_target_link_libraries NAME)
 
             get_property(defs TARGET ${lib} PROPERTY INTERFACE_COMPILE_DEFINITIONS)
             foreach(def ${defs})
-                if(NOT ";${finalDefs};" MATCHES ";${def};")
+                if(NOT def IN_LIST finalDefs)
                     list(APPEND finalDefs "${def}")
                 endif()
             endforeach()
             get_property(incs TARGET ${lib} PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
             foreach(inc ${incs})
-                if(NOT ";${finalIncs};" MATCHES ";${inc};")
+                if(NOT inc IN_LIST finalIncs)
                     list(APPEND finalIncs "${inc}")
                 endif()
             endforeach()
             get_property(incs TARGET ${lib} PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES)
             foreach(inc ${incs})
-                if(NOT ";${finalSystemIncs};" MATCHES ";${inc};")
+                if(NOT inc IN_LIST finalSystemIncs)
                     list(APPEND finalSystemIncs "${inc}")
                 endif()
             endforeach()
@@ -794,7 +794,7 @@ function(_pxr_target_link_libraries NAME)
                 else()
                     set(entry "${lib}")
                 endif()
-                if(entry AND NOT ";${finalLibs};" MATCHES ";${entry};")
+                if(entry AND NOT entry IN_LIST finalLibs)
                     list(APPEND finalLibs "${entry}")
                 endif()
             endif()
@@ -845,7 +845,7 @@ function(_pxr_target_link_libraries NAME)
             _pxr_transitive_internal_libraries("${internal}" internal)
             set(final "")
             foreach(lib ${internal})
-                if(";${PXR_STATIC_LIBS};" MATCHES ";${lib};")
+                if(lib IN_LIST PXR_STATIC_LIBS)
                     # The library is explicitly static.
                     list(APPEND final ${lib})
                 elseif(MSVC)

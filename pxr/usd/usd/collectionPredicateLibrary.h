@@ -61,7 +61,7 @@ using UsdObjectPredicateLibrary = SdfPredicateLibrary<UsdObject>;
 /// kind(kind1, ... kindN, strict=false)
 ///     Return true if the given object is a prim, and its kind metadata (see
 ///     UsdModelAPI::GetKind()) is one of kind1...kindN (exactly if strict=true,
-///     or in the UsdKindRegistry::IsA() sense otherwise).  If the given object
+///     or in the KindRegistry::IsA() sense otherwise).  If the given object
 ///     is not a prim, return false.
 ///
 /// specifier(spec1, ... specN)
@@ -90,7 +90,7 @@ using UsdObjectPredicateLibrary = SdfPredicateLibrary<UsdObject>;
 ///     UsdVariantSets::GetVariantSelection().  If the given object is not a
 ///     prim, return false.
 ///
-SDF_API
+USD_API
 UsdObjectPredicateLibrary const &
 UsdGetCollectionPredicateLibrary();
 

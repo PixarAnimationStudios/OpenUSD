@@ -651,9 +651,11 @@ public:
         return rhs != lhs;
     }
 
+    /// Invalid SdfMapEditProxy objects will compare less to an object
+    /// of their map type
     bool operator<(const Type& other) const
     {
-        return _Validate() ? _Compare(other) < 0 : false;
+        return !_Validate() || _Compare(other) < 0;
     }
 
     bool operator>(const Type& other) const
@@ -691,11 +693,16 @@ public:
         return rhs <= lhs;
     }
 
+    /// Comparison operator with another proxy
+    /// Two invalid proxy objects will compare equal.
     template <class U, class UVP>
     bool operator==(const SdfMapEditProxy<U, UVP>& other) const
     {
-        return _Validate() && other._Validate() ?
-                    _CompareEqual(*other._ConstData()) : false;
+        const bool isValid = _Validate();
+        const bool otherIsValid = other._Validate();
+
+        return isValid && otherIsValid ? 
+            _CompareEqual(*other._ConstData()) : isValid == otherIsValid;
     }
 
     template <class U, class UVP>

@@ -38,7 +38,7 @@ using HdFlattenedDataSourceProviderSharedPtr =
 
 /// \class HdFlattenedDataSourceProvider.
 ///
-/// Given to HdFlatteningSceneIndex to determine compute the
+/// Given to HdFlatteningSceneIndex to determine how to compute the
 /// flattened data source which is in the prim container data
 /// source.
 ///

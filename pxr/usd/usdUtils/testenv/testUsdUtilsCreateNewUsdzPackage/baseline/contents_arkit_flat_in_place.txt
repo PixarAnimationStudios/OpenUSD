@@ -1,0 +1,8 @@
+flat.usdc
+attr_a.usd
+attr_b.usd
+attr_c.usd
+0/base_a.usd
+meta_a.usd
+meta_b.usd
+meta_c.usd

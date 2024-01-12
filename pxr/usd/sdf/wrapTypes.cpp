@@ -289,7 +289,7 @@ _SdfValueBlockRepr(const SdfValueBlock &self)
 static int
 _SdfValueBlockHash(const SdfValueBlock &self)
 {
-    return boost::hash<SdfValueBlock>()(self);  
+    return TfHash{}(self);
 }
 
 SdfValueTypeName

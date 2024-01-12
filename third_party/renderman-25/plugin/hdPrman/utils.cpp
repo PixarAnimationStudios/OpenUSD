@@ -21,39 +21,37 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
 #include "hdPrman/utils.h"
+
 #include "hdPrman/debugCodes.h"
+#include "hdPrman/renderParam.h" // HDPRMAN_SHUTTER{OPEN,CLOSE}_DEFAULT
+#include "hdPrman/rixStrings.h"
 
 #include "pxr/base/arch/env.h"
 #include "pxr/base/arch/library.h"
 #include "pxr/base/gf/matrix4f.h"
-#include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec2d.h"
-#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3d.h"
-#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4d.h"
-#include "pxr/base/plug/registry.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
-#include "pxr/base/tf/pathUtils.h"  // Extract extension from tf token
+#include "pxr/base/tf/pathUtils.h"  // ARCH_PATH_LIST_SEP
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
-#include "pxr/base/vt/visitValue.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/base/vt/visitValue.h"
 #include "pxr/base/work/threadLimits.h"
-
+#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hio/imageRegistry.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ndr/declare.h"
 #include "pxr/usd/sdf/assetPath.h"
-
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hio/imageRegistry.h"
-
-#include "hdPrman/rixStrings.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -85,6 +83,9 @@ struct _VtValueToRtParamList
     }
     bool operator()(const float &v) {
         return params->SetFloat(name, v);
+    }
+    bool operator()(const long &v) {
+        return params->SetInteger(name, static_cast<int>(v));
     }
     bool operator()(const double &v) {
         return params->SetFloat(name, static_cast<float>(v));
@@ -145,6 +146,15 @@ struct _VtValueToRtParamList
     }
     bool operator()(const VtArray<float> &v) {
         return params->SetFloatArray(name, v.cdata(), v.size());
+    }
+    bool operator()(const VtArray<long> &vl) {
+        // convert long->int
+        VtArray<int> v;
+        v.resize(vl.size());
+        for (size_t i=0,n=vl.size(); i<n; ++i) {
+            v[i] = int(vl[i]);
+        }
+        return (*this)(v);
     }
     bool operator()(const VtArray<double> &vd) {
         // Convert double->float
@@ -338,6 +348,15 @@ struct _VtValueToRtPrimVar : _VtValueToRtParamList
         } else {
             return primvars->SetFloatDetail(name, v.cdata(), detail);
         }
+    }
+    bool operator()(const VtArray<long> &vl) {
+        // Convert double->int
+        VtArray<int> v;
+        v.resize(vl.size());
+        for (size_t i=0,n=vl.size(); i<n; ++i) {
+            v[i] = int(vl[i]);
+        }
+        return (*this)(v);
     }
     bool operator()(const VtArray<double> &vd) {
         // Convert double->float
@@ -600,6 +619,28 @@ SetParamFromVtValue(
     return VtVisitValue(val, _VtValueToRtParamList{name, role, params});
 }
 
+RtParamList
+ParamsFromDataSource(
+    HdContainerDataSourceHandle const &containerDs)
+{
+    RtParamList result;
+    if (!containerDs) {
+        return result;
+    }
+    for (const TfToken &name : containerDs->GetNames()) {
+        if (HdSampledDataSourceHandle const ds =
+                HdSampledDataSource::Cast(containerDs->Get(name))) {
+            SetParamFromVtValue(
+                RtUString(name.GetText()),
+                ds->GetValue(0.0f),
+                TfToken(),
+                &result);
+        }
+    }
+
+    return result;
+}
+
 bool
 SetPrimVarFromVtValue(
     RtUString const& name,
@@ -611,7 +652,8 @@ SetPrimVarFromVtValue(
     if (ARCH_UNLIKELY(!params)) {
         return false;
     }
-    return VtVisitValue(val, _VtValueToRtPrimVar(name, detail, role, params));
+    return VtVisitValue(val, _VtValueToRtPrimVar(
+        name, detail, role, params));
 }
 
 RtUString
@@ -696,9 +738,10 @@ GetDefaultRileyOptions()
     options.SetFloat(RixStr.k_Ri_PixelVariance, 0.001f);
     options.SetString(RixStr.k_bucket_order, RtUString("circle"));
     
-     // Default shutter settings from studio katana defaults:
-    // - /root.renderSettings.shutter{Open,Close}
-    float shutterInterval[2] = { 0.0f, 0.5f };
+    float shutterInterval[2] = {
+        HDPRMAN_SHUTTEROPEN_DEFAULT,
+        HDPRMAN_SHUTTERCLOSE_DEFAULT
+    };
     options.SetFloatArray(RixStr.k_Ri_Shutter, shutterInterval, 2);
 
     return options;
@@ -739,23 +782,6 @@ GetRileyOptionsFromEnvironment()
     return options;
 }
 
-RtParamList
-Compose(
-    RtParamList const &a,
-    RtParamList const &b)
-{
-    if (b.GetNumParams() == 0) {
-        return a;
-    }
-    if (a.GetNumParams() == 0) {
-        return b;
-    }
-
-    RtParamList result = b;
-    result.Update(a);
-    return result;
-}
-
-}
+} // namespace HdPrman_Utils
 
 PXR_NAMESPACE_CLOSE_SCOPE

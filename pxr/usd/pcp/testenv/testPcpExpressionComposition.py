@@ -38,42 +38,30 @@ class TestPcpExpressionComposition(unittest.TestCase):
     def AssertVariables(self, pcpCache, path, expected, errorsExpected = False):
         '''Helper function for verifying the expected value of 
         expression variables in the layer stacks throughout the prim index
-        for the prim at the given path.
-
-        The "expected" parameter is a list that mirrors the tree
-        structure of the prim index:
-
-        expected  : [nodeEntry]
-        nodeEntry : (root layer id, expressionVars), [nodeEntry, ...]
-
-        The first entry in "expected" corresponds to the expected expression
-        variables dictionary in the root node, followed by a list of
-        entries corresponding to the children of the root node, etc.
+        for the prim at the given path. See Pcp._TestPrimIndex for more info.
 
         If "errorsExpected" is False, then this function will return false if
         any composition errors are generated when computing the prim index.
         '''
-        def _recurse(node, expected):
-            self.assertEqual(
-                node.layerStack.identifier.rootLayer,
-                Sdf.Layer.Find(expected[0][0]))
-
-            self.assertEqual(
-                node.layerStack.expressionVariables.GetVariables(),
-                expected[0][1],
-                "Unexpected expression variables for layer stack {}"
-                .format(node.layerStack.identifier))
-
-            for idx, n in enumerate(node.children):
-                _recurse(n, expected[1][(idx*2):(idx*2)+2])
-
         pi, err = pcpCache.ComputePrimIndex(path)
         if errorsExpected:
             self.assertTrue(err, "Composition errors expected")
         else:
             self.assertFalse(err, "Unexpected composition errors: {}".format(
                 ",".join(str(e) for e in err)))
-        _recurse(pi.rootNode, expected)
+
+        for node, entry in Pcp._TestPrimIndex(pi, expected):
+            expectedRootLayerId, expectedVariables = entry
+
+            self.assertEqual(
+                node.layerStack.identifier.rootLayer,
+                Sdf.Layer.Find(expectedRootLayerId))
+
+            self.assertEqual(
+                node.layerStack.expressionVariables.GetVariables(),
+                expectedVariables,
+                "Unexpected expression variables for layer stack {}"
+                .format(node.layerStack.identifier))
 
         return pi
 

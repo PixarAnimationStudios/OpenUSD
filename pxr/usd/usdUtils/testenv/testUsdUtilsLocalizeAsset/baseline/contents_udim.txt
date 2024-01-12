@@ -1,0 +1,3 @@
+dir/subfolder.tile.1001.txt
+relative.tile.1001.txt
+root.usda

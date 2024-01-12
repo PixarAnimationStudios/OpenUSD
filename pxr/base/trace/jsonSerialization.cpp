@@ -32,6 +32,8 @@
 #include "pxr/base/trace/eventData.h"
 #include "pxr/base/trace/eventTreeBuilder.h"
 
+#include <optional>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,13 +45,13 @@ static
 typename std::enable_if< 
     !std::is_same<T, JsObject>::value && 
     !std::is_same<T, JsArray>::value && 
-    !std::is_same<T, std::string>::value, boost::optional<T> >::type
-_JsGet(const boost::optional<JsValue>& js)
+    !std::is_same<T, std::string>::value, std::optional<T>>::type
+_JsGet(const std::optional<JsValue>& js)
 {
     if (js && js->Is<T>()) {
         return js->Get<T>();
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 template<typename T>
@@ -58,7 +60,7 @@ typename std::enable_if<
     std::is_same<T, JsObject>::value ||
     std::is_same<T, JsArray>::value ||
     std::is_same<T, std::string>::value, const T* >::type
-_JsGet(const boost::optional<JsValue>& js)
+_JsGet(const std::optional<JsValue>& js)
 {
     if (js && js->Is<T>()) {
         return &js->Get<T>();
@@ -72,7 +74,7 @@ template <typename T,
             std::is_same<T, JsObject>::value || 
             std::is_same<T, JsArray>::value || 
             std::is_same<T, std::string>::value,
-            const T*, boost::optional<T> >::type>
+            const T*, std::optional<T> >::type>
 ReturnType _JsGetValue(const JsObject& js, const std::string& key) {
     return _JsGet<T>(JsFindValue(js, key));
 }
@@ -206,11 +208,11 @@ _TraceEventFromJSON(
 
     const JsObject& js = jsValue.GetJsObject();
     const std::string* keyStr = _JsGetValue<std::string>(js, "key");
-    boost::optional<uint64_t> category = _JsGetValue<uint64_t>(js, "category");
+    std::optional<uint64_t> category = _JsGetValue<uint64_t>(js, "category");
     const std::string* typeStr = _JsGetValue<std::string>(js, "type");
-    boost::optional<double> tsMicroSeconds = 
+    std::optional<double> tsMicroSeconds =
         _JsGetValue<double>(js, "ts");
-    boost::optional<TraceEvent::TimeStamp> ts;
+    std::optional<TraceEvent::TimeStamp> ts;
     if (tsMicroSeconds) {
         ts = _MicrosecondsToTicks(*tsMicroSeconds);
     }
@@ -248,9 +250,9 @@ _TraceEventFromJSON(
                 break;
             case TraceEvent::EventType::Timespan:
                 {
-                    boost::optional<TraceEvent::TimeStamp> start = 
+                    std::optional<TraceEvent::TimeStamp> start =
                         _JsGetValue<TraceEvent::TimeStamp>(js, "start");
-                    boost::optional<TraceEvent::TimeStamp> end = 
+                    std::optional<TraceEvent::TimeStamp> end =
                         _JsGetValue<TraceEvent::TimeStamp>(js, "end");
                     if (start && end) {
                         unorderedEvents.emplace_back(
@@ -264,7 +266,7 @@ _TraceEventFromJSON(
                 break;
             case TraceEvent::EventType::CounterDelta:
                 {
-                    boost::optional<double> value = 
+                    std::optional<double> value =
                         _JsGetValue<double>(js, "value");
                     if (ts && value) {
                         TraceEvent event(TraceEvent::CounterDelta,
@@ -278,7 +280,7 @@ _TraceEventFromJSON(
                 break;
             case TraceEvent::EventType::CounterValue:
                 {
-                    boost::optional<double> value = 
+                    std::optional<double> value =
                         _JsGetValue<double>(js, "value");
                     if (ts && value) {
                         TraceEvent event(TraceEvent::CounterValue,
@@ -292,7 +294,7 @@ _TraceEventFromJSON(
                 break;
             case TraceEvent::EventType::ScopeData:
                 if (ts) {
-                    if (boost::optional<JsValue> dataValue =
+                    if (std::optional<JsValue> dataValue =
                         JsFindValue(js, "data")) {
                         if (dataValue->Is<bool>()) {
                             TraceEvent event(
@@ -462,7 +464,7 @@ _ImportChromeEvents(
                 _JsGetValue<std::string>(*eventObj, "tid");
             // tid field might be an integer
             if (!tid) {
-                boost::optional<uint64_t> utid = 
+                std::optional<uint64_t> utid =
                     _JsGetValue<uint64_t>(*eventObj, "tid");
                 if (utid) {
                     auto it = tidToNames.find(*utid);
@@ -476,10 +478,10 @@ _ImportChromeEvents(
                 }
             }
     
-            boost::optional<double> ts = _JsGetValue<double>(*eventObj, "ts");
+            std::optional<double> ts = _JsGetValue<double>(*eventObj, "ts");
             // ts field might be an integer
             if (!ts) {
-                boost::optional<uint64_t> uts =
+                std::optional<uint64_t> uts =
                     _JsGetValue<uint64_t>(*eventObj, "ts");
                 if (uts) {
                     ts = *uts;
@@ -488,7 +490,7 @@ _ImportChromeEvents(
             const std::string* name = 
                 _JsGetValue<std::string>(*eventObj, "name");
             const std::string* ph = _JsGetValue<std::string>(*eventObj, "ph");
-            boost::optional<uint64_t> catId = 
+            std::optional<uint64_t> catId =
                 _JsGetValue<uint64_t>(*eventObj, "libTraceCatId");
 
             if (tid && ts && name && ph) {
@@ -518,10 +520,10 @@ _ImportChromeEvents(
                         *catId);
                 } else if (*ph == "X") {
                     // dur field might be a double or an int.
-                    boost::optional<double> dur = 
+                    std::optional<double> dur =
                         _JsGetValue<double>(*eventObj, "dur");
                     if (!dur) {
-                        boost::optional<uint64_t> udur = 
+                        std::optional<uint64_t> udur =
                             _JsGetValue<uint64_t>(*eventObj, "dur");
                         if (udur) {
                             dur = *udur;
@@ -531,7 +533,7 @@ _ImportChromeEvents(
                     if (!dur) {
                         // tdur field might be a double or an int.
                         dur = _JsGetValue<double>(*eventObj, "tdur");
-                        boost::optional<uint64_t> utdur = 
+                        std::optional<uint64_t> utdur =
                             _JsGetValue<uint64_t>(*eventObj, "tdur");
                         if (utdur) {
                             dur = *utdur;

@@ -37,7 +37,6 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/preprocessor.hpp>
 #include <boost/python.hpp>
 
 #include <numeric>
@@ -547,17 +546,17 @@ VtArrayFromPyBuffer(TfPyObjWrapper const &obj, std::string *err)
     return result;
 }
 
-#define INSTANTIATE(r, unused, elem)                                       \
+#define INSTANTIATE(unused, elem)                                          \
 template boost::optional<VtArray<VT_TYPE(elem)> >                          \
 VtArrayFromPyBuffer<VT_TYPE(elem)>(TfPyObjWrapper const &obj, string *err);
-BOOST_PP_SEQ_FOR_EACH(INSTANTIATE, ~, VT_ARRAY_PYBUFFER_TYPES)
+TF_PP_SEQ_FOR_EACH(INSTANTIATE, ~, VT_ARRAY_PYBUFFER_TYPES)
 #undef INSTANTIATE
 
 VT_API void Vt_AddBufferProtocolSupportToVtArrays()
 {
 
 // Add the buffer protocol support to every array type that we support it for.
-#define VT_ADD_BUFFER_PROTOCOL(r, unused, elem)                      \
+#define VT_ADD_BUFFER_PROTOCOL(unused, elem)                         \
     Vt_AddBufferProtocol<VtArray<VT_TYPE(elem)> >();                 \
     VtValue::RegisterCast<TfPyObjWrapper, VtArray<VT_TYPE(elem)> >(  \
         Vt_CastPyObjToArray<VT_TYPE(elem)>);                         \
@@ -567,7 +566,7 @@ VT_API void Vt_AddBufferProtocolSupportToVtArrays()
                         "ArrayFromBuffer",                           \
                         Vt_WrapArrayFromBuffer<VT_TYPE(elem)>);
 
-BOOST_PP_SEQ_FOR_EACH(VT_ADD_BUFFER_PROTOCOL, ~, VT_ARRAY_PYBUFFER_TYPES)
+TF_PP_SEQ_FOR_EACH(VT_ADD_BUFFER_PROTOCOL, ~, VT_ARRAY_PYBUFFER_TYPES)
 
 #undef VT_ADD_BUFFER_PROTOCOL
 }

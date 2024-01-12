@@ -35,7 +35,7 @@
 
 #include "pxr/base/vt/dictionary.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <string>
 
@@ -54,7 +54,7 @@ HdStShaderCode::ComputeHash(HdStShaderCodeSharedPtrVector const &shaders)
     size_t hash = 0;
     
     TF_FOR_ALL(it, shaders) {
-        boost::hash_combine(hash, (*it)->ComputeHash());
+        hash = TfHash::Combine(hash, (*it)->ComputeHash());
     }
     
     return hash;

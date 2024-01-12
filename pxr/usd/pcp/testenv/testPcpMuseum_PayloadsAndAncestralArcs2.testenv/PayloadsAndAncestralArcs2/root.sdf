@@ -1,0 +1,42 @@
+#sdf 1.4.32
+(
+    """
+    This museum case tests the interaction between ancestral
+    arcs authored across a reference and payloads.
+    """
+)
+
+def "SubrootInherits" (
+    """
+    The referenced prim /Ref contains a payload arc to /Payload.
+    /Ref/Child inherits from /Ref/Class. When /SubrootInherits/Child
+    is composed and payloads on /SubrootInherits are included, both
+    /Payload/Child and /Payload/Class should contribute opinions.
+    """
+    references = @./inherits.sdf@</Ref>
+)
+{
+    over "Class"
+    {
+    }
+
+    over "Child"
+    {
+    }
+}
+
+def "Relocates" (
+    """
+    The referenced prim /Ref contains a payload arc to /Payload,
+    which has a child prim /Payload/PayloadChild. /Ref relocates
+    that child prim from /Ref/PayloadChild to /Ref/Child. When
+    /Relocates/Child is composed and payloads on /Relocates are
+    included, /Payload/PayloadChild should contribute opinions.
+    """
+    references = @./relocates.sdf@</Ref>
+)
+{
+    over "Child"
+    {
+    }
+}

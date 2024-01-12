@@ -539,6 +539,13 @@ _ConvertNodes(
             int v = param.second.UncheckedGet<bool>();
             sn.params.SetInteger(name, v);
             ok = true;
+        } else if (param.second.IsHolding<GfMatrix4d>()) {
+            if (propType == SdrPropertyTypes->Matrix) {
+                const RtMatrix4x4 v = HdPrman_Utils::GfMatrixToRtMatrix(
+                    param.second.UncheckedGet<GfMatrix4d>());
+                sn.params.SetMatrix(name, v);
+                ok = true;
+            }
         }
         if (!ok) {
             TF_DEBUG(HDPRMAN_MATERIALS)
@@ -679,6 +686,13 @@ _ConvertNodes(
                     sn.params.SetBxdfReference(name, inputRefs[0]);
                 } else {
                     sn.params.SetBxdfReferenceArray(
+                        name, inputRefs.data(), numInputRefs);
+                }
+            } else if (propType == SdrPropertyTypes->Matrix) {
+                if (numInputRefs == 1) {
+                    sn.params.SetMatrixReference(name, inputRefs[0]);
+                } else {
+                    sn.params.SetMatrixReferenceArray(
                         name, inputRefs.data(), numInputRefs);
                 }
             } else {

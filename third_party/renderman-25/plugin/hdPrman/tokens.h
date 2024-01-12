@@ -37,8 +37,42 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanTokens, HDPRMAN_API, HD_PRMAN_TOKENS);
 
+///
+/// HdPrmanRileyPrimTypeTokens correspond to Riley::Create/Modify/Delete calls.
+///
+/// Dependencies are as follows:
+///
+/// lightShader     <----------------------------< lightInstance
+///                                               /
+/// material      <------------------------------*---< geometryInstance
+///                                             /
+/// coordinateSystem  <------------------------*
+///                                           /
+/// displacement  <----< geometryPrototype <-*
+///
+/// clippingPlane
+///
+/// renderOutput <-------------------------------< display
+///             \                                 / 
+///              *-----<  renderTarget <---------*
+///                                   \                            _
+/// integrator <-----------------------*
+///                                     \                          _
+/// displayFilter <----------------------*---------< renderView
+///                                     /
+/// sampleFilter <---------------------*
+///                                   /
+/// camera  <------------------------*
+///
+#define HD_PRMAN_RILEY_PRIM_TYPE_TOKENS         \
+    ((renderOutput, "riley:renderOutput"))      \
+    ((renderTarget, "riley:renderTarget"))
+
+TF_DECLARE_PUBLIC_TOKENS(HdPrmanRileyPrimTypeTokens, HDPRMAN_API,
+                         HD_PRMAN_RILEY_PRIM_TYPE_TOKENS);
+
 #define HD_PRMAN_PLUGIN_TOKENS \
-    ((velocityBlur,     "HdPrman_VelocityMotionBlurSceneIndexPlugin")) \
+    ((motionBlur,       "HdPrman_MotionBlurSceneIndexPlugin")) \
     ((extComp,          "HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin"))
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanPluginTokens, HD_PRMAN_PLUGIN_TOKENS);

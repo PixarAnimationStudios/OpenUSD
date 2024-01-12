@@ -47,7 +47,7 @@ HdxSelectionTask::HdxSelectionTask(HdSceneDelegate* delegate,
     , _params({false, false, 0.5, GfVec4f(), GfVec4f()})
     , _selOffsetBar(nullptr)
     , _selUniformBar(nullptr)
-    , _selPointColorsBar(nullptr)
+    , _pointColorsBufferSize(0)
 {
 }
 
@@ -114,7 +114,17 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
                     HdBufferArrayUsageHint());
         }
 
-        if (!_selUniformBar) {
+        const VtVec4fArray ptColors = sel->GetSelectedPointColors(renderIndex);
+        const size_t numPtColors = ptColors.size();
+        if (!_selUniformBar ||
+            numPtColors > _pointColorsBufferSize) {
+
+            // Allocate space for a small number of colors to avoid shader
+            // permutations from different number of selected point colors.
+            constexpr size_t s_minNumPointColors = 5;
+            _pointColorsBufferSize =
+                std::max<size_t>(numPtColors, s_minNumPointColors);
+
             HdBufferSpecVector uniformSpecs;
             uniformSpecs.emplace_back(HdxTokens->selColor,
                                       HdTupleType { HdTypeFloatVec4, 1 });
@@ -122,6 +132,9 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
                                       HdTupleType { HdTypeFloatVec4, 1 });
             uniformSpecs.emplace_back(HdxTokens->occludedSelectionOpacity,
                                       HdTupleType { HdTypeFloat, 1 });
+            uniformSpecs.emplace_back(HdxTokens->selectionPointColors,
+                                      HdTupleType { HdTypeFloatVec4,
+                                                    _pointColorsBufferSize});
             _selUniformBar = 
                 hdStResourceRegistry->AllocateUniformBufferArrayRange(
                     /*role*/HdxTokens->selection,
@@ -129,16 +142,6 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
                     HdBufferArrayUsageHint());
         }
 
-        if (!_selPointColorsBar) {
-            HdBufferSpecVector colorSpecs;
-            colorSpecs.emplace_back(HdxTokens->selectionPointColors,
-                                      HdTupleType { HdTypeFloatVec4, 1 });
-            _selPointColorsBar =
-                hdStResourceRegistry->AllocateSingleBufferArrayRange(
-                    /*role*/HdxTokens->selection,
-                    colorSpecs,
-                    HdBufferArrayUsageHint());
-        }
 
         //
         // Uniforms
@@ -154,7 +157,11 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
                     VtValue(_params.locateColor)),
                 std::make_shared<HdVtBufferSource>(
                     HdxTokens->occludedSelectionOpacity,
-                    VtValue(_params.occludedSelectionOpacity))
+                    VtValue(_params.occludedSelectionOpacity)),
+                std::make_shared<HdVtBufferSource>(
+                    HdxTokens->selectionPointColors,
+                    VtValue(ptColors),
+                    ptColors.size())
             });
 
         //
@@ -171,21 +178,10 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
             std::make_shared<HdVtBufferSource>(
                 HdxTokens->hdxSelectionBuffer,
                 VtValue(offsets)));
-
-        //
-        // Point Colors
-        //
-        const VtVec4fArray ptColors = sel->GetSelectedPointColors(renderIndex);
-        hdStResourceRegistry->AddSource(
-            _selPointColorsBar,
-            std::make_shared<HdVtBufferSource>(
-                HdxTokens->selectionPointColors,
-                VtValue(ptColors)));
     }
 
     (*ctx)[HdxTokens->selectionOffsets] = _selOffsetBar;
     (*ctx)[HdxTokens->selectionUniforms] = _selUniformBar;
-    (*ctx)[HdxTokens->selectionPointColors] = _selPointColorsBar;
 }
 
 void

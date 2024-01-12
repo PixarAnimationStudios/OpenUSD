@@ -26,6 +26,7 @@
 #include "pxr/usdImaging/usdImaging/dataSourcePrimvars.h"
 #include "pxr/usdImaging/usdImaging/dataSourceUsdPrimInfo.h"
 #include "pxr/usdImaging/usdImaging/extentsHintSchema.h"
+#include "pxr/usdImaging/usdImaging/geomModelSchema.h"
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
@@ -39,7 +40,6 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/usd/kind/registry.h"
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
@@ -523,6 +523,75 @@ UsdImagingDataSourcePrimOrigin::Get(const TfToken &name)
 
 // ----------------------------------------------------------------------------
 
+/// \class UsdImagingDataSourcePrim_ModelAPI
+///
+/// Data source representing UsdModelAPI.
+///
+class UsdImagingDataSourcePrim_ModelAPI : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(UsdImagingDataSourcePrim_ModelAPI);
+    TfTokenVector GetNames() override;
+    HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+private:
+    UsdImagingDataSourcePrim_ModelAPI(const UsdModelAPI &model);
+    const UsdModelAPI _model;
+};
+
+HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourcePrim_ModelAPI);
+
+UsdImagingDataSourcePrim_ModelAPI::UsdImagingDataSourcePrim_ModelAPI(
+        const UsdModelAPI &model)
+  : _model(model)
+{
+}
+
+TfTokenVector
+UsdImagingDataSourcePrim_ModelAPI::GetNames()
+{
+    return {
+        UsdImagingModelSchemaTokens->modelPath,
+        UsdImagingModelSchemaTokens->assetIdentifier,
+        UsdImagingModelSchemaTokens->assetName,
+        UsdImagingModelSchemaTokens->assetVersion,
+    };
+}
+
+HdDataSourceBaseHandle
+UsdImagingDataSourcePrim_ModelAPI::Get(const TfToken &name)
+{ 
+    TRACE_FUNCTION();
+    if (name == UsdImagingModelSchemaTokens->modelPath) {
+        return HdRetainedTypedSampledDataSource<SdfPath>::New(
+            _model.GetPrim().GetPath());
+    } else if (name == UsdImagingModelSchemaTokens->assetIdentifier) {
+        SdfAssetPath assetIdentifier;
+        if (_model.GetAssetIdentifier(&assetIdentifier)) {
+            return HdRetainedTypedSampledDataSource<SdfAssetPath>
+                ::New(assetIdentifier);
+        }
+        return nullptr;
+    } else if (name == UsdImagingModelSchemaTokens->assetName) {
+        std::string assetName;
+        if (_model.GetAssetName(&assetName)) {
+            return HdRetainedTypedSampledDataSource<std::string>
+                ::New(assetName);
+        }
+        return nullptr;
+    } else if (name == UsdImagingModelSchemaTokens->assetVersion) {
+        std::string assetVersion;
+        if (_model.GetAssetVersion(&assetVersion)) {
+            return HdRetainedTypedSampledDataSource<std::string>
+                ::New(assetVersion);
+        }
+        return nullptr;
+    }
+    return nullptr;
+}
+
+// ----------------------------------------------------------------------------
+
 UsdImagingDataSourcePrim::UsdImagingDataSourcePrim(
         const SdfPath &sceneIndexPath,
         UsdPrim usdPrim,
@@ -657,50 +726,10 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
     } else if (name == UsdImagingModelSchema::GetSchemaToken()) {
         if (UsdModelAPI model = UsdModelAPI(_GetUsdPrim())) {
             if (model.IsModel()) {
-                auto modelSchemaBuilder = UsdImagingModelSchema::Builder();
-
-                modelSchemaBuilder.SetModelPath(
-                    HdRetainedTypedSampledDataSource<SdfPath>::New(
-                        _sceneIndexPath));
-
-                TfToken kind;
-                if (model.GetKind(&kind)) {
-                    modelSchemaBuilder.SetKind(
-                        HdRetainedTypedSampledDataSource<TfToken>::New(kind));
-                }
-
-                SdfAssetPath assetIdentifier;
-                if (model.GetAssetIdentifier(&assetIdentifier)) {
-                    modelSchemaBuilder.SetAssetIdentifier(
-                        HdRetainedTypedSampledDataSource<SdfAssetPath>
-                        ::New(assetIdentifier));
-                }
-
-                std::string assetName;
-                if (model.GetAssetName(&assetName)) {
-                    modelSchemaBuilder.SetAssetName(
-                        HdRetainedTypedSampledDataSource<std::string>
-                        ::New(assetName));
-                }
-
-                std::string assetVersion;
-                if (model.GetAssetVersion(&assetVersion)) {
-                    modelSchemaBuilder.SetAssetVersion(
-                        HdRetainedTypedSampledDataSource<std::string>
-                        ::New(assetVersion));
-                }
-
-                // We set applyDrawMode for kind = component prims even if the
-                // prim is not a UsdGeomModelAPI.
-                if (model.IsKind(KindTokens->component)) {
-                    static auto boolTrueDs =
-                        HdRetainedTypedSampledDataSource<bool>::New(true);
-                    modelSchemaBuilder.SetApplyDrawMode(boolTrueDs);
-                }
-
-                return modelSchemaBuilder.Build();
+                return UsdImagingDataSourcePrim_ModelAPI::New(model);
             }
         }
+        return nullptr;
     } else if (name == UsdImagingUsdPrimInfoSchema::GetSchemaToken()) {
         return UsdImagingDataSourceUsdPrimInfo::New(
             _GetUsdPrim());

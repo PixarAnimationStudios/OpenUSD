@@ -61,6 +61,18 @@ public:
     TfToken GetImagingSubprimType(UsdPrim const& prim, TfToken const& subprim)
         override;
 
+    USDIMAGING_API
+    HdContainerDataSourceHandle GetImagingSubprimData(
+        UsdPrim const& prim, TfToken const& subprim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals) override;
+
+    USDIMAGING_API
+    HdDataSourceLocatorSet InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties,
+        UsdImagingPropertyInvalidationType invalidationType) override;
+
     // ---------------------------------------------------------------------- //
 
     USDIMAGING_API

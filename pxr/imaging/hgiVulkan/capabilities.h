@@ -65,6 +65,7 @@ public:
     VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT
         vkVertexAttributeDivisorFeatures;
     VkPhysicalDeviceMemoryProperties vkMemoryProperties;
+    VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR vkBarycentricFeatures;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

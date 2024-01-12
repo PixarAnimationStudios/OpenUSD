@@ -123,9 +123,9 @@ PCP_DEFINE_GET_API(const PcpMapExpression&, GetMapToRoot, mapToRoot);
 
 PCP_DEFINE_API(bool, HasSymmetry, SetHasSymmetry, smallInts.hasSymmetry);
 PCP_DEFINE_API(SdfPermission, GetPermission, SetPermission, smallInts.permission);
-PCP_DEFINE_API(bool, IsRestricted, SetRestricted, smallInts.permissionDenied);
+PCP_DEFINE_API(bool, IsRestricted, _SetRestricted, smallInts.permissionDenied);
 
-PCP_DEFINE_SET_API(bool, SetInert, smallInts.inert);
+PCP_DEFINE_SET_API(bool, _SetInert, smallInts.inert);
 
 PCP_DEFINE_GET_NODE_API(size_t, _GetParentIndex, indexes.arcParentIndex);
 PCP_DEFINE_GET_NODE_API(size_t, _GetOriginIndex, indexes.arcOriginIndex);
@@ -141,12 +141,85 @@ PcpNodeRef::IsCulled() const
 void
 PcpNodeRef::SetCulled(bool culled)
 {
-    // Have to set finalized to false if we cull anything.
     TF_DEV_AXIOM(_nodeIdx < _graph->_unshared.size());
-    if (culled && !_graph->_unshared[_nodeIdx].culled) {
+    
+    const bool wasCulled = _graph->_unshared[_nodeIdx].culled;
+    if (culled == wasCulled) {
+        return;
+    }
+
+    // Have to set finalized to false if we cull anything.
+    if (culled) {
         _graph->_finalized = false;
     }
+
+    // If we've culled this node, we've definitely restricted contributions.
+    // If we've unculled this node, some other flags may be restriction
+    // contributions, so we don't know.
+    _RecordRestrictionDepth(
+        culled ? _Restricted::Yes : _Restricted::Unknown);
+
     _graph->_unshared[_nodeIdx].culled = culled;
+}
+
+void
+PcpNodeRef::SetRestricted(bool restricted)
+{
+    const bool wasRestricted = IsRestricted();
+    _SetRestricted(restricted);
+    if (restricted != wasRestricted) {
+        // If we set this node to restricted, we've definitely restricted
+        // contributions. If we've unset restricted, some other flags
+        // may be restricting contributions, so we don't know.
+        _RecordRestrictionDepth(
+            restricted ? _Restricted::Yes : _Restricted::Unknown);
+    }
+}
+
+void
+PcpNodeRef::SetInert(bool inert)
+{
+    const bool wasInert = IsInert();
+    _SetInert(inert);
+    if (inert != wasInert) {
+        // If we set this node to inert, we've definitely restricted
+        // contributions. If we've unset inert-ness, some other flags
+        // may be restricting contributions, so we don't know.
+        _RecordRestrictionDepth(
+            inert ? _Restricted::Yes : _Restricted::Unknown);
+    }
+}
+
+void
+PcpNodeRef::_RecordRestrictionDepth(_Restricted isRestricted)
+{
+    // Determine if contributions have been restricted so we can
+    // figure out what to record for the restriction depth. We
+    // can avoid doing this extra check if the caller knows they
+    // restricted contributions.
+    const bool contributionRestricted = 
+        isRestricted == _Restricted::Yes || !CanContributeSpecs();
+
+    auto& currDepth = _graph->_unshared[_nodeIdx].restrictionDepth;
+
+    if (!contributionRestricted) {
+        currDepth = 0;
+    }
+    else {
+        size_t newDepth = GetPath().GetPathElementCount();
+
+        // XXX:
+        // This should result in a "capacity exceeded" composition error
+        // instead of just a warning.
+        if (auto maxDepth =
+            std::numeric_limits<std::decay_t<decltype(currDepth)>>::max();
+            newDepth > maxDepth) {
+            TF_WARN("Maximum restriction namespace depth exceeded");
+            newDepth = maxDepth;
+        }
+
+        currDepth = newDepth;
+    }
 }
 
 bool
@@ -218,6 +291,18 @@ PcpNodeRef::CanContributeSpecs() const
     const PcpPrimIndex_Graph::_Node& node = _graph->_GetNode(_nodeIdx);
     return !(node.smallInts.inert || _graph->_unshared[_nodeIdx].culled) &&
         (!node.smallInts.permissionDenied || _graph->IsUsd());
+}
+
+size_t
+PcpNodeRef::GetSpecContributionRestrictedDepth() const
+{
+    return _graph->_unshared[_nodeIdx].restrictionDepth;
+}
+
+void
+PcpNodeRef::SetSpecContributionRestrictedDepth(size_t depth)
+{
+    _graph->_unshared[_nodeIdx].restrictionDepth = depth;
 }
 
 int

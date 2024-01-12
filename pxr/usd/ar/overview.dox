@@ -94,15 +94,20 @@ that will search for an asset in a specified list of directories.
 See documentation on ArDefaultResolver for more information on configuring
 this behavior.
 
-\subsection ar_uri_resolvers URI Resolvers
+\subsection ar_uri_resolvers URI/IRI Resolvers
 
-URI resolvers are ArResolver subclasses that are associated with particular
-URI schemes.
+URI/IRI resolvers are ArResolver subclasses that are associated with particular
+resource identifier schemes.
+
+\note IRIs are URIs which support unicode characters in certain components of
+the identifier. All URIs are IRIs, and compliant IRIs can be idempotently
+converted to URIs through percent encoding.
 
 When Ar encounters an asset path or resolved path of the form "<scheme>:...", it
 will check if any ArResolver subclasses have been registered for the scheme. If
 so, it will dispatch the path to that subclass for handling. If not, it will
-dispatch the path to the primary resolver for handling.
+dispatch the path to the primary resolver for handling. Schemes should adhere to
+the URI/IRI specification and are ASCII only.
 
 For example, if there were an HTTPResolver subclass of ArResolver that was
 registered to handle the "http" scheme. If the following was called:
@@ -116,13 +121,13 @@ Ar would inspect the given path, find the "http" scheme and determine that
 HTTPResolver (if one had not already been created), then call
 HTTPResolver::Resolve on that instance with the given path.
 
-To create a URI resolver:
+To create a URI/IRI resolver:
 
 - Implement a subclass of ArResolver as described in the 
   \ref ar_primary_resolver "Primary Resolver" section above.
 
 - In the entry for the subclass in the plugin's plugInfo.json file,
-  add a "uriSchemes" key with a list of URI schemes associated with the
+  add a "uriSchemes" key with a list of schemes associated with the
   resolver.
 \code{.json}
 {
@@ -141,6 +146,16 @@ To create a URI resolver:
     ]
 }
 \endcode
+
+`uriSchemes` may be used to register resolvers which support non-percent
+encoded IRIs. Unicode characters in asset path strings should be UTF-8 encoded.
+
+Resolvers are ultimately responsible for validation, normalization, and parsing
+of asset paths. USD does not attempt to validate or parse resource identifiers
+beyond what's needed for dispatching via 'scheme'. When a resolver is working
+with a protocol that strictly requires percent-encoded URIs, it's acceptable
+for the resolver to accept UTF-8 encoded IRIs and internally handle percent
+encoding.
 
 \section ar_resolution Asset Path Resolution
 
@@ -267,11 +282,11 @@ Ar reserves trailing bracket-enclosed paths as syntax for package-relative
 asset paths. For example, paths like:
 
 - "/foo/baz.usdz[file.usd]"
-- "my_uri://foo/baz.usdz[file.usd]" 
+- "my-uri://foo/baz.usdz[file.usd]" 
 
 will be recognized by Ar as a package-relative asset path and will be split
 so that  ArResolver subclasses will only see the path "/foo/baz.usdz" or 
-"my_uri://foo/baz.usdz". For more details, see 
+"my-uri://foo/baz.usdz". For more details, see 
 \ref Ar_packagePaths "Package Relative Paths"
 
 */

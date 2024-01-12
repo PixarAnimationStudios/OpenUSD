@@ -55,8 +55,9 @@ protected:
         const ArResolvedPath& anchorAssetPath) const final
     {
         TF_AXIOM(
-            TfStringStartsWith(TfStringToLower(assetPath), _uriScheme) ||
-            TfStringStartsWith(TfStringToLower(anchorAssetPath), _uriScheme));
+            TfStringStartsWith(TfStringToLowerAscii(assetPath), _uriScheme) ||
+            TfStringStartsWith(TfStringToLowerAscii(anchorAssetPath),
+                               _uriScheme));
         return assetPath;
     }
 
@@ -65,15 +66,17 @@ protected:
         const ArResolvedPath& anchorAssetPath) const final
     {
         TF_AXIOM(
-            TfStringStartsWith(TfStringToLower(assetPath), _uriScheme) ||
-            TfStringStartsWith(TfStringToLower(anchorAssetPath), _uriScheme));
+            TfStringStartsWith(TfStringToLowerAscii(assetPath), _uriScheme) ||
+            TfStringStartsWith(TfStringToLowerAscii(anchorAssetPath),
+                               _uriScheme));
         return assetPath;
     }
 
     ArResolvedPath _Resolve(
         const std::string& assetPath) const final
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(assetPath), _uriScheme));
+        TF_AXIOM(TfStringStartsWith(TfStringToLowerAscii(assetPath),
+                                    _uriScheme));
 
         const _TestURIResolverContext* uriContext = _GetCurrentContextPtr();
         if (uriContext && !uriContext->data.empty()) {
@@ -105,7 +108,8 @@ protected:
     std::shared_ptr<ArAsset> _OpenAsset(
         const ArResolvedPath& resolvedPath) const final
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(resolvedPath), _uriScheme));
+        TF_AXIOM(TfStringStartsWith(TfStringToLowerAscii(resolvedPath),
+                                    _uriScheme));
         return nullptr;
     }
 
@@ -120,7 +124,8 @@ protected:
         const ArResolvedPath& resolvedPath,
         WriteMode writeMode) const final
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(resolvedPath), _uriScheme));
+        TF_AXIOM(TfStringStartsWith(TfStringToLowerAscii(resolvedPath),
+                                    _uriScheme));
         return nullptr;
     }
 
@@ -144,13 +149,59 @@ public:
     }
 };
 
-// Test resolver that handles asset paths of the form "test_other://...."
+// Test resolver that handles asset paths of the form "test-other://...."
 class _TestOtherURIResolver
     : public _TestURIResolverBase
 {
 public:
     _TestOtherURIResolver()
+        : _TestURIResolverBase("test-other")
+    {
+    }
+};
+
+// Underbar characters should cause a failure to register under strict mode
+class _TestInvalidUnderbarURIResolver
+    : public _TestURIResolverBase
+{
+public:
+    _TestInvalidUnderbarURIResolver()
         : _TestURIResolverBase("test_other")
+    {
+    }
+};
+
+// A colon in the scheme could cause problems when parsing an asset path.
+// This should cause a failure to register under strict mode.
+class _TestInvalidColonURIResolver
+    : public _TestURIResolverBase
+{
+public:
+    _TestInvalidColonURIResolver()
+        : _TestURIResolverBase("other:test")
+    {
+    }
+};
+
+// UTF-8 characters should cause a failure to register under strict mode
+class _TestInvalidNonAsciiURIResolver
+    : public _TestURIResolverBase
+{
+public:
+    _TestInvalidNonAsciiURIResolver()
+        : _TestURIResolverBase("test-π-utf8")
+    {
+    }
+};
+
+// Schemes starting with numeric characters should cause a failure to
+// register under strict mode
+class _TestInvalidNumericPrefixResolver
+    : public _TestURIResolverBase
+{
+public:
+    _TestInvalidNumericPrefixResolver()
+        : _TestURIResolverBase("113-test")
     {
     }
 };
@@ -165,3 +216,7 @@ TF_REGISTRY_FUNCTION(TfType)
 
 AR_DEFINE_RESOLVER(_TestURIResolver, _TestURIResolverBase);
 AR_DEFINE_RESOLVER(_TestOtherURIResolver, _TestURIResolverBase);
+AR_DEFINE_RESOLVER(_TestInvalidUnderbarURIResolver, _TestURIResolverBase);
+AR_DEFINE_RESOLVER(_TestInvalidColonURIResolver, _TestURIResolverBase);
+AR_DEFINE_RESOLVER(_TestInvalidNonAsciiURIResolver, _TestURIResolverBase);
+AR_DEFINE_RESOLVER(_TestInvalidNumericPrefixResolver, _TestURIResolverBase);

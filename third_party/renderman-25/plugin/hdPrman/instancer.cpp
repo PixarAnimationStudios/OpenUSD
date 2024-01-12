@@ -20,7 +20,7 @@
 // distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
-
+//
 #include "hdPrman/instancer.h"
 
 #include "hdPrman/debugCodes.h"
@@ -29,26 +29,15 @@
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/utils.h"
 
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/getenv.h"
+#include "pxr/base/vt/typeHeaders.h"
+#include "pxr/base/vt/visitValue.h"
+#include "pxr/base/work/loops.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/rotation.h"
-#include "pxr/base/gf/quatf.h"
-#include "pxr/base/gf/quath.h"
-#include "pxr/base/gf/quaternion.h"
-
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/envSetting.h"
-
-#include "pxr/base/vt/typeHeaders.h"
-#include "pxr/base/vt/visitValue.h"
-
-#include "RiTypesHelper.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -76,6 +65,28 @@ void _AccumulateSampleTimes(
         out.times = in.times;
     }
 }
+
+// Visitor for VtVisitValue; will retrieve the value at the specified
+// index as a VtValue when the visited value is array-typed. Returns
+// empty VtValue when the visited value is not array-typed, or when the
+// index points beyond the end of the array.
+struct _GetValueAtIndex {
+    _GetValueAtIndex(const size_t index) : _index(index) { }
+    template <class T>
+    const VtValue operator()(const VtArray<T>& array) const
+    {
+        if (array.size() > _index) {
+            return VtValue(array[_index]);
+        }
+        return VtValue();
+    }
+    const VtValue operator()(const VtValue& val) const
+    {
+        return VtValue();
+    }
+private:
+    size_t _index;
+};
 
 template <typename M>
 M _ConvertMatrix(GfMatrix4d&& src);
@@ -121,6 +132,13 @@ void _BuildStatsId(
     const SdfPath& protoId, 
     RtParamList& params)
 {
+    // The stats id is a human readable unique identifier in the form:
+    //   </path/to/instancer>[instanceIndex]{prototypeName}
+    // It is used for diagnostic purposes to identify instances in a
+    // Disgust log. It is somewhat costly to construct, so we only do so
+    // when generating a Disgust log.
+    static const bool disabled = TfGetenv("RILEY_CAPTURE").empty();
+    if (disabled) { return; }
     RtUString val;
     if (params.HasParam(RixStr.k_stats_identifier)) {
         params.GetString(RixStr.k_stats_identifier, val);
@@ -165,6 +183,18 @@ _FixupParamName(const TfToken& name) {
     return rtname;
 }
 
+// Save one code indentation level when we don't have anything to
+// amortize across a batch.
+template <typename Fn>
+void
+_ParallelFor(size_t n, Fn &&cb, size_t grainSize = 1) {
+    return WorkParallelForN(n, [&cb](size_t begin, size_t end) {
+        for (size_t i = begin; i < end; ++i) {
+            std::forward<Fn>(cb)(i);
+        }
+    }, grainSize);
+}
+
 } // anonymous namespace
 
 // **********************************************
@@ -207,7 +237,6 @@ HdPrmanInstancer::Sync(
         const std::string dbs = HdChangeTracker::StringifyDirtyBits(*dirtyBits);
         const std::string pro = SdfPathVecToString(delegate->
             GetInstancerPrototypes(id));
-        
         std::string dps;
         if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
             for (HdInterpolation i = HdInterpolationConstant;
@@ -294,15 +323,16 @@ HdPrmanInstancer::Finalize(HdRenderParam *renderParam)
     
     // Delete all my riley instances
     _protoMap.citerate([riley](const SdfPath& path, const _ProtoMapEntry& entry) {
-        for (const auto rp : entry.map) {
+        for (const auto& rp : entry.map) {
             const _InstanceIdVec& ids = rp.second;
-            for (const _RileyInstanceId& ri : ids) {
+            _ParallelFor(ids.size(), [&](size_t i) {
+                const _RileyInstanceId& ri = ids[i];
                 if (ri.lightInstanceId != riley::LightInstanceId::InvalidId()) {
                     riley->DeleteLightInstance(ri.groupId, ri.lightInstanceId);
                 } else if (ri.geoInstanceId != riley::GeometryInstanceId::InvalidId()) {
                     riley->DeleteGeometryInstance(ri.groupId, ri.geoInstanceId);
                 }
-            }
+            });
         }
     });
 
@@ -422,19 +452,41 @@ void HdPrmanInstancer::_SyncPrimvars(
     HdSceneDelegate* delegate = GetDelegate();
     SdfPath const& id = GetId();
 
+    // XXX: When removing these in 24.05, eliminate the variables. Replace
+    // their usages with the appropriate HdInstancerTokens.
+#if HD_API_VERSION < 56  // USD_VERSION < 23.05
+    TfToken instanceTranslationsToken = HdInstancerTokens->translate;
+    TfToken instanceRotationsToken = HdInstancerTokens->rotate;
+    TfToken instanceScalesToken = HdInstancerTokens->scale;
+    TfToken instanceTransformsToken = HdInstancerTokens->instanceTransform;
+#else
+    TfToken instanceTranslationsToken = HdInstancerTokens->instanceTranslations;
+    TfToken instanceRotationsToken = HdInstancerTokens->instanceRotations;
+    TfToken instanceScalesToken = HdInstancerTokens->instanceScales;
+    TfToken instanceTransformsToken = HdInstancerTokens->instanceTransforms;
+
+    if (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)) {
+        instanceTranslationsToken = HdInstancerTokens->translate;
+        instanceRotationsToken = HdInstancerTokens->rotate;
+        instanceScalesToken = HdInstancerTokens->scale;
+        instanceTransformsToken = HdInstancerTokens->instanceTransform;
+    }
+#endif
+
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
         // Get list of USD primvar names for each interp mode and cache each one
-        for (HdInterpolation i = HdInterpolationVarying;
+        // Solaris allows constant primvars so we need to be able to access them.
+        for (HdInterpolation i = HdInterpolationConstant;
             i != HdInterpolationCount; i = HdInterpolation(i+1)) {
             for (const HdPrimvarDescriptor& primvar :
                 delegate->GetPrimvarDescriptors(id, i)) {
                 // Skip primvars that have special handling elsewhere.
                 // The transform primvars are all handled in
                 // _SyncTransforms.
-                if (primvar.name == HdInstancerTokens->instanceTransform ||
-                    primvar.name == HdInstancerTokens->rotate ||
-                    primvar.name == HdInstancerTokens->scale ||
-                    primvar.name == HdInstancerTokens->translate) {
+                if (primvar.name == instanceTransformsToken ||
+                    primvar.name == instanceRotationsToken ||
+                    primvar.name == instanceScalesToken ||
+                    primvar.name == instanceTranslationsToken) {
                     continue;
                 }
                 if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, primvar.name)) {
@@ -457,6 +509,28 @@ HdPrmanInstancer::_SyncTransforms(
     HdSceneDelegate* delegate = GetDelegate();
     const SdfPath& id = GetId();
 
+    // XXX: When removing these in 24.05, eliminate the variables. Replace
+    // their usages with the appropriate HdInstancerTokens. Don't forget to
+    // reformat the "not ... expected type" warning messages, too!
+#if HD_API_VERSION < 56 // USD_VERSION < 23.05
+    TfToken instanceTranslationsToken = HdInstancerTokens->translate;
+    TfToken instanceRotationsToken = HdInstancerTokens->rotate;
+    TfToken instanceScalesToken = HdInstancerTokens->scale;
+    TfToken instanceTransformsToken = HdInstancerTokens->instanceTransform;
+#else
+    TfToken instanceTranslationsToken = HdInstancerTokens->instanceTranslations;
+    TfToken instanceRotationsToken = HdInstancerTokens->instanceRotations;
+    TfToken instanceScalesToken = HdInstancerTokens->instanceScales;
+    TfToken instanceTransformsToken = HdInstancerTokens->instanceTransforms;
+
+    if (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)) {
+        instanceTranslationsToken = HdInstancerTokens->translate;
+        instanceRotationsToken = HdInstancerTokens->rotate;
+        instanceScalesToken = HdInstancerTokens->scale;
+        instanceTransformsToken = HdInstancerTokens->instanceTransform;
+    }
+#endif
+
     // Only include this instancer's own transform if it has no parent. When
     // there is a parent instancer, the parent instancer will apply this
     // instancer's transform to the instances it creates of this instancer's
@@ -465,51 +539,53 @@ HdPrmanInstancer::_SyncTransforms(
 
     if (HdChangeTracker::IsTransformDirty(*dirtyBits, id) ||
         HdChangeTracker::IsPrimvarDirty(*dirtyBits, id,
-            HdInstancerTokens->instanceTransform) ||
+            instanceTransformsToken) ||
         HdChangeTracker::IsPrimvarDirty(*dirtyBits, id,
-            HdInstancerTokens->translate) ||
+            instanceTranslationsToken) ||
         HdChangeTracker::IsPrimvarDirty(*dirtyBits, id,
-            HdInstancerTokens->rotate) ||
+            instanceRotationsToken) ||
         HdChangeTracker::IsPrimvarDirty(*dirtyBits, id,
-            HdInstancerTokens->scale)) {
+            instanceScalesToken)) {
 
         HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> instancerXform;
-        HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedInstanceXforms;
+        HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES>
+            boxedInstanceXforms;
         HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedTranslates;
         HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedRotates;
         HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedScales;
         if (includeInstancerXform) {
             delegate->SampleInstancerTransform(id, &instancerXform);
         }
-        delegate->SamplePrimvar(id, HdInstancerTokens->instanceTransform,
+        delegate->SamplePrimvar(id, instanceTransformsToken,
                                 &boxedInstanceXforms);
-        delegate->SamplePrimvar(id, HdInstancerTokens->translate,
+        delegate->SamplePrimvar(id, instanceTranslationsToken,
                                 &boxedTranslates);
-        delegate->SamplePrimvar(id, HdInstancerTokens->scale,
+        delegate->SamplePrimvar(id, instanceScalesToken,
                                 &boxedScales);
-        delegate->SamplePrimvar(id, HdInstancerTokens->rotate,
+        delegate->SamplePrimvar(id, instanceRotationsToken,
                                 &boxedRotates);
 
         // Unbox samples held as VtValues
-        HdTimeSampleArray<VtMatrix4dArray, HDPRMAN_MAX_TIME_SAMPLES> instanceXforms;
+        HdTimeSampleArray<VtMatrix4dArray, HDPRMAN_MAX_TIME_SAMPLES>
+            instanceXforms;
         HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES> translates;
         HdTimeSampleArray<VtQuathArray, HDPRMAN_MAX_TIME_SAMPLES> rotates;
         HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES> scales;
         if (!instanceXforms.UnboxFrom(boxedInstanceXforms)) {
-            TF_WARN("<%s> instanceTransform did not have expected type matrix4d[]",
-                    id.GetText());
+            TF_WARN("<%s> %s did not have expected type matrix4d[]",
+                instanceTransformsToken.GetText(), id.GetText());
         }
         if (!translates.UnboxFrom(boxedTranslates)) {
-            TF_WARN("<%s> translate did not have expected type vec3f[]",
-                    id.GetText());
+            TF_WARN("<%s> %s did not have expected type vec3f[]",
+                instanceTranslationsToken.GetText(), id.GetText());
         }
         if (!rotates.UnboxFrom(boxedRotates)) {
-            TF_WARN("<%s> rotate did not have expected type quath[]",
-                    id.GetText());
+            TF_WARN("<%s> %s did not have expected type quath[]",
+                instanceRotationsToken.GetText(), id.GetText());
         }
         if (!scales.UnboxFrom(boxedScales)) {
-            TF_WARN("<%s> scale did not have expected type vec3f[]",
-                    id.GetText());
+            TF_WARN("<%s> %s did not have expected type vec3f[]",
+                instanceScalesToken.GetText(), id.GetText());
         }
 
         // As a simple resampling strategy, find the input with the max #
@@ -618,7 +694,7 @@ HdPrmanInstancer::_SyncCategories(HdDirtyBits* dirtyBits)
         _instanceCategories = delegate->GetInstanceCategories(id);
         if (_instanceCategories.size() == 0) {
             // Point instancing; use instancer's categories
-            VtTokenArray cats = delegate->GetCategories(id);
+            const VtTokenArray cats = delegate->GetCategories(id);
             _instancerFlat.categories.insert(cats.begin(), cats.end());
         } else {
             // Native instancing; move common categories to instancer
@@ -636,8 +712,8 @@ HdPrmanInstancer::_SyncCategories(HdDirtyBits* dirtyBits)
                     newIntersection = instCats;
                 } else {
                     std::set_intersection(
-                        intersection.begin(), intersection.end(),
-                        instCats.begin(), instCats.end(),
+                        intersection.cbegin(), intersection.cend(),
+                        instCats.cbegin(), instCats.cend(),
                         std::back_inserter(newIntersection));
                 }
                 if (newIntersection.size() == 0) {
@@ -652,13 +728,13 @@ HdPrmanInstancer::_SyncCategories(HdDirtyBits* dirtyBits)
                     // already sorted above
                     VtTokenArray newCats;
                     std::set_difference(
-                        instCats.begin(), instCats.end(),
-                        intersection.begin(), intersection.end(),
+                        instCats.cbegin(), instCats.cend(),
+                        intersection.cbegin(), intersection.cend(),
                         std::back_inserter(newCats));
                     instCats = newCats;
                 }
-                _instancerFlat.categories.insert(intersection.begin(), 
-                    intersection.end());
+                _instancerFlat.categories.insert(intersection.cbegin(), 
+                    intersection.cend());
             }
         }
     }
@@ -693,6 +769,40 @@ HdPrmanInstancer::_SetPrototypesDirty()
 // **********************************************
 
 void
+HdPrmanInstancer::_PopulateInstancesFromChild(
+    HdRenderParam* renderParam,
+    HdDirtyBits* dirtyBits,
+    const SdfPath& hydraPrototypeId,
+    const SdfPath& prototypePrimPath,
+    const std::vector<riley::GeometryPrototypeId>& rileyPrototypeIds,
+    const riley::CoordinateSystemList& coordSysList,
+    const RtParamList prototypeParams,
+    const HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> prototypeXform,
+    const std::vector<riley::MaterialId>& rileyMaterialIds,
+    const SdfPathVector& prototypePaths,
+    const riley::LightShaderId& lightShaderId,
+    const std::vector<_InstanceData>& subInstances,
+    const std::vector<_FlattenData>& prototypeFlats)
+{
+    // When a child instancer has multiple prototype prims, that child instancer
+    // may call this method simultaneously from different threads. That can lead
+    // to duplicate calls from this instancer to create or delete instances of
+    // the child instancer's prototype groups. Both of those are problematic
+    // when done in parallel. We expect such calls to be identical, so while
+    // we are locked we can throw away any additional calls from the same
+    // child instancer (identified by prototypePrimPath).
+    tbb::spin_rw_mutex& mutex = _childPopulateLocks.get(prototypePrimPath);
+    if (mutex.try_lock()) {
+        _PopulateInstances(renderParam, dirtyBits, hydraPrototypeId,
+            prototypePrimPath, rileyPrototypeIds, coordSysList, prototypeParams,
+            prototypeXform, rileyMaterialIds, prototypePaths, lightShaderId,
+            subInstances, prototypeFlats);
+        _childPopulateLocks.erase(prototypePrimPath);
+        mutex.unlock();
+    }
+}
+
+void
 HdPrmanInstancer::_PopulateInstances(
     HdRenderParam* renderParam,
     HdDirtyBits* dirtyBits,
@@ -706,8 +816,7 @@ HdPrmanInstancer::_PopulateInstances(
     const SdfPathVector& prototypePaths,
     const riley::LightShaderId& lightShaderId,
     const std::vector<_InstanceData>& subInstances,
-    const std::vector<_FlattenData>& prototypeFlats
-)
+    const std::vector<_FlattenData>& prototypeFlats)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -727,12 +836,6 @@ HdPrmanInstancer::_PopulateInstances(
     //
     // Further complicating issues, this method may be called concurrently from
     // multiple threads, so some actions must be gated behind mutex locks.
-
-#if PXR_VERSION <= 2011
-    // Sync hydra instancer primvars
-    // XXX: Does this still go here?
-    SyncPrimvars();
-#endif
 
     HdPrman_RenderParam* param = static_cast<HdPrman_RenderParam*>(renderParam);
     riley::Riley* riley = param->AcquireRiley();
@@ -896,7 +999,7 @@ HdPrmanInstancer::_PopulateInstances(
         }
 
         // Send allInstances up to the parent to populate
-        parentInstancer->_PopulateInstances(
+        parentInstancer->_PopulateInstancesFromChild(
             renderParam,
             dirtyBits,
             instancerId,
@@ -936,7 +1039,7 @@ HdPrmanInstancer::_PopulateInstances(
             protoFlats);
 
         // Prepare each instance to be sent to riley
-        for (size_t i = 0; i < instances.size(); ++i) {
+        _ParallelFor(instances.size(), [&](size_t i) {
             const _InstanceData& instance = instances[i];
 
             // Multiply the prototype transform by the instance transform. If
@@ -959,7 +1062,6 @@ HdPrmanInstancer::_PopulateInstances(
             // prototypes (e.g., in the case of GeomSubsets), we must make 
             // one riley instance for each riley prototype
             for (size_t j = 0; j < rileyPrototypeIds.size(); ++j) {
-                
                 // This is expected to be InvalidId for analytic lights
                 const riley::GeometryPrototypeId& protoId = 
                     rileyPrototypeIds[j];
@@ -1014,7 +1116,7 @@ HdPrmanInstancer::_PopulateInstances(
                     // light linking categories.
                     param->ConvertCategoriesToAttributes(
                         instancerId,
-                        { flats.categories.begin(), flats.categories.end() },
+                        { flats.categories.cbegin(), flats.categories.cend() },
                         params);
                 }
 
@@ -1117,7 +1219,7 @@ HdPrmanInstancer::_PopulateInstances(
                     }
                 }
             }
-        }
+        });
 
         // We have now fully processed all changes from the last time the
         // instancer was synced down to the riley instances for this particular
@@ -1157,9 +1259,9 @@ HdPrmanInstancer::_PopulateInstances(
             mats.push_back(riley::MaterialId::InvalidId());
         });
 
-        // Populate the parent using _PopulateInstances directly so that we can
+        // Populate the parent using _PopulateInstancesFromChild so that we can
         // pass the flatten groups up to it.
-        parentInstancer->_PopulateInstances(
+        parentInstancer->_PopulateInstancesFromChild(
             renderParam,
             dirtyBits,
             instancerId,
@@ -1183,7 +1285,7 @@ HdPrmanInstancer::_PopulateInstances(
 void
 HdPrmanInstancer::_ComposeInstances(
     const SdfPath& protoId,
-    const std::vector<_InstanceData> subInstances,
+    const std::vector<_InstanceData>& subInstances,
     std::vector<_InstanceData>& instances)
 {
     HD_TRACE_FUNCTION();
@@ -1203,7 +1305,7 @@ HdPrmanInstancer::_ComposeInstances(
     instances.clear();
     if (subInstances.empty()) {
         instances.resize(indices.size());
-        for (size_t i = 0; i < indices.size(); ++i) {
+        _ParallelFor(indices.size(), [&](size_t i) {
             const int index = indices[i];
             _InstanceData& instance = instances[i];
             _GetInstanceParams(index, instance.params);
@@ -1211,33 +1313,38 @@ HdPrmanInstancer::_ComposeInstances(
             _BuildStatsId(id, index, protoId, instance.params);
             _ComposeInstanceFlattenData(index, instance.params, instance.flattenData);
             _GetInstanceTransform(index, instance.transform);
-        }
+        });
     } else {
         instances.resize(indices.size() * subInstances.size());
         // Iteration order is critical to selection. identifier:id2 must
         // increment in subInstance-major order. So we slow-iterate through
         // this level's instances and fast-iterate through the subInstances.
-        for (size_t i = 0; i < indices.size(); ++i) {
-            const int index = indices[i];
-            for (size_t si = 0; si < subInstances.size(); ++si) {
-                const _InstanceData& subInstance  = subInstances[si];
-                const int ii = i * subInstances.size() + si;
-                _InstanceData& instance = instances[ii];
-                _GetInstanceParams(index, instance.params);
-                instance.params.Update(subInstance.params);
-                instance.params.SetInteger(RixStr.k_identifier_id2, int(ii));
-                _BuildStatsId(id, index, protoId, instance.params);
-                _ComposeInstanceFlattenData(
-                    index, 
-                    instance.params, 
-                    instance.flattenData, 
-                    subInstance.flattenData);
-                _GetInstanceTransform(
-                    index,
-                    instance.transform,
-                    subInstance.transform);
-            }
-        }
+        // Note: Just to express things as clearly as possible, since this is
+        // a parallel loop as written now, it is actually the choice of index
+        // for the identifier:id2 parameter and the ordering of the *indexing*
+        // that is critical: the parallel for loop is free to set the values
+        // in whatever temporal order is most efficient/fastest, as long as the
+        // choice we make for the value of identifier:id2 is the same.
+        _ParallelFor(indices.size() * subInstances.size(), [&](size_t ii) {
+            const size_t i = ii / subInstances.size();
+            const size_t index = indices[i];
+            const size_t si = ii % subInstances.size();
+            const _InstanceData& subInstance  = subInstances[si];
+            _InstanceData& instance = instances[ii];
+            _GetInstanceParams(index, instance.params);
+            instance.params.Update(subInstance.params);
+            instance.params.SetInteger(RixStr.k_identifier_id2, int(ii));
+            _BuildStatsId(id, index, protoId, instance.params);
+            _ComposeInstanceFlattenData(
+                index, 
+                instance.params, 
+                instance.flattenData, 
+                subInstance.flattenData);
+            _GetInstanceTransform(
+                index,
+                instance.transform,
+                subInstance.transform);
+        });
     }
 }
 
@@ -1276,7 +1383,7 @@ HdPrmanInstancer::_RemoveDeadInstances(
     // otherwise the call to get() will insert it.
     if (!_protoMap.has(prototypePrimPath)) { return false; }
     using ProtoMapPair = std::pair<riley::GeometryPrototypeId, _InstanceIdVec>;
-    _ProtoInstMap& protoMap = _protoMap.get(prototypePrimPath).map;
+    const _ProtoInstMap& protoMap = _protoMap.get(prototypePrimPath).map;
     std::vector<riley::GeometryPrototypeId> oldProtoIds;
     std::transform(
         protoMap.begin(), protoMap.end(),
@@ -1290,8 +1397,8 @@ HdPrmanInstancer::_RemoveDeadInstances(
 
     std::vector<riley::GeometryPrototypeId> toRemove;
     std::set_difference(
-        oldProtoIds.begin(), oldProtoIds.end(),
-        newProtoIds.begin(), newProtoIds.end(),
+        oldProtoIds.cbegin(), oldProtoIds.cend(),
+        newProtoIds.cbegin(), newProtoIds.cend(),
         std::back_inserter(toRemove));
     if (toRemove.size() > 0) {
         _ResizeProtoMap(riley, prototypePrimPath, toRemove, 0);
@@ -1300,8 +1407,8 @@ HdPrmanInstancer::_RemoveDeadInstances(
     // returns true if there are new geometry prototype ids for this prototype
     std::vector<riley::GeometryPrototypeId> toAdd;
     std::set_difference(
-        protoIds.begin(), protoIds.end(),
-        oldProtoIds.begin(), oldProtoIds.end(),
+        protoIds.cbegin(), protoIds.cend(),
+        oldProtoIds.cbegin(), oldProtoIds.cend(),
         std::back_inserter(toAdd));
     return toAdd.size() > 0;
 }
@@ -1351,7 +1458,6 @@ HdPrmanInstancer::_ComposePrototypeData(
             flats.params.SetInteger(RtUString("__light"), 1);
         }
         // XXX: End of RMAN-20703 workaround
-
     };
 
     // Make at least one set, even when there are no prototype ids,
@@ -1369,15 +1475,15 @@ HdPrmanInstancer::_ComposePrototypeData(
         // of light linking and thus have categories to deal with. They may also
         // receive visibility params as part of Hydra's handling of invisible
         // faces, even though visibility cannot be authored on them in USD.
-        if (subProtoPaths.size() > 0 && subProtoPaths[i] != protoPath) {
-            RtParamList subParams;
-            _FlattenData subFlats;
-            SetProtoParams(subProtoPaths[i], subParams, subFlats);
-            protoParams[i].Update(subParams);
-            protoFlats[i].Update(subFlats);
+        if (i < subProtoPaths.size() && subProtoPaths[i] != protoPath) {
+            RtParamList subsetParams;
+            _FlattenData subsetFlats;
+            SetProtoParams(subProtoPaths[i], subsetParams, subsetFlats);
+            protoParams[i].Update(subsetParams);
+            protoFlats[i].Update(subsetFlats);
         }
 
-        // Combine any flats received from below for this prototype
+        // Combine any flats received from below for this prototype.
         if (i < subProtoFlats.size()) {
             protoFlats[i].Update(subProtoFlats[i]);
         }
@@ -1396,16 +1502,21 @@ HdPrmanInstancer::_ResizeProtoMap(
     for (riley::GeometryPrototypeId protoId : rileyPrototypeIds) {
         _InstanceIdVec& instIdVec = protoInstMap[protoId];
         const size_t oldSize = instIdVec.size();
-        for (size_t i = newSize; i < oldSize; ++i) {
-            const _RileyInstanceId& id = instIdVec[i];
-            if (id.lightInstanceId != riley::LightInstanceId::InvalidId()) {
-                riley->DeleteLightInstance(id.groupId, id.lightInstanceId);
-                _groupCounters.get(id.groupId)--;
-            }
-            if (id.geoInstanceId != riley::GeometryInstanceId::InvalidId()) {
-                riley->DeleteGeometryInstance(id.groupId, id.geoInstanceId);
-                _groupCounters.get(id.groupId)--;
-            }
+        if (newSize < oldSize) {
+            // XXX: We loop over the range [newSize, oldSize), for a total of
+            // (oldSize - newSize) elements.
+            _ParallelFor(oldSize - newSize, [&](size_t ii) {
+                size_t i = ii + newSize; // Offset the index by 'newSize'
+                const _RileyInstanceId& id = instIdVec[i];
+                if (id.lightInstanceId != riley::LightInstanceId::InvalidId()) {
+                    riley->DeleteLightInstance(id.groupId, id.lightInstanceId);
+                    _groupCounters.get(id.groupId)--;
+                }
+                if (id.geoInstanceId != riley::GeometryInstanceId::InvalidId()) {
+                    riley->DeleteGeometryInstance(id.groupId, id.geoInstanceId);
+                    _groupCounters.get(id.groupId)--;
+                }
+            });
         }
         if (oldSize != newSize) {
             instIdVec.resize(newSize);
@@ -1423,7 +1534,7 @@ bool
 HdPrmanInstancer::_CleanDisusedGroupIds(HdPrman_RenderParam* param)
 {
     HD_TRACE_FUNCTION();
-    std::lock_guard<std::mutex> lock(_groupIdAcquisitionLock);
+    tbb::spin_rw_mutex::scoped_lock lock(_groupIdAcquisitionLock, true);
     riley::Riley* riley = param->AcquireRiley();
 
     // Gather active and disused
@@ -1443,7 +1554,8 @@ HdPrmanInstancer::_CleanDisusedGroupIds(HdPrman_RenderParam* param)
     if (toDestroy.size() > 0) {
         HdPrmanInstancer* parent = _GetParentInstancer();
         if (parent) {
-            parent->Depopulate(param, GetId(), { active.begin(), active.end() });
+            parent->Depopulate(param, GetId(),
+                { active.cbegin(), active.cend() });
         }
     }
     // Destroy the disused prototype groups
@@ -1475,7 +1587,7 @@ HdPrmanInstancer::_AcquireGroupId(
 
     // This lock prevents concurrent calls to Populate from creating separate
     // riley groups for the same set of flatten data.
-    std::lock_guard<std::mutex> lock(_groupIdAcquisitionLock);
+    tbb::spin_rw_mutex::scoped_lock lock(_groupIdAcquisitionLock, false);
     
     // We use the flatten data to look up whether this instancer has
     // a riley group that it will use for all instances across all
@@ -1493,16 +1605,26 @@ HdPrmanInstancer::_AcquireGroupId(
 
     groupId = _groupMap.get(flattenGroup);
     if (groupId == riley::GeometryPrototypeId::InvalidId()) {
-        RtPrimVarList groupPrimvars;
-        groupPrimvars.SetString(RixStr.k_stats_prototypeIdentifier,
-            RtUString(GetId().GetText()));
-        groupId = param->AcquireRiley()->CreateGeometryPrototype(
-            riley::UserId(stats::AddDataLocation(GetId().GetText()).GetValue()),
-            RixStr.k_Ri_Group,
-            riley::DisplacementId::InvalidId(),
-            groupPrimvars);
-        _groupMap.set(flattenGroup, groupId);
-        return true;
+
+        bool found = false;
+        if (!lock.upgrade_to_writer()) {
+            groupId = _groupMap.get(flattenGroup);
+            if (groupId != riley::GeometryPrototypeId::InvalidId())
+                found = true;
+        }
+
+        if (!found) {
+            RtPrimVarList groupPrimvars;
+            groupPrimvars.SetString(RixStr.k_stats_prototypeIdentifier,
+                RtUString(GetId().GetText()));
+            groupId = param->AcquireRiley()->CreateGeometryPrototype(
+                riley::UserId(stats::AddDataLocation(GetId().GetText()).GetValue()),
+                RixStr.k_Ri_Group,
+                riley::DisplacementId::InvalidId(),
+                groupPrimvars);
+            _groupMap.set(flattenGroup, groupId);
+            return true;
+        }
     }
     return false;
 }
@@ -1600,9 +1722,8 @@ HdPrmanInstancer::_GetInstanceParams(
             params.HasParam(name)) {
             continue;
         }
-        
-        if (!HdPrman_Utils::SetParamFromVtValue(name, val, 
-            primvar.role, &params)) {
+        if (!HdPrman_Utils::SetParamFromVtValue(
+                name, val, primvar.role, &params)) {
             TF_WARN("Unrecognized USD primvar value type at %s.%s",
                 GetId().GetText(), entry.first.GetText());
         }
@@ -1637,8 +1758,8 @@ HdPrmanInstancer::_GetPrototypeParams(
                 continue;
             }
             const VtValue& val = delegate->Get(protoPath, primvar.name);
-            if (!HdPrman_Utils::SetParamFromVtValue(name, val,
-                primvar.role, &params)) {
+            if (!HdPrman_Utils::SetParamFromVtValue(
+                name, val, primvar.role, &params)) {
                 TF_WARN("Unrecognized USD primvar value type at %s.%s",
                     protoPath.GetText(), primvar.name.GetText());
             }

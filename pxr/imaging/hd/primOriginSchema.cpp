@@ -37,9 +37,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdPrimOriginSchemaTokens,
-    HDPRIMORIGIN_SCHEMA_TOKENS);
+    HD_PRIM_ORIGIN_SCHEMA_TOKENS);
 
-
+// --(BEGIN CUSTOM CODE: Schema Methods)--
 
 SdfPath
 HdPrimOriginSchema::GetOriginPath(const TfToken &name) const
@@ -61,6 +61,9 @@ operator <<(std::ostream &stream, HdPrimOriginSchema::OriginPath const &p)
     return stream << "HdPrimOriginSchema::OriginPath(" << p.GetPath() << ")";
 }
 
+// --(END CUSTOM CODE: Schema Methods)--
+
+
 
 
 /*static*/
@@ -80,7 +83,8 @@ const TfToken &
 HdPrimOriginSchema::GetSchemaToken()
 {
     return HdPrimOriginSchemaTokens->primOrigin;
-} 
+}
+
 /*static*/
 const HdDataSourceLocator &
 HdPrimOriginSchema::GetDefaultLocator()

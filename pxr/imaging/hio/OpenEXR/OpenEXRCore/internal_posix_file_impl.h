@@ -4,7 +4,7 @@
 */
 
 /* implementation for unix-like file io routines (used in context.c) */
-#include "openexr_conf.h"
+#include "openexr_config.h" 
 
 #include <errno.h>
 

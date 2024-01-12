@@ -543,7 +543,7 @@ std::string
 HioOIIO_Image::_GetFilenameExtension() const
 {
     std::string fileExtension = ArGetResolver().GetExtension(_filename);
-    return TfStringToLower(fileExtension);
+    return TfStringToLowerAscii(fileExtension);
 }
 
 #if OIIO_VERSION >= 20003

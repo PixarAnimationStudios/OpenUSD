@@ -143,11 +143,13 @@ and :usda:`opacity`.
 
 * **clearcoat - float - 0.0** 
 
-  Second specular lobe amount. The color is white.
+  Second specular lobe amount. The color is white. Clearcoat results are 
+  calculated using the same normal map data used by the primary specular lobe.
 
 * **clearcoatRoughness - float - 0.01**
 
-  Roughness for the second specular lobe.
+  Roughness for the second specular lobe. Clearcoat results are 
+  calculated using the same normal map data used by the primary specular lobe.
 
 * **opacity - float - 1.0** 
 
@@ -281,11 +283,15 @@ typeName information that may be useful to a renderer or shading system.
        )
     
        float inputs:clearcoat = 0.0 (
-           doc = """Second specular lobe amount. The color is white."""
+           doc = """Second specular lobe amount. The color is white. Clearcoat 
+           results are calculated using the same normal map data used by the 
+           primary specular lobe."""
        )
     
        float inputs:clearcoatRoughness = 0.01 (
-           doc = """Roughness for the second specular lobe."""
+           doc = """Roughness for the second specular lobe. Clearcoat results 
+           are calculated using the same normal map data used by the primary 
+           specular lobe."""
        )
     
        float inputs:opacity = 1.0 (

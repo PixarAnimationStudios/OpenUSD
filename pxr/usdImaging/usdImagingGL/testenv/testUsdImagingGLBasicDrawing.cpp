@@ -241,7 +241,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         _engine->SetCameraPath(SdfPath(GetCameraPath()));
     }
 
-    _engine->SetOverrideWindowPolicy({true, GetWindowPolicy()});
+    _engine->SetOverrideWindowPolicy(GetWindowPolicy());
 
     const CameraUtilFraming framing(
         GetDisplayWindow(), GetDataWindow(), GetPixelAspectRatio());

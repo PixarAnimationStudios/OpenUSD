@@ -76,8 +76,21 @@
 //           HdFlatteningSceneIndex modular.
 // 54 -> 55: Introduce API in HdRenderDelegate to aid in transitioning
 //           render delegates to a Hydra 2.0 world.
+// 55 -> 56: Adds hydra-namespaced internal instancer primvars
+// 56 -> 57: Changing SetOverrideWindowPolicy to std::optional on
+//           HdRenderPassState, HdxPickFromRenderBufferTaskParams,
+//           HdxTaskController and UsdImagingGLEngine.
+// 57 -> 58: Introducing hdsi/version.h
+// 58 -> 59: HdGeomSubsetsSchema::GetIds() renamed to
+//           HdGeomSubsetsSchema::GetGeomSubsetNames().
+// 59 -> 60: Introduced HdRenderDelegate::GetCapabilities().
+// 60 -> 61: Adding HdPrimvarSchema::GetFlattenedPrimvarValue().
+//           Note that in an upcoming change,
+//           HdPrimvarSchema::GetPrimvarValue() might change and
+//           simply return the data source source at primvarValue.
 //
-#define HD_API_VERSION 55
+
+#define HD_API_VERSION 61
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

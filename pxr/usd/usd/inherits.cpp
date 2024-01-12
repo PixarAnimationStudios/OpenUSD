@@ -84,8 +84,9 @@ UsdInherits::GetAllDirectInherits() const
 
     auto addIfDirectInheritFn = [&](const PcpNodeRef &node) {
         if (node.GetArcType() == PcpArcTypeInherit &&
-                !node.GetOriginRootNode().IsDueToAncestor() && 
-                seen.insert(node.GetPath()).second) {
+            node.GetLayerStack() == node.GetRootNode().GetLayerStack() &&
+            !node.GetOriginRootNode().IsDueToAncestor() &&
+            seen.insert(node.GetPath()).second) {
             ret.push_back(node.GetPath());
         }
     };
@@ -106,14 +107,17 @@ UsdInherits::GetAllDirectInherits() const
     // specializes. Thus, we have to search under both the root's inherits 
     // and its specializes to find all propagated inherit arcs.
     //
-    // Note that this relies on the fact that propagated direct class base arcs
-    // are not culled from the prim index even if they do not produce specs.
+    // We search the expanded prim index to ensure that we pick up all possible
+    // sources of opinions even if they currently do not produce specs. These
+    // locations may be culled from the index returned by _prim.GetPrimIndex().
+    PcpPrimIndex fullPrimIndex = _prim.ComputeExpandedPrimIndex();
+
     for (const PcpNodeRef &node: 
-            _prim.GetPrimIndex().GetNodeRange(PcpRangeTypeInherit)) {
+             fullPrimIndex.GetNodeRange(PcpRangeTypeInherit)) {
         addIfDirectInheritFn(node);
     }
     for (const PcpNodeRef &node:
-             _prim.GetPrimIndex().GetNodeRange(PcpRangeTypeSpecialize)) {
+             fullPrimIndex.GetNodeRange(PcpRangeTypeSpecialize)) {
         addIfDirectInheritFn(node);
     }
     return ret;

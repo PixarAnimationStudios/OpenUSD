@@ -1754,11 +1754,22 @@ public:
     USD_API
     bool HasAttribute(const TfToken& attrName) const;
 
-    /// Search the prim subtree rooted at this prim for attributes for which
-    /// \p predicate returns true, collect their connection source paths and
-    /// return them in an arbitrary order.  If \p recurseOnSources is true,
-    /// act as if this function was invoked on the connected prims and owning
-    /// prims of connected properties also and return the union.
+    /// Search the prim subtree rooted at this prim according to \p
+    /// traversalPredicate for attributes for which \p predicate returns true,
+    /// collect their connection source paths and return them in an arbitrary
+    /// order.  If \p recurseOnSources is true, act as if this function was
+    /// invoked on the connected prims and owning prims of connected properties
+    /// also and return the union.
+    USD_API
+    SdfPathVector
+    FindAllAttributeConnectionPaths(
+        Usd_PrimFlagsPredicate const &traversalPredicate,
+        std::function<bool (UsdAttribute const &)> const &pred = nullptr,
+        bool recurseOnSources = false) const;
+
+    /// \overload
+    /// Invoke FindAllAttributeConnectionPaths() with the
+    /// UsdPrimDefaultPredicate as its traversalPredicate.
     USD_API
     SdfPathVector
     FindAllAttributeConnectionPaths(
@@ -1847,12 +1858,22 @@ public:
     USD_API
     bool HasRelationship(const TfToken& relName) const;
 
-    /// Search the prim subtree rooted at this prim for relationships for which
-    /// \p predicate returns true, collect their target paths and return them in
-    /// an arbitrary order.  If \p recurseOnTargets is true, act as if this
-    /// function was invoked on the targeted prims and owning prims of targeted
-    /// properties also (but not of forwarding relationships) and return the
-    /// union.
+    /// Search the prim subtree rooted at this prim according to \p
+    /// traversalPredicate for relationships for which \p predicate returns
+    /// true, collect their target paths and return them in an arbitrary order.
+    /// If \p recurseOnTargets is true, act as if this function was invoked on
+    /// the targeted prims and owning prims of targeted properties also (but not
+    /// of forwarding relationships) and return the union.
+    USD_API
+    SdfPathVector
+    FindAllRelationshipTargetPaths(
+        Usd_PrimFlagsPredicate const &traversalPredicate,
+        std::function<bool (UsdRelationship const &)> const &pred = nullptr,
+        bool recurseOnTargets = false) const;
+
+    /// \overload
+    /// Invoke FindAllRelationshipTargetPaths() with the UsdPrimDefaultPredicate
+    /// as its traversalPredicate.
     USD_API
     SdfPathVector
     FindAllRelationshipTargetPaths(

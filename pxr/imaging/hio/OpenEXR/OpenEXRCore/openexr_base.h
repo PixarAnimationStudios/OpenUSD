@@ -6,7 +6,7 @@
 #ifndef OPENEXR_BASE_H
 #define OPENEXR_BASE_H
 
-#include "openexr_conf.h"
+#include "openexr_config.h"
 
 #include <stddef.h>
 

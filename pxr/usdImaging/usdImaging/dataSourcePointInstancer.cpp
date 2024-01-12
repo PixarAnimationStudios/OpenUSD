@@ -186,15 +186,21 @@ const UsdImagingDataSourceCustomPrimvars::Mappings &
 _GetCustomPrimvarMappings(const UsdPrim &usdPrim)
 {
     static const UsdImagingDataSourceCustomPrimvars::Mappings mappings = {
-        { HdInstancerTokens->translate,
+        { (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+            ? HdInstancerTokens->translate
+            : HdInstancerTokens->instanceTranslations),
           UsdGeomTokens->positions,
           HdPrimvarSchemaTokens->instance
         },
-        { HdInstancerTokens->rotate,
+        { (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+            ? HdInstancerTokens->rotate
+            : HdInstancerTokens->instanceRotations),
           UsdGeomTokens->orientations,
           HdPrimvarSchemaTokens->instance
         },
-        { HdInstancerTokens->scale,
+        { (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+            ? HdInstancerTokens->scale
+            : HdInstancerTokens->instanceScales),
           UsdGeomTokens->scales,
           HdPrimvarSchemaTokens->instance
         }

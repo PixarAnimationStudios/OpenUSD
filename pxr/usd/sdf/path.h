@@ -305,15 +305,7 @@ public:
     
     /// Constructs the default, empty path.
     ///
-#if defined(ARCH_COMPILER_GCC) && ARCH_COMPILER_GCC_MAJOR <= 6
-    SdfPath() noexcept {
-        // This generates a single instruction instead of 2 on gcc 6.3.  Seems
-        // to be fixed on gcc 7+ and newer clangs.
-        memset(this, 0, sizeof(*this));
-    }
-#else
     SdfPath() noexcept = default;
-#endif
 
     /// Creates a path from the given string.
     ///

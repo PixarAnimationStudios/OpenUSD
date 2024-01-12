@@ -31,6 +31,7 @@
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/envSetting.h"
 
 #if defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
@@ -41,6 +42,24 @@
 #include <cerrno>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+#if defined(ARCH_OS_WINDOWS)
+    // Older networked filesystems have reported incorrect file permissions
+    // on Windows so the write permissions check has been disabled as a default
+    static const bool requireWritePermissionDefault = false;
+#else
+    static const bool requireWritePermissionDefault = true;
+#endif
+
+TF_DEFINE_ENV_SETTING(
+    TF_REQUIRE_FILESYSTEM_WRITE_PERMISSION, requireWritePermissionDefault,
+        "If enabled, check for both directory and file write permissions "
+        "before creating output files. Otherwise attempt to create output "
+        "files without first checking permissions. Note that if this is "
+        "disabled and the directory is writable then there is a risk of "
+        "renaming and obliterating the file; however it may be worth "
+        "disabling if your networked file system often reports incorrect "
+        "file permissions.");
 
 bool
 Tf_AtomicRenameFileOver(std::string const &srcFileName,
@@ -135,23 +154,25 @@ Tf_CreateSiblingTempFile(std::string fileName,
     std::string dirPath = TfStringGetBeforeSuffix(realFilePath, '/');
 #endif
 
-    if (ArchFileAccess(dirPath.c_str(), W_OK) != 0) {
-        *error = TfStringPrintf(
-            "Insufficient permissions to write to destination "
-            "directory '%s'", dirPath.c_str());
-        return result;
-    }
+    if (TfGetEnvSetting(TF_REQUIRE_FILESYSTEM_WRITE_PERMISSION)){
+        if (ArchFileAccess(dirPath.c_str(), W_OK) != 0) {
+            *error = TfStringPrintf(
+                "Insufficient permissions to write to destination "
+                "directory '%s'", dirPath.c_str());
+            return result;
+        }
 
-    // Directory exists and has write permission. Check whether the destination
-    // file exists and has write permission. We can rename into this path
-    // successfully even if we can't write to the file, but we retain the policy
-    // that if the user couldn't open the file for writing, they can't write to
-    // the file via this object.
-    if (ArchFileAccess(realFilePath.c_str(), W_OK) != 0 && errno != ENOENT) {
-        *error = TfStringPrintf(
-            "Insufficient permissions to write to destination "
-            "file '%s'", realFilePath.c_str());
-        return result;
+        // Directory exists and has write permission. Check whether the destination
+        // file exists and has write permission. We can rename into this path
+        // successfully even if we can't write to the file, but we retain the policy
+        // that if the user couldn't open the file for writing, they can't write to
+        // the file via this object.
+        if (ArchFileAccess(realFilePath.c_str(), W_OK) != 0 && errno != ENOENT) {
+            *error = TfStringPrintf(
+                "Insufficient permissions to write to destination "
+                "file '%s'", realFilePath.c_str());
+            return result;
+        }
     }
 
     std::string tmpFilePrefix =

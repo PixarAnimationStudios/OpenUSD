@@ -25,7 +25,6 @@
 #define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_GPRIM_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/enums.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/gf/matrix4d.h"
 
@@ -37,8 +36,6 @@
 #include "hdPrman/utils.h"
 
 #include "Riley.h"
-#include "RixShadingUtils.h"
-#include "RixPredefinedStrings.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -181,16 +178,6 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
     sceneDelegate->SampleTransform(id, &xf);
 
-    // If blur is explicitly disabled, use single time 0 sample
-    const bool disableTransformMotionBlur
-        = !param->GetMotionBlur(sceneDelegate, id)
-        || (param->GetNumXformSamples(sceneDelegate, id) < 2);
-    if (disableTransformMotionBlur) {
-        xf.values[0] = xf.Resample(0.f);
-        xf.times[0] = 0.f;
-        xf.Resize(1);
-    }
-
     // Update visibility so thet rprim->IsVisible() will work in render pass
     if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {
         BASE::_UpdateVisibility(sceneDelegate, dirtyBits);
@@ -300,8 +287,8 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                 HdGeomSubset &subset = geomSubsets[j];
 
                 // Convert indices to int32_t and set as k_shade_faceset.
-                std::vector<int32_t> int32Indices(subset.indices.begin(),
-                                                  subset.indices.end());
+                std::vector<int32_t> int32Indices(subset.indices.cbegin(),
+                                                  subset.indices.cend());
                 primvars.SetIntegerArray(RixStr.k_shade_faceset,
                                          int32Indices.data(),
                                          int32Indices.size());
@@ -351,7 +338,10 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     //
     
     // Resolve attributes.
-    RtParamList attrs = param->ConvertAttributes(sceneDelegate, id, true);
+    bool sceneVisibility = true;
+    RtParamList attrs = param->ConvertAttributes(sceneDelegate, id, true,
+                                                 &sceneVisibility);
+    _sceneVisibility = sceneVisibility;
 
     // Add "identifier:id" with the prim id.
     attrs.SetInteger(RixStr.k_identifier_id, primId);

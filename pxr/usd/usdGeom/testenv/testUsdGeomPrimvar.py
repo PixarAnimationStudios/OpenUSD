@@ -473,6 +473,26 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         self.assertFalse(oBasePrimvar2.IsIndexed())
         self.assertTrue(oBasePrimvar2.GetIndicesAttr().GetResolveInfo().ValueIsBlocked())
 
+        # Make sure ComputeFlattened works correctly
+        _2darr = gp_pv.CreatePrimvar('sphereHarmonics', Sdf.ValueTypeNames.FloatArray)
+        arrVals = Vt.FloatArray([0, 1, 2, 3, 4, 5, 6, 7, 8])
+        arrIdxs = Vt.IntArray([0, 1, 2, 0, 1, 2])
+        self.assertTrue( _2darr.Set(arrVals))
+        self.assertTrue(_2darr.SetIndices(arrIdxs))
+        self.assertTrue(_2darr.IsIndexed())
+
+        self.assertTrue(_2darr.SetElementSize(1))
+        self.assertEqual(_2darr.ComputeFlattened(), [0, 1, 2, 0, 1, 2])
+
+        self.assertTrue(_2darr.SetElementSize(2))
+        self.assertEqual(_2darr.ComputeFlattened(), [0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5])
+
+        self.assertTrue(_2darr.SetElementSize(3))
+        self.assertEqual(_2darr.ComputeFlattened(), [0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8])
+
+        self.assertTrue(_2darr.SetElementSize(4))
+        self.assertEqual(_2darr.ComputeFlattened(), None)
+
     def test_Bug124579(self):
         from pxr import Usd
         from pxr import UsdGeom

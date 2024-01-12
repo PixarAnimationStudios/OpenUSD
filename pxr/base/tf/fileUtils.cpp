@@ -675,7 +675,7 @@ TfTouchFile(string const &fileName, bool create)
             GENERIC_WRITE,          // open for write
             0,                      // not for sharing
             NULL,                   // default security
-            CREATE_ALWAYS,          // overwrite existing
+            OPEN_ALWAYS,            // opens existing
             FILE_ATTRIBUTE_NORMAL,  //normal file
             NULL);                  // no template
 

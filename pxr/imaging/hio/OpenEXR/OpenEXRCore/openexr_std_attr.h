@@ -26,8 +26,6 @@ extern "C" {
 chromaticities
 whiteLuminance
 adoptedNeutral
-renderingTransform
-lookModTransform
 xDensity
 owner
 comments
@@ -50,7 +48,6 @@ worldToCamera
 worldToNDC
 deepImageState
 originalDataWindow
-dwaCompressionLevel
 */
 
 /** @} */

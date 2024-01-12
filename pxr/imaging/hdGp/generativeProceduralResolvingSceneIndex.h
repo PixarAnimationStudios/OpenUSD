@@ -108,6 +108,10 @@ protected:
 
     ///////////////////////////////////////////////////////////////////////////
 
+    void _SystemMessage(
+        const TfToken &messageType,
+        const HdDataSourceBaseHandle &args) override;
+
 private:
 
     static HdGpGenerativeProcedural *_ConstructProcedural(
@@ -120,7 +124,7 @@ private:
 
     static void _CombinePathArrays(const _DensePathSet &s, SdfPathVector *v);
 
-    struct _ProcEntry
+    struct _ProcEntry : public TfWeakBase
     {
         enum State : unsigned char {
             StateUncooked = 0,
@@ -157,6 +161,8 @@ private:
         }
     };
 
+    TF_DECLARE_WEAK_PTRS(_ProcEntry);
+
     struct _GeneratedPrimEntry
     {
         _GeneratedPrimEntry()
@@ -179,6 +185,9 @@ private:
 
     using _ProcEntryMap =
         std::unordered_map<SdfPath, _ProcEntry, TfHash>;
+
+    using _WeakProcEntryMap =
+        tbb::concurrent_unordered_map<SdfPath, _ProcEntryPtr, TfHash>;
 
     using _PathSet = std::unordered_set<SdfPath, TfHash>;
 
@@ -205,6 +214,14 @@ private:
             *dirtiedDependencies = nullptr
     ) const;
 
+
+    void _UpdateProceduralResult(
+        _ProcEntry *procEntry,
+        const SdfPath &proceduralPrimPath,
+        const HdGpGenerativeProcedural::ChildPrimTypeMap &newChildTypes,
+        _Notices *outputNotices) const;
+
+
     void _RemoveProcedural(
         const SdfPath &proceduralPrimPath,
         _Notices *outputNotices=nullptr) const;
@@ -219,6 +236,8 @@ private:
     // procedural prim path -> entry
     mutable _ProcEntryMap _procedurals;
 
+    mutable _WeakProcEntryMap _activeSyncProcedurals;
+
     // reverse mapping of dependency -> dependent roots
     mutable _DependencyMap _dependencies;
 
@@ -231,6 +250,8 @@ private:
     mutable _MapMutex _proceduralsMutex;
 
     TfToken _targetPrimTypeName;
+
+    bool _attemptAsync;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

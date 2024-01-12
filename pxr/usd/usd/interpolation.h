@@ -32,8 +32,6 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/gf/declare.h"
 
-#include <boost/preprocessor/seq/for_each.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -107,15 +105,15 @@ struct UsdLinearInterpolationTraits
 };
 
 /// \cond INTERNAL
-#define _USD_DECLARE_INTERPOLATION_TRAITS(r, unused, type)       \
+#define _USD_DECLARE_INTERPOLATION_TRAITS(unused, type)         \
 template <>                                                     \
 struct UsdLinearInterpolationTraits<type>                       \
 {                                                               \
     static const bool isSupported = true;                       \
 };
 
-BOOST_PP_SEQ_FOR_EACH(_USD_DECLARE_INTERPOLATION_TRAITS, ~, 
-                      USD_LINEAR_INTERPOLATION_TYPES)
+TF_PP_SEQ_FOR_EACH(_USD_DECLARE_INTERPOLATION_TRAITS, ~,
+                   USD_LINEAR_INTERPOLATION_TYPES)
 
 #undef _USD_DECLARE_INTERPOLATION_TRAITS
 /// \endcond

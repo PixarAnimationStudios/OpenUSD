@@ -702,22 +702,23 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 # the naming of the dlls and so it is best to rely on boost's most default
 # settings for maximum compatibility.
 #
-# On behalf of versions of visual studio prior to vs2022, we still support
-# boost 1.76. We don't completely know if boost 1.78 is in play on Windows, 
-# until we have determined whether Python 3 has been selected as a target. 
-# That isn't known at this point in the script, so we simplify the logic by 
-# checking for any of the possible boost header locations that are possible
-# outcomes from running this script.
+# It's tricky to determine which version of boost we'll be using at this
+# point in the script, so we simplify the logic by checking for any of the
+# possible boost header locations that are possible outcomes from running
+# this script.
 BOOST_VERSION_FILES = [
     "include/boost/version.hpp",
     "include/boost-1_76/boost/version.hpp",
-    "include/boost-1_78/boost/version.hpp"
+    "include/boost-1_78/boost/version.hpp",
+    "include/boost-1_82/boost/version.hpp"
 ]
 
 def InstallBoost_Helper(context, force, buildArgs):
     # In general we use boost 1.76.0 to adhere to VFX Reference Platform CY2022.
     # However, there are some cases where a newer version is required.
-    # - Building with Python 3.10 requires boost 1.76.0 or newer.
+    # - Building with Python 3.11 requires boost 1.82.0 or newer
+    #   (https://github.com/boostorg/python/commit/a218ba)
+    # - Building with Python 3.10 requires boost 1.76.0 or newer
     #   (https://github.com/boostorg/python/commit/cbd2d9)
     #   XXX: Due to a typo we've been using 1.78.0 in this case for a while.
     #        We're leaving it that way to minimize potential disruption.
@@ -727,7 +728,9 @@ def InstallBoost_Helper(context, force, buildArgs):
     #   compatibility issues on Big Sur and Monterey.
     pyInfo = GetPythonInfo(context)
     pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
-    if context.buildPython and pyVer >= (3, 10):
+    if context.buildPython and pyVer >= (3, 11):
+        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip"
+    elif context.buildPython and pyVer >= (3, 10):
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
     elif IsVisualStudio2022OrGreater():
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
@@ -1155,6 +1158,12 @@ def InstallOpenEXR(context, force, buildArgs):
         RunCMake(context, force, 
                  ['-DOPENEXR_INSTALL_TOOLS=OFF',
                   '-DOPENEXR_INSTALL_EXAMPLES=OFF',
+
+                  # Force OpenEXR to build and use a separate Imath library
+                  # instead of looking for one externally. This ensures that
+                  # OpenEXR and other dependencies use the Imath library
+                  # built via this script.
+                  '-DOPENEXR_FORCE_INTERNAL_IMATH=ON',
                   '-DBUILD_TESTING=OFF'] + buildArgs)
 
 OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
@@ -1283,6 +1292,12 @@ def InstallOpenImageIO(context, force, buildArgs):
         extraArgs.append('-DBoost_NO_BOOST_CMAKE=On')
         extraArgs.append('-DBoost_NO_SYSTEM_PATHS=True')
 
+        # OpenImageIO 2.3.5 changed the default postfix for debug library
+        # names from "" to "_d". USD's build system currently does not support
+        # finding the library under this name, so as an interim workaround
+        # we reset it back to its old value.
+        extraArgs.append('-DCMAKE_DEBUG_POSTFIX=""')
+
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
 
@@ -1320,7 +1335,7 @@ OPENCOLORIO = Dependency("OpenColorIO", InstallOpenColorIO,
 ############################################################
 # OpenSubdiv
 
-OPENSUBDIV_URL = "https://github.com/PixarAnimationStudios/OpenSubdiv/archive/v3_5_1.zip"
+OPENSUBDIV_URL = "https://github.com/PixarAnimationStudios/OpenSubdiv/archive/v3_6_0.zip"
 
 def InstallOpenSubdiv(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OPENSUBDIV_URL, context, force)):
@@ -1582,7 +1597,17 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_BUILD_DOCUMENTATION=ON')
         else:
             extraArgs.append('-DPXR_BUILD_DOCUMENTATION=OFF')
-    
+
+        if context.buildHtmlDocs:
+            extraArgs.append('-DPXR_BUILD_HTML_DOCUMENTATION=ON')
+        else:
+            extraArgs.append('-DPXR_BUILD_HTML_DOCUMENTATION=OFF')
+
+        if context.buildPythonDocs:
+            extraArgs.append('-DPXR_BUILD_PYTHON_DOCUMENTATION=ON')
+        else:
+            extraArgs.append('-DPXR_BUILD_PYTHON_DOCUMENTATION=OFF')
+
         if context.buildTests:
             extraArgs.append('-DPXR_BUILD_TESTS=ON')
         else:
@@ -1677,11 +1702,6 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=ON')
         else:
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=OFF')
-
-        if context.buildPythonDocs:
-            extraArgs.append('-DPXR_BUILD_PYTHON_DOCUMENTATION=ON')
-        else:
-            extraArgs.append('-DPXR_BUILD_PYTHON_DOCUMENTATION=OFF')
 
         if Windows():
             # Increase the precompiled header buffer limit.
@@ -1876,9 +1896,9 @@ subgroup.add_argument("--no-tools", dest="build_tools", action="store_false",
                       help="Do not build USD tools")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--docs", dest="build_docs", action="store_true",
-                      default=False, help="Build documentation")
+                      default=False, help="Build C++ documentation")
 subgroup.add_argument("--no-docs", dest="build_docs", action="store_false",
-                      help="Do not build documentation (default)")
+                      help="Do not build C++ documentation (default)")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--python-docs", dest="build_python_docs", action="store_true",
                       default=False, help="Build Python docs")
@@ -1939,10 +1959,10 @@ subgroup.add_argument("--no-openvdb", dest="enable_openvdb",
                       action="store_false",
                       help="Disable OpenVDB support in imaging (default)")
 subgroup = group.add_mutually_exclusive_group()
-subgroup.add_argument("--onetbb", dest="enable_onetbb", action="store_true", 
-                      default=False, 
+subgroup.add_argument("--onetbb", dest="enable_onetbb", action="store_true",
+                      default=False,
                       help="Use new oneAPI TBB version")
-subgroup.add_argument("--no-onetbb", dest="enable_onetbb", 
+subgroup.add_argument("--no-onetbb", dest="enable_onetbb",
                       action="store_false",
                       help="Use old TBB version (default)")
 subgroup = group.add_mutually_exclusive_group()
@@ -2112,14 +2132,15 @@ class InstallContext:
 
         # Optional components
         self.buildTests = args.build_tests
-        self.buildDocs = args.build_docs
         self.buildPython = args.build_python
         self.buildExamples = args.build_examples
         self.buildTutorials = args.build_tutorials
         self.buildTools = args.build_tools
 
-        # - TBB
-        self.tbbVersion = "2021" if args.enable_onetbb else "2019"
+        # - Documentation
+        self.buildDocs = args.build_docs or args.build_python_docs
+        self.buildHtmlDocs = args.build_docs
+        self.buildPythonDocs = args.build_python_docs
 
         # - Imaging
         self.buildImaging = (args.build_imaging == IMAGING or
@@ -2156,8 +2177,8 @@ class InstallContext:
         # - MaterialX Plugin
         self.buildMaterialX = args.build_materialx
 
-        # - Python docs
-        self.buildPythonDocs = args.build_python_docs        
+        # - TBB
+        self.tbbVersion = "2021" if args.enable_onetbb else "2019"
 
     def GetBuildArguments(self, dep):
         return self.buildArgs.get(dep.name.lower(), [])
@@ -2279,7 +2300,11 @@ if which("cmake"):
     # Check cmake minimum version requirements
     pyInfo = GetPythonInfo(context)
     pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
-    if context.buildPython and pyVer >= (3, 10):
+    if context.buildPython and pyVer >= (3, 11):
+        # Python 3.11 requires boost 1.82.0, which is not supported prior
+        # to 3.27
+        cmake_required_version = (3, 27)
+    elif context.buildPython and pyVer >= (3, 10):
         # Python 3.10 is not supported prior to 3.24
         cmake_required_version = (3, 24)
     elif IsVisualStudio2022OrGreater():
@@ -2316,7 +2341,8 @@ if context.buildDocs:
     if not which("doxygen"):
         PrintError("doxygen not found -- please install it and adjust your PATH")
         sys.exit(1)
-        
+
+if context.buildHtmlDocs:
     if not which("dot"):
         PrintError("dot not found -- please install graphviz and adjust your "
                    "PATH")
@@ -2345,9 +2371,10 @@ if PYSIDE in requiredDependencies:
     pyside2Uic = ["pyside2-uic"]
     found_pyside2Uic = any([which(p) for p in pyside2Uic])
     if not given_pysideUic and not found_pyside2Uic and not found_pyside6Uic:
-        PrintError("uic not found -- please install PySide2 or PySide6 and"
-                   " adjust your PATH. (Note that this program may be"
-                   " named {0} depending on your platform)"
+        PrintError("PySide's user interface compiler was not found -- please"
+                   " install PySide2 or PySide6 and adjust your PATH. (Note"
+                   " that this program may be named {0} depending on your"
+                   " platform)"
                    .format(" or ".join(set(pyside2Uic+pyside6Uic))))
         sys.exit(1)
 
@@ -2385,8 +2412,7 @@ summaryMsg += """\
     Python support              {buildPython}
       Python Debug:             {debugPython}
       Python docs:              {buildPythonDocs}
-    TBB version:                {tbbVersion}
-    Documentation               {buildDocs}
+    Documentation               {buildHtmlDocs}
     Tests                       {buildTests}
     Examples                    {buildExamples}
     Tutorials                   {buildTutorials}
@@ -2395,6 +2421,7 @@ summaryMsg += """\
       HDF5 support:             {enableHDF5}
     Draco Plugin                {buildDraco}
     MaterialX Plugin            {buildMaterialX}
+    TBB version                 {tbbVersion}
 
   Dependencies                  {dependencies}"""
 
@@ -2447,8 +2474,7 @@ summaryMsg = summaryMsg.format(
     buildPython=("On" if context.buildPython else "Off"),
     debugPython=("On" if context.debugPython else "Off"),
     buildPythonDocs=("On" if context.buildPythonDocs else "Off"),
-    tbbVersion=context.tbbVersion,
-    buildDocs=("On" if context.buildDocs else "Off"),
+    buildHtmlDocs=("On" if context.buildHtmlDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),
     buildExamples=("On" if context.buildExamples else "Off"),
     buildTutorials=("On" if context.buildTutorials else "Off"),
@@ -2456,7 +2482,8 @@ summaryMsg = summaryMsg.format(
     buildAlembic=("On" if context.buildAlembic else "Off"),
     buildDraco=("On" if context.buildDraco else "Off"),
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
-    enableHDF5=("On" if context.enableHDF5 else "Off"))
+    enableHDF5=("On" if context.enableHDF5 else "Off"),
+    tbbVersion=context.tbbVersion)
 
 Print(summaryMsg)
 

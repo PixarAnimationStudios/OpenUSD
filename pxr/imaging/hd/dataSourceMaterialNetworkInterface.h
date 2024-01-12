@@ -46,15 +46,21 @@ public:
 
     HdDataSourceMaterialNetworkInterface(
         const SdfPath &materialPrimPath,
-        const HdContainerDataSourceHandle &networkContainer)
+        const HdContainerDataSourceHandle &networkContainer,
+        const HdContainerDataSourceHandle &primContainer)
     : _materialPrimPath(materialPrimPath)
     , _networkContainer(networkContainer)
-    , _containerEditor(networkContainer)
+    , _networkEditor(networkContainer)
+    , _primContainer(primContainer)
     {}
 
+    HD_API
     SdfPath GetMaterialPrimPath() const override {
         return _materialPrimPath;
     }
+
+    HD_API
+    std::string GetModelAssetName() const override;
 
     HD_API
     TfTokenVector GetNodeNames() const override;
@@ -74,6 +80,11 @@ public:
     
     HD_API
     VtValue GetNodeParameterValue(
+        const TfToken &nodeName,
+        const TfToken &paramName) const override;
+    
+    HD_API
+    HdMaterialNetworkInterface::NodeParamData GetNodeParameterData(
         const TfToken &nodeName,
         const TfToken &paramName) const override;
 
@@ -99,6 +110,12 @@ public:
         const TfToken &nodeName,
         const TfToken &paramName,
         const VtValue &value) override;
+
+    HD_API
+    void SetNodeParameterData(
+        const TfToken &nodeName,
+        const TfToken &paramName,
+        const NodeParamData &paramData) override;
 
     HD_API
     void DeleteNodeParameter(
@@ -151,7 +168,8 @@ private:
 
     SdfPath _materialPrimPath;
     HdContainerDataSourceHandle _networkContainer;
-    HdContainerDataSourceEditor _containerEditor;
+    HdContainerDataSourceEditor _networkEditor;
+    HdContainerDataSourceHandle _primContainer;
     _OverrideMap _existingOverrides;
     _TokenSet _overriddenNodes;
     _TokenSet _deletedNodes;

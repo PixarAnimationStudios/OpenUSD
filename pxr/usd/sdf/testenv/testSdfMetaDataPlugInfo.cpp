@@ -39,6 +39,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/pathUtils.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/stringUtils.h"
 #include <iostream>
 #include <string>
@@ -218,11 +219,11 @@ int main()
     TfRegistryManager::GetInstance().SubscribeTo<SdfSchema>();
 
     // Check all the fields
-    #define _CHECK_FIELD(r, unused, elem)        \
+    #define _CHECK_FIELD(unused, elem)           \
     {                                            \
         CheckField<SDF_VALUE_CPP_TYPE(elem)>();  \
     }
-    BOOST_PP_SEQ_FOR_EACH(_CHECK_FIELD, ~, SDF_VALUE_TYPES)
+    TF_PP_SEQ_FOR_EACH(_CHECK_FIELD, ~, SDF_VALUE_TYPES)
     #undef _CHECK_FIELD
 
     // Check the dictionary field separately

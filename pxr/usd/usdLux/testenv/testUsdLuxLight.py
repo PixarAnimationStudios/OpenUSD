@@ -369,6 +369,8 @@ class TestUsdLuxLight(unittest.TestCase):
         self.assertTrue(cylLight)
         sphereLight = UsdLux.SphereLight.Define(stage, "/SphereLight")
         self.assertTrue(sphereLight)
+        portalLight = UsdLux.PortalLight.Define(stage, "/PortalLight")
+        self.assertTrue(portalLight)
 
         # Verify the extent and bbox computations for each light given its
         # fallback attribute values.
@@ -376,6 +378,7 @@ class TestUsdLuxLight(unittest.TestCase):
         _VerifyExtentAndBBox(diskLight, [(-0.5, -0.5, 0.0), (0.5, 0.5, 0.0)])
         _VerifyExtentAndBBox(cylLight, [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)])
         _VerifyExtentAndBBox(sphereLight, [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)])
+        _VerifyExtentAndBBox(portalLight, [(-0.5, -0.5, 0.0), (0.5, 0.5, 0.0)])
 
         # Change the size related attribute of each light and verify the extents
         # and bounding boxes are updated.
@@ -393,14 +396,9 @@ class TestUsdLuxLight(unittest.TestCase):
         sphereLight.CreateRadiusAttr(3.0)
         _VerifyExtentAndBBox(sphereLight, [(-3.0, -3.0, -3.0), (3.0, 3.0, 3.0)])
 
-        # Special case for portal light. Portal lights don't have any attributes
-        # that affect their extent. Extent values are used only when
-        # explicitly authored but portal lights' do register a
-        # ComputeExtentFuction, which sets the extent as default from the
-        # schema.
-        portalLight = UsdLux.PortalLight.Define(stage, "/PortalLight")
-        self.assertTrue(portalLight)
-        _VerifyExtentAndBBox(portalLight, [(-0.5, -0.5, 0.0), (0.5, 0.5, 0.0)])
+        portalLight.CreateWidthAttr(4.0)
+        portalLight.CreateHeightAttr(6.0)
+        _VerifyExtentAndBBox(portalLight, [(-2.0, -3.0, 0.0), (2.0, 3.0, 0.0)])
 
         # For completeness verify that distant and dome lights are not 
         # boundable.
@@ -458,7 +456,7 @@ class TestUsdLuxLight(unittest.TestCase):
             'DistantLight' : ['angle'],
             'DomeLight' : ['texture:file', 'texture:format'],
             'GeometryLight' : [],
-            'PortalLight' : [],
+            'PortalLight' : ['width', 'height'],
             'RectLight' : ['width', 'height', 'texture:file'],
             'SphereLight' : ['radius'],
             'MeshLight' : [],

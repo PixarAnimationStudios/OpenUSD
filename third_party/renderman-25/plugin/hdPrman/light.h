@@ -69,7 +69,6 @@ private:
     SdfPathVector _lightFilterPaths;
     std::vector<TfToken> _lightFilterLinks;
     TfToken _shadowLink;
-    std::vector<riley::CoordinateSystemId> _coordSysIds;
 };
 
 

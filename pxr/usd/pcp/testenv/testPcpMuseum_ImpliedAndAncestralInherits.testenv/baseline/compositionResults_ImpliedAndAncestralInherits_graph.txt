@@ -24,6 +24,7 @@ Node 0:
     Is restricted:            FALSE
     Is inert:                 FALSE
     Contribute specs:         TRUE
+        Restricted at depth:  0
     Has specs:                FALSE
     Has symmetry:             FALSE
 Node 1:
@@ -44,6 +45,7 @@ Node 1:
     Is restricted:            FALSE
     Is inert:                 FALSE
     Contribute specs:         TRUE
+        Restricted at depth:  0
     Has specs:                FALSE
     Has symmetry:             FALSE
 Node 2:
@@ -64,6 +66,7 @@ Node 2:
     Is restricted:            FALSE
     Is inert:                 FALSE
     Contribute specs:         TRUE
+        Restricted at depth:  0
     Has specs:                FALSE
     Has symmetry:             FALSE
 Node 3:
@@ -86,6 +89,7 @@ Node 3:
     Is restricted:            FALSE
     Is inert:                 FALSE
     Contribute specs:         TRUE
+        Restricted at depth:  0
     Has specs:                TRUE
     Has symmetry:             FALSE
     Prim stack:

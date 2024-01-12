@@ -86,7 +86,8 @@ HdDependencyForwardingSceneIndex::_PrimsRemoved(
         _ClearDependencies(primPath);
 
         // If this prim is depended on, flag its map of affected paths/locators
-        // for deletion. Also, send a dirty notice for each affected entry.
+        // for deletion. Also, send a dirty notice for each affected entry,
+        // filtering out self-dependencies.
         // Note: The affected path/locator isn't notified explicitly of this 
         //       prim's removal. It needs to query the scene index and handle
         //       the absence of the prim to detect the removal.
@@ -101,6 +102,11 @@ HdDependencyForwardingSceneIndex::_PrimsRemoved(
                 affectedPair.second.flaggedForDeletion = true;
 
                 const SdfPath &affectedPrimPath = affectedPair.first;
+
+                // Filter out self-dependencies.
+                if (affectedPrimPath == primPath) {
+                    continue;
+                }
 
                 for (const auto &keyEntryPair :
                         affectedPair.second.locatorsEntryMap) {

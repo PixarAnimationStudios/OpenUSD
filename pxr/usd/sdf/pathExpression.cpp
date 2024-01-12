@@ -75,8 +75,8 @@ SdfPathExpression::SdfPathExpression(std::string const &inputStr,
     std::string errMsg;
     if (!inputStr.empty() &&
         !ParsePathExpression(inputStr, parseContext, this, &errMsg)) {
-        _parseError = errMsg;
         *this = {};
+        _parseError = errMsg;
         TF_RUNTIME_ERROR(errMsg);
     }
 }
@@ -336,6 +336,10 @@ SdfPathExpression::ResolveReferences(
     TfFunctionRef<
     SdfPathExpression (ExpressionReference const &)> resolve) &&
 {
+    if (IsEmpty()) {
+        return {};
+    }
+    
     std::vector<SdfPathExpression> stack;
     
     auto logic = [&stack](Op op, int argIndex) {

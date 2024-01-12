@@ -43,8 +43,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-
 // Recursively computes the given asset's dependencies.
 // This class is responsible for handling layer traversal and asset path
 // discovery only.  As asset paths are discovered, they are handed off to the
@@ -146,6 +144,8 @@ private:
     // Enqueues a dependency into the LIFO processing queue
     void _EnqueueDependency(const SdfLayerRefPtr layer, 
                            const std::string &assetPath);
+    void _EnqueueDependencies(const SdfLayerRefPtr layer,
+                              const std::vector<std::string> &dependencies);
 
     // Determines if a value needs to be processed by the delegate. Dictionaries
     // are always considered because they main contain asset path values.

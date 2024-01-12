@@ -63,6 +63,7 @@
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/fileUtils.h"
@@ -1524,7 +1525,7 @@ static void testValue() {
         m.Clear();
     }
 
-#define _VT_TEST_ZERO_VALUE(r, unused, elem)                            \
+#define _VT_TEST_ZERO_VALUE(unused, elem)                               \
     {                                                                   \
         VtValue empty;                                                  \
         TfErrorMark m;                                                  \
@@ -1533,8 +1534,7 @@ static void testValue() {
         m.Clear();                                                      \
     }
     
-    BOOST_PP_SEQ_FOR_EACH(_VT_TEST_ZERO_VALUE,
-        unused, 
+    TF_PP_SEQ_FOR_EACH(_VT_TEST_ZERO_VALUE, ~,
         VT_VEC_VALUE_TYPES
         VT_MATRIX_VALUE_TYPES
         VT_QUATERNION_VALUE_TYPES

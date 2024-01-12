@@ -63,6 +63,10 @@ def _CreateStage(fmt):
                 def "D" { add int DtoA.connect = <../A>
                 }
             }
+            over "E" { add int EtoF.connect = <../F>
+            }
+            over "F" { add int FtoE.connect = <../E>
+            }
         }
         ''')
 
@@ -119,6 +123,35 @@ class TestUsdAttributeConnections(unittest.TestCase):
                 'Recursive' or attr.GetPrim().GetName() in ('A', 'C'))),
             set([Sdf.Path('/Recursive/A'), Sdf.Path('/Recursive/B'),
                  Sdf.Path('/Recursive/C'), Sdf.Path('/Recursive/D'),
+                 Sdf.Path('/Recursive/D/B'), Sdf.Path('/Recursive/D/D')]))
+
+        # Recursive finding with traversal predicate.
+        recursive = stage.GetPrimAtPath("/Recursive")
+        self.assertEqual(
+            set(recursive.FindAllAttributeConnectionPaths(
+                Usd.PrimAllPrimsPredicate)),
+            set([Sdf.Path('/Recursive/A'), Sdf.Path('/Recursive/B'),
+                 Sdf.Path('/Recursive/C'), Sdf.Path('/Recursive/D'),
+                 Sdf.Path('/Recursive/E'), Sdf.Path('/Recursive/F'),
+                 Sdf.Path('/Recursive/D/A'), Sdf.Path('/Recursive/D/B'),
+                 Sdf.Path('/Recursive/D/C'), Sdf.Path('/Recursive/D/D')]))
+
+        self.assertEqual(
+            set(recursive.FindAllAttributeConnectionPaths(
+                Usd.PrimAllPrimsPredicate,
+                predicate =
+                lambda attr: attr.GetPrim().GetName() in ('B', 'D', 'E'))),
+            set([Sdf.Path('/Recursive/A'), Sdf.Path('/Recursive/C'),
+                 Sdf.Path('/Recursive/F'),
+                 Sdf.Path('/Recursive/D/A'), Sdf.Path('/Recursive/D/C')]))
+
+        self.assertEqual(
+            set(recursive.FindAllAttributeConnectionPaths(
+                Usd.PrimAllPrimsPredicate,
+                predicate =
+                lambda attr: attr.GetPrim().GetName() in ('A', 'C', 'F'))),
+            set([Sdf.Path('/Recursive/B'), Sdf.Path('/Recursive/D'),
+                 Sdf.Path('/Recursive/E'),
                  Sdf.Path('/Recursive/D/B'), Sdf.Path('/Recursive/D/D')]))
 
     def test_ConnectionsInInstances(self):

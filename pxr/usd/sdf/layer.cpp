@@ -76,6 +76,7 @@
 #include <functional>
 #include <iostream>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <thread>
 #include <vector>
@@ -243,7 +244,7 @@ SdfLayer::~SdfLayer()
     // Note that FindOrOpen may have already removed this layer from
     // the registry, so we count on this API not emitting errors in that
     // case.
-    _layerRegistry->Erase(_self);
+    _layerRegistry->Erase(_self, *(_self->_assetInfo));
 }
 
 const SdfFileFormatConstPtr&
@@ -307,7 +308,7 @@ SdfLayer::_WaitForInitializationAndCheckIfSuccessful()
     // The callers of this method are responsible for checking the result
     // and dropping any references they hold.  As a convenience to them,
     // we return the value here.
-    return _initializationWasSuccessful.get();
+    return _initializationWasSuccessful.value();
 }
 
 static bool
@@ -779,7 +780,7 @@ SdfLayer::_TryToFindLayer(const string &identifier,
         if (layer) {
             // Layer is expiring and we have the write lock: erase it from the
             // registry.
-            _layerRegistry->Erase(layer);  
+            _layerRegistry->Erase(layer, *layer->_assetInfo);
         }
     } else if (!hasWriteLock && retryAsWriter && !lock.upgrade_to_writer()) {
         // Retry the find since we released the lock in upgrade_to_writer().
@@ -1480,13 +1481,15 @@ SdfLayer::_InitializeFromIdentifier(
         _stateDelegate->_SetLayer(_self);
     }
 
-    // Update the layer registry before sending notices.
-    _layerRegistry->InsertOrUpdate(_self);
-
     // Only send a notice if the identifier has changed (this notice causes
     // mass invalidation. See http://bug/33217). If the old identifier was
     // empty, this is a newly constructed layer, so don't send the notice.
-    if (!oldIdentifier.empty()) {
+    if (oldIdentifier.empty()) {
+        _layerRegistry->Insert(_self, *_assetInfo);
+    }
+    else {
+        // NOTE: After the swap, newInfo actually stores the original info.
+        _layerRegistry->Update(_self, *newInfo, *_assetInfo);
         SdfChangeBlock block;
         if (oldIdentifier != GetIdentifier()) {
             Sdf_ChangeManager::Get().DidChangeLayerIdentifier(
@@ -2563,7 +2566,8 @@ void
 SdfLayer::UpdateAssetInfo()
 {
     TRACE_FUNCTION();
-    TF_DEBUG(SDF_LAYER).Msg("SdfLayer::UpdateAssetInfo()\n");
+    TF_DEBUG(SDF_LAYER).Msg("SdfLayer::UpdateAssetInfo('%s')\n",
+                            GetIdentifier().c_str());
 
     // Hold open a change block to defer identifier-did-change
     // notification until the mutex is unlocked.
@@ -2951,7 +2955,7 @@ SdfLayer::_ShouldNotify() const
 {
     // Only notify if this layer has been successfully initialized.
     // (If initialization is not yet complete, do not notify.)
-    return _initializationWasSuccessful.get_value_or(false);
+    return _initializationWasSuccessful.value_or(false);
 }
 
 void
@@ -3201,7 +3205,7 @@ SdfLayer::GetExternalAssetDependencies() const
 // ModifyItemEdits() callback that updates a reference's or payload's
 // asset path for SdfReferenceListEditor and SdfPayloadListEditor.
 template <class RefOrPayloadType>
-static boost::optional<RefOrPayloadType>
+static std::optional<RefOrPayloadType>
 _UpdateRefOrPayloadPath(
     const string &oldLayerPath,
     const string &newLayerPath,
@@ -3210,7 +3214,7 @@ _UpdateRefOrPayloadPath(
     if (refOrPayload.GetAssetPath() == oldLayerPath) {
         // Delete if new layer path is empty, otherwise rename.
         if (newLayerPath.empty()) {
-            return boost::optional<RefOrPayloadType>();
+            return std::optional<RefOrPayloadType>();
         } else {
             RefOrPayloadType updatedRefOrPayload = refOrPayload;
             updatedRefOrPayload.SetAssetPath(newLayerPath);

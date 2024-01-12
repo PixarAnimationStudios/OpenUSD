@@ -107,7 +107,7 @@ private:
     HdStRenderPassShaderSharedPtr _idRenderPassShader;
     SdfPath _cameraId;
     CameraUtilFraming _framing;
-    std::pair<bool, CameraUtilConformWindowPolicy> _overrideWindowPolicy;
+    std::optional<CameraUtilConformWindowPolicy> _overrideWindowPolicy;
     // Used when client did not specify the camera framing (more expressive
     // and preferred).
     GfVec4d _viewport;
@@ -178,7 +178,6 @@ struct HdxRenderTaskParams
         // Camera framing and viewer state
         , viewport(0.0)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
-        , overrideWindowPolicy{false, CameraUtilFit}
         {}
 
     // ---------------------------------------------------------------------- //
@@ -259,7 +258,7 @@ struct HdxRenderTaskParams
     // Only used if framing is invalid.
     GfVec4d viewport;
     HdCullStyle cullStyle;
-    std::pair<bool, CameraUtilConformWindowPolicy> overrideWindowPolicy;
+    std::optional<CameraUtilConformWindowPolicy> overrideWindowPolicy;
 };
 
 // VtValue requirements

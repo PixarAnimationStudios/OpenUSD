@@ -37,8 +37,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdRenderPassState::HdRenderPassState()
     : _camera(nullptr)
     , _viewport(0, 0, 1, 1)
-    , _overrideWindowPolicy{false, CameraUtilFit}
-
     , _overrideColor(0.0f, 0.0f, 0.0f, 0.0f)
     , _wireframeColor(0.0f, 0.0f, 0.0f, 0.0f)
     , _pointColor(0.0f, 0.0f, 0.0f, 1.0f)
@@ -106,7 +104,7 @@ HdRenderPassState::SetCamera(const HdCamera * const camera)
 
 void
 HdRenderPassState::SetOverrideWindowPolicy(
-    const std::pair<bool, CameraUtilConformWindowPolicy> &overrideWindowPolicy)
+    const std::optional<CameraUtilConformWindowPolicy> &overrideWindowPolicy)
 {
     _overrideWindowPolicy = overrideWindowPolicy;
 }
@@ -127,25 +125,6 @@ HdRenderPassState::SetFraming(const CameraUtilFraming &framing)
     _framing = framing;
 }
 
-void
-HdRenderPassState::SetCameraAndViewport(HdCamera const *camera,
-                                        GfVec4d const &viewport)
-{
-    SetCamera(camera);
-    SetViewport(viewport);
-}
-
-void
-HdRenderPassState::SetCameraAndFraming(
-    HdCamera const *camera,
-    const CameraUtilFraming &framing,
-    const std::pair<bool, CameraUtilConformWindowPolicy> &overrideWindowPolicy)
-{
-    SetCamera(camera);
-    SetFraming(framing);
-    SetOverrideWindowPolicy(overrideWindowPolicy);
-}
-
 GfMatrix4d
 HdRenderPassState::GetWorldToViewMatrix() const
 {
@@ -159,8 +138,8 @@ HdRenderPassState::GetWorldToViewMatrix() const
 CameraUtilConformWindowPolicy
 HdRenderPassState::GetWindowPolicy() const
 {
-    if (_overrideWindowPolicy.first) {
-        return _overrideWindowPolicy.second;
+    if (_overrideWindowPolicy) {
+        return *_overrideWindowPolicy;
     }
     if (_camera) {
         return _camera->GetWindowPolicy();

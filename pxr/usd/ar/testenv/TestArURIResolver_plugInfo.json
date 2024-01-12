@@ -18,7 +18,23 @@
                     },
                     "_TestOtherURIResolver": {
                         "bases": ["_TestURIResolverBase"],
+                        "uriSchemes": ["test-other"]
+                    },
+                    "_TestInvalidUnderbarURIResolver": {
+                        "bases": ["_TestURIResolverBase"],
                         "uriSchemes": ["test_other"]
+                    },
+                    "_TestInvalidColonURIResolver": {
+                        "bases": ["_TestURIResolverBase"],
+                        "uriSchemes": ["other:test"]
+                    },
+                    "_TestInvalidNonAsciiURIResolver": {
+                        "bases": ["_TestURIResolverBase"],
+                        "uriSchemes": ["test-π-utf8"]
+                    },
+                    "_TestInvalidNumericPrefixResolver": {
+                        "bases": ["_TestURIResolverBase"],
+                        "uriSchemes": ["113-test"]
                     }
                 }
             }

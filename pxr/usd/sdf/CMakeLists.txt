@@ -113,8 +113,10 @@ pxr_library(sdf
         listOpListEditor
         parserHelpers
         parserValueContext
+        pathParser
         subLayerListEditor
         textParserContext
+        textParserHelpers
         valueTypeRegistry
         variableExpressionImpl
         variableExpressionParser
