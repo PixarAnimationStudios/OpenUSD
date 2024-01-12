@@ -929,7 +929,8 @@ HdSt_IndirectDrawBatch::PrepareDraw(
 void
 HdSt_IndirectDrawBatch::EncodeDraw(
     HdStRenderPassStateSharedPtr const & renderPassState,
-    HdStResourceRegistrySharedPtr const & resourceRegistry)
+    HdStResourceRegistrySharedPtr const & resourceRegistry,
+    bool /*firstDrawBatch*/)
 {
     // No implementation.
 }
@@ -1083,7 +1084,8 @@ void
 HdSt_IndirectDrawBatch::ExecuteDraw(
     HgiGraphicsCmds * gfxCmds,
     HdStRenderPassStateSharedPtr const & renderPassState,
-    HdStResourceRegistrySharedPtr const & resourceRegistry)
+    HdStResourceRegistrySharedPtr const & resourceRegistry,
+    bool /*firstDrawBatch*/)
 {
     HgiGLGraphicsCmds* glGfxCmds = dynamic_cast<HgiGLGraphicsCmds*>(gfxCmds);
 
@@ -1541,7 +1543,7 @@ HdSt_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
 
         _resultBuffer =
             resourceRegistry->RegisterBufferResource(
-                _tokens->drawIndirectResult, tupleType);
+                _tokens->drawIndirectResult, tupleType, HgiBufferUsageStorage);
     }
 
     // Reset visible item count

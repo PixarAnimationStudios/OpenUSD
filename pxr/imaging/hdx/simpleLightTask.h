@@ -114,6 +114,10 @@ private:
     HdBufferArrayRangeSharedPtr _shadowsBar;
     HdBufferArrayRangeSharedPtr _materialBar;
 
+    bool _rebuildLightingBufferSources;
+    bool _rebuildLightAndShadowBufferSources;
+    bool _rebuildMaterialBufferSources;
+
     size_t _AppendLightsOfType(HdRenderIndex &renderIndex,
                                TfTokenVector const &lightTypes,
                                SdfPathVector const &lightIncludePaths,

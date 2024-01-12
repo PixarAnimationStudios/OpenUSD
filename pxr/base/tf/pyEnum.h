@@ -112,8 +112,8 @@ class Tf_PyEnumRegistry {
             // In the case of producing a TfEnum or an integer, any
             // registered enum type is fine.  In all other cases, the
             // enum types must match.
-            if (boost::is_same<T, TfEnum>::value ||
-                (boost::is_integral<T>::value && !boost::is_enum<T>::value))
+            if (std::is_same<T, TfEnum>::value ||
+                (std::is_integral<T>::value && !std::is_enum<T>::value))
                 return i != o2e.end() ? obj : 0;
             else
                 return (i != o2e.end() && i->second.IsA<T>()) ? obj : 0;
@@ -168,8 +168,7 @@ std::string Tf_PyEnumRepr(boost::python::object const &self);
 
 // Private base class for types which are instantiated and exposed to python
 // for each registered enum type.
-struct Tf_PyEnumWrapper
-    : public Tf_PyEnum, boost::totally_ordered<Tf_PyEnumWrapper>
+struct Tf_PyEnumWrapper : public Tf_PyEnum
 {
     typedef Tf_PyEnumWrapper This;
 
@@ -197,6 +196,11 @@ struct Tf_PyEnumWrapper
         return lhs.value == rhs.value;
     }
 
+    friend bool operator !=(Tf_PyEnumWrapper const &lhs,
+                            Tf_PyEnumWrapper const &rhs) {
+        return !(lhs == rhs);
+    }
+
     friend bool operator <(Tf_PyEnumWrapper const &lhs,
                            Tf_PyEnumWrapper const &rhs)
     {
@@ -210,7 +214,25 @@ struct Tf_PyEnumWrapper
         // If types do match, numerically compare values.
         return lhs.GetValue() < rhs.GetValue();
     }
-    
+
+    friend bool operator >(Tf_PyEnumWrapper const& lhs,
+                           Tf_PyEnumWrapper const& rhs)
+    {
+        return rhs < lhs;
+    }
+
+    friend bool operator <=(Tf_PyEnumWrapper const& lhs,
+                            Tf_PyEnumWrapper const& rhs)
+    {
+        return !(lhs > rhs);
+    }
+
+    friend bool operator >=(Tf_PyEnumWrapper const& lhs,
+                            Tf_PyEnumWrapper const& rhs)
+    {
+        return !(lhs < rhs);
+    }
+
     //
     // XXX Bitwise operators for Enums are a temporary measure to support the
     // use of Enums as Bitmasks in libSd.  It should be noted that Enums are

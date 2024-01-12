@@ -217,3 +217,25 @@ Prim Stack:
 Child names:
      ['Anim']
 
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Test/Anim>
+
+Prim Stack:
+    model_payload.sdf    /Model/Anim
+
+Child names:
+     ['LRig']
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Test/Anim/LRig>
+
+Prim Stack:
+    rig.sdf              /Rig/SymRigBase/Anim
+
+Property names:
+     ['foo']
+
+Property stacks:
+/ReferencePayloadedModel/Test/Anim/LRig.foo:
+    rig.sdf              /Rig/SymRigBase/Anim.foo
+

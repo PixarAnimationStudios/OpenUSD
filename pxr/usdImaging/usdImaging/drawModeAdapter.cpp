@@ -67,6 +67,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (subsetMaterialZNeg)
 
     (worldtoscreen)
+    (worldToNDC)
 
     (displayRoughness)
     (diffuseColor)
@@ -1399,30 +1400,54 @@ UsdImagingDrawModeAdapter::_GetMatrixFromImageMetadata(
     //   in row major order.
     // - GfMatrix4f or GfMatrix4d
     VtValue worldtoscreen;
-    if (img->GetMetadata(_tokens->worldtoscreen, &worldtoscreen)) {
-        if (worldtoscreen.IsHolding<std::vector<float>>()) {
-            return _ConvertToMatrix(
-                worldtoscreen.UncheckedGet<std::vector<float>>(), mat);
-        }
-        else if (worldtoscreen.IsHolding<std::vector<double>>()) {
-            return _ConvertToMatrix(
-                worldtoscreen.UncheckedGet<std::vector<double>>(), mat);
-        }
-        else if (worldtoscreen.IsHolding<GfMatrix4f>()) {
-            *mat = GfMatrix4d(worldtoscreen.UncheckedGet<GfMatrix4f>());
-            return true;
-        }
-        else if (worldtoscreen.IsHolding<GfMatrix4d>()) {
-            *mat = worldtoscreen.UncheckedGet<GfMatrix4d>();
-            return true;
-        }
-        else {
-            TF_WARN(
-                "worldtoscreen metadata holding unexpected type '%s'",
-                worldtoscreen.GetTypeName().c_str());
+
+    // XXX: OpenImageIO >= 2.2 no longer flips 'worldtoscreen' with 'worldToNDC'
+    // on read and write, so assets where 'worldtoscreen' was written with > 2.2
+    // have 'worldToNDC' actually in the metadata, and OIIO < 2.2 would read
+    // and return 'worldToNDC' from the file in response to a request for 
+    // 'worldtoscreen'. OIIO >= 2.2 no longer does either, so 'worldtoscreen'
+    // gets written as 'worldtoscreen' and returned when asked for
+    // 'worldtoscreen'. Issues only arise when trying to read 'worldtoscreen'
+    // from an asset written with OIIO < 2.2, when the authoring program told
+    // OIIO to write it as 'worldtoscreen'. Old OIIO flipped it to 'worldToNDC'.
+    // So new OIIO needs to read 'worldToNDC' to retrieve it.
+    //
+    // See https://github.com/OpenImageIO/oiio/pull/2609
+    //
+    // OIIO's change is correct -- the two metadata matrices have different
+    // semantic meanings, and should not be conflated. Unfortunately, users will
+    // have to continue to conflate them for a while as assets transition into
+    // vfx2022 (which uses OIIO 2.3). So we will need to check for both.
+
+    if (!img->GetMetadata(_tokens->worldtoscreen, &worldtoscreen)) {
+        if (img->GetMetadata(_tokens->worldToNDC, &worldtoscreen)) {
+            TF_WARN("The texture asset '%s' referenced at <%s> may have been "
+            "authored by an earlier version of the VFX toolset. To silence this "
+            "warning, please regenerate the asset with the current toolset.",
+            file.c_str(), attr.GetPath().GetText());
+        } else {
+            TF_WARN("The texture asset '%s' referenced at <%s> lacks a "
+            "worldtoscreen matrix in metadata. Cards draw mode may not appear "
+            "as expected.", file.c_str(), attr.GetPath().GetText());
+            return false;
         }
     }
-
+    
+    if (worldtoscreen.IsHolding<std::vector<float>>()) {
+        return _ConvertToMatrix(
+            worldtoscreen.UncheckedGet<std::vector<float>>(), mat);
+    } else if (worldtoscreen.IsHolding<std::vector<double>>()) {
+        return _ConvertToMatrix(
+            worldtoscreen.UncheckedGet<std::vector<double>>(), mat);
+    } else if (worldtoscreen.IsHolding<GfMatrix4f>()) {
+        *mat = GfMatrix4d(worldtoscreen.UncheckedGet<GfMatrix4f>());
+        return true;
+    } else if (worldtoscreen.IsHolding<GfMatrix4d>()) {
+        *mat = worldtoscreen.UncheckedGet<GfMatrix4d>();
+        return true;
+    }
+    TF_WARN("worldtoscreen metadata holding unexpected type '%s'",
+        worldtoscreen.GetTypeName().c_str());
     return false;
 }
 
@@ -1561,11 +1586,7 @@ UsdImagingDrawModeAdapter::GetTransform(UsdPrim const& prim,
     // the instance prim, but we want to ignore transforms on that
     // prim since the instance adapter will incorporate it into the per-instance
     // transform and we don't want to double-transform the prim.
-    //
-    // Note: if the prim is unloaded (because unloaded prims are drawing as
-    // bounds), we skip the normal instancing machinery and need to handle
-    // the transform ourselves.
-    if (prim.IsInstance() && prim.IsLoaded()) {
+    if (prim.IsInstance()) {
         return GfMatrix4d(1.0);
     } else {
         return BaseAdapter::GetTransform(

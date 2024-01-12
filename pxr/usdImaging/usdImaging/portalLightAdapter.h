@@ -57,6 +57,17 @@ public:
 
     USDIMAGING_API
     virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Scene Index Support
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    TfTokenVector GetImagingSubprims(UsdPrim const& prim) override;
+
+    USDIMAGING_API
+    TfToken GetImagingSubprimType(UsdPrim const& prim, TfToken const& subprim)
+        override;
     
 protected:
     virtual void _RemovePrim(SdfPath const& cachePath,

@@ -28,7 +28,6 @@
 #include "pxr/base/tf/pyUtils.h"
 
 #include <boost/python.hpp>
-#include <boost/function.hpp>
 
 #include <string>
 

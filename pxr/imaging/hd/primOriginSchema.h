@@ -39,12 +39,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
 
-#define HDPRIMORIGIN_SCHEMA_TOKENS \
+#define HD_PRIM_ORIGIN_SCHEMA_TOKENS \
     (primOrigin) \
     (scenePath) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrimOriginSchemaTokens, HD_API,
-    HDPRIMORIGIN_SCHEMA_TOKENS);
+    HD_PRIM_ORIGIN_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
 
@@ -54,7 +54,7 @@ public:
     HdPrimOriginSchema(HdContainerDataSourceHandle container)
     : HdSchema(container) {}
 
-
+// --(BEGIN CUSTOM CODE: Schema Methods)--
     /// Wraps an SdfPath so that it is not affected by the
     /// prefixing scene index.
     class OriginPath {
@@ -84,6 +84,7 @@ public:
     /// OriginPathDataSource.
     HD_API SdfPath GetOriginPath(const TfToken &name) const;
 
+// --(END CUSTOM CODE: Schema Methods)--
 
 
     /// Retrieves a container data source with the schema's default name token

@@ -38,7 +38,7 @@ JsFindValue(
 {
     if (key.empty()) {
         TF_CODING_ERROR("Key is empty");
-        return boost::none;
+        return std::nullopt;
     }
 
     JsObject::const_iterator i = object.find(key);

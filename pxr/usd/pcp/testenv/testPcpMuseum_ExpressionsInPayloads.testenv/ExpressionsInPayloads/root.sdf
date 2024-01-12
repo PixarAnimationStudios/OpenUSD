@@ -1,0 +1,51 @@
+#sdf 1.4.32
+(
+    """
+    This museum case demonstrates the behavior of variable expressions
+    authored in payload arcs.
+    """
+    expressionVariables = {
+        string REF = "A"
+    }
+)
+
+def "SinglePayload" (
+    """
+    Example showing a payload referring to an expression variable
+    in the same layer stack.
+    """
+    payload = @`"./${REF}.sdf"`@
+)
+{
+}
+
+def "ChainedPayload" (
+    """
+    Example where a prim in a payload layer stack contains another
+    payload that uses an expression variable, and the value of that
+    variable is authored in that payloaded layer stack.
+    """
+    payload = @./ref2.sdf@
+)
+{
+}
+
+def "ChainedPayloadOverride" (
+    """
+    Similar to /ChainedPayload, but the value of the expression variable used
+    in ref2.sdf is overridden by the value authored in ref3.sdf.
+    """
+    payload = @./ref3.sdf@
+)
+{
+}
+
+def "MultiPayload" (
+    """
+    Example with multiple payloads demonstrating that variables authored
+    across a payload arc don't affect sibling payload arcs.
+    """
+    payload = [@./ref3.sdf@, @./ref2.sdf@]
+)
+{
+}

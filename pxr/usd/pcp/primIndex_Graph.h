@@ -97,6 +97,11 @@ public:
     size_t 
     GetNodeIndexForNode(const PcpNodeRef &node) const;
 
+    /// Returns the indexes of the nodes that encompass the \p subtreeRootNode
+    /// and all of its descendants in strong-to-weak order.
+    std::pair<size_t, size_t> 
+    GetNodeIndexesForSubtreeRange(const PcpNodeRef &subtreeRootNode) const;
+
     /// Returns a node from the graph that uses the given site and can
     /// contribute specs, if one exists. If multiple nodes in the graph 
     /// use the same site, the one that will be returned by this function 
@@ -386,18 +391,20 @@ private:
         _UnsharedData()
             : hasSpecs(false), culled(false), isDueToAncestor(false) {}
         explicit _UnsharedData(SdfPath const &p)
-            : sitePath(p)
-            , hasSpecs(false)
-            , culled(false)
-            , isDueToAncestor(false) {}
+            : _UnsharedData(SdfPath(p)) {}
         explicit _UnsharedData(SdfPath &&p)
             : sitePath(std::move(p))
+            , restrictionDepth(0)
             , hasSpecs(false)
             , culled(false)
             , isDueToAncestor(false) {}
 
         // The site path for a particular node.
         SdfPath sitePath;
+
+        // Absolute depth in namespace of this node at which it was
+        // restricted from contributing opinions.
+        uint16_t restrictionDepth;
 
         // Whether or not a particular node has any specs to contribute to the
         // composed prim.

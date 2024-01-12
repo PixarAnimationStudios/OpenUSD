@@ -204,6 +204,15 @@ if (BUILD_SHARED_LIBS)
             testenv/testArURIResolver.cpp
     )
 
+    pxr_test_scripts(
+        testenv/testArURIResolver.py
+    )
+
+    pxr_register_test(testArURIResolver
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArURIResolver"
+    )
+
     pxr_register_test(testArURIResolver_CPP
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArURIResolver_CPP"
     )

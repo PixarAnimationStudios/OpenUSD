@@ -29,8 +29,6 @@
 
 #include "pxr/imaging/hio/glslfx.h"
 
-#include <boost/functional/hash.hpp>
-
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE

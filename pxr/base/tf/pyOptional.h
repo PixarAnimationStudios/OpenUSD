@@ -36,6 +36,8 @@
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/to_python_value.hpp>
 
+#include <optional>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Adapted from original at:
@@ -65,9 +67,10 @@ struct register_python_conversion
 template <typename T>
 struct python_optional : public boost::noncopyable
 {
+    template <typename Optional>
     struct optional_to_python
     {
-        static PyObject * convert(const boost::optional<T>& value)
+        static PyObject * convert(const Optional& value)
         {
             if (value) {
                 boost::python::object obj = TfPyObject(*value);
@@ -78,6 +81,7 @@ struct python_optional : public boost::noncopyable
         }
     };
 
+    template <typename Optional>
     struct optional_from_python
     {
         static void * convertible(PyObject * source)
@@ -99,9 +103,9 @@ struct python_optional : public boost::noncopyable
                 ((rvalue_from_python_storage<T> *)data)->storage.bytes;
 
             if (data->convertible == Py_None) {
-                new (storage) boost::optional<T>(); // An uninitialized optional
+                new (storage) Optional(); // An uninitialized optional
             } else {
-                new (storage) boost::optional<T>(boost::python::extract<T>(source));
+                new (storage) Optional(boost::python::extract<T>(source));
             }
 
             data->convertible = storage;
@@ -109,8 +113,14 @@ struct python_optional : public boost::noncopyable
     };
 
     explicit python_optional() {
-        register_python_conversion<boost::optional<T>,
-                                   optional_to_python, optional_from_python>();
+        register_python_conversion<
+            std::optional<T>,
+            optional_to_python<std::optional<T>>, 
+            optional_from_python<std::optional<T>>>();
+        register_python_conversion<
+            boost::optional<T>,
+            optional_to_python<boost::optional<T>>, 
+            optional_from_python<boost::optional<T>>>();
     }
 };
 

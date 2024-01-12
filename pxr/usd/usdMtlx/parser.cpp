@@ -49,7 +49,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((discoveryType, "mtlx"))
     ((sourceType, ""))
 
-    (colorspace)
     (defaultgeomprop)
     (defaultinput)
     (doc)
@@ -242,10 +241,11 @@ ShaderBuilder::AddProperty(
         if (converted.valueTypeName) {
             type = converted.valueTypeName.GetAsToken();
             // Do not use GetAsToken for comparison as recommended in the API
-            if (converted.valueTypeName == SdfValueTypeNames->Bool) {
+            if (converted.valueTypeName == SdfValueTypeNames->Bool ||
+                converted.valueTypeName == SdfValueTypeNames->Matrix3d) {
                  defaultValue = UsdMtlxGetUsdValue(element, isOutput);
                  metadata.emplace(SdrPropertyMetadata->SdrUsdDefinitionType,
-                           converted.valueTypeName.GetType().GetTypeName());
+                    converted.valueTypeName.GetAliasesAsTokens().front());
             }
         }
         else {
@@ -294,7 +294,7 @@ ShaderBuilder::AddProperty(
 
     // Record the colorspace on inputs and outputs.
     if (isOutput || element->isA<mx::Input>()) {
-        const auto& colorspace = element->getAttribute(_tokens->colorspace);
+        const auto& colorspace = element->getColorSpace();
         if (!colorspace.empty() &&
                 colorspace != element->getParent()->getActiveColorSpace()) {
             metadata.emplace(SdrPropertyMetadata->Colorspace, colorspace);

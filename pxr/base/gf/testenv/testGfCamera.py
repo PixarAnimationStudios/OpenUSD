@@ -34,8 +34,25 @@ class TestGfCamera(unittest.TestCase):
         for v1, v2 in zip(l1, l2):
             self.assertTrue(Gf.IsClose(v1, v2, delta))
 
-    def AssertEqualCams(self, cam1, cam2):
-        # Check fields
+    def AssertCamsClose(self, cam1, cam2, delta = 1e-6):
+        self.AssertListGfClose(cam1.transform, cam2.transform, delta=delta)
+        self.assertEqual(cam1.projection, cam2.projection)
+        self.assertAlmostEqual(cam1.horizontalAperture, cam2.horizontalAperture, delta=delta)
+        self.assertAlmostEqual(cam1.verticalAperture, cam2.verticalAperture, delta=delta)
+        self.assertAlmostEqual(cam1.horizontalApertureOffset, cam2.horizontalApertureOffset, delta=delta)
+        self.assertAlmostEqual(cam1.verticalApertureOffset, cam2.verticalApertureOffset, delta=delta)
+        self.assertAlmostEqual(cam1.focalLength, cam2.focalLength, delta=delta)
+        self.assertAlmostEqual(cam1.clippingRange, cam2.clippingRange, delta=delta)
+        self.assertAlmostEqual(cam1.clippingPlanes, cam2.clippingPlanes, delta=delta)
+        self.assertAlmostEqual(cam1.fStop, cam2.fStop, delta=delta)
+        self.assertAlmostEqual(cam1.focusDistance, cam2.focusDistance, delta=delta)
+
+        # Check computation of frustum
+        self.AssertListGfClose(cam1.frustum.ComputeCorners(),
+                               cam2.frustum.ComputeCorners(),
+                               delta=delta)
+
+    def AssertCamsEqual(self, cam1, cam2):
         self.assertEqual(cam1.transform, cam2.transform)
         self.assertEqual(cam1.projection, cam2.projection)
         self.assertEqual(cam1.horizontalAperture, cam2.horizontalAperture)
@@ -58,7 +75,7 @@ class TestGfCamera(unittest.TestCase):
 
     def AssertCamSelfEvaluating(self, cam):
 
-        self.AssertEqualCams(cam, eval(repr(cam)))
+        self.AssertCamsEqual(cam, eval(repr(cam)))
 
 
     def test_CameraEqualOperator(self):
@@ -369,7 +386,7 @@ class TestGfCamera(unittest.TestCase):
             verticalAperture = 20.0,
             focalLength = 26.684656143188477)
 
-        self.AssertEqualCams(cam, otherCam)
+        self.AssertCamsClose(cam, otherCam)
 
         self.assertEqual(cam.projection, Gf.Camera.Perspective)
             

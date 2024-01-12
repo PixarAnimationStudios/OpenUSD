@@ -12,7 +12,10 @@ def SkelRoot "Model" (
     prepend apiSchemas = ["SkelBindingAPI"]
 )
 {
-    def Skeleton "Skel" {
+    def Skeleton "Skel" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
+    {
         uniform token[] joints = ["Shoulder", "Shoulder/Elbow", "Shoulder/Elbow/Hand"]
         uniform matrix4d[] bindTransforms = [
             ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1)),

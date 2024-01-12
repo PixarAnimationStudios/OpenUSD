@@ -119,21 +119,26 @@ UsdImagingMeshAdapter::Populate(UsdPrim const& prim,
     // UsdShadeTokens->materialBind and record dependencies for them.
     for (const UsdGeomSubset &subset:
          UsdShadeMaterialBindingAPI(prim).GetMaterialBindSubsets()) {
-        index->AddDependency(cachePath, subset.GetPrim());
+        // Only populate face subsets
+        TfToken elementType;
+        if (subset.GetElementTypeAttr().Get(&elementType) && 
+                elementType == UsdGeomTokens->face) {
+            index->AddDependency(cachePath, subset.GetPrim());
 
-        // Ensure the bound material has been populated.
-        UsdPrim materialPrim = prim.GetStage()->GetPrimAtPath(
-                GetMaterialUsdPath(subset.GetPrim()));
-        if (materialPrim) {
-            UsdImagingPrimAdapterSharedPtr materialAdapter =
-                index->GetMaterialAdapter(materialPrim);
-            if (materialAdapter) {
-                materialAdapter->Populate(materialPrim, index, nullptr);
-                // We need to register a dependency on the material prim so
-                // that geometry is updated when the material is
-                // (specifically, DirtyMaterialId).
-                // XXX: Eventually, it would be great to push this into hydra.
-                index->AddDependency(cachePath, materialPrim);
+            // Ensure the bound material has been populated.
+            UsdPrim materialPrim = prim.GetStage()->GetPrimAtPath(
+                    GetMaterialUsdPath(subset.GetPrim()));
+            if (materialPrim) {
+                UsdImagingPrimAdapterSharedPtr materialAdapter =
+                    index->GetMaterialAdapter(materialPrim);
+                if (materialAdapter) {
+                    materialAdapter->Populate(materialPrim, index, nullptr);
+                    // We need to register a dependency on the material prim so
+                    // that geometry is updated when the material is
+                    // (specifically, DirtyMaterialId).
+                    // XXX: Eventually, it would be great to push this into hydra.
+                    index->AddDependency(cachePath, materialPrim);
+                }
             }
         }
     }
@@ -236,6 +241,13 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
             // If the topology dirty flag is already set, exit the loop.
             if (((*timeVaryingBits) & HdChangeTracker::DirtyTopology) != 0){
                 break;
+            }
+
+            // Skip non-face subsets
+            TfToken elementType;
+            if (!subset.GetElementTypeAttr().Get(&elementType) || 
+                elementType != UsdGeomTokens->face) {
+                continue;
             }
 
             if (!_IsVarying(subset.GetPrim(),

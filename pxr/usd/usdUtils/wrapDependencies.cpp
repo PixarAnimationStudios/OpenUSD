@@ -86,12 +86,14 @@ void wrapDependencies()
     bp::def("CreateNewUsdzPackage", UsdUtilsCreateNewUsdzPackage,
             (bp::arg("assetPath"),
              bp::arg("usdzFilePath"),
-             bp::arg("firstLayerName") = std::string()));
+             bp::arg("firstLayerName") = std::string(),
+             bp::arg("editLayersInPlace") = false));
 
     bp::def("CreateNewARKitUsdzPackage", UsdUtilsCreateNewARKitUsdzPackage,
             (bp::arg("assetPath"),
              bp::arg("usdzFilePath"),
-             bp::arg("firstLayerName") = std::string()));
+             bp::arg("firstLayerName") = std::string(),
+             bp::arg("editLayersInPlace") = false));
 
     bp::def("ComputeAllDependencies", _ComputeAllDependencies,
             (bp::arg("assetPath")));

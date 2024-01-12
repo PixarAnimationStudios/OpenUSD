@@ -156,6 +156,10 @@ class TestVtArray(unittest.TestCase):
         self.assertGreater(da[0], 1.0)
         self.assertEqual(da, eval(repr(da)))
 
+        ha = Vt.HalfArray((1.0001, 1e39, float('-inf')))
+        self.assertGreater(da[0], 1.0)
+        self.assertEqual(ha, eval(repr(ha)))
+
     def test_Overflows(self):
         overflows = [
             # (array type, (largest negative number to overflow,

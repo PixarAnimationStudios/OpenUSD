@@ -84,6 +84,14 @@ HdRenderSettings::IsActive() const
     return _active;
 }
 
+bool
+HdRenderSettings::IsValid() const
+{
+    // The RenderSettings prim is considered valid if there is at least one 
+    // RenderProduct, and we have a camera path specified.
+    return !_products.empty() && !_products[0].cameraPath.IsEmpty();
+}
+
 const HdRenderSettings::NamespacedSettings&
 HdRenderSettings::GetNamespacedSettings() const
 {
@@ -112,6 +120,12 @@ const TfToken&
 HdRenderSettings::GetRenderingColorSpace() const
 {
     return _renderingColorSpace;
+}
+
+const VtValue&
+HdRenderSettings::GetShutterInterval() const
+{
+    return _vShutterInterval;
 }
 
 void
@@ -173,6 +187,11 @@ HdRenderSettings::Sync(
         if (vColorSpace.IsHolding<TfToken>()) {
             _renderingColorSpace = vColorSpace.UncheckedGet<TfToken>();
         }
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyShutterInterval) {
+        _vShutterInterval = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->shutterInterval);
     }
 
     // Allow subclasses to do any additional processing if necessary.

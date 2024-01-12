@@ -24,7 +24,8 @@
 #include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/drawModeStandin.h"
 
-#include "pxr/imaging/hd/modelSchema.h"
+#include "pxr/usdImaging/usdImaging/geomModelSchema.h"
+#include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -32,6 +33,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
+
+bool
+_IsUsdNativeInstance(const HdSceneIndexPrim &prim)
+{
+    UsdImagingUsdPrimInfoSchema primInfoSchema =
+        UsdImagingUsdPrimInfoSchema::GetFromParent(prim.dataSource);
+
+    HdPathDataSourceHandle const ds = primInfoSchema.GetNiPrototypePath();
+    if (!ds) {
+        return false;
+    }
+    return !ds->GetTypedValue(0.0f).IsEmpty();
+}
 
 // Resolve draw mode for prim from input scene index.
 // Default draw mode can be expressed by either the empty token
@@ -41,10 +55,19 @@ _GetDrawMode(const HdSceneIndexPrim &prim)
 {
     static const TfToken empty;
 
-    HdModelSchema modelSchema =
-        HdModelSchema::GetFromParent(prim.dataSource);
+    if (_IsUsdNativeInstance(prim)) {
+        // Do not apply draw mode to native instance.
+        // Instead, the native instance prototype propagating scene index
+        // will create a copy of the prototype with the apply draw mode set
+        // and the draw mode scene index processing that prototype applies
+        // the draw mode.
+        return empty;
+    }
 
-    HdBoolDataSourceHandle const applySrc = modelSchema.GetApplyDrawMode();
+    UsdImagingGeomModelSchema geomModelSchema =
+        UsdImagingGeomModelSchema::GetFromParent(prim.dataSource);
+
+    HdBoolDataSourceHandle const applySrc = geomModelSchema.GetApplyDrawMode();
     if (!applySrc) {
         return empty;
     }
@@ -52,7 +75,7 @@ _GetDrawMode(const HdSceneIndexPrim &prim)
         return empty;
     }
     
-    HdTokenDataSourceHandle const modeSrc = modelSchema.GetDrawMode();
+    HdTokenDataSourceHandle const modeSrc = geomModelSchema.GetDrawMode();
     if (!modeSrc) {
         return empty;
     }
@@ -85,24 +108,39 @@ UsdImagingDrawModeSceneIndex::UsdImagingDrawModeSceneIndex(
 
 UsdImagingDrawModeSceneIndex::~UsdImagingDrawModeSceneIndex() = default;
 
+static
+auto _FindPrefixOfPath(
+    const std::map<SdfPath, UsdImaging_DrawModeStandinSharedPtr> &container,
+    const SdfPath &path)
+{
+    // Use std::map::lower_bound over std::lower_bound since the latter
+    // is slow given that std::map iterators are not random access.
+    auto it = container.lower_bound(path);
+    if (it != container.end() && path == it->first) {
+        // Path itself is in the container
+        return it;
+    }
+    // If a prefix of path is in container, it will point to the next element
+    // in the container, rather than the prefix itself.
+    if (it == container.begin()) {
+        return container.end();
+    }
+    --it;
+    if (path.HasPrefix(it->first)) {
+        return it;
+    }
+    return container.end();
+}
+
 UsdImaging_DrawModeStandinSharedPtr
 UsdImagingDrawModeSceneIndex::_FindStandinForPrimOrAncestor(
     const SdfPath &path,
     size_t * const relPathLen) const
 {
-    using value_type = decltype(*_prims.begin());
-
-    const auto it = std::lower_bound(
-        _prims.rbegin(), _prims.rend(),
-        path, 
-        [](const value_type &a, const SdfPath &b) { return a.first > b; });
-    if (it == _prims.rend()) {
+    const auto it = _FindPrefixOfPath(_prims, path);
+    if (it == _prims.end()) {
         return nullptr;
     }
-    if (!path.HasPrefix(it->first)) {
-        return nullptr;
-    }
-
     *relPathLen = path.GetPathElementCount() - it->first.GetPathElementCount();
     return it->second;
 }
@@ -266,6 +304,7 @@ UsdImagingDrawModeSceneIndex::_PrimsAdded(
             // the PrimsAdded message for that prim was emitted by the
             // UsdImagingStageSceneIndex.
             //
+            _DeleteSubtree(path);
             removedEntries.push_back({path});
 
             // The prim needs to be replaced by stand-in geometry.
@@ -318,10 +357,10 @@ UsdImagingDrawModeSceneIndex::_PrimsDirtied(
     std::set<SdfPath> paths;
 
     static const HdDataSourceLocatorSet drawModeLocators{
-        HdModelSchema::GetDefaultLocator().Append(
-            HdModelSchemaTokens->drawMode),
-        HdModelSchema::GetDefaultLocator().Append(
-            HdModelSchemaTokens->applyDrawMode)};
+        UsdImagingGeomModelSchema::GetDefaultLocator().Append(
+            UsdImagingGeomModelSchemaTokens->drawMode),
+        UsdImagingGeomModelSchema::GetDefaultLocator().Append(
+            UsdImagingGeomModelSchemaTokens->applyDrawMode)};
             
     for (const HdSceneIndexObserver::DirtiedPrimEntry &entry : entries) {
         if (drawModeLocators.Intersects(entry.dirtyLocators)) {
@@ -345,6 +384,16 @@ UsdImagingDrawModeSceneIndex::_PrimsDirtied(
                 continue;
             }
             lastPath = SdfPath();
+
+            // Suppress prims from input scene delegate that have an ancestor
+            // with a draw mode.
+            size_t relPathLen;
+            if (UsdImaging_DrawModeStandinSharedPtr standin =
+                _FindStandinForPrimOrAncestor(path, &relPathLen)) {
+                if (relPathLen > 0) {
+                    continue;
+                }
+            }
             
             // Determine new draw mode.
             const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(path);

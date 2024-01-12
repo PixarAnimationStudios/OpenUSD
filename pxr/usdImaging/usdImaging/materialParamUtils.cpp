@@ -25,6 +25,7 @@
 
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/imaging/hd/material.h"
+#include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
@@ -327,6 +328,14 @@ void _WalkGraph(
                 const VtValue value = _ResolveMaterialParamValue(attr, time);
                 if (!value.IsEmpty()) {
                     node.parameters[inputName] = value;
+                }
+                // If the attribute has a colorspace add an additional parameter
+                // of the form 'colorSpace:inputName'
+                if (attr.HasColorSpace()) {
+                    TfToken colorSpaceInputName(SdfPath::JoinIdentifier(
+                        SdfFieldKeys->ColorSpace, inputName));
+                    node.parameters[colorSpaceInputName] =
+                        VtValue(attr.GetColorSpace());
                 }
             }
         }

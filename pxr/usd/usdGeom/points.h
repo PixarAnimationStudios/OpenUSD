@@ -52,7 +52,7 @@ class SdfAssetPath;
 
 /// \class UsdGeomPoints
 ///
-/// Points are analogous to the <A HREF="https://renderman.pixar.com/resources/current/RenderMan/appnote.18.html">RiPoints spec</A>.  
+/// Points are analogous to the <A HREF="https://renderman.pixar.com/resources/RenderMan_20/appnote.18.html">RiPoints spec</A>.  
 /// 
 /// Points can be an efficient means of storing and rendering particle
 /// effects comprised of thousands or millions of small particles.  Points

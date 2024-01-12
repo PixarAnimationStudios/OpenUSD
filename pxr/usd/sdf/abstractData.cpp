@@ -188,7 +188,7 @@ SdfAbstractData::Equals(const SdfAbstractDataRefPtr &rhs) const
 
     // Check that the set of specs matches.
     SdfAbstractData_CheckAllSpecsExist 
-        rhsHasAllSpecsInThis(*boost::get_pointer(rhs));
+        rhsHasAllSpecsInThis(*get_pointer(rhs));
     VisitSpecs(&rhsHasAllSpecsInThis);
     if (!rhsHasAllSpecsInThis.passed)
         return false;
@@ -200,7 +200,7 @@ SdfAbstractData::Equals(const SdfAbstractDataRefPtr &rhs) const
 
     // Check that every spec matches.
     SdfAbstractData_CheckAllSpecsMatch 
-        thisSpecsMatchRhsSpecs(*boost::get_pointer(rhs));
+        thisSpecsMatchRhsSpecs(*get_pointer(rhs));
     VisitSpecs(&thisSpecsMatchRhsSpecs);
     return thisSpecsMatchRhsSpecs.passed;
 }
@@ -292,7 +292,7 @@ SdfAbstractData::HasDictKey(const SdfPath &path,
     VtValue tmp;
     bool result = HasDictKey(path, fieldName, keyPath, value ? &tmp : NULL);
     if (result && value) {
-        value->StoreValue(tmp);
+        result = value->StoreValue(tmp);
     }
     return result;
 }

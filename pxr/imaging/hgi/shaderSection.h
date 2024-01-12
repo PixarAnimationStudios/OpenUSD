@@ -84,6 +84,11 @@ public:
     HGI_API
     virtual void WriteBlockInstanceIdentifier(std::ostream& ss) const;
 
+    /// Returns the identifier of the section
+    const std::string& GetIdentifier() const {
+        return _identifierVar;
+    }
+
     /// Returns the attributes of the section
     HGI_API
     const HgiShaderSectionAttributeVector& GetAttributes() const;

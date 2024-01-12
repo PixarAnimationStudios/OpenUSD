@@ -47,7 +47,6 @@
 #include <Alembic/AbcGeom/OXform.h>
 #include <Alembic/AbcGeom/Visibility.h>
 #include <Alembic/AbcCoreOgawa/All.h>
-#include <boost/functional/hash.hpp>
 #include <algorithm>
 #include <functional>
 #include <memory>
@@ -683,7 +682,7 @@ public:
     }
 
     /// Returns the Usd data.
-    const SdfAbstractData& GetData() const { return *boost::get_pointer(_data);}
+    const SdfAbstractData& GetData() const { return *get_pointer(_data);}
 
     /// Sets or resets the flag named \p flagName.
     void SetFlag(const TfToken& flagName, bool set);
@@ -1492,9 +1491,8 @@ _Copy(
     DST* dst,
     R (DST::*method)(T))
 {
-    typedef typename boost::remove_const<
-                typename boost::remove_reference<T>::type
-            >::type SampleValueType;
+    typedef std::remove_const_t<
+                std::remove_reference_t<T>> SampleValueType;
 
     const SdfValueTypeName& usdType = samples.GetTypeName();
     const _WriterSchema::Converter& converter = schema.GetConverter(usdType);
@@ -1522,9 +1520,8 @@ _Copy(
     DST* dst,
     R (DST::*method)(T))
 {
-    typedef typename boost::remove_const<
-                typename boost::remove_reference<T>::type
-            >::type SampleValueType;
+    typedef std::remove_const_t<
+                std::remove_reference_t<T>> SampleValueType;
 
     const SdfValueTypeName& usdType = samples.GetTypeName();
 

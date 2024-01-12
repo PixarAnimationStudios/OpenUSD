@@ -64,6 +64,8 @@ struct HdSceneIndexPrim
 class HdSceneIndexBase : public TfRefBase, public TfWeakBase
 {
 public:
+    HD_API
+    HdSceneIndexBase();
 
     HD_API
     ~HdSceneIndexBase() override;
@@ -118,6 +120,18 @@ public:
         return HdContainerDataSource::Get(
                 GetPrim(primPath).dataSource, locator);
     }
+
+    // ------------------------------------------------------------------------
+    // System-wide API
+    // ------------------------------------------------------------------------
+
+    /// Sends a message with optional arguments to this and any upstream input
+    /// scene indices. Scene indices may implement _SystemMessage to provide
+    /// custom handling. See systemMessages.h for common message definitions.
+    HD_API
+    void SystemMessage(
+        const TfToken &messageType,
+        const HdDataSourceBaseHandle &args);
 
     // ------------------------------------------------------------------------
     // User Interface Utilities
@@ -209,13 +223,34 @@ protected:
     HD_API
     bool _IsObserved() const;
 
+    /// Implement in order to react directly to system messages sent from
+    /// downstream.
+    HD_API
+    virtual void _SystemMessage(
+        const TfToken &messageType,
+        const HdDataSourceBaseHandle &args);
+
 private:
+    void _RemoveExpiredObservers();
 
-    using _ObserverSet = std::set<HdSceneIndexObserverPtr>;
-    _ObserverSet _observers;
+    // Scoped (RAII) helper to manage tracking recursion depth,
+    // and to remove expired observers after completing delivery.
+    struct _NotifyScope;
 
+    // Registered observers, in order of registration.
+    using _Observers = std::vector<HdSceneIndexObserverPtr>;
+    _Observers _observers;
+
+    // Count of in-flight observer notifications
+    int _notifyDepth;
+
+    // Flag hinting that expired observers may exist.
+    bool _shouldRemoveExpiredObservers;
+
+    // User-visible label for this scene index
     std::string _displayName;
 
+    // Tags used to categorize this scene index
     using _TagSet = TfDenseHashSet<TfToken, TfHash, std::equal_to<TfToken>, 8>;
     _TagSet _tags;
 };

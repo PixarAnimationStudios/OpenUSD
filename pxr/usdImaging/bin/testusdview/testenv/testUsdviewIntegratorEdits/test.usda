@@ -27,22 +27,22 @@ def Scope "World"
         token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Sphere "GlowSphere" (
+    def Cube "GlowCube" (
         prepend apiSchemas = ["MaterialBindingAPI"]
     )
     {
         rel material:binding = </Material/Glow>
-        double radius = 0.6
+        double size = 1.2
         double3 xformOp:translate = (0, 0.65, -3.85)
         token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Sphere "DiffuseSphere" (
+    def Cube "DiffuseCube" (
         prepend apiSchemas = ["MaterialBindingAPI"]
     )
     {
         rel material:binding = </Material/White>
-        double radius = 0.5
+        double size = 1
         double3 xformOp:translate = (-2.5, 0.55, 3.5)
         token[] xformOpOrder = ["xformOp:translate"]
     }
@@ -116,7 +116,7 @@ def Scope "Material"
             uniform token info:id = "PxrSurface"
             color3f inputs:specularEdgeColor = (1, 1, 1)
             color3f inputs:specularFaceColor = (1, 1, 1)
-            float inputs:specularRoughness = 0.1
+            float inputs:specularRoughness = 0.01
             token outputs:out
         }
     }
@@ -140,6 +140,9 @@ def Scope "Render"
     def RenderSettings "RenderSettings"
     {
         token outputs:ri:integrator.connect = </Render/DirectLightingIntegrator.outputs:result>
+        float ri:Ri:PixelVariance = 0.0
+        int ri:hider:minsamples = 32
+        int ri:hider:maxsamples = 32
     }
 
     def PxrDirectLighting "DirectLightingIntegrator"

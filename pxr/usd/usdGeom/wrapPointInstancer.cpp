@@ -78,6 +78,13 @@ _CreateOrientationsAttr(UsdGeomPointInstancer &self,
 }
         
 static UsdAttribute
+_CreateOrientationsfAttr(UsdGeomPointInstancer &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateOrientationsfAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->QuatfArray), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateScalesAttr(UsdGeomPointInstancer &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateScalesAttr(
@@ -179,6 +186,13 @@ void wrapUsdGeomPointInstancer()
              &This::GetOrientationsAttr)
         .def("CreateOrientationsAttr",
              &_CreateOrientationsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetOrientationsfAttr",
+             &This::GetOrientationsfAttr)
+        .def("CreateOrientationsfAttr",
+             &_CreateOrientationsfAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         

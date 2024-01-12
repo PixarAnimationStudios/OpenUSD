@@ -428,7 +428,7 @@ these definitions should adhere to the following rules:
 
     * The *source type* each renderer queries is the same string it already uses
       as a "`material network selector
-      <https://github.com/PixarAnimationStudios/USD/blob/release/pxr/imaging/hd/renderDelegate.h>`_",
+      <https://github.com/PixarAnimationStudios/OpenUSD/blob/release/pxr/imaging/hd/renderDelegate.h>`_",
       for simplicity (for RenderMan and hdPrman, this is "ri")
 
     * The :usdcpp:`context <NdrNode::GetContext>` provided for each definition

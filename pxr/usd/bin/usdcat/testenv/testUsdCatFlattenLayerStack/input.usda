@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    subLayers = [
+        @./sublayer.usda@
+    ]
+)
+
+over "Prim" (
+    references = @reference.usda@</Prim>
+)
+{
+}

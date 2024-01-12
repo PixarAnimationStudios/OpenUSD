@@ -44,8 +44,6 @@
 
 #include <atomic>
 
-#include <boost/functional/hash.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 

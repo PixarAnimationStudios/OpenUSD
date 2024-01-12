@@ -191,6 +191,12 @@ HdRenderDelegate::GetRenderStats() const
     return VtDictionary();
 }
 
+HdContainerDataSourceHandle
+HdRenderDelegate::GetCapabilities() const
+{
+    return nullptr;
+}
+
 void
 HdRenderDelegate::_PopulateDefaultSettings(
     HdRenderSettingDescriptorList const& defaultSettings)
@@ -227,6 +233,15 @@ HdRenderDelegate::Pause()
     return false;
 }
 
+bool HdRenderDelegate::IsParallelSyncEnabled(
+    TfToken primType) const
+{
+    if (primType == HdPrimTypeTokens->extComputation) {
+        return true;
+    }
+    return false;
+}
+
 bool
 HdRenderDelegate::Resume()
 {
@@ -255,6 +270,23 @@ bool
 HdRenderDelegate::Restart()
 {
     return false;
+}
+
+////////////////////////////////////////////////////////////////////////////
+///
+/// Hydra 2.0 API
+///
+////////////////////////////////////////////////////////////////////////////
+
+void
+HdRenderDelegate::SetTerminalSceneIndex(
+    const HdSceneIndexBaseRefPtr &terminalSceneIndex)
+{
+}
+
+void
+HdRenderDelegate::Update()
+{
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

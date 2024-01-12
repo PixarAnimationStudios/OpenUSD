@@ -37,10 +37,10 @@ constexpr TraceCategoryId TestCategory
     = TraceCategory::CreateTraceCategoryId("TestCategory");
 
 static std::unique_ptr<TraceEventList>
-CreateTestEvents(TraceEvent::TimeStamp timeStampOffset)
+CreateTestEvents(double timeOffset)
 {
-    const TraceEvent::TimeStamp ms = ArchSecondsToTicks(0.001);
-    timeStampOffset += ms;
+    double ms = .001;
+    timeOffset += ms;
     std::unique_ptr<TraceEventList> events(new TraceEventList);
 
     static constexpr TraceStaticKeyData counterKey("Test Counter");
@@ -51,20 +51,20 @@ CreateTestEvents(TraceEvent::TimeStamp timeStampOffset)
             1,
             TraceCategory::Default
         );
-        counterEvent.SetTimeStamp(2*ms + timeStampOffset);
+        counterEvent.SetTimeStamp(ArchSecondsToTicks(2.0*ms + timeOffset));
         events->EmplaceBack(std::move(counterEvent));
     }
 
     events->EmplaceBack(
         TraceEvent::Begin,
         events->CacheKey("Inner Scope 2"),
-        3*ms + timeStampOffset,
+        ArchSecondsToTicks(3.0*ms + timeOffset),
         TestCategory
     );
     events->EmplaceBack(
         TraceEvent::End,
         events->CacheKey("Inner Scope 2"),
-        4*ms + timeStampOffset,
+        ArchSecondsToTicks(4.0*ms + timeOffset),
         TestCategory
     );
 
@@ -76,7 +76,7 @@ CreateTestEvents(TraceEvent::TimeStamp timeStampOffset)
             data,
             TraceCategory::Default
         );
-        dataEvent.SetTimeStamp(5*ms+timeStampOffset);
+        dataEvent.SetTimeStamp(ArchSecondsToTicks(5.0*ms + timeOffset));
         events->EmplaceBack(std::move(dataEvent));
     }
     {
@@ -87,7 +87,7 @@ CreateTestEvents(TraceEvent::TimeStamp timeStampOffset)
             data,
             TraceCategory::Default
         );
-        dataEvent.SetTimeStamp(6*ms+timeStampOffset);
+        dataEvent.SetTimeStamp(ArchSecondsToTicks(6.0*ms + timeOffset));
         events->EmplaceBack(std::move(dataEvent));
     }
     {
@@ -98,7 +98,7 @@ CreateTestEvents(TraceEvent::TimeStamp timeStampOffset)
             data,
             TraceCategory::Default
         );
-        dataEvent.SetTimeStamp(7*ms+timeStampOffset);
+        dataEvent.SetTimeStamp(ArchSecondsToTicks(7.0*ms + timeOffset));
         events->EmplaceBack(std::move(dataEvent));
     }
     {
@@ -109,7 +109,7 @@ CreateTestEvents(TraceEvent::TimeStamp timeStampOffset)
             data,
             TraceCategory::Default
         );
-        dataEvent.SetTimeStamp(8*ms+timeStampOffset);
+        dataEvent.SetTimeStamp(ArchSecondsToTicks(8.0*ms + timeOffset));
         events->EmplaceBack(std::move(dataEvent));
     }
     {
@@ -120,14 +120,14 @@ CreateTestEvents(TraceEvent::TimeStamp timeStampOffset)
             events->StoreData(data.c_str()),
             TraceCategory::Default
         );
-        dataEvent.SetTimeStamp(9*ms+timeStampOffset);
+        dataEvent.SetTimeStamp(ArchSecondsToTicks(9.0*ms + timeOffset));
         events->EmplaceBack(std::move(dataEvent));
     }
 
     static constexpr TraceStaticKeyData keyInner("InnerScope");
     events->EmplaceBack(TraceEvent::Timespan, keyInner,
-        ms + timeStampOffset,
-        10*ms + timeStampOffset,
+        ArchSecondsToTicks(ms + timeOffset),
+        ArchSecondsToTicks(10.0*ms + timeOffset),
         TraceCategory::Default);
 
 
@@ -138,7 +138,7 @@ CreateTestEvents(TraceEvent::TimeStamp timeStampOffset)
             1,
             TraceCategory::Default
         );
-        counterEvent.SetTimeStamp(11*ms + timeStampOffset);
+        counterEvent.SetTimeStamp(ArchSecondsToTicks(11.0*ms + timeOffset));
         events->EmplaceBack(std::move(counterEvent));
     }
     {
@@ -148,26 +148,26 @@ CreateTestEvents(TraceEvent::TimeStamp timeStampOffset)
             -1,
             TraceCategory::Default
         );
-        counterEvent.SetTimeStamp(12*ms + timeStampOffset);
+        counterEvent.SetTimeStamp(ArchSecondsToTicks(12.0*ms + timeOffset));
         events->EmplaceBack(std::move(counterEvent));
     }
     static constexpr TraceStaticKeyData keyOuter("OuterScope");
     events->EmplaceBack(TraceEvent::Timespan, keyOuter,
-        0 + timeStampOffset,
-        13*ms + timeStampOffset,
+        ArchSecondsToTicks(0 + timeOffset),
+        ArchSecondsToTicks(13.0*ms + timeOffset),
         TraceCategory::Default);
 
     events->EmplaceBack(
         TraceEvent::Marker,
         events->CacheKey("Test Marker 1"),
-        4*ms + timeStampOffset,
+        ArchSecondsToTicks(4.0*ms  + timeOffset),
         TraceCategory::Default
     );
 
     events->EmplaceBack(
         TraceEvent::Marker,
         events->CacheKey("Test Marker 2"),
-        5*ms + timeStampOffset,
+        ArchSecondsToTicks(5.0*ms + timeOffset),
         TraceCategory::Default
     );
     return events;
@@ -179,9 +179,9 @@ CreateTestCollection(float startTimeSec=0.0)
     std::unique_ptr<TraceCollection> collection(new TraceCollection);
     collection->AddToCollection(
         TraceThreadId("Thread 1"),
-        CreateTestEvents(ArchSecondsToTicks(startTimeSec)));
+        CreateTestEvents(startTimeSec));
     collection->AddToCollection(TraceThreadId("Thread 2"), 
-        CreateTestEvents(ArchSecondsToTicks(startTimeSec + 0.001)));
+        CreateTestEvents(startTimeSec + 0.001));
     return collection;
 }
 

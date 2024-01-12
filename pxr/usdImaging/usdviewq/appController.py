@@ -388,15 +388,12 @@ class AppController(QtCore.QObject):
             self._lastViewContext = {}
             self._paused = False
             self._stopped = False
-            if QT_BINDING == 'PySide':
-                self._statusFileName = 'state'
-                self._deprecatedStatusFileNames = ('.usdviewrc')
-            else:
-                self._statusFileName = 'state.%s'%QT_BINDING
-                self._deprecatedStatusFileNames = ('state', '.usdviewrc')
+            self._statusFileName = 'state.%s'%QT_BINDING
+            self._deprecatedStatusFileNames = ('state', '.usdviewrc')
             self._mallocTags = parserData.mallocTagStats
 
             self._allowViewUpdates = True
+            self._allowAsync = parserData.allowAsync
 
             # When viewer mode is active, the panel sizes are cached so they can
             # be restored later.
@@ -536,6 +533,14 @@ class AppController(QtCore.QObject):
             # to slow down rendering to self.framesPerSecond fps.
             self._qtimer.setInterval(0)
             self._lastFrameTime = time()
+
+            if self._allowAsync:
+                self._asyncTimer = QtCore.QTimer(self)
+                self._asyncTimer.setInterval(100)
+                self._asyncTimer.timeout.connect(self._updateAsyncTimer)
+                self._asyncTimer.start()
+            else:
+                self._asyncTimer = None
 
             # Initialize the upper HUD info
             self._upperHUDInfo = dict()
@@ -779,8 +784,10 @@ class AppController(QtCore.QObject):
 
             # XXX:
             # To avoid PYSIDE-79 (https://bugreports.qt.io/browse/PYSIDE-79)
-            # with Qt4/PySide, we must hold the prim view's selectionModel
-            # in a local variable before connecting its signals.
+            # we must hold the prim view's selectionModel in a local variable
+            # before connecting its signals. Note this bug was originally
+            # associated with PySide 1.x/Qt4, but comments on the bug report
+            # above indicate this is still be an issue in newer PySide releases.
             primViewSelModel = self._ui.primView.selectionModel()
             primViewSelModel.selectionChanged.connect(self._selectionChanged)
 
@@ -1845,6 +1852,8 @@ class AppController(QtCore.QObject):
                     dataModel=self._dataModel,
                     makeTimer=self._makeTimer)
 
+                self._stageView.allowAsync = self._allowAsync
+
                 self._stageView.fpsHUDInfo = self._fpsHUDInfo
                 self._stageView.fpsHUDKeys = self._fpsHUDKeys
 
@@ -1954,6 +1963,7 @@ class AppController(QtCore.QObject):
             self._updateCompositionView()
 
             if self._stageView:
+                self._stageView.updateSelection()
                 self._stageView.update()
 
     def updateGUI(self):
@@ -3040,7 +3050,9 @@ class AppController(QtCore.QObject):
             currCameraPath = None
             if currCamera:
                 currCameraPath = currCamera.GetPath()
-            for camera in self._allSceneCameras:
+            
+            cameraListMaxLen = 20
+            for camera in self._allSceneCameras[:cameraListMaxLen]:
                 action = self._ui.menuCameraSelect.addAction(camera.GetName())
                 action.setData(camera.GetPath())
                 action.setToolTip(str(camera.GetPath()))
@@ -3049,6 +3061,82 @@ class AppController(QtCore.QObject):
                 action.triggered[bool].connect(
                     lambda _, cam = camera: self._cameraSelectionChanged(cam))
                 action.setChecked(action.data() == currCameraPath)
+            
+            if len(self._allSceneCameras) > cameraListMaxLen:
+                self._ui.menuCameraSelect.addSeparator()
+                moreCamerasAction = self._ui.menuCameraSelect.addAction("More Cameras...")
+                moreCamerasAction.setToolTip("View All Cameras")
+                moreCamerasAction.triggered.connect(self._showMoreCamerasDialog)
+
+    def _showMoreCamerasDialog(self):
+        """Open dialog box containing all scene cameras."""
+        
+        class CameraItem(QtWidgets.QListWidgetItem):
+
+            def __init__(self, camera, parent=None):
+                super(CameraItem, self).__init__(parent)
+
+                self.camera = camera
+                self.setText(camera.GetName())
+
+         # Recreate the settings dialog
+        self._ui.camerasMoreDialog = QtWidgets.QDialog(self._mainWindow)
+        self._ui.camerasMoreDialog.setWindowTitle("Select Camera")
+        self._ui.camerasMoreDialog.setMinimumSize(400, 500)
+        layout = QtWidgets.QVBoxLayout()
+
+        # Make camera list widget
+        self._ui.cameraList = QtWidgets.QListWidget()
+        for camera in self._allSceneCameras:
+            item = CameraItem(camera)
+            self._ui.cameraList.addItem(item)
+
+        self._ui.cameraList.currentItemChanged.connect(
+            lambda cam, _: self._cameraSelectionChanged(cam.camera))
+
+        # Make scroll widget
+        scrollArea = QtWidgets.QScrollArea()
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setWidget(self._ui.cameraList)  
+        scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)  
+        layout.addWidget(scrollArea)
+
+        # Add search bar
+        searchBar = QtWidgets.QLineEdit()
+        searchBar.textChanged.connect(self._onCameraSearchTextChanged)
+        searchBar.editingFinished.connect(self._onCameraSearchComplete)
+        searchBar.setPlaceholderText("Search for camera by name")
+        layout.addWidget(searchBar)
+
+        # Add buttons
+        ok = QtWidgets.QPushButton("Ok")
+        ok.setAutoDefault(False)
+        ok.setDefault(False)
+        layout.addWidget(ok)
+        ok.clicked.connect(self._ui.camerasMoreDialog.accept)
+
+        self._ui.camerasMoreDialog.setLayout(layout)
+        self._ui.camerasMoreDialog.show()
+
+
+    def _onCameraSearchComplete(self):
+        for i in range(self._ui.cameraList.count()):
+            cam = self._ui.cameraList.item(i)
+            if not cam.isHidden():
+                self._ui.cameraList.setCurrentItem(cam)
+                break
+
+
+    def _onCameraSearchTextChanged(self, text):
+        text_lower = text.lower()
+        for i in range(self._ui.cameraList.count()):
+            cam = self._ui.cameraList.item(i)
+            if text_lower not in cam.text().lower():
+                cam.setHidden(True)
+            else:
+                cam.setHidden(False)
+        
 
     def _updatePropertiesFromPropertyView(self):
         """Update the data model's property selection to match property view's
@@ -5360,3 +5448,9 @@ class AppController(QtCore.QObject):
         from .rootDataModel import ChangeNotice
         self._updateForStageChanges(
             hasPrimResync=(primsChange==ChangeNotice.RESYNC))
+
+    def _updateAsyncTimer(self):
+        if not self._stageView:
+            return
+        if self._stageView.PollForAsynchronousUpdates():
+            self._usdviewApi.UpdateViewport()

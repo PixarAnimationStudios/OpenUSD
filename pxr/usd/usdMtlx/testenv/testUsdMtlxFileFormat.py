@@ -248,5 +248,26 @@ class TestFileFormat(unittest.TestCase):
         self.assertFalse(Sdf.FileFormat.FormatSupportsWriting('.mtlx'))
         self.assertFalse(Sdf.FileFormat.FormatSupportsEditing('.mtlx'))
 
+    def test_ExpandFilePrefix(self):
+        """
+        Test active file prefix defined by the fileprefix attribute
+        in a parent tag.
+        """
+        stage = UsdMtlx._TestFile('ExpandFilePrefix.mtlx')
+
+        for nodeName, expectedResult in [
+            ('image_base', 'outer_scope/textures/base.tif'),
+            ('image_spec', 'inner_scope/textures/spec.tif')
+        ]:
+            primPath = f'/MaterialX/Materials/test_material/test_nodegraph/{nodeName}'
+            shader = UsdShade.Shader.Get(stage, primPath)
+            self.assertTrue(shader)
+
+            fileInput = shader.GetInput('file')
+            self.assertTrue(fileInput)
+
+            actualResult = fileInput.Get().path
+            self.assertEqual(actualResult, expectedResult)
+
 if __name__ == '__main__':
     unittest.main()

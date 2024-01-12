@@ -55,6 +55,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     // wireframe mixins
     ((edgeNoneFS,                  "MeshWire.Fragment.NoEdge"))
 
+    ((edgeOpacityNoForceFS,        "MeshWire.Fragment.FinalEdgeOpacityNoForce"))
+    ((edgeOpacityForceFS,          "MeshWire.Fragment.FinalEdgeOpacityForce"))
+
     ((edgeMaskTriangleFS,          "MeshWire.Fragment.EdgeMaskTriangle"))
     ((edgeMaskQuadFS,              "MeshWire.Fragment.EdgeMaskQuad"))
     ((edgeMaskRefinedQuadFS,       "MeshWire.Fragment.EdgeMaskRefinedQuad"))
@@ -124,6 +127,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainTriQuadGS,               "Mesh.Geometry.TriQuad"))
     ((mainQuadGS,                  "Mesh.Geometry.Quad"))
     ((mainPatchCoordFS,            "Mesh.Fragment.PatchCoord"))
+    ((mainPatchCoordNoGSFS,        "Mesh.Fragment.PatchCoord.NoGS"))
     ((mainPatchCoordTessFS,        "Mesh.Fragment.PatchCoord.Tess"))
     ((mainPatchCoordTriangleFS,    "Mesh.Fragment.PatchCoord.Triangle"))
     ((mainPatchCoordQuadFS,        "Mesh.Fragment.PatchCoord.Quad"))
@@ -171,7 +175,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     bool hasMirroredTransform,
     bool hasInstancer,
     bool enableScalarOverride,
-    bool pointsShadingEnabled)
+    bool pointsShadingEnabled,
+    bool forceOpaqueEdges)
     : primType(primitiveType)
     , cullStyle(cullStyle)
     , hasMirroredTransform(hasMirroredTransform)
@@ -505,6 +510,12 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         }
         FS[fsIndex++] = _tokens->edgeParamFS;
 
+        if (forceOpaqueEdges) {
+            FS[fsIndex++] = _tokens->edgeOpacityForceFS;
+        } else {
+            FS[fsIndex++] = _tokens->edgeOpacityNoForceFS;
+        }
+
         if (renderWireframe) {
             if (isPrimTypePatches) {
                 FS[fsIndex++] = _tokens->patchEdgeOnlyFS;
@@ -614,6 +625,9 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     // Patches
     } else if (isPrimTypePatches && ptvsStageEnabled) {
         FS[fsIndex++] = _tokens->mainPatchCoordTessFS;
+    // Points/No GS
+    } else if (isPrimTypePoints || canSkipGS) {
+        FS[fsIndex++] = _tokens->mainPatchCoordNoGSFS;
     } else {
         FS[fsIndex++] = _tokens->mainPatchCoordFS;
     }

@@ -30,15 +30,25 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#define USDIMAGING_NI_PROTOTYPE_SCENE_INDEX_TOKENS \
+    ((instancer, "UsdNiInstancer"))                \
+    ((prototype, "UsdNiPrototype"))
+
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdImaging_NiPrototypeSceneIndexTokens,
+    USDIMAGING_NI_PROTOTYPE_SCENE_INDEX_TOKENS);
+
 TF_DECLARE_REF_PTRS(UsdImaging_NiPrototypeSceneIndex);
 
 /// \class UsdImaging_NiPrototypeSceneIndex
 ///
-/// A scene index that prepares prim in a Usd prototype moved under
-/// /UsdNiInstancer (so that paths that are referring to prims outside
-/// the prototype are not translated later when we re-root the instancer)
-/// (e.g. /UsdNiInstancer/__Prototype_1) to be instanced by an instancer
-/// created by the UsdImaging_InstanceAggregationSceneIndex.
+/// A scene index that prepares the prims under /UsdNiInstancer/UsdPrototype
+/// to be instanced by the instancer /UsdNiInstancer created
+/// by the UsdImaging_InstanceAggregationSceneIndex.
+/// Note that /UsdNiInstancer/UsdPrototype corresponds to a USD prototype.
+/// That is, the isolating scene index in the prototype propagating scene index
+/// is taking a USD prototype at, e.g., /__Prototype_1 and moves it underneath
+/// /UsdNiInstancer/UsdPrototype.
 ///
 /// It forces an empty type on all prims that are instances
 /// (that is prims with non-trivial usdPrototypePath).
@@ -47,7 +57,7 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiPrototypeSceneIndex);
 ///
 /// It also adds an instanced by data source with
 /// instancedBy:paths being /UsdNiInstancer and instancedBy:prototypeRoot being
-/// the given prototype root. These are only added if they are not
+/// /UsdNiInstancer/UsdNiPrototype. These are only added if they are not
 /// already present. That way, point instancers and prototypes within
 /// native prototypes are handled correctly.
 ///
@@ -55,14 +65,47 @@ class UsdImaging_NiPrototypeSceneIndex
             : public HdSingleInputFilteringSceneIndexBase
 {
 public:
+    // forNativePrototype = false indicates that this scene index is
+    // instantiated for the USD stage with all USD prototypes filtered out.
+    // forNativePrototype = true indicates that it is instantiated for a USD
+    // prototype and it needs to populate the instancedBy data source.
+    //
+    // The given data source is overlayed over the prototype root prim's
+    // data source.
+    //
+    // If instances with a particular opinion about, say, purpose, are
+    // aggregated together, this opinion needs to be applied to the respective
+    // prototype. This can be done by passing it as prototypeRootOverlayDs
+    // here. A later flattening scene index can then apply the opinion to the
+    // descendants of the prototype root that do not have a stronger opinion.
+    //
+    // Note that the flattening scene index is not flattening
+    // model:applyDrawMode - but it still has an effect on the prototype root.
+    //
     static
     UsdImaging_NiPrototypeSceneIndexRefPtr
     New(HdSceneIndexBaseRefPtr const &inputSceneIndex,
-        const SdfPath &prototypeRoot);
+        bool forNativePrototype,
+        HdContainerDataSourceHandle const &prototypeRootOverlayDs);
 
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
 
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
+
+    /// Get path of the instancer that the instance aggregation scene index
+    /// will add. This path is used by this scene index as well.
+    static
+    const SdfPath &GetInstancerPath();
+
+    /// Get path of the copy of the USD prototype that is a child of the
+    /// instancer.
+    static
+    const SdfPath &GetPrototypePath();
+
+    /// Get's data source for instancedBy schema for prims within this
+    /// prototype.
+    static
+    const HdDataSourceBaseHandle &GetInstancedByDataSource();
 
 protected:
     void _PrimsAdded(
@@ -78,11 +121,11 @@ protected:
 private:
     UsdImaging_NiPrototypeSceneIndex(
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
-        const SdfPath &prototypeRoot);
+        bool forNativePrototype,
+        HdContainerDataSourceHandle const &prototypeRootOverlayDso);
 
-    const SdfPath _prototypeRoot;
+    const bool _forNativePrototype;
     HdContainerDataSourceHandle const _prototypeRootOverlaySource;
-    HdContainerDataSourceHandle const _underlaySource;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

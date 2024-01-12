@@ -72,6 +72,16 @@ class TestStringUtils(unittest.TestCase):
         self.assertEqual(Tf.DictionaryStrcmp(u'apple', 'banana'), -1)
         self.assertEqual(Tf.DictionaryStrcmp(u'apple', u'banana'), -1)
 
+        # U+393B < U+393C
+        # U+393B > U+393A
+        # U+393B == U+393B
+        # U+00FC > U+0030 because 0 is a digit and hence the word
+        # prefix is less than that of `aü`
+        self.assertEqual(Tf.DictionaryStrcmp('apple㤻', 'apple㤼'), -1)
+        self.assertEqual(Tf.DictionaryStrcmp('apple㤻', 'apple㤺'), 1)
+        self.assertEqual(Tf.DictionaryStrcmp('apple㤻', 'apple㤻'), 0)
+        self.assertEqual(Tf.DictionaryStrcmp('aü', 'a0'), 1)
+
     def test_StringToLong(self):
 
         def checks(val):

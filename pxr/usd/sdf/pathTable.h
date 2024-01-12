@@ -30,8 +30,6 @@
 #include "pxr/base/tf/pointerAndBits.h"
 #include "pxr/base/tf/functionRef.h"
 
-#include <boost/iterator/iterator_facade.hpp>
-
 #include <algorithm>
 #include <utility>
 #include <vector>
@@ -202,20 +200,48 @@ public:
     // iterators.  Currently only forward traversal is supported.
     template <class, class> friend class Iterator;
     template <class ValType, class EntryPtr>
-    class Iterator :
-        public boost::iterator_facade<Iterator<ValType, EntryPtr>,
-                                      ValType, boost::forward_traversal_tag>
+    class Iterator
     {
     public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = ValType;
+        using reference = ValType&;
+        using pointer = ValType*;
+        using difference_type = std::ptrdiff_t;
+
         /// The standard requires default construction but places practically no
         /// requirements on the semantics of default-constructed iterators.
-        Iterator() {}
+        Iterator() = default;
 
         /// Copy constructor (also allows for converting non-const to const).
         template <class OtherVal, class OtherEntryPtr>
         Iterator(Iterator<OtherVal, OtherEntryPtr> const &other)
             : _entry(other._entry)
             {}
+
+        reference operator*() const { return dereference(); }
+        pointer operator->() const { return &(dereference()); }
+
+        Iterator& operator++() {
+            increment();
+            return *this;
+        }
+
+        Iterator operator++(int) {
+            Iterator result(*this);
+            increment();
+            return result;
+        }
+
+        template <class OtherVal, class OtherEntryPtr>
+        bool operator==(Iterator<OtherVal, OtherEntryPtr> const &other) const {
+            return equal(other);
+        }
+
+        template <class OtherVal, class OtherEntryPtr>
+        bool operator!=(Iterator<OtherVal, OtherEntryPtr> const &other) const {
+            return !equal(other);
+        }
 
         /// Return an iterator \a e, defining a maximal range [\a *this, \a e)
         /// such that for all \a i in the range, \a i->first is \a
@@ -248,7 +274,6 @@ public:
         }
 
     protected:
-        friend class boost::iterator_core_access;
         friend class SdfPathTable;
         template <class, class> friend class Iterator;
 
@@ -256,8 +281,6 @@ public:
             : _entry(entry) {}
 
         // Fundamental functionality to implement the iterator.
-        // boost::iterator_facade will invoke these as necessary to implement
-        // the full iterator public interface.
 
         // Iterator increment.
         inline void increment() {

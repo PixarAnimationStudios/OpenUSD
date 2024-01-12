@@ -208,7 +208,6 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
         std::make_unique<HdxFreeCameraSceneDelegate>(
             renderIndex, controllerId))
     , _renderBufferSize(0, 0)
-    , _overrideWindowPolicy{false, CameraUtilFit}
     , _viewport(0, 0, 1, 1)
 {
     _CreateRenderGraph();
@@ -421,6 +420,10 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
         renderParams->blendEnable = false;
         renderParams->depthMaskEnable = true;
         renderParams->enableAlphaToCoverage = true;
+    } else if (materialTag == HdStMaterialTagTokens->volume) {
+        // Disable alpha-to-coverage for the volume render task, as nothing 
+        // (including alpha) gets written to fragments during this task.
+        renderParams->enableAlphaToCoverage = false;
     }
 }
 
@@ -448,7 +451,8 @@ HdxTaskController::_CreateSelectionTask()
     _selectionTaskId = GetControllerId().AppendChild(_tokens->selectionTask);
 
     HdxSelectionTaskParams selectionParams;
-    selectionParams.enableSelection = true;
+    selectionParams.enableSelectionHighlight = true;
+    selectionParams.enableLocateHighlight = true;
     selectionParams.selectionColor = GfVec4f(1,1,0,1);
     selectionParams.locateColor = GfVec4f(0,0,1,1);
 
@@ -467,7 +471,8 @@ HdxTaskController::_CreateColorizeSelectionTask()
         _tokens->colorizeSelectionTask);
 
     HdxColorizeSelectionTaskParams selectionParams;
-    selectionParams.enableSelection = true;
+    selectionParams.enableSelectionHighlight = true;
+    selectionParams.enableLocateHighlight = true;
     selectionParams.selectionColor = GfVec4f(1,1,0,1);
     selectionParams.locateColor = GfVec4f(0,0,1,1);
 
@@ -857,6 +862,8 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
     if (light.IsDomeLight()) {
         _delegate.SetParameter(pathName, HdLightTokens->textureFile,
                                _GetDomeLightTexture(light));
+        _delegate.SetParameter(pathName, HdLightTokens->shadowEnable, 
+            VtValue(true));
     }
     // When not using storm, initialize the camera light transform based on
     // the SimpleLight position
@@ -871,6 +878,8 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
             VtValue(DISTANT_LIGHT_ANGLE));
         _delegate.SetParameter(pathName, HdLightTokens->intensity, 
             VtValue(DISTANT_LIGHT_INTENSITY));
+        _delegate.SetParameter(pathName, HdLightTokens->shadowEnable, 
+            VtValue(false));
     }
 }
 
@@ -901,6 +910,7 @@ HdxTaskController::_SetMaterialNetwork(SdfPath const& pathName,
         // For the domelight, add the domelight texture resource.
         node.parameters[HdLightTokens->textureFile] = 
             _GetDomeLightTexture(light);
+        node.parameters[HdLightTokens->shadowEnable] = true;
     }
     else {
         // For the camera light, initialize the transform based on the
@@ -913,6 +923,7 @@ HdxTaskController::_SetMaterialNetwork(SdfPath const& pathName,
         // Initialize distant light specific parameters
         node.parameters[HdLightTokens->angle] = DISTANT_LIGHT_ANGLE;
         node.parameters[HdLightTokens->intensity] = DISTANT_LIGHT_INTENSITY;
+        node.parameters[HdLightTokens->shadowEnable] = false;
     }
     lightNetwork.nodes.push_back(node);
 
@@ -1558,8 +1569,10 @@ HdxTaskController::SetEnableSelection(bool enable)
             _delegate.GetParameter<HdxSelectionTaskParams>(
                 _selectionTaskId, HdTokens->params);
 
-        if (params.enableSelection != enable) {
-            params.enableSelection = enable;
+        if (params.enableSelectionHighlight != enable || 
+            params.enableLocateHighlight != enable) {
+            params.enableSelectionHighlight = enable;
+            params.enableLocateHighlight = enable;
             _delegate.SetParameter(_selectionTaskId,
                 HdTokens->params, params);
             GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
@@ -1572,8 +1585,10 @@ HdxTaskController::SetEnableSelection(bool enable)
             _delegate.GetParameter<HdxColorizeSelectionTaskParams>(
                 _colorizeSelectionTaskId, HdTokens->params);
 
-        if (params.enableSelection != enable) {
-            params.enableSelection = enable;
+        if (params.enableSelectionHighlight != enable || 
+            params.enableLocateHighlight != enable) {
+            params.enableSelectionHighlight = enable;
+            params.enableLocateHighlight = enable;
             _delegate.SetParameter(_colorizeSelectionTaskId,
                 HdTokens->params, params);
             GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
@@ -1869,7 +1884,7 @@ HdxTaskController::SetFraming(const CameraUtilFraming &framing)
 
 void
 HdxTaskController::SetOverrideWindowPolicy(
-    const std::pair<bool, CameraUtilConformWindowPolicy> &policy)
+    const std::optional<CameraUtilConformWindowPolicy> &policy)
 {
     _overrideWindowPolicy = policy;
     _SetCameraFramingForTasks();

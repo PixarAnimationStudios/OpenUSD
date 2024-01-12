@@ -26,9 +26,9 @@
 #include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/wrapArray.h"
 
-#include <boost/functional/hash.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/implicit.hpp>
@@ -49,7 +49,7 @@ namespace {
 
 static std::string _Str(SdfAssetPath const &self)
 {
-    return boost::lexical_cast<std::string>(self);
+    return TfStringify(self);
 }
 
 static std::string
@@ -95,6 +95,7 @@ void wrapAssetPath()
     typedef SdfAssetPath This;
 
     class_<This>("AssetPath", init<>())
+        .def(init<const This&>())
         .def(init<const std::string &>())
         .def(init<const std::string &, const std::string &>())
 
@@ -104,6 +105,10 @@ void wrapAssetPath()
 
         .def( self == self )
         .def( self != self )
+        .def( self < self )
+        .def( self > self )
+        .def( self <= self )
+        .def( self >= self)
         .def("__str__", _Str)
 
         .add_property("path", GetAssetPath)

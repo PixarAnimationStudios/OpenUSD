@@ -5,7 +5,7 @@
 \section Usd_ScenegraphInstancing_Overview Overview
 
 USD's instancing functionality allows prims that bring in common scene 
-description via <a href="http://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-CompositionArcs">composition arcs</a> 
+description via <a href="https://openusd.org/release/glossary.html#usdglossary-compositionarcs">composition arcs</a> 
 to share those parts of the scenegraph, rather than having them duplicated for 
 each prim.  This can greatly improve performance in cases where many copies of 
 the same asset are brought in to a scene via composition.  For example, a 

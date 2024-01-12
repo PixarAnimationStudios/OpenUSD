@@ -57,3 +57,14 @@ def TestRemoval():
     Test('layer.usda', 'removal.usda', fn)
 
 TestRemoval()
+
+def TestDoesNotRecurseDeps():
+    # Tests reference paths are not traversed during asset path modification
+    def fn(s):
+        return 'MOD_' + s
+    
+    refLayer = Sdf.Layer.FindOrOpen('ref.usda')
+    Test('ref_layer.usda', 'ref_layer_mod.usda', fn)
+    refLayer.Export("ref_unmodified.usda")
+
+TestDoesNotRecurseDeps()

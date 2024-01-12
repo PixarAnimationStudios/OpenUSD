@@ -487,7 +487,7 @@ class TestPython(unittest.TestCase):
         self.assertEqual(4, Tf._RoundTripWrapperIndexTest([1,2,3,4], -1))
 
     def test_TfMakePyConstructorWithVarArgs(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaisesRegex(TypeError, "__init__\(bool, \.\.\.\)"):
             Tf._ClassWithVarArgInit()
 
         def CheckResults(c, allowExtraArgs, args, kwargs):

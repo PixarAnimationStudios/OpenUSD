@@ -33,6 +33,7 @@
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/stringUtils.h"
 
 using std::string;
 
@@ -44,7 +45,7 @@ namespace {
 
 static std::string __str__(UsdStageLoadRules const &self)
 {
-    return boost::lexical_cast<std::string>(self);
+    return TfStringify(self);
 }
 
 static string __repr__(UsdStageLoadRules const &self)

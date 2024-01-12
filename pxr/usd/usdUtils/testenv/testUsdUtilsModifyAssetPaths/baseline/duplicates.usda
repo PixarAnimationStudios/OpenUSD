@@ -15,6 +15,8 @@ def Xform "Model" (
             asset[] bar = [@baz.usd@, @baz.usd@]
             asset foo = @baz.usd@
         }
+        dictionary emptyDict = {
+        }
         asset foo = @baz.usd@
     }
     payload = [
@@ -28,7 +30,13 @@ def Xform "Model" (
 )
 {
     asset[] bar = [@baz.usd@, @baz.usd@]
-    asset foo = @baz.usd@
+    asset[] emptyArr = []
+    asset foo = @baz.usd@ (
+        customData = {
+            asset[] bar = [@baz.usd@, @baz.usd@]
+            asset foo = @baz.usd@
+        }
+    )
     asset[] varBar.timeSamples = {
         1: [@baz.usd@, @baz.usd@],
         2: [@baz.usd@, @baz.usd@],
@@ -48,5 +56,11 @@ def Xform "Variants" (
 
         }
     }
+}
+
+def "PrependPayload" (
+    prepend payload = @baz.usd@
+)
+{
 }
 

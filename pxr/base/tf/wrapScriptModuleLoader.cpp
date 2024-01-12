@@ -51,5 +51,3 @@ void wrapScriptModuleLoader() {
         .def("_LoadModulesForLibrary", &This::LoadModulesForLibrary)
         ;
 }
-
-TF_REFPTR_CONST_VOLATILE_GET(TfScriptModuleLoader)

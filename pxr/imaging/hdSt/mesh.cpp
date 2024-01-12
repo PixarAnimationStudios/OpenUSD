@@ -2629,7 +2629,8 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  _hasMirroredTransform,
                                  hasInstancer,
                                  desc.enableScalarOverride,
-                                 _pointsShadingEnabled);
+                                 _pointsShadingEnabled,
+                                 desc.forceOpaqueEdges);
 
     HdSt_GeometricShaderSharedPtr geomShader =
         HdSt_GeometricShader::Create(shaderKey, resourceRegistry);
@@ -2835,6 +2836,9 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
     bool requireFlatNormals =  false;
     for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
         const HdMeshReprDesc &desc = reprDescs[descIdx];
+        if (desc.geomStyle == HdMeshGeomStyleInvalid) {
+            continue;
+        }
         if (desc.flatShadingEnabled) {
             requireFlatNormals = true;
         } else {

@@ -1,0 +1,160 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+# Based on ni_ni_material_outside_prototype.usda with instance material bindings
+# at both levels.
+#
+# We should see:
+#
+# [OuterInstanceA]    [Inner]    [OuterInstanceB]
+#       Cyan           Green          Green
+#       Cyan           Green          Green
+#       Cyan            Red            Red
+#
+def Camera "main_cam"
+{
+     point3f xformOp:translate = (0,5,28)
+     float xformOp:rotateX = -10
+     uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX"]
+}
+
+def DistantLight "Sun"
+{
+    # Use default intensity and direction (light is emitted along -Z).
+    # The latter is fine since the stage is Y up.
+}
+
+def Xform "World"
+{
+    def Xform "NI_NI"
+    {
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "Outer"
+        {
+            def Xform "Inner"
+            {
+                def Xform "Prototype"
+                {
+                    def Sphere "Sphere"
+                    (
+                        prepend apiSchemas = [ "MaterialBindingAPI" ]
+                    )
+                    {
+                        float3 xformOp:translate = (0, 0, 0)
+                        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+                        rel material:binding = </Looks/Green>
+                    }
+                }
+
+                def Xform "InnerInstanceA"
+                (
+                    instanceable = true
+                    references = </World/NI_NI/Outer/Inner/Prototype>
+                    prepend apiSchemas = [ "MaterialBindingAPI" ]
+                )
+                {
+                    float3 xformOp:translate = (0,-3,0)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                    rel material:binding = </Looks/Red> (
+                        bindMaterialAs = "strongerThanDescendants"
+                    )
+                }
+
+                def Xform "InnerInstanceB"
+                (
+                    instanceable = true
+                    references = </World/NI_NI/Outer/Inner/Prototype>
+                    prepend apiSchemas = [ "MaterialBindingAPI" ]
+                )
+                {
+                    float3 xformOp:translate = (0,3,0)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                    # Weaker binding than that on the prototype.
+                    rel material:binding = </Looks/Blue>
+                }
+            }
+
+            def Xform "OuterInstanceA"
+            (
+                instanceable = true
+                references = </World/NI_NI/Outer/Inner>
+                prepend apiSchemas = [ "MaterialBindingAPI" ]
+            )
+            {
+                float3 xformOp:translate = (-3,0,0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                # All 3 sphere instances should appear cyan.
+                rel material:binding = </Looks/Cyan> (
+                    bindMaterialAs = "strongerThanDescendants"
+                )
+            }
+
+            def Xform "OuterInstanceB"
+            (
+                instanceable = true
+                references = </World/NI_NI/Outer/Inner>
+                prepend apiSchemas = [ "MaterialBindingAPI" ]
+            )
+            {
+                float3 xformOp:translate = (3,0,0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Looks/Cyan>
+            }
+        }
+    }
+}
+
+def Scope "Looks"
+{
+    def Material "Green"
+    {
+        token outputs:surface.connect = </Looks/Green/Surface.outputs:out>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.0, 1.0, 0.0)
+            token outputs:out
+        }
+    }
+
+    def Material "Red"
+    {
+        token outputs:surface.connect = </Looks/Red/Surface.outputs:out>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (1.0, 0.0, 0.0)
+            token outputs:out
+        }
+    }
+
+    def Material "Blue"
+    {
+        token outputs:surface.connect = </Looks/Blue/Surface.outputs:out>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.0, 0.0, 0.5)
+            token outputs:out
+        }
+    }
+
+    def Material "Cyan"
+    {
+        token outputs:surface.connect = </Looks/Cyan/Surface.outputs:out>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.0, 0.7, 0.7)
+            token outputs:out
+        }
+    }
+}

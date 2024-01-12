@@ -1,0 +1,4 @@
+#usda 1.0
+
+# Note: This file is included so that the clip templateAssetPath will resolve a
+# file and the simple test function will remain straightforward

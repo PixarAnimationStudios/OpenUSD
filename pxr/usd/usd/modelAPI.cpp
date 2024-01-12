@@ -131,22 +131,13 @@ TF_REGISTRY_FUNCTION(TfEnum)
 bool
 UsdModelAPI::GetKind(TfToken* retValue) const
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().GetMetadata(SdfFieldKeys->Kind, retValue);
+    return GetPrim().GetKind(retValue);
 }
+
 bool
 UsdModelAPI::SetKind(const TfToken& value) const
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().SetMetadata(SdfFieldKeys->Kind, value);
+    return GetPrim().SetKind(value);
 }
 
 bool

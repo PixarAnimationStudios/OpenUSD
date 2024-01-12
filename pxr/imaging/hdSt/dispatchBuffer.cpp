@@ -190,7 +190,8 @@ HdStDispatchBuffer::HdStDispatchBuffer(
     
     // just allocate uninitialized
     HgiBufferDesc bufDesc;
-    bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageVertex;
+    bufDesc.usage =
+        HgiBufferUsageUniform |  HgiBufferUsageVertex | HgiBufferUsageIndirect;
     bufDesc.byteSize = dataSize;
     bufDesc.vertexStride = stride;
     HgiBufferHandle buffer = _resourceRegistry->GetHgi()->CreateBuffer(bufDesc);

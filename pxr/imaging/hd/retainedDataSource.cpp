@@ -421,4 +421,62 @@ HdRetainedTypedSampledDataSource<bool>::New(const bool &value)
     }
 }
 
+static
+HdSampledDataSourceHandle
+_MakeStaticCopy(HdSampledDataSourceHandle const &ds)
+{
+    return HdCreateTypedRetainedDataSource(ds->GetValue(0.0f));
+}
+
+static
+HdVectorDataSourceHandle
+_MakeStaticCopy(HdVectorDataSourceHandle const &ds)
+{
+    const size_t n = ds->GetNumElements();
+    std::vector<HdDataSourceBaseHandle> values;
+    values.reserve(n);
+    for (size_t i = 0; i < n; ++i) {
+        values.push_back(ds->GetElement(i));
+    }
+    return HdRetainedSmallVectorDataSource::New(n, values.data());
+}
+
+HdContainerDataSourceHandle
+HdMakeStaticCopy(HdContainerDataSourceHandle const &ds)
+{
+    if (!ds) {
+        return nullptr;
+    }
+    const TfTokenVector names = ds->GetNames();
+    std::vector<HdDataSourceBaseHandle> items;
+    items.reserve(names.size());
+    for (const TfToken &name : names) {
+        items.push_back(HdMakeStaticCopy(ds->Get(name)));
+    }
+    return HdRetainedContainerDataSource::New(
+        names.size(), names.data(), items.data());
+}
+
+HdDataSourceBaseHandle
+HdMakeStaticCopy(HdDataSourceBaseHandle const &ds)
+{
+    if (!ds) {
+        return nullptr;
+    }
+    if (HdContainerDataSourceHandle const containerDs =
+            HdContainerDataSource::Cast(ds)) {
+        return HdMakeStaticCopy(containerDs);
+    }
+    if (HdVectorDataSourceHandle const vectorDs =
+            HdVectorDataSource::Cast(ds)) {
+        return _MakeStaticCopy(vectorDs);
+    }
+    if (HdSampledDataSourceHandle const sampledDs =
+            HdSampledDataSource::Cast(ds)) {
+        return _MakeStaticCopy(sampledDs);
+    }
+    TF_CODING_ERROR("Unsupported data source type");
+    return nullptr;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

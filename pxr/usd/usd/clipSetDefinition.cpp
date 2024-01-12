@@ -149,9 +149,9 @@ _DeriveClipInfo(const std::string& templateAssetPath,
                 const double activeOffset,
                 const double startTimeCode,
                 const double endTimeCode,
-                boost::optional<VtVec2dArray>* clipTimes,
-                boost::optional<VtVec2dArray>* clipActive,
-                boost::optional<VtArray<SdfAssetPath>>* clipAssetPaths,
+                std::optional<VtVec2dArray>* clipTimes,
+                std::optional<VtVec2dArray>* clipActive,
+                std::optional<VtArray<SdfAssetPath>>* clipAssetPaths,
                 const SdfPath& usdPrimPath,
                 const PcpLayerStackPtr& sourceLayerStack,
                 const size_t indexOfSourceLayer)
@@ -329,7 +329,7 @@ struct _ClipSet {
 
 template <class T>
 static bool
-_SetInfo(const VtDictionary& dict, const TfToken& key, boost::optional<T>* out)
+_SetInfo(const VtDictionary& dict, const TfToken& key, std::optional<T>* out)
 {
     const VtValue* v = TfMapLookupPtr(dict, key.GetString());
     if (v && v->IsHolding<T>()) {

@@ -995,10 +995,6 @@ HdStBasisCurves::_PopulateVaryingPrimvars(HdSceneDelegate *sceneDelegate,
     // until we get can do a better pass on curve normals.)
     _basisNormalInterpolation = true;
 
-    if (primvars.empty()) {
-        return;
-    }
-    
     HdBufferSourceSharedPtrVector sources;
     sources.reserve(primvars.size());
 
@@ -1164,7 +1160,7 @@ static bool
 HdSt_HasResource(HdStDrawItem* drawItem, const TfToken& resourceToken){
     // Check for authored resource, we could leverage dirtyBits here as an
     // optimization, however the BAR is the ground truth, so until there is a
-    // known peformance issue, we just check them explicitly.
+    // known performance issue, we just check them explicitly.
     bool hasAuthoredResouce = false;
 
     typedef HdBufferArrayRangeSharedPtr HdBarPtr;

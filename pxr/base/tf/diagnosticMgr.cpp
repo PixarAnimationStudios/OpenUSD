@@ -42,11 +42,10 @@
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/arch/threads.h"
 
-#include <boost/utility.hpp>
-
 #include <signal.h>
 #include <stdlib.h>
 
+#include <any>
 #include <thread>
 #include <memory>
 
@@ -673,7 +672,7 @@ TfDiagnosticMgr::FormatDiagnostic(const TfEnum &code,
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     if (const TfPyExceptionState* exc =
-            boost::any_cast<TfPyExceptionState>(&info)) {
+            std::any_cast<TfPyExceptionState>(&info)) {
         output += TfStringPrintf("%s\n", exc->GetExceptionString().c_str());
     }
 #endif // PXR_PYTHON_SUPPORT_ENABLED

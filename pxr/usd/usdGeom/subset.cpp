@@ -398,6 +398,109 @@ UsdGeomSubset::GetFamilyType(
     return familyType.IsEmpty() ? UsdGeomTokens->unrestricted : familyType;
 }
 
+static size_t
+_GetElementCountAtTime(
+    const UsdGeomImageable& geom,
+    const TfToken& elementType,
+    UsdTimeCode time,
+    bool* isCountTimeVarying=nullptr)
+{
+    size_t elementCount = 0u;
+    if (isCountTimeVarying) {
+        *isCountTimeVarying = false;
+    }
+
+    if (elementType == UsdGeomTokens->face) {
+        // XXX: Use UsdGeomMesh schema to get the face count.
+        const UsdAttribute fvcAttr = geom.GetPrim().GetAttribute(
+            UsdGeomTokens->faceVertexCounts);
+        if (fvcAttr) {
+            VtIntArray faceVertexCounts;
+            if (fvcAttr.Get(&faceVertexCounts, time)) {
+                elementCount = faceVertexCounts.size();
+            }
+            if (isCountTimeVarying) {
+                *isCountTimeVarying = fvcAttr.ValueMightBeTimeVarying();
+            }
+        }
+    } else if (elementType == UsdGeomTokens->point) {
+        const UsdAttribute ptAttr = geom.GetPrim().GetAttribute(
+            UsdGeomTokens->points);
+        if (ptAttr) {
+            VtArray<GfVec3f> points;
+            if (ptAttr.Get(&points, time)) {
+                elementCount = points.size();
+            } 
+            if (isCountTimeVarying) {
+                *isCountTimeVarying = ptAttr.ValueMightBeTimeVarying();
+            }
+        } 
+    } else {
+        TF_CODING_ERROR("Unsupported element type '%s'.",
+                        elementType.GetText());
+    }
+
+    return elementCount;
+}
+
+/* static */
+VtIntArray
+UsdGeomSubset::GetUnassignedIndices(
+    const UsdGeomImageable &geom, 
+    const TfToken &elementType,
+    const TfToken &familyName,
+    const UsdTimeCode &time /* UsdTimeCode::EarliestTime() */)
+{
+    std::vector<UsdGeomSubset> subsets = UsdGeomSubset::GetGeomSubsets(
+            geom, elementType, familyName);
+    
+    std::set<int> assignedIndices;
+    for (const auto &subset : subsets) {
+        VtIntArray indices;
+        subset.GetIndicesAttr().Get(&indices, time);
+        assignedIndices.insert(indices.begin(), indices.end());
+    }
+
+    // This is protection against the possibility that any of the subsets can
+    // erroneously contain negative valued indices. Even though negative indices
+    // are invalid, their presence breaks the assumption in the rest of this 
+    // function that all indices are nonnegative. This can lead to crashes.
+    // 
+    // Negative indices should be extremely rare which is why it's better to 
+    // check and remove them after the collection of assigned indices rather 
+    // than during.
+    while (!assignedIndices.empty() && *assignedIndices.begin() < 0) {
+        assignedIndices.erase(assignedIndices.begin());
+    }
+
+    const size_t elementCount = _GetElementCountAtTime(geom, elementType, time);
+
+    VtIntArray result;
+    if (assignedIndices.empty()) {
+        result.reserve(elementCount);
+        for (size_t idx = 0 ; idx < elementCount ; ++idx) 
+            result.push_back(idx);
+    } else {
+        std::vector<int> allIndices;
+        allIndices.reserve(elementCount);
+        for (size_t idx = 0 ; idx < elementCount ; ++idx) 
+            allIndices.push_back(idx);
+
+        const unsigned int lastAssigned = *assignedIndices.rbegin();
+        if (elementCount > lastAssigned) {
+            result.reserve(elementCount - assignedIndices.size());
+        } else {
+            result.reserve(std::min(
+                elementCount, (lastAssigned + 1) - assignedIndices.size()));
+        }
+        std::set_difference(allIndices.begin(), allIndices.end(), 
+            assignedIndices.begin(), assignedIndices.end(), 
+            std::back_inserter(result));
+    }
+
+    return result;
+}
+
 /* static */
 VtIntArray
 UsdGeomSubset::GetUnassignedIndices(
@@ -523,7 +626,7 @@ UsdGeomSubset::ValidateSubsets(
             }
         }
 
-        // Ensure that the indices are in the range [0, faceCount).
+        // Ensure that the indices are in the range [0, elementCount).
         if (elementCount > 0 && 
             static_cast<size_t>(*indicesInFamily.rbegin()) >= elementCount) {
             valid = false;
@@ -546,49 +649,54 @@ UsdGeomSubset::ValidateSubsets(
 }
 
 /* static */
-bool 
+bool
 UsdGeomSubset::ValidateFamily(
-    const UsdGeomImageable &geom, 
+    const UsdGeomImageable &geom,
     const TfToken &elementType,
     const TfToken &familyName,
     std::string * const reason)
 {
-    std::vector<UsdGeomSubset> familySubsets =      
-        UsdGeomSubset::GetGeomSubsets(geom, elementType, familyName);
-
-    bool valid = true;
-
-    size_t faceCount = 0;
-    if (elementType == UsdGeomTokens->face) {
-        // XXX: Use UsdGeomMesh schema to get the face count.
-        UsdAttribute fvcAttr = geom.GetPrim().GetAttribute(
-            UsdGeomTokens->faceVertexCounts);
-        if (fvcAttr) {
-            VtIntArray faceVertexCounts;
-            if (fvcAttr.Get(&faceVertexCounts)) {
-                faceCount = faceVertexCounts.size();
-            }
-        }
-    } else {
-        TF_CODING_ERROR("Unsupported element type '%s'.", 
+    // XXX: Remove when other element types are supported.
+    if (elementType != UsdGeomTokens->face && elementType != UsdGeomTokens->point) {
+        TF_CODING_ERROR("Unsupported element type '%s'.",
                         elementType.GetText());
         return false;
     }
 
-    if (faceCount == 0) {
+    const std::vector<UsdGeomSubset> familySubsets =
+        UsdGeomSubset::GetGeomSubsets(geom, elementType, familyName);
+    const TfToken familyType = GetFamilyType(geom, familyName);
+    const bool familyIsRestricted = (familyType != UsdGeomTokens->unrestricted);
+
+    bool valid = true;
+
+    bool isElementCountTimeVarying = false;
+    const size_t earliestTimeElementCount = _GetElementCountAtTime(
+        geom, elementType, UsdTimeCode::EarliestTime(),
+        &isElementCountTimeVarying);
+    if (!isElementCountTimeVarying && earliestTimeElementCount == 0u) {
         valid = false;
         if (reason) {
-            *reason += TfStringPrintf("Unable to determine face-count for geom"
-                " <%s>", geom.GetPath().GetText());
+            *reason += TfStringPrintf("Unable to determine element count "
+                "at earliest time for geom <%s>.\n", geom.GetPath().GetText());
         }
     }
 
-    TfToken familyType = GetFamilyType(geom, familyName);
-    
-    bool familyIsRestricted = (familyType != UsdGeomTokens->unrestricted);
-
     std::set<double> allTimeSamples;
     for (const auto &subset : familySubsets) {
+        TfToken subsetElementType;
+        subset.GetElementTypeAttr().Get(&subsetElementType);
+        if (subsetElementType != elementType) {
+            if (reason) {
+                *reason = TfStringPrintf("Subset at path <%s> has elementType "
+                    "%s, which does not match '%s'.",
+                    subset.GetPath().GetText(), subsetElementType.GetText(),
+                    elementType.GetText());
+            }
+            // Return early if all the subsets don't have the same element type.
+            return false;
+        }
+
         std::vector<double> subsetTimeSamples;
         subset.GetIndicesAttr().GetTimeSamples(&subsetTimeSamples);
         allTimeSamples.insert(subsetTimeSamples.begin(), subsetTimeSamples.end());
@@ -596,9 +704,11 @@ UsdGeomSubset::ValidateFamily(
 
     std::vector<UsdTimeCode> allTimeCodes(1, UsdTimeCode::Default());
     allTimeCodes.reserve(1 + allTimeSamples.size());
-    for (const double t: allTimeSamples) {
+    for (const double t : allTimeSamples) {
         allTimeCodes.emplace_back(t);
     }
+
+    bool hasIndicesAtAnyTime = false;
 
     for (const UsdTimeCode &t : allTimeCodes) {
         std::set<int> indicesInFamily;
@@ -614,34 +724,60 @@ UsdGeomSubset::ValidateFamily(
                         valid = false;
                         if (reason) {
                             *reason += TfStringPrintf("Found duplicate index %d "
-                                "in GeomSubset at path <%s>.\n", index,
-                                subset.GetPath().GetText());
+                                "in GeomSubset at path <%s> at time %s.\n", index,
+                                subset.GetPath().GetText(), TfStringify(t).c_str());
                         }
                     }
                 }
             }
         }
 
+        // Topologically varying geometry may not have any elements at some
+        // times. In that case, only mark the family invalid if it has indices
+        // but we have no elements for this time.
+        const size_t elementCount = isElementCountTimeVarying ?
+            _GetElementCountAtTime(geom, elementType, t) :
+            earliestTimeElementCount;
+        if (!indicesInFamily.empty() &&
+                isElementCountTimeVarying && elementCount == 0u) {
+            valid = false;
+            if (reason) {
+                *reason += TfStringPrintf("Geometry <%s> has no elements at "
+                    "time %s, but the \"%s\" GeomSubset family contains "
+                    "indices.\n", geom.GetPath().GetText(),
+                    TfStringify(t).c_str(), familyName.GetText());
+            }
+        }
+
         // Make sure every index appears exactly once if it's a partition.
-        if (familyType == UsdGeomTokens->partition && 
-            indicesInFamily.size() != faceCount) 
+        if (familyType == UsdGeomTokens->partition &&
+            indicesInFamily.size() != elementCount)
         {
             valid = false;
             if (reason) {
                 *reason += TfStringPrintf("Number of unique indices at time %s "
-                    "does not match the face count %ld.", 
-                    TfStringify(t).c_str(), faceCount);
+                    "does not match the element count %ld.\n",
+                    TfStringify(t).c_str(), elementCount);
             }
         }
 
-        // Make sure the indices are valid and don't exceed the faceCount.
-        if (faceCount > 0 && 
-            static_cast<size_t>(*indicesInFamily.rbegin()) >= faceCount) {
+        if (indicesInFamily.empty()) {
+            // Skip the bounds checking below if there are no indices at this
+            // time. This does not invalidate the subset family.
+            continue;
+        }
+
+        hasIndicesAtAnyTime = true;
+
+        // Make sure the indices are valid and don't exceed the elementCount.
+        const int lastIndex = *indicesInFamily.rbegin();
+        if (elementCount > 0 && lastIndex >= 0 &&
+            static_cast<size_t>(lastIndex) >= elementCount) {
             valid = false;
             if (reason) {
                 *reason += TfStringPrintf("Found one or more indices that are "
-                    "greater than the face-count %ld at time %s.\n", 
-                    faceCount, TfStringify(t).c_str());
+                    "greater than the element count %ld at time %s.\n",
+                    elementCount, TfStringify(t).c_str());
             }
         }
 
@@ -652,6 +788,13 @@ UsdGeomSubset::ValidateFamily(
                 *reason += TfStringPrintf("Found one or more indices that are "
                     "less than 0 at time %s.\n", TfStringify(t).c_str());
             }
+        }
+    }
+
+    if (!hasIndicesAtAnyTime) {
+        valid = false;
+        if (reason) {
+            *reason += TfStringPrintf("No indices in family at any time.\n");
         }
     }
 

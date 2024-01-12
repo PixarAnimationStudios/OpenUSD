@@ -9,7 +9,7 @@ City Set
 .. raw:: html
 
    <center>
-     <form method="get" action="https://graphics.pixar.com/usd/files/PointInstancedMedCity.zip">
+     <form method="get" action="https://openusd.org/files/PointInstancedMedCity.zip">
        <button type="submit">OK</button>
      </form>
    </center>

@@ -31,10 +31,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 //
 // Tweakable value
 //
-// If the ids are already at least this percent sorted, use
-// insert sort rather than a full sort.
+// If the count of unsorted ids is this value or lower, use insert
+// sort rather than a full sort.
 //
-static const size_t SORTED_PERCENT = 90;
+static const size_t INSERTION_SORT_MAX_ENTRIES = 32;
 
 Hd_SortedIds::Hd_SortedIds()
  : _ids()
@@ -231,7 +231,16 @@ Hd_SortedIds::_InsertSort()
 void
 Hd_SortedIds::_FullSort()
 {
-    std::sort(_ids.begin(), _ids.end());
+    // Sort the unsorted part
+    SdfPathVector::iterator mid = _ids.begin() + _sortedCount;
+    std::sort(mid, _ids.end());
+
+    // If needed, merge
+    if (mid == _ids.begin() || *(mid-1) < *(mid)) {
+        // List is fully sorted.
+    } else {
+        std::inplace_merge(_ids.begin(), mid, _ids.end());
+    }
 }
 
 void
@@ -246,8 +255,7 @@ Hd_SortedIds::_Sort()
         return;
     }
 
-    //   (_sortedCount / numIds) * 100 > SORTED_PERCENT
-    if (100 * _sortedCount > SORTED_PERCENT * numIds) {
+    if (numIds - _sortedCount < INSERTION_SORT_MAX_ENTRIES) {
         _InsertSort();
     } else {
         _FullSort();

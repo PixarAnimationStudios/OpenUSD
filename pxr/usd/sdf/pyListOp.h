@@ -61,7 +61,7 @@ private:
     }
     static boost::python::object
     _ApplyOperations2(const T& outer, const T& inner) {
-        if (boost::optional<T> r = outer.ApplyOperations(inner)) {
+        if (std::optional<T> r = outer.ApplyOperations(inner)) {
             return boost::python::object(*r);
         } else {
             return boost::python::object();

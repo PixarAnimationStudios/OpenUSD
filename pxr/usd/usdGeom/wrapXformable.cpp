@@ -257,6 +257,63 @@ WRAP_CUSTOM {
              arg("opSuffix")=TfToken(),
              arg("isInverseOp")=false))
 
+        .def("GetXformOp", &This::GetXformOp, 
+            (arg("opType"), 
+             arg("opSuffix")=TfToken(),
+             arg("isInverseOp")=false))
+
+        .def("GetTranslateOp", &This::GetTranslateOp, 
+            (arg("opSuffix")=TfToken(),
+             arg("isInverseOp")=false))
+
+        .def("GetScaleOp", &This::GetScaleOp, 
+            (arg("opSuffix")=TfToken(),
+             arg("isInverseOp")=false))
+
+        .def("GetRotateXOp", &This::GetRotateXOp, 
+            (arg("opSuffix")=TfToken(),
+             arg("isInverseOp")=false))
+
+        .def("GetRotateYOp", &This::GetRotateYOp, 
+            (arg("opSuffix")=TfToken(),
+             arg("isInverseOp")=false))
+
+        .def("GetRotateZOp", &This::GetRotateZOp, 
+            (arg("opSuffix")=TfToken(),
+             arg("isInverseOp")=false))
+
+        .def("GetRotateXYZOp", &This::GetRotateXYZOp, 
+            (arg("opSuffix")=TfToken(),
+             arg("isInverseOp")=false))
+
+        .def("GetRotateXZYOp", &This::GetRotateXZYOp, 
+            (arg("opSuffix")=TfToken(),
+             arg("isInverseOp")=false))
+
+        .def("GetRotateYXZOp", &This::GetRotateYXZOp, 
+            (arg("opSuffix")=TfToken(),
+             arg("isInverseOp")=false))
+
+        .def("GetRotateYZXOp", &This::GetRotateYZXOp, 
+            (arg("opSuffix")=TfToken(),
+             arg("isInverseOp")=false))
+
+        .def("GetRotateZXYOp", &This::GetRotateZXYOp, 
+            (arg("opSuffix")=TfToken(),
+             arg("isInverseOp")=false))
+
+        .def("GetRotateZYXOp", &This::GetRotateZYXOp, 
+            (arg("opSuffix")=TfToken(),
+             arg("isInverseOp")=false))
+
+        .def("GetOrientOp", &This::GetOrientOp, 
+            (arg("opSuffix")=TfToken(),
+             arg("isInverseOp")=false))
+
+        .def("GetTransformOp", &This::GetTransformOp, 
+            (arg("opSuffix")=TfToken(),
+             arg("isInverseOp")=false))
+
         .def("SetResetXformStack", &This::SetResetXformStack,
             (arg("resetXform")))
 

@@ -32,6 +32,7 @@
 #include "pxr/imaging/hd/dependencyForwardingSceneIndex.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/retainedSceneIndex.h"
+#include "pxr/imaging/hd/flattenedDataSourceProviders.h"
 
 #include "pxr/imaging/hd/dependenciesSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
@@ -355,7 +356,8 @@ bool TestFlatteningSceneIndex()
 {
     HdRetainedSceneIndexRefPtr sceneIndex_ = HdRetainedSceneIndex::New();
     HdFlatteningSceneIndexRefPtr flatteningSceneIndex_ =
-        HdFlatteningSceneIndex::New(sceneIndex_);
+        HdFlatteningSceneIndex::New(
+            sceneIndex_, HdFlattenedDataSourceProviders());
 
     HdRetainedSceneIndex &sceneIndex = *sceneIndex_;
     HdFlatteningSceneIndex &flatteningSceneIndex = *flatteningSceneIndex_;
@@ -957,12 +959,15 @@ bool TestDependencyForwardingSceneIndex()
             HdDependenciesSchemaTokens->__dependencies,
             HdRetainedContainerDataSource::New(
                 TfToken("test"),
-                HdDependencySchema::BuildRetained(
-                    HdRetainedTypedSampledDataSource<SdfPath>::New(
-                            SdfPath("/A")),
-                    RDS::New(HdDataSourceLocator(TfToken("taco"))),
-                    RDS::New(HdDataSourceLocator(TfToken("chicken")))
-                )
+                HdDependencySchema::Builder()
+                    .SetDependedOnPrimPath(
+                        HdRetainedTypedSampledDataSource<SdfPath>::New(
+                            SdfPath("/A")))
+                    .SetDependedOnDataSourceLocator(
+                        RDS::New(HdDataSourceLocator(TfToken("taco"))))
+                    .SetAffectedDataSourceLocator(
+                        RDS::New(HdDataSourceLocator(TfToken("chicken"))))
+                    .Build()
             )
         )}}
     );
@@ -972,12 +977,15 @@ bool TestDependencyForwardingSceneIndex()
             HdDependenciesSchemaTokens->__dependencies,
             HdRetainedContainerDataSource::New(
                 TfToken("test"),
-                HdDependencySchema::BuildRetained(
-                    HdRetainedTypedSampledDataSource<SdfPath>::New(
-                            SdfPath("/B")),
-                    RDS::New(HdDataSourceLocator(TfToken("chicken"))),
-                    RDS::New(HdDataSourceLocator(TfToken("salsa")))
-                )
+                HdDependencySchema::Builder()
+                    .SetDependedOnPrimPath(
+                        HdRetainedTypedSampledDataSource<SdfPath>::New(
+                            SdfPath("/B")))
+                    .SetDependedOnDataSourceLocator(
+                        RDS::New(HdDataSourceLocator(TfToken("chicken"))))
+                    .SetAffectedDataSourceLocator(
+                        RDS::New(HdDataSourceLocator(TfToken("salsa"))))
+                    .Build()
             )
         )}}
     );
@@ -988,12 +996,15 @@ bool TestDependencyForwardingSceneIndex()
                 HdDependenciesSchemaTokens->__dependencies,
                 HdRetainedContainerDataSource::New(
                     TfToken("test"),
-                    HdDependencySchema::BuildRetained(
-                        HdRetainedTypedSampledDataSource<SdfPath>::New(
-                                SdfPath("/E")),
-                        RDS::New(HdDataSourceLocator(TfToken("attr2"))),
-                        RDS::New(HdDataSourceLocator(TfToken("attr1")))
-                    )
+                    HdDependencySchema::Builder()
+                        .SetDependedOnPrimPath(
+                            HdRetainedTypedSampledDataSource<SdfPath>::New(
+                                SdfPath("/E")))
+                        .SetDependedOnDataSourceLocator(
+                            RDS::New(HdDataSourceLocator(TfToken("attr2"))))
+                        .SetAffectedDataSourceLocator(
+                            RDS::New(HdDataSourceLocator(TfToken("attr1"))))
+                        .Build()
                 )
             )}}
         );
@@ -1003,12 +1014,15 @@ bool TestDependencyForwardingSceneIndex()
             HdDependenciesSchemaTokens->__dependencies,
             HdRetainedContainerDataSource::New(
                 TfToken("test"),
-                HdDependencySchema::BuildRetained(
-                    HdRetainedTypedSampledDataSource<SdfPath>::New(
-                            SdfPath("/F")),
-                    RDS::New(HdDataSourceLocator(TfToken("attr3"))),
-                    RDS::New(HdDataSourceLocator(TfToken("attr2")))
-                )
+                HdDependencySchema::Builder()
+                    .SetDependedOnPrimPath(
+                        HdRetainedTypedSampledDataSource<SdfPath>::New(
+                            SdfPath("/F")))
+                    .SetDependedOnDataSourceLocator(
+                        RDS::New(HdDataSourceLocator(TfToken("attr3"))))
+                    .SetAffectedDataSourceLocator(
+                        RDS::New(HdDataSourceLocator(TfToken("attr2"))))
+                    .Build()
             )
         )}}
     );
@@ -1018,12 +1032,15 @@ bool TestDependencyForwardingSceneIndex()
             HdDependenciesSchemaTokens->__dependencies,
             HdRetainedContainerDataSource::New(
                 TfToken("test"),
-                HdDependencySchema::BuildRetained(
-                    HdRetainedTypedSampledDataSource<SdfPath>::New(
-                            SdfPath("/D")),
-                    RDS::New(HdDataSourceLocator(TfToken("attr1"))),
-                    RDS::New(HdDataSourceLocator(TfToken("attr3")))
-                )
+                HdDependencySchema::Builder()
+                    .SetDependedOnPrimPath(
+                        HdRetainedTypedSampledDataSource<SdfPath>::New(
+                            SdfPath("/D")))
+                    .SetDependedOnDataSourceLocator(
+                        RDS::New(HdDataSourceLocator(TfToken("attr1"))))
+                    .SetAffectedDataSourceLocator(
+                        RDS::New(HdDataSourceLocator(TfToken("attr3"))))
+                    .Build()
             )
         )}}
     );
@@ -1175,12 +1192,15 @@ void TestDependencyForwardingSceneIndexEviction_InitScenes(
             HdDependenciesSchemaTokens->__dependencies,
             HdRetainedContainerDataSource::New(
                 TfToken("test"),
-                HdDependencySchema::BuildRetained(
-                    HdRetainedTypedSampledDataSource<SdfPath>::New(
-                            SdfPath("/A")),
-                    RDS::New(HdDataSourceLocator(TfToken("taco"))),
-                    RDS::New(HdDataSourceLocator(TfToken("chicken")))
-                )
+                HdDependencySchema::Builder()
+                    .SetDependedOnPrimPath(
+                        HdRetainedTypedSampledDataSource<SdfPath>::New(
+                            SdfPath("/A")))
+                    .SetDependedOnDataSourceLocator(
+                        RDS::New(HdDataSourceLocator(TfToken("taco"))))
+                    .SetAffectedDataSourceLocator(
+                        RDS::New(HdDataSourceLocator(TfToken("chicken"))))
+                    .Build()
             )
         )}}
     );

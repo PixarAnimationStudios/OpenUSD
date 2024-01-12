@@ -744,6 +744,8 @@ private:
         // Ensure we start from a clean slate.
         _ClearSpecData();
 
+        TfErrorMark m;
+
         WorkDispatcher dispatcher;
 
         // Pull all the data out of the crate file structure that we'll
@@ -804,21 +806,34 @@ private:
                     
             dispatcher.Run(
                 [this, fsBegin, fsEnd, &fields, &fieldValuePairs]() mutable {
-                    // XXX Won't need first two tags when bug #132031 is
-                    // addressed
-                    TfAutoMallocTag tag(
-                        "Usd", "Usd_CrateDataImpl::Open", "field data");
-                    auto &pairs = fieldValuePairs.GetMutable();
-                    pairs.resize(fsEnd-fsBegin);
-                    for (size_t i = 0; fsBegin != fsEnd; ++fsBegin, ++i) {
-                        auto const &field = fields[fsBegin->value];
-                        pairs[i].first = _crateFile->GetToken(field.tokenIndex);
-                        pairs[i].second = _UnpackForField(field.valueRep);
+                    try{
+                        // XXX Won't need first two tags when bug #132031 is
+                        // addressed
+                        TfAutoMallocTag tag(
+                            "Usd", "Usd_CrateDataImpl::Open", "field data");
+                        auto &pairs = fieldValuePairs.GetMutable();
+                        pairs.resize(fsEnd-fsBegin);
+                        for (size_t i = 0; fsBegin != fsEnd; ++fsBegin, ++i) {
+                            auto const &field = fields[fsBegin->value];
+                            pairs[i].first = 
+                                _crateFile->GetToken(field.tokenIndex);
+                            pairs[i].second = _UnpackForField(field.valueRep);
+                        } 
+                    } catch (const std::exception &e){
+                        TF_RUNTIME_ERROR("Encountered exception: %s %s", 
+                            e.what(), _crateFile->GetAssetPath().c_str());
+
+                    } catch (...) {
+                        TF_RUNTIME_ERROR("Encountered unknown exception");
                     }
                 });
         }
                 
         dispatcher.Wait();
+
+        if (!m.IsClean()) {
+            return false;
+        }
 
         // Create all the specData entries and store pointers to them.
         tbb::parallel_for(

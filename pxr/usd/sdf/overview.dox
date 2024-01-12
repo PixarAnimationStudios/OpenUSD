@@ -219,8 +219,8 @@ A plugin metadata field may be associated with a display group by specifying a v
 
 See \subpage Sdf_Page_FileFormatPlugin for information about creating file format plugins..
 
-\section sdf_stage_variable_expressions Stage Variable Expressions
+\section sdf_variable_expressions Variable Expressions
 
-See \subpage Sdf_Page_StageVariableExpressions for information about stage variable expressions.
+See \subpage Sdf_Page_VariableExpressions for information about variable expressions.
 
 */

@@ -1,0 +1,41 @@
+#usda 1.0 
+
+def "Instance1" (
+    references = @ref.usda@</ReferencePrim>
+    instanceable = true
+) {
+    custom double ReferencePrim_Attr = 20.0
+    custom string Instance1_Attr = "one"
+
+	over "B" {
+        custom int B_Attr = 2
+	}
+}
+
+def "Instance2" (
+    references = @ref.usda@</ReferencePrim>
+    instanceable = true
+) {
+    custom double ReferencePrim_Attr = 20.0
+    custom string Instance2_Attr = "two"
+
+	over "B" {
+        custom int B_Attr = 2
+	}
+}
+
+def "NonInstancePrim" (
+    references = @ref.usda@</ReferencePrim>
+) {
+    custom double ReferencePrim_Attr = 20.0
+    custom string NonInstance_Attr = "none"
+
+	over "B" {
+        custom int B_Attr = 2
+	}
+}
+
+def "BasicRootPrim" 
+{
+    custom string BasicString_Attr = "foo"
+}

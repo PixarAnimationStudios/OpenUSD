@@ -29,6 +29,7 @@
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/dependency.h"
 #include "pxr/usd/pcp/dynamicFileFormatDependencyData.h"
+#include "pxr/usd/pcp/expressionVariablesDependencyData.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/iterator.h"
 #include "pxr/usd/pcp/node.h"
@@ -166,6 +167,11 @@ public:
     /// prim index.
     PCP_API
     PcpNodeIterator GetNodeIteratorAtNode(const PcpNodeRef &node) const;
+
+    /// Returns range of iterators that encompass the given \p node and all of
+    /// its descendants in strong-to-weak order.
+    PCP_API
+    PcpNodeRange GetNodeSubtreeRange(const PcpNodeRef &node) const;
 
     /// Returns range of iterators that encompasses all prims, in
     /// strong-to-weak order.
@@ -317,6 +323,10 @@ public:
     /// fields that had values, but is the list of all fields that a  composed 
     /// value was requested for. 
     PcpDynamicFileFormatDependencyData dynamicFileFormatDependency;
+
+    /// Dependencies on expression variables from composition arcs in this
+    /// prim index.
+    PcpExpressionVariablesDependencyData expressionVariablesDependency;
 
     /// Site dependencies from nodes in the prim index that have been culled.
     std::vector<PcpCulledDependency> culledDependencies;

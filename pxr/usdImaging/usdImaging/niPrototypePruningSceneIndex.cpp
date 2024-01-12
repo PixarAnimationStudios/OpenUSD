@@ -49,12 +49,21 @@ _IsUsdPrototype(HdSceneIndexBaseRefPtr const &sceneIndex,
 bool
 _ContainsPrefixOfPath(const SdfPathSet &pathSet, const SdfPath &path)
 {
-    const auto it = std::lower_bound(
-        pathSet.crbegin(), pathSet.crend(),
-        path,
-        [](const SdfPath &a, const SdfPath &b) {
-            return a > b;});
-    return it != pathSet.crend() && path.HasPrefix(*it);
+     // Use std::map::lower_bound over std::lower_bound since the latter
+    // is slow given that std::map iterators are not random access.
+    auto it = pathSet.lower_bound(path);
+    if (it != pathSet.end() && path == *it) {
+        // Path itself is in the container
+        return true;
+    }
+
+    // If a prefix of path is in container, it will point to the next element
+    // in the container, rather than the prefix itself.
+    if (it == pathSet.begin()) {
+        return false;
+    }
+    --it;
+    return path.HasPrefix(*it);
 }
 
 // Only return entries (e.g., HdSceneIndexObserver::AddedEntries) where

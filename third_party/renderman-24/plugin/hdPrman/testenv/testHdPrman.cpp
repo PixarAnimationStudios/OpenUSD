@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
+#include "pxr/imaging/hd/utils.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
@@ -44,6 +45,7 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/renderSettingsFlatteningSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/pathUtils.h"
@@ -560,7 +562,8 @@ HydraSetupAndRender(
         HdSceneIndexBaseRefPtr siChainHead;
         siChainHead = UsdImagingRenderSettingsFlatteningSceneIndex::New(
                         usdStageSceneIndex);
-        siChainHead = HdFlatteningSceneIndex::New(siChainHead);
+        siChainHead = HdFlatteningSceneIndex::New(
+            siChainHead, UsdImagingFlattenedDataSourceProviders());
 
         // Insert scene index chain into the render index.
         hdRenderIndex->InsertSceneIndex(
@@ -616,8 +619,13 @@ HydraSetupAndRender(
     hdRenderPassState->SetCamera(camera);
     hdRenderPassState->SetFraming(ComputeFraming(cameraInfo));
     hdRenderPassState->SetOverrideWindowPolicy(
-        { true, _RenderSettingsTokenToConformWindowPolicy(
-                                cameraInfo.aspectRatioConformPolicy) });
+#if HD_API_VERSION >= 57
+            HdUtils::ToConformWindowPolicy(
+                cameraInfo.aspectRatioConformPolicy));
+#else
+            { true, HdUtils::ToConformWindowPolicy(
+                                    cameraInfo.aspectRatioConformPolicy) });
+#endif
 
     // The task execution graph and engine configuration is also simple.
     HdTaskSharedPtrVector tasks = {

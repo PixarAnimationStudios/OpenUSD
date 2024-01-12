@@ -38,6 +38,7 @@
 #include <iosfwd>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -49,6 +50,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(Pcp_LayerStackRegistry);
 class ArResolverContext;
 class Pcp_LayerStackRegistry;
 class Pcp_MutedLayers;
+class PcpExpressionVariables;
 class PcpLayerStackChanges;
 class PcpLifeboat;
 
@@ -122,6 +124,17 @@ public:
     bool HasLayer(const SdfLayerHandle& layer) const;
     PCP_API
     bool HasLayer(const SdfLayerRefPtr& layer) const;
+
+    /// Return the composed expression variables for this layer stack.
+    const PcpExpressionVariables& GetExpressionVariables() const
+    { return *_expressionVariables; }
+
+    /// Return the set of expression variables used during the computation
+    /// of this layer stack. For example, this may include the variables
+    /// used in expression variable expressions in sublayer asset paths.
+    const std::unordered_set<std::string>&
+    GetExpressionVariableDependencies() const 
+    { return _expressionVariableDependencies; }
 
     /// Return the time codes per second value of the layer stack. This is 
     /// usually the same as the computed time codes per second of the root layer
@@ -307,6 +320,12 @@ private:
 
     /// List of all prim spec paths where relocations were found.
     SdfPathVector _relocatesPrimPaths;
+
+    /// Composed expression variables.
+    std::shared_ptr<PcpExpressionVariables> _expressionVariables;
+
+    /// Set of expression variables this layer stack depends on.
+    std::unordered_set<std::string> _expressionVariableDependencies;
 
     bool _isUsd;
 };

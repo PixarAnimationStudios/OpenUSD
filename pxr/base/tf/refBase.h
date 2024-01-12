@@ -29,8 +29,10 @@
 
 #include "pxr/pxr.h"
 
-#include "pxr/base/tf/refCount.h"
 #include "pxr/base/tf/api.h"
+
+#include <atomic>
+#include <cmath>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -78,24 +80,40 @@ public:
         void (*unlock)();
     };
 
-    TfRefBase() : _shouldInvokeUniqueChangedListener(false) { }
+    // This mimics the old TfRefCount's default ctor behavior, which set
+    // _refCount to 1.
+    TfRefBase() : _refCount(1) {}
+
+    // This mimics the old TfRefCount's copy ctor behavior, which set _refCount
+    // to 1 on copy construction.
+    TfRefBase(TfRefBase const &) : _refCount(1) {}
+
+    // This mimics the old TfRefCount's copy assignment behavior, which took no
+    // action.
+    TfRefBase &operator=(TfRefBase const &) {
+        return *this;
+    }
 
     /// Return the current reference count of this object.
     size_t GetCurrentCount() const {
-        return GetRefCount().Get();
+        // Return the absolute value since the sign encodes whether or not this
+        // TfRefBase invokes the UniqueChangedListener.
+        return std::abs(_refCount.load(std::memory_order_relaxed));
     }
 
     /// Return true if only one \c TfRefPtr points to this object.
     bool IsUnique() const {
-        return GetRefCount().Get() == 1;
-    }
-
-    const TfRefCount& GetRefCount() const {
-        return _refCount;
+        return GetCurrentCount() == 1;
     }
 
     void SetShouldInvokeUniqueChangedListener(bool shouldCall) {
-        _shouldInvokeUniqueChangedListener = shouldCall;
+        int curValue = _refCount.load(std::memory_order_relaxed);
+        while ((curValue > 0 && shouldCall) ||
+               (curValue < 0 && !shouldCall)) {
+            if (_refCount.compare_exchange_weak(curValue, -curValue)) {
+                return;
+            }                    
+        }
     }
 
     TF_API static void SetUniqueChangedListener(UniqueChangedListener listener);
@@ -107,8 +125,15 @@ protected:
     TF_API virtual ~TfRefBase();
 
 private:
-    TfRefCount _refCount;
-    bool _shouldInvokeUniqueChangedListener;
+    // For TfRefPtr's use.
+    std::atomic_int &_GetRefCount() const {
+        return _refCount;
+    }
+    
+    // Note! Counts can be both positive or negative.  Negative counts indicate
+    // that we must invoke the _uniqueChangedListener if the count goes 1 -> 2
+    // or 2 -> 1 (which is really -1 -> -2 or -2 -> -1).
+    mutable std::atomic_int _refCount;
 
     static UniqueChangedListener _uniqueChangedListener;
     template <typename T> friend class TfRefPtr;

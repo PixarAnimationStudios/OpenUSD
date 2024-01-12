@@ -49,6 +49,8 @@ using HioImageSharedPtr = std::shared_ptr<class HioImage>;
 ///
 /// The class allows basic access to texture image file data.
 ///
+/// Texture paths are UTF-8 strings, resolvable by AR. Texture system dispatch
+/// is driven by extension, with [A-Z] (and no other characters) case folded.
 class HioImage
 {
 public:

@@ -307,7 +307,8 @@ Usd_ClipSet::New(
     //      message..
     if (!_ValidateClipFields(
             *clipDef.clipAssetPaths, *clipDef.clipPrimPath, 
-            *clipDef.clipActive, clipDef.clipTimes.get_ptr(), 
+            *clipDef.clipActive,
+            clipDef.clipTimes ? &(clipDef.clipTimes.value()) : nullptr,
             status)) {
         return nullptr;
     }

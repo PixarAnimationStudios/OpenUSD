@@ -28,6 +28,8 @@
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
+#include <unordered_set>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_REF_PTRS(UsdImaging_PiPrototypeSceneIndex);
@@ -170,7 +172,8 @@ protected:
     // Instancers and overs within the prototype.
     // Note that this does not include instancers or overs nested
     // under an instancer or over.
-    SdfPathSet _instancersAndOvers;
+    using _PathSet = std::unordered_set<SdfPath, SdfPath::Hash>;
+    _PathSet _instancersAndOvers;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
