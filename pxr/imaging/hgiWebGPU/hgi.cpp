@@ -122,7 +122,7 @@ wgpu::Device GetDevice() {
             // control
             wgpu::DawnTogglesDescriptor deviceTogglesDesc;
             // Toggle for debugging shader
-            std::vector<const char *> enabledToggles = {"allow_unsafe_apis"};
+            std::vector<const char *> enabledToggles = {};
             if (TfDebug::IsEnabled(HGIWEBGPU_DEBUG_SHADER_CODE)) {
                 enabledToggles.push_back("dump_shaders");
                 enabledToggles.push_back("disable_symbol_renaming");
@@ -132,6 +132,17 @@ wgpu::Device GetDevice() {
             descriptor.nextInChain = &deviceTogglesDesc;
 
         #endif
+
+        WGPUSupportedLimits supportedLimits = {};
+        backendAdapter.GetLimits(&supportedLimits);
+        backendAdapter.SetUseTieredLimits(true);
+
+        // If the requirements are not met, dawn will throw a warning
+        wgpu::RequiredLimits limits = {};
+        limits.limits.maxStorageBuffersPerShaderStage = 10;
+        limits.limits.maxColorAttachmentBytesPerSample = 64;
+        limits.limits.maxBufferSize = 0x40000000;
+        descriptor.requiredLimits = &limits;
 
         descriptor.requiredFeatures = requiredFeatures.data();
         descriptor.requiredFeatureCount = requiredFeatures.size();
