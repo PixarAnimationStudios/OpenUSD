@@ -176,7 +176,8 @@ std::vector<TfToken> GetPropertyNames(const SdfPrimSpecHandle &prim) {
 
 template<typename PrimType>
 std::string GetPrimLabel(const PrimType &prim) {
-    const std::string spec = TfStringToLower(GetSpecifier(prim));
+    // The display name of specifiers are known to be ASCII only.
+    const std::string spec = TfStringToLowerAscii(GetSpecifier(prim));
     const std::string typeName = GetTypeName(prim);
     std::string definition = spec;
     if (!typeName.empty()) {

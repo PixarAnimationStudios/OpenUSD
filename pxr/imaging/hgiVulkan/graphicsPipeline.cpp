@@ -131,19 +131,21 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
         vertBufs.push_back(std::move(vib));
     }
 
-    VkPipelineVertexInputDivisorStateCreateInfoEXT vertexInputDivisor =
-        {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT};
-    vertexInputDivisor.pVertexBindingDivisors = vertBindingDivisors.data();
-    vertexInputDivisor.vertexBindingDivisorCount =
-        (uint32_t) vertBindingDivisors.size();
-
     VkPipelineVertexInputStateCreateInfo vertexInput =
         {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
     vertexInput.pVertexAttributeDescriptions = vertAttrs.data();
     vertexInput.vertexAttributeDescriptionCount = (uint32_t) vertAttrs.size();
     vertexInput.pVertexBindingDescriptions = vertBufs.data();
     vertexInput.vertexBindingDescriptionCount = (uint32_t) vertBufs.size();
-    vertexInput.pNext = &vertexInputDivisor;
+
+    if (!vertBindingDivisors.empty()) {
+        VkPipelineVertexInputDivisorStateCreateInfoEXT vertexInputDivisor =
+            {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT};
+        vertexInputDivisor.pVertexBindingDivisors = vertBindingDivisors.data();
+        vertexInputDivisor.vertexBindingDivisorCount =
+            (uint32_t) vertBindingDivisors.size();
+        vertexInput.pNext = &vertexInputDivisor;
+    }
     
     pipeCreateInfo.pVertexInputState = &vertexInput;
 

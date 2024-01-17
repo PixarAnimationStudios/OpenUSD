@@ -240,10 +240,10 @@ HdSt_CodeGen::ComputeHash() const
     HF_MALLOC_TAG_FUNCTION();
 
     return TfHash::Combine(
-            _geometricShader ? _geometricShader->ComputeHash() : 0,
-            _metaData.ComputeHash(),
-            HdStShaderCode::ComputeHash(_shaders),
-            _materialTag.Hash()
+        _geometricShader ? _geometricShader->ComputeHash() : 0,
+        _metaData.ComputeHash(),
+        HdStShaderCode::ComputeHash(_shaders),
+        _materialTag.Hash()
     );
 }
 

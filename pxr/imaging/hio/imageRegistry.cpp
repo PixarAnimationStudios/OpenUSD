@@ -72,7 +72,7 @@ HioImageRegistry::_ConstructImage(std::string const & filename)
 
     // Lookup the plug-in type name based on the filename.
     const TfToken fileExtension(
-            TfStringToLower(ArGetResolver().GetExtension(filename)));
+            TfStringToLowerAscii(ArGetResolver().GetExtension(filename)));
 
     TfType const & pluginType = _typeMap->Find(fileExtension);
 

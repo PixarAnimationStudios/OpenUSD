@@ -8,6 +8,103 @@ if(WIN32)
     set(WINLIBS Shlwapi.lib)
 endif()
 
+# Add a test that WindowsImportWrapper adds entries on the PATH in the correct order, to ensure
+# that the correct dlls needed by python modules are loaded
+function(add_py_dll_link_test)
+    # Skip this this for static builds (BUILD_SHARED_LIBS set to False), as
+    # python modules/plugins require a shared library.
+    if (NOT (PXR_ENABLE_PYTHON_SUPPORT AND PXR_BUILD_TESTS AND WIN32 AND BUILD_SHARED_LIBS))
+        return()
+    endif()
+
+    # The structure we are going to make is:
+    #  - python test script: testTfPyDllLink.py
+    #  - python module: testTfPyDllLinkModule/__init__.py
+    #  - python c extension: testTfPyDllLinkModule/_testTfPyDllLinkModule.pyd
+    #  - cpp lib: testTfPyDllLinkImplementation.dll
+    #    - for the cpp lib that the python extension links to, we create two dlls with the same name
+    #      - a "Good" one which returns 0, and
+    #      - a "Bad" one which returns 0xBAD
+    #    - they are placed in subdirs, in both build and install dirs:
+    #      - ImplementationGood/testTfPyDllLink.dll
+    #      - ImplementationBad/testTfPyDllLink.dll
+    #    - this will allow us to test which is loading by adding different directories to the PATH
+
+    # Create the good/bad implementations: testTfPyDllLinkImplementation.dll
+    foreach(implementation_suffix Good Bad)
+        set(implementation_name "testTfPyDllLinkImplementation${implementation_suffix}")
+        add_library(${implementation_name} SHARED
+            "testenv/${implementation_name}.cpp"
+        )
+
+        set(directory_name "Implementation${implementation_suffix}")
+
+        set_target_properties(${implementation_name} PROPERTIES
+            OUTPUT_NAME "testTfPyDllLinkImplementation"
+            RUNTIME_OUTPUT_DIRECTORY "${directory_name}"  # for the windows .dll
+            ARCHIVE_OUTPUT_DIRECTORY "${directory_name}"  # for the windows .lib
+        )
+
+        install(
+            TARGETS ${implementation_name}
+            RUNTIME DESTINATION "tests/ctest/TfPyDllLinkTestEnv/testTfPyDllLinkModule/Implementation${implementation_suffix}"
+        )
+    endforeach()
+
+    # create the _testTfPyDllLinkModule.pyd compiled python module
+    add_library(testTfPyDllLinkModule SHARED
+        "testenv/testTfPyDllLinkModule.c"
+    )
+    add_dependencies(python testTfPyDllLinkModule)
+
+    set(module_name testTfPyDllLinkModule)
+    if (PXR_USE_DEBUG_PYTHON)
+        target_compile_definitions(testTfPyDllLinkModule PRIVATE PXR_USE_DEBUG_PYTHON)
+        # On Windows when compiling with debug python the library must be named with _d.
+        set(module_filename "_${module_name}_d")
+    else()
+        set(module_filename "_${module_name}")
+    endif()
+
+    set_target_properties(testTfPyDllLinkModule PROPERTIES
+        PREFIX ""
+        # Python modules must be suffixed with .pyd on Windows.
+        SUFFIX ".pyd"
+        OUTPUT_NAME ${module_filename}
+    )
+    target_include_directories(testTfPyDllLinkModule
+        SYSTEM
+        PRIVATE
+            ${PYTHON_INCLUDE_DIRS}
+    )
+
+    target_link_libraries(testTfPyDllLinkModule PRIVATE ${PYTHON_LIBRARIES} testTfPyDllLinkImplementation)
+
+    # tell our python module to link against the "good" implementation while building
+    # (When actually running the test, which dll is found is controlled by the PATH env var)
+    add_dependencies(testTfPyDllLinkModule testTfPyDllLinkImplementationGood)
+    target_link_directories(testTfPyDllLinkModule PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/ImplementationGood")
+
+    install(
+        TARGETS testTfPyDllLinkModule
+        RUNTIME DESTINATION "tests/ctest/TfPyDllLinkTestEnv/testTfPyDllLinkModule"
+    )
+
+    # install the testenv dir, which has the testTfPyDllLinkModule.py python module
+    pxr_install_test_dir(
+        SRC testenv/TfPyDllLinkTestEnv
+        DEST TfPyDllLinkTestEnv
+    )
+
+    # finally register the test itself
+    pxr_register_test(testTfPyDllLink
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyDllLink"
+        TESTENV TfPyDllLinkTestEnv
+    )
+
+endfunction()
+
 pxr_library(tf
     LIBRARIES
         arch
@@ -295,6 +392,8 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         CPPFILES
             testenv/testTfPyResultConversions.cpp
     )
+
+    add_py_dll_link_test()
 endif()
 
 pxr_build_test(testTfSIGFPE
@@ -396,6 +495,7 @@ pxr_test_scripts(
     testenv/testTfNamedTemporaryFile.py
     testenv/testTfPathUtils.py
     testenv/testTfPython.py
+    testenv/testTfPyDllLink.py
     testenv/testTfPyNotice.py
     testenv/testTfPyOptional.py
     testenv/testTfPyScopeDescription.py

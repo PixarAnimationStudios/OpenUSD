@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usd/usd/collectionMembershipQuery.h"
+#include "pxr/usd/usd/collectionPredicateLibrary.h"
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/usd/sdf/types.h"
@@ -246,9 +247,9 @@ _ComputeIncludedImpl(
 
 } // anonymous
 
-UsdCollectionMembershipQuery::ExpressionEvaluator
-::ExpressionEvaluator(UsdStageWeakPtr const &stage,
-                      SdfPathExpression const &expr)
+UsdObjectCollectionExpressionEvaluator
+::UsdObjectCollectionExpressionEvaluator(UsdStageWeakPtr const &stage,
+                                         SdfPathExpression const &expr)
     : _stage(stage)
     , _evaluator(SdfMakePathExpressionEval(
                      expr, UsdGetCollectionPredicateLibrary()))
@@ -256,7 +257,19 @@ UsdCollectionMembershipQuery::ExpressionEvaluator
 }
 
 SdfPredicateFunctionResult
-UsdCollectionMembershipQuery::ExpressionEvaluator
+UsdObjectCollectionExpressionEvaluator
+::Match(SdfPath const &path) const
+{
+    if (_stage) {
+        if (UsdObject obj = _stage->GetObjectAtPath(path)) {
+            return _evaluator.Match(obj, ObjToPath {}, PathToObj { _stage });
+        }
+    }
+    return SdfPredicateFunctionResult::MakeConstant(false);
+}
+
+SdfPredicateFunctionResult
+UsdObjectCollectionExpressionEvaluator
 ::Match(UsdObject const &obj) const
 {
     if (_stage) {
@@ -265,8 +278,8 @@ UsdCollectionMembershipQuery::ExpressionEvaluator
     return SdfPredicateFunctionResult::MakeConstant(false);
 }
 
-UsdCollectionMembershipQuery::ExpressionEvaluator::IncrementalSearcher
-UsdCollectionMembershipQuery::ExpressionEvaluator
+UsdObjectCollectionExpressionEvaluator::IncrementalSearcher
+UsdObjectCollectionExpressionEvaluator
 ::MakeIncrementalSearcher() const
 {
     if (_stage) {
@@ -276,7 +289,8 @@ UsdCollectionMembershipQuery::ExpressionEvaluator
     return {};
 }
 
-std::set<UsdObject> UsdComputeIncludedObjectsFromCollection(
+std::set<UsdObject>
+UsdComputeIncludedObjectsFromCollection(
     const UsdCollectionMembershipQuery &query,
     const UsdStageWeakPtr &stage,
     const Usd_PrimFlagsPredicate &pred)
@@ -286,7 +300,8 @@ std::set<UsdObject> UsdComputeIncludedObjectsFromCollection(
     return result;
 }
 
-SdfPathSet UsdComputeIncludedPathsFromCollection(
+SdfPathSet
+UsdComputeIncludedPathsFromCollection(
     const UsdCollectionMembershipQuery &query,
     const UsdStageWeakPtr &stage,
     const Usd_PrimFlagsPredicate &pred)
@@ -296,46 +311,42 @@ SdfPathSet UsdComputeIncludedPathsFromCollection(
     return result;
 }
 
-UsdCollectionMembershipQuery::UsdCollectionMembershipQuery(
+Usd_CollectionMembershipQueryBase::Usd_CollectionMembershipQueryBase(
     const PathExpansionRuleMap& pathExpansionRuleMap,
     const SdfPathSet& includedCollections)
-    : UsdCollectionMembershipQuery(
+    : Usd_CollectionMembershipQueryBase(
         PathExpansionRuleMap {pathExpansionRuleMap},
-        SdfPathSet {includedCollections}, {}, {})
+        SdfPathSet {includedCollections}, {})
 {
 }
 
-UsdCollectionMembershipQuery::UsdCollectionMembershipQuery(
+Usd_CollectionMembershipQueryBase::Usd_CollectionMembershipQueryBase(
     PathExpansionRuleMap&& pathExpansionRuleMap,
     SdfPathSet&& includedCollections)
-    : UsdCollectionMembershipQuery(
+    : Usd_CollectionMembershipQueryBase(
         std::move(pathExpansionRuleMap),
-        std::move(includedCollections), {}, {})
+        std::move(includedCollections), {})
 {
 }
 
-UsdCollectionMembershipQuery::UsdCollectionMembershipQuery(
+Usd_CollectionMembershipQueryBase::Usd_CollectionMembershipQueryBase(
     const PathExpansionRuleMap& pathExpansionRuleMap,
     const SdfPathSet& includedCollections,
-    const ExpressionEvaluator &exprEval,
     const TfToken &topExpansionRule)
-    : UsdCollectionMembershipQuery(
+    : Usd_CollectionMembershipQueryBase(
         PathExpansionRuleMap {pathExpansionRuleMap},
         SdfPathSet {includedCollections},
-        ExpressionEvaluator {exprEval},
         topExpansionRule)
 {
 }
 
-UsdCollectionMembershipQuery::UsdCollectionMembershipQuery(
+Usd_CollectionMembershipQueryBase::Usd_CollectionMembershipQueryBase(
     PathExpansionRuleMap&& pathExpansionRuleMap,
     SdfPathSet&& includedCollections,
-    ExpressionEvaluator &&exprEval,
     TfToken const &topExpansionRule)
     : _topExpansionRule(topExpansionRule)
     , _pathExpansionRuleMap(std::move(pathExpansionRuleMap))
     , _includedCollections(std::move(includedCollections))
-    , _exprEval(std::move(exprEval))
 {
     for (const auto &pathAndExpansionRule : _pathExpansionRuleMap) {
         if (pathAndExpansionRule.second == UsdTokens->exclude) {
@@ -346,7 +357,7 @@ UsdCollectionMembershipQuery::UsdCollectionMembershipQuery(
 }
 
 bool
-UsdCollectionMembershipQuery::IsPathIncluded(
+Usd_CollectionMembershipQueryBase::_IsPathIncluded(
     const SdfPath &path,
     TfToken *expansionRule) const
 {
@@ -401,20 +412,12 @@ UsdCollectionMembershipQuery::IsPathIncluded(
                 }
             }
         }
-        
-    }
-
-    // Test against the expression if we have one.
-    if (UsdStageWeakPtr const &stage = _exprEval.GetStage()) {
-        if (UsdObject obj = stage->GetObjectAtPath(path)) {
-            return static_cast<bool>(_exprEval.Match(obj));
-        }
     }
     return false;
 }
 
 bool 
-UsdCollectionMembershipQuery::IsPathIncluded(
+Usd_CollectionMembershipQueryBase::_IsPathIncluded(
     const SdfPath &path,
     const TfToken &parentExpansionRule,
     TfToken *expansionRule) const
@@ -464,19 +467,12 @@ UsdCollectionMembershipQuery::IsPathIncluded(
             return true;
         }
     }
-
-    // Test against the expression if we have one.
-    if (UsdStageWeakPtr const &stage = _exprEval.GetStage()) {
-        if (UsdObject obj = stage->GetObjectAtPath(path)) {
-            return static_cast<bool>(_exprEval.Match(obj));
-        }
-    }
     return false;
 }
 
 size_t
-UsdCollectionMembershipQuery::Hash::operator()(
-    UsdCollectionMembershipQuery const& q) const
+Usd_CollectionMembershipQueryBase::_Hash::operator()(
+    Usd_CollectionMembershipQueryBase const& q) const
 {
     TRACE_FUNCTION();
 
@@ -495,7 +491,7 @@ UsdCollectionMembershipQuery::Hash::operator()(
 
     // Don't hash _hasExcludes because it is derived from
     // the contents of _pathExpansionRuleMap.
-    return TfHash::Combine(entries, q._topExpansionRule, q._exprEval.IsEmpty());
+    return TfHash::Combine(entries, q._topExpansionRule);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

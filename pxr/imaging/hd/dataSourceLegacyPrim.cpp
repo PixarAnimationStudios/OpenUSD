@@ -2413,19 +2413,6 @@ HdDataSourceLegacyPrim::GetCachedLocators()
     return locators;
 }
 
-static
-bool
-_IsTypeLightLike(const TfToken &type)
-{
-    // Things for which HdSceneDelegate::GetLightParamValue is meaningful
-    // for emulation
-    if (HdPrimTypeIsLight(type) || type == HdPrimTypeTokens->lightFilter) {
-        return true;
-    }
-
-    return false;
-}
-
 bool
 HdDataSourceLegacyPrim::_IsLight()
 {
@@ -2489,13 +2476,10 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdExtentSchemaTokens->extent);
     }
 
-    if (_IsLight()) {
+    if (_IsLight() || _type == HdPrimTypeTokens->lightFilter) {
         result.push_back(HdMaterialSchemaTokens->material);
         result.push_back(HdXformSchemaTokens->xform);
         result.push_back(HdLightSchemaTokens->light);
-    } else if (_IsTypeLightLike(_type)) {
-        result.push_back(HdLightSchemaTokens->light);
-        result.push_back(HdMaterialSchemaTokens->material);
     }
 
     if (_type == HdPrimTypeTokens->material) {

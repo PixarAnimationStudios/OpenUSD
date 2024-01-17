@@ -53,7 +53,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/array.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -829,17 +829,19 @@ HdStRenderPassState::GetShaderHash() const
 {
     size_t hash = 0;
     if (_lightingShader) {
-        boost::hash_combine(hash, _lightingShader->ComputeHash());
+        hash = TfHash::Combine(hash, _lightingShader->ComputeHash());
     }
     if (_renderPassShader) {
-        boost::hash_combine(hash, _renderPassShader->ComputeHash());
+        hash = TfHash::Combine(hash, _renderPassShader->ComputeHash());
     }
 
     // See note earlier about avoiding shader variants when 0-4 clip planes are
     // used.
-    boost::hash_combine(hash, _clipPlanesBufferSize);
-    boost::hash_combine(hash, _UseAlphaMask());
-    return hash;
+    return TfHash::Combine(
+        hash,
+        _clipPlanesBufferSize,
+        _UseAlphaMask()
+    );
 }
 
 static

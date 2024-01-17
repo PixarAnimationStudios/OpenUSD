@@ -45,6 +45,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/array.h"
 #include <MaterialXCore/Util.h>
+#include <MaterialXFormat/Util.h>
 #include <MaterialXFormat/XmlIo.h>
 #include <map>
 #include <type_traits>
@@ -295,6 +296,9 @@ _ReadFromString(mx::DocumentPtr doc, const std::string& s,
         };
 
     mx::readFromXmlString(doc, s, searchPath, &readOptions);
+
+    // Flatten all filenames in document
+    mx::flattenFilenames(doc);
 }
 
 static void
@@ -336,6 +340,10 @@ UsdMtlxReadDocument(const std::string& resolvedPath)
         // whatever backing store it points to.
         if (TfIsFile(resolvedPath)) {
             mx::readFromXmlFile(doc, resolvedPath);
+
+            // Flatten all filenames in document
+            mx::flattenFilenames(doc);
+
             return doc;
         }
         else {

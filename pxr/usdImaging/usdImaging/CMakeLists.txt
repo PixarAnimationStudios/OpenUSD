@@ -31,6 +31,7 @@ pxr_library(usdImaging
         adapterRegistry
         collectionCache
         dataSourceAttribute
+        dataSourceAttributeColorSpace
         dataSourceBasisCurves
         dataSourceCamera
         dataSourceGprim
@@ -54,6 +55,7 @@ pxr_library(usdImaging
         drawModeSceneIndex
         extentResolvingSceneIndex
         extentsHintSchema
+        geomModelSchema
         indexProxy
         materialParamUtils
         modelSchema

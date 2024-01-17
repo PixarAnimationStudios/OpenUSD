@@ -32,7 +32,7 @@
 #include "pxr/usdImaging/usdImaging/selectionSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/unloadedDrawModeSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/modelSchema.h"
+#include "pxr/usdImaging/usdImaging/geomModelSchema.h"
 
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
@@ -122,7 +122,7 @@ UsdImagingCreateSceneIndices(
             HdPurposeSchema::GetSchemaToken(),
             // We include model to aggregate scene indices
             // by draw mode.
-            UsdImagingModelSchema::GetSchemaToken()
+            UsdImagingGeomModelSchema::GetSchemaToken()
         };
 
         using SceneIndexAppendCallback =

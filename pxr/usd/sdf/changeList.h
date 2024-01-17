@@ -74,6 +74,7 @@ public:
 
     void DidAddPrim(const SdfPath &primPath, bool inert);
     void DidRemovePrim(const SdfPath &primPath, bool inert);
+    void DidMovePrim(const SdfPath &oldPath, const SdfPath &newPath);
     void DidReorderPrims(const SdfPath &parentPath);
     void DidChangePrimName(const SdfPath &oldPath, const SdfPath &newPath);
     void DidChangePrimVariantSets(const SdfPath &primPath);

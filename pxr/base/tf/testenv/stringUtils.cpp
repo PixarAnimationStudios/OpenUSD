@@ -195,7 +195,39 @@ TestPreds()
                            "primvars:curveHierarchy:id"));
     TF_AXIOM(DictLessThan("primvars:curveHierarchy:id",
                           "primvars:curveHierarchy__id"));
-        
+    
+    // basic UTF-8 character tests
+    // U+00FC (C3 B2)           U+0061 (61)
+    // U+1300A (F0 93 80 8A)    U+0041 (41)
+    // U+222B (E2 88 AB)        U+003D (3D)
+    // U+0F22 (E0 BC A2)        U+0036 (36)
+    // U+0F22 (E0 BC A2)        U+0F28 (E0 BC A8)
+    TF_AXIOM(!DictLessThan("ü", "a"));
+    TF_AXIOM(!DictLessThan("𓀊", "A"));
+    TF_AXIOM(!DictLessThan("∫", "="));
+    TF_AXIOM(!DictLessThan("༢", "6"));
+    TF_AXIOM(DictLessThan("༢", "༨"));
+    TF_AXIOM(DictLessThan("_", "㤼"));
+    TF_AXIOM(DictLessThan("_a", "_a㤼"));
+    TF_AXIOM(DictLessThan("6", "_a"));
+    TF_AXIOM(!DictLessThan("2_༢1", "2_༢"));
+    TF_AXIOM(!DictLessThan("∫∫", "∫="));
+
+    // U+03C7 (CF 87)  U+03C0 (CF 80)
+    TF_AXIOM(!DictLessThan("a00χ", "a0π"));
+    TF_AXIOM(!DictLessThan("00χ", "0π"));
+
+    // additional tests for UTF-8 characters in the loop
+    // U+393B (E3 A4 BB)        U+393C (E3 A4 BC)
+    // U+393B (E3 A4 BB)        U+393A (E3 A4 BA)
+    // U+393B (E3 A4 BB)        U+393B (E3 A4 BB)
+    // U+00FC (C3 B2)           U+0061 (61)
+    TF_AXIOM(DictLessThan("foo001bar001abc㤻", "foo001bar001abc㤼"));
+    TF_AXIOM(!DictLessThan("foo001㤻bar01abc", "foo001㤺bar001abc"));
+    TF_AXIOM(!DictLessThan("foo001㤻bar001abc", "foo001㤻bar001abc"));
+    TF_AXIOM(!DictLessThan("foo00001bar0002ü", "foo001bar002abc"));
+    TF_AXIOM(DictLessThan("üfoo", "㤻foo"));
+
     TF_AXIOM(TfIsValidIdentifier("f"));
     TF_AXIOM(TfIsValidIdentifier("foo"));
     TF_AXIOM(TfIsValidIdentifier("foo1"));
@@ -267,6 +299,13 @@ TestStrings()
     TF_AXIOM(TfStringCapitalize("notyet") == "Notyet");
     TF_AXIOM(TfStringCapitalize("@@@@") == "@@@@");
     TF_AXIOM(TfStringCapitalize("") == "");
+
+    TF_AXIOM(TfStringToLowerAscii("PIXAR") == TfStringToLowerAscii("pixar"));
+    TF_AXIOM(TfStringToLowerAscii("PiXaR") == TfStringToLowerAscii("pixar"));
+    // 'Pixar' in capital Greek letters is not case folded
+    TF_AXIOM(TfStringToLowerAscii("ΠΙΞΑΡ") == "ΠΙΞΑΡ");
+    // Mixture of symbols, capital non-ASCII letters, and ASCII letters
+    TF_AXIOM(TfStringToLowerAscii("ΠΙΞΑΡ ≈ PIXAR") == "ΠΙΞΑΡ ≈ pixar");
 
     TF_AXIOM(TfStringGetSuffix("file.ext") == "ext");
     TF_AXIOM(TfStringGetSuffix("here are some words", ' ') == "words");

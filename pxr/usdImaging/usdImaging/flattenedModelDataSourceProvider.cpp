@@ -23,7 +23,7 @@
 
 #include "pxr/usdImaging/usdImaging/flattenedModelDataSourceProvider.h"
 
-#include "pxr/usdImaging/usdImaging/modelSchema.h"
+#include "pxr/usdImaging/usdImaging/geomModelSchema.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
 
@@ -35,7 +35,7 @@ bool
 _ContainsDrawMode(const TfTokenVector &vec)
 {
     for (const TfToken &token : vec) {
-        if (token == UsdImagingModelSchemaTokens->drawMode) {
+        if (token == UsdImagingGeomModelSchemaTokens->drawMode) {
             return true;
         }
     }
@@ -51,24 +51,24 @@ public:
         TfTokenVector result = _primModel->GetNames();
         if (!_ContainsDrawMode(result) &&
              _ContainsDrawMode(_parentModel->GetNames())) {
-            result.push_back(UsdImagingModelSchemaTokens->drawMode);
+            result.push_back(UsdImagingGeomModelSchemaTokens->drawMode);
         }
 
         return result;
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
-        if (name != UsdImagingModelSchemaTokens->drawMode) {
+        if (name != UsdImagingGeomModelSchemaTokens->drawMode) {
             return _primModel->Get(name);
         }
         if (HdTokenDataSourceHandle ds =
-               UsdImagingModelSchema(_primModel).GetDrawMode()) {
+               UsdImagingGeomModelSchema(_primModel).GetDrawMode()) {
             const TfToken drawMode = ds->GetTypedValue(0.0f);
             if (!drawMode.IsEmpty() && drawMode != UsdGeomTokens->inherited) {
                 return ds;
             }
         }
-        return UsdImagingModelSchema(_parentModel).GetDrawMode();
+        return UsdImagingGeomModelSchema(_parentModel).GetDrawMode();
     }
 
     static
@@ -118,7 +118,7 @@ UsdImagingFlattenedModelDataSourceProvider::ComputeDirtyLocatorsForDescendants(
     HdDataSourceLocatorSet * const locators) const
 {
     static const HdDataSourceLocator drawModeLocator(
-        UsdImagingModelSchemaTokens->drawMode);
+        UsdImagingGeomModelSchemaTokens->drawMode);
     static const HdDataSourceLocatorSet drawModeLocatorSet{
         drawModeLocator};
 

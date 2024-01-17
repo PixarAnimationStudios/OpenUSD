@@ -336,6 +336,10 @@ SdfPathExpression::ResolveReferences(
     TfFunctionRef<
     SdfPathExpression (ExpressionReference const &)> resolve) &&
 {
+    if (IsEmpty()) {
+        return {};
+    }
+    
     std::vector<SdfPathExpression> stack;
     
     auto logic = [&stack](Op op, int argIndex) {

@@ -25,7 +25,7 @@
 
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/instancer.h"
-#include "hdPrman/lightFilterUtils.h"
+#include "hdPrman/lightFilter.h"
 #include "hdPrman/material.h"
 #include "hdPrman/mesh.h"
 #include "hdPrman/renderParam.h"
@@ -100,7 +100,6 @@ HdPrmanLight::Finalize(HdRenderParam *renderParam)
     _geometryPrototypeId = riley::GeometryPrototypeId::InvalidId();
     _sourceGeomPath = SdfPath();
     _shadowLink = TfToken();
-    _coordSysIds.clear();
 }
 
 static bool
@@ -176,8 +175,10 @@ _AddLightFilterCombiner(std::vector<riley::ShadingNode>* lightFilterNodes)
 
     // Set the combiner light filter reference array for each mode.
     for (const auto& entry : modeMap) {
-        combiner.params.SetLightFilterReferenceArray(
-            entry.first, &entry.second[0], entry.second.size());
+        if (!entry.second.empty()) {
+            combiner.params.SetLightFilterReferenceArray(
+                entry.first, &entry.second[0], entry.second.size());
+        }
     }
 
     lightFilterNodes->push_back(combiner);
@@ -230,14 +231,52 @@ _PopulateLightFilterNodes(
             continue;
         }
 
-        HdPrmanLightFilterGenerateCoordSysAndLinks(
-            &lightFilterNodes->back(),
-            filterPath,
-            coordsysIds,
-            lightFilterLinks,
-            sceneDelegate,
-            param,
-            riley);
+        riley::ShadingNode *filter = &lightFilterNodes->back();
+        RtUString filterPathAsString = RtUString(filterPath.GetText());
+
+        // To ensure that multiple light filters within a light get
+        // unique names, use the full filter path for the handle.
+        filter->handle = filterPathAsString;
+
+        // Only certain light filters require a coordsys, but we do not
+        // know which, here, so we provide it in all cases.
+        //
+        // TODO: We should be able to look up the SdrShaderNode entry
+        // and query it for the existence of this parameter.
+        filter->params.SetString(RtUString("coordsys"), filterPathAsString);
+
+        // Light filter linking
+        VtValue val = sceneDelegate->GetLightParamValue(filterPath,
+                                        HdTokens->lightFilterLink);
+        TfToken lightFilterLink = TfToken();
+        if (val.IsHolding<TfToken>()) {
+            lightFilterLink = val.UncheckedGet<TfToken>();
+        }
+        if (!lightFilterLink.IsEmpty()) {
+            param->IncrementLightFilterCount(lightFilterLink);
+            lightFilterLinks->push_back(lightFilterLink);
+            // For light filters to link geometry, the light filters must
+            // be assigned a grouping membership, and the
+            // geometry must subscribe to that grouping.
+            filter->params.SetString(RtUString("linkingGroups"),
+                                RtUString(lightFilterLink.GetText()));
+            TF_DEBUG(HDPRMAN_LIGHT_LINKING)
+                .Msg("HdPrman: Light filter <%s> linkingGroups \"%s\"\n",
+                        filterPath.GetText(), lightFilterLink.GetText());
+        }
+
+        // Look up light filter ID
+        if (HdSprim *sprim = sceneDelegate->GetRenderIndex().GetSprim(
+            HdPrimTypeTokens->lightFilter, filterPath)) {
+            if (HdPrmanLightFilter *lightFilter =
+                dynamic_cast<HdPrmanLightFilter*>(sprim)) {
+                lightFilter->SyncToRiley(sceneDelegate, riley);
+                coordsysIds->push_back(lightFilter->GetCoordSysId());
+            }
+        } else {
+            TF_WARN("Did not find expected light filter <%s>",
+                filterPath.GetText());
+        }
     }
 
     // Multiple filters requires a PxrCombinerLightFilter to combine results.
@@ -275,6 +314,8 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     // Light shader nodes will go here, whether we calculate them early during
     // change tracking or later during shader update.
     std::vector<riley::ShadingNode> lightNodes;
+    // Any coordinate system ID's used will go here.
+    std::vector<riley::CoordinateSystemId> coordSysIds;
 
     // Update instance bindings
     // XXX: This relies on DirtyInstancer having the same value for lights as
@@ -608,7 +649,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         // and are the only piece of derived state that needs to be shared by
         // both the shader and instance update branches.
         _PopulateLightFilterNodes(id, filters, sceneDelegate, renderParam,
-            riley, &filterNodes, &_coordSysIds, &_lightFilterLinks);
+            riley, &filterNodes, &coordSysIds, &_lightFilterLinks);
 
         const riley::ShadingNetwork light {
             static_cast<uint32_t>(lightNodes.size()),
@@ -691,7 +732,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
 
         // Convert coordinate system ids to list
         const riley::CoordinateSystemList coordSysList = {
-            unsigned(_coordSysIds.size()), _coordSysIds.data()
+            unsigned(coordSysIds.size()), coordSysIds.data()
         };
 
         // Sample transform

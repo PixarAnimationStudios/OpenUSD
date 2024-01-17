@@ -30,7 +30,7 @@
 
 #include "pxr/base/arch/hash.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -97,7 +97,7 @@ HdSt_ExtCompComputeShader::ComputeHash() const
 
     size_t hash = 0;
     std::string const & kernel = _extComp->GetGpuKernelSource();
-    boost::hash_combine(hash, ArchHash(kernel.c_str(), kernel.size()));
+    hash = TfHash::Combine(hash, ArchHash(kernel.c_str(), kernel.size()));
     return hash;
 }
 

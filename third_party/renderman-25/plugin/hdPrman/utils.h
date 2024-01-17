@@ -27,6 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/matrix4d.h"
 
+#include "pxr/imaging/hd/dataSource.h"
+
 #include "RiTypesHelper.h" // for RtParamList
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -45,6 +47,11 @@ SetParamFromVtValue(
     VtValue const& val,
     TfToken const& role,
     RtParamList *params);
+
+/// Creates RtParamList by pulling VtValue's from the container data source.
+RtParamList
+ParamsFromDataSource(
+    HdContainerDataSourceHandle const &containerDs);
 
 /// Similar to the function above, with the addition of \p detail, which 
 /// specifies how array values should be handled across topology.

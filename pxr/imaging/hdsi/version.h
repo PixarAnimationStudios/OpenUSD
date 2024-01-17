@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,29 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATFILT_CONVERSIONS_H
-#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATFILT_CONVERSIONS_H
+#ifndef PXR_IMAGING_HDSI_VERSION_H
+#define PXR_IMAGING_HDSI_VERSION_H
 
-#include "pxr/pxr.h"
-#include "Riley.h"
-#include <vector>
+// 10 -> 11: Adding HdsiPrimManagingSceneIndexObserver and
+//           HdsiPrimTypeNoticeBatchingSceneIndex
+// 11 -> 12: Adding HdsiPrimManagingSceneIndexObserver::GetTypedPrim.
 
-PXR_NAMESPACE_OPEN_SCOPE
+#define HDSI_API_VERSION 12
 
-class HdPrman_RenderParam;
-class HdSceneDelegate;
-class SdfPath;
-class TfToken;
-
-void HdPrmanLightFilterGenerateCoordSysAndLinks(
-    riley::ShadingNode *filter,
-    const SdfPath &filterPath,
-    std::vector<riley::CoordinateSystemId> *coordsysIds,
-    std::vector<TfToken> *filterLinks,
-    HdSceneDelegate *sceneDelegate,
-    HdPrman_RenderParam *renderParam,
-    riley::Riley *riley);
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif
+#endif // PXR_IMAGING_HDSI_VERSION_H

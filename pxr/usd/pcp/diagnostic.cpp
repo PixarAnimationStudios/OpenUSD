@@ -272,7 +272,9 @@ _WriteGraph(
     if (!node.CanContributeSpecs()) {
         nodeDesc += "\\nCANNOT contribute specs";
     }
-    nodeDesc += TfStringPrintf("\\ndepth: %i", node.GetNamespaceDepth());
+    nodeDesc += TfStringPrintf(
+        "\\ndepth (below intro): %i (%i)", 
+        node.GetNamespaceDepth(), node.GetDepthBelowIntroduction());
 
     std::string nodeStyle = (hasSpecs ? "solid" : "dotted");
     if (nodesToHighlight.count(node) != 0) {
@@ -627,11 +629,15 @@ private:
 
             std::stringstream ss;
 
+            const bool includeInheritOriginInfo = true;
+            const bool includeMaps = 
+                TfDebug::IsEnabled(PCP_PRIM_INDEX_GRAPHS_MAPPINGS);
+
             _WriteGraph(
                 ss, 
                 currentIndex.index->GetRootNode(),
-                /* includeInheritOriginInfo = */ true,
-                /* includeMaps = */ false, 
+                includeInheritOriginInfo,
+                includeMaps,
                 currentPhase.nodesToHighlight);
     
             currentIndex.dotGraph = ss.str();

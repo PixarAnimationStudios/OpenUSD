@@ -266,7 +266,7 @@ private:
         }
 
         // equals operator
-        const bool operator==(const _FlattenData& rhs) const noexcept
+        bool operator==(const _FlattenData& rhs) const noexcept
         {
             return categories == rhs.categories &&
                 _RtParamListEqualToFunctor()(params, rhs.params);
@@ -349,9 +349,9 @@ private:
     public:
         // Check whether the map contains the given key; check this call before
         // calling get() if you want to avoid get's auto-insertion.
-        const bool has(const Key& key) const
+        bool has(const Key& key) const
         {
-            std::shared_lock<std::shared_timed_mutex> lock(_mutex);
+            std::shared_lock<std::shared_mutex> lock(_mutex);
             if (_map.size() == 0) { return false; }
             return _map.find(key) != _map.end();
         }
@@ -364,7 +364,7 @@ private:
             static_assert(std::is_default_constructible<T>::value, 
                           "T must be default constructible");
 
-            std::shared_lock<std::shared_timed_mutex> lock(_mutex);
+            std::shared_lock<std::shared_mutex> lock(_mutex);
             auto it = _map.find(key);
             if (it == _map.end()) {
                 it = _map.emplace(
@@ -382,7 +382,7 @@ private:
             static_assert(std::is_copy_assignable<T>::value, 
                           "T must be copy-assignable");
 
-            std::shared_lock<std::shared_timed_mutex> lock(_mutex);
+            std::shared_lock<std::shared_mutex> lock(_mutex);
             if (_map.size() > 0) {
                 auto it = _map.find(key);
                 if (it != _map.end()) {
@@ -398,7 +398,7 @@ private:
         void iterate(std::function<void(const Key&, T&)> fn)
         {
             // exclusive lock
-            std::lock_guard<std::shared_timed_mutex> lock(_mutex);
+            std::lock_guard<std::shared_mutex> lock(_mutex);
             for (std::pair<const Key, T>& p : _map) {
                 fn(p.first, p.second);
             }
@@ -407,16 +407,16 @@ private:
         // Iterate the map with a const value reference under shared lock
         void citerate(std::function<void(const Key&, const T&)> fn) const
         {
-            std::shared_lock<std::shared_timed_mutex> lock(_mutex);
+            std::shared_lock<std::shared_mutex> lock(_mutex);
             for (const std::pair<const Key, const T>& p : _map) {
                 fn(p.first, p.second);
             }
         }
 
         // Gives the count of keys currently in the map
-        const size_t size() const
+        size_t size() const
         {
-            std::shared_lock<std::shared_timed_mutex> lock(_mutex);
+            std::shared_lock<std::shared_mutex> lock(_mutex);
             return _map.size();
         }
 
@@ -424,7 +424,7 @@ private:
         void erase(const Key& key)
         {
             // exclusive lock
-            std::lock_guard<std::shared_timed_mutex> lock(_mutex);
+            std::lock_guard<std::shared_mutex> lock(_mutex);
             _map.unsafe_erase(key);
         }
 
@@ -432,13 +432,12 @@ private:
         void clear()
         {
             // exclusive lock
-            std::lock_guard<std::shared_timed_mutex> lock(_mutex);
+            std::lock_guard<std::shared_mutex> lock(_mutex);
             _map.clear();
         }
     private:
         tbb::concurrent_unordered_map<Key, T, Hash, KeyEqual> _map;
-        // XXX: Replace with std::shared_mutex when C++17 for better performance
-        mutable std::shared_timed_mutex _mutex;
+        mutable std::shared_mutex _mutex;
     };
 
     using _LockingFlattenGroupMap = _LockingMap<
@@ -480,28 +479,6 @@ private:
     };
 
     using _LockingProtoMap = _LockingMap<SdfPath, _ProtoMapEntry, SdfPath::Hash>;
-
-    // Visitor for VtVisitValue; will retrieve the value at the specified
-    // index as a VtValue when the visited value is array-typed. Returns
-    // empty VtValue when the visited value is not array-typed, or when the
-    // index points beyond the end of the array.
-    struct _GetValueAtIndex {
-        _GetValueAtIndex(const size_t index) : _index(index) { }
-        template <class T>
-        const VtValue operator()(const VtArray<T>& array) const
-        {
-            if (array.size() > _index) {
-                return VtValue(array[_index]);
-            }
-            return VtValue();
-        }
-        const VtValue operator()(const VtValue& val) const
-        {
-            return VtValue();
-        }
-    private:
-        size_t _index;
-    };
 
     // **********************************************
     // **             Private Methods              **
@@ -617,7 +594,7 @@ private:
     // Gets constant and uniform params for the prototype
     void _GetPrototypeParams(
         const SdfPath& protoPath,
-        RtParamList& Params
+        RtParamList& params
     );
 
     // Retrieves the instance transform for the given index from the

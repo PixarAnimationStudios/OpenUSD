@@ -37,11 +37,12 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdGeomSubsetsSchemaTokens,
-    HDGEOMSUBSETS_SCHEMA_TOKENS);
+    HD_GEOM_SUBSETS_SCHEMA_TOKENS);
+
 
 
 TfTokenVector
-HdGeomSubsetsSchema::GetIds()
+HdGeomSubsetsSchema::GetGeomSubsetNames()
 {
     if (_container) {
         return _container->GetNames();
@@ -50,11 +51,10 @@ HdGeomSubsetsSchema::GetIds()
     }
 }
 
-HdGeomSubsetSchema 
-HdGeomSubsetsSchema::GetGeomSubset(const TfToken & id) 
+HdGeomSubsetSchema HdGeomSubsetsSchema::GetGeomSubset(const TfToken &name)
 {
-    return HdGeomSubsetSchema(
-            _GetTypedDataSource<HdContainerDataSource>(id));
+    return HdGeomSubsetSchema(_GetTypedDataSource<HdContainerDataSource>(name));
+    
 }
 
 
@@ -75,5 +75,6 @@ const TfToken &
 HdGeomSubsetsSchema::GetSchemaToken()
 {
     return HdGeomSubsetsSchemaTokens->geomSubsets;
-} 
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

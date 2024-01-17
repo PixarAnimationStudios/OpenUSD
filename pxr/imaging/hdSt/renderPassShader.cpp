@@ -38,7 +38,7 @@
 
 #include "pxr/imaging/hio/glslfx.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <string>
 
@@ -157,7 +157,7 @@ HdStRenderPassShader::ComputeHash() const
     // Custom buffer bindings may vary over time, requiring invalidation
     // of down stream clients.
     TF_FOR_ALL(it, _customBuffers) {
-        boost::hash_combine(_hash, it->second.ComputeHash());
+        _hash = TfHash::Combine(_hash, it->second.ComputeHash());
     }
 
     for (const HdStShaderCode::NamedTextureHandle &namedHandle :
@@ -165,8 +165,7 @@ HdStRenderPassShader::ComputeHash() const
         
         // Use name and hash only - not the texture itself as this
         // does not affect the generated shader source.
-        boost::hash_combine(_hash, namedHandle.name);
-        boost::hash_combine(_hash, namedHandle.hash);
+        _hash = TfHash::Combine(_hash, namedHandle.name, namedHandle.hash);
     }
 
     _hashValid = true;

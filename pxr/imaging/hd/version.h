@@ -80,8 +80,11 @@
 // 56 -> 57: Changing SetOverrideWindowPolicy to std::optional on
 //           HdRenderPassState, HdxPickFromRenderBufferTaskParams,
 //           HdxTaskController and UsdImagingGLEngine.
+// 57 -> 58: Introducing hdsi/version.h
+// 58 -> 59: HdGeomSubsetsSchema::GetIds() renamed to
+//           HdGeomSubsetsSchema::GetGeomSubsetNames().
 
-#define HD_API_VERSION 57
+#define HD_API_VERSION 59
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

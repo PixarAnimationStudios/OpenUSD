@@ -117,12 +117,6 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 namespace {
 
 bool
-_IsDomeLight(const HdSceneIndexPrim& prim)
-{
-    return (prim.primType == HdPrimTypeTokens->domeLight);
-}
-
-bool
 _IsPortalLight(const HdSceneIndexPrim& prim, const SdfPath& primPath)
 {
     const auto matDataSource = HdMaterialSchema::GetFromParent(prim.dataSource)
@@ -435,11 +429,12 @@ protected:
         const HdSceneIndexObserver::DirtiedPrimEntries& entries) override;
 
 private:
-    SdfPathVector _AddPortalMappingsForDome(const SdfPath& domePrimPath);
-    SdfPathVector _RemovePortalMappingsForDome(const SdfPath& domePrimPath);
+    SdfPathVector _AddMappingsForDome(const SdfPath& domePrimPath);
+    SdfPathVector _RemoveMappingsForDome(const SdfPath& domePrimPath);
 
 private:
-    std::unordered_set<SdfPath, SdfPath::Hash> _domesWithPortals;
+    // Map dome light paths to flag indicating presence of associated portals.
+    std::unordered_map<SdfPath, bool, SdfPath::Hash> _domesWithPortals;
 
     // Map portal path to dome path. A previous name for this map was
     // "_portalToDome", but that conflicts with a material param name.
@@ -477,16 +472,22 @@ _PortalLightResolvingSceneIndex::GetPrim(
         return prim;
     }
 
-    const auto it = _portalsToDomes.find(primPath);
-    if (it != _portalsToDomes.end()) {
-        const auto domePrimPath = it->second;
+    // Check for portal
+    const auto portalIt = _portalsToDomes.find(primPath);
+    if (portalIt != _portalsToDomes.end()) {
+        const auto domePrimPath = portalIt->second;
         return {
             prim.primType,
             _BuildPortalLightDataSource(domePrimPath, primPath,
                                         _GetInputSceneIndex())
         };
     }
-    else if (_domesWithPortals.count(primPath)) {
+
+    // Check for dome
+    const auto domeIt = _domesWithPortals.find(primPath);
+    // If the dome has associated portals, wrap the data source.
+    // Otherwise, pass it through as-is.
+    if (domeIt != _domesWithPortals.end() && domeIt->second) {
         return {
             prim.primType,
             _BuildDomeLightDataSource(primPath, _GetInputSceneIndex())
@@ -513,9 +514,8 @@ _PortalLightResolvingSceneIndex::_PrimsAdded(
     }
 
     for (const auto& entry: entries) {
-        const auto prim = _GetInputSceneIndex()->GetPrim(entry.primPath);
-        if (_IsDomeLight(prim)) {
-            _AddPortalMappingsForDome(entry.primPath);
+        if (entry.primType == HdPrimTypeTokens->domeLight) {
+            _AddMappingsForDome(entry.primPath);
         }
     }
 
@@ -532,9 +532,8 @@ _PortalLightResolvingSceneIndex::_PrimsRemoved(
     }
 
     for (const auto& entry: entries) {
-        const auto prim = _GetInputSceneIndex()->GetPrim(entry.primPath);
-        if (_IsDomeLight(prim)) {
-            _RemovePortalMappingsForDome(entry.primPath);
+        if (_domesWithPortals.count(entry.primPath)) {
+            _RemoveMappingsForDome(entry.primPath);
         }
     }
 
@@ -557,13 +556,14 @@ _PortalLightResolvingSceneIndex::_PrimsDirtied(
     HdSceneIndexObserver::DirtiedPrimEntries dirtied;
     SdfPathSet dirtiedPortals;
     for (const auto& entry: entries) {
-        const auto prim = _GetInputSceneIndex()->GetPrim(entry.primPath);
-        if (_IsDomeLight(prim)) {
+        auto domeIt = _domesWithPortals.find(entry.primPath);
+        if (domeIt != _domesWithPortals.end()) {
+            // entry.primPath is a known dome with associated portals
             if (entry.dirtyLocators.Contains(lightLocator)) {
                 // The dome's portals may have changed.
                 auto removedPortals =
-                    _RemovePortalMappingsForDome(entry.primPath);
-                _AddPortalMappingsForDome(entry.primPath);
+                    _RemoveMappingsForDome(entry.primPath);
+                _AddMappingsForDome(entry.primPath);
 
                 dirtiedPortals.insert(
                     std::make_move_iterator(removedPortals.begin()),
@@ -581,7 +581,7 @@ _PortalLightResolvingSceneIndex::_PrimsDirtied(
             }
             dirtied.push_back(entry);
         }
-        else if (_IsPortalLight(prim, entry.primPath) &&
+        else if (_portalsToDomes.count(entry.primPath) &&
                  entry.dirtyLocators.Contains(xformLocator)) {
             // An xform change will affect portalToDome and portalName,
             // so we need to make sure the material data source gets dirtied.
@@ -617,14 +617,22 @@ _PortalLightResolvingSceneIndex::_PrimsDirtied(
 }
 
 SdfPathVector
-_PortalLightResolvingSceneIndex::_AddPortalMappingsForDome(
+_PortalLightResolvingSceneIndex::_AddMappingsForDome(
     const SdfPath& domePrimPath)
 {
     const auto domePrim = _GetInputSceneIndex()->GetPrim(domePrimPath);
-    SdfPathVector portalPaths = _GetPortalPaths(domePrim.dataSource);
-    if (!portalPaths.empty()) {
-        _domesWithPortals.insert(domePrimPath);
+
+    if (domePrim.primType != HdPrimTypeTokens->domeLight) {
+        // Caller should have already confirmed this is a dome.
+        TF_CODING_ERROR("_AddMappingsForDome invoked for non-"
+                        "domeLight path <%s>", domePrimPath.GetText());
+        return SdfPathVector();
     }
+
+    SdfPathVector portalPaths = _GetPortalPaths(domePrim.dataSource);
+
+    _domesWithPortals[domePrimPath] = !portalPaths.empty();
+
     for (const auto& portalPath: portalPaths) {
         const auto it = _portalsToDomes.insert({portalPath,domePrimPath}).first;
         if (it->second != domePrimPath) {
@@ -639,20 +647,27 @@ _PortalLightResolvingSceneIndex::_AddPortalMappingsForDome(
 }
 
 SdfPathVector
-_PortalLightResolvingSceneIndex::_RemovePortalMappingsForDome(
+_PortalLightResolvingSceneIndex::_RemoveMappingsForDome(
     const SdfPath& domePrimPath)
 {
-    _domesWithPortals.erase(domePrimPath);
-
     SdfPathVector portalPaths;
-    for (auto it = _portalsToDomes.begin(); it != _portalsToDomes.end();) {
-        if (it->second == domePrimPath) {
-            portalPaths.push_back(it->first);
-            it = _portalsToDomes.erase(it);
+    auto domeIt = _domesWithPortals.find(domePrimPath);
+    if (domeIt != _domesWithPortals.end()) {
+        const bool domeHasPortals = domeIt->second;
+        if (domeHasPortals) {
+            // We successfully found a dome prim to erase, so remove the
+            // corresponding _portalsToDomes entries.
+            for (auto it = _portalsToDomes.begin(); it != _portalsToDomes.end();) {
+                if (it->second == domePrimPath) {
+                    portalPaths.push_back(it->first);
+                    it = _portalsToDomes.erase(it);
+                }
+                else {
+                    it++;
+                }
+            }
         }
-        else {
-            it++;
-        }
+        _domesWithPortals.erase(domeIt);
     }
     return portalPaths;
 }

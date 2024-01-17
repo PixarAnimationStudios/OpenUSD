@@ -38,6 +38,7 @@ pxr_library(usd
         inherits
         interpolation
         modelAPI
+        namespaceEditor
         notice
         object
         payloads
@@ -132,6 +133,7 @@ pxr_library(usd
         wrapInherits.cpp
         wrapInterpolation.cpp
         wrapModelAPI.cpp
+        wrapNamespaceEditor.cpp
         wrapNotice.cpp
         wrapObject.cpp
         wrapPayloads.cpp
@@ -240,6 +242,8 @@ pxr_test_scripts(
     testenv/testUsdLoadUnloadDeepNestedInstancing.py
     testenv/testUsdMetadata.py
     testenv/testUsdModel.py
+    testenv/testUsdNamespaceEditor.py
+    testenv/testUsdNamespaceEditorProperties.py
     testenv/testUsdNotices.py
     testenv/testUsdOpaqueAttributes.py
     testenv/testUsdPathExpressionAttrs.py
@@ -592,6 +596,16 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdNotices.testenv
     DEST testUsdNotices
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdNamespaceEditor
+    DEST testUsdNamespaceEditor
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdNamespaceEditorProperties
+    DEST testUsdNamespaceEditorProperties
 )
 
 pxr_install_test_dir(
@@ -1137,6 +1151,18 @@ pxr_register_test(testUsdFlattenLayerStack
 pxr_register_test(testUsdNotices
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNotices"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdNamespaceEditor
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNamespaceEditor"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdNamespaceEditorProperties
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNamespaceEditorProperties"
     EXPECTED_RETURN_CODE 0
 )
 
