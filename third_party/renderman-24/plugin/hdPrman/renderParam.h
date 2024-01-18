@@ -510,7 +510,7 @@ HdPrman_ResolveAssetToRtUString(SdfAssetPath const &asset,
                                 char const *debugNodeType=nullptr);
 
 /// Update the supplied list of options using searchpaths
-/// pulled from envrionment variables:
+/// pulled from environment variables:
 ///
 /// - RMAN_SHADERPATH
 /// - RMAN_TEXTUREPATH

@@ -293,7 +293,7 @@ _GatherNodeGraphNodes(
      TfTokenVector cNames =
         netInterface->GetNodeInputConnectionNames(hdNodeName);
 
-    // Traverse the upsteam connections to gather the nodeGraph nodes
+    // Traverse the upstream connections to gather the nodeGraph nodes
     for (TfToken const &cName : cNames) {
         auto inputConnections =
             netInterface->GetNodeInputConnection(hdNodeName, cName);
@@ -311,7 +311,7 @@ _GatherNodeGraphNodes(
             }
             visitedNodeNames->insert(upstreamNodeName);
 
-            // Gather the nodes uptream from the hdNode
+            // Gather the nodes upstream from the hdNode
             _GatherNodeGraphNodes(netInterface, upstreamNodeName, 
                                   upstreamNodeNames, visitedNodeNames);
             upstreamNodeNames->insert(upstreamNodeName);
@@ -688,7 +688,7 @@ _UpdateTextureNodes(
         TfToken const &textureNodeName = texturePath.GetToken();
         const TfToken nodeType = netInterface->GetNodeType(textureNodeName);
         if (nodeType.IsEmpty()) {
-            TF_WARN("Connot find texture node '%s' in material network.",
+            TF_WARN("Cannot find texture node '%s' in material network.",
                     textureNodeName.GetText());
             continue;
         }

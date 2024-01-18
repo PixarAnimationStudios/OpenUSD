@@ -154,7 +154,7 @@ static PtDspyError HydraDspyImageData(
     int ymax_plusorigin = ymax_plusone + buf->cropOrigin[1];
 
     // Looping over aov buffers first (rather than data) reduces
-    // branching and gives more consistant memory access.
+    // branching and gives more consistent memory access.
     int dataOffset = 0;
     HdPrmanFramebuffer::AovBuffer* primAovBuffer = nullptr;
     for (HdPrmanFramebuffer::AovBuffer& aovBuffer : buf->aovBuffers) {

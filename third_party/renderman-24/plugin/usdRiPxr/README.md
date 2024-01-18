@@ -24,6 +24,6 @@ in extra properties being pruned.
 Note that since users of this script have less control on direct
 authoring of schema.usda, "useLiteralIdentifier" is unconditionally
 set to true in schema.usda, which means the default camelCase token 
-names will be overriden and usdGenSchema will try keep the token 
+names will be overridden and usdGenSchema will try keep the token
 names as-is unless these are invalid.
 

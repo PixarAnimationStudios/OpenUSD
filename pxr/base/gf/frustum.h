@@ -251,7 +251,7 @@ class GfFrustum {
 
     /// Sets the position and rotation of the frustum from a camera matrix
     /// (always from a y-Up camera). The resulting frustum's transform will
-    /// always represent a right-handed and orthonormal coordinate sytem
+    /// always represent a right-handed and orthonormal coordinate system
     /// (scale, shear, and projection are removed from the given \p
     /// camToWorldXf).
     GF_API void SetPositionAndRotationFromMatrix(const GfMatrix4d &camToWorldXf);
