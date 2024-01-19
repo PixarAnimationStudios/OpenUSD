@@ -810,9 +810,7 @@ def InstallBoost_Helper(context, force, buildArgs):
             'link=shared',
             'runtime-link=shared',
             'threading=multi', 
-            'variant={variant}'.format(variant=boostBuildVariant),
-            '--with-atomic',
-            '--with-regex'
+            'variant={variant}'.format(variant=boostBuildVariant)
         ]
 
         if context.buildPython:
@@ -849,6 +847,7 @@ def InstallBoost_Helper(context, force, buildArgs):
             b2_settings.append("--with-thread")
 
         if context.enableOpenVDB:
+            b2_settings.append("--with-regex")
             b2_settings.append("--with-iostreams")
 
             # b2 with -sNO_COMPRESSION=1 fails with the following error message:
