@@ -118,8 +118,7 @@ def GetTargetArchPair(context):
 def SupportsMacOSUniversalBinaries():
     if not MacOS():
         return False
-    SDKVersionBytes  = subprocess.check_output(['xcrun', '--show-sdk-version'])
-    SDKVersion = SDKVersionBytes.decode('utf8').strip()
+    SDKVersion = GetCommandOutput('/usr/bin/xcrun --show-sdk-version')
     # Xcode/CommandLineTools 11 toolset came with SDK 10.15
     return (SDKVersion > '10.15')
 
