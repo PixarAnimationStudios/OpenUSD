@@ -403,12 +403,14 @@ HgiShaderFunctionAddStageInput(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const std::string &type,
-    const std::string &role)
+    const std::string &role,
+    const std::string& arraySize)
 {
     HgiShaderFunctionParamDesc paramDesc;
     paramDesc.nameInShader = nameInShader;
     paramDesc.type = type;
     paramDesc.role = role;
+    paramDesc.arraySize = arraySize;
 
     desc->stageInputs.push_back(std::move(paramDesc));
 }

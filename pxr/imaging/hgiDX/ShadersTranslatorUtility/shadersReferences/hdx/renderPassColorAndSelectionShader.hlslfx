@@ -42,16 +42,14 @@
                             "RenderPass.ApplyClipPlanes" ]
             },
             "postTessControlShader" : {
-                "source": [ "RenderPass.Camera",
-                            "RenderPass.ApplyClipPlanes" ]
+                "source": [ "RenderPass.Camera" ]
             },
             "postTessVertexShader" : {
                 "source": [ "RenderPass.Camera",
                             "RenderPass.ApplyClipPlanes" ]
             },
             "tessControlShader" : {
-                "source": [ "RenderPass.Camera",
-                            "RenderPass.ApplyClipPlanes" ]
+                "source": [ "RenderPass.Camera" ]
             },
             "tessEvalShader" : {
                 "source": [ "RenderPass.Camera",

@@ -68,6 +68,11 @@ using namespace Microsoft::WRL;
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+// request specific DirectX files
+extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 611; }
+extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\..\\bin\\"; }
+
+
 static void UsdImagingGL_UnitTestHelper_InitPlugins()
 {
     // Unfortunately, in order to properly find plugins in our test setup, we
@@ -110,7 +115,7 @@ public:
                             std::string const & filename);
 
 private:
-    std::unique_ptr<HgiDX> _hgiDX;
+    HgiDX* _hgiDX;
     HgiTextureHandle _offscreenTx;
     
     UsdImagingDX_UnitTestDXDrawing* _unitTest;
@@ -134,26 +139,15 @@ UsdImagingDX_UnitTestWindow::~UsdImagingDX_UnitTestWindow()
 void
 UsdImagingDX_UnitTestWindow::OnInitializeGL()
 {
-    //
-    // This init part is not needed for DirectX
-    /*
-    GarchGLApiLoad();
-    GlfRegisterDefaultDebugOutputMessageCallback();
-    GlfContextCaps::InitInstance();*/
+    _unitTest->InitTest();
+
+    _hgiDX = _unitTest->GetHgi();
     
-    _hgiDX = std::make_unique<HgiDX>();
-    
-    if (_unitTest->IsEnabledTestPresentOutput()) {
+    if (_unitTest->PresentOffscreen()) {
         //
         // Create an offscreen draw target which is the same size as this
         // widget and initialize the unit test with the draw target bound.
         //
-        /*
-        _drawTarget = GlfDrawTarget::New(GfVec2i(GetWidth(), GetHeight()));
-        _drawTarget->Bind();
-        _drawTarget->AddAttachment("color", GL_RGBA, GL_FLOAT, GL_RGBA);
-        _drawTarget->AddAttachment("depth", GL_DEPTH_COMPONENT, GL_FLOAT,
-                                            GL_DEPTH_COMPONENT);*/
                                             
         HgiTextureDesc desc;
         desc.debugName = "offscreen draw target";
@@ -166,12 +160,6 @@ UsdImagingDX_UnitTestWindow::OnInitializeGL()
         desc.type = HgiTextureType2D;
 
         _offscreenTx = _hgiDX->CreateTexture(desc);
-    }
-
-    _unitTest->InitTest();
-
-    if (_unitTest->IsEnabledTestPresentOutput()) {
-        _drawTarget->Unbind();
     }
 }
 
@@ -193,55 +181,14 @@ UsdImagingDX_UnitTestWindow::OnPaintGL()
     int width = GetWidth();
     int height = GetHeight();
 
-    if (_unitTest->IsEnabledTestPresentOutput()) {
-        //_drawTarget->Bind();
-        //_drawTarget->SetSize(GfVec2i(width, height));
-        //_hgiDX->GetPresentation()->SetTargetOffscreen(_offscreenTx);
-        // TODO
-        _hgiDX->GetPresentation()->SetTargetWnd(nullptr);
-    }
-
+    _hgiDX->GetPresentation()->SetTargetWnd((HWND)GetHWnd());
     _unitTest->DrawTest(false);
-
-    if (_unitTest->IsEnabledTestPresentOutput()) {
-        //_drawTarget->Unbind();
-
-        //
-        // Blit the resulting color buffer to the window (this is a noop
-        // if we're drawing offscreen).
-        //
-        
-        /*
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, _drawTarget->GetFramebufferId());
-
-        glBlitFramebuffer(0, 0, width, height,
-                          0, 0, width, height,
-                          GL_COLOR_BUFFER_BIT,
-                          GL_NEAREST);
-
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);*/
-    }
 }
 
 void
 UsdImagingDX_UnitTestWindow::DrawOffscreen()
 {
-    /*
-    if (_unitTest->IsEnabledTestPresentOutput()) {
-        _drawTarget->Bind();
-        _drawTarget->SetSize(GfVec2i(GetWidth(), GetHeight()));
-    }
-
-    _ClearPresentationOutput();*/
-
     _unitTest->DrawTest(true);
-
-    /*
-    if (_unitTest->IsEnabledTestPresentOutput()) {
-        _drawTarget->Unbind();
-    }*/
 }
 
 bool 
@@ -295,7 +242,7 @@ UsdImagingDX_UnitTestWindow::WriteToFile(std::string const & attachment,
                                          std::string const & filename)
 {
    if(nullptr != _offscreenTx.Get())
-      UsdImagingDX_UnitTestWindow::WriteToFile(_offscreenTx, _hgiDX.get(), filename);
+      UsdImagingDX_UnitTestWindow::WriteToFile(_offscreenTx, _hgiDX, filename);
    else {
       /* TODO
       HgiTextureHandle const &texture = engine->GetAovTexture(attachment);
@@ -408,6 +355,12 @@ UsdImagingDX_UnitTestDXDrawing::WriteAovToFile(
     UsdImagingDX_UnitTestWindow::WriteToFile(texture, pHgi, filename);
 
     return true;
+}
+
+HgiDX* 
+UsdImagingDX_UnitTestDXDrawing::GetHgi()
+{
+   return nullptr;
 }
 
 struct UsdImagingDX_UnitTestDXDrawing::_Args {
@@ -833,6 +786,8 @@ UsdImagingDX_UnitTestDXDrawing::RunTest(int argc, char *argv[])
 {
     _Args args;
     _Parse(argc, argv, &args);
+
+    //::MessageBox(0, "Attach now", "Attach now", MB_OK);
 
     if (!_traceFile.empty()) {
         TraceCollector::GetInstance().SetEnabled(true);

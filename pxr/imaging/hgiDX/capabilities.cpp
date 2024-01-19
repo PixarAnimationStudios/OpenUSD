@@ -67,6 +67,11 @@ HgiDXCapabilities::HgiDXCapabilities(HgiDXDevice* device)
       _d3dFeatureLevel = _d3dMinFeatureLevel;
    }
 
+   // just for me, during debug for now:
+   D3D12_FEATURE_DATA_SHADER_MODEL shaderModel{ D3D_SHADER_MODEL_6_7 };
+   hr = device->GetDevice()->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel));
+   
+
    //
    // TODO: check what each of the following do, what their effects are and set them 
    // to match both the reality and our needs...
@@ -108,6 +113,10 @@ HgiDXCapabilities::HgiDXCapabilities(HgiDXDevice* device)
 
    _uniformBufferOffsetAlignment = 256;
    _pageSizeAlignment = 4096;
+
+   _maxClipDistances = 4; // I need this for now to simplify the code
+                          // because if I use the real max which is probably 8
+                          // I would (probably) have to split them among SV_ClipDistance0 & SV_ClipDistance1
 }
 
 HgiDXCapabilities::~HgiDXCapabilities() = default;

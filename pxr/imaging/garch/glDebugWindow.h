@@ -54,6 +54,9 @@ public:
     int GetWidth() const { return _width; }
     int GetHeight() const { return _height; }
 
+    GARCH_API
+    void* GetHWnd();
+
     enum Buttons {
         MyButton1 = 0,
         MyButton2 = 1,

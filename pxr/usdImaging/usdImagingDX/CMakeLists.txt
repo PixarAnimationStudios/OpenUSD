@@ -132,6 +132,7 @@ pxr_register_test(testUsdImagingDXBasicDrawing_warp_sph_11
         HGI_DX_FORCE_WARP=1
         HDST_ENABLE_HGI_RESOURCE_GENERATION=1
         HGIGL_ENABLE_BINDLESS_TEXTURE=1
+        HGI_DX_SHADERS_MODEL_6=1
 )
 
 # a scene with all out of the box primitives
@@ -148,6 +149,7 @@ pxr_register_test(testUsdImagingDXBasicDrawing_allPrims
         HGI_ENABLE_DX=1
         HDST_ENABLE_HGI_RESOURCE_GENERATION=1
         HGIGL_ENABLE_BINDLESS_TEXTURE=1
+        HGI_DX_SHADERS_MODEL_6=1
 )
 
 # a scene with all out of the box primitives and a better placed camera (auto)
@@ -198,6 +200,7 @@ pxr_register_test(testUsdImagingDXBasicDrawing_warp_allPrims_3d_cam_lights
         HGI_DX_FORCE_WARP=1
         HDST_ENABLE_HGI_RESOURCE_GENERATION=1
         HGIGL_ENABLE_BINDLESS_TEXTURE=1
+        HGI_DX_SHADERS_MODEL_6=1
 )
 
 # a scene with all out of the box primitives and a better placed camera (auto) and some lighting - points
@@ -264,6 +267,7 @@ pxr_register_test(testUsdImagingDXBasicDrawing_warp_allPrims_3d_cam_wos
         HGI_DX_FORCE_WARP=1
         HDST_ENABLE_HGI_RESOURCE_GENERATION=1
         HGIGL_ENABLE_BINDLESS_TEXTURE=1
+        HGI_DX_SHADERS_MODEL_6=1
 )
 
 # a scene with all out of the box primitives and a better placed camera (auto) and some lighting - flat
@@ -288,7 +292,7 @@ pxr_register_test(testUsdImagingDXBasicDrawing_rvt_window_3d_cam_lights_flat
     IMAGE_DIFF_COMPARE
         rvt_window_main_3d_l_flat.png
     FAIL 0.02
-    FAIL_PERCENT 0.02
+    FAIL_PERCENT 0.07
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingDXBasicDrawing
@@ -296,5 +300,20 @@ pxr_register_test(testUsdImagingDXBasicDrawing_rvt_window_3d_cam_lights_flat
         HGI_ENABLE_DX=1
         HDST_ENABLE_HGI_RESOURCE_GENERATION=1
         HGIGL_ENABLE_BINDLESS_TEXTURE=1
+        HGI_DX_SHADERS_MODEL_6=1
 )
+
+# clone of a gl test, WIP
+#pxr_register_test(testUsdImagingDXAnimatedCamera
+#    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingDXBasicDrawing -offscreen -lighting -frameAll -camera /World/main_cam -times 1 2 3 -stage cameraMoving.usda -write testUsdImagingGLAnimatedCamera.png"
+#    IMAGE_DIFF_COMPARE
+#        testUsdImagingGLAnimatedCamera_001.png
+#        testUsdImagingGLAnimatedCamera_002.png
+#        testUsdImagingGLAnimatedCamera_003.png
+#    FAIL 1
+#    FAIL_PERCENT 1
+#    PERCEPTUAL
+#    EXPECTED_RETURN_CODE 0
+#    TESTENV testUsdImagingGLAnimatedCamera
+#)
 

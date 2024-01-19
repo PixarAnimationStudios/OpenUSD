@@ -28,16 +28,14 @@
 #include "pxr/imaging/hgiDX/textureConverter.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/getenv.h"
 
 #include "pxr/imaging/hgiDX/buffer.h"
 #include "pxr/imaging/hgiDX/conversions.h"
 #include "pxr/imaging/hgiDX/device.h"
 #include "pxr/imaging/hgiDX/hgi.h"
-#include "pxr/imaging/hgiDX/shaderFunction.h"
-#include "pxr/imaging/hgiDX/shaderProgram.h"
+#include "pxr/imaging/hgiDX/shaderCompiler.h"
 #include "pxr/imaging/hgiDX/texture.h"
-
-#include "D3dCompiler.h"
 
 //
 // some useful references
@@ -50,10 +48,13 @@ using namespace DirectX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static const bool bShadersModel6 = TfGetenvBool("HGI_DX_SHADERS_MODEL_6", false);
+
+
 HgiDXTextureConverter::HgiDXTextureConverter(HgiDX* pHgi)
-   :m_pHgi(pHgi)
+   :_pHgi(pHgi)
 {
-   if (nullptr == m_pHgi)
+   if (nullptr == _pHgi)
       TF_FATAL_CODING_ERROR("Texture Converter cannot work with invalid Hgi");
 }
 
@@ -90,7 +91,7 @@ static UINT g_Indices[3] =
     0, 1, 2, 
 };
 
-static FLOAT ColorRGBA[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+static FLOAT ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 const static std::string codeVS =
    "struct VS_STAGE_IN {\n"
@@ -103,7 +104,7 @@ const static std::string codeVS =
    "     float2 uv : TEXCOORD;\n"
    "};\n"
    "\n"
-   "VS_STAGE_OUT vs_main(VS_STAGE_IN IN) {\n"
+   "VS_STAGE_OUT mainDX (VS_STAGE_IN IN) {\n"
    "     VS_STAGE_OUT OUT;\n"
    "     OUT.position = IN.position;\n"
    "     OUT.uv = IN.uv;\n"
@@ -123,7 +124,7 @@ const static std::string codePS =
    "Texture2D texIn : register(t0, space0);\n"
    "SamplerState MeshTextureSampler : register(s0, space0);\n"
    "\n"
-   "PS_STAGE_OUT ps_main(PS_STAGE_IN IN) {\n"
+   "PS_STAGE_OUT mainDX (PS_STAGE_IN IN) {\n"
    "     PS_STAGE_OUT OUT;\n"
    "     OUT.colorOut = texIn.Sample(MeshTextureSampler, IN.uv);\n"
    "     return OUT;\n"
@@ -133,9 +134,9 @@ const static std::string codePS =
 void 
 HgiDXTextureConverter::_initializeBuffers()
 {
-   if (nullptr == m_vertBuff)
+   if (nullptr == _vertBuff)
    {
-      HgiDXDevice* pDevice = m_pHgi->GetPrimaryDevice();
+      HgiDXDevice* pDevice = _pHgi->GetPrimaryDevice();
 
       HgiBufferDesc descVB;
       descVB.debugName = "TxConverterVertexInfo";
@@ -144,7 +145,7 @@ HgiDXTextureConverter::_initializeBuffers()
       descVB.vertexStride = sizeof(VertexTex);
       descVB.initialData = &g_Vertices;
 
-      m_vertBuff = std::make_unique<HgiDXBuffer>(pDevice, descVB);
+      _vertBuff = std::make_unique<HgiDXBuffer>(pDevice, descVB);
 
       HgiBufferDesc descIdx;
       descIdx.debugName = "TxConverterIndices";
@@ -153,7 +154,7 @@ HgiDXTextureConverter::_initializeBuffers()
       descIdx.vertexStride = sizeof(UINT);
       descIdx.initialData = &g_Indices;
 
-      m_idxBuff = std::make_unique<HgiDXBuffer>(pDevice, descIdx);
+      _idxBuff = std::make_unique<HgiDXBuffer>(pDevice, descIdx);
    }
 }
 
@@ -162,60 +163,16 @@ HgiDXTextureConverter::_initialize(DXGI_FORMAT format)
 {
    _initializeBuffers();
 
-   std::map<DXGI_FORMAT, std::unique_ptr<TxConvertPipelineInfo>>::const_iterator it = m_pipelineByOutput.find(format);
-   if (it == m_pipelineByOutput.end())
+   std::map<DXGI_FORMAT, std::unique_ptr<TxConvertPipelineInfo>>::const_iterator it = _pipelineByOutput.find(format);
+   if (it == _pipelineByOutput.end())
    {
-      //
-      // If I do nto set additional information, the shader generator will have nothign to do
-      // The downside is that it will also be unable to auto-determine the root signature and input params 
-
       std::unique_ptr<TxConvertPipelineInfo> pTxPipelineInfo = std::make_unique<TxConvertPipelineInfo>();
       pTxPipelineInfo->renderTargetFormat = format;
 
-      ComPtr<ID3DBlob> errorMsgs;
-
-#if defined(_DEBUG)
-      // Enable better shader debugging with the graphics debugging tools.
-      UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-      UINT compileFlags = 0;
-#endif
-
-      HRESULT hr = D3DCompile(codeVS.c_str(), codeVS.length(),
-                              "tx_convert_vs",
-                              nullptr,
-                              D3D_COMPILE_STANDARD_FILE_INCLUDE,
-                              "vs_main", "vs_5_1",
-                              compileFlags, 0,
-                              pTxPipelineInfo->shaderBlob_VS.ReleaseAndGetAddressOf(),
-                              errorMsgs.ReleaseAndGetAddressOf());
-
-      if (FAILED(hr))
-      {
-         char err[20000]; // in some rare cases we can get very large errors text...
-         void* pBuffPtr = errorMsgs->GetBufferPointer();
-         snprintf(err, 20000, "Error %08X   %s\n", hr, (char*)pBuffPtr);
-         CheckResult(hr, "Failed to compile vertex shader");
-         return;
-      }
-
-      hr = D3DCompile(codePS.c_str(), codePS.length(),
-                              "tx_convert_ps",
-                              nullptr,
-                              D3D_COMPILE_STANDARD_FILE_INCLUDE,
-                              "ps_main", "ps_5_1",
-                              compileFlags, 0,
-                              pTxPipelineInfo->shaderBlob_PS.ReleaseAndGetAddressOf(),
-                              errorMsgs.ReleaseAndGetAddressOf());
-
-      if (FAILED(hr))
-      {
-         char err[20000]; // in some rare cases we can get very large errors text...
-         void* pBuffPtr = errorMsgs->GetBufferPointer();
-         snprintf(err, 20000, "Error %08X   %s\n", hr, (char*)pBuffPtr);
-         CheckResult(hr, "Failed to compile pixel shader");
-         return;
-      }
+      std::string errors;
+      pTxPipelineInfo->shaderBlob_VS = HgiDXShaderCompiler::Compile(codeVS, HgiDXShaderCompiler::CompileTarget::kVS, errors);
+      errors = "";
+      pTxPipelineInfo->shaderBlob_PS = HgiDXShaderCompiler::Compile(codePS, HgiDXShaderCompiler::CompileTarget::kPS, errors);
 
       pTxPipelineInfo->inputDescs.push_back(D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 });
       pTxPipelineInfo->inputDescs.push_back(D3D12_INPUT_ELEMENT_DESC{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 });
@@ -227,7 +184,7 @@ HgiDXTextureConverter::_initialize(DXGI_FORMAT format)
       pTxPipelineInfo->rootParams.push_back(rp);
       if (_buildPSO(pTxPipelineInfo.get()))
       {
-         m_pipelineByOutput[format] = std::move(pTxPipelineInfo);
+         _pipelineByOutput[format] = std::move(pTxPipelineInfo);
       }
    }
 }
@@ -238,7 +195,7 @@ HgiDXTextureConverter::_buildPSO(TxConvertPipelineInfo* pInfo)
    D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineDesc;
    ZeroMemory(&pipelineDesc, sizeof(pipelineDesc));
 
-   HgiDXDevice* pDevice = m_pHgi->GetPrimaryDevice();
+   HgiDXDevice* pDevice = _pHgi->GetPrimaryDevice();
 
    // Create a root signature.
    D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
@@ -284,9 +241,27 @@ HgiDXTextureConverter::_buildPSO(TxConvertPipelineInfo* pInfo)
 
    //
    // add shaders
-   pipelineDesc.VS = CD3DX12_SHADER_BYTECODE(pInfo->shaderBlob_VS.Get());
-   pipelineDesc.PS = CD3DX12_SHADER_BYTECODE(pInfo->shaderBlob_PS.Get());
-   
+   if (bShadersModel6) {
+      IDxcBlob* pVSBlob = (IDxcBlob*)pInfo->shaderBlob_VS.Get();
+      IDxcBlob* pPSBlob = (IDxcBlob*)pInfo->shaderBlob_PS.Get();
+
+      pipelineDesc.VS.BytecodeLength = pVSBlob->GetBufferSize();
+      pipelineDesc.VS.pShaderBytecode = pVSBlob->GetBufferPointer();
+
+      pipelineDesc.PS.BytecodeLength = pPSBlob->GetBufferSize();
+      pipelineDesc.PS.pShaderBytecode = pPSBlob->GetBufferPointer();
+   }
+   else {
+      ID3DBlob* pVSBlob = (ID3DBlob*)pInfo->shaderBlob_VS.Get();
+      ID3DBlob* pPSBlob = (ID3DBlob*)pInfo->shaderBlob_PS.Get();
+
+      pipelineDesc.VS.BytecodeLength = pVSBlob->GetBufferSize();
+      pipelineDesc.VS.pShaderBytecode = pVSBlob->GetBufferPointer();
+
+      pipelineDesc.PS.BytecodeLength = pPSBlob->GetBufferSize();
+      pipelineDesc.PS.pShaderBytecode = pPSBlob->GetBufferPointer();
+   }
+
 
    D3D12_DEPTH_STENCIL_DESC depthStencilDesc = {};
    depthStencilDesc.DepthEnable = FALSE;
@@ -323,17 +298,17 @@ HgiDXTextureConverter::convert(HgiDXTexture* pTxSource,
 {
    if (nullptr != pTxSource)
    {
-      std::map<DXGI_FORMAT, std::unique_ptr<TxConvertPipelineInfo>>::const_iterator it = m_pipelineByOutput.find(targetFormat);
-      if (it == m_pipelineByOutput.end())
+      std::map<DXGI_FORMAT, std::unique_ptr<TxConvertPipelineInfo>>::const_iterator it = _pipelineByOutput.find(targetFormat);
+      if (it == _pipelineByOutput.end())
       {
          _initialize(targetFormat);
-         it = m_pipelineByOutput.find(targetFormat);
+         it = _pipelineByOutput.find(targetFormat);
       }
 
-      if (it != m_pipelineByOutput.end())
+      if (it != _pipelineByOutput.end())
       {
          TxConvertPipelineInfo* pPipelineInfo = it->second.get();
-         HgiDXDevice* pDevice = m_pHgi->GetPrimaryDevice();
+         HgiDXDevice* pDevice = _pHgi->GetPrimaryDevice();
          if (nullptr != pDevice)
          {
             ID3D12GraphicsCommandList* pCmdList = pDevice->GetCommandList(HgiDXDevice::kGraphics);
@@ -359,27 +334,36 @@ HgiDXTextureConverter::convert(HgiDXTexture* pTxSource,
                
                pCmdList->OMSetRenderTargets(1, &rtvHandle, TRUE, nullptr);
                
-               pCmdList->ClearRenderTargetView(rtvHandle, ColorRGBA, 0, nullptr);
+               pCmdList->ClearRenderTargetView(rtvHandle, ClearColor, 0, nullptr);
 
                pTxSource->UpdateResourceState(pCmdList, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-               ID3D12DescriptorHeap* pTxHeap = pTxSource->GetGPUDescHeap();
+               
+               //
+               // If I do not set the descriptor heaps for rtv & dsv, why would I have to set it for cbvSrvUav?
+               // Unfortunately not setting it does not work, so back to setting it
+               
+               //
+               // TODO: probably I could move this inside the "Device" 
+               // since all the knowledge is in there and we could set all the heaps if we wanted
+               ID3D12DescriptorHeap* pTxHeap = pDevice->GetCbvSrvUavDescriptorHeap();
                ID3D12DescriptorHeap* descriptorHeaps[] = { pTxHeap };
                pCmdList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
-               pCmdList->SetGraphicsRootDescriptorTable(0, pTxHeap->GetGPUDescriptorHandleForHeapStart());
+               //pCmdList->SetGraphicsRootDescriptorTable(0, pTxHeap->GetGPUDescriptorHandleForHeapStart());
+               pCmdList->SetGraphicsRootDescriptorTable(0, pTxSource->GetGPUDescHandle(0, D3D12_DESCRIPTOR_RANGE_TYPE_SRV));
                
-               m_vertBuff->UpdateResourceState(pCmdList, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+               _vertBuff->UpdateResourceState(pCmdList, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
                D3D12_VERTEX_BUFFER_VIEW vbv;
-               vbv.BufferLocation = m_vertBuff->GetGPUVirtualAddress();
-               vbv.SizeInBytes = m_vertBuff->GetByteSizeOfResource();
+               vbv.BufferLocation = _vertBuff->GetGPUVirtualAddress();
+               vbv.SizeInBytes = _vertBuff->GetByteSizeOfResource();
                vbv.StrideInBytes = sizeof(VertexTex);
 
                pCmdList->IASetVertexBuffers(0, 1, &vbv);
 
-               m_idxBuff->UpdateResourceState(pCmdList, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+               _idxBuff->UpdateResourceState(pCmdList, D3D12_RESOURCE_STATE_INDEX_BUFFER);
                D3D12_INDEX_BUFFER_VIEW ibv;
-               ibv.BufferLocation = m_idxBuff->GetGPUVirtualAddress();
-               ibv.SizeInBytes = m_idxBuff->GetByteSizeOfResource();
+               ibv.BufferLocation = _idxBuff->GetGPUVirtualAddress();
+               ibv.SizeInBytes = _idxBuff->GetByteSizeOfResource();
                ibv.Format = DXGI_FORMAT_R32_UINT;
 
                pCmdList->IASetIndexBuffer(&ibv);

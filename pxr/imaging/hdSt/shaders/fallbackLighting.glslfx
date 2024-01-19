@@ -47,7 +47,8 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
     vec3 n = normalize(Neye);
 
     LightingContribution result;
-    result.diffuse = vec3(dot(n, vec3(0,0,1)));
+    float fDiffuse = dot(n, vec3(0,0,1));
+    result.diffuse = vec3(fDiffuse, fDiffuse, fDiffuse);
 
     return result;
 }

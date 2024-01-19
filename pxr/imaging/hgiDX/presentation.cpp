@@ -42,8 +42,8 @@ static const uint32_t c_idxRTVPresent = 4; // TODO: this is super ugly...
 PXR_NAMESPACE_OPEN_SCOPE
 
 HgiDXPresentation::HgiDXPresentation(HgiDXDevice* pDXDevice, HgiDXTextureConverter* pTxConverter)
-   :m_pDevice(pDXDevice),
-    m_pTxConverter(pTxConverter)
+   :_pDevice(pDXDevice),
+    _pTxConverter(pTxConverter)
 {
 
 }
@@ -57,12 +57,12 @@ HgiDXPresentation::TransferToApp(HgiTextureHandle const& srcColor,
    HgiDXTexture* pRTTx = dynamic_cast<HgiDXTexture*>(srcColor.Get());
    if (nullptr != pRTTx)
    {
-      if (m_hWnd != 0)
+      if (_hWnd != 0)
       {
          Initialize(pRTTx, dstRegion);
          _Present2Wnd(pRTTx);
       }
-      else if (m_offscreenTxHandle.Get() != nullptr)
+      else if (_offscreenTxHandle.Get() != nullptr)
       {
          _PresentOffscreen(pRTTx);
       }
@@ -72,21 +72,21 @@ HgiDXPresentation::TransferToApp(HgiTextureHandle const& srcColor,
 void 
 HgiDXPresentation::SetTargetWnd(HWND hWnd)
 {
-   m_hWnd = hWnd;
-   m_offscreenTxHandle = HgiTextureHandle();
+   _hWnd = hWnd;
+   _offscreenTxHandle = HgiTextureHandle();
 }
 
 void 
 HgiDXPresentation::SetTargetOffscreen(HgiTextureHandle offscreenTxHandle)
 {
-   m_hWnd = 0;
-   m_offscreenTxHandle = offscreenTxHandle;
+   _hWnd = 0;
+   _offscreenTxHandle = offscreenTxHandle;
 }
 
 void 
 HgiDXPresentation::Initialize(HgiDXTexture* pRenderTargetColor, GfVec4i const& dstRegion)
 {
-   if (0 == m_hWnd)
+   if (0 == _hWnd)
    {
       TF_WARN("Target window is not initialized. Not much can be done here without that information.");
       return;
@@ -94,19 +94,19 @@ HgiDXPresentation::Initialize(HgiDXTexture* pRenderTargetColor, GfVec4i const& d
 
    //
    // TODO: This check does not feel safe enough anymore
-   //if (m_renderTargetTx == pRenderTargetColor)
+   //if (_renderTargetTx == pRenderTargetColor)
    //   return;
 
-   m_renderTargetTx = pRenderTargetColor;
+   _renderTargetTx = pRenderTargetColor;
 
    if (!c_bIndepWndSwapchainFormat && (nullptr == pRenderTargetColor))
       return; // I need it to setup my swapChain with compatible data
 
    //
    // TODO: ignoring corner info for the moment...
-   bool bResizeSwapChain = (m_nWidth != dstRegion[2]) || (m_nHeight != dstRegion[3]);
-   m_nWidth = dstRegion[2];
-   m_nHeight = dstRegion[3];
+   bool bResizeSwapChain = (_nWidth != dstRegion[2]) || (_nHeight != dstRegion[3]);
+   _nWidth = dstRegion[2];
+   _nHeight = dstRegion[3];
 
    HgiTextureDesc desc = pRenderTargetColor->GetDescriptor();
    DXGI_FORMAT newFormat;
@@ -115,27 +115,27 @@ HgiDXPresentation::Initialize(HgiDXTexture* pRenderTargetColor, GfVec4i const& d
    else
       newFormat = HgiDXConversions::GetTextureFormat(desc.format);
 
-   bResizeSwapChain |= (m_RenderTargetBufferFormat != newFormat);
-   m_RenderTargetBufferFormat = newFormat;
+   bResizeSwapChain |= (_RenderTargetBufferFormat != newFormat);
+   _RenderTargetBufferFormat = newFormat;
 
-   if ((nullptr != m_swapChain) && (!bResizeSwapChain))
+   if ((nullptr != _swapChain) && (!bResizeSwapChain))
       return;
 
    HRESULT hr = S_OK;
 
-   m_pDevice->WaitForIdle();
+   _pDevice->WaitForIdle();
 
    // If the swap chain already exists, resize it, otherwise create one.
-   if (m_swapChain)
+   if (_swapChain)
    {
       // Release resources that are tied to the swap chain and update fence values.
       for (UINT n = 0; n < c_swapBufferCount; n++)
       {
-         m_renderTargets[n].Reset();
-         m_fenceValues[n] = 0;
+         _renderTargets[n].Reset();
+         _fenceValues[n] = 0;
       }
 
-      hr = m_swapChain->ResizeBuffers(c_swapBufferCount, m_nWidth, m_nHeight, m_RenderTargetBufferFormat, 0);
+      hr = _swapChain->ResizeBuffers(c_swapBufferCount, _nWidth, _nHeight, _RenderTargetBufferFormat, 0);
 
       if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
       {
@@ -154,13 +154,13 @@ HgiDXPresentation::Initialize(HgiDXTexture* pRenderTargetColor, GfVec4i const& d
    {
       // Create the swap chain and init fence values.
       for (UINT n = 0; n < c_swapBufferCount; n++)
-         m_fenceValues[n] = 0;
+         _fenceValues[n] = 0;
 
       // Create a descriptor for the swap chain.
       DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-      swapChainDesc.Width = m_nWidth;
-      swapChainDesc.Height = m_nHeight;
-      swapChainDesc.Format = m_RenderTargetBufferFormat;
+      swapChainDesc.Width = _nWidth;
+      swapChainDesc.Height = _nHeight;
+      swapChainDesc.Format = _RenderTargetBufferFormat;
       swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
       swapChainDesc.BufferCount = c_swapBufferCount;
       swapChainDesc.SampleDesc.Count = desc.sampleCount;
@@ -175,40 +175,40 @@ HgiDXPresentation::Initialize(HgiDXTexture* pRenderTargetColor, GfVec4i const& d
       // Create a swap chain for the window.
       ComPtr<IDXGISwapChain1> swapChain;
 
-      ID3D12CommandQueue* pCmdQueue = m_pDevice->GetCommandQueue(HgiDXDevice::eCommandType::kGraphics);
-      IDXGIFactory4* pFactory = m_pDevice->GetFactory();
+      ID3D12CommandQueue* pCmdQueue = _pDevice->GetCommandQueue(HgiDXDevice::eCommandType::kGraphics);
+      IDXGIFactory4* pFactory = _pDevice->GetFactory();
       HRESULT hr = pFactory->CreateSwapChainForHwnd(pCmdQueue,
-                                                    m_hWnd,
+                                                    _hWnd,
                                                     &swapChainDesc,
                                                     &fsSwapChainDesc,
                                                     nullptr,
                                                     swapChain.GetAddressOf());
       CheckResult(hr, "Failed to create swap chain.");
 
-      hr = swapChain.As(&m_swapChain);
+      hr = swapChain.As(&_swapChain);
       CheckResult(hr, "Failed to move?? swap chain.");
 
       //
       // TODO: add fullscreen support here (and test it somehow).
       // This template does not support exclusive fullscreen mode and prevents DXGI from responding to the ALT+ENTER shortcut.
-      hr = pFactory->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER);
+      hr = pFactory->MakeWindowAssociation(_hWnd, DXGI_MWA_NO_ALT_ENTER);
       CheckResult(hr, "Failed associate window.");
 
       //
       // Allocate a fence to wait for presentation to finish.
-      hr = m_pDevice->GetDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_presentationFence.ReleaseAndGetAddressOf()));
+      hr = _pDevice->GetDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(_presentationFence.ReleaseAndGetAddressOf()));
       CheckResult(hr, "Failed to create present fence");
    }
 
    // Obtain the back buffers for this window which will be the present targets.
    for (UINT n = 0; n < c_swapBufferCount; n++)
    {
-      hr = m_swapChain->GetBuffer(n, IID_PPV_ARGS(m_renderTargets[n].ReleaseAndGetAddressOf()));
+      hr = _swapChain->GetBuffer(n, IID_PPV_ARGS(_renderTargets[n].ReleaseAndGetAddressOf()));
       CheckResult(hr, "Failed to get swap chain render targets");
-      m_rtvHandles[n] = m_pDevice->CreateRenderTargetView(m_renderTargets[n].Get(), c_idxRTVPresent + n);
+      _rtvHandles[n] = _pDevice->CreateRenderTargetView(_renderTargets[n].Get(), c_idxRTVPresent + n);
    }
 
-   m_backBufferIndex = m_swapChain->GetCurrentBackBufferIndex();
+   _backBufferIndex = _swapChain->GetCurrentBackBufferIndex();
 }
 
 void 
@@ -219,31 +219,31 @@ HgiDXPresentation::_Present2Wnd(HgiDXTexture* pRTTx)
 
    if (c_bIndepWndSwapchainFormat)
    {
-      ID3D12GraphicsCommandList* pCmdList = m_pDevice->GetCommandList(HgiDXDevice::eCommandType::kGraphics);
+      ID3D12GraphicsCommandList* pCmdList = _pDevice->GetCommandList(HgiDXDevice::eCommandType::kGraphics);
 
       if (nullptr != pCmdList)
       {
          const D3D12_RESOURCE_BARRIER barrier = 
-            CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_backBufferIndex].Get(),
+            CD3DX12_RESOURCE_BARRIER::Transition(_renderTargets[_backBufferIndex].Get(),
                                                  D3D12_RESOURCE_STATE_PRESENT, 
                                                  D3D12_RESOURCE_STATE_RENDER_TARGET);
 
          pCmdList->ResourceBarrier(1, &barrier);
 
-         m_pTxConverter->convert(pRTTx, m_rtvHandles[m_backBufferIndex], c_scFormat, m_nWidth, m_nHeight);
+         _pTxConverter->convert(pRTTx, _rtvHandles[_backBufferIndex], c_scFormat, _nWidth, _nHeight);
 
          //
          // get command list again because "convert" will submit and close the command list
-         pCmdList = m_pDevice->GetCommandList(HgiDXDevice::eCommandType::kGraphics);
+         pCmdList = _pDevice->GetCommandList(HgiDXDevice::eCommandType::kGraphics);
 
          const D3D12_RESOURCE_BARRIER barrier2 =
-            CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_backBufferIndex].Get(),
+            CD3DX12_RESOURCE_BARRIER::Transition(_renderTargets[_backBufferIndex].Get(),
                                                  D3D12_RESOURCE_STATE_RENDER_TARGET,
                                                  D3D12_RESOURCE_STATE_PRESENT);
          pCmdList->ResourceBarrier(1, &barrier2);
 
          // Send the command list off to the GPU for processing.
-         m_pDevice->SubmitCommandList(HgiDXDevice::eCommandType::kGraphics);
+         _pDevice->SubmitCommandList(HgiDXDevice::eCommandType::kGraphics);
       }
    }
    else
@@ -256,7 +256,7 @@ HgiDXPresentation::_Present2Wnd(HgiDXTexture* pRTTx)
    // The first argument instructs DXGI to block until VSync, putting the application
    // to sleep until the next VSync. This ensures we don't waste any cycles rendering
    // frames that will never be displayed to the screen.
-   HRESULT hr = m_swapChain->Present(1, 0);
+   HRESULT hr = _swapChain->Present(1, 0);
 
    // If the device was reset we must completely reinitialize the renderer.
    if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
@@ -274,36 +274,36 @@ HgiDXPresentation::_Present2Wnd(HgiDXTexture* pRTTx)
 void 
 HgiDXPresentation::_CopyRenderTarget2SwapChain()
 {
-   if (nullptr == m_renderTargetTx)
+   if (nullptr == _renderTargetTx)
       return;
 
-   ID3D12GraphicsCommandList* pCmdList = m_pDevice->GetCommandList(HgiDXDevice::eCommandType::kGraphics);
+   ID3D12GraphicsCommandList* pCmdList = _pDevice->GetCommandList(HgiDXDevice::eCommandType::kGraphics);
 
    if (nullptr != pCmdList)
    {
       //
       // transition source resource from renderTarget into "copy from" mode
-      m_renderTargetTx->UpdateResourceState(pCmdList, D3D12_RESOURCE_STATE_PRESENT);
+      _renderTargetTx->UpdateResourceState(pCmdList, D3D12_RESOURCE_STATE_PRESENT);
 
       //
       // transition destination resource into "copy to" mode
       const D3D12_RESOURCE_BARRIER barrier2 =
-         CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_backBufferIndex].Get(),
+         CD3DX12_RESOURCE_BARRIER::Transition(_renderTargets[_backBufferIndex].Get(),
                                               D3D12_RESOURCE_STATE_PRESENT,
                                               D3D12_RESOURCE_STATE_COPY_DEST);
 
       pCmdList->ResourceBarrier(1, &barrier2);
 
-      pCmdList->CopyResource(m_renderTargets[m_backBufferIndex].Get(), m_renderTargetTx->GetResource());
+      pCmdList->CopyResource(_renderTargets[_backBufferIndex].Get(), _renderTargetTx->GetResource());
 
       const D3D12_RESOURCE_BARRIER barrier3 =
-         CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_backBufferIndex].Get(),
+         CD3DX12_RESOURCE_BARRIER::Transition(_renderTargets[_backBufferIndex].Get(),
                                               D3D12_RESOURCE_STATE_COPY_DEST,
                                               D3D12_RESOURCE_STATE_PRESENT);
       pCmdList->ResourceBarrier(1, &barrier3);
 
       // Send the command list off to the GPU for processing.
-      m_pDevice->SubmitCommandList(HgiDXDevice::eCommandType::kGraphics);
+      _pDevice->SubmitCommandList(HgiDXDevice::eCommandType::kGraphics);
    }
    else
       CheckResult(E_FAIL, "Cannot get valid command list. Failed to set buffer data.");
@@ -318,26 +318,26 @@ HgiDXPresentation::_MoveToNextFrame()
    // render in parallel... I should only wait for myself...
    // maybe use a different command queue for this?
    // Send the command list off to the GPU for processing.
-   ID3D12CommandQueue* pCmdQueue = m_pDevice->GetCommandQueue(HgiDXDevice::eCommandType::kGraphics);
+   ID3D12CommandQueue* pCmdQueue = _pDevice->GetCommandQueue(HgiDXDevice::eCommandType::kGraphics);
    
    // Schedule a Signal command in the queue.
-   const UINT64 nextFenceValue = m_fenceValues[m_backBufferIndex] + 1;
-   HRESULT hr = pCmdQueue->Signal(m_presentationFence.Get(), nextFenceValue);
+   const UINT64 nextFenceValue = _fenceValues[_backBufferIndex] + 1;
+   HRESULT hr = pCmdQueue->Signal(_presentationFence.Get(), nextFenceValue);
    CheckResult(hr, "Failed to signal queue for \"next\" frame.");
 
    // Update the back buffer index.
-   m_backBufferIndex = m_swapChain->GetCurrentBackBufferIndex();
+   _backBufferIndex = _swapChain->GetCurrentBackBufferIndex();
 
    // If the next frame is not ready to be rendered yet, wait until it is ready.
-   if (m_presentationFence->GetCompletedValue() < nextFenceValue)
+   if (_presentationFence->GetCompletedValue() < nextFenceValue)
    {
-      hr = m_presentationFence->SetEventOnCompletion(nextFenceValue, m_presentationFenceEvent.Get());
+      hr = _presentationFence->SetEventOnCompletion(nextFenceValue, _presentationFenceEvent.Get());
       CheckResult(hr, "Failed to set completion event for next frame signal.");
-      std::ignore = WaitForSingleObjectEx(m_presentationFenceEvent.Get(), INFINITE, FALSE);
+      std::ignore = WaitForSingleObjectEx(_presentationFenceEvent.Get(), INFINITE, FALSE);
    }
 
    // Set the fence value for the next frame.
-   m_fenceValues[m_backBufferIndex] = nextFenceValue;
+   _fenceValues[_backBufferIndex] = nextFenceValue;
 }
 
 void 
@@ -346,7 +346,7 @@ HgiDXPresentation::_PresentOffscreen(HgiDXTexture* pRTTx)
    if (nullptr == pRTTx)
       return;
 
-   HgiDXTexture* pOffscreenTx = dynamic_cast<HgiDXTexture*>(m_offscreenTxHandle.Get());
+   HgiDXTexture* pOffscreenTx = dynamic_cast<HgiDXTexture*>(_offscreenTxHandle.Get());
    if (nullptr == pOffscreenTx)
       return;
 
@@ -354,7 +354,7 @@ HgiDXPresentation::_PresentOffscreen(HgiDXTexture* pRTTx)
    // TODO: I assume (and do not check for now) that 
    // the size is the same for the render target and the final destination texture 
 
-   ID3D12GraphicsCommandList* pCmdList = m_pDevice->GetCommandList(HgiDXDevice::eCommandType::kGraphics);
+   ID3D12GraphicsCommandList* pCmdList = _pDevice->GetCommandList(HgiDXDevice::eCommandType::kGraphics);
    if (nullptr != pCmdList)
    {
       const HgiTextureDesc targetDesc = pOffscreenTx->GetDescriptor();
@@ -363,12 +363,12 @@ HgiDXPresentation::_PresentOffscreen(HgiDXTexture* pRTTx)
       GfVec3i dims = targetDesc.dimensions;
 
       pOffscreenTx->UpdateResourceState(pCmdList, D3D12_RESOURCE_STATE_RENDER_TARGET);
-      D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_pDevice->CreateRenderTargetView(pOffscreenTx->GetResource(), c_idxRTVPresent);
+      D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = _pDevice->CreateRenderTargetView(pOffscreenTx->GetResource(), c_idxRTVPresent);
 
       //
       // Looks like the best course of action here as well is to execute a dedicated program 
       // to do the format conversion, similar to what GL does in "$\pxr\imaging\hgiInterop\opengl.cpp".
-      m_pTxConverter->convert(pRTTx, rtvHandle, targetFormat, dims[0], dims[1]);
+      _pTxConverter->convert(pRTTx, rtvHandle, targetFormat, dims[0], dims[1]);
    }
 }
 

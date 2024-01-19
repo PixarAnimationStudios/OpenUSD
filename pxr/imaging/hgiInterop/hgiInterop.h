@@ -39,6 +39,14 @@ class VtValue;
 
 struct HgiInteropImpl;
 
+struct HgiCustomInterop
+{
+   virtual void TransferToApp(HgiTextureHandle const& srcColor,
+                              HgiTextureHandle const& srcDepth,
+                              VtValue const& dstFramebuffer,
+                              GfVec4i const& dstRegion) = 0;
+};
+
 /// \class HgiInterop
 ///
 /// Hydra Graphics Interface Interop.

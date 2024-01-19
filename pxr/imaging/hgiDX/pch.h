@@ -130,9 +130,11 @@
 #include <wrl/client.h>
 #include <wrl/event.h>
 #include "d3d12.h"
+#include "d3d12sdklayers.h"
+#include "dxcapi.h"
+#include "D3dCompiler.h"
 #include "d3dx12.h"
 #include <dxgi1_6.h>
 #include <DirectxMath.h>
-#include <pix.h>
 
 using namespace Microsoft::WRL;

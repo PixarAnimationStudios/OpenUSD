@@ -151,6 +151,7 @@ private:
 
 private:
     HgiDX* _hgi;
+    HgiBufferHandle _indirectParamBuff;
     HgiGraphicsCmdsDesc _descriptor;
     HgiDXGraphicsPipeline* _pPipeline;
     HgiResourceBindingsHandle _resBindings;

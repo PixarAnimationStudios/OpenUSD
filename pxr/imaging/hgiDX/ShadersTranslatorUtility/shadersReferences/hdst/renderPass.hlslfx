@@ -170,13 +170,20 @@ vec2 HorizontallyNormalizedFilmbackCoordinates()
 
 void ApplyClipPlanes(vec4 Peye)
 {
+#if defined(HD_HAS_numClipPlanes)
 #if defined(HD_HAS_clipPlanes)
-#if defined(HD_NUM_clipPlanes) // more than 1 (clipPlanes[N])
     for (int i=0; i<HD_NUM_clipPlanes; ++i) {
-        gl_ClipDistance[i] = dot(HdGet_clipPlanes(i), Peye);
+        // For Hgi backends like Metal, we declare a shader stage output of 
+        // gl_ClipDistance[HD_NUM_clipPlanes], since we need to know the array 
+        // size at compile time. To avoid having any uninitialized values in 
+        // that array, we initialize them all to zero first.
+        float fClip = 0;
+        if (i < HdGet_numClipPlanes()) {
+            fClip = dot(HdGet_clipPlanes(i), Peye);
+        }
+        
+        gl_ClipDistance[i] = fClip;
     }
-#else                          // only 1      (clipPlanes)
-    gl_ClipDistance[0] = dot(HdGet_clipPlanes(), Peye);
 #endif
 #endif
 }
@@ -209,7 +216,6 @@ vec4 ApplySelectionColor(vec4 color)
 
 // Forward declare selection functionality.
 // XXX: Currently, the non-empty implementation of this is in hdx.
-FORWARD_DECL(vec4 ApplySelectionColor(vec4 color));
 
 // XXX: Make sure to update hdx/shaders/renderPass.hlslfx when editing these
 // color override methods, since they're currently duplicated. This is because

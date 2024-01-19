@@ -36,7 +36,7 @@ public:
    HgiMemoryHelper() {};
    virtual ~HgiMemoryHelper() {};
 
-   virtual void GetMemorySpec(const std::vector<HdBufferSpec>& structSpec, StructMemorySpec& sms) = 0;
+   virtual void GetMemorySpec(const std::vector<HdBufferSpec>& structSpec, TfToken const& role, StructMemorySpec& sms) = 0;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -52,7 +52,7 @@ public:
    HGIDX_API
    void BindPipeline();
 
-   ID3D12CommandSignature* GetIndirectCommandSignature(uint32_t stride);
+   ID3D12CommandSignature* GetIndirectCommandSignature(uint32_t stride, bool bIndexed);
 
 protected:
    friend class HgiDX;
@@ -81,7 +81,8 @@ private:
 
    //
    // Indirect Command signature
-   uint32_t _indirectArgumentStride;
+   uint32_t _indirectArgumentStride = 0;
+   bool _bIndirectIndexed = false;
    Microsoft::WRL::ComPtr<ID3D12CommandSignature> _indirectCommandSignature;
 };
 

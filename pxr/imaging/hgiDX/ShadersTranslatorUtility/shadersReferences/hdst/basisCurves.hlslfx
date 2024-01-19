@@ -152,11 +152,7 @@ void SetTessFactors(float out0, float out1, float out2, float out3,
 -- glsl Curves.Vertex.Patch
 
 // We will either generate a camera facing normal or use the authored normal.
-FORWARD_DECL(vec3 getNormal(MAT4 transform));
 // Fwd declare methods defined in pointId.hlslfx, that are used below.
-FORWARD_DECL(int GetPointId());
-FORWARD_DECL(float GetPointRasterSize(int id));
-FORWARD_DECL(void ProcessPointId(int id));
 
 void main(void)
 {
@@ -196,7 +192,8 @@ vec3 getNormal(MAT4 transform)
 
 vec3 getNormal(MAT4 transform)
 {
-    return (transform * vec4(HdGet_normals(), 0)).xyz;
+    vec4 norm = mul(transform, vec4(HdGet_normals(), 0));
+    return norm.xyz;
 }
 
 --- --------------------------------------------------------------------------
@@ -214,7 +211,8 @@ vec3 getNormal(MAT4 transform, int index)
 
 vec3 getNormal(MAT4 transform, int index)
 {
-    return (transform * vec4(HdGet_normals(index), 0)).xyz;
+    vec4 norm = mul(transform, vec4(HdGet_normals(index), 0));
+    return norm.xyz;
 }
 
 --- --------------------------------------------------------------------------
@@ -230,9 +228,6 @@ vec3 getNormal(MAT4 transform, int index)
 -- glsl Curves.Vertex.Wire
 
 // Fwd declare methods defined in pointId.hlslfx, that are used below.
-FORWARD_DECL(int GetPointId());
-FORWARD_DECL(float GetPointRasterSize(int id));
-FORWARD_DECL(void ProcessPointId(int id));
 
 void main(void)
 {
@@ -604,7 +599,6 @@ void main(void)
 --- --------------------------------------------------------------------------
 -- glsl Curves.TessEval.Cubic.Wire
 
-FORWARD_DECL(Coeffs evaluateBasis(float u, const vec4 cv[4]));
 
 void main()
 {
@@ -680,16 +674,10 @@ void main()
 // Predefine so that we can later swap in the correct one depending
 // on what type of curve we have
 
-FORWARD_DECL(
-    void evaluate(float u, float v, REF(thread, vec4) position,
-                  REF(thread, vec4) tangent, REF(thread, float) width,
-                  REF(thread, vec3) normal, CurveData vertexData));
-FORWARD_DECL(Coeffs evaluateBasis(float u, const vec4 cv[4]));
 
 // it's the responsibility of orient to store Neye, usually with either
 // the computed normal or the tangent (from which the normal will be computed
 // in the fragment shader.)
-FORWARD_DECL(vec3 orient(float v, vec4 position, vec4 tangent, vec3 normal));
 
 void main()
 {
@@ -797,9 +785,6 @@ void evaluate(float u, float v, REF(thread, vec4) position,
 --- --------------------------------------------------------------------------
 -- glsl Curves.CommonEval.Cubic.Patch
 
-FORWARD_DECL(Coeffs evaluateBasis(float u, const vec4 cv[4]));
-FORWARD_DECL(float evaluateWidths(vec4 basis, float u));
-FORWARD_DECL(vec3 evaluateNormal(vec4 basis, float u, CurveData vertexData));
 
 void evaluate(float u, float v, REF(thread, vec4) position,
               REF(thread, vec4) tangent, REF(thread, float) width,
@@ -1239,7 +1224,6 @@ void main(void)
 /// In the previous stage, we may have stored the tangent in Neye from which
 /// we plan to compute a normal in the fragment shader.
 
-FORWARD_DECL(vec3 fragmentNormal(vec3 position, vec3 normal, float v));
 void main(void)
 {
     DiscardBasedOnTopologicalVisibility();

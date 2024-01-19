@@ -36,6 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiDXComputeCmds::HgiDXComputeCmds(HgiDX* hgi, HgiComputeCmdsDesc const& desc)
     : HgiComputeCmds()
     , _hgi(hgi)
+    , _localWorkGroupSize(GfVec3i(1, 1, 1))
 {
 }
 
@@ -71,6 +72,21 @@ HgiDXComputeCmds::BindPipeline(HgiComputePipelineHandle pipeline)
 {
    HgiDXComputePipeline* pDXPipeline = dynamic_cast<HgiDXComputePipeline*>(pipeline.Get());
    _pPipeline = pDXPipeline;
+
+   // Get and store local work group size from shader function desc
+   const HgiShaderFunctionHandleVector shaderFunctionsHandles =
+      _pPipeline->GetDescriptor().shaderProgram.Get()->GetDescriptor().shaderFunctions;
+
+   for (const auto& handle : shaderFunctionsHandles) {
+      const HgiShaderFunctionDesc& shaderDesc = handle.Get()->GetDescriptor();
+      if (shaderDesc.shaderStage == HgiShaderStageCompute) {
+         if (shaderDesc.computeDescriptor.localSize[0] > 0 &&
+             shaderDesc.computeDescriptor.localSize[1] > 0 &&
+             shaderDesc.computeDescriptor.localSize[2] > 0) {
+            _localWorkGroupSize = shaderDesc.computeDescriptor.localSize;
+         }
+      }
+   }
 
    _ops.push_back([pDXPipeline] {
       pDXPipeline->BindPipeline();
@@ -129,53 +145,42 @@ HgiDXComputeCmds::Dispatch(int dimX, int dimY)
    HgiDX* pHgi = _hgi;
    HgiDXComputePipeline* pPipeline = _pPipeline;
    const HgiResourceBindingsDesc& resBindingsDesc = _resBindings->GetDescriptor();
-   
-   _ops.push_back(
-      [pHgi, pPipeline, resBindingsDesc] {
-         ID3D12GraphicsCommandList* pCmdList = pHgi->GetPrimaryDevice()->GetCommandList(HgiDXDevice::eCommandType::kCompute);
-         if (nullptr != pCmdList && nullptr != pPipeline)
-         {
-            const HgiComputePipelineDesc& gpd = pPipeline->GetDescriptor();
-            HgiDXShaderProgram* pShaderProgram = dynamic_cast<HgiDXShaderProgram*>(gpd.shaderProgram.Get());
-
-            if (nullptr != pShaderProgram)
-               HgiDXResourceBindings::BindRootParams(pCmdList, pShaderProgram, resBindingsDesc.buffers, true);
-         }
-         else
-            TF_WARN("Failed to acquire command list or pipeline. Cannot bind root params buffer(s).");
-   });
 
    //
    // const values binding
-   const HgiBufferHandle& bh = _constValuesBuffers.back();
-   HgiBufferBindDesc constValuesBind;
+   std::vector<HgiBufferBindDesc> constDescs; // will be just one, but...
+   if (_constValuesBuffers.size() > 0)
+   {
+      const HgiBufferHandle& bh = _constValuesBuffers.back();
+      HgiBufferBindDesc constValuesBind;
 
-   //constValuesBind.bindingIndex = bindIndex;
-   // One issue with this is that during the "code generation" phase we do not get a buffer declaration for this, but rather separate contents
-   // However, even openGl groups these contents and pass them to a shader as one buffer
-   // More than that, the reported binding Index is zero for this and it overlaps with another zero for something else (some other buffer)
-   // Therefore:
-   constValuesBind.bindingIndex = -2; // using my hardcoded "trick" buffer index; TODO: handle this better / cleaner - at least one static common value somewhere
-   constValuesBind.buffers = std::vector<HgiBufferHandle>{ bh };
-   constValuesBind.offsets = std::vector<uint32_t>{ 0 };
-   constValuesBind.sizes = std::vector<uint32_t>{ (uint32_t)bh->GetDescriptor().byteSize };
-   constValuesBind.writable = false;
+      //constValuesBind.bindingIndex = bindIndex;
+      // One issue with this is that during the "code generation" phase we do not get a buffer declaration for this, but rather separate contents
+      // However, even openGl groups these contents and pass them to a shader as one buffer
+      // More than that, the reported binding Index is zero for this and it overlaps with another zero for something else (some other buffer)
+      // Therefore:
+      constValuesBind.bindingIndex = -2; // using my hardcoded "trick" buffer index; TODO: handle this better / cleaner - at least one static common value somewhere
+      constValuesBind.buffers = std::vector<HgiBufferHandle>{ bh };
+      constValuesBind.offsets = std::vector<uint32_t>{ 0 };
+      constValuesBind.sizes = std::vector<uint32_t>{ (uint32_t)bh->GetDescriptor().byteSize };
+      constValuesBind.writable = false;
 
-   //
-   // putting this into a vector just to avoid adding an override to the "bind" method called below
-   std::vector<HgiBufferBindDesc> descs;
-   descs.push_back(std::move(constValuesBind));
+      constDescs.push_back(std::move(constValuesBind));
+   }
 
    _ops.push_back(
-      [pHgi, pPipeline, descs] {
-         ID3D12GraphicsCommandList* pCmdList = pHgi->GetPrimaryDevice()->GetCommandList(HgiDXDevice::eCommandType::kCompute);
-         if (nullptr != pCmdList && nullptr != pPipeline)
+      [pHgi, pPipeline, constDescs, resBindingsDesc] {
+         if (nullptr != pPipeline)
          {
             const HgiComputePipelineDesc& gpd = pPipeline->GetDescriptor();
             HgiDXShaderProgram* pShaderProgram = dynamic_cast<HgiDXShaderProgram*>(gpd.shaderProgram.Get());
 
             if (nullptr != pShaderProgram)
-               HgiDXResourceBindings::BindRootParams(pCmdList, pShaderProgram, descs, true);
+            {
+               HgiDXResourceBindings::BindRootParams(pHgi, pShaderProgram, constDescs, true);
+               HgiDXResourceBindings::BindRootParams(pHgi, pShaderProgram, resBindingsDesc.buffers, true);
+               HgiDXResourceBindings::BindRootParams(pHgi, pShaderProgram, resBindingsDesc.textures, true);
+            }
          }
          else
             TF_WARN("Failed to acquire command list or pipeline. Cannot bind root params buffer(s).");
@@ -183,7 +188,18 @@ HgiDXComputeCmds::Dispatch(int dimX, int dimY)
 
    //
    // Dispatch
-   _ops.push_back(_DispatchOp(_hgi, dimX, dimY));
+   const int threadsPerGroupX = _localWorkGroupSize[0];
+   const int threadsPerGroupY = _localWorkGroupSize[1];
+   int numWorkGroupsX = (dimX + (threadsPerGroupX - 1)) / threadsPerGroupX;
+   int numWorkGroupsY = (dimY + (threadsPerGroupY - 1)) / threadsPerGroupY;
+
+   _ops.push_back(_DispatchOp(_hgi, numWorkGroupsX, numWorkGroupsY));
+
+   //
+   // from what I can see HdSt sometimes releases resources after calling dispatch
+   // e.g. "domeLightComputations.cpp \ HdSt_DomeLightComputationGPU::Execute"
+   // we cannot afford to wait any longer executing this
+   _Submit(_hgi, HgiSubmitWaitType::HgiSubmitWaitTypeWaitUntilCompleted);
 }
 
 HgiDXGfxFunction 
@@ -234,17 +250,27 @@ HgiDXComputeCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 bool
 HgiDXComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {
-   if (_ops.empty()) {
-      //
-      // it seems it can happen to have no ops in the list but to have some 
-      // buffers setup and accessed (probably on graphics list)
-      // and we should close such lists before we get later to deleting the buffers
+   //
+   // debug hack to only execute a part of the code to isolate an issue:
+   /*
+   static int nSubmitIdx = 0;
+   if (nSubmitIdx >= 1)
+   {
       _hgi->GetPrimaryDevice()->SubmitCommandList(HgiDXDevice::eCommandType::kGraphics);
       _hgi->GetPrimaryDevice()->SubmitCommandList(HgiDXDevice::eCommandType::kCompute);
-      
-      return false;
-   }
 
+      _SetSubmitted();
+      _ops.clear();
+      return true;
+   }
+   nSubmitIdx++;*/ 
+
+   bool bRet = !_ops.empty();
+
+   //
+   // it seems it can happen to have no ops in the list but to have some 
+   // buffers setup and accessed (probably on graphics list)
+   // and we should close such lists before we get later to deleting the buffers
    //
    // closing a list is a noop if the list is already closed, it's safer to do this here anyway
    _hgi->GetPrimaryDevice()->SubmitCommandList(HgiDXDevice::eCommandType::kGraphics);
@@ -252,8 +278,6 @@ HgiDXComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
    for (HgiDXGfxFunction const& f : _ops) {
       f();
    }
-
-   _hgi->GetPrimaryDevice()->SubmitCommandList(HgiDXDevice::eCommandType::kCompute);
 
    //static bool bDebug = false;
    //if (bDebug)
@@ -265,7 +289,9 @@ HgiDXComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
    
    _SetSubmitted();
 
-   return true;
+   _ops.clear();
+
+   return bRet;
 }
 
 HgiComputeDispatch 

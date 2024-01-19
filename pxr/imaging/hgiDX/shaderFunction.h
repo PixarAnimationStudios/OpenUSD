@@ -29,6 +29,8 @@
 #include "pxr/imaging/hgiDX/api.h"
 #include "pxr/imaging/hgiDX/shaderInfo.h"
 
+#include "pxr/imaging/hgiDX/shaderCompiler.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class Hgi;
@@ -60,16 +62,12 @@ public:
    HGIDX_API
    uint64_t GetRawResource() const override;
 
-   /// Returns the shader entry function name (usually "main").
-   HGIDX_API
-   const char* GetShaderFunctionName() const;
-
    /// Returns the device used to create this object.
    HGIDX_API
    HgiDXDevice* GetDevice() const;
 
    HGIDX_API
-   ID3DBlob* GetShaderBlob() const;
+   IUnknown* GetShaderBlob() const;
 
    HGIDX_API
    const std::vector<DXShaderInfo::StageParamInfo>& GetStageInputInfo() const;
@@ -90,15 +88,15 @@ private:
    HgiDXShaderFunction() = delete;
    HgiDXShaderFunction& operator=(const HgiDXShaderFunction&) = delete;
    HgiDXShaderFunction(const HgiDXShaderFunction&) = delete;
-   void _GetShaderCode(std::string& strShaderCode, std::string& strShaderTarget);
+   void _GetShaderCode(std::string& strShaderCode, HgiDXShaderCompiler::CompileTarget& ct);
 
 
 private:
    Hgi const* _hgi;
    HgiDXDevice* _device;
    std::string _errors;
-   ComPtr<ID3DBlob> _shaderBlob;
-   
+   ComPtr<IUnknown> _shaderBlob;
+      
    std::vector<DXShaderInfo::StageParamInfo> _inputInfo;
    std::vector<DXShaderInfo::RootParamInfo> _rootParamInfo;
 };

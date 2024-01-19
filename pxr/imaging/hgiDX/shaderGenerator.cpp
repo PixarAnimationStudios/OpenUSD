@@ -45,6 +45,17 @@ namespace {
       { "gl_Position", {"float4", "SV_Position", DXGI_FORMAT_R32_FLOAT}},
       { "gl_FragCoord", {"float4", "SV_Position", DXGI_FORMAT_R32G32B32A32_FLOAT}},
 
+      // clip distance(s) are also significantly different between gl and DX:
+      // in gl world it's an array of undefined size
+      // in dx world there are just 2 values SV_ClipDistance0, SV_ClipDistance1
+      // and it seems like each can store max 4 float each for a max of 8 in total
+      //
+      // what I could do now, is hope we do not need more than 4 values 
+      // or it will result in some serious issues
+      // I can also force max 4 / discard if we have more, and warn and see where that leads us
+      // see "HgiDXCapabilities"
+      { "gl_ClipDistance", {"float4", "SV_ClipDistance0", DXGI_FORMAT_R32_FLOAT}},
+
       //
       // There is a big issue with SV_PrimitiveID.
       // Experimentally, what happens is:
@@ -101,6 +112,12 @@ namespace {
       "SV_IsFrontFace",
       "SV_SampleIndex",
       "SV_InputCoverage",
+   };
+
+   const static std::set<std::string> systemDestinationParams{
+      "SV_ClipDistance0",
+      "SV_ClipDistance1",
+      "SV_Position",
    };
 }
 
@@ -246,7 +263,7 @@ HgiDXShaderGenerator::_WriteInOuts(const HgiShaderFunctionParamBlockDescVector& 
          std::unique_ptr<HgiDXParamsShaderSection>paramsSSBlock = std::make_unique<HgiDXParamsShaderSection>(paramName);
 
          for (HgiShaderFunctionParamBlockDesc::Member member : paramBlock.members) {
-            paramsSSBlock->AddParamInfo(member.type, member.name, "");
+            paramsSSBlock->AddParamInfo(member.type, member.name, "", "");
          }
 
          GetShaderSections()->push_back(std::move(paramsSSBlock));
@@ -265,7 +282,7 @@ HgiDXShaderGenerator::_WriteInOuts(const HgiShaderFunctionParamBlockDescVector& 
          std::unique_ptr<HgiDXParamsShaderSection>paramsSSBlock = std::make_unique<HgiDXParamsShaderSection>(paramName);
 
          for (HgiShaderFunctionParamBlockDesc::Member member : paramBlock.members) {
-            paramsSSBlock->AddParamInfo(member.type, member.name, "");
+            paramsSSBlock->AddParamInfo(member.type, member.name, "", "");
          }
 
          GetShaderSections()->push_back(std::move(paramsSSBlock));
@@ -278,10 +295,25 @@ HgiDXShaderGenerator::_WriteInOuts(const HgiShaderFunctionParamBlockDescVector& 
    std::unique_ptr<HgiDXParamsShaderSection> paramsSSOut = std::make_unique<HgiDXParamsShaderSection>("STAGE_OUT");
 
    for (const DXShaderInfo::StageParamInfo& spi : _sdi.stageIn)
-      paramsSSIn->AddParamInfo(spi.strShaderDataType, spi.strShaderDataName, spi.strSemanticName);
+   {
+      paramsSSIn->AddParamInfo(spi.strShaderDataType, 
+                               spi.strShaderDataName, 
+                               spi.strArrSize,
+                               spi.strSemanticName);
+   }
    
+
+   if (_sdi.stageOut.size() < 1) {
+      _bNoStageOut = true;
+   }
+
    for (const DXShaderInfo::StageParamInfo& spi : _sdi.stageOut)
-      paramsSSOut->AddParamInfo(spi.strShaderDataType, spi.strShaderDataName, spi.strSemanticName);
+   {
+      paramsSSOut->AddParamInfo(spi.strShaderDataType, 
+                                spi.strShaderDataName, 
+                                spi.strArrSize,
+                                spi.strSemanticName);
+   }
 
    GetShaderSections()->push_back(std::move(paramsSSIn));
    GetShaderSections()->push_back(std::move(paramsSSOut));
@@ -306,18 +338,21 @@ HgiDXShaderGenerator::_WriteBuffers(const HgiShaderFunctionBufferDescVector& buf
       rpi.strName = bufferDescription.nameInShader;
       rpi.strTypeName = bufferDescription.type;
       rpi.nArrSize = bufferDescription.arraySize;
+      rpi.bTexture = false;
       rpi.bConst = bConst;
       rpi.bWritable = bufferDescription.writable;
-      rpi.nShaderRegister = _bufRegisterIdx;
+      //rpi.nShaderRegister = _bufRegisterIdx;
+      rpi.nShaderRegister = bufferDescription.bindIndex;
 
-      //if(bufferDescription.arraySize > 1)
+      //if(bufferDescription.arraySize > 1) // 0 or 1 is 1
       //   _bufRegisterIdx+=bufferDescription.arraySize;
       //else 
-         _bufRegisterIdx++; // 0 or 1 is 1
+         _bufRegisterIdx++; 
 
       rpi.nRegisterSpace = 0;
       rpi.nSuggestedBindingIdx = bufferDescription.bindIndex;
       rpi.nBindingIdx = -1;
+      rpi.nSamplerBindingIdx = -1;
 
       _rootParamInfo.push_back(rpi);
 
@@ -360,7 +395,7 @@ HgiDXShaderGenerator::_WriteConstantParams(const HgiShaderFunctionParamDescVecto
          strName += "]";
       }
 
-      paramsBlock->AddParamInfo(param.type, strName, "");
+      paramsBlock->AddParamInfo(param.type, strName, "", "");
    }
    GetShaderSections()->push_back(std::move(paramsBlock));
 
@@ -370,6 +405,7 @@ HgiDXShaderGenerator::_WriteConstantParams(const HgiShaderFunctionParamDescVecto
    rpi.strName = strConstParamsInstName;
    rpi.strTypeName = strConstParamsStructName;
    rpi.nArrSize = 1;
+   rpi.bTexture = false;
    rpi.bConst = true;
    rpi.nShaderRegister = _bufRegisterIdx++;
    rpi.nRegisterSpace = 0;
@@ -380,6 +416,7 @@ HgiDXShaderGenerator::_WriteConstantParams(const HgiShaderFunctionParamDescVecto
    // we bind the "const" data
    rpi.nSuggestedBindingIdx = -2; 
    rpi.nBindingIdx = -1;
+   rpi.nSamplerBindingIdx = -1;
 
    _rootParamInfo.push_back(rpi);
 
@@ -393,25 +430,98 @@ HgiDXShaderGenerator::_WriteConstantParams(const HgiShaderFunctionParamDescVecto
 }
 
 void
-HgiDXShaderGenerator::_WriteTextures( const HgiShaderFunctionTextureDescVector& textures)
+HgiDXShaderGenerator::_WriteTextures(const HgiShaderFunctionTextureDescVector& textures)
 {
-   if(textures.size())
-      TF_RUNTIME_ERROR("Not implemented yet");
+   size_t binding = 0;
+   for (size_t i = 0; i < textures.size(); i++) {
+      const HgiShaderFunctionTextureDesc& textureDescription = textures[i];
 
-   for (const HgiShaderFunctionTextureDesc& desc : textures) {
-      
-      /*
+      DXShaderInfo::RootParamInfo rpi = {};
+      rpi.strName = textureDescription.nameInShader;
+      rpi.strTypeName = textureDescription.textureType; // this is obviously not useful 
+      // textureDescription.format??
+      rpi.nArrSize = textureDescription.arraySize;
+      rpi.bTexture = true;
+      rpi.bConst = false; // or would it also work with "const" - must test someday or read more about it
+      rpi.bWritable = textureDescription.writable;
+      //rpi.nShaderRegister = _bufRegisterIdx;
+      rpi.nShaderRegister = textureDescription.bindIndex;
+
+      _bufRegisterIdx++;
+
+      rpi.nRegisterSpace = 1; // puttiong textures in space 1, to avoid index overlap with buffers
+      rpi.nSuggestedBindingIdx = textureDescription.bindIndex;
+      rpi.nBindingIdx = -1;
+      rpi.nSamplerBindingIdx = -1;
+
+      _rootParamInfo.push_back(rpi);
+
+      //
+      // new evolution: for each texture I will also create a sampler root parameter
+      // but since I want to do that for each texture, there's no point in declaring anything here
+      // I'll just do it at the other end.
+
+      _rootParamInfo.push_back(rpi);
+
+      HgiShaderSectionAttributeVector attrs = {
+            HgiShaderSectionAttribute{"binding", std::to_string(binding)} };
+
+      if (textureDescription.writable) {
+
+         /* TODO: clarify DX needs with respect to this,
+         probably we need the same: the format and need to translate it
+         attrs.insert(attrs.begin(), HgiShaderSectionAttribute{
+             HgiGLConversions::GetImageLayoutFormatQualifier(
+                 textureDescription.format),
+             "" });*/
+      }
+
       GetShaderSections()->push_back(
          std::make_unique<HgiDXTextureShaderSection>(
-            desc.nameInShader,
-            _bindIndex,
-            desc.dimensions,
-            desc.format,
-            desc.textureType,
-            desc.arraySize,
-            desc.writable,
-            attrs));*/
+            textureDescription.nameInShader,
+            rpi.nShaderRegister,
+            rpi.nRegisterSpace,
+            textureDescription.dimensions,
+            textureDescription.format,
+            textureDescription.textureType,
+            textureDescription.arraySize,
+            textureDescription.writable,
+            attrs));
+
+
+      //
+      // this is sync'd to the "program" code
+      // for the moment I am making 2 assumtions:
+      //    only input textures need a sampler
+      //    and the writable ones are output
+      //if (!rpi.bWritable)
+      {
+         GetShaderSections()->push_back(
+            std::make_unique<HgiDXSamplerShaderSection>(textureDescription.nameInShader + "_Sampler", rpi.nShaderRegister, rpi.nRegisterSpace));
+      }
+
+      if (textureDescription.arraySize > 0) {
+         binding += textureDescription.arraySize;
+      }
+      else {
+         binding++;
+      }
    }
+
+   //
+   // Going for a more normal solution with one sampler for each texture
+   //if (textures.size() > 0)
+   //{
+   //   //
+   //   // I'll add a unique, hard-coded global sampler for now
+   //   // will have to review this later and find a better wat to deal with it
+
+   //   //
+   //   // TODO: also make the hard-coded name a variable somewhere
+   //   GetShaderSections()->push_back(
+   //      std::make_unique<HgiDXSamplerShaderSection>("g_Sampler", 0, 0));
+   //}
+
 }
 
 HgiDXShaderSectionUniquePtrVector*
@@ -423,9 +533,11 @@ HgiDXShaderGenerator::GetShaderSections()
 void
 HgiDXShaderGenerator::_GetSemanticName(bool bInParam,
                                        const HgiShaderStage& shaderStage,
-                                       std::string varName,
+                                       const std::string& varName,
+                                       const std::string& inVarType,
                                        std::string& strShaderSemanticName,
                                        std::string& strPipelineInputSemanticName,
+                                       std::string& outVarType,
                                        int& nPipelineInputIndex)
 {
    //
@@ -433,6 +545,7 @@ HgiDXShaderGenerator::_GetSemanticName(bool bInParam,
    auto it = glSysType2DXSysType.find(varName);
    if (it != glSysType2DXSysType.end())
    {
+      outVarType = it->second.dataType;
       //
       // I also want to check for the "exception" (hack_PrimitiveID_part2).
       bool bNotHandled = true;
@@ -454,6 +567,8 @@ HgiDXShaderGenerator::_GetSemanticName(bool bInParam,
    }
    else
    {
+      outVarType = inVarType;
+
       //
       // I will hard-code this entirely for now, 
       // because I am convinced this is an easily solvable problem that will 
@@ -539,6 +654,19 @@ struct less_than_spi
       bool bSystemProvidedParam1 = systemProvidedParams.find(spi1.strSemanticName) != systemProvidedParams.end();
       bool bSystemProvidedParam2 = systemProvidedParams.find(spi2.strSemanticName) != systemProvidedParams.end();
 
+      bool bSystemDestinationParam1 = systemDestinationParams.find(spi1.strSemanticName) != systemDestinationParams.end();
+      bool bSystemDestinationParam2 = systemDestinationParams.find(spi2.strSemanticName) != systemDestinationParams.end();
+
+      //
+      // for some crazy reason in some cases I get a slot assigned to SV_Position, in others I do not
+      // which breaks my sort assumtions and makes stages define parameters in different order
+      // (SV_Position vs SV_ClipDistance0, see test "testUsdImagingDXBasicDrawing_rvt_window_3d_cam_lights_flat")
+      if (bSystemProvidedParam1 || bSystemDestinationParam1)
+         bAssignedSlot1 = false; // I hope this is enough to bring things to normal
+
+      if (bSystemProvidedParam2 || bSystemDestinationParam2)
+         bAssignedSlot2 = false; // I hope this is enough to bring things to normal
+
       //
       // The most important thing I want to do, is move system provided params at the end of the list 
       // to make sure I minimize the chance for the DX stages mismatch error which may appear if we 
@@ -584,7 +712,22 @@ struct less_than_spi
                if (bAssignedSlot2)
                   return false; // the param that has a slot assigned has priority
                else
-                  return spi1.strSemanticName < spi2.strSemanticName; // this is very unlikely, but... provide max stability
+               {
+                  if (bSystemDestinationParam1)
+                  {
+                     if (bSystemDestinationParam2)
+                        return spi1.strSemanticName < spi2.strSemanticName; // this is very unlikely, but... provide max stability
+                     else
+                        return false; // params not needed by us but by the system have lowest priority
+                  }
+                  else
+                  {
+                     if (bSystemDestinationParam2)
+                        return true; // params not needed by us but by the system have lowest priority
+                     else
+                        return spi1.strSemanticName < spi2.strSemanticName; // this is very unlikely, but... provide max stability
+                  }
+               }
             }
          }
       }
@@ -624,6 +767,7 @@ HgiDXShaderGenerator::_ProcessStageInOut(const Hgi* pHgi,
       }
    }
 
+   //const std::string strSizeIgnore = "HD_NUM_PRIMITIVE_VERTS";
 
    for (const HgiShaderFunctionParamDesc& pd : params)
    {
@@ -658,18 +802,50 @@ HgiDXShaderGenerator::_ProcessStageInOut(const Hgi* pHgi,
 
       if (bAddAsParam)
       {
+         std::string strVarType;
          HgiDXShaderGenerator::_GetSemanticName(bIn,
                                                 stageDesc.shaderStage,
                                                 pd.nameInShader,
+                                                pd.type,
                                                 strSemanticName,
                                                 strPipelineInputSemanticName,
+                                                strVarType,
                                                 nSemanticPipelineIdx);
 
          DXShaderInfo::StageParamInfo spi;
          spi.strSemanticName = strSemanticName;
          spi.strSemanticPipelineName = strPipelineInputSemanticName;
          spi.nSemanticPipelineIndex = nSemanticPipelineIdx;
-         spi.strShaderDataType = pd.type;
+
+         //
+         // I have a problem with the fact that sometimes, some in/out variables are multi-dimensional, but
+         // for the geometry "gs" stage, they should all be multi-dimensional only inside the processing scope and not 
+         // in the stage_in, stage_out declarations.
+         // Before my last changes I would always ignore the provided "size" information 
+         // and automatically dimension the gs stage variables to have the "proper" dimension 
+         // based on the gs type (line, triangle, ...).
+         // 
+         // Now, I could use the provided size, but that is incorrect for the STAE_IN/ STAGE_OUT, when it comes from 
+         // the GS stage as "HD_NUM_PRIMITIVE_VERTS", so I could simply ignore all sizes equal to "HD_NUM_PRIMITIVE_VERTS"
+         //
+         // This leaves me vulnerable to a few scenarios: 
+         //    - HD_NUM_PRIMITIVE_VERTS changes name and again I'll write bad shaders
+         //    - HD_NUM_PRIMITIVE_VERTS comes as a valid size for a different stage than gs and I'll incorrectly ignore it
+         // 
+         // Probably it would be best if we could safely differentiate between size of gs input vs real size of some 
+         // really multi-dimensional things like the "HD_HAS_numClipPlanes" for the "renderPassState.clipPlanes"
+         // Still I'll move forward with this approach for now, as it is the cheapest way forward.
+
+         //
+         // The other case when I observed a need for size was for the clip planes distances definition
+         // which I just decided to declare as a float 4, and lock it at max 4 values from HgiDXCapabilities
+         // so, now, this means I no longer have a known use case for a valid "size"
+         // so, rather than complicating the code to exclude with the scalpel all exceptiosn = all known cases
+         // I will revert to always ignoring the input size
+         //spi.strArrSize = strSizeIgnore == pd.arraySize ? "" : pd.arraySize; // we'd need to xcplude the clip planes case also
+         spi.strArrSize = "";
+
+         spi.strShaderDataType = strVarType;
          spi.strShaderDataName = pd.nameInShader;
          spi.nSuggestedBindingIdx = pd.location;
          spi.nOriginalPosInList = nOriginalPos++;
@@ -693,11 +869,14 @@ HgiDXShaderGenerator::_ProcessStageInOut(const Hgi* pHgi,
       }
       semanticsSet.insert(pd.instanceName);
 
+      std::string strVarType;
       HgiDXShaderGenerator::_GetSemanticName(bIn, 
                                              stageDesc.shaderStage, 
                                              pd.instanceName, 
+                                             pd.blockName,
                                              strSemanticName, 
                                              strPipelineInputSemanticName, 
+                                             strVarType,
                                              nSemanticPipelineIdx);
 
       DXShaderInfo::StageParamInfo spi;
@@ -705,7 +884,7 @@ HgiDXShaderGenerator::_ProcessStageInOut(const Hgi* pHgi,
       spi.strSemanticName = strSemanticName;
       spi.strSemanticPipelineName = strPipelineInputSemanticName;
       spi.nSemanticPipelineIndex = nSemanticPipelineIdx;
-      spi.strShaderDataType = pd.blockName;
+      spi.strShaderDataType = strVarType;
       spi.strShaderDataName = pd.instanceName;
       spi.nSuggestedBindingIdx = UINT_MAX;
       spi.nOriginalPosInList = nOriginalPos++;
@@ -881,6 +1060,15 @@ HgiDXShaderGenerator::_CleanupGeneratedCode(std::ostream& ss, std::string& shade
       };
 
       //
+      // Cleanup any definition of PI - decided to add it to the main defines area
+      // and now we need to remove it if it appears all over the code
+      // e.g.
+      //     const float PI = 3.1415;
+      std::regex strDefine(R"(.*float PI.*)");
+      _CleanupText(shaderCode, strDefine, strEmpty);
+
+
+      //
       // Replace mat4(1) with MAT4Init(1)
       // This is now done in translation from glslfx -> hlslfx
       //std::regex strMat4Ctor(R"(mat4\(1\))");
@@ -1049,8 +1237,10 @@ HgiDXShaderGenerator::_WriteScopeStart_ForwardDeclarations(std::ostream& ss)
       // whatever we want to generate...
       ss << "// Declare DirectX callbacks:\n";
       ss << "#define OutStream " << _GetGeomShaderOutVarType() << "\n";
-      ss << "void EmitVertex(inout OutStream ts); \n";
-      ss << "void EndPrimitive(inout OutStream ts);\n\n";
+      
+      // These are functions inside a struct, they do not need to be pre-declared
+      //ss << "void EmitVertex(inout OutStream ts); \n";
+      //ss << "void EndPrimitive(inout OutStream ts);\n\n";
    }
 }
 
@@ -1071,7 +1261,12 @@ HgiDXShaderGenerator::_WriteScopeStart_DeclareInput(std::ostream& ss)
       //
       // Redeclare all input without semantics.
       for (const DXShaderInfo::StageParamInfo& spi : _sdi.stageIn)
-         ss << "   " << spi.strShaderDataType << " " << spi.strShaderDataName << "[" << nInValues << "];\n";
+      {
+         if (!spi.strArrSize.empty())
+            ss << "   " << spi.strShaderDataType << " " << spi.strShaderDataName << "[" << nInValues << "][" << spi.strArrSize <<"];\n";
+         else
+            ss << "   " << spi.strShaderDataType << " " << spi.strShaderDataName << "[" << nInValues << "];\n";
+      }
 
       //
       // And one hard-coded thing... so far only for geometry stage
@@ -1082,7 +1277,12 @@ HgiDXShaderGenerator::_WriteScopeStart_DeclareInput(std::ostream& ss)
       //
       // Redeclare all input without semantics.
       for (const DXShaderInfo::StageParamInfo& spi : _sdi.stageIn)
-         ss << "   " << spi.strShaderDataType << " " << spi.strShaderDataName << ";\n";
+      {
+         if (spi.strArrSize.empty())
+            ss << "   " << spi.strShaderDataType << " " << spi.strShaderDataName << ";\n";
+         else
+            ss << "   " << spi.strShaderDataType << " " << spi.strShaderDataName << "[" << spi.strArrSize << "];\n";
+      }
       ss << "\n";
    }
 }
@@ -1102,7 +1302,12 @@ HgiDXShaderGenerator::_WriteScopeStart_DeclareOutput(std::ostream& ss)
       //
       // Redeclare all output without semantics.
       for (const DXShaderInfo::StageParamInfo& spi : _sdi.stageOut)
-         ss << "   " << spi.strShaderDataType << " " << spi.strShaderDataName << ";\n";
+      {
+         if (spi.strArrSize.empty())
+            ss << "   " << spi.strShaderDataType << " " << spi.strShaderDataName << ";\n";
+         else
+            ss << "   " << spi.strShaderDataType << " " << spi.strShaderDataName << "[" << spi.strArrSize << "];\n";
+      }
       ss << "\n";
    }
 
@@ -1134,7 +1339,13 @@ HgiDXShaderGenerator::_WriteScopeEnd_ExtraMethods(std::ostream& ss)
       ss << "   STAGE_OUT OUT = (STAGE_OUT)0;\n";
       for (const DXShaderInfo::StageParamInfo& spi : _sdi.stageOut)
       {
-         ss << "   OUT." << spi.strShaderDataName << " = " << spi.strShaderDataName << ";\n";
+         if (spi.strArrSize.empty())
+            ss << "   OUT." << spi.strShaderDataName << " = " << spi.strShaderDataName << ";\n";
+         else
+         {
+            ss << "   for(int ii=0; ii<" << spi.strArrSize << "; ii++)\n";
+            ss << "      OUT." << spi.strShaderDataName << "[ii] = " << spi.strShaderDataName << "[ii];\n";
+         }
       }
       ss << "   ts.Append(OUT);\n";
       ss << "}\n\n";
@@ -1163,18 +1374,25 @@ HgiDXShaderGenerator::_WriteScopeEnd_StartMainFc(std::ostream& ss)
       std::string strInType = _GetGeomShaderInVarType();
       
       ss << "\n[maxvertexcount(" << nMaxPrimsOut << ")]\n";
-      ss << "void main(" << strInType << " STAGE_IN IN[" << nInValues << "], uint primitiveID : SV_PrimitiveID, inout OutStream ts) {\n";
+
+      // changed because of shader model 6 which complains about the main fc inside the hacky "scope"
+      ss << "void mainDX (";
+      ss << strInType << " STAGE_IN IN[" << nInValues << "], uint primitiveID : SV_PrimitiveID, inout OutStream ts) {\n";
    }
    else if (HgiShaderStageBits::HgiShaderStageCompute == stage)
    {
       ss << "\n[numthreads(" << _csWorkSizeX << ", " << _csWorkSizeY << ", " << _csWorkSizeZ << ")]\n";
-      ss << "void main (STAGE_IN IN) {\n";
+      ss << "void mainDX (STAGE_IN IN) {\n";
    }
    else
    {
       //
       // Write main fc that deals with setting scope, call and get result out.
-      ss << "\n" << "STAGE_OUT main (STAGE_IN IN) {\n";
+
+      if(_bNoStageOut)
+         ss << "\n" << "void mainDX (STAGE_IN IN) {\n";
+      else
+         ss << "\n" << "STAGE_OUT mainDX (STAGE_IN IN) {\n";
    }
 
    //
@@ -1198,7 +1416,15 @@ HgiDXShaderGenerator::_WriteScopeEnd_InitializeOutputVars(std::ostream& ss)
       //
       // Initialize output members with some default values to avoid dx error about uninitialized variables.
       for (const DXShaderInfo::StageParamInfo& spi : _sdi.stageOut)
-         ss << "   procScope." << spi.strShaderDataName << " = (" << spi.strShaderDataType << ")0;\n";
+      {
+         if (spi.strArrSize.empty())
+            ss << "   procScope." << spi.strShaderDataName << " = (" << spi.strShaderDataType << ")0;\n";
+         else
+         {
+            ss << "   for(int ii=0; ii<" << spi.strArrSize << "; ii++)\n";
+            ss << "      procScope." << spi.strShaderDataName << "[ii] = (" << spi.strShaderDataType << ")0;\n";
+         }
+      }
    }
 }
 
@@ -1215,7 +1441,17 @@ HgiDXShaderGenerator::_WriteScopeEnd_SetInputVars(std::ostream& ss)
       for (const DXShaderInfo::StageParamInfo& spi : _sdi.stageIn)
       {
          for (int idx = 0; idx < nInValues; idx++)
-            ss << "   procScope." << spi.strShaderDataName << "[" << idx << "] = IN[" << idx << "]." << spi.strShaderDataName << ";\n";
+         {
+            if (!spi.strArrSize.empty())
+            {
+               ss << "   {\n"; // I want to to avoid confusing the compiler with different iterators sharing the same scope
+               ss << "      for(int ii=0; ii<" << spi.strArrSize << "; ii++)\n";
+               ss << "         procScope." << spi.strShaderDataName << "[" << idx << "][ii] = IN[" << idx << "]." << spi.strShaderDataName << "[ii];\n";
+               ss << "   }\n";
+            }
+            else
+               ss << "   procScope." << spi.strShaderDataName << "[" << idx << "] = IN[" << idx << "]." << spi.strShaderDataName << ";\n";
+         }
       }
    }
    else
@@ -1223,7 +1459,15 @@ HgiDXShaderGenerator::_WriteScopeEnd_SetInputVars(std::ostream& ss)
       //
       // Set input members.
       for (const DXShaderInfo::StageParamInfo& spi : _sdi.stageIn)
-         ss << "   procScope." << spi.strShaderDataName << " = IN." << spi.strShaderDataName << ";\n";
+      {
+         if (spi.strArrSize.empty())
+            ss << "   procScope." << spi.strShaderDataName << " = IN." << spi.strShaderDataName << ";\n";
+         else
+         {
+            ss << "   for(int kk=0; kk<" << spi.strArrSize << "; kk++)\n";
+            ss << "      procScope." << spi.strShaderDataName << "[kk] = IN." << spi.strShaderDataName << "[kk];\n";
+         }
+      }
    }
 }
 
@@ -1242,17 +1486,22 @@ HgiDXShaderGenerator::_WriteScopeEnd_GetOutputVars(std::ostream& ss)
 {
    const HgiShaderStage& stage = GetDescriptor().shaderStage;
    if ((HgiShaderStageBits::HgiShaderStageGeometry == stage) ||
-       (HgiShaderStageBits::HgiShaderStageCompute == stage))
-   {
+       (HgiShaderStageBits::HgiShaderStageCompute == stage)) {
       //
       // nothing to do here
    }
    else
    {
-      ss << "   STAGE_OUT OUT;\n";
-      for (const DXShaderInfo::StageParamInfo& spi : _sdi.stageOut)
-      {
-         ss << "   OUT." << spi.strShaderDataName << " = procScope." << spi.strShaderDataName << ";\n";
+      if (!_bNoStageOut) {
+         ss << "   STAGE_OUT OUT;\n";
+         for (const DXShaderInfo::StageParamInfo& spi : _sdi.stageOut) {
+            if (spi.strArrSize.empty())
+               ss << "   OUT." << spi.strShaderDataName << " = procScope." << spi.strShaderDataName << ";\n";
+            else {
+               ss << "   for(int jj=0; jj<" << spi.strArrSize << "; jj++)\n";
+               ss << "      OUT." << spi.strShaderDataName << "[jj] = procScope." << spi.strShaderDataName << "[jj];\n";
+            }
+         }
       }
    }
 }
@@ -1268,7 +1517,9 @@ HgiDXShaderGenerator::_WriteScopeEnd_Finish(std::ostream& ss)
    }
    else
    {
-      ss << "   return OUT;\n";
+      if (!_bNoStageOut) 
+         ss << "   return OUT;\n";
+
       ss << "}\n\n";
    }
 }
@@ -1352,7 +1603,10 @@ HgiDXShaderGenerator::_GetMacroBlob()
       "#define hd_ivec3_get\n"
       "#define hd_vec3_get\n"
       "#define hd_dvec3_get\n"
-      "#define hd_int_get\n"
+      "int hd_int_get(int v)          { return v; }\n"
+      "int hd_int_get(ivec2 v)        { return v.x; }\n"
+      "int hd_int_get(ivec3 v)        { return v.x; }\n"
+      "int hd_int_get(ivec4 v)        { return v.x; }\n"
       // 
       // helper functions for 410 specification
       // applying a swizzle operator on int and float is not allowed in 410.
@@ -1374,7 +1628,25 @@ HgiDXShaderGenerator::_GetMacroBlob()
       "#define dFdx(x) ddx(x)\n"
       "#define dFdy(x) -ddy(x)\n" // this I hope will deal with a difference in behavior between dx and gl (probably caused by inverted screen y)
                                   // TODO: test this on my classic (Atrium house) case, by reverting changes in mesh.hlslfx, "vec3 ComputeScreenSpaceNeye()"
-      
+      "#define bitfieldReverse reversebits\n"
+      "#define intBitsToFloat asfloat\n"
+
+      // I am running into some errors with Pi definitions.
+      // The situation was that PI was defined twice:
+      // simpleLighting -> static const float PI = 3.1415;
+      // previewSurface.glslfx -> #define PI 3.1415
+      // which when mixed in the same file results in crezy directX compile errors
+      "#define PI 3.1415\n"
+
+      // Seems some of our shaders use some atomic operations that are not available in hlsl 
+      // until shader model 6.6 and even there they look very differently
+      // So, for the moment I will define the atomics to regular operations and hope for the best
+      // TODO: this needs to be better understood and fixed
+      "#define ATOMIC_ADD(x, y) (x += y)\n"
+      "#define ATOMIC_EXCHANGE(x, y) (x = y)\n"
+      "#define ATOMIC_LOAD(x) x\n"
+      "#define atomic_int int\n"
+
       // Moved this in codegen.cpp for all backends                            
       // but unfortunately I am cutting out their entire definition set due to too many things that 
       // do more harm than good, so I have to redefine it here again anyway
@@ -1443,6 +1715,14 @@ HgiDXShaderGenerator::_GetMacroBlob()
       "}\n"
       "bool4 not(bool4 v1) {\n"
       "   return bool4(!v1.x, !v1.y, !v1.z, !v1.w);\n"
+      "}\n"
+      "float atan(float a, float b) { \n"
+      "   return atan(a/b);\n" 
+      "}\n"
+
+      // I could define mod -> fmod, but documentation says they have different behavior for negative values, so...
+      "float mod(float x, float y) {\n"
+      "   return x - y * floor(x/y);\n"
       "}\n"
       ;
 }

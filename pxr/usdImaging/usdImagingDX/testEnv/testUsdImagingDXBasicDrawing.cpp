@@ -52,10 +52,16 @@
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
+#include "pxr/imaging/hgiDX/hgi.h"
+
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <fstream>
+
+#include "renderdoc_app.h"
+
+RENDERDOC_API_1_5_0* rdoc_api = nullptr;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -78,6 +84,8 @@ public:
     virtual void MousePress(int button, int x, int y, int modKeys);
     virtual void MouseRelease(int button, int x, int y, int modKeys);
     virtual void MouseMove(int x, int y, int modKeys);
+
+    virtual HgiDX* GetHgi() override;
 
 private:
     UsdStageRefPtr _stage;
@@ -203,6 +211,20 @@ My_TestDXDrawing::InitTest()
     }
 }
 
+HgiDX* 
+My_TestDXDrawing::GetHgi()
+{
+   HgiDX* pRet = nullptr;
+   
+   if (nullptr != _engine)
+   {
+      Hgi* pHgi = _engine->GetHgi();
+      pRet = dynamic_cast<HgiDX*>(pHgi);
+   }
+
+   return pRet;
+}
+
 void
 My_TestDXDrawing::DrawTest(bool offscreen)
 {
@@ -319,7 +341,7 @@ My_TestDXDrawing::DrawTest(bool offscreen)
     if (framing.IsValid()) {
         _engine->SetRenderBufferSize(GfVec2i(width, height));
         _engine->SetFraming(framing);
-        _engine->SetOverrideWindowPolicy({true, CameraUtilFit});
+        _engine->SetOverrideWindowPolicy({ CameraUtilFit});
     } else {
         const GfVec4d viewport(0, 0, width, height);
         _engine->SetRenderViewport(viewport);
@@ -347,9 +369,14 @@ My_TestDXDrawing::DrawTest(bool offscreen)
         _engine->SetLightingState(_lightingContext);
     }
 
+    // no matter whether we draw on screen or not, we need to tell presenter
+    // that destination is DirectX not OpenGL
+    _engine->SetPresentationOutput(HgiTokens->DirectX, VtValue(static_cast<uint32_t>(0)));
     if (PresentDisabled()) {
         _engine->SetEnablePresentation(false);
     }
+
+
 
     params.clipPlanes = GetClipPlanes();
 
@@ -364,6 +391,15 @@ My_TestDXDrawing::DrawTest(bool offscreen)
         // Make sure we render to convergence.
         TfErrorMark mark;
         int convergenceIterations = 0;
+
+
+        if (nullptr != rdoc_api)
+        {
+           std::cout << "RenderDoc connected.";
+           rdoc_api->StartFrameCapture(NULL, NULL);
+        }
+        else
+           std::cout << "RenderDoc not found.";
 
         {
             TRACE_FUNCTION_SCOPE("test profile: renderTime");
@@ -382,6 +418,9 @@ My_TestDXDrawing::DrawTest(bool offscreen)
         }
 
         TF_VERIFY(mark.IsClean(), "Errors occurred while rendering!");
+
+        if (nullptr != rdoc_api)
+           rdoc_api->EndFrameCapture(NULL, NULL);
 
         std::cout << "Iterations to convergence: " << convergenceIterations << std::endl;
         std::cout << "itemsDrawn " << perfLog.GetCounter(HdTokens->itemsDrawn) << std::endl;
@@ -450,11 +489,24 @@ My_TestDXDrawing::MouseMove(int x, int y, int modKeys)
     _mousePos[1] = y;
 }
 
+
 void
 BasicTest(int argc, char *argv[])
 {
-    My_TestDXDrawing driver;
-    driver.RunTest(argc, argv);
+   if (nullptr == rdoc_api)
+   {
+      // If renderdoc is connected I want to warn it we are about to do something
+      // otherwise it waits until is sees something drawn on screen
+      if (HMODULE mod = GetModuleHandleA("renderdoc.dll"))
+      {
+         pRENDERDOC_GetAPI RENDERDOC_GetAPI = (pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
+         int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_5_0, (void**)&rdoc_api);
+         assert(ret == 1);
+      }
+   }
+
+   My_TestDXDrawing driver;
+   driver.RunTest(argc, argv);
 }
 
 int main(int argc, char *argv[])

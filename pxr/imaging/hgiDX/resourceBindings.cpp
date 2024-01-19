@@ -29,6 +29,7 @@
 #include "pxr/imaging/hgiDX/buffer.h"
 #include "pxr/imaging/hgiDX/capabilities.h"
 #include "pxr/imaging/hgiDX/device.h"
+#include "pxr/imaging/hgiDX/hgi.h"
 #include "pxr/imaging/hgiDX/resourceBindings.h"
 #include "pxr/imaging/hgiDX/sampler.h"
 #include "pxr/imaging/hgiDX/buffer.h"
@@ -65,12 +66,17 @@ HgiDXResourceBindings::GetDevice() const
 // Implemented this here because I am calling it 3 times and every time I need to execute the exact same code
 // (for now)
 void 
-HgiDXResourceBindings::BindRootParams(ID3D12GraphicsCommandList* pCmdList, 
+HgiDXResourceBindings::BindRootParams(HgiDX* pHgi,
                                       HgiDXShaderProgram* pShaderProgram, 
                                       const HgiBufferBindDescVector& bindBuffersDescs,
                                       bool bCompute)
 {
-   if ((nullptr != pCmdList) && (nullptr != pShaderProgram))
+   ID3D12GraphicsCommandList* pGraphicsCmdList = pHgi->GetPrimaryDevice()->GetCommandList(HgiDXDevice::eCommandType::kGraphics);
+   ID3D12GraphicsCommandList* pComputeCmdList = nullptr;
+   if (bCompute)
+      pComputeCmdList = pHgi->GetPrimaryDevice()->GetCommandList(HgiDXDevice::eCommandType::kCompute);
+
+   if ((nullptr != pShaderProgram) && (nullptr != pGraphicsCmdList) && (!bCompute || (nullptr != pComputeCmdList)))
    {
       for (const HgiBufferBindDesc& bd : bindBuffersDescs)
       {
@@ -94,7 +100,10 @@ HgiDXResourceBindings::BindRootParams(ID3D12GraphicsCommandList* pCmdList,
             if (nullptr != pDxBuff)
             {
                DXShaderInfo::RootParamInfo rpi;
-               bool bFound = pShaderProgram->GetInfo(nBindingIdx, rpi, false);
+               //
+               // Hard coded register space 0 for bow for buffers
+               // TODO: find a nicer way
+               bool bFound = pShaderProgram->GetInfo(nBindingIdx, 0, rpi, false);
 
                if (bFound)
                {
@@ -116,40 +125,36 @@ HgiDXResourceBindings::BindRootParams(ID3D12GraphicsCommandList* pCmdList,
 
                   if (rpi.bConst)
                   {
-                     pDxBuff->UpdateResourceState(pCmdList, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+                     pDxBuff->UpdateResourceState(pGraphicsCmdList, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
                      if (bCompute)
-                     {
-                        pCmdList->SetComputeRootConstantBufferView(rpi.nBindingIdx, pDxBuff->GetGPUVirtualAddress() + nOffset);
-                     }
+                        pComputeCmdList->SetComputeRootConstantBufferView(rpi.nBindingIdx, pDxBuff->GetGPUVirtualAddress() + nOffset);
                      else
-                     {
-                        pCmdList->SetGraphicsRootConstantBufferView(rpi.nBindingIdx, pDxBuff->GetGPUVirtualAddress() + nOffset);
-                     }
+                        pGraphicsCmdList->SetGraphicsRootConstantBufferView(rpi.nBindingIdx, pDxBuff->GetGPUVirtualAddress() + nOffset);
                   }
                   else if (rpi.bWritable)
                   {
                      if (bCompute)
                      {
-                        pDxBuff->UpdateResourceState(pCmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-                        pCmdList->SetComputeRootUnorderedAccessView(rpi.nBindingIdx, pDxBuff->GetGPUVirtualAddress() + nOffset);
+                        pDxBuff->UpdateResourceState(pGraphicsCmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                        pComputeCmdList->SetComputeRootUnorderedAccessView(rpi.nBindingIdx, pDxBuff->GetGPUVirtualAddress() + nOffset);
                      }
                      else
                      {
-                        pDxBuff->UpdateResourceState(pCmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-                        pCmdList->SetGraphicsRootUnorderedAccessView(rpi.nBindingIdx, pDxBuff->GetGPUVirtualAddress() + nOffset);
+                        pDxBuff->UpdateResourceState(pGraphicsCmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+                        pGraphicsCmdList->SetGraphicsRootUnorderedAccessView(rpi.nBindingIdx, pDxBuff->GetGPUVirtualAddress() + nOffset);
                      }
                   }
                   else
                   {
                      if (bCompute)
                      {
-                        pDxBuff->UpdateResourceState(pCmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-                        pCmdList->SetComputeRootShaderResourceView(rpi.nBindingIdx, pDxBuff->GetGPUVirtualAddress() + nOffset);
+                        pDxBuff->UpdateResourceState(pGraphicsCmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                        pComputeCmdList->SetComputeRootShaderResourceView(rpi.nBindingIdx, pDxBuff->GetGPUVirtualAddress() + nOffset);
                      }
                      else
                      {
-                        pDxBuff->UpdateResourceState(pCmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-                        pCmdList->SetGraphicsRootShaderResourceView(rpi.nBindingIdx, pDxBuff->GetGPUVirtualAddress() + nOffset);
+                        pDxBuff->UpdateResourceState(pGraphicsCmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+                        pGraphicsCmdList->SetGraphicsRootShaderResourceView(rpi.nBindingIdx, pDxBuff->GetGPUVirtualAddress() + nOffset);
                      }
                   }
                }
@@ -165,14 +170,136 @@ HgiDXResourceBindings::BindRootParams(ID3D12GraphicsCommandList* pCmdList,
       TF_WARN("Invalid comand list of shader program. Cannot bind resources.");
 }
 
+void 
+HgiDXResourceBindings::BindRootParams(HgiDX* pHgi,
+                                      HgiDXShaderProgram* pShaderProgram,
+                                      const HgiTextureBindDescVector& bindBuffersDescs,
+                                      bool bCompute)
+{
+   //
+   // temporarily stop binding textures, to see if this is what causes the crash
+   //return;
+
+   ID3D12GraphicsCommandList* pGraphicsCmdList = pHgi->GetPrimaryDevice()->GetCommandList(HgiDXDevice::eCommandType::kGraphics);
+   ID3D12GraphicsCommandList* pComputeCmdList = nullptr;
+   if (bCompute)
+      pComputeCmdList = pHgi->GetPrimaryDevice()->GetCommandList(HgiDXDevice::eCommandType::kCompute);
+
+   if ((nullptr != pShaderProgram) && (nullptr != pGraphicsCmdList) && (!bCompute || (nullptr != pComputeCmdList)))
+   {
+      int nTexturesToBind = bindBuffersDescs.size();
+      if (nTexturesToBind > 0)
+      {
+         ID3D12DescriptorHeap* pTxHeap = pHgi->GetPrimaryDevice()->GetCbvSrvUavDescriptorHeap();
+         ID3D12DescriptorHeap* pSamplersHeap = pHgi->GetPrimaryDevice()->GetSamplersDescriptorHeap();
+         ID3D12DescriptorHeap* descHeaps[] = { pTxHeap, pSamplersHeap };
+
+         if (bCompute)
+            pComputeCmdList->SetDescriptorHeaps(_countof(descHeaps), descHeaps);
+         else
+            pGraphicsCmdList->SetDescriptorHeaps(_countof(descHeaps), descHeaps);
+
+         for (int nTxIdx = 0; nTxIdx < nTexturesToBind; nTxIdx++)
+         {
+            const HgiTextureBindDesc& td = bindBuffersDescs[nTxIdx];
+
+            int nBindingIdx = td.bindingIndex;
+
+            int nTextures = td.textures.size();
+            int nSamplers = td.samplers.size();
+
+            //
+            // TODO: not ready to deal with multiple textures yet
+            // will handle simplest case for now
+            if (nTextures > 1)
+            {
+               TF_WARN("Multiple textures in one desc not handled yet.");
+            }
+
+            if (nTextures > 0)
+            {
+               HgiDXTexture* pDxTx = dynamic_cast<HgiDXTexture*>(td.textures[0].Get());
+               if (nullptr != pDxTx)
+               {
+                  DXShaderInfo::RootParamInfo rpi;
+                  //
+                  // Hard coded register space 1 for bow for buffers
+                  // TODO: find a nicer way
+                  bool bFound = pShaderProgram->GetInfo(nBindingIdx, 1, rpi, false);
+
+                  if (bFound)
+                  {
+                     if (bCompute)
+                        pDxTx->UpdateResourceState(pGraphicsCmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                     else
+                        pDxTx->UpdateResourceState(pGraphicsCmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+                     //
+                     // bind the texture
+                     if (rpi.bWritable)
+                     {
+                        D3D12_GPU_DESCRIPTOR_HANDLE gpuDesc = pDxTx->GetGPUDescHandle(nTxIdx, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
+
+                        if (bCompute)
+                           pComputeCmdList->SetComputeRootDescriptorTable(rpi.nBindingIdx, gpuDesc);
+                        else
+                           pGraphicsCmdList->SetGraphicsRootDescriptorTable(rpi.nBindingIdx, gpuDesc);
+                     }
+                     else //if (rpi.bConst) - I will only map textures to srv for now, I think CBV is not adequate for textures?! TODO: make sure
+                     {
+                        D3D12_GPU_DESCRIPTOR_HANDLE gpuDesc = pDxTx->GetGPUDescHandle(nTxIdx, D3D12_DESCRIPTOR_RANGE_TYPE_SRV);
+
+                        if (bCompute)
+                           pComputeCmdList->SetComputeRootDescriptorTable(rpi.nBindingIdx, gpuDesc);
+                        else
+                           pGraphicsCmdList->SetGraphicsRootDescriptorTable(rpi.nBindingIdx, gpuDesc);
+                     }
+
+                     //
+                     // bind the sampler
+                     if (nSamplers > 0 && (rpi.nSamplerBindingIdx >= 0))
+                     {
+                        HgiDXSampler* pDxSamp = dynamic_cast<HgiDXSampler*>(td.samplers[0].Get());
+                        if (nullptr != pDxSamp)
+                        {
+                           D3D12_GPU_DESCRIPTOR_HANDLE gpuDesc = pDxSamp->GetGPUDescHandle(nTxIdx);
+
+                           if (bCompute)
+                              pComputeCmdList->SetComputeRootDescriptorTable(rpi.nSamplerBindingIdx, gpuDesc);
+                           else
+                              pGraphicsCmdList->SetGraphicsRootDescriptorTable(rpi.nSamplerBindingIdx, gpuDesc);
+                        }
+                        else
+                           TF_WARN("Trying to bind invalid sampler to shader resource.");
+                     }
+                     else
+                        TF_WARN("Invalid sampler information for texture. Cannot bind to pipeline.");
+                  }
+                  else
+                     TF_WARN("Failed to find texture by suggested binding index. Cannot assign to pipeline.");
+               }
+               else
+                  TF_WARN("Trying to bind invalid texture to shader resource.");
+            }
+         }
+      }
+   }
+   else
+      TF_WARN("Invalid comand list of shader program. Cannot bind resources.");
+}
 
 void 
-HgiDXResourceBindings::UnBindRootParams(ID3D12GraphicsCommandList* pCmdList,
+HgiDXResourceBindings::UnBindRootParams(HgiDX* pHgi,
                                         HgiDXShaderProgram* pShaderProgram,
                                         const HgiBufferBindDescVector& bindBuffersDescs,
                                         bool bCompute)
 {
-   if ((nullptr != pCmdList) && (nullptr != pShaderProgram))
+   ID3D12GraphicsCommandList* pGraphicsCmdList = pHgi->GetPrimaryDevice()->GetCommandList(HgiDXDevice::eCommandType::kGraphics);
+   ID3D12GraphicsCommandList* pComputeCmdList = nullptr;
+   if (bCompute)
+      pComputeCmdList = pHgi->GetPrimaryDevice()->GetCommandList(HgiDXDevice::eCommandType::kCompute);
+
+   if ((nullptr != pShaderProgram) && (nullptr != pGraphicsCmdList) && (!bCompute || (nullptr != pComputeCmdList)))
    {
       for (const HgiBufferBindDesc& bd : bindBuffersDescs)
       {
@@ -181,32 +308,34 @@ HgiDXResourceBindings::UnBindRootParams(ID3D12GraphicsCommandList* pCmdList,
          const HgiBufferHandle& bh = bd.buffers[0];
          HgiDXBuffer* pDxBuff = dynamic_cast<HgiDXBuffer*>(bh.Get());
          if (nullptr != pDxBuff)
-            pDxBuff->UpdateResourceState(pCmdList, D3D12_RESOURCE_STATE_COPY_DEST);
+            pDxBuff->UpdateResourceState(pGraphicsCmdList, D3D12_RESOURCE_STATE_COPY_DEST);
 
          DXShaderInfo::RootParamInfo rpi;
-         bool bFound = pShaderProgram->GetInfo(nBindingIdx, rpi, false);
+         //
+         // TODO: deal better with hard-coded 0
+         bool bFound = pShaderProgram->GetInfo(nBindingIdx, 0, rpi, false);
          if (bFound)
          {
             if (rpi.bConst)
             {
                if (bCompute)
-                  pCmdList->SetComputeRootConstantBufferView(rpi.nBindingIdx, 0);
+                  pComputeCmdList->SetComputeRootConstantBufferView(rpi.nBindingIdx, 0);
                else
-                  pCmdList->SetGraphicsRootConstantBufferView(rpi.nBindingIdx, 0);
+                  pGraphicsCmdList->SetGraphicsRootConstantBufferView(rpi.nBindingIdx, 0);
             }
             else if (rpi.bWritable)
             {
                if (bCompute)
-                  pCmdList->SetComputeRootUnorderedAccessView(rpi.nBindingIdx, 0);
+                  pComputeCmdList->SetComputeRootUnorderedAccessView(rpi.nBindingIdx, 0);
                else
-                  pCmdList->SetGraphicsRootUnorderedAccessView(rpi.nBindingIdx, 0);
+                  pGraphicsCmdList->SetGraphicsRootUnorderedAccessView(rpi.nBindingIdx, 0);
             }
             else
             {
                if (bCompute)
-                  pCmdList->SetComputeRootShaderResourceView(rpi.nBindingIdx, 0);
+                  pComputeCmdList->SetComputeRootShaderResourceView(rpi.nBindingIdx, 0);
                else
-                  pCmdList->SetGraphicsRootShaderResourceView(rpi.nBindingIdx, 0);
+                  pGraphicsCmdList->SetGraphicsRootShaderResourceView(rpi.nBindingIdx, 0);
             }
          }
          else
@@ -216,5 +345,17 @@ HgiDXResourceBindings::UnBindRootParams(ID3D12GraphicsCommandList* pCmdList,
    else
       TF_WARN("Invalid comand list of shader program. Cannot bind resources.");
 }
+
+void 
+HgiDXResourceBindings::UnBindRootParams(HgiDX* pHgi,
+                                        HgiDXShaderProgram* pShaderProgram,
+                                        const HgiTextureBindDescVector& bindBuffersDescs,
+                                        bool bCompute)
+{
+   //
+   // TODO
+   TF_WARN("Not implemented yet.");
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

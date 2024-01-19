@@ -48,6 +48,8 @@ public:
     HGIDX_API
     uint64_t GetRawResource() const override;
 
+    D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescHandle(int nIdx) const;
+
 protected:
     friend class HgiDX;
 
@@ -59,7 +61,19 @@ private:
     HgiDXSampler & operator=(const HgiDXSampler&) = delete;
     HgiDXSampler(const HgiDXSampler&) = delete;
 
+    static D3D12_FILTER _GetFilter(
+       const HgiSamplerFilter& min, 
+       const HgiSamplerFilter& mag, 
+       const HgiMipFilter& mipFilter,
+       bool bEnableComparison);
+    static D3D12_TEXTURE_ADDRESS_MODE _GetAddressMode(const HgiSamplerAddressMode& hgiAddr);
+    static void _GetBorderColor(const HgiBorderColor& bc, float color[4]);
+    static D3D12_COMPARISON_FUNC _GetCompareFc(bool bEnableCompare, const HgiCompareFunction& fc);
+
+private:
     HgiDXDevice* _device;
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> _dxSampler;
 };
 
 

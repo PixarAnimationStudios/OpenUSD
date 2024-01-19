@@ -84,32 +84,32 @@ private:
 
 
 private:
-   HgiDXDevice* m_pDevice;
-   HgiDXTextureConverter* m_pTxConverter;
+   HgiDXDevice* _pDevice;
+   HgiDXTextureConverter* _pTxConverter;
 
-   DXGI_FORMAT m_RenderTargetBufferFormat = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-   DXGI_FORMAT m_DepthBufferFormat = DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT;
+   DXGI_FORMAT _RenderTargetBufferFormat = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+   DXGI_FORMAT _DepthBufferFormat = DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT;
 
-   PXR_INTERNAL_NS::HgiDXTexture* m_renderTargetTx = nullptr;
+   PXR_INTERNAL_NS::HgiDXTexture* _renderTargetTx = nullptr;
 
    static const UINT c_swapBufferCount = 2;
-   Microsoft::WRL::ComPtr<IDXGISwapChain3> m_swapChain;
-   Microsoft::WRL::ComPtr<ID3D12Resource> m_renderTargets[c_swapBufferCount];
-   D3D12_CPU_DESCRIPTOR_HANDLE m_rtvHandles[c_swapBufferCount];
-   Microsoft::WRL::ComPtr<ID3D12Resource> m_depthStencil;
+   Microsoft::WRL::ComPtr<IDXGISwapChain3> _swapChain;
+   Microsoft::WRL::ComPtr<ID3D12Resource> _renderTargets[c_swapBufferCount];
+   D3D12_CPU_DESCRIPTOR_HANDLE _rtvHandles[c_swapBufferCount];
+   Microsoft::WRL::ComPtr<ID3D12Resource> _depthStencil;
 
-   UINT64 m_fenceValues[c_swapBufferCount];
+   UINT64 _fenceValues[c_swapBufferCount];
    
-   Microsoft::WRL::ComPtr<ID3D12Fence> m_presentationFence;
-   Microsoft::WRL::Wrappers::Event m_presentationFenceEvent;
+   Microsoft::WRL::ComPtr<ID3D12Fence> _presentationFence;
+   Microsoft::WRL::Wrappers::Event _presentationFenceEvent;
 
-   UINT m_backBufferIndex = 0;
+   UINT _backBufferIndex = 0;
 
-   int m_nWidth;
-   int m_nHeight;
-   HWND m_hWnd = 0;
+   int _nWidth;
+   int _nHeight;
+   HWND _hWnd = 0;
 
-   HgiTextureHandle m_offscreenTxHandle;
+   HgiTextureHandle _offscreenTxHandle;
 };
 
 

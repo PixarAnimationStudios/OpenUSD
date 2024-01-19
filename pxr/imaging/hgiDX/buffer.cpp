@@ -25,6 +25,7 @@
 
 #include "pch.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/getenv.h"
 
 #include "pxr/imaging/hgiDX/buffer.h"
 #include "pxr/imaging/hgiDX/conversions.h"
@@ -32,6 +33,8 @@
 #include "pxr/imaging/hgiDX/hgi.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+static const bool bShadersModel6 = TfGetenvBool("HGI_DX_SHADERS_MODEL_6", false);
 
 namespace {
    //
@@ -65,7 +68,8 @@ HgiDXBuffer::HgiDXBuffer(  HgiDXDevice* device,
    // I'll setup all my buffers as pure GPU for now
    // and when a CPU copy operation is requested, I'll build a new intermediary buffer on the fly and deal with it
    D3D12_HEAP_TYPE ht = D3D12_HEAP_TYPE_DEFAULT;
-   _bufResState = D3D12_RESOURCE_STATE_COPY_DEST;
+   //_bufResState = D3D12_RESOURCE_STATE_COPY_DEST;
+   _bufResState = D3D12_RESOURCE_STATE_COMMON;
 
    CD3DX12_HEAP_PROPERTIES hpDef(ht);
 
@@ -309,6 +313,39 @@ HgiDXBuffer::UpdateData(HgiDXBuffer* pOtherGPUBuff, size_t dataSize, size_t sour
    }
    else
       TF_WARN("Cannot get valid command list. Failed to set buffer data.");
+}
+
+void
+HgiDXBuffer::FillBuffer(uint8_t value)
+{
+   // seems there's not straight-forward way to do this:
+   // I need to create a memory buffer compatible to mine, copy from one to the other
+   // the main issue I have with this approach is that I need to manage the life cycle of 
+   // the intermediary buffer which is not fun at all
+
+   //
+   // I'll use the "staging buffer" I already have for now, and see if that 
+   // conflicts with something...
+   _InitStagingBuffer();
+
+   // some speed / performance related crazyness below
+   int nSize4 = _descriptor.byteSize / 4;
+   uint8_t* pBuff = (uint8_t*)_pStagingBuffer;
+
+   // fill the first quarter by the usual way
+   for (int i = 0; i < nSize4; i++)
+      pBuff[i] = value;
+
+   // copy the first quarter to the second (very fast)
+   memcpy(&pBuff[nSize4], pBuff, nSize4);
+   // copy the first half to the second (very fast)
+   memcpy(&pBuff[2 * nSize4], pBuff, 2 * nSize4);
+
+   // in case size was not perfectly divisible by 4
+   for (int i = 4 * nSize4; i < _descriptor.byteSize; i++)
+      pBuff[i] = value;
+
+   UpdateData(_pStagingBuffer, _descriptor.byteSize, 0, 0);
 }
 
 void 

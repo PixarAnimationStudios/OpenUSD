@@ -64,7 +64,7 @@ public:
    HGIDX_API
    void* GetCPUStagingAddress();
 
-   ID3D12DescriptorHeap* GetGPUDescHeap() const;
+   D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescHandle(int nIdx, D3D12_DESCRIPTOR_RANGE_TYPE drt) const;
 
    /// Returns true if the provided ptr matches the address of staging buffer.
    HGIDX_API
@@ -79,6 +79,9 @@ public:
                               int mipLevel = -1);
 
    HGIDX_API
+   void UpdateData(const void* pData, size_t dataSize);
+
+   HGIDX_API
    void ReadbackData(GfVec3i sourceTexelOffset, 
                      uint32_t mipLevel, 
                      void* cpuDestinationBuffer, 
@@ -86,7 +89,13 @@ public:
                      size_t destinationBufferByteSize);
 
    HGIDX_API
-   struct ID3D12Resource* GetResource();
+   struct ID3D12Resource* GetResource() const;
+
+   HGIDX_API
+   DXGI_FORMAT GetResourceFormat() const;
+
+   HGIDX_API
+   D3D12_RESOURCE_STATES& GetResourceState();
 
    HGIDX_API
    D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView(UINT nTexIdx);
@@ -115,28 +124,44 @@ private:
    static D3D12_RESOURCE_FLAGS _GetTextureFlags(HgiTextureDesc const& desc);
    static D3D12_HEAP_TYPE _GetHeapType(HgiTextureDesc const& desc);
    static D3D12_HEAP_FLAGS _GetHeapFlags(HgiTextureDesc const& desc);
-   static D3D12_RESOURCE_STATES _GetResourceStates(HgiTextureDesc const& desc);
+   static D3D12_RESOURCE_STATES _GetInitialResourceStates(HgiTextureDesc const& desc);
    static void _GetDxResourceDesc(const HgiTextureDesc&, D3D12_RESOURCE_DESC&);
    void _InitReadbackBuffer();
-
+   void _InitIntermediaryBuffer();
+   void _GetSurfaceInfo(size_t width,
+                        size_t height,
+                        DXGI_FORMAT fmt,
+                        size_t* outNumBytes,
+                        size_t* outRowBytes,
+                        size_t* outNumRows);
+   size_t _BitsPerPixel(DXGI_FORMAT fmt);
 
 private:
    HgiDXTexture() = delete;
    HgiDXTexture& operator=(const HgiDXTexture&) = delete;
    HgiDXTexture(const HgiDXTexture&) = delete;
 
+
    std::wstring _strName;
-   bool _isTextureView;
    HgiDXDevice* _device;
 
-   Microsoft::WRL::ComPtr<ID3D12Resource> _dxTexture;
+   Microsoft::WRL::ComPtr<ID3D12Resource> _dxIntermediaryBuffer;
    Microsoft::WRL::ComPtr<ID3D12Resource> _readbackBuffer;
    CD3DX12_TEXTURE_COPY_LOCATION _copyDestLocation;
 
-   mutable Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> _descHeap;
+   // !! Do not ever use any of the values below directly, use the accessor instead !!
+   // TODO: maybe implement a safer, more intuitive approach to all of this texture vs texture view
+   Microsoft::WRL::ComPtr<ID3D12Resource> _dxTexture;
    D3D12_RESOURCE_STATES _txResState;
-   DXGI_FORMAT _txFormat;
+   DXGI_FORMAT _txFormat; 
 
+
+   bool _bIsTextureView;
+   //
+   // In case this is a texture view we need here the additional data as well.
+   // Probably it is best to store everything as it is 
+   // TODO: (or I could store them in a more convenient form... we'll see)
+   HgiTextureViewDesc _descTV;
 
 };
 

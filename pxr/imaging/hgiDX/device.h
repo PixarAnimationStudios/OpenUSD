@@ -86,10 +86,22 @@ public:
    UINT GetRTVDescriptorHeapIncrementSize();
    
    HGIDX_API
+   struct ID3D12DescriptorHeap* GetDSVDescriptorHeap();
+
+   HGIDX_API
    UINT GetDSVDescriptorHeapIncrementSize();
 
    HGIDX_API
-   struct ID3D12DescriptorHeap* GetDSVDescriptorHeap();
+   struct ID3D12DescriptorHeap* GetCbvSrvUavDescriptorHeap();
+
+   HGIDX_API
+   UINT GetCbvSrvUavDescriptorHeapIncrementSize();
+
+   HGIDX_API
+   struct ID3D12DescriptorHeap* GetSamplersDescriptorHeap();
+
+   HGIDX_API
+   UINT GetSamplersDescriptorHeapIncrementSize();
 
    HGIDX_API
    const DXGI_ADAPTER_DESC1& GetAdapterInfo();
@@ -100,11 +112,15 @@ public:
    HGIDX_API
    D3D12_CPU_DESCRIPTOR_HANDLE CreateDepthStencilView(ID3D12Resource* pRes, UINT nTexIdx);
 
+   HGIDX_API
+   D3D12_CPU_DESCRIPTOR_HANDLE CreateCbvSrvUavResourceView(ID3D12Resource* pRes, UINT nTexIdx);
+
 private:
    HgiDXDevice& operator=(const HgiDXDevice&) = delete;
    HgiDXDevice(const HgiDXDevice&) = delete;
 
    void _GetAdapter(IDXGIAdapter1** ppAdapter);
+   void _EnsureInitialized();
    void _InitCommandLists();
    void _WaitForCommandListToExecute(eCommandType type);
 
@@ -145,11 +161,18 @@ private:
    bool _bComputeCmdListClosed;
    bool _bCopyCmdListClosed;
 
+   bool _bInitialized;
+
    // Direct3D rendering objects.
    UINT _rtvDescriptorHeapIncrementSize;
    UINT _dsvDescriptorHeapIncrementSize;
+   UINT _cbvSrvUavDescriptorHeapIncrementSize;
+   UINT _samplersDescriptorHeapIncrementSize;
+
    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> _rtvDescriptorHeap;
    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> _dsvDescriptorHeap;
+   Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> _cbvSrvUavDescriptorHeap;
+   Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> _samplersDescriptorHeap;
 };
 
 

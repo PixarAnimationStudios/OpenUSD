@@ -200,7 +200,8 @@ vec3 getNormal(MAT4 transform)
 
 vec3 getNormal(MAT4 transform)
 {
-    return (transform * vec4(HdGet_normals(), 0)).xyz;
+    vec4 norm = transform * vec4(HdGet_normals(), 0);
+    return norm.xyz;
 }
 
 --- --------------------------------------------------------------------------
@@ -218,7 +219,8 @@ vec3 getNormal(MAT4 transform, int index)
 
 vec3 getNormal(MAT4 transform, int index)
 {
-    return (transform * vec4(HdGet_normals(index), 0)).xyz;
+    vec4 norm = transform * vec4(HdGet_normals(index), 0);
+    return norm.xyz;
 }
 
 --- --------------------------------------------------------------------------
@@ -308,7 +310,7 @@ void main(void)
 --- --------------------------------------------------------------------------
 -- glsl Curves.TessControl.Linear.Patch
 
-void determineLODSettings(CurveData vertexData);
+FORWARD_DECL(void determineLODSettings(CurveData vertexData));
 void main(void)
 {
     if (gl_InvocationID == 0) {

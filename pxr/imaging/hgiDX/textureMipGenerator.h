@@ -26,31 +26,53 @@
 #pragma once
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgi/memoryHelper.h"
 #include "pxr/imaging/hgiDX/api.h"
-
-#include <string>
+#include "pxr/imaging/hgi/handle.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// <summary>
-/// \class HgiMemoryHelper
-/// This is meant to help HDStorm calculate memory layouts
-/// in a way that is Hgi dependent / compatible, 
-/// e.g. account for some of the differences between OpenGL, DirectX
-/// </summary>
-class HgiDXMemoryHelper : public HgiMemoryHelper
+class HgiDXBuffer;
+class HgiShaderFunction;
+struct HgiShaderFunctionDesc;
+class HgiShaderProgram;
+class HgiDXTexture;
+
+
+/// \class HgiDXComputePipeline
+///
+/// DirectX implementation of functionality 
+/// that generates mips (other than 0).
+///
+class HgiDXTextureMipGenerator final
 {
+private:
+    HGIDX_API
+    HgiDXTextureMipGenerator(class HgiDX* pHgi);
+   
 public:
-   HGIDX_API 
-   HgiDXMemoryHelper();
-   HGIDX_API 
-   virtual ~HgiDXMemoryHelper();
+    
+    HGIDX_API
+    ~HgiDXTextureMipGenerator();
 
-   HGIDX_API 
-   virtual void GetMemorySpec(const std::vector<HdBufferSpec>& structSpec, TfToken const& role, StructMemorySpec& sms) override;
+    void generate(HgiDXTexture* pTx);
+    
+private:
+   
+    void _initialize(DXGI_FORMAT);
+    bool _buildPSO();
 
-   static size_t RoundUp(size_t neededSize);
+    HgiDXTextureMipGenerator& operator=(const HgiDXTextureMipGenerator&) = delete;
+    HgiDXTextureMipGenerator(const HgiDXTextureMipGenerator&) = delete;
+
+
+private:
+    HgiDX* _pHgi = nullptr;
+    // Root signature
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> _rootSignature;
+
+    // Pipeline state object.
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> _pipelineState;
 };
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

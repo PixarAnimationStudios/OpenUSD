@@ -260,7 +260,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
     if (nullptr != pMemHelper)
     {
        StructMemorySpec sms;
-       pMemHelper->GetMemorySpec(bufferSpecs, sms);
+       pMemHelper->GetMemorySpec(bufferSpecs, role, sms);
 
        _elementStride = _stride = sms.structStride;
 

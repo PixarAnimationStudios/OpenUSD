@@ -45,8 +45,6 @@ struct ShadowMatrix {
     float padding1;
 };
 
-FORWARD_DECL(mat4 GetWorldToViewMatrix());
-FORWARD_DECL(mat4 GetWorldToViewInverseMatrix());
 
 ShadowMatrix GetShadow(int shadowIndex) {
     ShadowMatrix shadowMat;
@@ -166,8 +164,6 @@ bool GetUseColorMaterialDiffuse() {
     return HdGet_useColorMaterialDiffuse();
 }
 
-FORWARD_DECL(mat4 GetWorldToViewMatrix());
-FORWARD_DECL(mat4 GetWorldToViewInverseMatrix());
 
 LightSource GetLightSource(int lightIndex) {
     LightSource light;
@@ -338,7 +334,7 @@ projectSphericalToLatLong(vec3 sample3D)
 {
     // project spherical coord onto latitude-longitude map with
     // latitude: +y == pi/2 and longitude: +z == 0, +x == pi/2
-    const float PI = 3.1415;
+
     vec2 coord = vec2((atan(sample3D.z/ sample3D.x) + 0.5 * PI) / (2.0 * PI),
                       acos(sample3D.y) / PI);
     return coord;
@@ -376,7 +372,7 @@ evaluateIndirectLight(vec3 Neye, vec3 Reye, float NdotE, float EdotH,
 
     // Specular Component 
     const float MAX_REFLECTION_LOD = 
-        textureQueryLevels(HdGetSampler_domeLightPrefilter());
+        textureQueryLevels_domeLightPrefilter();
     const float roughness = props.roughness;
     const float lod = roughness * MAX_REFLECTION_LOD;
     vec3 Rdir = normalize(mul(transformationMatrix, vec4(Reye,0.0)).xyz);
@@ -484,8 +480,6 @@ integrateLightsConstant(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 // lighting functions
 // ---------------------------------------------------------------------------
 
-FORWARD_DECL(LightingContribution integrateLights(vec4 Peye, vec3 Neye, 
-    LightingInterfaceProperties props));
 
 vec4
 simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint,

@@ -25,6 +25,7 @@
 
 #include "pch.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/getenv.h"
 
 #include "pxr/imaging/hgiDX/computePipeline.h"
 #include "pxr/imaging/hgiDX/device.h"
@@ -32,6 +33,9 @@
 #include "pxr/imaging/hgiDX/shaderProgram.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+static const bool dxForceWarp = TfGetenvBool("HGI_DX_FORCE_WARP", false);
+static const bool bShadersModel6 = TfGetenvBool("HGI_DX_SHADERS_MODEL_6", false);
 
 HgiDXComputePipeline::HgiDXComputePipeline(HgiDXDevice* device, HgiComputePipelineDesc const& desc)
     : HgiComputePipeline(desc)
@@ -60,7 +64,9 @@ HgiDXComputePipeline::HgiDXComputePipeline(HgiDXDevice* device, HgiComputePipeli
 
    CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
    std::vector<CD3DX12_ROOT_PARAMETER1> rootParams = pShaderProgram->GetRootParameters();
-   rootSignatureDescription.Init_1_1((int)rootParams.size(), rootParams.data(), 0, nullptr, rootSignatureFlags);
+   std::vector<CD3DX12_STATIC_SAMPLER_DESC> staticSamplers = pShaderProgram->GetStaticSamplersDescs();
+
+   rootSignatureDescription.Init_1_1((int)rootParams.size(), rootParams.data(), staticSamplers.size(), staticSamplers.data(), rootSignatureFlags);
 
    // Serialize the root signature.
    ComPtr<ID3DBlob> rootSignatureBlob;
@@ -91,8 +97,16 @@ HgiDXComputePipeline::HgiDXComputePipeline(HgiDXDevice* device, HgiComputePipeli
          if (pdfsfc->GetDescriptor().shaderStage != HgiShaderStageCompute)
             TF_WARN("Unexpected shader function type for compute pipeline.");
 
-         ID3DBlob* pBlob = pdfsfc->GetShaderBlob();
-         pipelineDesc.CS = CD3DX12_SHADER_BYTECODE(pBlob);
+         if (bShadersModel6) {
+            IDxcBlob* pBlob = (IDxcBlob*)pdfsfc->GetShaderBlob();
+            pipelineDesc.CS.BytecodeLength = pBlob->GetBufferSize();
+            pipelineDesc.CS.pShaderBytecode = pBlob->GetBufferPointer();
+         }
+         else {
+            ID3DBlob* pBlob = (ID3DBlob*)pdfsfc->GetShaderBlob();
+            pipelineDesc.CS.BytecodeLength = pBlob->GetBufferSize();
+            pipelineDesc.CS.pShaderBytecode = pBlob->GetBufferPointer();
+         }
       }
    }
    else
@@ -102,7 +116,10 @@ HgiDXComputePipeline::HgiDXComputePipeline(HgiDXDevice* device, HgiComputePipeli
    // TODO: what else could we / should we set for this PSO?
    //pipelineDesc.NodeMask
    //pipelineDesc.CachedPSO
-   //pipelineDesc.Flags
+
+   pipelineDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+   if (dxForceWarp)
+      pipelineDesc.Flags = D3D12_PIPELINE_STATE_FLAG_TOOL_DEBUG;
 
    hr = device->GetDevice()->CreateComputePipelineState(&pipelineDesc, IID_PPV_ARGS(&_pipelineState));
    CheckResult(hr, "Failed to create pipeline state object");

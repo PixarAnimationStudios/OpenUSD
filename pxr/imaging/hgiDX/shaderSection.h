@@ -81,10 +81,11 @@ public:
    {
       std::string Type;
       std::string Name;
+      std::string Size;
       std::string Semantic;
    };
 
-   void AddParamInfo(const std::string& type, const std::string& name, const std::string& semantic);
+   void AddParamInfo(const std::string& type, const std::string& name, const std::string& size, const std::string& semantic);
 
    virtual bool VisitGlobalStructs(std::ostream& ss) override;
 
@@ -215,7 +216,8 @@ class HgiDXTextureShaderSection final : public HgiDXShaderSection
 public:
    HGIDX_API
    explicit HgiDXTextureShaderSection( const std::string& identifier,
-                                       const uint32_t layoutIndex,
+                                       const uint32_t registerIndex,
+                                       const uint32_t spaceIndex,
                                        const uint32_t dimensions,
                                        const HgiFormat format,
                                        const HgiShaderTextureType textureType,
@@ -243,12 +245,34 @@ private:
    void _WriteSamplerType(std::ostream& ss) const;
    void _WriteSampledDataType(std::ostream& ss) const;
 
+
+   const uint32_t _registerIdx;
+   const uint32_t _spaceIdx;
    const uint32_t _dimensions;
    const HgiFormat _format;
    const HgiShaderTextureType _textureType;
    const uint32_t _arraySize;
-   const bool _writable;
+   const bool _bWritable;
    static const std::string _storageQualifier;
+};
+
+class HgiDXSamplerShaderSection final : public HgiDXShaderSection
+{
+public:
+   HGIDX_API
+   explicit HgiDXSamplerShaderSection(const std::string& identifier,
+                                      const uint32_t registerIndex,
+                                      const uint32_t spaceIndex);
+
+   HGIDX_API
+   ~HgiDXSamplerShaderSection() override;
+
+   HGIDX_API
+   bool VisitGlobalMemberDeclarations(std::ostream& ss) override;
+
+private:
+   const uint32_t _registerIdx;
+   const uint32_t _spaceIdx;
 };
 
 /// \class HgiDXKeywordShaderSection

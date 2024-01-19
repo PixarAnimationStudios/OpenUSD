@@ -144,8 +144,14 @@ HgiDXBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 void
 HgiDXBlitCmds::FillBuffer(HgiBufferHandle const& buffer, uint8_t value)
 {
-   // TODO: impl
-   TF_WARN("FillBuffer,  Not implemented yet.");
+   HgiDXBuffer* pBuff = dynamic_cast<HgiDXBuffer*>(buffer.Get());
+
+   if (nullptr != pBuff)
+   {
+      pBuff->FillBuffer(value);
+   }
+   else
+      TF_WARN("Invalid buffer. Cannot execute fill buffer.");
 }
 
 bool 
@@ -175,7 +181,8 @@ HgiDXBlitCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
    // the barriers are per each resource
    // TODO: review
 
-   TF_STATUS("Info: Blit commands memory barrier -> Submit Graphics Cmd List.");
+   // This is to odistracting unless someone is actually trying to understand resources and barriers
+   //TF_STATUS("Info: Blit commands memory barrier -> Submit Graphics Cmd List.");
 
    //
    // I will do the copies on the graphics queue - the copy queue cannot transition resources...

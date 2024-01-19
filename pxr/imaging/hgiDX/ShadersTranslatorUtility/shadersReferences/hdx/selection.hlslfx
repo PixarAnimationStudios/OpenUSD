@@ -371,7 +371,6 @@ bool IsPointSelected(int pointId)
 // Helper functions to determine if the element (face) is selected for either
 // a given selection mode, or any of the modes.
 
-FORWARD_DECL(int GetElementID()); // code gen
 
 bool IsElementSelected(int mode)
 {
@@ -404,9 +403,6 @@ bool IsSelected()
 // Mixin for use in the geometry shader stage for wireframe rendering.
 // See comment below.
 
-FORWARD_DECL(int GetMaxNumSelectionHighlightModes());
-FORWARD_DECL(bool IsElementSelected(int mode));
-FORWARD_DECL(int GetElementID()); // code gen
 
 vec4 ComputeSelectionOffset()
 {
@@ -429,7 +425,7 @@ vec4 ComputeSelectionOffset()
     int numModes = GetMaxNumSelectionHighlightModes();
     for (int mode = 0; mode < numModes; ++mode) {
         if (IsElementSelected(mode)) {
-            offset += (1 << mode);
+            offset += (1U << mode);
         }
     }
 
@@ -458,9 +454,6 @@ vec4 ComputeSelectionOffset()
 // Mixin for use in the fragment shader stage to determine if the fragment is
 // selected.
 
-FORWARD_DECL(int GetElementID()); // generated via codeGen
-FORWARD_DECL(int GetPrimitiveEdgeId()); // defined in edgeId.hlslfx, or generated via codeGen
-FORWARD_DECL(int GetPointId()); // defined in pointId.hlslfx
 
 bool IsSelected()
 {
@@ -487,7 +480,6 @@ vec4 GetSelectionColor(int mode)
 }
 
 // fwd decl fn defined in edgeId.hlslfx or generated via codeGen
-FORWARD_DECL(float GetSelectedEdgeOpacity());
 
 vec4 GetSubprimSelectionColor(int mode, SubprimSelectionResult res)
 {
@@ -506,9 +498,6 @@ vec4 GetSubprimSelectionColor(int mode, SubprimSelectionResult res)
 #endif
 
 // Fwd declare necessary methods to determine the subprim id of a fragment.
-FORWARD_DECL(int GetElementID()); // generated via codeGen
-FORWARD_DECL(int GetPrimitiveEdgeId()); // defined in edgeId.hlslfx, or generated via codeGen
-FORWARD_DECL(int GetPointId()); // defined in pointId.hlslfx
 
 // Decodes the selection buffer to find out if the current fragment is from
 // a prim/instance/subprim that is selected, applies selection highlighting to

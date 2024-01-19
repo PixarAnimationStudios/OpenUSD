@@ -262,7 +262,6 @@ int getFaceIndex(int pParam)
     return pParam >> 2;
 }
 
-FORWARD_DECL(vec3 computeNormalForPrimIndex(int primIndex));
 
 void main()
 {

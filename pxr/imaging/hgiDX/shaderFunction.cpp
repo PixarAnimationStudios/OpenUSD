@@ -24,26 +24,20 @@
 //
 
 #include "pch.h"
+#include "pxr/imaging/hgiDX/shaderFunction.h"
+
 #include "pxr/imaging/hgiDX/device.h"
 #include "pxr/imaging/hgiDX/hgi.h"
-#include "pxr/imaging/hgiDX/shaderFunction.h"
 #include "pxr/imaging/hgiDX/shaderGenerator.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
 
-#include "D3dCompiler.h"
-
 #include <fstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-TF_DEFINE_ENV_SETTING(HGI_ENABLE_DX_DEBUG_SHADERS, 0, "Compile DirectX shaders with debug information (for release builds).");
-
-namespace {
-   const char szEntryPoint[] = "main";
-}
+static const bool bShadersModel6 = TfGetenvBool("HGI_DX_SHADERS_MODEL_6", false);
 
 HgiDXShaderFunction::HgiDXShaderFunction(HgiDXDevice* device,
                                          Hgi const* hgi,
@@ -55,52 +49,23 @@ HgiDXShaderFunction::HgiDXShaderFunction(HgiDXDevice* device,
 {
    const char* debugLbl = _descriptor.debugName.empty() ? "unknown" : _descriptor.debugName.c_str();
 
-#if defined(_DEBUG)
-   // Enable better shader debugging with the graphics debugging tools.
-   UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-   UINT compileFlags = 0;
-   int nDebug = TfGetenvInt("HGI_ENABLE_DX_DEBUG_SHADERS", 0);
-   if (nDebug > 0)
-      compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-   else
-   {
-      //
-      // D3DCOMPILE_AVOID_FLOW_CONTROL seems to be necessary in order to avoid a ton of errors
-      // about potentially uninitialized variables in code that looks perfectly fine
-      compileFlags = D3DCOMPILE_ALL_RESOURCES_BOUND
-                     //| D3DCOMPILE_AVOID_FLOW_CONTROL // this causes test "testUsdImagingDXBasicDrawing_allPrims_3d_cam_lights_pts" to crash !
-                     | D3DCOMPILE_OPTIMIZATION_LEVEL2
-                     //| D3DCOMPILE_WARNINGS_ARE_ERRORS
-                     ;
-      //compileFlags = D3DCOMPILE_SKIP_OPTIMIZATION;
-   }
-#endif
-
-   // Compile shader and capture errors
+   // get source code and target
    std::string strShaderCode;
-   std::string strCompileTarget;
-   _GetShaderCode(strShaderCode, strCompileTarget);
+   HgiDXShaderCompiler::CompileTarget ct;
+   _GetShaderCode(strShaderCode, ct);
 
-   ComPtr<ID3DBlob> errorMsgs;
-
-   HRESULT hr = D3DCompile(strShaderCode.c_str(), strShaderCode.length(),
-                           debugLbl,
-                           nullptr,
-                           D3D_COMPILE_STANDARD_FILE_INCLUDE,
-                           szEntryPoint, strCompileTarget.c_str(),
-                           compileFlags, 0,
-                           _shaderBlob.ReleaseAndGetAddressOf(),
-                           errorMsgs.ReleaseAndGetAddressOf());
-
-   if (FAILED(hr))
+   bool bDebugTest = false;
+   if (bDebugTest)
    {
-      char err[20000]; // In some rare cases we can get very large errors text...
-      void* pBuffPtr = errorMsgs->GetBufferPointer();
-      snprintf(err, 20000, "Error %08X   %s\n", hr, (char*)pBuffPtr);
-      OutputDebugString(err);
-      _errors = err;
+      std::ifstream fileStream("D:\\_work\\USD\\linetypes\\experiment.cpp");
+      std::stringstream buffer;
+      buffer << fileStream.rdbuf();
+      strShaderCode = buffer.str();
+
+      ct = HgiDXShaderCompiler::CompileTarget::kVS;
    }
+
+   _shaderBlob = HgiDXShaderCompiler::Compile(strShaderCode, ct, _errors);
 
    //
    // Not 100% sure about the code below, this is what they did for OpenGL and vulkan... 
@@ -113,15 +78,8 @@ HgiDXShaderFunction::HgiDXShaderFunction(HgiDXDevice* device,
    _descriptor.generatedShaderCodeOut = nullptr;
 }
 
-
 HgiDXShaderFunction::~HgiDXShaderFunction()
 {
-}
-
-const char*
-HgiDXShaderFunction::GetShaderFunctionName() const
-{
-   return szEntryPoint;
 }
 
 bool
@@ -140,19 +98,27 @@ size_t
 HgiDXShaderFunction::GetByteSizeOfResource() const
 {
    size_t ret = 0;
-   if(nullptr != _shaderBlob)
-      ret = _shaderBlob->GetBufferSize();
 
+   if (nullptr != _shaderBlob)
+   {
+      if (bShadersModel6) {
+         ret = ((IDxcBlob*)_shaderBlob.Get())->GetBufferSize();
+      }
+      else {
+         ret = ((ID3DBlob*)_shaderBlob.Get())->GetBufferSize();
+      }
+   }
+ 
    return ret;
 }
 
 uint64_t
 HgiDXShaderFunction::GetRawResource() const
 {
-   return (uint64_t)_shaderBlob.Get();
+   return (uint64_t)GetShaderBlob();
 }
 
-ID3DBlob*
+IUnknown*
 HgiDXShaderFunction::GetShaderBlob() const
 {
    return _shaderBlob.Get();
@@ -177,7 +143,7 @@ HgiDXShaderFunction::GetDevice() const
 }
 
 void 
-HgiDXShaderFunction::_GetShaderCode(std::string& strShaderCode, std::string& strShaderTarget)
+HgiDXShaderFunction::_GetShaderCode(std::string& strShaderCode, HgiDXShaderCompiler::CompileTarget& ct)
 {
    //
    // The code & paths below are something that work in my test environment (project) only
@@ -188,29 +154,29 @@ HgiDXShaderFunction::_GetShaderCode(std::string& strShaderCode, std::string& str
    switch (_descriptor.shaderStage) {
       case HgiShaderStageVertex:
          strShaderFile = "Shaders\\usd_dx_vs_1.txt"; 
-         strShaderTarget = "vs_5_1";
+         ct = HgiDXShaderCompiler::CompileTarget::kVS;
          break;
       case HgiShaderStageGeometry:
          strShaderFile = "Shaders\\usd_dx_gs_1.txt";
-         strShaderTarget = "gs_5_1";
+         ct = HgiDXShaderCompiler::CompileTarget::kGS;
          break;
       case HgiShaderStageFragment:
          strShaderFile = "Shaders\\usd_dx_ps_1.txt";
-         strShaderTarget = "ps_5_1";
+         ct = HgiDXShaderCompiler::CompileTarget::kPS;
          break;
       case HgiShaderStageCompute:
          strShaderFile = "Shaders\\usd_dx_cs_2.txt";
-         strShaderTarget = "cs_5_1";
+         ct = HgiDXShaderCompiler::CompileTarget::kCS;
          break;
       case HgiShaderStageTessellationEval:
-         strShaderTarget = "ds_5_1";
+         ct = HgiDXShaderCompiler::CompileTarget::kDS;
          break;
       case HgiShaderStageTessellationControl:
-         strShaderTarget = "hs_5_1";
+         ct = HgiDXShaderCompiler::CompileTarget::kHS;
          break;
       default:
          TF_CODING_ERROR("Compile target not implemented yet. What should we target in this case?");
-         strShaderTarget = "??";
+         ct = HgiDXShaderCompiler::CompileTarget::kUnknown;
          break;
    }
 

@@ -34,6 +34,7 @@ public:
       std::string strSemanticName;
       std::string strShaderDataName;
       std::string strShaderDataType;
+      std::string strArrSize;
 
       std::string strSemanticPipelineName;
       UINT nSemanticPipelineIndex;
@@ -51,12 +52,15 @@ public:
       std::string strTypeName;
       std::string strName;
       UINT nArrSize;
+      bool bTexture; // I can probably do better than this, but for now...
+      bool bSampler; // I do not have sampler information until late when I bind textures, so I need to define samplers dynamically
       bool bConst;
       bool bWritable;
       UINT nShaderRegister;
       UINT nRegisterSpace;
       UINT nSuggestedBindingIdx;
       UINT nBindingIdx;
+      UINT nSamplerBindingIdx;
    };
 
    struct StageDXInfo

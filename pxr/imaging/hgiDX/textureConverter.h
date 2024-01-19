@@ -41,8 +41,10 @@ struct TxConvertPipelineInfo
 {
    DXGI_FORMAT renderTargetFormat;
 
-   ComPtr<ID3DBlob> shaderBlob_VS;
-   ComPtr<ID3DBlob> shaderBlob_PS;
+   //ComPtr<ID3DBlob> shaderBlob_VS;
+   //ComPtr<ID3DBlob> shaderBlob_PS;
+   ComPtr<IUnknown> shaderBlob_VS;
+   ComPtr<IUnknown> shaderBlob_PS;
 
    std::vector<D3D12_INPUT_ELEMENT_DESC> inputDescs;
    std::vector<CD3DX12_ROOT_PARAMETER1> rootParams;
@@ -52,10 +54,11 @@ struct TxConvertPipelineInfo
 };
 
 
-/// \class HgiDXComputePipeline
+/// \class HgiDXTextureConverter
 ///
-/// DirectX implementation of HgiComputePipeline.
-///
+/// DirectX implementation of the functionality 
+/// that copies one texture to another and is capabale of changing the format also.
+/// The code is mostly similar in purpose to the one in hgiInterop/opengl.cpp
 class HgiDXTextureConverter final
 {
 private:
@@ -79,14 +82,14 @@ private:
     bool _buildPSO(TxConvertPipelineInfo* pInfo);
     void _initializeBuffers();
 
-    HgiDXTextureConverter & operator=(const HgiDXTextureConverter&) = delete;
+    HgiDXTextureConverter& operator=(const HgiDXTextureConverter&) = delete;
     HgiDXTextureConverter(const HgiDXTextureConverter&) = delete;
 
-    HgiDX* m_pHgi = nullptr;
+    HgiDX* _pHgi = nullptr;
 
-    std::unique_ptr<HgiDXBuffer> m_vertBuff;
-    std::unique_ptr<HgiDXBuffer> m_idxBuff;
-    std::map<DXGI_FORMAT, std::unique_ptr<TxConvertPipelineInfo>> m_pipelineByOutput;
+    std::unique_ptr<HgiDXBuffer> _vertBuff;
+    std::unique_ptr<HgiDXBuffer> _idxBuff;
+    std::map<DXGI_FORMAT, std::unique_ptr<TxConvertPipelineInfo>> _pipelineByOutput;
     
     friend class HgiDX;
 };

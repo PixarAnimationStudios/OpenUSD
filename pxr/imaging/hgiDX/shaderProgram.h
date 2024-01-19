@@ -73,7 +73,9 @@ public:
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> GetInputLayout(const std::vector<HgiVertexBufferDesc>& vbdv) const;
     std::vector<CD3DX12_ROOT_PARAMETER1> GetRootParameters() const;
-    bool GetInfo(UINT nSuggestedBindIdx, DXShaderInfo::RootParamInfo& rpi, bool bMovedParam) const;
+    std::vector<CD3DX12_STATIC_SAMPLER_DESC> GetStaticSamplersDescs() const;
+
+    bool GetInfo(UINT nSuggestedBindIdx, UINT nRegisterSpace, DXShaderInfo::RootParamInfo& rpi, bool bMovedParam) const;
 
 protected:
     friend class HgiDX;
@@ -88,7 +90,14 @@ private:
 
     HgiDXDevice* _device;
     mutable std::map<uint32_t, DXShaderInfo::StageParamInfo> _inputBindIdx2ShaderData;
-    mutable std::map<UINT, DXShaderInfo::RootParamInfo> _rootParamsBySuggestedBindIdx;
+    mutable std::map<UINT64, DXShaderInfo::RootParamInfo> _rootParamsBySuggestedBindIdx;
+    mutable std::vector<CD3DX12_ROOT_PARAMETER1> _rootParams;
+
+    //
+    // this next piece of data I do not need, but I need to keep it alive long ehough 
+    // for the root signature to be created
+    // TODO: find a better way
+    mutable std::map<UINT, CD3DX12_DESCRIPTOR_RANGE1> _descRangeBySuggestedBindIdx;
 };
 
 

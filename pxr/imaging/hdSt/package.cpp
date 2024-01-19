@@ -80,13 +80,8 @@ HdStPackageDomeLightShader()
 TfToken
 HdStPackageFallbackDomeLightTexture()
 {
-    //
-    // TODO: this is a temporary solution to switch between (slightly different) libraries 
-    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
-    static TfToken s = dxHgiEnabled ? 
-       _GetShaderPath("fallbackBlackDomeLight.hlslfx") :
-       _GetShaderPath("fallbackBlackDomeLight.glslfx");
-    return s;
+   static TfToken t = _GetTexturePath("fallbackBlackDomeLight.png");
+   return t;
 }
 
 TfToken

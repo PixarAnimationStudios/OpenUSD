@@ -60,18 +60,32 @@ public:
     HgiBufferBindDesc GetBufferDesc(int nBindingIndex) const;
 
     HGIDX_API
-    static void BindRootParams(ID3D12GraphicsCommandList* pCmdList,
+    static void BindRootParams(HgiDX* pHgi,
                                HgiDXShaderProgram* pShaderProgram, 
                                const HgiBufferBindDescVector& bindBuffersDescs,
+                               bool bCompute);
+
+    HGIDX_API
+    static void BindRootParams(HgiDX* pHgi,
+                               HgiDXShaderProgram* pShaderProgram,
+                               const HgiTextureBindDescVector& bindBuffersDescs,
                                bool bCompute);
 
     //
     // This is never called at this time, and I am not convinced I ever need to call it.
     // TODO: review & call or delete.
     HGIDX_API
-    static void UnBindRootParams(ID3D12GraphicsCommandList* pCmdList,
+    static void UnBindRootParams(HgiDX* pHgi,
                                  HgiDXShaderProgram* pShaderProgram,
                                  const HgiBufferBindDescVector& bindBuffersDescs,
+                                 bool bCompute);
+
+    // 
+    // TODO: same as above
+    HGIDX_API
+    static void UnBindRootParams(HgiDX* pHgi,
+                                 HgiDXShaderProgram* pShaderProgram,
+                                 const HgiTextureBindDescVector& bindBuffersDescs,
                                  bool bCompute);
 
 protected:

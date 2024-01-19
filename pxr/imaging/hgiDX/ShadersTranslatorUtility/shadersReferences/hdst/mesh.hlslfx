@@ -50,9 +50,6 @@
 -- glsl Mesh.Vertex
 
 // Fwd declare methods defined in pointId.hlslfx, that are used below.
-FORWARD_DECL(int GetPointId());
-FORWARD_DECL(float GetPointRasterSize(int id));
-FORWARD_DECL(void ProcessPointId(int id));
 
 void main(void)
 {
@@ -102,9 +99,6 @@ vec2 GetPatchCoordLocalST()
 }
 
 // Fwd declare methods defined in pointId.hlslfx, that are used below.
-FORWARD_DECL(int GetPointId());
-FORWARD_DECL(float GetPointRasterSize(int id));
-FORWARD_DECL(void ProcessPointId(int id));
 
 void main(void)
 {
@@ -175,9 +169,6 @@ vec2 GetPatchCoordLocalST()
 }
 
 // Fwd declare methods defined in pointId.hlslfx, that are used below.
-FORWARD_DECL(int GetPointId());
-FORWARD_DECL(float GetPointRasterSize(int id));
-FORWARD_DECL(void ProcessPointId(int id));
 
 void main(void)
 {
@@ -257,9 +248,6 @@ vec2 GetPatchCoordLocalST()
 }
 
 // Fwd declare methods defined in pointId.hlslfx, that are used below.
-FORWARD_DECL(int GetPointId());
-FORWARD_DECL(float GetPointRasterSize(int id));
-FORWARD_DECL(void ProcessPointId(int id));
 
 void main(void)
 {
@@ -941,7 +929,6 @@ void emit(int index, vec4 Peye, vec3 Neye, inout OutStream ts)
     EmitVertex(ts);
 }
 
-FORWARD_DECL(vec4 ComputeSelectionOffset()); // selection.hlslfx
 
 void main (inout OutStream ts)
 {
@@ -1072,7 +1059,6 @@ void emit(int index, vec4 Peye, vec3 Neye, inout OutStream ts)
     EmitVertex(ts);
 }
 
-FORWARD_DECL(vec4 ComputeSelectionOffset()); // selection.hlslfx
 
 void main (inout OutStream ts)
 {
@@ -1157,7 +1143,6 @@ void emit(int index, vec4 Peye, vec3 Neye, inout OutStream ts)
     EmitVertex(ts);
 }
 
-FORWARD_DECL(vec4 ComputeSelectionOffset()); // selection.hlslfx
 
 void main (inout OutStream ts)
 {
@@ -1246,7 +1231,6 @@ void emit(int index, vec4 Peye, vec3 Neye, inout OutStream ts)
     EmitVertex(ts);
 }
 
-FORWARD_DECL(vec4 ComputeSelectionOffset()); // selection.hlslfx
 
 void main (inout OutStream ts)
 {
@@ -1328,6 +1312,14 @@ void main (inout OutStream ts)
 vec4 GetInterpolatedPatchCoord()
 {
     return gsPatchCoord;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Fragment.PatchCoord.NoGS
+
+vec4 GetInterpolatedPatchCoord()
+{
+    return vec4(0,0,0,0);
 }
 
 --- --------------------------------------------------------------------------
@@ -1513,6 +1505,7 @@ void main(void)
 #ifdef HD_MATERIAL_TAG_MASKED   
     if (ShouldDiscardByAlpha(color)) {
         discard;
+        return;
     }
 #endif
 

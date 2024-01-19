@@ -43,6 +43,8 @@ public:
     void Run();
     void ExitApp();
 
+    HWND GetHWnd();
+
 private:
     static Garch_GLPlatformDebugWindow *_GetWindowByHandle(HWND);
     static LRESULT WINAPI _MsgProc(HWND hWnd, UINT msg,

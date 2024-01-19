@@ -40,6 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class UsdImagingDX_UnitTestWindow;
+class HgiDX;
 
 /// \class UsdImagingDX_UnitTestDXDrawing
 ///
@@ -73,6 +74,8 @@ public:
     bool IsEnabledTestPresentOutput() const {
         return PresentComposite() || PresentDisabled();
     }
+
+    bool PresentOffscreen() { return _bDrawOffscreen; }
 
     UsdImagingGLDrawMode GetDrawMode() const { return _drawMode; }
 
@@ -114,6 +117,8 @@ public:
                                TfToken const &aovName,
                                std::string const &filename);
 
+    virtual HgiDX* GetHgi();
+
 protected:
     float _GetComplexity() const { return _complexity; }
     bool _ShouldFrameAll() const { return _shouldFrameAll; }
@@ -135,6 +140,7 @@ protected:
         engine->_sceneDelegate->SetDisplayUnloadedPrimsWithBounds(enable);
     }
 
+
 private:
     struct _Args;
     void _Parse(int argc, char *argv[], _Args* args);
@@ -149,6 +155,7 @@ private:
     bool _testIdRender;
     bool _enableSceneMaterials;
     bool _unloadedAsBounds;
+    bool _bDrawOffscreen;
 
     std::string _stageFilePath;
     std::string _outputFilePath;

@@ -86,6 +86,9 @@ public:
    void UpdateData(HgiDXBuffer* pOtherGPUBuff, size_t dataSize, size_t sourceByteOffset, size_t destinationByteOffset);
 
    HGIDX_API
+   void FillBuffer(uint8_t value);
+
+   HGIDX_API
    void UpdateResourceState(ID3D12GraphicsCommandList* pCmdList, D3D12_RESOURCE_STATES newResState);
 
    /// <summary>

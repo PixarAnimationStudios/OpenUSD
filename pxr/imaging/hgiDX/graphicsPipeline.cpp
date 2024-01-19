@@ -26,6 +26,7 @@
 #include "pch.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/iterator.h"
 
 #include "pxr/imaging/hgiDX/capabilities.h"
@@ -40,6 +41,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HgiAttachmentDescConstPtrVector = std::vector<HgiAttachmentDesc const*>;
+static const bool bShadersModel6 = TfGetenvBool("HGI_DX_SHADERS_MODEL_6", false);
 
 
 HgiDXGraphicsPipeline::HgiDXGraphicsPipeline(HgiDXDevice* device, HgiGraphicsPipelineDesc const& desc)
@@ -75,7 +77,9 @@ HgiDXGraphicsPipeline::HgiDXGraphicsPipeline(HgiDXDevice* device, HgiGraphicsPip
 
    CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
    std::vector<CD3DX12_ROOT_PARAMETER1> rootParams = pShaderProgram->GetRootParameters();
-   rootSignatureDescription.Init_1_1((int)rootParams.size(), rootParams.data(), 0, nullptr, rootSignatureFlags);
+   std::vector<CD3DX12_STATIC_SAMPLER_DESC> staticSamplers = pShaderProgram->GetStaticSamplersDescs();
+   
+   rootSignatureDescription.Init_1_1((int)rootParams.size(), rootParams.data(), staticSamplers.size(), staticSamplers.data(), rootSignatureFlags);
 
    // Serialize the root signature.
    ComPtr<ID3DBlob> rootSignatureBlob;
@@ -113,18 +117,33 @@ HgiDXGraphicsPipeline::HgiDXGraphicsPipeline(HgiDXDevice* device, HgiGraphicsPip
       HgiDXShaderFunction* pdfsfc = dynamic_cast<HgiDXShaderFunction*>(sfh.Get());
       if (nullptr != pdfsfc)
       {
-         ID3DBlob* pBlob = pdfsfc->GetShaderBlob();
+         SIZE_T shaderSize;
+         void* shaderBlob;
+
+         if (bShadersModel6) {
+            IDxcBlob* pBlob = (IDxcBlob*)pdfsfc->GetShaderBlob();
+            shaderSize = pBlob->GetBufferSize();
+            shaderBlob = pBlob->GetBufferPointer();
+         }
+         else {
+            ID3DBlob* pBlob = (ID3DBlob*)pdfsfc->GetShaderBlob();
+            shaderSize = pBlob->GetBufferSize();
+            shaderBlob = pBlob->GetBufferPointer();
+         }
 
          switch (pdfsfc->GetDescriptor().shaderStage)
          {
             case HgiShaderStageVertex:
-               pipelineDesc.VS = CD3DX12_SHADER_BYTECODE(pBlob);
+               pipelineDesc.VS.BytecodeLength = shaderSize;
+               pipelineDesc.VS.pShaderBytecode = shaderBlob;
                break;
             case HgiShaderStageGeometry:
-               pipelineDesc.GS = CD3DX12_SHADER_BYTECODE(pBlob);
+               pipelineDesc.GS.BytecodeLength = shaderSize;
+               pipelineDesc.GS.pShaderBytecode = shaderBlob;
                break;
             case HgiShaderStageFragment:
-               pipelineDesc.PS = CD3DX12_SHADER_BYTECODE(pBlob);
+               pipelineDesc.PS.BytecodeLength = shaderSize;
+               pipelineDesc.PS.pShaderBytecode = shaderBlob;
                break;
             default:
                TF_CODING_ERROR("Shader stage not implemented yet");
@@ -149,7 +168,7 @@ HgiDXGraphicsPipeline::HgiDXGraphicsPipeline(HgiDXDevice* device, HgiGraphicsPip
    BOOL bDepthEnable = desc.depthState.depthTestEnabled;
    BOOL bStencilEnable = desc.depthState.stencilTestEnabled;
 
-   if (desc.colorAttachmentDescs.size() + desc.colorResolveAttachmentDescs.size() > 8)
+   if (desc.colorAttachmentDescs.size() > 8)
       TF_WARN("Too many color targets. DX seems to support max 8");
 
    int nIdxRT = 0;
@@ -229,10 +248,13 @@ HgiDXGraphicsPipeline::BindPipeline()
 }
 
 ID3D12CommandSignature* 
-HgiDXGraphicsPipeline::GetIndirectCommandSignature(uint32_t stride)
+HgiDXGraphicsPipeline::GetIndirectCommandSignature(uint32_t stride, bool bIndexed)
 {
-   if (_indirectArgumentStride != stride)
+   if ((_indirectArgumentStride != stride) || (_bIndirectIndexed != bIndexed))
    {
+      _indirectArgumentStride = stride;
+      _bIndirectIndexed = bIndexed;
+
       //
       // Build or re-build it now. 
       // My current theory is that I only need to rebuild it if I get here a different stride for some reason.
@@ -267,7 +289,7 @@ HgiDXGraphicsPipeline::GetIndirectCommandSignature(uint32_t stride)
 
       // Each command consists of a DrawInstanced call.
       D3D12_INDIRECT_ARGUMENT_DESC argumentDescs[1] = {};
-      argumentDescs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+      argumentDescs[0].Type = bIndexed ? D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED : D3D12_INDIRECT_ARGUMENT_TYPE_DRAW;
       
 
       D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};

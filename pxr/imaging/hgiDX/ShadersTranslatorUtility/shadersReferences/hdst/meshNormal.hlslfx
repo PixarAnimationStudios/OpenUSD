@@ -122,7 +122,6 @@ vec3 GetNormal(vec3 Neye, int index, vec2 localST)
 --- --------------------------------------------------------------------------
 -- glsl MeshNormal.Fragment.ScreenSpace
 
-FORWARD_DECL(vec3 ComputeScreenSpaceNeye());
 
 vec3 GetNormal(vec3 Neye, int index)
 {

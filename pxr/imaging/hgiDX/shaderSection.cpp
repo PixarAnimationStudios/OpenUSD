@@ -78,9 +78,9 @@ HgiDXParamsShaderSection::HgiDXParamsShaderSection(const std::string& name)
 }
 
 void 
-HgiDXParamsShaderSection::AddParamInfo(const std::string& type, const std::string& name, const std::string& semantic)
+HgiDXParamsShaderSection::AddParamInfo(const std::string& type, const std::string& name, const std::string& size, const std::string& semantic)
 {
-   ParamInfo pi{ type, name, semantic };
+   ParamInfo pi{ type, name, size, semantic };
    _info.push_back(pi);
 }
 
@@ -97,6 +97,9 @@ HgiDXParamsShaderSection::VisitGlobalStructs(std::ostream& ss)
       for (const ParamInfo& pi : _info)
       {
          ss << "   " << pi.Type << " " << pi.Name;
+
+         if (!pi.Size.empty())
+            ss << "[" << pi.Size << "]";
          
          if(pi.Semantic.empty())
             ss << ";" << std::endl;
@@ -224,7 +227,8 @@ const std::string HgiDXTextureShaderSection::_storageQualifier = "uniform";
 
 HgiDXTextureShaderSection::HgiDXTextureShaderSection(
     const std::string &identifier,
-    const unsigned int layoutIndex,
+    const uint32_t registerIndex,
+    const uint32_t spaceIndex,
     const unsigned int dimensions,
     const HgiFormat format,
     const HgiShaderTextureType textureType,
@@ -239,12 +243,16 @@ HgiDXTextureShaderSection::HgiDXTextureShaderSection(
                         arraySize > 0 ? 
                         "[" + std::to_string(arraySize) + "]" :
                         "")
-  , _dimensions(dimensions)
-  , _format(format)
-  , _textureType(textureType)
-  , _arraySize(arraySize)
-  , _writable(writable)
+   , _registerIdx(registerIndex)
+   , _spaceIdx(spaceIndex)
+   , _dimensions(dimensions)
+   , _format(format)
+   , _textureType(textureType)
+   , _arraySize(arraySize)
+   , _bWritable(writable)
 {
+   if(HgiShaderTextureType::HgiShaderTextureTypeTexture != _textureType)
+      TF_WARN("Texture type not properly handled yet"); // TODO
 }
 
 HgiDXTextureShaderSection::~HgiDXTextureShaderSection() = default;
@@ -261,10 +269,59 @@ _GetTextureTypePrefix(HgiFormat const &format)
     return ""; // e.g., sampler, vec4
 }
 
+static std::string
+_GetTextureType(HgiFormat const& format)
+{
+   std::string ret = "";
+   switch (format)
+   {
+      case HgiFormat::HgiFormatFloat16:
+         ret = "half";
+         break;
+      case HgiFormat::HgiFormatFloat16Vec2:
+         ret = "half2";
+         break;
+      case HgiFormat::HgiFormatFloat16Vec3:
+         ret = "half3";
+         break;
+      case HgiFormat::HgiFormatFloat16Vec4:
+         ret = "half4";
+         break;
+      case HgiFormat::HgiFormatFloat32:
+         ret = "float";
+         break;
+      case HgiFormat::HgiFormatFloat32Vec2:
+         ret = "float2";
+         break;
+      case HgiFormat::HgiFormatFloat32Vec3:
+         ret = "float3";
+         break;
+      case HgiFormat::HgiFormatFloat32Vec4:
+         ret = "float4";
+         break;
+      case HgiFormat::HgiFormatInt32:
+         ret = "int";
+         break;
+      case HgiFormat::HgiFormatInt32Vec2:
+         ret = "int2";
+         break;
+      case HgiFormat::HgiFormatInt32Vec3:
+         ret = "int3";
+         break;
+      case HgiFormat::HgiFormatInt32Vec4:
+         ret = "int4";
+         break;
+      default:
+         TF_RUNTIME_ERROR("Unhandled texture type"); // TODO
+         break;
+   }
+   return ret;
+}
+
 void
 HgiDXTextureShaderSection::_WriteSamplerType(std::ostream &ss) const
 {
-    if (_writable) {
+    if (_bWritable) {
         if (_textureType == HgiShaderTextureTypeArrayTexture) {
             ss << "image" << _dimensions << "DArray";
         } else {
@@ -306,126 +363,198 @@ HgiDXTextureShaderSection::WriteType(std::ostream &ss) const
 bool
 HgiDXTextureShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
 {
-    WriteDeclaration(ss);
-    return true;
+   //
+   // when do I write texture other than 2D? (depending on which parameter? dimensions?)
+   if(2 != _dimensions)
+      TF_WARN("Texture dimensions not properly handled yet"); // TODO
+
+   if (_bWritable)
+      ss << "RWTexture2D<" << _GetTextureType(_format) << "> "; // UAV
+   else 
+      ss << "Texture2D<" << _GetTextureType(_format) << "> "; // SRV
+
+   WriteIdentifier(ss);
+
+   ss << ": register( ";
+   if (_bWritable)
+      ss << "u"; // UAV
+   else
+      ss << "t"; // SRV
+
+   ss << _registerIdx << ", space" << _spaceIdx << "); " << std::endl;
+
+   return true;
 }
 
 bool
 HgiDXTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
 {
-    // Used to unify texture sampling and writing across platforms that depend 
-    // on samplers and don't store textures in global space.
-    const uint32_t sizeDim = 
-        (_textureType == HgiShaderTextureTypeArrayTexture) ? 
-        (_dimensions + 1) : _dimensions;
-    const uint32_t coordDim = 
-        (_textureType == HgiShaderTextureTypeShadowTexture ||
-         _textureType == HgiShaderTextureTypeArrayTexture) ? 
-        (_dimensions + 1) : _dimensions;
 
-    const std::string sizeType = sizeDim == 1 ? 
-        "int" :
-        "ivec" + std::to_string(sizeDim);
-    const std::string intCoordType = coordDim == 1 ? 
-        "int" :
-        "ivec" + std::to_string(coordDim);
-    const std::string floatCoordType = coordDim == 1 ? 
-        "float" :
-        "vec" + std::to_string(coordDim);
+   // Used to unify texture sampling and writing across platforms that depend 
+   // on samplers and don't store textures in global space.
+   const uint32_t sizeDim =
+      (_textureType == HgiShaderTextureTypeArrayTexture) ?
+      (_dimensions + 1) : _dimensions;
+   const uint32_t coordDim =
+      (_textureType == HgiShaderTextureTypeShadowTexture ||
+       _textureType == HgiShaderTextureTypeArrayTexture) ?
+      (_dimensions + 1) : _dimensions;
 
-    if (_arraySize > 0) {
-        WriteType(ss);
-        ss << " HgiGetSampler_";
-        WriteIdentifier(ss);
-        ss << "(uint index) {\n";
-        ss << "    return ";
-        WriteIdentifier(ss);
-        ss << "[index];\n}\n";
-    } else {
-        ss << "#define HgiGetSampler_";
-        WriteIdentifier(ss);
-        ss << "() ";
-        WriteIdentifier(ss);
-        ss << "\n";
-    }
+   const std::string sizeType = sizeDim == 1 ?
+      "int" :
+      "ivec" + std::to_string(sizeDim);
+   const std::string intCoordType = coordDim == 1 ?
+      "int" :
+      "ivec" + std::to_string(coordDim);
+   const std::string floatCoordType = coordDim == 1 ?
+      "float" :
+      "vec" + std::to_string(coordDim);
 
-    if (_writable) {
-        // Write a function that lets you write to the texture with 
-        // HgiSet_texName(uv, data).
-        ss << "void HgiSet_";
-        WriteIdentifier(ss);
-        ss << "(" << intCoordType << " uv, vec4 data) {\n";
-        ss << "    ";
-        ss << "imageStore(";
-        WriteIdentifier(ss);
-        ss << ", uv, data);\n";
-        ss << "}\n";
 
-        // HgiGetSize_texName()
-        ss << sizeType << " HgiGetSize_";
-        WriteIdentifier(ss);
-        ss << "() {\n";
-        ss << "    ";
-        ss << "return imageSize(";
-        WriteIdentifier(ss);
-        ss << ");\n";
-        ss << "}\n";
-    } else {
-        const std::string arrayInput = (_arraySize > 0) ? "uint index, " : "";
-        const std::string arrayIndex = (_arraySize > 0) ? "[index]" : "";
-        
-        // Write a function that lets you query the texture with 
-        // HgiGet_texName(uv).
-        _WriteSampledDataType(ss); // e.g., vec4, ivec4, uvec4
-        ss << " HgiGet_";
-        WriteIdentifier(ss);
-        ss << "(" << arrayInput << floatCoordType << " uv) {\n";
-        ss << "    ";
-        _WriteSampledDataType(ss);
-        ss << " result = texture(";
-        WriteIdentifier(ss);
-        ss << arrayIndex << ", uv);\n";
-        ss << "    return result;\n";
-        ss << "}\n";
-        
-        // HgiGetSize_texName()
-        ss << sizeType << " HgiGetSize_";
-        WriteIdentifier(ss);
-        ss << "(" << ((_arraySize > 0) ? "uint index" : "")  << ") {\n";
-        ss << "    ";
-        ss << "return textureSize(";
-        WriteIdentifier(ss);
-        ss << arrayIndex << ", 0);\n";
-        ss << "}\n";
+   /* Temporarily disable get sampler fc, until it is really needed and I can see how it's used
+   * and implement it properly
+   if (_arraySize > 0) {
+       WriteType(ss);
+       ss << " HgiGetSampler_";
+       WriteIdentifier(ss);
+       ss << "(uint index) {\n";
+       ss << "    return ";
+       WriteIdentifier(ss);
+       ss << "[index];\n}\n";
+   } else {
+      WriteType(ss);
+      ss << " HgiGetSampler_";
+      WriteIdentifier(ss);
+      ss << "() {\n";
+      ss << "    return ";
+      WriteIdentifier(ss);
+      ss << ";\n}\n";
+   }*/
 
-        // HgiTextureLod_texName()
-        _WriteSampledDataType(ss);
-        ss << " HgiTextureLod_";
-        WriteIdentifier(ss);
-        ss << "(" << arrayInput << floatCoordType << " coord, float lod) {\n";
-        ss << "    ";
-        ss << "return textureLod(";
-        WriteIdentifier(ss);
-        ss << arrayIndex << ", coord, lod);\n";
-        ss << "}\n";
-        
-        // HgiTexelFetch_texName()
-        if (_textureType != HgiShaderTextureTypeShadowTexture) {
-            _WriteSampledDataType(ss);
-            ss << " HgiTexelFetch_";
-            WriteIdentifier(ss);
-            ss << "(" << arrayInput << intCoordType << " coord) {\n";
-            ss << "    ";
-            _WriteSampledDataType(ss);
-            ss << " result = texelFetch(";
-            WriteIdentifier(ss);
-            ss << arrayIndex << ", coord, 0);\n";
-            ss << "    return result;\n";
-            ss << "}\n";
-        }
-    }
+   if (_bWritable) {
+      // Write a function that lets you write to the texture with 
+      // HgiSet_texName(uv, data).
+      ss << "void HgiSet_";
+      WriteIdentifier(ss);
+      ss << "(" << intCoordType << " uv, vec4 data) {\n";
+      ss << "    ";
+      WriteIdentifier(ss);
+      ss << "[uv] = data;\n";
+      ss << "}\n";
 
-    return true;
+      // HgiGetSize_texName()
+      // TODO: this only works for 2d now - I have to write it properly for all cases
+      ss << sizeType << " HgiGetSize_";
+      WriteIdentifier(ss);
+      ss << "() {\n";
+      ss << "    int w=0, h=0;\n";
+      ss << "    ";
+      WriteIdentifier(ss);
+      ss << ".GetDimensions(w, h);\n";
+      ss << "return " << sizeType << "(w, h); \n";
+      ss << "}\n";
+   }
+   else {
+      const std::string arrayInput = (_arraySize > 0) ? "uint index, " : "";
+      const std::string arrayIndex = (_arraySize > 0) ? "[index]" : "";
+
+      // Write a function that lets you query the texture with 
+      // HgiGet_texName(uv).
+      _WriteSampledDataType(ss); // e.g., vec4, ivec4, uvec4
+      ss << " HgiGet_";
+      WriteIdentifier(ss);
+      ss << "(" << arrayInput << floatCoordType << " uv) {\n";
+      ss << "    ";
+      _WriteSampledDataType(ss);
+      ss << " result = ";
+      WriteIdentifier(ss);
+      ss << arrayIndex << "[uv];\n";
+      ss << "    return result;\n";
+      ss << "}\n";
+
+      // HgiGetSize_texName()
+      // TODO: same as above, for now this will only work for 2d texture
+      ss << sizeType << " HgiGetSize_";
+      WriteIdentifier(ss);
+      ss << "(" << ((_arraySize > 0) ? "uint index" : "") << ") {\n";
+      ss << "    int w=0, h=0;\n";
+      ss << "    ";
+      WriteIdentifier(ss);
+      ss << arrayIndex;
+      ss << ".GetDimensions(w, h);\n";
+      ss << "    return " << sizeType << "(w, h); \n";
+      ss << "}\n";
+
+      // HgiTextureLod_texName()
+      _WriteSampledDataType(ss);
+      ss << " HgiTextureLod_";
+      WriteIdentifier(ss);
+      ss << "(" << arrayInput << floatCoordType << " coord, float lod) {\n";
+      ss << "    return ";
+      WriteIdentifier(ss);
+      ss << ".SampleLevel("; 
+      WriteIdentifier(ss);
+      ss << "_Sampler, coord, lod); \n";
+      ss << "}\n";
+
+      // HgiTexelFetch_texName()
+      // TODO: one more case where I am only implementing the 2D case for now
+      if (_textureType != HgiShaderTextureTypeShadowTexture) {
+         _WriteSampledDataType(ss);
+         ss << " HgiTexelFetch_";
+         WriteIdentifier(ss);
+         ss << "(" << arrayInput << intCoordType << " coord) {\n";
+         ss << "    ";
+         _WriteSampledDataType(ss);
+         ss << " result = ";
+         WriteIdentifier(ss);
+         ss << arrayIndex << ".Load(int3(coord, 0));\n";
+         ss << "    return result;\n";
+         ss << "}\n";
+      }
+
+      //
+      // and something to deal with GL textureQueryLevels
+      // TODO: should I use the sampler to find out the proper MipLevel?
+      // (maybe later when I generate proper samplers for each texture)
+      ss << "float textureQueryLevels_";
+      WriteIdentifier(ss);
+      ss << "() {\n";
+      ss << "    float w=0, h=0, numLvls=0;\n";
+      ss << "    ";
+      WriteIdentifier(ss);
+      ss << arrayIndex;
+      ss << ".GetDimensions(0/*MipLevel*/, w, h, numLvls);\n";
+      ss << "    return numLvls; \n";
+      ss << "}\n";
+   }
+
+   return true;
+}
+
+HgiDXSamplerShaderSection::HgiDXSamplerShaderSection(const std::string& identifier,
+                                                     const uint32_t registerIndex,
+                                                     const uint32_t spaceIndex)
+
+   : HgiDXShaderSection(identifier)
+   , _registerIdx(registerIndex)
+   , _spaceIdx(spaceIndex)
+{
+}
+
+HgiDXSamplerShaderSection::~HgiDXSamplerShaderSection()
+{
+
+}
+
+bool 
+HgiDXSamplerShaderSection::VisitGlobalMemberDeclarations(std::ostream& ss)
+{
+   ss << "SamplerState ";
+   WriteIdentifier(ss);
+   ss << " : register(s" << _registerIdx << ", space" << _spaceIdx <<"); \n";
+
+   return true;
 }
 
 HgiDXKeywordShaderSection::HgiDXKeywordShaderSection(

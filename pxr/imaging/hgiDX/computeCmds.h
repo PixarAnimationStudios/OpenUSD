@@ -93,6 +93,7 @@ private:
 
     HgiDX* _hgi;
     HgiDXComputePipeline* _pPipeline;
+    GfVec3i _localWorkGroupSize;
 
     HgiResourceBindingsHandle _resBindings;
 

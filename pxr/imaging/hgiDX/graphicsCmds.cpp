@@ -52,6 +52,9 @@ HgiDXGraphicsCmds::HgiDXGraphicsCmds(HgiDX* hgi, HgiGraphicsCmdsDesc const& desc
 
 HgiDXGraphicsCmds::~HgiDXGraphicsCmds()
 {
+   if (nullptr != _indirectParamBuff.Get()) {
+      _hgi->DestroyBuffer(&_indirectParamBuff);
+   }
 }
 
 void
@@ -171,8 +174,61 @@ HgiDXGraphicsCmds::DrawIndirect(HgiBufferHandle const& drawParameterBuffer,
                                 uint32_t drawCount,
                                 uint32_t stride)
 {
-   // TODO: Impl
-   TF_WARN("Draw (indirect) command version not implemented yet.");
+   HgiDX* pHgi = _hgi;
+   HgiDXGraphicsPipeline* pPipeline = _pPipeline;
+   HgiBufferHandle& drawIndirectParamCopy = _indirectParamBuff;
+   _ApplyPendingUpdates();
+
+   _ops.push_back(
+      [pHgi, pPipeline, &drawParameterBuffer, &drawIndirectParamCopy, drawBufferByteOffset, drawCount, stride] {
+         ID3D12GraphicsCommandList* pCmdList = pHgi->GetPrimaryDevice()->GetCommandList(HgiDXDevice::eCommandType::kGraphics);
+         if (nullptr != pCmdList)
+         {
+            HgiDXBuffer* pDrawParamBuffer = dynamic_cast<HgiDXBuffer*>(drawParameterBuffer.Get());
+            if (nullptr != pDrawParamBuffer)
+            {
+
+               //
+               // buffers debug code
+#ifdef DEBUG_BUFFERS
+               std::stringstream buffer;
+               buffer << "Info: Binding buffer: " << pIdxBuffer->GetResource() << ", as index buffer" << ",on thread : " << std::this_thread::get_id();
+               TF_STATUS(buffer.str());
+               buffer.str(std::string());
+               buffer << "Info: Binding buffer: " << pDrawParamBuffer->GetResource() << ", as indirect param buffer" << ",on thread : " << std::this_thread::get_id();
+               TF_STATUS(buffer.str());
+#endif
+
+               pDrawParamBuffer->UpdateResourceState(pCmdList, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+
+               ID3D12CommandSignature* pIndirectSig = pPipeline->GetIndirectCommandSignature(stride, false);
+               if (nullptr != pIndirectSig)
+               {
+                  TF_STATUS("Info: Posting draw (ExecuteIndirect) command.");
+                  pCmdList->ExecuteIndirect(pIndirectSig,
+                                            drawCount,
+                                            pDrawParamBuffer->GetResource(),
+                                            0,
+                                            nullptr, // TODO: if this is ever valuable, I need to set it up myself
+                                            0);
+
+                  //
+                  // experimentally, also submit this draw before I start preparing for the next
+                  //
+                  // TODO: maybe there is an opportunity here to parallelize draw by using different queues?
+                  // Also, at some point we should review all these decisions of 
+                  // work distribution & submitting lists
+                  pHgi->GetPrimaryDevice()->SubmitCommandList(HgiDXDevice::eCommandType::kGraphics);
+               }
+               else
+                  TF_WARN("Invalid indirect command signature. Failed to draw.");
+            }
+            else
+               TF_WARN("Unrecognized indices buffer or draw param type. Cannot bind to pipeline.");
+         }
+         else
+            TF_WARN("Failed to acquire command list. Cannot draw.");
+      });
 }
 
 void
@@ -185,7 +241,7 @@ HgiDXGraphicsCmds::DrawIndexed(HgiBufferHandle const& indexBuffer,
 {
    HgiDX* pHgi = _hgi;
    _ApplyPendingUpdates();
-
+   
    _ops.push_back(
       [pHgi, &indexBuffer, indexCount, indexBufferByteOffset, baseVertex, instanceCount, baseInstance] {
          ID3D12GraphicsCommandList* pCmdList = pHgi->GetPrimaryDevice()->GetCommandList(HgiDXDevice::eCommandType::kGraphics);
@@ -227,8 +283,28 @@ HgiDXGraphicsCmds::DrawIndexedIndirect(HgiBufferHandle const& indexBuffer,
 {
    HgiDX* pHgi = _hgi;
    HgiDXGraphicsPipeline* pPipeline = _pPipeline;
+   
+   //
+   // temp hack to avoid crazy HdSt behavior of passing the same buffer as both execute indirect argument and shader 
+   // buffer resource
+   // UPDATE: unfortunately with or without this nothing changes, things seem to work equally well (or bad)
+   // despite the RenderDoc warnings. Also, since at runtime I get no errors or warnings about this, I decided to
+   // let it work as HdSt wants for now
+
+   //if (nullptr != _indirectParamBuff.Get()) {
+   //   pHgi->DestroyBuffer(&_indirectParamBuff);
+   //}
+
+   //_indirectParamBuff = pHgi->CreateBuffer(drawParameterBuffer->GetDescriptor());
+   //HgiDXBuffer* pDrawParamBufferCopy = dynamic_cast<HgiDXBuffer*>(_indirectParamBuff.Get());
+   //HgiDXBuffer* pDrawParamBuffer = dynamic_cast<HgiDXBuffer*>(drawParameterBuffer.Get());
+   //if ((nullptr != pDrawParamBuffer) && (nullptr != pDrawParamBufferCopy))
+   //   pDrawParamBufferCopy->UpdateData(pDrawParamBuffer, pDrawParamBuffer->GetByteSizeOfResource(), 0, 0);
+   //HgiBufferHandle& drawIndirectParamCopy = _indirectParamBuff;
+
    _ApplyPendingUpdates();
 
+   
    _ops.push_back(
       [pHgi, pPipeline, &indexBuffer, &drawParameterBuffer, drawBufferByteOffset, drawCount, stride] {
       ID3D12GraphicsCommandList* pCmdList = pHgi->GetPrimaryDevice()->GetCommandList(HgiDXDevice::eCommandType::kGraphics);
@@ -238,6 +314,10 @@ HgiDXGraphicsCmds::DrawIndexedIndirect(HgiBufferHandle const& indexBuffer,
          HgiDXBuffer* pDrawParamBuffer = dynamic_cast<HgiDXBuffer*>(drawParameterBuffer.Get());
          if ((nullptr != pIdxBuffer) && (nullptr != pDrawParamBuffer))
          {
+            //pHgi->GetPrimaryDevice()->SubmitCommandList(HgiDXDevice::eCommandType::kGraphics);
+            //pCmdList = pHgi->GetPrimaryDevice()->GetCommandList(HgiDXDevice::eCommandType::kGraphics);
+
+
             //
             // buffers debug code
 #ifdef DEBUG_BUFFERS
@@ -262,7 +342,7 @@ HgiDXGraphicsCmds::DrawIndexedIndirect(HgiBufferHandle const& indexBuffer,
 
             pCmdList->IASetIndexBuffer(&ibv);
 
-            ID3D12CommandSignature* pIndirectSig = pPipeline->GetIndirectCommandSignature(stride);
+            ID3D12CommandSignature* pIndirectSig = pPipeline->GetIndirectCommandSignature(stride, true);
             if (nullptr != pIndirectSig)
             {
                TF_STATUS("Info: Posting draw (ExecuteIndirect) command.");
@@ -518,14 +598,16 @@ HgiDXGraphicsCmds::_BindRootParamsOp(HgiDX* pHgi,
                                      const HgiResourceBindingsDesc& resBindingsDesc)
 {
    return [pHgi, pPipeline, resBindingsDesc] {
-      ID3D12GraphicsCommandList* pCmdList = pHgi->GetPrimaryDevice()->GetCommandList(HgiDXDevice::eCommandType::kGraphics);
-      if (nullptr != pCmdList && nullptr != pPipeline)
+      if (nullptr != pPipeline)
       {
          const HgiGraphicsPipelineDesc& gpd = pPipeline->GetDescriptor();
          HgiDXShaderProgram* pShaderProgram = dynamic_cast<HgiDXShaderProgram*>(gpd.shaderProgram.Get());
 
          if (nullptr != pShaderProgram)
-            HgiDXResourceBindings::BindRootParams(pCmdList, pShaderProgram, resBindingsDesc.buffers, false);
+         {
+            HgiDXResourceBindings::BindRootParams(pHgi, pShaderProgram, resBindingsDesc.buffers, false);
+            HgiDXResourceBindings::BindRootParams(pHgi, pShaderProgram, resBindingsDesc.textures, false);
+         }
          else
             TF_WARN("Failed to acquire shader program or bindings resources. Cannot bind root params buffer(s).");
       }
@@ -537,6 +619,22 @@ HgiDXGraphicsCmds::_BindRootParamsOp(HgiDX* pHgi,
 bool 
 HgiDXGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {
+   //
+   // debug hack to only execute a part of the code to isolate an issue:
+   /*
+   static int nSubmitIdx = 0;
+   if (nSubmitIdx >= 0)
+   {
+      _hgi->GetPrimaryDevice()->SubmitCommandList(HgiDXDevice::eCommandType::kGraphics);
+      _hgi->GetPrimaryDevice()->SubmitCommandList(HgiDXDevice::eCommandType::kCompute);
+
+      _SetSubmitted();
+      _ops.clear();
+      return true;
+   }
+   nSubmitIdx++;*/
+
+   
    if (_ops.empty()) {
       return false;
    }
@@ -558,6 +656,7 @@ HgiDXGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
    }
 
    _SetSubmitted();
+   _ops.clear();
 
    //
    // And now resolve the buffers (if needed)

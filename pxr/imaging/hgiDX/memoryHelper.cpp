@@ -27,6 +27,8 @@
 #include "pch.h"
 #include "pxr/imaging/hgiDX/memoryHelper.h"
 
+#include "pxr/imaging/hd/tokens.h"
+
 ///
 /// Here's some info about HLSL
 /// https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-packing-rules
@@ -44,9 +46,24 @@ namespace {
    // Anyway I have a number of models who clearly indicate data is read in the shaders incorrectly 
    // if I try to align it at 16 bytes (2 lines, window from atrium model)
 
+   //
+   // debugging some more (a simplified window) example
+   // I can see the following:
+   // "renderPassState" needs 16 bytes padding, otherwise the "viewport" will be passed incorrectly (it follows a 7 unique ints sequence of data)
+   // "constantPrimvars" is hurt by padding to 16, it works well with 4: 
+   //   I padded a "isFlipped" and the next "bboxLocalMin" read the padding zeroes and everything afterwards was badly ofsetted
+   // what's different?
+   //   "renderPassState" is a CBV
+   //   "constantPrimvars" is a SRV
+   //   I do not know if this is what really matters, I do not have an example of a complex enough UAV to see what happens there...
+   //   but anyway we do not have that information at this time,
+   //   An article here: https://github.com/microsoft/DirectXShaderCompiler/wiki/Buffer-Packing suggests (vaguely)
+   //   that only (legacy) CBV might need 16 bytes padding, but that is not consistent to what I'm observing 
+   //   I will move forward with "primvars" as an exception, and take an action item to test this more and find a better way to deal with it
 
-   //const size_t c_blockSize = 16;
-   const size_t c_blockSize = 4;
+
+   const size_t c_blockSizeStd = 16;
+   const size_t c_blockSizeExc = 4;
 }
 
 
@@ -59,13 +76,18 @@ HgiDXMemoryHelper::~HgiDXMemoryHelper()
 }
 
 void 
-HgiDXMemoryHelper::GetMemorySpec(const std::vector<HdBufferSpec>& structSpec, StructMemorySpec& sms)
+HgiDXMemoryHelper::GetMemorySpec(const std::vector<HdBufferSpec>& structSpec, TfToken const& role, StructMemorySpec& sms)
 {
    size_t lastBlockOccupancy = 0;
 
    size_t nStructMemberCount = structSpec.size();
    sms.members.resize(nStructMemberCount);
    sms.structStride = 0;
+
+   // see above why
+   int nBlockSize = c_blockSizeStd;
+   if(role == HdTokens->primvar)
+      nBlockSize = c_blockSizeExc;
 
    for(size_t i=0; i< nStructMemberCount; i++)
    {
@@ -80,13 +102,13 @@ HgiDXMemoryHelper::GetMemorySpec(const std::vector<HdBufferSpec>& structSpec, St
       mbrMemSpec.stride = currSizeInBytes;
       sms.structStride += currSizeInBytes;
 
-      if (lastBlockOccupancy + currSizeInBytes > c_blockSize)
+      if (lastBlockOccupancy + currSizeInBytes > nBlockSize)
       {
          if (lastBlockOccupancy > 0)
          {
             //
             // I will have to add a padding (= increase stride) of the previous member
-            size_t padding = c_blockSize - lastBlockOccupancy;
+            size_t padding = nBlockSize - lastBlockOccupancy;
 
             //
             // In the existing code this value is not used at all...
@@ -98,7 +120,7 @@ HgiDXMemoryHelper::GetMemorySpec(const std::vector<HdBufferSpec>& structSpec, St
          }
       }
 
-      lastBlockOccupancy = (lastBlockOccupancy + currSizeInBytes) % c_blockSize;
+      lastBlockOccupancy = (lastBlockOccupancy + currSizeInBytes) % nBlockSize;
    }
 
    /* Experimentally, when creating a scene in which I forgot to set the color for some ents, 

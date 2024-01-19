@@ -31,8 +31,8 @@
 -- glsl EdgeId.Fragment.Common
 
 // Determines whether a fragment is on or close to an unhidden triangle edge.
-static const float edgePickRadius = 2; // in viewport pixels
-static const float edgePickParametricRadius = 0.02; // in parametric space
+#define edgePickRadius   2
+#define edgePickParametricRadius   0.02
 
 // For smooth looking edges, use an exponential falloff for the opacity.
 // Note: We use a slower falloff fn than in meshWire.hlslfx to make the
@@ -44,7 +44,6 @@ float SelectedEdgeFalloff(float d) {
 --- --------------------------------------------------------------------------
 -- glsl EdgeId.Fragment.TriangleSurface
 
-FORWARD_DECL(vec3 GetEdgeDistanceTriangle());
 
 vec3 ComputeBaseFaceEdgeDistanceTriangle()
 {

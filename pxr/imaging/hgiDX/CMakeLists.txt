@@ -15,7 +15,6 @@ pxr_library(hgiDX
         d3d12
         dxgi
         dxguid
-        d3dcompiler
         tf
         trace
 
@@ -36,12 +35,14 @@ pxr_library(hgiDX
         presentation
         resourceBindings
         sampler
+        shaderCompiler
         shaderFunction
         shaderGenerator
         shaderProgram
         shaderSection
         texture
         textureConverter
+        textureMipGenerator
 
     PUBLIC_HEADERS
         api.h

@@ -126,9 +126,11 @@ private:
 
    void _GetSemanticName(bool bInParam,
                          const HgiShaderStage& shaderStage,
-                         std::string varName,
+                         const std::string& varName,
+                         const std::string& inVarType,
                          std::string& strShaderSemanticName,
                          std::string& strPipelineInputSemanticName,
+                         std::string& outVarType,
                          int& nPipelineInputIndex);
 
    int _GetGeomShaderNumInValues();
@@ -159,6 +161,8 @@ private:
    DXShaderInfo::StageDXInfo _sdi;
    std::vector<varInfo> _additionalScopeParams;
    std::vector<DXShaderInfo::RootParamInfo> _rootParamInfo;
+
+   bool _bNoStageOut = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

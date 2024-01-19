@@ -41,12 +41,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HGI_DX_FORCE_WARP, false, "Force WARP (DirectX Software Rendering).");
 
+// TODO: At the time I'm writing this, shader model 6 needs a dxil.dll from ms to be present somewhere in path at runtime
+// I plan to deal with this (and also control exactly which DirectX12 version we use) by installing 1-2 nuget packages
+// but at the moment this needs to be done manually in order to get shaders 6 to work
+TF_DEFINE_ENV_SETTING(HGI_DX_SHADERS_MODEL_6, false, "Compile shaders with model 6 as opposed to 5.");
+
 // TODO: I need to understand better what this number means and how it should be used
 // and also what are the expected needs of HdSt...
 //
 // An additional complication is that I would like to reserve one of these for the 
 // final step: present to wnd or offscreen when I want to render again 
 static const uint32_t s_nMaxRenderTargetDescs = 6;
+
+//
+// even worse than the render target, we have cbvSrvUav heap
+// TODO: is there a way to build this dynamically enough? maybe reallocate it when needed?
+// is there some reasonably low max number of textures we use at the same time? (during the same draw operation)
+static const uint32_t s_nMaxTexturesHeap = 20;
 
 HgiDXDevice::HgiDXDevice()
    : _d3dMinFeatureLevel(D3D_FEATURE_LEVEL_11_0)
@@ -56,6 +67,8 @@ HgiDXDevice::HgiDXDevice()
    , _fenceValueGraphics(0)
    , _fenceValueCompute(0)
    , _fenceValueCopy(0)
+   , _bInitialized(false)
+   , _dxgiFactoryFlags(0)
 {
    bool bHookDebug = false;
 
@@ -94,18 +107,25 @@ HgiDXDevice::HgiDXDevice()
          if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(dxgiInfoQueue.GetAddressOf()))))
          {
             _dxgiFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
-
+            
             dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR, true);
             dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, true);
+            //dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_WARNING, true);
+            //dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_INFO, true);
+            //dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_MESSAGE, true);
 
             DXGI_INFO_QUEUE_MESSAGE_ID hide[] =
             {
-                80 /* IDXGISwapChain::GetContainingOutput: The swapchain's adapter does not control the output on which the swapchain's window resides. */,
+                80, // IDXGISwapChain::GetContainingOutput: The swapchain's adapter does not control the output on which the swapchain's window resides.
+                //D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE, // The application did not pass any clear value to resource creation.
             };
             DXGI_INFO_QUEUE_FILTER filter = {};
             filter.DenyList.NumIDs = static_cast<UINT>(std::size(hide));
             filter.DenyList.pIDList = hide;
-            dxgiInfoQueue->AddStorageFilterEntries(DXGI_DEBUG_DXGI, &filter);
+            HRESULT hr = dxgiInfoQueue->AddStorageFilterEntries(DXGI_DEBUG_ALL, &filter);
+            hr = hr;
+
+
          }
       }
    }
@@ -135,6 +155,9 @@ HgiDXDevice::HgiDXDevice()
 //#ifdef _DEBUG
          d3dInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
          d3dInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+         d3dInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
+         //d3dInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_INFO, true);
+         //d3dInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_MESSAGE, true);
 //#endif
          D3D12_MESSAGE_ID hide[] =
          {
@@ -143,6 +166,8 @@ HgiDXDevice::HgiDXDevice()
             // Workarounds for debug layer issues on hybrid-graphics systems
             D3D12_MESSAGE_ID_EXECUTECOMMANDLISTS_WRONGSWAPCHAINBUFFERREFERENCE,
             //D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE,
+            D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
+            D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE,
          };
          D3D12_INFO_QUEUE_FILTER filter = {};
          filter.DenyList.NumIDs = static_cast<UINT>(std::size(hide));
@@ -152,36 +177,13 @@ HgiDXDevice::HgiDXDevice()
    }
 
    _capabilities = std::make_unique<HgiDXCapabilities>(this);
-
-
-   // Create descriptor heaps for render target views and depth stencil views.
-   D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc = {};
-   rtvDescriptorHeapDesc.NumDescriptors = s_nMaxRenderTargetDescs; 
-   rtvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-
-   hr = _dxDevice->CreateDescriptorHeap(&rtvDescriptorHeapDesc, IID_PPV_ARGS(_rtvDescriptorHeap.ReleaseAndGetAddressOf()));
-   CheckResult(hr, "Failed to create render target heap descriptor");
-   _rtvDescriptorHeap->SetName(L"RTVDescriptorHeap");
-
-   D3D12_DESCRIPTOR_HEAP_DESC dsvDescriptorHeapDesc = {};
-   dsvDescriptorHeapDesc.NumDescriptors = s_nMaxRenderTargetDescs;
-   dsvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-
-   hr = _dxDevice->CreateDescriptorHeap(&dsvDescriptorHeapDesc, IID_PPV_ARGS(_dsvDescriptorHeap.ReleaseAndGetAddressOf()));
-   CheckResult(hr, "Failed to create depth stencil heap descriptor");
-   _dsvDescriptorHeap->SetName(L"DSVDescriptorHeap");
-
-   _rtvDescriptorHeapIncrementSize = _dxDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-   _dsvDescriptorHeapIncrementSize = _dxDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-
-   //
-   // create the command queue and list 
-   _InitCommandLists();
 }
 
 HgiDXDevice::~HgiDXDevice()
 {
 }
+
+void dummyFc() {}
 
 // This method acquires the first available hardware adapter that supports Direct3D 12.
 // If no such adapter can be found, try WARP. Otherwise throw an exception.
@@ -260,11 +262,38 @@ void HgiDXDevice::_GetAdapter(IDXGIAdapter1** ppAdapter)
 
    if (!adapter)
    {
+
+      // ugly hack to help DX load my warp preferred dll from path not from .exe directory
+      // this could actually be useful & needed & safe-ish in a single scenario: when runnning unit tests
+      // and there may still be a better way to do it...
+      HMODULE hWarpDll = 0;
+      HMODULE hm = NULL;
+      if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                            GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                            (LPCSTR)&dummyFc, &hm) != 0)
+      {
+         char path[MAX_PATH];
+         if (GetModuleFileName(hm, path, sizeof(path)) != 0)
+         {
+            std::string strPath(path);
+            size_t slashPos = strPath.rfind("\\"); // this should give me my install / run directory, but I want the parent
+            slashPos = strPath.rfind("\\", slashPos-1);
+
+            strPath = strPath.substr(0, slashPos) + "\\bin\\d3d10warp.dll";
+
+            hWarpDll = LoadLibraryA(strPath.c_str());
+         }
+      }
+
       // Try WARP12 instead
       if (FAILED(_dxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(adapter.ReleaseAndGetAddressOf()))))
       {
+         if(0 != hWarpDll)
+            FreeLibrary(hWarpDll);
+
          throw std::runtime_error("WARP12 not available. Enable the 'Graphics Tools' optional feature");
       }
+      
 
       OutputDebugStringA("Direct3D Adapter - WARP12\n");
    }
@@ -292,9 +321,69 @@ HgiDXDevice::GetDeviceCapabilities() const
    return *_capabilities;
 }
 
+void 
+HgiDXDevice::_EnsureInitialized()
+{
+   if (!_bInitialized)
+   {
+      _bInitialized = true;
+
+      // Create descriptor heaps for render target views and depth stencil views.
+      D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc = {};
+      rtvDescriptorHeapDesc.NumDescriptors = s_nMaxRenderTargetDescs;
+      rtvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+
+      HRESULT hr = _dxDevice->CreateDescriptorHeap(&rtvDescriptorHeapDesc, IID_PPV_ARGS(_rtvDescriptorHeap.ReleaseAndGetAddressOf()));
+      CheckResult(hr, "Failed to create render target heap descriptor");
+      _rtvDescriptorHeap->SetName(L"RTVDescriptorHeap");
+
+      D3D12_DESCRIPTOR_HEAP_DESC dsvDescriptorHeapDesc = {};
+      dsvDescriptorHeapDesc.NumDescriptors = s_nMaxRenderTargetDescs;
+      dsvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+
+      hr = _dxDevice->CreateDescriptorHeap(&dsvDescriptorHeapDesc, IID_PPV_ARGS(_dsvDescriptorHeap.ReleaseAndGetAddressOf()));
+      CheckResult(hr, "Failed to create depth stencil heap descriptor");
+      _dsvDescriptorHeap->SetName(L"DSVDescriptorHeap");
+
+      // Create descriptor heaps for txtures
+      D3D12_DESCRIPTOR_HEAP_DESC cbvSrvUavDescriptorHeapDesc = {};
+      cbvSrvUavDescriptorHeapDesc.NumDescriptors = s_nMaxTexturesHeap;
+      cbvSrvUavDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+      cbvSrvUavDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+      hr = _dxDevice->CreateDescriptorHeap(&cbvSrvUavDescriptorHeapDesc, IID_PPV_ARGS(_cbvSrvUavDescriptorHeap.ReleaseAndGetAddressOf()));
+      CheckResult(hr, "Failed to create depth stencil heap descriptor");
+      _cbvSrvUavDescriptorHeap->SetName(L"CbvSrvUavDescriptorHeap");
+
+      // And one more for samplers
+      D3D12_DESCRIPTOR_HEAP_DESC samplersDescriptorHeapDesc = {};
+      samplersDescriptorHeapDesc.NumDescriptors = s_nMaxTexturesHeap;
+      samplersDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+      samplersDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+      hr = _dxDevice->CreateDescriptorHeap(&samplersDescriptorHeapDesc, IID_PPV_ARGS(_samplersDescriptorHeap.ReleaseAndGetAddressOf()));
+      CheckResult(hr, "Failed to create samplers heap descriptor");
+      _samplersDescriptorHeap->SetName(L"SamplersDescriptorHeap");
+
+
+      _rtvDescriptorHeapIncrementSize = _dxDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+      _dsvDescriptorHeapIncrementSize = _dxDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+      _cbvSrvUavDescriptorHeapIncrementSize = _dxDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+      _samplersDescriptorHeapIncrementSize = _dxDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
+
+      //
+      // create the command queue and list 
+      _InitCommandLists();
+   }
+}
+
+
 void
 HgiDXDevice::WaitForIdle()
 {
+   _EnsureInitialized();
+
    //
    // Wait for all queues / commands.
    _WaitForCommandListToExecute(eCommandType::kGraphics);
@@ -480,31 +569,73 @@ HgiDXDevice::_InitCommandLists()
 ID3D12DescriptorHeap* 
 HgiDXDevice::GetRTVDescriptorHeap()
 {
+   _EnsureInitialized();
+
    return _rtvDescriptorHeap.Get();
 }
 
 ID3D12DescriptorHeap* 
 HgiDXDevice::GetDSVDescriptorHeap()
 {
+   _EnsureInitialized();
+
    return _dsvDescriptorHeap.Get();
+}
+
+ID3D12DescriptorHeap* 
+HgiDXDevice::GetCbvSrvUavDescriptorHeap()
+{
+   _EnsureInitialized();
+
+   return _cbvSrvUavDescriptorHeap.Get();
+}
+
+ID3D12DescriptorHeap* 
+HgiDXDevice::GetSamplersDescriptorHeap()
+{
+   _EnsureInitialized();
+
+   return _samplersDescriptorHeap.Get();
 }
 
 UINT 
 HgiDXDevice::GetRTVDescriptorHeapIncrementSize()
 {
+   _EnsureInitialized();
+
    return _rtvDescriptorHeapIncrementSize;
 }
 
 UINT 
 HgiDXDevice::GetDSVDescriptorHeapIncrementSize()
 {
+   _EnsureInitialized();
+
    return _dsvDescriptorHeapIncrementSize;
+}
+
+UINT 
+HgiDXDevice::GetCbvSrvUavDescriptorHeapIncrementSize()
+{
+   _EnsureInitialized();
+
+   return _cbvSrvUavDescriptorHeapIncrementSize;
+}
+
+UINT 
+HgiDXDevice::GetSamplersDescriptorHeapIncrementSize()
+{
+   _EnsureInitialized();
+
+   return _samplersDescriptorHeapIncrementSize;
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE
 HgiDXDevice::CreateRenderTargetView(ID3D12Resource* pRes, UINT nTexIdx)
 {
    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+
+   _EnsureInitialized();
 
    if (nTexIdx < s_nMaxRenderTargetDescs)
    {
@@ -525,6 +656,8 @@ HgiDXDevice::CreateDepthStencilView(ID3D12Resource* pRes, UINT nTexIdx)
 {
    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 
+   _EnsureInitialized();
+
    if (nTexIdx < s_nMaxRenderTargetDescs)
    {
       ID3D12DescriptorHeap* pHeap = GetDSVDescriptorHeap();
@@ -541,9 +674,11 @@ HgiDXDevice::GetCommandQueue(eCommandType type)
 {
    ID3D12CommandQueue* pRet = nullptr;
 
-   std::stringstream buffer;
-   buffer << "GetCommandQueue "<< type << " called on thread: " << std::this_thread::get_id();
-   TF_STATUS(buffer.str().c_str());
+   _EnsureInitialized();
+
+   //std::stringstream buffer;
+   //buffer << "GetCommandQueue "<< type << " called on thread: " << std::this_thread::get_id();
+   //TF_STATUS(buffer.str().c_str());
 
    if (eCommandType::kGraphics == type)
    {
@@ -608,6 +743,9 @@ ID3D12GraphicsCommandList*
 HgiDXDevice::GetCommandList(eCommandType type)
 {
    ID3D12GraphicsCommandList* pRet = nullptr;
+
+   _EnsureInitialized();
+
    if (eCommandType::kGraphics == type)
    {
       if (_bGraphicsCmdListClosed)
@@ -660,6 +798,8 @@ HgiDXDevice::GetCommandList(eCommandType type)
 void 
 HgiDXDevice::SubmitCommandList(eCommandType type)
 {
+   _EnsureInitialized();
+
    if (eCommandType::kGraphics == type)
    {
       if (nullptr != _commandListGraphics)
@@ -674,7 +814,7 @@ HgiDXDevice::SubmitCommandList(eCommandType type)
             {
                //
                // debug code
-               TF_STATUS("Info: Submitting graphics command list.");
+               //TF_STATUS("Info: Submitting graphics command list.");
                pQueue->ExecuteCommandLists(1, CommandListCast(_commandListGraphics.GetAddressOf()));
                _WaitForCommandListToExecute(type);
             }
@@ -695,7 +835,7 @@ HgiDXDevice::SubmitCommandList(eCommandType type)
             {
                //
                // debug code
-               TF_STATUS("Info: Submitting compute command list.");
+               //TF_STATUS("Info: Submitting compute command list.");
                pQueue->ExecuteCommandLists(1, CommandListCast(_commandListCompute.GetAddressOf()));
                _WaitForCommandListToExecute(type);
             }

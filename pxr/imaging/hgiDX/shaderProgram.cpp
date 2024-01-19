@@ -88,6 +88,18 @@ std::vector<D3D12_INPUT_ELEMENT_DESC>
 HgiDXShaderProgram::GetInputLayout(const std::vector<HgiVertexBufferDesc>& vbdv) const
 {
    std::vector<D3D12_INPUT_ELEMENT_DESC> ret;
+
+   //
+   // apparently some more custom gl shaders do not bother to tell me some binding index for the 
+   // stages in/out. 
+   // An example will come up when runnign test 
+   // "-frameAll -lighting -sceneLights -shading smooth -complexity 1.3 -camera /Scene/FrontCamera -stage domeLightYup.usda -write testUsdImagingGLDomeLight_YupFront.png"
+   //
+   // I am not sure I have a great solution for this case, but I'll try to assign valid indices myself
+   int nNextAutoAssignIdx = 0;
+   int nMaxProperlyAssignedIdx = -1;
+   std::map<uint32_t, DXShaderInfo::StageParamInfo> inputUnassignedBindIdx2ShaderData;
+   std::map<std::string, uint32_t> inputUnassignedSemantic2Idx;
    
    //
    // just setting the slot info correctly does not seem to be enough, 
@@ -112,10 +124,36 @@ HgiDXShaderProgram::GetInputLayout(const std::vector<HgiVertexBufferDesc>& vbdv)
                   TF_WARN("Error. Overlapping binding of input parameters.");
 
                _inputBindIdx2ShaderData.insert(std::pair<uint32_t, DXShaderInfo::StageParamInfo>(siiCurr.nSuggestedBindingIdx, siiCurr));
+
+               if ((int)siiCurr.nSuggestedBindingIdx > nMaxProperlyAssignedIdx)
+                  nMaxProperlyAssignedIdx = siiCurr.nSuggestedBindingIdx;
+            }
+            else 
+            {
+               std::string strSearchName = siiCurr.strSemanticName + std::to_string(siiCurr.nSemanticPipelineIndex);
+               if (inputUnassignedSemantic2Idx.find(strSearchName) == inputUnassignedSemantic2Idx.end())
+               {
+                  inputUnassignedBindIdx2ShaderData.insert(std::pair<uint32_t, DXShaderInfo::StageParamInfo>(nNextAutoAssignIdx, siiCurr));
+                  inputUnassignedSemantic2Idx.insert(std::pair<std::string, uint32_t>(strSearchName, nNextAutoAssignIdx));
+
+                  nNextAutoAssignIdx++;
+               }
             }
          }
 
          break;
+      }
+   }
+
+   if (inputUnassignedBindIdx2ShaderData.size())
+   {
+      //
+      // merge them now into the main list, also avoiding already assigned ids
+
+      for (const auto& it : inputUnassignedBindIdx2ShaderData)
+      {
+         uint32_t nFinalAssignedIdx = nMaxProperlyAssignedIdx + 1 + it.first;
+         _inputBindIdx2ShaderData.insert(std::pair<uint32_t, DXShaderInfo::StageParamInfo>(nFinalAssignedIdx, it.second));
       }
    }
 
@@ -193,56 +231,16 @@ HgiDXShaderProgram::GetInputLayout(const std::vector<HgiVertexBufferDesc>& vbdv)
    return ret;
 }
 
-
-//
-// I need to compensate for the fact that currently I have my shaders hard-coded
-// and the code generation apparently does not always generate the shaders buffers in the same order
-// and with the same binding id request
-uint32_t
-_GetHardCodedBindingIdx(const std::string& strBufferName)
-{
-   int nRet = -1;
-   if (strBufferName == "lightingContext")
-      nRet = 0;
-   else if (strBufferName == "lightSource")
-      nRet = 1;
-   else if (strBufferName == "material")
-      nRet = 2;
-   else if (strBufferName == "renderPassState")
-      nRet = 3;
-
-   else if (strBufferName == "constantPrimvars")
-      nRet = 4;
-   else if (strBufferName == "primitiveParam")
-      nRet = 5;
-   else if (strBufferName == "edgeIndices")
-      nRet = 6;
-
-   //
-   // compute shader
-   else if (strBufferName == "params")
-      nRet = 0;
-   else if (strBufferName == "points")
-      nRet = 1;
-   else if (strBufferName == "normals")
-      nRet = 2;
-   else if (strBufferName == "entry")
-      nRet = 3;
-
-   if (nRet < 0)
-      TF_WARN("Unexpected buffer binding.");
-
-   return nRet;
-}
-
-
 std::vector<CD3DX12_ROOT_PARAMETER1> 
 HgiDXShaderProgram::GetRootParameters() const
 {
-   std::vector<CD3DX12_ROOT_PARAMETER1> ret;
+   if (_rootParams.size() > 0)
+      return _rootParams;
 
    //
    // I will collect these from all the stages
+   int nSamplers = 0;
+
    HgiShaderFunctionHandleVector shaderFcs = GetShaderFunctions();
    for (HgiShaderFunctionHandle sfh : shaderFcs)
    {
@@ -252,13 +250,16 @@ HgiDXShaderProgram::GetRootParameters() const
          const std::vector<DXShaderInfo::RootParamInfo>& rootParams = pDxSfc->GetStageRootParamInfo();
          for (DXShaderInfo::RootParamInfo rp : rootParams)
          {
-            std::map<UINT, DXShaderInfo::RootParamInfo>::const_iterator it = _rootParamsBySuggestedBindIdx.find(rp.nSuggestedBindingIdx);
+            UINT64 key = rp.nRegisterSpace;
+            key = (key << 32) | rp.nSuggestedBindingIdx;
+
+            std::map<UINT64, DXShaderInfo::RootParamInfo>::const_iterator it = _rootParamsBySuggestedBindIdx.find(key);
             if (it != _rootParamsBySuggestedBindIdx.end())
             {
                if (it->second.strName != rp.strName)
                {
                   //
-                  // From what I could tell, this does happen, but if it does,
+                  // From what I could tell, this does not happen, but if it does,
                   // it can be handled by using different register spaces for the params
                   TF_WARN("Overlapping root params definitions binding");
                }
@@ -268,13 +269,19 @@ HgiDXShaderProgram::GetRootParameters() const
                //
                // I should be able to drop the hard-coded bindings by now
                //rp.nBindingIdx = rp.nShaderRegister = _GetHardCodedBindingIdx(rp.strName);
-               rp.nBindingIdx = rp.nShaderRegister = rp.nShaderRegister;
-               rp.nRegisterSpace = 0;
-               _rootParamsBySuggestedBindIdx[rp.nSuggestedBindingIdx] = rp;
+
+               rp.nBindingIdx = rp.nShaderRegister;
+               _rootParamsBySuggestedBindIdx[key] = rp;
+
+               //
+               // this is sync'd to the "generator" code
+               // for the moment I am making 2 assumtions:
+               //    only input textures need a sampler
+               //    and the writable ones are output
+               if (rp.bTexture /* && (!rp.bWritable)*/)
+                  nSamplers++;
             }   
          }
-
-         break;
       }
    }
 
@@ -282,37 +289,75 @@ HgiDXShaderProgram::GetRootParameters() const
    // For DirectX the order of root parameters matters more than the bind register
    // and since I know HDSt defines input with gaps, I'll declare them in order
    // and note the new position (for later when I bind the buffers)
-   
-   ret.resize(_rootParamsBySuggestedBindIdx.size());
+   int nRootParamsNoSamplers = _rootParamsBySuggestedBindIdx.size();
+   _rootParams.resize(_rootParamsBySuggestedBindIdx.size() + nSamplers);
 
    int nIdx = 0;
-   std::map<UINT, DXShaderInfo::RootParamInfo>::iterator it = _rootParamsBySuggestedBindIdx.begin();
+   int nIdxSamplers = 0;
+   std::map<UINT64, DXShaderInfo::RootParamInfo>::iterator it = _rootParamsBySuggestedBindIdx.begin();
    while (it != _rootParamsBySuggestedBindIdx.end())
    {
-      //CD3DX12_ROOT_PARAMETER1& rp = ret[it->second.nBindingIdx];
-      CD3DX12_ROOT_PARAMETER1& rp = ret[nIdx];
-      if (it->second.bConst)
-         rp.InitAsConstantBufferView(it->second.nShaderRegister, it->second.nRegisterSpace);
-      else if(it->second.bWritable)
-         rp.InitAsUnorderedAccessView(it->second.nShaderRegister, it->second.nRegisterSpace);
+      CD3DX12_ROOT_PARAMETER1& rp = _rootParams[nIdx];
+
+      if(it->second.bTexture)
+      {
+         //
+         // define a sampler first
+         CD3DX12_ROOT_PARAMETER1& rpSampler = _rootParams[nRootParamsNoSamplers + nIdxSamplers];
+         _descRangeBySuggestedBindIdx[nRootParamsNoSamplers + nIdxSamplers] = CD3DX12_DESCRIPTOR_RANGE1(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, it->second.nShaderRegister, it->second.nRegisterSpace);
+         rpSampler.InitAsDescriptorTable(1, &_descRangeBySuggestedBindIdx[nRootParamsNoSamplers + nIdxSamplers], D3D12_SHADER_VISIBILITY_ALL);
+         it->second.nSamplerBindingIdx = nRootParamsNoSamplers + nIdxSamplers;
+         nIdxSamplers++;
+
+         // I am not sure how to create a CBV texture, so for now:
+         //if (it->second.bConst)
+         //   _descRangeBySuggestedBindIdx[nIdx] = CD3DX12_DESCRIPTOR_RANGE1(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, it->second.nShaderRegister, it->second.nRegisterSpace);
+         /*else*/ if (it->second.bWritable)
+            _descRangeBySuggestedBindIdx[nIdx] = CD3DX12_DESCRIPTOR_RANGE1(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, it->second.nShaderRegister, it->second.nRegisterSpace);
+         else
+            _descRangeBySuggestedBindIdx[nIdx] = CD3DX12_DESCRIPTOR_RANGE1(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, it->second.nShaderRegister, it->second.nRegisterSpace);
+         
+         //
+         // TODO: for visibility I guess I could be more precise, if it was important
+         // (I would have to gather and pass down the information about where each reasource is needed)
+         rp.InitAsDescriptorTable(1, &_descRangeBySuggestedBindIdx[nIdx], D3D12_SHADER_VISIBILITY_ALL);
+      }
       else
-         rp.InitAsShaderResourceView(it->second.nShaderRegister, it->second.nRegisterSpace);
-      
+      {
+         if (it->second.bConst)
+            rp.InitAsConstantBufferView(it->second.nShaderRegister, it->second.nRegisterSpace);
+         else if (it->second.bWritable)
+            rp.InitAsUnorderedAccessView(it->second.nShaderRegister, it->second.nRegisterSpace);
+         else
+            rp.InitAsShaderResourceView(it->second.nShaderRegister, it->second.nRegisterSpace);
+      }
+
       it->second.nBindingIdx = nIdx;
       
       nIdx++;
       it++;
    }
 
-   return ret;
+   return _rootParams;
+}
+
+std::vector<CD3DX12_STATIC_SAMPLER_DESC> 
+HgiDXShaderProgram::GetStaticSamplersDescs() const
+{
+   //CD3DX12_STATIC_SAMPLER_DESC txSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR);
+   // no static samplers anymore
+   return { };
 }
 
 bool
-HgiDXShaderProgram::GetInfo(UINT nSuggestedBindIdx, DXShaderInfo::RootParamInfo& rpi, bool bMovedParam) const
+HgiDXShaderProgram::GetInfo(UINT nSuggestedBindIdx, UINT nRegisterSpace, DXShaderInfo::RootParamInfo& rpi, bool bMovedParam) const
 {
    bool bRet = false;
 
-   std::map<UINT, DXShaderInfo::RootParamInfo>::const_iterator it = _rootParamsBySuggestedBindIdx.find(nSuggestedBindIdx);
+   UINT64 key = nRegisterSpace;
+   key = (key << 32) | nSuggestedBindIdx;
+   
+   std::map<UINT64, DXShaderInfo::RootParamInfo>::const_iterator it = _rootParamsBySuggestedBindIdx.find(key);
    if (it != _rootParamsBySuggestedBindIdx.end())
    {
       bRet = true;

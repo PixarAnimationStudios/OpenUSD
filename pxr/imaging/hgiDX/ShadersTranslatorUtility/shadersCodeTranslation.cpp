@@ -37,21 +37,23 @@ bool fix_glslfx_2_hlslfx(std::string& strCode);
 bool fix_matInit(std::string& strCode);
 bool fix_vectorsInit(std::string& strCode);
 bool fix_constVarDecl(std::string& strCode);
+bool fix_PIDecl(std::string& strCode);
 bool fix_atan(std::string& strCode);
 bool fix_computeShaders(const std::string& strFileName, std::string& strCode);
 bool fix_geometryShaders(const std::string& strFileName, std::string& strCode);
 bool fix_matMultiplication(std::string& strCode);
-bool fix_forward_decl(std::string& strCode);
+bool remove_forward_decl(std::string& strCode);
 bool fix_verySpecialCases(const std::string& strFileName, std::string& strCode);
 
 bool executeCodeTranslation(const std::string& strSourceFileName, std::string& strCode)
 {
    bool bSomethingChanged = false;
    bSomethingChanged = fix_glslfx_2_hlslfx(strCode) || bSomethingChanged;
-   bSomethingChanged = fix_forward_decl(strCode) || bSomethingChanged;
+   bSomethingChanged = remove_forward_decl(strCode) || bSomethingChanged;
    bSomethingChanged = fix_matInit(strCode) || bSomethingChanged;
    bSomethingChanged = fix_vectorsInit(strCode) || bSomethingChanged;
    bSomethingChanged = fix_constVarDecl(strCode) || bSomethingChanged;
+   bSomethingChanged = fix_PIDecl(strCode) || bSomethingChanged;
    bSomethingChanged = fix_atan(strCode) || bSomethingChanged;
 
    bSomethingChanged = fix_computeShaders(strSourceFileName, strCode) || bSomethingChanged;
@@ -200,7 +202,7 @@ bool fix_vectorsInit(std::string& strCode)
 
    for (const auto& it : vecCtorsToChange)
    {
-      std::string strRegexVecCtor = "(?!.*(.xy))" + it.first + "\\(([0-9.a-zA-Z_]*)\\)";
+      std::string strRegexVecCtor = "(?!.*(.xy))" + it.first + "\\(([0-9.a-zA-Z_/]*)\\)";
       std::string strVecDxCtor = it.first + "(";
       nTimesAdd = it.second;
 
@@ -237,30 +239,30 @@ bool fix_atan(std::string& strCode)
    return bRet;
 }
 
-std::map<std::string, std::string> forwardDeclsToChange = {
-   {"FORWARD_DECL\\(float GetPointRasterSize\\(int\\)\\);", "FORWARD_DECL(float GetPointRasterSize(int id));"},
-   {"FORWARD_DECL\\(void ProcessPointId\\(int\\)\\);", "FORWARD_DECL(void ProcessPointId(int id));"},
-   {"FORWARD_DECL\\(bool IsPointSelected\\(int\\)\\);", "FORWARD_DECL(bool IsPointSelected(int id));"},
-};
-
-
-bool fix_forward_decl(std::string& strCode)
+//
+// with shader model 6 I get an error for forawrd declarations
+// because they are hopefully always inside my hack "scope"
+// and in there them seem to duplicate functions declarations
+// (inside a class / struct there is no need for forward declarations)
+bool remove_forward_decl(std::string& strCode)
 {
-   //
-   // I will take a very simple route for this, for now:
-   // rather than build a regex, I'll search for the few cases I know cause issues
-   // especially since I think this change belongs in the glslfx directly, should not be done during translation
    bool bSomethingChanged = false;
 
-   for (const auto& it : forwardDeclsToChange)
-      bSomethingChanged = replaceText(strCode, std::regex(it.first), it.second) || bSomethingChanged;
+   std::regex reDecl(R"(FORWARD_DECL[\s\S]*?;[\s\S]*?\n)");
+   std::string strFix = "";
+
+   bSomethingChanged = replaceText(strCode, reDecl, strFix) || bSomethingChanged;
 
    return bSomethingChanged;
 }
 
+// const float decls
 std::string constVarDecl[] = {
-   "const float edgePickRadius", 
-   "const float edgePickParametricRadius"
+   "edgePickRadius", 
+   "edgePickParametricRadius",
+   "farPlane",
+   "deltaPhi",
+   "deltaTheta",
 };
 
 bool fix_constVarDecl(std::string& strCode)
@@ -275,18 +277,57 @@ bool fix_constVarDecl(std::string& strCode)
    // const float edgePickRadius -> static const float edgePickRadius
    bool bSomethingChanged = false;
 
+   //I will search for something like this: "const float (edgePickRadius.*=)(.*;).*\n"
+   fcDealWithMatch fcSC = [](std::string& strNewCode, const std::smatch& match) {
+
+      std::string str1 = match[1].str(); // the name of the static const variable
+      std::string str2 = match[2].str(); // the value of the static const
+
+      strNewCode += "#define ";
+      strNewCode += str1.substr(0, str1.length() - 1); // no more '='
+      strNewCode += " "; // not sure there were spaces around '='
+      strNewCode += str2.substr(0, str2.length() - 1); // no more ';'
+      strNewCode += "\n";
+
+      };
+   std::string strReplaceWith = "";
+
    for (const std::string& decl : constVarDecl)
    {
-      std::string strReplace = "static " + decl;
-      bSomethingChanged = replaceText(strCode, std::regex(decl), strReplace) || bSomethingChanged;
+      std::string findExpr = "const float (";
+      findExpr += decl;
+      findExpr += ".*=)(.*;).*\\n";
+
+      std::regex strFind(findExpr);
+      bSomethingChanged = replaceText(strCode, strFind, strReplaceWith, &fcSC) || bSomethingChanged;
    }
 
    return bSomethingChanged;
 }
 
+bool fix_PIDecl(std::string& strCode)
+{
+   //
+   // I want to simply remove all PI declarationd for now 
+   // because they are inconsistent and when inconsistencies meet they do not compile
+   // const float PI = 3.14
+   // #define PI 3.14
+   bool bSomethingChanged = false;
+
+   std::regex reDecl1(R"(.*const float PI.*)");
+   std::regex reDecl2(R"(.*#define PI.*)");
+   std::string strFix = "";
+
+   bSomethingChanged = replaceText(strCode, reDecl1, strFix) || bSomethingChanged;
+   bSomethingChanged = replaceText(strCode, reDecl2, strFix) || bSomethingChanged;
+   
+   return bSomethingChanged;
+}
 
 std::set<std::string> strShadersToCheckForCompute = {
    "compute.glslfx",
+   "domeLight.glslfx",
+   "skydome.glslfx"
 };
 
 std::string computeShadersVarsToChange[] = {
@@ -319,6 +360,10 @@ std::string computeShadersVarsToChange[] = {
    //"drawRangeNDC",
    //"drawCommandNumUints",
    //"cullMatrix",
+   "inRoughness", 
+   "invProjMatrix",
+   "viewToWorld",
+   "lightTransform"
 };
 
 bool fix_computeShaders(const std::string& strFileName, std::string& strCode)
@@ -465,6 +510,10 @@ std::string matMulWhitelist[] = {
    "wvMatrix",
    "Peye",
    "invT",
+   "s2eMat",
+   "invProjMatrix",
+   "lightTransform",
+   "viewToWorld",
 };
 
 std::string matMulBlacklist[] = {
@@ -554,7 +603,7 @@ bool fix_matMultiplication_AB_eq(std::string& strCode)
    // I will do a set of additional empyrical checks to try and only change the legitimate cases
 
    bool bRet = false;
-   std::regex exprMatMulAB(R"(((= *)|(return *))\n? *([0-9a-zA-Z\(\)_,.]+) *\n?\t* *\* *\n?\t* *([0-9a-zA-Z\(\)_ ,]+)\;)");
+   std::regex exprMatMulAB(R"(((= *)|(return *))\n? *([0-9a-zA-Z\(\)_,.]+) *\n?\t* *\* *\n?\t* *([0-9a-zA-Z\(\)_ .,]+)\;)");
    //= *\n? *([0-9a-zA-Z()_,.]+) *\n?\t* *\* *\n?\t* *([0-9a-zA-Z()_ ,]+)\;
    
    fcDealWithMatch fcMulMat = [&bRet](std::string& strNewCode, const std::smatch& match) {
@@ -702,10 +751,13 @@ bool fix_special_mul_ms(std::string& strCode);
 bool fix_big_mat_mul(std::string& strCode);
 bool fix_special_mul(std::string& strCode);
 
+bool fix_tx_query_levels(std::string& strCode);
 
 bool fix_verySpecialCases(const std::string& strFileName, std::string& strCode)
 {
    bool bRet = false;
+
+   bRet = fix_tx_query_levels(strCode) || bRet;
    
    if (0 == strFileName.compare("terminals.glslfx"))
    {
@@ -736,6 +788,34 @@ bool fix_verySpecialCases(const std::string& strFileName, std::string& strCode)
       bRet = fix_big_mat_mul(strCode) || bRet;
       bRet = fix_special_mul(strCode) || bRet;
    }
+
+   return bRet;
+}
+
+bool fix_tx_query_levels(std::string& strCode)
+{
+   //
+   // There is one texture related piece of code (query) that is very different in DX compared to GL
+   // e.g. textureQueryLevels(HdGetSampler_domeLightPrefilter())
+   // 
+   // My plan is to turn it into somthing like:
+   // textureQueryLevels_domeLightPrefilter
+   // and in my code generator I will take care to generate that function together with the others
+
+   bool bRet = false;
+   std::regex strFind1(R"(textureQueryLevels\( *HdGetSampler_([0-9.a-zA-Z]*)\(\)\))");
+   std::regex strFind2(R"(textureQueryLevels\( *HgiGetSampler_([0-9.a-zA-Z]*)\(\)\))");
+   std::string strFix = "";
+
+   fcDealWithMatch fcReplace = [](std::string& strNewCode, const std::smatch& match) {
+      std::string strTxName = match[1].str();
+
+      strNewCode += "textureQueryLevels_";
+      strNewCode += strTxName;
+      strNewCode += "()";
+   };
+   bRet = replaceText(strCode, strFind1, strFix, &fcReplace) || bRet;
+   bRet = replaceText(strCode, strFind2, strFix, &fcReplace) || bRet;
 
    return bRet;
 }
@@ -867,7 +947,43 @@ bool fix_big_mat_mul(std::string& strCode)
 }
 bool fix_special_mul(std::string& strCode)
 {
-   std::regex strFind(R"(HdGetInstance_instanceTransform\(level, MAT4Init\(1\)\) \* m)");
-   std::string strFix = "mul(HdGetInstance_instanceTransform(level, MAT4Init(1)), m)";
-   return replaceText(strCode, strFind, strFix);
+   bool bRet = false;
+
+   //
+   // I am trying to fix 2x2 cases here:
+   // m = inverse(HdGetInstance_hydra_instanceTransforms(level, MAT4Init(1))) * m;
+   // m = HdGetInstance_hydra_instanceTransforms(level, MAT4Init(1)) * m;
+   //
+   // m = HdGetInstance_instanceTransform(level, MAT4Init(1)) * m;
+   // m = inverse(HdGetInstance_instanceTransform(level, MAT4Init(1))) * m;
+
+
+   std::regex strFind1(R"((.*?=)(.*?)(\(?)(HdGetInstance_hydra_instanceTransforms\(level, MAT4Init\(1\)\))(\)?)( ?\* ?m)(.*))");
+   std::regex strFind2(R"((.*?=)(.*?)(\(?)(HdGetInstance_instanceTransform\(level, MAT4Init\(1\)\))(\)?)( ?\* ?m)(.*))");
+   std::string strFix = "";
+
+   fcDealWithMatch fcInstTrfFix = [](std::string& strNewCode, const std::smatch& match) {
+      std::string str1 = match[1].str();
+      std::string str2 = match[2].str();
+      std::string str3 = match[3].str();
+      std::string str4 = match[4].str();
+      std::string str5 = match[5].str();
+      //std::string str6 = match[6].str();
+      std::string str7 = match[7].str();
+
+      strNewCode += str1;
+      strNewCode += " mul(";
+      strNewCode += str2; // could be empty
+      strNewCode += str3; // could be empty
+      strNewCode += str4; // this is the main fc call
+      strNewCode += str5; // could be empty
+
+      strNewCode += ", m)";
+      strNewCode += str7;
+   };
+
+   bRet = replaceText(strCode, strFind1, strFix, &fcInstTrfFix) || bRet;
+   bRet = replaceText(strCode, strFind2, strFix, &fcInstTrfFix) || bRet;
+   
+   return bRet;
 }
