@@ -118,10 +118,10 @@ def GetTargetArchPair(context):
 def SupportsMacOSUniversalBinaries():
     if not MacOS():
         return False
-    XcodeOutput = GetCommandOutput('/usr/bin/xcodebuild -version')
-    XcodeFind = XcodeOutput.rfind('Xcode ', 0, len(XcodeOutput))
-    XcodeVersion = XcodeOutput[XcodeFind:].split(' ')[1]
-    return (XcodeVersion > '11.0')
+    SDKVersionBytes  = subprocess.check_output(['xcrun', '--show-sdk-version'])
+    SDKVersion = SDKVersionBytes.decode('utf8').strip()
+    # Xcode/CommandLineTools 11 toolset came with SDK 10.15
+    return (SDKVersion > '10.15')
 
 def SetTarget(context, targetName):
     context.targetNative = (targetName == TARGET_NATIVE)
@@ -151,15 +151,16 @@ def ExtractFilesRecursive(path, cond):
     return files
 
 def CodesignFiles(files):
-    SDKVersion  = subprocess.check_output(
-        ['xcodebuild', '-version']).strip()[6:10]
+    SDKVersionBytes  = subprocess.check_output(['xcrun', '--show-sdk-version'])
+    SDKVersion = SDKVersionBytes.decode('utf8').strip()
+
     codeSignIDs = subprocess.check_output(
         ['security', 'find-identity', '-vp', 'codesigning'])
 
     codeSignID = "-"
     if os.environ.get('CODE_SIGN_ID'):
         codeSignID = os.environ.get('CODE_SIGN_ID')
-    elif float(SDKVersion) >= 11.0 and \
+    elif SDKVersion >= '10.15' and \
                 codeSignIDs.find(b'Apple Development') != -1:
         codeSignID = "Apple Development"
     elif codeSignIDs.find(b'Mac Developer') != -1:
