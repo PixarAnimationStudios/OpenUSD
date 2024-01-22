@@ -20,6 +20,35 @@ Results for composing </Char/Anim>
 Prim Stack:
     CharRig.sdf          /CharRig/Anim
 
+Child names:
+     ['LeftLeg', 'RightLeg']
+
+------------------------------------------------------------------------
+Results for composing </Char/Anim/LeftLeg>
+
+Prim Stack:
+    LegRig.sdf           /LegRig{LegRigStyle=1Leg}Anim
+
+Property names:
+     ['avarFor1LegStyle']
+
+Property stacks:
+/Char/Anim/LeftLeg.avarFor1LegStyle:
+    LegRig.sdf           /LegRig{LegRigStyle=1Leg}Anim.avarFor1LegStyle
+
+------------------------------------------------------------------------
+Results for composing </Char/Anim/RightLeg>
+
+Prim Stack:
+    LegRig.sdf           /LegRig{LegRigStyle=2Leg}Anim
+
+Property names:
+     ['avarFor2LegStyle']
+
+Property stacks:
+/Char/Anim/RightLeg.avarFor2LegStyle:
+    LegRig.sdf           /LegRig{LegRigStyle=2Leg}Anim.avarFor2LegStyle
+
 ------------------------------------------------------------------------
 Results for composing </Char/Rig>
 
@@ -72,6 +101,9 @@ Prim Stack:
 Variant Selections:
     {LegRigStyle = 1Leg}
 
+Prohibited child names:
+     ['Anim']
+
 ------------------------------------------------------------------------
 Results for composing </Char/Rig/RightLegRig>
 
@@ -85,6 +117,9 @@ Prim Stack:
 
 Variant Selections:
     {LegRigStyle = 2Leg}
+
+Prohibited child names:
+     ['Anim']
 
 ------------------------------------------------------------------------
 Results for composing </Char/InheritTest>
