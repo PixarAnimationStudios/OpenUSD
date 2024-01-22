@@ -49,9 +49,6 @@ TF_DEFINE_PUBLIC_TOKENS(HdRenderProductSchemaTokens,
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
 
-
-
-
 HdPathDataSourceHandle
 HdRenderProductSchema::GetPath()
 {
@@ -129,6 +126,13 @@ HdRenderProductSchema::GetDisableMotionBlur()
         HdRenderProductSchemaTokens->disableMotionBlur);
 }
 
+HdBoolDataSourceHandle
+HdRenderProductSchema::GetDisableDepthOfField()
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        HdRenderProductSchemaTokens->disableDepthOfField);
+}
+
 HdContainerDataSourceHandle
 HdRenderProductSchema::GetNamespacedSettings()
 {
@@ -150,13 +154,15 @@ HdRenderProductSchema::BuildRetained(
         const HdVec2fDataSourceHandle &apertureSize,
         const HdVec4fDataSourceHandle &dataWindowNDC,
         const HdBoolDataSourceHandle &disableMotionBlur,
+        const HdBoolDataSourceHandle &disableDepthOfField,
         const HdContainerDataSourceHandle &namespacedSettings
 )
 {
-    TfToken _names[12];
-    HdDataSourceBaseHandle _values[12];
+    TfToken _names[13];
+    HdDataSourceBaseHandle _values[13];
 
     size_t _count = 0;
+
     if (path) {
         _names[_count] = HdRenderProductSchemaTokens->path;
         _values[_count++] = path;
@@ -212,70 +218,18 @@ HdRenderProductSchema::BuildRetained(
         _values[_count++] = disableMotionBlur;
     }
 
+    if (disableDepthOfField) {
+        _names[_count] = HdRenderProductSchemaTokens->disableDepthOfField;
+        _values[_count++] = disableDepthOfField;
+    }
+
     if (namespacedSettings) {
         _names[_count] = HdRenderProductSchemaTokens->namespacedSettings;
         _values[_count++] = namespacedSettings;
     }
-
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
 
-/*static*/
-HdRenderProductSchema
-HdRenderProductSchema::GetFromParent(
-        const HdContainerDataSourceHandle &fromParentContainer)
-{
-    return HdRenderProductSchema(
-        fromParentContainer
-        ? HdContainerDataSource::Cast(fromParentContainer->Get(
-                HdRenderProductSchemaTokens->renderProduct))
-        : nullptr);
-}
-
-/*static*/
-const TfToken &
-HdRenderProductSchema::GetSchemaToken()
-{
-    return HdRenderProductSchemaTokens->renderProduct;
-}
-
-/*static*/
-const HdDataSourceLocator &
-HdRenderProductSchema::GetDefaultLocator()
-{
-    static const HdDataSourceLocator locator(GetSchemaToken());
-    return locator;
-} 
-
-/* static */
-const HdDataSourceLocator &
-HdRenderProductSchema::GetResolutionLocator()
-{
-    static const HdDataSourceLocator locator =
-        GetDefaultLocator().Append(
-            HdRenderProductSchemaTokens->resolution);
-    return locator;
-}
-
-/* static */
-const HdDataSourceLocator &
-HdRenderProductSchema::GetRenderVarsLocator()
-{
-    static const HdDataSourceLocator locator =
-        GetDefaultLocator().Append(
-            HdRenderProductSchemaTokens->renderVars);
-    return locator;
-}
-
-/* static */
-const HdDataSourceLocator &
-HdRenderProductSchema::GetNamespacedSettingsLocator()
-{
-    static const HdDataSourceLocator locator =
-        GetDefaultLocator().Append(
-            HdRenderProductSchemaTokens->namespacedSettings);
-    return locator;
-}
 HdRenderProductSchema::Builder &
 HdRenderProductSchema::Builder::SetPath(
     const HdPathDataSourceHandle &path)
@@ -365,6 +319,14 @@ HdRenderProductSchema::Builder::SetDisableMotionBlur(
 }
 
 HdRenderProductSchema::Builder &
+HdRenderProductSchema::Builder::SetDisableDepthOfField(
+    const HdBoolDataSourceHandle &disableDepthOfField)
+{
+    _disableDepthOfField = disableDepthOfField;
+    return *this;
+}
+
+HdRenderProductSchema::Builder &
 HdRenderProductSchema::Builder::SetNamespacedSettings(
     const HdContainerDataSourceHandle &namespacedSettings)
 {
@@ -387,9 +349,66 @@ HdRenderProductSchema::Builder::Build()
         _apertureSize,
         _dataWindowNDC,
         _disableMotionBlur,
+        _disableDepthOfField,
         _namespacedSettings
     );
 }
 
+/*static*/
+HdRenderProductSchema
+HdRenderProductSchema::GetFromParent(
+        const HdContainerDataSourceHandle &fromParentContainer)
+{
+    return HdRenderProductSchema(
+        fromParentContainer
+        ? HdContainerDataSource::Cast(fromParentContainer->Get(
+                HdRenderProductSchemaTokens->renderProduct))
+        : nullptr);
+}
+
+/*static*/
+const TfToken &
+HdRenderProductSchema::GetSchemaToken()
+{
+    return HdRenderProductSchemaTokens->renderProduct;
+}
+
+/*static*/
+const HdDataSourceLocator &
+HdRenderProductSchema::GetDefaultLocator()
+{
+    static const HdDataSourceLocator locator(GetSchemaToken());
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdRenderProductSchema::GetResolutionLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdRenderProductSchemaTokens->resolution);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdRenderProductSchema::GetRenderVarsLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdRenderProductSchemaTokens->renderVars);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdRenderProductSchema::GetNamespacedSettingsLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdRenderProductSchemaTokens->namespacedSettings);
+    return locator;
+} 
 
 PXR_NAMESPACE_CLOSE_SCOPE

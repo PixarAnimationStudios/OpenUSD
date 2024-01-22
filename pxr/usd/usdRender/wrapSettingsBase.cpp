@@ -90,6 +90,13 @@ _CreateDisableMotionBlurAttr(UsdRenderSettingsBase &self,
     return self.CreateDisableMotionBlurAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateDisableDepthOfFieldAttr(UsdRenderSettingsBase &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateDisableDepthOfFieldAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
+}
 
 static std::string
 _Repr(const UsdRenderSettingsBase &self)
@@ -169,6 +176,13 @@ void wrapUsdRenderSettingsBase()
              &This::GetDisableMotionBlurAttr)
         .def("CreateDisableMotionBlurAttr",
              &_CreateDisableMotionBlurAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetDisableDepthOfFieldAttr",
+             &This::GetDisableDepthOfFieldAttr)
+        .def("CreateDisableDepthOfFieldAttr",
+             &_CreateDisableDepthOfFieldAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

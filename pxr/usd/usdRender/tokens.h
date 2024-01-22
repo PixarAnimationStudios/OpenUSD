@@ -114,6 +114,10 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderPass
     const TfToken denoisePass;
+    /// \brief "disableDepthOfField"
+    /// 
+    /// UsdRenderSettingsBase
+    const TfToken disableDepthOfField;
     /// \brief "disableMotionBlur"
     /// 
     /// UsdRenderSettingsBase

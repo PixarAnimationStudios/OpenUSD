@@ -304,6 +304,7 @@ _ToHdRenderProducts(UsdRenderSpec const &renderSpec)
         hdProduct.dataWindowNDC = product.dataWindowNDC;
 
         hdProduct.disableMotionBlur = product.disableMotionBlur;
+        hdProduct.disableDepthOfField = product.disableDepthOfField;
         hdProduct.namespacedSettings = product.namespacedSettings;
 
         hdProducts.push_back(std::move(hdProduct));

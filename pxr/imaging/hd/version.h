@@ -94,8 +94,10 @@
 //           HdMaterialNode::GetParameters, GetInputConnections
 //           return Hydra schemas instead of just container data sources.
 //           schemaTypeDefs.h replaces vectorSchemaTypeDefs.h.
+// 63 -> 64: Adding disableDepthOfField to HdRenderSettings::RenderProduct
+//
 
-#define HD_API_VERSION 63
+#define HD_API_VERSION 64
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

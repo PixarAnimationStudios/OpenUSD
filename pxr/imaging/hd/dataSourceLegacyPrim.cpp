@@ -2275,6 +2275,9 @@ _ToVectorDS(const HdRenderProducts &hdProducts)
                 .SetDisableMotionBlur(
                     HdRetainedTypedSampledDataSource<bool>::New(
                         hdProduct.disableMotionBlur))
+                .SetDisableDepthOfField(
+                    HdRetainedTypedSampledDataSource<bool>::New(
+                        hdProduct.disableDepthOfField))
                 .SetNamespacedSettings(
                     _ToContainerDS(hdProduct.namespacedSettings))
                 .Build());

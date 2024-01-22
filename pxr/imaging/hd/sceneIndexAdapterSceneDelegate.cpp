@@ -1375,6 +1375,9 @@ _ToRenderProduct(HdRenderProductSchema productSchema)
     if (auto h = productSchema.GetDisableMotionBlur()) {
         prod.disableMotionBlur = h->GetTypedValue(0);
     }
+    if (auto h = productSchema.GetDisableDepthOfField()) {
+        prod.disableDepthOfField = h->GetTypedValue(0);
+    }
     if (auto h = productSchema.GetNamespacedSettings()) {
         prod.namespacedSettings = _ToDictionary(h);
     }

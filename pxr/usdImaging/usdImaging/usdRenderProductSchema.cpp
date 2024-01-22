@@ -33,6 +33,7 @@
 /* ************************************************************************** */
 
 #include "pxr/usdImaging/usdImaging/usdRenderProductSchema.h"
+
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/base/trace/trace.h"
@@ -47,9 +48,6 @@ TF_DEFINE_PUBLIC_TOKENS(UsdImagingUsdRenderProductSchemaTokens,
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
-
-
-
 
 HdVec2iDataSourceHandle
 UsdImagingUsdRenderProductSchema::GetResolution()
@@ -84,6 +82,13 @@ UsdImagingUsdRenderProductSchema::GetDisableMotionBlur()
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         UsdImagingUsdRenderProductSchemaTokens->disableMotionBlur);
+}
+
+HdBoolDataSourceHandle
+UsdImagingUsdRenderProductSchema::GetDisableDepthOfField()
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        UsdImagingUsdRenderProductSchemaTokens->disableDepthOfField);
 }
 
 HdPathDataSourceHandle
@@ -129,6 +134,7 @@ UsdImagingUsdRenderProductSchema::BuildRetained(
         const HdTokenDataSourceHandle &aspectRatioConformPolicy,
         const HdVec4fDataSourceHandle &dataWindowNDC,
         const HdBoolDataSourceHandle &disableMotionBlur,
+        const HdBoolDataSourceHandle &disableDepthOfField,
         const HdPathDataSourceHandle &camera,
         const HdTokenDataSourceHandle &productType,
         const HdTokenDataSourceHandle &productName,
@@ -136,10 +142,11 @@ UsdImagingUsdRenderProductSchema::BuildRetained(
         const HdContainerDataSourceHandle &namespacedSettings
 )
 {
-    TfToken _names[10];
-    HdDataSourceBaseHandle _values[10];
+    TfToken _names[11];
+    HdDataSourceBaseHandle _values[11];
 
     size_t _count = 0;
+
     if (resolution) {
         _names[_count] = UsdImagingUsdRenderProductSchemaTokens->resolution;
         _values[_count++] = resolution;
@@ -163,6 +170,11 @@ UsdImagingUsdRenderProductSchema::BuildRetained(
     if (disableMotionBlur) {
         _names[_count] = UsdImagingUsdRenderProductSchemaTokens->disableMotionBlur;
         _values[_count++] = disableMotionBlur;
+    }
+
+    if (disableDepthOfField) {
+        _names[_count] = UsdImagingUsdRenderProductSchemaTokens->disableDepthOfField;
+        _values[_count++] = disableDepthOfField;
     }
 
     if (camera) {
@@ -189,46 +201,9 @@ UsdImagingUsdRenderProductSchema::BuildRetained(
         _names[_count] = UsdImagingUsdRenderProductSchemaTokens->namespacedSettings;
         _values[_count++] = namespacedSettings;
     }
-
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
 
-/*static*/
-UsdImagingUsdRenderProductSchema
-UsdImagingUsdRenderProductSchema::GetFromParent(
-        const HdContainerDataSourceHandle &fromParentContainer)
-{
-    return UsdImagingUsdRenderProductSchema(
-        fromParentContainer
-        ? HdContainerDataSource::Cast(fromParentContainer->Get(
-                UsdImagingUsdRenderProductSchemaTokens->__usdRenderProduct))
-        : nullptr);
-}
-
-/*static*/
-const TfToken &
-UsdImagingUsdRenderProductSchema::GetSchemaToken()
-{
-    return UsdImagingUsdRenderProductSchemaTokens->__usdRenderProduct;
-}
-
-/*static*/
-const HdDataSourceLocator &
-UsdImagingUsdRenderProductSchema::GetDefaultLocator()
-{
-    static const HdDataSourceLocator locator(GetSchemaToken());
-    return locator;
-} 
-
-/* static */
-const HdDataSourceLocator &
-UsdImagingUsdRenderProductSchema::GetNamespacedSettingsLocator()
-{
-    static const HdDataSourceLocator locator =
-        GetDefaultLocator().Append(
-            UsdImagingUsdRenderProductSchemaTokens->namespacedSettings);
-    return locator;
-}
 UsdImagingUsdRenderProductSchema::Builder &
 UsdImagingUsdRenderProductSchema::Builder::SetResolution(
     const HdVec2iDataSourceHandle &resolution)
@@ -266,6 +241,14 @@ UsdImagingUsdRenderProductSchema::Builder::SetDisableMotionBlur(
     const HdBoolDataSourceHandle &disableMotionBlur)
 {
     _disableMotionBlur = disableMotionBlur;
+    return *this;
+}
+
+UsdImagingUsdRenderProductSchema::Builder &
+UsdImagingUsdRenderProductSchema::Builder::SetDisableDepthOfField(
+    const HdBoolDataSourceHandle &disableDepthOfField)
+{
+    _disableDepthOfField = disableDepthOfField;
     return *this;
 }
 
@@ -318,6 +301,7 @@ UsdImagingUsdRenderProductSchema::Builder::Build()
         _aspectRatioConformPolicy,
         _dataWindowNDC,
         _disableMotionBlur,
+        _disableDepthOfField,
         _camera,
         _productType,
         _productName,
@@ -326,5 +310,41 @@ UsdImagingUsdRenderProductSchema::Builder::Build()
     );
 }
 
+/*static*/
+UsdImagingUsdRenderProductSchema
+UsdImagingUsdRenderProductSchema::GetFromParent(
+        const HdContainerDataSourceHandle &fromParentContainer)
+{
+    return UsdImagingUsdRenderProductSchema(
+        fromParentContainer
+        ? HdContainerDataSource::Cast(fromParentContainer->Get(
+                UsdImagingUsdRenderProductSchemaTokens->__usdRenderProduct))
+        : nullptr);
+}
+
+/*static*/
+const TfToken &
+UsdImagingUsdRenderProductSchema::GetSchemaToken()
+{
+    return UsdImagingUsdRenderProductSchemaTokens->__usdRenderProduct;
+}
+
+/*static*/
+const HdDataSourceLocator &
+UsdImagingUsdRenderProductSchema::GetDefaultLocator()
+{
+    static const HdDataSourceLocator locator(GetSchemaToken());
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+UsdImagingUsdRenderProductSchema::GetNamespacedSettingsLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            UsdImagingUsdRenderProductSchemaTokens->namespacedSettings);
+    return locator;
+} 
 
 PXR_NAMESPACE_CLOSE_SCOPE
