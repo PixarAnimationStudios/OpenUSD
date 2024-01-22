@@ -64,6 +64,7 @@
 #include "pxr/imaging/hd/extentSchema.h"
 #include "pxr/imaging/hd/geomSubsetSchema.h"
 #include "pxr/imaging/hd/geomSubsetsSchema.h"
+#include "pxr/imaging/hd/imageShaderSchema.h"
 #include "pxr/imaging/hd/instanceCategoriesSchema.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
@@ -1516,6 +1517,42 @@ Hd_InterpolationAsEnum(const TfToken &interpolationToken)
     return HdInterpolation(-1);
 }
 
+VtValue
+_GetImageShaderValue(
+    HdSceneIndexPrim prim,
+    const TfToken& key)
+{
+    HdImageShaderSchema imageShaderSchema =
+        HdImageShaderSchema::GetFromParent(prim.dataSource);
+    if (!imageShaderSchema.IsDefined()) {
+        return VtValue();
+    }
+
+    if (key == HdImageShaderSchemaTokens->enabled) {
+        if (HdBoolDataSourceHandle enabledDs =
+                imageShaderSchema.GetEnabled()) {
+            return enabledDs->GetValue(0);
+        }
+    } else if (key == HdImageShaderSchemaTokens->priority) {
+        if (HdIntDataSourceHandle priorityDs =
+                imageShaderSchema.GetPriority()) {
+            return priorityDs->GetValue(0);
+        }
+    } else if (key == HdImageShaderSchemaTokens->filePath) {
+        if (HdStringDataSourceHandle filePathDs =
+                imageShaderSchema.GetFilePath()) {
+            return filePathDs->GetValue(0);
+        }
+    } else if (key == HdImageShaderSchemaTokens->constants) {
+        if (HdContainerDataSourceHandle constantsDs =
+                imageShaderSchema.GetConstants()) {
+            return VtValue(_ToDictionary(constantsDs));
+        }
+    }
+
+    return VtValue();
+}
+
 } // anonymous namespace
 
 HdPrimvarDescriptorVector
@@ -1780,6 +1817,10 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
             return _GetRenderTerminalResource<HdDisplayFilterSchema>(prim);
         }
         return VtValue();
+    }
+
+    if (prim.primType == HdPrimTypeTokens->imageShader) {
+        return _GetImageShaderValue(prim, key);
     }
 
     if (prim.primType == HdPrimTypeTokens->cube) {
