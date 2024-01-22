@@ -65,7 +65,12 @@ class SdfAssetPath;
 /// If a function is provided for the \p processingFunc parameter, it will be
 /// invoked on every asset path that is discovered during localization. This
 /// allows you to inject your own logic into the process. Refer to
-/// \ref UsdUtilsDependencyInfo for additional information.
+/// \ref UsdUtilsDependencyInfo for general information on user processing
+/// functions.  If an asset path is ignored in the processing function, it will
+/// be removed from the layer and excluded from the localized package.  Paths
+/// that are modified will have their updated value written back into the
+/// localized layer. Paths that are added to the dependencies array during
+/// processing will be included in the resulting localized asset.
 /// 
 /// Returns true if the package was created successfully.
 /// 

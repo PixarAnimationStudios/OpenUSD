@@ -62,13 +62,15 @@ _LayerRefToObj(const SdfLayerRefPtr& layer)
 }
 
 static bp::tuple
-_ComputeAllDependencies(const SdfAssetPath &assetPath) 
+_ComputeAllDependencies(
+    const SdfAssetPath &assetPath,
+    std::function<UsdUtilsProcessingFunc> processingFunc) 
 {
     std::vector<SdfLayerRefPtr> layers;
     std::vector<std::string> assets, unresolvedPaths;
     
     UsdUtilsComputeAllDependencies(assetPath, &layers, &assets, 
-                                   &unresolvedPaths);
+                                   &unresolvedPaths, processingFunc);
     bp::list layersList;
     for (auto &l: layers) { 
         layersList.append(_LayerRefToObj(l)); 
@@ -96,7 +98,8 @@ void wrapDependencies()
              bp::arg("editLayersInPlace") = false));
 
     bp::def("ComputeAllDependencies", _ComputeAllDependencies,
-            (bp::arg("assetPath")));
+            (bp::arg("assetPath"),
+             bp::arg("processingFunc") = bp::object()));
 
     using Py_UsdUtilsModifyAssetPathFn = std::string(const std::string&);
     TfPyFunctionFromPython<Py_UsdUtilsModifyAssetPathFn>();

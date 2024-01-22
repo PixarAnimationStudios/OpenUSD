@@ -23,6 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 
 from pxr import UsdUtils, Sdf, Usd
+from pathlib import Path
 import os
 import unittest
 
@@ -30,9 +31,9 @@ class TestUsdUtilsDependencies(unittest.TestCase):
     def test_ComputeAllDependencies(self):
         """Basic test for UsdUtils.ComputeAllDependencies"""
 
-        def _testLayer(rootLayer):
+        def _testLayer(rootLayer, processingFunc):
             layers, assets, unresolved = \
-                UsdUtils.ComputeAllDependencies(rootLayer)
+                UsdUtils.ComputeAllDependencies(rootLayer, processingFunc)
 
             self.assertEqual(
                set(layers),
@@ -78,17 +79,20 @@ class TestUsdUtilsDependencies(unittest.TestCase):
                                "v_attr_a_nonexist.txt",
                                "v_attr_nonexist.usd"]]))
 
-        def _test(rootLayer):
-            _testLayer(rootLayer)
+        def _test(rootLayer, processingFunc = None):
+            _testLayer(rootLayer, processingFunc)
 
             layer = Sdf.Layer.FindOrOpen(rootLayer)
             layer.SetPermissionToEdit(False)
-            _testLayer(rootLayer)
+            _testLayer(rootLayer, processingFunc)
 
         _test("computeAllDependencies/ascii.usda")
         _test("computeAllDependencies/ascii.usd")
         _test("computeAllDependencies/crate.usdc")
         _test("computeAllDependencies/crate.usd")
+
+        # test identity processing func
+        _test("computeAllDependencies/ascii.usda", lambda _, info: info)
 
     def test_ComputeAllDependenciesInvalidClipTemplate(self):
         """Test that an invalid clip template asset path does not
@@ -139,6 +143,129 @@ class TestUsdUtilsDependencies(unittest.TestCase):
             Sdf.Layer.Find(layer.identifier), 
             Sdf.Layer.Find("anon_sublayer.usda")])
         self.assertEqual(unresolved, ["unresolved.usda"])
+
+    def test_ComputeAllDependenciesUserFuncFilterPaths(self):
+        """Tests paths that are filtered by the processing func 
+        do not appear in results"""
+
+        stagePath = "test_filter.usda"
+        assetDirPath = "./asset_dep_dir"
+        assetFilePath = "./non_dir_dep.usda"
+
+        if not os.path.exists(assetDirPath): os.mkdir(assetDirPath)
+        assetDepLayer = Sdf.Layer.CreateNew(assetFilePath)
+        assetDepLayer.Save()
+
+        stage = Usd.Stage.CreateNew(stagePath)
+        prim = stage.DefinePrim("/test")
+        dirAttr = prim.CreateAttribute("dirAsset", Sdf.ValueTypeNames.Asset)
+        dirAttr.Set(assetDirPath)
+        nonDirAttr = prim.CreateAttribute("depAsset", Sdf.ValueTypeNames.Asset)
+        nonDirAttr.Set(assetFilePath)
+        stage.GetRootLayer().Save()
+
+        def FilterDirectories(layer, depInfo):
+            if (os.path.isdir(depInfo.assetPath)):
+                return UsdUtils.DependencyInfo()
+            else:
+                return depInfo
+
+        layers, references, unresolved = \
+            UsdUtils.ComputeAllDependencies(stagePath, FilterDirectories)
+        
+        self.assertEqual(layers, [stage.GetRootLayer(), assetDepLayer])
+        self.assertEqual(references, [])
+        self.assertEqual(unresolved, [])
+
+    def test_ComputeAllDependenciesUserFuncAdditionalPaths(self):
+        """Tests additional paths that are specified by the user processing func
+        appear in results"""
+
+        stagePath = "test_additional_deps.usda"
+        assetPath = "additional_dep.txt"
+        assetPathDep = "additional_dep.txt2"
+        Path(assetPath).touch()
+        Path(assetPathDep).touch()
+        stage = Usd.Stage.CreateNew(stagePath)
+        prim = stage.DefinePrim("/test")
+        attr = prim.CreateAttribute("depAsset", Sdf.ValueTypeNames.Asset)
+        attr.Set(assetPath)
+        stage.GetRootLayer().Save()
+
+        def AddAdditionalDeps(layer, depInfo):
+            return UsdUtils.DependencyInfo(
+                depInfo.assetPath, [depInfo.assetPath + "2"])
+
+
+        layers, references, unresolved = \
+            UsdUtils.ComputeAllDependencies(stagePath, AddAdditionalDeps)
+        
+        self.assertEqual(layers, [stage.GetRootLayer()])
+        self.assertEqual([os.path.normcase(f) for f in references], 
+                         [os.path.normcase(os.path.abspath(assetPath)), 
+                          os.path.normcase(os.path.abspath(assetPathDep))])
+        self.assertEqual(unresolved, [])
+
+    def test_ComputeAllDependenciesUserFuncModifyPathss(self):
+        """Tests assets paths which are modified by the processing func
+        appear correctly in returned vectors"""
+
+        stagePath = "test_modified_deps.usda"
+        assetPath = "modified_dep.txt"
+        Path(assetPath).touch()
+        stage = Usd.Stage.CreateNew(stagePath)
+        prim = stage.DefinePrim("/test")
+        attr = prim.CreateAttribute("depAsset", Sdf.ValueTypeNames.Asset)
+        attr.Set("dep.txt")
+        stage.GetRootLayer().Save()
+
+        def ModifyDeps(layer, depInfo):
+            return UsdUtils.DependencyInfo("modified_" + depInfo.assetPath)
+
+
+        layers, references, unresolved = \
+            UsdUtils.ComputeAllDependencies(stagePath, ModifyDeps)
+        
+        self.assertEqual(layers, [stage.GetRootLayer()])
+        self.assertEqual([os.path.normcase(f) for f in references],
+            [os.path.normcase(os.path.abspath(assetPath))])
+        self.assertEqual(unresolved, [])
+
+    def test_ComputeAllDependenciesParseAdditionalLayers(self):
+        """Tests that layers that are specified as additional dependencies are
+        themselves processed for additional assets"""
+
+        def CreateStageWithDep(stagePath, depPath):
+            stage = Usd.Stage.CreateNew(stagePath)
+            prim = stage.DefinePrim("/test")
+            if depPath is not None:
+                attr = prim.CreateAttribute("depAsset", Sdf.ValueTypeNames.Asset)
+                attr.Set(depPath)
+            stage.GetRootLayer().Save()
+            return stage
+        
+        stagePath = "test_process_deps.usda"
+        asset = CreateStageWithDep(stagePath, "dep.usda")
+        dep = CreateStageWithDep("dep.usda", None)
+        extra = CreateStageWithDep("extra_dep.usda", "file.txt")
+        Path("file.txt").touch()
+
+        def AddExtra(layer, depInfo):
+            if depInfo.assetPath.startswith("dep"):
+                return UsdUtils.DependencyInfo(
+                    depInfo.assetPath, ["extra_" + depInfo.assetPath])
+            else:
+                return depInfo
+            
+        layers, references, unresolved = \
+            UsdUtils.ComputeAllDependencies(stagePath, AddExtra)
+        
+        self.assertEqual(layers, [asset.GetRootLayer(), dep.GetRootLayer(), 
+                                  extra.GetRootLayer()])
+        self.assertEqual([os.path.normcase(f) for f in references],
+            [os.path.normcase(os.path.abspath("file.txt"))])
+        self.assertEqual(unresolved, [])
+            
 
 
 if __name__=="__main__":

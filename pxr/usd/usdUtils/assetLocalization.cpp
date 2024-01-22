@@ -597,7 +597,7 @@ UsdUtils_LocalizationContext::_ValueTypeIsRelevant(
 }
 
 struct UsdUtils_ExtractExternalReferencesClient {
-    void 
+    UsdUtilsDependencyInfo 
     Process (
         const SdfLayerRefPtr &, 
         const std::string &assetPath,
@@ -613,6 +613,8 @@ struct UsdUtils_ExtractExternalReferencesClient {
                 PlaceAsset(dependency, dependencyType);
             }
         }
+
+        return {};
     }
 
     void PlaceAsset(
