@@ -89,8 +89,13 @@
 //           HdPrimvarSchema::GetPrimvarValue() might change and
 //           simply return the data source source at primvarValue.
 // 61 -> 62: Remove 'bindingStrength' from HdMaterialBindingSchema.
+// 62 -> 63: HdMaterialSchema::GetMaterialNetwork,
+//           HdMaterialNetwork::GetNodes, GetTerminals,
+//           HdMaterialNode::GetParameters, GetInputConnections
+//           return Hydra schemas instead of just container data sources.
+//           schemaTypeDefs.h replaces vectorSchemaTypeDefs.h.
 
-#define HD_API_VERSION 62
+#define HD_API_VERSION 63
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

@@ -35,26 +35,20 @@
 #ifndef PXR_IMAGING_HD_MATERIAL_NETWORK_SCHEMA_H
 #define PXR_IMAGING_HD_MATERIAL_NETWORK_SCHEMA_H
 
+/// \file
+
 #include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/vectorSchemaTypeDefs.h"
+#include "pxr/imaging/hd/schemaTypeDefs.h"
 
 #include "pxr/imaging/hd/schema.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
-#include "pxr/imaging/hd/containerSchema.h"
 // --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//-----------------------------------------------------------------------------
-
 // --(BEGIN CUSTOM CODE: Declares)--
-using HdMaterialInterfaceMappingsContainerSchema =
-    HdSchemaBasedContainerSchema<
-        HdMaterialInterfaceMappingVectorSchema>;
 // --(END CUSTOM CODE: Declares)--
-
-//-----------------------------------------------------------------------------
 
 #define HD_MATERIAL_NETWORK_SCHEMA_TOKENS \
     (nodes) \
@@ -65,29 +59,41 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialNetworkSchemaTokens, HD_API,
     HD_MATERIAL_NETWORK_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
+
+
 class HdMaterialNetworkSchema : public HdSchema
 {
 public:
+    /// \name Schema retrieval
+    /// @{
+
     HdMaterialNetworkSchema(HdContainerDataSourceHandle container)
-    : HdSchema(container) {}
+      : HdSchema(container) {}
+
+    /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
 
-    //ACCESSORS
-
-
-    HD_API
-    HdContainerDataSourceHandle GetNodes();
+    /// \name Member accessor
+    /// @{
 
     HD_API
-    HdContainerDataSourceHandle GetTerminals();
+    HdMaterialNodeContainerSchema GetNodes();
 
     HD_API
-    HdMaterialInterfaceMappingsContainerSchema GetInterfaceMappings();
+    HdMaterialConnectionContainerSchema GetTerminals();
 
-    // RETRIEVING AND CONSTRUCTING
+    HD_API
+    HdMaterialInterfaceMappingsContainerSchema GetInterfaceMappings(); 
 
+    /// @} 
+
+    /// \name Schema construction
+    /// @{
+
+    /// \deprecated Use Builder instead.
+    ///
     /// Builds a container data source which includes the provided child data
     /// sources. Parameters with nullptr values are excluded. This is a
     /// low-level interface. For cases in which it's desired to define
@@ -128,8 +134,10 @@ public:
         HdContainerDataSourceHandle _nodes;
         HdContainerDataSourceHandle _terminals;
         HdContainerDataSourceHandle _interfaceMappings;
+
     };
 
+    /// @}
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

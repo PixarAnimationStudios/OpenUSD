@@ -49,21 +49,18 @@ TF_DEFINE_PUBLIC_TOKENS(HdMaterialNetworkSchemaTokens,
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
 
-
-
-
-HdContainerDataSourceHandle
+HdMaterialNodeContainerSchema
 HdMaterialNetworkSchema::GetNodes()
 {
-    return _GetTypedDataSource<HdContainerDataSource>(
-        HdMaterialNetworkSchemaTokens->nodes);
+    return HdMaterialNodeContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
+        HdMaterialNetworkSchemaTokens->nodes));
 }
 
-HdContainerDataSourceHandle
+HdMaterialConnectionContainerSchema
 HdMaterialNetworkSchema::GetTerminals()
 {
-    return _GetTypedDataSource<HdContainerDataSource>(
-        HdMaterialNetworkSchemaTokens->terminals);
+    return HdMaterialConnectionContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
+        HdMaterialNetworkSchemaTokens->terminals));
 }
 
 HdMaterialInterfaceMappingsContainerSchema
@@ -85,6 +82,7 @@ HdMaterialNetworkSchema::BuildRetained(
     HdDataSourceBaseHandle _values[3];
 
     size_t _count = 0;
+
     if (nodes) {
         _names[_count] = HdMaterialNetworkSchemaTokens->nodes;
         _values[_count++] = nodes;
@@ -99,10 +97,8 @@ HdMaterialNetworkSchema::BuildRetained(
         _names[_count] = HdMaterialNetworkSchemaTokens->interfaceMappings;
         _values[_count++] = interfaceMappings;
     }
-
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
-
 
 HdMaterialNetworkSchema::Builder &
 HdMaterialNetworkSchema::Builder::SetNodes(
@@ -136,7 +132,6 @@ HdMaterialNetworkSchema::Builder::Build()
         _terminals,
         _interfaceMappings
     );
-}
-
+} 
 
 PXR_NAMESPACE_CLOSE_SCOPE

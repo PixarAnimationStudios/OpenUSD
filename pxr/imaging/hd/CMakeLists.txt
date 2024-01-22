@@ -203,6 +203,7 @@ pxr_library(hd
         driver.h
         invalidatableContainerDataSource.h
         materialNetworkInterface.h
+        schemaTypeDefs.h
         vectorSchemaTypeDefs.h
         version.h
 

@@ -40,7 +40,15 @@ public:
     : HdSchema(container)
     {}
 
+    HD_API
     TfTokenVector GetNames() const;
+
+    HD_API
+    static HdContainerDataSourceHandle
+    BuildRetained(
+        size_t count,
+        const TfToken *names,
+        const HdDataSourceBaseHandle *values);
 };
 
 /// Template class for a schema backed by a container whose children have

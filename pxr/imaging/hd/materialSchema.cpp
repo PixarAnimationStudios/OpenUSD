@@ -48,23 +48,27 @@ TF_DEFINE_PUBLIC_TOKENS(HdMaterialSchemaTokens,
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 
-HdContainerDataSourceHandle
+HdMaterialNetworkSchema
 HdMaterialSchema::GetMaterialNetwork()
 {
-    return _GetTypedDataSource<HdContainerDataSource>(
-            HdMaterialSchemaTokens->universalRenderContext);
+    return 
+        HdMaterialNetworkSchema(
+            _GetTypedDataSource<HdContainerDataSource>(
+                HdMaterialSchemaTokens->universalRenderContext));
 }
 
-HdContainerDataSourceHandle 
+HdMaterialNetworkSchema
 HdMaterialSchema::GetMaterialNetwork(TfToken const &context)
 {
     if (auto b = _GetTypedDataSource<HdContainerDataSource>(context)) {
-        return b;
+        return HdMaterialNetworkSchema(b);
     }
 
     // If we can't find the context-specific binding, return the fallback.
-    return _GetTypedDataSource<HdContainerDataSource>(
-            HdMaterialSchemaTokens->universalRenderContext);
+    return
+        HdMaterialNetworkSchema(
+            _GetTypedDataSource<HdContainerDataSource>(
+                HdMaterialSchemaTokens->universalRenderContext));
 }
 
 // --(END CUSTOM CODE: Schema Methods)--
