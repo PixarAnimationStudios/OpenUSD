@@ -191,6 +191,50 @@ class TestPython(unittest.TestCase):
         with self.assertRaises(TypeError):
             listener = Tf.Notice.RegisterGlobally('BogusNotice', HandleNotice)
 
+    def test_ExceptionPropagationLifetime(self):
+        class TestNotice(Tf.Notice):
+            pass
+
+        Tf.Type.Define(TestNotice)
+
+        class ExceptOnNoticeListener:
+            """Raises an exception when active and the notice is received"""
+            def __init__(self, noticeType):
+                self._listener = Tf.Notice.RegisterGlobally(
+                    noticeType, self._OnNoticeReceived)
+                self._active = False
+
+            def __enter__(self):
+                self._active = True
+        
+            def __exit__(self, type, value, traceback):
+                self._active = False
+
+            def _OnNoticeReceived(self, notice, sender):
+                if self._active:
+                    raise Exception("exception")
+
+        deaths = []
+        
+        class T:
+            def __init__(self):
+                self._deaths = deaths
+            def __del__(self):
+                self._deaths.append(id(self))
+
+        class Sender:
+            pass
+
+        def TestException():
+            t, sender = T(), Sender()
+            with self.assertRaises(Exception):
+                TestNotice().Send(sender)
+        
+        with ExceptOnNoticeListener(TestNotice):
+            TestException()
+
+        # The 't' instance in TestException() should have been destroyed.
+        self.assertEqual(len(deaths), 1)
 
     def test_Enums(self):
         Tf._takesTfEnum(Tf._Alpha)

@@ -53,7 +53,7 @@ bool TfPyConvertTfErrorsToPythonException(TfErrorMark const &m) {
             if (e->GetErrorCode() == TF_PYTHON_EXCEPTION) {
                 if (const TfPyExceptionState* info =
                         e->GetInfo<TfPyExceptionState>()) {
-                    Tf_PyRestorePythonExceptionState(*info);
+                    TfPyExceptionState(*info).Restore();
                     TfDiagnosticMgr::GetInstance().EraseError(e);
 
                     // XXX: We have a problem here: we've restored the
@@ -95,7 +95,7 @@ void
 TfPyConvertPythonExceptionToTfErrors()
 {
     // Get the python exception info.
-    TfPyExceptionState exc = Tf_PyFetchPythonExceptionState();
+    TfPyExceptionState exc = TfPyExceptionState::Fetch();
  
     // Replace the errors in m with errors parsed out of the exception.
     if (exc.GetType()) {
