@@ -38,6 +38,7 @@
 /// \file
 
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/schemaTypeDefs.h"
 
 #include "pxr/imaging/hd/schema.h"
 
@@ -98,7 +99,7 @@ public:
     HdStringDataSourceHandle GetFilePath();
 
     HD_API
-    HdContainerDataSourceHandle GetConstants(); 
+    HdSampledDataSourceContainerSchema GetConstants(); 
 
     /// @}
 

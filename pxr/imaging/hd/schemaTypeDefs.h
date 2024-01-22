@@ -50,6 +50,10 @@ using HdMaterialInterfaceMappingVectorSchema =
 using HdMaterialConnectionVectorSchema =
     HdSchemaBasedVectorSchema<HdMaterialConnectionSchema>;
 
+// Containers of sampled data sources
+using HdSampledDataSourceContainerSchema =
+    HdTypedContainerSchema<HdSampledDataSource>;
+
 // Containers of schemas
 using HdMaterialNodeContainerSchema =
     HdSchemaBasedContainerSchema<class HdMaterialNodeSchema>;

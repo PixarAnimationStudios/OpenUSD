@@ -70,11 +70,11 @@ HdImageShaderSchema::GetFilePath()
         HdImageShaderSchemaTokens->filePath);
 }
 
-HdContainerDataSourceHandle
+HdSampledDataSourceContainerSchema
 HdImageShaderSchema::GetConstants()
 {
-    return _GetTypedDataSource<HdContainerDataSource>(
-        HdImageShaderSchemaTokens->constants);
+    return HdSampledDataSourceContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
+        HdImageShaderSchemaTokens->constants));
 }
 
 /*static*/

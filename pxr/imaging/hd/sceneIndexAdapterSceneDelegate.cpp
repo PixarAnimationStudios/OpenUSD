@@ -1277,16 +1277,22 @@ namespace {
 // Note: Utility methods below expect a valid data source handle.
 
 VtDictionary
-_ToDictionary(HdContainerDataSourceHandle const &cds)
+_ToDictionary(
+    HdSampledDataSourceContainerSchema schema)
 {
     VtDictionary dict;
-    for (const TfToken &name : cds->GetNames()) {
-        if (HdSampledDataSourceHandle valueDs =
-                HdSampledDataSource::Cast(cds->Get(name))) {
+    for (const TfToken& name : schema.GetNames()) {
+        if (HdSampledDataSourceHandle valueDs = schema.Get(name)) {
             dict[name.GetString()] = valueDs->GetValue(0);
         }
     }
     return dict;
+}
+
+VtDictionary
+_ToDictionary(HdContainerDataSourceHandle const &cds)
+{
+    return _ToDictionary(HdSampledDataSourceContainerSchema(cds));
 }
 
 using _RenderVar = HdRenderSettings::RenderProduct::RenderVar;
@@ -1547,9 +1553,9 @@ _GetImageShaderValue(
             return filePathDs->GetValue(0);
         }
     } else if (key == HdImageShaderSchemaTokens->constants) {
-        if (HdContainerDataSourceHandle constantsDs =
+        if (HdSampledDataSourceContainerSchema constantsSchema =
                 imageShaderSchema.GetConstants()) {
-            return VtValue(_ToDictionary(constantsDs));
+            return VtValue(_ToDictionary(constantsSchema));
         }
     }
 
