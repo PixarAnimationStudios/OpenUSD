@@ -351,12 +351,16 @@ _ComputeErrorIfKeyRemoved(TsSpline* spline, TsTime t,
 
     TsKeyFrame kCopy  = *k;
     TsKeyFrame k0Copy;
+    bool k0CopyValid = false;
     TsKeyFrame k1Copy;
+    bool k1CopyValid = false;
     if (k0 != spline->end()) {
         k0Copy = *k0;
+        k0CopyValid = true;
     }
     if (k1 != spline->end()) {
         k1Copy = *k1;
+        k1CopyValid = true;
     }
 
     spline->RemoveKeyFrame(kCopy.GetTime());
@@ -376,10 +380,10 @@ _ComputeErrorIfKeyRemoved(TsSpline* spline, TsTime t,
     spline->SetKeyFrame( kCopy);
     // We may have set these in _SimplifySpan, so we want to set them back to
     // what they were before.
-    if (k0 != spline->end()) {
+    if (k0CopyValid) {
         spline->SetKeyFrame(k0Copy);
     }
-    if (k1 != spline->end()) {
+    if (k1CopyValid) {
         spline->SetKeyFrame(k1Copy);
     }
 
