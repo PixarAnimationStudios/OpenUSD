@@ -84,11 +84,11 @@ HgiWebGPUBlitCmds::_MapAsyncAndWait(const wgpu::Buffer &buffer,
     buffer.MapAsync(
             mode, offset, size,
             [](WGPUBufferMapAsyncStatus status, void *userdata) {
-                if (status == WGPUBufferMapAsyncStatus_Success) {
-                    *static_cast<bool *>(userdata) = true;
-                } else {
+                if (status != WGPUBufferMapAsyncStatus_Success) {
                     TF_WARN("Failed to call MapAsync");
                 }
+                // Make sure we dont need to wait for it anymore. 
+                *static_cast<bool *>(userdata) = true;
             },
             &done);
 
