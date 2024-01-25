@@ -890,7 +890,7 @@ def InstallBoost_Helper(context, force, buildArgs):
             # Must specify toolset=clang to ensure install_name for boost
             # libraries includes @rpath
             b2_settings.append("toolset=clang")
-
+            b2_settings.append(f"define=BOOST_UNORDERED_HAVE_PIECEWISE_CONSTRUCT=0")
             if macOSArch:
                 b2_settings.append("cxxflags=\"{0}\"".format(macOSArch))
                 b2_settings.append("cflags=\"{0}\"".format(macOSArch))
