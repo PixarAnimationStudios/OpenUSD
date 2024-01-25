@@ -61,14 +61,16 @@ public:
     /// Constructor.
     HDST_API
     HdSt_CodeGen(HdSt_GeometricShaderPtr const &geometricShader,
-               HdStShaderCodeSharedPtrVector const &shaders,
-               TfToken const &materialTag);
+                 HdStShaderCodeSharedPtrVector const &shaders,
+                 TfToken const &materialTag,
+                 std::unique_ptr<HdSt_ResourceBinder::MetaData>&& metaData);
 
     /// Constructor for non-geometric use cases.
     /// Don't call compile when constructed this way.
     /// Call CompileComputeProgram instead.
     HDST_API
-    HdSt_CodeGen(HdStShaderCodeSharedPtrVector const &shaders);
+    HdSt_CodeGen(HdStShaderCodeSharedPtrVector const &shaders,
+                 std::unique_ptr<HdSt_ResourceBinder::MetaData>&& metaData);
     
     /// Return the hash value of glsl shader to be generated.
     HDST_API
@@ -126,9 +128,6 @@ public:
         return _ptvsSource;
     }
 
-    /// Return the pointer of metadata to be populated by resource binder.
-    HdSt_ResourceBinder::MetaData *GetMetaData() { return &_metaData; }
-
 private:
     void _GenerateDrawingCoord(
         bool const shaderDrawParametersEnabled,
@@ -157,7 +156,11 @@ private:
     HdStGLSLProgramSharedPtr _CompileWithGeneratedHgiResources(
         HdStResourceRegistry * const registry);
 
-    HdSt_ResourceBinder::MetaData _metaData;
+    HdSt_ResourceBinder::MetaData& _GetMetaData() {
+        return *(_metaData.get());
+    }
+
+    std::unique_ptr<HdSt_ResourceBinder::MetaData> _metaData;
     HdSt_GeometricShaderPtr _geometricShader;
     HdStShaderCodeSharedPtrVector _shaders;
     TfToken _materialTag;

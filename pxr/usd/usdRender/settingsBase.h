@@ -331,6 +331,30 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // DISABLEDEPTHOFFIELD 
+    // --------------------------------------------------------------------- //
+    /// Disable all depth of field by setting F-stop of the targeted
+    /// camera to infinity.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform bool disableDepthOfField = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    USDRENDER_API
+    UsdAttribute GetDisableDepthOfFieldAttr() const;
+
+    /// See GetDisableDepthOfFieldAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRENDER_API
+    UsdAttribute CreateDisableDepthOfFieldAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // CAMERA 
     // --------------------------------------------------------------------- //
     /// The _camera_ relationship specifies the primary

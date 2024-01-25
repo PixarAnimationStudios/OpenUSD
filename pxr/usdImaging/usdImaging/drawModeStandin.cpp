@@ -1406,8 +1406,6 @@ _CardsDataCache::_CardsData::_ComputeGeomSubsets(
     static const std::array<TfToken, 6> materialNameTokens = 
         _AddAxesToNames("subsetMaterial", "");
     
-    TfToken purposeToken[] = { HdMaterialBindingsSchemaTokens->allPurpose };
-
     std::vector<TfToken> subsetNames;
     std::vector<HdDataSourceBaseHandle> subsets;
 
@@ -1445,6 +1443,12 @@ _CardsDataCache::_CardsData::_ComputeGeomSubsets(
                 const SdfPath materialPath =
                     // geomSubset's materialBinding path must be absolute
                     primPath.AppendChild(materialNameTokens[matIndex]);
+
+                // Note that we use the hydra material bindings schema here (and
+                // below) rather than UsdImagingDirectMaterialBinding(s)Schema.
+                // We want these bindings to be unaffected by any USD material
+                // bindings up-namespace.
+                //
                 HdDataSourceBaseHandle const materialBindingSources[] = {
                     HdMaterialBindingSchema::Builder()
                         .SetPath(
@@ -1462,6 +1466,7 @@ _CardsDataCache::_CardsData::_ComputeGeomSubsets(
                                 HdRetainedTypedSampledDataSource<VtIntArray>::New(
                                     { subsetIndex }))
                             .Build(),
+
                         HdRetainedContainerDataSource::New(
                             HdMaterialBindingsSchema::GetSchemaToken(),
                             HdMaterialBindingsSchema::BuildRetained(

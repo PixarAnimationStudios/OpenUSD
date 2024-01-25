@@ -121,6 +121,10 @@ class "RenderSettingsBase" (
         of the targeted camera to [0,0] - that is, take only one sample,
         namely at the current time code."""
     )
+    uniform bool disableDepthOfField = false (
+        doc = """Disable all depth of field by setting F-stop of the targeted
+        camera to infinity."""
+    )
 }
  
 class RenderSettings "RenderSettings" (

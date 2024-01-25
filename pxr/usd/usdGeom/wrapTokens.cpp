@@ -95,6 +95,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "curveVertexCounts", UsdGeomTokens->curveVertexCounts);
     _AddToken(cls, "default_", UsdGeomTokens->default_);
     _AddToken(cls, "doubleSided", UsdGeomTokens->doubleSided);
+    _AddToken(cls, "edge", UsdGeomTokens->edge);
     _AddToken(cls, "edgeAndCorner", UsdGeomTokens->edgeAndCorner);
     _AddToken(cls, "edgeOnly", UsdGeomTokens->edgeOnly);
     _AddToken(cls, "elementSize", UsdGeomTokens->elementSize);

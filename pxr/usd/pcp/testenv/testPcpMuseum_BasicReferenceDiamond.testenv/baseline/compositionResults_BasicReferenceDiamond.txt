@@ -12,9 +12,10 @@ Prim Stack:
     A.sdf                /A
     C.sdf                /C
     B.sdf                /B
+    C.sdf                /C
 
 Property names:
-     ['B_attr', 'C_attr', 'A_attr']
+     ['C_attr', 'B_attr', 'A_attr']
 
 Property stacks:
 /Root.A_attr:
@@ -22,5 +23,6 @@ Property stacks:
 /Root.B_attr:
     B.sdf                /B.B_attr
 /Root.C_attr:
+    C.sdf                /C.C_attr
     C.sdf                /C.C_attr
 

@@ -26,9 +26,8 @@
 
 #include "pxr/imaging/hd/sceneGlobalsSchema.h"
 #include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/usd/sdf/path.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -85,6 +84,34 @@ ToConformWindowPolicy(const TfToken &token)
     
     return CameraUtilFit;
 }
+
+void
+PrintSceneIndex(
+    std::ostream &out,
+    const HdSceneIndexBaseRefPtr &si,
+    const SdfPath &rootPath /* = SdfPath::AbsoluteRootPath()*/)
+{
+    // Traverse the scene index to populate a lexicographically 
+    // ordered path set.
+    SdfPathSet primPathSet;
+    HdSceneIndexPrimView view(si, rootPath);
+    for (auto it = view.begin(); it != view.end(); ++it) {
+        const SdfPath &primPath = *it;
+        primPathSet.insert(primPath);
+    }
+
+    // Write out each prim without indenting it based on its depth in the 
+    // hierarchy for ease of readability,
+    for (const SdfPath &primPath : primPathSet) {
+        HdSceneIndexPrim prim = si->GetPrim(primPath);
+        if (prim.dataSource) {
+            out << "<" << primPath << "> type = " << prim.primType << std::endl;
+            
+            HdDebugPrintDataSource(out, prim.dataSource, /* indent = */1);
+        }
+    }
+}
+
 
 }
 

@@ -164,10 +164,13 @@ HdSt_CodeGen::IsEnabledHgiResourceGeneration(Hgi const *hgi)
     return isEnabled || hgiName != HgiTokens->OpenGL;
 }
 
-HdSt_CodeGen::HdSt_CodeGen(HdSt_GeometricShaderPtr const &geometricShader,
-                       HdStShaderCodeSharedPtrVector const &shaders,
-                       TfToken const &materialTag)
-    : _geometricShader(geometricShader)
+HdSt_CodeGen::HdSt_CodeGen(
+    HdSt_GeometricShaderPtr const &geometricShader,
+    HdStShaderCodeSharedPtrVector const &shaders,
+    TfToken const &materialTag,
+    std::unique_ptr<HdSt_ResourceBinder::MetaData>&& metaData)
+    : _metaData(std::move(metaData))
+    , _geometricShader(geometricShader)
     , _shaders(shaders)
     , _materialTag(materialTag)
     , _hasVS(false)
@@ -181,10 +184,15 @@ HdSt_CodeGen::HdSt_CodeGen(HdSt_GeometricShaderPtr const &geometricShader,
     , _hasClipPlanes(false)
 {
     TF_VERIFY(geometricShader);
+    TF_VERIFY(_metaData, 
+              "Invalid MetaData ptr passed in as constructor arg.");
 }
 
-HdSt_CodeGen::HdSt_CodeGen(HdStShaderCodeSharedPtrVector const &shaders)
-    : _geometricShader()
+HdSt_CodeGen::HdSt_CodeGen(
+    HdStShaderCodeSharedPtrVector const &shaders,
+    std::unique_ptr<HdSt_ResourceBinder::MetaData>&& metaData)
+    : _metaData(std::move(metaData))
+    , _geometricShader()
     , _shaders(shaders)
     , _hasVS(false)
     , _hasTCS(false)
@@ -196,6 +204,8 @@ HdSt_CodeGen::HdSt_CodeGen(HdStShaderCodeSharedPtrVector const &shaders)
     , _hasPTVS(false)
     , _hasClipPlanes(false)
 {
+    TF_VERIFY(_metaData,
+              "Invalid MetaData ptr passed in as constructor arg.");
 }
 
 HdSt_CodeGen::ID
@@ -204,9 +214,14 @@ HdSt_CodeGen::ComputeHash() const
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
+    if (!TF_VERIFY(_metaData,
+                   "Metadata not properly initialized by resource binder.")) {
+        return {}; 
+    }
+
     return TfHash::Combine(
         _geometricShader ? _geometricShader->ComputeHash() : 0,
-        _metaData.ComputeHash(),
+        _metaData->ComputeHash(),
         HdStShaderCode::ComputeHash(_shaders),
         _materialTag.Hash()
     );
@@ -1658,6 +1673,11 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
+    if (!TF_VERIFY(_metaData,
+                   "Metadata not properly initialized by resource binder.")) {
+        return {}; 
+    }
+    
     _GetShaderResourceLayouts({_geometricShader});
     _GetShaderResourceLayouts(_shaders);
 
@@ -1768,7 +1788,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // ----------------------
     // For custom buffer bindings, more code can be generated; a full spec is
     // emitted based on the binding declaration.
-    TF_FOR_ALL(binDecl, _metaData.customBindings) {
+    TF_FOR_ALL(binDecl, _metaData->customBindings) {
         _genDefines << "#define "
                     << binDecl->name << "_Binding " 
                     << binDecl->binding.GetLocation() << "\n";
@@ -1797,7 +1817,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                       ? NULL : "localIndex");
     }
 
-    TF_FOR_ALL(it, _metaData.customInterleavedBindings) {
+    TF_FOR_ALL(it, _metaData->customInterleavedBindings) {
         // note: _constantData has been sorted by offset in HdSt_ResourceBinder.
         // XXX: not robust enough, should consider padding and layouting rules
         // to match with the logic in HdInterleavedMemoryManager if we
@@ -1853,7 +1873,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                 << "\n";
 
     // include ptex utility (if needed)
-    TF_FOR_ALL (it, _metaData.shaderParameterBinding) {
+    TF_FOR_ALL (it, _metaData->shaderParameterBinding) {
         HdStBinding::Type bindingType = it->first.GetType();
         if (bindingType == HdStBinding::TEXTURE_PTEX_TEXEL ||
             bindingType == HdStBinding::BINDLESS_TEXTURE_PTEX_TEXEL) {
@@ -1862,7 +1882,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         }
     }
 
-    TF_FOR_ALL (it, _metaData.topologyVisibilityData) {
+    TF_FOR_ALL (it, _metaData->topologyVisibilityData) {
         TF_FOR_ALL (pIt, it->second.entries) {
             _genDefines << "#define HD_HAS_" << pIt->name  << " 1\n";
         }
@@ -1876,35 +1896,35 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // since it changes the source code. However we have already combined the
     // entries of instanceData into the hash value, so it's not needed to be
     // added separately, at least in current usage.
-    TF_FOR_ALL (it, _metaData.constantData) {
+    TF_FOR_ALL (it, _metaData->constantData) {
         TF_FOR_ALL (pIt, it->second.entries) {
             _genDefines << "#define HD_HAS_" << pIt->name << " 1\n";
         }
     }
-    TF_FOR_ALL (it, _metaData.instanceData) {
+    TF_FOR_ALL (it, _metaData->instanceData) {
         _genDefines << "#define HD_HAS_INSTANCE_" << it->second.name << " 1\n";
         _genDefines << "#define HD_HAS_"
                     << it->second.name << "_" << it->second.level << " 1\n";
     }
     _genDefines << "#define HD_INSTANCER_NUM_LEVELS "
-                << _metaData.instancerNumLevels << "\n"
+                << _metaData->instancerNumLevels << "\n"
                 << "#define HD_INSTANCE_INDEX_WIDTH "
-                << (_metaData.instancerNumLevels+1) << "\n";
+                << (_metaData->instancerNumLevels+1) << "\n";
     if (!_geometricShader->IsPrimTypePoints()) {
-        TF_FOR_ALL (it, _metaData.elementData) {
+        TF_FOR_ALL (it, _metaData->elementData) {
             _genDefines << "#define HD_HAS_" << it->second.name << " 1\n";
         }
-        TF_FOR_ALL (it, _metaData.fvarData) {
+        TF_FOR_ALL (it, _metaData->fvarData) {
             _genDefines << "#define HD_HAS_" << it->second.name << " 1\n";
         }
     }
-    TF_FOR_ALL (it, _metaData.vertexData) {
+    TF_FOR_ALL (it, _metaData->vertexData) {
         _genDefines << "#define HD_HAS_" << it->second.name << " 1\n";
     }
-    TF_FOR_ALL (it, _metaData.varyingData) {
+    TF_FOR_ALL (it, _metaData->varyingData) {
         _genDefines << "#define HD_HAS_" << it->second.name << " 1\n";
     }
-    TF_FOR_ALL (it, _metaData.shaderParameterBinding) {
+    TF_FOR_ALL (it, _metaData->shaderParameterBinding) {
         // XXX: HdStBinding::PRIMVAR_REDIRECT won't define an accessor if it's
         // an alias of like-to-like, so we want to suppress the HD_HAS_* flag
         // as well.
@@ -1915,7 +1935,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         // XXX: (HYD-1882) The #define HD_HAS_... for a primvar
         // redirect will be defined immediately after the primvar
         // redirect HdGet_... in the loop over
-        // _metaData.shaderParameterBinding below.  Given that this
+        // _metaData->shaderParameterBinding below.  Given that this
         // loop is not running in a canonical order (e.g., textures
         // first, then primvar redirects, ...) and that the texture is
         // picking up the HD_HAS_... flag, the answer to the following
@@ -2263,6 +2283,12 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
+
+    if (!TF_VERIFY(_metaData,
+                   "Metadata not properly initialized by resource binder.")) {
+        return {}; 
+    }
+
     _GetShaderResourceLayouts(_shaders);
 
     // Initialize source buckets
@@ -2305,15 +2331,15 @@ HdSt_CodeGen::_GenerateComputeParameters(HgiShaderFunctionDesc * const csDesc)
     std::stringstream accessors;
 
     bool const hasComputeData =
-        !_metaData.computeReadWriteData.empty() ||
-        !_metaData.computeReadOnlyData.empty();
+        !_metaData->computeReadWriteData.empty() ||
+        !_metaData->computeReadOnlyData.empty();
     if (hasComputeData) {
         HgiShaderFunctionAddConstantParam(
             csDesc, "vertexOffset", _tokens->_int);
     }
 
     accessors << "// Read-Write Accessors & Mutators\n";
-    TF_FOR_ALL(it, _metaData.computeReadWriteData) {
+    TF_FOR_ALL(it, _metaData->computeReadWriteData) {
         TfToken const &name = it->second.name;
         HdStBinding const &binding = it->first;
         TfToken const &dataType = it->second.dataType;
@@ -2350,7 +2376,7 @@ HdSt_CodeGen::_GenerateComputeParameters(HgiShaderFunctionDesc * const csDesc)
     }
     accessors << "// Read-Only Accessors\n";
     // no vertex offset for constant data
-    TF_FOR_ALL(it, _metaData.computeReadOnlyData) {
+    TF_FOR_ALL(it, _metaData->computeReadOnlyData) {
         TfToken const &name = it->second.name;
         HdStBinding const &binding = it->first;
         TfToken const &dataType = it->second.dataType;
@@ -2428,11 +2454,11 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         HgiShaderFunctionDesc desc;
         std::stringstream resDecl;
         resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->vertexShader, _resAttrib, _metaData);
+            HdShaderTokens->vertexShader, _resAttrib, _GetMetaData());
         resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->vertexShader, _resCommon, _metaData);
+            HdShaderTokens->vertexShader, _resCommon, _GetMetaData());
         resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->vertexShader, _resVS, _metaData);
+            HdShaderTokens->vertexShader, _resVS, _GetMetaData());
 
         std::string const declarations =
             _genDefines.str();
@@ -2470,15 +2496,15 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         HgiShaderFunctionDesc desc;
         std::stringstream resDecl;
         resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->fragmentShader, _resCommon, _metaData);
+            HdShaderTokens->fragmentShader, _resCommon, _GetMetaData());
         resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->fragmentShader, _resFS, _metaData);
+            HdShaderTokens->fragmentShader, _resFS, _GetMetaData());
 
         // material in FS
         resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->fragmentShader, _resMaterial, _metaData);
+            HdShaderTokens->fragmentShader, _resMaterial, _GetMetaData());
         resourceGen._GenerateGLSLTextureResources(resDecl,
-            HdShaderTokens->fragmentShader, _resTextures, _metaData);
+            HdShaderTokens->fragmentShader, _resTextures, _GetMetaData());
 
         std::string const source =
             _genDefines.str() + _genDecl.str() + resDecl.str() + _osd.str() +
@@ -2506,9 +2532,9 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         HgiShaderFunctionDesc desc;
         std::stringstream resDecl;
         resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->tessControlShader, _resCommon, _metaData);
+            HdShaderTokens->tessControlShader, _resCommon, _GetMetaData());
         resourceGen._GenerateGLSLResources(&desc, resDecl, 
-            HdShaderTokens->tessControlShader, _resTCS, _metaData);
+            HdShaderTokens->tessControlShader, _resTCS, _GetMetaData());
 
         std::string const declarations =
             _genDefines.str() + _osd.str();
@@ -2530,9 +2556,9 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         HgiShaderFunctionDesc desc;
         std::stringstream resDecl;
         resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->tessEvalShader, _resCommon, _metaData);
+            HdShaderTokens->tessEvalShader, _resCommon, _GetMetaData());
         resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->tessEvalShader, _resTES, _metaData);
+            HdShaderTokens->tessEvalShader, _resTES, _GetMetaData());
 
         std::string const declarations =
             _genDefines.str() + _osd.str();
@@ -2560,15 +2586,15 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         HgiShaderFunctionDesc desc;
         std::stringstream resDecl;
         resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->geometryShader, _resCommon, _metaData);
+            HdShaderTokens->geometryShader, _resCommon, _GetMetaData());
         resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->geometryShader, _resGS, _metaData);
+            HdShaderTokens->geometryShader, _resGS, _GetMetaData());
 
         // material in GS
         resourceGen._GenerateGLSLResources(&desc, resDecl, 
-            HdShaderTokens->geometryShader, _resMaterial, _metaData);
+            HdShaderTokens->geometryShader, _resMaterial, _GetMetaData());
         resourceGen._GenerateGLSLTextureResources(resDecl, 
-            HdShaderTokens->geometryShader, _resTextures, _metaData);
+            HdShaderTokens->geometryShader, _resTextures, _GetMetaData());
 
         std::string const declarations =
             _genDefines.str() + _osd.str();
@@ -2624,11 +2650,11 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         vsDesc.shaderStage = HgiShaderStageVertex;
 
         resourceGen._GenerateHgiResources(&vsDesc,
-            HdShaderTokens->vertexShader, _resAttrib, _metaData);
+            HdShaderTokens->vertexShader, _resAttrib, _GetMetaData());
         resourceGen._GenerateHgiResources(&vsDesc,
-            HdShaderTokens->vertexShader, _resCommon, _metaData);
+            HdShaderTokens->vertexShader, _resCommon, _GetMetaData());
         resourceGen._GenerateHgiResources(&vsDesc,
-            HdShaderTokens->vertexShader, _resVS, _metaData);
+            HdShaderTokens->vertexShader, _resVS, _GetMetaData());
 
         std::string const declarations = _genDefines.str() + _genDecl.str();
         std::string const source = _genAccessors.str() + _genVS.str();
@@ -2684,15 +2710,15 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         fsDesc.shaderStage = HgiShaderStageFragment;
 
         resourceGen._GenerateHgiResources(&fsDesc,
-            HdShaderTokens->fragmentShader, _resCommon, _metaData);
+            HdShaderTokens->fragmentShader, _resCommon, _GetMetaData());
         resourceGen._GenerateHgiResources(&fsDesc,
-            HdShaderTokens->fragmentShader, _resFS, _metaData);
+            HdShaderTokens->fragmentShader, _resFS, _GetMetaData());
 
         // material in FS
         resourceGen._GenerateHgiResources(&fsDesc,
-            HdShaderTokens->fragmentShader, _resMaterial, _metaData);
+            HdShaderTokens->fragmentShader, _resMaterial, _GetMetaData());
         resourceGen._GenerateHgiTextureResources(&fsDesc,
-            HdShaderTokens->fragmentShader, _resTextures, _metaData);
+            HdShaderTokens->fragmentShader, _resTextures, _GetMetaData());
 
         std::string const declarations =
             _genDefines.str() + _genDecl.str() + _osd.str();
@@ -2733,9 +2759,9 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         tcsDesc.shaderStage = HgiShaderStageTessellationControl;
 
         resourceGen._GenerateHgiResources(&tcsDesc,
-            HdShaderTokens->tessControlShader, _resCommon, _metaData);
+            HdShaderTokens->tessControlShader, _resCommon, _GetMetaData());
         resourceGen._GenerateHgiResources(&tcsDesc,
-            HdShaderTokens->tessControlShader, _resTCS, _metaData);
+            HdShaderTokens->tessControlShader, _resTCS, _GetMetaData());
 
         std::string const declarations =
             _genDefines.str() + _genDecl.str() + _osd.str();
@@ -2757,9 +2783,9 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         tesDesc.shaderStage = HgiShaderStageTessellationEval;
 
         resourceGen._GenerateHgiResources(&tesDesc,
-            HdShaderTokens->tessEvalShader, _resCommon, _metaData);
+            HdShaderTokens->tessEvalShader, _resCommon, _GetMetaData());
         resourceGen._GenerateHgiResources(&tesDesc,
-            HdShaderTokens->tessEvalShader, _resTES, _metaData);
+            HdShaderTokens->tessEvalShader, _resTES, _GetMetaData());
 
         std::string const declarations =
             _genDefines.str() + _genDecl.str() + _osd.str();
@@ -2786,11 +2812,11 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionDesc ptcsDesc;
         ptcsDesc.shaderStage = HgiShaderStagePostTessellationControl;
 
-        if (_metaData.tessFactorsBinding.binding.IsValid()) {
-            HdStBinding binding = _metaData.tessFactorsBinding.binding;
+        if (_metaData->tessFactorsBinding.binding.IsValid()) {
+            HdStBinding binding = _metaData->tessFactorsBinding.binding;
             _EmitDeclaration(&_resPTCS,
-                             _metaData.tessFactorsBinding.name,
-                             _metaData.tessFactorsBinding.dataType,
+                             _metaData->tessFactorsBinding.name,
+                             _metaData->tessFactorsBinding.dataType,
                              binding,
                              true);
         }
@@ -2813,17 +2839,17 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         }
 
         resourceGen._GenerateHgiResources(&ptcsDesc,
-            HdShaderTokens->postTessControlShader, _resAttrib, _metaData);
+            HdShaderTokens->postTessControlShader, _resAttrib, _GetMetaData());
         resourceGen._GenerateHgiResources(&ptcsDesc,
-            HdShaderTokens->postTessControlShader, _resCommon, _metaData);
+            HdShaderTokens->postTessControlShader, _resCommon, _GetMetaData());
         resourceGen._GenerateHgiResources(&ptcsDesc,
-            HdShaderTokens->postTessControlShader, _resPTCS, _metaData);
+            HdShaderTokens->postTessControlShader, _resPTCS, _GetMetaData());
 
         // material in PTCS
         resourceGen._GenerateHgiResources(&ptcsDesc,
-            HdShaderTokens->postTessControlShader, _resMaterial, _metaData);
+            HdShaderTokens->postTessControlShader, _resMaterial, _GetMetaData());
         resourceGen._GenerateHgiTextureResources(&ptcsDesc,
-            HdShaderTokens->postTessControlShader, _resTextures, _metaData);
+            HdShaderTokens->postTessControlShader, _resTextures, _GetMetaData());
 
         std::string const declarations =
             _genDefines.str() + _genDecl.str() + _osd.str();
@@ -2899,17 +2925,17 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         }
 
         resourceGen._GenerateHgiResources(&ptvsDesc,
-            HdShaderTokens->postTessVertexShader, _resAttrib, _metaData);
+            HdShaderTokens->postTessVertexShader, _resAttrib, _GetMetaData());
         resourceGen._GenerateHgiResources(&ptvsDesc,
-            HdShaderTokens->postTessVertexShader, _resCommon, _metaData);
+            HdShaderTokens->postTessVertexShader, _resCommon, _GetMetaData());
         resourceGen._GenerateHgiResources(&ptvsDesc,
-            HdShaderTokens->postTessVertexShader, _resPTVS, _metaData);
+            HdShaderTokens->postTessVertexShader, _resPTVS, _GetMetaData());
 
         // material in PTVS
         resourceGen._GenerateHgiResources(&ptvsDesc,
-            HdShaderTokens->postTessVertexShader, _resMaterial, _metaData);
+            HdShaderTokens->postTessVertexShader, _resMaterial, _GetMetaData());
         resourceGen._GenerateHgiTextureResources(&ptvsDesc,
-            HdShaderTokens->postTessVertexShader, _resTextures, _metaData);
+            HdShaderTokens->postTessVertexShader, _resTextures, _GetMetaData());
 
         std::string const declarations =
             _genDefines.str() + _genDecl.str() + _osd.str();
@@ -2973,15 +2999,15 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         gsDesc.shaderStage = HgiShaderStageGeometry;
 
         resourceGen._GenerateHgiResources(&gsDesc,
-            HdShaderTokens->geometryShader, _resCommon, _metaData);
+            HdShaderTokens->geometryShader, _resCommon, _GetMetaData());
         resourceGen._GenerateHgiResources(&gsDesc,
-            HdShaderTokens->geometryShader, _resGS, _metaData);
+            HdShaderTokens->geometryShader, _resGS, _GetMetaData());
 
         // material in GS
         resourceGen._GenerateHgiResources(&gsDesc,
-            HdShaderTokens->geometryShader, _resMaterial, _metaData);
+            HdShaderTokens->geometryShader, _resMaterial, _GetMetaData());
         resourceGen._GenerateHgiTextureResources(&gsDesc,
-            HdShaderTokens->geometryShader, _resTextures, _metaData);
+            HdShaderTokens->geometryShader, _resTextures, _GetMetaData());
 
         std::string const declarations = _genDefines.str() + _genDecl.str() +
             _osd.str();
@@ -3011,11 +3037,11 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         _GenerateComputeParameters(&csDesc);
 
         resourceGen._GenerateHgiResources(&csDesc,
-            HdShaderTokens->computeShader, _resAttrib, _metaData);
+            HdShaderTokens->computeShader, _resAttrib, _GetMetaData());
         resourceGen._GenerateHgiResources(&csDesc,
-            HdShaderTokens->computeShader, _resCommon, _metaData);
+            HdShaderTokens->computeShader, _resCommon, _GetMetaData());
         resourceGen._GenerateHgiResources(&csDesc,
-            HdShaderTokens->computeShader, _resCS, _metaData);
+            HdShaderTokens->computeShader, _resCS, _GetMetaData());
 
         std::string const declarations = _genDefines.str() + _genDecl.str();
         std::string const source = _genAccessors.str() + _genCS.str();
@@ -4062,9 +4088,9 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     bool const requiresBasePrimitiveOffset,
     bool const requiresPrimitiveIdEmulation)
 {
-    TF_VERIFY(_metaData.drawingCoord0Binding.binding.IsValid());
-    TF_VERIFY(_metaData.drawingCoord1Binding.binding.IsValid());
-    TF_VERIFY(_metaData.drawingCoord2Binding.binding.IsValid());
+    TF_VERIFY(_metaData->drawingCoord0Binding.binding.IsValid());
+    TF_VERIFY(_metaData->drawingCoord1Binding.binding.IsValid());
+    TF_VERIFY(_metaData->drawingCoord2Binding.binding.IsValid());
 
     /*
        hd_drawingCoord is a struct of integer offsets to locate the primvars
@@ -4190,7 +4216,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     _genDecl << "FORWARD_DECL(hd_drawingCoord GetDrawingCoord());\n"
                 "FORWARD_DECL(int HgiGetBaseVertex());\n";
 
-    int instanceIndexWidth = _metaData.instancerNumLevels + 1;
+    int instanceIndexWidth = _metaData->instancerNumLevels + 1;
 
     // vertex shader
 
@@ -4204,13 +4230,13 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     //   layout (location=z) in ivec2 drawingCoord2
     //   layout (location=w) in int   drawingCoordI[N]
     if (!_hasCS) {
-        _EmitDeclaration(&_resAttrib, _metaData.drawingCoord0Binding);
-        _EmitDeclaration(&_resAttrib, _metaData.drawingCoord1Binding);
-        _EmitDeclaration(&_resAttrib, _metaData.drawingCoord2Binding);
+        _EmitDeclaration(&_resAttrib, _metaData->drawingCoord0Binding);
+        _EmitDeclaration(&_resAttrib, _metaData->drawingCoord1Binding);
+        _EmitDeclaration(&_resAttrib, _metaData->drawingCoord2Binding);
 
-        if (_metaData.drawingCoordIBinding.binding.IsValid()) {
-            _EmitDeclaration(&_resAttrib, _metaData.drawingCoordIBinding,
-                /*arraySize=*/std::max(1, _metaData.instancerNumLevels));
+        if (_metaData->drawingCoordIBinding.binding.IsValid()) {
+            _EmitDeclaration(&_resAttrib, _metaData->drawingCoordIBinding,
+                /*arraySize=*/std::max(1, _metaData->instancerNumLevels));
         }
     }
 
@@ -4349,28 +4375,28 @@ HdSt_CodeGen::_GenerateDrawingCoord(
 
                << "int GetDrawingCoordField(int offset) {\n"
                << "  const int drawIndexOffset = "
-               << _metaData.drawingCoordBufferBinding.offset
+               << _metaData->drawingCoordBufferBinding.offset
                << ";\n"
 
                << "  const int drawIndexStride = "
-               << _metaData.drawingCoordBufferBinding.stride
+               << _metaData->drawingCoordBufferBinding.stride
                << ";\n"
 
                << "  const int base = "
                << "hd_drawIndex.drawId * drawIndexStride + drawIndexOffset;\n"
                << "  return int("
-               << _metaData.drawingCoordBufferBinding.bufferName
+               << _metaData->drawingCoordBufferBinding.bufferName
                << "[base + offset]);\n"
                << "}\n";
     }
 
-    if (_metaData.instanceIndexArrayBinding.binding.IsValid()) {
+    if (_metaData->instanceIndexArrayBinding.binding.IsValid()) {
         // << layout (location=x) uniform (int|ivec[234]) *instanceIndices;
-        _EmitDeclaration(&_resCommon, _metaData.instanceIndexArrayBinding);
+        _EmitDeclaration(&_resCommon, _metaData->instanceIndexArrayBinding);
 
         // << layout (location=x) uniform (int|ivec[234]) *culledInstanceIndices;
         HdSt_ResourceBinder::MetaData::BindingDeclaration const &
-                bindingDecl = _metaData.culledInstanceIndexArrayBinding;
+                bindingDecl = _metaData->culledInstanceIndexArrayBinding;
         _EmitDeclaration(&_resCommon, bindingDecl);
 
         /// if \p cullingPass is true, CodeGen generates GetInstanceIndex()
@@ -4454,17 +4480,17 @@ HdSt_CodeGen::_GenerateDrawingCoord(
 
         } else {
             // for drawing:  use culledInstanceIndices.
-            _EmitAccessor(_genVS, _metaData.culledInstanceIndexArrayBinding.name,
-                          _metaData.culledInstanceIndexArrayBinding.dataType,
-                          _metaData.culledInstanceIndexArrayBinding.binding,
+            _EmitAccessor(_genVS, _metaData->culledInstanceIndexArrayBinding.name,
+                          _metaData->culledInstanceIndexArrayBinding.dataType,
+                          _metaData->culledInstanceIndexArrayBinding.binding,
                           "GetInstanceIndexCoord()+localIndex + 1");
-            _EmitAccessor(_genPTCS, _metaData.culledInstanceIndexArrayBinding.name,
-                          _metaData.culledInstanceIndexArrayBinding.dataType,
-                          _metaData.culledInstanceIndexArrayBinding.binding,
+            _EmitAccessor(_genPTCS, _metaData->culledInstanceIndexArrayBinding.name,
+                          _metaData->culledInstanceIndexArrayBinding.dataType,
+                          _metaData->culledInstanceIndexArrayBinding.binding,
                           "GetInstanceIndexCoord()+localIndex + 1");
-            _EmitAccessor(_genPTVS, _metaData.culledInstanceIndexArrayBinding.name,
-                          _metaData.culledInstanceIndexArrayBinding.dataType,
-                          _metaData.culledInstanceIndexArrayBinding.binding,
+            _EmitAccessor(_genPTVS, _metaData->culledInstanceIndexArrayBinding.name,
+                          _metaData->culledInstanceIndexArrayBinding.dataType,
+                          _metaData->culledInstanceIndexArrayBinding.binding,
                           "GetInstanceIndexCoord()+localIndex + 1");
 
             genAttr << "hd_instanceIndex GetInstanceIndex() {\n"
@@ -4690,7 +4716,7 @@ HdSt_CodeGen::_GenerateConstantPrimvar()
 
     */
 
-    TF_FOR_ALL (it, _metaData.constantData) {
+    TF_FOR_ALL (it, _metaData->constantData) {
         // note: _constantData has been sorted by offset in HdSt_ResourceBinder.
         // XXX: not robust enough, should consider padding and layouting rules
         // to match with the logic in HdInterleavedMemoryManager if we
@@ -4754,7 +4780,7 @@ HdSt_CodeGen::_GenerateInstancePrimvar()
     };
     std::map<TfToken, LevelEntries> nameAndLevels;
 
-    TF_FOR_ALL (it, _metaData.instanceData) {
+    TF_FOR_ALL (it, _metaData->instanceData) {
         HdStBinding binding = it->first;
         TfToken const &dataType = it->second.dataType;
         int level = it->second.level;
@@ -4965,12 +4991,12 @@ HdSt_CodeGen::_GenerateElementPrimvar()
 
     std::stringstream accessors;
 
-    if (_metaData.primitiveParamBinding.binding.IsValid()) {
+    if (_metaData->primitiveParamBinding.binding.IsValid()) {
 
-        HdStBinding binding = _metaData.primitiveParamBinding.binding;
-        _EmitDeclaration(&_resCommon, _metaData.primitiveParamBinding);
-        _EmitAccessor(accessors, _metaData.primitiveParamBinding.name,
-                        _metaData.primitiveParamBinding.dataType, binding,
+        HdStBinding binding = _metaData->primitiveParamBinding.binding;
+        _EmitDeclaration(&_resCommon, _metaData->primitiveParamBinding);
+        _EmitAccessor(accessors, _metaData->primitiveParamBinding.name,
+                        _metaData->primitiveParamBinding.dataType, binding,
                         "GetPrimitiveIndex()");
 
         if (_geometricShader->IsPrimTypeCompute()) {
@@ -5160,25 +5186,25 @@ HdSt_CodeGen::_GenerateElementPrimvar()
         << "FORWARD_DECL(int GetAggregatedElementID());\n";
 
 
-    if (_metaData.edgeIndexBinding.binding.IsValid()) {
+    if (_metaData->edgeIndexBinding.binding.IsValid()) {
 
-        HdStBinding binding = _metaData.edgeIndexBinding.binding;
+        HdStBinding binding = _metaData->edgeIndexBinding.binding;
 
-        _EmitDeclaration(&_resCommon, _metaData.edgeIndexBinding);
-        _EmitAccessor(accessors, _metaData.edgeIndexBinding.name,
-                    _metaData.edgeIndexBinding.dataType, binding,
+        _EmitDeclaration(&_resCommon, _metaData->edgeIndexBinding);
+        _EmitAccessor(accessors, _metaData->edgeIndexBinding.name,
+                    _metaData->edgeIndexBinding.dataType, binding,
                     "GetPrimitiveIndex()");
     }
 
-    if (_metaData.coarseFaceIndexBinding.binding.IsValid()) {
+    if (_metaData->coarseFaceIndexBinding.binding.IsValid()) {
         _genDefines << "#define HD_HAS_" 
-            << _metaData.coarseFaceIndexBinding.name << " 1\n";
+            << _metaData->coarseFaceIndexBinding.name << " 1\n";
 
-        const HdStBinding &binding = _metaData.coarseFaceIndexBinding.binding;
+        const HdStBinding &binding = _metaData->coarseFaceIndexBinding.binding;
 
-        _EmitDeclaration(&_resCommon, _metaData.coarseFaceIndexBinding);
-        _EmitAccessor(accessors, _metaData.coarseFaceIndexBinding.name,
-                    _metaData.coarseFaceIndexBinding.dataType, binding,
+        _EmitDeclaration(&_resCommon, _metaData->coarseFaceIndexBinding);
+        _EmitAccessor(accessors, _metaData->coarseFaceIndexBinding.name,
+                    _metaData->coarseFaceIndexBinding.dataType, binding,
                     "GetPrimitiveIndex() + localIndex");
     }
 
@@ -5223,7 +5249,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
 
     // Uniform primvar data declarations & accessors
     if (!_geometricShader->IsPrimTypePoints()) {
-        TF_FOR_ALL (it, _metaData.elementData) {
+        TF_FOR_ALL (it, _metaData->elementData) {
             HdStBinding binding = it->first;
             TfToken const &name = it->second.name;
             TfToken const &dataType = it->second.dataType;
@@ -5235,41 +5261,41 @@ HdSt_CodeGen::_GenerateElementPrimvar()
         }
     }
 
-    for (size_t i = 0; i < _metaData.fvarIndicesBindings.size(); ++i) {
-        if (!_metaData.fvarIndicesBindings[i].binding.IsValid()) {
+    for (size_t i = 0; i < _metaData->fvarIndicesBindings.size(); ++i) {
+        if (!_metaData->fvarIndicesBindings[i].binding.IsValid()) {
             continue;
         }
 
-        HdStBinding binding = _metaData.fvarIndicesBindings[i].binding;
-        TfToken name = _metaData.fvarIndicesBindings[i].name;
+        HdStBinding binding = _metaData->fvarIndicesBindings[i].binding;
+        TfToken name = _metaData->fvarIndicesBindings[i].name;
         _EmitDeclaration(&_resCommon, name, 
-            _metaData.fvarIndicesBindings[i].dataType, 
-            _metaData.fvarIndicesBindings[i].binding, 0);
+            _metaData->fvarIndicesBindings[i].dataType, 
+            _metaData->fvarIndicesBindings[i].binding, 0);
 
         if (_geometricShader->GetFvarPatchType() == 
             HdSt_GeometricShader::FvarPatchType::PATCH_BSPLINE || 
             _geometricShader->GetFvarPatchType() ==
             HdSt_GeometricShader::FvarPatchType::PATCH_BOXSPLINETRIANGLE) {
             _EmitAccessor(accessors, name,
-                _metaData.fvarIndicesBindings[i].dataType, binding,
+                _metaData->fvarIndicesBindings[i].dataType, binding,
                 "GetPrimitiveIndex() * HD_NUM_PATCH_VERTS + localIndex");
         } else {
             _EmitAccessor(accessors,name,
-                _metaData.fvarIndicesBindings[i].dataType, binding,
+                _metaData->fvarIndicesBindings[i].dataType, binding,
                 "GetPrimitiveIndex() + localIndex");
         }
     }
 
-    for (size_t i = 0; i < _metaData.fvarPatchParamBindings.size(); ++i) {
-        if (!_metaData.fvarPatchParamBindings[i].binding.IsValid()) {
+    for (size_t i = 0; i < _metaData->fvarPatchParamBindings.size(); ++i) {
+        if (!_metaData->fvarPatchParamBindings[i].binding.IsValid()) {
             continue;
         }
 
-        HdStBinding binding = _metaData.fvarPatchParamBindings[i].binding;
-        TfToken name = _metaData.fvarPatchParamBindings[i].name;
+        HdStBinding binding = _metaData->fvarPatchParamBindings[i].binding;
+        TfToken name = _metaData->fvarPatchParamBindings[i].name;
         _EmitDeclaration(&_resCommon, name, 
-            _metaData.fvarPatchParamBindings[i].dataType, 
-            _metaData.fvarPatchParamBindings[i].binding, 0);
+            _metaData->fvarPatchParamBindings[i].dataType, 
+            _metaData->fvarPatchParamBindings[i].binding, 0);
 
         // Only need fvar patch param for bspline or box spline patches
         if (_geometricShader->GetFvarPatchType() == 
@@ -5277,7 +5303,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
             _geometricShader->GetFvarPatchType() ==
             HdSt_GeometricShader::FvarPatchType::PATCH_BOXSPLINETRIANGLE) {
             _EmitAccessor(accessors, name,
-                _metaData.fvarPatchParamBindings[i].dataType, binding,
+                _metaData->fvarPatchParamBindings[i].dataType, binding,
                 "GetPrimitiveIndex() + localIndex");
         }
     }
@@ -5349,7 +5375,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
     HioGlslfxResourceLayout::MemberVector interstagePrimvar;
 
     // vertex 
-    TF_FOR_ALL (it, _metaData.vertexData) {
+    TF_FOR_ALL (it, _metaData->vertexData) {
         HdStBinding binding = it->first;
         TfToken const &name = it->second.name;
         TfToken const &dataType = it->second.dataType;
@@ -5431,7 +5457,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
     */
 
     HdSt_ResourceBinder::MetaData::BindingDeclaration const &
-            indexBufferBinding = _metaData.indexBufferBinding;
+            indexBufferBinding = _metaData->indexBufferBinding;
     if (!indexBufferBinding.name.IsEmpty()) {
         _EmitDeclaration(&_resPTCS,
                          indexBufferBinding.name,
@@ -5452,7 +5478,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
             "patch_id * VERTEX_CONTROL_POINTS_PER_PATCH + localIndex");
     }
 
-    TF_FOR_ALL (it, _metaData.varyingData) {
+    TF_FOR_ALL (it, _metaData->varyingData) {
         HdStBinding binding = it->first;
         TfToken const &name = it->second.name;
         TfToken const &dataType = it->second.dataType;
@@ -5602,7 +5628,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
     HioGlslfxResourceLayout::MemberVector interstagePrimvarFVar;
 
     // FVar primvars are emitted by GS or FS
-    TF_FOR_ALL (it, _metaData.fvarData) {
+    TF_FOR_ALL (it, _metaData->fvarData) {
         HdStBinding binding = it->first;
         TfToken const &name = it->second.name;
         TfToken const &dataType = it->second.dataType;
@@ -5823,7 +5849,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
     TfToken varName("shaderData");
 
     // for shader parameters, we create declarations and accessors separetely.
-    TF_FOR_ALL (it, _metaData.shaderData) {
+    TF_FOR_ALL (it, _metaData->shaderData) {
         HdStBinding binding = it->first;
 
         _genDecl << "struct " << typeName << " {\n";
@@ -5848,7 +5874,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
     }
 
     // Non-field redirect accessors.
-    TF_FOR_ALL (it, _metaData.shaderParameterBinding) {
+    TF_FOR_ALL (it, _metaData->shaderParameterBinding) {
 
         // adjust datatype
         std::string swizzle = _GetSwizzleString(it->second.dataType,
@@ -6463,7 +6489,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                 // If INPUTNAME and PRIMVARNAME are the same and the
                 // primvar exists, we would generate two functions
                 // both called HdGet_PRIMVAR, one to read the primvar
-                // (based on _metaData.constantData) and one for the
+                // (based on _metaData->constantData) and one for the
                 // primvar redirect here.
                 accessors
                     << "#if !defined(HD_HAS_" << it->second.name << ")\n";
@@ -6561,7 +6587,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
         << "void ProcessSamplingTransforms("
         << "MAT4 instanceModelViewInverse) {\n";
 
-    TF_FOR_ALL (it, _metaData.shaderParameterBinding) {
+    TF_FOR_ALL (it, _metaData->shaderParameterBinding) {
         const HdStBinding::Type bindingType = it->first.GetType();
 
         if ( bindingType == HdStBinding::TEXTURE_FIELD ||
@@ -6580,7 +6606,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
         << "}\n";
 
     // Field redirect accessors, need to access above field textures.
-    TF_FOR_ALL (it, _metaData.shaderParameterBinding) {
+    TF_FOR_ALL (it, _metaData->shaderParameterBinding) {
         HdStBinding::Type bindingType = it->first.GetType();
 
         if (bindingType == HdStBinding::FIELD_REDIRECT) {
@@ -6633,7 +6659,7 @@ HdSt_CodeGen::_GenerateTopologyVisibilityParameters()
 {
     std::stringstream declarations;
     std::stringstream accessors;
-    TF_FOR_ALL (it, _metaData.topologyVisibilityData) {
+    TF_FOR_ALL (it, _metaData->topologyVisibilityData) {
         // See note in _GenerateConstantPrimvar re: padding.
         HdStBinding binding = it->first;
         TfToken typeName(TfStringPrintf("TopologyVisibilityData%d",
@@ -6683,7 +6709,7 @@ HdSt_CodeGen::_GetFallbackScalarSwizzleString(TfToken const &returnType,
     // or calculating it in codeGen
     TfToken fallbackParamName(paramName.GetString() +
         HdSt_ResourceBindingSuffixTokens->fallback.GetString());
-    TF_FOR_ALL (it, _metaData.shaderData) {
+    TF_FOR_ALL (it, _metaData->shaderData) {
         TF_FOR_ALL (dbIt, it->second.entries) {
             if (dbIt->name == fallbackParamName) {
                 if (!_IsScalarType(dbIt->dataType)) {

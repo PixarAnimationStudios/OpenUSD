@@ -42,8 +42,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Objects of this class represent a logical expression syntax tree consisting
 /// of SdfPath matching patterns (with optionally embedded predicate
-/// expressions) joined by the set-algebraic operators '+' (union), '&'
-/// (intersection), '-' (difference), '~' (complement) and an implied-union
+/// expressions) joined by the set-algebraic operators `+` (union), `&`
+/// (intersection), `-` (difference), `~` (complement) and an implied-union
 /// operator represented by two subexpressions joined by whitespace.
 ///
 /// An SdfPathExpression can be constructed from a string, which will parse the
@@ -53,20 +53,21 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// The fundamental building blocks are path patterns and expression references.
 /// A path pattern is similar to an SdfPath, but it may contain glob-style
 /// wild-card characters, embedded brace-enclosed predicate expressions (see
-/// SdfPredicateExpression) and '//' elements indicating arbitrary levels of
-/// prim hierarchy.  For example, consider "/foo//bar*/baz{active:false}".  This
-/// pattern matches absolute paths whose first component is 'foo', that also
-/// have some descendant prim whose name begins with 'bar', which in turn has a
-/// child named 'baz' where the predicate "active:false" evaluates to true.
+/// SdfPredicateExpression) and `//` elements indicating arbitrary levels of
+/// prim hierarchy.  For example, consider
+/// <code>/foo//bar*/baz{active:false}</code>.  This pattern matches absolute
+/// paths whose first component is `foo`, that also have some descendant prim
+/// whose name begins with `bar`, which in turn has a child named `baz` where
+/// the predicate `active:false` evaluates to true.
 ///
-/// An expression reference starts with '%' followed by a prim path, a ':', and
-/// a name.  There is also one "special" expression reference, "%_" which means
+/// An expression reference starts with `%` followed by a prim path, a `:`, and
+/// a name.  There is also one "special" expression reference, `%_` which means
 /// "the weaker" expression when composing expressions together.  See
 /// ComposeOver() and ResolveReferences() for more information.
 ///
-/// These building blocks may be joined as mentioned above, with '+', '-', '&',
-/// or whitespace, and may be complemented with '~', and grouped with '(' and
-/// ')'.
+/// These building blocks may be joined as mentioned above, with `+`, `-`, `&`,
+/// or whitespace, and may be complemented with `~`, and grouped with `(` and
+/// `)`.
 class SdfPathExpression
 {
 public:
@@ -162,7 +163,7 @@ public:
             return _prefix;
         }
 
-        /// \overload.
+        /// \overload
         SdfPath GetPrefix() && {
             return std::move(_prefix);
         }

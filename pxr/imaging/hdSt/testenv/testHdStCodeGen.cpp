@@ -260,16 +260,20 @@ CodeGenTest(HdSt_ShaderKey const &key, bool useBindlessBuffer,
     shaders[1].reset(new HdSt_FallbackLightingShader());
     shaders[2] = _fallbackMaterialNetworkShader;
 
-    HdSt_CodeGen codeGen(geometricShader, shaders, drawItem.GetMaterialTag());
-
     HdSt_ResourceBinder::MetaData::DrawingCoordBufferBinding dcBinding;
 
+    std::unique_ptr<HdSt_ResourceBinder::MetaData> metaData =
+        std::make_unique<HdSt_ResourceBinder::MetaData>();
+    
     binder.ResolveBindings(&drawItem,
                            shaders,
-                           codeGen.GetMetaData(),
+                           metaData.get(),
                            dcBinding,
                            /*instanced=*/true, empty,
                            registry->GetHgi()->GetCapabilities());
+
+    HdSt_CodeGen codeGen(geometricShader, shaders,
+                         drawItem.GetMaterialTag(), std::move(metaData));
 
     codeGen.Compile(registry.get());
 

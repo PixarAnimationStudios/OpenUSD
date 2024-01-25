@@ -154,6 +154,7 @@ pxr_library(sdf
         wrapPathExpression.cpp
         wrapPayload.cpp
         wrapPredicateExpression.cpp
+        wrapPredicateFunctionResult.cpp
         wrapPrimSpec.cpp
         wrapPropertySpec.cpp
         wrapPseudoRootSpec.cpp
@@ -219,6 +220,7 @@ pxr_test_scripts(
     testenv/testSdfPath.py
     testenv/testSdfPath2.py
     testenv/testSdfPath2Construct.py
+    testenv/testSdfPathExpression.py
     testenv/testSdfPayload.py
     testenv/testSdfPrim.py
     testenv/testSdfReference.py
@@ -470,6 +472,11 @@ pxr_register_test(testSdfListOp
 
 pxr_register_test(testSdfMetaDataPlugInfo
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfMetaDataPlugInfo"
+)
+
+pxr_register_test(testSdfPathExpression
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPathExpression"
 )
 
 pxr_register_test(testSdfPathExpression_Cpp

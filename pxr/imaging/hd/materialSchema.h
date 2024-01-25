@@ -35,7 +35,10 @@
 #ifndef PXR_IMAGING_HD_MATERIAL_SCHEMA_H
 #define PXR_IMAGING_HD_MATERIAL_SCHEMA_H
 
+/// \file
+
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/materialNetworkSchema.h"
 
 #include "pxr/imaging/hd/schema.h"
 
@@ -44,12 +47,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//-----------------------------------------------------------------------------
-
 // --(BEGIN CUSTOM CODE: Declares)--
 // --(END CUSTOM CODE: Declares)--
-
-//-----------------------------------------------------------------------------
 
 #define HD_MATERIAL_SCHEMA_TOKENS \
     (material) \
@@ -64,31 +63,11 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialSchemaTokens, HD_API,
 class HdMaterialSchema : public HdSchema
 {
 public:
+    /// \name Schema retrieval
+    /// @{
+
     HdMaterialSchema(HdContainerDataSourceHandle container)
-    : HdSchema(container) {}
-
-// --(BEGIN CUSTOM CODE: Schema Methods)--
-
-    HD_API
-    HdContainerDataSourceHandle GetMaterialNetwork();
-
-    HD_API
-    HdContainerDataSourceHandle GetMaterialNetwork(TfToken const &context);
-
-// --(END CUSTOM CODE: Schema Methods)--
-
-    //ACCESSORS
- 
-
-    // RETRIEVING AND CONSTRUCTING
-
-    HD_API
-    static HdContainerDataSourceHandle
-    BuildRetained(
-        size_t count,
-        const TfToken *names,
-        const HdDataSourceBaseHandle *values);
-
+      : HdSchema(container) {}
 
     /// Retrieves a container data source with the schema's default name token
     /// "material" from the parent container and constructs a
@@ -99,6 +78,26 @@ public:
     static HdMaterialSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    /// @}
+
+// --(BEGIN CUSTOM CODE: Schema Methods)--
+
+    HD_API
+    HdMaterialNetworkSchema GetMaterialNetwork();
+
+    HD_API
+    HdMaterialNetworkSchema GetMaterialNetwork(TfToken const &context);
+
+// --(END CUSTOM CODE: Schema Methods)--
+
+    /// \name Member accessor
+    /// @{ 
+
+    /// @}
+
+    /// \name Schema location
+    /// @{
+
     /// Returns a token where the container representing this schema is found in
     /// a container by default.
     HD_API
@@ -108,6 +107,19 @@ public:
     /// where the container representing this schema is found by default.
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
+
+    /// @} 
+
+    /// \name Schema construction
+    /// @{
+    HD_API
+    static HdContainerDataSourceHandle
+    BuildRetained(
+        size_t count,
+        const TfToken *names,
+        const HdDataSourceBaseHandle *values);
+
+    /// @}
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

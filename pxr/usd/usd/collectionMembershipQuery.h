@@ -388,7 +388,7 @@ public:
     /// was default constructed.
     UsdStageWeakPtr const &GetStage() const { return _stage; }
 
-    /// Return the result of evaluating the expression against \p object.
+    /// Return the result of evaluating the expression against \p path.
     USD_API
     SdfPredicateFunctionResult
     Match(SdfPath const &path) const;

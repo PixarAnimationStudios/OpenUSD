@@ -25,6 +25,9 @@ Prim Stack:
     CharRig.sdf          /CharRig{TailRigVersion=Standard}TailRig
     TailRig.sdf          /TailRig
 
+Prohibited child names:
+     ['Tail']
+
 ------------------------------------------------------------------------
 Results for composing </Char/Anim>
 
@@ -59,4 +62,7 @@ Results for composing </Char2/Anim>
 
 Prim Stack:
     CharRig.sdf          /CharRig2/Anim
+
+Child names:
+     ['Tail']
 

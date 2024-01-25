@@ -35,21 +35,20 @@
 #ifndef PXR_IMAGING_HD_IMAGE_SHADER_SCHEMA_H
 #define PXR_IMAGING_HD_IMAGE_SHADER_SCHEMA_H
 
-#include "pxr/imaging/hd/api.h"
+/// \file
 
-#include "pxr/imaging/hd/schema.h" 
+#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/schemaTypeDefs.h"
+
+#include "pxr/imaging/hd/schema.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
 // --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//-----------------------------------------------------------------------------
-
 // --(BEGIN CUSTOM CODE: Declares)--
 // --(END CUSTOM CODE: Declares)--
-
-//-----------------------------------------------------------------------------
 
 #define HD_IMAGE_SHADER_SCHEMA_TOKENS \
     (imageShader) \
@@ -62,17 +61,33 @@ TF_DECLARE_PUBLIC_TOKENS(HdImageShaderSchemaTokens, HD_API,
     HD_IMAGE_SHADER_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
+
+
 class HdImageShaderSchema : public HdSchema
 {
 public:
+    /// \name Schema retrieval
+    /// @{
+
     HdImageShaderSchema(HdContainerDataSourceHandle container)
-    : HdSchema(container) {}
+      : HdSchema(container) {}
+
+    /// Retrieves a container data source with the schema's default name token
+    /// "imageShader" from the parent container and constructs a
+    /// HdImageShaderSchema instance.
+    /// Because the requested container data source may not exist, the result
+    /// should be checked with IsDefined() or a bool comparison before use.
+    HD_API
+    static HdImageShaderSchema GetFromParent(
+        const HdContainerDataSourceHandle &fromParentContainer);
+
+    /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
 
-    //ACCESSORS
-
+    /// \name Member accessor
+    /// @{
 
     HD_API
     HdBoolDataSourceHandle GetEnabled();
@@ -81,13 +96,59 @@ public:
     HdIntDataSourceHandle GetPriority();
 
     HD_API
-    HdAssetPathDataSourceHandle GetFilePath();
+    HdStringDataSourceHandle GetFilePath();
 
     HD_API
-    HdContainerDataSourceHandle GetConstants();
+    HdSampledDataSourceContainerSchema GetConstants(); 
 
-    // RETRIEVING AND CONSTRUCTING
+    /// @}
 
+    /// \name Schema location
+    /// @{
+
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    HD_API
+    static const TfToken &GetSchemaToken();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the container representing this schema is found by default.
+    HD_API
+    static const HdDataSourceLocator &GetDefaultLocator();
+
+    /// @}
+
+    /// \name Data source locators for members
+    ///
+    /// The following methods return an HdDataSourceLocator (relative to the
+    /// prim-level data source) where the data source for a member can be found.
+    ///
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    /// @{
+
+    /// Prim-level relative data source locator to locate enabled.
+    HD_API
+    static const HdDataSourceLocator &GetEnabledLocator();
+
+    /// Prim-level relative data source locator to locate priority.
+    HD_API
+    static const HdDataSourceLocator &GetPriorityLocator();
+
+    /// Prim-level relative data source locator to locate filePath.
+    HD_API
+    static const HdDataSourceLocator &GetFilePathLocator();
+
+    /// Prim-level relative data source locator to locate constants.
+    HD_API
+    static const HdDataSourceLocator &GetConstantsLocator();
+    /// @} 
+
+    /// \name Schema construction
+    /// @{
+
+    /// \deprecated Use Builder instead.
+    ///
     /// Builds a container data source which includes the provided child data
     /// sources. Parameters with nullptr values are excluded. This is a
     /// low-level interface. For cases in which it's desired to define
@@ -98,7 +159,7 @@ public:
     BuildRetained(
         const HdBoolDataSourceHandle &enabled,
         const HdIntDataSourceHandle &priority,
-        const HdAssetPathDataSourceHandle &filePath,
+        const HdStringDataSourceHandle &filePath,
         const HdContainerDataSourceHandle &constants
     );
 
@@ -119,7 +180,7 @@ public:
             const HdIntDataSourceHandle &priority);
         HD_API
         Builder &SetFilePath(
-            const HdAssetPathDataSourceHandle &filePath);
+            const HdStringDataSourceHandle &filePath);
         HD_API
         Builder &SetConstants(
             const HdContainerDataSourceHandle &constants);
@@ -131,55 +192,12 @@ public:
     private:
         HdBoolDataSourceHandle _enabled;
         HdIntDataSourceHandle _priority;
-        HdAssetPathDataSourceHandle _filePath;
+        HdStringDataSourceHandle _filePath;
         HdContainerDataSourceHandle _constants;
+
     };
 
-    /// Retrieves a container data source with the schema's default name token
-    /// "imageShader" from the parent container and constructs a
-    /// HdImageShaderSchema instance.
-    /// Because the requested container data source may not exist, the result
-    /// should be checked with IsDefined() or a bool comparison before use.
-    HD_API
-    static HdImageShaderSchema GetFromParent(
-        const HdContainerDataSourceHandle &fromParentContainer);
-
-    /// Returns a token where the container representing this schema is found in
-    /// a container by default.
-    HD_API
-    static const TfToken &GetSchemaToken();
-
-    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
-    /// where the container representing this schema is found by default.
-    HD_API
-    static const HdDataSourceLocator &GetDefaultLocator();
-
-    // DATA SOURCE LOCATORS FOR MEMBERS
-    //
-    // The following methods return an HdDataSourceLocator (relative to the
-    // prim-level data source) where the data source for a member can be found.
-    //
-    // This is often useful for checking intersection against the
-    // HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
-
-
-    /// Prim-level relative data source locator to locate enabled.
-    HD_API
-    static const HdDataSourceLocator &GetEnabledLocator();
-
-    /// Prim-level relative data source locator to locate priority.
-    HD_API
-    static const HdDataSourceLocator &GetPriorityLocator();
-
-    /// Prim-level relative data source locator to locate filePath.
-    HD_API
-    static const HdDataSourceLocator &GetFilePathLocator();
-
-    /// Prim-level relative data source locator to locate constants.
-    HD_API
-    static const HdDataSourceLocator &GetConstantsLocator();
-
-
+    /// @}
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

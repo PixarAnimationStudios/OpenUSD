@@ -154,7 +154,7 @@ Tf_CreateSiblingTempFile(std::string fileName,
     std::string dirPath = TfStringGetBeforeSuffix(realFilePath, '/');
 #endif
 
-    if (TfGetEnvSetting(TF_REQUIRE_FILESYSTEM_WRITE_PERMISSION)){
+    if (TfGetEnvSetting(TF_REQUIRE_FILESYSTEM_WRITE_PERMISSION)) {
         if (ArchFileAccess(dirPath.c_str(), W_OK) != 0) {
             *error = TfStringPrintf(
                 "Insufficient permissions to write to destination "
@@ -162,12 +162,13 @@ Tf_CreateSiblingTempFile(std::string fileName,
             return result;
         }
 
-        // Directory exists and has write permission. Check whether the destination
-        // file exists and has write permission. We can rename into this path
-        // successfully even if we can't write to the file, but we retain the policy
-        // that if the user couldn't open the file for writing, they can't write to
-        // the file via this object.
-        if (ArchFileAccess(realFilePath.c_str(), W_OK) != 0 && errno != ENOENT) {
+        // Directory exists and has write permission. Check whether the
+        // destination file exists and has write permission. We can rename into
+        // this path successfully even if we can't write to the file, but we
+        // retain the policy that if the user couldn't open the file for
+        // writing, they can't write to the file via this object.
+        if (ArchFileAccess(
+                realFilePath.c_str(), W_OK) != 0 && errno != ENOENT) {
             *error = TfStringPrintf(
                 "Insufficient permissions to write to destination "
                 "file '%s'", realFilePath.c_str());

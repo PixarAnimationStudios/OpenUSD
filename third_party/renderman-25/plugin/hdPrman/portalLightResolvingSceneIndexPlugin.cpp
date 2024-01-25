@@ -36,6 +36,7 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
 #include "pxr/usd/sdf/assetPath.h"
@@ -119,8 +120,13 @@ namespace {
 bool
 _IsPortalLight(const HdSceneIndexPrim& prim, const SdfPath& primPath)
 {
-    const auto matDataSource = HdMaterialSchema::GetFromParent(prim.dataSource)
-                                   .GetMaterialNetwork(_tokens->renderContext);
+    auto matDataSource =
+        HdMaterialSchema::GetFromParent(prim.dataSource)
+            .GetMaterialNetwork(_tokens->renderContext)
+#if HD_API_VERSION >= 63
+            .GetContainer()
+#endif
+        ;
     HdDataSourceMaterialNetworkInterface matInterface(primPath, matDataSource,
                                                       prim.dataSource);
 
@@ -229,8 +235,11 @@ _BuildPortalLightDataSource(
     // -------------------------------------------------------------------------
     const HdContainerDataSourceHandle domeMatDataSource = 
         HdMaterialSchema::GetFromParent(domePrim.dataSource)
-            .GetMaterialNetwork(_tokens->renderContext);
-
+            .GetMaterialNetwork(_tokens->renderContext)
+#if HD_API_VERSION >= 63
+            .GetContainer()
+#endif
+        ;
     HdDataSourceMaterialNetworkInterface domeMatInterface(domePrimPath,
                                                           domeMatDataSource,
                                                           domePrim.dataSource);
@@ -283,7 +292,11 @@ _BuildPortalLightDataSource(
     // -------------------------------------------------------------------------
     const HdContainerDataSourceHandle portalMatDataSource = 
         HdMaterialSchema::GetFromParent(portalPrim.dataSource)
-            .GetMaterialNetwork(_tokens->renderContext);
+            .GetMaterialNetwork(_tokens->renderContext)
+#if HD_API_VERSION >= 63
+            .GetContainer()
+#endif
+        ;
 
     HdDataSourceMaterialNetworkInterface portalMatInterface(
         portalPrimPath, portalMatDataSource, portalPrim.dataSource);

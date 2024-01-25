@@ -47,9 +47,20 @@ HdStExtCompGpuComputationResource::HdStExtCompGpuComputationResource(
 {
 }
 
+static HdSt_CodeGen::ID _ComputeProgramHash(
+    HdStShaderCodeSharedPtrVector const &shaders,
+    const HdSt_ResourceBinder::MetaData* metaData)
+{
+    HdSt_CodeGen::ID hash = 0;
+    return TfHash::Combine(hash,
+                           metaData->ComputeHash(),
+                           HdStShaderCode::ComputeHash(shaders));
+}
+
 bool
 HdStExtCompGpuComputationResource::_Resolve()
 {
+    HD_TRACE_FUNCTION();
     // Non-in-place sources should have been registered as resource registry
     // sources already and Resolved. They go to an internal buffer range that
     // was allocated in AllocateInternalRange
@@ -86,19 +97,21 @@ HdStExtCompGpuComputationResource::_Resolve()
     if (!_computeProgram || _shaderSourceHash != shaderSourceHash) {
         HdStShaderCodeSharedPtrVector shaders;
         shaders.push_back(_kernel);
-        HdSt_CodeGen codeGen(shaders);
-        
+
+        std::unique_ptr<HdSt_ResourceBinder::MetaData> metaData =
+            std::make_unique<HdSt_ResourceBinder::MetaData>();
+
         // let resourcebinder resolve bindings and populate metadata
         // which is owned by codegen.
         _resourceBinder.ResolveComputeBindings(_outputBufferSpecs,
                                                inputBufferSpecs,
                                                shaders,
-                                               codeGen.GetMetaData(),
+                                               metaData.get(),
                                                _registry->GetHgi()->
                                                    GetCapabilities());
 
-        HdStGLSLProgram::ID registryID = codeGen.ComputeHash();
-
+        HdStGLSLProgram::ID registryID =
+            _ComputeProgramHash(shaders, metaData.get());
         {
             // ask registry to see if there's already compiled program
             HdInstance<HdStGLSLProgramSharedPtr> programInstance =
@@ -106,7 +119,7 @@ HdStExtCompGpuComputationResource::_Resolve()
 
             if (programInstance.IsFirstInstance()) {
                 TRACE_SCOPE("ExtComp Link");
-
+                HdSt_CodeGen codeGen(shaders, std::move(metaData));
                 TF_DEBUG(HDST_LOG_COMPUTE_SHADER_PROGRAM_MISSES).Msg(
                     "(MISS) First ext comp program instance for %s "
                     "(hash = %zu)\n",

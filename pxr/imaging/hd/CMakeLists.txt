@@ -76,7 +76,6 @@ pxr_library(hd
         flattenedDataSourceProvider
         flattenedDataSourceProviders
         flattenedOverlayDataSourceProvider
-        flattenedMaterialBindingsDataSourceProvider
         flattenedPrimvarsDataSourceProvider
         flattenedPurposeDataSourceProvider
         flattenedVisibilityDataSourceProvider
@@ -204,6 +203,7 @@ pxr_library(hd
         driver.h
         invalidatableContainerDataSource.h
         materialNetworkInterface.h
+        schemaTypeDefs.h
         vectorSchemaTypeDefs.h
         version.h
 

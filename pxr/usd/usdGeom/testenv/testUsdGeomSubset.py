@@ -52,27 +52,29 @@ class testUsdGeomSubset(unittest.TestCase):
     
         materialBindSubsets = UsdGeom.Subset.GetGeomSubsets(geom, 
             elementType=UsdGeom.Tokens.face,
-            familyName='materialBind')
+            familyName='face_materialBind')
         self.assertEqual(len(materialBindSubsets), 3)
         
         self.assertEqual(UsdGeom.Tokens.partition, 
-            UsdGeom.Subset.GetFamilyType(geom, 'materialBind'))
+            UsdGeom.Subset.GetFamilyType(geom, 'face_materialBind'))
 
         (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
-                UsdGeom.Tokens.face, familyName='materialBind')
+                UsdGeom.Tokens.face, familyName='face_materialBind')
         self.assertTrue(valid)
         
 
-        validFamilies = ['materialBind', 'validPartition', 
-                         'validNonOverlapping', 'validUnrestricted',
-                         'emptyIndicesSomeTimes']
+        validFamilies = ['face_materialBind', 'face_validPartition', 
+                         'face_validNonOverlapping', 'face_validUnrestricted',
+                         'face_emptyIndicesSomeTimes']
         for familyName in validFamilies:
             self._ValidateFamily(geom, UsdGeom.Tokens.face, familyName, True)
 
-        invalidFamilies = ['invalidIndices', 'badPartition1', 'badPartition2',
-                           'badPartition3', 'invalidNonOverlapping',
-                           'invalidUnrestricted', 'onlyNegativeIndices',
-                           'emptyIndicesAtAllTimes']
+        invalidFamilies = ['face_invalidIndices', 'face_badPartition1', 
+                           'face_badPartition2', 'face_badPartition3', 
+                           'face_invalidNonOverlapping',
+                           'face_invalidUnrestricted', 
+                           'face_onlyNegativeIndices',
+                           'face_emptyIndicesAtAllTimes']
         for familyName in invalidFamilies:
             self._ValidateFamily(geom, UsdGeom.Tokens.face, familyName, False)
 
@@ -80,11 +82,11 @@ class testUsdGeomSubset(unittest.TestCase):
         geom = UsdGeom.Imageable(varyingMesh)
         self.assertTrue(geom)
 
-        validFamilies = ['validPartition']
+        validFamilies = ['face_validPartition']
         for familyName in validFamilies:
             self._ValidateFamily(geom, UsdGeom.Tokens.face, familyName, True)
 
-        invalidFamilies = ['invalidNoDefaultTimeElements']
+        invalidFamilies = ['face_invalidNoDefaultTimeElements']
         for familyName in invalidFamilies:
             self._ValidateFamily(geom, UsdGeom.Tokens.face, familyName, False)
 
@@ -92,7 +94,7 @@ class testUsdGeomSubset(unittest.TestCase):
         geom = UsdGeom.Imageable(nullMesh)
         self.assertTrue(geom)
 
-        invalidFamilies = ['emptyIndicesAtAllTimes', 'invalidPartition']
+        invalidFamilies = ['face_emptyIndicesAtAllTimes', 'face_invalidPartition']
         for familyName in invalidFamilies:
             self._ValidateFamily(geom, UsdGeom.Tokens.face, familyName, False)
 
@@ -196,7 +198,7 @@ class testUsdGeomSubset(unittest.TestCase):
         # Check total count.
         allGeomSubsets = UsdGeom.Subset.GetAllGeomSubsets(
                 UsdGeom.Imageable(sphere))
-        self.assertEqual(len(allGeomSubsets), 46)
+        self.assertEqual(len(allGeomSubsets), 68)
 
         # Check that invalid negative indices are ignored when getting 
         # unassigned indices.
@@ -283,6 +285,58 @@ class testUsdGeomSubset(unittest.TestCase):
         invalidFamilies = ['point_emptyIndicesAtAllTimes', 'point_invalidPartition']
         for familyName in invalidFamilies:
             self._ValidateFamily(geom, UsdGeom.Tokens.point, familyName, False)
+
+    def test_EdgeSubsetRetrievalAndValidity(self):
+        testFile = "Sphere.usda"
+        stage = Usd.Stage.Open(testFile)
+        sphere = stage.GetPrimAtPath("/Sphere/pSphere1")
+        geom = UsdGeom.Imageable(sphere)
+        self.assertTrue(geom)
+
+        edgeSubsets = UsdGeom.Subset.GetGeomSubsets(geom, 
+            elementType=UsdGeom.Tokens.edge,
+            familyName='edge_physicsAttachment')
+        self.assertEqual(len(edgeSubsets), 3)
+        
+        self.assertEqual(UsdGeom.Tokens.partition, 
+            UsdGeom.Subset.GetFamilyType(geom, 'edge_physicsAttachment'))
+
+        (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
+                UsdGeom.Tokens.edge, familyName='edge_physicsAttachment')
+        self.assertTrue(valid)
+        
+        validFamilies = ['edge_physicsAttachment', 'edge_validPartition', 
+                         'edge_validNonOverlapping', 'edge_validUnrestricted',
+                         'edge_emptyIndicesSomeTimes']
+        for familyName in validFamilies:
+            self._ValidateFamily(geom, UsdGeom.Tokens.edge, familyName, True)
+
+        invalidFamilies = ['edge_invalidIndices', 'edge_badPartition1', 'edge_badPartition2',
+                           'edge_badPartition3', 'edge_invalidNonOverlapping',
+                           'edge_invalidUnrestricted', 'edge_onlyNegativeIndices',
+                           'edge_emptyIndicesAtAllTimes']
+        for familyName in invalidFamilies:
+            self._ValidateFamily(geom, UsdGeom.Tokens.edge, familyName, False)
+        
+        varyingMesh = stage.GetPrimAtPath("/Sphere/VaryingMesh")
+        geom = UsdGeom.Imageable(varyingMesh)
+        self.assertTrue(geom)
+
+        validFamilies = ['edge_validPartition']
+        for familyName in validFamilies:
+            self._ValidateFamily(geom, UsdGeom.Tokens.edge, familyName, True)
+
+        invalidFamilies = ['edge_invalidNoDefaultTimeElements']
+        for familyName in invalidFamilies:
+            self._ValidateFamily(geom, UsdGeom.Tokens.edge, familyName, False)
+
+        nullMesh = stage.GetPrimAtPath("/Sphere/NullMesh")
+        geom = UsdGeom.Imageable(nullMesh)
+        self.assertTrue(geom)
+
+        invalidFamilies = ['edge_emptyIndicesAtAllTimes', 'edge_invalidPartition']
+        for familyName in invalidFamilies:
+            self._ValidateFamily(geom, UsdGeom.Tokens.edge, familyName, False)
 
 if __name__ == "__main__":
     unittest.main()

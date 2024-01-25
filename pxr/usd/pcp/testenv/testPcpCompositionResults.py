@@ -73,11 +73,19 @@ dumpPath = Sdf.Path(args.dumpPathStr) if args.dumpPathStr else Sdf.Path()
 
 Work.SetMaximumConcurrencyLimit()
 
+# Error messages and dump strings can contain absolute paths to layers which
+# change depending on where the this test command is run. This cleans out the
+# absolute test run path from these strings so that baseline compares will work
+# regardless of where this is run. 
+def CleanTestRunPaths(msg):
+    cwd = os.getcwd().replace('\\', '/') + '/'
+    return re.compile(re.escape(cwd), re.IGNORECASE).sub('', msg)
+
 def PrintErrorMessage(errorFile, msg):
     if errorFile:
-        print(msg, file=errorFile)
+        print(CleanTestRunPaths(msg), file=errorFile)
     else:
-        print(msg, file=sys.stderr)
+        print(CleanTestRunPaths(msg), file=sys.stderr)
 
 def PrintErrors(errorFile, errors):
     global hadError
@@ -198,7 +206,7 @@ for layerPath in args.layer:
 
         # Optionally dump the index for this path.
         if primPath == dumpPath:
-            print(primIndex.DumpToString(args.dumpMaps))
+            print(CleanTestRunPaths(primIndex.DumpToString(args.dumpMaps)))
 
         propStackMap = {} 
         targetsMap = {}

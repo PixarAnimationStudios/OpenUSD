@@ -25,9 +25,19 @@ Property stacks:
 /Root.x:
     root.sdf             /Root.x
 
-Attribute connections:
-/Root.prohibitedConnectionToInstance:
-    /Root.x
+------------------------------------------------------------------------
+Results for composing </SubrootRef>
+
+Prim Stack:
+    root.sdf             /SubrootRef
+    A.sdf                /B/C
+
+Property names:
+     ['testRel']
+
+Property stacks:
+/SubrootRef.testRel:
+    A.sdf                /B/C.testRel
 
 ------------------------------------------------------------------------
 Results for composing </RootWithReferenceUnderVariant>
@@ -48,14 +58,6 @@ Property stacks:
     A.sdf                /A.A
 /RootWithReferenceUnderVariant.B:
     A.sdf                /A.B
-
-Relationship targets:
-/RootWithReferenceUnderVariant.B:
-    /PrimOutsideReferenceRoot
-
-Attribute connections:
-/RootWithReferenceUnderVariant.A:
-    /PrimOutsideReferenceRoot.A
 
 ------------------------------------------------------------------------
 Results for composing </_Class1>

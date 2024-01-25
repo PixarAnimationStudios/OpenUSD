@@ -2275,6 +2275,9 @@ _ToVectorDS(const HdRenderProducts &hdProducts)
                 .SetDisableMotionBlur(
                     HdRetainedTypedSampledDataSource<bool>::New(
                         hdProduct.disableMotionBlur))
+                .SetDisableDepthOfField(
+                    HdRetainedTypedSampledDataSource<bool>::New(
+                        hdProduct.disableDepthOfField))
                 .SetNamespacedSettings(
                     _ToContainerDS(hdProduct.namespacedSettings))
                 .Build());
@@ -2398,6 +2401,8 @@ public:
             if (value.IsHolding<bool>()) {
                 return HdRetainedTypedSampledDataSource<bool>::New(
                     value.UncheckedGet<bool>());
+            } else {
+                return nullptr;
             }
         }
 
@@ -2407,15 +2412,19 @@ public:
             if (value.IsHolding<int>()) {
                 return HdRetainedTypedSampledDataSource<int>::New(
                     value.UncheckedGet<int>());
+            } else {
+                return nullptr;
             }
         }
 
         if (name == HdImageShaderSchemaTokens->filePath) {
             const VtValue value = _sceneDelegate->Get(
                 _id, HdImageShaderSchemaTokens->filePath);
-            if (value.IsHolding<int>()) {
-                return HdRetainedTypedSampledDataSource<SdfAssetPath>::New(
-                    value.UncheckedGet<SdfAssetPath>());
+            if (value.IsHolding<std::string>()) {
+                return HdRetainedTypedSampledDataSource<std::string>::New(
+                    value.UncheckedGet<std::string>());
+            } else {
+                return nullptr;
             }
         }
 
@@ -2425,6 +2434,8 @@ public:
             if (value.IsHolding<VtDictionary>()) {
                 return _ToContainerDS(
                     value.UncheckedGet<VtDictionary>());
+            } else {
+                return nullptr;
             }
         }
 

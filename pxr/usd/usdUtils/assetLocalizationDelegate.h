@@ -217,9 +217,6 @@ private:
     SdfLayerRefPtr _GetOrCreateWritableLayer(const SdfLayerRefPtr& layer);
 
     static std::string _GetRelativeKeyPath(const std::string& fullPath);
-        
-    static std::vector<std::string> _AllDependenciesForInfo(
-        const UsdUtilsDependencyInfo &depInfo);
 
     // the user supplied processing function that will be invoked on every path.
     ProcessingFunc _processingFunc;
@@ -247,7 +244,7 @@ class UsdUtils_ReadOnlyLocalizationDelegate
 : public UsdUtils_LocalizationDelegate
 {
 public:
-    using ProcessingFunc = std::function<void(
+    using ProcessingFunc = std::function<UsdUtilsDependencyInfo(
             const SdfLayerRefPtr &layer, 
             const std::string &assetPath,
             const std::vector<std::string> &dependencies,
@@ -287,10 +284,10 @@ public:
         std::vector<std::string> dependencies) override;
 
 private:
-    template <class RefOrPayloadType, UsdUtils_DependencyType DEP_TYPE>
-    void _ProcessRefOrPayload(
+    template <typename RefOrPayloadType, UsdUtils_DependencyType DepType>
+    std::vector<std::string> ProcessReferencesOrPayloads(
         const SdfLayerRefPtr &layer,
-        const RefOrPayloadType& refOrPayload);
+        const std::vector<RefOrPayloadType>& appliedItems);
 
     ProcessingFunc _processingFunc;
 };

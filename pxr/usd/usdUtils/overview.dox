@@ -57,9 +57,9 @@ traversal.
 Processing functions are able to perform a number of tasks which have an effect 
 on the resulting output:
 
-\li Modify the asset path that is written back into the layer
-\li Add additional dependencies to be included in the output
-\li Remove an asset path and/or dependencies altogether from the output
+\li Modify an asset path to contain a new value.
+\li Add additional dependencies to be included in the output.
+\li Remove an asset path and/or dependencies altogether from the output.
 
 Creating a processing function allows you to create customized output without 
 having to write dependency discovery and traversal code.
@@ -122,7 +122,7 @@ def ProcessingFunc(layer, dependencyInfo):
 \endcode
 
 After a processing function has been called, the system looks at the returned
-asset path.  If it is empty, then the reference to that that path is removed,
+asset path.  If it is empty, then the reference to that path is removed,
 otherwise the new value is placed in the layer. Additionally, each item in the 
 dependencies array is added to the resulting package and enqueued for 
 recursive traversal.
