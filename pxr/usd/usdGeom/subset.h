@@ -187,7 +187,13 @@ public:
     /// attribute</li>
     /// <li><b>point</b>: for any UsdGeomPointBased, each 
     /// element of the indices attribute would refer to an element of the 
-    /// Mesh's points attribute</li></ul>
+    /// Mesh's points attribute</li>
+    /// <li><b>edge</b>: for any UsdGeomMesh, each pair of elements
+    /// in the indices attribute would refer to a pair of points of the 
+    /// Mesh's points attribute that are connected as an implicit edge on the 
+    /// Mesh. These edges are derived from the Mesh's faceVertexIndices 
+    /// attribute.
+    /// </li></ul>
     ///
     /// | ||
     /// | -- | -- |
@@ -195,7 +201,7 @@ public:
     /// | C++ Type | TfToken |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    /// | \ref UsdGeomTokens "Allowed Values" | face, point |
+    /// | \ref UsdGeomTokens "Allowed Values" | face, point, edge |
     USDGEOM_API
     UsdAttribute GetElementTypeAttr() const;
 
@@ -250,7 +256,8 @@ public:
     /// the whole geometry appears exactly once in only one of the subsets
     /// belonging to the family.</li>
     /// <li><b>UsdGeomTokens->nonOverlapping</b>: an element that appears in one 
-    /// subset may not appear in any other subset belonging to the family.</li>
+    /// subset may not appear in any other subset belonging to the family, and 
+    /// appears only once in the subset in which it appears.</li>
     /// <li><b>UsdGeomTokens->unrestricted</b>: implies that there are no
     /// restrictions w.r.t. the membership of elements in the subsets. They 
     /// could be overlapping and the union of all subsets in the family may 

@@ -186,6 +186,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomGprim, UsdGeomPlane
     const TfToken doubleSided;
+    /// \brief "edge"
+    /// 
+    /// Possible value for UsdGeomSubset::GetElementTypeAttr()
+    const TfToken edge;
     /// \brief "edgeAndCorner"
     /// 
     /// Fallback value for UsdGeomMesh::GetInterpolateBoundaryAttr()

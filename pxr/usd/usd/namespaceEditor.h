@@ -245,6 +245,30 @@ private:
         // namespace edit applied.
         SdfLayerHandleVector layersToEdit;
 
+        // Layer edits that need to be performed to update connection and 
+        // relationship targets of other properties in order to keep them 
+        // targeting the same object after applying this processed edit.
+        struct TargetPathListOpEdit {
+            // Property spec to author the new targets value to. Note that we
+            // store the spec handle for the property as the property spec's
+            // path could change if the property is moved or deleted by the 
+            // primary namespace edit.
+            SdfPropertySpecHandle propertySpec;
+
+            // Name of the field that holds the path targets for the property
+            // which differs for attributes vs relationships.  
+            TfToken fieldName;
+
+            // Updated list op value to set for the property spec.
+            SdfPathListOp newFieldValue;
+        };
+        std::vector<TargetPathListOpEdit> targetPathListOpEdits;
+
+        // List of errors encountered that would prevent connection and 
+        // relationship target edits from being performed in response to the
+        // namespace edits.
+        std::vector<std::string> targetPathListOpErrors;
+
         // Reparent edits may require overs to be created for the new parent if
         // a layer doesn't have any specs for the parent yet. This specifies the
         // path of the parent specs to create if need.

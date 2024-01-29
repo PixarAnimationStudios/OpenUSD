@@ -30,7 +30,9 @@
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 
 #include "pxr/base/tf/declarePtrs.h"
+#include "pxr/usd/sdf/path.h"
 
+#include <iosfwd>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -39,7 +41,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 
-class SdfPath;
 class TfToken;
 
 namespace HdUtils {
@@ -138,9 +139,20 @@ HasActiveRenderSettingsPrim(
 
 /// Translate the given aspect ratio conform policy \p token into an equivalent 
 /// CameraUtilConformWindowPolicy enum. 
+///
 HD_API
 CameraUtilConformWindowPolicy
 ToConformWindowPolicy(const TfToken &token);
+
+/// Lexicographically sorts the scene index prims in the subtree rooted at
+/// \p rootPath and writes them out.
+///
+HD_API
+void
+PrintSceneIndex(
+    std::ostream &out,
+    const HdSceneIndexBaseRefPtr &si,
+    const SdfPath &rootPath = SdfPath::AbsoluteRootPath());
 
 }
 

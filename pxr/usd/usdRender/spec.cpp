@@ -123,6 +123,9 @@ _ReadSettingsBase(UsdRenderSettingsBase const& rsBase,
             pd->disableMotionBlur = true;
         }
     }
+
+    _Get(rsBase.GetDisableDepthOfFieldAttr(), 
+        &pd->disableDepthOfField, getDefault);
 }
 
 // TODO: Consolidate with CameraUtilConformedWindow().  Resolve policy

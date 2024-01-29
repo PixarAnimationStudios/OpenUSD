@@ -35,21 +35,19 @@
 #ifndef PXR_USD_IMAGING_USD_IMAGING_USD_RENDER_PRODUCT_SCHEMA_H
 #define PXR_USD_IMAGING_USD_IMAGING_USD_RENDER_PRODUCT_SCHEMA_H
 
+/// \file
+
 #include "pxr/usdImaging/usdImaging/api.h"
 
-#include "pxr/imaging/hd/schema.h" 
+#include "pxr/imaging/hd/schema.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
 // --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//-----------------------------------------------------------------------------
-
 // --(BEGIN CUSTOM CODE: Declares)--
 // --(END CUSTOM CODE: Declares)--
-
-//-----------------------------------------------------------------------------
 
 #define USD_IMAGING_USD_RENDER_PRODUCT_SCHEMA_TOKENS \
     (__usdRenderProduct) \
@@ -58,6 +56,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (aspectRatioConformPolicy) \
     (dataWindowNDC) \
     (disableMotionBlur) \
+    (disableDepthOfField) \
     (camera) \
     (productType) \
     (productName) \
@@ -68,17 +67,33 @@ TF_DECLARE_PUBLIC_TOKENS(UsdImagingUsdRenderProductSchemaTokens, USDIMAGING_API,
     USD_IMAGING_USD_RENDER_PRODUCT_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
+
+
 class UsdImagingUsdRenderProductSchema : public HdSchema
 {
 public:
+    /// \name Schema retrieval
+    /// @{
+
     UsdImagingUsdRenderProductSchema(HdContainerDataSourceHandle container)
-    : HdSchema(container) {}
+      : HdSchema(container) {}
+
+    /// Retrieves a container data source with the schema's default name token
+    /// "__usdRenderProduct" from the parent container and constructs a
+    /// UsdImagingUsdRenderProductSchema instance.
+    /// Because the requested container data source may not exist, the result
+    /// should be checked with IsDefined() or a bool comparison before use.
+    USDIMAGING_API
+    static UsdImagingUsdRenderProductSchema GetFromParent(
+        const HdContainerDataSourceHandle &fromParentContainer);
+
+    /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
 
-    //ACCESSORS
-
+    /// \name Member accessor
+    /// @{
 
     USDIMAGING_API
     HdVec2iDataSourceHandle GetResolution();
@@ -96,6 +111,9 @@ public:
     HdBoolDataSourceHandle GetDisableMotionBlur();
 
     USDIMAGING_API
+    HdBoolDataSourceHandle GetDisableDepthOfField();
+
+    USDIMAGING_API
     HdPathDataSourceHandle GetCamera();
 
     USDIMAGING_API
@@ -108,10 +126,44 @@ public:
     HdPathArrayDataSourceHandle GetOrderedVars();
 
     USDIMAGING_API
-    HdContainerDataSourceHandle GetNamespacedSettings();
+    HdContainerDataSourceHandle GetNamespacedSettings(); 
 
-    // RETRIEVING AND CONSTRUCTING
+    /// @}
 
+    /// \name Schema location
+    /// @{
+
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    USDIMAGING_API
+    static const TfToken &GetSchemaToken();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the container representing this schema is found by default.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetDefaultLocator();
+
+    /// @}
+
+    /// \name Data source locators for members
+    ///
+    /// The following methods return an HdDataSourceLocator (relative to the
+    /// prim-level data source) where the data source for a member can be found.
+    ///
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    /// @{
+
+    /// Prim-level relative data source locator to locate namespacedSettings.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetNamespacedSettingsLocator();
+    /// @} 
+
+    /// \name Schema construction
+    /// @{
+
+    /// \deprecated Use Builder instead.
+    ///
     /// Builds a container data source which includes the provided child data
     /// sources. Parameters with nullptr values are excluded. This is a
     /// low-level interface. For cases in which it's desired to define
@@ -125,6 +177,7 @@ public:
         const HdTokenDataSourceHandle &aspectRatioConformPolicy,
         const HdVec4fDataSourceHandle &dataWindowNDC,
         const HdBoolDataSourceHandle &disableMotionBlur,
+        const HdBoolDataSourceHandle &disableDepthOfField,
         const HdPathDataSourceHandle &camera,
         const HdTokenDataSourceHandle &productType,
         const HdTokenDataSourceHandle &productName,
@@ -157,6 +210,9 @@ public:
         Builder &SetDisableMotionBlur(
             const HdBoolDataSourceHandle &disableMotionBlur);
         USDIMAGING_API
+        Builder &SetDisableDepthOfField(
+            const HdBoolDataSourceHandle &disableDepthOfField);
+        USDIMAGING_API
         Builder &SetCamera(
             const HdPathDataSourceHandle &camera);
         USDIMAGING_API
@@ -182,46 +238,16 @@ public:
         HdTokenDataSourceHandle _aspectRatioConformPolicy;
         HdVec4fDataSourceHandle _dataWindowNDC;
         HdBoolDataSourceHandle _disableMotionBlur;
+        HdBoolDataSourceHandle _disableDepthOfField;
         HdPathDataSourceHandle _camera;
         HdTokenDataSourceHandle _productType;
         HdTokenDataSourceHandle _productName;
         HdPathArrayDataSourceHandle _orderedVars;
         HdContainerDataSourceHandle _namespacedSettings;
+
     };
 
-    /// Retrieves a container data source with the schema's default name token
-    /// "__usdRenderProduct" from the parent container and constructs a
-    /// UsdImagingUsdRenderProductSchema instance.
-    /// Because the requested container data source may not exist, the result
-    /// should be checked with IsDefined() or a bool comparison before use.
-    USDIMAGING_API
-    static UsdImagingUsdRenderProductSchema GetFromParent(
-        const HdContainerDataSourceHandle &fromParentContainer);
-
-    /// Returns a token where the container representing this schema is found in
-    /// a container by default.
-    USDIMAGING_API
-    static const TfToken &GetSchemaToken();
-
-    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
-    /// where the container representing this schema is found by default.
-    USDIMAGING_API
-    static const HdDataSourceLocator &GetDefaultLocator();
-
-    // DATA SOURCE LOCATORS FOR MEMBERS
-    //
-    // The following methods return an HdDataSourceLocator (relative to the
-    // prim-level data source) where the data source for a member can be found.
-    //
-    // This is often useful for checking intersection against the
-    // HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
-
-
-    /// Prim-level relative data source locator to locate namespacedSettings.
-    USDIMAGING_API
-    static const HdDataSourceLocator &GetNamespacedSettingsLocator();
-
-
+    /// @}
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

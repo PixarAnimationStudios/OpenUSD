@@ -377,6 +377,10 @@ TestSearch()
     testSearch("/World",
                { "/World" });
 
+    testSearch("/World/anim/*",
+               { "/World/anim/chars",
+                 "/World/anim/sets" });
+
     testSearch("/Foo/g*m/foo/bar",
                { "/Foo/geom/foo/bar" });
 
@@ -438,15 +442,28 @@ TestSearch()
 static void
 TestErrors()
 {
+    auto expectBad = [](std::string const &exprTxt) {
+        SdfPathExpression badExpr(exprTxt);
+        if (!badExpr.IsEmpty()) {
+            TF_FATAL_ERROR("Expected '%s' to produce the empty expression",
+                           exprTxt.c_str());
+        }
+        if (badExpr.GetParseError().empty()) {
+            TF_FATAL_ERROR("Expected parsing '%s' to yield a parse error",
+                           exprTxt.c_str());
+        }
+    };
+
     fprintf(stderr, "=== Expected errors =======\n");
 
-    {
-        // Parse error
-        SdfPathExpression badExpr("/foo///");
-        TF_AXIOM(badExpr.IsEmpty());
-        TF_AXIOM(!badExpr.GetParseError().empty());
-    }
-
+    expectBad("/foo///");
+    expectBad("-");
+    expectBad("- /foo");
+    expectBad("-/foo");
+    expectBad("/foo-");
+    expectBad("/foo/-");
+    expectBad("/foo/-/bar");
+    
     fprintf(stderr, "=== End expected errors ===\n");
 }
 

@@ -38,6 +38,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/usdUtils/usdzPackage.h"
+#include "pxr/usd/usdUtils/userProcessingFunc.h"
 
 #include <string>
 #include <vector>
@@ -68,24 +69,33 @@ void UsdUtilsExtractExternalReferences(
 /// All of the resolved non-layer dependencies are populated in \p assets.
 /// Any unresolved (layer and non-layer) asset paths are populated in 
 /// \p unresolvedPaths.
-/// 
+///
+/// If a function is provided for the \p processingFunc parameter, it will be
+/// invoked on every asset path that is discovered during localization.  
+/// Refer to \ref UsdUtilsDependencyInfo for general information on User 
+/// processing functions.  Any changes made to the paths during the 
+/// invocation of this function will not be written to processed layers.
+///
 /// The input vectors to be populated with the results are *cleared* before 
 /// any results are added to them.
 /// 
 /// Returns true if the given asset was resolved correctly.
 USDUTILS_API
 bool
-UsdUtilsComputeAllDependencies(const SdfAssetPath &assetPath,
-                               std::vector<SdfLayerRefPtr> *layers,
-                               std::vector<std::string> *assets,
-                               std::vector<std::string> *unresolvedPaths);
+UsdUtilsComputeAllDependencies(
+    const SdfAssetPath &assetPath,
+    std::vector<SdfLayerRefPtr> *layers,
+    std::vector<std::string> *assets,
+    std::vector<std::string> *unresolvedPaths,
+    const std::function<UsdUtilsProcessingFunc> &processingFunc = 
+        std::function<UsdUtilsProcessingFunc>());
 
 /// Callback that is used to modify asset paths in a layer.  The \c assetPath
 /// will contain the string value that's authored.  The returned value is the
 /// new value that should be authored in the layer.  If the function returns
 /// an empty string, that value will be removed from the layer.
 using UsdUtilsModifyAssetPathFn = std::function<std::string(
-        const std::string& assetPath)>;
+    const std::string& assetPath)>;
 
 /// Helper function that visits every asset path in \c layer, calls \c modifyFn
 /// and replaces the value with the return value of \c modifyFn.  This modifies
@@ -97,8 +107,8 @@ using UsdUtilsModifyAssetPathFn = std::function<std::string(
 /// for example.
 USDUTILS_API
 void UsdUtilsModifyAssetPaths(
-        const SdfLayerHandle& layer,
-        const UsdUtilsModifyAssetPathFn& modifyFn);
+    const SdfLayerHandle& layer,
+    const UsdUtilsModifyAssetPathFn& modifyFn);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

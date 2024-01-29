@@ -23,7 +23,9 @@
 //
 #include "pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h"
 
+#include "pxr/usdImaging/usdImaging/directMaterialBindingsSchema.h"
 #include "pxr/usdImaging/usdImaging/flattenedGeomModelDataSourceProvider.h"
+#include "pxr/usdImaging/usdImaging/flattenedDirectMaterialBindingsDataSourceProvider.h"
 #include "pxr/usdImaging/usdImaging/geomModelSchema.h"
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
 
@@ -41,13 +43,22 @@ UsdImagingFlattenedDataSourceProviders()
 
     static HdContainerDataSourceHandle const result =
         HdOverlayContainerDataSource::New(
+            {
+            HdRetainedContainerDataSource::New(
+                UsdImagingDirectMaterialBindingsSchema::GetSchemaToken(),
+                Make<UsdImagingFlattenedDirectMaterialBindingsDataSourceProvider>()),
+
             HdRetainedContainerDataSource::New(
                 UsdImagingGeomModelSchema::GetSchemaToken(),
                 Make<UsdImagingFlattenedGeomModelDataSourceProvider>()),
+
             HdRetainedContainerDataSource::New(
                 UsdImagingModelSchema::GetSchemaToken(),
                 Make<HdFlattenedOverlayDataSourceProvider>()),
-            HdFlattenedDataSourceProviders());
+
+            HdFlattenedDataSourceProviders()
+            });
+
     return result;
 }
 

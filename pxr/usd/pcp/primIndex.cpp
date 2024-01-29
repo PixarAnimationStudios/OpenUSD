@@ -1410,20 +1410,6 @@ _CheckForCycle(
     return PcpErrorArcCyclePtr();
 }
 
-static void
-_AddCulledDependencies(
-    const PcpNodeRef& node,
-    std::vector<PcpCulledDependency>* culledDeps)
-{
-    if (node.IsCulled()) {
-        Pcp_AddCulledDependency(node, culledDeps);
-    }
-
-    TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
-        _AddCulledDependencies(*child, culledDeps);
-    }
-};
-
 namespace
 {
 
@@ -1685,17 +1671,6 @@ _AddArc(
         newNode = indexer->outputs->Append(std::move(childOutputs), newArc,
                                            &newNodeError);
         if (newNode) {
-            // Record any culled nodes from this subtree that introduced
-            // ancestral dependencies. These nodes may be removed from the prim
-            // index when Finalize() is called, so they must be saved separately
-            // for later use. Only do this in the top-level call to _AddArc
-            // to avoid running over the same subtree multiple times if there
-            // were multiple levels of recursive prim indexing.
-            if (!indexer->previousFrame) {
-                _AddCulledDependencies(
-                    newNode, &indexer->outputs->culledDependencies);
-            }
-
             PCP_INDEXING_UPDATE(
                 indexer, newNode, 
                 "Added subtree for site %s to graph",
@@ -1713,38 +1688,6 @@ _AddArc(
         TF_VERIFY(newNodeError, "Failed to create a node, but did not "
                   "specify the error.");
         return PcpNodeRef();
-    }
-
-    // If culling is enabled, check whether the entire subtree rooted
-    // at the new node can be culled. This doesn't have to recurse down
-    // the new subtree; instead, it just needs to check the new node only. 
-    // This is because computing the source prim index above will have culled
-    // everything it can *except* for the subtree's root node. 
-    if (indexer->inputs.cull) {
-        if (_NodeCanBeCulled(newNode, indexer->rootSite)) {
-            newNode.SetCulled(true);
-        }
-        else {
-            // Ancestor nodes that were previously marked as culled must
-            // be updated because they now have a subtree that isn't culled.
-            // This can happen during the propagation of implied inherits from
-            // a class hierarchy. For instance, consider the graph:
-            //
-            //   root.menva       ref.menva
-            //   Model_1 (ref)--> Model (inh)--> ModelClass (inh)--> CharClass.
-            // 
-            // Let's say there were specs for /CharClass but NOT for /ModelClass
-            // in the root layer stack. In that case, propagating ModelClass to
-            // the root layer stack would result in a culled node. However, when
-            // we then propagate CharClass, we wind up with an unculled node 
-            // beneath a culled node, which violates the culling invariant. So,
-            // we would need to fix up /ModelClass to indicate that it can no
-            // longer be culled.
-            for (PcpNodeRef p = parent; 
-                 p && p.IsCulled(); p = p.GetParentNode()) {
-                p.SetCulled(false);
-            }
-        }
     }
 
     // If we evaluated ancestral opinions, it it means the nested
@@ -4654,32 +4597,99 @@ _NodeCanBeCulled(
     return true;
 }
 
+// Cull all nodes in the subtree rooted at the given node whose site
+// is given in culledSites.
+static bool
+_CullMatchingChildrenInSubtree(
+    PcpNodeRef node,
+    const std::unordered_set<PcpLayerStackSite, TfHash>& culledSites)
+{
+    bool allChildrenCulled = true;
+    TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
+        allChildrenCulled &=
+            _CullMatchingChildrenInSubtree(*child, culledSites);
+    }
+
+    if (allChildrenCulled && culledSites.count(node.GetSite())) {
+        node.SetCulled(true);
+    }
+
+    return node.IsCulled();
+}
+
 // Helper that recursively culls subtrees at and under the given node.
 static void
-_CullSubtreesWithNoOpinions(
+_CullSubtreesWithNoOpinionsHelper(
     PcpNodeRef node,
-    const PcpLayerStackSite& rootSite)
+    const PcpLayerStackSite& rootSite,
+    std::vector<PcpCulledDependency>* culledDeps,
+    std::unordered_set<PcpLayerStackSite, TfHash>* culledSites = nullptr)
 {
     // Recurse and attempt to cull all children first. Order doesn't matter.
     TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
-        // XXX: 
-        // We propagate and maintain duplicate node structure in the graph
-        // for specializes arcs, so when we cull we need to ensure we do so
-        // in both places consistently. For simplicity, we're going to skip
-        // this for now and not cull beneath any specializes arcs.
+        // Skip culling for specializes subtrees here; these will be handled
+        // by _CullSubtreesWithNoOpinions. See comments there for more info.
         if (PcpIsSpecializeArc(child->GetArcType())) {
             continue;
         }
 
-        _CullSubtreesWithNoOpinions(*child, rootSite);
+        _CullSubtreesWithNoOpinionsHelper(
+            *child, rootSite, culledDeps, culledSites);
     }
 
     // Now, mark this node as culled if we can. These nodes will be
     // removed from the prim index at the end of prim indexing.
     if (_NodeCanBeCulled(node, rootSite)) {
         node.SetCulled(true);
+
+        // Record any culled nodes from this subtree that introduced
+        // ancestral dependencies. These nodes may be removed from the prim
+        // index when Finalize() is called, so they must be saved separately
+        // for later use.
+        Pcp_AddCulledDependency(node, culledDeps);
+
+        if (culledSites) {
+            culledSites->insert(node.GetSite());
+        }
     }
 }
+
+static void
+_CullSubtreesWithNoOpinions(
+    PcpPrimIndex* primIndex,
+    const PcpLayerStackSite& rootSite,
+    std::vector<PcpCulledDependency>* culledDeps)
+{
+    // We propagate and maintain duplicate node structure in the graph
+    // for specializes arcs so when we cull we need to ensure we do so
+    // in both places consistently. 
+    //
+    // The origin subtree is marked inert as part of propagation, which
+    // means culling would remove it entirely which is not what we want.
+    // Instead, we cull whatever nodes we can in the propagated subtree
+    // under the root of the prim index, then cull the corresponding
+    // nodes underneath the origin subtree.
+    //
+    // We do a first pass to handle of all these propagated specializes
+    // nodes first to ensure that nodes in the origin subtrees are marked
+    // culled before other subtrees are processed. Otherwise, subtrees
+    // containing those origin subtrees won't be culled.
+    TF_FOR_ALL(child, Pcp_GetChildrenRange(primIndex->GetRootNode())) {
+        if (_IsPropagatedSpecializesNode(*child)) {
+            std::unordered_set<PcpLayerStackSite, TfHash> culledSites;
+            _CullSubtreesWithNoOpinionsHelper(
+                *child, rootSite, culledDeps, &culledSites);
+
+            _CullMatchingChildrenInSubtree(child->GetOriginNode(), culledSites);
+        }
+    }
+
+    TF_FOR_ALL(child, Pcp_GetChildrenRange(primIndex->GetRootNode())) {
+        if (!_IsPropagatedSpecializesNode(*child)) {
+            _CullSubtreesWithNoOpinionsHelper(*child, rootSite, culledDeps);
+        }
+    }
+}    
 
 // Helper that sets any nodes that cannot have overrides on name children
 // as inert.
@@ -4791,10 +4801,6 @@ _BuildInitialPrimIndexFromAncestor(
 
     PcpNodeRef rootNode = outputs->primIndex.GetRootNode();
     _ConvertNodeForChild(rootNode, inputs);
-
-    if (inputs.cull) {
-        _CullSubtreesWithNoOpinions(rootNode, rootSite);
-    }
 
     // Force the root node to inert if the caller has specified that the
     // root node should not contribute specs. Note that the node
@@ -4940,8 +4946,8 @@ PcpComputePrimIndex(
 
     TRACE_FUNCTION();
 
-    if (!(primPath.IsAbsolutePath()                 &&
-             (primPath.IsAbsoluteRootOrPrimPath()   ||
+    if (!(primPath.IsAbsolutePath() &&
+             (primPath.IsAbsoluteRootOrPrimPath() ||
               primPath.IsPrimVariantSelectionPath()))) {
         TF_CODING_ERROR("Path <%s> must be an absolute path to a prim, "
                         "a prim variant-selection, or the pseudo-root.",
@@ -4961,6 +4967,13 @@ PcpComputePrimIndex(
                        /* rootNodeShouldContributeSpecs = */ true,
                        /* previousFrame = */ NULL,
                        inputs, outputs);
+
+    // Mark subtrees in the graph that provide no opinions as culled.
+    if (inputs.cull) {
+        _CullSubtreesWithNoOpinions(
+            &outputs->primIndex, site,
+            &outputs->culledDependencies);
+    }
 
     // Tag each node that's not allowed to contribute prim specs due to 
     // permissions. Note that we do this as a post-processing pass here, 

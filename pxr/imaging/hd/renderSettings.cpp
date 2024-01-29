@@ -63,6 +63,7 @@ void TfHashAppend(
             rp.apertureSize,
             rp.dataWindowNDC,
             rp.disableMotionBlur,
+            rp.disableDepthOfField,
             rp.namespacedSettings);
 }
 
@@ -255,6 +256,7 @@ bool operator==(const HdRenderSettings::RenderProduct& lhs,
         && lhs.apertureSize == rhs.apertureSize
         && lhs.dataWindowNDC == rhs.dataWindowNDC
         && lhs.disableMotionBlur == rhs.disableMotionBlur
+        && lhs.disableDepthOfField == rhs.disableDepthOfField
         && lhs.namespacedSettings == rhs.namespacedSettings;
 }
 

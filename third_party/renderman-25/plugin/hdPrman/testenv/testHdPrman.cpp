@@ -127,7 +127,11 @@ public:
         // Get the light shader network
         const HdContainerDataSourceHandle& shaderDS = 
             HdMaterialSchema::GetFromParent(prim.dataSource)
-            .GetMaterialNetwork(_tokens->renderContext);
+            .GetMaterialNetwork(_tokens->renderContext)
+#if HD_API_VERSION >= 63
+            .GetContainer()
+#endif
+            ;
         
         // Return unmodified if no light shader network
         if (!shaderDS) {
@@ -351,6 +355,7 @@ PopulateFallbackRenderSpec(
                 TfToken(outputFilename),                // name
                 SdfPath(),                              // camera path
                 false,                                  // disableMotionBlur
+                false,                                  // disableDepthOfField
                 s_fallbackResolution,                   // resolution
                 1.0f,                                   // PixelAspectRatio
                 s_fallbackConformPolicy,                // aspectRatioConformPolicy 

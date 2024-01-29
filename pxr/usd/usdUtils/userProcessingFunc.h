@@ -54,14 +54,20 @@ public:
         : _assetPath(assetPath), _dependencies(dependencies) {}
 
     /// Returns the asset value path for the dependency.
-    /// When returned as a parameter from a user processing function, This value
-    /// is checked by the localization system to see if it differs from the
-    /// original authored value. If the returned value is set to and empty 
-    /// string, the asset will be removed from the layer and not included in the
-    /// resulting package.  If this value differs from what what was originally
-    /// authored into the layer, the path will be updated with this new value.
-    /// Additionally, the newly specified asset will be included in the package
-    /// and searched for additional dependencies if it can be opened as a layer. 
+    /// When UsdUtilsDependencyInfo is returned as a parameter from a user
+    /// processing function, the localization system compares the value
+    /// with the value that was originally authored in the layer.
+    ///
+    /// If the values are the same, no special action is taken and processing
+    /// will continue as normal.
+    ///
+    /// If the returned value is an empty string, the system will ignore this
+    /// path as well as any dependencies associated with it.
+    ///
+    /// If the returned value differs from what what was originally
+    /// authored into the layer, the system will instead operate on the updated.
+    /// value.  If the updated path can be opened as a layer, it will be 
+    /// enqueued and searched for additional dependencies.
     USDUTILS_API const std::string& GetAssetPath() const {
         return _assetPath;
     }
@@ -71,12 +77,25 @@ public:
     /// When passed into the user processing function, if this array is
     /// populated, then the asset path resolved to one or more values, such as
     /// in the case of UDIM tiles or clip asset path template strings.
-    /// When this structure is returned from a processing function, the paths
-    /// contained within will be included in packaged output in addition to the
-    /// value specified in the dependency's asset path. Any paths that can be
-    /// opened as layers will be recursively searched for further dependencies.
+    ///
+    /// When this structure is returned from a processing function, each path
+    /// contained within will in turn be processed by the system. Any path 
+    /// that can be opened as a layer, will be enqueued and searched for 
+    /// additional dependencies.
     USDUTILS_API const std::vector<std::string>& GetDependencies() const {
         return _dependencies;
+    }
+
+    /// Equality: Asset path and dependencies are the same
+    bool operator==(const UsdUtilsDependencyInfo &rhs) const {
+        return _assetPath == rhs._assetPath &&
+               _dependencies == rhs._dependencies;
+    }
+
+    /// Inequality operator
+    /// \sa UsdUtilsDependencyInfo::operator==(const UsdUtilsDependencyInfo&)
+    bool operator!=(const UsdUtilsDependencyInfo& rhs) const {
+        return !(*this == rhs);
     }
 
 private:
@@ -85,8 +104,8 @@ private:
 };
 
 /// Signature for user supplied processing function.
-/// \param layer The layer containing this dependency
-/// \param dependencyInfo contains asset path information for this dependency
+/// \param layer The layer containing this dependency.
+/// \param dependencyInfo contains asset path information for this dependency.
 using UsdUtilsProcessingFunc = UsdUtilsDependencyInfo(
     const SdfLayerHandle &layer, 
     const UsdUtilsDependencyInfo &dependencyInfo);

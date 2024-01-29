@@ -24,26 +24,9 @@
 #ifndef PXR_IMAGING_HD_VECTOR_SCHEMA_TYPE_DEFS_H
 #define PXR_IMAGING_HD_VECTOR_SCHEMA_TYPE_DEFS_H
 
-#include "pxr/pxr.h"
+/// \deprecated
+/// Use schemaTypeDefs.h header instead.
 
-#include "pxr/imaging/hd/dataSourceTypeDefs.h"
-#include "pxr/imaging/hd/vectorSchema.h"
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-// Numeric
-using HdIntArrayVectorSchema = HdTypedVectorSchema<HdIntArrayDataSource>;
-
-// Schema types
-using HdRenderProductVectorSchema =
-    HdSchemaBasedVectorSchema<class HdRenderProductSchema>;
-using HdRenderVarVectorSchema =
-    HdSchemaBasedVectorSchema<class HdRenderVarSchema>;
-using HdInstanceIndicesVectorSchema =
-    HdSchemaBasedVectorSchema<class HdInstanceIndicesSchema>;
-using HdMaterialInterfaceMappingVectorSchema =
-    HdSchemaBasedVectorSchema<class HdMaterialInterfaceMappingSchema>;
-
-PXR_NAMESPACE_CLOSE_SCOPE
+#include "pxr/imaging/hd/schemaTypeDefs.h"
 
 #endif

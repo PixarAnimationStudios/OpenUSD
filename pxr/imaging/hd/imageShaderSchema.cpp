@@ -33,6 +33,7 @@
 /* ************************************************************************** */
 
 #include "pxr/imaging/hd/imageShaderSchema.h"
+
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/base/trace/trace.h"
@@ -48,9 +49,6 @@ TF_DEFINE_PUBLIC_TOKENS(HdImageShaderSchemaTokens,
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
 
-
-
-
 HdBoolDataSourceHandle
 HdImageShaderSchema::GetEnabled()
 {
@@ -65,18 +63,18 @@ HdImageShaderSchema::GetPriority()
         HdImageShaderSchemaTokens->priority);
 }
 
-HdAssetPathDataSourceHandle
+HdStringDataSourceHandle
 HdImageShaderSchema::GetFilePath()
 {
-    return _GetTypedDataSource<HdAssetPathDataSource>(
+    return _GetTypedDataSource<HdStringDataSource>(
         HdImageShaderSchemaTokens->filePath);
 }
 
-HdContainerDataSourceHandle
+HdSampledDataSourceContainerSchema
 HdImageShaderSchema::GetConstants()
 {
-    return _GetTypedDataSource<HdContainerDataSource>(
-        HdImageShaderSchemaTokens->constants);
+    return HdSampledDataSourceContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
+        HdImageShaderSchemaTokens->constants));
 }
 
 /*static*/
@@ -84,7 +82,7 @@ HdContainerDataSourceHandle
 HdImageShaderSchema::BuildRetained(
         const HdBoolDataSourceHandle &enabled,
         const HdIntDataSourceHandle &priority,
-        const HdAssetPathDataSourceHandle &filePath,
+        const HdStringDataSourceHandle &filePath,
         const HdContainerDataSourceHandle &constants
 )
 {
@@ -92,6 +90,7 @@ HdImageShaderSchema::BuildRetained(
     HdDataSourceBaseHandle _values[4];
 
     size_t _count = 0;
+
     if (enabled) {
         _names[_count] = HdImageShaderSchemaTokens->enabled;
         _values[_count++] = enabled;
@@ -111,8 +110,50 @@ HdImageShaderSchema::BuildRetained(
         _names[_count] = HdImageShaderSchemaTokens->constants;
         _values[_count++] = constants;
     }
-
     return HdRetainedContainerDataSource::New(_count, _names, _values);
+}
+
+HdImageShaderSchema::Builder &
+HdImageShaderSchema::Builder::SetEnabled(
+    const HdBoolDataSourceHandle &enabled)
+{
+    _enabled = enabled;
+    return *this;
+}
+
+HdImageShaderSchema::Builder &
+HdImageShaderSchema::Builder::SetPriority(
+    const HdIntDataSourceHandle &priority)
+{
+    _priority = priority;
+    return *this;
+}
+
+HdImageShaderSchema::Builder &
+HdImageShaderSchema::Builder::SetFilePath(
+    const HdStringDataSourceHandle &filePath)
+{
+    _filePath = filePath;
+    return *this;
+}
+
+HdImageShaderSchema::Builder &
+HdImageShaderSchema::Builder::SetConstants(
+    const HdContainerDataSourceHandle &constants)
+{
+    _constants = constants;
+    return *this;
+}
+
+HdContainerDataSourceHandle
+HdImageShaderSchema::Builder::Build()
+{
+    return HdImageShaderSchema::BuildRetained(
+        _enabled,
+        _priority,
+        _filePath,
+        _constants
+    );
 }
 
 /*static*/
@@ -140,7 +181,7 @@ HdImageShaderSchema::GetDefaultLocator()
 {
     static const HdDataSourceLocator locator(GetSchemaToken());
     return locator;
-} 
+}
 
 /* static */
 const HdDataSourceLocator &
@@ -180,49 +221,6 @@ HdImageShaderSchema::GetConstantsLocator()
         GetDefaultLocator().Append(
             HdImageShaderSchemaTokens->constants);
     return locator;
-}
-HdImageShaderSchema::Builder &
-HdImageShaderSchema::Builder::SetEnabled(
-    const HdBoolDataSourceHandle &enabled)
-{
-    _enabled = enabled;
-    return *this;
-}
-
-HdImageShaderSchema::Builder &
-HdImageShaderSchema::Builder::SetPriority(
-    const HdIntDataSourceHandle &priority)
-{
-    _priority = priority;
-    return *this;
-}
-
-HdImageShaderSchema::Builder &
-HdImageShaderSchema::Builder::SetFilePath(
-    const HdAssetPathDataSourceHandle &filePath)
-{
-    _filePath = filePath;
-    return *this;
-}
-
-HdImageShaderSchema::Builder &
-HdImageShaderSchema::Builder::SetConstants(
-    const HdContainerDataSourceHandle &constants)
-{
-    _constants = constants;
-    return *this;
-}
-
-HdContainerDataSourceHandle
-HdImageShaderSchema::Builder::Build()
-{
-    return HdImageShaderSchema::BuildRetained(
-        _enabled,
-        _priority,
-        _filePath,
-        _constants
-    );
-}
-
+} 
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -59,13 +59,43 @@ UsdUtilsExtractExternalReferences(
 
 struct UsdUtils_ComputeAllDependenciesClient
 {
-    void 
+    UsdUtils_ComputeAllDependenciesClient(
+        const std::function<UsdUtilsProcessingFunc> &processingFunc)
+            :processingFunc(processingFunc) {}
+
+    UsdUtilsDependencyInfo 
     Process( 
         const SdfLayerRefPtr &layer, 
         const std::string & assetPath,
         const std::vector<std::string> &dependencies,
         UsdUtils_DependencyType dependencyType)
     {
+        
+        if (processingFunc) {
+            UsdUtilsDependencyInfo depInfo = {assetPath, dependencies};
+            UsdUtilsDependencyInfo processedInfo = 
+                processingFunc(layer, depInfo);
+            
+            if (processedInfo.GetAssetPath().empty()) {
+                return {};
+            }
+
+            // When using a processing function with template asset paths
+            // such as clips or udim, if the user does not modify the
+            // asset path, we do not want to place it in the resulting arrays
+            // We always want to add dependencies, however
+            bool originalPathIsTemplate = !dependencies.empty();
+            if (processedInfo != depInfo || !originalPathIsTemplate) {
+                PlaceAsset(layer, processedInfo.GetAssetPath(), dependencyType);
+            }
+            
+            for (const auto & dependency : processedInfo.GetDependencies()) {
+                PlaceAsset(layer, dependency, dependencyType);
+            }
+
+            return processedInfo;
+        }
+
         if (dependencies.empty()) {
             PlaceAsset(layer, assetPath, dependencyType);
         }
@@ -74,6 +104,8 @@ struct UsdUtils_ComputeAllDependenciesClient
                 PlaceAsset(layer, dependency, dependencyType);
             }
         }
+
+        return {};
     }
 
     bool 
@@ -120,6 +152,7 @@ struct UsdUtils_ComputeAllDependenciesClient
 
     std::vector<SdfLayerRefPtr> layers;
     std::vector<std::string> assets, unresolvedPaths;
+    std::function<UsdUtilsProcessingFunc> processingFunc;
 };
 
 bool
@@ -127,7 +160,8 @@ UsdUtilsComputeAllDependencies(
     const SdfAssetPath &assetPath,
     std::vector<SdfLayerRefPtr> *outLayers,
     std::vector<std::string> *outAssets,
-    std::vector<std::string> *outUnresolvedPaths)
+    std::vector<std::string> *outUnresolvedPaths,
+    const std::function<UsdUtilsProcessingFunc> &processingFunc)
 {
     SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(assetPath.GetAssetPath());
 
@@ -135,7 +169,7 @@ UsdUtilsComputeAllDependencies(
         return false;
     }
 
-    UsdUtils_ComputeAllDependenciesClient client;
+    UsdUtils_ComputeAllDependenciesClient client(processingFunc);
     UsdUtils_ReadOnlyLocalizationDelegate delegate(
         std::bind(&UsdUtils_ComputeAllDependenciesClient::Process, &client,
             std::placeholders::_1, std::placeholders::_2, 

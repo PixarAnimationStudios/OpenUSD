@@ -274,8 +274,10 @@ pxr_library(tf
         pxrDoubleConversion/bignum.h
         pxrDoubleConversion/cached-powers.h
         pxrDoubleConversion/diy-fp.h
+        pxrDoubleConversion/double-to-string.h
         pxrDoubleConversion/fast-dtoa.h
         pxrDoubleConversion/fixed-dtoa.h
+        pxrDoubleConversion/string-to-double.h
         pxrDoubleConversion/strtod.h
         pxrLZ4/lz4.h
         pyWeakObject.h
@@ -283,13 +285,13 @@ pxr_library(tf
     CPPFILES
         initConfig.cpp
         preprocessorUtils.cpp
-        pxrDoubleConversion/double-conversion.cc
         pxrDoubleConversion/bignum-dtoa.cc
         pxrDoubleConversion/bignum.cc
         pxrDoubleConversion/cached-powers.cc
-        pxrDoubleConversion/diy-fp.cc
+        pxrDoubleConversion/double-to-string.cc
         pxrDoubleConversion/fast-dtoa.cc
         pxrDoubleConversion/fixed-dtoa.cc
+        pxrDoubleConversion/string-to-double.cc
         pxrDoubleConversion/strtod.cc
         pxrLZ4/lz4.cpp
 

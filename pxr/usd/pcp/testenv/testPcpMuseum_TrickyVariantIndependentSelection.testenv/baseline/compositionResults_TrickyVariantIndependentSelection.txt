@@ -21,10 +21,10 @@ Prim Stack:
     ref.sdf              /Model_1{transformVariant=a}
     ref.sdf              /Model_1{pin=test}
     ref.sdf              /Model_2
-    ref.sdf              /Model_2{transformVariant=b}
+    ref.sdf              /Model_2{transformVariant=a}
     ref.sdf              /Model_2{pin=test}
     ref.sdf              /Model_3
-    ref.sdf              /Model_3{transformVariant=c}
+    ref.sdf              /Model_3{transformVariant=a}
     ref.sdf              /Model_3{pin=test}
 
 Variant Selections:
@@ -32,7 +32,7 @@ Variant Selections:
     {transformVariant = a}
 
 Child names:
-     ['Model_3_Pin_Test', 'Model_3_Transform_C', 'Model_2_Pin_Test', 'Model_2_Transform_B', 'Model_1_Pin_Test', 'Model_1_Transform_A']
+     ['Model_3_Pin_Test', 'Model_3_Transform_A', 'Model_2_Pin_Test', 'Model_2_Transform_A', 'Model_1_Pin_Test', 'Model_1_Transform_A']
 
 ------------------------------------------------------------------------
 Results for composing </Model/Model_3_Pin_Test>
@@ -41,10 +41,10 @@ Prim Stack:
     ref.sdf              /Model_3{pin=test}Model_3_Pin_Test
 
 ------------------------------------------------------------------------
-Results for composing </Model/Model_3_Transform_C>
+Results for composing </Model/Model_3_Transform_A>
 
 Prim Stack:
-    ref.sdf              /Model_3{transformVariant=c}Model_3_Transform_C
+    ref.sdf              /Model_3{transformVariant=a}Model_3_Transform_A
 
 ------------------------------------------------------------------------
 Results for composing </Model/Model_2_Pin_Test>
@@ -53,10 +53,10 @@ Prim Stack:
     ref.sdf              /Model_2{pin=test}Model_2_Pin_Test
 
 ------------------------------------------------------------------------
-Results for composing </Model/Model_2_Transform_B>
+Results for composing </Model/Model_2_Transform_A>
 
 Prim Stack:
-    ref.sdf              /Model_2{transformVariant=b}Model_2_Transform_B
+    ref.sdf              /Model_2{transformVariant=a}Model_2_Transform_A
 
 ------------------------------------------------------------------------
 Results for composing </Model/Model_1_Pin_Test>

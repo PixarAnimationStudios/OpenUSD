@@ -428,18 +428,22 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
         (*it)->AddBindings(&customBindings);
     }
 
-    HdSt_CodeGen codeGen(_geometricShader, shaders, drawItem->GetMaterialTag());
-
+    std::unique_ptr<HdSt_ResourceBinder::MetaData> metaData =
+        std::make_unique<HdSt_ResourceBinder::MetaData>();
+    
     // let resourcebinder resolve bindings and populate metadata
     // which is owned by codegen.
     _resourceBinder.ResolveBindings(drawItem,
                                     shaders,
-                                    codeGen.GetMetaData(),
+                                    metaData.get(),
                                     _drawingCoordBufferBinding,
                                     instanceDraw,
                                     customBindings,
                                     resourceRegistry->GetHgi()->
                                         GetCapabilities());
+
+    HdSt_CodeGen codeGen(_geometricShader, shaders,
+                         drawItem->GetMaterialTag(), std::move(metaData));
 
     HdStGLSLProgram::ID hash = codeGen.ComputeHash();
 

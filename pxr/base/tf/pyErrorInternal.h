@@ -37,8 +37,6 @@ enum Tf_PyExceptionErrorCode {
     TF_PYTHON_EXCEPTION
 };
 
-TF_API TfPyExceptionState Tf_PyFetchPythonExceptionState();
-TF_API void Tf_PyRestorePythonExceptionState(TfPyExceptionState state);
 TF_API boost::python::handle<> Tf_PyGetErrorExceptionClass();
 TF_API void Tf_PySetErrorExceptionClass(boost::python::object const &cls);
 
@@ -46,21 +44,20 @@ TF_API void Tf_PySetErrorExceptionClass(boost::python::object const &cls);
 /// must hold the GIL during all methods, including the c'tor and d'tor.
 class TfPyExceptionStateScope {
 public:
-    // Save the current exception state but don't unset it.
+    // Store Python's current exception state in this object, if any, and clear
+    // Python's current exception state.
     TF_API TfPyExceptionStateScope();
     TfPyExceptionStateScope(const TfPyExceptionStateScope&) = delete;
     TfPyExceptionStateScope& operator=(const TfPyExceptionStateScope&) = delete;
 
-    // Restore the exception state as it was in the c'tor.
+    // Restore Python's exception state to the state captured upon
+    // construction.
     TF_API ~TfPyExceptionStateScope();
 
     // Return a reference to the held TfPyExceptionState.
     TfPyExceptionState const &Get() const {
         return _state;
     }
-
-    // Restore the exception state as it was in the c'tor.
-    TF_API void Restore();
 
 private:
     TfPyExceptionState _state;

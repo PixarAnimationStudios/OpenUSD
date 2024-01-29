@@ -35,6 +35,8 @@
 #ifndef PXR_IMAGING_HD_RENDER_PRODUCT_SCHEMA_H
 #define PXR_IMAGING_HD_RENDER_PRODUCT_SCHEMA_H
 
+/// \file
+
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/vectorSchemaTypeDefs.h"
 
@@ -48,12 +50,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//-----------------------------------------------------------------------------
-
 // --(BEGIN CUSTOM CODE: Declares)--
 // --(END CUSTOM CODE: Declares)--
-
-//-----------------------------------------------------------------------------
 
 #define HD_RENDER_PRODUCT_SCHEMA_TOKENS \
     (renderProduct) \
@@ -68,23 +66,40 @@ PXR_NAMESPACE_OPEN_SCOPE
     (apertureSize) \
     (dataWindowNDC) \
     (disableMotionBlur) \
+    (disableDepthOfField) \
     (namespacedSettings) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdRenderProductSchemaTokens, HD_API,
     HD_RENDER_PRODUCT_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
+
+
 class HdRenderProductSchema : public HdSchema
 {
 public:
+    /// \name Schema retrieval
+    /// @{
+
     HdRenderProductSchema(HdContainerDataSourceHandle container)
-    : HdSchema(container) {}
+      : HdSchema(container) {}
+
+    /// Retrieves a container data source with the schema's default name token
+    /// "renderProduct" from the parent container and constructs a
+    /// HdRenderProductSchema instance.
+    /// Because the requested container data source may not exist, the result
+    /// should be checked with IsDefined() or a bool comparison before use.
+    HD_API
+    static HdRenderProductSchema GetFromParent(
+        const HdContainerDataSourceHandle &fromParentContainer);
+
+    /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
 
-    //ACCESSORS
-
+    /// \name Member accessor
+    /// @{
 
     HD_API
     HdPathDataSourceHandle GetPath();
@@ -120,10 +135,55 @@ public:
     HdBoolDataSourceHandle GetDisableMotionBlur();
 
     HD_API
-    HdContainerDataSourceHandle GetNamespacedSettings();
+    HdBoolDataSourceHandle GetDisableDepthOfField();
 
-    // RETRIEVING AND CONSTRUCTING
+    HD_API
+    HdContainerDataSourceHandle GetNamespacedSettings(); 
 
+    /// @}
+
+    /// \name Schema location
+    /// @{
+
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    HD_API
+    static const TfToken &GetSchemaToken();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the container representing this schema is found by default.
+    HD_API
+    static const HdDataSourceLocator &GetDefaultLocator();
+
+    /// @}
+
+    /// \name Data source locators for members
+    ///
+    /// The following methods return an HdDataSourceLocator (relative to the
+    /// prim-level data source) where the data source for a member can be found.
+    ///
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    /// @{
+
+    /// Prim-level relative data source locator to locate resolution.
+    HD_API
+    static const HdDataSourceLocator &GetResolutionLocator();
+
+    /// Prim-level relative data source locator to locate renderVars.
+    HD_API
+    static const HdDataSourceLocator &GetRenderVarsLocator();
+
+    /// Prim-level relative data source locator to locate namespacedSettings.
+    HD_API
+    static const HdDataSourceLocator &GetNamespacedSettingsLocator();
+    /// @} 
+
+    /// \name Schema construction
+    /// @{
+
+    /// \deprecated Use Builder instead.
+    ///
     /// Builds a container data source which includes the provided child data
     /// sources. Parameters with nullptr values are excluded. This is a
     /// low-level interface. For cases in which it's desired to define
@@ -143,6 +203,7 @@ public:
         const HdVec2fDataSourceHandle &apertureSize,
         const HdVec4fDataSourceHandle &dataWindowNDC,
         const HdBoolDataSourceHandle &disableMotionBlur,
+        const HdBoolDataSourceHandle &disableDepthOfField,
         const HdContainerDataSourceHandle &namespacedSettings
     );
 
@@ -189,6 +250,9 @@ public:
         Builder &SetDisableMotionBlur(
             const HdBoolDataSourceHandle &disableMotionBlur);
         HD_API
+        Builder &SetDisableDepthOfField(
+            const HdBoolDataSourceHandle &disableDepthOfField);
+        HD_API
         Builder &SetNamespacedSettings(
             const HdContainerDataSourceHandle &namespacedSettings);
 
@@ -208,50 +272,12 @@ public:
         HdVec2fDataSourceHandle _apertureSize;
         HdVec4fDataSourceHandle _dataWindowNDC;
         HdBoolDataSourceHandle _disableMotionBlur;
+        HdBoolDataSourceHandle _disableDepthOfField;
         HdContainerDataSourceHandle _namespacedSettings;
+
     };
 
-    /// Retrieves a container data source with the schema's default name token
-    /// "renderProduct" from the parent container and constructs a
-    /// HdRenderProductSchema instance.
-    /// Because the requested container data source may not exist, the result
-    /// should be checked with IsDefined() or a bool comparison before use.
-    HD_API
-    static HdRenderProductSchema GetFromParent(
-        const HdContainerDataSourceHandle &fromParentContainer);
-
-    /// Returns a token where the container representing this schema is found in
-    /// a container by default.
-    HD_API
-    static const TfToken &GetSchemaToken();
-
-    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
-    /// where the container representing this schema is found by default.
-    HD_API
-    static const HdDataSourceLocator &GetDefaultLocator();
-
-    // DATA SOURCE LOCATORS FOR MEMBERS
-    //
-    // The following methods return an HdDataSourceLocator (relative to the
-    // prim-level data source) where the data source for a member can be found.
-    //
-    // This is often useful for checking intersection against the
-    // HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
-
-
-    /// Prim-level relative data source locator to locate resolution.
-    HD_API
-    static const HdDataSourceLocator &GetResolutionLocator();
-
-    /// Prim-level relative data source locator to locate renderVars.
-    HD_API
-    static const HdDataSourceLocator &GetRenderVarsLocator();
-
-    /// Prim-level relative data source locator to locate namespacedSettings.
-    HD_API
-    static const HdDataSourceLocator &GetNamespacedSettingsLocator();
-
-
+    /// @}
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

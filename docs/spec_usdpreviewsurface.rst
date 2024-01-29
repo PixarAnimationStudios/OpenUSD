@@ -389,9 +389,10 @@ UDIM's.
 
 * **wrapS - token - useMetadata** 
 
-  Wrap mode when reading this texture.Possible Values:
+  Wrap mode when reading this texture. Possible values:
 
-    * *black* : Reader returns black outside unit square
+    * *black* : Reader returns transparent black (0.0, 0.0, 0.0, 0.0) outside 
+      unit square. 
 
     * *clamp* : extend edge values outside unit square
 

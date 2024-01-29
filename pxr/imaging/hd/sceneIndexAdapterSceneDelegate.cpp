@@ -64,6 +64,7 @@
 #include "pxr/imaging/hd/extentSchema.h"
 #include "pxr/imaging/hd/geomSubsetSchema.h"
 #include "pxr/imaging/hd/geomSubsetsSchema.h"
+#include "pxr/imaging/hd/imageShaderSchema.h"
 #include "pxr/imaging/hd/instanceCategoriesSchema.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
@@ -922,32 +923,31 @@ HdSceneIndexAdapterSceneDelegate::GetRenderBufferDescriptor(SdfPath const &id)
 
 static
 std::map<TfToken, VtValue>
-_GetHdParamsFromDataSource(HdContainerDataSourceHandle paramsDS)
+_GetHdParamsFromDataSource(
+    HdMaterialNodeParameterContainerSchema containerSchema)
 {
     std::map<TfToken, VtValue> hdParams;
-    if (paramsDS) {
-        const TfTokenVector pNames = paramsDS->GetNames();
-        for (const auto & pName : pNames) {
-            HdDataSourceBaseHandle paramDS = paramsDS->Get(pName);
-            HdMaterialNodeParameterSchema paramSchema(
-                HdContainerDataSource::Cast(paramDS));
-            if (!paramSchema) {
-                continue;
-            }
+    if (!containerSchema) {
+        return hdParams;
+    }
 
-            // Parameter Value 
-            HdSampledDataSourceHandle paramValueDS = paramSchema.GetValue();
-            if (paramValueDS) {
-                VtValue v = paramValueDS->GetValue(0);
-                hdParams[pName] = v;
-            }
-            // ColorSpace Metadata
-            HdTokenDataSourceHandle colorSpaceDS = paramSchema.GetColorSpace();
-            if (colorSpaceDS) {
-                const TfToken cspName(SdfPath::JoinIdentifier(
+    const TfTokenVector pNames = containerSchema.GetNames();
+    for (const auto & pName : pNames) {
+        HdMaterialNodeParameterSchema paramSchema = containerSchema.Get(pName);
+        if (!paramSchema) {
+            continue;
+        }
+
+        // Parameter Value
+        if (HdSampledDataSourceHandle paramValueDS = paramSchema.GetValue()) {
+            hdParams[pName] = paramValueDS->GetValue(0);
+        }
+        // ColorSpace Metadata
+        if (HdTokenDataSourceHandle colorSpaceDS = paramSchema.GetColorSpace()) {
+            const TfToken cspName(
+                SdfPath::JoinIdentifier(
                     HdMaterialNodeParameterSchemaTokens->colorSpace, pName));
-                hdParams[cspName] = VtValue(colorSpaceDS->GetTypedValue(0));
-            }
+            hdParams[cspName] = VtValue(colorSpaceDS->GetTypedValue(0));
         }
     }
     return hdParams;
@@ -957,7 +957,7 @@ static
 void 
 _Walk(
     const SdfPath & nodePath, 
-    const HdContainerDataSourceHandle & nodesDS,
+    HdMaterialNodeContainerSchema nodesSchema,
     const TfTokenVector &renderContexts,
     std::unordered_set<SdfPath, SdfPath::Hash> * visitedSet,
     HdMaterialNetwork * netHd)
@@ -970,8 +970,8 @@ _Walk(
 
     TfToken nodePathTk(nodePath.GetToken());
 
-    HdDataSourceBaseHandle nodeDS = nodesDS->Get(nodePathTk);
-    HdMaterialNodeSchema nodeSchema(HdContainerDataSource::Cast(nodeDS));
+    HdMaterialNodeSchema nodeSchema = nodesSchema.Get(nodePathTk);
+
     if (!nodeSchema.IsDefined()) {
         return;
     }
@@ -1003,22 +1003,20 @@ _Walk(
         }
     }
 
-    HdContainerDataSourceHandle connsDS = nodeSchema.GetInputConnections();
-    if (connsDS) {
-        const TfTokenVector connsNames = connsDS->GetNames();
+    if (HdMaterialConnectionVectorContainerSchema vectorContainerSchema =
+            nodeSchema.GetInputConnections()) {
+        const TfTokenVector connsNames = vectorContainerSchema.GetNames();
         for (const auto & connName : connsNames) {
-            HdVectorDataSourceHandle allConnDS = 
-                HdVectorDataSource::Cast(connsDS->Get(connName));
-            
-            if (!allConnDS) {
+            HdMaterialConnectionVectorSchema vectorSchema =
+                vectorContainerSchema.Get(connName);
+
+            if (!vectorSchema) {
                 continue;
             }
             
-            for (size_t i = 0 ; i < allConnDS->GetNumElements() ; i++) {
-                HdDataSourceBaseHandle connDS = allConnDS->GetElement(i);
-                
-                HdMaterialConnectionSchema connSchema(
-                    HdContainerDataSource::Cast(connDS));
+            for (size_t i = 0 ; i < vectorSchema.GetNumElements() ; i++) {
+                HdMaterialConnectionSchema connSchema =
+                    vectorSchema.GetElement(i);
                 if (!connSchema.IsDefined()) {
                     continue;
                 }
@@ -1026,7 +1024,7 @@ _Walk(
                 TfToken p = connSchema.GetUpstreamNodePath()->GetTypedValue(0);
                 TfToken n = 
                     connSchema.GetUpstreamNodeOutputName()->GetTypedValue(0);
-                _Walk(SdfPath(p.GetString()), nodesDS, renderContexts,
+                _Walk(SdfPath(p.GetString()), nodesSchema, renderContexts,
                         visitedSet, netHd);
 
                 HdMaterialRelationship r;
@@ -1060,16 +1058,15 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
     }
 
     // Query for a material network to match the requested render contexts
-    HdContainerDataSourceHandle matDS;
+    HdMaterialNetworkSchema netSchema(nullptr);
     for (TfToken const& networkSelector:
         GetRenderIndex().GetRenderDelegate()->GetMaterialRenderContexts()) {
-        matDS = matSchema.GetMaterialNetwork(networkSelector);
-        if (matDS) {
+        netSchema = matSchema.GetMaterialNetwork(networkSelector);
+        if (netSchema) {
             // Found a matching network
             break;
         }
     }
-    HdMaterialNetworkSchema netSchema(matDS);
     if (!netSchema.IsDefined()) {
         return VtValue();
     }
@@ -1084,10 +1081,10 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
     // A renderer which wants this behavior can configure its networks
     // with an "includeDisconnectedNodes" data source.
     bool includeDisconnectedNodes = false;
-    if (matDS) {
+    if (HdContainerDataSourceHandle netContainer = netSchema.GetContainer()) {
         static const TfToken key("includeDisconnectedNodes");
         if (HdBoolDataSourceHandle ds = HdBoolDataSource::Cast(
-                matDS->Get(key))) {
+                netContainer->Get(key))) {
             includeDisconnectedNodes = ds->GetTypedValue(0.0f);
         }
     }
@@ -1098,17 +1095,17 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
     // List of visited nodes to facilitate network traversal
     std::unordered_set<SdfPath, SdfPath::Hash> visitedNodes;
 
-    HdContainerDataSourceHandle nodesDS = netSchema.GetNodes();
-    HdContainerDataSourceHandle terminalsDS = netSchema.GetTerminals();
-    const TfTokenVector names = terminalsDS->GetNames();
+    HdMaterialNodeContainerSchema nodesSchema =
+        netSchema.GetNodes();
+    HdMaterialConnectionContainerSchema terminalsSchema =
+        netSchema.GetTerminals();
+    const TfTokenVector names = terminalsSchema.GetNames();
    
     for (const auto & name : names) {
         visitedNodes.clear();
         
         // Extract connections one by one
-        HdDataSourceBaseHandle connDS = terminalsDS->Get(name);
-        HdMaterialConnectionSchema connSchema(
-            HdContainerDataSource::Cast(connDS));
+        HdMaterialConnectionSchema connSchema = terminalsSchema.Get(name);
         if (!connSchema.IsDefined()) {
             continue;
         }
@@ -1118,20 +1115,18 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
         SdfPath path(pathTk.GetString());
         matHd.terminals.push_back(path);
 
-
         TfTokenVector renderContexts =
             GetRenderIndex().GetRenderDelegate()->GetMaterialRenderContexts();
 
-
         // Continue walking the network
         HdMaterialNetwork & netHd = matHd.map[name];
-        _Walk(path, nodesDS, renderContexts, &visitedNodes, &netHd);
+        _Walk(path, nodesSchema, renderContexts, &visitedNodes, &netHd);
 
         // see "includeDisconnectedNodes" above
-        if (includeDisconnectedNodes && nodesDS) {
-            for (const TfToken &nodeName : nodesDS->GetNames()) {
+        if (includeDisconnectedNodes && nodesSchema) {
+            for (const TfToken &nodeName : nodesSchema.GetNames()) {
                 _Walk(SdfPath(nodeName.GetString()),
-                    nodesDS, renderContexts, &visitedNodes, &netHd);
+                    nodesSchema, renderContexts, &visitedNodes, &netHd);
             }
         }
     }
@@ -1282,16 +1277,22 @@ namespace {
 // Note: Utility methods below expect a valid data source handle.
 
 VtDictionary
-_ToDictionary(HdContainerDataSourceHandle const &cds)
+_ToDictionary(
+    HdSampledDataSourceContainerSchema schema)
 {
     VtDictionary dict;
-    for (const TfToken &name : cds->GetNames()) {
-        if (HdSampledDataSourceHandle valueDs =
-                HdSampledDataSource::Cast(cds->Get(name))) {
+    for (const TfToken& name : schema.GetNames()) {
+        if (HdSampledDataSourceHandle valueDs = schema.Get(name)) {
             dict[name.GetString()] = valueDs->GetValue(0);
         }
     }
     return dict;
+}
+
+VtDictionary
+_ToDictionary(HdContainerDataSourceHandle const &cds)
+{
+    return _ToDictionary(HdSampledDataSourceContainerSchema(cds));
 }
 
 using _RenderVar = HdRenderSettings::RenderProduct::RenderVar;
@@ -1379,6 +1380,9 @@ _ToRenderProduct(HdRenderProductSchema productSchema)
     }
     if (auto h = productSchema.GetDisableMotionBlur()) {
         prod.disableMotionBlur = h->GetTypedValue(0);
+    }
+    if (auto h = productSchema.GetDisableDepthOfField()) {
+        prod.disableDepthOfField = h->GetTypedValue(0);
     }
     if (auto h = productSchema.GetNamespacedSettings()) {
         prod.namespacedSettings = _ToDictionary(h);
@@ -1520,6 +1524,42 @@ Hd_InterpolationAsEnum(const TfToken &interpolationToken)
     }
 
     return HdInterpolation(-1);
+}
+
+VtValue
+_GetImageShaderValue(
+    HdSceneIndexPrim prim,
+    const TfToken& key)
+{
+    HdImageShaderSchema imageShaderSchema =
+        HdImageShaderSchema::GetFromParent(prim.dataSource);
+    if (!imageShaderSchema.IsDefined()) {
+        return VtValue();
+    }
+
+    if (key == HdImageShaderSchemaTokens->enabled) {
+        if (HdBoolDataSourceHandle enabledDs =
+                imageShaderSchema.GetEnabled()) {
+            return enabledDs->GetValue(0);
+        }
+    } else if (key == HdImageShaderSchemaTokens->priority) {
+        if (HdIntDataSourceHandle priorityDs =
+                imageShaderSchema.GetPriority()) {
+            return priorityDs->GetValue(0);
+        }
+    } else if (key == HdImageShaderSchemaTokens->filePath) {
+        if (HdStringDataSourceHandle filePathDs =
+                imageShaderSchema.GetFilePath()) {
+            return filePathDs->GetValue(0);
+        }
+    } else if (key == HdImageShaderSchemaTokens->constants) {
+        if (HdSampledDataSourceContainerSchema constantsSchema =
+                imageShaderSchema.GetConstants()) {
+            return VtValue(_ToDictionary(constantsSchema));
+        }
+    }
+
+    return VtValue();
 }
 
 } // anonymous namespace
@@ -1786,6 +1826,10 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
             return _GetRenderTerminalResource<HdDisplayFilterSchema>(prim);
         }
         return VtValue();
+    }
+
+    if (prim.primType == HdPrimTypeTokens->imageShader) {
+        return _GetImageShaderValue(prim, key);
     }
 
     if (prim.primType == HdPrimTypeTokens->cube) {

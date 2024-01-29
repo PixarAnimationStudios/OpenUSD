@@ -750,7 +750,10 @@ struct BracedPredExpr
     : if_must<one<'{'>, OptSpaced<EmbeddedPredExpr>, one<'}'>> {};
 
 struct PathWildCard :
-    plus<sor<identifier_other, one<'[',']','!','-','?','*'>>> {};
+    seq<
+    plus<sor<identifier_other, one<'?','*'>>>,
+    opt<one<'['>,plus<sor<identifier_other, one<'[',']','!','-','?','*'>>>>
+    > {};
 
 struct PathPatternElemText : PathWildCard {};
 

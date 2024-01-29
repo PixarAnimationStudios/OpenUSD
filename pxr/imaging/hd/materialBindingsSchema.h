@@ -35,6 +35,8 @@
 #ifndef PXR_IMAGING_HD_MATERIAL_BINDINGS_SCHEMA_H
 #define PXR_IMAGING_HD_MATERIAL_BINDINGS_SCHEMA_H
 
+/// \file
+
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
 
@@ -45,12 +47,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//-----------------------------------------------------------------------------
-
 // --(BEGIN CUSTOM CODE: Declares)--
 // --(END CUSTOM CODE: Declares)--
-
-//-----------------------------------------------------------------------------
 
 #define HD_MATERIAL_BINDINGS_SCHEMA_TOKENS \
     (materialBindings) \
@@ -65,8 +63,22 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialBindingsSchemaTokens, HD_API,
 class HdMaterialBindingsSchema : public HdSchema
 {
 public:
+    /// \name Schema retrieval
+    /// @{
+
     HdMaterialBindingsSchema(HdContainerDataSourceHandle container)
-    : HdSchema(container) {}
+      : HdSchema(container) {}
+
+    /// Retrieves a container data source with the schema's default name token
+    /// "materialBindings" from the parent container and constructs a
+    /// HdMaterialBindingsSchema instance.
+    /// Because the requested container data source may not exist, the result
+    /// should be checked with IsDefined() or a bool comparison before use.
+    HD_API
+    static HdMaterialBindingsSchema GetFromParent(
+        const HdContainerDataSourceHandle &fromParentContainer);
+
+    /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 
@@ -78,27 +90,13 @@ public:
 
 // --(END CUSTOM CODE: Schema Methods)--
 
-    //ACCESSORS
- 
+    /// \name Member accessor
+    /// @{ 
 
-    // RETRIEVING AND CONSTRUCTING
+    /// @}
 
-    HD_API
-    static HdContainerDataSourceHandle
-    BuildRetained(
-        size_t count,
-        const TfToken *names,
-        const HdDataSourceBaseHandle *values);
-
-
-    /// Retrieves a container data source with the schema's default name token
-    /// "materialBindings" from the parent container and constructs a
-    /// HdMaterialBindingsSchema instance.
-    /// Because the requested container data source may not exist, the result
-    /// should be checked with IsDefined() or a bool comparison before use.
-    HD_API
-    static HdMaterialBindingsSchema GetFromParent(
-        const HdContainerDataSourceHandle &fromParentContainer);
+    /// \name Schema location
+    /// @{
 
     /// Returns a token where the container representing this schema is found in
     /// a container by default.
@@ -109,6 +107,19 @@ public:
     /// where the container representing this schema is found by default.
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
+
+    /// @} 
+
+    /// \name Schema construction
+    /// @{
+    HD_API
+    static HdContainerDataSourceHandle
+    BuildRetained(
+        size_t count,
+        const TfToken *names,
+        const HdDataSourceBaseHandle *values);
+
+    /// @}
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

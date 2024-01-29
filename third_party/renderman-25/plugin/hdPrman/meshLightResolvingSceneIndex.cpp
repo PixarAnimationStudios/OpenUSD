@@ -199,6 +199,12 @@ bool
 _HasValidMaterialNetwork(
     const HdSceneIndexPrim& prim)
 {
+#if HD_API_VERSION >= 63
+    HdMaterialNetworkSchema netSchema = 
+        HdMaterialSchema::GetFromParent(prim.dataSource)
+            .GetMaterialNetwork(_tokens->renderContext);
+    return netSchema.GetNodes() && netSchema.GetTerminals();
+#else
     HdMaterialSchema matSchema = HdMaterialSchema::GetFromParent(prim.dataSource);
     if (!matSchema.IsDefined()) {
         return false;
@@ -215,6 +221,7 @@ _HasValidMaterialNetwork(
     HdContainerDataSourceHandle nodesDS = netSchema.GetNodes();
     HdContainerDataSourceHandle terminalsDS = netSchema.GetTerminals();
     return nodesDS && terminalsDS;
+#endif
 }
 
 TfToken
@@ -298,7 +305,11 @@ _BuildLightShaderDataSource(
     // Get the original light shader network
     const HdContainerDataSourceHandle& originalShaderDS = 
         HdMaterialSchema::GetFromParent(originPrim.dataSource)
-            .GetMaterialNetwork(_tokens->renderContext);
+            .GetMaterialNetwork(_tokens->renderContext)
+#if HD_API_VERSION >= 63
+        .GetContainer()
+#endif
+        ;
 
     // check materialSyncMode
     if (_GetMaterialSyncMode(originPrim.dataSource) !=
@@ -318,7 +329,12 @@ _BuildLightShaderDataSource(
     const HdSceneIndexPrim& matPrim = inputSceneIndex->GetPrim(matPath);
     const HdContainerDataSourceHandle& matDS =
         HdMaterialSchema::GetFromParent(matPrim.dataSource)
-        .GetMaterialNetwork(_tokens->renderContext);
+        .GetMaterialNetwork(_tokens->renderContext)
+#if HD_API_VERSION >= 63
+        .GetContainer()
+#endif
+        ;
+
     if (!matDS) {
         // could not get material shader network from material prim;
         // return unmodified
@@ -382,7 +398,12 @@ _BuildLightShaderDataSource(
         return HdOverlayContainerDataSource::New(
             shaderNI.Finish(),
             HdMaterialNetworkSchema::Builder()
-                .SetNodes(HdMaterialNetworkSchema(matDS).GetNodes())
+                .SetNodes(
+                    HdMaterialNetworkSchema(matDS).GetNodes()
+#if HD_API_VERSION >= 63
+                        .GetContainer()
+#endif
+                    )
                 .Build());
     }
     // No glow input connection; try for param value instead

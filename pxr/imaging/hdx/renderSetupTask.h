@@ -39,6 +39,7 @@
 #include "pxr/base/gf/vec4d.h"
 
 #include <memory>
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
