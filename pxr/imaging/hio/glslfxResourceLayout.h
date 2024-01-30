@@ -28,8 +28,6 @@
 
 #include "pxr/imaging/hio/types.h"
 
-#include "pxr/imaging/hgi/enums.h"
-
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -104,6 +102,10 @@ public:
         BUFFER_READ_WRITE,
     };
 
+    /// Describes the stage a shader function operates in.
+    /// \todo Refactor HgiShaderStage and apply it to hio without introducing hgi dependency.
+    using ShaderStage = uint32_t;
+
     /// Specifies a member of an aggregate resource element.
     struct Member {
         Member(TfToken const & dataType,
@@ -127,7 +129,7 @@ public:
                 TfToken name = HioGlslfxResourceLayoutTokens->unknown,
                 TfToken arraySize = TfToken(),
                 TfToken qualifiers = TfToken(),
-                HgiShaderStage stageVisibility = HgiShaderStageAll)
+                ShaderStage stageVisibility = UINT32_MAX)
             : inOut(inOut)
             , kind(kind)
             , location(-1)
@@ -148,7 +150,7 @@ public:
         TfToken arraySize;
         TfToken aggregateName;
         MemberVector members;
-        HgiShaderStage stageVisibility;
+        ShaderStage stageVisibility;
     };
     using ElementVector = std::vector<Element>;
 
