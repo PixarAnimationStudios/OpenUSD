@@ -1152,6 +1152,7 @@ class AppController(QtCore.QObject):
 
     def _drawFirstImage(self):
         if self._stageView:
+            self._stageView.signalRendererInitialized.connect(self._updateCurrentSelectedRenderer)
             self._stageView.setUpdatesEnabled(True)
         with BusyContext():
             try:
@@ -1483,6 +1484,14 @@ class AppController(QtCore.QObject):
             self._configureRendererCommands()
             self._configurePauseAction()
             self._configureStopAction()
+    
+    def _updateCurrentSelectedRenderer(self):
+        if hasattr(self._ui, 'rendererPluginActionGroup'):
+            currentRendererId = self._stageView.GetCurrentRendererId()
+            for action in self._ui.rendererPluginActionGroup.actions():
+                if action.pluginType == currentRendererId:
+                    action.setChecked(True)
+                    break
 
     # Renderer AOV support
     def _rendererAovChanged(self, aov):
