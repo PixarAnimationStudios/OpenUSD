@@ -20,3 +20,19 @@ CANNOT inherit from:
 @ErrorPermissionDenied/root.sdf@</_PrivateClass>
 which is private.
 
+------------------------------------------------------------------------
+Errors while composing </VariantsOpinionsOnRestrictedPrim/Child/Child2>
+
+@ErrorPermissionDenied/root.sdf@</VariantsOpinionsOnRestrictedPrim/Child{child=a}Child2>
+will be ignored because:
+@ErrorPermissionDenied/ref.sdf@</Ref/Child/Child2>
+is private and overrides its opinions.
+@ErrorPermissionDenied/root.sdf@</VariantsOpinionsOnRestrictedPrim/Child/Child2{child2=a}>
+will be ignored because:
+@ErrorPermissionDenied/ref.sdf@</Ref/Child/Child2>
+is private and overrides its opinions.
+@ErrorPermissionDenied/root.sdf@</VariantsOpinionsOnRestrictedPrim/Child/Child2>
+will be ignored because:
+@ErrorPermissionDenied/ref.sdf@</Ref/Child/Child2>
+is private and overrides its opinions.
+
