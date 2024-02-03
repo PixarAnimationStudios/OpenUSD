@@ -96,6 +96,7 @@ public:
     virtual void SetLeftValue( VtValue ) = 0;
     virtual VtValue GetZero() const = 0;
     virtual bool ValueCanBeInterpolated() const = 0;
+    virtual bool ValueCanBeExtrapolated() const = 0;
 
     // Extrapolation.
     // Note these methods don't actually use any data from this object
@@ -197,6 +198,7 @@ public:
     void SetLeftValue( VtValue ) override;
     VtValue GetZero() const override;
     bool ValueCanBeInterpolated() const override;
+    bool ValueCanBeExtrapolated() const override;
 
     // Tangents
     bool HasTangents() const override;
@@ -215,7 +217,7 @@ public:
 
 public:
 
-    // Extrapolation methods.
+    // Slope computation methods.
 
     VtValue GetSlope(const Ts_Data &right) const override
     {
@@ -748,6 +750,13 @@ bool
 Ts_TypedData<T>::ValueCanBeInterpolated() const
 {
     return TsTraits<T>::interpolatable;
+}
+
+template <typename T>
+bool
+Ts_TypedData<T>::ValueCanBeExtrapolated() const
+{
+    return TsTraits<T>::extrapolatable;
 }
 
 template <typename T>

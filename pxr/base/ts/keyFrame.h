@@ -274,6 +274,12 @@ public: // methods
     TS_API
     bool IsInterpolatable() const;
 
+    /// Gets whether the value type of this keyframe is extrapolatable.  This
+    /// means that a slope can be computed from the line between two knots of
+    /// this knot's value type.
+    TS_API
+    bool IsExtrapolatable() const;
+
     /// Gets whether the value type of this keyframe supports tangents.  This
     /// will return true not only for Bezier, but also for Linear and Held,
     /// because when authors switch from Bezier to Linear/Held and back to

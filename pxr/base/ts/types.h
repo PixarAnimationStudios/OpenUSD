@@ -138,7 +138,9 @@ struct TsTraits {
     static const bool interpolatable = true;
 
     // True if the value can be extrapolated outside of the keyframe
-    // range. If this is false we always use TsExtrapolateHeld behaviour
+    // range. If this is false we always use TsExtrapolateHeld behaviour.
+    // This is true if a slope can be computed from the line between two knots
+    // of this type.
     static const bool extrapolatable = false;
 
     // True if the value type supports tangents.

@@ -1398,7 +1398,7 @@ main(int argc, char **argv)
     TF_AXIOM( val.Eval(5).Get<float>() == float(10) );
     TF_AXIOM( val.Eval(5.5).Get<float>() == float(11) );
     TF_AXIOM( val.EvalDerivative(0, TsLeft).Get<float>() == float(0) );
-    TF_AXIOM( val.EvalDerivative(0, TsRight).Get<float>() == float(0) );
+    TF_AXIOM( val.EvalDerivative(0, TsRight).Get<float>() == float(2) );
     TF_AXIOM( val.EvalDerivative(5, TsLeft).Get<float>() == float(2) );
     TF_AXIOM( val.EvalDerivative(5, TsRight).Get<float>() == float(2) );
     TF_AXIOM( val.EvalDerivative(5.5, TsLeft).Get<float>() == float(2) );
@@ -1485,11 +1485,11 @@ main(int argc, char **argv)
     TF_AXIOM(_IsClose(VtValue(val.EvalDerivative(0, TsLeft)), 
                     VtValue(GfVec2d(0.0, 0.0)), vec2dEps));
     TF_AXIOM(_IsClose(VtValue(val.EvalDerivative(0, TsRight)), 
-                    VtValue(GfVec2d(0.0, 0.0)), vec2dEps));
+                    VtValue(GfVec2d(0.1, 0.1)), vec2dEps));
     TF_AXIOM(_IsClose(VtValue(val.EvalDerivative(1, TsLeft)), 
-                    VtValue(GfVec2d(0.0, 0.0)), vec2dEps));
+                    VtValue(GfVec2d(0.1, 0.1)), vec2dEps));
     TF_AXIOM(_IsClose(VtValue(val.EvalDerivative(1, TsRight)), 
-                    VtValue(GfVec2d(0.0, 0.0)), vec2dEps));
+                    VtValue(GfVec2d(0.1, 0.1)), vec2dEps));
 
     val.Clear();
     val.SetKeyFrame( TsKeyFrame( 0, 0.0, TsKnotHeld ) );
@@ -1511,10 +1511,10 @@ main(int argc, char **argv)
     TF_AXIOM(_IsClose<double>(val.Eval(0,  TsLeft).Get<double>(),  0.0));
     TF_AXIOM(_IsClose<double>(val.Eval(10, TsRight).Get<double>(), 10.0));
     TF_AXIOM(_IsClose<double>(val.Eval(10, TsLeft).Get<double>(),  10.0));
-    TF_AXIOM(_IsClose<double>(val.EvalDerivative(0,  TsRight).Get<double>(), 0.0));
+    TF_AXIOM(_IsClose<double>(val.EvalDerivative(0,  TsRight).Get<double>(), 1.0));
     TF_AXIOM(_IsClose<double>(val.EvalDerivative(0,  TsLeft).Get<double>(),  0.0));
     TF_AXIOM(_IsClose<double>(val.EvalDerivative(10, TsRight).Get<double>(), 0.0));
-    TF_AXIOM(_IsClose<double>(val.EvalDerivative(10, TsLeft).Get<double>(),  0.0));
+    TF_AXIOM(_IsClose<double>(val.EvalDerivative(10, TsLeft).Get<double>(),  1.0));
     printf("\tpassed\n");
 
     val.Clear();
@@ -1524,10 +1524,10 @@ main(int argc, char **argv)
     TF_AXIOM(_IsClose<double>(val.Eval(0,  TsLeft),  VtValue(0.0)));
     TF_AXIOM(_IsClose<double>(val.Eval(10, TsRight), VtValue(10.0)));
     TF_AXIOM(_IsClose<double>(val.Eval(10, TsLeft),  VtValue(10.0)));
-    TF_AXIOM(_IsClose<double>(val.EvalDerivative(0,  TsRight), VtValue(0.0)));
+    TF_AXIOM(_IsClose<double>(val.EvalDerivative(0,  TsRight), VtValue(1.0)));
     TF_AXIOM(_IsClose<double>(val.EvalDerivative(0,  TsLeft),  VtValue(0.0)));
     TF_AXIOM(_IsClose<double>(val.EvalDerivative(10, TsRight), VtValue(0.0)));
-    TF_AXIOM(_IsClose<double>(val.EvalDerivative(10, TsLeft),  VtValue(0.0)));
+    TF_AXIOM(_IsClose<double>(val.EvalDerivative(10, TsLeft),  VtValue(1.0)));
     printf("\tpassed\n");
 
     // Test evaluation of cached segments.

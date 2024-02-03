@@ -133,6 +133,7 @@ pxr_test_scripts(
     testenv/testTsSplineAPI.py
     testenv/testTsKeyFrame.py
     testenv/testTsSimplify.py
+    testenv/testTsDerivatives.py
     testenv/tsTest_TsFramework.py
 )
 
@@ -163,6 +164,12 @@ pxr_register_test(
     testTsSimplify
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTsSimplify"
+)
+
+pxr_register_test(
+    testTsDerivatives
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTsDerivatives"
 )
 
 pxr_register_test(
