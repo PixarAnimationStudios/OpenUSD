@@ -1269,16 +1269,15 @@ class TetMesh "TetMesh" (
 class GeomSubset "GeomSubset" (
     inherits = </Typed>
     doc = """Encodes a subset of a piece of geometry (i.e. a UsdGeomImageable) 
-    as a set of indices. Currently only supports encoding of face-subsets and
-    point-subsets, but could be extended in the future to support subsets 
-    representing edges, segments, tetrahedrons, etc.
+    as a set of indices. Currently supports encoding subsets of faces, 
+    points, edges, and tetrahedrons.
 
     To apply to a geometric prim, a GeomSubset prim must be the prim's direct 
     child in namespace, and possess a concrete defining specifier (i.e. def). 
     This restriction makes it easy and efficient to discover subsets of a prim. 
     We might want to relax this restriction if it's common to have multiple 
     <b>families</b> of subsets on a gprim and if it's useful to be able to 
-    organize subsets belonging to a </b>family</b> under a common scope. See 
+    organize subsets belonging to a <b>family</b> under a common scope. See 
     'familyName' attribute for more info on defining a family of subsets.
 
     Note that a GeomSubset isn't an imageable (i.e. doesn't derive from
@@ -1293,25 +1292,34 @@ class GeomSubset "GeomSubset" (
         string extraIncludes = """
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usdGeom/imageable.h"
+#include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/tetMesh.h"
 """
     }
 )
 {
     uniform token elementType = "face" (
-        allowedTokens = ["face", "point", "edge"]
+        allowedTokens = ["face", "point", "edge", "tetrahedron"]
         doc = """The type of element that the indices target. "elementType" can
         have one of the following values:
-        <ul><li><b>face</b>: for a UsdGeomMesh, each element of the indices 
-        attribute would refer to an element of the Mesh's faceCounts 
-        attribute</li>
+        <ul><li><b>face</b>: Identifies faces on a Gprim's surface. For a 
+        UsdGeomMesh, each element of the _indices_ attribute would refer to 
+        an element of the Mesh's _faceCounts_ attribute. For a UsdGeomTetMesh,
+        each element of the _indices_ attribute would refer to an element of
+        the Mesh's _surfaceFaceVertexIndices_ attribute.</li>
         <li><b>point</b>: for any UsdGeomPointBased, each 
-        element of the indices attribute would refer to an element of the 
-        Mesh's points attribute</li>
+        element of the _indices_ attribute would refer to an element of the 
+        Mesh's _points_ attribute</li>
         <li><b>edge</b>: for any UsdGeomMesh, each pair of elements
-        in the indices attribute would refer to a pair of points of the 
-        Mesh's points attribute that are connected as an implicit edge on the 
-        Mesh. These edges are derived from the Mesh's faceVertexIndices \
-        attribute.
+        in the _indices_ attribute would refer to a pair of points of the 
+        Mesh's _points_ attribute that are connected as an implicit edge on the 
+        Mesh. These edges are derived from the Mesh's _faceVertexIndices_ 
+        attribute. Edges are not currently defined for a UsdGeomTetMesh, but
+        could be derived from all tetrahedron edges or surface face edges only 
+        if a specific use-case arises.</li>
+        <li><b>tetrahedron</b>: for any UsdGeomTetMesh, each element of the 
+        _indices_ attribute would refer to an element of the TetMesh's 
+        _tetVertexIndices_ attribute.
         </li></ul>"""
     )
     int[] indices = [] (

@@ -461,15 +461,31 @@ _GetElementCountAtTime(
 
     if (elementType == UsdGeomTokens->face) {
         // XXX: Use UsdGeomMesh schema to get the face count.
-        const UsdAttribute fvcAttr = geom.GetPrim().GetAttribute(
-            UsdGeomTokens->faceVertexCounts);
-        if (fvcAttr) {
-            VtIntArray faceVertexCounts;
-            if (fvcAttr.Get(&faceVertexCounts, time)) {
-                elementCount = faceVertexCounts.size();
+        const UsdPrim prim = geom.GetPrim();
+        if (prim.IsA<UsdGeomMesh>()) {
+            const UsdAttribute fvcAttr = prim.GetAttribute(
+                UsdGeomTokens->faceVertexCounts);
+            if (fvcAttr) {
+                VtIntArray faceVertexCounts;
+                if (fvcAttr.Get(&faceVertexCounts, time)) {
+                    elementCount = faceVertexCounts.size();
+                }
+                if (isCountTimeVarying) {
+                    *isCountTimeVarying = fvcAttr.ValueMightBeTimeVarying();
+                }
             }
-            if (isCountTimeVarying) {
-                *isCountTimeVarying = fvcAttr.ValueMightBeTimeVarying();
+        } else if (prim.IsA<UsdGeomTetMesh>()) {
+            const UsdAttribute sfviAttr = prim.GetAttribute(
+                UsdGeomTokens->surfaceFaceVertexIndices);
+            
+            if (sfviAttr) {
+                VtVec3iArray surfaceFaceVertexIndices;
+                if (sfviAttr.Get(&surfaceFaceVertexIndices, time)) {
+                    elementCount = surfaceFaceVertexIndices.size();
+                }
+                if (isCountTimeVarying) {
+                    *isCountTimeVarying = sfviAttr.ValueMightBeTimeVarying();
+                }
             }
         }
     } else if (elementType == UsdGeomTokens->point) {
@@ -498,12 +514,47 @@ _GetElementCountAtTime(
                                         fviAttr.ValueMightBeTimeVarying();
             }
         }
+    } else if (elementType == UsdGeomTokens->tetrahedron) {
+        const UsdAttribute tviAttr = geom.GetPrim().GetAttribute(
+            UsdGeomTokens->tetVertexIndices);
+        if (tviAttr) {
+            VtVec4iArray tetVertexIndices;
+            if (tviAttr.Get(&tetVertexIndices, time)) {
+                elementCount = tetVertexIndices.size();
+            }
+            if (isCountTimeVarying) {
+                *isCountTimeVarying = tviAttr.ValueMightBeTimeVarying();
+            }
+        }
     } else {
         TF_CODING_ERROR("Unsupported element type '%s'.",
                         elementType.GetText());
     }
 
     return elementCount;
+}
+
+static bool _ValidateGeomType(const UsdGeomImageable &geom, const TfToken &elementType) {
+    const UsdPrim prim = geom.GetPrim();
+    if (prim.IsA<UsdGeomMesh>()) {
+        if (elementType != UsdGeomTokens->face && elementType != UsdGeomTokens->point 
+            && elementType != UsdGeomTokens->edge) {
+            TF_CODING_ERROR("Unsupported element type '%s' for prim type Mesh.",
+                            elementType.GetText());
+            return false;
+        }
+    } else if (prim.IsA<UsdGeomTetMesh>()) {
+        if (elementType != UsdGeomTokens->face && elementType != UsdGeomTokens->tetrahedron) {
+            TF_CODING_ERROR("Unsupported element type '%s' for prim type TetMesh.",
+                            elementType.GetText());
+            return false;
+        }
+    } else {
+        TF_CODING_ERROR("Unsupported prim type '%s'.",
+                        elementType.GetText());
+        return false;
+    }
+    return true;
 }
 
 /* static */
@@ -514,6 +565,11 @@ UsdGeomSubset::GetUnassignedIndices(
     const TfToken &familyName,
     const UsdTimeCode &time /* UsdTimeCode::EarliestTime() */)
 {
+    VtIntArray result;
+    if (!_ValidateGeomType(geom, elementType)) {
+        return result;
+    }
+
     std::vector<UsdGeomSubset> subsets = UsdGeomSubset::GetGeomSubsets(
             geom, elementType, familyName);
     
@@ -538,7 +594,6 @@ UsdGeomSubset::GetUnassignedIndices(
 
     const size_t elementCount = _GetElementCountAtTime(geom, elementType, time);
 
-    VtIntArray result;
     if (assignedIndices.empty()) {
         result.reserve(elementCount);
         for (size_t idx = 0 ; idx < elementCount ; ++idx) 
@@ -719,10 +774,9 @@ UsdGeomSubset::ValidateFamily(
     const TfToken &familyName,
     std::string * const reason)
 {
-    if (elementType != UsdGeomTokens->face && elementType != UsdGeomTokens->point 
-            && elementType != UsdGeomTokens->edge) {
-        TF_CODING_ERROR("Unsupported element type '%s'.",
-                        elementType.GetText());
+    if (!_ValidateGeomType(geom, elementType)) {
+        *reason += TfStringPrintf("Invalid geom type for elementType %s.\n", 
+                elementType.GetText());
         return false;
     }
 
