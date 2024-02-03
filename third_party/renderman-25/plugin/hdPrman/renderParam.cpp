@@ -69,6 +69,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (sourceName)
     (sourceType)
     (lpe)
+
+    // See PxrDisplayChannelAPI
+    ((riDisplayChannelNamespace,    "ri:displayChannel:"))
 );
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -1365,14 +1368,19 @@ _ToRenderOutputType(const TfToken &t)
     }
 }
 
-// Helper to convert a dictionary of Hydra settings to Riley params.
+// Helper to convert a dictionary of Hydra settings to Riley params,
+// stripping the namespace prefix if provided.
 static
 RtParamList
-_ToRtParamList(VtDictionary const& dict)
+_ToRtParamList(VtDictionary const& dict, TfToken prefix=TfToken())
 {
     RtParamList params;
     for (auto const& entry: dict) {
-        RtUString riName(entry.first.c_str());
+        std::string key = entry.first;
+        if (TfStringStartsWith(key, prefix.GetString())) {
+            key = key.substr(prefix.size());
+        }
+        RtUString riName(key.c_str());
         HdPrman_Utils::SetParamFromVtValue(riName, entry.second,
                                            /* role = */ TfToken(), &params);
     }
@@ -1422,26 +1430,45 @@ _ComputeRenderViewDesc(
     
     for (const VtValue &renderVarVal : renderVars) {
         const VtDictionary renderVar = renderVarVal.Get<VtDictionary>();
+
         const std::string &nameStr =
             VtDictionaryGet<std::string>(
                 renderVar,
                 HdPrmanExperimentalRenderSpecTokens->name);
-        const RtUString name(nameStr.c_str());
+        const std::string &sourceNameStr =
+            VtDictionaryGet<std::string>(
+                renderVar,
+                HdPrmanExperimentalRenderSpecTokens->sourceName);
+        const TfToken sourceType =
+            VtDictionaryGet<TfToken>(
+                renderVar,
+                HdPrmanExperimentalRenderSpecTokens->sourceType);
+
+        // Map renderVar to RenderMan AOV name and source.
+        // For LPE's, we use the name of the prim rather than the LPE,
+        // and include an "lpe:" prefix on the source.
+        const RtUString aovName( (sourceType == _tokens->lpe)
+            ? nameStr.c_str()
+            : sourceNameStr.c_str());
+        const RtUString sourceName( (sourceType == _tokens->lpe)
+            ? ("lpe:" + sourceNameStr).c_str()
+            : sourceNameStr.c_str());
 
         HdPrman_RenderViewDesc::RenderOutputDesc renderOutputDesc;
-        renderOutputDesc.name = name;
+        renderOutputDesc.name = aovName;
         renderOutputDesc.type = _ToRenderOutputType(
             TfToken(
                 VtDictionaryGet<std::string>(
                     renderVar,
                     HdPrmanExperimentalRenderSpecTokens->type)));
-        renderOutputDesc.sourceName = name;
+        renderOutputDesc.sourceName = sourceName;
         renderOutputDesc.rule = RixStr.k_filter;
         renderOutputDesc.params = _ToRtParamList(
             VtDictionaryGet<VtDictionary>(
                 renderVar,
                 HdPrmanExperimentalRenderSpecTokens->params,
-                VtDefault = VtDictionary()));
+                VtDefault = VtDictionary()),
+            _tokens->riDisplayChannelNamespace);
         renderViewDesc.renderOutputDescs.push_back(renderOutputDesc);
     }
     
@@ -1532,22 +1559,29 @@ _ComputeRenderViewDesc(
         displayDesc.renderOutputIndices.push_back(renderVarIndex);
         renderVarIndex++;
 
-        // Map renderVar sourceName to Ri name.
-        std::string varSourceName = (renderVar.sourceType == _tokens->lpe) 
-            ? _tokens->lpe.GetString() + ":" + renderVar.sourceName
+        // Map renderVar to RenderMan AOV name and source.
+        // For LPE's, we use the name of the prim rather than the LPE,
+        // and include an "lpe:" prefix on the source.
+        std::string aovNameStr = (renderVar.sourceType == _tokens->lpe)
+            ? renderVar.varPath.GetName()
             : renderVar.sourceName;
-        const RtUString sourceName(varSourceName.c_str());
+        std::string sourceNameStr = (renderVar.sourceType == _tokens->lpe) 
+            ? "lpe:" + renderVar.sourceName
+            : renderVar.sourceName;
+        const RtUString aovName(aovNameStr.c_str());
+        const RtUString sourceName(sourceNameStr.c_str());
 
         // Create a RenderOutputDesc for this RenderVar and add it to the 
         // renderViewDesc.
         // Note that we are not using the renderOutputIndices passed into 
         // this function, we are instead relying on the indices stored above
         std::vector<size_t> renderOutputIndices;
-        _AddRenderOutput(sourceName, 
+        _AddRenderOutput(aovName, 
                         renderVar.dataType, 
                         HdFormatInvalid, // using renderVar.dataType
                         sourceName, 
-                        _ToRtParamList(renderVar.namespacedSettings),
+                        _ToRtParamList(renderVar.namespacedSettings,
+                                       _tokens->riDisplayChannelNamespace),
                         &renderViewDesc.renderOutputDescs,
                         &renderOutputIndices);
     }
