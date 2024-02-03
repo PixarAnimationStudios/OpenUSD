@@ -401,7 +401,12 @@ public:
     /// Utility for getting the list of indices that are not assigned to any of 
     /// the GeomSubsets in the \p familyName family on the given \p geom at the 
     /// timeCode, \p time, given the element count (total number of indices in 
-    /// the array being subdivided), \p elementCount.
+    /// the array being subdivided).
+    ///
+    /// For \p elementType UsdGeomTokens->edge, the output array of indices 
+    /// should be interpreted in pairs, as each sequential pair of indices
+    /// corresponds to an edge between the two points. Each edge will be in
+    /// the order (lowIndex, highIndex).
     ///
     /// If the \p elementType is not applicable to the given \p geom, an empty
     /// array is returned and a coding error is issued.
@@ -467,6 +472,13 @@ public:
         const TfToken &elementType,
         const TfToken &familyName,
         std::string * const reason);
+
+private:
+    /// Utility to get edges at time \p t from the indices attribute 
+    /// where every sequential pair of indices is interpreted as an edge.
+    /// Returned edges are stored in the order (lowIndex, highIndex).
+    /// Assumes the elementType is edge.
+    VtVec2iArray _GetEdges(const UsdTimeCode t) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

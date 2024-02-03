@@ -557,6 +557,22 @@ static bool _ValidateGeomType(const UsdGeomImageable &geom, const TfToken &eleme
     return true;
 }
 
+VtVec2iArray UsdGeomSubset::_GetEdges(const UsdTimeCode t) const {
+    VtVec2iArray subsetIndices;
+    VtIntArray indicesAttr;
+    this->GetIndicesAttr().Get(&indicesAttr, t);
+
+    subsetIndices.reserve(indicesAttr.size() / 2);
+    for (size_t i = 0; i < indicesAttr.size() / 2; ++i) {
+        int pointA = indicesAttr[2*i];
+        int pointB = indicesAttr[2*i+1];
+        subsetIndices.emplace_back(GfVec2i(std::min(pointA, pointB),
+                                            std::max(pointA, pointB)));
+    }
+
+    return subsetIndices;
+}
+
 /* static */
 VtIntArray
 UsdGeomSubset::GetUnassignedIndices(
@@ -572,48 +588,72 @@ UsdGeomSubset::GetUnassignedIndices(
 
     std::vector<UsdGeomSubset> subsets = UsdGeomSubset::GetGeomSubsets(
             geom, elementType, familyName);
-    
-    std::set<int> assignedIndices;
-    for (const auto &subset : subsets) {
-        VtIntArray indices;
-        subset.GetIndicesAttr().Get(&indices, time);
-        assignedIndices.insert(indices.begin(), indices.end());
-    }
-
-    // This is protection against the possibility that any of the subsets can
-    // erroneously contain negative valued indices. Even though negative indices
-    // are invalid, their presence breaks the assumption in the rest of this 
-    // function that all indices are nonnegative. This can lead to crashes.
-    // 
-    // Negative indices should be extremely rare which is why it's better to 
-    // check and remove them after the collection of assigned indices rather 
-    // than during.
-    while (!assignedIndices.empty() && *assignedIndices.begin() < 0) {
-        assignedIndices.erase(assignedIndices.begin());
-    }
 
     const size_t elementCount = _GetElementCountAtTime(geom, elementType, time);
 
-    if (assignedIndices.empty()) {
-        result.reserve(elementCount);
-        for (size_t idx = 0 ; idx < elementCount ; ++idx) 
-            result.push_back(idx);
-    } else {
-        std::vector<int> allIndices;
-        allIndices.reserve(elementCount);
-        for (size_t idx = 0 ; idx < elementCount ; ++idx) 
-            allIndices.push_back(idx);
-
-        const unsigned int lastAssigned = *assignedIndices.rbegin();
-        if (elementCount > lastAssigned) {
-            result.reserve(elementCount - assignedIndices.size());
-        } else {
-            result.reserve(std::min(
-                elementCount, (lastAssigned + 1) - assignedIndices.size()));
+    if (elementType != UsdGeomTokens->edge) {
+        std::set<int> assignedIndices;
+        for (const auto &subset : subsets) {
+            VtIntArray indices;
+            subset.GetIndicesAttr().Get(&indices, time);
+            assignedIndices.insert(indices.begin(), indices.end());
         }
-        std::set_difference(allIndices.begin(), allIndices.end(), 
-            assignedIndices.begin(), assignedIndices.end(), 
-            std::back_inserter(result));
+
+        // This is protection against the possibility that any of the subsets can
+        // erroneously contain negative valued indices. Even though negative indices
+        // are invalid, their presence breaks the assumption in the rest of this 
+        // function that all indices are nonnegative. This can lead to crashes.
+        // 
+        // Negative indices should be extremely rare which is why it's better to 
+        // check and remove them after the collection of assigned indices rather 
+        // than during.
+        while (!assignedIndices.empty() && *assignedIndices.begin() < 0) {
+            assignedIndices.erase(assignedIndices.begin());
+        }
+
+        if (assignedIndices.empty()) {
+            result.reserve(elementCount);
+            for (size_t idx = 0 ; idx < elementCount ; ++idx) 
+                result.push_back(idx);
+        } else {
+            std::vector<int> allIndices;
+            allIndices.reserve(elementCount);
+            for (size_t idx = 0 ; idx < elementCount ; ++idx) 
+                allIndices.push_back(idx);
+
+            const unsigned int lastAssigned = *assignedIndices.rbegin();
+            if (elementCount > lastAssigned) {
+                result.reserve(elementCount - assignedIndices.size());
+            } else {
+                result.reserve(std::min(
+                    elementCount, (lastAssigned + 1) - assignedIndices.size()));
+            }
+            std::set_difference(allIndices.begin(), allIndices.end(), 
+                assignedIndices.begin(), assignedIndices.end(), 
+                std::back_inserter(result));
+        }
+    } else {
+        std::set<GfVec2i, cmpEdge> edgesOnPrim;
+        if (_GetEdgesFromPrim(geom, time, edgesOnPrim)) {
+            VtVec2iArray edgesInFamily;
+            for (const auto &subset : subsets) {
+                VtVec2iArray subsetEdges = subset._GetEdges(time);
+                std::copy(subsetEdges.begin(), subsetEdges.end(), 
+                        std::back_inserter(edgesInFamily));
+            }
+
+            struct cmpEdge e;
+            std::vector<GfVec2i> unassignedEdges;
+            std::set_difference(edgesOnPrim.begin(), edgesOnPrim.end(), 
+                    edgesInFamily.begin(), edgesInFamily.end(), 
+                    std::inserter(unassignedEdges, unassignedEdges.begin()), e);
+
+            result.reserve(elementCount);
+            for (GfVec2i edge : unassignedEdges) {
+                result.push_back(edge[0]);
+                result.push_back(edge[1]);
+            }
+        }
     }
 
     return result;
@@ -897,17 +937,7 @@ UsdGeomSubset::ValidateFamily(
             // Check for duplicate edges if elementType is edge
             std::set<GfVec2i, cmpEdge> edgesInFamily;
             for (const UsdGeomSubset &subset : familySubsets) {
-                VtVec2iArray subsetIndices;
-                VtIntArray indicesAttr;
-                subset.GetIndicesAttr().Get(&indicesAttr, t);
-
-                subsetIndices.reserve(indicesAttr.size() / 2);
-                for (size_t i = 0; i < indicesAttr.size() / 2; ++i) {
-                    int pointA = indicesAttr[2*i];
-                    int pointB = indicesAttr[2*i+1];
-                    subsetIndices.emplace_back(GfVec2i(std::min(pointA, pointB),
-                                                        std::max(pointA, pointB)));
-                }
+                VtVec2iArray subsetIndices = subset._GetEdges(t);
 
                 if (!familyIsRestricted) {
                     edgesInFamily.insert(subsetIndices.begin(), subsetIndices.end());

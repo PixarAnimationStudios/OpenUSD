@@ -9,6 +9,12 @@ def Xform "Sphere" (
     kind = "component"
 )
 {
+    def Mesh "SimpleEdges"
+    {
+        int[] faceVertexCounts = [4, 4]
+        int[] faceVertexIndices = [0, 1, 5, 4, 0, 1, 2, 3]
+        PointFloat[] points = [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619), (9.32115e-07, 7.10811, -1.57832e-15), (-7.10811, 6.2141e-07, -1.37981e-22)]
+    }
 
     def TetMesh "TetMesh"
     {

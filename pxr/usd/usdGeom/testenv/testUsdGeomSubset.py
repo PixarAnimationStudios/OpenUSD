@@ -127,6 +127,50 @@ class testUsdGeomSubset(unittest.TestCase):
         self._TestSubsetValidity(geom, varyingGeom, nullGeom, UsdGeom.Tokens.face)
 
 
+    def test_GetUnassignedIndicesForEdges(self):
+        testFile = "Sphere.usda"
+        stage = Usd.Stage.Open(testFile)
+        sphere = stage.GetPrimAtPath("/Sphere/SimpleEdges")
+        geom = UsdGeom.Imageable(sphere)
+        self.assertTrue(geom)
+
+        newSubset = UsdGeom.Subset.CreateGeomSubset(geom, 'testEdge', 
+            UsdGeom.Tokens.edge, indices=Vt.IntArray())
+        newSubset.GetFamilyNameAttr().Set('testEdgeFamily')
+
+        # Indices are empty when unassigned.
+        self.assertEqual(newSubset.GetIndicesAttr().Get(), Vt.IntArray())
+        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices(geom, 
+                         UsdGeom.Tokens.edge, "testEdgeFamily"), 
+                         Vt.IntArray([0, 1, 0, 3, 0, 4, 1, 2, 1, 5, 2, 3, 4, 5]))
+
+        # Some indices are assigned
+        indices = [0, 1, 5, 4]
+        newSubset.GetIndicesAttr().Set(indices)
+        self.assertEqual(list(newSubset.GetIndicesAttr().Get()), indices)
+        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices(geom, 
+                         UsdGeom.Tokens.edge, "testEdgeFamily"), 
+                         Vt.IntArray([0, 3, 0, 4, 1, 2, 1, 5, 2, 3]))
+
+        # All indices are assigned
+        indices = [0, 1, 0, 3, 0, 4, 1, 2, 1, 5, 2, 3, 4, 5]
+        newSubset.GetIndicesAttr().Set(indices)
+        self.assertEqual(list(newSubset.GetIndicesAttr().Get()), indices)
+        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices(geom, 
+                         UsdGeom.Tokens.edge, "testEdgeFamily"), 
+                         Vt.IntArray())
+
+        # Confirm GetUnassignedIndices still works with invalid indices
+        invalidIndices = [0, 1, 0, 3, 0, 4, 1, 2, 2, 3, 4, 5, 7, -1]
+        newSubset = UsdGeom.Subset.CreateGeomSubset(geom, 'testEdge', 
+            UsdGeom.Tokens.edge, indices=invalidIndices)
+        newSubset.GetFamilyNameAttr().Set('testEdgeFamily')
+        self.assertEqual(list(newSubset.GetIndicesAttr().Get()), invalidIndices)
+        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices(geom, 
+                         UsdGeom.Tokens.edge, "testEdgeFamily"), 
+                         Vt.IntArray([1, 5]))
+
+
     def test_CreateGeomSubset(self):
         testFile = "Sphere.usda"
         stage = Usd.Stage.Open(testFile)
