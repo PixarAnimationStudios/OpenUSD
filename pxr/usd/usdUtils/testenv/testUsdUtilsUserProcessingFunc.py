@@ -109,15 +109,14 @@ class TestUsdUtilsUserProcessFunc(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tempDir:
             def TestUserFunc(layer, depInfo):
                 root, ext = os.path.splitext(depInfo.assetPath)
-                if ext != ".usda":
+                if ext != '.usda':
                     return depInfo
                 
                 sourceDepLayer = Sdf.Layer.FindOrOpenRelativeToLayer(
                     layer, depInfo.assetPath)
-                crateFileName = root + ".usdc"
+                crateFileName = root + '.usdc'
                 cratePath = os.path.join(tempDir, crateFileName)
                 sourceDepLayer.Export(cratePath)
-
                 return UsdUtils.DependencyInfo(cratePath)
         
             rootPath = 'fileFormatConversion/root.usda'
@@ -133,6 +132,42 @@ class TestUsdUtilsUserProcessFunc(unittest.TestCase):
             ]
 
             self._CheckLocalizedPackageContents(localizationDir, expectedFiles)
+
+    def test_CachedProcessingFuncValues(self):
+        """Tests that the system caches processed asset path values and only
+           invokes the callback once for each layer / path pair"""
+        
+        processedPaths = set()
+        def TestUserFunc(layer, depInfo):
+            self.assertTrue(depInfo.assetPath not in processedPaths)
+            processedPaths.add(depInfo.assetPath)
+
+            name, _ = os.path.splitext(os.path.basename(depInfo.assetPath))
+
+            if name.startswith('modify'):
+                return UsdUtils.DependencyInfo('./modified.usda')
+            elif name.startswith('remove'):
+                return UsdUtils.DependencyInfo()
+            else:
+                return depInfo
+            
+        rootPath = 'duplicatePaths/root.usda'
+        localizationDir = 'duplicatePaths_localized'
+        localizedRoot = os.path.join(localizationDir, 'root.usda')
+
+        self._Localize(rootPath, localizationDir, TestUserFunc)
+        self.assertIsNotNone(Usd.Stage.Open(localizedRoot))
+
+        self.assertSetEqual(processedPaths, 
+            {'./default.usda', './modify.usda', './remove.usda'})
+
+        expectedFiles = [
+            'default.usda',
+            'modified.usda',
+            'root.usda'
+        ]
+
+        self._CheckLocalizedPackageContents(localizationDir, expectedFiles)
 
     def _Localize(self, rootPath, localizationDir, userFunc):
         if os.path.isdir(localizationDir):

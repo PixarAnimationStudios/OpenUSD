@@ -37,6 +37,7 @@
 #include "pxr/base/trace/trace.h"
 
 #include <functional>
+#include <unordered_set>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -66,13 +67,11 @@ struct UsdUtils_ComputeAllDependenciesClient
     UsdUtilsDependencyInfo 
     Process( 
         const SdfLayerRefPtr &layer, 
-        const std::string & assetPath,
-        const std::vector<std::string> &dependencies,
+        const UsdUtilsDependencyInfo &depInfo,
         UsdUtils_DependencyType dependencyType)
     {
         
         if (processingFunc) {
-            UsdUtilsDependencyInfo depInfo = {assetPath, dependencies};
             UsdUtilsDependencyInfo processedInfo = 
                 processingFunc(layer, depInfo);
             
@@ -84,7 +83,7 @@ struct UsdUtils_ComputeAllDependenciesClient
             // such as clips or udim, if the user does not modify the
             // asset path, we do not want to place it in the resulting arrays
             // We always want to add dependencies, however
-            bool originalPathIsTemplate = !dependencies.empty();
+            bool originalPathIsTemplate = !depInfo.GetDependencies().empty();
             if (processedInfo != depInfo || !originalPathIsTemplate) {
                 PlaceAsset(layer, processedInfo.GetAssetPath(), dependencyType);
             }
@@ -96,11 +95,11 @@ struct UsdUtils_ComputeAllDependenciesClient
             return processedInfo;
         }
 
-        if (dependencies.empty()) {
-            PlaceAsset(layer, assetPath, dependencyType);
+        if (depInfo.GetDependencies().empty()) {
+            PlaceAsset(layer, depInfo.GetAssetPath(), dependencyType);
         }
         else {
-            for (const auto & dependency : dependencies) {
+            for (const auto & dependency : depInfo.GetDependencies()) {
                 PlaceAsset(layer, dependency, dependencyType);
             }
         }
@@ -139,19 +138,19 @@ struct UsdUtils_ComputeAllDependenciesClient
 
         if (resolvedPath.empty()) {
             if (PathShouldResolve(layer, resolvedPath, dependencyType)) {
-                unresolvedPaths.emplace_back(anchoredPath);
+                unresolvedPaths.insert(anchoredPath);
             }
         }
         else if (UsdStage::IsSupportedFile(anchoredPath)) {
-            layers.push_back(SdfLayer::FindOrOpen(anchoredPath));
+            layers.insert(SdfLayer::FindOrOpen(anchoredPath));
         }
         else {
-            assets.push_back(resolvedPath);
+            assets.insert(resolvedPath);
         }
     }
 
-    std::vector<SdfLayerRefPtr> layers;
-    std::vector<std::string> assets, unresolvedPaths;
+    std::unordered_set<SdfLayerRefPtr, TfHash> layers;
+    std::unordered_set<std::string> assets, unresolvedPaths;
     std::function<UsdUtilsProcessingFunc> processingFunc;
 };
 
@@ -173,24 +172,30 @@ UsdUtilsComputeAllDependencies(
     UsdUtils_ReadOnlyLocalizationDelegate delegate(
         std::bind(&UsdUtils_ComputeAllDependenciesClient::Process, &client,
             std::placeholders::_1, std::placeholders::_2, 
-            std::placeholders::_3, std::placeholders::_4));
+            std::placeholders::_3));
     UsdUtils_LocalizationContext context(&delegate);
     context.SetMetadataFilteringEnabled(true);
-
-    client.layers.emplace_back(rootLayer);
 
     if (!context.Process(rootLayer)) {
         return false;
     }
 
     if (outLayers) {
-        *outLayers = std::move(client.layers);
+        outLayers->push_back(rootLayer);
+        outLayers->insert(outLayers->end(), 
+            client.layers.begin(), client.layers.end());
+        std::sort(outLayers->begin() + 1, outLayers->end(), [](const SdfLayerRefPtr& a, const SdfLayerRefPtr& b) {
+            return a->GetRealPath() < b->GetRealPath();
+        });
     }
     if (outAssets) {
-        *outAssets = std::move(client.assets);
+        outAssets->assign(client.assets.begin(), client.assets.end());
+        std::sort(outAssets->begin(), outAssets->end());
     }
     if (outUnresolvedPaths) {
-        *outUnresolvedPaths = std::move(client.unresolvedPaths);
+        outUnresolvedPaths->assign(
+            client.unresolvedPaths.begin(), client.unresolvedPaths.end());
+        std::sort(outAssets->begin(), outAssets->end());
     }
 
     return true;

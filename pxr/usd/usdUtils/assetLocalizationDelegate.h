@@ -32,6 +32,8 @@
 #include "pxr/usd/usdUtils/dependencies.h"
 #include "pxr/usd/usdUtils/userProcessingFunc.h"
 
+#include "pxr/base/tf/hash.h"
+
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -54,6 +56,11 @@ enum class UsdUtils_DependencyType {
 // context.
 struct UsdUtils_LocalizationDelegate
 {
+    using ProcessingFunc = std::function<UsdUtilsDependencyInfo(
+        const SdfLayerRefPtr &layer, 
+        const UsdUtilsDependencyInfo &dependencyInfo,
+        UsdUtils_DependencyType dependencyType)>;
+
     virtual std::vector<std::string> ProcessSublayers(
         const SdfLayerRefPtr &layer) { return {}; }
 
@@ -110,6 +117,31 @@ struct UsdUtils_LocalizationDelegate
         std::vector<std::string> dependencies) { return {}; }
 };
 
+class UsdUtils_ProcessedPathCache {
+public:
+    UsdUtils_ProcessedPathCache(
+        const UsdUtils_LocalizationDelegate::ProcessingFunc &processingFun)
+        : _processingFunc(processingFun) {}
+
+    UsdUtilsDependencyInfo GetProcessedInfo(
+        const SdfLayerRefPtr &layer, 
+        const UsdUtilsDependencyInfo &dependencyInfo,
+        UsdUtils_DependencyType dependencyType);
+
+private:
+    using PathKey = std::tuple<std::string, std::string>;
+
+    struct ProcessedPathHash {
+        size_t operator()(const PathKey& key) const
+        {
+            return TfHash::Combine(std::get<0>(key), std::get<1>(key));
+        }
+    };
+
+    std::unordered_map<PathKey, std::string, ProcessedPathHash> _cachedPaths;
+    UsdUtils_LocalizationDelegate::ProcessingFunc _processingFunc;
+};
+
 // A Delegate which allows for modification and optional removal of
 // asset path values.  This delegate invokes a user supplied processing function
 // on every asset path it encounters.  It will update the path with the returned
@@ -118,14 +150,9 @@ class UsdUtils_WritableLocalizationDelegate
     : public UsdUtils_LocalizationDelegate
 {
 public:
-    using ProcessingFunc = std::function<UsdUtilsDependencyInfo(
-        const SdfLayerRefPtr &layer, 
-        const UsdUtilsDependencyInfo &dependencyInfo,
-        UsdUtils_DependencyType dependencyType)>;
-
     UsdUtils_WritableLocalizationDelegate(
         ProcessingFunc processingFunc)
-        :_processingFunc(processingFunc)
+        : _pathCache(processingFunc)
     {}
 
     virtual std::vector<std::string> ProcessSublayers(
@@ -218,8 +245,7 @@ private:
 
     static std::string _GetRelativeKeyPath(const std::string& fullPath);
 
-    // the user supplied processing function that will be invoked on every path.
-    ProcessingFunc _processingFunc;
+    UsdUtils_ProcessedPathCache _pathCache;
 
     SdfAssetPath _currentValuePath;
     VtArray<SdfAssetPath> _currentValuePathArray;
@@ -244,14 +270,8 @@ class UsdUtils_ReadOnlyLocalizationDelegate
 : public UsdUtils_LocalizationDelegate
 {
 public:
-    using ProcessingFunc = std::function<UsdUtilsDependencyInfo(
-            const SdfLayerRefPtr &layer, 
-            const std::string &assetPath,
-            const std::vector<std::string> &dependencies,
-            UsdUtils_DependencyType dependencyType)>;
-
     UsdUtils_ReadOnlyLocalizationDelegate(ProcessingFunc processingFunc)
-        : _processingFunc(processingFunc) {}
+        : _pathCache(processingFunc){}
 
     virtual std::vector<std::string> ProcessSublayers(
         const SdfLayerRefPtr &layer) override;
@@ -289,7 +309,7 @@ private:
         const SdfLayerRefPtr &layer,
         const std::vector<RefOrPayloadType>& appliedItems);
 
-    ProcessingFunc _processingFunc;
+    UsdUtils_ProcessedPathCache _pathCache;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
