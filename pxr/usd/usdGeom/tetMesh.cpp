@@ -180,6 +180,124 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // --(BEGIN CUSTOM CODE)--
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+
+GfVec3i
+_Sorted(GfVec3i v)
+{
+    if (v[0] > v[1]) {
+        std::swap(v[0], v[1]);
+    }
+    if (v[0] > v[2]) {
+        std::swap(v[0], v[2]);
+    }
+    if (v[1] > v[2]) {
+        std::swap(v[1], v[2]);
+    }
+    return v;
+}
+
+struct _Vec3iHash
+{
+    size_t operator()(const GfVec3i& v) const
+    {
+        return
+            static_cast<size_t>(v[0]) << 42 ^
+            static_cast<size_t>(v[1]) << 21 ^
+            static_cast<size_t>(v[2]);
+    }
+};
+
+struct _Vec3iCmp
+{
+    // Comparator function
+    bool operator()(const GfVec3i& f1, const GfVec3i &f2)
+    {
+        if (f1[0] == f2[0])
+        {
+            if (f1[1] == f2[1])
+            {
+                return f1[2] < f2[2];
+            }
+            
+            return f1[1] < f2[1];
+        }
+        
+        return f1[0] < f2[0];
+    }
+};    
+
+VtVec3iArray
+_ComputeSurfaceFaces(const VtVec4iArray &tetVertexIndices)
+{
+
+    // The surface faces are made of triangles that are not shared between
+    // tetrahedra and only occur once. We use a hashmap from triangles
+    // to counting information to see whether a triangle occurs in the
+    // hashmap just and thus is not shared. We then sweep the hashmap
+    // to find all triangles.
+    //
+    // Recall that a triangle is a triple of indices. But two triangles are
+    // shared if these two triples are related by a permutation. Thus, the
+    // key into the hashmap is the sorted triple which we call the signature.
+    //
+    // The value of the hashmap is a pair of (count, triple). The triple
+    // is stored next to the count so that we do not loose the orientation
+    // information that was lost when sorting the triple.
+    //
+    using SigToCountAndTriangle =
+        TfHashMap<GfVec3i, std::pair<size_t, GfVec3i>, _Vec3iHash>;
+
+    SigToCountAndTriangle sigToCountAndTriangle;
+
+    for (size_t t = 0; t < tetVertexIndices.size(); t++) {
+
+        const GfVec4i& tet = tetVertexIndices[t];
+
+        // The four triangles of a tetrahedron
+        static int tetFaceIndices[4][3] = {
+            {1,2,3},
+            {0,3,2},
+            {0,1,3},
+            {0,2,1}
+        };
+        
+        for (int tFace = 0; tFace < 4; tFace++) {
+
+            // A triangle of this tetrahedron.
+            const GfVec3i triangle(
+                tet[tetFaceIndices[tFace][0]],
+                tet[tetFaceIndices[tFace][1]],
+                tet[tetFaceIndices[tFace][2]]);
+
+            std::pair<size_t, GfVec3i> &item =
+                sigToCountAndTriangle[_Sorted(triangle)];
+            item.first++;
+            item.second = triangle;
+        }  
+    }          
+
+    VtVec3iArray result;
+    // Reserve one surface face per tetrahedron.
+    // A tetrahedron can contribute up to 4 faces, but typically,
+    // most faces of tet mesh are shared. So this is really just
+    // a guess.
+    result.reserve(tetVertexIndices.size());
+
+    for(auto && [sig, countAndTriangle] : sigToCountAndTriangle) {
+        if (countAndTriangle.first == 1) {
+            result.push_back(countAndTriangle.second);
+        }
+    }
+    // Need to sort results for deterministic behavior across different 
+    // compiler/OS versions 
+    std::sort(result.begin(), result.end(), _Vec3iCmp());
+
+    return result;
+}
+
+}
+
 bool UsdGeomTetMesh::ComputeSurfaceFaces(const UsdGeomTetMesh& tetMesh,
                                          VtVec3iArray* surfaceFaceIndices,
                                          const UsdTimeCode timeCode) 
@@ -189,56 +307,12 @@ bool UsdGeomTetMesh::ComputeSurfaceFaces(const UsdGeomTetMesh& tetMesh,
     {
         return false;
     }
-    
-    // The four triangles of the tetrahedron
-    static int tetFaceIndices[4][3] = {
-        {1,2,3},
-        {0,3,2},
-        {0,1,3},
-        {0,2,1}
-    };
 
     const UsdAttribute& tetVertexIndicesAttr = tetMesh.GetTetVertexIndicesAttr();
     VtVec4iArray tetVertexIndices;
     tetVertexIndicesAttr.Get(&tetVertexIndices, timeCode);
-
-    // The surface faces are made of triangles that are not shared between
-    // tetrahedra and only occur once. We create a hashmap from face
-    // triangles to occurence counts and then run through all the triangles
-    // in the tetmesh incrementing the count. When we are done, we sweep
-    // the hashmap and gather the faces with one occurence.
-    TfHashMap<_IndexTri, size_t, 
-              _IndexTriHash, _IndexTriEquals> triangleCounts;
-
-    for (size_t t = 0; t < tetVertexIndices.size(); t++) {
-
-        const GfVec4i& tet = tetVertexIndices[t];
-        
-        for (int tFace = 0; tFace < 4; tFace++) {
-            
-            const _IndexTri faceId(tet[tetFaceIndices[tFace][0]],
-                                   tet[tetFaceIndices[tFace][1]],
-                                   tet[tetFaceIndices[tFace][2]]);            
-            triangleCounts[faceId]++;
-        }  
-    }          
     
-    // Take a guess and generously reserve one surface face
-    // per tetrahedron.  
-    surfaceFaceIndices->reserve(tetVertexIndices.size());
-
-    for(auto&& [first, second] : triangleCounts) {
-        if (second == 1) {
-            const _IndexTri& tri = first;
-            surfaceFaceIndices->push_back(tri.GetUnsortedIndices());
-        }
-    }
-    // Need to sort results for deterministic behavior across different 
-    // compiler/OS versions 
-    FaceVertexIndicesCompare comparator;
-    std::sort(surfaceFaceIndices->begin(), 
-              surfaceFaceIndices->end(), comparator);
-
+    *surfaceFaceIndices = _ComputeSurfaceFaces(tetVertexIndices);
     return true;
 }
 
