@@ -53,9 +53,11 @@ TF_DECLARE_REF_PTRS(HdFlatteningSceneIndex);
 /// A scene index that observes an input scene index and produces a comparable
 /// scene in which inherited state is represented at leaf prims.
 ///
-/// This kind of representation is typically required for legacy-style 
-/// render delegates that require all the information to be available at the
-/// leaf prims.
+/// This kind of representation is useful for render delegates that
+/// require some/all the information to be available at the leaf prims.
+/// It is also useful to express scene description composition functionality
+/// (e.g., material binding resolution that factors inherited opinions) via
+/// flattened data source provider(s).
 ///
 class HdFlatteningSceneIndex : public HdSingleInputFilteringSceneIndexBase
 {
