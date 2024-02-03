@@ -285,7 +285,7 @@ HdPrman_RenderSettings::DriveRenderPass(
     // to drive render pass execution are:
     // 1. In an application like usdrecord wherein the render delegate is
     //    not interactive and the render task has AOV bindings by enabling the
-    //    setting HD_PRMAN_RENDER_SETTINGS_PRIM_DRIVE_RENDER_PASS.
+    //    setting HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS.
     //
     // 2. The hdPrman test harness where the task does not have AOV bindings.
     // 
@@ -306,7 +306,7 @@ HdPrman_RenderSettings::DriveRenderPass(
 
     TF_DEBUG(HDPRMAN_RENDER_PASS).Msg(
         "Drive with RenderSettingsPrim = %d\n"
-        " - HD_PRMAN_RENDER_SETTINGS_PRIM_DRIVE_RENDER_PASS = %d\n"
+        " - HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS = %d\n"
         " - valid = %d\n"
         " - interactive renderDelegate %d\n",
         result, driveRenderPassWithAovBindings, IsValid(), interactive);
