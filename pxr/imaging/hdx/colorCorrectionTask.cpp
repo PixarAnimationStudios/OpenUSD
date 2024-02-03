@@ -1146,6 +1146,15 @@ HdxColorCorrectionTask::Execute(HdTaskContext* ctx)
     _GetTaskContextData(
         ctx, HdxAovTokens->colorIntermediate, &aovTextureIntermediate);
 
+    // We need to ensure the incoming color buffer is set to the correct layout
+    // ie: Shader Read Only Optimal
+    // since we are going to be sampling from this buffer and writing to a 
+    // color-corrected intermediate buffer.
+    // However, the intermediate color-corrected buffer is in the correct layout
+    // ie: Color Attachment Optimal.
+    // So, no layout transition there.
+    aovTexture->SubmitLayoutChange(HgiTextureUsageBitsShaderRead);
+
     if (!TF_VERIFY(_CreateBufferResources())) {
         return;
     }
@@ -1163,6 +1172,12 @@ HdxColorCorrectionTask::Execute(HdTaskContext* ctx)
     }
 
     _ApplyColorCorrection(aovTextureIntermediate);
+
+    // Before we ping-pong the buffers, we are going to ensure the color buffer 
+    // is converted to a Color Attachment Optimal layout.
+    // Hence, preserving the state atomicity of this pass.
+    // Otherwise, it's business as usual.
+    aovTexture->SubmitLayoutChange(HgiTextureUsageBitsColorTarget);
 
     // Toggle color and colorIntermediate
     _ToggleRenderTarget(ctx);
