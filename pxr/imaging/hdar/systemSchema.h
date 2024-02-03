@@ -79,7 +79,7 @@ public:
     /// Otherwise, this returns null.
     ///
     /// This operation will be linear in the length of \p fromPath.
-    HD_API
+    HDAR_API
     static HdContainerDataSourceHandle GetFromPath(
             HdSceneIndexBaseRefPtr const &inputScene,
             SdfPath const &fromPath,
