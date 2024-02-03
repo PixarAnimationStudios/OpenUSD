@@ -29,6 +29,11 @@ pxr_install_test_dir(
     DEST testUsdRecordSmallObject
 )
 
+pxr_install_test_dir(
+    SRC testenv/ExpressionVariableTest
+    DEST testUsdRecordExpressionTest
+)
+
 if (NOT PXR_HEADLESS_TEST_MODE)
 
     pxr_register_test(testUsdRecordSingleFrame
@@ -46,6 +51,12 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_register_test(testUsdRecordSmallObject
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord test.usda out.png"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testUsdRecordExpressionVariable
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord textureCard.usda out.png --vars TEXTURE=grid"
         EXPECTED_RETURN_CODE 0
     )
 
