@@ -119,7 +119,11 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->diskLight,
     HdPrimTypeTokens->cylinderLight,
     HdPrimTypeTokens->sphereLight,
+#if PXR_VERSION < 2302
+    HdPrmanTokens->meshLight,
+#else
     HdPrimTypeTokens->meshLight,
+#endif
     HdPrimTypeTokens->pluginLight,
     HdPrimTypeTokens->extComputation,
     HdPrimTypeTokens->coordSys,
@@ -350,15 +354,12 @@ HdRprim *
 HdPrmanRenderDelegate::CreateRprim(TfToken const& typeId,
                                     SdfPath const& rprimId)
 {
-    bool isMeshLight = false;
     if (typeId == HdPrmanTokens->meshLightSourceMesh) {
-        isMeshLight = true;
-        return new HdPrman_Mesh(rprimId, isMeshLight);
+        return new HdPrman_Mesh(rprimId, true /* isMeshLight */);
     } else if (typeId == HdPrmanTokens->meshLightSourceVolume) {
-        isMeshLight = true;
-        return new HdPrman_Volume(rprimId, isMeshLight);
+        return new HdPrman_Volume(rprimId, true /* isMeshLight */);
     } else if (typeId == HdPrimTypeTokens->mesh) {
-        return new HdPrman_Mesh(rprimId, isMeshLight);
+        return new HdPrman_Mesh(rprimId, false /* isMeshLight */);
     } else if (typeId == HdPrimTypeTokens->basisCurves) {
         return new HdPrman_BasisCurves(rprimId);
     } if (typeId == HdPrimTypeTokens->cone) {
@@ -370,7 +371,7 @@ HdPrmanRenderDelegate::CreateRprim(TfToken const& typeId,
     } else if (typeId == HdPrimTypeTokens->points) {
         return new HdPrman_Points(rprimId);
     } else if (typeId == HdPrimTypeTokens->volume) {
-        return new HdPrman_Volume(rprimId, isMeshLight);
+        return new HdPrman_Volume(rprimId, false /* isMeshLight */);
     } else {
         TF_CODING_ERROR("Unknown Rprim Type %s", typeId.GetText());
     }
@@ -404,7 +405,11 @@ HdPrmanRenderDelegate::CreateSprim(TfToken const& typeId,
                typeId == HdPrimTypeTokens->diskLight ||
                typeId == HdPrimTypeTokens->cylinderLight ||
                typeId == HdPrimTypeTokens->sphereLight ||
+#if PXR_VERSION < 2302
+               typeId == HdPrmanTokens->meshLight ||
+#else
                typeId == HdPrimTypeTokens->meshLight ||
+#endif
                typeId == HdPrimTypeTokens->pluginLight) {
         sprim = new HdPrmanLight(sprimId, typeId);
 
@@ -447,7 +452,11 @@ HdPrmanRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
                typeId == HdPrimTypeTokens->diskLight ||
                typeId == HdPrimTypeTokens->cylinderLight ||
                typeId == HdPrimTypeTokens->sphereLight ||
+#if PXR_VERSION < 2302
+               typeId == HdPrmanTokens->meshLight ||
+#else
                typeId == HdPrimTypeTokens->meshLight ||
+#endif
                typeId == HdPrimTypeTokens->pluginLight) {
         return new HdPrmanLight(SdfPath::EmptyPath(), typeId);
     } else if (typeId == HdPrimTypeTokens->extComputation) {

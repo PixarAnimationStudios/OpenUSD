@@ -31,6 +31,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_PRMAN_TOKENS                         \
+    (meshLight)                                 \
     (meshLightSourceMesh)                       \
     (meshLightSourceVolume)                     \
     (sourceGeom)
