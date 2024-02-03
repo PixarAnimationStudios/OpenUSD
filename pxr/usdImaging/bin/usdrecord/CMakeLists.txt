@@ -25,13 +25,13 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/SmallObjectTest
-    DEST testUsdRecordSmallObject
+    SRC testenv/RecordTest
+    DEST testUsdRecordSessionLayer
 )
 
 pxr_install_test_dir(
-    SRC testenv/ExpressionVariableTest
-    DEST testUsdRecordExpressionTest
+    SRC testenv/SmallObjectTest
+    DEST testUsdRecordSmallObject
 )
 
 if (NOT PXR_HEADLESS_TEST_MODE)
@@ -45,6 +45,12 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_register_test(testUsdRecordMultipleFrames
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord AnimCube.usda AnimCube.#.png --frames 1,5,10"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testUsdRecordSessionLayer
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --sessionLayer overrideDisplayColor.usda AnimCube.usda AnimCube_overrides.png"
         EXPECTED_RETURN_CODE 0
     )
 

@@ -127,12 +127,10 @@ def main():
             'more than one extra purpose, either use commas with no spaces or '
             'quote the argument and separate purposes by commas and/or spaces.'))
 
-    parser.add_argument('--vars', action='store', type=str, nargs='*',
-        dest='expressionVariables', metavar='NAME=VALUE',
-        help=(
-            'Specify expression variables and their values to override in '
-            'a session layer.  Currently, only string-valued variables '
-            'are supported.'))
+    parser.add_argument('--sessionLayer', action='store', type=str,
+        dest='sessionLayerPath', metavar='SESSIONLAYER',
+        help=("If specified, the stage will be opened with the "
+              "'sessionLayer' in place of the default anonymous layer."))
 
     # Note: The argument passed via the command line (disableGpu) is inverted
     # from the variable in which it is stored (gpuEnabled).
@@ -175,21 +173,20 @@ def main():
 
     purposes = args.purposes.replace(',', ' ').split()
 
-    # Prepare a session layer with requested expressionVariables
-    sessionLayer = Sdf.Layer.CreateAnonymous("usdrecord-session.usda",
-        {Sdf.FileFormat.Tokens.TargetArg: Usd.UsdFileFormat.Tokens.Target})
-    if args.expressionVariables:
-        exprVars = sessionLayer.expressionVariables
-        for entry in args.expressionVariables:
-            name, val = entry.split('=')
-            exprVars[name] = val
-        sessionLayer.expressionVariables = exprVars
-
     # Load the root layer.
     rootLayer = Sdf.Layer.FindOrOpen(args.usdFilePath)
     if not rootLayer:
         _Err('Could not open layer: %s' % args.usdFilePath)
         return 1
+
+    # Load the session layer.
+    if args.sessionLayerPath:
+        sessionLayer = Sdf.Layer.FindOrOpen(args.sessionLayerPath)
+        if not sessionLayer:
+            _Err('Could not open layer: %s' % args.sessionLayerPath)
+            return 1
+    else:
+        sessionLayer = Sdf.Layer.CreateAnonymous()
 
     # Open the USD stage, using a population mask if paths were given.
     if args.populationMask:
