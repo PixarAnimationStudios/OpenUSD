@@ -1371,30 +1371,11 @@ RtParamList
 _ToRtParamList(VtDictionary const& dict)
 {
     RtParamList params;
-    // TODO: Replace with VtVisitValue()
     for (auto const& entry: dict) {
         RtUString riName(entry.first.c_str());
-
-        if (entry.second.IsHolding<int>()) {
-            params.SetInteger(riName, entry.second.UncheckedGet<int>());
-        } else if (entry.second.IsHolding<float>()) {
-            params.SetFloat(riName, entry.second.UncheckedGet<float>());
-        } else if (entry.second.IsHolding<std::string>()) {
-            params.SetString(riName,
-                RtUString(entry.second.UncheckedGet<std::string>().c_str()));
-        } else if (entry.second.IsHolding<VtArray<int>>()) {
-            auto const& array = entry.second.UncheckedGet<VtArray<int>>();
-            params.SetIntegerArray(riName, array.data(), array.size());
-        } else if (entry.second.IsHolding<VtArray<float>>()) {
-            auto const& array = entry.second.UncheckedGet<VtArray<float>>();
-            params.SetFloatArray(riName, array.data(), array.size());
-        } else {
-            TF_CODING_ERROR("Unimplemented setting %s of type %s\n",
-                            entry.first.c_str(),
-                            entry.second.GetTypeName().c_str());
-        }
+        HdPrman_Utils::SetParamFromVtValue(riName, entry.second,
+                                           /* role = */ TfToken(), &params);
     }
-
     return params;
 }
 
