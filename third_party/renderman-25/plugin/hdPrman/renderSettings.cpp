@@ -179,7 +179,6 @@ _UpdateRileyCamera(
     riley::Riley *riley,
     const HdRenderIndex *renderIndex,
     const SdfPath &cameraPathFromProduct,
-    bool interactive,
     HdPrman_CameraContext *cameraContext)
 {
     if (cameraContext->IsInvalid()) {
@@ -187,11 +186,6 @@ _UpdateRileyCamera(
             "Updating riley camera %u using camera prim %s\n",
             cameraContext->GetCameraId().AsUInt32(),
             cameraContext->GetCameraPath().GetText());
-
-        // XXX This should come from the camera Sprim instead and should be
-        //     folded into UpdateRileyCameraAndClipPlanes.
-        //
-        cameraContext->SetFallbackShutterCurve(interactive);
 
         cameraContext->UpdateRileyCameraAndClipPlanes(riley, renderIndex);
         cameraContext->MarkValid();
@@ -376,7 +370,6 @@ HdPrman_RenderSettings::UpdateAndRender(
             param->AcquireRiley(),
             renderIndex,
             product.cameraPath,
-            interactive,
             &cameraContext);
         
         const GfVec2f shutter =

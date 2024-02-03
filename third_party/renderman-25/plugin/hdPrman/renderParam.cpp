@@ -3407,4 +3407,10 @@ HdPrman_RenderParam::GetInstancer(const SdfPath& id)
     return nullptr;
 }
 
+bool
+HdPrman_RenderParam::IsInteractive() const
+{
+    return _renderDelegate->IsInteractive();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -42,13 +42,6 @@ static const RtUString s_projectionNodeName("cam_projection");
 HdPrman_CameraContext::HdPrman_CameraContext()
   : _policy(CameraUtilFit)
   , _disableDepthOfField(false)
-  , _shutterOpenTime(0.0f)
-  , _shutterCloseTime(1.0f)
-  , _shutteropeningPoints{ // matches RenderMan default
-            0.0f, 0.0f, // points before open time
-            0.0f, 0.0f, 
-            1.0f, 0.0f, // points after close time
-            1.0f, 0.0f}
   , _invalid(false)
 {
 }
@@ -88,52 +81,6 @@ HdPrman_CameraContext::SetWindowPolicy(
     if (_policy != policy) {
         _policy = policy;
         _invalid = true;
-    }
-}
-
-void
-HdPrman_CameraContext::SetShutterCurve(const float shutterOpenTime,
-                                       const float shutterCloseTime,
-                                       const float shutteropeningPoints[8])
-{
-    if (_shutterOpenTime != shutterOpenTime) {
-        _shutterOpenTime = shutterOpenTime;
-        _invalid = true;
-    }
-    if (_shutterCloseTime != shutterCloseTime) {
-        _shutterCloseTime = shutterCloseTime;
-        _invalid = true;
-    }
-    size_t i = 0;
-    for (; i < TfArraySize(_shutteropeningPoints); i++) {
-        if (_shutteropeningPoints[i] != shutteropeningPoints[i]) {
-            _invalid = true;
-            break;
-        }
-    }
-    for (; i < TfArraySize(_shutteropeningPoints); i++) {
-        _shutteropeningPoints[i] = shutteropeningPoints[i];
-    }
-}
-
-void
-HdPrman_CameraContext::SetFallbackShutterCurve(bool isInteractive)
-{
-    if (isInteractive) {
-        // Open instantaneously, remain fully open for the duration of the
-        // shutter interval (set via the param RixStr.k_Ri_Shutter) and close
-        // instantaneously.
-        static const float pts[8] = {
-            0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f
-        };
-        SetShutterCurve(0.0f, 1.0f, pts);
-    } else {
-        // Open instantaneously and start closing immediately, rapidly at first
-        // decelerating until the end of the interval.
-        static const float pts[8] = {
-            0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.3f, 0.0f
-        };
-        SetShutterCurve(0.0f, 0.0f, pts);
     }
 }
 
@@ -438,30 +385,19 @@ HdPrman_CameraContext::_ComputeCameraParams(
         result.SetFloat(RixStr.k_farClip, clippingRange.GetMax());
     }
 
-    result.SetFloat(RixStr.k_shutterOpenTime, _shutterOpenTime);
-    result.SetFloat(RixStr.k_shutterCloseTime, _shutterCloseTime);
+    const HdPrmanCamera * const hdPrmanCamera =
+        dynamic_cast<const HdPrmanCamera * const>(camera);
+    const HdPrmanCamera::ShutterCurve &shutterCurve
+        = hdPrmanCamera->GetShutterCurve();
+        
+    result.SetFloat(RixStr.k_shutterOpenTime, shutterCurve.shutterOpenTime);
+    result.SetFloat(RixStr.k_shutterCloseTime, shutterCurve.shutterCloseTime);
     result.SetFloatArray(
         RixStr.k_shutteropening,
-        _shutteropeningPoints, TfArraySize(_shutteropeningPoints));
-
-    // XXX : Ideally we would want to set the proper shutter open and close,
-    // however we can not fully change the shutter without restarting
-    // Riley.
-    
-    // double const *shutterOpen =
-    //     _GetDictItem<double>(_params, HdCameraTokens->shutterOpen);
-    // if (shutterOpen) {
-    //     camParams->SetFloat(RixStr.k_shutterOpenTime, *shutterOpen);
-    // }
-    
-    // double const *shutterClose =
-    //     _GetDictItem<double>(_params, HdCameraTokens->shutterClose);
-    // if (shutterClose) {
-    //     camParams->SetFloat(RixStr.k_shutterCloseTime, *shutterClose);
-    // }
+        shutterCurve.shutterOpening.data(),
+        shutterCurve.shutterOpening.size());
 
     const GfVec4f s = _ToVec4f(screenWindow);
-    
     result.SetFloatArray(RixStr.k_Ri_ScreenWindow, s.data(), 4);
 
     return result;
