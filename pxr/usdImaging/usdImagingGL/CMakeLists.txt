@@ -280,6 +280,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLTetMesh
+    DEST testUsdImagingGLTetMesh
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdImagingGLPrimitiveDrawing
     DEST testUsdImagingGLPrimitiveDrawing
 )
@@ -1248,6 +1253,18 @@ pxr_register_test(testUsdImagingGLEmptyMesh
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLEmptyMesh
+)
+
+pxr_register_test(testUsdImagingGLTetMesh
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -offscreen -times 0 10 -stage tetMesh.usda -camera /Camera -write testUsdImagingGLTetMesh.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLTetMesh_000.png
+        testUsdImagingGLTetMesh_010.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLTetMesh
 )
 
 pxr_register_test(testUsdImagingGLPrimitiveDrawing

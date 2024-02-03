@@ -129,6 +129,7 @@ pxr_library(usdImaging
         sceneIndices
         sphereAdapter
         sphereLightAdapter
+        tetMeshAdapter
         textureUtils
         volumeAdapter
 
