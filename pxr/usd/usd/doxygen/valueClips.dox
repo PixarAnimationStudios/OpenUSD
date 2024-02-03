@@ -910,7 +910,7 @@ over "World"
                 asset manifestAssetPath = @./shot.manifest.usd@
                 string primPath = "/World/Model"
                 asset[] assetPaths = [@./clip1.usd@]
-                double2[] active = [(0, 0]
+                double2[] active = [(0, 0)]
                 double2[] times = [(0, 0), (25, 25), (25, 0), (50, 25)]
             }
         }
