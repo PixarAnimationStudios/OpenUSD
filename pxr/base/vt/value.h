@@ -1203,7 +1203,8 @@ public:
     template <typename T>
     static VtValue Cast(VtValue const &val) {
         VtValue ret = val;
-        return ret.Cast<T>();
+        ret.Cast<T>();
+        return ret;
     }
 
     /// Return a VtValue holding \c val cast to same type that \c other is
