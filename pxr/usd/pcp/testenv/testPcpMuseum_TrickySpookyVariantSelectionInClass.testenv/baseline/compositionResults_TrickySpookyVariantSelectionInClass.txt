@@ -175,4 +175,12 @@ Results for composing </Char/InheritTest/Y>
 Prim Stack:
     CharRig.sdf          /CharRig/InheritTest/Y
     CharRig.sdf          /CharRig/InheritTest/X/Anim
+    LegRig.sdf           /LegRig{LegRigStyle=2Leg}Anim
+
+Property names:
+     ['avarFor2LegStyle']
+
+Property stacks:
+/Char/InheritTest/Y.avarFor2LegStyle:
+    LegRig.sdf           /LegRig{LegRigStyle=2Leg}Anim.avarFor2LegStyle
 

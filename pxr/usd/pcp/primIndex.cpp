@@ -661,6 +661,14 @@ enum _ArcFlags {
 inline static size_t
 _ScanArcs(PcpNodeRef const& node)
 {
+    // If the node does not have specs or cannot contribute specs,
+    // we can avoid even enqueueing certain kinds of tasks that will
+    // end up being no-ops.
+    const bool contributesSpecs = node.HasSpecs() && node.CanContributeSpecs();
+    if (!contributesSpecs) {
+        return 0;
+    }
+
     size_t arcs = 0;
     SdfPath const& path = node.GetPath();
     for (SdfLayerRefPtr const& layer: node.GetLayerStack()->GetLayers()) {
@@ -687,6 +695,43 @@ _ScanArcs(PcpNodeRef const& node)
     return arcs;
 }
 
+// Scan all ancestors of the site represented by this node for the
+// presence of any variant arcs. See _ScanArcs for more details.
+inline static size_t
+_ScanAncestralVariantArcs(PcpNodeRef const& node)
+{
+    if (node.GetPath().IsAbsoluteRootPath()) {
+        return 0;
+    }
+
+    // Since this function is specific to *ancestral* variants, we
+    // start at the parent of this node's path and walk up until we
+    // are under the depth at which this node was restricted from
+    // contributing opinions.
+    SdfPath path = node.GetPath().GetParentPath();
+
+    if (const size_t restrictedDepth 
+            = node.GetSpecContributionRestrictedDepth(); 
+        restrictedDepth != 0) {
+
+        for (size_t numPathComponents = path.GetPathElementCount();
+             numPathComponents >= restrictedDepth && !path.IsAbsoluteRootPath();
+             --numPathComponents, path = path.GetParentPath()) {
+        }
+    }
+
+    PcpLayerStackRefPtr const& layerStack = node.GetLayerStack();
+    for (; !path.IsAbsoluteRootPath(); path = path.GetParentPath()) {
+        for (SdfLayerRefPtr const& layer : layerStack->GetLayers()) {
+            if (layer->HasField(path, SdfFieldKeys->VariantSetNames)) {
+                return _ArcFlagVariants;
+            }
+        }
+    }
+
+    return 0;
+}    
+
 ////////////////////////////////////////////////////////////////////////
 
 namespace {
@@ -702,11 +747,31 @@ struct Task {
         EvalNodeInherits,
         EvalImpliedClasses,
         EvalNodeSpecializes,
+
+        // XXX: 
+        // These ancestral variant set tasks should come after the implied
+        // specializes task below so that specializes nodes are in the
+        // correct strength-ordered location in the index. However, this
+        // conflicts with the way we current duplicate node subtrees for
+        // specializes and is difficult to fix, so for now we leave this
+        // as-is. We can revisit this if/when we remove the node 
+        // duplication as part of making specializes handling more efficient.
+        // 
+        // The main effect is that ancestral variant selections authored
+        // in specializes nodes may have a stronger strength ordering than
+        // they should.
+        EvalNodeAncestralVariantSets,
+        EvalNodeAncestralVariantAuthored,
+        EvalNodeAncestralVariantFallback,
+        EvalNodeAncestralVariantNoneFound,
+
         EvalImpliedSpecializes,
+
         EvalNodeVariantSets,
         EvalNodeVariantAuthored,
         EvalNodeVariantFallback,
         EvalNodeVariantNoneFound,
+
         EvalUnresolvedPrimPathError,
         None
     };
@@ -726,6 +791,8 @@ struct Task {
                 // on non-local information, so we must process these in 
                 // strength order.
                 return PcpCompareNodeStrength(a.node, b.node) == 1;
+            case EvalNodeAncestralVariantAuthored:
+            case EvalNodeAncestralVariantFallback:
             case EvalNodeVariantAuthored:
             case EvalNodeVariantFallback:
                 // Variant selections can depend on non-local information
@@ -733,18 +800,22 @@ struct Task {
                 if (a.node != b.node) {
                     return PcpCompareNodeStrength(a.node, b.node) == 1;
                 } else {
-                    // Lower-number vsets have strength priority.
-                    return a.vsetNum > b.vsetNum;
+                    // Variant tasks with the same node may be associated with
+                    // different paths. In this case, the order must be 
+                    // consistent but can be arbitrary.
+                    //
+                    // For variants at the same node and site path, lower-number
+                    // vsets have strength priority.
+                    return std::tie(a.vsetPath, a.vsetNum) >
+                        std::tie(b.vsetPath, b.vsetNum);
                 }
+            case EvalNodeAncestralVariantNoneFound:
             case EvalNodeVariantNoneFound:
                 // In the none-found case, we only need to ensure a consistent
                 // and distinct order for distinct tasks, the specific order can
                 // be arbitrary.
-                if (a.node != b.node) {
-                    return a.node > b.node;
-                } else {
-                    return a.vsetNum > b.vsetNum;
-                }
+                return std::tie(a.node, a.vsetPath, a.vsetNum) >
+                    std::tie(b.node, b.vsetPath, b.vsetNum);
             case EvalImpliedClasses:
                 // When multiple implied classes tasks are queued for different
                 // nodes, ordering matters in that ancestor nodes must be 
@@ -780,30 +851,30 @@ struct Task {
     { }
 
     Task(Type type, const PcpNodeRef& node,
-         std::string &&vsetName, int vsetNum)
+         const SdfPath& vsetPath, std::string &&vsetName, int vsetNum)
         : type(type)
         , vsetNum(vsetNum)
         , node(node)
         , vsetName(std::move(vsetName))
+        , vsetPath(vsetPath)
     { }
 
     Task(Type type, const PcpNodeRef& node,
-         std::string const &vsetName, int vsetNum)
-        : type(type)
-        , vsetNum(vsetNum)
-        , node(node)
-        , vsetName(vsetName)
+         const SdfPath& vsetPath, std::string const &vsetName, int vsetNum)
+        : Task(type, node, vsetPath, std::string(vsetName), vsetNum)
     { }
 
     // TfHash support.
     template <class HashState>
     friend void TfHashAppend(HashState &h, Task const &task) {
-        h.Append(task.type, task.node, task.vsetNum, task.vsetName);
+        h.Append(task.type, task.node, 
+            task.vsetNum, task.vsetName, task.vsetPath);
     }
 
     inline bool operator==(Task const &rhs) const {
         return type == rhs.type && node == rhs.node &&
-            vsetName == rhs.vsetName && vsetNum == rhs.vsetNum;
+            vsetPath == rhs.vsetPath && vsetName == rhs.vsetName &&
+            vsetNum == rhs.vsetNum;
     }
 
     inline bool operator!=(Task const &rhs) const { return !(*this == rhs); }
@@ -813,6 +884,7 @@ struct Task {
         std::swap(lhs.node, rhs.node);
         lhs.vsetName.swap(rhs.vsetName);
         std::swap(lhs.vsetNum, rhs.vsetNum);
+        std::swap(lhs.vsetPath, rhs.vsetPath);
     }
 
     // Stream insertion operator for debugging.
@@ -830,8 +902,9 @@ struct Task {
             task.node.GetPath().GetText(),
             TfStringify(task.node.GetSite()).c_str());
         if (!task.vsetName.empty()) {
-            os << TfStringPrintf(", vsetName=%s, vsetNum=%d",
-                                 task.vsetName.c_str(), task.vsetNum);
+            os << TfStringPrintf(
+                ", vsetPath=%s, vsetName=%s, vsetNum=%d",
+                task.vsetPath.GetText(), task.vsetName.c_str(), task.vsetNum);
         }
         return os << ")";
     }        
@@ -840,6 +913,7 @@ struct Task {
     int vsetNum; // << only for variant tasks.
     PcpNodeRef node;
     std::string vsetName; // << only for variant tasks.
+    SdfPath vsetPath; // << only for ancestral variant tasks.
 };
 
 }
@@ -853,6 +927,10 @@ TF_REGISTRY_FUNCTION(TfEnum) {
     TF_ADD_ENUM_NAME(Task::EvalImpliedClasses);
     TF_ADD_ENUM_NAME(Task::EvalNodeSpecializes);
     TF_ADD_ENUM_NAME(Task::EvalImpliedSpecializes);
+    TF_ADD_ENUM_NAME(Task::EvalNodeAncestralVariantSets);
+    TF_ADD_ENUM_NAME(Task::EvalNodeAncestralVariantAuthored);
+    TF_ADD_ENUM_NAME(Task::EvalNodeAncestralVariantFallback);
+    TF_ADD_ENUM_NAME(Task::EvalNodeAncestralVariantNoneFound);
     TF_ADD_ENUM_NAME(Task::EvalNodeVariantSets);
     TF_ADD_ENUM_NAME(Task::EvalNodeVariantAuthored);
     TF_ADD_ENUM_NAME(Task::EvalNodeVariantFallback);
@@ -1017,6 +1095,7 @@ struct Pcp_PrimIndexer
         bool skipTasksForExpressedArcs,
         bool skipCompletedNodesForImpliedSpecializes,
         bool evaluateUnresolvedPrimPathErrors,
+        bool evaluateAncestralVariants,
         bool isUsd) 
     {
 #ifdef PCP_DIAGNOSTIC_VALIDATION
@@ -1031,19 +1110,15 @@ struct Pcp_PrimIndexer
                 skipTasksForExpressedArcs, 
                 skipCompletedNodesForImpliedSpecializes,
                 evaluateUnresolvedPrimPathErrors,
+                evaluateAncestralVariants,
                 isUsd);
         }
-
-        // If the node does not have specs or cannot contribute specs,
-        // we can avoid even enqueueing certain kinds of tasks that will
-        // end up being no-ops.
-        const bool contributesSpecs = n.HasSpecs() && n.CanContributeSpecs();
 
         // Preflight scan for arc types that are present in specs.
         // This reduces pressure on the task queue, and enables more
         // data access locality, since we avoid interleaving tasks that
         // re-visit sites later only to determine there is no work to do.
-        const size_t arcMask = contributesSpecs ? _ScanArcs(n) : 0;
+        const size_t arcMask = _ScanArcs(n);
 
         // Only reference and payload arcs require the source prim to provide
         // opinions, so we only enqueue this task for those arcs.
@@ -1063,12 +1138,15 @@ struct Pcp_PrimIndexer
                 AddTask(Task(Task::Type::EvalNodeVariantSets, n));
             }
         } else {
-            // Payloads and variants have expensive
-            // sorting semantics, so do a preflight check
-            // to see if there is any work to do.
             if (evaluateVariants && (arcMask & _ArcFlagVariants)) {
                 AddTask(Task(Task::Type::EvalNodeVariantSets, n));
             }
+
+            if (evaluateAncestralVariants &&
+                _ScanAncestralVariantArcs(n) & _ArcFlagVariants) {
+                AddTask(Task(Task::Type::EvalNodeAncestralVariantSets, n));
+            }
+
             if (!skipTasksForExpressedArcs) {
                 // In some cases, we don't want to add the tasks for expressed 
                 // arcs because we're adding nodes from an already composed 
@@ -1105,13 +1183,15 @@ struct Pcp_PrimIndexer
             /*skipTasksForExpressedArcs=*/false,
             /*skipCompletedNodesForImpliedSpecializes=*/false,
             /*evaluateUnresolvedPrimPathErrors=*/false,
+            /*evaluateAncestralVariants=*/false,
             /*isUsd=*/inputs.usd);
     }
 
     void AddTasksForNode(
         const PcpNodeRef& n, 
         bool skipTasksForExpressedArcs,
-        bool skipCompletedNodesForImpliedSpecializes) {
+        bool skipCompletedNodesForImpliedSpecializes,
+        bool evaluateAncestralVariants) {
 
         // Any time we add an edge to the graph, we may need to update
         // implied class edges.
@@ -1166,6 +1246,7 @@ struct Pcp_PrimIndexer
             skipTasksForExpressedArcs, 
             skipCompletedNodesForImpliedSpecializes,
             evaluateUnresolvedPrimPathErrors,
+            evaluateAncestralVariants,
             inputs.usd);
 
         _DebugPrintTasks("After AddTasksForNode");
@@ -1198,6 +1279,12 @@ struct Pcp_PrimIndexer
                 t.type == Task::Type::EvalNodeVariantNoneFound) {
                 // Promote the type and re-heap this task.
                 t.type = Task::Type::EvalNodeVariantAuthored;
+                push_heap(tasks.begin(), i + 1, Task::PriorityOrder());
+            }
+            else if (t.type == Task::Type::EvalNodeAncestralVariantFallback ||
+                     t.type == Task::Type::EvalNodeAncestralVariantNoneFound) {
+                // Promote the type and re-heap this task.
+                t.type = Task::Type::EvalNodeAncestralVariantAuthored;
                 push_heap(tasks.begin(), i + 1, Task::PriorityOrder());
             }
         }
@@ -1590,7 +1677,14 @@ _AddArc(
         // No ancestral opinions.  Just add the single new site.
         newNode = parent.InsertChild(site, newArc, &newNodeError);
         if (newNode) {
-            newNode.SetInert(!opts.directNodeShouldContributeSpecs);
+            if (!opts.directNodeShouldContributeSpecs) {
+                newNode.SetInert(true);
+
+                // Override the contribution restriction depth to indicate
+                // that this node was not allowed to contribute specs directly
+                // or ancestrally.
+                newNode.SetSpecContributionRestrictedDepth(1);
+            }
 
             // Compose the existence of primSpecs and update the HasSpecs field 
             // accordingly.
@@ -1693,13 +1787,19 @@ _AddArc(
     // If we evaluated ancestral opinions, it it means the nested
     // call to Pcp_BuildPrimIndex() has already evaluated refs, payloads,
     // and inherits on this subgraph, so we can skip those tasks in this case 
-    // too.
+    // too. However, we skipped all ancestral variants, so if we're evaluating
+    // variants we need to consider those as well.
     opts.skipTasksForExpressedArcs |= opts.includeAncestralOpinions;
+
+    const bool evaluateAncestralVariants =
+        indexer->evaluateVariants && opts.includeAncestralOpinions;
 
     // Enqueue tasks to evaluate the new nodes.
     indexer->AddTasksForNode(
-        newNode, opts.skipTasksForExpressedArcs, 
-        opts.skipImpliedSpecializesCompletedNodes);
+        newNode, 
+        opts.skipTasksForExpressedArcs,
+        opts.skipImpliedSpecializesCompletedNodes,
+        evaluateAncestralVariants);
 
     // If the arc targets a site that is itself private, issue an error.
     if (newNode.GetPermission() == SdfPermissionPrivate) {
@@ -2367,6 +2467,16 @@ _ElideSubtree(
     else {
         node.SetInert(true);
     }
+
+    // _ElideSubtree is intended to prune the subtree starting at
+    // the given node from the graph so that it no longer contributes
+    // opinions. If this subtree is part of a recursive prim index
+    // computation, marking each node culled/inert will ensure we
+    // don't enqueue "direct" tasks at the subtree's namespace depth.
+    // We also override the spec contribution restricted depth to
+    // ensure "ancestral" tasks (e.g. ancestral variants) will also
+    // be skipped.
+    node.SetSpecContributionRestrictedDepth(1);
 
     TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
         _ElideSubtree(indexer, *child);
@@ -3631,6 +3741,20 @@ _EvalImpliedSpecializes(
 // Variants
 
 static bool
+_NodeCanContributeToVariant(
+    const PcpNodeRef& node,
+    const SdfPath& vsetPath)
+{
+    // This node can contribute opinions to variant sets at vsetPath
+    // if there were no restrictions to opinions from this node OR
+    // if the restriction to opinions occurred at a site that was
+    // deeper in namespace than vsetPath.
+    const size_t restrictionDepth = node.GetSpecContributionRestrictedDepth();
+    return restrictionDepth == 0 ||
+        restrictionDepth > vsetPath.GetPathElementCount();
+}
+
+static bool
 _ComposeVariantSelectionForNode(
     const PcpNodeRef& node,
     const SdfPath& pathInNode,
@@ -3651,16 +3775,21 @@ _ComposeVariantSelectionForNode(
     // If this node has an authored selection, use that.
     // Note that we use this even if the authored selection is
     // the empty string, which explicitly selects no variant.
-    if (node.CanContributeSpecs()) {
+    if (_NodeCanContributeToVariant(node, pathInNode)) {
         PcpLayerStackSite site(node.GetLayerStack(), pathInNode);
         // pathInNode is a namespace path, not a storage path,
         // so it will contain no variant selection (as verified above).
         // To find the storage site, we need to insert any variant
         // selection for this node.
         if (node.GetArcType() == PcpArcTypeVariant) {
+            // We need to use the variant node's path at introduction
+            // instead of it's current path (i.e. node.GetPath()) because
+            // pathInNode may be an ancestor of the current path when
+            // dealing with ancestral variants.
+            const SdfPath variantPath = node.GetPathAtIntroduction();
             site.path = pathInNode.ReplacePrefix(
-                node.GetPath().StripAllVariantSelections(),
-                node.GetPath());
+                variantPath.StripAllVariantSelections(),
+                variantPath);
         }
 
         std::unordered_set<std::string> exprVarDependencies;
@@ -3696,16 +3825,14 @@ _ComposeVariantSelectionForNode(
 static bool
 _FindPriorVariantSelection(
     const PcpNodeRef& node,
-    const SdfPath &pathInRoot,
-    int ancestorRecursionDepth,
+    const SdfPath &pathInNode,
     const std::string & vset,
     std::string *vsel,
     PcpNodeRef *nodeWithVsel)
 {
     // If this node represents a variant selection at the same
     // effective depth of namespace, then check its selection.
-    if (node.GetArcType() == PcpArcTypeVariant &&
-        node.GetDepthBelowIntroduction() == ancestorRecursionDepth) {
+    if (node.GetArcType() == PcpArcTypeVariant) {
         const SdfPath nodePathAtIntroduction = node.GetPathAtIntroduction();
         const std::pair<std::string, std::string> nodeVsel =
             nodePathAtIntroduction.GetVariantSelection();
@@ -3715,18 +3842,6 @@ _FindPriorVariantSelection(
             // represents the prim path we're choosing a variant selection for
             // (as opposed to a different prim path that just happens to have
             // a variant set with the same name.
-            // 
-            // Note that we have to map search prim path back down this node
-            // to compare it as it was mapped up to the root of this node's 
-            // graph before being passed to this function.
-            const SdfPath pathInNode =
-                node.GetMapToRoot().MapTargetToSource(pathInRoot);
-            // If the path didn't translate to this node, it won't translate
-            // to any of the node's children, so we might as well early out
-            // here.
-            if (pathInNode.IsEmpty()) {
-                return false;
-            }
             if (nodePathAtIntroduction.GetPrimPath() == pathInNode) {
                 *vsel = nodeVsel.second;
                 *nodeWithVsel = node;
@@ -3734,26 +3849,29 @@ _FindPriorVariantSelection(
             }
         }
     }
+
     TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
+        const SdfPath pathInChild = 
+            child->GetMapToParent().MapTargetToSource(pathInNode);
+        if (pathInChild.IsEmpty()) {
+            continue;
+        }
+
         if (_FindPriorVariantSelection(
-                *child, pathInRoot, ancestorRecursionDepth, 
-                vset, vsel, nodeWithVsel)) {
+                *child, pathInChild, vset, vsel, nodeWithVsel)) {
             return true;
         }
     }
+
     return false;
 }
 
-typedef std::pair<PcpPrimIndex_StackFrame*, PcpNodeRef> _StackFrameAndChildNode;
-typedef std::vector<_StackFrameAndChildNode> _StackFrameAndChildNodeVector;
-
 static bool
-_ComposeVariantSelectionAcrossStackFrames(
+_ComposeVariantSelectionAcrossNodes(
     const PcpNodeRef& node,
     const SdfPath& pathInNode,
     const std::string & vset,
     std::string *vsel,
-    _StackFrameAndChildNodeVector *stackFrames,
     PcpNodeRef *nodeWithVsel,
     Pcp_PrimIndexer *indexer)
 {
@@ -3763,68 +3881,19 @@ _ComposeVariantSelectionAcrossStackFrames(
         return true;
     }
 
-    // If we're in recursive prim index construction and hit the end
-    // of a graph produced by the current stack frame, we need to look 
-    // at the next stack frame to continue the traversal to the next
-    // part of the graph.
-    //
-    // XXX: See XXX comment in _ComposeVariantSelection. This probably has
-    //      the same bug. The real fix would be to figure out where the
-    //      graph for the next stack frame would be inserted into the
-    //      current node's children in the below for loop and deal with it
-    //      there.
-    const bool atEndOfStack = 
-        (!stackFrames->empty() &&
-         node == stackFrames->back().first->parentNode);
-    if (atEndOfStack) {
-        const _StackFrameAndChildNode nextFrame = stackFrames->back();
-        stackFrames->pop_back();
-
-        const PcpNodeRef& childNode = nextFrame.second;
-        const SdfPath pathInChildNode = 
-            nextFrame.first->arcToParent->mapToParent
-            .MapTargetToSource(pathInNode);
-
-        if (!pathInChildNode.IsEmpty()) {
-            return _ComposeVariantSelectionAcrossStackFrames(
-                childNode, pathInChildNode, vset, vsel, stackFrames, 
-                nodeWithVsel, indexer);
-        }
-
-        return false;
-    }
-
     TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
         const PcpNodeRef& childNode = *child;
         const SdfPath pathInChildNode =
             childNode.GetMapToParent().MapTargetToSource(pathInNode);
 
         if (!pathInChildNode.IsEmpty() &&
-            _ComposeVariantSelectionAcrossStackFrames(
-                *child, pathInChildNode, vset, vsel, stackFrames,
-                nodeWithVsel, indexer)) {
+            _ComposeVariantSelectionAcrossNodes(
+                *child, pathInChildNode, vset, vsel, nodeWithVsel, indexer)) {
             return true;
         }
     }
 
     return false;
-}
-
-// Convert from the given node and the given path at the node to the
-// root node and the path mapped to the root node by traversing up the 
-// parent nodes. 
-static bool
-_ConvertToRootNodeAndPath(PcpNodeRef *node, SdfPath *path)
-{
-    // This function assumes the given path is not empty to begin with so 
-    // return true if this is already the root node.
-    if (!node->GetParentNode()) {
-        return true;
-    }
-    *path = node->GetMapToRoot().MapSourceToTarget(*path);
-    *node = node->GetRootNode();
-    // Return whether the path translates fully up to the root node.
-    return !path->IsEmpty();
 }
 
 static void
@@ -3848,84 +3917,51 @@ _ComposeVariantSelection(
     //
     // See bug 106950 and TrickyVariantWeakerSelection for more details.
     //
-    // This is really a simple strength-order traversal of the
-    // current prim index. It is complicated by the fact that we 
-    // may be in the middle of recursive calls to Pcp_BuildPrimIndex
-    // that are building up subgraphs that will eventually be joined
-    // together. To deal with this, we need to keep track of the 
-    // stack frames for these recursive calls so that we can traverse 
-    // the prim index as if it were fully constructed.
-    //
-    // Translate the given path up to the root node of the *entire* 
-    // prim index under construction, keeping track of when we need
-    // to hop across a stack frame.
-    _StackFrameAndChildNodeVector previousStackFrames;
-    PcpNodeRef rootNode = node;
-    SdfPath pathInRoot = pathInNode;
-    _ConvertToRootNodeAndPath(&rootNode, &pathInRoot);
+    // Perform a strength-order traversal of the prim index. Note this
+    // assumes we are not in a recursive prim indexing call and there
+    // are no previous stack frames to traverse.
+    TF_VERIFY(!indexer->previousFrame);
+
+    // Find the strongest possible location where variant selections
+    // may be authored by trying to map pathInNode all the way up to
+    // the root node of the prim index. If we're looking at an ancestral
+    // variant set (i.e., node.GetPath().HasPrefix(pathInNode)), this
+    // mapping may fail at some intermediate node. This failure means
+    // there are no stronger sites with relevant variant selection
+    // opinions. See SubrootReferenceAndVariants for an example.
+    const auto [pathInStartNode, startNode] =
+        Pcp_TranslatePathFromNodeToRootOrClosestNode(node, pathInNode);
+
+    // XXX: 
+    // If we're evaluating an ancestral variant, nodeWithVsel's site
+    // path will not be where the authored variant selection was found.
+    // This mostly just affects debugging messages below; nodeWithVsel
+    // is also used by _ShouldUseVariantFallback, but only in the
+    // deprecated standin behavior codepath that is no longer used. Once
+    // that's fully removed it'll be easier to fix this up.
 
     // First check if we have already resolved this variant set in the current
-    // stack frame. Try all nodes in all parent frames; ancestorRecursionDepth
-    // accounts for any ancestral recursion.
-    if (_FindPriorVariantSelection(rootNode, pathInRoot,
-                                   indexer->ancestorRecursionDepth,
-                                   vset, vsel, nodeWithVsel)) {
+    // prim index.
+    if (_FindPriorVariantSelection(
+            startNode, pathInStartNode, vset, vsel, nodeWithVsel)) {
+
+        PCP_INDEXING_MSG(
+            indexer, node, *nodeWithVsel,
+            "Found prior variant selection {%s=%s} at %s",
+            vset.c_str(), vsel->c_str(),
+            Pcp_FormatSite(nodeWithVsel->GetSite()).c_str());
         return;
     }
 
-    for (PcpPrimIndex_StackFrame *previousFrame = indexer->previousFrame;
-         previousFrame; previousFrame = previousFrame->previousFrame) {
-        // There may not be a valid mapping for the current path across 
-        // the previous stack frame. For example, this may happen when
-        // trying to compose ancestral variant selections on a sub-root
-        // reference (see SubrootReferenceAndVariants for an example).
-        // This failure means there are no further sites with relevant 
-        // variant selection opinions across this stack frame. In this case, 
-        // we break out of the loop and only search the portion of the prim
-        // index we've traversed.
-        SdfPath pathInPreviousFrame =
-            previousFrame->arcToParent->mapToParent.MapSourceToTarget(
-                pathInRoot);
-        PcpNodeRef rootNodeInPreviousFrame = previousFrame->parentNode;
-        // Note that even if the path can be mapped across the stack frame it 
-        // may not map all the way up to the root of the previous stack frame. 
-        // This can happen when composing an ancestor with a variant set for a 
-        // subroot inherit. Inherit arcs always have an identity mapping so an 
-        // ancestral prim path can still map across the inherit's stack frame, 
-        // but it may not map across other arcs, like references, on the way up 
-        // to the root. In this case we break out of the loop and only search 
-        // the the portion of the index before the stack frame jump.
-        if (pathInPreviousFrame.IsEmpty() ||
-            !_ConvertToRootNodeAndPath(&rootNodeInPreviousFrame, 
-                                       &pathInPreviousFrame)) {
-            break;
-        }
-
-        // Check if we have already resolved this variant set in this previous
-        // stack as well.
-        if (_FindPriorVariantSelection(rootNodeInPreviousFrame, 
-                                       pathInPreviousFrame,
-                                       indexer->ancestorRecursionDepth,
-                                       vset, vsel, nodeWithVsel)) {
-            return;
-        }
-
-        // rootNode is still set to be child of the previous frame's arc which
-        // is why do this first.
-        previousStackFrames.push_back(
-            _StackFrameAndChildNode(previousFrame, rootNode));
-
-        // Update the root node and path to be the root of this previous stack
-        // frame.
-        rootNode = rootNodeInPreviousFrame;
-        pathInRoot = pathInPreviousFrame;
+    // Otherwise, search all nodes to find the strongest variant selection.
+    if (_ComposeVariantSelectionAcrossNodes(
+            startNode, pathInStartNode, vset, vsel, nodeWithVsel, indexer)) {
+        PCP_INDEXING_MSG(
+            indexer, node, *nodeWithVsel,
+            "Found authored variant selection {%s=%s} at %s",
+            vset.c_str(), vsel->c_str(),
+            Pcp_FormatSite(nodeWithVsel->GetSite()).c_str());
     }
-
-    // Now recursively walk the prim index in strong-to-weak order
-    // looking for a variant selection.
-    _ComposeVariantSelectionAcrossStackFrames(
-        rootNode, pathInRoot, vset, vsel, &previousStackFrames,
-        nodeWithVsel, indexer);
 }
 
 static bool
@@ -4039,11 +4075,10 @@ _ChooseBestFallbackAmongOptions(
 }
 
 static void
-_AddVariantArc(Pcp_PrimIndexer *indexer,
-               const PcpNodeRef &node,
-               const std::string &vset,
-               int vsetNum,
-               const std::string &vsel)
+_AddVariantArc(
+    Pcp_PrimIndexer *indexer,
+    const PcpNodeRef &node,
+    const std::string &vset, int vsetNum, const std::string &vsel)
 {
     // Variants do not remap the scenegraph's namespace, they simply
     // represent a branch off into a different section of the layer
@@ -4064,6 +4099,95 @@ _AddVariantArc(Pcp_PrimIndexer *indexer,
 }
 
 static void
+_AddAncestralVariantArc(
+    Pcp_PrimIndexer *indexer,
+    const PcpNodeRef &node,
+    const SdfPath &vsetPath,
+    const std::string &vset, int vsetNum, const std::string &vsel)
+{
+    const SdfPath varPath = node.GetPath().ReplacePrefix(
+        vsetPath, vsetPath.AppendVariantSelection(vset, vsel));
+    const int namespaceDepth =
+        PcpNode_GetNonVariantPathElementCount(vsetPath);
+
+    _ArcOptions opts;
+    opts.includeAncestralOpinions = true;
+
+    // Skip duplicate nodes if this variant arc is being added to a subtree
+    // rooted at an class-based arc introduced at this level of namespace.
+    // 
+    // _AddClassBasedArc will set skipDuplicateNodes = true in certain cases
+    // when adding new subtrees. We want to maintain that same setting when
+    // adding new ancestral variant nodes that originate from those subtrees.
+    //
+    // XXX:
+    // This is brittle. A better solution might be to find a way to remove
+    // the skipDuplicateNodes functionality altogether. The comment in
+    // _AddClassBasedArc suggests finding a better representation or
+    // procedure for handling "duplicate" implied inherit nodes; if we
+    // had something like that it might allow us to remove this code.
+    opts.skipDuplicateNodes = [&]() {
+        for (PcpNodeRef n = node; !n.IsRootNode(); n = n.GetParentNode()) {
+            if (PcpIsClassBasedArc(n.GetArcType())
+                && n.GetDepthBelowIntroduction() == 0
+                && !n.IsInert()) {
+                return true;
+            }
+        }
+        return false;
+    }();
+
+    if (_AddArc(indexer, PcpArcTypeVariant,
+                /* parent = */ node,
+                /* origin = */ node,
+                PcpLayerStackSite( node.GetLayerStack(), varPath ),
+                /* mapExpression = */ PcpMapExpression::Identity(),
+                /* arcSiblingNum = */ vsetNum,
+                namespaceDepth,
+                opts)) {
+        // If we expanded a variant set, it may have introduced new
+        // authored variant selections, so we must retry any pending
+        // variant tasks as authored tasks.
+        indexer->RetryVariantTasks();
+    }
+}
+
+static void
+_EvalVariantSetsAtSite(
+    const PcpNodeRef& node,
+    const SdfPath& sitePath,
+    Pcp_PrimIndexer* indexer,
+    bool isAncestral)
+{
+    std::vector<std::string> vsetNames;
+    PcpComposeSiteVariantSets(node.GetLayerStack(), sitePath, &vsetNames);
+    if (vsetNames.empty()) {
+        return;
+    }
+
+    const Task::Type variantTaskType =
+        (isAncestral ?
+            Task::Type::EvalNodeAncestralVariantAuthored :
+            Task::Type::EvalNodeVariantAuthored);
+
+    for (int vsetNum=0, numVsets=vsetNames.size();
+         vsetNum < numVsets; ++vsetNum) {
+
+        std::string& vsetName = vsetNames[vsetNum];
+
+        PCP_INDEXING_MSG(
+            indexer, node,
+            "Found variant set %s%s",
+            vsetName.c_str(), 
+            (node.GetPath() == sitePath ? 
+                "" : TfStringPrintf(" at <%s>", sitePath.GetText()).c_str()));
+
+        indexer->AddTask(Task(
+            variantTaskType, node, sitePath, std::move(vsetName), vsetNum));
+    }
+}
+
+static void
 _EvalNodeVariantSets(
     const PcpNodeRef& node, 
     Pcp_PrimIndexer *indexer)
@@ -4073,16 +4197,44 @@ _EvalNodeVariantSets(
         "Evaluating variant sets at %s", 
         Pcp_FormatSite(node.GetSite()).c_str());
 
-    if (!node.CanContributeSpecs())
+    if (!node.CanContributeSpecs()) {
         return;
+    }
 
-    std::vector<std::string> vsetNames;
-    PcpComposeSiteVariantSets(node, &vsetNames);
+    _EvalVariantSetsAtSite(
+        node, node.GetPath(), indexer, /* isAncestral = */ false);
+}
 
-    for (int vsetNum=0, numVsets=vsetNames.size();
-         vsetNum < numVsets; ++vsetNum) {
-        indexer->AddTask(Task(Task::Type::EvalNodeVariantAuthored,
-                              node, std::move(vsetNames[vsetNum]), vsetNum));
+static void
+_EvalNodeAncestralVariantSets(
+    const PcpNodeRef& node,
+    Pcp_PrimIndexer *indexer)
+{
+    PCP_INDEXING_PHASE(
+        indexer, node,
+        "Evaluating ancestral variant sets at %s", 
+        Pcp_FormatSite(node.GetSite()).c_str());
+
+    for (SdfPath path = node.GetPath().GetParentPath();
+         !path.IsAbsoluteRootPath(); path = path.GetParentPath()) {
+
+        if (!_NodeCanContributeToVariant(node, path)) {
+            continue;
+        }
+
+        // path is either a prim path or a prim variant selection path.
+        // Enqueue tasks to evaluate variant selections if we find any
+        // variant sets at that path.
+        TF_VERIFY(path.IsPrimOrPrimVariantSelectionPath());
+        _EvalVariantSetsAtSite(
+            node, path, indexer, /* isAncestral = */ true);
+
+        // If path is a prim variant selection path, we can stop here
+        // since any variant sets further up namespace must already
+        // have been handled.
+        if (path.IsPrimVariantSelectionPath()) {
+            break;
+        }
     }
 }
 
@@ -4090,21 +4242,25 @@ static void
 _EvalNodeAuthoredVariant(
     const PcpNodeRef& node, 
     Pcp_PrimIndexer *indexer,
+    const SdfPath& vsetPath,
     const std::string &vset,
-    int vsetNum)
+    int vsetNum,
+    bool isAncestral)
 {
     PCP_INDEXING_PHASE(
         indexer, node,
         "Evaluating authored selections for variant set %s at %s", 
         vset.c_str(),
-        Pcp_FormatSite(node.GetSite()).c_str());
+        Pcp_FormatSite(node.GetLayerStack(), vsetPath).c_str());
 
-    if (!node.CanContributeSpecs())
+    if (!_NodeCanContributeToVariant(node, vsetPath)) {
         return;
+    }
 
     // Compose options.
     std::set<std::string> vsetOptions;
-    PcpComposeSiteVariantSetOptions(node, vset, &vsetOptions);
+    PcpComposeSiteVariantSetOptions(
+        node.GetLayerStack(), vsetPath, vset, &vsetOptions);
 
     // Determine what the fallback selection would be.
     // Generally speaking, authoring opinions win over fallbacks, however if
@@ -4124,21 +4280,18 @@ _EvalNodeAuthoredVariant(
     // Determine the authored variant selection for this set, if any.
     std::string vsel;
     PcpNodeRef nodeWithVsel;
-    _ComposeVariantSelection(node, node.GetPath().StripAllVariantSelections(),
+    _ComposeVariantSelection(node, vsetPath.StripAllVariantSelections(),
                              indexer, vset, &vsel, &nodeWithVsel);
-    if (!vsel.empty()) {
-        PCP_INDEXING_MSG(
-            indexer, node, "Found variant selection {%s=%s} at %s",
-            vset.c_str(),
-            vsel.c_str(),
-            Pcp_FormatSite(nodeWithVsel.GetSite()).c_str());
-    }
+
     // Check if we should use the fallback
     if (_ShouldUseVariantFallback(indexer, vset, vsel, vselFallback,
                                   nodeWithVsel)) {
         PCP_INDEXING_MSG(indexer, node, "Deferring to variant fallback");
-        indexer->AddTask(Task(Task::Type::EvalNodeVariantFallback,
-                              node, vset, vsetNum));
+        indexer->AddTask(Task(
+            (isAncestral ?
+                Task::Type::EvalNodeAncestralVariantFallback :
+                Task::Type::EvalNodeVariantFallback),
+            node, vsetPath, vset, vsetNum));
         return;
     }
     // If no variant was chosen, do not expand this variant set.
@@ -4146,48 +4299,63 @@ _EvalNodeAuthoredVariant(
         PCP_INDEXING_MSG(indexer, node,
                          "No variant selection found for set '%s'",
                          vset.c_str());
-        indexer->AddTask(Task(Task::Type::EvalNodeVariantNoneFound,
-                              node, vset, vsetNum));
+        indexer->AddTask(Task(
+            (isAncestral ? 
+                Task::Type::EvalNodeAncestralVariantNoneFound :
+                Task::Type::EvalNodeVariantNoneFound),
+            node, vsetPath, vset, vsetNum));
         return;
     }
 
-    _AddVariantArc(indexer, node, vset, vsetNum, vsel);
+    isAncestral ?
+        _AddAncestralVariantArc(indexer, node, vsetPath, vset, vsetNum, vsel) :
+        _AddVariantArc(indexer, node, vset, vsetNum, vsel);
 }
 
 static void
 _EvalNodeFallbackVariant(
     const PcpNodeRef& node, 
     Pcp_PrimIndexer *indexer,
+    const SdfPath& vsetPath,
     const std::string &vset,
-    int vsetNum)
+    int vsetNum,
+    bool isAncestral)
 {
     PCP_INDEXING_PHASE(
         indexer, node,
         "Evaluating fallback selections for variant set %s s at %s", 
         vset.c_str(),
-        Pcp_FormatSite(node.GetSite()).c_str());
+        Pcp_FormatSite(node.GetLayerStack(), vsetPath).c_str());
 
-    if (!node.CanContributeSpecs())
+    if (!_NodeCanContributeToVariant(node, vsetPath)) {
         return;
+    }
 
     // Compose options.
     std::set<std::string> vsetOptions;
-    PcpComposeSiteVariantSetOptions(node, vset, &vsetOptions);
+    PcpComposeSiteVariantSetOptions(
+        node.GetLayerStack(), vsetPath, vset, &vsetOptions);
 
     // Determine what the fallback selection would be.
     const std::string vsel =
         _ChooseBestFallbackAmongOptions( vset, vsetOptions,
                                          *indexer->inputs.variantFallbacks );
+
     // If no variant was chosen, do not expand this variant set.
     if (vsel.empty()) {
         PCP_INDEXING_MSG(indexer, node,
                       "No variant fallback found for set '%s'", vset.c_str());
-        indexer->AddTask(Task(Task::Type::EvalNodeVariantNoneFound,
-                              node, vset, vsetNum));
+        indexer->AddTask(Task(
+            (isAncestral ? 
+                Task::Type::EvalNodeAncestralVariantNoneFound :
+                Task::Type::EvalNodeVariantNoneFound),
+            node, vsetPath, vset, vsetNum));
         return;
     }
 
-    _AddVariantArc(indexer, node, vset, vsetNum, vsel);
+    isAncestral ? 
+        _AddAncestralVariantArc(indexer, node, vsetPath, vset, vsetNum, vsel) :
+        _AddVariantArc(indexer, node, vset, vsetNum, vsel);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -4720,6 +4888,7 @@ _BuildInitialPrimIndexFromAncestor(
     int ancestorRecursionDepth,
     PcpPrimIndex_StackFrame *previousFrame,
     bool evaluateImpliedSpecializes,
+    bool evaluateVariants,
     bool rootNodeShouldContributeSpecs,
     const PcpPrimIndexInputs& inputs,
     PcpPrimIndexOutputs* outputs)
@@ -4764,8 +4933,7 @@ _BuildInitialPrimIndexFromAncestor(
         Pcp_BuildPrimIndex(parentSite, parentSite,
                            ancestorRecursionDepth+1,
                            evaluateImpliedSpecializes,
-                           /* Always pick up ancestral opinions from variants
-                              evaluateVariants = */ true,
+                           evaluateVariants,
                            /* rootNodeShouldContributeSpecs = */ true,
                            previousFrame, inputs, outputs);
 
@@ -4870,7 +5038,7 @@ Pcp_BuildPrimIndex(
         // contribute opinions to this child.
         _BuildInitialPrimIndexFromAncestor(
             site, rootSite, ancestorRecursionDepth, previousFrame,
-            evaluateImpliedSpecializes,
+            evaluateImpliedSpecializes, evaluateVariants,
             rootNodeShouldContributeSpecs,
             inputs, outputs);
     }
@@ -4910,17 +5078,37 @@ Pcp_BuildPrimIndex(
         case Task::Type::EvalImpliedSpecializes:
             _EvalImpliedSpecializes(task.node, &indexer);
             break;
+        case Task::Type::EvalNodeAncestralVariantSets:
+            _EvalNodeAncestralVariantSets(task.node, &indexer);
+            break;
         case Task::Type::EvalNodeVariantSets:
             _EvalNodeVariantSets(task.node, &indexer);
             break;
+        case Task::Type::EvalNodeAncestralVariantAuthored:
+            _EvalNodeAuthoredVariant(
+                task.node, &indexer,
+                task.vsetPath, task.vsetName, task.vsetNum,
+                /* ancestral = */ true);
+            break;
         case Task::Type::EvalNodeVariantAuthored:
-            _EvalNodeAuthoredVariant(task.node, &indexer,
-                                     task.vsetName, task.vsetNum);
+            _EvalNodeAuthoredVariant(
+                task.node, &indexer,
+                task.vsetPath, task.vsetName, task.vsetNum,
+                /* ancestral = */ false);
+            break;
+        case Task::Type::EvalNodeAncestralVariantFallback:
+            _EvalNodeFallbackVariant(
+                task.node, &indexer,
+                task.vsetPath, task.vsetName, task.vsetNum,
+                /* ancestral = */ true);
             break;
         case Task::Type::EvalNodeVariantFallback:
-            _EvalNodeFallbackVariant(task.node, &indexer,
-                                     task.vsetName, task.vsetNum);
+            _EvalNodeFallbackVariant(
+                task.node, &indexer,
+                task.vsetPath, task.vsetName, task.vsetNum,
+                /* ancestral = */ false);
             break;
+        case Task::Type::EvalNodeAncestralVariantNoneFound:
         case Task::Type::EvalNodeVariantNoneFound:
             // No-op.  These tasks are just markers for RetryVariantTasks().
             break;

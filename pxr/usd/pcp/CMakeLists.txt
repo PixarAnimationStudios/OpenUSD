@@ -1712,15 +1712,12 @@ pxr_register_test(testPcpMuseum_TrickySpookyVariantSelection
     DIFF_COMPARE compositionResults_TrickySpookyVariantSelection.txt 
 )
 
-# Temporarily disable pending bug fix
-if (FALSE)
-    pxr_register_test(testPcpMuseum_TrickySpookyVariantSelectionInClass
-        PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpookyVariantSelectionInClass/root.sdf" 
-        STDOUT_REDIRECT compositionResults_TrickySpookyVariantSelectionInClass.txt
-        DIFF_COMPARE compositionResults_TrickySpookyVariantSelectionInClass.txt 
-    )
-endif()
+pxr_register_test(testPcpMuseum_TrickySpookyVariantSelectionInClass
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpookyVariantSelectionInClass/root.sdf" 
+    STDOUT_REDIRECT compositionResults_TrickySpookyVariantSelectionInClass.txt
+    DIFF_COMPARE compositionResults_TrickySpookyVariantSelectionInClass.txt 
+)
 
 pxr_register_test(testPcpMuseum_TrickyConnectionToRelocatedAttribute
     PYTHON
