@@ -63,6 +63,9 @@ pxr_library(pcp
         statistics
         utils
 
+    PRIVATE_HEADERS
+        traversalCache.h
+
     PYTHON_CPPFILES
         moduleDeps.cpp
 

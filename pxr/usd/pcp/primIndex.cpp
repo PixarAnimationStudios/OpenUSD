@@ -41,6 +41,7 @@
 #include "pxr/usd/pcp/primIndex_StackFrame.h"
 #include "pxr/usd/pcp/statistics.h"
 #include "pxr/usd/pcp/strengthOrdering.h"
+#include "pxr/usd/pcp/traversalCache.h"
 #include "pxr/usd/pcp/types.h"
 #include "pxr/usd/pcp/utils.h"
 #include "pxr/usd/ar/resolver.h"
@@ -1000,6 +1001,26 @@ struct Pcp_PrimIndexer
     using _TaskUniq = pxr_tsl::robin_set<Task, TfHash>;
     _TaskUniq taskUniq;
 
+    // Caches for finding variant selections in the prim index. The map
+    // of caches is constructed lazily because this map isn't always
+    // needed. In particular, prim indexing doesn't look for variant
+    // selections in recursive prim indexing calls.
+    struct _VariantSelectionInfo
+    {
+        // Path in associate node's layer stack at which variant
+        // selections are authored.
+        SdfPath sitePath;
+
+        // Whether authored selections were found or not yet checked.
+        enum Status { AuthoredSelections, NoSelections, Unknown };
+        Status status = Unknown;
+    };
+
+    using _VariantTraversalCache = Pcp_TraversalCache<_VariantSelectionInfo>;
+    using _VariantTraversalCaches = std::unordered_map<
+        std::pair<PcpNodeRef, SdfPath>, _VariantTraversalCache, TfHash>;
+    std::optional<_VariantTraversalCaches> variantTraversalCache;
+
     const bool evaluateImpliedSpecializes;
     const bool evaluateVariants;
 
@@ -1027,6 +1048,16 @@ struct Pcp_PrimIndexer
 
     inline PcpPrimIndex const *GetOriginatingIndex() const {
         return _GetOriginatingIndex(previousFrame, outputs);
+    }
+
+    _VariantTraversalCache& GetVariantTraversalCache(
+        PcpNodeRef const& node, SdfPath const& pathInNode) {
+        if (!variantTraversalCache) {
+            variantTraversalCache.emplace();
+        }
+
+        return variantTraversalCache->try_emplace(
+            {node, pathInNode}, node, pathInNode).first->second;
     }
 
     // Map the given node's path to the root of the final prim index
@@ -3760,106 +3791,82 @@ _ComposeVariantSelectionForNode(
     const SdfPath& pathInNode,
     const std::string & vset,
     std::string *vsel,
-    PcpNodeRef *nodeWithVsel,
     Pcp_PrimIndexer *indexer)
 {
-    TF_VERIFY(!pathInNode.IsEmpty());
+    std::unordered_set<std::string> exprVarDependencies;
+    PcpErrorVector errors;
 
-    // We are using path-translation to walk between nodes, so we
-    // are working exclusively in namespace paths, which must have
-    // no variant selection.
-    TF_VERIFY(!pathInNode.ContainsPrimVariantSelection(),
-              "Unexpected variant selection in namespace path <%s>",
-              pathInNode.GetText());
+    const bool foundSelection = 
+        PcpComposeSiteVariantSelection(
+            node.GetLayerStack(), pathInNode, vset, vsel, 
+            &exprVarDependencies, &errors);
 
-    // If this node has an authored selection, use that.
-    // Note that we use this even if the authored selection is
-    // the empty string, which explicitly selects no variant.
-    if (_NodeCanContributeToVariant(node, pathInNode)) {
-        PcpLayerStackSite site(node.GetLayerStack(), pathInNode);
-        // pathInNode is a namespace path, not a storage path,
-        // so it will contain no variant selection (as verified above).
-        // To find the storage site, we need to insert any variant
-        // selection for this node.
-        if (node.GetArcType() == PcpArcTypeVariant) {
-            // We need to use the variant node's path at introduction
-            // instead of it's current path (i.e. node.GetPath()) because
-            // pathInNode may be an ancestor of the current path when
-            // dealing with ancestral variants.
-            const SdfPath variantPath = node.GetPathAtIntroduction();
-            site.path = pathInNode.ReplacePrefix(
-                variantPath.StripAllVariantSelections(),
-                variantPath);
-        }
+    if (!exprVarDependencies.empty()) {
+        indexer->outputs->expressionVariablesDependency.AddDependencies(
+            node.GetLayerStack(), std::move(exprVarDependencies));
+    }
 
-        std::unordered_set<std::string> exprVarDependencies;
-        PcpErrorVector errors;
-
-        const bool foundSelection = 
-            PcpComposeSiteVariantSelection(
-                site.layerStack, site.path, vset, vsel, 
-                &exprVarDependencies, &errors);
-
-        if (!exprVarDependencies.empty()) {
-            indexer->outputs->expressionVariablesDependency.AddDependencies(
-                site.layerStack, std::move(exprVarDependencies));
-        }
-
-        if (!errors.empty()) {
-            for (const PcpErrorBasePtr& err : errors) {
-                indexer->RecordError(err);
-            }
-        }
-
-        if (foundSelection) {
-            *nodeWithVsel = node;
-            return true;
+    if (!errors.empty()) {
+        for (const PcpErrorBasePtr& err : errors) {
+            indexer->RecordError(err);
         }
     }
 
-    return false;
+    return foundSelection;
 }
 
 // Check the tree of nodes rooted at the given node for any node
 // representing a prior selection for the given variant set for the path.
 static bool
 _FindPriorVariantSelection(
-    const PcpNodeRef& node,
-    const SdfPath &pathInNode,
+    const PcpNodeRef& startNode,
+    const SdfPath &pathInStartNode,
     const std::string & vset,
     std::string *vsel,
-    PcpNodeRef *nodeWithVsel)
+    PcpNodeRef *nodeWithVsel,
+    Pcp_PrimIndexer *indexer)
 {
-    // If this node represents a variant selection at the same
-    // effective depth of namespace, then check its selection.
-    if (node.GetArcType() == PcpArcTypeVariant) {
-        const SdfPath nodePathAtIntroduction = node.GetPathAtIntroduction();
-        const std::pair<std::string, std::string> nodeVsel =
-            nodePathAtIntroduction.GetVariantSelection();
-        if (nodeVsel.first == vset) {
-            // The node has a variant selection for the variant set we're 
-            // looking for, but we still have to check that the node actually
-            // represents the prim path we're choosing a variant selection for
-            // (as opposed to a different prim path that just happens to have
-            // a variant set with the same name.
-            if (nodePathAtIntroduction.GetPrimPath() == pathInNode) {
-                *vsel = nodeVsel.second;
-                *nodeWithVsel = node;
-                return true;
+    auto& traverser = 
+        indexer->GetVariantTraversalCache(startNode, pathInStartNode);
+
+    // Don't use a range-based for loop here so we can avoid asking for
+    // the path in the current node (which incurs expensive path translations)
+    // until we're absolutely sure we need it.
+    for (auto it = traverser.begin(), e = traverser.end(); it != e; ++it) {
+        const PcpNodeRef node = it.Node();
+
+        // If this node represents a variant selection at the same
+        // effective depth of namespace, then check its selection.
+        if (node.GetArcType() == PcpArcTypeVariant) {
+            const SdfPath nodePathAtIntroduction = node.GetPathAtIntroduction();
+            const std::pair<std::string, std::string> nodeVsel =
+                nodePathAtIntroduction.GetVariantSelection();
+            if (nodeVsel.first == vset) {
+                const SdfPath& pathInNode = it.PathInNode();
+
+                // If the path didn't translate to this node, it won't translate
+                // to any of the node's children, so we might as well prune the
+                // traversal here. 
+                //
+                // We don't do this check earlier because we don't want to call
+                // PathInNode unless absolutely necessary, as it runs relatively
+                // expensive path translations.
+                if (pathInNode.IsEmpty()) {
+                    it.PruneChildren();
+                    continue;
+                }
+
+                // The node has a variant selection for the variant set we're
+                // looking for, but we still have to check that the node
+                // actually represents the prim path we're choosing a variant
+                // selection for (as opposed to a different prim path that just
+                // happens to have a variant set with the same name.
+                if (nodePathAtIntroduction.GetPrimPath() == it.PathInNode()) {
+                    *vsel = nodeVsel.second;
+                    *nodeWithVsel = node;
+                    return true;
+                }
             }
-        }
-    }
-
-    TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
-        const SdfPath pathInChild = 
-            child->GetMapToParent().MapTargetToSource(pathInNode);
-        if (pathInChild.IsEmpty()) {
-            continue;
-        }
-
-        if (_FindPriorVariantSelection(
-                *child, pathInChild, vset, vsel, nodeWithVsel)) {
-            return true;
         }
     }
 
@@ -3868,27 +3875,70 @@ _FindPriorVariantSelection(
 
 static bool
 _ComposeVariantSelectionAcrossNodes(
-    const PcpNodeRef& node,
-    const SdfPath& pathInNode,
+    const PcpNodeRef& startNode,
+    const SdfPath& pathInStartNode,
     const std::string & vset,
     std::string *vsel,
     PcpNodeRef *nodeWithVsel,
     Pcp_PrimIndexer *indexer)
 {
     // Compose variant selection in strong-to-weak order.
-    if (_ComposeVariantSelectionForNode(
-            node, pathInNode, vset, vsel, nodeWithVsel, indexer)) {
-        return true;
-    }
+    auto& traverser = 
+        indexer->GetVariantTraversalCache(startNode, pathInStartNode);
 
-    TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
-        const PcpNodeRef& childNode = *child;
-        const SdfPath pathInChildNode =
-            childNode.GetMapToParent().MapTargetToSource(pathInNode);
+    for (auto it = traverser.begin(), e = traverser.end(); it != e; ++it) {
+        auto [node, pathInNode, info] = *it;
 
-        if (!pathInChildNode.IsEmpty() &&
-            _ComposeVariantSelectionAcrossNodes(
-                *child, pathInChildNode, vset, vsel, nodeWithVsel, indexer)) {
+        // If path translation to this node failed, it will fail for all
+        // other children so we can skip them entirely
+        if (pathInNode.IsEmpty()) {
+            it.PruneChildren();
+            continue;
+        }
+
+        if (!_NodeCanContributeToVariant(node, pathInNode)) {
+            continue;
+        }
+
+        // Precompute whether the layer stack has any authored variant
+        // selections and cache that away.
+        using Info = Pcp_PrimIndexer::_VariantSelectionInfo;
+        if (info.status == Info::Unknown) {
+            info.sitePath = [&node=node, &pathInNode=pathInNode]() {
+                // pathInNode is a namespace path, not a storage path,
+                // so it will contain no variant selection (as verified above).
+                // To find the storage site, we need to insert any variant
+                // selection for this node.
+                if (node.GetArcType() == PcpArcTypeVariant) {
+                    // We need to use the variant node's path at introduction
+                    // instead of it's current path (i.e. node.GetPath()) because
+                    // pathInNode may be an ancestor of the current path when
+                    // dealing with ancestral variants.
+                    const SdfPath variantPath = node.GetPathAtIntroduction();
+                    return pathInNode.ReplacePrefix(
+                        variantPath.StripAllVariantSelections(),
+                        variantPath);
+                }
+                return pathInNode;
+            }();
+
+            info.status = 
+                PcpComposeSiteHasVariantSelections(
+                    node.GetLayerStack(), info.sitePath) ?
+                Info::AuthoredSelections : Info::NoSelections;
+        }
+
+        // If no variant selections are authored here, we can skip.
+        if (info.status == Info::NoSelections) {
+            continue;
+        }
+
+        // If this node has an authored selection, use that.
+        // Note that we use this even if the authored selection is
+        // the empty string, which explicitly selects no variant.
+        if (_ComposeVariantSelectionForNode(
+                node, info.sitePath, vset, vsel, indexer)) {
+            *nodeWithVsel = node;
             return true;
         }
     }
@@ -3943,7 +3993,7 @@ _ComposeVariantSelection(
     // First check if we have already resolved this variant set in the current
     // prim index.
     if (_FindPriorVariantSelection(
-            startNode, pathInStartNode, vset, vsel, nodeWithVsel)) {
+            startNode, pathInStartNode, vset, vsel, nodeWithVsel, indexer)) {
 
         PCP_INDEXING_MSG(
             indexer, node, *nodeWithVsel,

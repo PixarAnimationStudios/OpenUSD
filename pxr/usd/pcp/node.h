@@ -331,6 +331,8 @@ private:
     friend class PcpNodeRef_ChildrenReverseIterator;
     friend class PcpNodeRef_PrivateChildrenConstIterator;
     friend class PcpNodeRef_PrivateChildrenConstReverseIterator;
+    friend class PcpNodeRef_PrivateSubtreeConstIterator;
+    template <class T> friend class Pcp_TraversalCache;
 
     // Private constructor for internal use.
     PcpNodeRef(PcpPrimIndex_Graph* graph, size_t idx)
