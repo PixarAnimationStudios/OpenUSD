@@ -44,6 +44,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((shutterOpenTime,  "ri:shutterOpenTime"))
     ((shutterCloseTime, "ri:shutterCloseTime"))
+    // We follow the PRManCamera.args convention here and camel case.
+    // Annoyingly, the string when passing params to the
+    // Riley::Create/ModifyCamera is RixStr.k_shutteropening with
+    // all small letters.
+    //
     ((shutterOpening,   "ri:shutterOpening"))
 );
 
