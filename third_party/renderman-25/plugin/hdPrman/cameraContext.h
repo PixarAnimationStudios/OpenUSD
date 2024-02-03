@@ -146,6 +146,9 @@ public:
     ///
     void SetFallbackShutterCurve(bool isInteractive);
 
+    /// When depth of field is disabled the fstop is set to infinity.
+    void SetDisableDepthOfField(bool disableDepthOfField);
+
     /// Path of current camera in render index.
     const SdfPath &GetCameraPath() const { return _cameraPath; }
 
@@ -186,6 +189,7 @@ private:
     SdfPath _cameraPath;
     CameraUtilFraming _framing;
     CameraUtilConformWindowPolicy _policy;
+    bool _disableDepthOfField;
 
     float _shutterOpenTime;
     float _shutterCloseTime;

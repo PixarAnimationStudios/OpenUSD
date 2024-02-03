@@ -41,6 +41,7 @@ static const RtUString s_projectionNodeName("cam_projection");
 
 HdPrman_CameraContext::HdPrman_CameraContext()
   : _policy(CameraUtilFit)
+  , _disableDepthOfField(false)
   , _shutterOpenTime(0.0f)
   , _shutterCloseTime(1.0f)
   , _shutteropeningPoints{ // matches RenderMan default
@@ -133,6 +134,15 @@ HdPrman_CameraContext::SetFallbackShutterCurve(bool isInteractive)
             0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.3f, 0.0f
         };
         SetShutterCurve(0.0f, 0.0f, pts);
+    }
+}
+
+void
+HdPrman_CameraContext::SetDisableDepthOfField(bool disableDepthOfField)
+{
+    if (_disableDepthOfField != disableDepthOfField) {
+        _disableDepthOfField = disableDepthOfField;
+        _invalid = true;
     }
 }
 
@@ -286,7 +296,8 @@ _ComputeProjectionShader(const HdCamera::Projection projection)
 
 // Compute parameters for the camera riley::ShadingNode for perspective camera
 RtParamList
-_ComputePerspectiveNodeParams(const HdPrmanCamera * const camera)
+_ComputePerspectiveNodeParams(
+    const HdPrmanCamera * const camera, bool disableDepthOfField)
 {
     RtParamList result;
 
@@ -321,12 +332,13 @@ _ComputePerspectiveNodeParams(const HdPrmanCamera * const camera)
     }
 
     const float fStop = camera->GetFStop();
-    if (fStop > 0.0f && focusDistance > 0.0f) {
-        result.SetFloat(RixStr.k_fStop, fStop);
-    } else {
-        // If values are bogus, disable depth of field by setting
-        // ininie f-Stop and a sane value for focalDistance.
+    if (disableDepthOfField || fStop <= 0.0f || focusDistance <= 0.0f) {
+        // If depth of field is disabled or the values are bogus, 
+        // disable depth of field by setting f-Stop to infinity, 
+        // and a sane value for focalDistance. 
         result.SetFloat(RixStr.k_fStop, RI_INFINITY);
+    } else {
+        result.SetFloat(RixStr.k_fStop, fStop);
     }
 
     // Not setting fov frame begin/end - thus we do not support motion blur
@@ -377,17 +389,17 @@ _ComputeOrthographicNodeParams(const HdPrmanCamera * const camera)
 // Compute parameters for the camera riley::ShadingNode
 static
 RtParamList
-_ComputeNodeParams(const HdPrmanCamera * const camera)
+_ComputeNodeParams(const HdPrmanCamera * const camera, bool disableDepthOfField)
 {
     switch(camera->GetProjection()) {
     case HdCamera::Perspective:
-        return _ComputePerspectiveNodeParams(camera);
+        return _ComputePerspectiveNodeParams(camera, disableDepthOfField);
     case HdCamera::Orthographic:
         return _ComputeOrthographicNodeParams(camera);
     }
 
     // Make compiler happy
-    return _ComputePerspectiveNodeParams(camera);
+    return _ComputePerspectiveNodeParams(camera, disableDepthOfField);
 }
 
 // Compute params given to Riley::ModifyCamera
@@ -561,7 +573,7 @@ HdPrman_CameraContext::_UpdateRileyCamera(
         riley::ShadingNode::Type::k_Projection,
         _ComputeProjectionShader(camera->GetProjection()),
         s_projectionNodeName,
-        _ComputeNodeParams(camera)
+        _ComputeNodeParams(camera, _disableDepthOfField)
     };
 
     const RtParamList params = _ComputeCameraParams(screenWindow, camera);

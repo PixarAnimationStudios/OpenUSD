@@ -167,6 +167,9 @@ _UpdateCameraContextFromProduct(
             displayWindow, dataWindow, product.pixelAspectRatio));
     cameraContext->SetWindowPolicy(
         HdUtils::ToConformWindowPolicy(product.aspectRatioConformPolicy));
+#if HD_API_VERSION >= 64
+    cameraContext->SetDisableDepthOfField(product.disableDepthOfField);
+#endif
 }
 
 // Update the riley camera params using state on the camera Sprim and the
@@ -564,11 +567,11 @@ HdPrman_RenderSettings::_ProcessRenderTerminals(
 }
 
 void
-HdPrman_RenderSettings::_ProcessRenderProducts(
-    HdPrman_RenderParam *param)
+HdPrman_RenderSettings::_ProcessRenderProducts(HdPrman_RenderParam *param)
 {
-    const bool hasRenderProducts = !GetRenderProducts().empty();
-
+    if (GetRenderProducts().empty()) {
+        return;
+    }
     // Fallback path for apps using an older version of Hydra wherein 
     // the computed "unioned shutter interval" on the render settings 
     // prim via HdsiRenderSettingsFilteringSceneIndex is not available.
@@ -577,7 +580,7 @@ HdPrman_RenderSettings::_ProcessRenderProducts(
     // during HdPrmanCamera::Sync. The riley shutter interval needs to
     // be set before any time-sampled primvars are synced.
     // 
-    if (GetShutterInterval().IsEmpty() && hasRenderProducts) {
+    if (GetShutterInterval().IsEmpty()) {
         // Set the camera path here so that HdPrmanCamera::Sync can detect
         // whether it is syncing the current camera to set the riley shutter
         // interval. See SetRileyShutterIntervalFromCameraContextCameraPath
@@ -585,6 +588,11 @@ HdPrman_RenderSettings::_ProcessRenderProducts(
         const SdfPath &cameraPath = GetRenderProducts().at(0).cameraPath;
         param->GetCameraContext().SetCameraPath(cameraPath);
     }
+
+    // This will override the f-stop value on the camera
+    param->GetCameraContext().SetDisableDepthOfField(
+        GetRenderProducts().at(0).disableDepthOfField);
+    
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
