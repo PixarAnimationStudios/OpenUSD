@@ -156,7 +156,7 @@ UsdImagingRenderSettingsAdapter::Populate(
                     &renderVarPaths);
                 for (SdfPath const& renderVarPath: renderVarPaths ) {
                     UsdPrim rv = prim.GetStage()->GetPrimAtPath(renderVarPath);
-                    if (rv.IsA<UsdRenderVar>()) {
+                    if (rv && rv.IsA<UsdRenderVar>()) {
                         index->AddDependency(/* to   */rsPrimPath,
                                              /* from */rv);
                     }
