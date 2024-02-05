@@ -72,6 +72,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // See PxrDisplayChannelAPI
     ((riDisplayChannelNamespace,    "ri:displayChannel:"))
+    // See PxrDisplayDriverAPI
+    ((riDisplayDriverNamespace,     "ri:displayDriver:"))
 );
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -1495,7 +1497,8 @@ _ComputeRenderViewDesc(
             VtDictionaryGet<VtDictionary>(
                 renderProduct,
                 HdPrmanExperimentalRenderSpecTokens->params,
-                VtDefault = VtDictionary()));
+                VtDefault = VtDictionary()),
+            _tokens->riDisplayDriverNamespace);
 
         const VtIntArray &renderVarIndices =
             VtDictionaryGet<VtIntArray>(
@@ -1541,7 +1544,8 @@ _ComputeRenderViewDesc(
     // Create a DisplayDesc for this RenderProduct
     HdPrman_RenderViewDesc::DisplayDesc displayDesc;
     displayDesc.name = RtUString(product.name.GetText());
-    displayDesc.params = _ToRtParamList(product.namespacedSettings);
+    displayDesc.params = _ToRtParamList(product.namespacedSettings,
+        _tokens->riDisplayDriverNamespace);
     displayDesc.driver = _GetOutputDisplayDriverType(product.name);
 
     /* RenderVar */
