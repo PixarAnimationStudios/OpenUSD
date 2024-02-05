@@ -2131,6 +2131,10 @@ PcpChanges::_DidChangeSublayer(
     // us because some changes introduce new dependencies that wouldn't
     // have been registered yet using the normal means -- such as unmuting
     // a sublayer.
+    //
+    // When flagging "significant" changes, we don't need to recurseOnIndex
+    // because adding a prim to the didChangeSignificantly set implies that
+    // all descendants have also changed significantly.
 
     bool anyFound = false;
     TF_FOR_ALL(layerStack, layerStacks) {
@@ -2139,7 +2143,7 @@ PcpChanges::_DidChangeSublayer(
             SdfPath::AbsoluteRootPath(), 
             PcpDependencyTypeAnyIncludingVirtual,
             /* recurseOnSite */ true,
-            /* recurseOnIndex */ true,
+            /* recurseOnIndex */ !(*significant),
             /* filter */ true);
         for (const auto &dep: deps) {
             if (!dep.indexPath.IsAbsoluteRootOrPrimPath()) {
