@@ -33,6 +33,8 @@
 #include "pxr/imaging/hdsi/primManagingSceneIndexObserver.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 
+#include "Riley.h"
+
 #include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -144,6 +146,24 @@ struct HdPrman_RileyPrimArray
     std::vector<RileyId> rileyIds;
     /// Same information as rileyIds but as, e.g., riley::RenderOutputList
     /// (with pointers pointing into rileyIds).
+    RileyObject rileyObject;
+};
+
+/// A (RAII) object for transform samples extracted from the HdXformSchema.
+///
+struct HdPrman_RileyTransform
+{
+    using RileyObject = riley::Transform;
+
+    HdPrman_RileyTransform(
+        HdMatrixDataSourceHandle const &ds,
+        const GfVec2f &shutterInterval);
+
+    std::vector<RtMatrix4x4> matrix;
+    std::vector<float> time;
+
+    // (Non-RAII) object that can be passed to, e.g.,
+    // Riley::CreateCoordinateSystem.
     RileyObject rileyObject;
 };
 

@@ -105,6 +105,7 @@ pxr_plugin(${PXR_PACKAGE}
         points
         renderDelegate
         renderSettings
+        rileyCoordinateSystemSchema
         rileyRenderOutputSchema
         rileyRenderTargetSchema
         rixStrings
@@ -133,6 +134,8 @@ pxr_plugin(${PXR_PACKAGE}
         resourceRegistry
         rileyPrimBase
         rileyPrimFactory
+        rileyPrimUtil
+        rileyCoordinateSystemPrim
         rileyRenderOutputPrim
         rileyRenderTargetPrim
         terminalSceneIndexObserver

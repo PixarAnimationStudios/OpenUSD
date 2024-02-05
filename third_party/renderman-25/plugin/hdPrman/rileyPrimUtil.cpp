@@ -21,48 +21,49 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_PRIM_BASE_H
-#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_PRIM_BASE_H
 
-#include "pxr/pxr.h"
-#include "hdPrman/api.h"
-#include "hdPrman/sceneIndexObserverApi.h"
+#include "hdPrman/rileyPrimUtil.h"
 
 #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
 
-#include "pxr/imaging/hdsi/primManagingSceneIndexObserver.h"
-
-#include "Riley.h"
+#include "hdPrman/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdPrman_RenderParam;
-
-/// \class HdPrman_RileyPrimBase
-///
-/// A base class for prims wrapping Riley objects. It provides access
-/// to Riley so that subclasses can call Riley::Create/Modify/DeleteFoo.
-///
-class HdPrman_RileyPrimBase
-   : public HdsiPrimManagingSceneIndexObserver::PrimBase
+HdPrman_RileyTransform::HdPrman_RileyTransform(
+    HdMatrixDataSourceHandle const &ds,
+    const GfVec2f &shutterInterval)
 {
-protected:
-    // HdPrman_RenderParam needed to get Riley.
-    HdPrman_RileyPrimBase(HdPrman_RenderParam * renderParam);
+    if (!ds) {
+        static const RtMatrix4x4 matrix[] = {
+            HdPrman_Utils::GfMatrixToRtMatrix(GfMatrix4d(1.0))
+        };
+        static const float time[] = {
+            0.0f
+        };
+        rileyObject.samples = static_cast<uint32_t>(std::size(matrix));
+        rileyObject.matrix = matrix;
+        rileyObject.time = time;
+        return;
+    }
 
-    // Does necessary things (such as stopping the render) so that
-    // calls to, e.g., Riley::Create are safe.
-    riley::Riley * _AcquireRiley();
+    ds->GetContributingSampleTimesForInterval(
+        shutterInterval[0], shutterInterval[1], &time);
+    if (time.empty()) {
+        time = { 0.0f };
+    }
 
-    const GfVec2f &_GetShutterInterval();
-
-private:
-    HdPrman_RenderParam * const _renderParam;
-};
+    matrix.reserve(time.size());
+    for (const float t : time) {
+        matrix.push_back(
+            HdPrman_Utils::GfMatrixToRtMatrix(ds->GetTypedValue(t)));
+    }
+    
+    rileyObject.samples = time.size();
+    rileyObject.matrix = matrix.data();
+    rileyObject.time = time.data();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
-
-#endif
-

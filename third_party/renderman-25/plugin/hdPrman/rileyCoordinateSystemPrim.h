@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_PRIM_BASE_H
-#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_PRIM_BASE_H
+#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_COORDINATE_SYSTEM_PRIM_H
+#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_COORDINATE_SYSTEM_PRIM_H
 
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
@@ -30,34 +30,40 @@
 
 #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
 
-#include "pxr/imaging/hdsi/primManagingSceneIndexObserver.h"
-
-#include "Riley.h"
+#include "hdPrman/rileyPrimBase.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdPrman_RenderParam;
+using HdPrman_RileyCoordinateSystemPrimHandle =
+    std::shared_ptr<class HdPrman_RileyCoordinateSystemPrim>;
 
-/// \class HdPrman_RileyPrimBase
+/// \class HdPrman_RileyCoordinateSystemPrim
 ///
-/// A base class for prims wrapping Riley objects. It provides access
-/// to Riley so that subclasses can call Riley::Create/Modify/DeleteFoo.
+/// Wraps a riley render output object, initializing or updating it
+/// using the HdPrmanRileyCoordinateSystemSchema.
 ///
-class HdPrman_RileyPrimBase
-   : public HdsiPrimManagingSceneIndexObserver::PrimBase
+class HdPrman_RileyCoordinateSystemPrim : public HdPrman_RileyPrimBase
 {
+public:
+    HdPrman_RileyCoordinateSystemPrim(
+        HdContainerDataSourceHandle const &primSource,
+        const HdsiPrimManagingSceneIndexObserver *observer,
+        HdPrman_RenderParam * renderParam);
+
+    ~HdPrman_RileyCoordinateSystemPrim() override;
+
+    using RileyId = riley::CoordinateSystemId;
+    using RileyIdList = riley::CoordinateSystemList;
+
+    const RileyId &GetRileyId() const { return _rileyId; }
+
 protected:
-    // HdPrman_RenderParam needed to get Riley.
-    HdPrman_RileyPrimBase(HdPrman_RenderParam * renderParam);
-
-    // Does necessary things (such as stopping the render) so that
-    // calls to, e.g., Riley::Create are safe.
-    riley::Riley * _AcquireRiley();
-
-    const GfVec2f &_GetShutterInterval();
+    void _Dirty(
+        const HdSceneIndexObserver::DirtiedPrimEntry &entry,
+        const HdsiPrimManagingSceneIndexObserver * observer) override;
 
 private:
-    HdPrman_RenderParam * const _renderParam;
+    RileyId _rileyId;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
