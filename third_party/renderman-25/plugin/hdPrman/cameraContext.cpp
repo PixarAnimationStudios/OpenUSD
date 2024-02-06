@@ -397,6 +397,16 @@ HdPrman_CameraContext::_ComputeCameraParams(
         shutterCurve.shutterOpening.data(),
         shutterCurve.shutterOpening.size());
 
+    result.SetFloat(RixStr.k_apertureAngle,
+                    hdPrmanCamera->GetApertureAngle());
+    result.SetFloat(RixStr.k_apertureDensity,
+                    hdPrmanCamera->GetApertureDensity());
+    result.SetInteger(RixStr.k_apertureNSides,
+                      hdPrmanCamera->GetApertureNSides());
+    result.SetFloat(RixStr.k_apertureRoundness,
+                    hdPrmanCamera->GetApertureRoundness());
+                    
+
     const GfVec4f s = _ToVec4f(screenWindow);
     result.SetFloatArray(RixStr.k_Ri_ScreenWindow, s.data(), 4);
 
