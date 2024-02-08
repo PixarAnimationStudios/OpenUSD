@@ -206,7 +206,7 @@ public:
     /// \sa ComputeExtentFromPlugins
     /// \sa UsdGeomRegisterComputeExtentFunction
     USDGEOM_API
-    bool ComputeExtent(const UsdTimeCode &time, VtVec3fArray *extent);
+    bool ComputeExtent(const UsdTimeCode &time, VtVec3fArray *extent) const;
     
     /// Compute the extent for the Boundable prim \p boundable at time
     /// \p time.  If successful, populates \p extent with the result and
