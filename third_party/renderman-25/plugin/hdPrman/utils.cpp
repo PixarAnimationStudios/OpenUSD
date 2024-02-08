@@ -103,6 +103,9 @@ struct _VtValueToRtParamList
     bool operator()(const GfVec2d &vd) {
         return (*this)(GfVec2f(vd));
     }
+    bool operator()(const GfVec3i &v) {
+        return params->SetIntegerArray(name, v.data(), 3); 
+    }
     bool operator()(const GfVec3f &v) {
         if (role == HdPrimvarRoleTokens->color) {
             return params->SetColor(name, RtColorRGB(v[0], v[1], v[2]));
@@ -118,6 +121,9 @@ struct _VtValueToRtParamList
     }
     bool operator()(const GfVec3d &vd) {
         return (*this)(GfVec3f(vd));
+    }
+    bool operator()(const GfVec4i &v) {
+        return params->SetIntegerArray(name, v.data(), 4); 
     }
     bool operator()(const GfVec4f &v) {
         return params->SetFloatArray(name, v.data(), 4);

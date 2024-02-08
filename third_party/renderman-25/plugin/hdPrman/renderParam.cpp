@@ -1379,9 +1379,25 @@ _ToRtParamList(VtDictionary const& dict, TfToken prefix=TfToken())
     RtParamList params;
     for (auto const& entry: dict) {
         std::string key = entry.first;
+
+        // EXR metadata transformation:
+        // Keys of the format "ri:exrheader:A:B:C"
+        // will be changed to "exrheader_A/B/C"
+        // for use with the d_openexr display driver conventions.
+        if (TfStringStartsWith(key, "ri:exrheader:")) {
+            key = TfStringReplace(key, "ri:exrheader:", "exrheader_");
+            for (char &c: key) {
+                if (c == ':') {
+                    c = '/';
+                }
+            }
+        }
+
+        // Remove namespace prefix
         if (TfStringStartsWith(key, prefix.GetString())) {
             key = key.substr(prefix.size());
         }
+
         RtUString riName(key.c_str());
         HdPrman_Utils::SetParamFromVtValue(riName, entry.second,
                                            /* role = */ TfToken(), &params);
