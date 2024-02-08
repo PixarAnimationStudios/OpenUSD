@@ -39,6 +39,7 @@
 
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/schemaTypeDefs.h"
+#include "pxr/imaging/hd/materialNetworkSchema.h"
 
 #include "pxr/imaging/hd/schema.h"
 
@@ -56,6 +57,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (priority) \
     (filePath) \
     (constants) \
+    (materialNetwork) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdImageShaderSchemaTokens, HD_API,
     HD_IMAGE_SHADER_SCHEMA_TOKENS);
@@ -99,7 +101,10 @@ public:
     HdStringDataSourceHandle GetFilePath();
 
     HD_API
-    HdSampledDataSourceContainerSchema GetConstants(); 
+    HdSampledDataSourceContainerSchema GetConstants();
+
+    HD_API
+    HdMaterialNetworkSchema GetMaterialNetwork(); 
 
     /// @}
 
@@ -142,6 +147,10 @@ public:
     /// Prim-level relative data source locator to locate constants.
     HD_API
     static const HdDataSourceLocator &GetConstantsLocator();
+
+    /// Prim-level relative data source locator to locate materialNetwork.
+    HD_API
+    static const HdDataSourceLocator &GetMaterialNetworkLocator();
     /// @} 
 
     /// \name Schema construction
@@ -160,7 +169,8 @@ public:
         const HdBoolDataSourceHandle &enabled,
         const HdIntDataSourceHandle &priority,
         const HdStringDataSourceHandle &filePath,
-        const HdContainerDataSourceHandle &constants
+        const HdContainerDataSourceHandle &constants,
+        const HdContainerDataSourceHandle &materialNetwork
     );
 
     /// \class HdImageShaderSchema::Builder
@@ -184,6 +194,9 @@ public:
         HD_API
         Builder &SetConstants(
             const HdContainerDataSourceHandle &constants);
+        HD_API
+        Builder &SetMaterialNetwork(
+            const HdContainerDataSourceHandle &materialNetwork);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -194,6 +207,7 @@ public:
         HdIntDataSourceHandle _priority;
         HdStringDataSourceHandle _filePath;
         HdContainerDataSourceHandle _constants;
+        HdContainerDataSourceHandle _materialNetwork;
 
     };
 

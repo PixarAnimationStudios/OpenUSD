@@ -77,17 +77,25 @@ HdImageShaderSchema::GetConstants()
         HdImageShaderSchemaTokens->constants));
 }
 
+HdMaterialNetworkSchema
+HdImageShaderSchema::GetMaterialNetwork()
+{
+    return HdMaterialNetworkSchema(_GetTypedDataSource<HdContainerDataSource>(
+        HdImageShaderSchemaTokens->materialNetwork));
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdImageShaderSchema::BuildRetained(
         const HdBoolDataSourceHandle &enabled,
         const HdIntDataSourceHandle &priority,
         const HdStringDataSourceHandle &filePath,
-        const HdContainerDataSourceHandle &constants
+        const HdContainerDataSourceHandle &constants,
+        const HdContainerDataSourceHandle &materialNetwork
 )
 {
-    TfToken _names[4];
-    HdDataSourceBaseHandle _values[4];
+    TfToken _names[5];
+    HdDataSourceBaseHandle _values[5];
 
     size_t _count = 0;
 
@@ -109,6 +117,11 @@ HdImageShaderSchema::BuildRetained(
     if (constants) {
         _names[_count] = HdImageShaderSchemaTokens->constants;
         _values[_count++] = constants;
+    }
+
+    if (materialNetwork) {
+        _names[_count] = HdImageShaderSchemaTokens->materialNetwork;
+        _values[_count++] = materialNetwork;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -145,6 +158,14 @@ HdImageShaderSchema::Builder::SetConstants(
     return *this;
 }
 
+HdImageShaderSchema::Builder &
+HdImageShaderSchema::Builder::SetMaterialNetwork(
+    const HdContainerDataSourceHandle &materialNetwork)
+{
+    _materialNetwork = materialNetwork;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdImageShaderSchema::Builder::Build()
 {
@@ -152,7 +173,8 @@ HdImageShaderSchema::Builder::Build()
         _enabled,
         _priority,
         _filePath,
-        _constants
+        _constants,
+        _materialNetwork
     );
 }
 
@@ -220,6 +242,16 @@ HdImageShaderSchema::GetConstantsLocator()
     static const HdDataSourceLocator locator =
         GetDefaultLocator().Append(
             HdImageShaderSchemaTokens->constants);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdImageShaderSchema::GetMaterialNetworkLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdImageShaderSchemaTokens->materialNetwork);
     return locator;
 } 
 

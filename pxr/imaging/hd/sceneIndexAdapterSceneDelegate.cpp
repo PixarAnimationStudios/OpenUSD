@@ -1044,33 +1044,12 @@ _Walk(
     netHd->nodes.push_back(n);
 }
 
-VtValue 
-HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
+static
+HdMaterialNetworkMap
+_ToMaterialNetworkMap(
+    HdMaterialNetworkSchema netSchema,
+    const TfTokenVector& renderContexts)
 {
-    TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-    HdSceneIndexPrim prim = _GetInputPrim(id);
-
-    HdMaterialSchema matSchema = HdMaterialSchema::GetFromParent(
-            prim.dataSource);
-    if (!matSchema.IsDefined()) {
-        return VtValue();
-    }
-
-    // Query for a material network to match the requested render contexts
-    HdMaterialNetworkSchema netSchema(nullptr);
-    for (TfToken const& networkSelector:
-        GetRenderIndex().GetRenderDelegate()->GetMaterialRenderContexts()) {
-        netSchema = matSchema.GetMaterialNetwork(networkSelector);
-        if (netSchema) {
-            // Found a matching network
-            break;
-        }
-    }
-    if (!netSchema.IsDefined()) {
-        return VtValue();
-    }
-
     // Some legacy render delegates may require all shading nodes
     // to be included regardless of whether they are reachable via
     // a terminal. While 100% accuracy in emulation would require that
@@ -1115,9 +1094,6 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
         SdfPath path(pathTk.GetString());
         matHd.terminals.push_back(path);
 
-        TfTokenVector renderContexts =
-            GetRenderIndex().GetRenderDelegate()->GetMaterialRenderContexts();
-
         // Continue walking the network
         HdMaterialNetwork & netHd = matHd.map[name];
         _Walk(path, nodesSchema, renderContexts, &visitedNodes, &netHd);
@@ -1130,7 +1106,39 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
             }
         }
     }
-    return VtValue(matHd);
+
+    return matHd;
+}
+
+VtValue 
+HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
+{
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+    HdSceneIndexPrim prim = _GetInputPrim(id);
+
+    HdMaterialSchema matSchema = HdMaterialSchema::GetFromParent(
+            prim.dataSource);
+    if (!matSchema.IsDefined()) {
+        return VtValue();
+    }
+
+    // Query for a material network to match the requested render contexts
+    const TfTokenVector renderContexts =
+        GetRenderIndex().GetRenderDelegate()->GetMaterialRenderContexts();
+    HdMaterialNetworkSchema netSchema(nullptr);
+    for (TfToken const& networkSelector : renderContexts) {
+        netSchema = matSchema.GetMaterialNetwork(networkSelector);
+        if (netSchema) {
+            // Found a matching network
+            break;
+        }
+    }
+    if (!netSchema.IsDefined()) {
+        return VtValue();
+    }
+
+    return VtValue(_ToMaterialNetworkMap(netSchema, renderContexts));
 }
 
 static
@@ -1526,8 +1534,10 @@ Hd_InterpolationAsEnum(const TfToken &interpolationToken)
     return HdInterpolation(-1);
 }
 
+} // anonymous namespace
+
 VtValue
-_GetImageShaderValue(
+HdSceneIndexAdapterSceneDelegate::_GetImageShaderValue(
     HdSceneIndexPrim prim,
     const TfToken& key)
 {
@@ -1557,12 +1567,19 @@ _GetImageShaderValue(
                 imageShaderSchema.GetConstants()) {
             return VtValue(_ToDictionary(constantsSchema));
         }
+    } else if (key == HdImageShaderSchemaTokens->materialNetwork) {
+        if (HdMaterialNetworkSchema materialNetworkSchema =
+                imageShaderSchema.GetMaterialNetwork()) {
+            const TfTokenVector renderContexts =
+                GetRenderIndex()
+                    .GetRenderDelegate()->GetMaterialRenderContexts();
+            return VtValue(_ToMaterialNetworkMap(
+                materialNetworkSchema, renderContexts));
+        }
     }
 
     return VtValue();
 }
-
-} // anonymous namespace
 
 HdPrimvarDescriptorVector
 HdSceneIndexAdapterSceneDelegate::GetPrimvarDescriptors(

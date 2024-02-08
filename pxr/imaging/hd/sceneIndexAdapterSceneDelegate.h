@@ -227,7 +227,10 @@ private:
         const HdContainerDataSourceHandle &primvarsDataSource, 
         TfToken const &key,
         VtIntArray *outIndices);
-    
+
+    VtValue _GetImageShaderValue(
+        HdSceneIndexPrim prim,
+        const TfToken& key);
 
     size_t _SamplePrimvar(SdfPath const &id, TfToken const &key,
         size_t maxNumSamples, float *times, VtValue *samples, 

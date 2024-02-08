@@ -269,7 +269,8 @@ extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
     (displacement)                              \
     (volume)                                    \
     (light)                                     \
-    (lightFilter)
+    (lightFilter)                               \
+    (imageShader)
 
 #define HD_RENDERTAG_TOKENS                     \
     (geometry)                                  \
