@@ -1440,11 +1440,13 @@ _ComputeRenderViewDesc(
         const std::string &sourceNameStr =
             VtDictionaryGet<std::string>(
                 renderVar,
-                HdPrmanExperimentalRenderSpecTokens->sourceName);
+                HdPrmanExperimentalRenderSpecTokens->sourceName,
+                VtDefault = nameStr);
         const TfToken sourceType =
             VtDictionaryGet<TfToken>(
                 renderVar,
-                HdPrmanExperimentalRenderSpecTokens->sourceType);
+                HdPrmanExperimentalRenderSpecTokens->sourceType,
+                VtDefault = TfToken());
 
         // Map renderVar to RenderMan AOV name and source.
         // For LPE's, we use the name of the prim rather than the LPE,
