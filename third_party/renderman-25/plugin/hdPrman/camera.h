@@ -54,7 +54,7 @@ public:
     {
         float shutterOpenTime;
         float shutterCloseTime;
-        VtArray<float> shutterOpening;
+        VtArray<float> shutteropening;
     };
 
     HDPRMAN_API

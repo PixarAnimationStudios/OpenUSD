@@ -44,13 +44,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((shutterOpenTime,   "ri:shutterOpenTime"))
     ((shutterCloseTime,  "ri:shutterCloseTime"))
-    // We follow the PRManCamera.args convention here and camel case.
-    // Annoyingly, the string when passing params to the
-    // Riley::Create/ModifyCamera is RixStr.k_shutteropening with
-    // all small letters.
-    //
-    ((shutterOpening,    "ri:shutterOpening"))
-
+    ((shutteropening,    "ri:shutteropening"))
     ((apertureAngle,     "ri:apertureAngle"))
     ((apertureDensity,   "ri:apertureDensity"))
     ((apertureNSides,    "ri:apertureNSides"))
@@ -170,17 +164,17 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
             sceneDelegate->GetCameraParamValue(id, _tokens->shutterOpenTime);
         const VtValue vShutterCloseTime =
             sceneDelegate->GetCameraParamValue(id, _tokens->shutterCloseTime);
-        const VtValue vShutterOpening =
-            sceneDelegate->GetCameraParamValue(id, _tokens->shutterOpening);
+        const VtValue vShutteropening =
+            sceneDelegate->GetCameraParamValue(id, _tokens->shutteropening);
         
         if (vShutterOpenTime.IsHolding<float>() &&
             vShutterCloseTime.IsHolding<float>() &&
-            vShutterOpening.IsHolding<VtArray<float>>()) {
+            vShutteropening.IsHolding<VtArray<float>>()) {
 
             _shutterCurve = {
                 vShutterOpenTime.UncheckedGet<float>(),
                 vShutterCloseTime.UncheckedGet<float>(),
-                vShutterOpening.UncheckedGet<VtArray<float>>()
+                vShutteropening.UncheckedGet<VtArray<float>>()
             };
 
         } else {

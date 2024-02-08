@@ -394,8 +394,8 @@ HdPrman_CameraContext::_ComputeCameraParams(
     result.SetFloat(RixStr.k_shutterCloseTime, shutterCurve.shutterCloseTime);
     result.SetFloatArray(
         RixStr.k_shutteropening,
-        shutterCurve.shutterOpening.data(),
-        shutterCurve.shutterOpening.size());
+        shutterCurve.shutteropening.data(),
+        shutterCurve.shutteropening.size());
 
     result.SetFloat(RixStr.k_apertureAngle,
                     hdPrmanCamera->GetApertureAngle());
