@@ -568,6 +568,18 @@ pxr_build_test(testHdStTransition
     CPPFILES
         testenv/testHdStTransition.cpp
 )
+pxr_build_test(testHdStSubResourceRegistry
+    LIBRARIES
+        garch
+        gf
+        hd
+        hdSt
+        hgi
+        tf
+        vt
+    CPPFILES
+        testenv/testHdStSubResourceRegistry.cpp
+)
 endif()
 
 if (APPLE)
@@ -3131,6 +3143,13 @@ pxr_register_test(testHdStTransitionRefinedCurves
     TESTENV testHdStTransitionRefinedCurves
     ENV
         HD_ENABLE_REFINED_CURVES=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+pxr_register_test(testHdStSubResourceRegistry
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStSubResourceRegistry"
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStSubResourceRegistry
+    ENV
         TF_DEBUG=HD_SAFE_MODE
 )
 

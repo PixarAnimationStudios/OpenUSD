@@ -692,6 +692,19 @@ HdStResourceRegistry::RegisterComputePipeline(
     return _computePipelineRegistry.GetInstance(id);
 }
 
+HdResourceRegistry*
+HdStResourceRegistry::FindOrCreateSubResourceRegistry(
+    const std::string& identifier,
+    const std::function<std::unique_ptr<HdResourceRegistry>()>& factory)
+{
+    auto it = _subResourceRegistries.find(identifier);
+    if (it == _subResourceRegistries.end()) {
+        it = _subResourceRegistries.insert({ identifier, factory() }).first;
+    }
+
+    return it->second.get();
+}
+
 std::ostream &operator <<(
     std::ostream &out,
     const HdStResourceRegistry& self)
@@ -785,7 +798,14 @@ HdStResourceRegistry::_CommitTextures()
 void
 HdStResourceRegistry::_Commit()
 {
-    // Process textures first before resolving buffer sources since
+    // Process sub resource registries before other resources in
+    // case they depend on any resources in this resource registry
+    // being committed.
+    for (auto& subResourceRegistry : _subResourceRegistries) {
+        subResourceRegistry.second->Commit();
+    }
+
+    // Process textures before resolving buffer sources since
     // some computation buffer sources need meta-data from textures
     // (such as the grid transform for an OpenVDB file) or texture
     // handles (for bindless textures).
@@ -1041,6 +1061,10 @@ HdStResourceRegistry::_GarbageCollect()
     // The sequence in which we run garbage collection is significant.
     // We want to clean objects first which might be holding references
     // to other objects which will be subsequently cleaned up.
+
+    for (auto& subResourceRegistry : _subResourceRegistries) {
+        subResourceRegistry.second->GarbageCollect();
+    }
 
     GarbageCollectDispatchBuffers();
     GarbageCollectBufferResources();
