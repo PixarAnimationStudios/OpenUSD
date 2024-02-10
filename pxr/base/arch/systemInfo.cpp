@@ -45,7 +45,7 @@
 
 #elif defined(ARCH_OS_WINDOWS)
 
-    #include <Windows.h>
+    #include <windows.h>
     #include <direct.h>
     #define getcwd(buffer_, size_) _getcwd(buffer_, size_)
 

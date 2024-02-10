@@ -25,7 +25,7 @@
 #define PXR_IMAGING_GARCH_GL_PLATFORM_DEBUG_WINDOW_WINDOWS_H
 
 #include "pxr/pxr.h"
-#include <Windows.h>
+#include <windows.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

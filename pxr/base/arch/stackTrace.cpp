@@ -35,7 +35,7 @@
 #if defined(ARCH_OS_WINDOWS)
 // Need to include Winsock2.h BEFORE windows.h - which is included in
 // fileSystem.h
-#include <Winsock2.h>
+#include <winsock2.h>
 #endif
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/inttypes.h"
@@ -44,7 +44,7 @@
 #if defined(ARCH_OS_WINDOWS)
 #include <io.h>
 #include <process.h>
-#include <DbgHelp.h>
+#include <dbghelp.h>
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN 64
 #endif

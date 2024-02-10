@@ -40,7 +40,7 @@
 #include <cstdlib>
 #include <cstring>
 #elif defined(ARCH_OS_WINDOWS)
-#include <Windows.h>
+#include <windows.h>
 #include <chrono>
 #include <thread>
 #endif

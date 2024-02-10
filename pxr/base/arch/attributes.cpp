@@ -271,7 +271,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #elif defined(ARCH_OS_WINDOWS)
 
-#include <Windows.h>
+#include <windows.h>
 #include <algorithm>
 #include <cstddef>
 #include <cstring>

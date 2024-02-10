@@ -29,7 +29,7 @@
 #include <regex>
 
 #if defined(ARCH_OS_WINDOWS)
-#include <Windows.h>
+#include <windows.h>
 #else
 #include <stdlib.h>
 #endif

@@ -51,9 +51,9 @@
 #include <dirent.h>
 #include <utime.h>
 #else
-#include <Windows.h>
-#include <Shellapi.h>
-#include <ShlwAPI.h>
+#include <windows.h>
+#include <shellapi.h>
+#include <shlwapi.h>
 #include <sys/utime.h>
 #endif
 using std::set;

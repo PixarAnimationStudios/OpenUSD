@@ -50,7 +50,7 @@
 #include "pxrDoubleConversion/utils.h"
 
 #if defined(ARCH_OS_WINDOWS)
-#include <Shlwapi.h>
+#include <shlwapi.h>
 #endif
 
 using std::list;

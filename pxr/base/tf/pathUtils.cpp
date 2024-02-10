@@ -41,8 +41,8 @@
 #include <vector>
 
 #if defined(ARCH_OS_WINDOWS)
-#include <Windows.h>
-#include <Shlwapi.h>
+#include <windows.h>
+#include <shlwapi.h>
 #else
 #include <glob.h>
 #endif

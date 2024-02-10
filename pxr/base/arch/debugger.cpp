@@ -50,7 +50,7 @@
 #include <sys/sysctl.h>
 #endif
 #if defined(ARCH_OS_WINDOWS)
-#include <Windows.h>
+#include <windows.h>
 #endif
 #include <atomic>
 

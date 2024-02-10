@@ -27,7 +27,7 @@
 #include <cerrno>
 #include <cstring>
 #if defined(ARCH_OS_WINDOWS)
-#include <Windows.h>
+#include <windows.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -55,7 +55,7 @@ ArchStrerror(int errorCode)
     //   unknown). The string always includes a terminating null byte.
     //
     return strerror_r(errorCode, msg_buf, 256);
-#elif !defined(ARCH_COMPILER_MSVC)
+#elif !defined(ARCH_OS_WINDOWS)
     strerror_r(errorCode, msg_buf, 256);
 #else
     strerror_s(msg_buf, 256, errorCode);

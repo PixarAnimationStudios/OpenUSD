@@ -28,8 +28,8 @@
 
 #include <cstdint>
 #if defined(ARCH_OS_WINDOWS)
-#include <Windows.h>
-#include <Memoryapi.h>
+#include <windows.h>
+#include <memoryapi.h>
 #else // Assume POSIX
 #include <sys/mman.h>
 #endif
