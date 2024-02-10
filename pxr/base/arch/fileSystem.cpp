@@ -48,8 +48,9 @@
 #include <functional>
 #include <io.h>
 #include <process.h>
-#include <Windows.h>
-#include <WinIoCtl.h>
+#include <windows.h>
+#include <winioctl.h>
+#include <share.h>
 #else
 #include <alloca.h>
 #include <sys/mman.h>

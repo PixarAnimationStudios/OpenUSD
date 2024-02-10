@@ -24,7 +24,7 @@
 #include "pxr/imaging/garch/glPlatformContextWindows.h"
 
 #include <boost/functional/hash.hpp>
-#include <Windows.h>
+#include <windows.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

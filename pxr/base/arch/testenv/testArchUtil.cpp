@@ -35,7 +35,7 @@
 #include <cstring>
 
 #if defined(ARCH_OS_WINDOWS)
-#include <Windows.h>
+#include <windows.h>
 #include <process.h>
 #include <csignal>
 #else

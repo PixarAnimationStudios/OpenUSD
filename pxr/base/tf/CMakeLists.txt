@@ -5,7 +5,7 @@ set(PXR_PACKAGE tf)
 set(PXR_PREFIX pxr/base)
 
 if(WIN32)
-    set(WINLIBS Shlwapi.lib)
+    set(WINLIBS shlwapi.lib)
 endif()
 
 pxr_library(tf

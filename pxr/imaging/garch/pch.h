@@ -40,7 +40,7 @@
 #endif
 
 #include <tchar.h>
-#include <Windows.h>
+#include <windows.h>
 #include <intrin.h>
 #include <map>
 #endif

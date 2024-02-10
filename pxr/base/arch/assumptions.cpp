@@ -41,7 +41,7 @@
 #include <sys/sysctl.h>
 #include <mach-o/arch.h>
 #elif defined(ARCH_OS_WINDOWS)
-#include <Windows.h>
+#include <windows.h>
 #include <memory>
 #endif
 

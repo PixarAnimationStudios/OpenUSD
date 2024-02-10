@@ -6,7 +6,7 @@ set(PXR_PACKAGE arch)
 
 set(PLATFORM_LIBS ${M_LIB})
 if(WIN32)
-    set(PLATFORM_LIBS Ws2_32.lib Dbghelp.lib ${PLATFORM_LIBS})
+    set(PLATFORM_LIBS ws2_32.lib dbghelp.lib ${PLATFORM_LIBS})
 endif()
 
 pxr_library(arch

@@ -35,7 +35,7 @@
 #include <vector>
 
 #if defined(ARCH_OS_WINDOWS)
-#include <Windows.h>
+#include <windows.h>
 #endif
 
 using namespace std;

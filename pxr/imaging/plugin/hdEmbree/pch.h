@@ -38,7 +38,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#include <Windows.h>
+#include <windows.h>
 #include <intrin.h>
 #include <boost/preprocessor/variadic/size.hpp>
 #include <boost/vmd/is_empty.hpp>

@@ -27,7 +27,7 @@
 #include "pxr/base/arch/errno.h"
 
 #if defined(ARCH_OS_WINDOWS)
-#include <Windows.h>
+#include <windows.h>
 #else
 #include <dlfcn.h>
 #endif
@@ -88,7 +88,7 @@ int ArchLibraryClose(void* handle)
 void* ArchLibraryGetSymbolAddress(void* handle, const char* name)
 {
 #if defined(ARCH_OS_WINDOWS)
-    return GetProcAddress(reinterpret_cast<HMODULE>(handle), name);
+    return (void*)GetProcAddress(reinterpret_cast<HMODULE>(handle), name);
 #else
     return dlsym(handle, name);
 #endif
