@@ -307,7 +307,7 @@ def CopyFiles(context, src, dest):
                            .format(file=f, destDir=instDestDir))
         shutil.copy(f, instDestDir)
 
-def CopyDirectory(context, srcDir, destDir):
+def CopyDirectory(context, srcDir, destDir, **kwargs):
     """Copy directory like shutil.copytree."""
     instDestDir = os.path.join(context.instDir, destDir)
     if os.path.isdir(instDestDir):
@@ -315,7 +315,7 @@ def CopyDirectory(context, srcDir, destDir):
 
     PrintCommandOutput("Copying {srcDir} to {destDir}\n"
                        .format(srcDir=srcDir, destDir=instDestDir))
-    shutil.copytree(srcDir, instDestDir)
+    shutil.copytree(srcDir, instDestDir, **kwargs)
 
 def AppendCXX11ABIArg(buildFlag, context, buildArgs):
     """Append a build argument that defines _GLIBCXX_USE_CXX11_ABI
@@ -756,8 +756,38 @@ def InstallBoost_Helper(context, force, buildArgs):
         "*/libs/wave/test/testwave/testfiles/utf8-test-*"
     ]
 
+    headersOnly = not (context.buildOIIO or context.enableOpenVDB or context.buildPython)
+
     with CurrentWorkingDirectory(DownloadURL(BOOST_URL, context, force, 
                                              dontExtract=dontExtract)):
+        if headersOnly:
+            # We don't need all the headers, so we elide some for space
+            accepted = {'assert', 'config', 'core', 'detail', 'function', 'intrusive_ptr', 'iterator', 'lexical_cast',
+                        'mpl', 'exception', 'move', 'container', 'integer', 'range', 'concept', 'noncopyable',
+                        'numeric', 'optional', 'preprocessor', 'smart_ptr', 'variant', 'vmd', 'type', 'utility'}
+
+            def _filteredHeaderCopy(src, dst):
+                """This utility function only copies over headers that meet our criteria"""
+                doCopy = False
+                parent = os.path.dirname(src)
+                # First we copy over any headers that are in the root of the boost dir, but have no associated subdir
+                # We assume these are shared across many boost libs
+                if src.endswith(".hpp") and os.path.basename(parent) == "boost":
+                    lookFor = os.path.join(parent, os.path.splitext(os.path.basename(src))[0])
+                    doCopy = not os.path.exists(lookFor)
+                # For everything else, we check against the accepted list above to see if they're a dir we want
+                if not doCopy:
+                    for accept in accepted:
+                        if f"boost/{accept}" in dst:
+                            doCopy = True
+                            break
+                if doCopy:
+                    return shutil.copy2(src, dst)
+
+            headersDir = os.path.abspath("./boost")
+            CopyDirectory(context, headersDir, "include/boost", copy_function=_filteredHeaderCopy)
+            return
+
         if Windows():
             bootstrap = "bootstrap.bat"
         else:
