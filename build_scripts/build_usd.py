@@ -756,8 +756,15 @@ def InstallBoost_Helper(context, force, buildArgs):
         "*/libs/wave/test/testwave/testfiles/utf8-test-*"
     ]
 
+    headersOnly = not (context.buildOIIO or context.enableOpenVDB or context.buildPython)
+
     with CurrentWorkingDirectory(DownloadURL(BOOST_URL, context, force, 
                                              dontExtract=dontExtract)):
+        if headersOnly:
+            headersDir = os.path.abspath("./boost")
+            CopyDirectory(context, headersDir, "include/boost")
+            return
+
         if Windows():
             bootstrap = "bootstrap.bat"
         else:
