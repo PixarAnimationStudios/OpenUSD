@@ -172,6 +172,27 @@ Or for visionOS:
 ```
 > python OpenUSD/build_scripts/build_usd.py --build-target visionOS --build-monolithic /path/to/my_usd_install_dir
 ```
+###### Framework Builds (Experimental)
+
+Builds for Apple platforms may optionally build as a framework using the `--build-apple-framework` flag. 
+
+**NOTE:** This feature is experimental and may change how it functions in future USD builds.
+
+- Framework builds are enabled by default for iOS and visionOS build targets. It can optionally be enabled for macOS.
+- Framework builds enable monolithic builds by default. This may be overridden but is not currently a tested scenario.
+
+To add the Framework to your application, simply add `OpenUSD.framework` to your Xcode project.
+It is recommended to set it to `Embed and Sign`.
+
+When including sources from the Framework, you must prefix the include with the framework name.
+However, you should note that these includes are not portable to non-framework builds.
+e.g `#include <OpenUSD/pxr/pxr.h>`
+
+Optionally, if you want to avoid prefixed includes for your cross platform code, you can manually add the search path
+by setting `SYSTEM_HEADER_SEARCH_PATHS` in your Xcode target to the Headers directory within the framework.
+For example, if your Framework folder is in your project, under a folder with the same name as your target, you would
+set it as `$(SRCROOT)/$(TARGET_NAME)/OpenUSD.framework/Headers`. 
+
 
 ##### Windows:
 

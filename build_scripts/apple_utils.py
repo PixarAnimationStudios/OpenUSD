@@ -15,6 +15,7 @@
 import sys
 import locale
 import os
+import re
 import platform
 import shlex
 import subprocess
@@ -120,12 +121,21 @@ def SupportsMacOSUniversalBinaries():
     XcodeVersion = XcodeOutput[XcodeFind:].split(' ')[1]
     return (XcodeVersion > '11.0')
 
-def GetSDKRoot(context) -> Optional[str]:
+
+def GetSDKName(context) -> str:
     sdk = "macosx"
     if context.buildTarget == TARGET_IOS:
-        sdk = "iphoneos"
+        sdk = "iPhoneOS"
     elif context.buildTarget == TARGET_VISIONOS:
-        sdk = "xros"
+        sdk = "xrOS"
+
+    if TargetEmbeddedOS(context) and context.buildSimulator:
+        sdk = sdk[:-2] + "Simulator"
+
+    return sdk
+
+def GetSDKRoot(context) -> Optional[str]:
+    sdk = GetSDKName(context).lower()
 
     for arg in (context.cmakeBuildArgs or '').split():
         if "CMAKE_OSX_SYSROOT" in arg:
@@ -163,20 +173,59 @@ def ExtractFilesRecursive(path, cond):
                 files.append(os.path.join(r, file))
     return files
 
-def CodesignFiles(files):
-    SDKVersion  = subprocess.check_output(
-        ['xcodebuild', '-version']).strip()[6:10]
-    codeSignIDs = subprocess.check_output(
-        ['security', 'find-identity', '-vp', 'codesigning'])
+def _GetCodeSignStringFromTerminal():
+    codeSignIDs = GetCommandOutput(['security', 'find-identity', '-vp', 'codesigning'])
+    return codeSignIDs
 
-    codeSignID = "-"
+def GetCodeSignID():
     if os.environ.get('CODE_SIGN_ID'):
-        codeSignID = os.environ.get('CODE_SIGN_ID')
-    elif float(SDKVersion) >= 11.0 and \
-                codeSignIDs.find(b'Apple Development') != -1:
-        codeSignID = "Apple Development"
-    elif codeSignIDs.find(b'Mac Developer') != -1:
-        codeSignID = "Mac Developer"
+        return os.environ.get('CODE_SIGN_ID')
+
+    codeSignIDs = _GetCodeSignStringFromTerminal()
+    if not codeSignIDs:
+        return "-"
+    for codeSignID in codeSignIDs.splitlines():
+        if "CSSMERR_TP_CERT_REVOKED" in codeSignID:
+            continue
+        if ")" not in codeSignID:
+            continue
+        codeSignID = codeSignID.split()[1]
+        break
+    else:
+        raise RuntimeError("Could not find a valid codesigning ID")
+
+    return codeSignID or "-"
+
+def GetCodeSignIDHash():
+    codeSignIDs = _GetCodeSignStringFromTerminal()
+    try:
+        return re.findall(r'\(.*?\)', codeSignIDs)[0][1:-1]
+    except:
+        raise Exception("Unable to parse codesign ID hash")
+
+def GetDevelopmentTeamID():
+    if os.environ.get("DEVELOPMENT_TEAM"):
+        return os.environ.get("DEVELOPMENT_TEAM")
+    codesignID = GetCodeSignIDHash()
+
+    certs = subprocess.check_output(["security", "find-certificate", "-c", codesignID, "-p"])
+    subject = GetCommandOutput(["openssl", "x509", "-subject"], input=certs)
+    subject = subject.splitlines()[0]
+    match = re.search("OU\s*=\s*(?P<team>([A-Za-z0-9_])+)",  subject)
+    if not match:
+        raise RuntimeError("Could not parse the output certificate to find the team ID")
+
+    groups = match.groupdict()
+    team = groups.get("team")
+
+    if not team:
+        raise RuntimeError("Could not extract team id from certificate")
+
+    return team
+
+
+def CodesignFiles(files):
+    codeSignID = GetCodeSignID()
 
     for f in files:
         subprocess.call(['codesign', '-f', '-s', '{codesignid}'
@@ -244,5 +293,11 @@ def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
         args.append(f"-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH")
         args.append(f"-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH")
         args.append(f"-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH")
+
+
+    # Signing needs to happen on all systems
+    if context.macOSCodesign:
+        args.append(f"-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY={GetCodeSignID()}")
+        args.append(f"-DCMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM={GetDevelopmentTeamID()}")
 
     return args

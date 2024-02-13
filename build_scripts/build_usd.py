@@ -1529,9 +1529,7 @@ MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.10.zip"
 
 def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
-        cmakeOptions = ['-DMATERIALX_BUILD_SHARED_LIBS=ON',
-                        '-DMATERIALX_BUILD_TESTS=OFF'
-        ]
+        cmakeOptions = ['-DMATERIALX_BUILD_TESTS=OFF']
 
         if MacOSTargetEmbedded(context):
             # The materialXShaderGen in hdSt assumes the GLSL shadergen is
@@ -1551,6 +1549,10 @@ def InstallMaterialX(context, force, buildArgs):
                         '        add_subdirectory(source/MaterialXRenderGlsl)\n' +
                         '    endif()')
                        ], multiLineMatches=True)
+        if MacOS() and context.buildAppleFramework and context.buildMonolithic:
+            cmakeOptions.extend(["-DMATERIALX_BUILD_SHARED_LIBS=OFF"])
+        else:
+            cmakeOptions.extend(["-DMATERIALX_BUILD_SHARED_LIBS=ON"])
 
         cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
@@ -1634,11 +1636,6 @@ def InstallUSD(context, force, buildArgs):
                 extraArgs.append('-DPXR_USE_DEBUG_PYTHON=ON')
             else:
                 extraArgs.append('-DPXR_USE_DEBUG_PYTHON=OFF')
-
-            if context.buildBoostPython:
-                extraArgs.append('-DPXR_USE_BOOST_PYTHON=ON')
-            else:
-                extraArgs.append('-DPXR_USE_BOOST_PYTHON=OFF')
 
             # CMake has trouble finding the executable, library, and include
             # directories when there are multiple versions of Python installed.
@@ -1796,6 +1793,8 @@ def InstallUSD(context, force, buildArgs):
         if Windows():
             # Increase the precompiled header buffer limit.
             extraArgs.append('-DCMAKE_CXX_FLAGS="/Zm150"')
+        if MacOS():
+            extraArgs.append(f"-DPXR_BUILD_APPLE_FRAMEWORK={'ON' if context.buildAppleFramework else 'OFF'}")
 
         # Make sure to use boost installed by the build script and not any
         # system installed boost
@@ -1843,8 +1842,8 @@ errors may occur.
 
 - Embedded Build Targets
 When cross compiling for an embedded target operating system, e.g. iOS, the
-following components are disabled: python, tools, tests, examples, tutorials,
-opencolorio, openimageio, openvdb.
+following components are disabled: python, tools, imaging, tests, examples,
+tutorials.
 
 - Python Versions and DCC Plugins:
 Some DCCs may ship with and run using their own version of Python. In that case,
@@ -1916,6 +1915,14 @@ if MacOS():
                        help=("Build target for macOS cross compilation. "
                              "(default: {})".format(
                                 apple_utils.GetBuildTargetDefault())))
+    group.add_argument("--build-simulator", action="store_true",
+                       help="Build using the simulator SDK for embedded targets.")
+    subgroup = group.add_mutually_exclusive_group()
+    subgroup.add_argument("--build-apple-framework", dest="build_apple_framework", action="store_true",
+                          help="Build USD as an Apple Framework (Default if using build)")
+    subgroup.add_argument("--no-build-apple-framework", dest="no_build_apple_framework", action="store_true",
+                          help="Do not build USD as an Apple Framework (Default if macOS)")
+
     if apple_utils.IsHostArm():
         # Intel Homebrew stores packages in /usr/local which unfortunately can
         # be where a lot of other things are too. So we only add this flag on arm macs.
@@ -1969,8 +1976,7 @@ group = parser.add_argument_group(title="USD Options")
 (SHARED_LIBS, MONOLITHIC_LIB) = (0, 1)
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--build-shared", dest="build_type",
-                      action="store_const", const=SHARED_LIBS, 
-                      default=SHARED_LIBS,
+                      action="store_const", const=SHARED_LIBS,
                       help="Build individual shared libraries (default)")
 subgroup.add_argument("--build-monolithic", dest="build_type",
                       action="store_const", const=MONOLITHIC_LIB,
@@ -2022,10 +2028,6 @@ subgroup.add_argument("--prefer-speed-over-safety", dest="safety_first",
                       action="store_false", help=
                       "Disable performance-impacting safety checks against "
                       "malformed input files")
-
-group.add_argument("--boost-python", dest="build_boost_python",
-                   action="store_true", default=False,
-                   help="Build Python bindings with boost::python (deprecated)")
 
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--debug-python", dest="debug_python", 
@@ -2235,7 +2237,7 @@ class InstallContext:
 
         self.debugPython = args.debug_python
 
-        self.buildShared = (args.build_type == SHARED_LIBS)
+        self.buildShared = (args.build_type == SHARED_LIBS or not args.build_type)
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
 
         self.ignorePaths = args.ignore_paths or []
@@ -2243,12 +2245,19 @@ class InstallContext:
         if MacOS():
             self.buildTarget = args.build_target
             apple_utils.SetTarget(self, self.buildTarget)
+            self.buildSimulator = args.build_simulator
 
-            self.macOSCodesign = \
-                (args.macos_codesign if hasattr(args, "macos_codesign")
-                 else False)
+            self.macOSCodesign = False
+            if args.macos_codesign:
+                self.macOSCodesign = args.macos_codesign_id or apple_utils.GetCodeSignID()
             if apple_utils.IsHostArm() and args.ignore_homebrew:
                 self.ignorePaths.append("/opt/homebrew")
+
+            self.buildAppleFramework = ((args.build_apple_framework or MacOSTargetEmbedded(self))
+                                        and not args.no_build_apple_framework)
+            if self.buildAppleFramework and not args.build_type:
+                    self.buildShared = False
+                    self.buildMonolithic = True
         else:
             self.buildTarget = ""
 
@@ -2262,14 +2271,15 @@ class InstallContext:
 
         # Some components are disabled for embedded build targets
         embedded = MacOSTargetEmbedded(self)
+        optional_components = not (embedded or (MacOS() and self.buildAppleFramework))
 
         # Optional components
-        self.buildTests = args.build_tests and not embedded
-        self.buildPython = args.build_python and not embedded
+        self.buildTests = args.build_tests and optional_components
+        self.buildPython = args.build_python and optional_components
         self.buildBoostPython = self.buildPython and args.build_boost_python
-        self.buildExamples = args.build_examples and not embedded
-        self.buildTutorials = args.build_tutorials and not embedded
-        self.buildTools = args.build_tools and not embedded
+        self.buildExamples = args.build_examples and optional_components
+        self.buildTutorials = args.build_tutorials and optional_components
+        self.buildTools = args.build_tools and optional_components
 
         # - Documentation
         self.buildDocs = args.build_docs or args.build_python_docs
@@ -2282,7 +2292,7 @@ class InstallContext:
         self.enablePtex = self.buildImaging and args.enable_ptex
         self.enableOpenVDB = (self.buildImaging
                               and args.enable_openvdb
-                              and not embedded)
+                              and optional_components)
 
         # - USD Imaging
         self.buildUsdImaging = (args.build_imaging == USD_IMAGING)
@@ -2299,8 +2309,8 @@ class InstallContext:
                                if args.prman_location else None)                               
         self.buildOIIO = ((args.build_oiio or (self.buildUsdImaging
                                                and self.buildTests))
-                          and not embedded)
-        self.buildOCIO = args.build_ocio and not embedded
+                          and optional_components)
+        self.buildOCIO = args.build_ocio and optional_components
 
         # - Alembic Plugin
         self.buildAlembic = args.build_alembic

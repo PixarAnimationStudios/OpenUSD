@@ -278,9 +278,9 @@ function(pxr_library NAME)
         # Register a dependency so that cmake will regenerate the build
         # system if generatedSchema.classes.txt changes
         set_property(
-            DIRECTORY 
-            APPEND 
-            PROPERTY CMAKE_CONFIGURE_DEPENDS 
+            DIRECTORY
+            APPEND
+            PROPERTY CMAKE_CONFIGURE_DEPENDS
             ${filePath}
         )
 
@@ -1174,6 +1174,12 @@ function(pxr_toplevel_epilogue)
     # Setup the plugins in the top epilogue to ensure that everybody has had a
     # chance to update PXR_EXTRA_PLUGINS with their plugin paths.
     pxr_setup_plugins()
+
+    # Build
+    if (PXR_BUILD_APPLE_FRAMEWORK)
+        pxr_create_apple_framework()
+    endif ()
+
 endfunction() # pxr_toplevel_epilogue
 
 function(pxr_monolithic_epilogue)
@@ -1364,10 +1370,10 @@ function(pxr_build_python_documentation)
 endfunction() # pxr_build_python_documentation
 
 # Adding support for a "docs-only" directory, needed when adding doxygen docs
-# not associated with a specific library/etc. 
+# not associated with a specific library/etc.
 function(pxr_docs_only_dir NAME)
-    # Get list of doxygen files, which could include image files and/or 
-    # snippets example cpp files 
+    # Get list of doxygen files, which could include image files and/or
+    # snippets example cpp files
     set(multiValueArgs
         DOXYGEN_FILES
     )
@@ -1406,3 +1412,34 @@ function(pxr_set_rpaths_for_target TARGET)
     _pxr_install_rpath(rpath ${TARGET})
 
 endfunction() # pxr_set_rpaths_for_target
+
+
+function(pxr_create_apple_framework)
+    # CMake can have a lot of different boolean representations,
+    # that need to be narrowed down to a constant form for zsh
+    if (PXR_APPLE_EMBEDDED)
+        set(EMBEDDED_BUILD "true")
+    else()
+        set(EMBEDDED_BUILD "false")
+    endif()
+
+    if (PXR_BUILD_MONOLITHIC)
+        set(MONOLITHIC_BUILD "true")
+    else()
+        set(MONOLITHIC_BUILD "false")
+    endif()
+
+    _get_library_prefix(LIB_PREFIX)
+    if(TARGET usd_ms)
+        set(FRAMEWORK_ROOT_LIBRARY_NAME "${LIB_PREFIX}usd_ms.dylib")
+    else()
+        set(FRAMEWORK_ROOT_LIBRARY_NAME "${LIB_PREFIX}usd.dylib")
+    endif()
+
+    # Install the Info.plist and shell script
+    configure_file(cmake/resources/Info.plist.in "${PROJECT_BINARY_DIR}/Info.plist" @ONLY)
+    configure_file(cmake/resources/AppleFrameworkBuild.zsh.in "${PROJECT_BINARY_DIR}/AppleFrameworkBuild.zsh" @ONLY)
+
+    # Run the shell script for the primary configuration
+    install(CODE "execute_process(COMMAND zsh ${PROJECT_BINARY_DIR}/AppleFrameworkBuild.zsh )")
+endfunction() # pxr_create_apple_framework

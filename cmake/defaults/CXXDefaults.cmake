@@ -92,3 +92,19 @@ if (PXR_PREFER_SAFETY_OVER_SPEED)
 else()
    set(PXR_PREFER_SAFETY_OVER_SPEED "0")
 endif()
+
+# Set that Apple Framework is being build
+if (PXR_BUILD_APPLE_FRAMEWORK)
+    _add_define("PXR_BUILD_APPLE_FRAMEWORK")
+endif()
+
+# Setup CCache for C/C++ compilation
+if(PXR_ENABLE_COMPILER_CACHE)
+    find_program(COMPILER_CACHE_PROGRAM ${PXR_COMPILER_CACHE_NAME})
+    if(COMPILER_CACHE_PROGRAM)
+        set(CMAKE_C_COMPILER_LAUNCHER "${COMPILER_CACHE_PROGRAM}")
+        set(CMAKE_CXX_COMPILER_LAUNCHER "${COMPILER_CACHE_PROGRAM}")
+    else ()
+        MESSAGE(STATUS "Compiler Caching disabled. Could not find ${PXR_COMPILER_CACHE_NAME}.")
+    endif()
+endif()

@@ -1,0 +1,141 @@
+#!/bin/zsh
+
+# Creates an Apple framework for the given platform type
+# documentation: https://developer.apple.com/documentation/bundleresources/placing_content_in_a_bundle
+#                https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPFrameworks/Concepts/FrameworkAnatomy.html
+echo "⌛️ Creating @PXR_APPLE_FRAMEWORK_NAME@ ..."
+
+# Variables are substituted by CMake
+CMAKE_INSTALL_PREFIX="@CMAKE_INSTALL_PREFIX@"
+PROJECT_BINARY_DIR="@PROJECT_BINARY_DIR@"
+
+FRAMEWORK_NAME="@PXR_APPLE_FRAMEWORK_NAME@"
+FRAMEWORK_DIR="${CMAKE_INSTALL_PREFIX}/frameworks/${FRAMEWORK_NAME}.framework"
+FRAMEWORK_LIBRARIES_DIR="${FRAMEWORK_DIR}/Libraries"
+FRAMEWORK_ROOT_LIBRARY_NAME="@FRAMEWORK_ROOT_LIBRARY_NAME@"
+EMBEDDED_BUILD=@EMBEDDED_BUILD@
+MONOLITHIC_BUILD=@MONOLITHIC_BUILD@
+FRAMEWORK_RESOURCES_DIR="${FRAMEWORK_DIR}"
+MATERIALX_SOURCE_LIBRARIES="${CMAKE_INSTALL_PREFIX}/libraries/"
+BUNDLE_IDENTIFIER="@PXR_APPLE_IDENTIFIER_DOMAIN@.@PXR_APPLE_FRAMEWORK_NAME@"
+CODESIGN_ID="@CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY@"
+OLD_RC_PATH="${CMAKE_INSTALL_PREFIX}/lib"
+
+function fix_linkage() {
+    readonly file=${1:?"A file path must be specified."}
+    readonly prepend="${FRAMEWORK_NAME}.framework/Libraries"
+    filename=$(basename ${file})
+    # First, change the install name. This corresponds to LC_ID_DYLIB.
+    install_name_tool -id "@rpath/${prepend}/${filename}" ${file}
+
+    parts=("${(@f)$(otool -l ${file})}")
+    for line in ${parts}; do
+      dylib_name=""
+      [[ $line =~ ' *name @rpath/(.*\.dylib)' ]] && dylib_name=$match[1]
+      if [ -n "${dylib_name}" ]; then
+        install_name_tool -change "@rpath/${dylib_name}" "@rpath/${prepend}/${dylib_name}" "${file}"
+      fi
+      if [[ $line == *"${OLD_RC_PATH}"* ]]; then
+        install_name_tool -delete_rpath ${OLD_RC_PATH} ${file}
+      fi
+    done
+
+    codesign -f -s ${CODESIGN_ID} ${file}
+}
+
+# Remove the existing directory if it exists
+if [ -d ${FRAMEWORK_DIR} ]; then
+  echo "Removing existing framework";
+  rm -Rf ${FRAMEWORK_DIR};
+fi
+
+# Create the parent directory
+echo "Creating Framework Directory: ${FRAMEWORK_DIR}"
+mkdir -p ${FRAMEWORK_DIR}
+
+if [ "$EMBEDDED_BUILD" = true ];then
+  FRAMEWORK_RESOURCES_DIR="${FRAMEWORK_DIR}/Resources"
+  FRAMEWORK_PLIST_LOCATION="${FRAMEWORK_DIR}/Info.plist"
+  FRAMEWORK_HEADERS_DIR="${FRAMEWORK_DIR}/Headers"
+  FRAMEWORK_LIB_PATH=""${FRAMEWORK_DIR}/${FRAMEWORK_NAME}""
+else
+  FRAMEWORK_RESOURCES_DIR="${FRAMEWORK_DIR}/Versions/A/Resources/"
+  FRAMEWORK_PLIST_LOCATION="${FRAMEWORK_DIR}/Versions/A/Resources/Info.plist"
+  FRAMEWORK_HEADERS_DIR="${FRAMEWORK_DIR}/Versions/A/Headers"
+  FRAMEWORK_LIB_PATH="${FRAMEWORK_DIR}/Versions/A/${FRAMEWORK_NAME}"
+fi
+
+echo "Creating Resources Root: ${FRAMEWORK_RESOURCES_DIR}"
+mkdir -p ${FRAMEWORK_RESOURCES_DIR}
+
+echo "Creating Headers Root: ${FRAMEWORK_HEADERS_DIR}"
+mkdir -p ${FRAMEWORK_HEADERS_DIR}
+
+# Copy the plist over
+echo "Copying files into ${FRAMEWORK_DIR}"
+ditto "${PROJECT_BINARY_DIR}/Info.plist" "${FRAMEWORK_PLIST_LOCATION}"
+
+
+# Copy the MaterialX libraries if they exist
+if [ -d "${MATERIALX_SOURCE_LIBRARIES}" ]; then
+  ditto ${MATERIALX_SOURCE_LIBRARIES} "${FRAMEWORK_RESOURCES_DIR}/materialx/"
+fi
+
+
+# Copy the primary directories over
+ditto "${CMAKE_INSTALL_PREFIX}/include/" ${FRAMEWORK_HEADERS_DIR}
+ditto "${CMAKE_INSTALL_PREFIX}/plugin/usd/" "${FRAMEWORK_RESOURCES_DIR}/usd"
+ditto "${CMAKE_INSTALL_PREFIX}/lib/usd/" "${FRAMEWORK_RESOURCES_DIR}/usd"
+
+if [ "$MONOLITHIC_BUILD" = true ];then
+  cp "${CMAKE_INSTALL_PREFIX}/lib/${FRAMEWORK_ROOT_LIBRARY_NAME}" "${FRAMEWORK_LIB_PATH}"
+else
+  ditto "${CMAKE_INSTALL_PREFIX}/lib/" ${FRAMEWORK_LIBRARIES_DIR}
+  # Remove any static archive files
+  for file in ${FRAMEWORK_LIBRARIES_DIR}/**/*.a; do
+    rm -f ${file}
+  done
+
+  echo "Correcting linkage on libraries..."
+   mv "${FRAMEWORK_LIBRARIES_DIR}/${FRAMEWORK_ROOT_LIBRARY_NAME}" "${FRAMEWORK_DIR}/${FRAMEWORK_NAME}"
+   (cd ${FRAMEWORK_LIBRARIES_DIR} && ln -s "../${FRAMEWORK_NAME}" ${FRAMEWORK_ROOT_LIBRARY_NAME})
+
+    # Do Dylib fixing here
+    # This finds all dylibs, but (.) skips linked files
+    for file in ${FRAMEWORK_LIBRARIES_DIR}/**/*.dylib(.); do
+      fix_linkage ${file}
+    done
+fi
+
+
+# Setup symlinks
+if [ "$EMBEDDED_BUILD" = false ];then
+  (cd "${FRAMEWORK_DIR}/Versions" && ln -s "A" "Current")
+  (cd ${FRAMEWORK_DIR} && ln -s "Versions/Current/Resources" "Resources")
+  (cd ${FRAMEWORK_DIR} && ln -s "Versions/Current/Headers" "Headers")
+  (cd ${FRAMEWORK_DIR} && ln -s "Versions/Current/${FRAMEWORK_NAME}" ${FRAMEWORK_NAME})
+fi
+
+# Fix the linkage on the primary dylib
+fix_linkage "${FRAMEWORK_DIR}/${FRAMEWORK_NAME}"
+install_name_tool -id "@rpath/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}" "${FRAMEWORK_DIR}/${FRAMEWORK_NAME}"
+install_name_tool -change "@rpath/${FRAMEWORK_NAME}.framework/Libraries/${FRAMEWORK_NAME}" "@rpath/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}" "${FRAMEWORK_DIR}/${FRAMEWORK_NAME}"
+
+# Frameworks require all includes to use the framework name as the prefix for automatic discovery
+# e.g #include "pxr/pxr.h" must be #include <OpenUSD/pxr/pxr.h>
+echo "Modifying headers..."
+HEADER_SET=""
+for i in $(cd $FRAMEWORK_HEADERS_DIR && ls -d */ | cut -f1 -d'/');do
+  HEADER_SET+="${i}|"
+done;
+# Sed on macOS is POSIX compliant and so uses different args than GNU
+# Things to be aware of are [[:<:]] and [[:>:]] are for word boundaries and spaces are explicit literals
+INCLUDE_PATTERN="^# *include [\"|<]([[:<:]](${HEADER_SET::-1})[[:>:]].*)[\"|>].*$"
+find ${FRAMEWORK_HEADERS_DIR} -type f -name "*.h*" -print0 | xargs -0 sed -i "" -E "s,${INCLUDE_PATTERN},#include <${FRAMEWORK_NAME}/\1>,g"
+
+# Sign the final framework
+echo "Codesigning the framework..."
+set -e
+codesign --force --sign ${CODESIGN_ID} --generate-entitlement-der --identifier ${BUNDLE_IDENTIFIER} --verbose ${FRAMEWORK_DIR}
+
+echo "✅ Finished creating framework at ${FRAMEWORK_DIR}"
