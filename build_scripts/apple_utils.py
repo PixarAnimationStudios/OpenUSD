@@ -35,20 +35,26 @@ import os
 import platform
 import shlex
 import subprocess
+import re
+from typing import Optional, List
 
 TARGET_NATIVE = "native"
 TARGET_X86 = "x86_64"
 TARGET_ARM64 = "arm64"
 TARGET_UNIVERSAL = "universal"
+TARGET_IOS = "iOS"
+
+EMBEDDED_PLATFORMS = [TARGET_IOS]
 
 def GetBuildTargets():
     return [TARGET_NATIVE,
             TARGET_X86,
             TARGET_ARM64,
-            TARGET_UNIVERSAL]
+            TARGET_UNIVERSAL,
+            TARGET_IOS]
 
 def GetBuildTargetDefault():
-    return TARGET_NATIVE;
+    return TARGET_NATIVE
 
 def MacOS():
     return platform.system() == "Darwin"
@@ -56,15 +62,12 @@ def MacOS():
 def GetLocale():
     return sys.stdout.encoding or locale.getdefaultlocale()[1] or "UTF-8"
 
-def GetCommandOutput(command):
+def GetCommandOutput(command, **kwargs):
     """Executes the specified command and returns output or None."""
     try:
-        return subprocess.check_output(
-            shlex.split(command),
-            stderr=subprocess.STDOUT).decode(GetLocale(), 'replace').strip()
-    except subprocess.CalledProcessError:
-        pass
-    return None
+        return subprocess.check_output(command, stderr=subprocess.STDOUT, **kwargs).decode(GetLocale(), 'replace').strip()
+    except:
+        return None
 
 def GetTargetArmArch():
     # Allows the arm architecture string to be overridden by
@@ -72,7 +75,7 @@ def GetTargetArmArch():
     return os.environ.get('MACOS_ARM_ARCHITECTURE') or TARGET_ARM64
 
 def GetHostArch():
-    macArch = GetCommandOutput('arch').strip()
+    macArch = GetCommandOutput(["arch"])
     if macArch == "i386" or macArch == TARGET_X86:
         macArch = TARGET_X86
     else:
@@ -80,13 +83,14 @@ def GetHostArch():
     return macArch
 
 def GetTargetArch(context):
-    macTargets = None
+    if context.buildTarget in EMBEDDED_PLATFORMS:
+        return GetTargetArmArch()
     if context.targetNative:
         macTargets = GetHostArch()
     else:
         if context.targetX86:
             macTargets = TARGET_X86
-        if context.targetARM64:
+        if context.targetARM64 or context.buildTarget in EMBEDDED_PLATFORMS:
             macTargets = GetTargetArmArch()
         if context.targetUniversal:
             macTargets = TARGET_X86 + ";" + GetTargetArmArch()
@@ -108,6 +112,8 @@ def GetTargetArchPair(context):
         primaryArch = TARGET_X86
     if context.targetARM64:
         primaryArch = GetTargetArmArch()
+    if context.buildTarget in EMBEDDED_PLATFORMS:
+        primaryArch = GetTargetArmArch()
     if context.targetUniversal:
         primaryArch = GetHostArch()
         if (primaryArch == TARGET_X86):
@@ -120,18 +126,33 @@ def GetTargetArchPair(context):
 def SupportsMacOSUniversalBinaries():
     if not MacOS():
         return False
-    XcodeOutput = GetCommandOutput('/usr/bin/xcodebuild -version')
+    XcodeOutput = GetCommandOutput(["/usr/bin/xcodebuild", "-version"])
     XcodeFind = XcodeOutput.rfind('Xcode ', 0, len(XcodeOutput))
     XcodeVersion = XcodeOutput[XcodeFind:].split(' ')[1]
     return (XcodeVersion > '11.0')
+
+
+def GetSDKRoot(context) -> Optional[str]:
+    sdk = "macosx"
+    if context.buildTarget == TARGET_IOS:
+        sdk = "iphoneos"
+
+    for arg in (context.cmakeBuildArgs or '').split():
+        if "CMAKE_OSX_SYSROOT" in arg:
+            override = arg.split('=')[1].strip('"').strip()
+            if override:
+                sdk = override
+    return GetCommandOutput(["xcrun", "--sdk", sdk, "--show-sdk-path"])
+
 
 def SetTarget(context, targetName):
     context.targetNative = (targetName == TARGET_NATIVE)
     context.targetX86 = (targetName == TARGET_X86)
     context.targetARM64 = (targetName == GetTargetArmArch())
     context.targetUniversal = (targetName == TARGET_UNIVERSAL)
+    context.targetIos = (targetName == TARGET_IOS)
     if context.targetUniversal and not SupportsMacOSUniversalBinaries():
-        self.targetUniversal = False
+        context.targetUniversal = False
         raise ValueError(
                 "Universal binaries only supported in macOS 11.0 and later.")
 
@@ -140,7 +161,7 @@ def GetTargetName(context):
             TARGET_X86 if context.targetX86 else
             GetTargetArmArch() if context.targetARM64 else
             TARGET_UNIVERSAL if context.targetUniversal else
-            "")
+            context.buildTarget)
 
 devout = open(os.devnull, 'w')
 
@@ -152,25 +173,62 @@ def ExtractFilesRecursive(path, cond):
                 files.append(os.path.join(r, file))
     return files
 
-def CodesignFiles(files):
-    SDKVersion  = subprocess.check_output(
-        ['xcodebuild', '-version']).strip()[6:10]
-    codeSignIDs = subprocess.check_output(
-        ['security', 'find-identity', '-vp', 'codesigning'])
+def _GetCodeSignStringFromTerminal():
+    codeSignIDs = GetCommandOutput(['security', 'find-identity', '-vp', 'codesigning'])
+    return codeSignIDs
 
-    codeSignID = "-"
+def GetCodeSignID():
     if os.environ.get('CODE_SIGN_ID'):
-        codeSignID = os.environ.get('CODE_SIGN_ID')
-    elif float(SDKVersion) >= 11.0 and \
-                codeSignIDs.find(b'Apple Development') != -1:
-        codeSignID = "Apple Development"
-    elif codeSignIDs.find(b'Mac Developer') != -1:
-        codeSignID = "Mac Developer"
+        return os.environ.get('CODE_SIGN_ID')
+
+    codeSignIDs = _GetCodeSignStringFromTerminal()
+    if not codeSignIDs:
+        return "-"
+    for codeSignID in codeSignIDs.splitlines():
+        if "CSSMERR_TP_CERT_REVOKED" in codeSignID:
+            continue
+        if ")" not in codeSignID:
+            continue
+        codeSignID = codeSignID.split()[1]
+        break
+    else:
+        raise RuntimeError("Could not find a valid codesigning ID")
+
+    return codeSignID or "-"
+
+def GetCodeSignIDHash():
+    codeSignIDs = _GetCodeSignStringFromTerminal()
+    try:
+        return re.findall(r'\(.*?\)', codeSignIDs)[0][1:-1]
+    except:
+        raise Exception("Unable to parse codesign ID hash")
+
+def GetDevelopmentTeamID():
+    if os.environ.get("DEVELOPMENT_TEAM"):
+        return os.environ.get("DEVELOPMENT_TEAM")
+    codesignID = GetCodeSignIDHash()
+
+    certs = subprocess.check_output(["security", "find-certificate", "-c", codesignID, "-p"])
+    subject = GetCommandOutput(["openssl", "x509", "-subject"], input=certs)
+    subject = subject.splitlines()[0]
+
+    # Extract the Organizational Unit (OU field) from the cert
+    try:
+        team = [elm for elm in subject.split(
+            '/') if elm.startswith('OU')][0].split('=')[1]
+        if team is not None and team != "":
+            return team
+    except Exception as ex:
+        raise Exception("No development team found with exception " + ex)
+
+def CodesignFiles(files):
+    codeSignID = GetCodeSignID()
 
     for f in files:
         subprocess.call(['codesign', '-f', '-s', '{codesignid}'
-                              .format(codesignid=codeSignID), f],
+                        .format(codesignid=codeSignID), f],
                         stdout=devout, stderr=devout)
+
 
 def Codesign(install_path, verbose_output=False):
     if not MacOS():
@@ -219,3 +277,19 @@ def CreateUniversalBinaries(context, libNames, x86Dir, armDir):
                                 instDir=context.instDir, libName=targetName),
                        outputName)
     return lipoCommands
+
+def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
+    system_name = None
+    if context.buildTarget == TARGET_IOS:
+        system_name = "iOS"
+
+    if system_name:
+        args.append(f"-DCMAKE_SYSTEM_NAME={system_name}")
+        args.append(f"-DCMAKE_OSX_SYSROOT={GetSDKRoot(context)}")
+
+        # CMake gets confused trying to find things when setting the system name
+        # See https://discourse.cmake.org/t/find-package-stops-working-when-cmake-system-name-ios/4609/8
+        args.append(f"-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH")
+        args.append(f"-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH")
+        args.append(f"-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH")
+    return args
