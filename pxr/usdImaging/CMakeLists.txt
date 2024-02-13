@@ -8,9 +8,12 @@ set(DIRS
     usdAppUtils
     usdviewq
     plugin
-    hdEmscripten
     bin
 )
+
+if(PXR_ENABLE_JS_BINDINGS_SUPPORT)
+    list(APPEND DIRS hdEmscripten)
+endif()
 
 foreach(d ${DIRS})
     add_subdirectory(${d})

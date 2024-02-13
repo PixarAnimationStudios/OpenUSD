@@ -63,7 +63,7 @@ pxr_library(vt
         overview.dox
 )
 
-if(PXR_ENABLE_JS_SUPPORT)
+if (PXR_ENABLE_JS_BINDINGS_SUPPORT)
     target_link_options(vt_internal PRIVATE "SHELL: --bind")
     target_compile_options(vt_internal PRIVATE "SHELL: --bind")
 endif()

@@ -5,7 +5,7 @@ Build USD with Emscripten (in the root of this repository):
 
 locally
 ```sh
-python build_scripts/build_usd.py --emscripten <build_folder>
+python build_scripts/build_usd.py --emscripten --js-bindings <build_folder>
 ```
 or in a Docker container
 ```sh

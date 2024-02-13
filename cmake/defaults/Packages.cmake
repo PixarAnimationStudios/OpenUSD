@@ -252,6 +252,9 @@ if (PXR_BUILD_IMAGING)
     # --WebGPU
     if (PXR_ENABLE_WEBGPU_SUPPORT)
         add_definitions(-DPXR_WEBGPU_SUPPORT_ENABLED)
+        if (PXR_ENABLE_JS_BINDINGS_SUPPORT)
+            add_definitions(-DPXR_JS_BINDINGS_SUPPORT_ENABLED)
+        endif()
     endif()
     # --Metal
     if (PXR_ENABLE_METAL_SUPPORT)

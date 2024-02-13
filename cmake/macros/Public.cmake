@@ -281,7 +281,7 @@ function(pxr_library NAME)
         endif()
     endif()
 
-    if(PXR_ENABLE_JS_SUPPORT)
+    if(PXR_ENABLE_JS_BINDINGS_SUPPORT)
         if(args_JS_PUBLIC_CLASSES)
             list(APPEND args_PUBLIC_CLASSES ${args_JS_PUBLIC_CLASSES})
         endif()

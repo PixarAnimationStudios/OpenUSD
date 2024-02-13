@@ -1996,6 +1996,11 @@ def InstallUSD(context, force, buildArgs):
             if context.buildUsdImaging:
                 extraArgs.append('-DPXR_ENABLE_WEBGPU_SUPPORT=ON')
 
+            if context.buildJsBindings:
+                extraArgs.append('-DPXR_ENABLE_JS_BINDINGS_SUPPORT=ON')
+            else:
+                extraArgs.append('-DPXR_ENABLE_JS_BINDINGS_SUPPORT=OFF')
+
             extraArgs.append('-DPXR_ENABLE_JS_SUPPORT=ON')
             # For some reason we have to manually specify path to boost
             extraArgs.append('-DBoost_INCLUDE_DIR="{}"'.format(os.path.join(context.usdInstDir, "include")))
@@ -2163,6 +2168,12 @@ subgroup.add_argument("--emscriptenNode", dest="emscripten", action="store_const
                     help="Build emscripten for NodeJS (embed data into JS)")
 subgroup.add_argument("--dawn", dest="dawn", action="store_true",
                     help="Build for dawn")
+
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--js-bindings", dest="buildJsBindings", action="store_true",
+                    default=True, help="Build with JavaScript bindings")
+subgroup.add_argument("--no-js-bindings", dest="buildJsBindings", action="store_false",
+                    help="Do not build with JavaScript bindings")
 
 if Linux():
     group.add_argument("--use-cxx11-abi", type=int, choices=[0, 1],
@@ -2383,6 +2394,7 @@ class InstallContext:
         self.cmakeBuildArgs = args.cmake_build_args
         self.emscripten = args.emscripten
         self.dawn = args.dawn
+        self.buildJsBindings = args.buildJsBindings
 
         # Emscripten only supports MinGW on Windows
         if self.emscripten and Windows():
@@ -2846,6 +2858,7 @@ summaryMsg = summaryMsg.format(
     buildAlembic=("On" if context.buildAlembic else "Off"),
     buildDraco=("On" if context.buildDraco else "Off"),
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
+    buildJsBindings=("On" if context.buildJsBindings else "Off"),
     enableHDF5=("On" if context.enableHDF5 else "Off"))
 
 Print(summaryMsg)
