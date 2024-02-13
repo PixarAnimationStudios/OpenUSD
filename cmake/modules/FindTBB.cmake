@@ -239,13 +239,22 @@ if(NOT TBB_FOUND)
         set(_lib_name ${_comp})
       endif()
 
+      set(_lib_names_release ${_lib_name})
+      set(_lib_names_debug ${_lib_name}_debug)
+
+      if (APPLE AND PXR_BUILD_MONOLITHIC AND PXR_BUILD_APPLE_FRAMEWORK)
+        # When building a monolithic framework, it's best to take the static lib
+        set(_lib_names_release lib${_lib_name}.a)
+        set(_lib_names_debug lib${_lib_name}_debug.a)
+      endif ()
+
       # Search for the libraries
-      find_library(TBB_${_comp}_LIBRARY_RELEASE ${_lib_name}
+      find_library(TBB_${_comp}_LIBRARY_RELEASE NAMES ${_lib_names_release}
           HINTS ${TBB_LIBRARY} ${TBB_SEARCH_DIR}
           PATHS ${TBB_DEFAULT_SEARCH_DIR} ENV LIBRARY_PATH
           PATH_SUFFIXES ${TBB_LIB_PATH_SUFFIX})
 
-      find_library(TBB_${_comp}_LIBRARY_DEBUG ${_lib_name}_debug
+      find_library(TBB_${_comp}_LIBRARY_DEBUG NAMES ${_lib_names_debug}
           HINTS ${TBB_LIBRARY} ${TBB_SEARCH_DIR}
           PATHS ${TBB_DEFAULT_SEARCH_DIR} ENV LIBRARY_PATH
           PATH_SUFFIXES ${TBB_LIB_PATH_SUFFIX})
