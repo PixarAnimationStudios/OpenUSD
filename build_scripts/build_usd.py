@@ -758,7 +758,7 @@ def InstallBoost_Helper(context, force, buildArgs):
 
     headersOnly = not (context.buildOIIO or context.enableOpenVDB or context.buildPython)
 
-    with CurrentWorkingDirectory(DownloadURL(BOOST_URL, context, force, 
+    with CurrentWorkingDirectory(DownloadURL(BOOST_URL, context, force,
                                              dontExtract=dontExtract)):
         if headersOnly:
             # We don't need all the headers, so we elide some for space
