@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "glPlatformContextDarwin.h"
 
-#ifdef ARCH_OS_IOS
+#ifdef ARCH_OS_IPHONE
 typedef EAGLContext NSGLContext;
 #else
 typedef NSOpenGLContext NSGLContext;
@@ -90,7 +90,7 @@ GarchNSGLContextState::IsValid() const
 void
 GarchNSGLContextState::MakeCurrent()
 {
-#if ARCH_OS_IOS
+#if ARCH_OS_IPHONE
     [EAGLContext setCurrentContext:_detail->context];
 #else
     [_detail->context makeCurrentContext];

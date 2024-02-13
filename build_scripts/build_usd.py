@@ -51,6 +51,7 @@ import zipfile
 
 from urllib.request import urlopen
 from shutil import which
+import apple_utils
 
 # Helpers for printing output
 verbosity = 1
@@ -88,9 +89,6 @@ def Linux():
     return platform.system() == "Linux"
 def MacOS():
     return platform.system() == "Darwin"
-
-if MacOS():
-    import apple_utils
 
 def GetLocale():
     if Windows():
@@ -251,7 +249,7 @@ def GetCPUCount():
     except NotImplementedError:
         return 1
 
-def Run(cmd, logCommandOutput = True):
+def Run(cmd, logCommandOutput = True, env=None):
     """Run the specified command in a subprocess."""
     PrintInfo('Running "{cmd}"'.format(cmd=cmd))
 
@@ -265,7 +263,7 @@ def Run(cmd, logCommandOutput = True):
         # code will handle them.
         if logCommandOutput:
             p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, 
-                                 stderr=subprocess.STDOUT)
+                                 stderr=subprocess.STDOUT, env=env)
             while True:
                 l = p.stdout.readline().decode(GetLocale(), 'replace')
                 if l:
@@ -274,7 +272,7 @@ def Run(cmd, logCommandOutput = True):
                 elif p.poll() is not None:
                     break
         else:
-            p = subprocess.Popen(shlex.split(cmd))
+            p = subprocess.Popen(shlex.split(cmd), env=env)
             p.wait()
 
     if p.returncode != 0:
@@ -420,6 +418,7 @@ def RunCMake(context, force, extraArgs = None):
             extraArgs.append('-DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO')
 
         extraArgs.append('-DCMAKE_OSX_ARCHITECTURES={0}'.format(targetArch))
+        extraArgs = apple_utils.ConfigureCMakeExtraArgs(context, extraArgs)
 
     if context.ignorePaths:
         ignoredPaths = ";".join(context.ignorePaths)
@@ -689,6 +688,19 @@ ZLIB_URL = "https://github.com/madler/zlib/archive/v1.2.13.zip"
 
 def InstallZlib(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ZLIB_URL, context, force)):
+        # The following test files aren't portable to embedded platforms.
+        # They're not required for use on any platforms, so we elide them for efficiency
+        PatchFile("CMakeLists.txt",
+                  [("add_executable(example test/example.c)",
+                    ""),
+                   ("add_executable(minigzip test/minigzip.c)",
+                    ""),
+                   ("target_link_libraries(example zlib)",
+                    ""),
+                   ("target_link_libraries(minigzip zlib)",
+                    ""),
+                   ("add_test(example example)",
+                    "")])
         RunCMake(context, force, buildArgs)
 
 ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
@@ -1019,15 +1031,31 @@ def InstallTBB_MacOS(context, force, buildArgs):
         if (secondaryArch == apple_utils.TARGET_X86):
             secondaryArch = "intel64"
 
+        # fixup if condition in main make config
+        PatchFile("build/macos.clang.inc",
+                  [("TARGET)\nelse\n", "TARGET)\nelse ifeq (macos,$(target))\n")],
+                  multiLineMatches=True)
+
+        if context.buildTarget == apple_utils.TARGET_IOS:
+            primaryArch = "arm64"
+            buildArgs.append('compiler=clang arch=arm64 extra_inc=big_iron.inc ')
+
         # Install both release and debug builds.
         # See comments in InstallTBB_Linux.
         def _RunBuild(arch):
             if not arch:
                 return
-            makeTBBCmd = 'make -j{procs} arch={arch} {buildArgs}'.format(
+            platformArg = ""
+            env = os.environ.copy()
+            if context.buildTarget == apple_utils.TARGET_IOS:
+                platformArg = "target=ios"
+                env["SDKROOT"] = apple_utils.GetSDKRoot(context)
+            makeTBBCmd = 'make -j{procs} arch={arch} {platformArg} {buildArgs}'.format(
                 arch=arch, procs=context.numJobs,
+                platformArg = platformArg,
                 buildArgs=" ".join(buildArgs))
-            Run(makeTBBCmd)
+
+            Run(makeTBBCmd, env=env)
 
         _RunBuild(primaryArch)
         _RunBuild(secondaryArch)
@@ -1378,6 +1406,9 @@ def InstallOpenSubdiv(context, force, buildArgs):
             '-DNO_GLEW=ON',
             '-DNO_GLFW=ON',
         ]
+
+        if MacOS():
+            extraArgs.append('-DNO_OPENGL=ON')
 
         # If Ptex support is disabled in USD, disable support in OpenSubdiv
         # as well. This ensures OSD doesn't accidentally pick up a Ptex
@@ -1769,6 +1800,13 @@ def InstallUSD(context, force, buildArgs):
         if Windows():
             # Increase the precompiled header buffer limit.
             extraArgs.append('-DCMAKE_CXX_FLAGS="/Zm150"')
+
+        if context.buildTarget in apple_utils.EMBEDDED_PLATFORMS:
+            # Required to find locally built boost etc.
+            extraArgs.extend([
+                '-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH',
+                '-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH',
+                '-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH'])
 
         # Make sure to use boost installed by the build script and not any
         # system installed boost
@@ -2195,6 +2233,8 @@ class InstallContext:
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
 
         self.ignorePaths = args.ignore_paths or []
+        self.buildTarget = None
+        self.macOSCodesign = ""
         # Build target and code signing
         if MacOS():
             self.buildTarget = args.build_target
@@ -2205,8 +2245,8 @@ class InstallContext:
                  else False)
             if apple_utils.IsHostArm() and args.ignore_homebrew:
                 self.ignorePaths.append("/opt/homebrew")
-        else:
-            self.buildTarget = ""
+
+        coreOnly = self.buildTarget in apple_utils.EMBEDDED_PLATFORMS
 
         self.useCXX11ABI = \
             (args.use_cxx11_abi if hasattr(args, "use_cxx11_abi") else None)
@@ -2218,10 +2258,10 @@ class InstallContext:
 
         # Optional components
         self.buildTests = args.build_tests
-        self.buildPython = args.build_python
+        self.buildPython = args.build_python and not coreOnly
         self.buildExamples = args.build_examples
         self.buildTutorials = args.build_tutorials
-        self.buildTools = args.build_tools
+        self.buildTools = args.build_tools and not coreOnly
 
         # - Documentation
         self.buildDocs = args.build_docs or args.build_python_docs
@@ -2230,7 +2270,7 @@ class InstallContext:
 
         # - Imaging
         self.buildImaging = (args.build_imaging == IMAGING or
-                             args.build_imaging == USD_IMAGING)
+                             args.build_imaging == USD_IMAGING) and not coreOnly
         self.enablePtex = self.buildImaging and args.enable_ptex
         self.enableOpenVDB = self.buildImaging and args.enable_openvdb
 
@@ -2261,7 +2301,7 @@ class InstallContext:
                                 if args.draco_location else None)
 
         # - MaterialX Plugin
-        self.buildMaterialX = args.build_materialx
+        self.buildMaterialX = args.build_materialx and not coreOnly
 
         # - Spline Tests
         self.buildMayapyTests = args.build_mayapy_tests
@@ -2657,8 +2697,11 @@ if MacOS():
     if context.macOSCodesign:
         apple_utils.Codesign(context.usdInstDir, verbosity > 1)
 
-Print("""
-Success! To use USD, please ensure that you have:""")
+printInstructions = any([context.buildPython, context.buildTools, context.buildPrman])
+if printInstructions:
+    Print("\nSuccess! To use USD, please ensure that you have:")
+else:
+    Print("\nSuccess! USD libraries were built.")
 
 if context.buildPython:
     Print("""
@@ -2666,10 +2709,11 @@ if context.buildPython:
     {requiredInPythonPath}""".format(
         requiredInPythonPath="\n    ".join(sorted(requiredInPythonPath))))
 
-Print("""
-    The following in your PATH environment variable:
-    {requiredInPath}
-""".format(requiredInPath="\n    ".join(sorted(requiredInPath))))
+if context.buildTools:
+    Print("""
+        The following in your PATH environment variable:
+        {requiredInPath}
+    """.format(requiredInPath="\n    ".join(sorted(requiredInPath))))
     
 if context.buildPrman:
     Print("See documentation at http://openusd.org/docs/RenderMan-USD-Imaging-Plugin.html "
