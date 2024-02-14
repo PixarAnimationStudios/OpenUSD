@@ -1862,6 +1862,17 @@ _InitIdentityXforms(
                            GfMatrix4f(1));
 }
 
+double
+UsdSkelImagingSkeletonAdapter::_GetDefaultSampleTime(UsdTimeCode time)
+{
+  // For computation inputs which are constant, report their sample time offset
+  // as the beginning of the interval. The boundaries are always included as
+  // time samples for the animation (see _UnionTimeSamples()) so this
+  // ensures we don't introduce an extra time sample to the computation.
+  const GfInterval interval = _GetCurrentTimeSamplingInterval();
+  return interval.GetMin() - time.GetValue();
+}
+
 size_t
 UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForSkinningComputation(
     UsdPrim const& prim,
@@ -1907,7 +1918,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForSkinningComputation(
                                         skinnedPrimCachePath, time);
         size_t numPoints = restPoints.size();
         sampleValues[0] = VtValue(numPoints);
-        sampleTimes[0] = 0.f;
+        sampleTimes[0] = _GetDefaultSampleTime(time);
         return 1;
     }
 
@@ -2007,7 +2018,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForSkinningComputation(
                                     skinnedPrimData->skinningQuery,
                                     &skinningXforms);
                 sampleValues[0] = VtValue::Take(skinningXforms);
-                sampleTimes[0] = 0.f;
+                sampleTimes[0] = _GetDefaultSampleTime(time);
                 return 1;
             }
         }
@@ -2046,7 +2057,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForSkinningComputation(
 
             } else {
                 sampleValues[0] = VtValue(VtFloatArray());
-                sampleTimes[0] = 0.f;
+                sampleTimes[0] = _GetDefaultSampleTime(time);
                 return 1;
             }
         }
@@ -2125,7 +2136,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForInputAggregator(
         // Rest points aren't expected to be time-varying.
         sampleValues[0] =
             VtValue(_GetSkinnedPrimPoints(prim, skinnedPrimCachePath, time));
-        sampleTimes[0] = 0.f;
+        sampleTimes[0] = _GetDefaultSampleTime(time);
         return 1;
     }
 
@@ -2137,7 +2148,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForInputAggregator(
             skinnedPrimData->skinningQuery.GetSkinningMethod();
 
         sampleValues[0] = VtValue(skinningMethod);
-        sampleTimes[0] = 0.f;
+        sampleTimes[0] = _GetDefaultSampleTime(time);
         return 1;
     }
 
@@ -2150,7 +2161,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForInputAggregator(
 
         // Skinning computations use float precision.
         sampleValues[0] = GfMatrix4f(geomBindXform);
-        sampleTimes[0] = 0.f;
+        sampleTimes[0] = _GetDefaultSampleTime(time);
         return 1;
     }
 
@@ -2179,7 +2190,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForInputAggregator(
             sampleValues[0] = VtValue(usesConstantJointPrimvar);
         }
 
-        sampleTimes[0] = 0.f;
+        sampleTimes[0] = _GetDefaultSampleTime(time);
         return 1;
     }
 
@@ -2206,7 +2217,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForInputAggregator(
             sampleValues[0] = VtValue(static_cast<int>(ranges.size()));
         }
 
-        sampleTimes[0] = 0.f;
+        sampleTimes[0] = _GetDefaultSampleTime(time);
         return 1;
     }
 
