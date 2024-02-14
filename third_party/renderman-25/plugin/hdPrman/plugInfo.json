@@ -80,6 +80,12 @@
                         "loadWithRenderer": "Prman",
                         "priority": 0,
                         "displayName": "Prman Update Object Settings Prim Scene Index"
+                    },
+                    "HdPrman_TetMeshConversionSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "Prman",
+                        "priority": 0,
+                        "displayName": "Scene Index to convert tet meshes into standard triangle based meshes."
                     }
                 }
             },

@@ -111,6 +111,7 @@ pxr_plugin(${PXR_PACKAGE}
         rixStrings
         sampleFilter
         sphere
+        tetMeshConversionSceneIndexPlugin
         tokens
         volume
         xcpt
