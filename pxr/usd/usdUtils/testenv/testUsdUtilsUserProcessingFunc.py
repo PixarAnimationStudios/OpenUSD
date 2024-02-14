@@ -85,7 +85,8 @@ class TestUsdUtilsUserProcessFunc(unittest.TestCase):
         self._CheckLocalizedPackageContents(localizationDir, expectedFiles)
 
     def test_UserProcessingFuncRemove(self):
-        """Tests that dependencies can be removed with the user processing func"""
+        """Tests that dependencies can be removed with the user 
+        processing func"""
         def TestUserFunc(layer, depInfo):
             return UsdUtils.DependencyInfo()
 
@@ -104,7 +105,7 @@ class TestUsdUtilsUserProcessFunc(unittest.TestCase):
 
     def test_FileFormatConversion(self):
         """Tests converting a layer to a crate file in a temp path and
-           ensuring the resulting localized package can be loaded correctly"""
+        ensuring the resulting localized package can be loaded correctly"""
         
         with tempfile.TemporaryDirectory() as tempDir:
             def TestUserFunc(layer, depInfo):
@@ -164,6 +165,29 @@ class TestUsdUtilsUserProcessFunc(unittest.TestCase):
         expectedFiles = [
             'default.usda',
             'modified.usda',
+            'root.usda'
+        ]
+
+        self._CheckLocalizedPackageContents(localizationDir, expectedFiles)
+
+    def test_FilesystemAbsolutePaths(self):
+        """Tests that localization works correctly with absolute filesystem 
+        paths"""
+
+        def TestUserFunc(layer, depInfo):
+            absPath = os.path.abspath(Sdf.ComputeAssetPathRelativeToLayer(
+                layer, depInfo.assetPath))
+            return UsdUtils.DependencyInfo(absPath)
+    
+        rootPath = os.path.abspath('fileFormatConversion/root.usda')
+        localizationDir = os.path.abspath('abspath_localized')
+        localizedRoot = os.path.join(localizationDir, 'root.usda')
+
+        self._Localize(rootPath, localizationDir, TestUserFunc)
+        self.assertIsNotNone(Usd.Stage.Open(localizedRoot))
+
+        expectedFiles = [
+            '0/sublayer.usda',
             'root.usda'
         ]
 
