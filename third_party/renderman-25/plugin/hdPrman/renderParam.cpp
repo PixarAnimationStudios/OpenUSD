@@ -64,6 +64,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (percentDone)
     (PrimvarPass)
     (name)
     (sourceName)
@@ -121,6 +122,7 @@ HdPrman_RenderParam::HdPrman_RenderParam(
     _ri(nullptr),
     _mgr(nullptr),
     _statsSession(nullptr),
+    _progressPercent(0),
     _riley(nullptr),
     _sceneLightCount(0),
     _shutterInterval(HDPRMAN_SHUTTEROPEN_DEFAULT, HDPRMAN_SHUTTERCLOSE_DEFAULT),
@@ -1306,6 +1308,12 @@ HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
     RixXcpt* rix_xcpt = (RixXcpt*)_rix->GetRixInterface(k_RixXcpt);
     rix_xcpt->Register(&_xcpt);
 
+    // Register progress callback
+     RixEventCallbacks* rix_event_callbacks =
+        (RixEventCallbacks*)_rix->GetRixInterface(k_RixEventCallbacks);
+     rix_event_callbacks->RegisterCallback(RixEventCallbacks::k_Progress,
+                                           _ProgressCallback, this);
+
     // Populate RixStr struct
     RixSymbolResolver* sym = (RixSymbolResolver*)_rix->GetRixInterface(
         k_RixSymbolResolver);
@@ -1653,6 +1661,11 @@ HdPrman_RenderParam::CreateRenderViewFromRenderSettingsProduct(
 void
 HdPrman_RenderParam::_DestroyRiley()
 {
+     RixEventCallbacks* rix_event_callbacks =
+        (RixEventCallbacks*)_rix->GetRixInterface(k_RixEventCallbacks);
+     rix_event_callbacks->UnregisterCallback(RixEventCallbacks::k_Progress,
+                                             _ProgressCallback, this);
+
     if (_mgr) {
         if (_riley) {
             // Riley/RIS crashes if SetOptions hasn't been called prior to
@@ -1911,6 +1924,22 @@ HdPrman_RenderParam::_RenderThreadCallback()
 
         // If a pause was requested, we may have stopped early
         renderComplete = !_renderThread->IsPauseDirty();
+    }
+}
+
+void 
+HdPrman_RenderParam::_ProgressCallback(RixEventCallbacks::Event,
+                                       RtConstPointer data, RtPointer clientData)
+{
+    int const* pp = static_cast<int const*>(data);
+    HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(clientData);
+    param->_progressPercent = *pp;
+
+    if (!param->IsInteractive()) {
+        // XXX Placeholder to simulate RenderMan's built-in writeProgress
+        // option, until iether HdPrman can pass that in, and/or it gets
+        // replaced with Roz-based client-side progress reporting
+        printf("R90000  %3i%%\n", param->_progressPercent);
     }
 }
 
