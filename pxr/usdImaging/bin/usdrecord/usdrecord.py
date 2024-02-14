@@ -142,6 +142,14 @@ def main():
             'the CPU, but additionally it will prevent any tasks that require '
             'the GPU from being invoked.'))
 
+    # Note: The argument passed via the command line (disableCameraLight)
+    # is inverted from the variable in which it is stored (cameraLightEnabled)
+    parser.add_argument('--disableCameraLight', action='store_false',
+        dest='cameraLightEnabled',
+        help=(
+            'Indicates if the default camera lights should not be used '
+            'for rendering.'))
+
     UsdAppUtils.cameraArgs.AddCmdlineArgs(parser)
     UsdAppUtils.framesArgs.AddCmdlineArgs(parser)
     UsdAppUtils.complexityArgs.AddCmdlineArgs(parser)
@@ -228,6 +236,7 @@ def main():
         rendererPluginId, args.gpuEnabled, args.rsPrimPath)
     frameRecorder.SetImageWidth(args.imageWidth)
     frameRecorder.SetComplexity(args.complexity.value)
+    frameRecorder.SetCameraLightEnabled(args.cameraLightEnabled)
     frameRecorder.SetColorCorrectionMode(args.colorCorrectionMode)
     frameRecorder.SetIncludedPurposes(purposes)
 

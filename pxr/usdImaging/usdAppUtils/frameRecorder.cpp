@@ -59,7 +59,8 @@ UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
     _complexity(1.0f),
     _colorCorrectionMode(HdxColorCorrectionTokens->disabled),
     _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy}),
-    _renderSettingsPrimPath(renderSettingsPrimPath)
+    _renderSettingsPrimPath(renderSettingsPrimPath),
+    _cameraLightEnabled(true)
 {
     // Disable presentation to avoid the need to create an OpenGL context when
     // using other graphics APIs such as Metal and Vulkan.
@@ -94,6 +95,12 @@ UsdAppUtilsFrameRecorder::SetColorCorrectionMode(
         }
         _colorCorrectionMode = HdxColorCorrectionTokens->disabled;
     }
+}
+
+void
+UsdAppUtilsFrameRecorder::SetCameraLightEnabled(bool cameraLightEnabled)
+{
+    _cameraLightEnabled = cameraLightEnabled;
 }
 
 void
@@ -397,14 +404,17 @@ UsdAppUtilsFrameRecorder::Record(
             static_cast<double>(_imageWidth),
             static_cast<double>(imageHeight)));
 
-    GlfSimpleLight cameraLight(
-        GfVec4f(cameraPos[0], cameraPos[1], cameraPos[2], 1.0f));
-    cameraLight.SetAmbient(SCENE_AMBIENT);
+    GlfSimpleLightVector lights;
+    if (_cameraLightEnabled) {
+        GlfSimpleLight cameraLight(
+            GfVec4f(cameraPos[0], cameraPos[1], cameraPos[2], 1.0f));
+        cameraLight.SetAmbient(SCENE_AMBIENT);
+        lights.push_back(cameraLight);
+    }
 
-    const GlfSimpleLightVector lights({cameraLight});
-
-    // Make default material and lighting match usdview's defaults... we expect 
-    // GlfSimpleMaterial to go away soon, so not worth refactoring for sharing
+    // Make default material and lighting match usdview's
+    // defaults... we expect GlfSimpleMaterial to go away soon, so
+    // not worth refactoring for sharing
     GlfSimpleMaterial material;
     material.SetAmbient(AMBIENT_DEFAULT);
     material.SetSpecular(SPECULAR_DEFAULT);
