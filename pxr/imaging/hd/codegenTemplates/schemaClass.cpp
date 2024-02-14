@@ -113,7 +113,8 @@ HdContainerDataSourceHandle
 {
     return HdRetainedContainerDataSource::New(count, names, values);
 }
-{%- else %}
+{%- else -%}
+{%- if MEMBERS %}
 
 /*static*/
 HdContainerDataSourceHandle
@@ -157,6 +158,7 @@ HdContainerDataSourceHandle
 {%- endfor %}
     );
 }
+{%- endif -%} {# else of if MEMBERS #}
 {%- endif -%} {# else of if GENERIC_MEMBER is defined #}
 
 {%- if SCHEMA_TOKEN is defined %}
@@ -215,14 +217,14 @@ const HdDataSourceLocator &
 {%- endif -%} {# if MEMBERS is defined #}
 
 {%- if STATIC_LOCATOR_ACCESSORS is defined -%}
-{%- for entry in STATIC_LOCATOR_ACCESSORS %}
+{%- for name, tokens in STATIC_LOCATOR_ACCESSORS %}
 
 /*static*/
 const HdDataSourceLocator &
-{{ SCHEMA_CLASS_NAME }}::Get{{entry[0]}}Locator()
+{{ SCHEMA_CLASS_NAME }}::Get{{name|capitalizeFirst}}Locator()
 {
     static const HdDataSourceLocator locator(
-    {%- for t in entry[1] -%}
+    {%- for t in tokens -%}
         {%if t is string %}{{SCHEMA_CLASS_NAME}}Tokens->{{ t }}{% else %}{{ t[0] }}SchemaTokens->{{ t[1] }}{% endif %}{%if loop.last == False %},{% endif -%}
     {%- endfor %}
     );
@@ -236,18 +238,18 @@ const HdDataSourceLocator &
 
 /*static*/
 HdTokenDataSourceHandle
-{{ SCHEMA_CLASS_NAME }}::Build{{typeName|capitalize}}DataSource(
-    const TfToken &{{typeName|lower}})
+{{ SCHEMA_CLASS_NAME }}::Build{{typeName|capitalizeFirst}}DataSource(
+    const TfToken &{{typeName}})
 {
 {% for token in tokens %}
-    if ({{typeName|lower}} == {{SCHEMA_CLASS_NAME}}Tokens->{{ token | tokenName }}) {
+    if ({{typeName}} == {{SCHEMA_CLASS_NAME}}Tokens->{{ token | tokenName }}) {
         static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New({{typeName|lower}});
+            HdRetainedTypedSampledDataSource<TfToken>::New({{typeName}});
         return ds;
     }
 {%- endfor %}
     // fallback for unknown token
-    return HdRetainedTypedSampledDataSource<TfToken>::New({{typeName|lower}});
+    return HdRetainedTypedSampledDataSource<TfToken>::New({{typeName}});
 }
 {%- endfor -%}
 {%- endif %} {# if STATIC_TOKEN_DATASOURCE_BUILDERS is defined #}

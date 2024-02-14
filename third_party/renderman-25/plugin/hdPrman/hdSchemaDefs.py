@@ -46,7 +46,7 @@
             ('params', T_CONTAINER, {}),
         ],
         STATIC_TOKEN_DATASOURCE_BUILDERS = [
-            ('Type', ['(float_, "float")', 'integer', 'color', 'vector']),
+            ('type', ['(float_, "float")', 'integer', 'color', 'vector']),
         ],
     ),
 
@@ -65,7 +65,7 @@
             ('params', T_CONTAINER, {}),
         ],
         STATIC_TOKEN_DATASOURCE_BUILDERS = [
-            ('FilterMode', ['importance', 'weighted']),
+            ('filterMode', ['importance', 'weighted']),
         ],
     ),
 

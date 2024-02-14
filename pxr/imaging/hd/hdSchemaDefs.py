@@ -84,7 +84,7 @@
         ],
 
         STATIC_TOKEN_DATASOURCE_BUILDERS = [ # optional for shared token ds's
-            ('Type', ['typeFaceSet', 'typePointSet', 'typeCurveSet']),
+            ('type', ['typeFaceSet', 'typePointSet', 'typeCurveSet']),
         ],
     ),
 
@@ -137,7 +137,7 @@
         ADD_DEFAULT_LOCATOR = True,
 
         STATIC_TOKEN_DATASOURCE_BUILDERS = [ # optional for shared token ds's
-            ('Orientation', ['leftHanded', 'rightHanded']),
+            ('orientation', ['leftHanded', 'rightHanded']),
         ],
     ),
 
@@ -172,7 +172,7 @@
         ADD_DEFAULT_LOCATOR = True,
 
         STATIC_TOKEN_DATASOURCE_BUILDERS = [ # optional for shared token ds's
-            ('Orientation', ['leftHanded', 'rightHanded']),
+            ('orientation', ['leftHanded', 'rightHanded']),
         ],
     ),
 
@@ -202,8 +202,8 @@
         ADD_DEFAULT_LOCATOR = True,
 
         STATIC_TOKEN_DATASOURCE_BUILDERS = [
-            ('Form', ['open', 'closed', 'periodic']),
-            ('Orientation', ['leftHanded', 'rightHanded']),
+            ('form', ['open', 'closed', 'periodic']),
+            ('orientation', ['leftHanded', 'rightHanded']),
         ],
     ),
 
@@ -301,7 +301,7 @@
         ],
 
         STATIC_TOKEN_DATASOURCE_BUILDERS = [ # optional for shared token ds's
-            ('Interpolation', [
+            ('interpolation', [
                 'constant',
                 'uniform',
                 'varying',
@@ -309,7 +309,7 @@
                 'faceVarying',
                 'instance',
                 ]),
-            ('Role', [
+            ('role', [
                 'point',
                 'normal',
                 'vector',
@@ -896,7 +896,7 @@
             ('lensDistortion', 'HdLensDistortionSchema', {}),
         ],
         STATIC_TOKEN_DATASOURCE_BUILDERS = [ # optional for shared token ds's
-            ('Projection', ['perspective', 'orthographic']),
+            ('projection', ['perspective', 'orthographic']),
         ],
     ),
 
@@ -940,7 +940,7 @@
         ADD_DEFAULT_LOCATOR = True,
 
         STATIC_TOKEN_DATASOURCE_BUILDERS = [ # optional for shared token ds's
-            ('Type', ['standard', 'fisheye']),
+            ('type', ['standard', 'fisheye']),
         ],
     ),
 
@@ -1061,7 +1061,7 @@
         ],
 
         STATIC_TOKEN_DATASOURCE_BUILDERS = [
-            ('Axis', ['X', 'Y', 'Z']),
+            ('axis', ['X', 'Y', 'Z']),
         ],
     ),
 
@@ -1081,7 +1081,7 @@
         ],
 
         STATIC_TOKEN_DATASOURCE_BUILDERS = [
-            ('Axis', ['X', 'Y', 'Z']),
+            ('axis', ['X', 'Y', 'Z']),
         ],
     ),
 
@@ -1101,7 +1101,7 @@
         ],
 
         STATIC_TOKEN_DATASOURCE_BUILDERS = [
-            ('Axis', ['X', 'Y', 'Z']),
+            ('axis', ['X', 'Y', 'Z']),
         ],
 
     ),
@@ -1113,7 +1113,7 @@
         SCHEMA_TOKEN = 'primOrigin',
         ADD_DEFAULT_LOCATOR = True,
         STATIC_LOCATOR_ACCESSORS = [
-            ('ScenePath', ['primOrigin', 'scenePath']),
+            ('scenePath', ['primOrigin', 'scenePath']),
         ],
         EXTRA_TOKENS = [
             'scenePath',

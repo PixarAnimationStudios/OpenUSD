@@ -206,12 +206,12 @@ public:
 {%- endif -%} {# if MEMBERS is defined #}
 
 {%- if STATIC_LOCATOR_ACCESSORS is defined -%}
-{%- for entry in STATIC_LOCATOR_ACCESSORS %}
+{%- for name, tokens in STATIC_LOCATOR_ACCESSORS %}
 
     /// Additional prim-level relative data source locator to locate
     /// {{ name }}.
     {{ LIBRARY_API }}
-    static const HdDataSourceLocator &Get{{entry[0]}}Locator();
+    static const HdDataSourceLocator &Get{{name | capitalizeFirst}}Locator();
 {%- endfor -%}
 {%- endif -%}
 {%- endblock member_locators %}
@@ -228,7 +228,8 @@ public:
         size_t count,
         const TfToken *names,
         const HdDataSourceBaseHandle *values);
-{%- else %}
+{%- else -%}
+{%- if MEMBERS %}
 
     /// \deprecated Use Builder instead.
     ///
@@ -270,12 +271,13 @@ public:
 {%- endfor %}
 
     };
+{%- endif -%} {# else of if MEMBERS #}
 {%- endif -%} {# else of if GENERIC_MEMBER is defined #}
 
 {%- if STATIC_TOKEN_DATASOURCE_BUILDERS is defined -%}
 {%- for typeName, tokens in STATIC_TOKEN_DATASOURCE_BUILDERS %}
 
-    /// Returns token data source for use as {{typeName|lower}} value.
+    /// Returns token data source for use as {{typeName}} value.
     ///
     /// The following values will be stored statically and reused for future
     /// calls:
@@ -283,8 +285,8 @@ public:
     /// - {{SCHEMA_CLASS_NAME}}Tokens->{{ token | tokenName }}
 {%- endfor %}
     {{ LIBRARY_API }}
-    static HdTokenDataSourceHandle Build{{typeName|capitalize}}DataSource(
-        const TfToken &{{typeName|lower}});
+    static HdTokenDataSourceHandle Build{{typeName|capitalizeFirst}}DataSource(
+        const TfToken &{{typeName}});
 {%- endfor -%}
 {%- endif %}
 

@@ -41,7 +41,7 @@
             ('isLoaded', T_BOOL, {}),
         ],
         STATIC_TOKEN_DATASOURCE_BUILDERS = [
-            ('Specifier', ['def', 'over', '(class_, "class")']),
+            ('specifier', ['def', 'over', '(class_, "class")']),
         ],
     ),
 
@@ -78,13 +78,13 @@
             ('cardTextureZNeg', T_ASSETPATH, {}),
         ],
         STATIC_TOKEN_DATASOURCE_BUILDERS = [
-            ('DrawMode', [
+            ('drawMode', [
                 '(default_, "default")',
                 'origin',
                 'bounds',
                 'cards',
                 'inherited']),
-            ('CardGeometry', [
+            ('cardGeometry', [
                 'cross',
                 'box',
                 'fromTexture']),
