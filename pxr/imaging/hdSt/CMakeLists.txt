@@ -122,6 +122,7 @@ pxr_library(hdSt
         stagingBuffer
         strategyBase
         subtextureIdentifier
+        tetMeshConversionSceneIndexPlugin
         textureBinder
         textureCpuData
         textureHandle

@@ -51,6 +51,7 @@ pxr_library(usdImaging
         dataSourceRenderPrims
         dataSourceStage
         dataSourceStageGlobals
+        dataSourceTetMesh
         dataSourceUsdPrimInfo
         dataSourceVolume
         debugCodes

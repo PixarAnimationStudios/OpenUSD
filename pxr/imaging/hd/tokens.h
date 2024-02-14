@@ -295,6 +295,7 @@ extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
     (cylinder)                                  \
     (cylinder_1)                                \
     (mesh)                                      \
+    (tetMesh)                                   \
     (nurbsPatch)                                \
     (basisCurves)                               \
     (nurbsCurves)                               \
