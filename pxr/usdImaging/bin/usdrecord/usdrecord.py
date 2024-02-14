@@ -24,6 +24,7 @@
 #
 
 from pxr import Usd
+from pxr import UsdRender
 from pxr import Sdf
 from pxr import UsdAppUtils
 from pxr import Tf
@@ -162,6 +163,16 @@ def main():
             'Width of the output image. The height will be computed from this '
             'value and the camera\'s aspect ratio (default=%(default)s)'))
 
+    parser.add_argument('--renderPassPrimPath', '-rp', action='store', 
+        type=str, dest='rpPrimPath', 
+        help=(
+            'Specify the Render Pass Prim to use to render the given '
+            'usdFile. '
+            'Note that if a renderSettingsPrimPath has been specified in the '
+            'stage metadata, using this argument will override that opinion. '
+            'Furthermore any properties authored on the RenderSettings will '
+            'override other arguments (imageWidth, camera, outputImagePath)'))
+
     parser.add_argument('--renderSettingsPrimPath', '-rs', action='store', 
         type=str, dest='rsPrimPath', 
         help=(
@@ -215,8 +226,30 @@ def main():
     # Get the camera at the given path (or with the given name).
     usdCamera = UsdAppUtils.GetCameraAtPath(usdStage, args.camera)
 
-    # Get the RenderSettings Prim Path from the stage metadata if not specified.
+    # Get the RenderSettings Prim Path.
+    # It may be specified directly (--renderSettingsPrimPath),
+    # via a render pass (--renderPassPrimPath),
+    # or by stage metadata (renderSettingsPrimPath).
+    if args.rsPrimPath and args.rpPrimPath:
+        _Err('Cannot specify both --renderSettingsPrimPath and '
+             '--renderPassPrimPath')
+        return 1
+    if args.rpPrimPath:
+        # A pass was specified, so next we get the associated settings prim.
+        renderPass = UsdRender.Pass(usdStage.GetPrimAtPath(args.rpPrimPath))
+        if not renderPass:
+            _Err('Unknown render pass <{}>'.format(args.rpPrimPath))
+            return 1
+        sourceRelTargets = renderPass.GetRenderSourceRel().GetTargets()
+        if not sourceRelTargets:
+            _Err('Render source not authored on {}'.format(args.rpPrimPath))
+            return 1
+        args.rsPrimPath = sourceRelTargets[0]
+        if len(sourceRelTargets) > 1:
+            Tf.Warn('Render pass <{}> has multiple targets; using <{}>'.
+                format(args.rpPrimPath, args.rsPrimPath))
     if not args.rsPrimPath:
+        # Fall back to stage metadata.
         args.rsPrimPath = usdStage.GetMetadata('renderSettingsPrimPath')
 
     if args.gpuEnabled:
