@@ -338,4 +338,4 @@ if __name__ == '__main__':
     else:
         for entry in entries:
             ExpandEntry(os.curdir, entry)
-            WriteEntry(os.curdir, entry, templates)
+            WriteEntry(args.dstDir, entry, templates)
