@@ -58,6 +58,9 @@ public:
         const HdSceneIndexObserver::AddedPrimEntry &entry,
         const HdsiPrimManagingSceneIndexObserver * observer) override;
 
+    static const HdContainerDataSourceHandle &
+    GetPrimTypeNoticeBatchingSceneIndexInputArgs();
+
 private:
     HdPrman_RenderParam * const _renderParam;
 };

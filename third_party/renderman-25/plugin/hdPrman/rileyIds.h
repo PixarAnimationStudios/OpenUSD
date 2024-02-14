@@ -25,7 +25,6 @@
 #define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_PRIM_UTIL_H
 
 #include "pxr/pxr.h"
-#include "hdPrman/api.h"
 #include "hdPrman/sceneIndexObserverApi.h"
 
 #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
@@ -33,57 +32,62 @@
 #include "pxr/imaging/hdsi/primManagingSceneIndexObserver.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 
-#include "Riley.h"
-
-#include <optional>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Support for std::optional<T>
+/// \name Path conversions to riley ids
 ///
-/// Turns std::optional<T> into const T * which is how riley's
-/// API represents optional values.
-///
-/// In particular, we can use std::optional<T> to provide
-/// a value only if it has changed and convert that optional
-/// with HdPrman_GetPtr to an argument of Riley::ModifyFoo
-/// where a nullptr indicates that we do not change that
-/// particular field of a riley prim.
-///
-template<typename T>
-const T * HdPrman_GetPtr(const std::optional<T> &v)
-{
-    if (!v) {
-        return nullptr;
-    }
-    return &(*v);
-}
+/// Conversion of a path or an array of paths to scene index prims
+/// to a riley type such as riley::RenderTargetId or RenderOutputList.
+/// @{
 
-/// Some riley API expects non-RAII objects, e.g.,
-/// riley::RenderOutputList has a raw pointer to an array of
-/// riley::RenderOutputId's and its d'tor does not free that array.
+/// A (RAII) helper struct to retrieve riley prims managed by a prim managing
+/// scene index observer and identified by a path from a data source.
 ///
-/// In hdPrman, we wrap such an object in an RAII object T with
-/// T::rileyObject being the non-RAII object pointing to, e.g., the
-/// data of a std::vector<riley::RenderOutputId> in T.
-
+/// The struct contains both the wrapping object of type PrimType 
+/// (subclassing from HdPrman_RileyPrimBase) as well as the (non-RAII) riley
+/// prim.
 ///
-/// Extract T::rileyObject as pointer from std::optional<T>.
-///
-/// Use as a helper to extract the non-RAII object from a std::optional<T>
-/// where T is the RAII wrapper.
-///
-/// Similar to HdPrman_GetPtr, can be used as argument to Riley::ModifyFoo.
-///
-template<typename T>
-auto HdPrman_GetPtrRileyObject(
-        const std::optional<T> &v) -> decltype(&(v->rileyObject))
+template<typename PrimType>
+struct HdPrman_RileyId
 {
-    if (!v) {
-        return nullptr;
+    /// A riley id, e.g., riley::RenderTargetId. It is essentially just an
+    /// integer.
+    ///
+    /// This will be passed to calls such as Riley::RenderTarget.
+    /// It is the non-RAII object.
+    ///
+    using RileyType = typename PrimType::RileyId;
+
+    /// Handle to subclass of HdPrman_RileyPrimBase
+    using PrimHandle = std::shared_ptr<PrimType>;
+
+    /// C'tor takes observerer managing the prims and data source
+    /// identifying prims by paths.
+    ///
+    HdPrman_RileyId(
+        const HdsiPrimManagingSceneIndexObserver * const observer,
+        HdPathDataSourceHandle const &ds)
+    {
+        if (!ds) {
+            return;
+        }
+
+        const SdfPath path = ds->GetTypedValue(0.0f);
+        if (path.IsEmpty()) {
+            return;
+        }
+
+        prim = observer->GetTypedPrim<PrimType>(path);
+        if (prim) {
+            rileyObject = prim->GetRileyId();
+        }
     }
-    return &(v->rileyObject);
-}
+
+    /// The prims wrapping the riley prims, subclass of HdPrman_RileyPrimBase.
+    PrimHandle prim;
+    /// The rileyId.
+    RileyType rileyObject;
+};
 
 /// A (RAII) helper struct to retrieve riley prims managed by a prim managing
 /// scene index observer and identified by paths from a data source.
@@ -93,20 +97,20 @@ auto HdPrman_GetPtrRileyObject(
 /// ids packaged in (the non-RAII) riley::RenderOutputList or similar.
 ///
 template<typename PrimType>
-struct HdPrman_RileyPrimArray
+struct HdPrman_RileyIdList
 {
     /// List of riley ids, e.g., riley::RenderOutputList.
     ///
-    /// This will be passed to calls such as Riley::RenderTarget.
+    /// This will be passed to calls such as Riley::CreateRenderTarget.
     /// It is the non-RAII object.
     ///
-    /// Example for a RileyObject:
+    /// Example for a RileyType:
     /// struct RenderOutputList
     /// {
     ///      uint32_t count;
     ///      RenderOutputId const *ids; // raw-pointer making it non-RAII
     /// };
-    using RileyObject = typename PrimType::RileyIdList;
+    using RileyType = typename PrimType::RileyIdList;
 
     /// Handle to subclass of HdPrman_RileyPrimBase
     using PrimHandle = std::shared_ptr<PrimType>;
@@ -116,7 +120,7 @@ struct HdPrman_RileyPrimArray
     /// C'tor takes observerer managing the prims and data source
     /// identifying prims by paths.
     ///
-    HdPrman_RileyPrimArray(
+    HdPrman_RileyIdList(
         const HdsiPrimManagingSceneIndexObserver * const observer,
         HdPathArrayDataSourceHandle const &ds)
       : rileyObject{0, nullptr}
@@ -146,26 +150,10 @@ struct HdPrman_RileyPrimArray
     std::vector<RileyId> rileyIds;
     /// Same information as rileyIds but as, e.g., riley::RenderOutputList
     /// (with pointers pointing into rileyIds).
-    RileyObject rileyObject;
+    RileyType rileyObject;
 };
 
-/// A (RAII) object for transform samples extracted from the HdXformSchema.
-///
-struct HdPrman_RileyTransform
-{
-    using RileyObject = riley::Transform;
-
-    HdPrman_RileyTransform(
-        HdMatrixDataSourceHandle const &ds,
-        const GfVec2f &shutterInterval);
-
-    std::vector<RtMatrix4x4> matrix;
-    std::vector<float> time;
-
-    // (Non-RAII) object that can be passed to, e.g.,
-    // Riley::CreateCoordinateSystem.
-    RileyObject rileyObject;
-};
+/// @}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

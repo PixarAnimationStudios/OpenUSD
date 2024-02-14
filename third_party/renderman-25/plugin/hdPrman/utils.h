@@ -48,11 +48,6 @@ SetParamFromVtValue(
     TfToken const& role,
     RtParamList *params);
 
-/// Creates RtParamList by pulling VtValue's from the container data source.
-RtParamList
-ParamsFromDataSource(
-    HdContainerDataSourceHandle const &containerDs);
-
 /// Similar to the function above, with the addition of \p detail, which 
 /// specifies how array values should be handled across topology.
 bool
