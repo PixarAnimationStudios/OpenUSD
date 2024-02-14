@@ -181,6 +181,8 @@ pxr_library(hd
         systemMessages
         systemSchema
         task
+        tetMeshSchema
+        tetMeshTopologySchema
         timeSampleArray
         tokens
         topology

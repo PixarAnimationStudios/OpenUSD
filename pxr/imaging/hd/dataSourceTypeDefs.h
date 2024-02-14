@@ -107,6 +107,8 @@ using HdVec3dArrayDataSourceHandle = HdVec3dArrayDataSource::Handle;
 
 using HdVec4iDataSource = HdTypedSampledDataSource<GfVec4i>;
 using HdVec4iDataSourceHandle = HdVec4iDataSource::Handle;
+using HdVec4iArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec4i>>;
+using HdVec4iArrayDataSourceHandle = HdVec4iArrayDataSource::Handle;
 using HdVec4fDataSource = HdTypedSampledDataSource<GfVec4f>;
 using HdVec4fDataSourceHandle = HdVec4fDataSource::Handle;
 using HdVec4dArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec4d>>;
