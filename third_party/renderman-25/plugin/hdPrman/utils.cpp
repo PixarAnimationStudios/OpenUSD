@@ -512,24 +512,26 @@ _IsNativeRenderManFormat(std::string const &path)
 void
 _UpdateSearchPathsFromEnvironment(RtParamList& options)
 {
-    // searchpath:shader contains OSL (.oso)
-    std::string shaderpath = TfGetenv("RMAN_SHADERPATH");
-    if (!shaderpath.empty()) {
-        // RenderMan expects ':' as path separator, regardless of platform
-        NdrStringVec paths = TfStringSplit(shaderpath, ARCH_PATH_LIST_SEP);
-        shaderpath = TfStringJoin(paths, ":");
-        options.SetString( RixStr.k_searchpath_shader,
-                            RtUString(shaderpath.c_str()) );
-    } else {
+    // Default RenderMan installation under '$RMANTREE/lib/shaders'
+    std::string rmantree = TfGetenv("RMANTREE");
+    // Default hdPrman installation under 'plugins/usd/resources/shaders'
+    PlugPluginPtr plugin =
+        PlugRegistry::GetInstance().GetPluginWithName("hdPrmanLoader");
+
+    {
+        // searchpath:shader contains OSL (.oso)
+        std::string shaderpath = TfGetenv("RMAN_SHADERPATH");
         NdrStringVec paths;
-        // Default RenderMan installation under '$RMANTREE/lib/shaders'
-        std::string rmantree = TfGetenv("RMANTREE");
+        if (!shaderpath.empty()) {
+            // RenderMan expects ':' as path separator, regardless of platform
+            for (auto path : TfStringSplit(shaderpath, ARCH_PATH_LIST_SEP))
+            {
+                paths.push_back(path);
+            }
+        }
         if (!rmantree.empty()) {
             paths.push_back(TfStringCatPaths(rmantree, "lib/shaders"));
         }
-        // Default hdPrman installation under 'plugins/usd/resources/shaders'
-        PlugPluginPtr plugin =
-            PlugRegistry::GetInstance().GetPluginWithName("hdPrmanLoader");
         if (plugin)
         {
             std::string path = TfGetPathName(plugin->GetPath());
@@ -539,42 +541,42 @@ _UpdateSearchPathsFromEnvironment(RtParamList& options)
         }
         shaderpath = TfStringJoin(paths, ":");
         options.SetString( RixStr.k_searchpath_shader,
-                            RtUString(shaderpath.c_str()) );
+                           RtUString(shaderpath.c_str()) );
     }
 
-    // searchpath:rixplugin contains C++ (.so) plugins
-    std::string rixpluginpath = TfGetenv("RMAN_RIXPLUGINPATH");
-    if (!rixpluginpath.empty()) {
-        // RenderMan expects ':' as path separator, regardless of platform
-        NdrStringVec paths = TfStringSplit(rixpluginpath, ARCH_PATH_LIST_SEP);
-        rixpluginpath = TfStringJoin(paths, ":");
-        options.SetString( RixStr.k_searchpath_rixplugin,
-                            RtUString(rixpluginpath.c_str()) );
-    } else {
+    {
+        // searchpath:rixplugin contains C++ (.so) plugins
+        std::string rixpluginpath = TfGetenv("RMAN_RIXPLUGINPATH");
         NdrStringVec paths;
+        if (!rixpluginpath.empty()) {
+            // RenderMan expects ':' as path separator, regardless of platform
+            for (auto path : TfStringSplit(rixpluginpath, ARCH_PATH_LIST_SEP))
+            {
+                paths.push_back(path);
+            }
+        }
         // Default RenderMan installation under '$RMANTREE/lib/plugins'
-        std::string rmantree = TfGetenv("RMANTREE");
         if (!rmantree.empty()) {
             paths.push_back(TfStringCatPaths(rmantree, "lib/plugins"));
         }
         rixpluginpath = TfStringJoin(paths, ":");
         options.SetString( RixStr.k_searchpath_rixplugin,
-                            RtUString(rixpluginpath.c_str()) );
+                           RtUString(rixpluginpath.c_str()) );
     }
 
-    // searchpath:texture contains textures (.tex) and Rtx plugins (.so)
-    std::string texturepath = TfGetenv("RMAN_TEXTUREPATH");
-    if (!texturepath.empty()) {
-        // RenderMan expects ':' as path separator, regardless of platform
-        NdrStringVec paths = TfStringSplit(texturepath, ARCH_PATH_LIST_SEP);
-        texturepath = TfStringJoin(paths, ":");
-        options.SetString( RixStr.k_searchpath_texture,
-                            RtUString(texturepath.c_str()) );
-    } else {
+    {
+        // searchpath:texture contains textures (.tex) and Rtx plugins (.so)
+        std::string texturepath = TfGetenv("RMAN_TEXTUREPATH");
         NdrStringVec paths;
+        if (!texturepath.empty()) {
+            // RenderMan expects ':' as path separator, regardless of platform
+            for (auto path : TfStringSplit(texturepath, ARCH_PATH_LIST_SEP))
+            {
+                paths.push_back(path);
+            }
+        }
         // Default RenderMan installation under '$RMANTREE/lib/textures'
         // and '$RMANTREE/lib/plugins'
-        std::string rmantree = TfGetenv("RMANTREE");
         if (!rmantree.empty()) {
             paths.push_back(TfStringCatPaths(rmantree, "lib/textures"));
             paths.push_back(TfStringCatPaths(rmantree, "lib/plugins"));
@@ -582,8 +584,6 @@ _UpdateSearchPathsFromEnvironment(RtParamList& options)
         // Default hdPrman installation under 'plugins/usd'
         // We need the path to RtxHioImage and we assume that it lives in the
         // same directory as hdPrmanLoader
-        PlugPluginPtr plugin =
-            PlugRegistry::GetInstance().GetPluginWithName("hdPrmanLoader");
         if (plugin)
         {
             std::string path = TfGetPathName(plugin->GetPath());
@@ -593,16 +593,28 @@ _UpdateSearchPathsFromEnvironment(RtParamList& options)
         }
         texturepath = TfStringJoin(paths, ":");
         options.SetString( RixStr.k_searchpath_texture,
-                            RtUString(texturepath.c_str()) );
+                           RtUString(texturepath.c_str()) );
     }
 
-    std::string proceduralpath = TfGetenv("RMAN_PROCEDURALPATH");
-    if (!proceduralpath.empty()) {
-        // RenderMan expects ':' as path separator, regardless of platform
-        NdrStringVec paths = TfStringSplit(proceduralpath, ARCH_PATH_LIST_SEP);
+    {
+        std::string proceduralpath = TfGetenv("RMAN_PROCEDURALPATH");
+        NdrStringVec paths;
+        if (!proceduralpath.empty()) {
+            // RenderMan expects ':' as path separator, regardless of platform
+            for (std::string const& path : TfStringSplit(proceduralpath,
+                                                         ARCH_PATH_LIST_SEP))
+            {
+                paths.push_back(path);
+            }
+        }
+
+        // Default RenderMan installation under '$RMANTREE/lib/plugins'
+        if (!rmantree.empty()) {
+            paths.push_back(TfStringCatPaths(rmantree, "lib/plugins"));
+        }
         proceduralpath = TfStringJoin(paths, ":");
         options.SetString( RixStr.k_searchpath_procedural,
-                            RtUString(proceduralpath.c_str()) );
+                           RtUString(proceduralpath.c_str()) );
     }
 }
 
