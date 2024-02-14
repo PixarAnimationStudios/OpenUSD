@@ -95,9 +95,12 @@
 //           return Hydra schemas instead of just container data sources.
 //           schemaTypeDefs.h replaces vectorSchemaTypeDefs.h.
 // 63 -> 64: Adding disableDepthOfField to HdRenderSettings::RenderProduct
+// 64 -> 65: Introduce HdCollectionPredicateLibrary and 
+//           HdCollectionExpressionEvaluator for path expression evaluation on
+//           scene index prims.
 //
 
-#define HD_API_VERSION 64
+#define HD_API_VERSION 65
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

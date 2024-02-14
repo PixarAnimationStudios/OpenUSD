@@ -36,6 +36,8 @@ pxr_library(hd
         capsuleSchema
         categoriesSchema
         changeTracker
+        collectionExpressionEvaluator
+        collectionPredicateLibrary
         command
         coneSchema
         containerDataSourceEditor
@@ -372,6 +374,16 @@ pxr_build_test(testHdInstancerDeprecatedPrimvars
         testenv/testHdInstancerDeprecatedPrimvars.cpp
 )
 
+pxr_build_test(testHdCollectionExpressionEvaluator
+    LIBRARIES
+        hd
+        tf
+        sdf
+        
+    CPPFILES
+        testenv/testHdCollectionExpressionEvaluator.cpp
+)
+
 pxr_install_test_dir(
     SRC testenv/testHdSortedIds
     DEST testHdSortedIds
@@ -448,4 +460,8 @@ pxr_register_test(testHdInstancerDeprecatedPrimvars
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdInstancerDeprecatedPrimvars"
     ENV
         HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
+)
+
+pxr_register_test(testHdCollectionExpressionEvaluator
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdCollectionExpressionEvaluator"
 )
