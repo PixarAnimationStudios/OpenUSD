@@ -303,8 +303,7 @@ bool UsdGeomTetMesh::ComputeSurfaceFaces(const UsdGeomTetMesh& tetMesh,
                                          const UsdTimeCode timeCode) 
 {
     
-    if (surfaceFaceIndices == nullptr)
-    {
+    if (surfaceFaceIndices == nullptr) {
         return false;
     }
 
@@ -313,6 +312,68 @@ bool UsdGeomTetMesh::ComputeSurfaceFaces(const UsdGeomTetMesh& tetMesh,
     tetVertexIndicesAttr.Get(&tetVertexIndices, timeCode);
     
     *surfaceFaceIndices = _ComputeSurfaceFaces(tetVertexIndices);
+    return true;
+}
+
+VtIntArray
+_FindInvertedElements(const VtVec3fArray &tetMeshPoints, 
+                      const VtVec4iArray &tetVertexIndices,
+                      const TfToken &orientation)
+{
+    VtIntArray invertedElements;
+    invertedElements.reserve(tetVertexIndices.size());
+    GfVec3f elemPoints[4];
+    
+    const float sign = (orientation == UsdGeomTokens->leftHanded) ? -1.0f : 1.0f;
+
+    for (size_t t = 0; t < tetVertexIndices.size(); t++) {
+        for (uint_fast8_t p = 0; p < 4; p++) {
+            elemPoints[p] = tetMeshPoints[tetVertexIndices[t][p]];
+        }
+
+        const float tripleProduct = sign * GfDot(elemPoints[3] - elemPoints[0], 
+                                    GfCross(elemPoints[1] - elemPoints[0], 
+                                            elemPoints[2] - elemPoints[0]));
+
+        if (tripleProduct < 0.0f) {
+            invertedElements.push_back(t);
+        }
+    }
+
+    return invertedElements;
+}
+
+bool UsdGeomTetMesh::FindInvertedElements(const UsdGeomTetMesh& tetMesh,
+                                          VtIntArray* invertedElements,
+                                          const UsdTimeCode timeCode) 
+{    
+    if (invertedElements == nullptr) {
+        return false;
+    }
+
+    const UsdAttribute& tetPointsAttr = tetMesh.GetPointsAttr();
+    VtVec3fArray tetMeshPoints;
+    tetPointsAttr.Get(&tetMeshPoints, timeCode);
+    
+    if (tetMeshPoints.size() < 4) {
+        return false;
+    }
+
+    const UsdAttribute& tetVertexIndicesAttr = tetMesh.GetTetVertexIndicesAttr();
+    VtVec4iArray tetVertexIndices;
+    tetVertexIndicesAttr.Get(&tetVertexIndices, timeCode);
+    
+    if (tetVertexIndices.size() < 1) {
+        return false;
+    }
+    
+    const UsdAttribute& orientationAttr = tetMesh.GetOrientationAttr();
+    TfToken orientation; 
+    orientationAttr.Get(&orientation);
+
+    *invertedElements = _FindInvertedElements(tetMeshPoints,
+                                              tetVertexIndices, 
+                                              orientation);
     return true;
 }
 

@@ -68,6 +68,7 @@ class TestUsdGeomTetMesh(unittest.TestCase):
         self.assertEqual(len(surfaceFacesTime0), 6)
 
         surfaceFacesTime10 = UsdGeom.TetMesh.ComputeSurfaceFaces(myTetMesh, 10.0)
+       
         # When they separate we have 8 faces
         self.assertEqual(len(surfaceFacesTime10), 8)
 
@@ -99,6 +100,38 @@ class TestUsdGeomTetMesh(unittest.TestCase):
         stage.SetStartTimeCode(0.0)
         stage.SetEndTimeCode(15.0)
         stage.Export('tetMesh.usda')
+
+    def test_UsdGeomTetMeshFindInvertedElements(self):
+        stage = Usd.Stage.CreateInMemory()
+        myTetMesh = UsdGeom.TetMesh.Define(stage,"/tetMesh")
+        pointsAttr = myTetMesh.GetPointsAttr()
+
+        pointsTime10 = Vt.Vec3fArray(8, (Gf.Vec3f(0.0, 0.0, 3.0),
+                                        Gf.Vec3f(-2.0, 0.0, 3.0),
+                                        Gf.Vec3f(0.0, 2.0, 3.0),
+                                        Gf.Vec3f(0.0, 0.0, 5.0),
+                                        Gf.Vec3f(0.0, 0.0, -3.0),
+                                        Gf.Vec3f(2.0, 0.0, -3.0),
+                                        Gf.Vec3f(0.0, 2.0, -3.0),
+                                        Gf.Vec3f(0.0, 0.0, -5.0)))
+        # Test default rightHanded orientation
+        pointsAttr.Set(pointsTime10, 10.0)
+        tetVertexIndicesAttr = myTetMesh.GetTetVertexIndicesAttr();        
+
+        tetIndicesTime10 = Vt.Vec4iArray(2, (Gf.Vec4i(0,1,2,3),
+                                             Gf.Vec4i(4,6,5,7)))
+
+        tetVertexIndicesAttr.Set(tetIndicesTime10, 10.0)
+        
+        invertedElementsTime10 =  UsdGeom.TetMesh.FindInvertedElements(myTetMesh, 10.0)
+        self.assertEqual(len(invertedElementsTime10), 1)
+        self.assertEqual(invertedElementsTime10[0], 0)
+        # Test leftHanded orientation
+        orientationAttr = myTetMesh.GetOrientationAttr();   
+        orientationAttr.Set(UsdGeom.Tokens.leftHanded)
+        invertedElementsTime10 =  UsdGeom.TetMesh.FindInvertedElements(myTetMesh, 10.0)
+        self.assertEqual(len(invertedElementsTime10), 1)
+        self.assertEqual(invertedElementsTime10[0], 1)        
 
 if __name__ == '__main__':
     unittest.main()
