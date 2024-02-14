@@ -938,6 +938,12 @@ ArResolver& ArGetUnderlyingResolver();
 AR_API
 std::vector<TfType> ArGetAvailableResolvers();
 
+/// Returns list of all URI schemes for which a resolver has been
+/// registered. Schemes are returned in all lower-case and in alphabetically
+/// sorted order.
+AR_API
+const std::vector<std::string>& ArGetRegisteredURISchemes();
+
 /// Construct an instance of the ArResolver subclass specified by 
 /// \p resolverType.
 ///
