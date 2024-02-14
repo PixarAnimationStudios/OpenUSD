@@ -216,10 +216,22 @@ pxr_library(hd
 
     RESOURCE_FILES
         plugInfo.json
+        codegenTemplates/schemaClass.h
+        codegenTemplates/schemaClass.cpp
 
     DOXYGEN_FILES
         overview.dox
 )
+
+if (NOT PXR_ENABLE_PYTHON_SUPPORT)
+    message(STATUS "Skipping building usdGenSchema, Python modules required.")
+elseif (NOT JINJA2_FOUND)
+    message(WARNING "Skipping building usdGenSchema due to missing dependency: Jinja2")
+else()
+    pxr_python_bin(hdGenSchema
+        DEPENDENCIES
+    )
+endif()
 
 pxr_build_test(testHdBufferSourceEmptyVal
    LIBRARIES
