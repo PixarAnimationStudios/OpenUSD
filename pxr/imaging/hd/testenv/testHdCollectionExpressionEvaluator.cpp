@@ -154,13 +154,24 @@ _MakePrimContainer(
     );
 }
 
+// Rather than define a standalone set of custom predicates and have the user
+// stitch various predicate libraries together, use the pattern below to
+// extend the provided predicate library.
+// That way, the net library can be built up in a chaining fashion:
+// HdCollectionPredicateLibrary myLib =
+//      _MakeCustomN(
+//          ...(
+//              _MakeCustom2(
+//                  _MakeCustom1(HdGetCollectionPredicateLibrary()))...));
+//
 HdCollectionPredicateLibrary
-_MakeCustomPredicateLibrary()
+_MakeCustomPredicateLibrary(
+    const HdCollectionPredicateLibrary &base)
 {
     using PredResult = SdfPredicateFunctionResult;
 
-    // Extend foundational set with additional predicates.
-    HdCollectionPredicateLibrary lib = HdGetCollectionPredicateLibrary();
+    // Extend provided library with additional predicate(s).
+    HdCollectionPredicateLibrary lib = base;
 
     lib
 
@@ -177,7 +188,8 @@ _MakeCustomPredicateLibrary()
 HdCollectionPredicateLibrary
 _GetCustomPredicateLibrary()
 {
-    static HdCollectionPredicateLibrary lib = _MakeCustomPredicateLibrary();
+    static HdCollectionPredicateLibrary lib =
+        _MakeCustomPredicateLibrary(HdGetCollectionPredicateLibrary());
     return lib;
 }
 
