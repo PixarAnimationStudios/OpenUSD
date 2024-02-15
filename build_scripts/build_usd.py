@@ -1526,7 +1526,7 @@ DRACO = Dependency("Draco", InstallDraco, "include/draco/compression/decode.h")
 ############################################################
 # MaterialX
 
-MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.7.zip"
+MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.8.zip"
 
 def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
@@ -1542,6 +1542,12 @@ def InstallMaterialX(context, force, buildArgs):
         cmakeOptions = ['-DMATERIALX_BUILD_SHARED_LIBS=ON',
                         '-DMATERIALX_BUILD_TESTS=OFF'
         ]
+        if context.buildTarget in apple_utils.EMBEDDED_PLATFORMS:
+            cmakeOptions.extend([
+                "-DMATERIALX_BUILD_GEN_MSL=ON",
+                "-DMATERIALX_BUILD_GEN_GLSL=OFF",
+                "-DMATERIALX_BUILD_IOS=ON"
+            ])
         cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
 
@@ -2282,7 +2288,7 @@ class InstallContext:
                                 if args.draco_location else None)
 
         # - MaterialX Plugin
-        self.buildMaterialX = args.build_materialx and not coreOnly
+        self.buildMaterialX = args.build_materialx
 
         # - Spline Tests
         self.buildMayapyTests = args.build_mayapy_tests
