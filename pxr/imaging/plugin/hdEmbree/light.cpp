@@ -77,20 +77,20 @@ void HdEmbreeLight::Sync(HdSceneDelegate *sceneDelegate,
     light.xformWorldToLight = light.xformLightToWorld.GetInverse();
 
     // Store luminance parameters
-    light.intensity = sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity).Get<float>();
-    light.exposure = sceneDelegate->GetLightParamValue(id, HdLightTokens->exposure).Get<float>();
-    light.color = sceneDelegate->GetLightParamValue(id, HdLightTokens->color).Get<GfVec3f>();
-    light.normalize = sceneDelegate->GetLightParamValue(id, HdLightTokens->normalize).Get<bool>();
-    light.colorTemperature = sceneDelegate->GetLightParamValue(id, HdLightTokens->colorTemperature).Get<float>();
-    light.enableColorTemperature = sceneDelegate->GetLightParamValue(id, HdLightTokens->enableColorTemperature).Get<bool>();
+    light.intensity = sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity).GetWithDefault(1.0f);
+    light.exposure = sceneDelegate->GetLightParamValue(id, HdLightTokens->exposure).GetWithDefault(0.0f);
+    light.color = sceneDelegate->GetLightParamValue(id, HdLightTokens->color).GetWithDefault(GfVec3f{1.0f, 1.0f, 1.0f});
+    light.normalize = sceneDelegate->GetLightParamValue(id, HdLightTokens->normalize).GetWithDefault(false);
+    light.colorTemperature = sceneDelegate->GetLightParamValue(id, HdLightTokens->colorTemperature).GetWithDefault(6500.0f);
+    light.enableColorTemperature = sceneDelegate->GetLightParamValue(id, HdLightTokens->enableColorTemperature).GetWithDefault(false);
 
     // Get visibility
     light.visible = sceneDelegate->GetVisible(id);
-    light.visible_camera = sceneDelegate->GetLightParamValue(id, TfToken("inputs:visibility:camera")).GetWithDefault<bool>(false);
+    light.visible_camera = sceneDelegate->GetLightParamValue(id, TfToken("inputs:visibility:camera")).GetWithDefault(false);
     // XXX: Don't think we can get this to work in Embree unless it's built with masking
     // only solution would be to use rtcIntersect instead of rtcOccluded for shadow rays, which
     // maybe isn't the worst for a reference renderer
-    light.visible_shadow = sceneDelegate->GetLightParamValue(id, TfToken("inputs:visibility:shadow")).GetWithDefault<bool>(false);
+    light.visible_shadow = sceneDelegate->GetLightParamValue(id, TfToken("inputs:visibility:shadow")).GetWithDefault(false);
 
     light.rtcMeshId = RTC_INVALID_GEOMETRY_ID;
 
@@ -99,30 +99,37 @@ void HdEmbreeLight::Sync(HdSceneDelegate *sceneDelegate,
         light.kind = LightKind::Cylinder;
         light.cylinder = {
             sceneDelegate->GetLightParamValue(id, HdLightTokens->radius)
-                .Get<float>(),
+                .GetWithDefault(0.5f),
             sceneDelegate->GetLightParamValue(id, HdLightTokens->length)
-                .Get<float>(),
+                .GetWithDefault(1.0f),
         };
     } else if (_lightType == HdSprimTypeTokens->diskLight) {
         light.kind = LightKind::Disk;
         light.disk = {
             sceneDelegate->GetLightParamValue(id, HdLightTokens->radius)
-                .Get<float>(),
+                .GetWithDefault(0.5f),
         };
     } else if (_lightType == HdSprimTypeTokens->distantLight) {
         light.kind = LightKind::Distant;
 
         light.distant = {
             float(GfDegreesToRadians(sceneDelegate->GetLightParamValue(id, HdLightTokens->angle)
-                .Get<float>() / 2.0f)),
+                .GetWithDefault(0.53f) / 2.0f)),
         };
 
     } else if (_lightType == HdSprimTypeTokens->domeLight) {
         light.kind = LightKind::Dome;
         
-        SdfAssetPath texturePath = sceneDelegate->GetLightParamValue(id, HdLightTokens->textureFile).Get<SdfAssetPath>();
-        std::string const& resolvedPath = texturePath.GetResolvedPath();
-        light.texture = LoadLightTexture(resolvedPath);
+        std::string path;
+        VtValue textureValue = sceneDelegate->GetLightParamValue(id, HdLightTokens->textureFile);
+        if (textureValue.IsHolding<SdfAssetPath>()) {
+            SdfAssetPath texturePath = textureValue.UncheckedGet<SdfAssetPath>();
+            path = texturePath.GetResolvedPath();
+            if (path.empty()) {
+                path = texturePath.GetAssetPath();
+            }
+        }
+        light.texture = LoadLightTexture(path);
     } else if (_lightType == HdSprimTypeTokens->rectLight) {
         // Get shape parameters
         light.kind = LightKind::Rect;
@@ -134,22 +141,21 @@ void HdEmbreeLight::Sync(HdSceneDelegate *sceneDelegate,
         };
         
         // get texture
-        SdfAssetPath texturePath = sceneDelegate->GetLightParamValue(id, HdLightTokens->textureFile).Get<SdfAssetPath>();
-        std::string path = texturePath.GetResolvedPath();
-        if (path.empty()) {
-            path = texturePath.GetAssetPath();
+        std::string path;
+        VtValue textureValue = sceneDelegate->GetLightParamValue(id, HdLightTokens->textureFile);
+        if (textureValue.IsHolding<SdfAssetPath>()) {
+            SdfAssetPath texturePath = textureValue.UncheckedGet<SdfAssetPath>();
+            path = texturePath.GetResolvedPath();
+            if (path.empty()) {
+                path = texturePath.GetAssetPath();
+            }
         }
         light.texture = LoadLightTexture(path);
     } else if (_lightType == HdSprimTypeTokens->sphereLight) {
         light.kind = LightKind::Sphere;
         light.sphere = {
             sceneDelegate->GetLightParamValue(id, HdLightTokens->radius)
-                .Get<float>(),
-        };
-    } else if (_lightType == HdSprimTypeTokens->diskLight) {
-        light.kind = LightKind::Disk;
-        light.disk = {
-            sceneDelegate->GetLightParamValue(id, HdLightTokens->radius).Get<float>()
+                .GetWithDefault(0.5f),
         };
     }
 

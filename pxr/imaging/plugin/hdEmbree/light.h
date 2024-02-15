@@ -66,8 +66,8 @@ struct Distant
 struct LightTexture
 {
     GfVec3f* pixels = nullptr;
-    int width;
-    int height;
+    int width = 0;
+    int height = 0;
 };
 
 struct Rect 
@@ -84,16 +84,16 @@ struct Sphere
 struct IES
 {
     IESFile iesFile;
-    bool normalize;
-    float angleScale;
+    bool normalize = false;
+    float angleScale = 0.0f;
 };
 
 struct Shaping
 {
     GfVec3f focusTint;
-    float focus;
-    float coneAngle;
-    float coneSoftness;
+    float focus = 0.0f;
+    float coneAngle = 180.0f;
+    float coneSoftness = 0.0f;
     IES ies;
 };
 
@@ -103,10 +103,10 @@ struct Light
     GfMatrix4f xformWorldToLight;
     GfVec3f color;
     LightTexture texture;
-    float intensity;
-    float exposure;
-    float colorTemperature;
-    bool enableColorTemperature;
+    float intensity = 1.0f;
+    float exposure = 0.0f;
+    float colorTemperature = 6500.0f;
+    bool enableColorTemperature = false;
     LightKind kind;
     union
     {
@@ -116,10 +116,10 @@ struct Light
         Rect rect;
         Sphere sphere;
     };
-    bool normalize;
-    bool visible;
-    bool visible_camera;
-    bool visible_shadow;
+    bool normalize = false;
+    bool visible = true;
+    bool visible_camera = true;
+    bool visible_shadow = true;
     Shaping shaping;
     unsigned rtcMeshId = RTC_INVALID_GEOMETRY_ID;
     RTCGeometry rtcGeometry;
