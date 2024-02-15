@@ -166,7 +166,6 @@ private:
     // rays, and following them/calculating color with _TraceRay. This function
     // renders all tiles between tileStart and tileEnd.
     void _RenderTiles(HdRenderThread *renderThread,
-                      int progression,
                       size_t tileStart, size_t tileEnd);
 
     // Cast a ray into the scene and if it hits an object, write to the bound

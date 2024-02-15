@@ -38,7 +38,7 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/work/loops.h"
 
-#include "pxr/base/tf/hash.h"
+#include <boost/functional/hash.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -543,8 +543,6 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 
         // Render by scheduling square tiles of the sample buffer in a parallel
         // for loop.
-        // Always pass the renderThread to _RenderTiles to allow the first frame
-        // to be interrupted.
         WorkParallelForN(numTilesX*numTilesY,
             std::bind(&HdEmbreeRenderer::_RenderTiles, this, renderThread,
                 std::placeholders::_1, std::placeholders::_2));
@@ -586,8 +584,7 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 }
 
 void
-HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
-                                int progression,
+HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread, 
                                size_t tileStart, size_t tileEnd)
 {
     const unsigned int minX = _dataWindow.GetMinX();
