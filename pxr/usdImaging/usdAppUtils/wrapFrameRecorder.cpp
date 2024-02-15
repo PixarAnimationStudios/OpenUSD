@@ -42,7 +42,7 @@ wrapFrameRecorder()
 
     scope s = class_<This, boost::noncopyable>("FrameRecorder")
         .def(init<>())
-        .def(init<const TfToken&, bool, const SdfPath&>(
+        .def(init<const TfToken&, bool, bool, const SdfPath&>(
             (arg("rendererPluginId") = TfToken(), 
              arg("gpuEnabled") = true,
              arg("disableDefaultLight") = false,
