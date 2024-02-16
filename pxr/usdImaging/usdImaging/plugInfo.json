@@ -132,6 +132,13 @@
                         "isInternal": true,
                         "primTypeName": "Mesh"
                     },
+                    "UsdImagingTetMeshAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "TetMesh"
+                    },
                     "UsdImagingNurbsCurvesAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"

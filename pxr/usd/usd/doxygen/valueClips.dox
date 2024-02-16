@@ -38,8 +38,7 @@ indicating:
 Before going further, let's establish some terminology:
 
 - **Value Clip**: An individual \ref SdfLayer "layer" containing time varying data
-  over some interval.  **All metadata, relationships, and 
-  <a HREF="http://openusd.org/docs/USD-Glossary.html#USDGlossary-DefaultValue">default values</a> 
+  over some interval.  **All metadata, relationships, and [default values](http://openusd.org/docs/USD-Glossary.html#USDGlossary-DefaultValue)
   present in a layer are ignored when the layer is consumed as a Value Clip.**
 
 - **Clip Set**: A named set of value clips defined by a group of clip metadata.
@@ -910,7 +909,7 @@ over "World"
                 asset manifestAssetPath = @./shot.manifest.usd@
                 string primPath = "/World/Model"
                 asset[] assetPaths = [@./clip1.usd@]
-                double2[] active = [(0, 0]
+                double2[] active = [(0, 0)]
                 double2[] times = [(0, 0), (25, 25), (25, 0), (50, 25)]
             }
         }

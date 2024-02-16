@@ -49,6 +49,7 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/tf/unicodeUtils.h"
 
 #include <tbb/concurrent_hash_map.h>
 
@@ -139,14 +140,14 @@ public:
 // with an ASCII alpha character, followed by any number of ASCII alphanumeric
 // or the hyphen, period, and plus characters.
 std::pair<bool, std::string>
-_ValidateResourceIdentifierScheme(const std::string& caseFoldedScheme) {
+_ValidateResourceIdentifierScheme(const std::string_view& caseFoldedScheme) {
     if (caseFoldedScheme.empty()) {
         return std::make_pair(false, "Scheme cannot be empty");
     }
-    if (caseFoldedScheme[0] > 'z' || caseFoldedScheme[0] < 'a') {
+    if (caseFoldedScheme.front() > 'z' || caseFoldedScheme.front() < 'a') {
         return std::make_pair(false, "Scheme must start with ASCII 'a-z'");
     }
-    const auto it = std::find_if(caseFoldedScheme.begin() + 1,
+    const auto it = std::find_if(std::next(caseFoldedScheme.begin()),
                                  caseFoldedScheme.end(),
                                  [](const char c) {
         return !((c >= '0' && c <= '9') ||
@@ -154,21 +155,14 @@ _ValidateResourceIdentifierScheme(const std::string& caseFoldedScheme) {
                  (c == '-') || (c== '.') || (c=='+'));
     });
     if (it != caseFoldedScheme.end()) {
-        if ((((*it) & (1<<7)) == 0)) {
-            // TODO: Once the UTF-8 character iterator lands, it would be
-            // helpful to include the invalid UTF-8 character in the error
-            // message output. As invalid UTF-8 characters may span multiple
-            // bytes, it can't be trivially identified by the character
-            // iterator.
-            return std::make_pair(
-                false, "Non-ASCII UTF-8 characters not allowed in scheme");
-        }
-        else {
-            return std::make_pair(
--               false, TfStringPrintf("Character '%c' not allowed in scheme. "
-                                      "Must be ASCII 'a-z', '-', '+', or '.'",
-                                      *it));
-        }
+        TfUtf8CodePointIterator codePointIt(it, caseFoldedScheme.end());
+        return std::make_pair(
+            false,
+            TfStringPrintf(
+                "'%s' not allowed in scheme. "
+                "Characters must be ASCII 'a-z', '-', '+', or '.'",
+                TfStringify(TfUtf8CodePoint{*codePointIt}).c_str())
+        );
     }
     return std::make_pair(true, "");
 }

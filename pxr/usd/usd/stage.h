@@ -869,6 +869,10 @@ public:
     /// If either a pre-and-post-order traversal or a traversal rooted at a
     /// particular prim is desired, construct a UsdPrimRange directly.
     ///
+    /// You'll need to use the returned UsdPrimRange's iterator to perform 
+    /// actions such as pruning subtrees. See the "Using Usd.PrimRange in 
+    /// python" section in UsdPrimRange for more details and examples. 
+    ///
     /// This is equivalent to UsdPrimRange::Stage() . 
     USD_API
     UsdPrimRange Traverse();

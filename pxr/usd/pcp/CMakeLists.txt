@@ -63,6 +63,9 @@ pxr_library(pcp
         statistics
         utils
 
+    PRIVATE_HEADERS
+        traversalCache.h
+
     PYTHON_CPPFILES
         moduleDeps.cpp
 
@@ -564,6 +567,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_SubrootReferenceAndVariants2.testenv
+    DEST testPcpMuseum_SubrootReferenceAndVariants2
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_TimeCodesPerSecond.testenv
     DEST testPcpMuseum_TimeCodesPerSecond1
 )
@@ -729,6 +737,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_TrickyVariantSelectionInVariant2.testenv
+    DEST testPcpMuseum_TrickyVariantSelectionInVariant2
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_TrickyVariantWeakerSelection.testenv
     DEST testPcpMuseum_TrickyVariantWeakerSelection
 )
@@ -741,6 +754,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_TrickyVariantWeakerSelection3.testenv
     DEST testPcpMuseum_TrickyVariantWeakerSelection3
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_TrickyVariantWeakerSelection4.testenv
+    DEST testPcpMuseum_TrickyVariantWeakerSelection4
 )
 
 pxr_install_test_dir(
@@ -861,6 +879,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_TrickyMultipleRelocations4.testenv
     DEST testPcpMuseum_TrickyMultipleRelocations4
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_TrickyMultipleRelocations5.testenv
+    DEST testPcpMuseum_TrickyMultipleRelocations5
 )
 
 pxr_install_test_dir(
@@ -1304,6 +1327,13 @@ pxr_register_test(testPcpMuseum_SubrootReferenceAndVariants
         SDF_SCHEMA_PROHIBIT_INVALID_VARIANT_SELECTIONS=0
 )
 
+pxr_register_test(testPcpMuseum_SubrootReferenceAndVariants2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SubrootReferenceAndVariants2/root.sdf" 
+    STDOUT_REDIRECT compositionResults_SubrootReferenceAndVariants2.txt
+    DIFF_COMPARE compositionResults_SubrootReferenceAndVariants2.txt
+)
+
 pxr_register_test(testPcpMuseum_TimeCodesPerSecond1
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TimeCodesPerSecond/root.sdf" 
@@ -1552,6 +1582,13 @@ pxr_register_test(testPcpMuseum_TrickyVariantSelectionInVariant
     DIFF_COMPARE compositionResults_TrickyVariantSelectionInVariant.txt 
 )
 
+pxr_register_test(testPcpMuseum_TrickyVariantSelectionInVariant2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantSelectionInVariant2/root.sdf" 
+    STDOUT_REDIRECT compositionResults_TrickyVariantSelectionInVariant2.txt
+    DIFF_COMPARE compositionResults_TrickyVariantSelectionInVariant2.txt 
+)
+
 pxr_register_test(testPcpMuseum_TrickyVariantWeakerSelection
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantWeakerSelection/root.sdf" 
@@ -1571,6 +1608,13 @@ pxr_register_test(testPcpMuseum_TrickyVariantWeakerSelection3
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantWeakerSelection3/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyVariantWeakerSelection3.txt
     DIFF_COMPARE compositionResults_TrickyVariantWeakerSelection3.txt 
+)
+
+pxr_register_test(testPcpMuseum_TrickyVariantWeakerSelection4
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantWeakerSelection4/root.sdf" 
+    STDOUT_REDIRECT compositionResults_TrickyVariantWeakerSelection4.txt
+    DIFF_COMPARE compositionResults_TrickyVariantWeakerSelection4.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyClassHierarchy
@@ -1671,15 +1715,12 @@ pxr_register_test(testPcpMuseum_TrickySpookyVariantSelection
     DIFF_COMPARE compositionResults_TrickySpookyVariantSelection.txt 
 )
 
-# Temporarily disable pending bug fix
-if (FALSE)
-    pxr_register_test(testPcpMuseum_TrickySpookyVariantSelectionInClass
-        PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpookyVariantSelectionInClass/root.sdf" 
-        STDOUT_REDIRECT compositionResults_TrickySpookyVariantSelectionInClass.txt
-        DIFF_COMPARE compositionResults_TrickySpookyVariantSelectionInClass.txt 
-    )
-endif()
+pxr_register_test(testPcpMuseum_TrickySpookyVariantSelectionInClass
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpookyVariantSelectionInClass/root.sdf" 
+    STDOUT_REDIRECT compositionResults_TrickySpookyVariantSelectionInClass.txt
+    DIFF_COMPARE compositionResults_TrickySpookyVariantSelectionInClass.txt 
+)
 
 pxr_register_test(testPcpMuseum_TrickyConnectionToRelocatedAttribute
     PYTHON
@@ -1742,6 +1783,13 @@ pxr_register_test(testPcpMuseum_TrickyMultipleRelocations4
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_TrickyMultipleRelocations4.txt TrickyMultipleRelocations4/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyMultipleRelocations4.txt
     DIFF_COMPARE compositionResults_TrickyMultipleRelocations4.txt compositionErrors_TrickyMultipleRelocations4.txt 
+)
+
+pxr_register_test(testPcpMuseum_TrickyMultipleRelocations5
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyMultipleRelocations5/root.sdf" 
+    STDOUT_REDIRECT compositionResults_TrickyMultipleRelocations5.txt
+    DIFF_COMPARE compositionResults_TrickyMultipleRelocations5.txt
 )
 
 pxr_register_test(testPcpMuseum_TrickyMultipleRelocationsAndClasses

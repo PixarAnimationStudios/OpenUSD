@@ -214,6 +214,7 @@ PopulateFallbackRenderSpec(
                 TfToken(outputFilename),                // name
                 SdfPath(),                              // camera path
                 false,                                  // disableMotionBlur
+                false,                                  // disableDepthOfField
                 _fallbackResolution,                    // resolution
                 1.0f,                                   // PixelAspectRatio
                 _fallbackConformPolicy,                 // aspectRatioConformPolicy 

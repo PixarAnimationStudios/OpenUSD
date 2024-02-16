@@ -1120,6 +1120,9 @@ UsdGeomBBoxCache::_Resolve(
     
     // If the bound is in the cache, return it.
     entry = _FindEntry(primContext);
+    if (entry == nullptr) {
+        return false;
+    }
     *bboxes = entry->bboxes;
     return (!bboxes->empty());
 }

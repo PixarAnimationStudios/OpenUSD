@@ -1,0 +1,44 @@
+#sdf 1.4.32
+(
+    """
+    This museum case demonstrates the ability for a stronger
+    variant set to provide a variant selection for a weaker
+    variant set.
+    """
+)
+
+def "Ref" (
+    variantSets = ["v1", "v2"]
+    variants = {
+        string v1 = "a"
+    }
+)
+{
+    variantSet "v1" = {
+        "a" (
+            variants = {
+                string v2 = "b"
+            }
+        ) {
+        }
+    }
+
+    variantSet "v2" = {
+        "b" {
+            def "Model"
+            {
+            }
+        }
+    }
+}
+
+def "Root" (
+    """
+    Composition should pick up the variant {v2 = b} on /Ref when
+    composing ancestral opinions. The variant selection for v2
+    comes from stronger variant {v1 = a}, also authored on /Ref.
+    """
+    references = </Ref/Model>
+)
+{
+}

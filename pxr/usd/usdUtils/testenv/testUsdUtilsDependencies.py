@@ -143,6 +143,33 @@ class TestUsdUtilsDependencies(unittest.TestCase):
             Sdf.Layer.Find(layer.identifier), 
             Sdf.Layer.Find("anon_sublayer.usda")])
         self.assertEqual(unresolved, ["unresolved.usda"])
+    
+    def test_ComputeAllDependenciesMultipleReferences(self):
+        """Tests that identical paths only appear once in result arrays"""
+
+        def TestDirPath(path):
+            return os.path.normcase(
+                os.path.abspath(os.path.join(testDir, path)))
+        
+        testDir = "computeAllDependenciesMultipleReferences"
+        rootLayer = TestDirPath("root.usda")
+        layers, assets, unresolved = \
+            UsdUtils.ComputeAllDependencies(rootLayer)
+        
+        self.assertEqual(len(layers), 3)
+        self.assertSetEqual(
+            set(layers), 
+            {Sdf.Layer.Find(TestDirPath("common.usda")),
+             Sdf.Layer.Find(TestDirPath("reference.usda")),
+             Sdf.Layer.Find(rootLayer)})
+
+        self.assertEqual(
+            [os.path.normcase(f) for f in assets],
+            [TestDirPath("asset.txt")])
+
+        self.assertEqual(
+            [os.path.normcase(f) for f in unresolved],
+            [TestDirPath("missing.usda")])
 
     def test_ComputeAllDependenciesUserFuncFilterPaths(self):
         """Tests paths that are filtered by the processing func 
@@ -206,7 +233,7 @@ class TestUsdUtilsDependencies(unittest.TestCase):
                           os.path.normcase(os.path.abspath(assetPathDep))])
         self.assertEqual(unresolved, [])
 
-    def test_ComputeAllDependenciesUserFuncModifyPathss(self):
+    def test_ComputeAllDependenciesUserFuncModifyPaths(self):
         """Tests assets paths which are modified by the processing func
         appear correctly in returned vectors"""
 
@@ -265,8 +292,6 @@ class TestUsdUtilsDependencies(unittest.TestCase):
         self.assertEqual([os.path.normcase(f) for f in references],
             [os.path.normcase(os.path.abspath("file.txt"))])
         self.assertEqual(unresolved, [])
-            
-
 
 if __name__=="__main__":
     unittest.main()

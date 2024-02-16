@@ -362,6 +362,10 @@ public:
     // Set Riley scene options by composing opinion sources.
     void SetRileyOptions();
 
+    // Returns true if the render delegate in interactive mode (as opposed to
+    // batched/offline mode).
+    bool IsInteractive() const;
+
 private:
     void _CreateStatsSession();
     void _CreateRiley(const std::string &rileyVariant, 

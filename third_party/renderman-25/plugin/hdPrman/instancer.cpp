@@ -502,6 +502,32 @@ void HdPrmanInstancer::_SyncPrimvars(
     }
 }
 
+bool UnboxOrientations(
+    HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> const& box,
+    HdTimeSampleArray<VtQuatfArray, HDPRMAN_MAX_TIME_SAMPLES> *outRotates)
+{
+    HdTimeSampleArray<VtQuathArray, HDPRMAN_MAX_TIME_SAMPLES> rotates;
+    if (outRotates->UnboxFrom(box)) {
+        if (outRotates->count > 0 && outRotates->values[0].size() > 0){
+            return true;
+        }
+    }
+    if (rotates.UnboxFrom(box)) {
+        // convert to quatf
+        outRotates->Resize(rotates.count);
+        outRotates->times = rotates.times;
+        for (size_t i=0; i < rotates.count; ++i) {
+            if (rotates.values[i].size() > 0) {
+                VtQuathArray halfs = rotates.values[i];
+                VtQuatfArray floats(halfs.cbegin(), halfs.cend());
+                outRotates->values[i] = floats;
+            }
+        }
+        return true;
+    }   
+    return false;
+}
+
 void
 HdPrmanInstancer::_SyncTransforms(
     HdDirtyBits* dirtyBits)
@@ -569,7 +595,7 @@ HdPrmanInstancer::_SyncTransforms(
         HdTimeSampleArray<VtMatrix4dArray, HDPRMAN_MAX_TIME_SAMPLES>
             instanceXforms;
         HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES> translates;
-        HdTimeSampleArray<VtQuathArray, HDPRMAN_MAX_TIME_SAMPLES> rotates;
+        HdTimeSampleArray<VtQuatfArray, HDPRMAN_MAX_TIME_SAMPLES> rotates;
         HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES> scales;
         if (!instanceXforms.UnboxFrom(boxedInstanceXforms)) {
             TF_WARN("<%s> %s did not have expected type matrix4d[]",
@@ -579,8 +605,8 @@ HdPrmanInstancer::_SyncTransforms(
             TF_WARN("<%s> %s did not have expected type vec3f[]",
                 instanceTranslationsToken.GetText(), id.GetText());
         }
-        if (!rotates.UnboxFrom(boxedRotates)) {
-            TF_WARN("<%s> %s did not have expected type quath[]",
+        if (!UnboxOrientations(boxedRotates, &rotates)) {
+            TF_WARN("<%s> %s did not have expected type quath[] or quatf[]",
                 instanceRotationsToken.GetText(), id.GetText());
         }
         if (!scales.UnboxFrom(boxedScales)) {
@@ -613,7 +639,7 @@ HdPrmanInstancer::_SyncTransforms(
             if (translates.count > 0) {
                 trans = translates.Resample(t);
             }
-            VtQuathArray rot;
+            VtQuatfArray rot;
             if (rotates.count > 0) {
                 rot = rotates.Resample(t);
             }

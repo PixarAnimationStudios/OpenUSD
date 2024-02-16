@@ -61,6 +61,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanRenderSettingsTokens, HDPRMAN_API,
     (renderVars)                   \
     (renderVarIndices)             \
     (name)                         \
+    (sourceName)                   \
+    (sourceType)                   \
     (type)                         \
     (params)                       \
     (camera)

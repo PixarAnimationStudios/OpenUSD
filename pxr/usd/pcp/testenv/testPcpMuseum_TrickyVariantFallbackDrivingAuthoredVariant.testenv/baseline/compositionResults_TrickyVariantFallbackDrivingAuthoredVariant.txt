@@ -26,6 +26,13 @@ Prim Stack:
     root.sdf             /A{vset2=authored}vset2_authored_child
 
 ------------------------------------------------------------------------
+Results for composing </A_Ancestral>
+
+Prim Stack:
+    root.sdf             /A_Ancestral
+    root.sdf             /A{vset2=authored}vset2_authored_child
+
+------------------------------------------------------------------------
 Results for composing </B>
 
 Prim Stack:
@@ -44,5 +51,12 @@ Child names:
 Results for composing </B/vset2_authored_child>
 
 Prim Stack:
+    root.sdf             /B{vset2=authored}vset2_authored_child
+
+------------------------------------------------------------------------
+Results for composing </B_Ancestral>
+
+Prim Stack:
+    root.sdf             /B_Ancestral
     root.sdf             /B{vset2=authored}vset2_authored_child
 

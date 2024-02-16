@@ -286,6 +286,12 @@ TsKeyFrame::IsInterpolatable() const
 }
 
 bool
+TsKeyFrame::IsExtrapolatable() const
+{
+    return _holder.Get()->ValueCanBeExtrapolated();
+}
+
+bool
 TsKeyFrame::SupportsTangents() const
 {
     return _holder.Get()->ValueTypeSupportsTangents();

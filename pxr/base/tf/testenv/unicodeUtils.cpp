@@ -75,6 +75,13 @@ TestUtf8CodePoint()
                  TfStringify(TfUtf8InvalidCodePoint));
 
     }
+    {
+        // Test ASCII character helper
+        TF_AXIOM(TfUtf8CodePointFromAscii('a') == TfUtf8CodePoint(97));
+        TF_AXIOM(TfStringify(TfUtf8CodePointFromAscii('a')) == "a");
+        TF_AXIOM(TfUtf8CodePointFromAscii(static_cast<char>(128)) ==
+                 TfUtf8InvalidCodePoint);
+    }
     return true;
 }
 
@@ -94,12 +101,13 @@ TestUtf8CodePointView()
         TfUtf8CodePointView u1{s1};
         auto i1 = std::cbegin(u1);
         TF_AXIOM(i1.GetBase() == s1.begin());
-        TF_AXIOM(*i1 == 8520);
+        TF_AXIOM(*i1 != TfUtf8InvalidCodePoint);
+        TF_AXIOM(*i1 == TfUtf8CodePoint{8520});
         std::advance(i1, 9);
         TF_AXIOM(i1 == std::cend(u1));
 
-        for (const uint32_t codePoint : u1) {
-            TF_AXIOM(codePoint != TfUtf8InvalidCodePoint.AsUInt32());
+        for (const auto codePoint : u1) {
+            TF_AXIOM(codePoint != TfUtf8InvalidCodePoint);
         }
     }
 
@@ -108,12 +116,13 @@ TestUtf8CodePointView()
         TfUtf8CodePointView u2{s2};
         auto i2 = std::cbegin(u2);
         TF_AXIOM(i2.GetBase() == s2.begin());
-        TF_AXIOM(*i2 == 14652);
+        TF_AXIOM(*i2 != TfUtf8InvalidCodePoint);
+        TF_AXIOM(*i2 == TfUtf8CodePoint{14652});
         std::advance(i2, 5);
         TF_AXIOM(i2 == std::cend(u2));
 
-        for (const uint32_t codePoint : u2) {
-            TF_AXIOM(codePoint != TfUtf8InvalidCodePoint.AsUInt32());
+        for (const auto codePoint : u2) {
+            TF_AXIOM(codePoint != TfUtf8InvalidCodePoint);
         }
     }
 
@@ -121,30 +130,25 @@ TestUtf8CodePointView()
         const std::string_view s3{"㤻üaf-∫⁇…🔗"};
         TfUtf8CodePointView u3{s3};
         auto i3a = std::cbegin(u3);
-        auto i3b = std::cbegin(u3);
-
-        // The C++20 ranges version of find_if can be used with sentinels in
-        // C++20
-        for (; i3b != std::cend(u3); ++i3b) {
-            if (*(i3b.GetBase()) == '-') {
-                break;
-            }
-        }
+        auto i3b = TfUtf8CodePointIterator{
+                std::next(std::cbegin(s3), s3.find('-')),
+                std::cend(s3)};
         TF_AXIOM(i3b != std::cend(u3));
 
         // i3a should contain all characters before the "-"
-        TF_AXIOM(*i3a == 14651);
+        TF_AXIOM(*i3a != TfUtf8InvalidCodePoint);
+        TF_AXIOM(*i3a == TfUtf8CodePoint{14651});
         std::advance(i3a, 4);
         TF_AXIOM(i3a == i3b);
         TF_AXIOM(i3a.GetBase() == i3b.GetBase());
 
         // i3b should include the "-" character
-        TF_AXIOM(*i3b == 45);
+        TF_AXIOM((*i3b) == TfUtf8CodePointFromAscii('-'));
         std::advance(i3b, 5);
         TF_AXIOM(i3b == std::cend(u3));
 
-        for (const uint32_t codePoint : u3) {
-            TF_AXIOM(codePoint != TfUtf8InvalidCodePoint.AsUInt32());
+        for (const auto codePoint : u3) {
+            TF_AXIOM(codePoint != TfUtf8InvalidCodePoint);
         }
 
     }
@@ -153,32 +157,31 @@ TestUtf8CodePointView()
         // invalid code points.
         const std::string_view sv{"\x80\x61\x62\x81\x63"};
         const TfUtf8CodePointView uv{sv};
-        TF_AXIOM(std::next(std::begin(uv), 5) == std::end(uv));
+        TF_AXIOM(std::distance(std::begin(uv), uv.EndAsIterator()) == 5);
         TF_AXIOM(std::next(std::begin(uv), 5).GetBase() == std::end(sv));
 
-        std::array<uint32_t, 5> codePoints{0};
-        const std::array<uint32_t, 5> expectedCodePoints{{
-            TfUtf8InvalidCodePoint.AsUInt32(), 0x61, 0x62,
-            TfUtf8InvalidCodePoint.AsUInt32(), 0x63}};
-        std::copy(std::cbegin(uv), uv.EndAsIterator(), std::begin(codePoints));
-        TF_AXIOM(codePoints == expectedCodePoints);
+        const std::array expectedCodePoints{
+            TfUtf8InvalidCodePoint, TfUtf8CodePointFromAscii('a'),
+            TfUtf8CodePointFromAscii('b'), TfUtf8InvalidCodePoint,
+            TfUtf8CodePointFromAscii('c')};
+        TF_AXIOM(std::equal(std::cbegin(uv), uv.EndAsIterator(),
+                            std::cbegin(expectedCodePoints)));
     }
     {
         // Incomplete UTF-8 sequences should not consume valid character
         // sequences
         const std::string_view sv{"\xc0\x61\xe0\x85\x62\xf0\x83\x84\x63\xf1"};
         const TfUtf8CodePointView uv{sv};
-        TF_AXIOM(std::next(std::begin(uv), 7) == std::end(uv));
+        TF_AXIOM(std::distance(std::begin(uv), uv.EndAsIterator()) == 7);
         TF_AXIOM(std::next(std::begin(uv), 7).GetBase() == std::end(sv));
 
-        std::array<uint32_t, 7> codePoints{0};
-        const std::array<uint32_t, 7> expectedCodePoints{{
-            TfUtf8InvalidCodePoint.AsUInt32(), 0x61,
-            TfUtf8InvalidCodePoint.AsUInt32(), 0x62,
-            TfUtf8InvalidCodePoint.AsUInt32(), 0x63,
-            TfUtf8InvalidCodePoint.AsUInt32()}};
-        std::copy(std::cbegin(uv), uv.EndAsIterator(), std::begin(codePoints));
-        TF_AXIOM(codePoints == expectedCodePoints);
+        const std::array expectedCodePoints{
+            TfUtf8InvalidCodePoint, TfUtf8CodePointFromAscii('a'),
+            TfUtf8InvalidCodePoint, TfUtf8CodePointFromAscii('b'),
+            TfUtf8InvalidCodePoint, TfUtf8CodePointFromAscii('c'),
+            TfUtf8InvalidCodePoint};
+        TF_AXIOM(std::equal(std::cbegin(uv), uv.EndAsIterator(),
+                            std::cbegin(expectedCodePoints)));
     }
     return true;
 }
@@ -196,7 +199,7 @@ TestUtf8CodePointReflection()
             const std::string text{TfStringify(codePoint)};
             const auto view = TfUtf8CodePointView{text};
             TF_AXIOM(std::cbegin(view) != std::cend(view));
-            TF_AXIOM(*std::cbegin(view) == codePoint.AsUInt32());
+            TF_AXIOM(*std::cbegin(view) == codePoint);
             TF_AXIOM(++std::cbegin(view) == std::cend(view));
         }
     }
@@ -356,44 +359,32 @@ TestCharacterClasses()
     TfUtf8CodePointView view4 {sv4};
 
     // s1 should start with XID_Start and then have XID_Continue
-    bool first = true;
-    for (const uint32_t codePoint : view1)
-    {
-        bool result = first ? TfIsUtf8CodePointXidStart(codePoint)
-            : TfIsUtf8CodePointXidContinue(codePoint);
-        TF_AXIOM(result);
-
-        first = false;
-    }
+    TF_AXIOM(std::distance(std::cbegin(view1), view1.EndAsIterator()) == 9);
+    TF_AXIOM(TfIsUtf8CodePointXidStart(*std::cbegin(view1)));
+    TF_AXIOM(std::all_of(std::next(std::cbegin(view1)), view1.EndAsIterator(),
+                         [](const auto c) {
+                            return TfIsUtf8CodePointXidContinue(c);
+                         }));
 
     // s2 should start with XID_Start, have three characters that are 
-    // XID_Continue, then one that isn't in either 
-    size_t count = 0;
-    for (const uint32_t codePoint : view2)
-    {
-        if (count == 0)
-        {
-            TF_AXIOM(TfIsUtf8CodePointXidStart(codePoint));
-        }
-        else if (count == 4)
-        {
-            TF_AXIOM(!TfIsUtf8CodePointXidContinue(codePoint));
-        }
-        else
-        {
-            TF_AXIOM(TfIsUtf8CodePointXidContinue(codePoint));
-        }
-
-        count++;
-    }
+    // XID_Continue, then one that isn't in either
+    TF_AXIOM(std::distance(std::cbegin(view2), view2.EndAsIterator()) == 5);
+    auto it = std::cbegin(view2);
+    TF_AXIOM(TfIsUtf8CodePointXidStart(*it++));
+    TF_AXIOM(TfIsUtf8CodePointXidContinue(*it++));
+    TF_AXIOM(TfIsUtf8CodePointXidContinue(*it++));
+    TF_AXIOM(TfIsUtf8CodePointXidContinue(*it++));
+    TF_AXIOM(it != std::cend(view2));
+    TF_AXIOM(!TfIsUtf8CodePointXidContinue(*it++));
+    TF_AXIOM(it == std::cend(view2));
 
     // s3 should have all XID_Start characters in the first set
     // (before the "-") and all invalid characters after
-    for (const uint32_t codePoint : view3)
+    for (const auto codePoint : view3)
     {
         TF_AXIOM(TfIsUtf8CodePointXidStart(codePoint));
     }
-    for (const uint32_t codePoint : view4)
+    for (const auto codePoint : view4)
     {
         TF_AXIOM(!TfIsUtf8CodePointXidContinue(codePoint));
     }

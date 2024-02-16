@@ -167,6 +167,9 @@ _UpdateCameraContextFromProduct(
             displayWindow, dataWindow, product.pixelAspectRatio));
     cameraContext->SetWindowPolicy(
         HdUtils::ToConformWindowPolicy(product.aspectRatioConformPolicy));
+#if HD_API_VERSION >= 64
+    cameraContext->SetDisableDepthOfField(product.disableDepthOfField);
+#endif
 }
 
 // Update the riley camera params using state on the camera Sprim and the
@@ -176,7 +179,6 @@ _UpdateRileyCamera(
     riley::Riley *riley,
     const HdRenderIndex *renderIndex,
     const SdfPath &cameraPathFromProduct,
-    bool interactive,
     HdPrman_CameraContext *cameraContext)
 {
     if (cameraContext->IsInvalid()) {
@@ -184,11 +186,6 @@ _UpdateRileyCamera(
             "Updating riley camera %u using camera prim %s\n",
             cameraContext->GetCameraId().AsUInt32(),
             cameraContext->GetCameraPath().GetText());
-
-        // XXX This should come from the camera Sprim instead and should be
-        //     folded into UpdateRileyCameraAndClipPlanes.
-        //
-        cameraContext->SetFallbackShutterCurve(interactive);
 
         cameraContext->UpdateRileyCameraAndClipPlanes(riley, renderIndex);
         cameraContext->MarkValid();
@@ -288,7 +285,7 @@ HdPrman_RenderSettings::DriveRenderPass(
     // to drive render pass execution are:
     // 1. In an application like usdrecord wherein the render delegate is
     //    not interactive and the render task has AOV bindings by enabling the
-    //    setting HD_PRMAN_RENDER_SETTINGS_PRIM_DRIVE_RENDER_PASS.
+    //    setting HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS.
     //
     // 2. The hdPrman test harness where the task does not have AOV bindings.
     // 
@@ -309,7 +306,7 @@ HdPrman_RenderSettings::DriveRenderPass(
 
     TF_DEBUG(HDPRMAN_RENDER_PASS).Msg(
         "Drive with RenderSettingsPrim = %d\n"
-        " - HD_PRMAN_RENDER_SETTINGS_PRIM_DRIVE_RENDER_PASS = %d\n"
+        " - HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS = %d\n"
         " - valid = %d\n"
         " - interactive renderDelegate %d\n",
         result, driveRenderPassWithAovBindings, IsValid(), interactive);
@@ -373,7 +370,6 @@ HdPrman_RenderSettings::UpdateAndRender(
             param->AcquireRiley(),
             renderIndex,
             product.cameraPath,
-            interactive,
             &cameraContext);
         
         const GfVec2f shutter =
@@ -564,11 +560,11 @@ HdPrman_RenderSettings::_ProcessRenderTerminals(
 }
 
 void
-HdPrman_RenderSettings::_ProcessRenderProducts(
-    HdPrman_RenderParam *param)
+HdPrman_RenderSettings::_ProcessRenderProducts(HdPrman_RenderParam *param)
 {
-    const bool hasRenderProducts = !GetRenderProducts().empty();
-
+    if (GetRenderProducts().empty()) {
+        return;
+    }
     // Fallback path for apps using an older version of Hydra wherein 
     // the computed "unioned shutter interval" on the render settings 
     // prim via HdsiRenderSettingsFilteringSceneIndex is not available.
@@ -577,7 +573,7 @@ HdPrman_RenderSettings::_ProcessRenderProducts(
     // during HdPrmanCamera::Sync. The riley shutter interval needs to
     // be set before any time-sampled primvars are synced.
     // 
-    if (GetShutterInterval().IsEmpty() && hasRenderProducts) {
+    if (GetShutterInterval().IsEmpty()) {
         // Set the camera path here so that HdPrmanCamera::Sync can detect
         // whether it is syncing the current camera to set the riley shutter
         // interval. See SetRileyShutterIntervalFromCameraContextCameraPath
@@ -585,6 +581,11 @@ HdPrman_RenderSettings::_ProcessRenderProducts(
         const SdfPath &cameraPath = GetRenderProducts().at(0).cameraPath;
         param->GetCameraContext().SetCameraPath(cameraPath);
     }
+
+    // This will override the f-stop value on the camera
+    param->GetCameraContext().SetDisableDepthOfField(
+        GetRenderProducts().at(0).disableDepthOfField);
+    
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

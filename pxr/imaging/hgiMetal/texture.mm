@@ -294,4 +294,10 @@ HgiMetalTexture::GetTextureId() const
     return _textureId;
 }
 
+void 
+HgiMetalTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
+{
+    return;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

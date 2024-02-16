@@ -100,6 +100,12 @@ public:
         GfVec3i const& dstTexelOffset = GfVec3i(0),
         int mipLevel=-1);
 
+    /// This function issues a layout change barrier. However, the layout 
+    /// transition isn't immediately executed. The command buffer simply 
+    /// records the request and executes when in the next submission cycle.
+    HGIVULKAN_API
+    void SubmitLayoutChange(HgiTextureUsage newLayout) override;
+
     /// Transition image from oldLayout to newLayout.
     /// `producerAccess` of 0 means:
     ///    Only invalidation barrier, no flush barrier. For read-only resources.
