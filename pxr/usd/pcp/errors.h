@@ -63,6 +63,8 @@ enum PcpErrorType {
     PcpErrorType_InvalidSublayerPath,
     PcpErrorType_InvalidVariantSelection,
     PcpErrorType_MutedAssetPath,
+    PcpErrorType_InvalidAuthoredRelocation,
+    PcpErrorType_InvalidConflictingRelocation,
     PcpErrorType_OpinionAtRelocationSource,
     PcpErrorType_PrimPermissionDenied,
     PcpErrorType_PropertyPermissionDenied,
@@ -667,6 +669,94 @@ public:
 private:
     /// Constructor is private. Use New() instead.
     PcpErrorInvalidSublayerPath();
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Forward declarations:
+class PcpErrorRelocationBase;
+typedef std::shared_ptr<PcpErrorRelocationBase>
+    PcpErrorRelocationBasePtr;
+
+/// \class PcpErrorRelocationBase
+///
+/// Base class for composition errors related to relocates.
+///
+class PcpErrorRelocationBase : public PcpErrorBase {
+public:
+    /// Destructor.
+    PCP_API ~PcpErrorRelocationBase() override;
+
+    /// The source path of the invalid relocation.
+    SdfPath sourcePath;
+    /// The target path of the invalid relocation.
+    SdfPath targetPath;
+    /// The layer containing the authored relocates.
+    SdfLayerHandle layer;
+    /// The path to the prim where the relocates is authored.
+    SdfPath owningPath;
+    /// Additional messages about the error.
+    std::string messages;
+
+protected:
+    PcpErrorRelocationBase(PcpErrorType errorType);
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Forward declarations:
+class PcpErrorInvalidAuthoredRelocation;
+typedef std::shared_ptr<PcpErrorInvalidAuthoredRelocation>
+    PcpErrorInvalidAuthoredRelocationPtr;
+
+/// \class PcpErrorInvalidAuthoredRelocation
+///
+/// Invalid authored relocation found in a relocates field.
+///
+class PcpErrorInvalidAuthoredRelocation : public PcpErrorRelocationBase {
+public:
+    /// Returns a new error object.
+    static PcpErrorInvalidAuthoredRelocationPtr New();
+    /// Destructor.
+    PCP_API ~PcpErrorInvalidAuthoredRelocation() override;
+    /// Converts error to string message.
+    PCP_API std::string ToString() const override;
+    
+protected:
+    PcpErrorInvalidAuthoredRelocation();
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Forward declarations:
+class PcpErrorInvalidConflictingRelocation;
+typedef std::shared_ptr<PcpErrorInvalidConflictingRelocation>
+    PcpErrorInvalidConflictingRelocationPtr;
+
+/// \class PcpErrorInvalidConflictingRelocation
+///
+/// Relocation conflicts with another relocation in the layer stack.
+///
+class PcpErrorInvalidConflictingRelocation : public PcpErrorRelocationBase {
+public:
+    /// Returns a new error object.
+    static PcpErrorInvalidConflictingRelocationPtr New();
+    /// Destructor.
+    PCP_API ~PcpErrorInvalidConflictingRelocation() override;
+    /// Converts error to string message.
+    PCP_API std::string ToString() const override;
+    
+    /// The source path of the relocation this conflicts with.
+    SdfPath conflictSourcePath;
+    /// The target path of the relocation this conflicts with.
+    SdfPath conflictTargetPath;
+    /// The layer containing the authored relocation this conflicts with.
+    SdfLayerHandle conflictLayer;
+    /// The path to the prim where the relocation this conflicts with is authored.
+    SdfPath conflictOwningPath;
+
+protected:
+    PcpErrorInvalidConflictingRelocation();
 };
 
 ///////////////////////////////////////////////////////////////////////////////

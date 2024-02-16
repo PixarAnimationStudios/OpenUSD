@@ -340,12 +340,13 @@ std::ostream& operator<<(std::ostream&, const PcpLayerStackRefPtr&);
 /// maps.
 void
 Pcp_ComputeRelocationsForLayerStack(
-    const SdfLayerRefPtrVector & layers,
+    const PcpLayerStack &layerStack,
     SdfRelocatesMap *relocatesSourceToTarget,
     SdfRelocatesMap *relocatesTargetToSource,
     SdfRelocatesMap *incrementalRelocatesSourceToTarget,
     SdfRelocatesMap *incrementalRelocatesTargetToSource,
-    SdfPathVector *relocatesPrimPaths);
+    SdfPathVector *relocatesPrimPaths,
+    PcpErrorVector *errors);
 
 // Returns true if \p layerStack should be recomputed due to changes to
 // any computed asset paths that were used to find or open layers

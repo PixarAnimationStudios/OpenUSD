@@ -962,8 +962,8 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testPcpMuseum_ErrorRelocateToSelf.testenv
-    DEST testPcpMuseum_ErrorRelocateToSelf
+    SRC testenv/testPcpMuseum_ErrorInvalidAuthoredRelocates.testenv
+    DEST testPcpMuseum_ErrorInvalidAuthoredRelocates
 )
 
 pxr_install_test_dir(
@@ -1820,11 +1820,11 @@ pxr_register_test(testPcpMuseum_ErrorOpinionAtRelocationSource
     DIFF_COMPARE compositionResults_ErrorOpinionAtRelocationSource.txt
 )
 
-pxr_register_test(testPcpMuseum_ErrorRelocateToSelf
+pxr_register_test(testPcpMuseum_ErrorInvalidAuthoredRelocates
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_ErrorRelocateToSelf.txt ErrorRelocateToSelf/root.sdf" 
-    STDOUT_REDIRECT compositionResults_ErrorRelocateToSelf.txt
-    DIFF_COMPARE compositionResults_ErrorRelocateToSelf.txt compositionErrors_ErrorRelocateToSelf.txt
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_ErrorInvalidAuthoredRelocates.txt ErrorInvalidAuthoredRelocates/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ErrorInvalidAuthoredRelocates.txt
+    DIFF_COMPARE compositionResults_ErrorInvalidAuthoredRelocates.txt compositionErrors_ErrorInvalidAuthoredRelocates.txt
 )
 
 pxr_register_test(testPcpMuseum_ErrorRelocateWithVariantSelection
@@ -1937,9 +1937,9 @@ pxr_register_test(testPcpRegressionBugs_bug92955
 
 pxr_register_test(testPcpRegressionBugs_bug92827
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults bug92827/root.sdf"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_bug92827.txt bug92827/root.sdf"
     STDOUT_REDIRECT compositionResults_bug92827.txt
-    DIFF_COMPARE compositionResults_bug92827.txt
+    DIFF_COMPARE compositionResults_bug92827.txt compositionErrors_bug92827.txt
     EXPECTED_RETURN_CODE 0
 )
 

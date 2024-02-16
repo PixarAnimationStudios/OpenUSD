@@ -52,6 +52,9 @@ TF_REGISTRY_FUNCTION(TfEnum) {
     TF_ADD_ENUM_NAME(PcpErrorType_InvalidSublayerOwnership);
     TF_ADD_ENUM_NAME(PcpErrorType_InvalidSublayerPath);
     TF_ADD_ENUM_NAME(PcpErrorType_InvalidVariantSelection);
+    TF_ADD_ENUM_NAME(PcpErrorType_MutedAssetPath);
+    TF_ADD_ENUM_NAME(PcpErrorType_InvalidAuthoredRelocation);
+    TF_ADD_ENUM_NAME(PcpErrorType_InvalidConflictingRelocation);
     TF_ADD_ENUM_NAME(PcpErrorType_OpinionAtRelocationSource);
     TF_ADD_ENUM_NAME(PcpErrorType_PrimPermissionDenied);
     TF_ADD_ENUM_NAME(PcpErrorType_PropertyPermissionDenied);
@@ -689,6 +692,84 @@ PcpErrorInvalidSublayerPath::ToString() const
                           layer ? layer->GetIdentifier().c_str()
                                 : "<NULL>",
                           messages.empty() ? "" : " -- ",
+                          messages.c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PcpErrorRelocationBase::PcpErrorRelocationBase(PcpErrorType errorType)
+    : PcpErrorBase(errorType)
+{
+}
+
+PcpErrorRelocationBase::~PcpErrorRelocationBase()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PcpErrorInvalidAuthoredRelocationPtr
+PcpErrorInvalidAuthoredRelocation::New()
+{
+    return PcpErrorInvalidAuthoredRelocationPtr(
+        new PcpErrorInvalidAuthoredRelocation);
+}
+
+PcpErrorInvalidAuthoredRelocation::PcpErrorInvalidAuthoredRelocation() :
+    PcpErrorRelocationBase(PcpErrorType_InvalidAuthoredRelocation)
+{
+}
+
+PcpErrorInvalidAuthoredRelocation::~PcpErrorInvalidAuthoredRelocation()
+{
+}
+
+// virtual
+std::string
+PcpErrorInvalidAuthoredRelocation::ToString() const
+{
+    return TfStringPrintf("Relocation from <%s> to <%s> authored at @%s@<%s> is "
+                          "invalid and will be ignored: %s",
+                          sourcePath.GetText(),
+                          targetPath.GetText(),
+                          layer->GetIdentifier().c_str(), 
+                          owningPath.GetText(),
+                          messages.c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PcpErrorInvalidConflictingRelocationPtr
+PcpErrorInvalidConflictingRelocation::New()
+{
+    return PcpErrorInvalidConflictingRelocationPtr(
+        new PcpErrorInvalidConflictingRelocation);
+}
+
+PcpErrorInvalidConflictingRelocation::PcpErrorInvalidConflictingRelocation() :
+    PcpErrorRelocationBase(PcpErrorType_InvalidConflictingRelocation)
+{
+}
+
+PcpErrorInvalidConflictingRelocation::~PcpErrorInvalidConflictingRelocation()
+{
+}
+
+// virtual
+std::string
+PcpErrorInvalidConflictingRelocation::ToString() const
+{
+    return TfStringPrintf("Relocation from <%s> to <%s> authored at @%s@<%s> "
+                          "conflicts with another relocation from <%s> to <%s> "
+                          "authored at @%s@<%s> and will be ignored: %s",
+                          sourcePath.GetText(),
+                          targetPath.GetText(),
+                          layer->GetIdentifier().c_str(), 
+                          owningPath.GetText(),
+                          conflictSourcePath.GetText(),
+                          conflictTargetPath.GetText(),
+                          conflictLayer->GetIdentifier().c_str(), 
+                          conflictOwningPath.GetText(),
                           messages.c_str());
 }
 

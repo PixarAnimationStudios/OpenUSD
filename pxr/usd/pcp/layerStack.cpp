@@ -175,22 +175,83 @@ _ApplyOwnedSublayerOrder(
     }
 }
 
+// Checks if the source and target paths constitute a valid relocates. This
+// validation is not context specific, i.e. if this returns false, the 
+// combination of sourse and target paths is always invalid in any layer.
 static bool
-_IsValidRelocatesPath(SdfPath const& path)
+_IsValidRelocatesEntry(
+    const SdfPath &source, const SdfPath &target, std::string *errorMessage) 
 {
-    return path.IsPrimPath() && !path.ContainsPrimVariantSelection();
+    auto isValidPathFn = [&](SdfPath const& path) {
+        // The SdfSchema should already enforce that these are valid paths for 
+        // relocates, however we still double-check here to avoid problematic 
+        // results under composition.
+        if (!path.IsPrimPath()) {
+            *errorMessage = "Only prims can be relocated.";
+            return false;
+        }
+
+        if (path.ContainsPrimVariantSelection()) {
+            *errorMessage = "Relocates cannot have any variant selections.";
+            return false;
+        }
+
+        // This is not enforced by the Sdf Schema but is still not allowed
+        if (path.IsRootPrimPath()) {
+            *errorMessage = 
+                "Root prims cannot be the source or target of a relocate.";
+            return false;
+        }
+
+        return true;
+    };
+
+    // The source and target must be valid relocates paths.
+    if (!isValidPathFn(source) || !isValidPathFn(target)) {
+        return false;
+    }
+
+    if (source == target) {
+        *errorMessage = 
+            "The target of a relocate cannot be the same as its source.";
+        return false;
+    }
+
+    if (target.HasPrefix(source)) {
+        *errorMessage = 
+            "The target of a relocate cannot be a descendant of its source.";
+        return false;
+    }
+
+    if (source.HasPrefix(target)) {
+        *errorMessage = 
+            "The target of a relocate cannot be an ancestor of its source.";
+        return false;
+    }
+
+    if (source.GetCommonPrefix(target).IsAbsoluteRootPath()) {
+        *errorMessage = 
+            "Prims cannot be relocated to be a descendant of a different "
+            "root prim.";
+        return false;
+    }
+
+    return true;
 }
 
 void
 Pcp_ComputeRelocationsForLayerStack(
-    const SdfLayerRefPtrVector & layers,
+    const PcpLayerStack &layerStack,
     SdfRelocatesMap *relocatesSourceToTarget,
     SdfRelocatesMap *relocatesTargetToSource,
     SdfRelocatesMap *incrementalRelocatesSourceToTarget,
     SdfRelocatesMap *incrementalRelocatesTargetToSource,
-    SdfPathVector *relocatesPrimPaths)
+    SdfPathVector *relocatesPrimPaths,
+    PcpErrorVector *errors)
 {
     TRACE_FUNCTION();
+
+    const SdfLayerRefPtrVector & layers = layerStack.GetLayers();
 
     // Compose authored relocation arcs per prim path.
     std::map<SdfPath, SdfRelocatesMap> relocatesPerPrim;
@@ -231,48 +292,21 @@ Pcp_ComputeRelocationsForLayerStack(
                 SdfPath source = reloc->first .MakeAbsolutePath(primPath);
                 SdfPath target = reloc->second.MakeAbsolutePath(primPath);
 
-                // The SdfSchema should already enforce that these
-                // are valid paths for relocates, however we still
-                // double-check here to avoid problematic results
-                // under composition.
-                //
-                // XXX As with the case below, high-level code emits a
-                // warning in this case.  If we introduce a path to
-                // emit PcpErrors in this code, we'd use it here too.
-                if (!_IsValidRelocatesPath(source)) {
-                    TF_WARN("Ignoring invalid relocate source "
-                            "path <%s> in layer @%s@",
-                            source.GetText(),
-                            (*layer)->GetIdentifier().c_str());
-                    continue;
-                }
-                if (!_IsValidRelocatesPath(target)) {
-                    TF_WARN("Ignoring invalid relocate target "
-                            "path <%s> in layer @%s@",
-                            target.GetText(),
-                            (*layer)->GetIdentifier().c_str());
-                    continue;
-                }
-
-                if (source == target || source.HasPrefix(target)) {
-                    // Skip relocations from a path P back to itself and
-                    // relocations from a path P to an ancestor of P.
-                    // (The authoring code in Csd should never create these,
-                    // but they can be introduced by hand-editing.)
-                    //
-                    // Including them in the composed table would complicate
-                    // life downstream, since all consumers of this table
-                    // would have to be aware of this weird edge-case
-                    // scenario.
-                    //
-                    // XXX: Although Csd already throws a warning
-                    //      when this happens, we should also add a
-                    //      formal PcpError for this case.  Perhaps
-                    //      we can do this when removing the
-                    //      non-Pcp-mode composition code from Csd.
-                }
-                else {
+                std::string errorMessage;
+                if (_IsValidRelocatesEntry(source, target, &errorMessage)) {
                     relocatesPerPrim[primPath][source] = target;
+                } else {
+                    PcpErrorInvalidAuthoredRelocationPtr err = 
+                        PcpErrorInvalidAuthoredRelocation::New();
+                    err->rootSite = PcpSite(
+                        layerStack.GetIdentifier(), SdfPath::AbsoluteRootPath());
+
+                    err->layer = *layer;
+                    err->owningPath = primPath;
+                    err->sourcePath = std::move(source);
+                    err->targetPath = std::move(target);
+                    err->messages = std::move(errorMessage);
+                    errors->push_back(std::move(err));
                 }
             }
 
@@ -495,15 +529,6 @@ PcpLayerStack::PcpLayerStack(
     }
 
     _Compute(registry._GetFileFormatTarget(), registry._GetMutedLayers());
-
-    if (!_isUsd) {
-        Pcp_ComputeRelocationsForLayerStack(_layers, 
-                                            &_relocatesSourceToTarget,
-                                            &_relocatesTargetToSource,
-                                            &_incrementalRelocatesSourceToTarget,
-                                            &_incrementalRelocatesTargetToSource,
-                                            &_relocatesPrimPaths);
-    }
 }
 
 PcpLayerStack::~PcpLayerStack()
@@ -521,7 +546,7 @@ PcpLayerStack::Apply(const PcpLayerStackChanges& changes, PcpLifeboat* lifeboat)
     // Invalidate the layer stack as necessary, recomputing immediately.
     // Recomputing immediately assists optimal change processing --
     // e.g. it lets us examine the before/after change to relocations.
-
+    
     // Update expression variables if necessary. This needs to be done up front
     // since they may be needed when computing the full layer stack.
     if (changes.didChangeSignificantly || 
@@ -610,12 +635,29 @@ PcpLayerStack::Apply(const PcpLayerStackChanges& changes, PcpLifeboat* lifeboat)
             lifeboat->Retain(*i);
         }
         _BlowLayers();
+        _BlowRelocations();
         _Compute(_registry->_GetFileFormatTarget(), _registry->_GetMutedLayers());
-    }
 
-    // Update relocations if necessary.
-    if (!_isUsd &&
-        (changes.didChangeSignificantly || changes.didChangeRelocates)) {
+        // Recompute the derived relocation variables.
+        for (auto &[path, variable] : _relocatesVariables) {
+            variable->SetValue(_FilterRelocationsForPath(*this, path));
+        }
+    } else if (!_isUsd &&
+            (changes.didChangeSignificantly || changes.didChangeRelocates)) {
+
+        PcpErrorVector errors;
+
+        // We're only updating relocates in this case so if we have any current
+        // local errors, copy any that aren't relocates errors over.
+        if (_localErrors) {
+            errors.reserve(_localErrors->size());
+            for (const auto &err : *_localErrors) {
+                if (!std::dynamic_pointer_cast<PcpErrorRelocationBasePtr>(err)) {
+                    errors.push_back(err);
+                }
+            }
+        }
+
         // Blow the relocations if they changed specifically, or if there's been
         // a significant change.
         // A significant change means the composed opinions of the layer stack
@@ -625,12 +667,13 @@ PcpLayerStack::Apply(const PcpLayerStackChanges& changes, PcpLifeboat* lifeboat)
         if (changes.didChangeSignificantly) {
             // Recompute relocations from scratch.
             Pcp_ComputeRelocationsForLayerStack(
-                _layers, 
+                *this,
                 &_relocatesSourceToTarget,
                 &_relocatesTargetToSource,
                 &_incrementalRelocatesSourceToTarget,
                 &_incrementalRelocatesTargetToSource,
-                &_relocatesPrimPaths);
+                &_relocatesPrimPaths,
+                &errors);
         } else {
             // Change processing has provided a specific new set of
             // relocations to use.
@@ -641,11 +684,21 @@ PcpLayerStack::Apply(const PcpLayerStackChanges& changes, PcpLifeboat* lifeboat)
             _incrementalRelocatesTargetToSource = 
                 changes.newIncrementalRelocatesTargetToSource;
             _relocatesPrimPaths = changes.newRelocatesPrimPaths;
+            errors.insert(errors.end(), 
+                changes.newRelocatesErrors.begin(), 
+                changes.newRelocatesErrors.end());
         }
         
         // Recompute the derived relocation variables.
-        TF_FOR_ALL(i, _relocatesVariables) {
-            i->second->SetValue(_FilterRelocationsForPath(*this, i->first));
+        for (auto &[path, variable] : _relocatesVariables) {
+            variable->SetValue(_FilterRelocationsForPath(*this, path));
+        }
+
+        if (errors.empty()) {
+            _localErrors.reset();
+        } else {
+            _localErrors.reset(new PcpErrorVector);
+            _localErrors->swap(errors);
         }
     }
 }
@@ -970,6 +1023,16 @@ PcpLayerStack::_Compute(const std::string &fileFormatTarget,
     // registry.
     if (_registry)
         _registry->_SetLayers(this);
+
+    if (!_isUsd) {
+        Pcp_ComputeRelocationsForLayerStack(*this,
+                                            &_relocatesSourceToTarget,
+                                            &_relocatesTargetToSource,
+                                            &_incrementalRelocatesSourceToTarget,
+                                            &_incrementalRelocatesTargetToSource,
+                                            &_relocatesPrimPaths,
+                                            &errors);
+    }
 
     if (errors.empty()) {
         _localErrors.reset();

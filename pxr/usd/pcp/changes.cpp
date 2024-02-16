@@ -2253,12 +2253,13 @@ PcpChanges::_DidChangeLayerStackRelocations(
     // Store the result in the PcpLayerStackChanges so they can
     // be committed when the changes are applied.
     Pcp_ComputeRelocationsForLayerStack(
-        layerStack->GetLayers(),
+        *layerStack,
         &changes.newRelocatesSourceToTarget,
         &changes.newRelocatesTargetToSource,
         &changes.newIncrementalRelocatesSourceToTarget,
         &changes.newIncrementalRelocatesTargetToSource,
-        &changes.newRelocatesPrimPaths);
+        &changes.newRelocatesPrimPaths,
+        &changes.newRelocatesErrors);
 
     // Compare the old and new relocations to determine which
     // paths (in this layer stack) are affected.
