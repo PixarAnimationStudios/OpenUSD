@@ -123,7 +123,6 @@ pxr_test_scripts(
 )
 
 pxr_build_test_shared_lib(TestPcpDynamicFileFormatPlugin
-    CREATE_FRAMEWORK
     INSTALL_PREFIX PcpPlugins
     LIBRARIES
         tf
@@ -135,7 +134,6 @@ pxr_build_test_shared_lib(TestPcpDynamicFileFormatPlugin
 )
 
 pxr_build_test_shared_lib(TestPcpStreamingLayerReload
-    CREATE_FRAMEWORK
     INSTALL_PREFIX PcpPlugins
     LIBRARIES
         tf
