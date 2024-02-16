@@ -224,9 +224,9 @@ pxr_library(hd
 )
 
 if (NOT PXR_ENABLE_PYTHON_SUPPORT)
-    message(STATUS "Skipping building usdGenSchema, Python modules required.")
+    message(STATUS "Skipping building hdGenSchema, Python modules required.")
 elseif (NOT JINJA2_FOUND)
-    message(WARNING "Skipping building usdGenSchema due to missing dependency: Jinja2")
+    message(WARNING "Skipping building hdGenSchema due to missing dependency: Jinja2")
 else()
     pxr_python_bin(hdGenSchema
         DEPENDENCIES
