@@ -42,6 +42,17 @@ if(APPLE)
     if (CMAKE_HOST_SYSTEM_VERSION VERSION_GREATER_EQUAL 20)
         set(CMAKE_XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "-o linker-signed")
     endif()
+
+    # Cross Compilation as defined in CMake docs
+    # https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html#cross-compiling-for-ios-tvos-visionos-or-watchos
+    # Note: All these SDKs may not be supported by OpenUSD, but are all listed here for future proofing
+    set(APPLE_EMBEDDED OFF)
+    if (CMAKE_SYSTEM_NAME MATCHES "iOS"
+            OR CMAKE_SYSTEM_NAME MATCHES "tvOS"
+            OR CMAKE_SYSTEM_NAME MATCHES "visionOS"
+            OR CMAKE_SYSTEM_NAME MATCHES "watchOS")
+        set(APPLE_EMBEDDED ON)
+    endif ()
 endif()
 
 # Allow local includes from source directory.
