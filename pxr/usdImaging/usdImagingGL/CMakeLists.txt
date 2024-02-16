@@ -1991,6 +1991,17 @@ pxr_register_test(testUsdImagingGLPointInstancer_pi_pi
     TESTENV testUsdImagingGLPointInstancer
 )
 
+pxr_register_test(testUsdImagingGLPointInstancer_pi_pi_which_rot
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_pi_which_rot.usda -write pi_pi_which_rot.png"
+    IMAGE_DIFF_COMPARE
+        pi_pi_which_rot.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer
+)
+
 pxr_register_test(testUsdImagingGLPointInstancer_pi_pi2
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_pi2.usda -write pi_pi2.png"
     IMAGE_DIFF_COMPARE
@@ -2255,6 +2266,19 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi
         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi_which_rot
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_pi_which_rot.usda -write pi_pi_which_rot.png"
+    IMAGE_DIFF_COMPARE
+        pi_pi_which_rot.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi2
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_pi2.usda -write pi_pi2.png"
     IMAGE_DIFF_COMPARE
@@ -2440,6 +2464,34 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi_varying
     TESTENV testUsdImagingGLPointInstancer_SceneIndex
     ENV
         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_pi_pi_varyingf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -translate 0 -10 -40 -clear 0.2 0.2 0.2 1 -stage pi_pi_varyingf.usda -times 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 -write pi_pi_varyingf.png"
+    IMAGE_DIFF_COMPARE
+        pi_pi_varyingf_000.png
+        pi_pi_varyingf_001.png
+        pi_pi_varyingf_002.png
+        pi_pi_varyingf_003.png
+        pi_pi_varyingf_004.png
+        pi_pi_varyingf_005.png
+        pi_pi_varyingf_006.png
+        pi_pi_varyingf_007.png
+        pi_pi_varyingf_008.png
+        pi_pi_varyingf_009.png
+        pi_pi_varyingf_010.png
+        pi_pi_varyingf_011.png
+        pi_pi_varyingf_012.png
+        pi_pi_varyingf_013.png
+        pi_pi_varyingf_014.png
+        pi_pi_varyingf_015.png
+        pi_pi_varyingf_016.png
+        pi_pi_varyingf_017.png
+    FAIL .05
+    FAIL_PERCENT .03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi_time

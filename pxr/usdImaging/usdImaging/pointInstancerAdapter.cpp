@@ -583,6 +583,12 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
                 timeVaryingBits,
                 false) ||
             _IsVarying(prim,
+                    UsdGeomTokens->orientationsf,
+                    HdChangeTracker::DirtyPrimvar,
+                    HdInstancerTokens->instancer,
+                    timeVaryingBits,
+                    false) ||
+            _IsVarying(prim,
                     UsdGeomTokens->orientations,
                     HdChangeTracker::DirtyPrimvar,
                     HdInstancerTokens->instancer,
@@ -676,14 +682,29 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                     HdPrimvarRoleTokens->vector);
             }
 
-            VtQuathArray orientations;
-            if (instancer.GetOrientationsAttr().Get(&orientations, time)) {
-                _MergePrimvar(
-                    &vPrimvars,
-                    (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-                        ? HdInstancerTokens->rotate
-                        : HdInstancerTokens->instanceRotations),
-                    HdInterpolationInstance);
+            UsdAttribute orientationsAttr;
+            if (instancer.UsesOrientationsf(&orientationsAttr)) {
+                VtQuatfArray orientationsf;
+                if (orientationsAttr.Get(&orientationsf, time)) {
+                    _MergePrimvar(
+                        &vPrimvars,
+                        (TfGetEnvSetting(
+                            HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+                            ? HdInstancerTokens->rotate
+                            : HdInstancerTokens->instanceRotations),
+                        HdInterpolationInstance);
+                }
+            } else {
+                VtQuathArray orientations;
+                if (orientationsAttr.Get(&orientations, time)) {
+                    _MergePrimvar(
+                        &vPrimvars,
+                        (TfGetEnvSetting(
+                            HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+                            ? HdInstancerTokens->rotate
+                            : HdInstancerTokens->instanceRotations),
+                        HdInterpolationInstance);
+                }
             }
 
             VtVec3fArray scales;
@@ -774,6 +795,7 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
 
     if (propertyName == UsdGeomTokens->positions ||
         propertyName == UsdGeomTokens->orientations ||
+        propertyName == UsdGeomTokens->orientationsf ||
         propertyName == UsdGeomTokens->scales ||
         propertyName == UsdGeomTokens->velocities ||
         propertyName == UsdGeomTokens->accelerations) {
@@ -784,6 +806,10 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
                 ? HdInstancerTokens->translate
                 : HdInstancerTokens->instanceTranslations);
         } else if (propertyName == UsdGeomTokens->orientations) {
+            primvarName = (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+                ? HdInstancerTokens->rotate
+                : HdInstancerTokens->instanceRotations);
+        } else if (propertyName == UsdGeomTokens->orientationsf) {
             primvarName = (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
                 ? HdInstancerTokens->rotate
                 : HdInstancerTokens->instanceRotations);
@@ -1803,7 +1829,8 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
             usdKey = UsdGeomTokens->scales;
         } else if (key == HdInstancerTokens->instanceRotations ||
                    key == HdInstancerTokens->rotate) {
-            usdKey = UsdGeomTokens->orientations;
+            UsdGeomPointInstancer instancer(usdPrim);
+            instancer.UsesOrientationsf(&usdKey);
         } else if (key == HdTokens->velocities) {
             usdKey = UsdGeomTokens->velocities;
         } else if (key == HdTokens->accelerations) {
@@ -2065,9 +2092,17 @@ UsdImagingPointInstancerAdapter::Get(UsdPrim const& usdPrim,
         } else if (key == HdInstancerTokens->instanceRotations ||
                    key == HdInstancerTokens->rotate) {
             UsdGeomPointInstancer instancer(usdPrim);
-            VtQuathArray orientations;
-            if (instancer.GetOrientationsAttr().Get(&orientations, time)) {
-                return VtValue(orientations);
+            UsdAttribute orientationsAttr;
+            if (instancer.UsesOrientationsf(&orientationsAttr)){
+                VtQuatfArray orientationsf;
+                if (orientationsAttr.Get(&orientationsf, time)) {
+                    return VtValue(orientationsf);
+                }
+            } else {
+                VtQuathArray orientations;
+                if (orientationsAttr.Get(&orientations, time)) {
+                    return VtValue(orientations);
+                }
             }
 
         } else if (key == HdInstancerTokens->instanceScales ||
