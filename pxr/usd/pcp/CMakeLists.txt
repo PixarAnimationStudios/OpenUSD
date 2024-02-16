@@ -1780,9 +1780,9 @@ pxr_register_test(testPcpMuseum_TrickyMultipleRelocations3
 
 pxr_register_test(testPcpMuseum_TrickyMultipleRelocations4
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_TrickyMultipleRelocations4.txt TrickyMultipleRelocations4/root.sdf" 
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyMultipleRelocations4/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyMultipleRelocations4.txt
-    DIFF_COMPARE compositionResults_TrickyMultipleRelocations4.txt compositionErrors_TrickyMultipleRelocations4.txt 
+    DIFF_COMPARE compositionResults_TrickyMultipleRelocations4.txt
 )
 
 pxr_register_test(testPcpMuseum_TrickyMultipleRelocations5

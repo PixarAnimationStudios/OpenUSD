@@ -4,6 +4,13 @@ class "SymRig"
 {
     def "Leg_bone"
     {
+        rel bones = [
+            </SymRig>,
+            </SymRig/Leg_bone>,
+            </SymRig/Leg_bone/Knee_bone>,
+            </SymRig/Leg_bone/Knee_bone/Ankle_bone>
+        ]
+
         def "Knee_bone"
         {
             def "Ankle_bone"
