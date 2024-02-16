@@ -559,7 +559,6 @@ HdStGetRemovedOrReplacedPrimvarBufferSpecs(
     return removedOrReplacedSpecs;
 }
 
-// XXX: Not currently exported; does anyone else need it?
 HdBufferSpecVector
 HdStGetRemovedOrReplacedPrimvarBufferSpecs(
     HdBufferArrayRangeSharedPtr const& curRange,

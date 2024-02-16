@@ -151,17 +151,17 @@ HdStInstancer::_SyncPrimvars(HdSceneDelegate *sceneDelegate,
          sources, _instancePrimvarRange, *dirtyBits)) {
         // XXX: This should be based off the DirtyPrimvarDesc bit.
         bool hasDirtyPrimvarDesc = (*dirtyBits & HdChangeTracker::DirtyPrimvar);
-        HdBufferSpecVector removedSpecs;
-        if (hasDirtyPrimvarDesc) {
-            TfTokenVector internallyGeneratedPrimvars; // none
-            removedSpecs = HdStGetRemovedPrimvarBufferSpecs(
-                _instancePrimvarRange, primvars,
-                internallyGeneratedPrimvars, instancerId);
-        }
-        
         HdBufferSpecVector bufferSpecs;
         HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
+        HdBufferSpecVector removedSpecs;
+        if (hasDirtyPrimvarDesc) {
+            TfTokenVector internallyGeneratedPrimvars; // none
+            removedSpecs = HdStGetRemovedOrReplacedPrimvarBufferSpecs(
+                _instancePrimvarRange, primvars,
+                internallyGeneratedPrimvars, bufferSpecs, instancerId);
+        }
+        
         // Update local primvar range.
         _instancePrimvarRange =
             resourceRegistry->UpdateNonUniformBufferArrayRange(
