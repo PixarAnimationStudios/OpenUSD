@@ -2674,7 +2674,7 @@ UsdImagingInstanceAdapter::GetScenePrimPaths(
                     }
                 }
 
-                result.resize(validIndices);
+                result.resize(instanceIndices.size());
                 _GetScenePrimPathsFn primPathsFn(
                     this, requestedIndicesMap, minIdx, result, proto.path);
                 _RunForAllInstancesToDraw(instancerPrim, &primPathsFn);
