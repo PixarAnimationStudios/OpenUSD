@@ -255,6 +255,9 @@ if (PXR_BUILD_IMAGING)
 
             # Find the extra vulkan libraries we need
             set(EXTRA_VULKAN_LIBS shaderc_combined)
+            if(NOT LINUX AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+                set(EXTRA_VULKAN_LIBS shaderc_combinedd)
+            endif()
             foreach(EXTRA_LIBRARY ${EXTRA_VULKAN_LIBS})
                 find_library("${EXTRA_LIBRARY}_PATH" NAMES "${EXTRA_LIBRARY}" PATHS $ENV{VULKAN_SDK}/lib)
                 list(APPEND VULKAN_LIBS "${${EXTRA_LIBRARY}_PATH}")
