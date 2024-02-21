@@ -164,6 +164,11 @@ wrapErrors()
         ("ErrorInvalidConflictingRelocation", "", no_init)
         ;
 
+    class_<PcpErrorInvalidSameTargetRelocations, bases<PcpErrorRelocationBase>,
+        PcpErrorInvalidSameTargetRelocationsPtr>
+        ("ErrorInvalidSameTargetRelocations", "", no_init)
+        ;
+
     class_<PcpErrorOpinionAtRelocationSource, bases<PcpErrorBase>, 
            PcpErrorOpinionAtRelocationSourcePtr>
         ("ErrorOpinionAtRelocationSource", "", no_init)

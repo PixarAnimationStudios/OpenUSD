@@ -66,6 +66,14 @@ TF_DEFINE_ENV_SETTING(
     "Disables automatic layer offset scaling from time codes per second "
     "metadata in layers.");
 
+TF_DEFINE_ENV_SETTING(
+    PCP_ENABLE_LEGACY_RELOCATES_BEHAVIOR, true,
+    "Enables the legacy behavior of ignoring composition errors that would "
+    "cause us to reject conflicting relocates that are invalid within the "
+    "context of all other relocates on the layer stack. This only applies to "
+    "non-USD caches/layer stacks; the legacy behavior cannot be enabled in USD "
+    "mode");
+
 bool
 PcpIsTimeScalingForLayerTimeCodesPerSecondDisabled()
 {
@@ -392,9 +400,6 @@ private:
         }
     }
 
-    // XXX: This does not yet do the validation as that will be part of an
-    // upcoming change. For now this just populates the target path mapping.
-    //
     // Run after all authored relocates are collected from all layers; validates
     // that relocates are valid in the context of all other relocates in the
     // layer stack and removes any that are not. This also populates the target
@@ -402,15 +407,144 @@ private:
     void 
     _ValidateAndRemoveConflictingRelocates()
     {
+        using ConflictReason = 
+            PcpErrorInvalidConflictingRelocation::ConflictReason;
+
         TRACE_FUNCTION();
 
-        // Even though we're not further validating relocates here, we 
-        // need to populate the target path to relocates map.
-        for (auto &authoredRelocatesEntry : processedRelocates) {
-            const SdfPath &targetPath = 
-                authoredRelocatesEntry.second.targetPath;                        
-            targetPathToProcessedRelocateMap.emplace(
-                targetPath, &authoredRelocatesEntry);
+        // XXX: There are some non-USD use cases that rely on the fact that
+        // we validate and reject these conflicting relocates in Pcp. We 
+        // will update these cases to conform in the future, but the work to
+        // do so is non-trivial, so for now we need to allow these cases to 
+        // still work.
+        if (TfGetEnvSetting(PCP_ENABLE_LEGACY_RELOCATES_BEHAVIOR)) {
+            // Even though we're not further validating relocates here, we 
+            // need to populate the target path to relocates map.
+            for (auto &authoredRelocatesEntry : processedRelocates) {
+                const SdfPath &targetPath = 
+                    authoredRelocatesEntry.second.targetPath;                        
+                targetPathToProcessedRelocateMap.emplace(
+                    targetPath, &authoredRelocatesEntry);
+            }
+            return;
+        }
+
+        for (auto &relocatesEntry : processedRelocates) {
+            const SdfPath &sourcePath = relocatesEntry.first;                        
+            const SdfPath &targetPath = relocatesEntry.second.targetPath;                        
+
+            std::string whyNot;
+            // If we can't add this relocate to the "by target" map, we have
+            // a duplicate target error.
+            if (auto [it, success] = targetPathToProcessedRelocateMap.emplace(
+                    targetPath, &relocatesEntry); !success) {
+                auto *&existingAuthoredRelocatesEntry = it->second;
+
+                // Always add this relocate entry as an error. If this function
+                // returns true, it's adding the error for this target for the
+                // first time so add the existing relocate entry to the error
+                // as well in that case.
+                if (_LogInvalidSameTargetRelocates(relocatesEntry)) {
+                    _LogInvalidSameTargetRelocates(
+                        *existingAuthoredRelocatesEntry);
+                }
+            }
+
+            // If the target can be found as a source path of any of our 
+            // relocates, then both relocates are invalid.
+            if (auto it = processedRelocates.find(targetPath); 
+                    it != processedRelocates.end()) {
+                _LogInvalidConflictingRelocate(
+                    relocatesEntry,
+                    *it,
+                    ConflictReason::TargetIsConflictSource);
+                _LogInvalidConflictingRelocate(
+                    *it,
+                    relocatesEntry,
+                    ConflictReason::SourceIsConflictTarget);           
+            }
+
+            // The target of a relocate must be a fully relocated path which we
+            // enforce by making sure that it cannot itself be ancestrally 
+            // relocated by any other relocates in the layer stack.
+            for (SdfPath pathToCheck = targetPath.GetParentPath();
+                    !pathToCheck.IsRootPrimPath(); 
+                    pathToCheck = pathToCheck.GetParentPath()) {
+                if (auto it = processedRelocates.find(pathToCheck); 
+                        it != processedRelocates.end()) {
+                    _LogInvalidConflictingRelocate(relocatesEntry, *it,
+                        ConflictReason::TargetIsConflictSourceDescendant);
+                }
+            }
+
+            // The source of a relocate must be fully relocated with respect to
+            // all the other relocates (except itself). We enforce this by 
+            // making sure the source path cannot be ancestrally relocated by
+            // any other relocates in the layer stack.
+            for (SdfPath pathToCheck = sourcePath.GetParentPath();
+                    !pathToCheck.IsRootPrimPath(); 
+                    pathToCheck = pathToCheck.GetParentPath()) {
+                if (auto it = processedRelocates.find(pathToCheck); 
+                        it != processedRelocates.end()) {
+                    _LogInvalidConflictingRelocate(relocatesEntry, *it,
+                        ConflictReason::SourceIsConflictSourceDescendant);
+                }
+            }
+        }
+
+        // After we have found all invalid relocates, we go ahead and remove
+        // them from the relocates list. We do this after to make sure we're 
+        // always validating each relocate against all the other relocates.
+
+        // Process the same target errors first. Note these errors are ordered
+        // by target path already since we store them as a map.
+        for (auto &[targetPath, err] : _invalidSameTargetRelocates) { 
+            // Errors are generated in an arbitrary and inconstistent order 
+            // because we process the relocates from an unordered map. So
+            // sort the error's sources for error consistency between runs and
+            // across platforms. 
+            std::sort(err->sources.begin(), err->sources.end(), 
+                [](const auto &lhs, const auto &rhs){ 
+                    return lhs.sourcePath < rhs.sourcePath;
+                });
+
+            // Delete all these errored relocates from the source and target
+            // maps
+            targetPathToProcessedRelocateMap.erase(err->targetPath);
+            for (const auto &source : err->sources) {
+                processedRelocates.erase(source.sourcePath);
+            }
+
+            // Move the error to the full error list.
+            errors.push_back(std::move(err));
+        }
+
+        // Now process the other conflicting relocates errors. We sort them 
+        // first to keep the error order consistent between runs across all 
+        // platforms.
+        std::sort(
+            _invalidConflictingRelocates.begin(), 
+            _invalidConflictingRelocates.end(), 
+            [](const auto &lhs, const auto &rhs) {
+                return 
+                    std::tie(
+                        lhs->sourcePath, 
+                        lhs->conflictReason, 
+                        lhs->conflictSourcePath) <
+                    std::tie(
+                        rhs->sourcePath, 
+                        rhs->conflictReason, 
+                        rhs->conflictSourcePath);
+            });
+        
+        // Delete all these errored relocates from both the source and target 
+        // maps
+        for (const auto &err : _invalidConflictingRelocates) {
+            targetPathToProcessedRelocateMap.erase(err->targetPath);
+            processedRelocates.erase(err->sourcePath);
+
+            // Move the error to the full error list.
+            errors.push_back(std::move(err));
         }
     }
 
@@ -481,7 +615,72 @@ private:
         }
     }
 
+    // Logs an invalid conflicting relocate by adding an error and logging that 
+    // the entry needs to be deleted after all relocates are validated.
+    void
+    _LogInvalidConflictingRelocate(
+        const ProcessedRelocatesMap::value_type &entry,
+        const ProcessedRelocatesMap::value_type &conflictEntry,
+        PcpErrorInvalidConflictingRelocation::ConflictReason conflictReason) 
+    {
+        // Add the error for this relocate
+        PcpErrorInvalidConflictingRelocationPtr err = 
+            PcpErrorInvalidConflictingRelocation::New();
+        err->rootSite = PcpSite(
+            _layerStack->GetIdentifier(), SdfPath::AbsoluteRootPath());
+
+        err->layer = entry.second.owningSite.layer;
+        err->owningPath = entry.second.owningSite.path;
+        err->sourcePath = entry.first;
+        err->targetPath = entry.second.targetPath;
+
+        err->conflictLayer = conflictEntry.second.owningSite.layer;
+        err->conflictOwningPath = conflictEntry.second.owningSite.path;
+        err->conflictSourcePath = conflictEntry.first;
+        err->conflictTargetPath = conflictEntry.second.targetPath;
+
+        err->conflictReason = std::move(conflictReason);
+
+        _invalidConflictingRelocates.push_back(std::move(err));
+    }
+
+    // Logs an invalid relocate where its target is the same as another relocate
+    // with a different source. Only one error is logged for each target which 
+    // holds all of its sources. 
+    // 
+    // This returns true if a new error is created for the target and false if
+    // there's already an existing error that we can just add the source info to.
+    bool 
+    _LogInvalidSameTargetRelocates(
+        const ProcessedRelocatesMap::value_type &entry)
+    {
+        // See if we can add a new error
+        const auto [it, createNewError] = 
+            _invalidSameTargetRelocates.try_emplace(
+                entry.second.targetPath, nullptr);
+
+        PcpErrorInvalidSameTargetRelocationsPtr &err = it->second;
+
+        // Create the error if we have to.
+        if (createNewError) {
+            err = PcpErrorInvalidSameTargetRelocations::New();
+            err->targetPath = entry.second.targetPath;
+        }
+
+        // Always add the source info.
+        err->sources.push_back({
+            entry.first, 
+            entry.second.owningSite.layer, 
+            entry.second.owningSite.path});
+
+        return createNewError;
+    }
+
     const PcpLayerStack *_layerStack;
+    std::vector<PcpErrorInvalidConflictingRelocationPtr>
+        _invalidConflictingRelocates;
+    std::map<SdfPath, PcpErrorInvalidSameTargetRelocationsPtr> 
+        _invalidSameTargetRelocates;
 };
 
 }; // end anonymous namespace

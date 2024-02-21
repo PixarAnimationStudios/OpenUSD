@@ -65,6 +65,7 @@ enum PcpErrorType {
     PcpErrorType_MutedAssetPath,
     PcpErrorType_InvalidAuthoredRelocation,
     PcpErrorType_InvalidConflictingRelocation,
+    PcpErrorType_InvalidSameTargetRelocations,
     PcpErrorType_OpinionAtRelocationSource,
     PcpErrorType_PrimPermissionDenied,
     PcpErrorType_PropertyPermissionDenied,
@@ -687,17 +688,6 @@ public:
     /// Destructor.
     PCP_API ~PcpErrorRelocationBase() override;
 
-    /// The source path of the invalid relocation.
-    SdfPath sourcePath;
-    /// The target path of the invalid relocation.
-    SdfPath targetPath;
-    /// The layer containing the authored relocates.
-    SdfLayerHandle layer;
-    /// The path to the prim where the relocates is authored.
-    SdfPath owningPath;
-    /// Additional messages about the error.
-    std::string messages;
-
 protected:
     PcpErrorRelocationBase(PcpErrorType errorType);
 };
@@ -722,7 +712,19 @@ public:
     /// Converts error to string message.
     PCP_API std::string ToString() const override;
     
-protected:
+    /// The source path of the invalid relocation.
+    SdfPath sourcePath;
+    /// The target path of the invalid relocation.
+    SdfPath targetPath;
+    /// The layer containing the authored relocates.
+    SdfLayerHandle layer;
+    /// The path to the prim where the relocates is authored.
+    SdfPath owningPath;
+
+    /// Additional messages about the error.
+    std::string messages;
+
+private:
     PcpErrorInvalidAuthoredRelocation();
 };
 
@@ -745,7 +747,16 @@ public:
     PCP_API ~PcpErrorInvalidConflictingRelocation() override;
     /// Converts error to string message.
     PCP_API std::string ToString() const override;
-    
+
+    /// The source path of the invalid relocation.
+    SdfPath sourcePath;
+    /// The target path of the invalid relocation.
+    SdfPath targetPath;
+    /// The layer containing the authored relocates.
+    SdfLayerHandle layer;
+    /// The path to the prim where the relocates is authored.
+    SdfPath owningPath;
+
     /// The source path of the relocation this conflicts with.
     SdfPath conflictSourcePath;
     /// The target path of the relocation this conflicts with.
@@ -755,8 +766,60 @@ public:
     /// The path to the prim where the relocation this conflicts with is authored.
     SdfPath conflictOwningPath;
 
-protected:
+    /// Enumeration of reasons a relocate can be in conflict with another 
+    /// relocate.
+    enum class ConflictReason {
+        TargetIsConflictSource,
+        SourceIsConflictTarget,
+        TargetIsConflictSourceDescendant,
+        SourceIsConflictSourceDescendant
+    };
+
+    /// The reason the relocate is a conflict.
+    ConflictReason conflictReason;
+
+private:
     PcpErrorInvalidConflictingRelocation();
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Forward declarations:
+class PcpErrorInvalidSameTargetRelocations;
+typedef std::shared_ptr<PcpErrorInvalidSameTargetRelocations>
+    PcpErrorInvalidSameTargetRelocationsPtr;
+
+/// \class PcpErrorInvalidSameTargetRelocations
+///
+/// Multiple relocations in the layer stack have the same target.
+///
+class PcpErrorInvalidSameTargetRelocations : public PcpErrorRelocationBase {
+public:
+    /// Returns a new error object.
+    static PcpErrorInvalidSameTargetRelocationsPtr New();
+    /// Destructor.
+    PCP_API ~PcpErrorInvalidSameTargetRelocations() override;
+    /// Converts error to string message.
+    PCP_API std::string ToString() const override;
+
+    /// The target path of the multiple invalid relocations.
+    SdfPath targetPath;
+
+    /// Info about each relocate source that has the same target path.
+    struct RelocationSource {
+        /// The source path of the invalid relocation.
+        SdfPath sourcePath;
+        /// The layer containing the authored relocates.
+        SdfLayerHandle layer;
+        /// The path to the prim where the relocates is authored.
+        SdfPath owningPath;
+    };
+
+    /// The sources of all relocates that relocate to the target path.
+    std::vector<RelocationSource> sources;
+
+private:
+    PcpErrorInvalidSameTargetRelocations();
 };
 
 ///////////////////////////////////////////////////////////////////////////////

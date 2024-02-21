@@ -967,6 +967,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ErrorInvalidConflictingRelocates.testenv
+    DEST testPcpMuseum_ErrorInvalidConflictingRelocates
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_ErrorRelocateWithVariantSelection.testenv
     DEST testPcpMuseum_ErrorRelocateWithVariantSelection
 )
@@ -1825,6 +1830,15 @@ pxr_register_test(testPcpMuseum_ErrorInvalidAuthoredRelocates
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_ErrorInvalidAuthoredRelocates.txt ErrorInvalidAuthoredRelocates/root.sdf" 
     STDOUT_REDIRECT compositionResults_ErrorInvalidAuthoredRelocates.txt
     DIFF_COMPARE compositionResults_ErrorInvalidAuthoredRelocates.txt compositionErrors_ErrorInvalidAuthoredRelocates.txt
+)
+
+pxr_register_test(testPcpMuseum_ErrorInvalidConflictingRelocates
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_ErrorInvalidConflictingRelocates.txt ErrorInvalidConflictingRelocates/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ErrorInvalidConflictingRelocates.txt
+    DIFF_COMPARE compositionResults_ErrorInvalidConflictingRelocates.txt compositionErrors_ErrorInvalidConflictingRelocates.txt
+    ENV 
+        PCP_ENABLE_LEGACY_RELOCATES_BEHAVIOR=0
 )
 
 pxr_register_test(testPcpMuseum_ErrorRelocateWithVariantSelection

@@ -1,0 +1,412 @@
+Loading @ErrorInvalidConflictingRelocates/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model_1>
+
+Prim Stack:
+    root.sdf             /Model_1
+    model.sdf            /Model
+
+Child names:
+     ['LocalClass', 'Instance']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/LocalClass>
+
+Prim Stack:
+    root.sdf             /Model_1/LocalClass
+    model.sdf            /Model/LocalClass
+
+Child names:
+     ['ClassChild', 'Test']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/LocalClass/ClassChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild
+
+Child names:
+     ['ClassGrandChild']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/LocalClass/ClassChild/ClassGrandChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+
+------------------------------------------------------------------------
+Results for composing </Model_1/LocalClass/Test>
+
+Prim Stack:
+    root.sdf             /Model_1/LocalClass/Test
+
+------------------------------------------------------------------------
+Results for composing </Model_1/Instance>
+
+Prim Stack:
+    root.sdf             /Model_1/Instance
+    root.sdf             /Model_1/LocalClass
+    model.sdf            /Model/Instance
+    model.sdf            /Model/LocalClass
+
+Child names:
+     ['Test']
+
+Prohibited child names:
+     ['ClassChild', 'InstanceChild']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/Instance/Test>
+
+Prim Stack:
+    root.sdf             /Model_1/Instance/Test
+    model.sdf            /Model/LocalClass/ClassChild
+
+Child names:
+     ['ClassGrandChild']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/Instance/Test/ClassGrandChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+
+------------------------------------------------------------------------
+Results for composing </Model_2>
+
+Prim Stack:
+    root.sdf             /Model_2
+    model.sdf            /Model
+
+Child names:
+     ['LocalClass', 'Instance']
+
+Prohibited child names:
+     ['Test']
+
+------------------------------------------------------------------------
+Results for composing </Model_2/LocalClass>
+
+Prim Stack:
+    root.sdf             /Model_2/LocalClass
+    model.sdf            /Model/LocalClass
+
+Child names:
+     ['ClassChild', 'Test']
+
+------------------------------------------------------------------------
+Results for composing </Model_2/LocalClass/ClassChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild
+
+Child names:
+     ['ClassGrandChild']
+
+------------------------------------------------------------------------
+Results for composing </Model_2/LocalClass/ClassChild/ClassGrandChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+
+------------------------------------------------------------------------
+Results for composing </Model_2/LocalClass/Test>
+
+Prim Stack:
+    root.sdf             /Model_2/LocalClass/Test
+
+------------------------------------------------------------------------
+Results for composing </Model_2/Instance>
+
+Prim Stack:
+    root.sdf             /Model_2/Instance
+    root.sdf             /Model_2/LocalClass
+    model.sdf            /Model/Instance
+    model.sdf            /Model/LocalClass
+
+Child names:
+     ['ClassChild', 'Test']
+
+Prohibited child names:
+     ['InstanceChild']
+
+------------------------------------------------------------------------
+Results for composing </Model_2/Instance/ClassChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild
+
+Child names:
+     ['ClassGrandChild']
+
+------------------------------------------------------------------------
+Results for composing </Model_2/Instance/ClassChild/ClassGrandChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+
+------------------------------------------------------------------------
+Results for composing </Model_2/Instance/Test>
+
+Prim Stack:
+    root.sdf             /Model_2/Instance/Test
+
+------------------------------------------------------------------------
+Results for composing </Model_3>
+
+Prim Stack:
+    root.sdf             /Model_3
+    model.sdf            /Model
+
+Child names:
+     ['LocalClass', 'Instance']
+
+Prohibited child names:
+     ['Test']
+
+------------------------------------------------------------------------
+Results for composing </Model_3/LocalClass>
+
+Prim Stack:
+    root.sdf             /Model_3/LocalClass
+    model.sdf            /Model/LocalClass
+
+Child names:
+     ['ClassChild', 'Test']
+
+------------------------------------------------------------------------
+Results for composing </Model_3/LocalClass/ClassChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild
+
+Child names:
+     ['ClassGrandChild']
+
+------------------------------------------------------------------------
+Results for composing </Model_3/LocalClass/ClassChild/ClassGrandChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+
+------------------------------------------------------------------------
+Results for composing </Model_3/LocalClass/Test>
+
+Prim Stack:
+    root.sdf             /Model_3/LocalClass/Test
+
+------------------------------------------------------------------------
+Results for composing </Model_3/Instance>
+
+Prim Stack:
+    root.sdf             /Model_3/Instance
+    root.sdf             /Model_3/LocalClass
+    model.sdf            /Model/Instance
+    model.sdf            /Model/LocalClass
+
+Child names:
+     ['Test']
+
+Prohibited child names:
+     ['ClassChild', 'InstanceChild']
+
+------------------------------------------------------------------------
+Results for composing </Model_3/Instance/Test>
+
+Prim Stack:
+    root.sdf             /Model_3/Instance/Test
+
+------------------------------------------------------------------------
+Results for composing </Model_4>
+
+Prim Stack:
+    root.sdf             /Model_4
+    model.sdf            /Model
+
+Child names:
+     ['LocalClass', 'Instance', 'Test']
+
+------------------------------------------------------------------------
+Results for composing </Model_4/LocalClass>
+
+Prim Stack:
+    root.sdf             /Model_4/LocalClass
+    model.sdf            /Model/LocalClass
+
+Child names:
+     ['ClassChild', 'Test']
+
+------------------------------------------------------------------------
+Results for composing </Model_4/LocalClass/ClassChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild
+
+Child names:
+     ['ClassGrandChild']
+
+------------------------------------------------------------------------
+Results for composing </Model_4/LocalClass/ClassChild/ClassGrandChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+
+------------------------------------------------------------------------
+Results for composing </Model_4/LocalClass/Test>
+
+Prim Stack:
+    root.sdf             /Model_4/LocalClass/Test
+
+------------------------------------------------------------------------
+Results for composing </Model_4/Instance>
+
+Prim Stack:
+    root.sdf             /Model_4/Instance
+    root.sdf             /Model_4/LocalClass
+    model.sdf            /Model/Instance
+    model.sdf            /Model/LocalClass
+
+Child names:
+     ['ClassChild', 'Test']
+
+Prohibited child names:
+     ['InstanceChild']
+
+------------------------------------------------------------------------
+Results for composing </Model_4/Instance/ClassChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild
+
+Child names:
+     ['ClassGrandChild']
+
+------------------------------------------------------------------------
+Results for composing </Model_4/Instance/ClassChild/ClassGrandChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+
+------------------------------------------------------------------------
+Results for composing </Model_4/Instance/Test>
+
+Prim Stack:
+    root.sdf             /Model_4/Instance/Test
+    root.sdf             /Model_4/LocalClass/Test
+
+------------------------------------------------------------------------
+Results for composing </Model_4/Test>
+
+Prim Stack:
+    model.sdf            /Model/Instance/InstanceChild
+
+Child names:
+     ['Child']
+
+Prohibited child names:
+     ['InstanceGrandChild']
+
+------------------------------------------------------------------------
+Results for composing </Model_4/Test/Child>
+
+Prim Stack:
+    model.sdf            /Model/Instance/InstanceChild/InstanceGrandChild
+
+------------------------------------------------------------------------
+Results for composing </Model_5>
+
+Prim Stack:
+    root.sdf             /Model_5
+    model.sdf            /Model
+
+Child names:
+     ['LocalClass', 'Instance', 'Test']
+
+------------------------------------------------------------------------
+Results for composing </Model_5/LocalClass>
+
+Prim Stack:
+    root.sdf             /Model_5/LocalClass
+    model.sdf            /Model/LocalClass
+
+Child names:
+     ['ClassChild', 'Test']
+
+------------------------------------------------------------------------
+Results for composing </Model_5/LocalClass/ClassChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild
+
+Child names:
+     ['ClassGrandChild']
+
+------------------------------------------------------------------------
+Results for composing </Model_5/LocalClass/ClassChild/ClassGrandChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+
+------------------------------------------------------------------------
+Results for composing </Model_5/LocalClass/Test>
+
+Prim Stack:
+    root.sdf             /Model_5/LocalClass/Test
+
+------------------------------------------------------------------------
+Results for composing </Model_5/Instance>
+
+Prim Stack:
+    root.sdf             /Model_5/Instance
+    root.sdf             /Model_5/LocalClass
+    model.sdf            /Model/Instance
+    model.sdf            /Model/LocalClass
+
+Child names:
+     ['Test']
+
+Prohibited child names:
+     ['ClassChild', 'InstanceChild']
+
+------------------------------------------------------------------------
+Results for composing </Model_5/Instance/Test>
+
+Prim Stack:
+    root.sdf             /Model_5/Instance/Test
+    root.sdf             /Model_5/LocalClass/Test
+
+------------------------------------------------------------------------
+Results for composing </Model_5/Test>
+
+Prim Stack:
+    model.sdf            /Model/Instance/InstanceChild
+
+Child names:
+     ['InstanceGrandChild', 'ClassChild']
+
+------------------------------------------------------------------------
+Results for composing </Model_5/Test/InstanceGrandChild>
+
+Prim Stack:
+    model.sdf            /Model/Instance/InstanceChild/InstanceGrandChild
+
+------------------------------------------------------------------------
+Results for composing </Model_5/Test/ClassChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild
+
+Child names:
+     ['ClassGrandChild']
+
+------------------------------------------------------------------------
+Results for composing </Model_5/Test/ClassChild/ClassGrandChild>
+
+Prim Stack:
+    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+

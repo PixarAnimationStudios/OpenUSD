@@ -55,6 +55,7 @@ TF_REGISTRY_FUNCTION(TfEnum) {
     TF_ADD_ENUM_NAME(PcpErrorType_MutedAssetPath);
     TF_ADD_ENUM_NAME(PcpErrorType_InvalidAuthoredRelocation);
     TF_ADD_ENUM_NAME(PcpErrorType_InvalidConflictingRelocation);
+    TF_ADD_ENUM_NAME(PcpErrorType_InvalidSameTargetRelocations);
     TF_ADD_ENUM_NAME(PcpErrorType_OpinionAtRelocationSource);
     TF_ADD_ENUM_NAME(PcpErrorType_PrimPermissionDenied);
     TF_ADD_ENUM_NAME(PcpErrorType_PropertyPermissionDenied);
@@ -759,6 +760,24 @@ PcpErrorInvalidConflictingRelocation::~PcpErrorInvalidConflictingRelocation()
 std::string
 PcpErrorInvalidConflictingRelocation::ToString() const
 {
+    auto conflictReasonCstr = [](ConflictReason reason) {
+        switch (reason) {
+            case ConflictReason::TargetIsConflictSource:
+                return "The target of a relocate cannot be the source of "
+                    "another relocate in the same layer stack.";
+            case ConflictReason::SourceIsConflictTarget:
+                return "The source of a relocate cannot be the target of "
+                    "another relocate in the same layer stack.";
+            case ConflictReason::TargetIsConflictSourceDescendant:
+                return "The target of a relocate cannot be a descendant of "
+                    "the source of another relocate.";
+            case ConflictReason::SourceIsConflictSourceDescendant:
+                return "The source of a relocate cannot be a descendant of "
+                    "the source of another relocate.";
+        };
+        return "Invalid conflict reason.";
+    };
+
     return TfStringPrintf("Relocation from <%s> to <%s> authored at @%s@<%s> "
                           "conflicts with another relocation from <%s> to <%s> "
                           "authored at @%s@<%s> and will be ignored: %s",
@@ -770,7 +789,56 @@ PcpErrorInvalidConflictingRelocation::ToString() const
                           conflictTargetPath.GetText(),
                           conflictLayer->GetIdentifier().c_str(), 
                           conflictOwningPath.GetText(),
-                          messages.c_str());
+                          conflictReasonCstr(conflictReason));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PcpErrorInvalidSameTargetRelocationsPtr
+PcpErrorInvalidSameTargetRelocations::New()
+{
+    return PcpErrorInvalidSameTargetRelocationsPtr(
+        new PcpErrorInvalidSameTargetRelocations);
+}
+
+PcpErrorInvalidSameTargetRelocations::PcpErrorInvalidSameTargetRelocations() :
+    PcpErrorRelocationBase(PcpErrorType_InvalidSameTargetRelocations)
+{
+}
+
+PcpErrorInvalidSameTargetRelocations::~PcpErrorInvalidSameTargetRelocations()
+{
+}
+
+// virtual
+std::string
+PcpErrorInvalidSameTargetRelocations::ToString() const
+{
+    auto sourceToString = [](const RelocationSource &source) {
+        return TfStringPrintf("relocation from <%s> authored at @%s@<%s>",
+            source.sourcePath.GetText(),
+            source.layer->GetIdentifier().c_str(),
+            source.owningPath.GetText());
+    };
+
+    auto sourceIt = sources.begin();
+    if (sourceIt == sources.end()) {
+        TF_CODING_ERROR(
+            "PcpErrorInvalidSameTargetRelocations must have sources");
+        return std::string();
+    }
+
+    std::string sourcesString = sourceToString(*sourceIt);
+    while (++sourceIt != sources.end()) {
+        sourcesString.append("; ");
+        sourcesString.append(sourceToString(*sourceIt));
+    }
+
+    return TfStringPrintf("The path <%s> is the target of multiple relocations "
+                          "from different sources. The following relocates to "
+                          "this target are invalid and will be ignored: %s.",
+                          targetPath.GetText(),
+                          sourcesString.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
