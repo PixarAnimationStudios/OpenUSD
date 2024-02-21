@@ -24,7 +24,7 @@
 
 import unittest
 
-from pxr import Pcp, Sdf
+from pxr import Pcp, Sdf, Tf
 
 def LoadPcpCache(rootLayer):
     return Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
@@ -47,6 +47,27 @@ class TestPcpPrimIndex(unittest.TestCase):
             self.assertEqual(
                 node.GetSpecContributionRestrictedDepth(), expectedDepth,
                 "Error at {} {}".format(node.arcType, node.path))
+
+    def AssertPrimIndex(self, pcpCache, path, expected):
+        pi, err = pcpCache.ComputePrimIndex(path)
+        self.assertFalse(err, "Unexpected composition errors: {}".format(
+            ",".join(str(e) for e in err)))
+
+        for node, e in Pcp._TestPrimIndex(pi, expected):
+            expectedArcType, expectedLayerStack, expectedPath = e
+            
+            self.assertEqual(
+                node.arcType, expectedArcType,
+                "Error at {} {} {}".format(node.arcType, node.layerStack, node.path))
+            self.assertEqual(
+                node.layerStack.identifier.rootLayer, expectedLayerStack,
+                "Error at {} {} {}".format(node.arcType, node.layerStack, node.path))
+            self.assertEqual(
+                node.isCulled, False,
+                "Error at {} {} {}".format(node.arcType, node.layerStack, node.path))
+            self.assertEqual(
+                node.path, expectedPath,
+                "Error at {} {}{}".format(node.arcType, node.layerStack, node.path))
 
     def test_TestPrimIndex(self):
         """Test _TestPrimIndex generator"""
@@ -537,6 +558,378 @@ class TestPcpPrimIndex(unittest.TestCase):
                     ]
                 ]
             ])
+
+    @unittest.skipIf(not Tf.GetEnvSetting("PCP_CULLING"), "Culling is disabled")
+    def test_PrimIndexCulling_Specializes(self):
+        """Tests node culling optimization with specializes arcs"""
+        refLayer = Sdf.Layer.CreateAnonymous("ref")
+        refLayer.ImportFromString('''
+        #sdf 1.4.32
+
+        def "SpecRefA"
+        {
+            def "ChildA"
+            {
+            }
+        }
+
+        def "SpecRefB"
+        {
+        }
+
+        def "Spec" (
+            references = [</SpecRefA>, </SpecRefB>]
+        )
+        {
+        }
+
+        def "Ref" (
+            specializes = </Spec>
+        )
+        {
+        }
+        '''.strip())
+
+        rootLayer = Sdf.Layer.CreateAnonymous("root")
+        rootLayer.ImportFromString(f'''
+        #sdf 1.4.32
+
+        def "Root" (
+            references = @{refLayer.identifier}@</Ref>
+        )
+        {{
+            def "ChildB"
+            {{
+            }}
+        }}
+        '''.strip())
+        
+        pcp = LoadPcpCache(rootLayer)
+
+        # Compute /Root. No culling occurs here since there are opinions
+        # at all sites.
+        self.AssertPrimIndex(
+            pcp, "/Root",
+            [
+                (Pcp.ArcTypeRoot, rootLayer, "/Root"), [
+                    # Reference from /Root -> /Ref in @root@
+                    (Pcp.ArcTypeReference, refLayer, "/Ref"), [
+                        (Pcp.ArcTypeSpecialize, refLayer, "/Spec"), [
+                            (Pcp.ArcTypeReference, refLayer, "/SpecRefA"), [],
+                            (Pcp.ArcTypeReference, refLayer, "/SpecRefB"), []
+                        ]
+                    ],
+
+                    # Implied specialize due to /Ref -> /Spec in @ref@
+                    (Pcp.ArcTypeSpecialize, rootLayer, "/Spec"), [],
+
+                    # Propagated specialize due to /Ref -> /Spec in @ref@
+                    (Pcp.ArcTypeSpecialize, refLayer, "/Spec"), [
+                        (Pcp.ArcTypeReference, refLayer, "/SpecRefA"), [],
+                        (Pcp.ArcTypeReference, refLayer, "/SpecRefB"), []
+                    ]
+                ]
+            ])
+
+        # Compute /Root/ChildA. The reference arcs pointing to /SpecRefB
+        # beneath the specializes arcs are culled since there are no opinions
+        # at /SpecRefB/ChildA.
+        self.AssertPrimIndex(
+            pcp, "/Root/ChildA",
+            [
+                (Pcp.ArcTypeRoot, rootLayer, "/Root/ChildA"), [
+                    # Reference from /Root -> /Ref in @root@
+                    (Pcp.ArcTypeReference, refLayer, "/Ref/ChildA"), [
+                        (Pcp.ArcTypeSpecialize, refLayer, "/Spec/ChildA"), [
+                            (Pcp.ArcTypeReference, refLayer, "/SpecRefA/ChildA"), []
+                        ]
+                    ],
+
+                    # Propagated specialize due to /Ref -> /Spec in @ref@
+                    (Pcp.ArcTypeSpecialize, refLayer, "/Spec/ChildA"), [
+                        (Pcp.ArcTypeReference, refLayer, "/SpecRefA/ChildA"), []
+                    ]
+                ]
+            ])
+
+        # Compute /Root/ChildB. All nodes should be culled since there are
+        # no opinions for ChildB anywhere except at /Root/ChildB.
+        self.AssertPrimIndex(
+            pcp, "/Root/ChildB",
+            [
+                (Pcp.ArcTypeRoot, rootLayer, "/Root/ChildB"), []
+            ])
+
+    @unittest.skipIf(not Tf.GetEnvSetting("PCP_CULLING"), "Culling is disabled")
+    def test_PrimIndexCulling_SubrootSpecializes(self):
+        """Tests node culling optimization with specializes arcs pointing
+        to subroot prims"""
+        refLayer = Sdf.Layer.CreateAnonymous("ref")
+        refLayer.ImportFromString('''
+        #sdf 1.4.32
+
+        def "SpecRefA"
+        {
+            def "ChildA"
+            {
+            }
+        }
+
+        def "SpecRefB"
+        {
+        }
+
+        def "Ref"
+        {
+            def "Instance" (
+                specializes = </Ref/Spec>
+            )
+            {
+            }
+
+            def "Spec" (
+                references = [</SpecRefA>, </SpecRefB>]
+            )
+            {
+            }
+        }
+        '''.strip())
+
+        rootLayer = Sdf.Layer.CreateAnonymous("root")
+        rootLayer.ImportFromString(f'''
+        #sdf 1.4.32
+
+        def "Root" (
+            references = @{refLayer.identifier}@</Ref>
+        )
+        {{
+            def "Spec"
+            {{
+            }}
+
+            def "Instance"
+            {{
+                def "ChildB"
+                {{
+                }}
+            }}
+        }}
+        '''.strip())
+        
+        pcp = LoadPcpCache(rootLayer)
+
+        # Compute /Root/Instance. No culling occurs here since there are
+        # opinions at all sites.
+        self.AssertPrimIndex(
+            pcp, "/Root/Instance",
+            [
+                (Pcp.ArcTypeRoot, rootLayer, "/Root/Instance"), [
+                    # Reference from /Root -> /Ref in @root@
+                    (Pcp.ArcTypeReference, refLayer, "/Ref/Instance"), [
+                        (Pcp.ArcTypeSpecialize, refLayer, "/Ref/Spec"), [
+                            (Pcp.ArcTypeReference, refLayer, "/SpecRefA"), [],
+                            (Pcp.ArcTypeReference, refLayer, "/SpecRefB"), []
+                        ]
+                    ],
+
+                    # Implied specialize due to /Ref/Instance -> /Ref/Spec in @ref@
+                    (Pcp.ArcTypeSpecialize, rootLayer, "/Root/Spec"), [],
+
+                    # Propagated specialize due to /Ref/Instance -> /Ref/Spec in @ref@
+                    (Pcp.ArcTypeSpecialize, refLayer, "/Ref/Spec"), [
+                        (Pcp.ArcTypeReference, refLayer, "/SpecRefA"), [],
+                        (Pcp.ArcTypeReference, refLayer, "/SpecRefB"), []
+                    ]
+                ]
+            ])
+
+        # Compute /Root/Instance/ChildA. The reference arcs pointing to
+        # /SpecRefB beneath the specializes arcs are culled since there are no
+        # opinions at /SpecRefB/ChildA.
+        self.AssertPrimIndex(
+            pcp, "/Root/Instance/ChildA",
+            [
+                (Pcp.ArcTypeRoot, rootLayer, "/Root/Instance/ChildA"), [
+                    # Reference from /Root -> /Ref in @root@
+                    (Pcp.ArcTypeReference, refLayer, "/Ref/Instance/ChildA"), [
+                        (Pcp.ArcTypeSpecialize, refLayer, "/Ref/Spec/ChildA"), [
+                            (Pcp.ArcTypeReference, refLayer, "/SpecRefA/ChildA"), []
+                        ]
+                    ],
+
+                    # Propagated specialize due to /Ref/Instance -> /Ref/Spec in @ref@
+                    (Pcp.ArcTypeSpecialize, refLayer, "/Ref/Spec/ChildA"), [
+                        (Pcp.ArcTypeReference, refLayer, "/SpecRefA/ChildA"), []
+                    ]
+                ]
+            ])
+
+        # Compute /Root/Instance/ChildB. All nodes should be culled since there
+        # are no opinions for ChildB anywhere except at /Root/Instance/ChildB.
+        self.AssertPrimIndex(
+            pcp, "/Root/Instance/ChildB",
+            [
+                (Pcp.ArcTypeRoot, rootLayer, "/Root/Instance/ChildB"), []
+            ])
+
+    @unittest.skipIf(not Tf.GetEnvSetting("PCP_CULLING"), "Culling is disabled")
+    def test_PrimIndexCulling_SpecializesHierarchy(self):
+        """Tests node culling optimization with hierarchy of specializes arcs"""
+
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootLayer.ImportFromString('''
+        #sdf 1.4.32
+
+        def "Ref"
+        {
+            def "Instance" (
+                specializes = </Ref/SpecA>
+            )
+            {
+            }
+
+            def "SpecA" (
+                specializes = </Ref/SpecB>
+            )
+            {
+            }
+
+            def "SpecB"
+            {
+                def "Child"
+                {
+                }
+            }
+        }
+
+        def "Root" (
+            references = </Ref>
+        )
+        {
+        }        
+        '''.strip())
+        
+        pcp = LoadPcpCache(rootLayer)
+
+        # Compute /Root/Instance to show initial prim index structure.
+        # No culling occurs here.
+        self.AssertPrimIndex(
+            pcp, "/Root/Instance",
+            [
+                (Pcp.ArcTypeRoot, rootLayer, "/Root/Instance"), [
+                    # Reference from /Root -> /Ref
+                    (Pcp.ArcTypeReference, rootLayer, "/Ref/Instance"), [
+                        # Specializes from /Ref/Instance -> /Ref/SpecA
+                        (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecA"), [
+                            # Specializes from /Ref/SpecA -> /Ref/SpecB
+                            (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecB"), []
+                        ]
+                    ],
+
+                    # Implied specializes due to /Ref/Instance -> /Ref/SpecA
+                    (Pcp.ArcTypeSpecialize, rootLayer, "/Root/SpecA"), [
+                        (Pcp.ArcTypeSpecialize, rootLayer, "/Root/SpecB"), []
+                    ],
+
+                    # Propagated specializes due to /Ref/Instance -> /Ref/SpecA
+                    (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecA"), [],
+
+                    # Propagated specializes due to implied /Root/SpecB
+                    (Pcp.ArcTypeSpecialize, rootLayer, "/Root/SpecB"), [],
+
+                    # Propagated specializes due to /Ref/SpecA -> /Ref/SpecB.
+                    (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecB"), []
+                ]
+            ])
+
+        # Compute /Root/Instance/Child. Most of the nodes are culled and
+        # removed because they provide no opinions on the Child prim, but
+        # the origin specializes hierarchy noted below cannot be culled.
+        self.AssertPrimIndex(
+            pcp, "/Root/Instance/Child",
+            [
+                (Pcp.ArcTypeRoot, rootLayer, "/Root/Instance/Child"), [
+                    # Reference from /Root -> /Ref
+                    (Pcp.ArcTypeReference, rootLayer, "/Ref/Instance/Child"), [
+                        # The propagated specializes subtree for 
+                        # /Ref/SpecA/Child is culled, but the propagated subtree
+                        # for /Ref/SpecB/Child is not. That prevents the origin
+                        # subtree for /Ref/SpecA/Child from being culled.
+                        (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecA/Child"), [
+                            (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecB/Child"), []
+                        ]
+                    ],
+
+                    # Propagated specializes due to /Ref/SpecA -> /Ref/SpecB.
+                    (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecB/Child"), []
+                ]
+            ])
+
+    @unittest.skipIf(not Tf.GetEnvSetting("PCP_CULLING"), "Culling is disabled")
+    def test_PrimIndexCulling_SpecializesAncestralCulling(self):
+        """Tests node culling optimization where the prim index for
+        the parent prim contains a node that is marked as culled
+        but has not been removed from the prim index."""
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootLayer.ImportFromString('''
+        #sdf 1.4.32
+
+        def "RefB"
+        {
+            def "Instance" (
+                specializes = </RefB/Spec>
+            )
+            {
+                def "Child"
+                {
+                }
+            }
+
+            def "Spec"
+            {
+                def "Child"
+                {
+                }
+            }
+        }
+
+        def "Inh"
+        {
+        }
+
+        def "Ref" (
+            references = </RefB>
+            inherits = </Inh>
+        )
+        {
+        }
+
+        def "Root" (
+            references = </Ref>
+        )
+        {
+        }
+        '''.strip())
+
+        pcp = LoadPcpCache(rootLayer)
+
+        # Compute /Root/Instance/Child. The important part here is that the
+        # subtrees for the implied specializes nodes at /Ref/Spec/Child and
+        # /Root/Spec/Child have been culled and removed from the prim index.
+        self.AssertPrimIndex(
+            pcp, "/Root/Instance/Child",
+            [
+                (Pcp.ArcTypeRoot, rootLayer, "/Root/Instance/Child"), [
+                    (Pcp.ArcTypeReference, rootLayer, "/Ref/Instance/Child"), [
+                        (Pcp.ArcTypeReference, rootLayer, "/RefB/Instance/Child"), [
+                            (Pcp.ArcTypeSpecialize, rootLayer, "/RefB/Spec/Child"), [],
+                        ]
+                    ],
+
+                    (Pcp.ArcTypeSpecialize, rootLayer, "/RefB/Spec/Child")
+                ]
+            ])
+
 
 if __name__ == "__main__":
     unittest.main()
