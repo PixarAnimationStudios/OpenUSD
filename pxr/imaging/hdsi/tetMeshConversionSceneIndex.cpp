@@ -200,13 +200,17 @@ HdsiTetMeshConversionSceneIndex::_PrimsDirtied(
         return;
     }
 
-    // Gather indices for Tet Mesh locators
+    // Gather indices for Tet Mesh locators that need to be updated.
     std::vector<size_t> tetMeshIndices;
     for (size_t i = 0; i < entries.size(); ++i) {
-        for (auto locator : entries[i].dirtyLocators) {
-            if (locator.Intersects(HdTetMeshSchema::GetDefaultLocator())) {
-                tetMeshIndices.push_back(i);
-            }
+        const HdDataSourceLocatorSet& dirtyLocators = entries[i].dirtyLocators;
+        if (dirtyLocators.Contains(HdDataSourceLocator::EmptyLocator())) {
+            // If the locator set contains the empty locator, it means it will
+            // intersect everything.  It does not need to be updated.
+            continue;
+        }
+        if (dirtyLocators.Intersects(HdTetMeshSchema::GetDefaultLocator())) {
+            tetMeshIndices.push_back(i);
         }
     }
     
@@ -216,21 +220,22 @@ HdsiTetMeshConversionSceneIndex::_PrimsDirtied(
     }
 
     // Convert TetMesh Locators to Mesh Locators
-    HdSceneIndexObserver::DirtiedPrimEntries dirtiedEntries(entries);
+    HdSceneIndexObserver::DirtiedPrimEntries newEntries(entries);
     for (const size_t i : tetMeshIndices) {
-        HdDataSourceLocatorSet meshLocatorSet;
-        for (auto locator : dirtiedEntries[i].dirtyLocators) {
-            if (locator.Intersects(HdTetMeshSchema::GetDoubleSidedLocator())) {
-                meshLocatorSet.append(HdMeshSchema::GetDoubleSidedLocator());
-            }
-            if (locator.Intersects(HdTetMeshSchema::GetTopologyLocator())) {
-                meshLocatorSet.append(HdMeshSchema::GetTopologyLocator());
-            }
+        HdDataSourceLocatorSet& dirtyLocators = newEntries[i].dirtyLocators;
+        // The code that populated tetMeshIndices skips anything that
+        // contains the empty locator.
+        TF_VERIFY(!dirtyLocators.Contains(HdDataSourceLocator::EmptyLocator()));
+
+        if (dirtyLocators.Intersects(HdTetMeshSchema::GetDoubleSidedLocator())) {
+            dirtyLocators.append(HdMeshSchema::GetDoubleSidedLocator());
         }
-        dirtiedEntries[i].dirtyLocators = meshLocatorSet;
+        if (dirtyLocators.Intersects(HdTetMeshSchema::GetTopologyLocator())) {
+            dirtyLocators.append(HdMeshSchema::GetTopologyLocator());
+        }
     }
 
-    _SendPrimsDirtied(dirtiedEntries);
+    _SendPrimsDirtied(newEntries);
 }
 
 
