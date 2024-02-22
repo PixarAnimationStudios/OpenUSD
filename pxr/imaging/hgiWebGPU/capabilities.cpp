@@ -33,6 +33,12 @@ HgiWebGPUCapabilities::HgiWebGPUCapabilities(wgpu::Device)
     _maxUniformBlockSize          = 64 * 1024;
     _maxShaderStorageBlockSize    = 1 * 1024 * 1024 * 1024;
 
+    #ifdef __EMSCRIPTEN__
+    // Without this, the default value of 1 causes aligned_malloc to always return 0 (null)
+    // Emscripten treats null pointers as valid, making the issue VERY hard to track down
+    _pageSizeAlignment = sizeof(void *);
+    #endif
+
     // https://github.com/gfx-rs/wgpu/issues/158#issuecomment-490653129
     _uniformBufferOffsetAlignment = 256;
     _SetFlag(HgiDeviceCapabilitiesBitsPrimitiveIdEmulation, true);
