@@ -31,6 +31,10 @@
 #include "pxr/imaging/hdSt/textureIdentifier.h"
 #include "pxr/base/vt/dictionary.h"
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+#include <MaterialXGenShader/Shader.h>
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStResourceRegistry;
@@ -119,6 +123,9 @@ private:
     TextureDescriptorVector _textureDescriptors;
     HioGlslfxSharedPtr _surfaceGfx;
     size_t _surfaceGfxHash;
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+    MaterialX::ShaderPtr _materialXGfx;
+#endif
 };
 
 
