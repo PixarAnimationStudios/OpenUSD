@@ -12,6 +12,8 @@
   - --ignore-paths and --ignore-homebrew options added to command line to help 
     solve problems where CMake picks up unwanted sources for dependencies. 
     (PR: [#2873](https://github.com/PixarAnimationStudios/OpenUSD/pull/2873))
+  - Fixed build issue with boost on macOS with Xcode 15.3+.
+    (PR: [#2919](https://github.com/PixarAnimationStudios/OpenUSD/pull/2919))
 
 - Builds on macOS now avoid hard-coding specific SDK versions for system library 
   dependencies. 
