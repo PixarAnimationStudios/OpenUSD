@@ -1665,7 +1665,7 @@ def InstallTint(context, force, buildArgs):
             ])
 
             cmakeOptions = [
-                '-DCMAKE_CXX_FLAGS="-Wno-unsafe-buffer-usage -Wno-disabled-macro-expansion -Wno-#warnings -Wno-error '
+                '-DCMAKE_CXX_FLAGS="-Wno-unsafe-buffer-usage -Wno-disabled-macro-expansion -Wno-#warnings -Wno-error -Wno-switch-default '
                     + EMSCRIPTEN_CMAKE_CXX_FLAGS + '"',
                 '-DCMAKE_EXE_LINKER_FLAGS="' + EMSCRIPTEN_CMAKE_EXE_LINKER_FLAGS + '"',
                 '-DBUILD_SHARED_LIBS=OFF'
