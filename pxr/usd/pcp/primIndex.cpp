@@ -4891,8 +4891,13 @@ _CullSubtreesWithNoOpinions(
     // We do a first pass to handle of all these propagated specializes
     // nodes first to ensure that nodes in the origin subtrees are marked
     // culled before other subtrees are processed. Otherwise, subtrees
-    // containing those origin subtrees won't be culled.
-    TF_FOR_ALL(child, Pcp_GetChildrenRange(primIndex->GetRootNode())) {
+    // containing those origin subtrees won't be culled. 
+    //
+    // Note that this first pass must be done in weakest-to-strongest order
+    // to handle hierarchies of specializes arcs. See the test case
+    // test_PrimIndexCulling_SpecializesHierarchy in testPcpPrimIndex for
+    // an example.
+    TF_REVERSE_FOR_ALL(child, Pcp_GetChildrenRange(primIndex->GetRootNode())) {
         if (_IsPropagatedSpecializesNode(*child)) {
             std::unordered_set<PcpLayerStackSite, TfHash> culledSites;
             _CullSubtreesWithNoOpinionsHelper(
