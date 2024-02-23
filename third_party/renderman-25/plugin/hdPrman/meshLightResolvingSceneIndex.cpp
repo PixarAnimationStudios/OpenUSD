@@ -28,6 +28,7 @@
 
 #include "pxr/imaging/hd/version.h"
 
+#include "pxr/imaging/hd/categoriesSchema.h"
 #include "pxr/imaging/hd/containerDataSourceEditor.h"
 #include "pxr/imaging/hd/dataSourceLocator.h"
 #include "pxr/imaging/hd/dataSourceMaterialNetworkInterface.h"
@@ -53,7 +54,9 @@
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
 
+#if PXR_VERSION >= 2311
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
+#endif
 
 #include "pxr/usd/usdLux/tokens.h"
 
@@ -174,6 +177,15 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // render context / material network selector
     ((renderContext, "ri"))
+
+    // Legacy Compatibility. Remove when PXR_VERSION > 2308
+    (model)
+
+    // Legacy Compatibility. Remove when PXR_VERSION >= 2308
+    (materialSyncMode)
+
+    // Legacy Compatibility. Remove when PXR_VERSION >= 2302
+    (isLight)
 );
 
 // Internal helpers
@@ -187,7 +199,11 @@ _IsMeshLight(
         (prim.primType == HdPrimTypeTokens->volume)) {
         if (auto lightSchema = HdLightSchema::GetFromParent(prim.dataSource)) {
             if (auto dataSource = HdBoolDataSource::Cast(
+#if PXR_VERSION < 2302
+                    lightSchema.GetContainer()->Get(_tokens->isLight))) {
+#else
                     lightSchema.GetContainer()->Get(HdTokens->isLight))) {
+#endif
                 return dataSource->GetTypedValue(0.0f);
             }
         }
@@ -199,6 +215,12 @@ bool
 _HasValidMaterialNetwork(
     const HdSceneIndexPrim& prim)
 {
+#if HD_API_VERSION >= 63
+    HdMaterialNetworkSchema netSchema = 
+        HdMaterialSchema::GetFromParent(prim.dataSource)
+            .GetMaterialNetwork(_tokens->renderContext);
+    return netSchema.GetNodes() && netSchema.GetTerminals();
+#else
     HdMaterialSchema matSchema = HdMaterialSchema::GetFromParent(prim.dataSource);
     if (!matSchema.IsDefined()) {
         return false;
@@ -215,21 +237,28 @@ _HasValidMaterialNetwork(
     HdContainerDataSourceHandle nodesDS = netSchema.GetNodes();
     HdContainerDataSourceHandle terminalsDS = netSchema.GetTerminals();
     return nodesDS && terminalsDS;
+#endif
 }
 
 TfToken
 _GetMaterialSyncMode(
     const HdContainerDataSourceHandle& primDs)
 {
+    const static TfToken defaultMaterialSyncMode = UsdLuxTokens->materialGlowTintsLight;
+
     if (auto lightSchema = HdLightSchema::GetFromParent(primDs)) {
         if (auto dataSource = HdTokenDataSource::Cast(
+#if PXR_VERSION < 2308
+                lightSchema.GetContainer()->Get(_tokens->materialSyncMode))) {
+#else
                 lightSchema.GetContainer()->Get(HdTokens->materialSyncMode))) {
-            return dataSource->GetTypedValue(0.0f);
+#endif
+            const TfToken materialSyncMode = dataSource->GetTypedValue(0.0f);
+            return materialSyncMode.IsEmpty() ? defaultMaterialSyncMode : materialSyncMode;
         }
     }
 
-    // default for mesh lights
-    return UsdLuxTokens->materialGlowTintsLight;
+    return defaultMaterialSyncMode;
 }
 
 SdfPath
@@ -298,7 +327,11 @@ _BuildLightShaderDataSource(
     // Get the original light shader network
     const HdContainerDataSourceHandle& originalShaderDS = 
         HdMaterialSchema::GetFromParent(originPrim.dataSource)
-            .GetMaterialNetwork(_tokens->renderContext);
+            .GetMaterialNetwork(_tokens->renderContext)
+#if HD_API_VERSION >= 63
+        .GetContainer()
+#endif
+        ;
 
     // check materialSyncMode
     if (_GetMaterialSyncMode(originPrim.dataSource) !=
@@ -318,7 +351,12 @@ _BuildLightShaderDataSource(
     const HdSceneIndexPrim& matPrim = inputSceneIndex->GetPrim(matPath);
     const HdContainerDataSourceHandle& matDS =
         HdMaterialSchema::GetFromParent(matPrim.dataSource)
-        .GetMaterialNetwork(_tokens->renderContext);
+        .GetMaterialNetwork(_tokens->renderContext)
+#if HD_API_VERSION >= 63
+        .GetContainer()
+#endif
+        ;
+
     if (!matDS) {
         // could not get material shader network from material prim;
         // return unmodified
@@ -329,8 +367,12 @@ _BuildLightShaderDataSource(
     }
     
     // interface with the material shader network
+#if PXR_VERSION <= 2308
+    const HdDataSourceMaterialNetworkInterface srcMatNI(matPath, matDS);
+#else
     const HdDataSourceMaterialNetworkInterface srcMatNI(matPath, matDS,
                                                         originPrim.dataSource);
+#endif
     // look up the surface/volume terminal connection
     const auto& terminalConn = srcMatNI.GetTerminalConnection(terminalToken);
     if (!terminalConn.first) {
@@ -356,8 +398,12 @@ _BuildLightShaderDataSource(
     }
 
     // interface with the original light shader network
+#if PXR_VERSION <= 2308
+    HdDataSourceMaterialNetworkInterface shaderNI(originPath, originalShaderDS);
+#else
     HdDataSourceMaterialNetworkInterface shaderNI(originPath, originalShaderDS,
                                                   originPrim.dataSource);
+#endif
     // look up the light terminal connection
     const auto lightTC = shaderNI.GetTerminalConnection(
         HdMaterialTerminalTokens->light);
@@ -379,11 +425,18 @@ _BuildLightShaderDataSource(
         // reference nodes in other networks. But we are not bothering to walk
         // the graph and pull only the nodes we actually need. We just copy
         // over all the nodes.
-        return HdOverlayContainerDataSource::New(
+        HdContainerDataSourceHandle handles[2] = {
             shaderNI.Finish(),
             HdMaterialNetworkSchema::Builder()
-                .SetNodes(HdMaterialNetworkSchema(matDS).GetNodes())
-                .Build());
+                .SetNodes(
+                    HdMaterialNetworkSchema(matDS).GetNodes()
+#if HD_API_VERSION >= 63
+                        .GetContainer()
+#endif
+                    )
+                .Build()
+        };
+        return HdOverlayContainerDataSource::New(2, handles);
     }
     // No glow input connection; try for param value instead
     const VtValue glowIV = srcMatNI.GetNodeParameterValue(
@@ -596,7 +649,12 @@ _BuildLightDataSource(
     if (materialSyncMode == UsdLuxTokens->materialGlowTintsLight) {
         names.push_back(HdMaterialSchemaTokens->material);
         sources.push_back(HdRetainedContainerDataSource::New(
+#if PXR_VERSION < 2308
+            // https://github.com/PixarAnimationStudios/OpenUSD/commit/283b1a6d7fb144f6fb16040fdf689b2c517b7520
+            TfToken(),
+#else
             _tokens->renderContext,
+#endif
             _BuildLightShaderDataSource(
                 originPath, originPrim,
                 bindingSourceDS,
@@ -622,7 +680,11 @@ _BuildLightDataSource(
     sources.push_back(HdBlockDataSource::New());
 
     // Knock out model
+#if PXR_VERSION >= 2311
     names.push_back(UsdImagingModelSchemaTokens->model);
+#else
+    names.push_back(_tokens->model);
+#endif
     sources.push_back(HdBlockDataSource::New());
 
     // Knock out mesh
@@ -640,12 +702,12 @@ _BuildLightDataSource(
     // Knock out volume field binding
     names.push_back(HdVolumeFieldBindingSchemaTokens->volumeFieldBinding);
     sources.push_back(HdBlockDataSource::New());
-      
 
-    return HdOverlayContainerDataSource::New(
-        HdRetainedContainerDataSource::New(
-            names.size(), names.data(), sources.data()),
-        originPrim.dataSource);
+    HdContainerDataSourceHandle handles[2] = {
+        HdRetainedContainerDataSource::New(names.size(), names.data(), sources.data()),
+        originPrim.dataSource
+    };
+    return HdOverlayContainerDataSource::New(2, handles);
 }
 
 HdContainerDataSourceHandle
@@ -755,10 +817,11 @@ _BuildSourceDataSource(
     names.push_back(HdXformSchemaTokens->xform);
     sources.push_back(HdBlockDataSource::New());
 
-    return HdOverlayContainerDataSource::New(
-        HdRetainedContainerDataSource::New(
-            names.size(), names.data(), sources.data()),
-        originDS);
+    HdContainerDataSourceHandle handles[2] = {
+        HdRetainedContainerDataSource::New(names.size(), names.data(), sources.data()),
+        originDS 
+    };
+    return HdOverlayContainerDataSource::New(2, handles);
 }
 
 HdContainerDataSourceHandle
@@ -914,23 +977,30 @@ HdPrmanMeshLightResolvingSceneIndex::GetPrim(
         // The stripped-down origin prim -> "mesh" or "volume"
         if (primPath.GetNameToken() == _tokens->meshLightMeshName
             && _meshLights.at(parentPath)) {
+            HdContainerDataSourceHandle handles[2] = { 
+                HdRetainedContainerDataSource::New(
+                    HdLightSchemaTokens->light, HdBlockDataSource::New(),
+                    HdMaterialSchemaTokens->material,
+                    HdBlockDataSource::New(), _tokens->usdCollections,
+                    HdBlockDataSource::New(),
+                    HdDependenciesSchemaTokens->__dependencies,
+                    _BuildMeshDependenciesDataSource(parentPath)),
+                parentPrim.dataSource 
+            };
             return {
                 parentPrim.primType,
-                HdOverlayContainerDataSource::New(
-                    HdRetainedContainerDataSource::New(
-                        HdLightSchemaTokens->light, HdBlockDataSource::New(),
-                        HdMaterialSchemaTokens->material, HdBlockDataSource::New(),
-                        _tokens->usdCollections, HdBlockDataSource::New(),
-                        HdDependenciesSchemaTokens->__dependencies,
-                        _BuildMeshDependenciesDataSource(parentPath)),
-                    parentPrim.dataSource)
+                HdOverlayContainerDataSource::New(2, handles)
             };
         }
 
         // The light prim -> "meshLight"
         if (primPath.GetNameToken() == _tokens->meshLightLightName) {
             return {
+#if PXR_VERSION < 2302
+                HdPrmanTokens->meshLight,
+#else
                 HdPrimTypeTokens->meshLight,
+#endif
                 _BuildLightDataSource(
                     parentPath, parentPrim,
                     parentPath, parentPrim.dataSource, // materialBinding source
@@ -1007,10 +1077,13 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsAdded(
                 // The light prim
                 added.emplace_back(
                     entry.primPath.AppendChild(_tokens->meshLightLightName),
+#if PXR_VERSION < 2302
+                    HdPrmanTokens->meshLight);
+#else
                     HdPrimTypeTokens->meshLight);
+#endif
                 
                 // The source mesh (for the light prim)
-
                 added.emplace_back(
                     entry.primPath.AppendChild(_tokens->meshLightSourceName),
                     entry.primType == HdPrimTypeTokens->volume
@@ -1080,12 +1153,20 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsDirtied(
 
     static const HdDataSourceLocator materialSyncModeLocator = { 
         HdLightSchemaTokens->light,
+#if PXR_VERSION < 2308
+        _tokens->materialSyncMode
+#else
         HdTokens->materialSyncMode
+#endif
     };
 
     for (const auto& entry : entries) {
         if (_meshLights.count(entry.primPath)
+#if PXR_VERSION < 2208
+            && entry.dirtyLocators.Intersects(materialSyncModeLocator)) {
+#else
             && entry.dirtyLocators.Contains(materialSyncModeLocator)) {
+#endif
             const HdSceneIndexPrim& prim = _GetInputSceneIndex()
                 ->GetPrim(entry.primPath);
             const bool visible = _GetMaterialSyncMode(prim.dataSource)
@@ -1106,6 +1187,38 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsDirtied(
             }
         }
     }
+
+#ifndef PIXAR_ANIM
+    for (const auto& entry : entries) {
+        if (_meshLights.count(entry.primPath)) {
+            // Propogate dirtiness to the meshLight light if applicable.
+            // HdDataSourceLocator::EmptyLocator() == AllDirty in Hydra 1.0
+            if (entry.dirtyLocators.Intersects(HdDataSourceLocator::EmptyLocator())
+            || entry.dirtyLocators.Intersects(HdCategoriesSchema::GetDefaultLocator())
+#if HD_API_VERSION >= 51
+            || entry.dirtyLocators.Intersects(HdMaterialBindingsSchema::GetDefaultLocator())) {
+#else
+            || entry.dirtyLocators.Intersects(HdMaterialBindingSchema::GetDefaultLocator())) {
+#endif
+                _SendPrimsDirtied({{ entry.primPath.AppendChild(_tokens->meshLightLightName), {
+                    HdLightSchema::GetDefaultLocator(), 
+                    HdMaterialSchema::GetDefaultLocator(), 
+                    HdPrimvarsSchema::GetDefaultLocator(),
+                    HdVisibilitySchema::GetDefaultLocator(),
+                    HdXformSchema::GetDefaultLocator()
+                }}});
+            }
+
+            // Propogate all dirtiness to the visible meshLight mesh.
+            if (_meshLights[entry.primPath] == true /* IsVisible */) {
+                _SendPrimsDirtied({{entry.primPath.AppendChild(_tokens->meshLightMeshName), 
+                    entry.dirtyLocators
+                }});
+            }
+        }
+    }
+#endif
+
     _SendPrimsDirtied(entries);
 }
 

@@ -169,15 +169,9 @@ public:
     /// Specifies whether to force a window policy when conforming
     /// the frustum of the camera to match the display window of
     /// the camera framing.
-    ///
-    /// If set to {false, ...}, the window policy of the specified camera
-    /// will be used.
-    ///
-    /// Note: std::pair<bool, ...> is used instead of std::optional<...>
-    /// because the latter is only available in C++17 or later.
     HDX_API
     void SetOverrideWindowPolicy(
-        const std::pair<bool, CameraUtilConformWindowPolicy> &policy);
+        const std::optional<CameraUtilConformWindowPolicy> &policy);
 
     /// -- Scene camera --
     /// Set the camera param on tasks to a USD camera path.
@@ -425,7 +419,7 @@ private:
 
     GfVec2i _renderBufferSize;
     CameraUtilFraming _framing;
-    std::pair<bool, CameraUtilConformWindowPolicy> _overrideWindowPolicy;
+    std::optional<CameraUtilConformWindowPolicy> _overrideWindowPolicy;
 
     GfVec4d _viewport;
 };

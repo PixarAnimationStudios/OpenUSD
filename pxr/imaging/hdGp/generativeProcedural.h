@@ -122,6 +122,73 @@ public:
         const HdSceneIndexBaseRefPtr &inputScene,
         const SdfPath &childPrimPath) = 0;
 
+    // Returns a locator which can be used in the UpdateDependencies result to
+    // declare a dependency on the set of immediate children for a prim path.
+    static const HdDataSourceLocator &GetChildNamesDependencyKey();
+
+
+    // ------------------------------------------------------------------------
+    // Asynchronous API
+    // ------------------------------------------------------------------------
+
+    // Called to inform a procedural instance whether asychronous evaluation
+    // is possible.
+    // 
+    // If asyncEnabled is true, a procedural which makes use of asynchronous
+    // processing should return true to indicate that it wants to receive
+    // AsyncUpdate calls. If asyncEnabled is false, the procedural is expected
+    // to do its work as normal.
+    // 
+    // Procedurals which have previously declined async updates (or have
+    // indicated that they are finished via a return value from AsyncUpdate)
+    // are given an opportunity begin asynchronous processing (via receiving
+    // another call to this method) following any call to UpdateDependencies.
+    virtual bool AsyncBegin(bool asyncEnabled);
+
+
+    enum AsyncState
+    {
+        Continuing = 0, // nothing new, continue checking
+        Finished, // nothing new, stop checking
+        ContinuingWithNewChanges, // new stuff, but continue checking
+        FinishedWithNewChanges, // new stuff, but stop checking
+    };
+
+    // When asynchronous evaluation is enabled, a procedural will be polled (
+    // at a frequency determined by the host application) to discover any
+    // changes to child prim state.
+    // 
+    // This is similar to the standard Update call but differs in these ways:
+    // 1) The input scene is not provided. Any information needed from it for
+    //    the sake of asychronous processing should be retrieved during the
+    //    standard Update call.
+    // 2) Filling in the provided outputPrimTypes is equivalent to the return
+    //    value of the standard Update. If no child prim presence or type
+    //    changes (or dirtying) are available, no action is required.
+    // 3) It should not be used to do significant work but rather just to
+    //    synchronize the results of work completed by threads or processes
+    //    managed by the procedural.
+    // 
+    // Changes are only considered following a return value of
+    // ContinuingWithNewChanges or FinishedWithNewChanges. In that case,
+    // outputPrimTypes must be filled in full (similar to the result of standard
+    // Update). As with Update, the previous child prim type map is provided
+    // for convenience.
+    // 
+    // Return values of Finished or FinishedWithNewChanges will prevent this
+    // method from being called again until another call to AsyncBegin(true)
+    // returns a true value. This allows a procedural to indicate when it is
+    // finished and then restarted itself in response to declared dependenices
+    // changing. Should a procedural wish to continue receiving the AsyncUpdate
+    // call regardless of whether declared dependencies are dirtied, it should
+    // return Continuing or ContinuingWithNewChanges;
+    virtual AsyncState AsyncUpdate(
+        const ChildPrimTypeMap &previousResult,
+        ChildPrimTypeMap *outputPrimTypes,
+        HdSceneIndexObserver::DirtiedPrimEntries *outputDirtiedPrims);
+
+
+
 protected:
     HDGP_API
     const SdfPath &_GetProceduralPrimPath();

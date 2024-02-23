@@ -29,12 +29,6 @@
 #include "pxr/base/tf/stringUtils.h"
 #include <iostream>
 
-#include <boost/preprocessor/punctuation/comma.hpp>
-#include <boost/preprocessor/punctuation/comma_if.hpp>
-#include <boost/preprocessor/seq/elem.hpp>
-#include <boost/preprocessor/seq/for_each_i.hpp>
-#include <boost/preprocessor/seq/transform.hpp>
-#include <boost/preprocessor/variadic/to_seq.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -62,47 +56,68 @@ PXR_NAMESPACE_USING_DIRECTIVE
 #define TRACE_DATA(name, value) \
     TraceCollector::GetInstance().StoreData(name, value);
 
+// Flatten the keys and values tuples so the result is suitable to construct a
+// TraceAutoScope.
+// This returns a tuple of the form
+// (data, std::get<0>(keys), std::get<0>(values),
+//        std::get<1>(keys), std::get<1>(values), ...)
+template <typename KeysTuple, typename ValuesTuple, size_t... Indices>
+auto Trace_MakeAutoScopeArgs(const TraceStaticKeyData& data,
+                             KeysTuple&& keys,
+                             ValuesTuple&& values,
+                             std::index_sequence<Indices...>) {
+    // Forward to preserve references
+    return std::tuple_cat(
+        std::forward_as_tuple(data),
+        std::forward_as_tuple(
+            std::get<Indices>(keys), std::get<Indices>(values)) ...);
+}
+
+// _TRACE_FUNCTION_ARGS_IMPL needs a value to match the last comma
+// in the converted key and value sequences. This value is then dropped
+// when the auto scope arguments are constructed.
+#define _TRACE_UNUSED_TAIL nullptr
+
+// Create a tuple to store the arguments to ensure the lifetime of the
+// static key data outlives the referencing scope.
+// Even though TraceScopeAuto isn't movable, std::make_from_tuple benefits
+// from guaranteed copy collision.
+// The index sequence used to zip keys and values is one less than the tuple
+// size because a spurious element is added to each tuple to match the commas.
+#define _TRACE_FUNCTION_ARGS_IMPL(keyDataIdentifier, keysIdentifier, scopeIdentifier, ...) \
+constexpr static auto keysIdentifier = std::make_tuple( \
+    _TRACE_ARGS_TO_KEYS(__VA_ARGS__) _TRACE_UNUSED_TAIL); \
+auto scopeIdentifier = std::make_from_tuple<TraceScopeAuto>( \
+    Trace_MakeAutoScopeArgs( \
+        keyDataIdentifier, \
+        keysIdentifier, \
+        std::forward_as_tuple(_TRACE_ARGS_TO_VALUES(__VA_ARGS__) _TRACE_UNUSED_TAIL), \
+        std::make_index_sequence< \
+            std::tuple_size_v<decltype(keysIdentifier)> - 1>()));
+
 #define TRACE_FUNCTION_ARGS_INSTANCE(instance, name, prettyName, ...) \
 constexpr static TraceStaticKeyData TF_PP_CAT(TraceKeyData_, instance)( \
     name, prettyName); \
-_TRACE_ARGS_TO_STATIC_VARS(TF_PP_CAT(TraceKeyData_, instance), __VA_ARGS__); \
-TraceScopeAuto TF_PP_CAT(TraceScopeAuto_, instance)(\
-        TF_PP_CAT(TraceKeyData_, instance), \
-        _TRACE_ARGS_TO_FUNC_PARAMS(TF_PP_CAT(TraceKeyData_, instance), \
-            __VA_ARGS__));
+_TRACE_FUNCTION_ARGS_IMPL(TF_PP_CAT(TraceKeyData_, instance), \
+                          TF_PP_CAT(TraceAutoKeysTuple_, instance), \
+                          TF_PP_CAT(TraceAutoScope_, instance), \
+                          __VA_ARGS__) \
 
 #define TRACE_SCOPE_ARGS_INSTANCE(instance, name, ...) \
 constexpr static TraceStaticKeyData TF_PP_CAT(TraceKeyData_, instance)(name); \
-_TRACE_ARGS_TO_STATIC_VARS(TF_PP_CAT(TraceKeyData_, instance), __VA_ARGS__); \
-TraceScopeAuto TF_PP_CAT(TraceScopeAuto_, instance)(\
-        TF_PP_CAT(TraceKeyData_, instance), \
-        _TRACE_ARGS_TO_FUNC_PARAMS(TF_PP_CAT(TraceKeyData_, instance), \
-            __VA_ARGS__));
+_TRACE_FUNCTION_ARGS_IMPL(TF_PP_CAT(TraceKeyData_, instance), \
+                          TF_PP_CAT(TraceAutoKeysTuple_, instance), \
+                          TF_PP_CAT(TraceAutoScope_, instance), \
+                          __VA_ARGS__) \
 
-#define _TRACE_KEY_FROM_TUPLE(r, data, elem) TF_PP_TUPLE_ELEM(0, elem)
-#define _TRACE_VALUE_FROM_TUPLE(r, data, elem) TF_PP_TUPLE_ELEM(1, elem)
+#define _TRACE_KEY_FROM_TUPLE(elem) TF_PP_TUPLE_ELEM(0, elem)
+#define _TRACE_VALUE_FROM_TUPLE(elem) TF_PP_TUPLE_ELEM(1, elem)
 
-#define _TRACE_ARGS_TO_KEY_SEQ(...) \
-    BOOST_PP_SEQ_TRANSFORM(\
-        _TRACE_KEY_FROM_TUPLE, _, BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__)\
-    )
-
-#define _TRACE_ARGS_TO_VAL_SEQ(...) \
-    BOOST_PP_SEQ_TRANSFORM(\
-        _TRACE_VALUE_FROM_TUPLE, _, BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__)\
-    )
-#define _TRACE_KEY_KEY_DEF(r, data, i, elem) \
-    constexpr static TraceStaticKeyData TF_PP_CAT(data, i)(elem);
-
-#define _TRACE_ARGS_TO_STATIC_VARS(varname,...) \
-    BOOST_PP_SEQ_FOR_EACH_I(_TRACE_KEY_KEY_DEF, varname, \
-        _TRACE_ARGS_TO_KEY_SEQ(__VA_ARGS__))
-
-#define _TRACE_ARG_FUNC_PARAM( r, data, i, elem) \
-    BOOST_PP_COMMA_IF(i) TF_PP_CAT(data, i) BOOST_PP_COMMA() elem
-#define _TRACE_ARGS_TO_FUNC_PARAMS(varname, ...) \
-    BOOST_PP_SEQ_FOR_EACH_I(\
-        _TRACE_ARG_FUNC_PARAM, varname, _TRACE_ARGS_TO_VAL_SEQ(__VA_ARGS__))
+#define _TRACE_KEY_ELEM(elem) TraceStaticKeyData{_TRACE_KEY_FROM_TUPLE(elem)},
+#define _TRACE_ARGS_TO_KEYS(...) TF_PP_FOR_EACH(_TRACE_KEY_ELEM, __VA_ARGS__)
+#define _TRACE_VALUE_ELEM(elem) _TRACE_VALUE_FROM_TUPLE(elem),
+#define _TRACE_ARGS_TO_VALUES(...) \
+    TF_PP_FOR_EACH(_TRACE_VALUE_ELEM, __VA_ARGS__)
 
 void TestFunc(short a, float b, bool c) {
     TRACE_FUNCTION_ARGS(("a", a), ("b", b), ("c", c));

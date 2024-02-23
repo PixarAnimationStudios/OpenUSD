@@ -42,4 +42,29 @@ HdGpGenerativeProcedural::_GetProceduralPrimPath()
     return _proceduralPrimPath;
 }
 
+
+/*static*/
+
+const HdDataSourceLocator &
+HdGpGenerativeProcedural::GetChildNamesDependencyKey()
+{
+    static const HdDataSourceLocator loc(TfToken("__childNames"));
+    return loc;
+}
+
+bool
+HdGpGenerativeProcedural::AsyncBegin(bool asyncEnabled)
+{
+    return false;
+}
+
+HdGpGenerativeProcedural::AsyncState
+HdGpGenerativeProcedural::AsyncUpdate(
+    const ChildPrimTypeMap &previousResult,
+    ChildPrimTypeMap *outputPrimTypes,
+    HdSceneIndexObserver::DirtiedPrimEntries *outputDirtiedPrims)
+{
+    return Finished;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -3,6 +3,9 @@
     upAxis = "Z"
 )
 
+# The prototype cube has a material binding (of red).
+# Both cubes should appear red.
+#
 def Xform "Scene"
 {
     over "Instance1" (
@@ -10,7 +13,7 @@ def Xform "Scene"
         references = @cubeShaded.usda@</Group>
     )
     {
-        float3 xformOp:translate = (-10, 0, 0)
+        float3 xformOp:translate = (-3, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 
@@ -19,7 +22,7 @@ def Xform "Scene"
         references = @cubeShaded.usda@</Group>
     )
     {
-        float3 xformOp:translate = (10, 0, 0)
+        float3 xformOp:translate = (3, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 }

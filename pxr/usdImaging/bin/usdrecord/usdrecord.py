@@ -24,6 +24,7 @@
 #
 
 from pxr import Usd
+from pxr import Sdf
 from pxr import UsdAppUtils
 from pxr import Tf
 
@@ -126,6 +127,11 @@ def main():
             'more than one extra purpose, either use commas with no spaces or '
             'quote the argument and separate purposes by commas and/or spaces.'))
 
+    parser.add_argument('--sessionLayer', action='store', type=str,
+        dest='sessionLayerPath', metavar='SESSIONLAYER',
+        help=("If specified, the stage will be opened with the "
+              "'sessionLayer' in place of the default anonymous layer."))
+
     # Note: The argument passed via the command line (disableGpu) is inverted
     # from the variable in which it is stored (gpuEnabled).
     parser.add_argument('--disableGpu', action='store_false',
@@ -167,6 +173,21 @@ def main():
 
     purposes = args.purposes.replace(',', ' ').split()
 
+    # Load the root layer.
+    rootLayer = Sdf.Layer.FindOrOpen(args.usdFilePath)
+    if not rootLayer:
+        _Err('Could not open layer: %s' % args.usdFilePath)
+        return 1
+
+    # Load the session layer.
+    if args.sessionLayerPath:
+        sessionLayer = Sdf.Layer.FindOrOpen(args.sessionLayerPath)
+        if not sessionLayer:
+            _Err('Could not open layer: %s' % args.sessionLayerPath)
+            return 1
+    else:
+        sessionLayer = Sdf.Layer.CreateAnonymous()
+
     # Open the USD stage, using a population mask if paths were given.
     if args.populationMask:
         populationMaskPaths = args.populationMask.replace(',', ' ').split()
@@ -175,9 +196,9 @@ def main():
         for maskPath in populationMaskPaths:
             populationMask.Add(maskPath)
 
-        usdStage = Usd.Stage.OpenMasked(args.usdFilePath, populationMask)
+        usdStage = Usd.Stage.OpenMasked(rootLayer, sessionLayer, populationMask)
     else:
-        usdStage = Usd.Stage.Open(args.usdFilePath)
+        usdStage = Usd.Stage.Open(rootLayer, sessionLayer)
 
     if not usdStage:
         _Err('Could not open USD stage: %s' % args.usdFilePath)

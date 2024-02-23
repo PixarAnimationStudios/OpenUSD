@@ -163,6 +163,7 @@ int main()
         "foo.mapper",
         "foo.mapper.expression",
         "foo.mapper.mapper[/A.b]",
+        "/root_utf8_umlaute_ß_3",
         NULL
     };
 
@@ -221,7 +222,8 @@ int main()
         "foo{a=:}",
         "foo{a=x:}",
         "Foo.attr.mapper[/Bar].arg:baz",
-        "/root_utf8_umlaute_ß_3", // Move to "good" when we support utf-8.
+        "/foo😀", // valid UTF-8 string that isn't an identifier
+        "/foo/bar/_∂baz", // valid UTF-8 string that isn't an identifier
         NULL
     };
 

@@ -54,7 +54,7 @@ public:
             // Do nothing
         }
 
-        boost::optional<V> operator()(SdfListOpType op, const V& value)
+        std::optional<V> operator()(SdfListOpType op, const V& value)
         {
             using namespace boost::python;
 
@@ -63,14 +63,14 @@ public:
             if (! TfPyIsNone(result)) {
                 extract<V> e(result);
                 if (e.check()) {
-                    return boost::optional<V>(e());
+                    return std::optional<V>(e());
                 }
                 else {
                     TF_CODING_ERROR("ApplyEditsToList callback has "
                                     "incorrect return type.");
                 }
             }
-            return boost::optional<V>();
+            return std::optional<V>();
         }
 
     private:
@@ -87,7 +87,7 @@ public:
             // Do nothing
         }
 
-        boost::optional<V> operator()(const V& value)
+        std::optional<V> operator()(const V& value)
         {
             using namespace boost::python;
 
@@ -96,14 +96,14 @@ public:
             if (! TfPyIsNone(result)) {
                 extract<V> e(result);
                 if (e.check()) {
-                    return boost::optional<V>(e());
+                    return std::optional<V>(e());
                 }
                 else {
                     TF_CODING_ERROR("ModifyItemEdits callback has "
                                     "incorrect return type.");
                 }
             }
-            return boost::optional<V>();
+            return std::optional<V>();
         }
 
     private:

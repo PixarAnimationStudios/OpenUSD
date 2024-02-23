@@ -51,6 +51,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (renderSettings_depOn_usdRenderSettings_aspectRatioConformPolicy)
     (renderSettings_depOn_usdRenderSettings_dataWindowNDC)
     (renderSettings_depOn_usdRenderSettings_disableMotionBlur)
+    (renderSettings_depOn_usdRenderSettings_disableDepthOfField)
     (renderSettings_depOn_usdRenderSettings_camera)
     (__dependencies_depOn_usdRenderSettings_products)
 );
@@ -232,6 +233,11 @@ _GetRenderSettingsDependenciesDataSource(
             HdRenderSettingsSchema::GetRenderProductsLocator(),
         },
         {
+            _tokens->renderSettings_depOn_usdRenderSettings_disableDepthOfField,
+            UsdImagingUsdRenderSettingsSchema::GetDisableDepthOfFieldLocator(),
+            HdRenderSettingsSchema::GetRenderProductsLocator(),
+        },
+        {
             _tokens->renderSettings_depOn_usdRenderSettings_camera,
             UsdImagingUsdRenderSettingsSchema::GetCameraLocator(),
             HdRenderSettingsSchema::GetRenderProductsLocator(),
@@ -377,6 +383,8 @@ _ToHdRenderProductDS(
             _Resolve(p.GetDataWindowNDC(), s.GetDataWindowNDC()))
         .SetDisableMotionBlur(
             _Resolve(p.GetDisableMotionBlur(), s.GetDisableMotionBlur()))
+        .SetDisableDepthOfField(
+            _Resolve(p.GetDisableDepthOfField(), s.GetDisableDepthOfField()))
         .SetNamespacedSettings(p.GetNamespacedSettings())
         .Build();
 }

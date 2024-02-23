@@ -115,6 +115,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Color Space
     ((cs_raw, "raw"))
     ((cs_auto, "auto"))
+    ((cs_srgb, "sRGB"))
+    ((mtlx_srgb, "srgb_texture"))
 );
 
 static bool
@@ -269,15 +271,16 @@ _GetTerminalConnectionName(TfToken const &hdNodeType)
             HdMaterialTerminalTokens->surface;
 }
 
-// Convert the TfToken associated with the input parameters to the Standard
-// Surface Adapter Node that conflict with OSL reserved words. 
+// Convert the TfToken associated with the input parameters to Adapter Nodes
+// that conflict with OSL reserved words. 
 static TfToken
 _GetUpdatedInputToken(TfToken const &currInputName)
 {
-    // { currentInputNname , updatedInputName }
-    static const mx::StringMap conflicts = {{"emission",   "emission_value"},
-                                            {"subsurface", "subsurface_value"},
-                                            {"normal", "input_normal"}};
+    static const mx::StringMap conflicts = {
+    // { currInputNname , updatedInputName }
+        {"emission",    "emission_value"},
+        {"subsurface",  "subsurface_value"},
+        {"normal",      "normalIn"}};
     auto it = conflicts.find(currInputName.GetString());
     if (it != conflicts.end()) {
         return TfToken(it->second);
@@ -575,21 +578,20 @@ _TransformTerminalNode(
     // Transform the terminalNode with the appropriate Adapter Node, which
     // translates the MaterialX parameters into PxrSurface/PxrDisplace inputs.
     netInterface->SetNodeType(terminalNodeName, adapterType);
-    if (adapterType != _tokens->USD_Adapter) {
-        // Update the TfTokens associated with the input parameters to the
-        // Standard Surface Adapter Node that conflict with OSL reserved words. 
-        // The corresponding input connection is updated in _UpdateNetwork()
-        TfTokenVector pNames =
-            netInterface->GetAuthoredNodeParameterNames(terminalNodeName);
-        for (TfToken const &pName : pNames) {
-            TfToken updatedName = _GetUpdatedInputToken(pName);
-            if (!updatedName.IsEmpty()) {
-                VtValue val = netInterface->GetNodeParameterValue(
-                                                terminalNodeName, pName);
-                netInterface->SetNodeParameterValue(
-                    terminalNodeName, updatedName, val);
-                netInterface->DeleteNodeParameter(terminalNodeName, pName);
-            }
+
+    // Update the TfTokens associated with the Adapter Node's input parameters
+    // that conflict with OSL reserved words. 
+    // The corresponding input connection is updated in _UpdateNetwork()
+    TfTokenVector pNames =
+        netInterface->GetAuthoredNodeParameterNames(terminalNodeName);
+    for (TfToken const &pName : pNames) {
+        const TfToken updatedName = _GetUpdatedInputToken(pName);
+        if (!updatedName.IsEmpty()) {
+            const VtValue val = netInterface->GetNodeParameterValue(
+                terminalNodeName, pName);
+            netInterface->SetNodeParameterValue(
+                terminalNodeName, updatedName, val);
+            netInterface->DeleteNodeParameter(terminalNodeName, pName);
         }
     }
     
@@ -671,20 +673,24 @@ _GetWrapModes(
     }
 }
 
-static void
+static TfToken
 _GetColorSpace(
     HdMaterialNetworkInterface *netInterface,
     TfToken const &hdTextureNodeName,
-    TfToken *colorSpace)
+    HdMaterialNetworkInterface::NodeParamData paramData)
 {
     const TfToken nodeType = netInterface->GetNodeType(hdTextureNodeName);
-    if( nodeType == _tokens->ND_image_vector2 ||
+    if (nodeType == _tokens->ND_image_vector2 ||
         nodeType == _tokens->ND_image_vector3 ||
         nodeType == _tokens->ND_image_vector4 ) {
         // For images not used as color use "raw" (eg. normal maps)
-        *colorSpace = _tokens->cs_raw;
+        return _tokens->cs_raw;
     } else {
-        *colorSpace = _tokens->cs_auto;
+        if (paramData.colorSpace == _tokens->mtlx_srgb) {
+            return _tokens->cs_srgb;
+        } else {
+            return _tokens->cs_auto;
+        }
     }
 }
 
@@ -703,8 +709,9 @@ _UpdateTextureNodes(
             continue;
         }
         
-        VtValue vFile =
-            netInterface->GetNodeParameterValue(textureNodeName, _tokens->file);
+        HdMaterialNetworkInterface::NodeParamData fileParamData =
+            netInterface->GetNodeParameterData(textureNodeName, _tokens->file);
+        const VtValue vFile = fileParamData.value;
         if (vFile.IsEmpty()) {
             TF_WARN("File path missing for texture node '%s'.",
                     textureNodeName.GetText());
@@ -741,8 +748,8 @@ _UpdateTextureNodes(
                 TfToken uWrap, vWrap;
                 _GetWrapModes(netInterface, textureNodeName, &uWrap, &vWrap);
 
-                TfToken colorSpace;
-                _GetColorSpace(netInterface, textureNodeName, &colorSpace);
+                TfToken colorSpace = 
+                    _GetColorSpace(netInterface, textureNodeName, fileParamData);
 
                 std::string const &mxInputValue = TfStringPrintf(
                     "rtxplugin:%s?filename=%s&wrapS=%s&wrapT=%s&sourceColorSpace=%s",
@@ -905,7 +912,7 @@ MatfiltMaterialX(
     std::set<TfToken> nodesToKeep;   // nodes directly connected to the terminal
     std::set<TfToken> nodesToRemove; // nodes further removed from the terminal
 
-    for( auto terminalName : supportedTerminalTokens ) {
+    for (auto terminalName : supportedTerminalTokens ) {
 
         // Check presence of terminal
         const HdMaterialNetworkInterface::InputConnectionResult res =
@@ -939,12 +946,10 @@ MatfiltMaterialX(
             static std::mutex materialXMutex;
             std::lock_guard<std::mutex> lock(materialXMutex);
 
-            // Load Standard Libraries/setup SearchPaths (for mxDoc and
+            // Get Standard Libraries and SearchPaths (for mxDoc and 
             // mxShaderGen)
-            mx::FilePathVec libraryFolders;
+            mx::DocumentPtr stdLibraries = HdMtlxStdLibraries();
             mx::FileSearchPath searchPath = HdMtlxSearchPaths();
-            mx::DocumentPtr stdLibraries = mx::createDocument();
-            mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
 
             // Create the MaterialX Document from the material network
             HdMtlxTexturePrimvarData hdMtlxData;

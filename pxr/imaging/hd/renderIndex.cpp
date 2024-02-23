@@ -1407,9 +1407,11 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
 
     HdRenderParam *renderParam = _renderDelegate->GetRenderParam();
 
-    _bprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());
+    _bprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam(),
+                          _renderDelegate);
 
-    _sprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());
+    _sprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam(),
+                          _renderDelegate);
 
     ////////////////////////////////////////////////////////////////////////////
     //

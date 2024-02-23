@@ -36,7 +36,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdPrman_RenderParam;
 class HdPrman_CameraContext;
 class HdPrman_RenderSettings;
-class HdPrmanRenderDelegate;
 
 class HdPrman_RenderPass final : public HdRenderPass
 {
@@ -59,24 +58,23 @@ private:
 
     // Helpers to update the Camera Context inside _Execute()
     void _UpdateCameraPath(
-        const HdPrman_RenderSettings *renderSettingsPrim,
         const HdRenderPassStateSharedPtr &renderPassState,
-        HdPrmanRenderDelegate * const renderDelegate,
         HdPrman_CameraContext *cameraContext);
     
-    bool _UpdateCameraFraming(
-        const HdPrman_RenderSettings *renderSettingsPrim,
+    bool _UpdateCameraFramingAndWindowPolicy(
         const HdRenderPassStateSharedPtr &renderPassState,
-        HdPrman_CameraContext *cameraContext,
-        GfVec2i *resolution);
+        HdPrman_CameraContext *cameraContext);
+
+    void _UpdateRprimVisibilityFromTaskRenderTags(
+        TfTokenVector const &renderTags);
+
+    HdPrman_RenderSettings* _GetDrivingRenderSettingsPrim() const;
 
     std::shared_ptr<HdPrman_RenderParam> _renderParam;
     bool _converged;
     int _lastRenderedVersion;
     int _lastTaskRenderTagsVersion;
     int _lastRprimRenderTagVersion;
-
-    SdfPath _lastRenderSettingsPrimPath;
 
     std::chrono::steady_clock::time_point _frameStart;
     float _quickIntegrateTime;

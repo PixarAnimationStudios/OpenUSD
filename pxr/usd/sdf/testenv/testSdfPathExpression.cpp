@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/pathExpressionEval.h"
@@ -55,9 +56,9 @@ struct MatchEval {
         : _eval(SdfMakePathExpressionEval(expr, GetBasicPredicateLib())) {}
     explicit MatchEval(std::string const &exprStr) :
         MatchEval(SdfPathExpression(exprStr)) {}
-    bool Match(SdfPath const &p) {
-        return static_cast<bool>(
-            _eval.Match(p, PathIdentity {}, PathIdentity {}));
+    SdfPredicateFunctionResult
+    Match(SdfPath const &p) {
+        return _eval.Match(p, PathIdentity {}, PathIdentity {});
     }
     SdfPathExpressionEval<SdfPath const &> _eval;
 };
@@ -250,6 +251,10 @@ TestBasics()
         TF_AXIOM(!eval.Match(SdfPath("/weaker/c")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/bar")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/bar/baz")));
+
+        // ResolveReferences() with the empty expression should produce the
+        // empty expression.
+        TF_AXIOM(SdfPathExpression().ResolveReferences(resolveRefs).IsEmpty());
     }
 
     {
@@ -283,6 +288,18 @@ TestBasics()
             TF_AXIOM(eval.Match(SdfPath("/Home/test/baz/qux")));
             TF_AXIOM(eval.Match(SdfPath("/Home/test/baz/a/b/c/qux")));
         }
+    }
+
+    {
+        // Check constancy wrt prefix relations.
+        auto eval = MatchEval { SdfPathExpression("/prefix/path//") };
+
+        TF_AXIOM(!eval.Match(SdfPath("/prefix")));
+        TF_AXIOM(!eval.Match(SdfPath("/prefix")).IsConstant());
+        TF_AXIOM(eval.Match(SdfPath("/prefix/path")));
+        TF_AXIOM(eval.Match(SdfPath("/prefix/path")).IsConstant());
+        TF_AXIOM(!eval.Match(SdfPath("/prefix/wrong")));
+        TF_AXIOM(eval.Match(SdfPath("/prefix/wrong")).IsConstant());
     }
 }
 
@@ -333,154 +350,121 @@ TestSearch()
         paths.push_back(SdfPath(pathStr));
     }
 
-    {
+    auto testSearch = [&predLib, &paths](
+        std::string const &exprStr,
+        std::vector<std::string> const &expected) {
+
         auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("/Foo/g*m/foo/bar"), predLib);
+            SdfPathExpression(exprStr), predLib);
         auto search = eval.MakeIncrementalSearcher(
             PathIdentity {}, PathIdentity {});
+
+        std::vector<std::string> matches;
         for (SdfPath const &p: paths) {
             if (search.Next(p)) {
-                TF_AXIOM(p == SdfPath("/Foo/geom/foo/bar"));
+                matches.push_back(p.GetAsString());
             }
         }
-    }
-
-    {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("/Foo/g*m//foo/bar/foo"), predLib);
-        auto search = eval.MakeIncrementalSearcher(
-            PathIdentity {}, PathIdentity {});
-        for (SdfPath const &p: paths) {
-            if (search.Next(p)) {
-                TF_AXIOM(
-                    p == SdfPath("/Foo/geom/foo/bar/foo") ||
-                    p == SdfPath("/Foo/geom/foo/bar/foo/bar/foo"));
-            }
+        if (matches != expected) {
+            TF_FATAL_ERROR("Incremental search yielded unexpected results:\n"
+                           "Expected : %s\n"
+                           "Actual   : %s",
+                           TfStringify(expected).c_str(),
+                           TfStringify(matches).c_str());
         }
-    }
+    };
 
-    {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("/Foo/g*m//foo//foo/bar/foo"), predLib);
-        auto search = eval.MakeIncrementalSearcher(
-            PathIdentity {}, PathIdentity {});
-        for (SdfPath const &p: paths) {
-            if (search.Next(p)) {
-                TF_AXIOM(
-                    p == SdfPath("/Foo/geom/foo/bar/foo/bar/foo"));
-            }
-        }
-    }
+    testSearch("/World",
+               { "/World" });
 
-    {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("/Foo/g*m/foo//foo/bar"), predLib);
-        auto search = eval.MakeIncrementalSearcher(
-            PathIdentity {}, PathIdentity {});
-        for (SdfPath const &p: paths) {
-            if (search.Next(p)) {
-                TF_AXIOM(
-                    p == SdfPath("/Foo/geom/foo/bar/foo/bar") ||
-                    p == SdfPath("/Foo/geom/foo/bar/foo/bar/foo/bar"));
-            }
-        }
-    }
+    testSearch("/World/anim/*",
+               { "/World/anim/chars",
+                 "/World/anim/sets" });
 
-    {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("//Foo//foo/bar"), predLib);
-        auto search = eval.MakeIncrementalSearcher(
-            PathIdentity {}, PathIdentity {});
-        for (SdfPath const &p: paths) {
-            if (search.Next(p)) {
-                TF_AXIOM(
-                    p == SdfPath("/Foo/geom/foo/bar") ||
-                    p == SdfPath("/Foo/geom/foo/bar/foo/bar") ||
-                    p == SdfPath("/Foo/geom/foo/bar/foo/bar/foo/bar"));
-            }
-        }
-    }
+    testSearch("/Foo/g*m/foo/bar",
+               { "/Foo/geom/foo/bar" });
 
-    {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("//geom/body_sbdv"), predLib);
-        auto search = eval.MakeIncrementalSearcher(
-            PathIdentity {}, PathIdentity {});
-        for (SdfPath const &p: paths) {
-            if (search.Next(p)) {
-                TF_AXIOM(
-                    p == SdfPath("/World/anim/chars/Mike/geom/body_sbdv") ||
-                    p == SdfPath("/World/anim/chars/Sully/geom/body_sbdv"));
-            }
-        }
-    }
+    testSearch("/Foo/g*m//foo/bar/foo",
+               { "/Foo/geom/foo/bar/foo",
+                 "/Foo/geom/foo/bar/foo/bar/foo" });
 
-    {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("//chars//"), predLib);
-        auto search = eval.MakeIncrementalSearcher(
-            PathIdentity {}, PathIdentity {});
-        int count = 0;
-        for (SdfPath const &p: paths) {
-            count += search.Next(p) ? 1 : 0;
-        }
-        TF_AXIOM(count == 9);
-    }
+    testSearch("/Foo/g*m//foo//foo/bar/foo",
+               { "/Foo/geom/foo/bar/foo/bar/foo" });
+
+    testSearch("/Foo/g*m/foo//foo/bar",
+               { "/Foo/geom/foo/bar/foo/bar",
+                 "/Foo/geom/foo/bar/foo/bar/foo/bar" });
+
+    testSearch("//Foo//foo/bar",
+               { "/Foo/geom/foo/bar",
+                 "/Foo/geom/foo/bar/foo/bar",
+                 "/Foo/geom/foo/bar/foo/bar/foo/bar" });
     
-    {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("//{isPropertyPath}"), predLib);
-        auto search = eval.MakeIncrementalSearcher(
-            PathIdentity {}, PathIdentity {});
-        int count = 0;
-        for (SdfPath const &p: paths) {
-            count += search.Next(p) ? 1 : 0;
-        }
-        TF_AXIOM(count == 2);
-    }
-    
-    {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("//chars/*/geom/body_sbdv "
-                              "//Bed"), predLib);
-        auto search = eval.MakeIncrementalSearcher(
-            PathIdentity {}, PathIdentity {});
-        for (SdfPath const &p: paths) {
-            if (search.Next(p)) {
-                TF_AXIOM(
-                    p == SdfPath("/World/anim/chars/Mike/geom/body_sbdv") ||
-                    p == SdfPath("/World/anim/chars/Sully/geom/body_sbdv") ||
-                    p == SdfPath("/World/anim/sets/Bedroom/Furniture/Bed"));
-            }
-        }
-    }
+    testSearch("//geom/body_sbdv",
+               { "/World/anim/chars/Mike/geom/body_sbdv",
+                 "/World/anim/chars/Sully/geom/body_sbdv" });
 
-    {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("//*sbdv"), predLib);
-        auto search = eval.MakeIncrementalSearcher(
-            PathIdentity {}, PathIdentity {});
-        for (SdfPath const &p: paths) {
-            if (search.Next(p)) {
-                TF_AXIOM(
-                    p == SdfPath("/World/anim/chars/Mike/geom/body_sbdv") ||
-                    p == SdfPath("/World/anim/chars/Sully/geom/body_sbdv"));
-            }
+    testSearch("//chars//",
+               { "/World/anim/chars",
+                 "/World/anim/chars/Mike",
+                 "/World/anim/chars/Mike/geom",
+                 "/World/anim/chars/Mike/geom/body_sbdv",
+                 "/World/anim/chars/Mike/geom/body_sbdv.points",
+                 "/World/anim/chars/Sully",
+                 "/World/anim/chars/Sully/geom",
+                 "/World/anim/chars/Sully/geom/body_sbdv",
+                 "/World/anim/chars/Sully/geom/body_sbdv.points" });
+
+    testSearch("//{isPropertyPath}",
+               { "/World/anim/chars/Mike/geom/body_sbdv.points",
+                 "/World/anim/chars/Sully/geom/body_sbdv.points" });
+
+    testSearch("//chars/*/geom/body_sbdv //Bed",
+               { "/World/anim/chars/Mike/geom/body_sbdv",
+                 "/World/anim/chars/Sully/geom/body_sbdv",
+                 "/World/anim/sets/Bedroom/Furniture/Bed" });
+
+    testSearch("//*sbdv",
+               { "/World/anim/chars/Mike/geom/body_sbdv",
+                 "/World/anim/chars/Sully/geom/body_sbdv" });
+
+    testSearch("/World//chars//geom/*sbdv",
+               { "/World/anim/chars/Mike/geom/body_sbdv",
+                 "/World/anim/chars/Sully/geom/body_sbdv" });
+
+    testSearch("//*e",
+               { "/World/anim/chars/Mike",
+                 "/World/anim/sets/Bedroom/Furniture" });
+
+}
+
+
+static void
+TestErrors()
+{
+    auto expectBad = [](std::string const &exprTxt) {
+        SdfPathExpression badExpr(exprTxt);
+        if (!badExpr.IsEmpty()) {
+            TF_FATAL_ERROR("Expected '%s' to produce the empty expression",
+                           exprTxt.c_str());
         }
-    }
-    {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("/World//chars//geom/*sbdv"), predLib);
-        auto search = eval.MakeIncrementalSearcher(
-            PathIdentity {}, PathIdentity {});
-        for (SdfPath const &p: paths) {
-            if (search.Next(p)) {
-                TF_AXIOM(
-                    p == SdfPath("/World/anim/chars/Mike/geom/body_sbdv") ||
-                    p == SdfPath("/World/anim/chars/Sully/geom/body_sbdv"));
-            }
+        if (badExpr.GetParseError().empty()) {
+            TF_FATAL_ERROR("Expected parsing '%s' to yield a parse error",
+                           exprTxt.c_str());
         }
-    }
+    };
+
+    fprintf(stderr, "=== Expected errors =======\n");
+
+    expectBad("/foo///");
+    expectBad("-");
+    expectBad("- /foo");
+    expectBad("-/foo");
+    expectBad("/foo-");
+    expectBad("/foo/-");
+    expectBad("/foo/-/bar");
+    
+    fprintf(stderr, "=== End expected errors ===\n");
 }
 
 
@@ -489,6 +473,7 @@ main(int argc, char **argv)
 {
     TestBasics();
     TestSearch();
+    TestErrors();
     
     printf(">>> Test SUCCEEDED\n");
     return 0;

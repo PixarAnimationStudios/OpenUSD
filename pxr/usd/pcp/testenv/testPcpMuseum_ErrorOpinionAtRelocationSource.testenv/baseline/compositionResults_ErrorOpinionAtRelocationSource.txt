@@ -47,3 +47,55 @@ Prim Stack:
 Prohibited child names:
      ['Path']
 
+------------------------------------------------------------------------
+Results for composing </VariantAtRelocateSource>
+
+Prim Stack:
+    root.sdf             /VariantAtRelocateSource
+    ref.sdf              /Ref
+
+Child names:
+     ['Child', 'Sibling', 'Inherit']
+
+------------------------------------------------------------------------
+Results for composing </VariantAtRelocateSource/Child>
+
+Prim Stack:
+    root.sdf             /VariantAtRelocateSource/Child
+    root.sdf             /VariantAtRelocateSource/Child{child=a}
+    ref.sdf              /Ref/Child
+
+Variant Selections:
+    {child = a}
+
+Prohibited child names:
+     ['Child2']
+
+------------------------------------------------------------------------
+Results for composing </VariantAtRelocateSource/Sibling>
+
+Prim Stack:
+    root.sdf             /VariantAtRelocateSource/Sibling
+    root.sdf             /VariantAtRelocateSource/Child{child=a}Child2
+    ref.sdf              /Ref/Child/Child2
+
+Child names:
+     ['Class']
+
+------------------------------------------------------------------------
+Results for composing </VariantAtRelocateSource/Sibling/Class>
+
+Prim Stack:
+    root.sdf             /VariantAtRelocateSource/Sibling/Class
+    root.sdf             /VariantAtRelocateSource/Child{child=a}Child2/Class
+    ref.sdf              /Ref/Child/Child2/Class
+
+------------------------------------------------------------------------
+Results for composing </VariantAtRelocateSource/Inherit>
+
+Prim Stack:
+    root.sdf             /VariantAtRelocateSource/Inherit
+    root.sdf             /VariantAtRelocateSource/Sibling/Class
+    root.sdf             /VariantAtRelocateSource/Child{child=a}Child2/Class
+    ref.sdf              /Ref/Child/Child2/Class
+

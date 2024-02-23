@@ -31,6 +31,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdRenderIndex;
+class HdPrman_RenderParam;
+
 class HdPrman_RenderSettings final : public HdRenderSettings
 {
 public:
@@ -38,17 +41,41 @@ public:
 
     ~HdPrman_RenderSettings() override;
 
-    static bool DriveRenderPass();
+    /// Public API.
+    ///
+    /// Returns whether the prim can be used to drive render pass execution.
+    /// If false is returned, the render pass uses a combination of the
+    /// legacy render settings map and render pass state to drive execution.
+    //
+    bool DriveRenderPass(
+        bool interactive,
+        bool renderPassHasAovBindings) const;
 
-    const RtParamList& GetOptions() const {
-        return _settingsOptions;
-    }
+    // Called during render pass execution.
+    // Updates necessary riley state (camera, render view, scene options) and
+    // invokes riley->Render(..).
+    //
+    // NOTE: Current support is limited to "batch" (i.e., non-interactive)
+    //       rendering.
+    //
+    bool UpdateAndRender(
+        const HdRenderIndex *renderIndex,
+        bool interactive,
+        HdPrman_RenderParam *param);
 
+    /// Virtual API.
     void Finalize(HdRenderParam *renderParam) override;
 
     void _Sync(HdSceneDelegate *sceneDelegate,
                HdRenderParam *renderParam,
                const HdDirtyBits *dirtyBits) override;
+
+private:
+    void _ProcessRenderTerminals(
+        HdSceneDelegate *sceneDelegate,
+        HdPrman_RenderParam *param);
+
+    void _ProcessRenderProducts(HdPrman_RenderParam *param);
 
 private:
     RtParamList _settingsOptions;

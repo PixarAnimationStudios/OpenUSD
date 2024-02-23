@@ -99,8 +99,8 @@ HdxPickFromRenderBufferTask::_ComputeProjectionMatrix() const
 
     if (_params.framing.IsValid()) {
         const CameraUtilConformWindowPolicy policy =
-            _params.overrideWindowPolicy.first
-                ?_params.overrideWindowPolicy.second
+            _params.overrideWindowPolicy
+                ? *_params.overrideWindowPolicy
                 : _camera->GetWindowPolicy();
         return
             _params.framing.ApplyToProjectionMatrix(

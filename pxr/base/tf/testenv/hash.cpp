@@ -29,12 +29,10 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/weakPtr.h"
 
-// We're getting rid of our dependency on boost::hash -- this code is left
-// commented for testing purposes, for now (6/2020).
-//#include <boost/functional/hash.hpp>
-
+#include <optional>
 #include <set>
 #include <string>
+#include <variant>
 #include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -155,23 +153,6 @@ _TestStatsTwo(Hasher const &h, char const *label)
     sw.Stop();
     printf("took %f seconds\n", sw.GetSeconds());
 }
-
-/*  See comment at top of file.
-
-struct BoostHasher
-{
-    size_t operator()(uint64_t x) const {
-        return boost::hash<uint64_t>()(x);
-    }
-    
-    size_t operator()(Two t) const {
-        size_t seed = 0;
-        boost::hash_combine(seed, t.x);
-        boost::hash_combine(seed, t.y);
-        return seed;
-    }
-};
-*/
 
 struct TfHasher
 {
@@ -324,13 +305,21 @@ Test_TfHash()
     // Validate support for std::unique_ptr
     printf("hash(unique_ptr): %zu\n", h(std::make_unique<int>(7)));
 
+    // Validate support for std::optional
+    printf("hash(optional): %zu\n", h(std::make_optional<std::string>("xyz")));
+    TF_AXIOM(h(std::optional<std::string>("xyz")) ==
+             h(std::optional<std::string>("xyz")));
+
+    // Validate support for std::variant
+    printf("hash(variant): %zu\n",
+           h(std::variant<std::string, int, double>("abc")));
+    TF_AXIOM(h(std::variant<std::string, int, double>("abc")) ==
+             h(std::variant<std::string, int, double>("abc")));
+
     TfHasher tfh;
-    //BoostHasher bh;
 
     _TestStatsOne(tfh, "TfHash");
     _TestStatsTwo(tfh, "TfHash");
-    //_TestStatsOne(bh, "Boost hash");
-    //_TestStatsTwo(bh, "Boost hash");
 
     bool status = true;
     return status;

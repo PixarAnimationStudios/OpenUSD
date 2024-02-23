@@ -25,12 +25,9 @@
 #ifndef PXR_IMAGING_HGIMETAL_SHADERGENERATOR_H
 #define PXR_IMAGING_HGIMETAL_SHADERGENERATOR_H
 
-#include "pxr/base/arch/defines.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/imaging/hgiMetal/hgi.h"
-#include "pxr/imaging/hgiMetal/conversions.h"
-#include "pxr/imaging/hgiMetal/shaderSection.h"
 #include "pxr/imaging/hgi/shaderGenerator.h"
+#include "pxr/imaging/hgiMetal/shaderSection.h"
+#include "pxr/imaging/hgiMetal/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -48,6 +45,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 //Stage function entryPoint definition
 //Stage function implementation
 
+class HgiMetal;
+
 using HgiMetalShaderStageEntryPointUniquePtr =
     std::unique_ptr<class HgiMetalShaderStageEntryPoint>;
 
@@ -61,8 +60,8 @@ class HgiMetalShaderGenerator final: public HgiShaderGenerator
 public:
     HGIMETAL_API
     HgiMetalShaderGenerator(
-        const HgiShaderFunctionDesc &descriptor, 
-        id<MTLDevice> device);
+        HgiMetal const *hgi,
+        const HgiShaderFunctionDesc &descriptor);
 
     HGIMETAL_API
     ~HgiMetalShaderGenerator() override;
@@ -84,6 +83,7 @@ private:
 
     void _BuildKeywordInputShaderSections(const HgiShaderFunctionDesc &descriptor);
 
+    HgiMetal const *_hgi;
     HgiMetalShaderSectionUniquePtrVector _shaderSections;
     HgiMetalShaderStageEntryPointUniquePtr _generatorShaderSections;
 };

@@ -33,9 +33,8 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/spec.h"
 
-#include <boost/optional.hpp>
-
 #include <functional>
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -119,7 +118,7 @@ public:
     virtual bool ClearEditsAndMakeExplicit() = 0;
 
     typedef std::function<
-                boost::optional<value_type>(const value_type&)
+                std::optional<value_type>(const value_type&)
             >
         ModifyCallback;
 
@@ -132,7 +131,7 @@ public:
     virtual void ModifyItemEdits(const ModifyCallback& cb) = 0;
 
     typedef std::function<
-                boost::optional<value_type>(SdfListOpType, const value_type&)
+                std::optional<value_type>(SdfListOpType, const value_type&)
             >
         ApplyCallback;
 

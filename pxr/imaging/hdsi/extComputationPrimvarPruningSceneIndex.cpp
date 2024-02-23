@@ -123,8 +123,27 @@ public:
 
         return VtValue();
     }
+    
+    bool
+    GetContributingSampleTimesForInterval(
+        const SdfPath& sourceCompId,
+        const Time startTime,
+        const Time endTime,
+        std::vector<Time>* outSampleTimes)
+    {
+        return _GetSampleTimesFromComputationNetwork(
+            sourceCompId, startTime, endTime, outSampleTimes);
+    }
 
 private:
+
+    using _ComputationDependencyMap =
+        std::unordered_map<SdfPath, SdfPathVector, SdfPath::Hash>;
+    using _ComputationPathToDataSourceMap =
+        std::unordered_map<SdfPath, HdContainerDataSourceHandle, SdfPath::Hash>;
+    using _PathQueue = std::deque<SdfPath>;
+    using TokenPair = std::pair<TfToken, TfToken>;
+    using TokenPairs = std::vector<TokenPair>;
 
     static SdfPathVector
     _GetInputComputationPaths(HdVectorDataSourceHandle inputCompsDs)
@@ -150,9 +169,49 @@ private:
         return result;
     }
 
+    void
+    _GatherComputationSources(
+        const SdfPath& sourceCompId,
+        _ComputationPathToDataSourceMap* compDsMap,
+        _ComputationDependencyMap* compDepMap)
+    {
+        TF_VERIFY(compDsMap);
+        TF_VERIFY(compDepMap);
 
-    using TokenPair = std::pair<TfToken, TfToken>;
-    using TokenPairs = std::vector<TokenPair>;
+        // Use a deque to add and subsequently visit dependent computations,
+        // using the dependency map to track the ones we've visited.
+        _PathQueue compsQueue = { sourceCompId };
+        
+        while (!compsQueue.empty()) {
+            const SdfPath& curCompId = compsQueue.front();
+            compsQueue.pop_front();
+            
+            // Nothing to do since we've already processed this computation
+            // previously.
+            if (compDepMap->find(curCompId) != compDepMap->end()) {
+                continue;
+            }
+            
+            // Add computations directly feeding curCompId and update
+            // bookkeeping.
+            HdSceneIndexPrim prim = _si->GetPrim(curCompId);
+            if (HdExtComputationSchema curCompSchema =
+                HdExtComputationSchema::GetFromParent(prim.dataSource)) {
+                
+                // compId -> dataSource
+                (*compDsMap)[curCompId] = curCompSchema.GetContainer();
+                
+                // dependency entry
+                auto& entry = (*compDepMap)[curCompId];
+                entry = _GetInputComputationPaths(
+                    curCompSchema.GetInputComputations());
+                
+                // comps to visit
+                compsQueue.insert(compsQueue.end(), entry.begin(), entry.end());
+            }
+        }
+    }
+
 
     static TokenPairs
     _GetComputationInputAndSourceOutputNames(
@@ -208,6 +267,31 @@ private:
 
         return result;
     }
+    
+    bool _GetSampleTimesFromComputationNetwork(
+        const SdfPath& sourceCompId,
+        const Time& startTime,
+        const Time& endTime,
+        std::vector<Time>* outSampleTimes)
+    {
+        _ComputationPathToDataSourceMap compDsMap;
+        {
+            _ComputationDependencyMap compDepMap;
+            _GatherComputationSources(sourceCompId, &compDsMap, &compDepMap);
+        }
+        std::vector<HdSampledDataSourceHandle> sources;
+        for (const auto& comp : compDsMap) {
+            HdExtComputationSchema cs(comp.second);
+            HdContainerDataSourceHandle inputDs = cs.GetInputValues();
+            for (const TfToken& name : inputDs->GetNames()) {
+                if (auto sds = HdSampledDataSource::Cast(inputDs->Get(name))) {
+                    sources.push_back(sds);
+                }
+            }
+        }
+        return HdGetMergedContributingSampleTimesForInterval(
+            sources.size(), sources.data(), startTime, endTime, outSampleTimes);
+    }
 
     // Execute the computation network by traversing the network backwards from
     // the terminal node "sourceCompId" and return the computed results as
@@ -222,12 +306,6 @@ private:
 
         // XXX The generic algorithm below might be overkill for the
         //     small size of ExtComputation networks (typically 2-3 nodes).
-        using _ComputationDependencyMap =
-            std::unordered_map<SdfPath, SdfPathVector, SdfPath::Hash>;
-        using _ComputationPathToDataSourceMap =
-            std::unordered_map<
-                SdfPath, HdContainerDataSourceHandle, SdfPath::Hash>;
-        using _ComputationQueue = std::deque<SdfPath>;
         
         // Track dependencies for each computation. Note that this map is
         // mutated when we order the computations in the subsequent step.
@@ -237,47 +315,12 @@ private:
         _ComputationPathToDataSourceMap compDsMap;
 
         // Populate computation dependency & data source maps.
-        {
-            // Use a deque to add and subsequently visit dependent computations,
-            // using the dependency map to track the ones we've visited.
-            _ComputationQueue compsQueue = { sourceCompId };
-
-            while (!compsQueue.empty()) {
-                SdfPath curCompId = compsQueue.front();
-                compsQueue.pop_front();
-
-                // Nothing to do since we've already processed this computation
-                // previously.
-                if (compDepMap.find(curCompId) != compDepMap.end()) { 
-                    continue;
-                }
-
-                // Add computations directly feeding curCompId and update
-                // bookkeeping.
-                HdSceneIndexPrim prim = _si->GetPrim(curCompId);
-                if (HdExtComputationSchema curCompSchema =
-                        HdExtComputationSchema::GetFromParent(
-                            prim.dataSource)) {
-
-                    // compId -> dataSource
-                    compDsMap[curCompId] = curCompSchema.GetContainer();
-                    
-                    // dependency entry
-                    auto &entry = compDepMap[curCompId];
-                    entry = _GetInputComputationPaths(
-                        curCompSchema.GetInputComputations());
-                    
-                    // comps to visit
-                    compsQueue.insert(
-                        compsQueue.end(), entry.begin(), entry.end());
-                }
-            }
-        }
+        _GatherComputationSources(sourceCompId, &compDsMap, &compDepMap);
 
         // Topological ordering of computations (Kahn's algorithm).
         SdfPathVector orderedComps;
         {
-            _ComputationQueue compsQueue;
+            _PathQueue compsQueue;
 
             using _MapIterator = _ComputationDependencyMap::iterator;
 
@@ -498,9 +541,15 @@ public:
         Time endTime,
         std::vector<Time> * outSampleTimes) override
     {
-        // XXX This requires aggregating time samples from the inputs.
-        //     For now, return false, indicating that the output value is
-        //     uniform over the shutter window. 
+        // Gather and combine all contributing sample times for each input.
+        HdExtComputationPrimvarSchema s(_input);
+        HdPathDataSourceHandle h1 = s.GetSourceComputation();
+        if (h1) {
+            SdfPath sourceComp = h1->GetTypedValue(0.0f);
+            return _ctx->GetContributingSampleTimesForInterval(
+                sourceComp, startTime, endTime, outSampleTimes);
+        }
+        *outSampleTimes = { 0.0f };
         return false;
     }
 

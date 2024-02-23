@@ -37,7 +37,7 @@ TF_DECLARE_REF_PTRS(UsdImagingDrawModeSceneIndex);
 /// A scene index replacing geometry based on the draw mode.
 ///
 /// Inspects a prim's values for drawMode and applyDrawMode (see
-/// UsdImagingModelSchema).
+/// UsdImagingGeomModelSchema).
 /// If the drawMode is valid and not the default and applyDrawMode is true,
 /// the prim and all its descendents are replaced by stand-in geometry
 /// specified by the draw mode.

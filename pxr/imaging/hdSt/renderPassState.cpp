@@ -53,7 +53,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/array.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -829,17 +829,19 @@ HdStRenderPassState::GetShaderHash() const
 {
     size_t hash = 0;
     if (_lightingShader) {
-        boost::hash_combine(hash, _lightingShader->ComputeHash());
+        hash = TfHash::Combine(hash, _lightingShader->ComputeHash());
     }
     if (_renderPassShader) {
-        boost::hash_combine(hash, _renderPassShader->ComputeHash());
+        hash = TfHash::Combine(hash, _renderPassShader->ComputeHash());
     }
 
     // See note earlier about avoiding shader variants when 0-4 clip planes are
     // used.
-    boost::hash_combine(hash, _clipPlanesBufferSize);
-    boost::hash_combine(hash, _UseAlphaMask());
-    return hash;
+    return TfHash::Combine(
+        hash,
+        _clipPlanesBufferSize,
+        _UseAlphaMask()
+    );
 }
 
 static
@@ -1099,7 +1101,8 @@ HdStRenderPassState::_InitPrimitiveState(
 
 void
 HdStRenderPassState::_InitAttachmentState(
-    HgiGraphicsPipelineDesc * pipeDesc) const
+    HgiGraphicsPipelineDesc * pipeDesc,
+    bool firstDrawBatch) const
 {
     // For Metal and Vulkan, we have to pass the color and depth descriptors 
     // down so that they are available when creating the Render Pipeline State
@@ -1111,6 +1114,13 @@ HdStRenderPassState::_InitAttachmentState(
         HgiAttachmentDesc attachment;
         _InitAttachmentDesc(
             attachment, binding, binding.renderBuffer, aovIndex);
+
+        // For HgiVulkan, don't want to run a clear operation unless this is 
+        // the first draw batch in a graphics cmds submission.
+        if (!firstDrawBatch) {
+            attachment.loadOp = HgiAttachmentLoadOpLoad;
+            attachment.clearValue = GfVec4f(0);
+        }
 
         if (HdAovHasDepthSemantic(binding.aovName) ||
             HdAovHasDepthStencilSemantic(binding.aovName)) {
@@ -1222,18 +1232,20 @@ HdStRenderPassState::_InitRasterizationState(
 void
 HdStRenderPassState::InitGraphicsPipelineDesc(
     HgiGraphicsPipelineDesc * pipeDesc,
-    HdSt_GeometricShaderSharedPtr const & geometricShader) const
+    HdSt_GeometricShaderSharedPtr const & geometricShader,
+    bool firstDrawBatch) const
 {
     _InitPrimitiveState(pipeDesc, geometricShader);
     _InitDepthStencilState(&pipeDesc->depthState);
     _InitMultiSampleState(&pipeDesc->multiSampleState);
     _InitRasterizationState(&pipeDesc->rasterizationState, geometricShader);
-    _InitAttachmentState(pipeDesc);
+    _InitAttachmentState(pipeDesc, firstDrawBatch);
 }
 
 uint64_t
 HdStRenderPassState::GetGraphicsPipelineHash(
-    HdSt_GeometricShaderSharedPtr const & geometricShader) const
+    HdSt_GeometricShaderSharedPtr const & geometricShader,
+    bool firstDrawBatch) const
 {
     // Hash all of the state that is captured in the pipeline state object.
     uint64_t hash = TfHash::Combine(
@@ -1274,7 +1286,7 @@ HdStRenderPassState::GetGraphicsPipelineHash(
         geometricShader->ResolveCullMode(_cullStyle),
         geometricShader->GetHgiPrimitiveType(),
         geometricShader->GetPrimitiveIndexSize());
-    
+
     // Hash the aov bindings by name and format.
     for (HdRenderPassAovBinding const& binding : GetAovBindings()) {
         HdStRenderBuffer *renderBuffer =
@@ -1282,13 +1294,16 @@ HdStRenderPassState::GetGraphicsPipelineHash(
         
         const uint32_t msaaCount = renderBuffer->IsMultiSampled() ?
             renderBuffer->GetMSAASampleCount() : 1;
-
+        const bool clear =
+            firstDrawBatch ? !binding.clearValue.IsEmpty() : false;
+        
         hash = TfHash::Combine(hash,
                                binding.aovName,
                                renderBuffer->GetFormat(),
-                               msaaCount);
+                               msaaCount,
+                               clear);
     }
-    
+
     return hash;
 }
 

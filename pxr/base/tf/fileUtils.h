@@ -225,9 +225,9 @@ TfReadDir(std::string const &dirPath,
 ///
 /// A simple touch-like functionality. Simple in a sense that it does not
 /// offer as many options as the same-name unix touch command, but otherwise
-/// is identical to the default touch behavior. If \p create is true, an empty
-/// file gets created, otherwise the touch call fails if the file does not
-/// already exist. 
+/// is identical to the default touch behavior. If \p create is true and 
+/// the file does not already exist, an empty file gets created, otherwise
+/// the touch call fails if the file does not already exist.
 TF_API
 bool TfTouchFile(std::string const &fileName, bool create=true);
 

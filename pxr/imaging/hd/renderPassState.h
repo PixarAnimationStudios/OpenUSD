@@ -43,6 +43,8 @@
 
 #include <memory>
 
+#include <optional>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -86,12 +88,9 @@ public:
     /// if its aspect ratio is not matching the display window/viewport.
     /// If first value is false, the HdCamera's window policy is used.
     ///
-    /// Note: using std::pair<bool, ...> here instead of std::optional<...>
-    /// since the latter is only available in C++17 or later.
-    /// 
     HD_API
     void SetOverrideWindowPolicy(
-        const std::pair<bool, CameraUtilConformWindowPolicy> &
+        const std::optional<CameraUtilConformWindowPolicy> &
             overrideWindowPolicy);
 
     /// Sets the framing to show the camera. If a valid framing is set, a
@@ -106,25 +105,6 @@ public:
     HD_API
     void SetViewport(const GfVec4d &viewport);
 
-    ///
-    /// \deprecated Use SetCamera, SetFraming and SetOverrideWindowPolicy
-    /// instead.
-    ///
-    HD_API
-    void SetCameraAndFraming(
-        const HdCamera *camera,
-        const CameraUtilFraming &framing,
-        const std::pair<bool, CameraUtilConformWindowPolicy> &
-                                            overrideWindowPolicy);
-
-    ///
-    /// \deprecated Use SetCamera, SetViewport and SetOverrideWindowPolicy
-    /// instead.
-    ///
-    HD_API
-    void SetCameraAndViewport(const HdCamera *camera,
-                              const GfVec4d &viewport);
-
     /// Get camera
     HdCamera const *
     GetCamera() const { return _camera; }
@@ -136,7 +116,7 @@ public:
 
     /// The override value for the window policy to conform the camera 
     /// frustum that can be specified by the application.
-    const std::pair<bool, CameraUtilConformWindowPolicy> &
+    const std::optional<CameraUtilConformWindowPolicy> &
     GetOverrideWindowPolicy() const { return _overrideWindowPolicy; }
 
     /// The resolved window policy to conform the camera frustum.
@@ -376,7 +356,7 @@ protected:
     HdCamera const *_camera;
     GfVec4f _viewport;
     CameraUtilFraming _framing;
-    std::pair<bool, CameraUtilConformWindowPolicy> _overrideWindowPolicy;
+    std::optional<CameraUtilConformWindowPolicy> _overrideWindowPolicy;
 
     // ---------------------------------------------------------------------- //
     // Application rendering state

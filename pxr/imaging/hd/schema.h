@@ -28,7 +28,6 @@
 #include "pxr/imaging/hd/api.h"
 
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
-#include "pxr/imaging/hd/vectorSchemaTypeDefs.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -57,6 +56,7 @@ public:
     /// container.
     explicit operator bool() const { return IsDefined(); }
 
+    using UnderlyingDataSource = HdContainerDataSource;
 
 protected:
     HdContainerDataSourceHandle _container;

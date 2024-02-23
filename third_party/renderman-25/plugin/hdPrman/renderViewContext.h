@@ -86,9 +86,13 @@ public:
     void CreateRenderView(
         const HdPrman_RenderViewDesc &desc,
         riley::Riley * riley);
+
+    void DeleteRenderView(riley::Riley * riley);
+
     void SetIntegratorId(
         riley::IntegratorId id,
         riley::Riley * riley);
+
     void SetResolution(
         const GfVec2i &resolution,
         riley::Riley * riley);
@@ -97,8 +101,6 @@ public:
 
 private:
     HdPrman_RenderViewContext(const HdPrman_RenderViewContext &) = delete;
-
-    void _DestroyRenderView(riley::Riley * riley);
 
     std::vector<riley::RenderOutputId> _renderOutputIds;
     std::vector<riley::DisplayId> _displayIds;

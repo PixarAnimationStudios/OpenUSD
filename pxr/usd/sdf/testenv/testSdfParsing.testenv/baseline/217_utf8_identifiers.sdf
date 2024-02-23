@@ -1,0 +1,24 @@
+#sdf 1.4.32
+(
+    defaultPrim = "_Süßigkeiten"
+    doc = "Tests UTF-8 content in prim names and custom data."
+)
+
+def Xform "_Süßigkeiten" (
+    customData = {
+        int "存在する" = 7
+    }
+)
+{
+    string utf8_情報 = "._جيد"
+    custom double3 xformOp:translate = (4, 5, 6)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Sphere "ⅈ573"
+    {
+        float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+        color3f[] primvars:displayColor = [(0, 0, 1)]
+        double radius = 2
+    }
+}
+

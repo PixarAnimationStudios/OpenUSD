@@ -43,6 +43,7 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
         colorOut = vec4(color.rgb, 1);
     } else {
         discard;
+        return;
     }
 }
 
@@ -122,7 +123,7 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     // There are two render passes for ordinary OIT geometry.
     // Fragments with alpha >= 1.0 are handled in the first (opaque)
     // render pass.
-    if (color.a < 1.0 && color.a > 0.0001) {
+    if (color.a < 1.0 && color.a >= 0.0001) {
         RenderOutputImpl(Peye, Neye, color, patchCoord);
     }
 }

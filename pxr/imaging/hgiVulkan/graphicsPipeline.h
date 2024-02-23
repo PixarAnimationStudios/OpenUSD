@@ -38,7 +38,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HgiVulkanDevice;
 
 using VkDescriptorSetLayoutVector = std::vector<VkDescriptorSetLayout>;
-using VkClearValueVector = std::vector<VkClearValue>;
 
 /// \class HgiVulkanPipeline
 ///
@@ -72,13 +71,17 @@ public:
         HgiGraphicsCmdsDesc const& gfxDesc,
         GfVec2i* dimensions);
 
-    /// Returns the clear values for each color and depth attachment.
-    HGIVULKAN_API
-    VkClearValueVector const& GetClearValues() const;
-
     /// Returns the (writable) inflight bits of when this object was trashed.
     HGIVULKAN_API
     uint64_t & GetInflightBits();
+
+    /// Returns true if any of the attachments in HgiGraphicsPipelineDesc 
+    /// specify a clear operation.
+    HGIVULKAN_API
+    bool GetClearNeeded() const
+    {
+        return _clearNeeded;
+    }
 
 protected:
     friend class HgiVulkan;
@@ -93,6 +96,12 @@ private:
     HgiVulkanGraphicsPipeline & operator=(const HgiVulkanGraphicsPipeline&) = delete;
     HgiVulkanGraphicsPipeline(const HgiVulkanGraphicsPipeline&) = delete;
 
+    void _ProcessAttachment(
+        HgiAttachmentDesc const& attachment,
+        uint32_t attachmentIndex,
+        HgiSampleCount sampleCount,
+        VkAttachmentDescription2* vkAttachDesc,
+        VkAttachmentReference2* vkRef);
     void _CreateRenderPass();
 
     struct HgiVulkan_Framebuffer {
@@ -107,7 +116,7 @@ private:
     VkRenderPass _vkRenderPass;
     VkPipelineLayout _vkPipelineLayout;
     VkDescriptorSetLayoutVector _vkDescriptorSetLayouts;
-    VkClearValueVector _vkClearValues;
+    bool _clearNeeded;
 
     std::vector<HgiVulkan_Framebuffer> _framebuffers;
 };

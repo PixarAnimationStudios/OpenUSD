@@ -39,7 +39,7 @@
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/envSetting.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -205,12 +205,11 @@ HdSt_MaterialNetworkShader::_ComputeHash() const
 {
     size_t hash = HdSt_MaterialParam::ComputeHash(_params);
 
-    boost::hash_combine(hash, 
-        ArchHash(_fragmentSource.c_str(), _fragmentSource.size()));
-    boost::hash_combine(hash, 
-        ArchHash(_geometrySource.c_str(), _geometrySource.size()));
-    boost::hash_combine(hash,
-        ArchHash(_displacementSource.c_str(), _displacementSource.size()));
+    hash = TfHash::Combine(hash, 
+        ArchHash(_fragmentSource.c_str(), _fragmentSource.size()),
+        ArchHash(_geometrySource.c_str(), _geometrySource.size()),
+        ArchHash(_displacementSource.c_str(), _displacementSource.size())
+    );
 
     // Codegen is inspecting the shader bar spec to generate some
     // of the struct's, so we should probably use _paramSpec
@@ -233,8 +232,7 @@ HdSt_MaterialNetworkShader::_ComputeTextureSourceHash() const
              _namedTextureHandles) {
 
         // Use name, texture object and sampling parameters.
-        boost::hash_combine(hash, namedHandle.name);
-        boost::hash_combine(hash, namedHandle.hash);
+        hash = TfHash::Combine(hash, namedHandle.name, namedHandle.hash);
     }
     
     return hash;

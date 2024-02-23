@@ -27,6 +27,7 @@
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/node_Iterator.h"
 #include "pxr/usd/pcp/primIndex_StackFrame.h"
+#include "pxr/usd/pcp/utils.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/vt/value.h"
 
@@ -81,13 +82,14 @@ private:
     // composition should stop.
     template <typename ComposeFunc>
     bool _ComposeOpinionInSubtree(const PcpNodeRef &node,
+                                  const SdfPath &pathInNode,
                                   const TfToken &propName,
                                   const TfToken &fieldName, 
                                   const ComposeFunc &composeFunc)
     {
         // Get the prim or property path within the node's spec.
         const SdfPath &path = propName.IsEmpty() ? 
-            node.GetPath() : node.GetPath().AppendProperty(propName);
+            pathInNode : pathInNode.AppendProperty(propName);
 
         // Search the node's layer stack in strength order for the field on
         // the spec.
@@ -105,8 +107,27 @@ private:
         }
 
         TF_FOR_ALL(childNode, Pcp_GetChildrenRange(node)) {
+            // Map the path in this node to the next child node, also applying
+            // any variant selections represented by the child node.
+            SdfPath pathInChildNode = 
+                childNode->GetMapToParent().MapTargetToSource(
+                    pathInNode.StripAllVariantSelections());
+            if (pathInChildNode.IsEmpty()) {
+                continue;
+            }
+
+            if (const SdfPath childNodePathAtIntro =
+                    childNode->GetPathAtIntroduction();
+                childNodePathAtIntro.ContainsPrimVariantSelection()) {
+
+                pathInChildNode = pathInChildNode.ReplacePrefix(
+                    childNodePathAtIntro.StripAllVariantSelections(),
+                    childNodePathAtIntro);
+            }
+
             if (_ComposeOpinionInSubtree(
-                    *childNode, propName, fieldName, composeFunc)) {
+                    *childNode, pathInChildNode, 
+                    propName, fieldName, composeFunc)) {
                 return true;
             }
         }
@@ -123,21 +144,45 @@ private:
         const TfToken &fieldName, 
         const ComposeFunc &composeFunc)
     {
-        PcpNodeRef currentNode = _iterator.node;
+        return _ComposeOpinionFromAncestors(
+            _iterator.node, _iterator.node.GetPath(),
+            propName, fieldName, composeFunc);
+    }
 
-        // Try parent node.
-        _iterator.Next();
-        if (_iterator.node) {
-            // Recurse on parent node's ancestors.
+    template <typename ComposeFunc>
+    bool _ComposeOpinionFromAncestors(
+        const PcpNodeRef &node,
+        const SdfPath &pathInNode,
+        const TfToken &propName,
+        const TfToken &fieldName, 
+        const ComposeFunc &composeFunc)
+    {
+        // Translate the path from the given node's namespace to
+        // the root of the node's prim index.
+        const auto [rootmostPath, rootmostNode] = 
+            Pcp_TranslatePathFromNodeToRootOrClosestNode(node, pathInNode);
+
+        // If we were able to translate the path all the way to the root
+        // node, and we're in the middle of a recursive prim indexing
+        // call, map across the previous frame and recurse.
+        if (rootmostNode.IsRootNode() && _iterator.previousFrame) {
+            PcpNodeRef parentNode = _iterator.previousFrame->parentNode;
+            SdfPath parentNodePath = _iterator.previousFrame->arcToParent->
+                mapToParent.MapSourceToTarget(
+                    rootmostPath.StripAllVariantSelections());
+
+            _iterator.NextFrame();
+
             if (_ComposeOpinionFromAncestors(
-                    propName, fieldName, composeFunc)) {
+                    parentNode, parentNodePath, propName, fieldName,
+                    composeFunc)) {
                 return true;
             }
         }
 
-        // Otherwise compose from the current node and its subtrees.
+        // Compose opinions in the subtree.
         if (_ComposeOpinionInSubtree(
-                currentNode, propName, fieldName, composeFunc)) {
+                rootmostNode, rootmostPath, propName, fieldName, composeFunc)) {
             return true;
         }
         return false;

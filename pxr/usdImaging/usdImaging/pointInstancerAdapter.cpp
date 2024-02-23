@@ -2226,13 +2226,6 @@ UsdImagingPointInstancerAdapter::GetInstanceIndices(
                         instancerPrim, time);
 
                 if (pathIndex >= indices.size()) {
-                    TF_WARN("ProtoIndex %lu out of bounds "
-                            "(prototypes size = %lu) for (%s, %s)",
-                                    pathIndex,
-                                    indices.size(),
-                                    instancerCachePath.GetText(),
-                                    prototypeCachePath.GetText());
-                    
                     return VtValue();
                 }
                 return VtValue(indices[pathIndex]);

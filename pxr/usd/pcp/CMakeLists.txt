@@ -63,6 +63,9 @@ pxr_library(pcp
         statistics
         utils
 
+    PRIVATE_HEADERS
+        traversalCache.h
+
     PYTHON_CPPFILES
         moduleDeps.cpp
 
@@ -104,6 +107,7 @@ pxr_test_scripts(
     testenv/testPcpLayerMuting.py
     testenv/testPcpDependencies.py
     testenv/testPcpPathTranslation.py
+    testenv/testPcpPrimIndex.py
     testenv/testPcpDynamicFileFormatPlugin.py
     testenv/testPcpMapFunction.py
     testenv/testPcpOwner.py
@@ -493,6 +497,21 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_PayloadsAndAncestralArcs2.testenv
+    DEST testPcpMuseum_PayloadsAndAncestralArcs2
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_PayloadsAndAncestralArcs3.testenv
+    DEST testPcpMuseum_PayloadsAndAncestralArcs3_allpayloads
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_PayloadsAndAncestralArcs3.testenv
+    DEST testPcpMuseum_PayloadsAndAncestralArcs3_refpayloadsonly
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_ReferenceListOpsWithOffsets.testenv
     DEST testPcpMuseum_ReferenceListOpsWithOffsets
 )
@@ -545,6 +564,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_SubrootReferenceAndVariants.testenv
     DEST testPcpMuseum_SubrootReferenceAndVariants
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_SubrootReferenceAndVariants2.testenv
+    DEST testPcpMuseum_SubrootReferenceAndVariants2
 )
 
 pxr_install_test_dir(
@@ -713,6 +737,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_TrickyVariantSelectionInVariant2.testenv
+    DEST testPcpMuseum_TrickyVariantSelectionInVariant2
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_TrickyVariantWeakerSelection.testenv
     DEST testPcpMuseum_TrickyVariantWeakerSelection
 )
@@ -725,6 +754,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_TrickyVariantWeakerSelection3.testenv
     DEST testPcpMuseum_TrickyVariantWeakerSelection3
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_TrickyVariantWeakerSelection4.testenv
+    DEST testPcpMuseum_TrickyVariantWeakerSelection4
 )
 
 pxr_install_test_dir(
@@ -845,6 +879,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_TrickyMultipleRelocations4.testenv
     DEST testPcpMuseum_TrickyMultipleRelocations4
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_TrickyMultipleRelocations5.testenv
+    DEST testPcpMuseum_TrickyMultipleRelocations5
 )
 
 pxr_install_test_dir(
@@ -999,8 +1038,8 @@ pxr_register_test(testPcpMuseum_BasicAncestralReference
 pxr_register_test(testPcpMuseum_BasicReferenceDiamond
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicReferenceDiamond/root.sdf" 
-    STDOUT_REDIRECT compositionResults_BasicReferenceDiamond_pcp.txt
-    DIFF_COMPARE compositionResults_BasicReferenceDiamond_pcp.txt 
+    STDOUT_REDIRECT compositionResults_BasicReferenceDiamond.txt
+    DIFF_COMPARE compositionResults_BasicReferenceDiamond.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicRelocateToAnimInterface
@@ -1036,8 +1075,8 @@ pxr_register_test(testPcpMuseum_BasicListEditing
 pxr_register_test(testPcpMuseum_BasicListEditingWithInherits
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicListEditingWithInherits/root.sdf" 
-    STDOUT_REDIRECT compositionResults_BasicListEditingWithInherits_pcp.txt
-    DIFF_COMPARE compositionResults_BasicListEditingWithInherits_pcp.txt 
+    STDOUT_REDIRECT compositionResults_BasicListEditingWithInherits.txt
+    DIFF_COMPARE compositionResults_BasicListEditingWithInherits.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicDuplicateSublayer
@@ -1064,8 +1103,8 @@ pxr_register_test(testPcpMuseum_BasicNestedPayload
 pxr_register_test(testPcpMuseum_BasicNestedVariants
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicNestedVariants/root.sdf" 
-    STDOUT_REDIRECT compositionResults_BasicNestedVariants_pcp.txt
-    DIFF_COMPARE compositionResults_BasicNestedVariants_pcp.txt 
+    STDOUT_REDIRECT compositionResults_BasicNestedVariants.txt
+    DIFF_COMPARE compositionResults_BasicNestedVariants.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicNestedVariantsWithSameName
@@ -1098,9 +1137,9 @@ pxr_register_test(testPcpMuseum_BasicOwner
 
 pxr_register_test(testPcpMuseum_BasicPayload
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --session BasicPayload/session.sdf --errorFile compositionErrors_BasicPayload_pcp.txt BasicPayload/root.sdf" 
-    STDOUT_REDIRECT compositionResults_BasicPayload_pcp.txt
-    DIFF_COMPARE compositionResults_BasicPayload_pcp.txt compositionErrors_BasicPayload_pcp.txt
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --session BasicPayload/session.sdf --errorFile compositionErrors_BasicPayload.txt BasicPayload/root.sdf" 
+    STDOUT_REDIRECT compositionResults_BasicPayload.txt
+    DIFF_COMPARE compositionResults_BasicPayload.txt compositionErrors_BasicPayload.txt
 )
 
 pxr_register_test(testPcpMuseum_BasicSpecializes
@@ -1171,7 +1210,6 @@ pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits_graph
     TESTENV testPcpMuseum_ImpliedAndAncestralInherits
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --dumpPath /World/CharGroup/Sim/includes/Hand/Geom --dumpMaps ImpliedAndAncestralInherits/root.sdf" 
     STDOUT_REDIRECT compositionResults_ImpliedAndAncestralInherits_graph.txt
-    CLEAN_OUTPUT "[^@]*/ImpliedAndAncestralInherits/"
     DIFF_COMPARE compositionResults_ImpliedAndAncestralInherits_graph.txt 
 )
 
@@ -1187,6 +1225,27 @@ pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --payloads ^(?!/Root/UnloadedInheritedPayload) PayloadsAndAncestralArcs/root.sdf" 
     STDOUT_REDIRECT compositionResults_PayloadsAndAncestralArcs.txt
     DIFF_COMPARE compositionResults_PayloadsAndAncestralArcs.txt 
+)
+
+pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults PayloadsAndAncestralArcs2/root.sdf" 
+    STDOUT_REDIRECT compositionResults_PayloadsAndAncestralArcs2.txt
+    DIFF_COMPARE compositionResults_PayloadsAndAncestralArcs2.txt 
+)
+
+pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs3_allpayloads
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults PayloadsAndAncestralArcs3/root.sdf" 
+    STDOUT_REDIRECT compositionResults_PayloadsAndAncestralArcs3_allpayloads.txt
+    DIFF_COMPARE compositionResults_PayloadsAndAncestralArcs3_allpayloads.txt 
+)
+
+pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs3_refpayloadsonly
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --payloads '.*Reference.*' PayloadsAndAncestralArcs3/root.sdf" 
+    STDOUT_REDIRECT compositionResults_PayloadsAndAncestralArcs3_refpayloadsonly.txt
+    DIFF_COMPARE compositionResults_PayloadsAndAncestralArcs3_refpayloadsonly.txt 
 )
 
 pxr_register_test(testPcpMuseum_ReferenceListOpsWithOffsets
@@ -1266,6 +1325,13 @@ pxr_register_test(testPcpMuseum_SubrootReferenceAndVariants
     DIFF_COMPARE compositionResults_SubrootReferenceAndVariants.txt compositionErrors_SubrootReferenceAndVariants.txt 
     ENV 
         SDF_SCHEMA_PROHIBIT_INVALID_VARIANT_SELECTIONS=0
+)
+
+pxr_register_test(testPcpMuseum_SubrootReferenceAndVariants2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SubrootReferenceAndVariants2/root.sdf" 
+    STDOUT_REDIRECT compositionResults_SubrootReferenceAndVariants2.txt
+    DIFF_COMPARE compositionResults_SubrootReferenceAndVariants2.txt
 )
 
 pxr_register_test(testPcpMuseum_TimeCodesPerSecond1
@@ -1386,8 +1452,8 @@ pxr_register_test(testPcpMuseum_TypicalReferenceToRiggedModel
 pxr_register_test(testPcpMuseum_TypicalReferenceToChargroup
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TypicalReferenceToChargroup/root.sdf" 
-    STDOUT_REDIRECT compositionResults_TypicalReferenceToChargroup_pcp.txt
-    DIFF_COMPARE compositionResults_TypicalReferenceToChargroup_pcp.txt 
+    STDOUT_REDIRECT compositionResults_TypicalReferenceToChargroup.txt
+    DIFF_COMPARE compositionResults_TypicalReferenceToChargroup.txt 
 )
 
 pxr_register_test(testPcpMuseum_TypicalReferenceToChargroupWithRename
@@ -1407,8 +1473,8 @@ pxr_register_test(testPcpMuseum_TrickyListEditedTargetPaths
 pxr_register_test(testPcpMuseum_TrickySpookyInherits
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpookyInherits/root.sdf" 
-    STDOUT_REDIRECT compositionResults_TrickySpookyInherits_pcp.txt
-    DIFF_COMPARE compositionResults_TrickySpookyInherits_pcp.txt 
+    STDOUT_REDIRECT compositionResults_TrickySpookyInherits.txt
+    DIFF_COMPARE compositionResults_TrickySpookyInherits.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickySpookyInheritsInSymmetricArmRig
@@ -1477,15 +1543,15 @@ pxr_register_test(testPcpMuseum_SubrootReferenceNonCycle
 pxr_register_test(testPcpMuseum_TrickyVariantAncestralSelection
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantAncestralSelection/root.sdf" 
-    STDOUT_REDIRECT compositionResults_TrickyVariantAncestralSelection_pcp.txt
-    DIFF_COMPARE compositionResults_TrickyVariantAncestralSelection_pcp.txt 
+    STDOUT_REDIRECT compositionResults_TrickyVariantAncestralSelection.txt
+    DIFF_COMPARE compositionResults_TrickyVariantAncestralSelection.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyVariantIndependentSelection
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantIndependentSelection/root.sdf" 
-    STDOUT_REDIRECT compositionResults_TrickyVariantIndependentSelection_pcp.txt
-    DIFF_COMPARE compositionResults_TrickyVariantIndependentSelection_pcp.txt 
+    STDOUT_REDIRECT compositionResults_TrickyVariantIndependentSelection.txt
+    DIFF_COMPARE compositionResults_TrickyVariantIndependentSelection.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyVariantInPayload
@@ -1512,15 +1578,22 @@ pxr_register_test(testPcpMuseum_TrickyVariantOverrideOfRelocatedPrim
 pxr_register_test(testPcpMuseum_TrickyVariantSelectionInVariant
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantSelectionInVariant/root.sdf" 
-    STDOUT_REDIRECT compositionResults_TrickyVariantSelectionInVariant_pcp.txt
-    DIFF_COMPARE compositionResults_TrickyVariantSelectionInVariant_pcp.txt 
+    STDOUT_REDIRECT compositionResults_TrickyVariantSelectionInVariant.txt
+    DIFF_COMPARE compositionResults_TrickyVariantSelectionInVariant.txt 
+)
+
+pxr_register_test(testPcpMuseum_TrickyVariantSelectionInVariant2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantSelectionInVariant2/root.sdf" 
+    STDOUT_REDIRECT compositionResults_TrickyVariantSelectionInVariant2.txt
+    DIFF_COMPARE compositionResults_TrickyVariantSelectionInVariant2.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyVariantWeakerSelection
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantWeakerSelection/root.sdf" 
-    STDOUT_REDIRECT compositionResults_TrickyVariantWeakerSelection_pcp.txt
-    DIFF_COMPARE compositionResults_TrickyVariantWeakerSelection_pcp.txt 
+    STDOUT_REDIRECT compositionResults_TrickyVariantWeakerSelection.txt
+    DIFF_COMPARE compositionResults_TrickyVariantWeakerSelection.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyVariantWeakerSelection2
@@ -1535,6 +1608,13 @@ pxr_register_test(testPcpMuseum_TrickyVariantWeakerSelection3
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantWeakerSelection3/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyVariantWeakerSelection3.txt
     DIFF_COMPARE compositionResults_TrickyVariantWeakerSelection3.txt 
+)
+
+pxr_register_test(testPcpMuseum_TrickyVariantWeakerSelection4
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantWeakerSelection4/root.sdf" 
+    STDOUT_REDIRECT compositionResults_TrickyVariantWeakerSelection4.txt
+    DIFF_COMPARE compositionResults_TrickyVariantWeakerSelection4.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyClassHierarchy
@@ -1631,15 +1711,15 @@ pxr_register_test(testPcpMuseum_TrickySpecializesAndRelocates
 pxr_register_test(testPcpMuseum_TrickySpookyVariantSelection
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpookyVariantSelection/root.sdf" 
-    STDOUT_REDIRECT compositionResults_TrickySpookyVariantSelection_pcp.txt
-    DIFF_COMPARE compositionResults_TrickySpookyVariantSelection_pcp.txt 
+    STDOUT_REDIRECT compositionResults_TrickySpookyVariantSelection.txt
+    DIFF_COMPARE compositionResults_TrickySpookyVariantSelection.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickySpookyVariantSelectionInClass
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpookyVariantSelectionInClass/root.sdf" 
-    STDOUT_REDIRECT compositionResults_TrickySpookyVariantSelectionInClass_pcp.txt
-    DIFF_COMPARE compositionResults_TrickySpookyVariantSelectionInClass_pcp.txt 
+    STDOUT_REDIRECT compositionResults_TrickySpookyVariantSelectionInClass.txt
+    DIFF_COMPARE compositionResults_TrickySpookyVariantSelectionInClass.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyConnectionToRelocatedAttribute
@@ -1659,15 +1739,15 @@ pxr_register_test(testPcpMuseum_TrickyRelocatedTargetInVariant
 pxr_register_test(testPcpMuseum_TrickyRelocationOfPrimFromPayload
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyRelocationOfPrimFromPayload/root.sdf" 
-    STDOUT_REDIRECT compositionResults_TrickyRelocationOfPrimFromPayload_pcp.txt
-    DIFF_COMPARE compositionResults_TrickyRelocationOfPrimFromPayload_pcp.txt 
+    STDOUT_REDIRECT compositionResults_TrickyRelocationOfPrimFromPayload.txt
+    DIFF_COMPARE compositionResults_TrickyRelocationOfPrimFromPayload.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyRelocationOfPrimFromVariant
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyRelocationOfPrimFromVariant/root.sdf" 
-    STDOUT_REDIRECT compositionResults_TrickyRelocationOfPrimFromVariant_pcp.txt
-    DIFF_COMPARE compositionResults_TrickyRelocationOfPrimFromVariant_pcp.txt 
+    STDOUT_REDIRECT compositionResults_TrickyRelocationOfPrimFromVariant.txt
+    DIFF_COMPARE compositionResults_TrickyRelocationOfPrimFromVariant.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyRelocationSquatter
@@ -1705,6 +1785,13 @@ pxr_register_test(testPcpMuseum_TrickyMultipleRelocations4
     DIFF_COMPARE compositionResults_TrickyMultipleRelocations4.txt compositionErrors_TrickyMultipleRelocations4.txt 
 )
 
+pxr_register_test(testPcpMuseum_TrickyMultipleRelocations5
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyMultipleRelocations5/root.sdf" 
+    STDOUT_REDIRECT compositionResults_TrickyMultipleRelocations5.txt
+    DIFF_COMPARE compositionResults_TrickyMultipleRelocations5.txt
+)
+
 pxr_register_test(testPcpMuseum_TrickyMultipleRelocationsAndClasses
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyMultipleRelocationsAndClasses/root.sdf" 
@@ -1728,16 +1815,16 @@ pxr_register_test(testPcpMuseum_TrickyNonLocalVariantSelection
 
 pxr_register_test(testPcpMuseum_ErrorOpinionAtRelocationSource
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_ErrorOpinionAtRelocationSource_pcp.txt ErrorOpinionAtRelocationSource/root.sdf" 
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_ErrorOpinionAtRelocationSource.txt ErrorOpinionAtRelocationSource/root.sdf" 
     STDOUT_REDIRECT compositionResults_ErrorOpinionAtRelocationSource.txt
     DIFF_COMPARE compositionResults_ErrorOpinionAtRelocationSource.txt
 )
 
 pxr_register_test(testPcpMuseum_ErrorRelocateToSelf
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_ErrorRelocateToSelf_pcp.txt ErrorRelocateToSelf/root.sdf" 
-    STDOUT_REDIRECT compositionResults_ErrorRelocateToSelf_pcp.txt
-    DIFF_COMPARE compositionResults_ErrorRelocateToSelf_pcp.txt compositionErrors_ErrorRelocateToSelf_pcp.txt
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_ErrorRelocateToSelf.txt ErrorRelocateToSelf/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ErrorRelocateToSelf.txt
+    DIFF_COMPARE compositionResults_ErrorRelocateToSelf.txt compositionErrors_ErrorRelocateToSelf.txt
 )
 
 pxr_register_test(testPcpMuseum_ErrorRelocateWithVariantSelection
@@ -1893,6 +1980,12 @@ pxr_register_test(testPcpMapFunction
 pxr_register_test(testPcpPathTranslation
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpPathTranslation"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testPcpPrimIndex
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpPrimIndex"
     EXPECTED_RETURN_CODE 0
 )
 

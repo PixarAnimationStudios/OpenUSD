@@ -23,6 +23,7 @@ pxr_library(usdUtils
         dependencies
         flattenLayerStack
         introspection
+        localizeAsset
         pipeline
         registeredVariantSet
         sparseValueWriter
@@ -35,9 +36,11 @@ pxr_library(usdUtils
     PRIVATE_CLASSES
         assetLocalization
         assetLocalizationDelegate
+        assetLocalizationPackage
 
     PUBLIC_HEADERS
         api.h
+        userProcessingFunc.h
 
     PYTHON_CPPFILES
         moduleDeps.cpp
@@ -50,6 +53,7 @@ pxr_library(usdUtils
         wrapDependencies.cpp
         wrapFlattenLayerStack.cpp
         wrapIntrospection.cpp
+        wrapLocalizeAsset.cpp
         wrapPipeline.cpp
         wrapRegisteredVariantSet.cpp
         wrapSparseValueWriter.cpp
@@ -57,6 +61,7 @@ pxr_library(usdUtils
         wrapStitch.cpp
         wrapStitchClips.cpp
         wrapTimeCodeRange.cpp
+        wrapUserProcessingFunc.cpp
 
     PYMODULE_FILES
         __init__.py
@@ -82,6 +87,7 @@ pxr_test_scripts(
     testenv/testUsdUtilsDependencyExtractor.py
     testenv/testUsdUtilsFlattenLayerStack.py
     testenv/testUsdUtilsIntrospection.py
+    testenv/testUsdUtilsLocalizeAsset.py
     testenv/testUsdUtilsModifyAssetPaths.py
     testenv/testUsdUtilsPipeline.py
     testenv/testUsdUtilsSparseValueWriter.py
@@ -91,6 +97,7 @@ pxr_test_scripts(
     testenv/testUsdUtilsTimeCodeRange.py
     testenv/testUsdUtilsUpdateSchemaWithSdrNode.py
     testenv/testUsdUtilsUsdzUtils.py
+    testenv/testUsdUtilsUserProcessingFunc.py
     testenv/testUsdUtilsVarSelsSessionLayer.py
 )
 
@@ -153,6 +160,11 @@ pxr_install_test_dir(
 
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsCreateNewUsdzPackage
+    DEST testUsdUtilsCreateNewARKitUsdzPackageInPlace
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsCreateNewUsdzPackage
     DEST testUsdUtilsCreateNewUsdzPackage
 )
 
@@ -174,6 +186,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
    SRC testenv/testUsdUtilsCreateNewUsdzPackage
    DEST testUsdUtilsCreateNewUsdzPackageRemapClipsDir
+)
+
+pxr_install_test_dir(
+   SRC testenv/testUsdUtilsCreateNewUsdzPackage
+   DEST testUsdUtilsCreateNewUsdzPackageEditInPlace
 )
 
 pxr_install_test_dir(
@@ -222,6 +239,16 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdUtilsLocalizeAsset
+    DEST testUsdUtilsLocalizeAsset
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsLocalizeAsset
+    DEST testUsdUtilsLocalizeAssetUdims
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdUtilsModifyAssetPaths
     DEST testUsdUtilsModifyAssetPaths
 )
@@ -254,6 +281,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsUsdzUtils
     DEST testUsdUtilsUsdzUtils
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsUserProcessingFunc
+    DEST testUsdUtilsUserProcessingFunc
 )
 
 pxr_register_test(testUsdUtilsAuthoring
@@ -440,6 +472,12 @@ pxr_register_test(testUsdUtilsCreateNewARKitUsdzPackage
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdUtilsCreateNewARKitUsdzPackageInPlace
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --editLayersInPlace --expectedDirtyLayers flat.usda --check --arkit package_flat.usdz flat.usda -l contents_arkit_flat_in_place.txt"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdUtilsCreateNewUsdzPackage
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents.txt package.usdz root.usd"
@@ -468,13 +506,19 @@ pxr_register_test(testUsdUtilsCreateNewUsdzPackageUdim
     EXPECTED_RETURN_CODE 0
 )
 
-# Commented out until completion of USD-8473
-# pxr_register_test(testUsdUtilsCreateNewUsdzPackageRemapClipsDir
-#    PYTHON
-#    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents_remap_clips_dir.txt remapClipsDir.usdz remapClipsDir/root.usda"
-#    DIFF_COMPARE contents_remap_clips_dir.txt
-#    EXPECTED_RETURN_CODE 0
-#)
+pxr_register_test(testUsdUtilsCreateNewUsdzPackageRemapClipsDir
+   PYTHON
+   COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check remapClipsDir.usdz remapClipsDir/root.usda -l contents_remap_clips_dir.txt"
+   DIFF_COMPARE contents_remap_clips_dir.txt
+   EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsCreateNewUsdzPackageEditInPlace
+   PYTHON
+   COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --editLayersInPlace --expectedDirtyLayers nestedUsdz/combined.usda --check combined.usdz nestedUsdz/combined.usda -l contents_nested_in_place.txt"
+   DIFF_COMPARE contents_nested_in_place.txt
+   EXPECTED_RETURN_CODE 0
+)
 
 pxr_register_test(testUsdUtilsDependencies
     PYTHON
@@ -532,6 +576,20 @@ pxr_register_test(testUsdUtilsFlattenLayerStack
 pxr_register_test(testUsdUtilsIntrospection
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsIntrospection"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsLocalizeAsset
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsLocalizeAsset default/root.usda default_localized -l contents_default.txt"
+    DIFF_COMPARE contents_default.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsLocalizeAssetUdims
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsLocalizeAsset udim/root.usda udim_localized -l contents_udim.txt"
+    DIFF_COMPARE contents_udim.txt
     EXPECTED_RETURN_CODE 0
 )
 
@@ -607,6 +665,12 @@ pxr_register_test(testUsdUtilsTimeCodeRange
 
 pxr_register_test(testUsdUtilsTimeCodeRangeCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsTimeCodeRangeCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsUserProcessingFunc
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsUserProcessingFunc"
     EXPECTED_RETURN_CODE 0
 )
 

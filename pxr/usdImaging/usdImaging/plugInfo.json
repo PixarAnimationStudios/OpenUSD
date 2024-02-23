@@ -114,6 +114,12 @@
                         "primTypeName": "Shader"
                     },
 
+                    "UsdImagingNodeGraphAdapter" : {
+                        "bases": ["UsdImagingRepresentedByAncestorPrimAdapter"],
+                        "isInternal": true,
+                        "primTypeName": "NodeGraph"
+                    },
+
                     "UsdImagingMaterialBindingAPIAdapter" : {
                         "bases": ["UsdImagingAPISchemaAdapter"],
                         "isInternal": true,
@@ -125,6 +131,13 @@
                         ],
                         "isInternal": true,
                         "primTypeName": "Mesh"
+                    },
+                    "UsdImagingTetMeshAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "TetMesh"
                     },
                     "UsdImagingNurbsCurvesAdapter": {
                         "bases": [

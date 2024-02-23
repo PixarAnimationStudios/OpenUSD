@@ -208,7 +208,6 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
         std::make_unique<HdxFreeCameraSceneDelegate>(
             renderIndex, controllerId))
     , _renderBufferSize(0, 0)
-    , _overrideWindowPolicy{false, CameraUtilFit}
     , _viewport(0, 0, 1, 1)
 {
     _CreateRenderGraph();
@@ -421,6 +420,10 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
         renderParams->blendEnable = false;
         renderParams->depthMaskEnable = true;
         renderParams->enableAlphaToCoverage = true;
+    } else if (materialTag == HdStMaterialTagTokens->volume) {
+        // Disable alpha-to-coverage for the volume render task, as nothing 
+        // (including alpha) gets written to fragments during this task.
+        renderParams->enableAlphaToCoverage = false;
     }
 }
 
@@ -1881,7 +1884,7 @@ HdxTaskController::SetFraming(const CameraUtilFraming &framing)
 
 void
 HdxTaskController::SetOverrideWindowPolicy(
-    const std::pair<bool, CameraUtilConformWindowPolicy> &policy)
+    const std::optional<CameraUtilConformWindowPolicy> &policy)
 {
     _overrideWindowPolicy = policy;
     _SetCameraFramingForTasks();

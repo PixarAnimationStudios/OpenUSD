@@ -37,7 +37,10 @@ shader TestShaderPropertiesNodeOSL
     [[
         string vstructmember = "inputVstruct.parameter"
     ]],
-    int inputIntArray[3] = {1, 2, 3},
+    int inputInt2[2] = {1, 2},
+    int inputInt3[3] = {1, 2, 3},
+    int inputInt4[4] = {1, 2, 3, 4},
+    int inputIntArray[5] = {1, 2, 3, 4, 5},
     string inputStringArray[4] = { "foo", "bar", "baz", "moo" },
     float inputFloatArray[5] = { 1.0, 2.0, 3.0, 4.0, 5.0 },
     color inputColorArray[2] = { color(1.0, 1.0, 1.0), color(1.0, 1.0, 1.0) },

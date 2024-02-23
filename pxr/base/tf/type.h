@@ -647,45 +647,32 @@ private:
     static TfType const &_FindImplPyPolymorphic(PyPolymorphicBase const *ptr);
     
     // PyPolymorphic case.
-    template <class T>
-    static typename std::enable_if<
-        std::is_base_of<PyPolymorphicBase, T>::value, TfType const &>::type
-    _FindImpl(T const *rawPtr) {
-        return _FindImplPyPolymorphic(
-            static_cast<PyPolymorphicBase const *>(rawPtr));
+    static TfType const &
+    _FindImpl(PyPolymorphicBase const *rawPtr) {
+        return _FindImplPyPolymorphic(rawPtr);
     }
 
-    // Polymorphic.
+    // Not PyPolymorphic.
     template <class T>
-    static typename std::enable_if<
-        std::is_polymorphic<T>::value &&
-        !std::is_base_of<PyPolymorphicBase, T>::value, TfType const &>::type
+    static TfType const &
     _FindImpl(T const *rawPtr) {
-        if (auto ptr = dynamic_cast<PyPolymorphicBase const *>(rawPtr))
-            return _FindImplPyPolymorphic(ptr);
-        return Find(typeid(*rawPtr));
+        if constexpr (std::is_polymorphic<T>::value) {
+            if (auto ptr = dynamic_cast<PyPolymorphicBase const *>(rawPtr)) {
+                return _FindImplPyPolymorphic(ptr);
+            }
+            else {
+                return Find(typeid(*rawPtr));
+            }
+        }
+        else {
+            return Find(typeid(T));
+        }
     }
-
-    template <class T>
-    static typename std::enable_if<
-        !std::is_polymorphic<T>::value, TfType const &>::type
-    _FindImpl(T const *rawPtr) {
-        return Find(typeid(T));
-    }
-
 #else
     template <class T>
-    static typename std::enable_if<
-        std::is_polymorphic<T>::value, TfType const &>::type
+    static TfType const &
     _FindImpl(T const *rawPtr) {
         return Find(typeid(*rawPtr));
-    }
-
-    template <class T>
-    static typename std::enable_if<
-        !std::is_polymorphic<T>::value, TfType const &>::type
-    _FindImpl(T const *rawPtr) {
-        return Find(typeid(T));
     }
 
 #endif // PXR_PYTHON_SUPPORT_ENABLED

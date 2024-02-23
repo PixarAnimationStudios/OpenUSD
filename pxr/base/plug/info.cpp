@@ -709,7 +709,11 @@ Plug_ReadPlugInfo(
     const AddPluginCallback& addPlugin,
     Plug_TaskArena* taskArena)
 {
-    TF_DEBUG(PLUG_INFO_SEARCH).Msg("Will check plugin info paths\n");
+    if (TfDebug::IsEnabled(PLUG_INFO_SEARCH)) {
+        TF_DEBUG(PLUG_INFO_SEARCH).Msg(
+            "Will check plugin info paths:\n    %s\n",
+            TfStringJoin(pathnames, "\n    ").c_str());
+    }
     TfStopwatch stopwatch;
     stopwatch.Start();
 

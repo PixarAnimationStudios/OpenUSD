@@ -24,7 +24,6 @@
 
 #include "pxr/imaging/hd/flattenedDataSourceProviders.h"
 
-#include "pxr/imaging/hd/flattenedMaterialBindingsDataSourceProvider.h"
 #include "pxr/imaging/hd/flattenedOverlayDataSourceProvider.h"
 #include "pxr/imaging/hd/flattenedPrimvarsDataSourceProvider.h"
 #include "pxr/imaging/hd/flattenedPurposeDataSourceProvider.h"
@@ -49,8 +48,6 @@ HdFlattenedDataSourceProviders()
         HdRetainedContainerDataSource::New(
             HdCoordSysBindingSchema::GetSchemaToken(),
             Make<HdFlattenedOverlayDataSourceProvider>(),
-            HdMaterialBindingsSchema::GetSchemaToken(),
-            Make<HdFlattenedMaterialBindingsDataSourceProvider>(),
             HdPrimvarsSchema::GetSchemaToken(),
             Make<HdFlattenedPrimvarsDataSourceProvider>(),
             HdPurposeSchema::GetSchemaToken(),

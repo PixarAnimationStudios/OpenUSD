@@ -908,7 +908,7 @@ _NodeGraphBuilder::_AddNode(
         // Nodegraphs associated with locally defined custom nodes are added 
         // before reading materials, and therefore get-able here 
         auto nodeGraphPath = usdParent.GetParent().GetPath().AppendChild(
-            TfToken(mtlxNodeDef->getName()));
+            _MakeName(mtlxNodeDef));
         auto usdNodeGraph = UsdShadeNodeGraph::Get(usdStage, nodeGraphPath);
         connectable = usdNodeGraph.ConnectableAPI();
         _SetCoreUIAttributes(usdNodeGraph.GetPrim(), mtlxNode);

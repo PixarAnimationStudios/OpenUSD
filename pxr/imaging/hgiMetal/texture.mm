@@ -74,24 +74,15 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
 #if (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15) \
     || __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
         if (@available(macOS 10.15, ios 13.0, *)) {
-            size_t numChannels = HgiGetComponentCount(desc.format);
-
-            if (usage == MTLTextureUsageShaderRead && numChannels == 1) {
-                MTLTextureSwizzle s = HgiMetalConversions::GetComponentSwizzle(
-                    desc.componentMapping.r);
-                texDesc.swizzle = MTLTextureSwizzleChannelsMake(s, s, s, s);
-            }
-            else {
-                texDesc.swizzle = MTLTextureSwizzleChannelsMake(
-                    HgiMetalConversions::GetComponentSwizzle(
-                        desc.componentMapping.r),
-                    HgiMetalConversions::GetComponentSwizzle(
-                        desc.componentMapping.g),
-                    HgiMetalConversions::GetComponentSwizzle(
-                        desc.componentMapping.b),
-                    HgiMetalConversions::GetComponentSwizzle(
-                        desc.componentMapping.a));
-            }
+            texDesc.swizzle = MTLTextureSwizzleChannelsMake(
+                HgiMetalConversions::GetComponentSwizzle(
+                    desc.componentMapping.r),
+                HgiMetalConversions::GetComponentSwizzle(
+                    desc.componentMapping.g),
+                HgiMetalConversions::GetComponentSwizzle(
+                    desc.componentMapping.b),
+                HgiMetalConversions::GetComponentSwizzle(
+                    desc.componentMapping.a));
         }
 #endif
 
@@ -301,6 +292,12 @@ id<MTLTexture>
 HgiMetalTexture::GetTextureId() const
 {
     return _textureId;
+}
+
+void 
+HgiMetalTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
+{
+    return;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

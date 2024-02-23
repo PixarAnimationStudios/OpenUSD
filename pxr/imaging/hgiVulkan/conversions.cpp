@@ -156,12 +156,14 @@ static_assert(HgiTextureUsageCustomBitsBegin == 1 << 5, "");
 static const uint32_t
 _BufferUsageTable[][2] =
 {
-    {HgiBufferUsageUniform, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT},
-    {HgiBufferUsageIndex32, VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
-    {HgiBufferUsageVertex,  VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
-    {HgiBufferUsageStorage, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT},
+    {HgiBufferUsageUniform,  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT},
+    {HgiBufferUsageIndex32,  VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
+    {HgiBufferUsageVertex,   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
+    {HgiBufferUsageStorage,  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT},
+    {HgiBufferUsageIndirect, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT},
+
 };
-static_assert(HgiBufferUsageCustomBitsBegin == 1 << 4, "");
+static_assert(HgiBufferUsageCustomBitsBegin == 1 << 5, "");
 
 static const uint32_t
 _CullModeTable[HgiCullModeCount][2] =

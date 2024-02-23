@@ -28,6 +28,9 @@ Prim Stack:
 Child names:
      ['SymRig']
 
+Prohibited child names:
+     ['LRig']
+
 ------------------------------------------------------------------------
 Results for composing </Model_1/Rig/SymRig>
 
@@ -51,7 +54,10 @@ Child names:
 Results for composing </Model_1/Anim/LAnim>
 
 Prim Stack:
+    root.sdf             /_class_Model/Rig/SymRig
+    root.sdf             /_class_Model/Rig/LRig
     root.sdf             /_class_Model/Anim/LAnim
+    model.sdf            /_class_Model/Rig/SymRig
     model.sdf            /_class_Model/Rig/LRig
     rig.sdf              /Rig/LRig
     rig.sdf              /Rig/SymRig

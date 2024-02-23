@@ -22,8 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/testGLContext.h"
 
@@ -198,7 +196,6 @@ int main()
     TfErrorMark mark;
 
     GlfTestGLContext::RegisterGLContextCallbacks();
-    GarchGLApiLoad();
     GlfSharedGLContextScopeHolder sharedContext;
 
     CameraAndLightTest();

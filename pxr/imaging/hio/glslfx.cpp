@@ -40,8 +40,7 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/pathUtils.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iostream>
 #include <istream>
@@ -320,7 +319,7 @@ HioGlslfx::_ProcessInput(std::istream * input,
         ++context.lineNo;
 
         // update hash
-        boost::hash_combine(_hash, context.currentLine);
+        _hash = TfHash::Combine(_hash, context.currentLine);
 
         if (context.lineNo > 1 && context.version < 0) {
             TF_RUNTIME_ERROR("Syntax Error on line 1 of %s. First line in file "

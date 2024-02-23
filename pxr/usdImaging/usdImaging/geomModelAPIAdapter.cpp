@@ -24,13 +24,15 @@
 #include "pxr/usdImaging/usdImaging/geomModelAPIAdapter.h"
 
 #include "pxr/usdImaging/usdImaging/dataSourceSchemaBased.h"
-#include "pxr/usdImaging/usdImaging/modelSchema.h"
+#include "pxr/usdImaging/usdImaging/geomModelSchema.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/imaging/hd/extentSchema.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/usd/kind/registry.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
+#include "pxr/usd/usd/modelAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -54,7 +56,7 @@ struct _GeomModelTranslator
     HdDataSourceLocator
     GetContainerLocator()
     {
-        return UsdImagingModelSchema::GetDefaultLocator();
+        return UsdImagingGeomModelSchema::GetDefaultLocator();
     }
 };    
 
@@ -82,12 +84,25 @@ UsdImagingGeomModelAPIAdapter::GetImagingSubprimData(
     }
 
     if (subprim.IsEmpty()) {
-        UsdGeomModelAPI model(prim);
+        // Reflect UsdGeomModelAPI as UsdImagingGeomModelSchema.
+        HdContainerDataSourceHandle geomModelDs =
+            HdRetainedContainerDataSource::New(
+                UsdImagingGeomModelSchema::GetSchemaToken(),
+                _GeomModelDataSource::New(
+                    prim.GetPath(), UsdGeomModelAPI(prim), stageGlobals));
 
-        return HdRetainedContainerDataSource::New(
-            UsdImagingModelSchema::GetSchemaToken(),
-            _GeomModelDataSource::New(
-                prim.GetPath(), model, stageGlobals));
+        // For model components, overlay applyDrawMode=true.
+        if (UsdModelAPI(prim).IsKind(KindTokens->component)) {
+            static HdContainerDataSourceHandle const applyDrawModeDs =
+                UsdImagingGeomModelSchema::Builder()
+                    .SetApplyDrawMode(
+                        HdRetainedTypedSampledDataSource<bool>::New(true))
+                    .Build();
+            geomModelDs = HdOverlayContainerDataSource::
+                OverlayedContainerDataSources(applyDrawModeDs, geomModelDs);
+        }
+
+        return geomModelDs;
     }
 
     return nullptr;

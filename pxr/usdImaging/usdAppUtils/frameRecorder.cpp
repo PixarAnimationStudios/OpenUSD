@@ -130,6 +130,7 @@ _ComputeCameraToFrameStage(const UsdStagePtr& stage, UsdTimeCode timeCode,
     GfRange3d range = bbox.ComputeAlignedRange();
     GfVec3d dim = range.GetSize();
     TfToken upAxis = UsdGeomGetStageUpAxis(stage);
+
     // Find corner of bbox in the focal plane.
     GfVec2d plane_corner;
     if (upAxis == UsdGeomTokens->y) {
@@ -138,15 +139,24 @@ _ComputeCameraToFrameStage(const UsdStagePtr& stage, UsdTimeCode timeCode,
         plane_corner = GfVec2d(dim[0], dim[2])/2;
     }
     float plane_radius = sqrt(GfDot(plane_corner, plane_corner));
+
     // Compute distance to focal plane.
     float half_fov = gfCamera.GetFieldOfView(GfCamera::FOVHorizontal)/2.0;
     float distance = plane_radius / tan(GfDegreesToRadians(half_fov));
+
     // Back up to frame the front face of the bbox.
     if (upAxis == UsdGeomTokens->y) {
         distance += dim[2] / 2;
     } else {
         distance += dim[1] / 2;
     }
+    // Small objects that fill out their bounding boxes might be clipped by the 
+    // near-clipping plane (always defaulting to 1 here). Increase the distance
+    // to make sure that doesn't happen.
+    if (distance < gfCamera.GetClippingRange().GetMin()) {
+        distance += gfCamera.GetClippingRange().GetMin();
+    }
+
     // Compute local-to-world transform for camera filmback.
     GfMatrix4d xf;
     if (upAxis == UsdGeomTokens->y) {

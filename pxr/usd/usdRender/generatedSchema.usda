@@ -72,6 +72,10 @@ class "RenderSettingsBase" (
         aspectRatioConformPolicy.
         """
     )
+    uniform bool disableDepthOfField = 0 (
+        doc = """Disable all depth of field by setting F-stop of the targeted
+        camera to infinity."""
+    )
     uniform bool disableMotionBlur = 0 (
         doc = """Disable all motion blur by setting the shutter interval
         of the targeted camera to [0,0] - that is, take only one sample,
@@ -163,6 +167,10 @@ class RenderSettings "RenderSettings" (
         aperture after any adjustments required by
         aspectRatioConformPolicy.
         """
+    )
+    uniform bool disableDepthOfField = 0 (
+        doc = """Disable all depth of field by setting F-stop of the targeted
+        camera to infinity."""
     )
     uniform bool disableMotionBlur = 0 (
         doc = """Disable all motion blur by setting the shutter interval
@@ -333,6 +341,10 @@ class RenderProduct "RenderProduct" (
         aperture after any adjustments required by
         aspectRatioConformPolicy.
         """
+    )
+    uniform bool disableDepthOfField = 0 (
+        doc = """Disable all depth of field by setting F-stop of the targeted
+        camera to infinity."""
     )
     uniform bool disableMotionBlur = 0 (
         doc = """Disable all motion blur by setting the shutter interval

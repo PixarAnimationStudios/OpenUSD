@@ -1,0 +1,38 @@
+#usda 1.0 
+(
+    subLayers = [
+        @sub_1.usda@,
+        @sub_2.usda@
+    ]
+)
+
+
+over "C" (
+    doc = "Root"
+    prepend apiSchemas = ["C_Root_API"]
+) {
+    custom double C_Root_Attr
+
+    def "C_Root_Prim" {
+    }
+    
+    over "B" (
+        doc = "Root"
+        prepend apiSchemas = ["B_Root_API"]
+    ) {
+        custom double B_Root_Attr
+
+        def "B_Root_Prim" {
+        }
+
+        def PrimTypeA "A" (
+            doc = "Root"
+            prepend apiSchemas = ["A_Root_API"]
+        )
+        {
+            custom double A_Root_Attr
+            def "A_Root_Prim" {
+            }
+        }
+    }
+}

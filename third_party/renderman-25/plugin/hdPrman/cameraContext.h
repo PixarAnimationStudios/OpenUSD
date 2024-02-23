@@ -69,7 +69,11 @@ public:
     bool IsInvalid() const;
 
     /// Create riley camera (with default settings).
-    void CreateRileyCamera(riley::Riley * riley);
+    void CreateRileyCamera(
+        riley::Riley * riley,
+        const RtUString &cameraName);
+
+    void DeleteRileyCameraAndClipPlanes(riley::Riley * riley);
 
     /// Get id of riley camera - valid only after Begin.
     const riley::CameraId &GetCameraId() const { return _cameraId; }
@@ -81,7 +85,7 @@ public:
     void SetRileyOptions(
         RtParamList * options) const;
 
-    /// Update the given riley options for rendering to AOVs baked by
+    /// Update the given riley options for rendering to AOVs backed by
     /// render buffers of the given size.
     ///
     /// Sets the crop window and pixel aspect ratio.
@@ -108,43 +112,22 @@ public:
     /// Get resolution for offline rendering.
     GfVec2i GetResolutionFromDisplayWindow() const;
 
-    /// Set the shutter curve, i.e., the curve that determines how
-    /// transparency of the shutter as a function of (normalized)
-    /// time.
-    ///
-    /// Note that the times given here are relative to the shutter
-    /// interval.
-    ///
-    /// Some more explanation:
-    ///
-    /// The values given here are passed to the Riley camera as options
-    /// RixStr.k_shutterOpenTime, k_shutterCloseTime and k_shutteropening.
-    ///
-    /// (where as the shutter interval is set through the global Riley options
-    /// using Ri:Shutter).
-    ///
-    /// RenderMan computes the shutter curve using constant pieces and
-    /// cubic Bezier interpolation between the following points
-    /// 
-    /// (0, 0), (t1, y1), (t2,y2), (t3, 1), (t4, 1), (t5, y5), (t6, y6), (1, 0)
-    ///
-    /// which are encoded as:
-    ///    t3 is the shutterOpenTime
-    ///    t4 is the shutterCloseTime
-    ///    [t1, y1, t2, y2, t5, y5, t6, y6] is shutteropeningPoints array.
-    ///
-    void SetShutterCurve(const float shutterOpenTime,
-                         const float shutterCloseTime,
-                         const float shutteropeningPoints[8]);
+    /// When depth of field is disabled the fstop is set to infinity.
+    void SetDisableDepthOfField(bool disableDepthOfField);
 
     /// Path of current camera in render index.
     const SdfPath &GetCameraPath() const { return _cameraPath; }
+
+    /// Camera name used when creating the riley camera object.
+    const RtUString& GetCameraName() const { return _cameraName; }
 
     /// For convenience, get camera at camera path from render index.
     const HdPrmanCamera * GetCamera(const HdRenderIndex *renderIndex) const;
 
     /// Get the camera framing.
     const CameraUtilFraming &GetFraming() const;
+
+    static RtUString GetDefaultReferenceCameraName();
 
 private:
     /// Computes the screen window for the camera and conforms
@@ -161,22 +144,26 @@ private:
         riley::Riley * const riley,
         const GfRange2d &screenWindow,
         const HdPrmanCamera * camera);
+
     void _UpdateClipPlanes(
         riley::Riley * riley,
         const HdPrmanCamera * camera);
 
+    void _DeleteClipPlanes(riley::Riley * riley);
+
+    // Hydra Sprim path in the render index.
     SdfPath _cameraPath;
     CameraUtilFraming _framing;
     CameraUtilConformWindowPolicy _policy;
-
-    float _shutterOpenTime;
-    float _shutterCloseTime;
-    float _shutteropeningPoints[8];
+    bool _disableDepthOfField;
     
     // Save ids of riley clip planes so that we can delete them before
     // re-creating them to update the clip planes.
     std::vector<riley::ClippingPlaneId> _clipPlaneIds;
     riley::CameraId _cameraId;
+    // Riley camera name provided as an argument to CreateRileyCamera.
+    // This needs to be unique across all cameras.
+    RtUString _cameraName;
     
     std::atomic_bool _invalid;
 };

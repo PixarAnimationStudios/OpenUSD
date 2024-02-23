@@ -235,17 +235,17 @@ class SdfAssetPath;
 /// <b>Using the C++ API</b>
 /// 
 /// #1. Creating a simple transform matrix encoding
-/// \snippet examples.cpp CreateMatrixWithDefault
+/// \snippet examples_usdGeom.cpp CreateMatrixWithDefault
 /// 
 /// #2. Creating the simple SRT from the example above
-/// \snippet examples.cpp CreateExampleSRT
+/// \snippet examples_usdGeom.cpp CreateExampleSRT
 /// 
 /// #3. Creating a parameterized SRT with pivot using UsdGeomXformCommonAPI
-/// \snippet examples.cpp CreateSRTWithDefaults
+/// \snippet examples_usdGeom.cpp CreateSRTWithDefaults
 /// 
 /// #4. Creating a rotate-only pivot transform with animated
 /// rotation and translation
-/// \snippet examples.cpp CreateAnimatedTransform
+/// \snippet examples_usdGeom.cpp CreateAnimatedTransform
 /// 
 /// 
 ///

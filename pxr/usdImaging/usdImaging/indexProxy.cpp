@@ -516,7 +516,6 @@ UsdImagingIndexProxy::_ProcessRemovals()
 
             _delegate->_primvarDescCache.Clear(cachePath);
             _delegate->_refineLevelMap.erase(cachePath);
-            _delegate->_pickablesMap.erase(cachePath);
 
             _delegate->_hdPrimInfoMap.erase(cachePath);
 

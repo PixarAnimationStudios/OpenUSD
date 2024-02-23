@@ -41,6 +41,7 @@
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/lightSchema.h"
 #include "pxr/imaging/hd/dataSourceMaterialNetworkInterface.h"
+#include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
 #include "pxr/imaging/hdsi/sceneGlobalsSceneIndex.h"
@@ -126,7 +127,11 @@ public:
         // Get the light shader network
         const HdContainerDataSourceHandle& shaderDS = 
             HdMaterialSchema::GetFromParent(prim.dataSource)
-            .GetMaterialNetwork(_tokens->renderContext);
+            .GetMaterialNetwork(_tokens->renderContext)
+#if HD_API_VERSION >= 63
+            .GetContainer()
+#endif
+            ;
         
         // Return unmodified if no light shader network
         if (!shaderDS) {
@@ -350,6 +355,7 @@ PopulateFallbackRenderSpec(
                 TfToken(outputFilename),                // name
                 SdfPath(),                              // camera path
                 false,                                  // disableMotionBlur
+                false,                                  // disableDepthOfField
                 s_fallbackResolution,                   // resolution
                 1.0f,                                   // PixelAspectRatio
                 s_fallbackConformPolicy,                // aspectRatioConformPolicy 
@@ -560,15 +566,13 @@ CreateRenderSpecDict(
         for (size_t index: product.renderVarIndices) {
             auto const& renderVar = renderSpec.renderVars[index];
 
-            // Map source to Ri name.
-            std::string name = renderVar.sourceName;
-            if (renderVar.sourceType == UsdRenderTokens->lpe) {
-                name = "lpe:" + name;
-            }
-
             VtDictionary renderVarDict;
             renderVarDict[HdPrmanExperimentalRenderSpecTokens->name] =
-                name;
+                renderVar.renderVarPath.GetName();
+            renderVarDict[HdPrmanExperimentalRenderSpecTokens->sourceName] =
+                renderVar.sourceName;
+            renderVarDict[HdPrmanExperimentalRenderSpecTokens->sourceType] =
+                renderVar.sourceType;
             renderVarDict[HdPrmanExperimentalRenderSpecTokens->type] =
                 renderVar.dataType.GetString();
             renderVarDict[HdPrmanExperimentalRenderSpecTokens->params] =
@@ -936,8 +940,13 @@ HydraSetupAndRender(
         hdRenderPassState->SetCamera(camera);
         hdRenderPassState->SetFraming(ComputeFraming(*cameraInfo));
         hdRenderPassState->SetOverrideWindowPolicy(
+#if HD_API_VERSION >= 57
+            HdUtils::ToConformWindowPolicy(
+                cameraInfo->aspectRatioConformPolicy));
+#else
             { true, HdUtils::ToConformWindowPolicy(
                                     cameraInfo->aspectRatioConformPolicy) });
+#endif
     }
 
     auto sgsi = appSceneIndices->sceneGlobalsSceneIndex;

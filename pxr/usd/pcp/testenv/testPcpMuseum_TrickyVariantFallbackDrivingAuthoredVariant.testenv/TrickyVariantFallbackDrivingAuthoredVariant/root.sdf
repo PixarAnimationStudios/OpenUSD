@@ -8,7 +8,7 @@
     """
 )
 
-def Scope "A" (
+def "A" (
     add variantSets = ["vset1", "vset2"]
 )
 {
@@ -23,14 +23,20 @@ def Scope "A" (
     variantSet "vset2" = {
         "authored" (
         ) {
-            def Scope "vset2_authored_child"
+            def "vset2_authored_child"
             {
             }
         }
     }
 }
 
-def Scope "B" (
+def "A_Ancestral" (
+    references = </A/vset2_authored_child>
+)
+{
+}
+
+def "B" (
     add variantSets = ["vset2", "vset1"]
 )
 {
@@ -45,9 +51,15 @@ def Scope "B" (
     variantSet "vset2" = {
         "authored" (
         ) {
-            def Scope "vset2_authored_child"
+            def "vset2_authored_child"
             {
             }
         }
     }
+}
+
+def "B_Ancestral" (
+    references = </B/vset2_authored_child>
+)
+{
 }

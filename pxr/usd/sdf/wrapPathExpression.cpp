@@ -31,10 +31,14 @@
 #include "pxr/base/tf/pyFunction.h"
 
 #include "pxr/usd/sdf/pathExpression.h"
+#include "pxr/usd/sdf/pathExpressionEval.h"
+#include "pxr/usd/sdf/predicateLibrary.h"
 
 #include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
 #include <boost/python/scope.hpp>
 
+#include <mutex>
 #include <string>
 
 using namespace boost::python;
@@ -70,15 +74,66 @@ _PatternRepr(SdfPathExpression::PathPattern const &self) {
     }
 }
 
+namespace {
+
+struct _PathIdentity {
+    SdfPath operator()(SdfPath const &p) const { return p; }
+};
+
+static SdfPredicateLibrary<SdfPath const &> const &
+_GetBasicPredicateLib() {
+    // Super simple predicate library for paths for testing.
+    static auto theLib = SdfPredicateLibrary<SdfPath const &>()
+        .Define("isPrimPath", [](SdfPath const &p) {
+            return p.IsPrimPath();
+        })
+        .Define("isPropertyPath", [](SdfPath const &p) {
+            return p.IsPropertyPath();
+        })
+        ;
+    return theLib;
+}
+
+struct _BasicMatchEval
+{
+    explicit _BasicMatchEval(SdfPathExpression const &expr)
+        : _eval(SdfMakePathExpressionEval(expr, _GetBasicPredicateLib())) {}
+    explicit _BasicMatchEval(std::string const &expr)
+        : _BasicMatchEval(SdfPathExpression(expr)) {}
+    SdfPredicateFunctionResult
+    Match(SdfPath const &p) {
+        return _eval.Match(p, _PathIdentity {}, _PathIdentity {});
+    }
+    SdfPathExpressionEval<SdfPath const &> _eval;
+};
+
+std::once_flag wrapMatchEvalFlag;
+static _BasicMatchEval
+_MakeBasicMatchEval(std::string const &expr)
+{
+    std::call_once(wrapMatchEvalFlag, []() {
+        class_<_BasicMatchEval>("_BasicMatchEval", init<std::string>())
+            .def(init<SdfPathExpression>())
+            .def("Match", &_BasicMatchEval::Match)
+            ;
+    });
+    return _BasicMatchEval(expr);
+}
+
+} // anon
+
 void wrapPathExpression()
 {
+    // For testing.
+    def("_MakeBasicMatchEval", _MakeBasicMatchEval);
+    
     // For ResolveReferences.
     TfPyFunctionFromPython<PathExpr (ExpressionReference const &)> {};
         
     // For Walk.
     TfPyFunctionFromPython<void (PathExpr::Op, int)> {};
-    TfPyFunctionFromPython<void (ExpressionReference const &, int)> {};
-    TfPyFunctionFromPython<void (PathPattern const &, int)> {};
+    TfPyFunctionFromPython<void (ExpressionReference const &)> {};
+    TfPyFunctionFromPython<void (PathPattern const &)> {};
 
     scope s = class_<PathExpr>("PathExpression")
         .def(init<PathExpr const &>())
@@ -125,6 +180,8 @@ void wrapPathExpression()
                  return self.ReplacePrefix(oldPrefix, newPrefix);
              }, (arg("oldPrefix"), arg("newPrefix")))
 
+        .def("IsAbsolute", &PathExpr::IsAbsolute)
+
         .def("MakeAbsolute",
              +[](PathExpr const &self, SdfPath const &anchor) {
                  return self.MakeAbsolute(anchor);
@@ -147,6 +204,8 @@ void wrapPathExpression()
              +[](PathExpr const &self, SdfPathExpression const &weaker) {
                  return self.ComposeOver(weaker);
              }, (arg("weaker")))
+
+        .def("IsComplete", &PathExpr::IsComplete)
 
         .def("Walk",
              +[](PathExpr const &self,
@@ -210,4 +269,5 @@ void wrapPathExpression()
         .staticmethod("Weaker")
         ;        
     VtValueFromPython<ExpressionReference>();
+
 }

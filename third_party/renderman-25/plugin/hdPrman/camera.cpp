@@ -40,6 +40,49 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 #endif
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((shutterOpenTime,  "ri:shutterOpenTime"))
+    ((shutterCloseTime, "ri:shutterCloseTime"))
+    // We follow the PRManCamera.args convention here and camel case.
+    // Annoyingly, the string when passing params to the
+    // Riley::Create/ModifyCamera is RixStr.k_shutteropening with
+    // all small letters.
+    //
+    ((shutterOpening,   "ri:shutterOpening"))
+);
+
+namespace {
+
+const HdPrmanCamera::ShutterCurve&
+_GetFallbackShutterCurve(
+    bool interactive)
+{
+    if (interactive) {
+        // Open instantaneously, remain fully open for the duration of the
+        // shutter interval (set via the param RixStr.k_Ri_Shutter) and close
+        // instantaneously.
+        static const HdPrmanCamera::ShutterCurve interactiveFallback = {
+            0.0,
+            1.0,
+            { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f }};
+
+        return interactiveFallback;
+    }
+
+    // Open instantaneously and start closing immediately, rapidly at first
+    // decelerating until the end of the interval.
+    static const HdPrmanCamera::ShutterCurve batchFallback = {
+        0.0,
+        0.0,
+        { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.3f, 0.0f }};
+    
+    return batchFallback;
+}
+
+} // anon
+
+
 HdPrmanCamera::HdPrmanCamera(SdfPath const& id)
   : HdCamera(id)
 #if HD_API_VERSION < 52
@@ -50,6 +93,7 @@ HdPrmanCamera::HdPrmanCamera(SdfPath const& id)
   , _lensDistortionAsym(0.0f)
   , _lensDistortionScale(1.0f)
 #endif
+    , _shutterCurve(_GetFallbackShutterCurve(/*isInteractive = */true))
 {
 }
 
@@ -113,20 +157,36 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
                 .GetWithDefault<float>(1.0f);
 #endif
 
-        // NOTE: This workaround is necessary only when a well-formed render
-        //       settings prim isn't present. UpdateRileyShutterInterval(..)
-        //       sets the riley global shutter param on the legacy options
-        //       param list, which has a weaker strength than the param list
-        //       from the render settings prim.
-        //
+        const VtValue vShutterOpenTime =
+            sceneDelegate->GetCameraParamValue(id, _tokens->shutterOpenTime);
+        const VtValue vShutterCloseTime =
+            sceneDelegate->GetCameraParamValue(id, _tokens->shutterCloseTime);
+        const VtValue vShutterOpening =
+            sceneDelegate->GetCameraParamValue(id, _tokens->shutterOpening);
+        
+        if (vShutterOpenTime.IsHolding<float>() &&
+            vShutterCloseTime.IsHolding<float>() &&
+            vShutterOpening.IsHolding<VtArray<float>>()) {
+
+            _shutterCurve = {
+                vShutterOpenTime.UncheckedGet<float>(),
+                vShutterCloseTime.UncheckedGet<float>(),
+                vShutterOpening.UncheckedGet<VtArray<float>>()
+            };
+
+        } else {
+            _shutterCurve = _GetFallbackShutterCurve(param->IsInteractive());
+        }
+        
         if (id == param->GetCameraContext().GetCameraPath()) {
             // Motion blur in Riley only works correctly if the
             // shutter interval is set before any rprims are synced
             // (and the transform of the riley camera is updated).
             //
-            // Thus, we immediately call UpdateRileyShutterInterval
-            // here.
-            param->UpdateRileyShutterInterval(
+            // See SetRileyShutterIntervalFromCameraContextCameraPath
+            // for additional context.
+            //
+            param->SetRileyShutterIntervalFromCameraContextCameraPath(
                 &sceneDelegate->GetRenderIndex());
         }
     }

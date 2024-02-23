@@ -24,7 +24,7 @@
 #include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/drawModeStandin.h"
 
-#include "pxr/usdImaging/usdImaging/modelSchema.h"
+#include "pxr/usdImaging/usdImaging/geomModelSchema.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/base/trace/trace.h"
@@ -64,10 +64,10 @@ _GetDrawMode(const HdSceneIndexPrim &prim)
         return empty;
     }
 
-    UsdImagingModelSchema modelSchema =
-        UsdImagingModelSchema::GetFromParent(prim.dataSource);
+    UsdImagingGeomModelSchema geomModelSchema =
+        UsdImagingGeomModelSchema::GetFromParent(prim.dataSource);
 
-    HdBoolDataSourceHandle const applySrc = modelSchema.GetApplyDrawMode();
+    HdBoolDataSourceHandle const applySrc = geomModelSchema.GetApplyDrawMode();
     if (!applySrc) {
         return empty;
     }
@@ -75,7 +75,7 @@ _GetDrawMode(const HdSceneIndexPrim &prim)
         return empty;
     }
     
-    HdTokenDataSourceHandle const modeSrc = modelSchema.GetDrawMode();
+    HdTokenDataSourceHandle const modeSrc = geomModelSchema.GetDrawMode();
     if (!modeSrc) {
         return empty;
     }
@@ -357,10 +357,10 @@ UsdImagingDrawModeSceneIndex::_PrimsDirtied(
     std::set<SdfPath> paths;
 
     static const HdDataSourceLocatorSet drawModeLocators{
-        UsdImagingModelSchema::GetDefaultLocator().Append(
-            UsdImagingModelSchemaTokens->drawMode),
-        UsdImagingModelSchema::GetDefaultLocator().Append(
-            UsdImagingModelSchemaTokens->applyDrawMode)};
+        UsdImagingGeomModelSchema::GetDefaultLocator().Append(
+            UsdImagingGeomModelSchemaTokens->drawMode),
+        UsdImagingGeomModelSchema::GetDefaultLocator().Append(
+            UsdImagingGeomModelSchemaTokens->applyDrawMode)};
             
     for (const HdSceneIndexObserver::DirtiedPrimEntry &entry : entries) {
         if (drawModeLocators.Intersects(entry.dirtyLocators)) {

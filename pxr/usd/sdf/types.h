@@ -67,7 +67,6 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 
-#include <boost/preprocessor/seq/for_each.hpp>
 #include <iosfwd>
 #include <list>
 #include <map>
@@ -245,14 +244,14 @@ enum SdfAuthoringError
 #define _SDF_UNITSLIST_ENUM(elem) TF_PP_CAT(TF_PP_CAT(Sdf, \
                                     _SDF_UNITSLIST_CATEGORY(elem)), Unit)
 
-#define _SDF_DECLARE_UNIT_ENUMERANT(r, tag, elem) \
+#define _SDF_DECLARE_UNIT_ENUMERANT(tag, elem) \
     TF_PP_CAT(Sdf ## tag ## Unit, _SDF_UNIT_TAG(elem)),
 
 #define _SDF_DECLARE_UNIT_ENUM(elem)                     \
 enum _SDF_UNITSLIST_ENUM(elem) {                         \
-    BOOST_PP_SEQ_FOR_EACH(_SDF_DECLARE_UNIT_ENUMERANT,   \
-                          _SDF_UNITSLIST_CATEGORY(elem), \
-                          _SDF_UNITSLIST_TUPLES(elem))   \
+    TF_PP_SEQ_FOR_EACH(_SDF_DECLARE_UNIT_ENUMERANT,      \
+                       _SDF_UNITSLIST_CATEGORY(elem),    \
+                       _SDF_UNITSLIST_TUPLES(elem))      \
 };
 
 #define _SDF_FOR_EACH_UNITS_IMPL(macro, ...)             \
@@ -381,7 +380,7 @@ struct SdfValueTypeTraits<char[N]> {
     static const bool IsValueType = true;
 };
 
-#define SDF_DECLARE_VALUE_TYPE_TRAITS(r, unused, elem)                      \
+#define SDF_DECLARE_VALUE_TYPE_TRAITS(unused, elem)                         \
 template <>                                                                 \
 struct SdfValueTypeTraits<SDF_VALUE_CPP_TYPE(elem)> {                       \
     static const bool IsValueType = true;                                   \
@@ -391,7 +390,7 @@ struct SdfValueTypeTraits<SDF_VALUE_CPP_ARRAY_TYPE(elem)> {                 \
     static const bool IsValueType = true;                                   \
 };
 
-BOOST_PP_SEQ_FOR_EACH(SDF_DECLARE_VALUE_TYPE_TRAITS, ~, SDF_VALUE_TYPES);
+TF_PP_SEQ_FOR_EACH(SDF_DECLARE_VALUE_TYPE_TRAITS, ~, SDF_VALUE_TYPES);
 
 /// Convert \p dict to a valid metadata dictionary for scene description.  Valid
 /// metadata dictionaries have values that are any of SDF_VALUE_TYPES (or

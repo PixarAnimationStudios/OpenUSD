@@ -30,6 +30,8 @@
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/timeSampleArray.h"
 
+#include "pxr/base/vt/array.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
@@ -45,6 +47,16 @@ class HdSceneDelegate;
 class HdPrmanCamera final : public HdCamera
 {
 public:
+    /// See GetShutterCurve() below for a description of what these
+    /// values represent.
+    ///
+    struct ShutterCurve
+    {
+        float shutterOpenTime;
+        float shutterCloseTime;
+        VtArray<float> shutterOpening;
+    };
+
     HDPRMAN_API
     HdPrmanCamera(SdfPath const& id);
 
@@ -90,6 +102,43 @@ public:
     }
 #endif
 
+    /// Get the shutter curve of the camera. This curve determines the
+    /// transparency of the shutter as a function of (normalized)
+    /// time.
+    ///
+    /// Note that the times returned here are relative to the shutter
+    /// interval.
+    ///
+    /// Some more explanation:
+    ///
+    /// The values given here are passed to the Riley camera as options
+    /// RixStr.k_shutterOpenTime, k_shutterCloseTime and k_shutteropening.
+    ///
+    /// (where as the shutter interval is set through the global Riley options
+    /// using Ri:Shutter).
+    ///
+    /// RenderMan computes the shutter curve using constant pieces and
+    /// cubic Bezier interpolation between the following points
+    /// 
+    /// (0, 0), (t1, y1), (t2,y2), (t3, 1), (t4, 1), (t5, y5), (t6, y6), (1, 0)
+    ///
+    /// which are encoded as:
+    ///    t3 is the shutterOpenTime
+    ///    t4 is the shutterCloseTime
+    ///    [t1, y1, t2, y2, t5, y5, t6, y6] is the shutteropening array.
+    ///
+    /// \note The shutter:open and shutter:close attributes of UsdGeomCamera
+    ///       represent the (frame-relative) time the shutter *begins to open*
+    ///       and is *fully closed* respectively.
+    ///
+    ///       The Riley shutterOpenTime and shutterCloseTime represent the
+    ///       (riley shutter-interval relative)  time the shutter is *fully
+    ///       open* and *begins to close* respectively.
+    ///
+    const ShutterCurve& GetShutterCurve() const {
+        return _shutterCurve;
+    }
+
 private:
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> _sampleXforms;
 
@@ -101,6 +150,18 @@ private:
     GfVec2f _lensDistortionAsym;
     float _lensDistortionScale;
 #endif
+
+    /// RenderMan computes the shutter curve using constant pieces and
+    /// cubic Bezier interpolation between the following points
+    /// 
+    /// (0, 0), (t1, y1), (t2,y2), (t3, 1), (t4, 1), (t5, y5), (t6, y6), (1, 0)
+    ///
+    /// which are encoded as:
+    ///    t3 is the shutterOpenTime
+    ///    t4 is the shutterCloseTime
+    ///    [t1, y1, t2, y2, t5, y5, t6, y6] is shutteropeningPoints array.
+    ///
+    ShutterCurve _shutterCurve;
 };
 
 

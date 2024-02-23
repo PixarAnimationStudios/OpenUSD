@@ -52,7 +52,6 @@ HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const&
     , _idRenderPassShader(
         std::make_shared<HdStRenderPassShader>(
             HdxPackageRenderPassIdShader()))
-    , _overrideWindowPolicy{false, CameraUtilFit}
     , _viewport(0)
 {
 }

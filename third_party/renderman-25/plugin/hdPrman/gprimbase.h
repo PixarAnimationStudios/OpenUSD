@@ -39,12 +39,21 @@ class HdPrman_GprimBase
 public:
     HdPrman_GprimBase() = default;
     virtual ~HdPrman_GprimBase() = 0;
-    void UpdateInstanceVisibility(bool vis, riley::Riley *riley ) const;
+
+    /// Update the visibilty of this prim for a render pass.
+    void UpdateInstanceVisibility(bool renderPassVisibility,
+                                  riley::Riley *riley ) const;
+
     std::vector<riley::GeometryPrototypeId> GetPrototypeIds() const;
 
 protected:
     std::vector<riley::GeometryPrototypeId> _prototypeIds;
     std::vector<riley::GeometryInstanceId> _instanceIds;
+    
+    // Visibility state defined by the scene delegate.
+    bool _sceneVisibility:1;
+    // Visibility state defined by the render pass.
+    mutable bool _renderPassVisibility:1;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -27,6 +27,7 @@
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "hdPrman/meshLightResolvingSceneIndex.h"
+#include "hdPrman/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -34,8 +35,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((sceneIndexPluginName, "HdPrman_MeshLightResolvingSceneIndexPlugin"))
 );
-
-static const char * const _pluginDisplayName = "Prman";
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -46,13 +45,14 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
     // We need an "insertion point" that's *after* general material resolve.
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 115;
-
-    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        _pluginDisplayName,
-        _tokens->sceneIndexPluginName,
-        nullptr, // No input args.
-        insertionPhase,
-        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    for( auto const& pluginDisplayName : HdPrman_GetPluginDisplayNames() ) {
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            pluginDisplayName,
+            _tokens->sceneIndexPluginName,
+            nullptr, // No input args.
+            insertionPhase,
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    }
 }
 
 HdPrman_MeshLightResolvingSceneIndexPlugin::

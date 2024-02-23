@@ -98,13 +98,15 @@ public:
     /// Encode drawing commands for this batch.
     virtual void EncodeDraw(
         HdStRenderPassStateSharedPtr const & renderPassState,
-        HdStResourceRegistrySharedPtr const & resourceRegistry) = 0;
+        HdStResourceRegistrySharedPtr const & resourceRegistry,
+        bool firstDrawBatch) = 0;
 
     /// Executes the drawing commands for this batch.
     virtual void ExecuteDraw(
         HgiGraphicsCmds *gfxCmds,
         HdStRenderPassStateSharedPtr const &renderPassState,
-        HdStResourceRegistrySharedPtr const & resourceRegistry) = 0;
+        HdStResourceRegistrySharedPtr const & resourceRegistry,
+        bool firstDrawBatch) = 0;
 
     /// Let the batch know that one of it's draw item instances has changed
     /// NOTE: This callback is called from multiple threads, so needs to be

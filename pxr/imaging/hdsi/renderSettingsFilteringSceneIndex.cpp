@@ -47,7 +47,8 @@ namespace
 {
 
 static const SdfPath s_renderScope("/Render");
-static const SdfPath s_fallbackPath("/Render/_FallbackSettings");
+static const SdfPath s_fallbackPath(
+    "/Render/__HdsiRenderSettingsFilteringSceneIndex__FallbackSettings");
 
 // Builds and returns a data source to invalidate the renderSettings.active
 // locator when the sceneGlobals.activeRenderSettingsPrim locator is dirtied.
@@ -226,18 +227,13 @@ _Contains(
 // prim.
 SdfPathVector
 _GetTargetedCameras(
-    HdRenderProductVectorSchema products)
+    HdRenderProductVectorSchema productsSchema)
 {
-    const HdVectorDataSourceHandle vds = products.GetVector();
-    if (!vds) {
-        return SdfPathVector();
-    }
+    const size_t n = productsSchema.GetNumElements();
 
     SdfPathVector cameraPaths;
-    for (size_t ii = 0; ii < vds->GetNumElements(); ++ii) {
-        HdRenderProductSchema productSchema(
-            HdContainerDataSource::Cast(vds->GetElement(ii)));
-        
+    for (size_t i = 0; i < n; ++i) {
+        HdRenderProductSchema productSchema = productsSchema.GetElement(i);
         const HdPathDataSourceHandle camPathDs =  productSchema.GetCameraPrim();
         if (camPathDs) {
             const SdfPath camPath = camPathDs->GetTypedValue(0.0);
@@ -289,18 +285,13 @@ using _ProductShutterInfoVec = std::vector<_ProductShutterInfo>;
 
 _ProductShutterInfoVec
 _GetShutterInfoFromProducts(
-    HdRenderProductVectorSchema products)
+    HdRenderProductVectorSchema productsSchema)
 {
-    const HdVectorDataSourceHandle vds = products.GetVector();
-    if (!vds) {
-        return _ProductShutterInfoVec();
-    }
+    const size_t n = productsSchema.GetNumElements();
 
     _ProductShutterInfoVec result;
-    for (size_t ii = 0; ii < vds->GetNumElements(); ++ii) {
-        HdRenderProductSchema productSchema(
-            HdContainerDataSource::Cast(vds->GetElement(ii)));
-        
+    for (size_t i = 0; i < n; ++i) {
+        HdRenderProductSchema productSchema = productsSchema.GetElement(i);
         const HdPathDataSourceHandle camPathDs =  productSchema.GetCameraPrim();
         if (camPathDs) {
             const SdfPath camPath = camPathDs->GetTypedValue(0.0);
@@ -580,17 +571,24 @@ SdfPathVector
 HdsiRenderSettingsFilteringSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 { 
-    // Avoid a copy if possible.
+    // Avoid a copy if possible in the generic case.
     if (ARCH_UNLIKELY(
-            (primPath == GetRenderScope() || primPath.IsAbsoluteRootPath()) &&
-             _addedFallbackPrim)) {
+            primPath.IsAbsoluteRootPath() && _addedFallbackPrim)) {
         
         SdfPathVector paths =
             _GetInputSceneIndex()->GetChildPrimPaths(primPath);
-        paths.push_back(primPath.IsAbsoluteRootPath()
-                        ? GetRenderScope()
-                        : GetFallbackPrimPath());
+        if (!_Contains(paths, GetRenderScope())) {
+            paths.push_back(GetRenderScope());
+        }
+        return paths;
+    }
 
+    if (ARCH_UNLIKELY(
+            primPath == GetRenderScope() && _addedFallbackPrim)) {
+        
+        SdfPathVector paths =
+            _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+        paths.push_back(GetFallbackPrimPath());
         return paths;
     }
 

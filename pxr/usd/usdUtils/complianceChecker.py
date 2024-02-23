@@ -24,6 +24,8 @@
 
 from __future__ import print_function
 
+import warnings
+
 from pxr import Ar
 
 from pxr.UsdUtils.constantsGroup import ConstantsGroup
@@ -456,13 +458,21 @@ Specifically:
         ext = Ar.GetResolver().GetExtension(asset.resolvedPath)
         # not an exhaustive list, but ones we typically can read
         return ext in ["bmp", "tga", "jpg", "jpeg", "png", "tif"]
-        
+
     def _GetInputValue(self, shader, inputName):
-        from pxr import Usd
+        from pxr import Usd, UsdShade
         input = shader.GetInput(inputName)
         if not input:
             return None
-        return input.Get(Usd.TimeCode.EarliestTime())
+        # Query value producing attributes for input values.
+        # This has to be a length of 1, otherwise no attribute is producing a value.
+        valueProducingAttrs = UsdShade.Utils.GetValueProducingAttributes(input)
+        if not valueProducingAttrs or len(valueProducingAttrs) != 1:
+            return None
+        # We require an input parameter producing the value.
+        if not UsdShade.Input.IsInput(valueProducingAttrs[0]):
+            return None
+        return valueProducingAttrs[0].Get(Usd.TimeCode.EarliestTime())
 
     def CheckPrim(self, prim):
         from pxr import UsdShade, Gf
@@ -718,7 +728,9 @@ class ARKitPrimTypeChecker(BaseRuleChecker):
                             'Mesh', 'Sphere', 'Cube', 'Cylinder', 'Cone',
                             'Capsule', 'GeomSubset', 'Points', 
                             'SkelRoot', 'Skeleton', 'SkelAnimation', 
-                            'BlendShape', 'SpatialAudio')
+                            'BlendShape', 'SpatialAudio', 'PhysicsScene',
+                            'Preliminary_ReferenceImage', 'Preliminary_Text',
+                            'Preliminary_Trigger')
 
     @staticmethod
     def GetDescription():
@@ -733,8 +745,10 @@ class ARKitPrimTypeChecker(BaseRuleChecker):
 
     def CheckPrim(self, prim):
         self._Msg("Checking prim <%s>." % prim.GetPath())
-        if prim.GetTypeName() not in \
-            ARKitPrimTypeChecker._allowedPrimTypeNames:
+        if (
+            (prim.GetTypeName() not in ARKitPrimTypeChecker._allowedPrimTypeNames) and
+            (not prim.GetTypeName().startswith("RealityKit"))
+        ):
             self._AddFailedCheck("Prim <%s> has unsupported type '%s'." % 
                                     (prim.GetPath(), prim.GetTypeName()))
 
@@ -742,7 +756,7 @@ class ARKitShaderChecker(BaseRuleChecker):
     @staticmethod
     def GetDescription():
         return "Shader nodes must have \"id\" as the implementationSource, "  \
-               "with id values that begin with \"Usd*\". Also, shader inputs "\
+               "with id values that begin with \"Usd*|ND_*\". Also, shader inputs "\
                "with connections must each have a single, valid connection "  \
                "source."
 
@@ -773,7 +787,8 @@ class ARKitShaderChecker(BaseRuleChecker):
            not (shaderId in [NodeTypes.UsdPreviewSurface, 
                              NodeTypes.UsdUVTexture, 
                              NodeTypes.UsdTransform2d] or
-                shaderId.startswith(NodeTypes.UsdPrimvarReader)) :
+                shaderId.startswith(NodeTypes.UsdPrimvarReader) or
+                shaderId.startswith("ND_")) :
             self._AddFailedCheck("Shader <%s> has unsupported info:id '%s'." 
                     % (prim.GetPath(), shaderId))
 
@@ -863,44 +878,6 @@ class ARKitFileExtensionChecker(BaseRuleChecker):
                     "unknown or unsupported extension '%s'." % 
                     (fileName, packagePath, fileExt))
 
-class ARKitRootLayerChecker(BaseRuleChecker):
-    @staticmethod
-    def GetDescription():
-        return "The root layer of the package must be a usdc file and " \
-            "must not include any external dependencies that participate in "\
-            "stage composition."
-
-    def __init__(self, verbose, consumerLevelChecks, assetLevelChecks):
-        super(ARKitRootLayerChecker, self).__init__(verbose, 
-                                                    consumerLevelChecks, 
-                                                    assetLevelChecks)
-
-    def CheckStage(self, usdStage):
-        usedLayers = usdStage.GetUsedLayers()
-        # This list excludes any session layers.
-        usedLayersOnDisk = [i for i in usedLayers if i.realPath]
-        if len(usedLayersOnDisk) > 1:
-            self._AddFailedCheck("The stage uses %s layers. It should "
-                "contain a single usdc layer to be compatible with ARKit's "
-                "implementation of usdz." % len(usedLayersOnDisk))
-        
-        rootLayerRealPath = usdStage.GetRootLayer().realPath
-        if rootLayerRealPath.endswith(".usdz"):
-            # Check if the root layer in the package is a usdc.
-            from pxr import Usd
-            zipFile = Usd.ZipFile.Open(rootLayerRealPath)
-            if not zipFile:
-                self._AddError("Could not open package at path '%s'." % 
-                        resolvedPath)
-                return
-            fileNames = zipFile.GetFileNames()
-            if not fileNames[0].endswith(".usdc"):
-                self._AddFailedCheck("First file (%s) in usdz package '%s' "
-                    "does not have the .usdc extension." % (fileNames[0], 
-                    rootLayerRealPath))
-        elif not rootLayerRealPath.endswith(".usdc"):
-            self._AddFailedCheck("Root layer of the stage '%s' does not "
-                "have the '.usdc' extension." % (rootLayerRealPath))
 
 class ComplianceChecker(object):
     """ A utility class for checking compliance of a given USD asset or a USDZ 
@@ -937,8 +914,9 @@ class ComplianceChecker(object):
                       ARKitMaterialBindingChecker,
                       ARKitFileExtensionChecker, 
                       ARKitPackageEncapsulationChecker]
-        if not skipARKitRootLayerCheck:
-            arkitRules.append(ARKitRootLayerChecker)
+        if skipARKitRootLayerCheck:
+            warnings.warn("skipARKitRootLayerCheck is no longer supported. It will be removed in a future version",
+                          PendingDeprecationWarning)
         return arkitRules
 
     @staticmethod

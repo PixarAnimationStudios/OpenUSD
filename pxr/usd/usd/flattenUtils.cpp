@@ -51,6 +51,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <optional>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -82,6 +83,9 @@ template <typename T>
 SdfListOp<T>
 _FixListOp(SdfListOp<T> op)
 {
+    if (op.IsExplicit()) {
+        return op;
+    }
     std::vector<T> items;
     items = op.GetAppendedItems();
     for (const T& item: op.GetAddedItems()) {
@@ -95,20 +99,36 @@ _FixListOp(SdfListOp<T> op)
     return op;
 }
 
+// List ops that use added or reordered items cannot, in general, be
+// composed into another listop. In those cases, we fall back to a
+// best-effort approximation by discarding reorders and converting
+// adds to appends.
+static void
+_FixListOpValue(VtValue *v)
+{
+#define FIX_LISTOP_TYPE(T) \
+    if (v->IsHolding<T>()) { \
+        *v = _FixListOp(v->UncheckedGet<T>()); \
+        return; \
+    }
+    FIX_LISTOP_TYPE(SdfIntListOp);
+    FIX_LISTOP_TYPE(SdfUIntListOp);
+    FIX_LISTOP_TYPE(SdfInt64ListOp);
+    FIX_LISTOP_TYPE(SdfUInt64ListOp);
+    FIX_LISTOP_TYPE(SdfTokenListOp);
+    FIX_LISTOP_TYPE(SdfStringListOp);
+    FIX_LISTOP_TYPE(SdfPathListOp);
+    FIX_LISTOP_TYPE(SdfPayloadListOp);
+    FIX_LISTOP_TYPE(SdfReferenceListOp);
+    FIX_LISTOP_TYPE(SdfUnregisteredValueListOp);
+}
+
 template <typename T>
 VtValue
 _Reduce(const SdfListOp<T> &lhs, const SdfListOp<T> &rhs)
 {
-    boost::optional<SdfListOp<T>> r = lhs.ApplyOperations(rhs);
-    if (r) {
-        return VtValue(*r);
-    }
-    // List ops that use added or reordered items cannot, in general, be
-    // composed into another listop. In those cases, we fall back to a
-    // best-effort approximation by discarding reorders and converting
-    // adds to appends.
-    r = _FixListOp(lhs).ApplyOperations(_FixListOp(rhs));
-    if (r) {
+    // We assume the caller has already applied _FixListOp()
+    if (std::optional<SdfListOp<T>> r = lhs.ApplyOperations(rhs)) {
         return VtValue(*r);
     }
     // The approximation used should always be composable,
@@ -225,13 +245,13 @@ _ApplyLayerOffsetToClipInfo(
 }
 
 template <class RefOrPayloadType>
-static boost::optional<RefOrPayloadType>
+static std::optional<RefOrPayloadType>
 _ApplyLayerOffsetToRefOrPayload(const SdfLayerOffset &offset,
                                 const RefOrPayloadType &refOrPayload)
 {
     RefOrPayloadType result = refOrPayload;
     result.SetLayerOffset(offset * refOrPayload.GetLayerOffset());
-    return boost::optional<RefOrPayloadType>(result);
+    return std::optional<RefOrPayloadType>(result);
 }
 
 // Apply layer offsets (time remapping) to time-keyed metadata.
@@ -293,7 +313,7 @@ using _ResolveAssetPathFn = std::function<
                 const std::string& assetPath)>;
 
 template <class RefOrPayloadType>
-static boost::optional<RefOrPayloadType>
+static std::optional<RefOrPayloadType>
 _FixReferenceOrPayload(const _ResolveAssetPathFn& resolveAssetPathFn,
                        const SdfLayerHandle &sourceLayer,
                        const RefOrPayloadType &refOrPayload)
@@ -301,7 +321,7 @@ _FixReferenceOrPayload(const _ResolveAssetPathFn& resolveAssetPathFn,
     RefOrPayloadType result = refOrPayload;
     result.SetAssetPath(
         resolveAssetPathFn(sourceLayer, refOrPayload.GetAssetPath()));
-    return boost::optional<RefOrPayloadType>(result);
+    return std::optional<RefOrPayloadType>(result);
 }
 
 static void
@@ -491,6 +511,8 @@ _ReduceField(const PcpLayerStackRefPtr &layerStack,
         }
         // Fix asset paths.
         _FixAssetPaths(layers[i], field, resolveAssetPathFn, &layerVal);
+        // Fix any list ops
+        _FixListOpValue(&layerVal);
         val = _Reduce(val, layerVal, field);
     }
     return val;

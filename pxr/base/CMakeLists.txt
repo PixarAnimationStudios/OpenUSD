@@ -7,6 +7,7 @@ set(DIRS
     work
     plug
     vt
+    ts
 #    bin
 )
 

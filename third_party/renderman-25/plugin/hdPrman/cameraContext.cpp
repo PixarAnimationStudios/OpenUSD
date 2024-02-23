@@ -37,17 +37,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static const RtUString _us_main_cam_projection("main_cam_projection");
+static const RtUString s_projectionNodeName("cam_projection");
 
 HdPrman_CameraContext::HdPrman_CameraContext()
   : _policy(CameraUtilFit)
-  , _shutterOpenTime(0.0f)
-  , _shutterCloseTime(1.0f)
-  , _shutteropeningPoints{ // matches RenderMan default
-            0.0f, 0.0f, // points before open time
-            0.0f, 0.0f, 
-            1.0f, 0.0f, // points after close time
-            1.0f, 0.0f}
+  , _disableDepthOfField(false)
   , _invalid(false)
 {
 }
@@ -91,27 +85,11 @@ HdPrman_CameraContext::SetWindowPolicy(
 }
 
 void
-HdPrman_CameraContext::SetShutterCurve(const float shutterOpenTime,
-                                       const float shutterCloseTime,
-                                       const float shutteropeningPoints[8])
+HdPrman_CameraContext::SetDisableDepthOfField(bool disableDepthOfField)
 {
-    if (_shutterOpenTime != shutterOpenTime) {
-        _shutterOpenTime = shutterOpenTime;
+    if (_disableDepthOfField != disableDepthOfField) {
+        _disableDepthOfField = disableDepthOfField;
         _invalid = true;
-    }
-    if (_shutterCloseTime != shutterCloseTime) {
-        _shutterCloseTime = shutterCloseTime;
-        _invalid = true;
-    }
-    size_t i = 0;
-    for (; i < TfArraySize(_shutteropeningPoints); i++) {
-        if (_shutteropeningPoints[i] != shutteropeningPoints[i]) {
-            _invalid = true;
-            break;
-        }
-    }
-    for (; i < TfArraySize(_shutteropeningPoints); i++) {
-        _shutteropeningPoints[i] = shutteropeningPoints[i];
     }
 }
 
@@ -265,7 +243,8 @@ _ComputeProjectionShader(const HdCamera::Projection projection)
 
 // Compute parameters for the camera riley::ShadingNode for perspective camera
 RtParamList
-_ComputePerspectiveNodeParams(const HdPrmanCamera * const camera)
+_ComputePerspectiveNodeParams(
+    const HdPrmanCamera * const camera, bool disableDepthOfField)
 {
     RtParamList result;
 
@@ -300,12 +279,13 @@ _ComputePerspectiveNodeParams(const HdPrmanCamera * const camera)
     }
 
     const float fStop = camera->GetFStop();
-    if (fStop > 0.0f && focusDistance > 0.0f) {
-        result.SetFloat(RixStr.k_fStop, fStop);
-    } else {
-        // If values are bogus, disable depth of field by setting
-        // ininie f-Stop and a sane value for focalDistance.
+    if (disableDepthOfField || fStop <= 0.0f || focusDistance <= 0.0f) {
+        // If depth of field is disabled or the values are bogus, 
+        // disable depth of field by setting f-Stop to infinity, 
+        // and a sane value for focalDistance. 
         result.SetFloat(RixStr.k_fStop, RI_INFINITY);
+    } else {
+        result.SetFloat(RixStr.k_fStop, fStop);
     }
 
     // Not setting fov frame begin/end - thus we do not support motion blur
@@ -356,17 +336,17 @@ _ComputeOrthographicNodeParams(const HdPrmanCamera * const camera)
 // Compute parameters for the camera riley::ShadingNode
 static
 RtParamList
-_ComputeNodeParams(const HdPrmanCamera * const camera)
+_ComputeNodeParams(const HdPrmanCamera * const camera, bool disableDepthOfField)
 {
     switch(camera->GetProjection()) {
     case HdCamera::Perspective:
-        return _ComputePerspectiveNodeParams(camera);
+        return _ComputePerspectiveNodeParams(camera, disableDepthOfField);
     case HdCamera::Orthographic:
         return _ComputeOrthographicNodeParams(camera);
     }
 
     // Make compiler happy
-    return _ComputePerspectiveNodeParams(camera);
+    return _ComputePerspectiveNodeParams(camera, disableDepthOfField);
 }
 
 // Compute params given to Riley::ModifyCamera
@@ -405,30 +385,19 @@ HdPrman_CameraContext::_ComputeCameraParams(
         result.SetFloat(RixStr.k_farClip, clippingRange.GetMax());
     }
 
-    result.SetFloat(RixStr.k_shutterOpenTime, _shutterOpenTime);
-    result.SetFloat(RixStr.k_shutterCloseTime, _shutterCloseTime);
+    const HdPrmanCamera * const hdPrmanCamera =
+        dynamic_cast<const HdPrmanCamera * const>(camera);
+    const HdPrmanCamera::ShutterCurve &shutterCurve
+        = hdPrmanCamera->GetShutterCurve();
+        
+    result.SetFloat(RixStr.k_shutterOpenTime, shutterCurve.shutterOpenTime);
+    result.SetFloat(RixStr.k_shutterCloseTime, shutterCurve.shutterCloseTime);
     result.SetFloatArray(
         RixStr.k_shutteropening,
-        _shutteropeningPoints, TfArraySize(_shutteropeningPoints));
-
-    // XXX : Ideally we would want to set the proper shutter open and close,
-    // however we can not fully change the shutter without restarting
-    // Riley.
-    
-    // double const *shutterOpen =
-    //     _GetDictItem<double>(_params, HdCameraTokens->shutterOpen);
-    // if (shutterOpen) {
-    //     camParams->SetFloat(RixStr.k_shutterOpenTime, *shutterOpen);
-    // }
-    
-    // double const *shutterClose =
-    //     _GetDictItem<double>(_params, HdCameraTokens->shutterClose);
-    // if (shutterClose) {
-    //     camParams->SetFloat(RixStr.k_shutterCloseTime, *shutterClose);
-    // }
+        shutterCurve.shutterOpening.data(),
+        shutterCurve.shutterOpening.size());
 
     const GfVec4f s = _ToVec4f(screenWindow);
-    
     result.SetFloatArray(RixStr.k_Ri_ScreenWindow, s.data(), 4);
 
     return result;
@@ -539,8 +508,8 @@ HdPrman_CameraContext::_UpdateRileyCamera(
     const riley::ShadingNode node = riley::ShadingNode {
         riley::ShadingNode::Type::k_Projection,
         _ComputeProjectionShader(camera->GetProjection()),
-        _us_main_cam_projection,
-        _ComputeNodeParams(camera)
+        s_projectionNodeName,
+        _ComputeNodeParams(camera, _disableDepthOfField)
     };
 
     const RtParamList params = _ComputeCameraParams(screenWindow, camera);
@@ -623,11 +592,7 @@ HdPrman_CameraContext::_UpdateClipPlanes(
     riley::Riley * const riley,
     const HdPrmanCamera * const camera)
 {
-    // Delete clipping planes
-    for (riley::ClippingPlaneId const& id: _clipPlaneIds) {
-        riley->DeleteClippingPlane(id);
-    }
-    _clipPlaneIds.clear();
+    _DeleteClipPlanes(riley);
 
     // Create clipping planes
     const std::vector<GfVec4d> &clipPlanes = camera->GetClipPlanes();
@@ -638,7 +603,7 @@ HdPrman_CameraContext::_UpdateClipPlanes(
     using _HdTimeSamples =
         HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES>;
     using _RtMatrices =
-        TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>;    
+        TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>;
 
     // Use time sampled transforms authored on the scene camera.
     const _HdTimeSamples &sampleXforms = camera->GetTimeSampleXforms();
@@ -656,6 +621,16 @@ HdPrman_CameraContext::_UpdateClipPlanes(
                 riley->CreateClippingPlane(transform, params));
         }
     }
+}
+
+void
+HdPrman_CameraContext::_DeleteClipPlanes(
+    riley::Riley * const riley)
+{
+    for (riley::ClippingPlaneId const& id: _clipPlaneIds) {
+        riley->DeleteClippingPlane(id);
+    }
+    _clipPlaneIds.clear();
 }
     
 // The crop window for RenderMan.
@@ -778,14 +753,11 @@ HdPrman_CameraContext::MarkValid()
 }
 
 void
-HdPrman_CameraContext::CreateRileyCamera(riley::Riley * const riley)
+HdPrman_CameraContext::CreateRileyCamera(
+    riley::Riley * const riley,
+    const RtUString &cameraName)
 {
-    // Create camera
-
-    // Note: when changing the name of this camera, we will need to also 
-    // change the 'default dicing camera' name given to Riley::Render().
-    // Note: why not use us_main_cam defined earlier in the same file?
-    const static RtUString name("main_cam");
+    _cameraName = cameraName;
 
     RtParamList nodeParams;
     nodeParams.SetFloat(RixStr.k_fov, 60.0f);
@@ -794,7 +766,7 @@ HdPrman_CameraContext::CreateRileyCamera(riley::Riley * const riley)
     const riley::ShadingNode node = riley::ShadingNode {
         riley::ShadingNode::Type::k_Projection,
         _ComputeProjectionShader(HdCamera::Perspective),
-        _us_main_cam_projection,
+        s_projectionNodeName,
         nodeParams
     };
 
@@ -809,14 +781,27 @@ HdPrman_CameraContext::CreateRileyCamera(riley::Riley * const riley)
         
     _cameraId = riley->CreateCamera(
         riley::UserId(
-            stats::AddDataLocation(name.CStr()).GetValue()),
-        name,
+            stats::AddDataLocation(_cameraName.CStr()).GetValue()),
+        _cameraName,
         node,
         transform,
         params);
 
     // Dicing Camera
+    // XXX This should be moved out if/when we support multiple camera contexts.
     riley->SetDefaultDicingCamera(_cameraId);
+}
+
+void
+HdPrman_CameraContext::DeleteRileyCameraAndClipPlanes(
+    riley::Riley * const riley)
+{
+    if (_cameraId != riley::CameraId::InvalidId()) {
+        riley->DeleteCamera(_cameraId);
+        _cameraId = riley::CameraId::InvalidId();
+    }
+
+    _DeleteClipPlanes(riley);
 }
 
 const HdPrmanCamera *
@@ -834,6 +819,14 @@ const CameraUtilFraming &
 HdPrman_CameraContext::GetFraming() const
 {
     return _framing;
+}
+
+/* static */
+RtUString
+HdPrman_CameraContext::GetDefaultReferenceCameraName()
+{
+    const static RtUString name("main_cam");
+    return name;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -51,7 +51,7 @@
 #include "pxr/imaging/hgiGL/graphicsCmds.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iostream>
 
@@ -1016,17 +1016,20 @@ size_t
 HdxPickResult::_GetHash(int index) const
 {
     size_t hash = 0;
-    boost::hash_combine(hash, _GetPrimId(index));
-    boost::hash_combine(hash, _GetInstanceId(index));
+    hash = TfHash::Combine(
+        hash,
+        _GetPrimId(index),
+        _GetInstanceId(index)
+    );
     if (_pickTarget == HdxPickTokens->pickFaces) {
-        boost::hash_combine(hash, _GetElementId(index));
+        hash = TfHash::Combine(hash, _GetElementId(index));
     }
     if (_pickTarget == HdxPickTokens->pickEdges) {
-        boost::hash_combine(hash, _GetEdgeId(index));
+        hash = TfHash::Combine(hash, _GetEdgeId(index));
     }
     if (_pickTarget == HdxPickTokens->pickPoints ||
         _pickTarget == HdxPickTokens->pickPointsAndInstances) {
-        boost::hash_combine(hash, _GetPointId(index));
+        hash = TfHash::Combine(hash, _GetPointId(index));
     }
     return hash;
 }
@@ -1234,20 +1237,23 @@ HdxPickHit::GetHash() const
 {
     size_t hash = 0;
 
-    boost::hash_combine(hash, delegateId.GetHash());
-    boost::hash_combine(hash, objectId.GetHash());
-    boost::hash_combine(hash, instancerId);
-    boost::hash_combine(hash, instanceIndex);
-    boost::hash_combine(hash, elementIndex);
-    boost::hash_combine(hash, edgeIndex);
-    boost::hash_combine(hash, pointIndex);
-    boost::hash_combine(hash, worldSpaceHitPoint[0]);
-    boost::hash_combine(hash, worldSpaceHitPoint[1]);
-    boost::hash_combine(hash, worldSpaceHitPoint[2]);
-    boost::hash_combine(hash, worldSpaceHitNormal[0]);
-    boost::hash_combine(hash, worldSpaceHitNormal[1]);
-    boost::hash_combine(hash, worldSpaceHitNormal[2]);
-    boost::hash_combine(hash, normalizedDepth);
+    hash = TfHash::Combine(
+        hash,
+        delegateId.GetHash(),
+        objectId.GetHash(),
+        instancerId,
+        instanceIndex,
+        elementIndex,
+        edgeIndex,
+        pointIndex,
+        worldSpaceHitPoint[0],
+        worldSpaceHitPoint[1],
+        worldSpaceHitPoint[2],
+        worldSpaceHitNormal[0],
+        worldSpaceHitNormal[1],
+        worldSpaceHitNormal[2],
+        normalizedDepth
+    );
     
     return hash;
 }

@@ -186,6 +186,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomGprim, UsdGeomPlane
     const TfToken doubleSided;
+    /// \brief "edge"
+    /// 
+    /// Possible value for UsdGeomSubset::GetElementTypeAttr()
+    const TfToken edge;
     /// \brief "edgeAndCorner"
     /// 
     /// Fallback value for UsdGeomMesh::GetInterpolateBoundaryAttr()
@@ -430,6 +434,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomPointInstancer
     const TfToken orientations;
+    /// \brief "orientationsf"
+    /// 
+    /// UsdGeomPointInstancer
+    const TfToken orientationsf;
     /// \brief "origin"
     /// 
     /// Possible value for UsdGeomModelAPI::GetModelDrawModeAttr()
@@ -458,6 +466,10 @@ struct UsdGeomTokensType {
     /// 
     /// Op suffix for the standard scale-rotate pivot on a UsdGeomXformCommonAPI-compatible prim. 
     const TfToken pivot;
+    /// \brief "point"
+    /// 
+    /// Possible value for UsdGeomSubset::GetElementTypeAttr()
+    const TfToken point;
     /// \brief "points"
     /// 
     /// UsdGeomPointBased
@@ -570,10 +582,22 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomMesh
     const TfToken subdivisionScheme;
+    /// \brief "surfaceFaceVertexIndices"
+    /// 
+    /// UsdGeomTetMesh
+    const TfToken surfaceFaceVertexIndices;
     /// \brief "tangents"
     /// 
     /// UsdGeomHermiteCurves
     const TfToken tangents;
+    /// \brief "tetrahedron"
+    /// 
+    /// Possible value for UsdGeomSubset::GetElementTypeAttr()
+    const TfToken tetrahedron;
+    /// \brief "tetVertexIndices"
+    /// 
+    /// UsdGeomTetMesh
+    const TfToken tetVertexIndices;
     /// \brief "triangleSubdivisionRule"
     /// 
     /// UsdGeomMesh
@@ -822,6 +846,10 @@ struct UsdGeomTokensType {
     /// 
     /// Schema identifer and family for UsdGeomSphere
     const TfToken Sphere;
+    /// \brief "TetMesh"
+    /// 
+    /// Schema identifer and family for UsdGeomTetMesh
+    const TfToken TetMesh;
     /// \brief "VisibilityAPI"
     /// 
     /// Schema identifer and family for UsdGeomVisibilityAPI

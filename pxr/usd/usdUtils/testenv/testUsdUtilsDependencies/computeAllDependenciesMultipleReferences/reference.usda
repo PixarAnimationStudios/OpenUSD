@@ -1,0 +1,13 @@
+#usda 1.0
+(
+    defaultPrim = "main"
+)
+
+def "main"
+(
+    references = [@./common.usda@]
+)
+{
+    asset textAsset = @./asset.txt@
+    asset missing = @./missing.usda@
+}
