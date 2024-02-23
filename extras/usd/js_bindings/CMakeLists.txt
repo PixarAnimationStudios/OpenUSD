@@ -66,7 +66,7 @@ endif()
 install(
     FILES
       ${BUILD_FILES}
-    DESTINATION ${CMAKE_BINARY_DIR}/../../bin
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
 )
 # Install files for npm package
 
@@ -90,6 +90,6 @@ install(
 
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/usd.js 
-    DESTINATION ${CMAKE_BINARY_DIR}/../../bin
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
 )
 ]]

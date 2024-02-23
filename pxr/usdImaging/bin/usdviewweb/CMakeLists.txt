@@ -138,7 +138,7 @@ if (EMSCRIPTEN)
     install(
         FILES
         ${BUILD_FILES}
-        DESTINATION ${CMAKE_BINARY_DIR}/../../bin
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
     )
 endif()
 
