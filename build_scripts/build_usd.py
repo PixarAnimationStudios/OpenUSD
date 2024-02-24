@@ -1350,11 +1350,15 @@ def InstallOpenSubdiv(context, force, buildArgs):
             '-DNO_OMP=ON',
             '-DNO_CUDA=ON',
             '-DNO_OPENCL=ON',
-            '-DNO_DX=ON',
             '-DNO_TESTS=ON',
             '-DNO_GLEW=ON',
             '-DNO_GLFW=ON',
         ]
+        
+        if Windows() and context.buildDirectX:
+            extraArgs.append('-DNO_DX=OFF')
+        else:
+            extraArgs.append('-DNO_DX=ON')
 
         # If Ptex support is disabled in USD, disable support in OpenSubdiv
         # as well. This ensures OSD doesn't accidentally pick up a Ptex
@@ -1564,6 +1568,74 @@ def InstallAnimX(context, force, buildArgs):
 
 ANIMX = Dependency("AnimX", InstallAnimX, "include/animx.h")
 
+############################################################
+# Intel DirectX files custom versions
+
+if Windows():
+    DX_DXC_URL = "https://www.nuget.org/api/v2/package/Microsoft.Direct3D.DXC/1.7.2308.12"
+    DX_WARP_URL = "https://www.nuget.org/api/v2/package/Microsoft.Direct3D.WARP/1.0.9"
+    DX_D3D12_URL = "https://www.nuget.org/api/v2/package/Microsoft.Direct3D.D3D12/1.611.2"
+
+def InstallDirectX(context, force, buildArgs):
+    if Windows():
+        InstallDirectX_Windows(context, force, buildArgs)
+
+def InstallDirectX_Windows(context, force, buildArgs):
+    DownloadAndInstallDXDependencies(context, DX_DXC_URL, "dxc",
+           [ "\\build\\native\\bin\\x64\\dxcompiler.*",
+             "\\build\\native\\bin\\x64\\dxil.*"])
+    DownloadAndInstallDXDependencies(context, DX_WARP_URL, "dx_warp",
+           [ "\\build\\native\\amd64\\d3d10warp.*"])
+    DownloadAndInstallDXDependencies(context, DX_D3D12_URL, "d3d12",
+           [ "\\build\\native\\bin\\x64\\D3D12Core.*",
+             "\\build\\native\\bin\\x64\\d3d12SDKLayers.*"])
+
+# The code below is strongly inspired from 
+# the function "DownloadURL" which did not work for my case because it expects 
+# the urls to end in a file name which is not the case for my directX nuggets
+# also even if my files would have ended in a file name that would have been .nuget
+# and I needed that renamed to "zip" in order to extract them.
+# I consider this a temporary stop gap and I believe we should try to improve the 
+# "DownloadURL" to support 1-2 more parameters and be able to cover DirectX needs as well.
+def DownloadAndInstallDXDependencies(context, url, dependencyName, filesToInstall):
+    #with CurrentWorkingDirectory(DownloadURL(DX_DXC_URL, context, force, "dxc", "false")):
+    with CurrentWorkingDirectory(context.srcDir):
+        # Download to a temporary file and rename it to the expected
+        # filename when complete. This ensures that incomplete downloads
+        # will be retried if the script is run again.
+        
+        # I build a file name here because the url does not include one
+        downloadLastPart = url.split("/")[-1]
+        filename = dependencyName + "_" + downloadLastPart + ".zip"
+        
+        # use the name as extract folder 
+        extractPath = dependencyName
+        lastError = ""
+        
+        if not os.path.exists(extractPath):
+       
+           if not os.path.exists(filename):
+              #downloadFullPath = os.path.abspath(filename);
+              #print("Downloading dxc_1.7.2308.12 to {0}".format(downloadFullPath));
+              try:
+                 context.downloader(url, filename);
+              except Exception as e:
+                 raise RuntimeError("Failed download due to error: {err}\n"
+                                   .format(err=e))
+
+           archive = zipfile.ZipFile(filename)
+           
+           #print("Extracting to {0}".format(os.path.abspath(extractPath)))
+           archive.extractall(extractPath)
+       
+        #CopyFiles(context, "dxc\\build\\native\\bin\\x64\\dxcompiler.*", "bin")
+        for pattern in filesToInstall:
+           CopyFiles(context, dependencyName + pattern, "bin")
+
+
+DirectX = Dependency("DirectX", InstallDirectX, "bin\\dxcompiler.dll")
+
+
 
 ############################################################
 # USD
@@ -1730,6 +1802,9 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=ON')
         else:
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=OFF')
+            
+        if Windows() and context.buildDirectX:
+            extraArgs.append('-DPXR_ENABLE_DIRECTX_SUPPORT=ON')
 
         if context.buildMayapyTests:
             extraArgs.append('-DPXR_BUILD_MAYAPY_TESTS=ON')
@@ -2092,6 +2167,11 @@ subgroup.add_argument("--animx-tests",
 subgroup.add_argument("--no-animx-tests",
                       dest="build_animx_tests", action="store_false",
                       help="Do not build AnimX spline tests (default)")
+group = parser.add_argument_group(title="Optional Hgi")
+group.add_argument("--directx", dest="buildDirectX", action="store_true", 
+                      default=False,
+                      help="Build DirectX Hgi")
+
 
 args = parser.parse_args()
 
@@ -2239,6 +2319,9 @@ class InstallContext:
 
         # - MaterialX Plugin
         self.buildMaterialX = args.build_materialx
+        
+        # - Hgi
+        self.buildDirectX = args.buildDirectX
 
         # - Spline Tests
         self.buildMayapyTests = args.build_mayapy_tests
@@ -2317,6 +2400,10 @@ if context.buildUsdview:
 
 if context.buildAnimXTests:
     requiredDependencies += [ANIMX]
+
+if Windows() and context.buildDirectX:
+    requiredDependencies += [DirectX]
+
 
 # Assume zlib already exists on Linux platforms and don't build
 # our own. This avoids potential issues where a host application
@@ -2507,6 +2594,7 @@ summaryMsg += """\
       HDF5 support:             {enableHDF5}
     Draco Plugin                {buildDraco}
     MaterialX Plugin            {buildMaterialX}
+    DirectX Hgi                 {buildDirectX}
 
   Dependencies                  {dependencies}"""
 
@@ -2569,7 +2657,8 @@ summaryMsg = summaryMsg.format(
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
     buildMayapyTests=("On" if context.buildMayapyTests else "Off"),
     buildAnimXTests=("On" if context.buildAnimXTests else "Off"),
-    enableHDF5=("On" if context.enableHDF5 else "Off"))
+    enableHDF5=("On" if context.enableHDF5 else "Off"),
+    buildDirectX=("On" if context.buildDirectX else "Off"))
 
 Print(summaryMsg)
 

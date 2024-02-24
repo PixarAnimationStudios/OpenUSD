@@ -33,6 +33,7 @@
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/capabilities.h"
+#include "pxr/imaging/hgi/memoryHelper.h"
 
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -250,7 +251,62 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    /*
+    //
+    // DirectX aligns data in memory differently than OpenGL
+    // and unless we take that into account shaders will get corrupted data.
+    // Since this is dependent on Hgi, I decided to introduce here a way
+    // to allow the Hgi to specify whatever alignment they need.
+    HgiMemoryHelper* pMemHelper = _resourceRegistry->GetHgi()->GetMemoryHelper();
+    if (nullptr != pMemHelper)
+    {
+       StructMemorySpec sms;
+       pMemHelper->GetMemorySpec(bufferSpecs, role, sms);
+
+       _elementStride = _stride = sms.structStride;
+
+       //
+       // a bit of copy-paste because the code below is really strange...
+       // and also aligned if bufferOffsetAlignment exists (for UBO binding)
+       if (_bufferOffsetAlignment > 0) {
+          _stride += _ComputePadding(_bufferOffsetAlignment, _stride);
+       }
+
+       if (_stride > _maxSize) {
+          TF_WARN("Computed stride = %zu of interleaved buffer is larger than max"
+                  " size %zu, cannot create buffer.", _stride, _maxSize);
+          _SetMaxNumRanges(0);
+          return;
+       }
+       if (_stride == 0) {
+          TF_WARN("Computed stride = %zu of interleaved buffer is 0, cannot "
+                  " create buffer.", _stride);
+          _SetMaxNumRanges(0);
+          return;
+       }
+
+       TF_DEBUG_MSG(HD_BUFFER_ARRAY_INFO,
+                    "Create interleaved buffer array: stride = %zu\n", _stride);
+
+
+       size_t offset = 0;
+       TF_FOR_ALL(it, sms.members) {
+          
+          //
+          // I am not sure why we add here each of the resources with the total stride 
+          // of the entire struct, but... it does not work otherwise...
+          // probably somebody makes a wrong assumption somewhere when copy-ing data...
+          _AddResource(it->name, it->tupleType, it->offset, _stride/*it->stride*/);
+
+          TF_DEBUG_MSG(HD_BUFFER_ARRAY_INFO,
+                       "  %s : offset = %zu, stride = %zu\n",
+                       it->name.GetText(), it->offset, it->stride);
+       }
+
+       _SetMaxNumRanges(_maxSize / _stride);
+    }
+    else
+    {
+       /*
        interleaved uniform buffer layout (for example)
 
                 .--range["color"].offset
@@ -269,79 +325,79 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
       shader storage blocks using the "std140" layout, except that the base
       alignment of arrays of scalars and vectors in rule (4) and of structures
       in rule (9) are not rounded up a multiple of the base alignment of a vec4.
-     
+
       ***Unless we're using Metal, and then we use C++ alignment padding rules.
      */
-    const bool useCppShaderPadding = _resourceRegistry->GetHgi()->
-        GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsCppShaderPadding);
+       const bool useCppShaderPadding = _resourceRegistry->GetHgi()->
+          GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsCppShaderPadding);
 
-    TF_FOR_ALL(it, bufferSpecs) {
-        // Figure out the alignment we need for this type of data
-        const size_t alignment = _ComputeAlignment(it->tupleType);
-        _stride += _ComputePadding(alignment, _stride);
+       TF_FOR_ALL(it, bufferSpecs) {
+          // Figure out the alignment we need for this type of data
+          const size_t alignment = _ComputeAlignment(it->tupleType);
+          _stride += _ComputePadding(alignment, _stride);
 
-        // We need to save the max alignment size for later because the
-        // stride for our struct needs to be aligned to this
-        structAlignment = std::max(size_t(structAlignment), alignment);
+          // We need to save the max alignment size for later because the
+          // stride for our struct needs to be aligned to this
+          structAlignment = std::max(size_t(structAlignment), alignment);
 
-        _stride += HdDataSizeOfTupleType(it->tupleType);
-        
-        if (useCppShaderPadding) {
-            _stride += _ComputePadding(alignment, _stride);
-        }
+          _stride += HdDataSizeOfTupleType(it->tupleType);
+
+          if (useCppShaderPadding) {
+             _stride += _ComputePadding(alignment, _stride);
+          }
+       }
+
+       // Our struct stride needs to be aligned to the max alignment needed within
+       // our struct.
+       _stride += _ComputePadding(structAlignment, _stride);
+
+       _elementStride = _stride;
+
+       // and also aligned if bufferOffsetAlignment exists (for UBO binding)
+       if (_bufferOffsetAlignment > 0) {
+          _stride += _ComputePadding(_bufferOffsetAlignment, _stride);
+       }
+
+       if (_stride > _maxSize) {
+          TF_WARN("Computed stride = %zu of interleaved buffer is larger than max"
+                  " size %zu, cannot create buffer.", _stride, _maxSize);
+          _SetMaxNumRanges(0);
+          return;
+       }
+       if (_stride == 0) {
+          TF_WARN("Computed stride = %zu of interleaved buffer is 0, cannot "
+                  " create buffer.", _stride);
+          _SetMaxNumRanges(0);
+          return;
+       }
+
+       TF_DEBUG_MSG(HD_BUFFER_ARRAY_INFO,
+                    "Create interleaved buffer array: stride = %zu\n", _stride);
+
+       // populate BufferResources, interleaved
+       size_t offset = 0;
+       TF_FOR_ALL(it, bufferSpecs) {
+          // Figure out alignment for this data member
+          const size_t alignment = _ComputeAlignment(it->tupleType);
+          // Add any needed padding to fixup alignment
+          offset += _ComputePadding(alignment, offset);
+
+          _AddResource(it->name, it->tupleType, offset, _stride);
+
+          TF_DEBUG_MSG(HD_BUFFER_ARRAY_INFO,
+                       "  %s : offset = %zu, alignment = %zu\n",
+                       it->name.GetText(), offset, alignment);
+
+          const size_t thisSize = HdDataSizeOfTupleType(it->tupleType);
+          offset += thisSize;
+          if (useCppShaderPadding) {
+             offset += _ComputePadding(alignment, thisSize);
+          }
+       }
+
+       _SetMaxNumRanges(_maxSize / _stride);
+       TF_VERIFY(_stride + offset);
     }
-
-    // Our struct stride needs to be aligned to the max alignment needed within
-    // our struct.
-    _stride += _ComputePadding(structAlignment, _stride);
-
-    _elementStride = _stride;
-
-    // and also aligned if bufferOffsetAlignment exists (for UBO binding)
-    if (_bufferOffsetAlignment > 0) {
-        _stride += _ComputePadding(_bufferOffsetAlignment, _stride);
-    }
-
-    if (_stride > _maxSize) {
-        TF_WARN("Computed stride = %zu of interleaved buffer is larger than max"
-        " size %zu, cannot create buffer.", _stride, _maxSize);
-        _SetMaxNumRanges(0);
-        return;
-    }
-    if (_stride == 0) {
-        TF_WARN("Computed stride = %zu of interleaved buffer is 0, cannot "
-        " create buffer.", _stride);
-        _SetMaxNumRanges(0);
-        return;
-    }
-
-    TF_DEBUG_MSG(HD_BUFFER_ARRAY_INFO,
-                 "Create interleaved buffer array: stride = %zu\n", _stride);
-
-    // populate BufferResources, interleaved
-    size_t offset = 0;
-    TF_FOR_ALL(it, bufferSpecs) {
-        // Figure out alignment for this data member
-        const size_t alignment = _ComputeAlignment(it->tupleType);
-        // Add any needed padding to fixup alignment
-        offset += _ComputePadding(alignment, offset);
-
-        _AddResource(it->name, it->tupleType, offset, _stride);
-
-        TF_DEBUG_MSG(HD_BUFFER_ARRAY_INFO,
-                     "  %s : offset = %zu, alignment = %zu\n",
-                     it->name.GetText(), offset, alignment);
-
-        const size_t thisSize = HdDataSizeOfTupleType(it->tupleType);
-        offset += thisSize;
-        if (useCppShaderPadding) {
-            offset += _ComputePadding(alignment, thisSize);
-        }
-    }
-
-    _SetMaxNumRanges(_maxSize / _stride);
-
-    TF_VERIFY(_stride + offset);
 }
 
 HdStBufferResourceSharedPtr

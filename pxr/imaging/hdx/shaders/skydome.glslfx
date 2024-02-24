@@ -71,11 +71,11 @@ void main(void)
     vec3 sampleDirection = normalize(uvOut_view.xyz);
 
     // Apply the camera rotation and lightTransform to the sampleDirection
-    sampleDirection = 
-        ( lightTransform * viewToWorld * vec4(sampleDirection, 0.0) ).xyz;
+    vec4 sampleDirection4 = vec4(sampleDirection, 0.0);
+    sampleDirection4 = lightTransform * viewToWorld * sampleDirection4;
     
     // Sample Skydome Texture with the sampleDirection
-    vec2 sampleCoord = getSampleCoord(sampleDirection);
+    vec2 sampleCoord = getSampleCoord(sampleDirection4.xyz);
     hd_FragColor = vec4(HgiGet_skydomeTexture(sampleCoord).xyz, 1.0);
     gl_FragDepth = farPlane;
 }

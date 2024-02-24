@@ -606,6 +606,7 @@ protected:
 
     /// Open some protected methods for whitebox testing.
     friend class UsdImagingGL_UnitTestGLDrawing;
+    friend class UsdImagingDX_UnitTestDXDrawing;
 
     /// Returns the render index of the engine, if any.  This is only used for
     /// whitebox testing.

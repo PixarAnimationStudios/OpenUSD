@@ -55,6 +55,16 @@ GarchGLDebugWindow::Init()
     _private->Init(_title.c_str(), _width, _height);
 }
 
+void*
+GarchGLDebugWindow::GetHWnd()
+{
+#if defined(ARCH_OS_WINDOWS)
+   return _private->GetHWnd();
+#else
+   return nullptr;
+#endif
+}
+
 void
 GarchGLDebugWindow::Run()
 {

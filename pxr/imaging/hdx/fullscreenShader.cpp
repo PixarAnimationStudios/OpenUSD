@@ -163,10 +163,18 @@ HdxFullscreenShader::SetProgram(
         &vertDesc, "position", "vec4", "position");
     HgiShaderFunctionAddStageInput(
         &vertDesc, "uvIn", "vec2");
-    HgiShaderFunctionAddStageOutput(
-        &vertDesc, "gl_Position", "vec4", "position");
+    
+    //
+    // since we hard-coded a single input to fs stage for this (uvOut), 
+    // see "HdxSkydomeTask::_SetFragmentShader()"
+    // for DX (and probably also Vulkan) compatibility, 
+    // in the absence of a overall program build scope, 
+    // it's necessary to add that useful output from vs first
+    // and leave the unused one last
     HgiShaderFunctionAddStageOutput(
         &vertDesc, "uvOut", "vec2");
+    HgiShaderFunctionAddStageOutput(
+       &vertDesc, "gl_Position", "vec4", "position");
 
     const std::string vsCode = vertGlslfx.GetSource(_tokens->fullscreenVertex);
     TF_VERIFY(!vsCode.empty());

@@ -45,6 +45,7 @@
 #include "pxr/imaging/hio/glslfxResourceLayout.h"
 
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -58,6 +59,7 @@
 #include <opensubdiv/osd/mtlPatchShaderSource.h>
 #else
 #include <opensubdiv/osd/glslPatchShaderSource.h>
+#include <opensubdiv/osd/hlslPatchShaderSource.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -149,6 +151,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_HGI_RESOURCE_GENERATION, false,
                       "Enable Hgi resource generation for codeGen");
+
+// TODO: refactor this in the future
+static const bool dxHgiEnabled = TfGetenvBool("HGI_ENABLE_DX", false);
 
 /* static */
 bool
@@ -352,6 +357,8 @@ _GetPackedTypeDefinitions()
            "hd_dmat3 hd_dmat3_set(dmat3 v)    { return hd_dmat3(v[0][0], v[0][1], v[0][2],\n"
            "                                                    v[1][0], v[1][1], v[1][2],\n"
            "                                                    v[2][0], v[2][1], v[2][2]); }\n"
+           "mat4 MAT4Init(float x) {\n"
+           "   return mat4(x,0,0,0, 0,x,0,0, 0,0,x,0, 0,0,0,x); }\n"
         // helper functions for 410 specification
         // applying a swizzle operator on int and float is not allowed in 410.
            "int hd_int_get(int v)          { return v; }\n"
@@ -386,6 +393,7 @@ _GetPackedTypeDefinitions()
            "    return vec4(unpackHalf2x16(v.x), unpackHalf2x16(v.y)); }\n"
            "uvec2 hd_half4_set(vec4 v) {\n"
            "    return uvec2(packHalf2x16(v.xy), packHalf2x16(v.zw)); }\n"
+           "// End alias hgi vec and matrix types to hd.\n"
            ;
 }
 
@@ -1600,18 +1608,26 @@ _GetOSDCommonShaderSource()
     // forward declarations needed by the OpenSubdiv shaders.
     std::stringstream ss;
 
+    //
+    // This marker is required by the DirectX HGI backend 
+    // so that it can post-process the OSD shader code starting at this line.
+    ss << "\n// //////// OSD_CODE_START //////// \n";
+
 #if OPENSUBDIV_VERSION_NUMBER >= 30600
 #if defined(__APPLE__)
     ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchDrawingShaderSource();
 #else
     ss << "FORWARD_DECL(MAT4 GetProjectionMatrix());\n"
           "FORWARD_DECL(float GetTessLevel());\n"
-          "mat4 OsdModelViewMatrix() { return mat4(1); }\n"
-          "mat4 OsdProjectionMatrix() { return mat4(GetProjectionMatrix()); }\n"
+          "mat4 OsdModelViewMatrix() { return MAT4Init(1); }\n"
+          "mat4 OsdProjectionMatrix() { return GetProjectionMatrix(); }\n"
           "float OsdTessLevel() { return GetTessLevel(); }\n"
           "\n";
 
-    ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchDrawingShaderSource();
+    if (dxHgiEnabled)
+       ss << OpenSubdiv::Osd::HLSLPatchShaderSource::GetPatchDrawingShaderSource();
+    else
+       ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchDrawingShaderSource();
 #endif
 
 #else // OPENSUBDIV_VERSION_NUMBER
@@ -1639,16 +1655,27 @@ _GetOSDCommonShaderSource()
 #else
     ss << "FORWARD_DECL(MAT4 GetProjectionMatrix());\n"
        << "FORWARD_DECL(float GetTessLevel());\n"
-       << "mat4 OsdModelViewMatrix() { return mat4(1); }\n"
-       << "mat4 OsdProjectionMatrix() { return mat4(GetProjectionMatrix()); }\n"
+       << "mat4 OsdProjectionMatrix() { return GetProjectionMatrix(); }\n"
        << "int OsdPrimitiveIdBase() { return 0; }\n"
        << "float OsdTessLevel() { return GetTessLevel(); }\n"
+       //
+       // DirectX (HLSL) does not have a matrix constructor from one (float) value
+       // so let's do something a bit more generic
+       << "mat4 OsdModelViewMatrix() { return MAT4Init(1); }\n"
        << "\n";
 
-    ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
+    if (dxHgiEnabled)
+       ss << OpenSubdiv::Osd::HLSLPatchShaderSource::GetCommonShaderSource();
+    else
+       ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
+
 #endif
 #endif // OPENSUBDIV_VERSION_NUMBER
 
+    //
+    // This marker is required by the DirectX HGI backend 
+    // so that it can post-process the OSD shader code ending at this line.
+    ss << "\n// //////// OSD_CODE_END //////// \n";
     return ss.str();
 }
 
@@ -1662,7 +1689,12 @@ _GetOSDPatchBasisShaderSource()
     ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchBasisShaderSource();
 #else
     ss << "#define OSD_PATCH_BASIS_GLSL\n";
-    ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchBasisShaderSource();
+
+    if (dxHgiEnabled)
+       ss << OpenSubdiv::Osd::HLSLPatchShaderSource::GetPatchBasisShaderSource();
+    else
+       ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchBasisShaderSource();
+
 #endif
     return ss.str();
 }
@@ -2011,7 +2043,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                       "}\n";
         } else {
             _genFS << "vec3 GetBarycentricCoord() {\n"
-                      "  return vec3(0);\n"
+                      "  return vec3(0,0,0);\n"
                       "}\n";
         }
     }
@@ -2054,6 +2086,49 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                 /*dataType=*/_tokens->_uint);
         }
     }
+
+    //
+    // When drawing with "points" mode, there is no gs
+    // and the ps expects a "patchCoord" as input.
+    // If vs does not provide it, DX throws an error:
+    // D3D12 ERROR: ID3D12Device::CreateGraphicsPipelineState: 
+    // Vertex Shader - Pixel Shader linkage error :
+    // Signatures between stages are incompatible.
+    // The input stage requires Semantic / Index(GSPATCHCOORD, 0) as input, 
+    // but it is not provided by the output stage.
+    // [STATE_CREATION ERROR #666: CREATEGRAPHICSPIPELINESTATE_SHADER_LINKAGE_SEMANTICNAME_NOT_FOUND]
+    //
+    // Adding the missing values to the output stage, fixes the DX errors, 
+    // even though nobody is setting a proper value for them.
+    if (!_hasGS)
+    {
+       //
+       // There are different cases:
+       // drawing a simple shape with "points" is once case,
+       // when drawing a line however, the PS does not (always) expect a gsPatchCoord
+       // so adding it here makes things worse.
+       
+       TfToken tokPC("gsPatchCoord");
+
+       bool bGSInFS = false;
+       for (const auto& item : _resFS)
+       {
+          if (item.name == tokPC)
+          {
+             bGSInFS = true;
+             break;
+          }
+       }
+
+       if (bGSInFS)
+       {
+          _AddInterstageElement(&_resVS,
+                                HioGlslfxResourceLayout::InOut::STAGE_OUT,
+                                /*name=*/tokPC,
+                                /*dataType=*/_tokens->vec4);
+       }
+    }
+
 
     // prep interstage plumbing function
     _procVS  << "void ProcessPrimvarsIn() {\n";
@@ -2102,8 +2177,14 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIQUADS:
         {
-            _procGS << "FORWARD_DECL(vec4 GetPatchCoord(int index));\n"
-                    << "void ProcessPrimvarsOut(int index) {\n"
+            // because of the trick "scope" we use for DirectX
+            // such forward declarations become part of a struct and they become illegal
+            // at the same time because all the code is part of a struct they are also useless
+            if (!dxHgiEnabled) {
+                 _procGS << "FORWARD_DECL(vec4 GetPatchCoord(int index));\n";
+            }
+
+            _procGS << "void ProcessPrimvarsOut(int index) {\n"
                     << "  vec2 localST = GetPatchCoord(index).xy;\n";
             break;
         }
@@ -2226,6 +2307,15 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // We need to include OpenSubdiv shader source only when processing
     // refined meshes. For all other meshes we need only a simplified
     // method of patch coord interpolation.
+
+    //
+    // The above idea seems good in theory but also looks unfinished:
+    // when drawing a simple Cube with no material and a simple red color,
+    // we get here with a "PrimitiveType" == PRIM_COMPUTE, 
+    // but the compiled code uses mesh.glslfx, line 1047, -- glsl Mesh.Geometry.Triangle
+    // which calls "GetPatchCoord", which calls "InterpolatePatchCoordTriangle"
+    // which, without the OSD code is now undefined, so I'm making a small change below
+
     if (_geometricShader->IsPrimTypeRefinedMesh()) {
         // Include OpenSubdiv shader source and use full patch interpolation.
         _osd << _GetOSDCommonShaderSource();
@@ -2238,7 +2328,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             "{\n"
             "    return OsdInterpolatePatchCoordTriangle(uv, patchParam);\n"
             "}\n";
-    } else if (_geometricShader->IsPrimTypeMesh()) {
+    } else 
+    {
         // Use simplified patch interpolation since all mesh faces are level 0.
         _osd <<
             "vec4 InterpolatePatchCoord(vec2 uv, ivec3 patchParam)\n"
@@ -2729,9 +2820,21 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         fsDesc.generatedShaderCodeOut = &_fsSource;
 
         // builtins
-        HgiShaderFunctionAddStageInput(
-            &fsDesc, "gl_PrimitiveID", "uint",
-            HgiShaderKeywordTokens->hdPrimitiveID);
+        
+        //
+        // For the PrimitiveID, HLSL has some really crazy ideas about when this can or cannot be
+        // a system parameter and also seems unable to properly compile based on context, so
+        // I need to manually distinguish between the case when we have a gs stage and when we do not
+        // For now, dealing with that with an ugly hack:
+        // Adding the parameter here (with an interstage id of -1), while for the "_hasGS" case
+        // it is properly added as an interstage element elsewhere (hlslfx file)
+        if (!dxHgiEnabled || !_hasGS)
+        {
+            HgiShaderFunctionAddStageInput(
+                &fsDesc, "gl_PrimitiveID", "uint",
+                HgiShaderKeywordTokens->hdPrimitiveID);
+        }
+
         HgiShaderFunctionAddStageInput(
             &fsDesc, "gl_FrontFacing", "bool",
             HgiShaderKeywordTokens->hdFrontFacing);
@@ -2747,6 +2850,34 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                 HgiShaderKeywordTokens->hdBaryCoordNoPersp);
         }
 
+        if (dxHgiEnabled)
+        {
+            if (!_hasGS)
+            {
+                //
+                // one more case where, for DirectX we need parity in terms on stages in/out
+                // if we force-add "gl_PointSize" as VS "out" we need it also as fs "in".
+                char const* pointRole =
+                    (_geometricShader->GetPrimitiveType() ==
+                        HdSt_GeometricShader::PrimitiveType::PRIM_POINTS)
+                    ? "point_size" : "";
+
+                HgiShaderFunctionAddStageInput(
+                    &fsDesc, "gl_PointSize", "float", pointRole);
+            }
+
+
+            // if we add this forcefully as an out param, 
+            // both from vs and gs (and others)
+            // and considering we also forcefully add the "gl_FragCoord" as input
+            // for dx we need to add it as an in param also in fs
+            if (_hasClipPlanes) {
+               HgiShaderFunctionAddStageInput(
+                  &fsDesc, "gl_ClipDistance", "float",
+                  "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
+            }
+        }
+
         if (!glslProgram->CompileShader(fsDesc)) {
             return nullptr;
         }
@@ -2757,6 +2888,14 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
     if (_hasTCS) {
         HgiShaderFunctionDesc tcsDesc;
         tcsDesc.shaderStage = HgiShaderStageTessellationControl;
+
+        //
+        // tentative quick fix to get TCS to compile for DX
+        if (dxHgiEnabled)
+        {
+           HgiShaderFunctionAddStageInput(&tcsDesc, "gl_PrimitiveID", "uint", HgiShaderKeywordTokens->hdPrimitiveID);
+           HgiShaderFunctionAddStageInput(&tcsDesc, "gl_InvocationID", "uint", "");
+        }
 
         resourceGen._GenerateHgiResources(&tcsDesc,
             HdShaderTokens->tessControlShader, _resCommon, _GetMetaData());
@@ -3486,7 +3625,7 @@ static void _EmitTextureAccessors(
         "sampler" + std::to_string(dim) + "D";
 
     // Forward declare texture scale and bias
-    if (hasTextureScaleAndBias) {
+    if (hasTextureScaleAndBias && !dxHgiEnabled) { // DX does not like forward declarations (because of scope trick)
         accessors 
             << "#ifdef HD_HAS_" << name << "_" 
             << HdStTokens->storm << "_" << HdStTokens->scale << "\n"
@@ -3519,19 +3658,33 @@ static void _EmitTextureAccessors(
                     << "}\n";
             }
         } else {
-            if (isArray) {
-                accessors
-                    << "#define HdGetSampler_" << name << "(index) "
-                    << "  HgiGetSampler_" << name << "(index)\n"
-                    << "#define HdGetSize_" << name << "(index) "
-                    << "  HgiGetSize_" << name << "(index)\n";
-            } else {
-                accessors
-                    << "#define HdGetSampler_" << name << "() "
-                    << "  HgiGetSampler_" << name << "()\n"
-                    << "#define HdGetSize_" << name << "() "
-                    << "  HgiGetSize_" << name << "()\n";
-            }
+
+            //
+            // The previous code did not compile for Directx.
+            // I am proposing a simplified version (no paranthesis)
+            // meaning instead of 
+            // "#define HdGetSampler_domeLightIrradiance()   HgiGetSampler_domeLightIrradiance()"
+            // I want to produce
+            // "#define HdGetSampler_domeLightIrradiance HgiGetSampler_domeLightIrradiance"
+            accessors
+                << "#define HdGetSampler_" << name
+                << " HgiGetSampler_" << name << "\n"
+                << "#define HdGetSize_" << name
+                << " HgiGetSize_" << name << "\n";
+            
+            //if (isArray) {
+            //    accessors
+            //        << "#define HdGetSampler_" << name << "(index) "
+            //        << "  HgiGetSampler_" << name << "(index)\n"
+            //        << "#define HdGetSize_" << name << "(index) "
+            //        << "  HgiGetSize_" << name << "(index)\n";
+            //} else {
+            //    accessors
+            //        << "#define HdGetSampler_" << name << "() "
+            //        << "  HgiGetSampler_" << name << "()\n"
+            //        << "#define HdGetSize_" << name << "() "
+            //        << "  HgiGetSize_" << name << "()\n";
+            //}
         }
     } else {
         if (bindlessTextureEnabled) {
@@ -3755,12 +3908,14 @@ static void _EmitTextureAccessors(
     TfTokenVector const &inPrimvars = acc.inPrimvars;
 
     // Forward declare getter for inPrimvars in case it's a transform2d
-    if (!inPrimvars.empty()) {
-        accessors
-            << "#if defined(HD_HAS_" << inPrimvars[0] << ")\n"
-            << "FORWARD_DECL(vec" << dim << " HdGet_" << inPrimvars[0] 
-            << "(int localIndex));\n"
-            << "#endif\n";
+    if (!dxHgiEnabled) { // DX does not like forward declarations (because of scope trick)
+       if (!inPrimvars.empty()) {
+          accessors
+             << "#if defined(HD_HAS_" << inPrimvars[0] << ")\n"
+             << "FORWARD_DECL(vec" << dim << " HdGet_" << inPrimvars[0]
+             << "(int localIndex));\n"
+             << "#endif\n";
+       }
     }
 
     // Create accessor for texture coordinates based on texture param name
@@ -3768,16 +3923,30 @@ static void _EmitTextureAccessors(
     accessors
         << "vec" << coordDim << " HdGetCoord_" << name << "(int localIndex) {\n"
         << "  return \n";
+
+    //
+    // instead of generating code like this: vec3(0)
+    // it's more portable to generate this: vec3(0,0,0)
     if (!inPrimvars.empty()) {
-        accessors 
-            << "#if defined(HD_HAS_" << inPrimvars[0] <<")\n"
+        accessors
+            << "#if defined(HD_HAS_" << inPrimvars[0] << ")\n"
             << "  HdGet_" << inPrimvars[0] << "(localIndex).xy\n"
             << "#else\n"
-            << "  vec" << coordDim << "(0.0)\n"
-            << "#endif\n";
+            << "  vec" << coordDim << "(";
+
+        for (int iC = 0; iC < coordDim-1; iC++)
+           accessors << "0.0,";
+        accessors 
+           << "0.0)\n"
+           << "#endif\n";
+            
     } else {
         accessors
-            << "  vec" << coordDim << "(0.0)";
+            << "  vec" << coordDim << "(";
+        for (int iC = 0; iC < coordDim - 1; iC++)
+           accessors << "0.0,";
+        accessors
+           << "0.0)";
     }
     accessors << ";\n}\n"; 
 
@@ -3953,9 +4122,15 @@ static void _EmitFVarAccessor(
         }
     }
 
-    str << "FORWARD_DECL(vec4 GetPatchCoord(int index));\n"
-        << "FORWARD_DECL(vec2 GetPatchCoordLocalST());\n"
-        << _GetUnpackedType(type, false)
+    // because of the trick "scope" we use for DirectX
+    // such forward declarations become part of a struct and they become illegal
+    // at the same time because all the code is part of a struct they are also useless
+    if (!dxHgiEnabled) {
+        str << "FORWARD_DECL(vec4 GetPatchCoord(int index));\n"
+            << "FORWARD_DECL(vec2 GetPatchCoordLocalST());\n";
+    }
+
+    str << _GetUnpackedType(type, false)
         << " HdGet_" << name << "(int localIndex) {\n";         
 
     switch (fvarPatchType) {
@@ -4213,8 +4388,10 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     _genDecl << "};\n";
 
     // forward declaration
-    _genDecl << "FORWARD_DECL(hd_drawingCoord GetDrawingCoord());\n"
-                "FORWARD_DECL(int HgiGetBaseVertex());\n";
+    if (!dxHgiEnabled) { // DX does not like forward declarations (because of scope trick)
+       _genDecl << "FORWARD_DECL(hd_drawingCoord GetDrawingCoord());\n"
+                   "FORWARD_DECL(int HgiGetBaseVertex());\n";
+    }
 
     int instanceIndexWidth = _metaData->instancerNumLevels + 1;
 
@@ -5070,10 +5247,14 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                     // When there are geom subsets, we can no longer use the 
                     // primitiveId and instead use a buffer source generated
                     // per subset draw item containing the coarse face indices. 
-                    accessors
-                        << "#if defined(HD_HAS_coarseFaceIndex)\n"
-                        << "FORWARD_DECL(int HdGetScalar_coarseFaceIndex());\n"
-                        << "#endif\n"
+                    if(!dxHgiEnabled) { // DX does not like forward declarations (because of scope trick)
+                        accessors
+                            << "#if defined(HD_HAS_coarseFaceIndex)\n"
+                            << "FORWARD_DECL(int HdGetScalar_coarseFaceIndex());\n"
+                            << "#endif\n";
+                    }
+
+                    accessors 
                         << "ivec3 GetPatchParam() {\n"
                         << "#if defined(HD_HAS_coarseFaceIndex)\n "
                         << "  return ivec3(HdGetScalar_coarseFaceIndex(), 0, 0);\n"
@@ -5181,9 +5362,12 @@ HdSt_CodeGen::_GenerateElementPrimvar()
             << "  return 0;\n"
             << "}\n";
     }
-    _genDecl
-        << "FORWARD_DECL(int GetElementID());\n"
-        << "FORWARD_DECL(int GetAggregatedElementID());\n";
+
+    if (!dxHgiEnabled) { // DX does not like forward declarations (because of scope trick)
+        _genDecl
+            << "FORWARD_DECL(int GetElementID());\n"
+            << "FORWARD_DECL(int GetAggregatedElementID());\n";
+    }
 
 
     if (_metaData->edgeIndexBinding.binding.IsValid()) {
@@ -5243,9 +5427,12 @@ HdSt_CodeGen::_GenerateElementPrimvar()
             break;
     }
 
-    _genDecl
-        << "FORWARD_DECL(int GetPrimitiveEdgeId());\n"
-        << "FORWARD_DECL(float GetSelectedEdgeOpacity());\n";
+    if (!dxHgiEnabled) { // DX does not like forward declarations (because of scope trick)
+        _genDecl
+            << "FORWARD_DECL(int GetPrimitiveEdgeId());\n"
+            << "FORWARD_DECL(float GetSelectedEdgeOpacity());\n";
+    }
+
 
     // Uniform primvar data declarations & accessors
     if (!_geometricShader->IsPrimTypePoints()) {
@@ -5747,8 +5934,14 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
     _genPTVS  << accessorsPTVS.str();
 
     // ---------
-    _genFS << "FORWARD_DECL(vec4 GetPatchCoord(int index));\n";
-    _genGS << "FORWARD_DECL(vec4 GetPatchCoord(int localIndex));\n";
+
+    // because of the trick "scope" we use for DirectX
+    // such forward declarations become part of a struct and they become illegal
+    // at the same time because all the code is part of a struct they are also useless
+    if (!dxHgiEnabled) {
+        _genFS << "FORWARD_DECL(vec4 GetPatchCoord(int index));\n";
+        _genGS << "FORWARD_DECL(vec4 GetPatchCoord(int localIndex));\n";
+    }
 }
 
 void
@@ -6134,21 +6327,23 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
 
         } else if (bindingType == HdStBinding::TEXTURE_UDIM_ARRAY) {
 
-            accessors 
-                << "#ifdef HD_HAS_" << it->second.name << "_" 
-                << HdStTokens->storm << "_"
-                << HdStTokens->scale << "\n"
-                << "FORWARD_DECL(vec4 HdGet_" << it->second.name << "_" 
-                << HdStTokens->storm << "_"
-                << HdStTokens->scale << "());\n"
-                << "#endif\n"
-                << "#ifdef HD_HAS_" << it->second.name << "_" 
-                << HdStTokens->storm << "_"
-                << HdStTokens->bias << "\n"
-                << "FORWARD_DECL(vec4 HdGet_" << it->second.name << "_" 
-                << HdStTokens->storm << "_" 
-                << HdStTokens->bias << "());\n"
-                << "#endif\n";
+            if (!dxHgiEnabled) { // DX does not like forward declarations (because of scope trick)
+                accessors 
+                    << "#ifdef HD_HAS_" << it->second.name << "_" 
+                    << HdStTokens->storm << "_"
+                    << HdStTokens->scale << "\n"
+                    << "FORWARD_DECL(vec4 HdGet_" << it->second.name << "_" 
+                    << HdStTokens->storm << "_"
+                    << HdStTokens->scale << "());\n"
+                    << "#endif\n"
+                    << "#ifdef HD_HAS_" << it->second.name << "_" 
+                    << HdStTokens->storm << "_"
+                    << HdStTokens->bias << "\n"
+                    << "FORWARD_DECL(vec4 HdGet_" << it->second.name << "_" 
+                    << HdStTokens->storm << "_" 
+                    << HdStTokens->bias << "());\n"
+                    << "#endif\n";
+            }
                 
             _AddTextureElement(&_resTextures,
                                it->second.name, 2,
@@ -6532,13 +6727,15 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
         } else if (bindingType == HdStBinding::TRANSFORM_2D) {
 
             // Forward declare rotation, scale, and translation
-            accessors 
-                << "FORWARD_DECL(float HdGet_" << it->second.name << "_" 
-                << HdStTokens->rotation  << "());\n"
-                << "FORWARD_DECL(vec2 HdGet_" << it->second.name << "_" 
-                << HdStTokens->scale  << "());\n"
-                << "FORWARD_DECL(vec2 HdGet_" << it->second.name << "_" 
-                << HdStTokens->translation  << "());\n";
+            if (!dxHgiEnabled) { // DX does not like forward declarations (because of scope trick)
+                accessors
+                    << "FORWARD_DECL(float HdGet_" << it->second.name << "_"
+                    << HdStTokens->rotation << "());\n"
+                    << "FORWARD_DECL(vec2 HdGet_" << it->second.name << "_"
+                    << HdStTokens->scale << "());\n"
+                    << "FORWARD_DECL(vec2 HdGet_" << it->second.name << "_"
+                    << HdStTokens->translation << "());\n";
+            }
 
             // vec2 HdGet_name(int localIndex)
             accessors

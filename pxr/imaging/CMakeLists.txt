@@ -25,4 +25,5 @@ endif()
 
 add_subdirectory(hdSt)
 add_subdirectory(hdx)
+add_subdirectory(hgiDX)
 add_subdirectory(plugin)

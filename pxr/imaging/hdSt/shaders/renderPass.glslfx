@@ -177,10 +177,12 @@ void ApplyClipPlanes(vec4 Peye)
         // gl_ClipDistance[HD_NUM_clipPlanes], since we need to know the array 
         // size at compile time. To avoid having any uninitialized values in 
         // that array, we initialize them all to zero first.
-        gl_ClipDistance[i] = 0;
+        float fClip = 0;
         if (i < HdGet_numClipPlanes()) {
-            gl_ClipDistance[i] = dot(HdGet_clipPlanes(i), Peye);
+            fClip = dot(HdGet_clipPlanes(i), Peye);
         }
+        
+        gl_ClipDistance[i] = fClip;
     }
 #endif
 #endif

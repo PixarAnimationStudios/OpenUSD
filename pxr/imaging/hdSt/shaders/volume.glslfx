@@ -46,12 +46,12 @@
 void main(void)
 {
     // Bounding box vertex in local spce
-    const vec4 point = vec4(HdGet_points().xyz, 1);
+    const vec4 pt = vec4(HdGet_points().xyz, 1);
 
     const MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
 
     // Bounding box vertex in eye space.
-    const vec4 pointEye = vec4(GetWorldToViewMatrix() * transform * point); 
+    const vec4 pointEye = vec4(GetWorldToViewMatrix() * transform * pt); 
 
     outData.Peye = pointEye.xyz / pointEye.w;
 
@@ -100,17 +100,17 @@ float resolvedStepSizeWorldLighting;
 
 // Transform a point by a 4x4 matrix
 vec3
-transformPoint(mat4 m, vec3 point)
+transformPoint(mat4 m, vec3 pt)
 {
-    const vec4 result = vec4(m * vec4(point, 1.0));
+    const vec4 result = vec4(m * vec4(pt, 1.0));
     return result.xyz / result.w;
 }
 
 #ifdef HD_SHADER_SUPPORTS_DOUBLE_PRECISION   
 vec3
-transformPoint(dmat4 m, vec3 point)
+transformPoint(dmat4 m, vec3 pt)
 {
-    const vec4 result = vec4(m * vec4(point, 1.0));
+    const vec4 result = vec4(m * vec4(pt, 1.0));
     return result.xyz / result.w;
 }
 #endif

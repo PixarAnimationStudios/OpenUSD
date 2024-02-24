@@ -143,6 +143,12 @@ The additional dependencies that must be supplied when invoking cmake are:
 
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 
+##### DirectX
+
+Building USD with DirectX enabled requires Windows. 
+Support for DirectX can optionally be enabled by specifying the cmake flag
+```PXR_ENABLE_DIRECTX_SUPPORT=TRUE```.
+
 ##### OSL (OpenShadingLanguage)
 
 Support for OSL is disabled by default, and can optionally be enabled by

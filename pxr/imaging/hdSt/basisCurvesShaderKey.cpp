@@ -27,6 +27,7 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/getEnv.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -48,6 +49,11 @@ TF_REGISTRY_FUNCTION(TfEnum) {
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,                      "basisCurves.glslfx"))
+
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    ((baseHLSLFX,                      "basisCurves.hlslfx"))
 
     // curve data
     ((curvesCommonData,                "Curves.CommonData"))
@@ -147,6 +153,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((scalarOverrideFS,                "Fragment.ScalarOverride"))
 );
 
+// TODO: refactor this in the future
+static const bool dxHgiEnabled = TfGetenvBool("HGI_ENABLE_DX", false);
+
 static TfToken HdSt_BasisToShaderKey(const TfToken& basis){
     if (basis == HdTokens->bezier)
         return _tokens->curvesBezier;
@@ -170,8 +179,9 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     bool pointsShadingEnabled,
     bool hasMetalTessellation)
     : useMetalTessellation(false)
-    , glslfx(_tokens->baseGLSLFX)
 {
+    glslfx = dxHgiEnabled ? _tokens->baseHLSLFX : _tokens->baseGLSLFX;
+
     bool drawThick = (drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE) || 
                      (drawStyle == HdSt_BasisCurvesShaderKey::RIBBON);
     bool cubic  = (type == HdTokens->cubic);

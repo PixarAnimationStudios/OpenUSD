@@ -131,6 +131,12 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
     _callback->OnInitializeGL();
 }
 
+HWND 
+Garch_GLPlatformDebugWindow::GetHWnd()
+{
+   return _hWND;
+}
+
 static int
 Garch_GetModifierKeys(WPARAM wParam)
 {
@@ -250,6 +256,7 @@ Garch_GLPlatformDebugWindow::Run()
     wglMakeCurrent(NULL, NULL);
     // release GL
     wglDeleteContext(_hGLRC);
+
     ReleaseDC(_hWND, _hDC);
 
     _GetWindowsMap().erase(_hWND);

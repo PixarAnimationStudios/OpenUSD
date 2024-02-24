@@ -424,12 +424,12 @@ vec4 ComputeSelectionOffset()
     // of selection modes by constructing a bitmask of selection modes for
     // this face, and reinterpreting it as an integer.
 
-    int offset = 0;
+    uint offset = 0;
 
     int numModes = GetMaxNumSelectionHighlightModes();
     for (int mode = 0; mode < numModes; ++mode) {
         if (IsElementSelected(mode)) {
-            offset += (1 << mode);
+            offset += (1U << mode);
         }
     }
 

@@ -1,0 +1,166 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2016 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/points.hlslfx
+
+#import $TOOLS/hdSt/shaders/instancing.hlslfx
+#import $TOOLS/hdSt/shaders/terminals.hlslfx
+#import $TOOLS/hdSt/shaders/pointId.hlslfx
+
+--- --------------------------------------------------------------------------
+-- layout Point.Vertex
+
+[
+    ["out block", "VertexData", "outData",
+        ["vec4", "Peye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Point.Vertex
+
+// Fwd declare methods defined in pointId.hlslfx, that are used below.
+
+// The approach used below transforms a unit diagonal vector by the provided
+// matrix and returns its length.
+// This works when the provided transform is computed from a chain of
+// transformations wherein the scale operation doesn't follow a rotation.
+// This is typically true with scene-graph hierachies wherein the parent nodes 
+// are rigid-body transformations.
+//
+// When that isn't the case, this approach would result in scaling that is
+// coordinate-system dependent.
+// The accurate way to calculate the scale would be to compute the determinant.
+// 
+float ExtractAverageScaleFromMatrix(
+    MAT4 transform)
+{
+    const vec4 eyeScale = mul(transform, normalize(vec4(1,1,1,0)));
+    return length(eyeScale.xyz);
+}
+
+
+// Compute the point size in pixels based on the authored width.
+float ComputeRasterPointSize(
+    MAT4 modelToWorldTransform, float eyeZ)
+{
+    // Check for primvar 'widths'. This is in model space.
+#if defined(HD_HAS_widths)
+    float modelWidth = HdGet_widths();
+#else
+    float modelWidth = 1.0;
+#endif
+
+    // Compute scaling from the modelToWorld and worldToView transforms.
+    const float modelToEyeScale =
+        ExtractAverageScaleFromMatrix(
+            GetWorldToViewMatrix() * modelToWorldTransform);
+
+    // Compute the scaling factor in X when transforming from eye space to NDC
+    // space. We want to know how much the x-value of the result of the
+    // perspective division varies as the x-value of the position (x,y,z,1) in
+    // eye space varies.
+    //
+    // With 'p' being the projection matrix and using row-major order, the
+    // x-value in NDC space is:
+    //
+    // (x * p[0][0] + y * p[1][0] + z * p[2][0] + 1 * p[3][0]) /
+    // (x * p[0][3] + y * p[1][3] + z * p[2][3] + 1 * p[3][3])
+    //
+    // The derivative with respect to x under the assumption that p[0][3] and 
+    // p[1][3] is zero (which is the case for perspective and orthographic
+    // projection) then simply is p[0][0] / (z * p[2][3] + p[3][3]).
+    //
+    const MAT4 projMat = GetProjectionMatrix();
+    const float eyeToClipXScale = float(projMat[0][0]);
+    const float clipW = float(eyeZ * projMat[2][3] + projMat[3][3]);
+    const float eyeToNDCScale = eyeToClipXScale / clipW;
+
+    // Our final scaling factor is from the viewport transform, transforming
+    // from [-1,1] NDC space to image (pixel) space.
+    const float viewportSizeX = GetViewport().z;
+    const float NDCToImageScale = viewportSizeX * 0.5;
+
+    return modelWidth * modelToEyeScale * eyeToNDCScale * NDCToImageScale;
+}
+
+void main(void)
+{
+    MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
+    vec4 pt     = vec4(HdGet_points().xyz, 1);
+
+    outData.Peye = vec4(mul(GetWorldToViewMatrix(), mul(transform, pt)));
+
+    ProcessPrimvarsIn();
+
+    gl_Position = mul(GetProjectionMatrix(), outData.Peye);
+    ApplyClipPlanes(outData.Peye);
+
+    float screenSpaceWidth = ComputeRasterPointSize(transform, outData.Peye.z);
+    gl_PointSize = clamp(screenSpaceWidth,
+                         HD_GL_POINT_SIZE_MIN, HD_GL_POINT_SIZE_MAX);
+
+    ProcessPointId(GetPointId());
+}
+
+--- --------------------------------------------------------------------------
+-- layout Point.Fragment
+
+[
+    ["in block", "VertexData", "inData",
+        ["vec4", "Peye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Point.Fragment
+
+void main(void)
+{
+    vec3 Peye = inData.Peye.xyz / inData.Peye.w;
+    // camera facing.
+    vec3 Neye = vec3(0, 0, 1);
+
+    vec4 color = vec4(0.5, 0.5, 0.5, 1);
+#ifdef HD_HAS_displayColor
+    color.rgb = HdGet_displayColor().rgb;
+#endif
+#ifdef HD_HAS_displayOpacity
+    color.a = HdGet_displayOpacity();
+#endif
+
+    vec4 patchCoord = vec4(0,0,0,0);
+    color = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord);
+
+#ifdef HD_MATERIAL_TAG_MASKED   
+    if (ShouldDiscardByAlpha(color)) {
+        discard;
+    }
+#endif
+
+    RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
+}

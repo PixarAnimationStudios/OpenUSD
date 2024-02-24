@@ -86,4 +86,11 @@ HgiShaderGenerator::GetGeneratedShaderCode() const
     }
 }
 
+HgiShaderFunctionDesc const&
+HgiShaderGenerator::GetDescriptor() const
+{
+   return _descriptor;
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE

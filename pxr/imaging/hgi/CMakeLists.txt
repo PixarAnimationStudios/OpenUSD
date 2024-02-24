@@ -40,6 +40,7 @@ pxr_library(hgi
         blitCmdsOps.h
         enums.h
         handle.h
+        memoryHelper.h
 )
 
 if (${PXR_HEADLESS_TEST_MODE})

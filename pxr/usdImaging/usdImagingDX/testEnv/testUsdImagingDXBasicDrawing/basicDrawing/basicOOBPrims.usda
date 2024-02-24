@@ -1,0 +1,47 @@
+#usda 1.0
+
+def Xform "root"
+{
+    def Xform "base"
+    {
+        double3 xformOp:translate:offset = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate:offset"]
+
+        def Cube "cube"
+        {
+            color3f[] primvars:displayColor = [(1, 0, 1)]
+            double size = 2
+            double3 xformOp:translate:offset = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate:offset"]
+        }
+
+        def Sphere "sphere"
+        {
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            double3 xformOp:translate:offset = (4, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate:offset"]
+        }
+
+        def Cylinder "cyl"
+        {
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            double3 xformOp:translate:offset = (10, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate:offset"]
+        }
+
+        def Cone "cone"
+        {
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+            double3 xformOp:translate:offset = (15, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate:offset"]
+        }
+
+        def Capsule "capsule"
+        {
+            color3f[] primvars:displayColor = [(1, 1, 0)]
+            double3 xformOp:translate:offset = (20, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate:offset"]
+        }
+    }
+}
+

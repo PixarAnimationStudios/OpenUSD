@@ -97,5 +97,4 @@ HgiShaderSection::_GetDefaultValue() const
     return _defaultValue;
 }
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
