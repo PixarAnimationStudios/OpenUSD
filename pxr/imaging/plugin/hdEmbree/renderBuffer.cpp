@@ -274,9 +274,11 @@ HdEmbreeRenderBuffer::Resolve()
     size_t formatSize = HdDataSizeOfFormat(_format);
     size_t sampleSize = HdDataSizeOfFormat(_GetSampleFormat(_format));
 
+    int maxSampleCount = 0;
     for (unsigned int i = 0; i < _width * _height; ++i) {
 
         int sampleCount = _sampleCount[i];
+        maxSampleCount = std::max(sampleCount, maxSampleCount);
         // Skip pixels with no samples.
         if (sampleCount == 0) {
             continue;

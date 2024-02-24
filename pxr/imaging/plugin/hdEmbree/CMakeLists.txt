@@ -21,6 +21,7 @@ pxr_plugin(hdEmbree
         hf
         hd
         hdx
+        usdLux
         ${TBB_tbb_LIBRARY}
         ${EMBREE_LIBRARY}
 
@@ -30,7 +31,9 @@ pxr_plugin(hdEmbree
 
     PUBLIC_CLASSES
         config
+        ies
         instancer
+        light
         mesh
         meshSamplers
         renderBuffer
@@ -39,6 +42,7 @@ pxr_plugin(hdEmbree
         renderDelegate
         renderPass
         sampler
+        pcg_basic
 
     PUBLIC_HEADERS
         context.h

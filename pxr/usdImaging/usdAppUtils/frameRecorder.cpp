@@ -53,12 +53,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
     const TfToken& rendererPluginId,
     bool gpuEnabled, 
+    bool defaultLightDisabled,
     const SdfPath& renderSettingsPrimPath) :
     _imagingEngine(HdDriver(), rendererPluginId, gpuEnabled),
     _imageWidth(960u),
     _complexity(1.0f),
     _colorCorrectionMode(HdxColorCorrectionTokens->disabled),
     _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy}),
+    _defaultLightDisabled(defaultLightDisabled),
     _renderSettingsPrimPath(renderSettingsPrimPath)
 {
     // Disable presentation to avoid the need to create an OpenGL context when
@@ -410,7 +412,10 @@ UsdAppUtilsFrameRecorder::Record(
     material.SetSpecular(SPECULAR_DEFAULT);
     material.SetShininess(SHININESS_DEFAULT);
 
-    _imagingEngine.SetLightingState(lights, material, SCENE_AMBIENT);
+    if (!_defaultLightDisabled)
+    {
+        _imagingEngine.SetLightingState(lights, material, SCENE_AMBIENT);
+    }
 
     UsdImagingGLRenderParams renderParams;
     renderParams.frame = timeCode;

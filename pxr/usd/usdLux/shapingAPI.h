@@ -171,8 +171,14 @@ public:
     // --------------------------------------------------------------------- //
     /// A control to shape the spread of light.  Higher focus
     /// values pull light towards the center and narrow the spread.
-    /// Implemented as an off-axis cosine power exponent.
-    /// TODO: clarify semantics
+    ///
+    /// This is implemented as a multiplication with the dot product between the
+    /// light's surface normal and the emission direction, raised to the power `focus`,
+    ///  i.e. 
+    /// ```
+    /// Le = GfCompMult(Le, powf(emissionDirection * lightNormal, focus))
+    /// ```
+    ///
     ///
     /// | ||
     /// | -- | -- |
@@ -196,7 +202,17 @@ public:
     // --------------------------------------------------------------------- //
     /// Off-axis color tint.  This tints the emission in the
     /// falloff region.  The default tint is black.
-    /// TODO: clarify semantics
+    ///
+    /// This is implemented as a linear interpolation between `focusTint` and
+    /// white, by the factor computed from the focus attribute, in other words:
+    ///
+    /// ```
+    /// if (focus > 0.0f) {
+    ///     const float focusFactor = powf(emissionDirection * lightNormal, focus);
+    ///     const GfVec3f focusTintFactor = lerp(focusTint, GfVec3f(1), focusFactor);
+    ///     Le = GfCompMult(Le, focusTintFactor);
+    /// }
+    /// ```
     ///
     /// | ||
     /// | -- | -- |
@@ -221,6 +237,15 @@ public:
     /// Angular limit off the primary axis to restrict the
     /// light spread.
     ///
+    /// ```
+    /// const float cosThetaC = cosf(light.shaping.coneAngle * M_PI / 180.0f);
+    /// const float cosThetaS = Lerp(cosThetaC, 1.0f, light.shaping.coneSoftness);
+    /// const float thetaC = light.shaping.coneAngle * M_PI / 180.0f;
+    /// const float thetaS = Lerp(thetaC, 0.0f, light.shaping.coneSoftness);
+    /// const float thetaOZ = acosf(lightZ * emissionDir);
+    /// Le *= 1.0f - Smoothstep(thetaS, thetaC, thetaOZ);
+    /// ```
+    ///
     /// | ||
     /// | -- | -- |
     /// | Declaration | `float inputs:shaping:cone:angle = 90` |
@@ -242,7 +267,16 @@ public:
     // SHAPING:CONE:SOFTNESS 
     // --------------------------------------------------------------------- //
     /// Controls the cutoff softness for cone angle.
-    /// TODO: clarify semantics
+    /// 
+    /// ```
+    /// const float cosThetaC = cosf(light.shaping.coneAngle * M_PI / 180.0f);
+    /// const float cosThetaS = Lerp(cosThetaC, 1.0f, light.shaping.coneSoftness);
+    /// const float thetaC = light.shaping.coneAngle * M_PI / 180.0f;
+    /// const float thetaS = Lerp(thetaC, 0.0f, light.shaping.coneSoftness);
+    /// const float thetaOZ = acosf(lightZ * emissionDir);
+    /// Le *= 1.0f - Smoothstep(thetaS, thetaC, thetaOZ);
+    /// ```
+    ///
     ///
     /// | ||
     /// | -- | -- |
@@ -267,6 +301,8 @@ public:
     /// An IES (Illumination Engineering Society) light
     /// profile describing the angular distribution of light.
     ///
+    /// See hdEmbree example plugin for reference implementation
+    ///
     /// | ||
     /// | -- | -- |
     /// | Declaration | `asset inputs:shaping:ies:file` |
@@ -288,7 +324,8 @@ public:
     // SHAPING:IES:ANGLESCALE 
     // --------------------------------------------------------------------- //
     /// Rescales the angular distribution of the IES profile.
-    /// TODO: clarify semantics
+    ///
+    /// See hdEmbree example plugin for reference implementation
     ///
     /// | ||
     /// | -- | -- |
@@ -312,6 +349,8 @@ public:
     // --------------------------------------------------------------------- //
     /// Normalizes the IES profile so that it affects the shaping
     /// of the light while preserving the overall energy output.
+    /// 
+    /// See hdEmbree example plugin for reference implementation
     ///
     /// | ||
     /// | -- | -- |

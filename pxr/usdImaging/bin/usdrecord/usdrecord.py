@@ -142,6 +142,13 @@ def main():
             'the CPU, but additionally it will prevent any tasks that require '
             'the GPU from being invoked.'))
 
+    parser.add_argument("--disableDefaultLight", action='store_true',
+        dest='defaultLightDisabled',
+        help=(
+            "Disables the default camera light that is otherwise automatically "
+            "added to the stage."
+        ))
+
     UsdAppUtils.cameraArgs.AddCmdlineArgs(parser)
     UsdAppUtils.framesArgs.AddCmdlineArgs(parser)
     UsdAppUtils.complexityArgs.AddCmdlineArgs(parser)
@@ -225,7 +232,7 @@ def main():
 
     # Initialize FrameRecorder 
     frameRecorder = UsdAppUtils.FrameRecorder(
-        rendererPluginId, args.gpuEnabled, args.rsPrimPath)
+        rendererPluginId, args.gpuEnabled, args.defaultLightDisabled, args.rsPrimPath)
     frameRecorder.SetImageWidth(args.imageWidth)
     frameRecorder.SetComplexity(args.complexity.value)
     frameRecorder.SetColorCorrectionMode(args.colorCorrectionMode)

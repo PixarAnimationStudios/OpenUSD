@@ -68,6 +68,7 @@ public:
     UsdAppUtilsFrameRecorder(
         const TfToken& rendererPluginId = TfToken(),
         bool gpuEnabled = true,
+        bool defaultLightDisabled = false,
         const SdfPath& renderSettingsPrimPath = SdfPath());
 
     /// Gets the ID of the Hydra renderer plugin that will be used for
@@ -155,6 +156,7 @@ private:
     TfToken _colorCorrectionMode;
     TfTokenVector _purposes;
     SdfPath _renderSettingsPrimPath;
+    bool _defaultLightDisabled;
 };
 
 

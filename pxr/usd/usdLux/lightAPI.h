@@ -62,6 +62,38 @@ class SdfAssetPath;
 /// regardless of whether LightAPI is included as a built-in API of the prim 
 /// type (e.g. RectLight or DistantLight) or is applied directly to a Gprim 
 /// that should be treated as a light.
+///
+/// <b>Quantities and Units</b>
+/// 
+/// Most renderers consuming OpenUSD today are RGB renderers, rather than spectral.
+/// Units in RGB renderers are tricky to define as each of the red, green and blue
+/// channels transported by the renderer represents the convolution of a spectral
+/// exposure distribution, e.g. CIE Illuminant D65, with a sensor response function, e.g.
+/// CIE 1931 x_bar. Thus the main quantity in an RGB renderer is neither radiance nor
+/// luminance, but "integrated radiance" or "tristimulus weight".
+/// 
+/// The emision of a default light with \c intensity 1 and \c color [1, 1, 1] is an 
+/// Illuminant D spectral power distribution with chromaticity matching the rendering 
+/// colour space white point, normalized such that a ray normally incident upon the 
+/// sensor with EV0 exposure settings will generate a pixel value of [1, 1, 1] in the 
+/// rendering colour space.
+/// 
+/// Given the above definition, that means that the luminance of said default light 
+/// will be 1 \a nit and its emission spectral radiance distribution is easily 
+/// computed by appropriate normalization.
+///
+/// For brevity, the term \a emission will be used in the documentation to mean
+/// "emitted spectral radiance" or "emitted integrated radiance/tristimulus weight",
+/// as appropriate.
+/// 
+/// Note that some colour spaces, most notably ACES, define their white points by 
+/// chromaticity coordinates that do not exactly line up to any value of a standard illuminant. 
+/// In these cases, a spectral renderer should choose the closest Illuminant D spectrum
+/// for the lights' emission (the \a rendering \a illuminant) and perform chromatic 
+/// adaptation to transform the rendered image to the rendering colour space. 
+/// The method of "uplifting" an RGB colour to a spectral distribution is unspecified
+/// other than that it should round-trip under the rendering illuminant to the limits
+/// of numerical accuracy.
 /// 
 /// <b>Linking</b>
 /// 
@@ -284,7 +316,13 @@ public:
     // --------------------------------------------------------------------- //
     // INTENSITY 
     // --------------------------------------------------------------------- //
-    /// Scales the power of the light linearly.
+    /// Scales the brightness of the light linearly.
+    ///
+    /// Lights' emission is in units of spectral radiance normalized such that 
+    /// a directly visible light normally incident upon the sensor plane will 
+    /// generate a pixel value of [1, 1, 1] in an RGB renderer, and thus have a 
+    /// luminance of 1 nit. A light with `intensity` 2 would therefore have a 
+    /// luminance of 2 nits.
     ///
     /// | ||
     /// | -- | -- |
@@ -306,9 +344,15 @@ public:
     // --------------------------------------------------------------------- //
     // EXPOSURE 
     // --------------------------------------------------------------------- //
-    /// Scales the power of the light exponentially as a power
+    /// Scales the brightness of the light exponentially as a power
     /// of 2 (similar to an F-stop control over exposure).  The result
     /// is multiplied against the intensity.
+    ///
+    /// Lights' emission is in units of spectral radiance normalized such that 
+    /// a directly visible light normally incident upon the sensor plane will 
+    /// generate a pixel value of [1, 1, 1] in an RGB renderer, and thus have a 
+    /// luminance of 1 nit. A light with `intensity` 1 and `exposure` 2 would 
+    /// therefore have a luminance of 4 nits.
     ///
     /// | ||
     /// | -- | -- |
@@ -376,10 +420,22 @@ public:
     // --------------------------------------------------------------------- //
     // NORMALIZE 
     // --------------------------------------------------------------------- //
-    /// Normalizes power by the surface area of the light.
+    /// Normalizes brightness by the surface area of the light.
     /// This makes it easier to independently adjust the power and shape
-    /// of the light, by causing the power to not vary with the area or
+    /// of the light, by causing the brightness to not vary with the area or
     /// angular size of the light.
+    /// 
+    /// For an area light, this is calculated by dividing the emission
+    /// by the surface area (in world space) of the shape of the light, including
+    /// any scaling applied to the light by its transform stack.
+    ///
+    /// For a distant light, this is calculated by dividing the proportion of the
+    /// visible hemisphere subtended by the light, that is by `sin(theta)*sin(theta)*M_PI`,
+    /// where `theta` is half the value of the distant light's `angle` attribute.
+    /// If `angle` is zero, this attribute has no effect.
+    ///
+    /// For a dome light, this attribute is ignored.
+    /// 
     ///
     /// | ||
     /// | -- | -- |
@@ -401,7 +457,12 @@ public:
     // --------------------------------------------------------------------- //
     // COLOR 
     // --------------------------------------------------------------------- //
-    /// The color of emitted light, in energy-linear terms.
+    /// The color of emitted light, in the rendering color space.
+    ///
+    /// This color is just multiplied with the emission. In the case of a spectral
+    /// renderer, this color should be uplifted such that it round-trips to within 
+    /// the limit of numerical accuracy under the rendering illuminant.
+    /// 
     ///
     /// | ||
     /// | -- | -- |
@@ -452,6 +513,13 @@ public:
     /// enableColorTemperature is set to true.  When active, the
     /// computed result multiplies against the color attribute.
     /// See UsdLuxBlackbodyTemperatureAsRgb().
+    ///
+    /// This is always calculated as an RGB color using a D65 white points, regardless
+    /// of the rendering color space, normalized such that the default value of 
+    /// 6500 will always result in white, and then should be transformed to the 
+    /// rendering color space. 
+    /// Spectral renderers should do the same and then uplift the resulting 
+    /// color after multiplying with the `color` attribute.
     ///
     /// | ||
     /// | -- | -- |
