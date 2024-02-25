@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -33,6 +33,8 @@
 #include <cctype>
 #include <map>
 
+#include "pxr/base/trace/trace.h"
+
 namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -52,6 +54,8 @@ using _NameMapping = std::map<std::string, std::string>;
 void
 _MapNodeNamesToBaseForVersioning(mx::ConstElementPtr mtlx, _NameMapping* mapping)
 {
+    TRACE_FUNCTION();
+
     static const std::string inheritAttr("inherit");
 
     // Find shortest:
@@ -102,6 +106,8 @@ _MapNodeNamesToBaseForVersioning(mx::ConstElementPtr mtlx, _NameMapping* mapping
 _NameMapping
 _ComputeNameMapping(const mx::ConstDocumentPtr& doc)
 {
+    TRACE_FUNCTION();
+
     _NameMapping result;
 
     // For each nodeDef with an inheritance chain, we populate the 
@@ -134,6 +140,8 @@ _ComputeNameMapping(const mx::ConstDocumentPtr& doc)
 std::string
 _ChooseName(const std::string& nodeDefName, const _NameMapping& nameMapping)
 {
+    TRACE_FUNCTION();
+
     auto i = nameMapping.find(nodeDefName);
     return i == nameMapping.end() ? nodeDefName : i->second;
 }
@@ -146,6 +154,8 @@ _DiscoverNodes(
     const NdrDiscoveryUri& fileResult,
     const _NameMapping& nameMapping)
 {
+    TRACE_FUNCTION();
+
     static const TfToken family = TfToken();
 
     // Get the node definitions
@@ -187,6 +197,8 @@ private:
 
 UsdMtlxDiscoveryPlugin::UsdMtlxDiscoveryPlugin()
 {
+    TRACE_FUNCTION();
+
     _customSearchPaths = UsdMtlxCustomSearchPaths();
     _allSearchPaths = UsdMtlxSearchPaths();
 }
@@ -194,6 +206,8 @@ UsdMtlxDiscoveryPlugin::UsdMtlxDiscoveryPlugin()
 NdrNodeDiscoveryResultVec
 UsdMtlxDiscoveryPlugin::DiscoverNodes(const Context& context)
 {
+    TRACE_FUNCTION();
+
     NdrNodeDiscoveryResultVec result;
 
     // Merge all MaterialX standard library files into a single document.
@@ -226,6 +240,8 @@ UsdMtlxDiscoveryPlugin::DiscoverNodes(const Context& context)
 const NdrStringVec&
 UsdMtlxDiscoveryPlugin::GetSearchURIs() const
 {
+    TRACE_FUNCTION();
+
     return _allSearchPaths;
 }
 
