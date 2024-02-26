@@ -197,6 +197,8 @@ private:
 
     int _instanceCountOffset;
     int _cullInstanceCountOffset;
+
+    uint32_t _vao;
 };
 
 
