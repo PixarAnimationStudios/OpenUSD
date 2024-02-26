@@ -182,17 +182,6 @@ HdSt_MaterialNetworkShader::ComputeHash() const
 HdStShaderCode::ID
 HdSt_MaterialNetworkShader::ComputeTextureSourceHash() const
 {
-    // To avoid excessive plumbing and checking of HgiCapabilities in order to 
-    // determine if bindless textures are enabled, we make things a little 
-    // easier for ourselves by having this function check and return 0 if 
-    // using bindless textures.
-    const bool useBindlessHandles = _namedTextureHandles.empty() ? false :
-        _namedTextureHandles[0].handle->UseBindlessHandles();
-    
-    if (useBindlessHandles) { 
-        return 0;
-    }
-
     if (!_isValidComputedTextureSourceHash) {
         _computedTextureSourceHash = _ComputeTextureSourceHash();
         _isValidComputedTextureSourceHash = true;
@@ -225,6 +214,17 @@ HdStShaderCode::ID
 HdSt_MaterialNetworkShader::_ComputeTextureSourceHash() const
 {
     TRACE_FUNCTION();
+
+    // To avoid excessive plumbing and checking of HgiCapabilities in order to
+    // determine if bindless textures are enabled, we make things a little
+    // easier for ourselves by having this function check and return 0 if
+    // using bindless textures.
+    const bool useBindlessHandles = _namedTextureHandles.empty() ? false :
+        _namedTextureHandles[0].handle->UseBindlessHandles();
+
+    if (useBindlessHandles) {
+        return 0;
+    }
 
     size_t hash = 0;
 
@@ -334,36 +334,6 @@ void
 HdSt_MaterialNetworkShader::Reload()
 {
     // Nothing to do, this shader's sources are externally managed.
-}
-
-/*static*/
-bool
-HdSt_MaterialNetworkShader::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
-                                         HdStShaderCodeSharedPtr const &shaderB)
-{
-    // Can aggregate if the shaders are identical.
-    if (shaderA == shaderB) {
-        return true;
-    }
-
-    HdBufferArrayRangeSharedPtr dataA = shaderA->GetShaderData();
-    HdBufferArrayRangeSharedPtr dataB = shaderB->GetShaderData();
-
-    bool dataIsAggregated = (dataA == dataB) ||
-                            (dataA && dataA->IsAggregatedWith(dataB));
-
-    // We can't aggregate if the shaders have data buffers that aren't
-    // aggregated or if the shaders don't match.
-    if (!dataIsAggregated || shaderA->ComputeHash() != shaderB->ComputeHash()) {
-        return false;
-    }
-
-    if (shaderA->ComputeTextureSourceHash() !=
-        shaderB->ComputeTextureSourceHash()) {
-        return false;
-    }
-
-    return true;
 }
 
 TF_DEFINE_PRIVATE_TOKENS(
