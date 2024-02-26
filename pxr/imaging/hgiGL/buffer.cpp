@@ -46,16 +46,11 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
         HgiGLObjectLabel(GL_BUFFER, _bufferId,  _descriptor.debugName);
     }
 
-    GLbitfield const flags =
-        GL_MAP_READ_BIT |
-        GL_MAP_WRITE_BIT |
-        GL_DYNAMIC_STORAGE_BIT;
-
-    glNamedBufferStorage(
+    glNamedBufferData(
         _bufferId,
         _descriptor.byteSize,
         _descriptor.initialData,
-        flags);
+        GL_STATIC_DRAW);
 
     // glBindVertexBuffer (graphics cmds) needs to know the stride of each
     // vertex buffer. Make sure user provides it.
