@@ -243,18 +243,22 @@ if (PXR_BUILD_IMAGING)
         add_definitions(-DPXR_METAL_SUPPORT_ENABLED)
     endif()
     if (PXR_ENABLE_VULKAN_SUPPORT)
+        message(STATUS "Enabling experimental feature Vulkan support")
         if (EXISTS $ENV{VULKAN_SDK})
             # Prioritize the VULKAN_SDK includes and packages before any system
             # installed headers. This is to prevent linking against older SDKs
             # that may be installed by the OS.
             # XXX This is fixed in cmake 3.18+
-            include_directories(BEFORE SYSTEM $ENV{VULKAN_SDK} $ENV{VULKAN_SDK}/include $ENV{VULKAN_SDK}/lib)
-            set(ENV{PATH} "$ENV{VULKAN_SDK}:$ENV{VULKAN_SDK}/include:$ENV{VULKAN_SDK}/lib:$ENV{PATH}")
+            include_directories(BEFORE SYSTEM $ENV{VULKAN_SDK} $ENV{VULKAN_SDK}/include $ENV{VULKAN_SDK}/lib $ENV{VULKAN_SDK}/source)
+            set(ENV{PATH} "$ENV{VULKAN_SDK}:$ENV{VULKAN_SDK}/include:$ENV{VULKAN_SDK}/lib:$ENV{VULKAN_SDK}/source:$ENV{PATH}")
             find_package(Vulkan REQUIRED)
             list(APPEND VULKAN_LIBS Vulkan::Vulkan)
 
             # Find the extra vulkan libraries we need
             set(EXTRA_VULKAN_LIBS shaderc_combined)
+            if (WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+                set(EXTRA_VULKAN_LIBS shaderc_combinedd)
+            endif()
             foreach(EXTRA_LIBRARY ${EXTRA_VULKAN_LIBS})
                 find_library("${EXTRA_LIBRARY}_PATH" NAMES "${EXTRA_LIBRARY}" PATHS $ENV{VULKAN_SDK}/lib)
                 list(APPEND VULKAN_LIBS "${${EXTRA_LIBRARY}_PATH}")
