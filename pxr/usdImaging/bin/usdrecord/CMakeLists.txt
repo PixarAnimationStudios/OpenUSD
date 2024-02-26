@@ -1,6 +1,8 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdrecord)
 
+# usdrecord has usdAppUtils as a dependency, which is only built when GPU
+# support is enabled.
 if (NOT ${PXR_BUILD_GPU_SUPPORT})
     message(STATUS
         "Skipping ${PXR_PACKAGE} because PXR_BUILD_GPU_SUPPORT is OFF")
@@ -23,6 +25,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/RecordTest
+    DEST testUsdRecordSessionLayer
+)
+
+pxr_install_test_dir(
     SRC testenv/SmallObjectTest
     DEST testUsdRecordSmallObject
 )
@@ -41,9 +48,21 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         EXPECTED_RETURN_CODE 0
     )
 
+    pxr_register_test(testUsdRecordSessionLayer
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --sessionLayer overrideDisplayColor.usda AnimCube.usda AnimCube_overrides.png"
+        EXPECTED_RETURN_CODE 0
+    )
+
     pxr_register_test(testUsdRecordSmallObject
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord test.usda out.png"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testUsdRecordExpressionVariable
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord textureCard.usda out.png --vars TEXTURE=grid"
         EXPECTED_RETURN_CODE 0
     )
 

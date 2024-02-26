@@ -83,8 +83,21 @@
 // 57 -> 58: Introducing hdsi/version.h
 // 58 -> 59: HdGeomSubsetsSchema::GetIds() renamed to
 //           HdGeomSubsetsSchema::GetGeomSubsetNames().
+// 59 -> 60: Introduced HdRenderDelegate::GetCapabilities().
+// 60 -> 61: Adding HdPrimvarSchema::GetFlattenedPrimvarValue().
+//           Note that in an upcoming change,
+//           HdPrimvarSchema::GetPrimvarValue() might change and
+//           simply return the data source source at primvarValue.
+// 61 -> 62: Remove 'bindingStrength' from HdMaterialBindingSchema.
+// 62 -> 63: HdMaterialSchema::GetMaterialNetwork,
+//           HdMaterialNetwork::GetNodes, GetTerminals,
+//           HdMaterialNode::GetParameters, GetInputConnections
+//           return Hydra schemas instead of just container data sources.
+//           schemaTypeDefs.h replaces vectorSchemaTypeDefs.h.
+// 63 -> 64: Adding disableDepthOfField to HdRenderSettings::RenderProduct
+//
 
-#define HD_API_VERSION 59
+#define HD_API_VERSION 64
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

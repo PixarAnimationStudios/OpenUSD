@@ -22,11 +22,22 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdImaging/materialBindingAPIAdapter.h"
+
+#include "pxr/usdImaging/usdImaging/collectionMaterialBindingSchema.h"
+#include "pxr/usdImaging/usdImaging/collectionMaterialBindingsSchema.h"
+#include "pxr/usdImaging/usdImaging/directMaterialBindingSchema.h"
+#include "pxr/usdImaging/usdImaging/directMaterialBindingsSchema.h"
+
 #include "pxr/usd/usdShade/materialBindingAPI.h"
-#include "pxr/imaging/hd/materialBindingsSchema.h"
+
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((materialNamespace, "material:"))
+);
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -40,48 +51,144 @@ TF_REGISTRY_FUNCTION(TfType)
 namespace
 {
 
-class _MaterialBindingsContainerDataSource : public HdContainerDataSource
+template <typename T>
+using _RetainedTypedDs = HdRetainedTypedSampledDataSource<T>;
+
+class _CollectionMaterialBindingsContainerDataSource : public HdContainerDataSource
 {
 public:
 
-    HD_DECLARE_DATASOURCE(_MaterialBindingsContainerDataSource);
+    HD_DECLARE_DATASOURCE(_CollectionMaterialBindingsContainerDataSource);
 
-    _MaterialBindingsContainerDataSource(const UsdPrim &prim)
+    _CollectionMaterialBindingsContainerDataSource(const UsdPrim &prim)
     : _mbApi(prim) {
     }
 
     TfTokenVector GetNames() override {
+        // XXX This returns all the possible values for material purpose
+        //     instead of just the ones for which material bindings are
+        //     authored on the prim.
         return _mbApi.GetMaterialPurposes();
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
-        UsdRelationship bindingRel = _mbApi.GetDirectBindingRel(name);
-        if (!bindingRel) {
+        const TfToken &purpose = name;
+        return _BuildCollectionBindingsVectorDataSource(purpose);
+    }
+
+private:
+
+    HdDataSourceBaseHandle
+    _BuildCollectionBindingsVectorDataSource(
+        const TfToken &purpose) const
+    {
+        using _CollectionBindings =
+            UsdShadeMaterialBindingAPI::CollectionBindingVector;
+
+        _CollectionBindings bindings = _mbApi.GetCollectionBindings(purpose);
+        if (bindings.empty()) {
             return nullptr;
         }
 
+        std::vector<HdDataSourceBaseHandle> bindingsDs;
+        bindingsDs.reserve(bindings.size());
+        for (auto const &binding : bindings) {
+            if (binding.IsValid()) {
+                auto const &b = binding;
+                bindingsDs.push_back(
+                    UsdImagingCollectionMaterialBindingSchema::Builder()
+                    .SetCollectionPath(
+                        _RetainedTypedDs<SdfPath>::New(b.GetCollectionPath()))
+                    .SetMaterialPath(
+                        _RetainedTypedDs<SdfPath>::New(b.GetMaterialPath()))
+                    .SetBindingStrength(
+                        _RetainedTypedDs<TfToken>::New(
+                            UsdShadeMaterialBindingAPI::GetMaterialBindingStrength(
+                                b.GetBindingRel())))
+                    .Build()
+                );
+            }
+        }
+
+        return HdRetainedSmallVectorDataSource::New(
+            bindingsDs.size(), bindingsDs.data());
+    }
+
+    UsdShadeMaterialBindingAPI _mbApi;
+};
+HD_DECLARE_DATASOURCE_HANDLES(_CollectionMaterialBindingsContainerDataSource);
+
+
+class _DirectMaterialBindingsContainerDataSource : public HdContainerDataSource
+{
+public:
+
+    HD_DECLARE_DATASOURCE(_DirectMaterialBindingsContainerDataSource);
+
+    _DirectMaterialBindingsContainerDataSource(const UsdPrim &prim)
+    : _mbApi(prim) {
+    }
+
+    TfTokenVector GetNames() override {
+        // XXX This returns all the possible values for material purpose
+        //     instead of just the ones for which material bindings are
+        //     authored on the prim.
+        return _mbApi.GetMaterialPurposes();
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override {
+        const TfToken &purpose = name;
+
+        UsdRelationship bindingRel = _mbApi.GetDirectBindingRel(purpose);
+        if (!bindingRel) {
+            return nullptr;
+        }
         UsdShadeMaterialBindingAPI::DirectBinding db(bindingRel);
         if (!db.IsBound()) {
             return nullptr;
         }
 
         return
-            HdMaterialBindingSchema::Builder()
-                .SetPath(
-                    HdRetainedTypedSampledDataSource<SdfPath>::New(
-                        db.GetMaterialPath()))
-                .SetBindingStrength(
-                    HdRetainedTypedSampledDataSource<TfToken>::New(
-                        UsdShadeMaterialBindingAPI::GetMaterialBindingStrength(
-                            bindingRel)))
-                .Build();
+            UsdImagingDirectMaterialBindingSchema::Builder()
+            .SetMaterialPath(
+                _RetainedTypedDs<SdfPath>::New(db.GetMaterialPath()))
+            .SetBindingStrength(
+                _RetainedTypedDs<TfToken>::New(
+                    UsdShadeMaterialBindingAPI::GetMaterialBindingStrength(
+                        bindingRel)))
+            .Build();
     }
 
 private:
     UsdShadeMaterialBindingAPI _mbApi;
 };
+HD_DECLARE_DATASOURCE_HANDLES(_DirectMaterialBindingsContainerDataSource);
 
-HD_DECLARE_DATASOURCE_HANDLES(_MaterialBindingsContainerDataSource);
+
+std::pair<bool,bool>
+_HasDirectAndCollectionBindings(const UsdPrim &prim)
+{
+    // Note: GetAuthoredPropertiesInNamespace for "material:binding" returns
+    //       "material:binding:*" but not "material:binding". So, we use
+    //       "material:" instead to get all bindings.
+    //       Collection bindings have a binding name, so using
+    //       "material:binding:collection" suffices.
+    //
+    const std::vector<UsdProperty> colBindingProps =
+        prim.GetAuthoredPropertiesInNamespace(
+            UsdShadeTokens->materialBindingCollection.GetString());
+
+    const bool hasCollectionBinding = !colBindingProps.empty();
+    
+    const std::vector<UsdProperty> allBindingProps =
+        prim.GetAuthoredPropertiesInNamespace(
+            _tokens->materialNamespace.GetString());
+
+    const bool hasDirectBinding =
+        allBindingProps.size() > colBindingProps.size();
+
+    return {hasDirectBinding, hasCollectionBinding};
+}
 
 } // anonymous namespace
 
@@ -98,10 +205,21 @@ UsdImagingMaterialBindingAPIAdapter::GetImagingSubprimData(
         return nullptr;
     }
 
+    const std::pair<bool,bool> hasBindings =
+        _HasDirectAndCollectionBindings(prim);
+    const bool &hasDirectBindings = hasBindings.first;
+    const bool &hasCollectionBindings = hasBindings.second;
+
     return HdRetainedContainerDataSource::New(
-        HdMaterialBindingsSchema::GetSchemaToken(),
-        _MaterialBindingsContainerDataSource::New(prim)
-    );
+        UsdImagingDirectMaterialBindingsSchema::GetSchemaToken(),
+        hasDirectBindings
+        ? _DirectMaterialBindingsContainerDataSource::New(prim)
+        : nullptr,
+
+        UsdImagingCollectionMaterialBindingsSchema::GetSchemaToken(),
+        hasCollectionBindings
+        ? _CollectionMaterialBindingsContainerDataSource::New(prim)
+        : nullptr);
 }
 
 HdDataSourceLocatorSet
@@ -119,9 +237,22 @@ UsdImagingMaterialBindingAPIAdapter::InvalidateImagingSubprim(
         return HdDataSourceLocatorSet();
     }
 
+    const auto &dirBindingsLocator =
+        UsdImagingDirectMaterialBindingsSchema::GetDefaultLocator();
+    const auto &colBindingsLocator =
+        UsdImagingCollectionMaterialBindingsSchema::GetDefaultLocator();
+
+    // Edits to the binding path or strength or collection requires
+    // reevaluation of the resolved binding.
     for (const TfToken &propertyName : properties) {
-        if (UsdShadeMaterialBindingAPI::CanContainPropertyName(propertyName)) {
-            return HdMaterialBindingsSchema::GetDefaultLocator();
+        if (TfStringStartsWith(propertyName,
+                UsdShadeTokens->materialBindingCollection)) {
+            return colBindingsLocator;
+        }
+        
+        if (TfStringStartsWith(propertyName,
+                UsdShadeTokens->materialBinding)) {
+            return dirBindingsLocator;
         }
     }
 

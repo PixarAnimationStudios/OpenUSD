@@ -412,7 +412,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
         TF_DEBUG(SDF_FILE_FORMAT).Msg("_RegisterFormatPlugins: "
             "  target '%s'\n", target.c_str());
 
-        const TfToken formatIdToken(formatId);
+        const TfToken formatIdToken(formatId, TfToken::Immortal);
 
         _InfoSharedPtr& info = formatInfo[formatIdToken];
         if (info) {
@@ -421,7 +421,8 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             continue;
         }
         info = std::make_shared<_Info>(
-            formatIdToken, formatType, TfToken(target), plugin, capabilities);
+            formatIdToken, formatType,
+            TfToken(target, TfToken::Immortal), plugin, capabilities);
 
         // Record the extensions that this file format plugin can handle.
         // Note that an extension may be supported by multiple file format

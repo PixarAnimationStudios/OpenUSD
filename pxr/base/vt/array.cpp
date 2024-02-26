@@ -26,6 +26,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/stackTrace.h"
 #include "pxr/base/tf/stringUtils.h"
 
@@ -46,9 +47,9 @@ Vt_ArrayBase::_DetachCopyHook(char const *funcName) const
 }
 
 // Instantiate basic array templates.
-#define VT_ARRAY_EXPLICIT_INST(r, unused, elem) \
+#define VT_ARRAY_EXPLICIT_INST(unused, elem) \
     template class VT_API VtArray< VT_TYPE(elem) >;
-BOOST_PP_SEQ_FOR_EACH(VT_ARRAY_EXPLICIT_INST, ~, VT_SCALAR_VALUE_TYPES)
+TF_PP_SEQ_FOR_EACH(VT_ARRAY_EXPLICIT_INST, ~, VT_SCALAR_VALUE_TYPES)
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

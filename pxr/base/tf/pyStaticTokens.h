@@ -95,10 +95,10 @@ private:
     _TF_TOKENS_EXPAND_ARRAY_ELEMENTS(seq)
 
 // Private macros to wrap a single element in a sequence.
-#define _TF_PY_TOKENS_WRAP_ELEMENT(r, key, elem)                            \
+#define _TF_PY_TOKENS_WRAP_ELEMENT(key, elem)                               \
     _TF_PY_TOKENS_WRAP_MEMBER(r, key, _TF_PY_TOKEN_GET_ELEM(elem))
 
-#define _TF_PY_TOKENS_WRAP_ATTR_ELEMENT(r, key, elem)                       \
+#define _TF_PY_TOKENS_WRAP_ATTR_ELEMENT(key, elem)                          \
     _TF_PY_TOKENS_WRAP_ATTR_MEMBER(r, key, _TF_PY_TOKEN_GET_ELEM(elem))
 
 #define _TF_PY_TOKEN_GET_ELEM(elem)                                         \
@@ -107,10 +107,10 @@ private:
 
 // Private macros to wrap a sequence.
 #define _TF_PY_TOKENS_WRAP_SEQ(key, seq)                                    \
-    BOOST_PP_SEQ_FOR_EACH(_TF_PY_TOKENS_WRAP_ELEMENT, key, seq)
+    TF_PP_SEQ_FOR_EACH(_TF_PY_TOKENS_WRAP_ELEMENT, key, seq)
 
 #define _TF_PY_TOKENS_WRAP_ATTR_SEQ(key, seq)                               \
-    BOOST_PP_SEQ_FOR_EACH(_TF_PY_TOKENS_WRAP_ATTR_ELEMENT, key, seq)
+    TF_PP_SEQ_FOR_EACH(_TF_PY_TOKENS_WRAP_ATTR_ELEMENT, key, seq)
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

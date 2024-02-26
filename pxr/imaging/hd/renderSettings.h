@@ -133,6 +133,7 @@ public:
         /// Settings overrides
         //
         bool disableMotionBlur;
+        bool disableDepthOfField;
         VtDictionary namespacedSettings;
     };
 

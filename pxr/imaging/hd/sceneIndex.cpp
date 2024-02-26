@@ -195,6 +195,30 @@ HdSceneIndexBase::_IsObserved() const
     return !_observers.empty();
 }
 
+void
+HdSceneIndexBase::SystemMessage(
+    const TfToken &messageType,
+    const HdDataSourceBaseHandle &args)
+{
+    // give input scene indices an opportunity first
+    if (const HdFilteringSceneIndexBase * const fsi =
+            dynamic_cast<const HdFilteringSceneIndexBase*>(this)) {
+        for (const HdSceneIndexBaseRefPtr &isi : fsi->GetInputScenes()) {
+            isi->SystemMessage(messageType, args);
+        }
+    }
+
+    _SystemMessage(messageType, args);
+}
+
+void
+HdSceneIndexBase::_SystemMessage(
+    const TfToken &messageType,
+    const HdDataSourceBaseHandle &args)
+{
+    // no behavior for base
+}
+
 std::string
 HdSceneIndexBase::GetDisplayName() const
 {

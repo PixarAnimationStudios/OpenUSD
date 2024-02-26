@@ -493,7 +493,23 @@ HgiVulkanBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 void
 HgiVulkanBlitCmds::FillBuffer(HgiBufferHandle const& buffer, uint8_t value)
 {
-    TF_CODING_ERROR("Missing Implementation");
+    _CreateCommandBuffer();
+
+    HgiVulkanBuffer* buf = static_cast<HgiVulkanBuffer*>(buffer.Get());
+
+    // Convert 8-bit value to 32-bit value e.g. if given 0xff, we want to pass
+    // 0xffffffff to vkCmdFillBuffer.
+    const uint32_t value32Bit = static_cast<uint32_t>(value) | 
+                                static_cast<uint32_t>(value) << 8 | 
+                                static_cast<uint32_t>(value) << 16 |
+                                static_cast<uint32_t>(value) << 24;
+
+    vkCmdFillBuffer(
+        _commandBuffer->GetVulkanCommandBuffer(),
+        buf->GetVulkanBuffer(),
+        0,
+        VK_WHOLE_SIZE,
+        value32Bit);
 }
 
 void

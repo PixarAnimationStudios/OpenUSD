@@ -1330,7 +1330,7 @@ BuildPrimDefinition(_SchemaDefInitHelper *defInitHelper)
 
     // Get the list of names of any override properties this schema may have as
     // we want to skip these at first when initializing the prim definition.
-    VtTokenArray overridePropertyNames = _GetOverridePropertyNames(
+    const VtTokenArray overridePropertyNames = _GetOverridePropertyNames(
         schematicsLayer, schematicsPrimPath);
 
     // Multiple apply schemas are actually templates for creating an instance of
@@ -1535,7 +1535,7 @@ _PopulateConcretePrimDefinitions() const
         const SdfPath schematicsPrimPath = 
             SdfPath::AbsoluteRootPath().AppendChild(schemaInfo->identifier);
 
-        VtTokenArray overridePropertyNames = _GetOverridePropertyNames(
+        const VtTokenArray overridePropertyNames = _GetOverridePropertyNames(
             schematicsLayer, schematicsPrimPath);
 
         // Create and initialize a new prim definition for the concrete schema.

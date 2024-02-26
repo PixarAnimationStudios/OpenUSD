@@ -35,6 +35,7 @@
 
 #include "pxr/base/gf/matrix2f.h"
 #include "pxr/base/gf/matrix2d.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
@@ -1920,7 +1921,7 @@ static size_t
 AddTestCasesToPrim(const UsdPrim& prim)
 {
     size_t numTestCasesAdded = 0;
-#define ADD_TEST_CASE(r, unused, tup)                                   \
+#define ADD_TEST_CASE(unused, tup)                                      \
     {                                                                   \
         typedef SDF_VALUE_CPP_TYPE(tup) Type;                           \
         typedef SDF_VALUE_CPP_ARRAY_TYPE(tup) ShapedType;               \
@@ -1929,7 +1930,7 @@ AddTestCasesToPrim(const UsdPrim& prim)
                                                                         \
         ++numTestCasesAdded;                                            \
     }
-    BOOST_PP_SEQ_FOR_EACH(ADD_TEST_CASE, ~, SDF_VALUE_TYPES);
+    TF_PP_SEQ_FOR_EACH(ADD_TEST_CASE, ~, SDF_VALUE_TYPES);
 #undef ADD_TEST_CASE
 
     return numTestCasesAdded;
@@ -1944,14 +1945,14 @@ RunInterpolationTests(const UsdPrim& prim)
     stage->SetInterpolationType(UsdInterpolationTypeLinear);
     TF_VERIFY(stage->GetInterpolationType() == UsdInterpolationTypeLinear);
 
-#define RUN_LINEAR_INTERPOLATION_TEST(r, unused, tup)                   \
+#define RUN_LINEAR_INTERPOLATION_TEST(unused, tup)                      \
     {                                                                   \
         typedef SDF_VALUE_CPP_TYPE(tup) Type;                           \
         typedef SDF_VALUE_CPP_ARRAY_TYPE(tup) ShapedType;               \
         TestCase<Type>::TestLinearInterpolation(prim);                  \
         TestCase<ShapedType>::TestLinearInterpolation(prim);            \
     }
-    BOOST_PP_SEQ_FOR_EACH(
+    TF_PP_SEQ_FOR_EACH(
         RUN_LINEAR_INTERPOLATION_TEST, ~, SDF_VALUE_TYPES);
 #undef RUN_LINEAR_INTERPOLATION_TEST
 
@@ -1959,14 +1960,14 @@ RunInterpolationTests(const UsdPrim& prim)
     stage->SetInterpolationType(UsdInterpolationTypeHeld);
     TF_VERIFY(stage->GetInterpolationType() == UsdInterpolationTypeHeld);
 
-#define RUN_HELD_INTERPOLATION_TEST(r, unused, tup)                     \
+#define RUN_HELD_INTERPOLATION_TEST(unused, tup)                        \
     {                                                                   \
         typedef SDF_VALUE_CPP_TYPE(tup) Type;                           \
         typedef SDF_VALUE_CPP_ARRAY_TYPE(tup) ShapedType;               \
         TestCase<Type>::TestHeldInterpolation(prim);                    \
         TestCase<ShapedType>::TestHeldInterpolation(prim);              \
     }
-    BOOST_PP_SEQ_FOR_EACH(
+    TF_PP_SEQ_FOR_EACH(
         RUN_HELD_INTERPOLATION_TEST, ~, SDF_VALUE_TYPES);
 #undef RUN_HELD_INTERPOLATION_TEST    
 }

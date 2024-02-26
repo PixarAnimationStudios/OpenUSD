@@ -115,7 +115,8 @@ HdPrman_SampleFilter::Sync(
         // Only Create the SampleFilter if connected to the RenderSettings
         // Note that this works because the RenderSettings, being a Bprim,
         // always gets synced before the SampleFilter Sprim.
-        SdfPathVector connectedFilters = param->GetConnectedSampleFilterPaths();
+        const SdfPathVector& connectedFilters =
+            param->GetConnectedSampleFilterPaths();
         if (std::find(connectedFilters.begin(), connectedFilters.end(), id)
             != connectedFilters.end()) {
             const VtValue sampleFilterResourceValue =

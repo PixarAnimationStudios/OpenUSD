@@ -30,17 +30,30 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdPrman_GprimBase::~HdPrman_GprimBase() = default; 
 
 void
-HdPrman_GprimBase::UpdateInstanceVisibility(bool vis,
+HdPrman_GprimBase::UpdateInstanceVisibility(bool renderPassVisibility,
                                             riley::Riley *riley ) const
 {
+    if (_renderPassVisibility == renderPassVisibility) {
+        return;
+    }
+    _renderPassVisibility = renderPassVisibility;
+    if (!_sceneVisibility) {
+        // If the prim is not visible in the scene it cannot be
+        // further affected by render pass state.
+        return;
+    }
     for(auto instid : _instanceIds) {
         RtParamList attrs;
         attrs.SetInteger(RixStr.k_visibility_camera,
-                         static_cast<int>(vis));
+                         static_cast<int>(_renderPassVisibility));
         attrs.SetInteger(RixStr.k_visibility_indirect,
-                         static_cast<int>(vis));
+                         static_cast<int>(_renderPassVisibility));
         attrs.SetInteger(RixStr.k_visibility_transmission,
-                         static_cast<int>(vis));
+                         static_cast<int>(_renderPassVisibility));
+        // XXX: HYD-2973: This approach has the unfortunate side-effect
+        // of clearing any other attributes that had been previously set
+        // on this geometry instance.  This can break features that rely
+        // on those attributes, such as subsurface and light-linking.
         riley->ModifyGeometryInstance(
             riley::GeometryPrototypeId::InvalidId(),
             instid, nullptr, nullptr,

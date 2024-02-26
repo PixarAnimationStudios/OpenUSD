@@ -128,7 +128,7 @@ _MarkBindingsAsConverged(
     HdRenderPassAovBindingVector const &aovBindings,
     const HdRenderIndex * const renderIndex)
 {
-    for (const HdRenderPassAovBinding aovBinding : aovBindings) {
+    for (const HdRenderPassAovBinding& aovBinding : aovBindings) {
         HdPrmanRenderBuffer * const rb =
             static_cast<HdPrmanRenderBuffer*>(
                 renderIndex->GetBprim(
@@ -444,8 +444,6 @@ HdPrman_RenderPass::_Execute(
     _UpdateCameraPath(renderPassState, &cameraContext);
     const bool dataWindowChanged = _UpdateCameraFramingAndWindowPolicy(
         renderPassState, &cameraContext);
-    // XXX This should come from the camera.
-    cameraContext.SetFallbackShutterCurve(isInteractive);
     const bool camChanged = cameraContext.IsInvalid();
     cameraContext.MarkValid();
     
@@ -593,7 +591,7 @@ HdPrman_RenderPass::_Execute(
         }
     }
 
-    if (renderDelegate->IsInteractive()) {
+    if (isInteractive) {
         // This path uses the render thread to start the render.
         _RestartRenderIfNecessary(renderDelegate);
     } else {

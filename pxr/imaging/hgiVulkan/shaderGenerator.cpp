@@ -226,7 +226,7 @@ HgiVulkanShaderGenerator::_WriteExtensions(std::ostream &ss)
 
     if (_GetShaderStage() & HgiShaderStageFragment) {
         if (builtinBarycentricsEnabled) {
-            ss << "#extension GL_NV_fragment_shader_barycentric: require\n";
+            ss << "#extension GL_EXT_fragment_shader_barycentric: require\n";
         }
     }
 }
@@ -387,7 +387,7 @@ HgiVulkanShaderGenerator::_WriteInOuts(
         { HgiShaderKeywordTokens->hdLayer, "gl_Layer"},
         { HgiShaderKeywordTokens->hdViewportIndex, "gl_ViewportIndex"},
         { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"},
-        { HgiShaderKeywordTokens->hdBaryCoordNoPerspNV, "gl_BaryCoordNoPerspNV"},
+        { HgiShaderKeywordTokens->hdBaryCoordNoPersp, "gl_BaryCoordNoPerspEXT"}
     };
 
     const bool in_qualifier = qualifier == "in";
@@ -417,22 +417,11 @@ HgiVulkanShaderGenerator::_WriteInOuts(
             const std::string &role = param.role;
             auto const& keyword = takenInParams.find(role);
             if (keyword != takenInParams.end()) {
-                if (role == HgiShaderKeywordTokens->hdGlobalInvocationID) {
-                    CreateShaderSection<HgiVulkanKeywordShaderSection>(
-                        paramName,
-                        param.type,
-                        keyword->second);
-                } else if (role == HgiShaderKeywordTokens->hdVertexID) {
-                    CreateShaderSection<HgiVulkanKeywordShaderSection>(
-                        paramName,
-                        param.type,
-                        keyword->second);
-                } else if (role == HgiShaderKeywordTokens->hdInstanceID) {
-                    CreateShaderSection<HgiVulkanKeywordShaderSection>(
-                        paramName,
-                        param.type,
-                        keyword->second);
-                } else if (role == HgiShaderKeywordTokens->hdBaseInstance) {
+                if (role == HgiShaderKeywordTokens->hdGlobalInvocationID ||
+                    role == HgiShaderKeywordTokens->hdVertexID ||
+                    role == HgiShaderKeywordTokens->hdInstanceID ||
+                    role == HgiShaderKeywordTokens->hdBaseInstance ||
+                    role == HgiShaderKeywordTokens->hdBaryCoordNoPersp) {
                     CreateShaderSection<HgiVulkanKeywordShaderSection>(
                         paramName,
                         param.type,

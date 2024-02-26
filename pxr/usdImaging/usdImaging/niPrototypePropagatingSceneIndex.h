@@ -42,7 +42,7 @@ TF_DECLARE_REF_PTRS(UsdImagingNiPrototypePropagatingSceneIndex);
 /// instancing scene index has to be run after the point instancing
 /// scene index.
 ///
-/// This scene index uses the UsdImgingNiInstanceAggregationSceneIndex
+/// This scene index uses the UsdImagingNiInstanceAggregationSceneIndex
 /// to find all instances, aggregate them and insert instancers for
 /// each set of aggregated instances. This scene index then inserts
 /// flattened and possibly further transformed (e.g. applying draw mode)

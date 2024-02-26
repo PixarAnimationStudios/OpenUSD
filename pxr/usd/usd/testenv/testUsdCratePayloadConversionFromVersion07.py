@@ -104,9 +104,9 @@ class TestUsdCrateForPayloadLists(unittest.TestCase):
         self._VerifyLayerPrims(usdaLayer)
 
         # Export the this layer to a usdc file and verify that it is exported
-        # using the 0.8.0 crate file version as new files start at 0.8.0.
+        # using the 0.9.0 crate file version as new files start at 0.9.0.
         self.assertTrue(usdaLayer.Export(singlePayloadCrateFilename))
-        self._VerifyCrateVersion08(singlePayloadCrateFilename)
+        self._VerifyCrateVersion09(singlePayloadCrateFilename)
 
         # Open the crate layer and verify that it has the same prims and
         # payloads.
@@ -120,11 +120,11 @@ class TestUsdCrateForPayloadLists(unittest.TestCase):
             Sdf.Payload('PayloadNew1.usda', Sdf.Path('/Parent')),
             Sdf.Payload('PayloadNew2.usda', Sdf.Path('/Parent'))]
 
-        # Export layer to a new crate file and verify that it uses the 0.8.0
+        # Export layer to a new crate file and verify that it uses the 0.9.0
         # crate version as this can not be represented in prior versions (and 
         # also it's now the default version for new crate files).
         self.assertTrue(usdaLayer.Export(listPayloadCrateFilename))
-        self._VerifyCrateVersion08(listPayloadCrateFilename)
+        self._VerifyCrateVersion09(listPayloadCrateFilename)
 
         # Similar to the generic _VerifyLayerPrims but instead verifies that
         # '/PayloadRefNone' has two payloads instead.
@@ -178,10 +178,10 @@ class TestUsdCrateForPayloadLists(unittest.TestCase):
         usdaPayloadNoOpinion = usdaLayer.GetPrimAtPath('/PayloadNoOpinion')
         usdaPayloadNoOpinion.payloadList.explicitItems = [Sdf.Payload("","/PayloadRef1")]
 
-        # Export layer to a new crate file and verify that it uses the 0.8.0
+        # Export layer to a new crate file and verify that it uses the 0.9.0
         # crate version as this can not be represented in prior versions.
         self.assertTrue(usdaLayer.Export(internalPayloadCrateFilename))
-        self._VerifyCrateVersion08(internalPayloadCrateFilename)
+        self._VerifyCrateVersion09(internalPayloadCrateFilename)
 
         # Similar to the generic _VerifyLayerPrims but instead verifies that
         # '/PayloadRefNoOpinion' has a single internal payload instead.
@@ -233,10 +233,10 @@ class TestUsdCrateForPayloadLists(unittest.TestCase):
         usdaPayloadRef1.payloadList.explicitItems = [
             Sdf.Payload('Payload.usda', Sdf.Path('/Parent'), Sdf.LayerOffset(12.0, 1.0))]
 
-        # Export layer to a new crate file and verify that it uses the 0.8.0
+        # Export layer to a new crate file and verify that it uses the 0.9.0
         # crate version as this can not be represented in prior versions.
         self.assertTrue(usdaLayer.Export(exportCrateFilename))
-        self._VerifyCrateVersion08(exportCrateFilename)
+        self._VerifyCrateVersion09(exportCrateFilename)
 
         # Similar to the generic _VerifyLayerPrims but instead verifies that
         # '/PayloadRef1' has a layer offset.

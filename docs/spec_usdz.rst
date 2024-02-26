@@ -375,7 +375,7 @@ MIME Type
 =========
 
 Usdz is registered with IANA, with a media type name of **model** and a subtype
-name of **vnd.usd+zip** . For full details, see `Usdz's IANA registration
+name of **vnd.usdz+zip** . For full details, see `Usdz's IANA registration
 page. <https://www.iana.org/assignments/media-types/model/vnd.usdz+zip>`_
 
 Toolset

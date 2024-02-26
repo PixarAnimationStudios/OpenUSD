@@ -139,30 +139,43 @@ UsdUtils_AssetLocalizationPackage::Write(
     return success;
 }
 
-std::string
+UsdUtilsDependencyInfo
 UsdUtils_AssetLocalizationPackage::_ProcessDependency( 
     const SdfLayerRefPtr &layer, 
-    const std::string &assetPath,
-    const std::vector<std::string> &dependencies,
-    UsdUtilsDependencyType dependencyType)
+    const UsdUtilsDependencyInfo &depInfo,
+    UsdUtils_DependencyType dependencyType)
 {
-    return _AddDependenciesToPackage(layer, assetPath, dependencies);
+    if (_userProcessingFunc) {
+        UsdUtilsDependencyInfo processedInfo = _userProcessingFunc(
+            layer, depInfo);
+
+        // if the user processing func returned empty string then this
+        // asset should be removed from the source layer
+        if (processedInfo.GetAssetPath().empty()) {
+            return UsdUtilsDependencyInfo();
+        }
+
+        return _AddDependenciesToPackage(
+            layer, processedInfo);
+    }
+
+    return _AddDependenciesToPackage(
+        layer, depInfo);
 }
 
-std::string 
+UsdUtilsDependencyInfo 
 UsdUtils_AssetLocalizationPackage::_AddDependenciesToPackage( 
     const SdfLayerRefPtr &layer, 
-    const std::string &assetPath,
-    const std::vector<std::string> &dependencies)
+    const UsdUtilsDependencyInfo &depInfo)
 {
     // If there are no dependencies then there is no need for remapping
-    if (assetPath.empty()) {
-        return assetPath;
+    if (depInfo.GetAssetPath().empty()) {
+        return depInfo;
     }
 
     bool isRelativeOutput;
     const std::string remappedPath = 
-        _ProcessAssetPath(layer, assetPath, &isRelativeOutput);
+        _ProcessAssetPath(layer, depInfo.GetAssetPath(), &isRelativeOutput);
     
     std::string packagePath = remappedPath;
     if (isRelativeOutput) {
@@ -173,28 +186,31 @@ UsdUtils_AssetLocalizationPackage::_AddDependenciesToPackage(
             _layersToCopy.find(layer->GetIdentifier());
 
         if (containingLayerInfo != _layersToCopy.end()) {
-            packagePath = TfNormPath(TfStringCatPaths(
-                TfGetPathName(containingLayerInfo->second), assetPath));
+            packagePath = TfNormPath(TfStringCatPaths(TfGetPathName(
+                containingLayerInfo->second), depInfo.GetAssetPath()));
         }
     }
 
     // Add all dependencies to package
     const std::string destDirectory = TfGetPathName(packagePath);
 
-    //_AddDependencyToPackage(layer, assetPath, destDirectory);
-
-    for (const auto &dependency : dependencies) {
-        _AddDependencyToPackage(layer, dependency, destDirectory);
+    if (depInfo.GetDependencies().empty()) {
+        _AddDependencyToPackage(layer, depInfo.GetAssetPath(), destDirectory);
+    }
+    else {
+        for (const auto &dependency : depInfo.GetDependencies()) {
+            _AddDependencyToPackage(layer, dependency, destDirectory);
+        }
     }
 
-    return remappedPath;
+    return {remappedPath, depInfo.GetDependencies()};
 }
 
 void
 UsdUtils_AssetLocalizationPackage::_AddDependencyToPackage(
     const SdfLayerRefPtr &layer, 
-    const std::string dependency,
-    const std::string destDirectory)
+    const std::string &dependency,
+    const std::string &destDirectory)
 {
     const std::string dependencyAnchored = 
         SdfComputeAssetPathRelativeToLayer(layer, dependency);
@@ -242,10 +258,13 @@ UsdUtils_AssetLocalizationPackage::_ProcessAssetPath(
             // will be nowhere to put this asset in the localized asset
             // structure. In that case, we need to remap this path. 
             // Otherwise, we can keep the relative asset path as-is.
+            // Note: if we are unable to resolve the anchored path we will not 
+            // consider it outside the asset location. For example, we would
+            // like to preserve relative clip template paths for matching.
             const ArResolvedPath resolvedRefPath = 
                 resolver.Resolve(anchored);
             const bool refPathIsOutsideAssetLocation = 
-                !TfStringStartsWith(
+                !resolvedRefPath.empty() && !TfStringStartsWith(
                     TfNormPath(TfGetPathName(resolvedRefPath)),
                     TfNormPath(TfGetPathName(_rootFilePath)));
 

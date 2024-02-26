@@ -77,6 +77,7 @@ void wrapUsdRenderTokens()
     _AddToken(cls, "dataWindowNDC", UsdRenderTokens->dataWindowNDC);
     _AddToken(cls, "denoiseEnable", UsdRenderTokens->denoiseEnable);
     _AddToken(cls, "denoisePass", UsdRenderTokens->denoisePass);
+    _AddToken(cls, "disableDepthOfField", UsdRenderTokens->disableDepthOfField);
     _AddToken(cls, "disableMotionBlur", UsdRenderTokens->disableMotionBlur);
     _AddToken(cls, "expandAperture", UsdRenderTokens->expandAperture);
     _AddToken(cls, "fileName", UsdRenderTokens->fileName);

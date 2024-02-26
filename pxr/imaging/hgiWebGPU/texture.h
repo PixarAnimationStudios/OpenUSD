@@ -57,6 +57,12 @@ public:
     HGIWEBGPU_API
     wgpu::TextureView GetTextureView() const;
 
+    /// This function does not do anything. There is no support for explicit 
+    /// layout transition in non-explicit APIs like OpenGL. Hence this function
+    /// simply returns void.
+    HGIWEBGPU_API
+    void SubmitLayoutChange(HgiTextureUsage newLayout) override;
+
 protected:
     friend class HgiWebGPU;
 

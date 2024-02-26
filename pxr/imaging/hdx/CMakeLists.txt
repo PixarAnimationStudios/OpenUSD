@@ -175,17 +175,6 @@ pxr_build_test(testHdxCameraAndLight
     CPPFILES
         testenv/testHdxCameraAndLight.cpp
 )
-pxr_build_test(testHdxDrawTarget
-    LIBRARIES
-        hdx
-        hd
-        sdf
-        glf
-        arch
-        tf
-    CPPFILES
-        testenv/testHdxDrawTarget.cpp
-)
 pxr_build_test(testHdxPickingWithReprAndRefineChanges
     LIBRARIES
         hdx
@@ -263,10 +252,6 @@ endif()
 # Install tests
 #
 pxr_install_test_dir(
-    SRC testenv/testHdxDrawTarget
-    DEST testHdxDrawTarget
-)
-pxr_install_test_dir(
     SRC testenv/testHdxLightAndShadow
     DEST testHdxLightAndShadow
 )
@@ -297,17 +282,6 @@ pxr_install_test_dir(
 pxr_register_test(testHdxCameraAndLight
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxCameraAndLight"
     EXPECTED_RETURN_CODE 0
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-)
-pxr_register_test(testHdxDrawTarget
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxDrawTarget"
-    EXPECTED_RETURN_CODE 0
-    IMAGE_DIFF_COMPARE
-        color1.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -411,3 +385,35 @@ pxr_register_test(testHdxUnpickablesAsOccluders
     FAIL_PERCENT 1
     PERCEPTUAL
 )
+
+# Certain tests use plugins that require shared libraries.
+if (TARGET shared_libs)
+
+pxr_build_test(testHdxDrawTarget
+    LIBRARIES
+        hdx
+        hd
+        sdf
+        glf
+        arch
+        tf
+    CPPFILES
+        testenv/testHdxDrawTarget.cpp
+)
+pxr_install_test_dir(
+    SRC testenv/testHdxDrawTarget
+    DEST testHdxDrawTarget
+)
+pxr_register_test(testHdxDrawTarget
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxDrawTarget"
+    EXPECTED_RETURN_CODE 0
+    IMAGE_DIFF_COMPARE
+        color1.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+endif() # TARGET shared_libs

@@ -125,8 +125,6 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory<HioImageFactory<Image>>();
 }
 
-// There is a HioGetFormat function, but the twist here is that we are
-// forcing translation of 3 channel float images to 4 channel images.
 HioFormat Hio_OpenEXRImage::GetFormat() const
 {
     switch (_exrReader.pixelType)
@@ -141,9 +139,6 @@ HioFormat Hio_OpenEXRImage::GetFormat() const
         default: return HioFormatInvalid;
         }
 
-    // float pixel formats promote 3 channel reads to 4, because general gpu
-    // support for three component floating point textures is not always
-    // supported, but 1, 2, and 4 components are.
     case EXR_PIXEL_HALF:
         switch (_exrReader.channelCount)
         {
@@ -770,6 +765,9 @@ bool Hio_OpenEXRImage::_OpenForReading(std::string const &filename,
         return false;
     }
     
+    _exrReader.width >>= mip;
+    _exrReader.height >>= mip;
+    
     return true;
 }
 
@@ -850,26 +848,26 @@ bool Hio_OpenEXRImage::Write(StorageSpec const &storage,
         for (int i = 0; i < storage.width * storage.height * ch; ++i) {
             *dst++ = GfHalf(*src++) / 255.0f;
         }
-        int pixMul = ch - 1;
+        int pixMul = 0;
         uint8_t* red = nullptr;
         uint8_t* green = nullptr;
         uint8_t* blue = nullptr;
         uint8_t* alpha = nullptr;
         if (ch > 0) {
             red = (uint8_t*) pixels.data() + (pxsize * pixMul);
-            --pixMul;
+            ++pixMul;
         }
         if (ch > 1) {
             green = (uint8_t*) pixels.data() + (pxsize * pixMul);
-            --pixMul;
+            ++pixMul;
         }
         if (ch > 2) {
             blue = (uint8_t*) pixels.data() + (pxsize * pixMul);
-            --pixMul;
+            ++pixMul;
         }
         if (ch > 3) {
             alpha = (uint8_t*) pixels.data() + (pxsize * pixMul);
-            --pixMul;
+            ++pixMul;
         }
         rv = nanoexr_write_exr(
                 _filename.c_str(),
@@ -890,26 +888,26 @@ bool Hio_OpenEXRImage::Write(StorageSpec const &storage,
     }
 
     uint8_t* pixels = reinterpret_cast<uint8_t*>(storage.data);
-    int pixMul = ch - 1;
+    int pixMul = 0;
     uint8_t* red = nullptr;
     uint8_t* green = nullptr;
     uint8_t* blue = nullptr;
     uint8_t* alpha = nullptr;
     if (ch > 0) {
         red = pixels + (pxsize * pixMul);
-        --pixMul;
+        ++pixMul;
     }
     if (ch > 1) {
         green = pixels + (pxsize * pixMul);
-        --pixMul;
+        ++pixMul;
     }
     if (ch > 2) {
         blue = pixels + (pxsize * pixMul);
-        --pixMul;
+        ++pixMul;
     }
     if (ch > 3) {
         alpha = pixels + (pxsize * pixMul);
-        --pixMul;
+        ++pixMul;
     }
 
     if (type == HioTypeFloat)

@@ -6,9 +6,8 @@
 #ifndef OPENEXR_PRIVATE_STRUCTS_H
 #define OPENEXR_PRIVATE_STRUCTS_H
 
+#include "openexr_config.h"
 #include "internal_attr.h"
-
-#include "openexr_conf.h"
 
 #ifdef ILMTHREAD_THREADING_ENABLED
 #    ifdef _WIN32
@@ -368,7 +367,6 @@ internal_exr_unlock (const struct _internal_exr_context* c)
         EXR_ERR_ARGUMENT_OUT_OF_RANGE,                                         \
         "Part index (%d) out of range",                                        \
         pi)
-
 
 EXR_INTERNAL void internal_exr_update_default_handlers (exr_context_initializer_t* inits);
 

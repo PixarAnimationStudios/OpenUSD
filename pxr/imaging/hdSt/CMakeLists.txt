@@ -192,6 +192,7 @@ pxr_library(hdSt
         shaders/frustumCull.glslfx
         shaders/imageShader.glslfx
         shaders/instancing.glslfx
+        shaders/invalidMaterialNetwork.glslfx
         shaders/mesh.glslfx
         shaders/meshFaceCull.glslfx
         shaders/meshNormal.glslfx
@@ -202,6 +203,7 @@ pxr_library(hdSt
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
         shaders/simpleLightingShader.glslfx
+        shaders/surfaceHelpers.glslfx
         shaders/terminals.glslfx
         shaders/visibility.glslfx
         shaders/volume.glslfx
@@ -505,18 +507,6 @@ pxr_build_test(testHdStPrimvars
     CPPFILES
         testenv/testHdStPrimvars.cpp
 )
-if (PXR_ENABLE_PTEX_SUPPORT)
-pxr_build_test(testHdStPtex
-    LIBRARIES
-        hdSt
-        hd
-        sdf
-        tf
-        gf
-    CPPFILES
-        testenv/testHdStPtex.cpp
-)
-endif()
 pxr_build_test(testHdStQuadrangulation
     LIBRARIES
         hdSt
@@ -542,16 +532,6 @@ pxr_build_test(testHdStSamplerObjectRegistry
         tf
     CPPFILES
         testenv/testHdStSamplerObjectRegistry.cpp
-)
-pxr_build_test(testHdStShaders
-    LIBRARIES
-        hdSt
-        hd
-        sdr
-        tf
-        gf
-    CPPFILES
-        testenv/testHdStShaders.cpp
 )
 pxr_build_test(testHdStSubdivision
     LIBRARIES
@@ -716,23 +696,9 @@ pxr_install_test_dir(
     SRC testenv/testHdStPrimvars
     DEST testHdStPrimvars
 )
-if (PXR_ENABLE_PTEX_SUPPORT)
-pxr_install_test_dir(
-    SRC testenv/testHdStPtex
-    DEST testHdStPtex
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStPtexTetrahedron
-    DEST testHdStPtexTetrahedron
-)
-endif()
 pxr_install_test_dir(
     SRC testenv/testHdStSamplerObjectRegistry
     DEST testHdStSamplerObjectRegistry
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStShaders
-    DEST testHdStShaders
 )
 pxr_install_test_dir(
     SRC testenv/testHdStSubdivisionOsd3
@@ -2925,55 +2891,64 @@ pxr_register_test(testHdStMaterialXShaderGen_SSdefault
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_default.mtlx"
     STDOUT_REDIRECT shadergen_SSdefault.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_SSdefault.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SSdefault.out"
+    POST_COMMAND "diff -B -b shadergen_SSdefault.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SSdefault.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_UsdPSdefault
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename usd_preview_surface_default.mtlx"
     STDOUT_REDIRECT shadergen_UsdPSdefault.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_UsdPSdefault.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_UsdPSdefault.out"
+    POST_COMMAND "diff -B -b shadergen_UsdPSdefault.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_UsdPSdefault.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_SSmarble
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_marble_solid.mtlx"
     STDOUT_REDIRECT shadergen_SSmarble.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_SSmarble.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SSmarble.out"
+    POST_COMMAND "diff -B -b shadergen_SSmarble.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SSmarble.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_SScopper
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_copper.mtlx"
     STDOUT_REDIRECT shadergen_SScopper.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_SScopper.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SScopper.out"
+    POST_COMMAND "diff -B -b shadergen_SScopper.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SScopper.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_UsdPStextured
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename usd_preview_surface_brass_tiled.mtlx --textureMap image_color_file:diffuseColor --textureMap image_roughness_file:roughness"
     STDOUT_REDIRECT shadergen_UsdPStextured.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_UsdPStextured.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_UsdPStextured.out"
+    POST_COMMAND "diff -B -b shadergen_UsdPStextured.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_UsdPStextured.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_SStextured
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_brass_tiled.mtlx --textureMap image_color_file:diffuseColor --textureMap image_roughness_file:roughness --primvarMap uv:vector2"
     STDOUT_REDIRECT shadergen_SStextured.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_SStextured.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SStextured.out"
+    POST_COMMAND "diff -B -b shadergen_SStextured.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SStextured.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_UsdPSglass
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename usd_preview_surface_glass.mtlx --materialTag translucent"
     STDOUT_REDIRECT shadergen_UsdPSglass.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_UsdPSglass.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_UsdPSglass.out"
+    POST_COMMAND "diff -B -b shadergen_UsdPSglass.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_UsdPSglass.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen8_SStextured_bindless
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_brass_tiled.mtlx --textureMap image_color_file:diffuseColor --textureMap image_roughness_file:roughness --primvarMap uv:vector2 --bindless"
     STDOUT_REDIRECT shadergen_SStextured_bindless.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_SStextured_bindless.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SStextured_bindless.out"
+    POST_COMMAND "diff -B -b shadergen_SStextured_bindless.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SStextured_bindless.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_texcoord
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename texcoord.mtlx --primvarMap st:vector2"
     STDOUT_REDIRECT shadergen_texcoord.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_texcoord.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_texcoord.out"
+    POST_COMMAND "diff -B -b shadergen_texcoord.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_texcoord.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 endif()
 pxr_register_test(testHdStMeshTopology
@@ -3036,7 +3011,151 @@ pxr_register_test(testHdStPrimvars
         HDST_ENABLE_MATERIAL_PRIMVAR_FILTERING=0
         TF_DEBUG=HD_SAFE_MODE
 )
+pxr_register_test(testHdStQuadrangulation
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStQuadrangulation"
+    EXPECTED_RETURN_CODE 0
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+pxr_register_test(testHdStRenderPass
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStRenderPass"
+    EXPECTED_RETURN_CODE 0
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+pxr_register_test(testHdStSamplerObjectRegistry
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStSamplerObjectRegistry --offscreen"
+    EXPECTED_RETURN_CODE 0
+    IMAGE_DIFF_COMPARE
+        outSampler1.png
+        outSampler2.png
+        outHiResSampler.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+)
+pxr_register_test(testHdStSubdivisionOsd3
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStSubdivision"
+    EXPECTED_RETURN_CODE 0
+    STDOUT_REDIRECT testHdStSubdivisionOsd3-Run1-stdout.txt
+    DIFF_COMPARE testHdStSubdivisionOsd3-Run1-stdout.txt
+    TESTENV testHdStSubdivisionOsd3
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+pxr_register_test(testHdStTextureHandleRegistry
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStTextureHandleRegistry --offscreen"
+    EXPECTED_RETURN_CODE 0
+    IMAGE_DIFF_COMPARE
+        outTextureBasic.png
+        outTextureSampler1LowRes.png
+        outTextureSampler1.png
+        outTextureSampler2.png
+        outTextureBeforeFileChange.png
+        outTextureAfterFileChange.png
+        outTextureAfterReload.png
+        outTextureWithLowGlobalMemoryRequest.png
+        outTextureWithHighGlobalMemoryRequest.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+)
+pxr_register_test(testHdStTextureObjectRegistry
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStTextureObjectRegistry --offscreen"
+    EXPECTED_RETURN_CODE 0
+    IMAGE_DIFF_COMPARE
+        outTexture1FullRes.png
+        outTexture1LowRes.png
+        outTexture1Reloaded.png
+        outTexture2.png
+        outGrayscaleTexture.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+)
+pxr_register_test(testHdStTransition0
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStTransition --offscreen --outputFilePrefix testHdStTransition0 --repr hull -c draw,animate=/cube1,repr=smoothHull,draw,repr=hull,draw,refineLevel=1,repr=refined,draw,refineLevel=2,draw"
+    EXPECTED_RETURN_CODE 0
+    IMAGE_DIFF_COMPARE
+        testHdStTransition0_0.png
+        testHdStTransition0_1.png
+        testHdStTransition0_2.png
+        testHdStTransition0_3.png
+        testHdStTransition0_4.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    TESTENV testHdStTransition
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+pxr_register_test(testHdStTransition1
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStTransition --offscreen --outputFilePrefix testHdStTransition1 --repr smoothHull -c draw,animate=/cube1,animate=/grid1,animate=/curve2,animate=/points3,repr=hull,draw"
+    EXPECTED_RETURN_CODE 0
+    IMAGE_DIFF_COMPARE
+        testHdStTransition1_0.png
+        testHdStTransition1_1.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    TESTENV testHdStTransition
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+pxr_register_test(testHdStTransition2
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStTransition --offscreen --outputFilePrefix testHdStTransition2 --repr smoothHull -c draw,clipPlane=1:0:0:1,draw,clipPlane=-1:0:0:1,draw"
+    EXPECTED_RETURN_CODE 0
+    IMAGE_DIFF_COMPARE
+        testHdStTransition2_0.png
+        testHdStTransition2_1.png
+        testHdStTransition2_2.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    TESTENV testHdStTransition
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+pxr_register_test(testHdStTransitionRefinedCurves
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStTransition --offscreen --outputFilePrefix testHdStTransitionRefinedCurves0 --repr hull -c draw,repr=smoothHull,draw"
+    EXPECTED_RETURN_CODE 0
+    IMAGE_DIFF_COMPARE
+        testHdStTransitionRefinedCurves0_0.png
+        testHdStTransitionRefinedCurves0_1.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    TESTENV testHdStTransitionRefinedCurves
+    ENV
+        HD_ENABLE_REFINED_CURVES=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+# Certain tests use plugins that require shared libraries.
+if (TARGET shared_libs)
+
 if (PXR_ENABLE_PTEX_SUPPORT)
+pxr_build_test(testHdStPtex
+    LIBRARIES
+        hdSt
+        hd
+        sdf
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStPtex.cpp
+)
+pxr_install_test_dir(
+    SRC testenv/testHdStPtex
+    DEST testHdStPtex
+)
+pxr_install_test_dir(
+    SRC testenv/testHdStPtexTetrahedron
+    DEST testHdStPtexTetrahedron
+)
 pxr_register_test(testHdStPtex
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStPtex --ptex test.ptx --offscreen --write testHdStPtex.png"
     EXPECTED_RETURN_CODE 0
@@ -3207,29 +3326,21 @@ pxr_register_test(testHdStPtexTetrahedron_Refined_Quads_ForceTris
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
-endif()
-pxr_register_test(testHdStQuadrangulation
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStQuadrangulation"
-    EXPECTED_RETURN_CODE 0
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
+endif() # PXR_ENABLE_PTEX_SUPPORT
+
+pxr_build_test(testHdStShaders
+    LIBRARIES
+        hdSt
+        hd
+        sdr
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStShaders.cpp
 )
-pxr_register_test(testHdStRenderPass
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStRenderPass"
-    EXPECTED_RETURN_CODE 0
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-)
-pxr_register_test(testHdStSamplerObjectRegistry
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStSamplerObjectRegistry --offscreen"
-    EXPECTED_RETURN_CODE 0
-    IMAGE_DIFF_COMPARE
-        outSampler1.png
-        outSampler2.png
-        outHiResSampler.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
+pxr_install_test_dir(
+    SRC testenv/testHdStShaders
+    DEST testHdStShaders
 )
 pxr_register_test(testHdStShaders
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStShaders --offscreen --outputFilePrefix testHdStShaders"
@@ -3253,102 +3364,4 @@ pxr_register_test(testHdStShaders
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
-pxr_register_test(testHdStSubdivisionOsd3
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStSubdivision"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT testHdStSubdivisionOsd3-Run1-stdout.txt
-    DIFF_COMPARE testHdStSubdivisionOsd3-Run1-stdout.txt
-    TESTENV testHdStSubdivisionOsd3
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-)
-pxr_register_test(testHdStTextureHandleRegistry
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStTextureHandleRegistry --offscreen"
-    EXPECTED_RETURN_CODE 0
-    IMAGE_DIFF_COMPARE
-        outTextureBasic.png
-        outTextureSampler1LowRes.png
-        outTextureSampler1.png
-        outTextureSampler2.png
-        outTextureBeforeFileChange.png
-        outTextureAfterFileChange.png
-        outTextureAfterReload.png
-        outTextureWithLowGlobalMemoryRequest.png
-        outTextureWithHighGlobalMemoryRequest.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-)
-pxr_register_test(testHdStTextureObjectRegistry
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStTextureObjectRegistry --offscreen"
-    EXPECTED_RETURN_CODE 0
-    IMAGE_DIFF_COMPARE
-        outTexture1FullRes.png
-        outTexture1LowRes.png
-        outTexture1Reloaded.png
-        outTexture2.png
-        outGrayscaleTexture.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-)
-pxr_register_test(testHdStTransition0
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStTransition --offscreen --outputFilePrefix testHdStTransition0 --repr hull -c draw,animate=/cube1,repr=smoothHull,draw,repr=hull,draw,refineLevel=1,repr=refined,draw,refineLevel=2,draw"
-    EXPECTED_RETURN_CODE 0
-    IMAGE_DIFF_COMPARE
-        testHdStTransition0_0.png
-        testHdStTransition0_1.png
-        testHdStTransition0_2.png
-        testHdStTransition0_3.png
-        testHdStTransition0_4.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    TESTENV testHdStTransition
-    ENV
-        HD_ENABLE_FORCE_QUADRANGULATE=1
-        TF_DEBUG=HD_SAFE_MODE
-)
-pxr_register_test(testHdStTransition1
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStTransition --offscreen --outputFilePrefix testHdStTransition1 --repr smoothHull -c draw,animate=/cube1,animate=/grid1,animate=/curve2,animate=/points3,repr=hull,draw"
-    EXPECTED_RETURN_CODE 0
-    IMAGE_DIFF_COMPARE
-        testHdStTransition1_0.png
-        testHdStTransition1_1.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    TESTENV testHdStTransition
-    ENV
-        HD_ENABLE_FORCE_QUADRANGULATE=1
-        TF_DEBUG=HD_SAFE_MODE
-)
-pxr_register_test(testHdStTransition2
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStTransition --offscreen --outputFilePrefix testHdStTransition2 --repr smoothHull -c draw,clipPlane=1:0:0:1,draw,clipPlane=-1:0:0:1,draw"
-    EXPECTED_RETURN_CODE 0
-    IMAGE_DIFF_COMPARE
-        testHdStTransition2_0.png
-        testHdStTransition2_1.png
-        testHdStTransition2_2.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    TESTENV testHdStTransition
-    ENV
-        HD_ENABLE_FORCE_QUADRANGULATE=1
-        TF_DEBUG=HD_SAFE_MODE
-)
-pxr_register_test(testHdStTransitionRefinedCurves
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStTransition --offscreen --outputFilePrefix testHdStTransitionRefinedCurves0 --repr hull -c draw,repr=smoothHull,draw"
-    EXPECTED_RETURN_CODE 0
-    IMAGE_DIFF_COMPARE
-        testHdStTransitionRefinedCurves0_0.png
-        testHdStTransitionRefinedCurves0_1.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    TESTENV testHdStTransitionRefinedCurves
-    ENV
-        HD_ENABLE_REFINED_CURVES=1
-        TF_DEBUG=HD_SAFE_MODE
-)
+endif() # TARGET shared_libs

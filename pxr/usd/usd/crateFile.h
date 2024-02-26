@@ -949,15 +949,10 @@ private:
 
     ////////////////////////////////////////////////////////////////////////
 
-    // Base class, to have a pointer type.
-    struct _ValueHandlerBase;
-    template <class, class=void> struct _ScalarValueHandlerBase;
-    template <class, class=void> struct _ArrayValueHandlerBase;
+    // Type-specific _ValueHandler<T> derives _ValueHandlerBase, just so we can
+    // have common pointers to specific instances.
+    struct _ValueHandlerBase {};
     template <class> struct _ValueHandler;
-
-    friend struct _ValueHandlerBase;
-    template <class, class> friend struct _ScalarValueHandlerBase;
-    template <class, class> friend struct _ArrayValueHandlerBase;
     template <class> friend struct _ValueHandler;
 
     template <class T> inline _ValueHandler<T> &_GetValueHandler();

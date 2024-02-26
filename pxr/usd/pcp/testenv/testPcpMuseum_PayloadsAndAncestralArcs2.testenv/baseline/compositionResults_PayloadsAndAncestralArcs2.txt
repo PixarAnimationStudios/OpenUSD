@@ -1,0 +1,58 @@
+Loading @PayloadsAndAncestralArcs2/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </SubrootInherits>
+
+Prim Stack:
+    root.sdf             /SubrootInherits
+    inherits.sdf         /Ref
+    inherits.sdf         /Payload
+
+Child names:
+     ['Class', 'Child']
+
+------------------------------------------------------------------------
+Results for composing </SubrootInherits/Class>
+
+Prim Stack:
+    root.sdf             /SubrootInherits/Class
+    inherits.sdf         /Ref/Class
+    inherits.sdf         /Payload/Class
+
+------------------------------------------------------------------------
+Results for composing </SubrootInherits/Child>
+
+Prim Stack:
+    root.sdf             /SubrootInherits/Child
+    root.sdf             /SubrootInherits/Class
+    inherits.sdf         /Ref/Child
+    inherits.sdf         /Ref/Class
+    inherits.sdf         /Payload/Class
+    inherits.sdf         /Payload/Child
+
+------------------------------------------------------------------------
+Results for composing </Relocates>
+
+Prim Stack:
+    root.sdf             /Relocates
+    relocates.sdf        /Ref
+    relocates.sdf        /Payload
+
+Child names:
+     ['Child']
+
+Prohibited child names:
+     ['PayloadChild']
+
+------------------------------------------------------------------------
+Results for composing </Relocates/Child>
+
+Prim Stack:
+    root.sdf             /Relocates/Child
+    relocates.sdf        /Ref/Child
+    relocates.sdf        /Payload/PayloadChild
+

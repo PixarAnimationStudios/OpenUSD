@@ -27,6 +27,7 @@
 #include "pxr/usd/pcp/layerStackRegistry.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
+#include "pxr/usd/pcp/utils.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/layerUtils.h"
@@ -52,6 +53,7 @@ public:
         : rootLayerStackId(rootLayerStackId_)
         , fileFormatTarget(fileFormatTarget_)
         , isUsd(isUsd)
+        , mutedLayers(fileFormatTarget_)
     { }
 
     typedef SdfLayerHandleVector Layers;
@@ -366,24 +368,46 @@ Pcp_LayerStackRegistry::_GetMutedLayers() const
 
 // ------------------------------------------------------------
 
-namespace
-{
 std::string 
-_GetCanonicalLayerId(const SdfLayerHandle& anchorLayer, 
-                     const std::string& layerId)
+Pcp_MutedLayers::_GetCanonicalLayerId(const SdfLayerHandle& anchorLayer, 
+                                      const std::string& layerId) const
 {
-    if (SdfLayer::IsAnonymousLayerIdentifier(layerId)) {
-        return layerId;
+    // Split out any file format arguments embedded in layerId so we
+    // can anchor the layer path separately.
+    std::string layerPath;
+    SdfLayer::FileFormatArguments args;
+    if (!SdfLayer::SplitIdentifier(layerId, &layerPath, &args)) {
+        return std::string();
     }
-
+    
     // XXX: 
     // We may ultimately want to use the resolved path here but that's
     // possibly a bigger change and there are questions about what happens if
     // the muted path doesn't resolve to an existing asset and how/when to
     // invalidate the resolved paths stored in the Pcp_MutedLayers object.
-    return ArGetResolver().CreateIdentifier(
-        layerId, anchorLayer->GetResolvedPath());
+    const std::string anchoredPath =
+        SdfLayer::IsAnonymousLayerIdentifier(layerPath) ?
+        layerPath :
+        ArGetResolver().CreateIdentifier(
+            layerPath, anchorLayer->GetResolvedPath());
+
+    if (anchoredPath.empty()) {
+        return std::string();
+    }
+
+    // If the layer identifier specified a file format target that matches
+    // our own, we strip it off. This simplifies the matching done in
+    // IsLayerMuted, e.g. in the case where the user specified a muted
+    // layer with a file format target that matches our own, and the
+    // layer identifier being checked has no file format target.
+    Pcp_StripFileFormatTarget(_fileFormatTarget, &args);
+
+    return SdfLayer::CreateIdentifier(anchoredPath, args);
 }
+
+Pcp_MutedLayers::Pcp_MutedLayers(const std::string& fileFormatTarget)
+    : _fileFormatTarget(fileFormatTarget)
+{
 }
 
 const std::vector<std::string>& 
@@ -402,6 +426,9 @@ Pcp_MutedLayers::MuteAndUnmuteLayers(const SdfLayerHandle& anchorLayer,
     for (const auto& layerToMute : *layersToMute) {
         const std::string canonicalId = 
             _GetCanonicalLayerId(anchorLayer, layerToMute);
+        if (canonicalId.empty()) {
+            continue;
+        }
 
         const auto layerIt = std::lower_bound(
             _layers.begin(), _layers.end(), canonicalId);
@@ -414,6 +441,9 @@ Pcp_MutedLayers::MuteAndUnmuteLayers(const SdfLayerHandle& anchorLayer,
     for (const auto& layerToUnmute : *layersToUnmute) {
         const std::string canonicalId = 
             _GetCanonicalLayerId(anchorLayer, layerToUnmute);
+        if (canonicalId.empty()) {
+            continue;
+        }
 
         const auto layerIt = std::lower_bound(
             _layers.begin(), _layers.end(), canonicalId);
@@ -437,6 +467,10 @@ Pcp_MutedLayers::IsLayerMuted(const SdfLayerHandle& anchorLayer,
     }
 
     std::string canonicalId = _GetCanonicalLayerId(anchorLayer, layerId);
+    if (canonicalId.empty()) {
+        return false;
+    }
+
     if (std::binary_search(_layers.begin(), _layers.end(), canonicalId)) {
         if (canonicalLayerId) {
             canonicalLayerId->swap(canonicalId);

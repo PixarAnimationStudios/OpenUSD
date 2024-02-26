@@ -37,7 +37,7 @@ TF_DECLARE_REF_PTRS(HdsiCoordSysPrimSceneIndex);
 ///
 /// If prim P has a coord sys binding FOO to another prim Q, the scene
 /// index will add a coord sys prim Q.__coordSys:FOO under Q.
-/// It will rewrite the coord sys binding on Q to point to
+/// It will rewrite the coord sys binding on P to point to
 /// Q.__coordSys:FOO and use Q's xform data source for Q.__coordSys:FOO.
 ///
 /// Motivation: USD allows for a coord sys binding to target any xformable

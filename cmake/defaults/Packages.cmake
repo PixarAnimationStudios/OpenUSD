@@ -248,6 +248,7 @@ if (PXR_BUILD_IMAGING)
         else ()
             find_package(OpenGL REQUIRED)
         endif()
+        add_definitions(-DPXR_GL_SUPPORT_ENABLED)
     endif()
     # --WebGPU
     if (PXR_ENABLE_WEBGPU_SUPPORT)
@@ -397,6 +398,10 @@ if(PXR_ENABLE_OSL_SUPPORT)
     find_package(OSL REQUIRED)
     set(REQUIRES_Imath TRUE)
     add_definitions(-DPXR_OSL_SUPPORT_ENABLED)
+endif()
+
+if (PXR_BUILD_ANIMX_TESTS)
+    find_package(AnimX REQUIRED)
 endif()
 
 # ----------------------------------------------

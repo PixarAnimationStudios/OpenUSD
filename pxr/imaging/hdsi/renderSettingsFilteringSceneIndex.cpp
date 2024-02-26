@@ -227,18 +227,13 @@ _Contains(
 // prim.
 SdfPathVector
 _GetTargetedCameras(
-    HdRenderProductVectorSchema products)
+    HdRenderProductVectorSchema productsSchema)
 {
-    const HdVectorDataSourceHandle vds = products.GetVector();
-    if (!vds) {
-        return SdfPathVector();
-    }
+    const size_t n = productsSchema.GetNumElements();
 
     SdfPathVector cameraPaths;
-    for (size_t ii = 0; ii < vds->GetNumElements(); ++ii) {
-        HdRenderProductSchema productSchema(
-            HdContainerDataSource::Cast(vds->GetElement(ii)));
-        
+    for (size_t i = 0; i < n; ++i) {
+        HdRenderProductSchema productSchema = productsSchema.GetElement(i);
         const HdPathDataSourceHandle camPathDs =  productSchema.GetCameraPrim();
         if (camPathDs) {
             const SdfPath camPath = camPathDs->GetTypedValue(0.0);
@@ -290,18 +285,13 @@ using _ProductShutterInfoVec = std::vector<_ProductShutterInfo>;
 
 _ProductShutterInfoVec
 _GetShutterInfoFromProducts(
-    HdRenderProductVectorSchema products)
+    HdRenderProductVectorSchema productsSchema)
 {
-    const HdVectorDataSourceHandle vds = products.GetVector();
-    if (!vds) {
-        return _ProductShutterInfoVec();
-    }
+    const size_t n = productsSchema.GetNumElements();
 
     _ProductShutterInfoVec result;
-    for (size_t ii = 0; ii < vds->GetNumElements(); ++ii) {
-        HdRenderProductSchema productSchema(
-            HdContainerDataSource::Cast(vds->GetElement(ii)));
-        
+    for (size_t i = 0; i < n; ++i) {
+        HdRenderProductSchema productSchema = productsSchema.GetElement(i);
         const HdPathDataSourceHandle camPathDs =  productSchema.GetCameraPrim();
         if (camPathDs) {
             const SdfPath camPath = camPathDs->GetTypedValue(0.0);

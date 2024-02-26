@@ -300,10 +300,19 @@ namespace {
             }
 
             // We prefer more specific types, so if the arraySize is 2, 3, or 4,
-            // then try to convert to a fixed-dimension float array.
+            // then try to convert to a fixed-dimension int or float array.
             // In the future if we change this to not return a fixed-size array,
             // all the parsers need to be updated to not return a fixed-size
             // array as well.
+            if (type == SdrPropertyTypes->Int) {
+                if (arraySize == 2) {
+                    return std::make_pair(SdfValueTypeNames->Int2, TfToken());
+                } else if (arraySize == 3) {
+                    return std::make_pair(SdfValueTypeNames->Int3, TfToken());
+                } else if (arraySize == 4) {
+                    return std::make_pair(SdfValueTypeNames->Int4, TfToken());
+                }
+            }
             if (type == SdrPropertyTypes->Float) {
                 if (arraySize == 2) {
                     return std::make_pair(SdfValueTypeNames->Float2, TfToken());

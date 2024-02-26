@@ -304,7 +304,7 @@ HgiWebGPUShaderGenerator::_WriteInOuts(
         { HgiShaderKeywordTokens->hdLayer, "gl_Layer"},
         { HgiShaderKeywordTokens->hdViewportIndex, "gl_ViewportIndex"},
         { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"},
-        { HgiShaderKeywordTokens->hdBaryCoordNoPerspNV, "gl_BaryCoordNoPerspNV"},
+        { HgiShaderKeywordTokens->hdBaryCoordNoPersp, "gl_BaryCoordNoPerspNV"},
     };
 
     const bool in_qualifier = qualifier == "in";
@@ -320,26 +320,15 @@ HgiWebGPUShaderGenerator::_WriteInOuts(
             const std::string &role = param.role;
             auto const& keyword = takenInParams.find(role);
             if (keyword != takenInParams.end()) {
-                if (role == HgiShaderKeywordTokens->hdGlobalInvocationID) {
+                if (role == HgiShaderKeywordTokens->hdGlobalInvocationID ||
+                    role == HgiShaderKeywordTokens->hdVertexID ||
+                    role == HgiShaderKeywordTokens->hdInstanceID ||
+                    role == HgiShaderKeywordTokens->hdBaseInstance ||
+                    role == HgiShaderKeywordTokens->hdBaryCoordNoPersp) {
                     CreateShaderSection<HgiGLKeywordShaderSection>(
-                            paramName,
-                            param.type,
-                            keyword->second);
-                } else if (role == HgiShaderKeywordTokens->hdVertexID) {
-                    CreateShaderSection<HgiGLKeywordShaderSection>(
-                            paramName,
-                            param.type,
-                            keyword->second);
-                } else if (role == HgiShaderKeywordTokens->hdInstanceID) {
-                    CreateShaderSection<HgiGLKeywordShaderSection>(
-                            paramName,
-                            param.type,
-                            keyword->second);
-                } else if (role == HgiShaderKeywordTokens->hdBaseInstance) {
-                    CreateShaderSection<HgiGLKeywordShaderSection>(
-                            paramName,
-                            param.type,
-                            keyword->second);
+                        paramName,
+                        param.type,
+                        keyword->second);
                 }
                 continue;
             }

@@ -257,11 +257,14 @@ private:
     // Remove backpointers to \p path and descendants.
     void _RemoveBackpointers(const SdfPath& path);
 
-    // Add \p path to _deadspace, removing any descendants.
+    // Add \p path to _deadspace.
     void _AddDeadspace(const SdfPath& path);
 
-    // Remove \p path and any descendants from _deadspace.
+    // Remove \p path from _deadspace.
     void _RemoveDeadspace(const SdfPath& path);
+
+    // Move all deadspace descendants from the \p from path to the \p to path.
+    void _MoveDeadspaceDescendants(const SdfPath &from, const SdfPath &to);
 
     // Returns \c true if \p path is in _deadspace.
     bool _IsDeadspace(const SdfPath& path) const;
@@ -562,7 +565,12 @@ SdfNamespaceEdit_Namespace::_Move(
         _FixBackpointers(currentPath, newPath);
     }
 
-    // Fix deadspace.  First add then remove in case this is a no-op move.
+    // Move any existing deadspace under the current path to the new path
+    _MoveDeadspaceDescendants(currentPath, newPath);
+
+    // Add deadspace for the current path, and remove newPath from deadspace.
+    //
+    // Be sure to add before removing in case this is a no-op move.
     _AddDeadspace(currentPath);
     _RemoveDeadspace(newPath);
 
@@ -638,7 +646,6 @@ SdfNamespaceEdit_Namespace::_AddDeadspace(const SdfPath& path)
         return;
     }
 
-    _RemoveDeadspace(path);
     _deadspace.insert(path);
 }
 
@@ -650,15 +657,35 @@ SdfNamespaceEdit_Namespace::_RemoveDeadspace(const SdfPath& path)
         return;
     }
 
-    // Find the extent of the subtree with path as a prefix.
-    SdfPathSet::iterator i = _deadspace.lower_bound(path);
-    SdfPathSet::iterator n = i;
-    while (n != _deadspace.end() && n->HasPrefix(path)) {
-        ++n;
+    // Only erase the path given, but keep any descendant paths.
+    //
+    // If there's a descendant path in the deadspace set, then that means that 
+    // path was previously moved or removed before this path was moved/removed.
+    // If this path were to move back, then the deadspace previously descendant 
+    // deadspace paths should still exist.
+    _deadspace.erase(path);
+}
+
+void 
+SdfNamespaceEdit_Namespace::_MoveDeadspaceDescendants(
+    const SdfPath &from, 
+    const SdfPath &to)
+{
+    // Never move to or from the absolute root path.
+    if (!TF_VERIFY(from != SdfPath::AbsoluteRootPath()) ||
+        !TF_VERIFY(to != SdfPath::AbsoluteRootPath())) {
+        return;
     }
 
-    // Remove the subtree.
-    _deadspace.erase(i, n);
+    const auto [begin, end] = 
+        SdfPathFindPrefixedRange(_deadspace.begin(), _deadspace.end(), from);
+    SdfPathVector newDeadspacePaths;
+    for (auto it = begin; it != end; it++) {
+        newDeadspacePaths.push_back(it->ReplacePrefix(from, to));
+    }
+
+    _deadspace.erase(begin, end);
+    _deadspace.insert(newDeadspacePaths.begin(), newDeadspacePaths.end());
 }
 
 bool

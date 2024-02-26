@@ -11,9 +11,14 @@ endif()
 # Add a test that WindowsImportWrapper adds entries on the PATH in the correct order, to ensure
 # that the correct dlls needed by python modules are loaded
 function(add_py_dll_link_test)
-    # Skip this this for static builds (BUILD_SHARED_LIBS set to False), as
-    # python modules/plugins require a shared library.
-    if (NOT (PXR_ENABLE_PYTHON_SUPPORT AND PXR_BUILD_TESTS AND WIN32 AND BUILD_SHARED_LIBS))
+    # early return if we are not building tests or if we are not on windows.
+    if (NOT (PXR_BUILD_TESTS AND WIN32))
+        return()
+    endif()
+
+    # early return if python target is not built! (No python build enabled or
+    # doing a static build, etc)
+    if (NOT TARGET python)
         return()
     endif()
 
@@ -156,7 +161,6 @@ pxr_library(tf
         pyObjWrapper
         pyTracing
         refBase
-        refCount
         refPtr
         refPtrTracker
         regTest
@@ -167,6 +171,7 @@ pxr_library(tf
         setenv
         singleton
         smallVector
+        spinMutex
         spinRWMutex
         stackTrace
         stacked
@@ -180,6 +185,7 @@ pxr_library(tf
         type
         typeFunctions
         typeNotice
+        unicodeUtils
         warning
         weakBase
         weakPtr
@@ -258,6 +264,7 @@ pxr_library(tf
         atomicRenameUtil
         debugCodes
         noticeRegistry
+        unicodeCharacterClasses
 
     PYTHON_PRIVATE_CLASSES
         pyErrorInternal
@@ -271,8 +278,10 @@ pxr_library(tf
         pxrDoubleConversion/bignum.h
         pxrDoubleConversion/cached-powers.h
         pxrDoubleConversion/diy-fp.h
+        pxrDoubleConversion/double-to-string.h
         pxrDoubleConversion/fast-dtoa.h
         pxrDoubleConversion/fixed-dtoa.h
+        pxrDoubleConversion/string-to-double.h
         pxrDoubleConversion/strtod.h
         pxrLZ4/lz4.h
         pyWeakObject.h
@@ -280,13 +289,13 @@ pxr_library(tf
     CPPFILES
         initConfig.cpp
         preprocessorUtils.cpp
-        pxrDoubleConversion/double-conversion.cc
         pxrDoubleConversion/bignum-dtoa.cc
         pxrDoubleConversion/bignum.cc
         pxrDoubleConversion/cached-powers.cc
-        pxrDoubleConversion/diy-fp.cc
+        pxrDoubleConversion/double-to-string.cc
         pxrDoubleConversion/fast-dtoa.cc
         pxrDoubleConversion/fixed-dtoa.cc
+        pxrDoubleConversion/string-to-double.cc
         pxrDoubleConversion/strtod.cc
         pxrLZ4/lz4.cpp
 
@@ -465,6 +474,7 @@ pxr_build_test(testTf
         testenv/patternMatcher.cpp
         testenv/pointerAndBits.cpp
         testenv/preprocessorUtils.cpp
+        testenv/preprocessorUtilsLite.cpp
         testenv/probe.cpp
         testenv/refPtr.cpp
         testenv/registryManager.cpp
@@ -486,6 +496,7 @@ pxr_build_test(testTf
         testenv/type.cpp
         testenv/typeMultipleInheritance.cpp
         testenv/typeInfoMap.cpp
+        testenv/unicodeUtils.cpp
         testenv/weakPtr.cpp
 )
 
@@ -670,6 +681,9 @@ pxr_register_test(TfPointerAndBits
 pxr_register_test(TfPreprocessorUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPreprocessorUtils"
 )
+pxr_register_test(TfPreprocessorUtilsLite
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPreprocessorUtilsLite"
+)
 pxr_register_test(TfProbe
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfProbe"
 )
@@ -749,6 +763,9 @@ pxr_register_test(TfTypeInfoMap
 )
 pxr_register_test(TfType_MultipleInheritance
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfType_MultipleInheritance"
+)
+pxr_register_test(TfUnicodeUtils
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfUnicodeUtils"
 )
 pxr_register_test(TfWeakPtr
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfWeakPtr"

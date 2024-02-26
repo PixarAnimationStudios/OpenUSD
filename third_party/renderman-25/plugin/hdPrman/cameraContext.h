@@ -112,39 +112,8 @@ public:
     /// Get resolution for offline rendering.
     GfVec2i GetResolutionFromDisplayWindow() const;
 
-    /// Set the shutter curve, i.e., the curve that determines how
-    /// transparency of the shutter as a function of (normalized)
-    /// time.
-    ///
-    /// Note that the times given here are relative to the shutter
-    /// interval.
-    ///
-    /// Some more explanation:
-    ///
-    /// The values given here are passed to the Riley camera as options
-    /// RixStr.k_shutterOpenTime, k_shutterCloseTime and k_shutteropening.
-    ///
-    /// (where as the shutter interval is set through the global Riley options
-    /// using Ri:Shutter).
-    ///
-    /// RenderMan computes the shutter curve using constant pieces and
-    /// cubic Bezier interpolation between the following points
-    /// 
-    /// (0, 0), (t1, y1), (t2,y2), (t3, 1), (t4, 1), (t5, y5), (t6, y6), (1, 0)
-    ///
-    /// which are encoded as:
-    ///    t3 is the shutterOpenTime
-    ///    t4 is the shutterCloseTime
-    ///    [t1, y1, t2, y2, t5, y5, t6, y6] is shutteropeningPoints array.
-    ///
-    void SetShutterCurve(const float shutterOpenTime,
-                         const float shutterCloseTime,
-                         const float shutteropeningPoints[8]);
-
-    /// Use hardcoded fallback values for the shutter curve. Ideally, this
-    /// can be removed once we add UsdImaging/Hydra support for PxrCameraAPI.
-    ///
-    void SetFallbackShutterCurve(bool isInteractive);
+    /// When depth of field is disabled the fstop is set to infinity.
+    void SetDisableDepthOfField(bool disableDepthOfField);
 
     /// Path of current camera in render index.
     const SdfPath &GetCameraPath() const { return _cameraPath; }
@@ -186,10 +155,7 @@ private:
     SdfPath _cameraPath;
     CameraUtilFraming _framing;
     CameraUtilConformWindowPolicy _policy;
-
-    float _shutterOpenTime;
-    float _shutterCloseTime;
-    float _shutteropeningPoints[8];
+    bool _disableDepthOfField;
     
     // Save ids of riley clip planes so that we can delete them before
     // re-creating them to update the clip planes.

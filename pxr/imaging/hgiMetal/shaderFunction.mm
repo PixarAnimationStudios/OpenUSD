@@ -41,9 +41,7 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
   , _shaderId(nil)
 {
     if (desc.shaderCode) {
-        id<MTLDevice> device = hgi->GetPrimaryDevice();
-
-        HgiMetalShaderGenerator shaderGenerator {desc, device};
+        HgiMetalShaderGenerator shaderGenerator(hgi, desc);
         shaderGenerator.Execute();
         const char *shaderCode = shaderGenerator.GetGeneratedShaderCode();
 

@@ -47,6 +47,7 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     , _vkPipeline(nullptr)
     , _vkRenderPass(nullptr)
     , _vkPipelineLayout(nullptr)
+    , _clearNeeded(false)
 {
     VkGraphicsPipelineCreateInfo pipeCreateInfo =
         {VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
@@ -558,8 +559,8 @@ HgiVulkanGraphicsPipeline::GetInflightBits()
     return _inflightBits;
 }
 
-static void
-_ProcessAttachment(
+void
+HgiVulkanGraphicsPipeline::_ProcessAttachment(
     HgiAttachmentDesc const& attachment,
     uint32_t attachmentIndex,
     HgiSampleCount sampleCount,
@@ -599,6 +600,13 @@ _ProcessAttachment(
         attachment.format, isDepthAttachment);
     vkAttachDesc->initialLayout = layout;
     vkAttachDesc->loadOp = HgiVulkanConversions::GetLoadOp(attachment.loadOp);
+
+    // If any attachments specify a clear op, clearing the renderpass will be 
+    // needed.
+    if (attachment.loadOp == HgiAttachmentLoadOpClear) {
+        _clearNeeded = true;
+    }
+
     vkAttachDesc->samples = HgiVulkanConversions::GetSampleCount(sampleCount);
     vkAttachDesc->storeOp= HgiVulkanConversions::GetStoreOp(attachment.storeOp);
     // XXX Hgi doesn't provide stencil ops, assume it matches depth attachment.

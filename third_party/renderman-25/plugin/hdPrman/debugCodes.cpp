@@ -49,6 +49,7 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "computations.");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_TERMINAL_SCENE_INDEX_OBSERVER,
         "Debug logging for HdPrman terminal scene index observer.");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_MOTION_BLUR, "Motion blur");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

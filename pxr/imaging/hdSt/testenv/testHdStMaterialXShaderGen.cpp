@@ -39,16 +39,21 @@ void TestShaderGen(
     const mx::FilePath& mtlxFilename, 
     const HdSt_MxShaderGenInfo& mxHdInfo)
 {
-    // Load Standard Libraries/setup SearchPaths (for mxDoc and mxShaderGen)
-    mx::FilePathVec libraryFolders;
-    mx::FileSearchPath searchPath = HdMtlxSearchPaths();
-    mx::DocumentPtr stdLibraries = mx::createDocument();
-    mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
+    // Get Standard Libraries and SearchPaths (for mxDoc and mxShaderGen)
+    const mx::DocumentPtr& stdLibraries = HdMtlxStdLibraries();
+    const mx::FileSearchPath& searchPaths = HdMtlxSearchPaths();
 
     // Read the mtlx file
     mx::DocumentPtr mxDoc = mx::createDocument();
     fprintf(stderr, "reading the mtlx file: \n - %s\n", mtlxFilename.asString().c_str());
-    mx::readFromXmlFile(mxDoc, mtlxFilename, searchPath);
+
+    try {
+        mx::readFromXmlFile(mxDoc, mtlxFilename, searchPaths);
+    } catch (const mx::Exception& e) {
+        TF_WARN("mx::readFromXmlFile threw an exception: %s", e.what());
+        return;
+    }
+
     mxDoc->importLibrary(stdLibraries);
 
     // Validate the document.
@@ -61,7 +66,7 @@ void TestShaderGen(
 
     // Generate the HdSt MaterialX Shader
     mx::ShaderPtr glslfx = HdSt_GenMaterialXShader(
-        mxDoc, stdLibraries, searchPath, mxHdInfo, HgiTokens->OpenGL);
+        mxDoc, stdLibraries, searchPaths, mxHdInfo, HgiTokens->OpenGL);
     std::cout << glslfx->getSourceCode(mx::Stage::PIXEL);
 }
 

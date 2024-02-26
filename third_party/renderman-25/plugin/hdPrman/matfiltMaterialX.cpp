@@ -271,15 +271,16 @@ _GetTerminalConnectionName(TfToken const &hdNodeType)
             HdMaterialTerminalTokens->surface;
 }
 
-// Convert the TfToken associated with the input parameters to the Standard
-// Surface Adapter Node that conflict with OSL reserved words. 
+// Convert the TfToken associated with the input parameters to Adapter Nodes
+// that conflict with OSL reserved words. 
 static TfToken
 _GetUpdatedInputToken(TfToken const &currInputName)
 {
-    // { currentInputNname , updatedInputName }
-    static const mx::StringMap conflicts = {{"emission",   "emission_value"},
-                                            {"subsurface", "subsurface_value"},
-                                            {"normal", "input_normal"}};
+    static const mx::StringMap conflicts = {
+    // { currInputNname , updatedInputName }
+        {"emission",    "emission_value"},
+        {"subsurface",  "subsurface_value"},
+        {"normal",      "normalIn"}};
     auto it = conflicts.find(currInputName.GetString());
     if (it != conflicts.end()) {
         return TfToken(it->second);
@@ -577,21 +578,20 @@ _TransformTerminalNode(
     // Transform the terminalNode with the appropriate Adapter Node, which
     // translates the MaterialX parameters into PxrSurface/PxrDisplace inputs.
     netInterface->SetNodeType(terminalNodeName, adapterType);
-    if (adapterType != _tokens->USD_Adapter) {
-        // Update the TfTokens associated with the input parameters to the
-        // Standard Surface Adapter Node that conflict with OSL reserved words. 
-        // The corresponding input connection is updated in _UpdateNetwork()
-        TfTokenVector pNames =
-            netInterface->GetAuthoredNodeParameterNames(terminalNodeName);
-        for (TfToken const &pName : pNames) {
-            TfToken updatedName = _GetUpdatedInputToken(pName);
-            if (!updatedName.IsEmpty()) {
-                VtValue val = netInterface->GetNodeParameterValue(
-                                                terminalNodeName, pName);
-                netInterface->SetNodeParameterValue(
-                    terminalNodeName, updatedName, val);
-                netInterface->DeleteNodeParameter(terminalNodeName, pName);
-            }
+
+    // Update the TfTokens associated with the Adapter Node's input parameters
+    // that conflict with OSL reserved words. 
+    // The corresponding input connection is updated in _UpdateNetwork()
+    TfTokenVector pNames =
+        netInterface->GetAuthoredNodeParameterNames(terminalNodeName);
+    for (TfToken const &pName : pNames) {
+        const TfToken updatedName = _GetUpdatedInputToken(pName);
+        if (!updatedName.IsEmpty()) {
+            const VtValue val = netInterface->GetNodeParameterValue(
+                terminalNodeName, pName);
+            netInterface->SetNodeParameterValue(
+                terminalNodeName, updatedName, val);
+            netInterface->DeleteNodeParameter(terminalNodeName, pName);
         }
     }
     
@@ -912,7 +912,7 @@ MatfiltMaterialX(
     std::set<TfToken> nodesToKeep;   // nodes directly connected to the terminal
     std::set<TfToken> nodesToRemove; // nodes further removed from the terminal
 
-    for( auto terminalName : supportedTerminalTokens ) {
+    for (auto terminalName : supportedTerminalTokens ) {
 
         // Check presence of terminal
         const HdMaterialNetworkInterface::InputConnectionResult res =
@@ -946,12 +946,10 @@ MatfiltMaterialX(
             static std::mutex materialXMutex;
             std::lock_guard<std::mutex> lock(materialXMutex);
 
-            // Load Standard Libraries/setup SearchPaths (for mxDoc and
+            // Get Standard Libraries and SearchPaths (for mxDoc and 
             // mxShaderGen)
-            mx::FilePathVec libraryFolders;
+            mx::DocumentPtr stdLibraries = HdMtlxStdLibraries();
             mx::FileSearchPath searchPath = HdMtlxSearchPaths();
-            mx::DocumentPtr stdLibraries = mx::createDocument();
-            mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
 
             // Create the MaterialX Document from the material network
             HdMtlxTexturePrimvarData hdMtlxData;

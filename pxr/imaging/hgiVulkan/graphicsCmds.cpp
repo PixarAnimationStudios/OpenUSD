@@ -632,12 +632,18 @@ HgiVulkanGraphicsCmds::_ApplyPendingUpdates()
         VkRenderPassBeginInfo beginInfo =
             {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         beginInfo.renderPass = pso->GetVulkanRenderPass();
-        beginInfo.framebuffer= pso->AcquireVulkanFramebuffer(_descriptor,&size);
+        beginInfo.framebuffer= pso->AcquireVulkanFramebuffer(
+            _descriptor, &size);
         beginInfo.renderArea.extent.width = size[0];
         beginInfo.renderArea.extent.height = size[1];
-        beginInfo.clearValueCount =
-            static_cast<uint32_t>(_vkClearValues.size());
-        beginInfo.pClearValues = _vkClearValues.data();
+
+        // Only pass clear values to VkRenderPassBeginInfo if the pipeline has
+        // attachments that specify a clear op.
+        if (pso->GetClearNeeded()) {
+            beginInfo.clearValueCount =
+                static_cast<uint32_t>(_vkClearValues.size());
+            beginInfo.pClearValues = _vkClearValues.data();
+        }
 
         VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE;
 

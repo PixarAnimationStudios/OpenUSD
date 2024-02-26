@@ -1,0 +1,61 @@
+Loading @TrickyVariantWeakerSelection4/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </_class_geotype>
+
+Prim Stack:
+    root.sdf             /_class_geotype
+
+------------------------------------------------------------------------
+Results for composing </bob>
+
+Prim Stack:
+    root.sdf             /bob
+    root.sdf             /_class_geotype
+    root.sdf             /_class_geotype{geotype_selector=select_cube}
+    root.sdf             /bob{geotype=cube}
+
+Variant Selections:
+    {geotype = cube}
+    {geotype_selector = select_cube}
+
+Child names:
+     ['geom']
+
+------------------------------------------------------------------------
+Results for composing </bob/geom>
+
+Prim Stack:
+    root.sdf             /bob{geotype=cube}geom
+    geo.sdf              /bob_root_cube
+
+Child names:
+     ['bob_body']
+
+------------------------------------------------------------------------
+Results for composing </bob/geom/bob_body>
+
+Prim Stack:
+    geo.sdf              /bob_root_cube/bob_body
+
+------------------------------------------------------------------------
+Results for composing </shape>
+
+Prim Stack:
+    root.sdf             /shape
+    root.sdf             /bob{geotype=cube}geom
+    geo.sdf              /bob_root_cube
+
+Child names:
+     ['bob_body']
+
+------------------------------------------------------------------------
+Results for composing </shape/bob_body>
+
+Prim Stack:
+    geo.sdf              /bob_root_cube/bob_body
+

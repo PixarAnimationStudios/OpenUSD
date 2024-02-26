@@ -63,32 +63,6 @@ def SetDebugMode(debugOn):
     global __debugMode
     __debugMode = debugOn
 
-def Import(cmd):
-    """Perform an import, inserting into the calling module's global scope."""
-
-    # find the global frame for the calling module
-    frame = inspect.currentframe()
-    module = frame.f_code.co_filename
-    modcount = 0
-    while frame and frame.f_back:
-        parent_module = frame.f_back.f_code.co_filename
-        if parent_module != module:
-            module = parent_module
-            modcount += 1
-            if modcount > 1:
-                break
-        frame = frame.f_back
-
-    # try to execute the import command (really, any command)
-    try:
-        globals = frame.f_globals
-        locals = frame.f_locals
-        exec(compile(cmd, '<string>', 'single'), globals, locals)
-        return True
-    except Exception as e:
-        print("Error: %s" % e)
-        return False
-
 def GetArg(optnames, default=False):
     """Return True if any of the args exist in sys.argv."""
     if not isinstance(optnames, type([])):
@@ -134,13 +108,16 @@ Global options:
   --debug or -d   = turn on debugging mode
   --help or -h    = display this program usage statement
   --pythonPath    = optional path to add to python lib paths
+  --dllPath       = optional ;-separated paths to add to Window's list of
+                    directories you may load .dll libraries from. Ignored if not
+                    on Windows.
 
 Docstring format:
   Write Python doc strings from Doyxgen C++ comments. Writes
   output to file or directory as specified by --output option.
 
   --package or -p = the package name, e.g. pxr
-  --module or -m  = the module name, e.g. UsdGeom, or a list of 
+  --module or -m  = the module name, e.g. UsdGeom, or a list of
                     comma-separated modules, e.g. Usd,UsdGeom,UsdShade
     """ % (progname, progname)
     print(usageMsg)

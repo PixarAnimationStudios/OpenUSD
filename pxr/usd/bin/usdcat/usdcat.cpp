@@ -216,7 +216,9 @@ static int UsdCat(const Args &args) {
             }
         } else if (args.flattenLayerStack) {
             stage = UsdStage::Open(input, UsdStage::LoadNone);
-            layer = UsdUtilsFlattenLayerStack(stage);
+            if (stage) {
+                layer = UsdUtilsFlattenLayerStack(stage);
+            }
         } else if (args.layerMetadata) {
             auto srcLayer = SdfLayer::OpenAsAnonymous(
                 input, /* metadataOnly = */ true);
@@ -263,12 +265,12 @@ static int UsdCat(const Args &args) {
 
         // Write to either stdout or the specified output file
         if (!args.output.empty()) {
-            if (stage) {
+            if (layer) {
+                layer->Export(args.output, std::string(), formatArgs);
+            }
+            else {
                 stage->Export(
                     args.output, !args.skipSourceFileComment, formatArgs);
-            }
-            else if (layer) {
-                layer->Export(args.output, std::string(), formatArgs);
             }
 
             if (!errMark.IsClean()) {
@@ -288,10 +290,11 @@ static int UsdCat(const Args &args) {
         }
         else {
             std::string usdString;
-            if (stage) {
-                stage->ExportToString(&usdString);
-            } else {
+            if (layer) {
                 layer->ExportToString(&usdString);
+            }
+            else {
+                stage->ExportToString(&usdString);
             }
 
             if (errMark.IsClean()) {

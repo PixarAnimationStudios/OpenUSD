@@ -63,7 +63,6 @@ class TestSdfPath(unittest.TestCase):
             123test
             /Foo:Bar
             /Foo.bar.mapper[/Targ.attr].arg:name:space
-            /root_utf8_umlaute_ß_3
             '''.split()
         for badPath in badPaths:
             self.assertTrue(Sdf.Path(badPath).isEmpty)
@@ -115,10 +114,14 @@ class TestSdfPath(unittest.TestCase):
             "Foo.bar[targ.attr].boom",
             "/A/B/C.rel3[/Blah].attr3",
             "A/B.rel2[/A/B/C.rel3[/Blah].attr3].attr2",
-            "/A.rel1[/A/B.rel2[/A/B/C.rel3[/Blah].attr3].attr2].attr1"
+            "/A.rel1[/A/B.rel2[/A/B/C.rel3[/Blah].attr3].attr2].attr1",
+            "/root_utf8_umlaute_ß_3",
+            "Süßigkeiten.bar",
+            "/ß34/情報/información",
+            "情報._جيد"
         ]
-        testAbsolute = [True, False, False, False, False, False, True, False, False, False, True, False, False, False, True, False, True]
-        testProperty = [True, False, False, True, True, True, False, True, False, True, True, True, True, True, True, True, True]
+        testAbsolute = [True, False, False, False, False, False, True, False, False, False, True, False, False, False, True, False, True, True, False, True, False]
+        testProperty = [True, False, False, True, True, True, False, True, False, True, True, True, True, True, True, True, True, False, True, False, True]
         testElements = [
             ["Foo", "Bar", ".baz"],
             ["Foo"],
@@ -136,7 +139,11 @@ class TestSdfPath(unittest.TestCase):
             ["Foo", ".bar", "[targ.attr]", ".boom"],
             ["A", "B", "C", ".rel3", "[/Blah]", ".attr3"],
             ["A", "B", ".rel2", "[/A/B/C.rel3[/Blah].attr3]", ".attr2"],
-            ["A", ".rel1", "[/A/B.rel2[/A/B/C.rel3[/Blah].attr3].attr2]", ".attr1"]
+            ["A", ".rel1", "[/A/B.rel2[/A/B/C.rel3[/Blah].attr3].attr2]", ".attr1"],
+            ["root_utf8_umlaute_ß_3"],
+            ["Süßigkeiten", ".bar"],
+            ["ß34", "情報", "información"],
+            ["情報", "._جيد"]
         ]
         
         # Test IsAbsolutePath and IsPropertyPath

@@ -13,13 +13,13 @@ Our test machines have the following software versions installed.
 
 | Software      | Linux                | macOS                        | Windows                        |
 | ------------- | -------------------- | ---------------------------- | ------------------------------ |
-| OS            | CentOS Linux 7       | 10.15.7                      | Windows 10                     |
+| OS            | CentOS Linux 7       | 12.6.3                       | Windows 10                     |
 | C++ Compiler  | gcc 9.3.1            | Apple clang 13.1.6 (Xcode 13.3) | Visual Studio 2017 15.9     |
 | CMake         | 3.17.5               | 3.19.5                       | 3.25.3                         |
 | Python        | 3.9.16               | 3.9.13                       | 3.9.13                         |
 | Boost         | 1.76.0               | 1.78.0                       | 1.76.0                         |
 | Intel TBB     | 2020 Update 3        | 2018 Update 1, 2020 Update 3 | 2020 Update 3                  |
-| OpenSubdiv    | 3.5.1                | 3.5.1                        | 3.5.1                          |
+| OpenSubdiv    | 3.6.0                | 3.6.0                        | 3.6.0                          |
 | OpenImageIO   | 2.3.21.0             | 2.3.21.0                     | 2.3.21.0                       |
 | OpenColorIO   | 2.1.3                | 2.1.3                        | 2.1.3                          |
 | OSL           | 1.10.9               |                              |                                |
@@ -37,5 +37,5 @@ Our test machines have the following software versions installed.
 | Doxygen       | 1.9.6                |                              |                                |
 | GraphViz      | 2.40.1               |                              |                                |
 | OpenVDB       | 9.1.0                | 7.1.0, 9.1.0                 | 9.1.0                          |
-| Vulkan SDK    | 1.2.135.0            | 1.2.135.0                    | 1.2.135.0                      |
+| Vulkan SDK    | 1.3.243.0            | 1.3.243.0                    | 1.3.243.0                      |
 | Draco         | 1.3.6                | 1.3.6                        | 1.3.6                          |

@@ -36,6 +36,7 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
 #include "pxr/usd/sdf/assetPath.h"
@@ -52,6 +53,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (PortalLight)
     (PxrPortalLight)
     ((sceneIndexPluginName, "HdPrman_PortalLightResolvingSceneIndexPlugin"))
 
@@ -62,7 +64,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (exposure)
     (intensity)
     ((intensityMult,           "ri:light:intensityMult"))
-    ((lightColor,              "ri:light:lightColor"))
     ((portalName,              "ri:light:portalName"))
     ((portalToDome,            "ri:light:portalToDome"))
     ((tint,                    "ri:light:tint"))
@@ -119,8 +120,13 @@ namespace {
 bool
 _IsPortalLight(const HdSceneIndexPrim& prim, const SdfPath& primPath)
 {
-    const auto matDataSource = HdMaterialSchema::GetFromParent(prim.dataSource)
-                                   .GetMaterialNetwork(_tokens->renderContext);
+    auto matDataSource =
+        HdMaterialSchema::GetFromParent(prim.dataSource)
+            .GetMaterialNetwork(_tokens->renderContext)
+#if HD_API_VERSION >= 63
+            .GetContainer()
+#endif
+        ;
     HdDataSourceMaterialNetworkInterface matInterface(primPath, matDataSource,
                                                       prim.dataSource);
 
@@ -128,7 +134,15 @@ _IsPortalLight(const HdSceneIndexPrim& prim, const SdfPath& primPath)
         matInterface.GetTerminalConnection(HdMaterialTerminalTokens->light);
     const auto nodeName = matTerminal.second.upstreamNodeName;
 
-    return (matInterface.GetNodeType(nodeName) == _tokens->PxrPortalLight);
+    const TfToken nodeTypeName = matInterface.GetNodeType(nodeName);
+
+    // We accept either the generic UsdLux "PortalLight" or the
+    // RenderMan-specific "PxrPortalLight" here.  (The former can
+    // occur when using Hydra render index emulation.  In that
+    // setup, the scene index chain runs prior to applying the
+    // renderContextNodeIdentifier to individual nodes.)
+    return (nodeTypeName == _tokens->PxrPortalLight
+        || nodeTypeName == _tokens->PortalLight);
 }
 
 // Helper function to extract a value from a light data source.
@@ -221,8 +235,11 @@ _BuildPortalLightDataSource(
     // -------------------------------------------------------------------------
     const HdContainerDataSourceHandle domeMatDataSource = 
         HdMaterialSchema::GetFromParent(domePrim.dataSource)
-            .GetMaterialNetwork(_tokens->renderContext);
-
+            .GetMaterialNetwork(_tokens->renderContext)
+#if HD_API_VERSION >= 63
+            .GetContainer()
+#endif
+        ;
     HdDataSourceMaterialNetworkInterface domeMatInterface(domePrimPath,
                                                           domeMatDataSource,
                                                           domePrim.dataSource);
@@ -275,7 +292,11 @@ _BuildPortalLightDataSource(
     // -------------------------------------------------------------------------
     const HdContainerDataSourceHandle portalMatDataSource = 
         HdMaterialSchema::GetFromParent(portalPrim.dataSource)
-            .GetMaterialNetwork(_tokens->renderContext);
+            .GetMaterialNetwork(_tokens->renderContext)
+#if HD_API_VERSION >= 63
+            .GetContainer()
+#endif
+        ;
 
     HdDataSourceMaterialNetworkInterface portalMatInterface(
         portalPrimPath, portalMatDataSource, portalPrim.dataSource);
@@ -337,7 +358,6 @@ _BuildPortalLightDataSource(
 
     setPortalParamVal(_tokens->domeColorMap, VtValue(domeColorMap));
     setPortalParamVal(_tokens->color,        VtValue(computedPortalColor));
-    setPortalParamVal(_tokens->lightColor,   VtValue(computedPortalColor));
     setPortalParamVal(_tokens->intensity,    VtValue(computedPortalIntensity));
     setPortalParamVal(_tokens->portalToDome, VtValue(computedPortalToDome));
     setPortalParamVal(_tokens->portalName,   VtValue(computedPortalName));
@@ -558,7 +578,7 @@ _PortalLightResolvingSceneIndex::_PrimsDirtied(
     for (const auto& entry: entries) {
         auto domeIt = _domesWithPortals.find(entry.primPath);
         if (domeIt != _domesWithPortals.end()) {
-            // entry.primPath is a known dome with associated portals
+            // entry.primPath is a known dome
             if (entry.dirtyLocators.Contains(lightLocator)) {
                 // The dome's portals may have changed.
                 auto removedPortals =

@@ -155,9 +155,13 @@ public:
         return GetConstancy() == ConstantOverDescendants;
     }
 
+#if !defined(doxygen)
+    using UnspecifiedBoolType = bool (SdfPredicateFunctionResult::*);
+#endif //!doxygen
+
     /// Return GetValue().
-    explicit operator bool() const {
-        return _value;
+    operator UnspecifiedBoolType() const {
+        return _value ? &SdfPredicateFunctionResult::_value : nullptr;
     }
 
     /// Return a result with the opposite value but the same constancy.

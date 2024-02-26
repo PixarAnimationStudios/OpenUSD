@@ -52,7 +52,6 @@
 
 #include <boost/preprocessor/punctuation/comma_if.hpp>
 #include <boost/preprocessor/repetition/repeat.hpp>
-#include <boost/preprocessor/seq/for_each.hpp>
 
 #include <boost/python/class.hpp>
 #include <boost/python/copy_const_reference.hpp>
@@ -642,9 +641,9 @@ void VtRegisterValueCastsFromPythonSequencesToArray()
     VtValue::RegisterCast<std::vector<VtValue>, Array>(Vt_CastToArray<Array>);
 }
 
-#define VT_WRAP_ARRAY(r, unused, elem)          \
+#define VT_WRAP_ARRAY(unused, elem)          \
     VtWrapArray< VtArray< VT_TYPE(elem) > >();
-#define VT_WRAP_COMPARISON(r, unused, elem)        \
+#define VT_WRAP_COMPARISON(unused, elem)        \
     VtWrapComparisonFunctions< VtArray< VT_TYPE(elem) > >();
 
 PXR_NAMESPACE_CLOSE_SCOPE

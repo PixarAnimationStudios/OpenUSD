@@ -199,6 +199,7 @@ pxr_library(usd
         doxygen/images/instancing/Nested_Instancing_Example.png
         doxygen/images/instancing/Relationship_Example.png
         doxygen/images/instancing/Uninstanced_vs_Instanced.png
+        examples_usd.cpp
 )
 
 if (NOT PXR_ENABLE_PYTHON_SUPPORT)

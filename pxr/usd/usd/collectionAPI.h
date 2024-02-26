@@ -148,7 +148,7 @@ class SdfAssetPath;
 /// 
 /// <b>Creating collections in C++</b>
 /// 
-/// \snippet examples.cpp ApplyCollections
+/// \snippet examples_usd.cpp ApplyCollections
 /// 
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below

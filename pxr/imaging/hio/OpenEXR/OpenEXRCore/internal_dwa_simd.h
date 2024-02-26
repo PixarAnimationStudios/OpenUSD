@@ -18,7 +18,7 @@
 // aligned. Unaligned pointers may risk seg-faulting.
 //
 
-#if defined __SSE2__ || (_MSC_VER >= 1300 && !_M_CEE_PURE)
+#if defined __SSE2__ || (_MSC_VER && (_M_IX86 || _M_X64))
 #    define IMF_HAVE_SSE2 1
 #    include <emmintrin.h>
 #    include <mmintrin.h>
@@ -48,7 +48,21 @@
 #define _AVX_ALIGNMENT_MASK 0x1F
 
 #ifdef __ARM_NEON // Needed to support macOS with arm64 processor (e.g. M1)
-#include <arm_neon.h>
+#    include <arm_neon.h>
+#endif
+
+#include "OpenEXRConfigInternal.h"
+#ifdef OPENEXR_MISSING_ARM_VLD1
+/* Workaround for missing vld1q_f32_x2 in older gcc versions.  */
+
+__extension__ extern __inline float32x4x2_t
+    __attribute__ ((__always_inline__, __gnu_inline__, __artificial__))
+    vld1q_f32_x2 (const float32_t* __a)
+{
+    float32x4x2_t ret;
+    asm ("ld1 {%S0.4s - %T0.4s}, [%1]" : "=w"(ret) : "r"(__a) :);
+    return ret;
+}
 #endif
 
 //
@@ -872,13 +886,13 @@ dctInverse8x8DcOnly (float* data)
 static inline void
 dctInverse8x8_scalar (float* data, int zeroedRows)
 {
-    const float a = 0.35355362513961314f; //.5f * cosf (3.14159f / 4.0f);
-    const float b = 0.4903926563794112f;  //.5f * cosf (3.14159f / 16.0f);
-    const float c = 0.4619398297234211f;  //.5f * cosf (3.14159f / 8.0f);
-    const float d = 0.4157349443626743f;  //.5f * cosf (3.f * 3.14159f / 16.0f);
-    const float e = 0.2777854612564676f;  //.5f * cosf (5.f * 3.14159f / 16.0f);
-    const float f = 0.19134217585694352f; //.5f * cosf (3.f * 3.14159f / 8.0f);
-    const float g = 0.09754573032714427f; //.5f * cosf (7.f * 3.14159f / 16.0f);
+    const float a = .5f * cosf (3.14159f / 4.0f);
+    const float b = .5f * cosf (3.14159f / 16.0f);
+    const float c = .5f * cosf (3.14159f / 8.0f);
+    const float d = .5f * cosf (3.f * 3.14159f / 16.0f);
+    const float e = .5f * cosf (5.f * 3.14159f / 16.0f);
+    const float f = .5f * cosf (3.f * 3.14159f / 8.0f);
+    const float g = .5f * cosf (7.f * 3.14159f / 16.0f);
 
     float alpha[4], beta[4], theta[4], gamma[4];
 
@@ -1869,7 +1883,7 @@ dctInverse8x8_avx_7 (float* data)
 // Default implementation
 //
 
-void
+static void
 dctForward8x8 (float* data)
 {
     float A0, A1, A2, A3, A4, A5, A6, A7;
@@ -1878,20 +1892,20 @@ dctForward8x8 (float* data)
     float* srcPtr = data;
     float* dstPtr = data;
 
-    const float c1 = 0.9807853127588224f;  //cosf (3.14159f * 1.0f / 16.0f);
-    const float c2 = 0.9238796594468422f;  //cosf (3.14159f * 2.0f / 16.0f);
-    const float c3 = 0.8314698887253485f;  //cosf (3.14159f * 3.0f / 16.0f);
-    const float c4 = 0.7071072502792263f;  //cosf (3.14159f * 4.0f / 16.0f);
-    const float c5 = 0.5555709225129352f;  //cosf (3.14159f * 5.0f / 16.0f);
-    const float c6 = 0.38268435171388704f; //cosf (3.14159f * 6.0f / 16.0f);
-    const float c7 = 0.19509146065428853f; //cosf (3.14159f * 7.0f / 16.0f);
+    const float c1 = cosf (3.14159f * 1.0f / 16.0f);
+    const float c2 = cosf (3.14159f * 2.0f / 16.0f);
+    const float c3 = cosf (3.14159f * 3.0f / 16.0f);
+    const float c4 = cosf (3.14159f * 4.0f / 16.0f);
+    const float c5 = cosf (3.14159f * 5.0f / 16.0f);
+    const float c6 = cosf (3.14159f * 6.0f / 16.0f);
+    const float c7 = cosf (3.14159f * 7.0f / 16.0f);
 
-    const float c1Half = 0.4903926563794112f;  //.5f * c1;
-    const float c2Half = 0.4619398297234211f;  //.5f * c2;
-    const float c3Half = 0.4157349443626743f;  //.5f * c3;
-    const float c5Half = 0.2777854612564676f;  //.5f * c5;
-    const float c6Half = 0.19134217585694352f; //.5f * c6;
-    const float c7Half = 0.09754573032714427f; //.5f * c7;
+    const float c1Half = .5f * c1;
+    const float c2Half = .5f * c2;
+    const float c3Half = .5f * c3;
+    const float c5Half = .5f * c5;
+    const float c6Half = .5f * c6;
+    const float c7Half = .5f * c7;
 
     //
     // First pass - do a 1D DCT over the rows and write the

@@ -824,6 +824,15 @@ class StageView(QGLWidget):
     def rendererAovName(self):
         return self._rendererAovName
 
+    
+    @property
+    def allowAsync(self):
+        return self._allowAsync
+
+    @allowAsync.setter
+    def allowAsync(self, value):
+        self._allowAsync = bool(value)
+
     def __init__(self, parent=None, dataModel=None, makeTimer=Timer):
         # Note: The default format *disables* the alpha component and so the
         # default backbuffer uses GL_RGB.
@@ -883,6 +892,9 @@ class StageView(QGLWidget):
         self._renderPauseState = False
         self._renderStopState = False
         self._reportedContextError = False
+
+        self._rendererSelectionNeedsUpdate = True
+
         self._renderModeDict = {
             RenderModes.WIREFRAME: UsdImagingGL.DrawMode.DRAW_WIREFRAME,
             RenderModes.WIREFRAME_ON_SURFACE: 
@@ -930,6 +942,8 @@ class StageView(QGLWidget):
         self._cameraGuidesVBO = None
         self._vao = 0
 
+        self._allowAsync = False
+
         # Update all properties for the current stage.
         self._stageReplaced()
 
@@ -940,7 +954,9 @@ class StageView(QGLWidget):
         if not self._renderer:
             if self.context().isValid():
                 if self.isContextInitialised():
-                  self._renderer = UsdImagingGL.Engine()
+                  params = UsdImagingGL.Engine.Parameters()
+                  params.allowAsynchronousSceneProcessing = self._allowAsync
+                  self._renderer = UsdImagingGL.Engine(params)
                   self._handleRendererChanged(self.GetCurrentRendererId())
             elif not self._reportedContextError:
                 self._reportedContextError = True
@@ -1354,6 +1370,14 @@ class StageView(QGLWidget):
         self.updateGL()
 
     def updateSelection(self):
+        self._rendererSelectionNeedsUpdate = True
+        self.update()
+
+    def _processSelection(self):
+        if not self._rendererSelectionNeedsUpdate:
+            return
+        self._rendererSelectionNeedsUpdate = False
+
         try:
             renderer = self._getRenderer()
             if not renderer:
@@ -1455,6 +1479,7 @@ class StageView(QGLWidget):
             self._dataModel.viewSettings.domeLightTexturesVisible)
 
         self._processBBoxes()
+        self._processSelection()
 
         try:
             renderer.Render(pseudoRoot, self._renderParams)
@@ -2360,3 +2385,12 @@ class StageView(QGLWidget):
         # set highlighted paths to renderer
         self.updateSelection()
         self.update()
+
+    def PollForAsynchronousUpdates(self):
+        if not self._allowAsync:
+            return False
+
+        if not self._renderer:
+            return False
+
+        return self._renderer.PollForAsynchronousUpdates()

@@ -28,12 +28,10 @@
 #include "pxr/imaging/hgiVulkan/hgi.h"
 #include "pxr/imaging/hgiVulkan/instance.h"
 #include "pxr/imaging/hgiVulkan/pipelineCache.h"
+#include "pxr/imaging/hgiVulkan/vk_mem_alloc.h"
 
 #include "pxr/base/tf/diagnostic.h"
 
-#define VMA_IMPLEMENTATION
-    #include "pxr/imaging/hgiVulkan/vk_mem_alloc.h"
-#undef VMA_IMPLEMENTATION
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -225,8 +223,8 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     }
 
     // Allow use of built-in shader barycentrics.
-    if (IsSupportedExtension(VK_NV_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME)) {
-        extensions.push_back(VK_NV_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
+    if (IsSupportedExtension(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME)) {
+        extensions.push_back(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
     }
 
     // Allow use of shader draw parameters.

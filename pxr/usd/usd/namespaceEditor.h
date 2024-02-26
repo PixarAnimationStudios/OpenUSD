@@ -240,20 +240,53 @@ private:
         // The Sdf batch namespace edit that needs to be applied to each layer
         // with specs.
         SdfBatchNamespaceEdit edits;
+        
         // The list of layers that have specs that need to have the Sdf 
         // namespace edit applied.
         SdfLayerHandleVector layersToEdit;
+
+        // Layer edits that need to be performed to update connection and 
+        // relationship targets of other properties in order to keep them 
+        // targeting the same object after applying this processed edit.
+        struct TargetPathListOpEdit {
+            // Property spec to author the new targets value to. Note that we
+            // store the spec handle for the property as the property spec's
+            // path could change if the property is moved or deleted by the 
+            // primary namespace edit.
+            SdfPropertySpecHandle propertySpec;
+
+            // Name of the field that holds the path targets for the property
+            // which differs for attributes vs relationships.  
+            TfToken fieldName;
+
+            // Updated list op value to set for the property spec.
+            SdfPathListOp newFieldValue;
+        };
+        std::vector<TargetPathListOpEdit> targetPathListOpEdits;
+
+        // List of errors encountered that would prevent connection and 
+        // relationship target edits from being performed in response to the
+        // namespace edits.
+        std::vector<std::string> targetPathListOpErrors;
 
         // Reparent edits may require overs to be created for the new parent if
         // a layer doesn't have any specs for the parent yet. This specifies the
         // path of the parent specs to create if need.
         SdfPath createParentSpecIfNeededPath;
+
         // Some edits want to remove inert ancestor overs after a prim is
         // removed from its parent spec in a layer.
         bool removeInertAncestorOvers = false;
 
         // Whether the edit would require relocates (or deactivation for delete)
         bool requiresRelocates = false;
+
+        // Applies this processed edit, performing the individual edits 
+        // necessary to each layer that needs to be updated.
+        bool Apply();
+
+        // Returns whether this processed edit can be applied.
+        bool CanApply(std::string *whyNot) const;
     };
 
     // Adds an edit description for a prim delete operation.
@@ -275,22 +308,10 @@ private:
     // operation if there is no cached processecd edit.
     void _ProcessEditsIfNeeded() const;
 
-    // Creates a processed edit from an edit description.
-    _ProcessedEdit _ProcessEdit(const _EditDescription &editDesc) const;
-    _ProcessedEdit _ProcessPrimEdit(const _EditDescription &editDesc) const;
-    _ProcessedEdit _ProcessPropertyEdit(const _EditDescription &editDesc) const;
-
-    // Gathers all the layer with specs that need to be edited (deleted or 
-    // moved) in order to perform any namespace edit on the given path.
-    static void _GatherLayersToEdit(
-        const _EditDescription &editDesc,
-        const UsdEditTarget &editTarget,
-        const PcpPrimIndex &primIndex,
-        _ProcessedEdit *processedEdit);
-
-    // Applies the processed edit, performing the individual edits necessary to
-    // each layer that needs to be updated.
-    static bool _ApplyProcessedEdit(const _ProcessedEdit &processedEdit);
+    // Helper class for _ProcessEditsIfNeeded. Defined entirely in 
+    // implementation. Declared here for private access to the editor 
+    // structures.
+    class _EditProcessor;
 
     UsdStageRefPtr _stage;
     _EditDescription _editDescription;

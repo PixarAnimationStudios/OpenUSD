@@ -195,6 +195,9 @@ exr_attr_string_set_with_length (
 #ifdef _MSC_VER
 #    pragma warning(push)
 #    pragma warning(disable : 4996)
+#elif __MSVCRT__ && __GNUC__
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wstringop-truncation"
 #endif
             if (d)
                 strncpy (sstr, d, (size_t) len);
@@ -202,6 +205,8 @@ exr_attr_string_set_with_length (
                 memset (sstr, 0, (size_t) len);
 #ifdef _MSC_VER
 #    pragma warning(pop)
+#elif __MSVCRT__ && __GNUC__
+#pragma GCC diagnostic pop
 #endif
         }
         sstr[len] = '\0';

@@ -25,20 +25,41 @@
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
-#if defined(PXR_WEBGPU_SUPPORT_ENABLED) || defined(PXR_VULKAN_SUPPORT_ENABLED)
+#if defined(PXR_GL_SUPPORT_ENABLED)
+#include "pxr/imaging/hgiInterop/opengl.h"
+#endif
+
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+#include "pxr/imaging/hgiInterop/cpu.h"
+#endif
+
+#if defined(PXR_WEBGPU_SUPPORT_ENABLED)
     #include "pxr/imaging/hgiInterop/cpu.h"
 #endif
 
 #if defined(PXR_METAL_SUPPORT_ENABLED)
-    #include "pxr/imaging/hgiMetal/hgi.h"
-    #include "pxr/imaging/hgiInterop/metal.h"
-#else
-    #include "pxr/imaging/hgiInterop/opengl.h"
+#include "pxr/imaging/hgiMetal/hgi.h"
+#include "pxr/imaging/hgiInterop/metal.h"
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiInterop::HgiInterop() = default;
+struct HgiInteropImpl
+{
+#if defined(PXR_GL_SUPPORT_ENABLED)
+    std::unique_ptr<HgiInteropOpenGL> _openGLToOpenGL;
+#endif
+#if defined(PXR_VULKAN_SUPPORT_ENABLED) || defined(PXR_WEBGPU_SUPPORT_ENABLED)
+    std::unique_ptr<HgiInteropCpu> _backendToOpenGL;
+#endif
+#if defined(PXR_METAL_SUPPORT_ENABLED)
+    std::unique_ptr<HgiInteropMetal> _metalToOpenGL;
+#endif
+};
+
+HgiInterop::HgiInterop() 
+ : _hgiInteropImpl(std::make_unique<HgiInteropImpl>())
+{}
 
 HgiInterop::~HgiInterop() = default;
 
@@ -51,42 +72,57 @@ void HgiInterop::TransferToApp(
     GfVec4i const &dstRegion)
 {
     TfToken const& srcApi = srcHgi->GetAPIName();
-    bool isBackendHandled = false;
-#if defined(PXR_WEBGPU_SUPPORT_ENABLED) || defined(PXR_VULKAN_SUPPORT_ENABLED)
-    if ((srcApi==HgiTokens->WebGPU || srcApi==HgiTokens->Vulkan) && dstApi==HgiTokens->OpenGL) {
-        // Transfer GPU textures to OpenGL application
-        if (!_gpuToOpenGL) {
-            _gpuToOpenGL = std::make_unique<HgiInteropCpu>(srcHgi);
-        }
-        _gpuToOpenGL->CompositeToInterop(
-            srcColor, srcDepth, dstFramebuffer, dstRegion);
-        isBackendHandled = true;
+
+    if (dstApi != HgiTokens->OpenGL) {
+        TF_CODING_ERROR("Unsupported destination Hgi backend: %s",
+                        dstApi.GetText());
+        return;
     }
-#endif
-#if defined(PXR_METAL_SUPPORT_ENABLED)
-    if (srcApi==HgiTokens->Metal && dstApi==HgiTokens->OpenGL) {
-        // Transfer Metal textures to OpenGL application
-        if (!_metalToOpenGL) {
-            _metalToOpenGL = std::make_unique<HgiInteropMetal>(srcHgi);
-        }
-        _metalToOpenGL->CompositeToInterop(
-            srcColor, srcDepth, dstFramebuffer, dstRegion);
-        isBackendHandled = true;
-    }
-#else
-    if (srcApi==HgiTokens->OpenGL && dstApi==HgiTokens->OpenGL) {
+
+
+#if defined(PXR_GL_SUPPORT_ENABLED)
+    if (srcApi == HgiTokens->OpenGL) {
         // Transfer OpenGL textures to OpenGL application
-        if (!_openGLToOpenGL) {
-            _openGLToOpenGL = std::make_unique<HgiInteropOpenGL>();
+        if (!_hgiInteropImpl->_openGLToOpenGL) {
+            _hgiInteropImpl->_openGLToOpenGL =
+                std::make_unique<HgiInteropOpenGL>();
         }
-        _openGLToOpenGL->CompositeToInterop(
+        return _hgiInteropImpl->_openGLToOpenGL->CompositeToInterop(
             srcColor, srcDepth, dstFramebuffer, dstRegion);
-        isBackendHandled = true;
     }
 #endif
-    if (!isBackendHandled) {
-        TF_CODING_ERROR("Unsupported Hgi backend: %s", srcApi.GetText());
+
+#if defined(PXR_VULKAN_SUPPORT_ENABLED) ||  defined(PXR_WEBGPU_SUPPORT_ENABLED)
+    if (srcApi == HgiTokens->Vulkan || srcApi==HgiTokens->WebGPU) {
+        // XXX: It's possible that if we use the same HgiInterop with a 
+        // different Hgi instance passed to this function, HgiInteropVulkan 
+        // will have the wrong Hgi instance since we wouldn't recreate it here.
+        // We should fix this.
+        if (!_hgiInteropImpl->_backendToOpenGL) {
+            _hgiInteropImpl->_backendToOpenGL =
+                std::make_unique<HgiInteropCpu>(srcHgi);
+        }
+        return _hgiInteropImpl->_backendToOpenGL->CompositeToInterop(
+            srcColor, srcDepth, dstFramebuffer, dstRegion);
     }
+#endif
+
+#if defined(PXR_METAL_SUPPORT_ENABLED)
+    if (srcApi == HgiTokens->Metal) {
+        // Transfer Metal textures to OpenGL application
+        // XXX: It's possible that if we use the same HgiInterop with a 
+        // different Hgi instance passed to this function, HgiInteropMetal 
+        // will have the wrong Hgi instance since we wouldn't recreate it here.
+        // We should fix this.
+        if (!_hgiInteropImpl->_metalToOpenGL) {
+            _hgiInteropImpl->_metalToOpenGL =
+                std::make_unique<HgiInteropMetal>(srcHgi);
+        }
+        return _hgiInteropImpl->_metalToOpenGL->CompositeToInterop(
+            srcColor, srcDepth, dstFramebuffer, dstRegion);
+    }
+#endif
+
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

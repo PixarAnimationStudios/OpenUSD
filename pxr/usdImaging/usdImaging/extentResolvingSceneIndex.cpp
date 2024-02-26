@@ -27,6 +27,7 @@
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/vectorSchema.h"
 #include "pxr/base/gf/range3d.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -48,7 +49,7 @@ _GetPurposes(HdContainerDataSourceHandle const &inputArgs)
         return defaultSet;
     }
 
-    HdTypedVectorSchema<TfToken> vecSchema(
+    HdTypedVectorSchema<HdTokenDataSource> vecSchema(
         HdVectorDataSource::Cast(
             inputArgs->Get(
                 UsdImagingExtentResolvingSceneIndexTokens->purposes)));

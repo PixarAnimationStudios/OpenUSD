@@ -24,6 +24,7 @@
 #include "pxr/usd/usd/collectionMembershipQuery.h"
 #include "pxr/usd/usd/collectionPredicateLibrary.h"
 
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/usd/primRange.h"
@@ -32,6 +33,9 @@
 #include "pxr/usd/usd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PUBLIC_TOKENS(UsdCollectionMembershipQueryTokens,
+                        USD_COLLECTION_MEMBERSHIP_QUERY_TOKENS);
 
 namespace {
 
@@ -357,11 +361,11 @@ Usd_CollectionMembershipQueryBase::Usd_CollectionMembershipQueryBase(
 }
 
 bool
-Usd_CollectionMembershipQueryBase::_IsPathIncluded(
+Usd_CollectionMembershipQueryBase::_IsPathIncludedByRuleMap(
     const SdfPath &path,
     TfToken *expansionRule) const
 {
-    // Coding Error if one passes in a relative path to IsPathIncluded
+    // Coding Error if one passes in a relative path to _IsPathIncludedByRuleMap
     // Passing one causes a infinite loop because of how `GetParentPath` works.
     if (!path.IsAbsolutePath()) {
         TF_CODING_ERROR("Relative paths are not allowed");
@@ -417,12 +421,12 @@ Usd_CollectionMembershipQueryBase::_IsPathIncluded(
 }
 
 bool 
-Usd_CollectionMembershipQueryBase::_IsPathIncluded(
+Usd_CollectionMembershipQueryBase::_IsPathIncludedByRuleMap(
     const SdfPath &path,
     const TfToken &parentExpansionRule,
     TfToken *expansionRule) const
 {
-    // Coding Error if one passes in a relative path to IsPathIncluded
+    // Coding Error if one passes in a relative path to _IsPathIncludedByRuleMap
     if (!path.IsAbsolutePath()) {
         TF_CODING_ERROR("Relative paths are not allowed");
         return false;
@@ -468,6 +472,12 @@ Usd_CollectionMembershipQueryBase::_IsPathIncluded(
         }
     }
     return false;
+}
+
+bool
+Usd_CollectionMembershipQueryBase::_HasEmptyRuleMap() const
+{
+    return _pathExpansionRuleMap.empty();
 }
 
 size_t

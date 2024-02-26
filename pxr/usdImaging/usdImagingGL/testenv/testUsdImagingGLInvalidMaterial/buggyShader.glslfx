@@ -1,0 +1,22 @@
+-- glslfx version 0.1
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "surfaceShader": {
+                "source": [ "Surface.Buggy" ]
+            }
+        }
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Surface.Buggy
+
+vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    int foo = vec2(0,0); // <-- this won't compile, thankfully.
+    // Use foo below in case compiler optimization eliminates the above line.
+    return vec4(foo, 0, 0.8, 0.8);
+}

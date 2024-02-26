@@ -122,6 +122,18 @@ public:
     }
 
     // ------------------------------------------------------------------------
+    // System-wide API
+    // ------------------------------------------------------------------------
+
+    /// Sends a message with optional arguments to this and any upstream input
+    /// scene indices. Scene indices may implement _SystemMessage to provide
+    /// custom handling. See systemMessages.h for common message definitions.
+    HD_API
+    void SystemMessage(
+        const TfToken &messageType,
+        const HdDataSourceBaseHandle &args);
+
+    // ------------------------------------------------------------------------
     // User Interface Utilities
     // ------------------------------------------------------------------------
 
@@ -210,6 +222,13 @@ protected:
     /// no observers.
     HD_API
     bool _IsObserved() const;
+
+    /// Implement in order to react directly to system messages sent from
+    /// downstream.
+    HD_API
+    virtual void _SystemMessage(
+        const TfToken &messageType,
+        const HdDataSourceBaseHandle &args);
 
 private:
     void _RemoveExpiredObservers();
