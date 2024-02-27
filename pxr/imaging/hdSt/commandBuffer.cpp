@@ -221,7 +221,7 @@ _BatchDrawItemInstances(
 bool
 _HasTextureResourceBinding(HdStDrawItemInstance const *instance)
 {
-    if (HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader =
+    if (HdSt_MaterialNetworkShaderSharedPtr const &materialNetworkShader =
             instance->GetDrawItem()->GetMaterialNetworkShader()) {
         return (materialNetworkShader->ComputeTextureSourceHash() != 0);
     }
@@ -229,7 +229,8 @@ _HasTextureResourceBinding(HdStDrawItemInstance const *instance)
 }
 
 bool
-_ShouldAttemptToAggregate(std::vector<HdStDrawItemInstance const *> &instances)
+_ShouldAttemptToAggregate(
+    std::vector<HdStDrawItemInstance const *> const &instances)
 {
     size_t const threshold = _GetTextureAggregationThreshold();
     return (instances.size() <= threshold) &&
@@ -250,7 +251,7 @@ _AggregateDrawBatches(
     std::vector<HdStDrawItemInstance *> toAggregate;
 
     for (auto const &batch : *drawBatches) {
-        std::vector<HdStDrawItemInstance const *> instances =
+        std::vector<HdStDrawItemInstance const *> const &instances =
                 batch->GetDrawItemInstances();
         if (_ShouldAttemptToAggregate(instances)) {
             for (auto const *instance : instances) {

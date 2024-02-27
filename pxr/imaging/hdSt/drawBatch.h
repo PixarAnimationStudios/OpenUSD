@@ -110,7 +110,8 @@ public:
         bool firstDrawBatch) = 0;
 
     /// Returns the draw item instances in this batch.
-    std::vector<HdStDrawItemInstance const*> GetDrawItemInstances() const {
+    std::vector<HdStDrawItemInstance const*> const &
+    GetDrawItemInstances() const {
         return _drawItemInstances;
     }
 
