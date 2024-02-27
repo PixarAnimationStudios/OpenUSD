@@ -1273,7 +1273,7 @@ pxr_register_test(testUsdImagingGLTetMesh
 )
 
 pxr_register_test(testUsdImagingGLTetMesh_SceneIndex
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing --lighting -offscreen -times 0 10 -stage tetMesh.usda -camera /Camera -write testUsdImagingGLTetMesh.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -offscreen -times 0 10 -stage tetMesh.usda -camera /Camera -write testUsdImagingGLTetMesh.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLTetMesh_000.png
         testUsdImagingGLTetMesh_010.png
