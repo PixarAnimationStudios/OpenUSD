@@ -194,6 +194,7 @@ pxr_library(usd
         doxygen/multiThreading.dox
         doxygen/objectModel.dox
         doxygen/propertiesOfSceneDescription.dox 
+        doxygen/utf8Overview.dox
         doxygen/valueClips.dox
         doxygen/images/instancing/Instancing_Example.png
         doxygen/images/instancing/Nested_Instancing_Example.png
