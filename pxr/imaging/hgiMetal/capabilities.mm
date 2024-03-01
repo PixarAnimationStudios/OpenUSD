@@ -50,7 +50,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     if (@available(macOS 100.100, ios 12.0, *)) {
         unifiedMemory = true;
     } else if (@available(macOS 10.15, ios 13.0, *)) {
-#if defined(ARCH_OS_IOS) || (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15)
+#if defined(ARCH_OS_IPHONE) || (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15)
         unifiedMemory = [device hasUnifiedMemory];
 #else
         unifiedMemory = [device isLowPower];
