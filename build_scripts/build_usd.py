@@ -51,6 +51,7 @@ import zipfile
 
 from urllib.request import urlopen
 from shutil import which
+import apple_utils
 
 # Helpers for printing output
 verbosity = 1
@@ -88,9 +89,6 @@ def Linux():
     return platform.system() == "Linux"
 def MacOS():
     return platform.system() == "Darwin"
-
-if MacOS():
-    import apple_utils
 
 def GetLocale():
     if Windows():
@@ -251,7 +249,7 @@ def GetCPUCount():
     except NotImplementedError:
         return 1
 
-def Run(cmd, logCommandOutput = True):
+def Run(cmd, logCommandOutput = True, env=None):
     """Run the specified command in a subprocess."""
     PrintInfo('Running "{cmd}"'.format(cmd=cmd))
 
@@ -265,7 +263,7 @@ def Run(cmd, logCommandOutput = True):
         # code will handle them.
         if logCommandOutput:
             p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, 
-                                 stderr=subprocess.STDOUT)
+                                 stderr=subprocess.STDOUT, env=env)
             while True:
                 l = p.stdout.readline().decode(GetLocale(), 'replace')
                 if l:
@@ -274,7 +272,7 @@ def Run(cmd, logCommandOutput = True):
                 elif p.poll() is not None:
                     break
         else:
-            p = subprocess.Popen(shlex.split(cmd))
+            p = subprocess.Popen(shlex.split(cmd), env=env)
             p.wait()
 
     if p.returncode != 0:
@@ -307,7 +305,7 @@ def CopyFiles(context, src, dest):
                            .format(file=f, destDir=instDestDir))
         shutil.copy(f, instDestDir)
 
-def CopyDirectory(context, srcDir, destDir):
+def CopyDirectory(context, srcDir, destDir, **kwargs):
     """Copy directory like shutil.copytree."""
     instDestDir = os.path.join(context.instDir, destDir)
     if os.path.isdir(instDestDir):
@@ -315,7 +313,7 @@ def CopyDirectory(context, srcDir, destDir):
 
     PrintCommandOutput("Copying {srcDir} to {destDir}\n"
                        .format(srcDir=srcDir, destDir=instDestDir))
-    shutil.copytree(srcDir, instDestDir)
+    shutil.copytree(srcDir, instDestDir, **kwargs)
 
 def AppendCXX11ABIArg(buildFlag, context, buildArgs):
     """Append a build argument that defines _GLIBCXX_USE_CXX11_ABI
@@ -420,6 +418,7 @@ def RunCMake(context, force, extraArgs = None):
             extraArgs.append('-DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO')
 
         extraArgs.append('-DCMAKE_OSX_ARCHITECTURES={0}'.format(targetArch))
+        extraArgs = apple_utils.ConfigureCMakeExtraArgs(context, extraArgs)
 
     if context.ignorePaths:
         ignoredPaths = ";".join(context.ignorePaths)
@@ -689,6 +688,19 @@ ZLIB_URL = "https://github.com/madler/zlib/archive/v1.2.13.zip"
 
 def InstallZlib(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ZLIB_URL, context, force)):
+        # The following test files aren't portable to embedded platforms.
+        # They're not required for use on any platforms, so we elide them for efficiency
+        PatchFile("CMakeLists.txt",
+                  [("add_executable(example test/example.c)",
+                    ""),
+                   ("add_executable(minigzip test/minigzip.c)",
+                    ""),
+                   ("target_link_libraries(example zlib)",
+                    ""),
+                   ("target_link_libraries(minigzip zlib)",
+                    ""),
+                   ("add_test(example example)",
+                    "")])
         RunCMake(context, force, buildArgs)
 
 ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
@@ -733,7 +745,7 @@ def InstallBoost_Helper(context, force, buildArgs):
     #   compatibility issues on Big Sur and Monterey.
     pyInfo = GetPythonInfo(context)
     pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
-    if context.buildPython and pyVer >= (3, 11):
+    if (context.buildPython and pyVer >= (3, 11)) or context.buildTarget in apple_utils.EMBEDDED_PLATFORMS:
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip"
     elif context.buildPython and pyVer >= (3, 10):
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
@@ -819,6 +831,10 @@ def InstallBoost_Helper(context, force, buildArgs):
             '--with-atomic',
             '--with-regex'
         ]
+
+        if context.buildTarget in apple_utils.EMBEDDED_PLATFORMS:
+            # Treat all embedded platforms as iphone derivatives since we're not actually building anything of note
+            b2_settings.append("target-os=iphone")
 
         if context.buildPython:
             b2_settings.append("--with-python")
@@ -996,15 +1012,31 @@ def InstallTBB_MacOS(context, force, buildArgs):
         if (secondaryArch == apple_utils.TARGET_X86):
             secondaryArch = "intel64"
 
+        # fixup if condition in main make config
+        PatchFile("build/macos.clang.inc",
+                  [("TARGET)\nelse\n", "TARGET)\nelse ifeq (macos,$(target))\n")],
+                  multiLineMatches=True)
+
+        if context.buildTarget == apple_utils.TARGET_IOS:
+            primaryArch = "arm64"
+            buildArgs.append('compiler=clang arch=arm64 extra_inc=big_iron.inc ')
+
         # Install both release and debug builds.
         # See comments in InstallTBB_Linux.
         def _RunBuild(arch):
             if not arch:
                 return
-            makeTBBCmd = 'make -j{procs} arch={arch} {buildArgs}'.format(
+            platformArg = ""
+            env = os.environ.copy()
+            if context.buildTarget == apple_utils.TARGET_IOS:
+                platformArg = "target=ios"
+                env["SDKROOT"] = apple_utils.GetSDKRoot(context)
+            makeTBBCmd = 'make -j{procs} arch={arch} {platformArg} {buildArgs}'.format(
                 arch=arch, procs=context.numJobs,
+                platformArg = platformArg,
                 buildArgs=" ".join(buildArgs))
-            Run(makeTBBCmd)
+
+            Run(makeTBBCmd, env=env)
 
         _RunBuild(primaryArch)
         _RunBuild(secondaryArch)
@@ -1355,6 +1387,9 @@ def InstallOpenSubdiv(context, force, buildArgs):
             '-DNO_GLEW=ON',
             '-DNO_GLFW=ON',
         ]
+
+        if MacOS():
+            extraArgs.append('-DNO_OPENGL=ON')
 
         # If Ptex support is disabled in USD, disable support in OpenSubdiv
         # as well. This ensures OSD doesn't accidentally pick up a Ptex
@@ -1747,6 +1782,18 @@ def InstallUSD(context, force, buildArgs):
             # Increase the precompiled header buffer limit.
             extraArgs.append('-DCMAKE_CXX_FLAGS="/Zm150"')
 
+        if context.buildTarget in apple_utils.EMBEDDED_PLATFORMS:
+            # Required to find locally built boost etc.
+            extraArgs.extend([
+                '-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH',
+                '-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH',
+                '-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH'])
+
+        if MacOS():
+            extraArgs.append(f"-DPXR_BUILD_APPLE_FRAMEWORK={'ON' if context.buildAppleFramework else 'OFF'}")
+            if context.macOSCodesign:
+                extraArgs.append(f"-DPXR_APPLE_CODESIGN_IDENTITY={context.macOSCodesign}")
+
         # Make sure to use boost installed by the build script and not any
         # system installed boost
         extraArgs.append('-DBoost_NO_BOOST_CMAKE=On')
@@ -1861,6 +1908,12 @@ if MacOS():
                        help=("Build target for macOS cross compilation. "
                              "(default: {})".format(
                                 apple_utils.GetBuildTargetDefault())))
+    subgroup = group.add_mutually_exclusive_group()
+    subgroup.add_argument("--build-apple-framework", dest="build_apple_framework", action="store_true",
+                          help="Build USD as an Apple Framework (Default if using build)")
+    subgroup.add_argument("--no-build-apple-framework", dest="no_build_apple_framework", action="store_true",
+                          help="Do not build USD as an Apple Framework (Default if macOS)")
+
     if apple_utils.IsHostArm():
         # Intel Homebrew stores packages in /usr/local which unfortunately can
         # be where a lot of other things are too. So we only add this flag on arm macs.
@@ -1896,6 +1949,7 @@ if MacOS():
                        default=codesignDefault, action="store_true",
                        help=("Enable code signing for macOS builds "
                              "(defaults to enabled on Apple Silicon)"))
+    group.add_argument("--codesign-id", dest="macos_codesign_id", type=str)
 
 if Linux():
     group.add_argument("--use-cxx11-abi", type=int, choices=[0, 1],
@@ -2172,18 +2226,28 @@ class InstallContext:
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
 
         self.ignorePaths = args.ignore_paths or []
+        self.buildTarget = None
+        self.macOSCodesign = ""
+        self.buildAppleFramework = False
         # Build target and code signing
         if MacOS():
             self.buildTarget = args.build_target
             apple_utils.SetTarget(self, self.buildTarget)
 
-            self.macOSCodesign = \
-                (args.macos_codesign if hasattr(args, "macos_codesign")
-                 else False)
+            if args.macos_codesign:
+                self.macOSCodesign = args.macos_codesign_id or apple_utils.GetCodeSignID()
             if apple_utils.IsHostArm() and args.ignore_homebrew:
                 self.ignorePaths.append("/opt/homebrew")
-        else:
-            self.buildTarget = ""
+
+            self.buildAppleFramework = ((args.build_apple_framework
+                                         or self.buildTarget in apple_utils.EMBEDDED_PLATFORMS)
+                                        and not args.no_build_apple_framework)
+            if self.buildAppleFramework:
+                self.buildShared = False
+                self.buildMonolithic = True
+
+
+        coreOnly = self.buildTarget in apple_utils.EMBEDDED_PLATFORMS
 
         self.useCXX11ABI = \
             (args.use_cxx11_abi if hasattr(args, "use_cxx11_abi") else None)
@@ -2195,10 +2259,10 @@ class InstallContext:
 
         # Optional components
         self.buildTests = args.build_tests
-        self.buildPython = args.build_python
+        self.buildPython = args.build_python and not coreOnly and not self.buildAppleFramework
         self.buildExamples = args.build_examples
         self.buildTutorials = args.build_tutorials
-        self.buildTools = args.build_tools
+        self.buildTools = args.build_tools and not coreOnly and not self.buildAppleFramework
 
         # - Documentation
         self.buildDocs = args.build_docs or args.build_python_docs
@@ -2207,7 +2271,7 @@ class InstallContext:
 
         # - Imaging
         self.buildImaging = (args.build_imaging == IMAGING or
-                             args.build_imaging == USD_IMAGING)
+                             args.build_imaging == USD_IMAGING) and not coreOnly
         self.enablePtex = self.buildImaging and args.enable_ptex
         self.enableOpenVDB = self.buildImaging and args.enable_openvdb
 
@@ -2238,7 +2302,7 @@ class InstallContext:
                                 if args.draco_location else None)
 
         # - MaterialX Plugin
-        self.buildMaterialX = args.build_materialx
+        self.buildMaterialX = args.build_materialx and not coreOnly
 
         # - Spline Tests
         self.buildMayapyTests = args.build_mayapy_tests
@@ -2631,11 +2695,15 @@ if Windows():
     ])
 
 if MacOS():
-    if context.macOSCodesign:
-        apple_utils.Codesign(context.usdInstDir, verbosity > 1)
+    # We don't need to codesign when building a framework because it's handled during framework creation
+    if context.macOSCodesign and not context.buildAppleFramework:
+        apple_utils.Codesign(context, verbosity > 1)
 
-Print("""
-Success! To use USD, please ensure that you have:""")
+printInstructions = any([context.buildPython, context.buildTools, context.buildPrman])
+if printInstructions:
+    Print("\nSuccess! To use USD, please ensure that you have:")
+else:
+    Print("\nSuccess! USD libraries were built.")
 
 if context.buildPython:
     Print("""
@@ -2643,11 +2711,21 @@ if context.buildPython:
     {requiredInPythonPath}""".format(
         requiredInPythonPath="\n    ".join(sorted(requiredInPythonPath))))
 
-Print("""
-    The following in your PATH environment variable:
-    {requiredInPath}
-""".format(requiredInPath="\n    ".join(sorted(requiredInPath))))
+if context.buildTools:
+    Print("""
+        The following in your PATH environment variable:
+        {requiredInPath}
+    """.format(requiredInPath="\n    ".join(sorted(requiredInPath))))
     
 if context.buildPrman:
     Print("See documentation at http://openusd.org/docs/RenderMan-USD-Imaging-Plugin.html "
           "for setting up the RenderMan plugin.\n")
+
+if context.buildAppleFramework:
+    Print("""
+        Added the following framework to your Xcode Project, (recommended as Embed Without Signing):
+        OpenUSD.framework
+        
+        Set the following compiler argument, to find the headers:
+        SYSTEM_HEADER_SEARCH_PATHS=$(SRCROOT)/$(TARGET_NAME)/OpenUSD.framework/Headers
+    """)

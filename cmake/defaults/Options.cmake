@@ -54,6 +54,40 @@ option(PXR_PREFER_SAFETY_OVER_SPEED
        "Enable certain checks designed to avoid crashes or out-of-bounds memory reads with malformed input files.  These checks may negatively impact performance."
         ON)
 
+if(APPLE)
+    set(PXR_APPLE_CODESIGN_IDENTITY "-" CACHE STRING "The Codesigning identity needed to sign compiled objects")
+    # Cross Compilation detection as defined in CMake docs
+    # Required to be handled here so it can configure options later on
+    # https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html#cross-compiling-for-ios-tvos-visionos-or-watchos
+    # Note: All these SDKs may not be supported by OpenUSD, but are all listed here for future proofing
+    set(APPLE_EMBEDDED OFF)
+    if (CMAKE_SYSTEM_NAME MATCHES "iOS"
+            OR CMAKE_SYSTEM_NAME MATCHES "tvOS"
+            OR CMAKE_SYSTEM_NAME MATCHES "visionOS"
+            OR CMAKE_SYSTEM_NAME MATCHES "watchOS")
+        set(APPLE_EMBEDDED ON)
+        if(${PXR_BUILD_USD_TOOLS})
+            MESSAGE(STATUS "Setting PXR_BUILD_USD_TOOLS=OFF because they are not supported on Apple embedded platforms")
+            set(PXR_BUILD_USD_TOOLS OFF)
+        endif()
+        if (${PXR_BUILD_IMAGING})
+            MESSAGE(STATUS "Setting PXR_BUILD_USD_IMAGING=OFF because it is not supported on Apple embedded platforms")
+            set(PXR_BUILD_IMAGING OFF)
+        endif ()
+    endif ()
+
+    option(PXR_BUILD_APPLE_FRAMEWORK "Builds an Apple Framework." APPLE_EMBEDDED)
+    set(PXR_APPLE_FRAMEWORK_NAME "OpenUSD" CACHE STRING "Name to provide Apple Framework build")
+    set(PXR_APPLE_IDENTIFIER_DOMAIN "org.openusd" CACHE STRING "Name to provide Apple Framework build")
+    if (${PXR_BUILD_APPLE_FRAMEWORK})
+        if(${PXR_BUILD_USD_TOOLS})
+            MESSAGE(STATUS "Setting PXR_BUILD_USD_TOOLS=OFF because PXR_BUILD_APPLE_FRAMEWORK is enabled.")
+            set(PXR_BUILD_USD_TOOLS OFF)
+        endif()
+    endif()
+endif()
+
+
 # Determine GFX api
 # Metal only valid on Apple platforms
 set(pxr_enable_metal "OFF")
@@ -122,6 +156,12 @@ set(PXR_LIB_PREFIX ""
 
 option(BUILD_SHARED_LIBS "Build shared libraries." ON)
 option(PXR_BUILD_MONOLITHIC "Build a monolithic library." OFF)
+if (${PXR_BUILD_APPLE_FRAMEWORK})
+    set(BUILD_SHARED_LIBS OFF)
+    set(PXR_BUILD_MONOLITHIC ON)
+    MESSAGE(STATUS "Setting PXR_BUILD_MONOLITHIC=ON for Framework build")
+endif ()
+
 set(PXR_MONOLITHIC_IMPORT ""
     CACHE
     STRING

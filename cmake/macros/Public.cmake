@@ -1117,6 +1117,12 @@ function(pxr_toplevel_epilogue)
     # Setup the plugins in the top epilogue to ensure that everybody has had a
     # chance to update PXR_EXTRA_PLUGINS with their plugin paths.
     pxr_setup_plugins()
+
+    # Build
+    if (PXR_BUILD_APPLE_FRAMEWORK)
+        pxr_create_apple_framework()
+    endif ()
+
 endfunction() # pxr_toplevel_epilogue
 
 function(pxr_monolithic_epilogue)
@@ -1305,3 +1311,26 @@ function(pxr_build_python_documentation)
     ")
 
 endfunction() # pxr_build_python_documentation
+
+function(pxr_create_apple_framework)
+    # CMake can have a lot of different boolean representations, that need to be narrowed down
+    if (APPLE_EMBEDDED)
+        set(EMBEDDED_BUILD "true")
+    else()
+        set(EMBEDDED_BUILD "false")
+    endif()
+
+    _get_library_prefix(LIB_PREFIX)
+    if(TARGET usd_ms)
+        set(FRAMEWORK_ROOT_LIBRARY_NAME "${LIB_PREFIX}usd_ms.dylib")
+    else()
+        set(FRAMEWORK_ROOT_LIBRARY_NAME "${LIB_PREFIX}usd.dylib")
+    endif()
+
+    # Install the Info.plist and shell script
+    configure_file(cmake/resources/Info.plist.in "${PROJECT_BINARY_DIR}/Info.plist" @ONLY)
+    configure_file(cmake/resources/AppleFrameworkBuild.zsh.in "${PROJECT_BINARY_DIR}/AppleFrameworkBuild.zsh" @ONLY)
+
+     # Run the shell script for the primary configuration
+    install(CODE "execute_process(COMMAND zsh ${PROJECT_BINARY_DIR}/AppleFrameworkBuild.zsh )")
+endfunction() # pxr_create_apple_framework

@@ -106,3 +106,8 @@ if (PXR_PREFER_SAFETY_OVER_SPEED)
 else()
    set(PXR_PREFER_SAFETY_OVER_SPEED "0")
 endif()
+
+# Set that Apple Framework is being build
+if (PXR_BUILD_APPLE_FRAMEWORK)
+    _add_define("PXR_BUILD_APPLE_FRAMEWORK")
+endif()

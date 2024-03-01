@@ -1,0 +1,107 @@
+#!/usr/bin/env zsh
+
+# Creates an Apple framework for the given platform type
+# documentation: https://developer.apple.com/documentation/bundleresources/placing_content_in_a_bundle
+echo "⌛️ Creating @PXR_APPLE_FRAMEWORK_NAME@ ..."
+
+# Variables are substituted by CMake
+CMAKE_INSTALL_PREFIX="@CMAKE_INSTALL_PREFIX@"
+PROJECT_BINARY_DIR="@PROJECT_BINARY_DIR@"
+
+FRAMEWORK_NAME="@PXR_APPLE_FRAMEWORK_NAME@"
+FRAMEWORK_DIR="${CMAKE_INSTALL_PREFIX}/${FRAMEWORK_NAME}.framework"
+FRAMEWORK_HEADERS_DIR="${FRAMEWORK_DIR}/Headers"
+FRAMEWORK_LIBRARIES_DIR="${FRAMEWORK_DIR}/Libraries"
+FRAMEWORK_PLUGIN_DIR="${FRAMEWORK_LIBRARIES_DIR}/usd"
+FRAMEWORK_ROOT_LIBRARY_NAME="@FRAMEWORK_ROOT_LIBRARY_NAME@"
+EMBEDDED_BUILD=@EMBEDDED_BUILD@
+FRAMEWORK_RESOURCES_DIR="${FRAMEWORK_DIR}"
+MATERIALX_SOURCE_LIBRARIES="${CMAKE_INSTALL_PREFIX}/libraries/"
+BUNDLE_IDENTIFIER="@PXR_APPLE_IDENTIFIER_DOMAIN@.@PXR_APPLE_FRAMEWORK_NAME@"
+CODESIGN_ID="@PXR_APPLE_CODESIGN_IDENTITY@"
+OLD_RC_PATH="${CMAKE_INSTALL_PREFIX}/lib"
+
+function fix_linkage() {
+    readonly file=${1:?"A file path must be specified."}
+    readonly prepend="${FRAMEWORK_NAME}.framework/Libraries"
+    filename=$(basename ${file})
+    # First, change the install name. This corresponds to LC_ID_DYLIB.
+    install_name_tool -id "@rpath/${prepend}/${filename}" ${file}
+
+    parts=("${(@f)$(otool -l ${file})}")
+    for line in ${parts}; do
+      dylib_name=""
+      [[ $line =~ ' *name @rpath/(.*\.dylib)' ]] && dylib_name=$match[1]
+      if [ -n "${dylib_name}" ]; then
+        install_name_tool -change "@rpath/${dylib_name}" "@rpath/${prepend}/${dylib_name}" "${file}"
+      fi
+      if [[ $line == *"${OLD_RC_PATH}"* ]]; then
+        install_name_tool -delete_rpath ${OLD_RC_PATH} ${file}
+      fi
+    done
+
+    codesign -f -s ${CODESIGN_ID} ${file}
+}
+
+if [ "$EMBEDDED_BUILD" = false ];then
+  PLIST_ROOT="${FRAMEWORK_DIR}/Versions/A/Resources/"
+fi
+
+# Remove the existing directory if it exists
+if [ -d ${FRAMEWORK_DIR} ]; then
+  echo "Removing existing framework";
+  rm -Rf ${FRAMEWORK_DIR};
+fi
+
+# Create the parent directory
+echo "Creating directories..."
+mkdir -p ${FRAMEWORK_DIR}
+mkdir -p ${PLIST_ROOT}
+
+# Copy the plist over
+echo "Copying files into ${FRAMEWORK_DIR}"
+ditto "${PROJECT_BINARY_DIR}/Info.plist" "${PLIST_ROOT}/Info.plist"
+
+# Copy the primary directories over
+ditto "${CMAKE_INSTALL_PREFIX}/include/" ${FRAMEWORK_HEADERS_DIR}
+ditto "${CMAKE_INSTALL_PREFIX}/lib/" ${FRAMEWORK_LIBRARIES_DIR}
+ditto "${CMAKE_INSTALL_PREFIX}/plugin/usd/" ${FRAMEWORK_PLUGIN_DIR}
+
+
+# Remove any so files because boost generates them for iPhone
+rm -rf ${FRAMEWORK_LIBRARIES_DIR}/cmake
+for file in ${FRAMEWORK_LIBRARIES_DIR}/**/libboost*.so*; do
+  rm -f ${file}
+done
+
+# Remove any static archive files as well
+for file in ${FRAMEWORK_LIBRARIES_DIR}/**/*.a; do
+  rm -f ${file}
+done
+
+
+# Copy the MaterialX libraries if they exist
+if [ -d "${MATERIALX_SOURCE_LIBRARIES}" ]; then
+  ditto ${MATERIALX_SOURCE_LIBRARIES} "${FRAMEWORK_LIBRARIES_DIR}/materialx/"
+fi
+
+
+echo "Correcting linkage on libraries..."
+# The root file needs to be a binary that matches the framework name
+mv "${FRAMEWORK_LIBRARIES_DIR}/${FRAMEWORK_ROOT_LIBRARY_NAME}" "${FRAMEWORK_DIR}/${FRAMEWORK_NAME}"
+(cd ${FRAMEWORK_LIBRARIES_DIR} && ln -s "../${FRAMEWORK_NAME}" ${FRAMEWORK_ROOT_LIBRARY_NAME})
+fix_linkage "${FRAMEWORK_DIR}/${FRAMEWORK_NAME}"
+install_name_tool -id "@rpath/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}" "${FRAMEWORK_DIR}/${FRAMEWORK_NAME}"
+install_name_tool -change "@rpath/${FRAMEWORK_NAME}.framework/Libraries/${FRAMEWORK_NAME}" "@rpath/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}" "${FRAMEWORK_DIR}/${FRAMEWORK_NAME}"
+
+# Do Dylib fixing here
+# This finds all dylibs, but (.) skips linked files
+for file in ${FRAMEWORK_LIBRARIES_DIR}/**/*.dylib(.); do
+  fix_linkage ${file}
+done
+
+# Sign the final framework
+echo "Codesigning the framework..."
+codesign --force --sign ${CODESIGN_ID} ${FRAMEWORK_DIR} --generate-entitlement-der --identifier ${BUNDLE_IDENTIFIER}
+
+echo "✅ Finished creating framework at ${FRAMEWORK_DIR}"

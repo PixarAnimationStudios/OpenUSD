@@ -110,6 +110,10 @@ ARCH_CONSTRUCTOR(Plug_InitConfig, 2, void)
     _AppendPathList(&result, buildLocation, binaryPath);
     _AppendPathList(&result, pluginBuildLocation, binaryPath);
 
+#ifdef PXR_BUILD_APPLE_FRAMEWORK
+    _AppendPathList(&result, "Libraries/usd", binaryPath);
+#endif
+
 #ifdef PXR_INSTALL_LOCATION
     _AppendPathList(&result, installLocation, binaryPath);
 #endif // PXR_INSTALL_LOCATION
