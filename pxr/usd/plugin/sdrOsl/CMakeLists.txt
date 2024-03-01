@@ -5,6 +5,12 @@ if(NOT PXR_ENABLE_OSL_SUPPORT)
     return()
 endif()
 
+if (Imath_FOUND)
+    set(__OSL_IMATH_LIBS "Imath::Imath")
+else()
+    set(__OSL_IMATH_INCLUDE ${OPENEXR_INCLUDE_DIRS})
+endif()
+
 pxr_plugin(sdrOsl
     LIBRARIES
         gf
@@ -13,11 +19,12 @@ pxr_plugin(sdrOsl
         ar
         ndr
         sdr
+        ${__OSL_IMATH_LIBS}
         ${OSL_QUERY_LIBRARY}
         ${OIIO_LIBRARIES}
 
     INCLUDE_DIRS
-        ${OPENEXR_INCLUDE_DIR}
+        ${__OSL_IMATH_INCLUDE}
         ${OSL_INCLUDE_DIR}
         ${OIIO_INCLUDE_DIRS}
 
