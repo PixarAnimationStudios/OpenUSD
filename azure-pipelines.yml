@@ -1,6 +1,7 @@
 trigger:
 - release
 - dev
+- local
 
 jobs:
 - job: Linux
