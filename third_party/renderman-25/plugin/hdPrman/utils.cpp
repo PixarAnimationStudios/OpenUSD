@@ -712,6 +712,46 @@ PruneDeprecatedOptions(
 }
 
 RtParamList
+PruneBatchOnlyOptions(
+    const RtParamList &options)
+{
+    // The following should not be given to Riley::SetOptions()
+    // when doing an interactive render.
+    //
+    // XXX We use an explicit list here, but would it be better
+    // to do a prefix-check instead?
+    static std::vector<RtUString> const _batchOnlyRileyOptions = {
+        RixStr.k_checkpoint,
+        RixStr.k_checkpoint_asfinal,
+        RixStr.k_checkpoint_command,
+        RixStr.k_checkpoint_exitat,
+        RixStr.k_checkpoint_interval,
+        RixStr.k_checkpoint_keepfiles,
+        RixStr.k_exitat,
+        RixStr.k_statistics,
+        RixStr.k_statistics_displaceratios,
+        RixStr.k_statistics_endofframe,
+        RixStr.k_statistics_filename,
+        RixStr.k_statistics_level,
+        RixStr.k_statistics_maxdispwarnings,
+        RixStr.k_statistics_shaderprofile,
+        RixStr.k_statistics_stylesheet,
+        RixStr.k_statistics_texturestatslevel,
+        RixStr.k_statistics_xmlfilename
+        };
+
+    RtParamList prunedOptions = options;
+    for (auto name : _batchOnlyRileyOptions) {
+        uint32_t paramId;
+        if (prunedOptions.GetParamId(name, paramId)) {
+            prunedOptions.Remove(paramId);
+        }
+    }
+
+    return prunedOptions;
+}
+
+RtParamList
 GetDefaultRileyOptions()
 {
     RtParamList options;

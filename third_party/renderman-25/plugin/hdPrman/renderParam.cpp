@@ -2128,6 +2128,10 @@ HdPrman_RenderParam::SetRileyOptions()
         RtParamList prunedOptions = HdPrman_Utils::PruneDeprecatedOptions(
                     composedParams);
 
+        if (_renderDelegate->IsInteractive()) {
+            prunedOptions = HdPrman_Utils::PruneBatchOnlyOptions(prunedOptions);
+        }
+
         riley::Riley * const riley = AcquireRiley();
         riley->SetOptions(prunedOptions);
 

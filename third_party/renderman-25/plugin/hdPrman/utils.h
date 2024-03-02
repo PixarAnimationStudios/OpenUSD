@@ -98,6 +98,13 @@ RtParamList
 PruneDeprecatedOptions(
     const RtParamList &options);
 
+/// Some options, such as exitat, should only apply to a batch-mode render.
+/// This method returns a pruned copy of the options, removing those
+/// that should only be used in batch rendering.
+RtParamList
+PruneBatchOnlyOptions(
+    const RtParamList &options);
+
 /// Returns a small set of options for default path tracer configuration.
 RtParamList
 GetDefaultRileyOptions();
