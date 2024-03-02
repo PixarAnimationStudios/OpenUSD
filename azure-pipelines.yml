@@ -9,6 +9,7 @@ jobs:
     vmImage: 'Ubuntu-20.04'
   steps:
   - script: |
+      echo test
       sudo apt-get -qq update;
       sudo pip install --upgrade pip
       sudo apt-get install python-setuptools;
