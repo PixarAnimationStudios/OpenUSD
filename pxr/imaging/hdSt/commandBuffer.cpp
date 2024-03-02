@@ -76,7 +76,7 @@ _NewDrawBatch(HdStDrawItemInstance * drawItemInstance,
     }
 }
 
-TF_DEFINE_ENV_SETTING(HDST_DRAW_BATCH_TEXTURE_AGGREGATION_THRESHOLD, 0,
+TF_DEFINE_ENV_SETTING(HDST_DRAW_BATCH_TEXTURE_AGGREGATION_THRESHOLD, 10,
     "Specifies the draw item instance count threshold "
     "for aggregating draw items which use distinct textures.");
 
