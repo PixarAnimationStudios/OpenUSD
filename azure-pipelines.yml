@@ -1,6 +1,7 @@
 trigger:
 - release
 - dev
+- uat
 
 jobs:
 - job: Linux
