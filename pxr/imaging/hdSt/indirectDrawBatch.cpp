@@ -1281,6 +1281,14 @@ HdSt_IndirectDrawBatch::_ExecuteDrawImmediate(
     uint32_t const stride = strideUInt32 * sizeof(uint32_t);
     uint32_t const drawCount = dispatchBuffer->GetCount();
 
+    // We'll rebind texture resources while drawing only if the drawing
+    // program's material network shader uses texture resources.
+    bool const programUsesTextureResources =
+        program.GetMaterialNetworkShader()->ComputeTextureSourceHash() != 0;
+
+    bool const rebindTextureResources =
+        _needsTextureResourceRebinding && programUsesTextureResources;
+
     TextureResourceID currentTextureResourceID =
         _GetTextureResourceID(_drawItemInstances[0]->GetDrawItem());
 
@@ -1298,7 +1306,7 @@ HdSt_IndirectDrawBatch::_ExecuteDrawImmediate(
                 reinterpret_cast<_DrawNonIndexedCommand*>(
                     &_drawCommandBuffer[i*strideUInt32]);
 
-            if (_needsTextureResourceRebinding) {
+            if (rebindTextureResources) {
                 _BindTextureResources(
                     _drawItemInstances[i]->GetDrawItem(),
                     program.GetBinder(),
@@ -1328,7 +1336,7 @@ HdSt_IndirectDrawBatch::_ExecuteDrawImmediate(
                 reinterpret_cast<_DrawIndexedCommand*>(
                     &_drawCommandBuffer[i*strideUInt32]);
 
-            if (_needsTextureResourceRebinding) {
+            if (rebindTextureResources) {
                 _BindTextureResources(
                     _drawItemInstances[i]->GetDrawItem(),
                     program.GetBinder(),
