@@ -1479,6 +1479,14 @@ layer_metadata:
                 context->path, SdfFieldKeys->Documentation, 
                 $3.Get<std::string>(), context);
         }
+    // Not parsed with generic metadata because: uses special Python-like
+    // dictionary syntax with paths
+    | TOK_RELOCATES '=' relocates_map {
+            _SetField(
+                context->path, SdfFieldKeys->Relocates,
+                context->relocatesParsingMap, context);
+            context->relocatesParsingMap.clear();
+        }      
     // Not parsed with generic metadata because: actually maps to two values
     // instead of one
     | TOK_SUBLAYERS '=' sublayer_list

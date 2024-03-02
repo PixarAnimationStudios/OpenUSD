@@ -1218,6 +1218,37 @@ public:
     void SetSubLayerOffset(const SdfLayerOffset& offset, int index);
 
     /// @}
+    /// \name Relocates
+    /// @{
+
+    /// Get an editing proxy for the map of namespace relocations
+    /// specified in this layer's metadata.
+    ///
+    /// The map of namespace relocation paths is editable in-place via
+    /// this editing proxy.  Individual source-target pairs can be added,
+    /// removed, or altered using common map operations.
+    ///
+    /// The map is organized as target \c SdfPath indexed by source \c SdfPath.
+    SDF_API
+    SdfRelocatesMapProxy GetRelocates() const;
+    
+    /// Set the entire map of namespace relocations specified on this layer.
+    /// Use the editing proxy for modifying single paths in the map.
+    SDF_API
+    void SetRelocates(const SdfRelocatesMap& newMap);
+
+    /// Returns true if this layer's metadata has any relocates opinion, 
+    /// including that there should be no relocates (i.e. an empty map).  An 
+    /// empty map (no relocates) does not mean the same thing as a missing map
+    /// (no opinion).
+    SDF_API
+    bool HasRelocates() const;
+    
+    /// Clears the relocates opinion for this layer.
+    SDF_API
+    void ClearRelocates();
+
+    /// @}
 
     /// \name Detached Layers
     ///

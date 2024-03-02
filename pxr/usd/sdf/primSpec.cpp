@@ -780,21 +780,14 @@ SdfPrimSpec::BlockVariantSelection(const std::string& variantSetName)
 SdfRelocatesMapProxy
 SdfPrimSpec::GetRelocates() const
 {
-    if (!_IsPseudoRoot()) {
-        return SdfRelocatesMapProxy(
-            SdfCreateHandle(this), SdfFieldKeys->Relocates);
-    }
-    else {
-        return SdfRelocatesMapProxy();
-    }
+    return SdfRelocatesMapProxy(
+        SdfCreateHandle(this), SdfFieldKeys->Relocates);
 }
 
 void
 SdfPrimSpec::SetRelocates(const SdfRelocatesMap& newMap)
 {
-    if (_ValidateEdit(SdfFieldKeys->Relocates)) {
-        GetRelocates() = newMap;
-    }
+    GetRelocates() = newMap;
 }
 
 bool
@@ -806,9 +799,7 @@ SdfPrimSpec::HasRelocates() const
 void
 SdfPrimSpec::ClearRelocates()
 {
-    if (_ValidateEdit(SdfFieldKeys->Relocates)) {
-        ClearField(SdfFieldKeys->Relocates);
-    }
+    ClearField(SdfFieldKeys->Relocates);
 }
 
 //

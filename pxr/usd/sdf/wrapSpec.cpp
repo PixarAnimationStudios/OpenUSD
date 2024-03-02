@@ -80,6 +80,9 @@ _WrapSetInfo(SdfSpec &self, const TfToken &name, const object& pyObj)
         else if (fallback.IsHolding<SdfVariantSelectionMap>()) {
             value = extract<SdfVariantSelectionMap>(pyObj)();
         }
+        else if (fallback.IsHolding<SdfRelocatesMap>()) {
+            value = extract<SdfRelocatesMap>(pyObj)();
+        }
         else {
             value = extract<VtValue>(pyObj)();
             value.CastToTypeOf(fallback);

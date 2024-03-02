@@ -224,6 +224,7 @@ pxr_test_scripts(
     testenv/testSdfPayload.py
     testenv/testSdfPrim.py
     testenv/testSdfReference.py
+    testenv/testSdfRelocates.py
     testenv/testSdfSpecHash.py
     testenv/testSdfTimeCode.py
     testenv/testSdfTypes.py
@@ -529,6 +530,10 @@ pxr_register_test(testSdfPrim
 pxr_register_test(testSdfReference
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfReference"
+)
+pxr_register_test(testSdfRelocates
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfRelocates"
 )
 pxr_register_test(testSdfSpecHash
     PYTHON

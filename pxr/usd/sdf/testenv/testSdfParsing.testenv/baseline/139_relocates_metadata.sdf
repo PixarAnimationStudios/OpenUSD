@@ -2,6 +2,11 @@
 (
     framePrecision = 3
     framesPerSecond = 24
+    relocates = {
+        </absolute>: </some/nested/relative/path>, 
+        </relative/path>: </some/other/relative/path>, 
+        </source>: </target>
+    }
 )
 
 def MfScope "TestPrim" (

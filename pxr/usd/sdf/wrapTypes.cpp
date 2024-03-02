@@ -64,25 +64,20 @@ public:
     }
 };
 
-struct Sdf_RelocatesMapConverter {
+template <class MapType>
+struct Sdf_MapTypeConverter {
 public:
-    static PyObject* convert(SdfRelocatesMap const &c)
-    {
-        boost::python::dict result = TfPyCopyMapToDictionary(c);
-        return boost::python::incref(result.ptr());
-    }
-};
+    using KeyType = typename MapType::key_type;
+    using ValueType = typename MapType::mapped_type;
 
-struct Sdf_VariantSelectionMapConverter {
-public:
-    Sdf_VariantSelectionMapConverter()
+    Sdf_MapTypeConverter()
     {
         boost::python::converter::registry::push_back(
-            &Sdf_VariantSelectionMapConverter::convertible,
-            &Sdf_VariantSelectionMapConverter::construct,
-            boost::python::type_id<SdfVariantSelectionMap>());
-        to_python_converter<SdfVariantSelectionMap,
-                            Sdf_VariantSelectionMapConverter>();
+            &Sdf_MapTypeConverter::convertible,
+            &Sdf_MapTypeConverter::construct,
+            boost::python::type_id<MapType>());
+        to_python_converter<MapType,
+                            Sdf_MapTypeConverter>();
     }
 
     static void* convertible(PyObject* obj_ptr)
@@ -95,21 +90,21 @@ public:
       boost::python::converter::rvalue_from_python_stage1_data* data)
     {
         void* storage = (
-            (converter::rvalue_from_python_storage<SdfVariantSelectionMap>*)
+            (converter::rvalue_from_python_storage<MapType>*)
             data)->storage.bytes;
-        new (storage) SdfVariantSelectionMap();
+        new (storage) MapType();
         data->convertible = storage;
-        _convert(obj_ptr, (SdfVariantSelectionMap*)storage);
+        _convert(obj_ptr, (MapType*)storage);
     }
 
-    static PyObject* convert(const SdfVariantSelectionMap& c)
+    static PyObject* convert(const MapType& c)
     {
         boost::python::dict result = TfPyCopyMapToDictionary(c);
         return boost::python::incref(result.ptr());
     }
 
 private:
-    static PyObject* _convert(PyObject* pyDict, SdfVariantSelectionMap* result)
+    static PyObject* _convert(PyObject* pyDict, MapType* result)
     {
         extract<dict> dictProxy(pyDict);
         if (!dictProxy.check()) {
@@ -120,18 +115,18 @@ private:
         list keys = d.keys();
         for (int i = 0, numKeys = len(d); i < numKeys; ++i) {
             object pyKey = keys[i];
-            extract<std::string> keyProxy(pyKey);
+            extract<KeyType> keyProxy(pyKey);
             if (!keyProxy.check()) {
                 return NULL;
             }
 
             object pyValue = d[pyKey];
-            extract<std::string> valueProxy(pyValue);
+            extract<ValueType> valueProxy(pyValue);
             if (!valueProxy.check()) {
                 return NULL;
             }
 
-            std::string key = keyProxy();
+            KeyType key = keyProxy();
             if (result) {
                 result->insert(std::make_pair(keyProxy(), valueProxy()));
             }
@@ -412,11 +407,11 @@ void wrapTypes()
     // Modify class wrappers for special behaviors (see function comments).
     _ModifyVariantSelectionProxy();
 
-    // Register to_python conversion for SdfRelocatesMap.
-    to_python_converter<SdfRelocatesMap, Sdf_RelocatesMapConverter>();
+    // Register python conversions for SdfRelocatesMap.
+    Sdf_MapTypeConverter<SdfRelocatesMap>();
 
     // Register python conversions for SdfVariantSelectionMap.
-    Sdf_VariantSelectionMapConverter();
+    Sdf_MapTypeConverter<SdfVariantSelectionMap>();
 
     // Register python conversions for SdfTimeSampleMap.
     to_python_converter<SdfTimeSampleMap, Sdf_TimeSampleMapConverter>();

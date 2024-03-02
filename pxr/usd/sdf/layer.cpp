@@ -2012,6 +2012,31 @@ SdfLayer::SetSubLayerOffset(const SdfLayerOffset& offset, int index)
         VtValue(offsets));
 }
 
+SdfRelocatesMapProxy
+SdfLayer::GetRelocates() const
+{
+    return SdfRelocatesMapProxy(GetPseudoRoot(), SdfFieldKeys->Relocates);                
+}
+
+void
+SdfLayer::SetRelocates(const SdfRelocatesMap& newMap)
+{
+    GetRelocates() = newMap;
+}
+
+bool
+SdfLayer::HasRelocates() const
+{
+    return HasField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->Relocates);
+}
+
+void
+SdfLayer::ClearRelocates()
+{
+    EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->Relocates);
+}
+
+
 bool 
 SdfLayer::_CanGetSpecAtPath(
     const SdfPath& path, 
