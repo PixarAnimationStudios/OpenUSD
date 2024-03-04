@@ -411,6 +411,38 @@ _GetSdrMetadata(UsdPrim const& prim)
     return result;
 }
 
+std::vector<std::string> 
+UsdShadeNodeDefAPI::GetSourceTypes() const
+{   
+    // Early exit if the implementation source is not "sourceAsset" or "sourceCode"
+    const TfToken implSource = GetImplementationSource();
+    if ((implSource != UsdShadeTokens->sourceAsset) &&
+        (implSource != UsdShadeTokens->sourceCode)) {
+        return {};
+    }
+
+    // Extracting the sourceType in property name of format
+    // info:<sourceType>:<implementationType>
+    const size_t sourceTypePropLen = 3;
+    const size_t sourceTypeIdx = 1;
+    const std::vector<UsdProperty> props = GetPrim()
+                                    .GetPropertiesInNamespace("info");
+    std::vector<std::string> sourceTypes;
+    sourceTypes.reserve(props.size());
+    for (auto it = props.begin(); it != props.end(); it++){
+        std::string name = it->GetName().GetString();
+        if (TfStringEndsWith(name, implSource.GetString())) {
+            const std::vector<std::string> tokenizedName = 
+                    TfStringTokenize(name, 
+                        SdfPathTokens->namespaceDelimiter.GetText());
+            if (tokenizedName.size() == sourceTypePropLen) {
+                sourceTypes.push_back(tokenizedName[sourceTypeIdx]);
+            }
+        }
+    }
+    return sourceTypes;
+}
+
 SdrShaderNodeConstPtr 
 UsdShadeNodeDefAPI::GetShaderNodeForSourceType(const TfToken &sourceType) const
 {
