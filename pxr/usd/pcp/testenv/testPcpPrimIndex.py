@@ -965,6 +965,13 @@ class TestPcpPrimIndex(unittest.TestCase):
                 ]
             ])
 
+    def test_TestInvalidPcpNodeRef(self):
+        """Test to ensure that a invalid PcpNodeRef will return false
+            when cast to a bool"""
+
+        nullPcpNodeRef =  Pcp._GetInvalidPcpNode()
+        self.assertFalse(bool(nullPcpNodeRef))
+
 
 if __name__ == "__main__":
     unittest.main()
