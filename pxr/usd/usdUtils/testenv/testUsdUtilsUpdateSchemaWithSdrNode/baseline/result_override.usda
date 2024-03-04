@@ -36,8 +36,6 @@ class "TestSchemaAPI" (
     inherits = </APISchemaBase>
 )
 {
-    bool[] inputs:boolArray
-    bool inputs:boolNotInt = 1
     uniform token inputs:colorMapGamma (
         allowedTokens = ["texture"]
         connectability = "interfaceOnly"

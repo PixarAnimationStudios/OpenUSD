@@ -579,8 +579,11 @@ class TestUsdLuxLight(unittest.TestCase):
                 if expectedTypeName.isArray:
                     if not primDefaultValue or len(primDefaultValue) == 0:
                         expectedTypeName = expectedTypeName.scalarType
-                elif expectedTypeName == Sdf.ValueTypeNames.Token:
-                    expectedTypeName = Sdf.ValueTypeNames.String 
+                # token SdfType should Have String SdrTypes, but still return as
+                # token when queried for GetTypeAsSdfType
+                if expectedTypeName == Sdf.ValueTypeNames.Token:
+                    self.assertEqual(nodeInput.GetType(),
+                            Sdf.ValueTypeNames.String)
                 # Bool SdfTypes should Have Int SdrTypes, but still return as
                 # Bool when queried for GetTypeAsSdfType
                 if expectedTypeName == Sdf.ValueTypeNames.Bool:
