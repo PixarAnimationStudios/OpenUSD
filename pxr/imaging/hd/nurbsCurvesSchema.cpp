@@ -50,28 +50,28 @@ TF_DEFINE_PUBLIC_TOKENS(HdNurbsCurvesSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdIntArrayDataSourceHandle
-HdNurbsCurvesSchema::GetCurveVertexCounts()
+HdNurbsCurvesSchema::GetCurveVertexCounts() const
 {
     return _GetTypedDataSource<HdIntArrayDataSource>(
         HdNurbsCurvesSchemaTokens->curveVertexCounts);
 }
 
 HdIntArrayDataSourceHandle
-HdNurbsCurvesSchema::GetOrder()
+HdNurbsCurvesSchema::GetOrder() const
 {
     return _GetTypedDataSource<HdIntArrayDataSource>(
         HdNurbsCurvesSchemaTokens->order);
 }
 
 HdDoubleArrayDataSourceHandle
-HdNurbsCurvesSchema::GetKnots()
+HdNurbsCurvesSchema::GetKnots() const
 {
     return _GetTypedDataSource<HdDoubleArrayDataSource>(
         HdNurbsCurvesSchemaTokens->knots);
 }
 
 HdVec2dArrayDataSourceHandle
-HdNurbsCurvesSchema::GetRanges()
+HdNurbsCurvesSchema::GetRanges() const
 {
     return _GetTypedDataSource<HdVec2dArrayDataSource>(
         HdNurbsCurvesSchemaTokens->ranges);

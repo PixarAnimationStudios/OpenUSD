@@ -95,28 +95,28 @@ public:
     /// @{
 
     HD_API
-    HdTokenDataSourceHandle GetType();
+    HdTokenDataSourceHandle GetType() const;
 
     HD_API
-    HdFloatDataSourceHandle GetK1();
+    HdFloatDataSourceHandle GetK1() const;
 
     HD_API
-    HdFloatDataSourceHandle GetK2();
+    HdFloatDataSourceHandle GetK2() const;
 
     HD_API
-    HdVec2fDataSourceHandle GetCenter();
+    HdVec2fDataSourceHandle GetCenter() const;
 
     HD_API
-    HdFloatDataSourceHandle GetAnaSq();
+    HdFloatDataSourceHandle GetAnaSq() const;
 
     HD_API
-    HdVec2fDataSourceHandle GetAsym();
+    HdVec2fDataSourceHandle GetAsym() const;
 
     HD_API
-    HdFloatDataSourceHandle GetScale();
+    HdFloatDataSourceHandle GetScale() const;
 
     HD_API
-    HdFloatDataSourceHandle GetIor(); 
+    HdFloatDataSourceHandle GetIor() const; 
 
     /// @}
 

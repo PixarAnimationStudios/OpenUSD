@@ -50,21 +50,21 @@ TF_DEFINE_PUBLIC_TOKENS(HdInstanceSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdPathDataSourceHandle
-HdInstanceSchema::GetInstancer()
+HdInstanceSchema::GetInstancer() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdInstanceSchemaTokens->instancer);
 }
 
 HdIntDataSourceHandle
-HdInstanceSchema::GetPrototypeIndex()
+HdInstanceSchema::GetPrototypeIndex() const
 {
     return _GetTypedDataSource<HdIntDataSource>(
         HdInstanceSchemaTokens->prototypeIndex);
 }
 
 HdIntDataSourceHandle
-HdInstanceSchema::GetInstanceIndex()
+HdInstanceSchema::GetInstanceIndex() const
 {
     return _GetTypedDataSource<HdIntDataSource>(
         HdInstanceSchemaTokens->instanceIndex);

@@ -41,6 +41,7 @@
 #include "hdPrman/rileyParamListSchema.h"
 
 #include "pxr/imaging/hd/schema.h"
+#include "pxr/imaging/hd/version.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
 // --(END CUSTOM CODE: Includes)--
@@ -91,19 +92,49 @@ public:
     /// @{
 
     HDPRMAN_API
-    HdPathDataSourceHandle GetRenderTarget();
+    HdPathDataSourceHandle GetRenderTarget()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdTokenDataSourceHandle GetName();
+    HdTokenDataSourceHandle GetName()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdTokenDataSourceHandle GetDriver();
+    HdTokenDataSourceHandle GetDriver()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdPathArrayDataSourceHandle GetRenderOutputs();
+    HdPathArrayDataSourceHandle GetRenderOutputs()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdPrmanRileyParamListSchema GetDriverParams(); 
+    HdPrmanRileyParamListSchema GetDriverParams()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+ 
 
     /// @}
 

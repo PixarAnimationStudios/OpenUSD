@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyPrimvarSchemaTokens,
 
 HdSampledDataSourceHandle
 HdPrmanRileyPrimvarSchema::GetValue()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdSampledDataSource>(
         HdPrmanRileyPrimvarSchemaTokens->value);
@@ -58,6 +63,11 @@ HdPrmanRileyPrimvarSchema::GetValue()
 
 HdTokenDataSourceHandle
 HdPrmanRileyPrimvarSchema::GetDetailType()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrmanRileyPrimvarSchemaTokens->detailType);
@@ -65,6 +75,11 @@ HdPrmanRileyPrimvarSchema::GetDetailType()
 
 HdTokenDataSourceHandle
 HdPrmanRileyPrimvarSchema::GetRole()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrmanRileyPrimvarSchemaTokens->role);

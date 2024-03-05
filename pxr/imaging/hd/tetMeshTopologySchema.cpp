@@ -51,14 +51,14 @@ TF_DEFINE_PUBLIC_TOKENS(HdTetMeshTopologySchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdVec4iArrayDataSourceHandle
-HdTetMeshTopologySchema::GetTetVertexIndices()
+HdTetMeshTopologySchema::GetTetVertexIndices() const
 {
     return _GetTypedDataSource<HdVec4iArrayDataSource>(
         HdTetMeshTopologySchemaTokens->tetVertexIndices);
 }
 
 HdTokenDataSourceHandle
-HdTetMeshTopologySchema::GetOrientation()
+HdTetMeshTopologySchema::GetOrientation() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdTetMeshTopologySchemaTokens->orientation);

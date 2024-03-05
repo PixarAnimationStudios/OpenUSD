@@ -50,7 +50,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdCoordSysSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdTokenDataSourceHandle
-HdCoordSysSchema::GetName()
+HdCoordSysSchema::GetName() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdCoordSysSchemaTokens->name);

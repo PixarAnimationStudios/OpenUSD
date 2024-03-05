@@ -86,9 +86,10 @@ public:
     /// @{
 
     HD_API
-    TfTokenVector GetGeomSubsetNames();
+    TfTokenVector GetGeomSubsetNames() const;
+
     HD_API
-    HdGeomSubsetSchema GetGeomSubset(const TfToken &name); 
+    HdGeomSubsetSchema GetGeomSubset(const TfToken &name) const; 
 
     /// @}
 

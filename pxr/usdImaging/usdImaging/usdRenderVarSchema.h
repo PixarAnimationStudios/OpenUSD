@@ -89,16 +89,16 @@ public:
     /// @{
 
     USDIMAGING_API
-    HdTokenDataSourceHandle GetDataType();
+    HdTokenDataSourceHandle GetDataType() const;
 
     USDIMAGING_API
-    HdStringDataSourceHandle GetSourceName();
+    HdStringDataSourceHandle GetSourceName() const;
 
     USDIMAGING_API
-    HdTokenDataSourceHandle GetSourceType();
+    HdTokenDataSourceHandle GetSourceType() const;
 
     USDIMAGING_API
-    HdContainerDataSourceHandle GetNamespacedSettings(); 
+    HdContainerDataSourceHandle GetNamespacedSettings() const; 
 
     /// @}
 

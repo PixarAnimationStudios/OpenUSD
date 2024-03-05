@@ -93,19 +93,19 @@ public:
     /// @{
 
     USDIMAGING_API
-    HdPathDataSourceHandle GetNiPrototypePath();
+    HdPathDataSourceHandle GetNiPrototypePath() const;
 
     USDIMAGING_API
-    HdBoolDataSourceHandle GetIsNiPrototype();
+    HdBoolDataSourceHandle GetIsNiPrototype() const;
 
     USDIMAGING_API
-    HdTokenDataSourceHandle GetSpecifier();
+    HdTokenDataSourceHandle GetSpecifier() const;
 
     USDIMAGING_API
-    HdContainerDataSourceHandle GetPiPropagatedPrototypes();
+    HdContainerDataSourceHandle GetPiPropagatedPrototypes() const;
 
     USDIMAGING_API
-    HdBoolDataSourceHandle GetIsLoaded(); 
+    HdBoolDataSourceHandle GetIsLoaded() const; 
 
     /// @}
 

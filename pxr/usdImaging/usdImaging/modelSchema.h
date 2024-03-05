@@ -89,16 +89,16 @@ public:
     /// @{
 
     USDIMAGING_API
-    HdPathDataSourceHandle GetModelPath();
+    HdPathDataSourceHandle GetModelPath() const;
 
     USDIMAGING_API
-    HdAssetPathDataSourceHandle GetAssetIdentifier();
+    HdAssetPathDataSourceHandle GetAssetIdentifier() const;
 
     USDIMAGING_API
-    HdStringDataSourceHandle GetAssetName();
+    HdStringDataSourceHandle GetAssetName() const;
 
     USDIMAGING_API
-    HdStringDataSourceHandle GetAssetVersion(); 
+    HdStringDataSourceHandle GetAssetVersion() const; 
 
     /// @}
 

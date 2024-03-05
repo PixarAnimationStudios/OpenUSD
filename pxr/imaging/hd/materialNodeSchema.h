@@ -81,10 +81,10 @@ public:
     /// @{
 
     HD_API
-    HdMaterialNodeParameterContainerSchema GetParameters();
+    HdMaterialNodeParameterContainerSchema GetParameters() const;
 
     HD_API
-    HdMaterialConnectionVectorContainerSchema GetInputConnections();
+    HdMaterialConnectionVectorContainerSchema GetInputConnections() const;
 
     /// This identifies the shader the node represents. The
     /// renderContextNodeIdentifier container can store alternative values for
@@ -92,7 +92,7 @@ public:
     /// should check for that token within renderContextNodeIdentifiers and
     /// fall back on this value in its absence.
     HD_API
-    HdTokenDataSourceHandle GetNodeIdentifier();
+    HdTokenDataSourceHandle GetNodeIdentifier() const;
 
     /// A shading node can hold a nodeIdentifier value for multiple render
     /// contexts at once. This allows multiple renderer target representations
@@ -102,12 +102,12 @@ public:
     /// token within this container and fall back on nodeIdentifier in its
     /// absence.
     HD_API
-    HdContainerDataSourceHandle GetRenderContextNodeIdentifiers();
+    HdContainerDataSourceHandle GetRenderContextNodeIdentifiers() const;
 
     /// Rather than having an identifier, a shader can be specified by other
     /// information.
     HD_API
-    HdContainerDataSourceHandle GetNodeTypeInfo(); 
+    HdContainerDataSourceHandle GetNodeTypeInfo() const; 
 
     /// @} 
 

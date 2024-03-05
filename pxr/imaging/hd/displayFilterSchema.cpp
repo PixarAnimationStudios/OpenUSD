@@ -50,7 +50,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdDisplayFilterSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdMaterialNodeSchema
-HdDisplayFilterSchema::GetResource()
+HdDisplayFilterSchema::GetResource() const
 {
     return HdMaterialNodeSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdDisplayFilterSchemaTokens->resource));

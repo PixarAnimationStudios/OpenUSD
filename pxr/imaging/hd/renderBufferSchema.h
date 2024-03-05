@@ -88,13 +88,13 @@ public:
     /// @{
 
     HD_API
-    HdVec3iDataSourceHandle GetDimensions();
+    HdVec3iDataSourceHandle GetDimensions() const;
 
     HD_API
-    HdFormatDataSourceHandle GetFormat();
+    HdFormatDataSourceHandle GetFormat() const;
 
     HD_API
-    HdBoolDataSourceHandle GetMultiSampled(); 
+    HdBoolDataSourceHandle GetMultiSampled() const; 
 
     /// @}
 

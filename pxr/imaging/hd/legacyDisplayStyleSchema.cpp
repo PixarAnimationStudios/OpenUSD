@@ -50,63 +50,63 @@ TF_DEFINE_PUBLIC_TOKENS(HdLegacyDisplayStyleSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdIntDataSourceHandle
-HdLegacyDisplayStyleSchema::GetRefineLevel()
+HdLegacyDisplayStyleSchema::GetRefineLevel() const
 {
     return _GetTypedDataSource<HdIntDataSource>(
         HdLegacyDisplayStyleSchemaTokens->refineLevel);
 }
 
 HdBoolDataSourceHandle
-HdLegacyDisplayStyleSchema::GetFlatShadingEnabled()
+HdLegacyDisplayStyleSchema::GetFlatShadingEnabled() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdLegacyDisplayStyleSchemaTokens->flatShadingEnabled);
 }
 
 HdBoolDataSourceHandle
-HdLegacyDisplayStyleSchema::GetDisplacementEnabled()
+HdLegacyDisplayStyleSchema::GetDisplacementEnabled() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdLegacyDisplayStyleSchemaTokens->displacementEnabled);
 }
 
 HdBoolDataSourceHandle
-HdLegacyDisplayStyleSchema::GetOccludedSelectionShowsThrough()
+HdLegacyDisplayStyleSchema::GetOccludedSelectionShowsThrough() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough);
 }
 
 HdBoolDataSourceHandle
-HdLegacyDisplayStyleSchema::GetPointsShadingEnabled()
+HdLegacyDisplayStyleSchema::GetPointsShadingEnabled() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdLegacyDisplayStyleSchemaTokens->pointsShadingEnabled);
 }
 
 HdBoolDataSourceHandle
-HdLegacyDisplayStyleSchema::GetMaterialIsFinal()
+HdLegacyDisplayStyleSchema::GetMaterialIsFinal() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdLegacyDisplayStyleSchemaTokens->materialIsFinal);
 }
 
 HdTokenDataSourceHandle
-HdLegacyDisplayStyleSchema::GetShadingStyle()
+HdLegacyDisplayStyleSchema::GetShadingStyle() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdLegacyDisplayStyleSchemaTokens->shadingStyle);
 }
 
 HdTokenArrayDataSourceHandle
-HdLegacyDisplayStyleSchema::GetReprSelector()
+HdLegacyDisplayStyleSchema::GetReprSelector() const
 {
     return _GetTypedDataSource<HdTokenArrayDataSource>(
         HdLegacyDisplayStyleSchemaTokens->reprSelector);
 }
 
 HdTokenDataSourceHandle
-HdLegacyDisplayStyleSchema::GetCullStyle()
+HdLegacyDisplayStyleSchema::GetCullStyle() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdLegacyDisplayStyleSchemaTokens->cullStyle);

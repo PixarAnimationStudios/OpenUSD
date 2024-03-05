@@ -82,7 +82,7 @@ HdarSystemSchema::GetFromPath(
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdResolverContextDataSourceHandle
-HdarSystemSchema::GetResolverContext()
+HdarSystemSchema::GetResolverContext() const
 {
     return _GetTypedDataSource<HdResolverContextDataSource>(
         HdarSystemSchemaTokens->resolverContext);

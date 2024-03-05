@@ -93,28 +93,28 @@ public:
     /// @{
 
     HD_API
-    HdTokenDataSourceHandle GetFaceVaryingLinearInterpolation();
+    HdTokenDataSourceHandle GetFaceVaryingLinearInterpolation() const;
 
     HD_API
-    HdTokenDataSourceHandle GetInterpolateBoundary();
+    HdTokenDataSourceHandle GetInterpolateBoundary() const;
 
     HD_API
-    HdTokenDataSourceHandle GetTriangleSubdivisionRule();
+    HdTokenDataSourceHandle GetTriangleSubdivisionRule() const;
 
     HD_API
-    HdIntArrayDataSourceHandle GetCornerIndices();
+    HdIntArrayDataSourceHandle GetCornerIndices() const;
 
     HD_API
-    HdFloatArrayDataSourceHandle GetCornerSharpnesses();
+    HdFloatArrayDataSourceHandle GetCornerSharpnesses() const;
 
     HD_API
-    HdIntArrayDataSourceHandle GetCreaseIndices();
+    HdIntArrayDataSourceHandle GetCreaseIndices() const;
 
     HD_API
-    HdIntArrayDataSourceHandle GetCreaseLengths();
+    HdIntArrayDataSourceHandle GetCreaseLengths() const;
 
     HD_API
-    HdFloatArrayDataSourceHandle GetCreaseSharpnesses(); 
+    HdFloatArrayDataSourceHandle GetCreaseSharpnesses() const; 
 
     /// @}
 

@@ -87,10 +87,10 @@ public:
     /// @{
 
     HD_API
-    HdVec3dDataSourceHandle GetMin();
+    HdVec3dDataSourceHandle GetMin() const;
 
     HD_API
-    HdVec3dDataSourceHandle GetMax(); 
+    HdVec3dDataSourceHandle GetMax() const; 
 
     /// @}
 

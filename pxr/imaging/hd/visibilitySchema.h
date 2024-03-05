@@ -85,7 +85,7 @@ public:
     /// @{
 
     HD_API
-    HdBoolDataSourceHandle GetVisibility(); 
+    HdBoolDataSourceHandle GetVisibility() const; 
 
     /// @}
 

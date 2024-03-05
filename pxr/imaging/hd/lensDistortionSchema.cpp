@@ -51,56 +51,56 @@ TF_DEFINE_PUBLIC_TOKENS(HdLensDistortionSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdTokenDataSourceHandle
-HdLensDistortionSchema::GetType()
+HdLensDistortionSchema::GetType() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdLensDistortionSchemaTokens->type);
 }
 
 HdFloatDataSourceHandle
-HdLensDistortionSchema::GetK1()
+HdLensDistortionSchema::GetK1() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdLensDistortionSchemaTokens->k1);
 }
 
 HdFloatDataSourceHandle
-HdLensDistortionSchema::GetK2()
+HdLensDistortionSchema::GetK2() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdLensDistortionSchemaTokens->k2);
 }
 
 HdVec2fDataSourceHandle
-HdLensDistortionSchema::GetCenter()
+HdLensDistortionSchema::GetCenter() const
 {
     return _GetTypedDataSource<HdVec2fDataSource>(
         HdLensDistortionSchemaTokens->center);
 }
 
 HdFloatDataSourceHandle
-HdLensDistortionSchema::GetAnaSq()
+HdLensDistortionSchema::GetAnaSq() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdLensDistortionSchemaTokens->anaSq);
 }
 
 HdVec2fDataSourceHandle
-HdLensDistortionSchema::GetAsym()
+HdLensDistortionSchema::GetAsym() const
 {
     return _GetTypedDataSource<HdVec2fDataSource>(
         HdLensDistortionSchemaTokens->asym);
 }
 
 HdFloatDataSourceHandle
-HdLensDistortionSchema::GetScale()
+HdLensDistortionSchema::GetScale() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdLensDistortionSchemaTokens->scale);
 }
 
 HdFloatDataSourceHandle
-HdLensDistortionSchema::GetIor()
+HdLensDistortionSchema::GetIor() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdLensDistortionSchemaTokens->ior);

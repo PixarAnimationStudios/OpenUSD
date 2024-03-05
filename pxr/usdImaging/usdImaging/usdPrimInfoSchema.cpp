@@ -50,35 +50,35 @@ TF_DEFINE_PUBLIC_TOKENS(UsdImagingUsdPrimInfoSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdPathDataSourceHandle
-UsdImagingUsdPrimInfoSchema::GetNiPrototypePath()
+UsdImagingUsdPrimInfoSchema::GetNiPrototypePath() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
         UsdImagingUsdPrimInfoSchemaTokens->niPrototypePath);
 }
 
 HdBoolDataSourceHandle
-UsdImagingUsdPrimInfoSchema::GetIsNiPrototype()
+UsdImagingUsdPrimInfoSchema::GetIsNiPrototype() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         UsdImagingUsdPrimInfoSchemaTokens->isNiPrototype);
 }
 
 HdTokenDataSourceHandle
-UsdImagingUsdPrimInfoSchema::GetSpecifier()
+UsdImagingUsdPrimInfoSchema::GetSpecifier() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         UsdImagingUsdPrimInfoSchemaTokens->specifier);
 }
 
 HdContainerDataSourceHandle
-UsdImagingUsdPrimInfoSchema::GetPiPropagatedPrototypes()
+UsdImagingUsdPrimInfoSchema::GetPiPropagatedPrototypes() const
 {
     return _GetTypedDataSource<HdContainerDataSource>(
         UsdImagingUsdPrimInfoSchemaTokens->piPropagatedPrototypes);
 }
 
 HdBoolDataSourceHandle
-UsdImagingUsdPrimInfoSchema::GetIsLoaded()
+UsdImagingUsdPrimInfoSchema::GetIsLoaded() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         UsdImagingUsdPrimInfoSchemaTokens->isLoaded);

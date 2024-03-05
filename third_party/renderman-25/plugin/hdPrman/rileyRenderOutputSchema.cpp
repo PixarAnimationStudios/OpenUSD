@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyRenderOutputSchemaTokens,
 
 HdTokenDataSourceHandle
 HdPrmanRileyRenderOutputSchema::GetName()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrmanRileyRenderOutputSchemaTokens->name);
@@ -58,6 +63,11 @@ HdPrmanRileyRenderOutputSchema::GetName()
 
 HdTokenDataSourceHandle
 HdPrmanRileyRenderOutputSchema::GetType()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrmanRileyRenderOutputSchemaTokens->type);
@@ -65,6 +75,11 @@ HdPrmanRileyRenderOutputSchema::GetType()
 
 HdTokenDataSourceHandle
 HdPrmanRileyRenderOutputSchema::GetSource()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrmanRileyRenderOutputSchemaTokens->source);
@@ -72,6 +87,11 @@ HdPrmanRileyRenderOutputSchema::GetSource()
 
 HdTokenDataSourceHandle
 HdPrmanRileyRenderOutputSchema::GetAccumulationRule()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrmanRileyRenderOutputSchemaTokens->accumulationRule);
@@ -79,6 +99,11 @@ HdPrmanRileyRenderOutputSchema::GetAccumulationRule()
 
 HdTokenDataSourceHandle
 HdPrmanRileyRenderOutputSchema::GetFilter()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrmanRileyRenderOutputSchemaTokens->filter);
@@ -86,6 +111,11 @@ HdPrmanRileyRenderOutputSchema::GetFilter()
 
 HdVec2fDataSourceHandle
 HdPrmanRileyRenderOutputSchema::GetFilterSize()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdVec2fDataSource>(
         HdPrmanRileyRenderOutputSchemaTokens->filterSize);
@@ -93,6 +123,11 @@ HdPrmanRileyRenderOutputSchema::GetFilterSize()
 
 HdFloatDataSourceHandle
 HdPrmanRileyRenderOutputSchema::GetRelativePixelVariance()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdPrmanRileyRenderOutputSchemaTokens->relativePixelVariance);
@@ -100,6 +135,11 @@ HdPrmanRileyRenderOutputSchema::GetRelativePixelVariance()
 
 HdPrmanRileyParamListSchema
 HdPrmanRileyRenderOutputSchema::GetParams()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyParamListSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdPrmanRileyRenderOutputSchemaTokens->params));

@@ -51,35 +51,35 @@ TF_DEFINE_PUBLIC_TOKENS(HdBasisCurvesTopologySchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdIntArrayDataSourceHandle
-HdBasisCurvesTopologySchema::GetCurveVertexCounts()
+HdBasisCurvesTopologySchema::GetCurveVertexCounts() const
 {
     return _GetTypedDataSource<HdIntArrayDataSource>(
         HdBasisCurvesTopologySchemaTokens->curveVertexCounts);
 }
 
 HdIntArrayDataSourceHandle
-HdBasisCurvesTopologySchema::GetCurveIndices()
+HdBasisCurvesTopologySchema::GetCurveIndices() const
 {
     return _GetTypedDataSource<HdIntArrayDataSource>(
         HdBasisCurvesTopologySchemaTokens->curveIndices);
 }
 
 HdTokenDataSourceHandle
-HdBasisCurvesTopologySchema::GetBasis()
+HdBasisCurvesTopologySchema::GetBasis() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdBasisCurvesTopologySchemaTokens->basis);
 }
 
 HdTokenDataSourceHandle
-HdBasisCurvesTopologySchema::GetType()
+HdBasisCurvesTopologySchema::GetType() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdBasisCurvesTopologySchemaTokens->type);
 }
 
 HdTokenDataSourceHandle
-HdBasisCurvesTopologySchema::GetWrap()
+HdBasisCurvesTopologySchema::GetWrap() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdBasisCurvesTopologySchemaTokens->wrap);

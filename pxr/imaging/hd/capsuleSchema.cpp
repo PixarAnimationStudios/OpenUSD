@@ -50,35 +50,35 @@ TF_DEFINE_PUBLIC_TOKENS(HdCapsuleSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdDoubleDataSourceHandle
-HdCapsuleSchema::GetHeight()
+HdCapsuleSchema::GetHeight() const
 {
     return _GetTypedDataSource<HdDoubleDataSource>(
         HdCapsuleSchemaTokens->height);
 }
 
 HdDoubleDataSourceHandle
-HdCapsuleSchema::GetRadius()
+HdCapsuleSchema::GetRadius() const
 {
     return _GetTypedDataSource<HdDoubleDataSource>(
         HdCapsuleSchemaTokens->radius);
 }
 
 HdDoubleDataSourceHandle
-HdCapsuleSchema::GetRadiusTop()
+HdCapsuleSchema::GetRadiusTop() const
 {
     return _GetTypedDataSource<HdDoubleDataSource>(
         HdCapsuleSchemaTokens->radiusTop);
 }
 
 HdDoubleDataSourceHandle
-HdCapsuleSchema::GetRadiusBottom()
+HdCapsuleSchema::GetRadiusBottom() const
 {
     return _GetTypedDataSource<HdDoubleDataSource>(
         HdCapsuleSchemaTokens->radiusBottom);
 }
 
 HdTokenDataSourceHandle
-HdCapsuleSchema::GetAxis()
+HdCapsuleSchema::GetAxis() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdCapsuleSchemaTokens->axis);

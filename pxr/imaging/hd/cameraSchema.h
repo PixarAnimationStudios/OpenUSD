@@ -106,55 +106,55 @@ public:
     /// @{
 
     HD_API
-    HdTokenDataSourceHandle GetProjection();
+    HdTokenDataSourceHandle GetProjection() const;
 
     HD_API
-    HdFloatDataSourceHandle GetHorizontalAperture();
+    HdFloatDataSourceHandle GetHorizontalAperture() const;
 
     HD_API
-    HdFloatDataSourceHandle GetVerticalAperture();
+    HdFloatDataSourceHandle GetVerticalAperture() const;
 
     HD_API
-    HdFloatDataSourceHandle GetHorizontalApertureOffset();
+    HdFloatDataSourceHandle GetHorizontalApertureOffset() const;
 
     HD_API
-    HdFloatDataSourceHandle GetVerticalApertureOffset();
+    HdFloatDataSourceHandle GetVerticalApertureOffset() const;
 
     HD_API
-    HdFloatDataSourceHandle GetFocalLength();
+    HdFloatDataSourceHandle GetFocalLength() const;
 
     HD_API
-    HdVec2fDataSourceHandle GetClippingRange();
+    HdVec2fDataSourceHandle GetClippingRange() const;
 
     HD_API
-    HdVec4dArrayDataSourceHandle GetClippingPlanes();
+    HdVec4dArrayDataSourceHandle GetClippingPlanes() const;
 
     HD_API
-    HdFloatDataSourceHandle GetFStop();
+    HdFloatDataSourceHandle GetFStop() const;
 
     HD_API
-    HdFloatDataSourceHandle GetFocusDistance();
+    HdFloatDataSourceHandle GetFocusDistance() const;
 
     HD_API
-    HdDoubleDataSourceHandle GetShutterOpen();
+    HdDoubleDataSourceHandle GetShutterOpen() const;
 
     HD_API
-    HdDoubleDataSourceHandle GetShutterClose();
+    HdDoubleDataSourceHandle GetShutterClose() const;
 
     HD_API
-    HdFloatDataSourceHandle GetExposure();
+    HdFloatDataSourceHandle GetExposure() const;
 
     HD_API
-    HdBoolDataSourceHandle GetFocusOn();
+    HdBoolDataSourceHandle GetFocusOn() const;
 
     HD_API
-    HdFloatDataSourceHandle GetDofAspect();
+    HdFloatDataSourceHandle GetDofAspect() const;
 
     HD_API
-    HdSplitDiopterSchema GetSplitDiopter();
+    HdSplitDiopterSchema GetSplitDiopter() const;
 
     HD_API
-    HdLensDistortionSchema GetLensDistortion(); 
+    HdLensDistortionSchema GetLensDistortion() const; 
 
     /// @}
 

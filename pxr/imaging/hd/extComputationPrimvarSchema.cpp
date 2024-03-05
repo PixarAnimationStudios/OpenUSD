@@ -50,35 +50,35 @@ TF_DEFINE_PUBLIC_TOKENS(HdExtComputationPrimvarSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdTokenDataSourceHandle
-HdExtComputationPrimvarSchema::GetInterpolation()
+HdExtComputationPrimvarSchema::GetInterpolation() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdExtComputationPrimvarSchemaTokens->interpolation);
 }
 
 HdTokenDataSourceHandle
-HdExtComputationPrimvarSchema::GetRole()
+HdExtComputationPrimvarSchema::GetRole() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdExtComputationPrimvarSchemaTokens->role);
 }
 
 HdPathDataSourceHandle
-HdExtComputationPrimvarSchema::GetSourceComputation()
+HdExtComputationPrimvarSchema::GetSourceComputation() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdExtComputationPrimvarSchemaTokens->sourceComputation);
 }
 
 HdTokenDataSourceHandle
-HdExtComputationPrimvarSchema::GetSourceComputationOutputName()
+HdExtComputationPrimvarSchema::GetSourceComputationOutputName() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdExtComputationPrimvarSchemaTokens->sourceComputationOutputName);
 }
 
 HdTupleTypeDataSourceHandle
-HdExtComputationPrimvarSchema::GetValueType()
+HdExtComputationPrimvarSchema::GetValueType() const
 {
     return _GetTypedDataSource<HdTupleTypeDataSource>(
         HdExtComputationPrimvarSchemaTokens->valueType);

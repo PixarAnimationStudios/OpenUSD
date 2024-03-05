@@ -91,22 +91,22 @@ public:
     /// @{
 
     HD_API
-    HdIntArrayDataSourceHandle GetCounts();
+    HdIntArrayDataSourceHandle GetCounts() const;
 
     HD_API
-    HdIntArrayDataSourceHandle GetOrders();
+    HdIntArrayDataSourceHandle GetOrders() const;
 
     HD_API
-    HdIntArrayDataSourceHandle GetVertexCounts();
+    HdIntArrayDataSourceHandle GetVertexCounts() const;
 
     HD_API
-    HdDoubleArrayDataSourceHandle GetKnots();
+    HdDoubleArrayDataSourceHandle GetKnots() const;
 
     HD_API
-    HdVec2dArrayDataSourceHandle GetRanges();
+    HdVec2dArrayDataSourceHandle GetRanges() const;
 
     HD_API
-    HdVec3dArrayDataSourceHandle GetPoints(); 
+    HdVec3dArrayDataSourceHandle GetPoints() const; 
 
     /// @}
 

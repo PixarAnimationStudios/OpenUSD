@@ -79,13 +79,13 @@ public:
     /// @{
 
     HD_API
-    HdMaterialNodeContainerSchema GetNodes();
+    HdMaterialNodeContainerSchema GetNodes() const;
 
     HD_API
-    HdMaterialConnectionContainerSchema GetTerminals();
+    HdMaterialConnectionContainerSchema GetTerminals() const;
 
     HD_API
-    HdMaterialInterfaceMappingsContainerSchema GetInterfaceMappings(); 
+    HdMaterialInterfaceMappingsContainerSchema GetInterfaceMappings() const; 
 
     /// @} 
 

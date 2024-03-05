@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyLightShaderSchemaTokens,
 
 HdPrmanRileyShadingNodeVectorSchema
 HdPrmanRileyLightShaderSchema::GetLight()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyShadingNodeVectorSchema(_GetTypedDataSource<HdVectorDataSource>(
         HdPrmanRileyLightShaderSchemaTokens->light));
@@ -58,6 +63,11 @@ HdPrmanRileyLightShaderSchema::GetLight()
 
 HdPrmanRileyShadingNodeVectorSchema
 HdPrmanRileyLightShaderSchema::GetLightFilter()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyShadingNodeVectorSchema(_GetTypedDataSource<HdVectorDataSource>(
         HdPrmanRileyLightShaderSchemaTokens->lightFilter));

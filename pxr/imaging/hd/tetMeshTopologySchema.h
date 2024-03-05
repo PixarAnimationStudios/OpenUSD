@@ -89,10 +89,10 @@ public:
     /// @{
 
     HD_API
-    HdVec4iArrayDataSourceHandle GetTetVertexIndices();
+    HdVec4iArrayDataSourceHandle GetTetVertexIndices() const;
 
     HD_API
-    HdTokenDataSourceHandle GetOrientation(); 
+    HdTokenDataSourceHandle GetOrientation() const; 
 
     /// @}
 

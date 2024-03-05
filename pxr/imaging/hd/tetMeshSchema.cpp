@@ -50,14 +50,14 @@ TF_DEFINE_PUBLIC_TOKENS(HdTetMeshSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdTetMeshTopologySchema
-HdTetMeshSchema::GetTopology()
+HdTetMeshSchema::GetTopology() const
 {
     return HdTetMeshTopologySchema(_GetTypedDataSource<HdContainerDataSource>(
         HdTetMeshSchemaTokens->topology));
 }
 
 HdBoolDataSourceHandle
-HdTetMeshSchema::GetDoubleSided()
+HdTetMeshSchema::GetDoubleSided() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdTetMeshSchemaTokens->doubleSided);

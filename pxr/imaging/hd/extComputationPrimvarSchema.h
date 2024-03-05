@@ -92,19 +92,19 @@ public:
     /// @{
 
     HD_API
-    HdTokenDataSourceHandle GetInterpolation();
+    HdTokenDataSourceHandle GetInterpolation() const;
 
     HD_API
-    HdTokenDataSourceHandle GetRole();
+    HdTokenDataSourceHandle GetRole() const;
 
     HD_API
-    HdPathDataSourceHandle GetSourceComputation();
+    HdPathDataSourceHandle GetSourceComputation() const;
 
     HD_API
-    HdTokenDataSourceHandle GetSourceComputationOutputName();
+    HdTokenDataSourceHandle GetSourceComputationOutputName() const;
 
     HD_API
-    HdTupleTypeDataSourceHandle GetValueType(); 
+    HdTupleTypeDataSourceHandle GetValueType() const; 
 
     /// @} 
 

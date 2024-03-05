@@ -50,28 +50,28 @@ TF_DEFINE_PUBLIC_TOKENS(UsdImagingUsdRenderVarSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdTokenDataSourceHandle
-UsdImagingUsdRenderVarSchema::GetDataType()
+UsdImagingUsdRenderVarSchema::GetDataType() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         UsdImagingUsdRenderVarSchemaTokens->dataType);
 }
 
 HdStringDataSourceHandle
-UsdImagingUsdRenderVarSchema::GetSourceName()
+UsdImagingUsdRenderVarSchema::GetSourceName() const
 {
     return _GetTypedDataSource<HdStringDataSource>(
         UsdImagingUsdRenderVarSchemaTokens->sourceName);
 }
 
 HdTokenDataSourceHandle
-UsdImagingUsdRenderVarSchema::GetSourceType()
+UsdImagingUsdRenderVarSchema::GetSourceType() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         UsdImagingUsdRenderVarSchemaTokens->sourceType);
 }
 
 HdContainerDataSourceHandle
-UsdImagingUsdRenderVarSchema::GetNamespacedSettings()
+UsdImagingUsdRenderVarSchema::GetNamespacedSettings() const
 {
     return _GetTypedDataSource<HdContainerDataSource>(
         UsdImagingUsdRenderVarSchemaTokens->namespacedSettings);

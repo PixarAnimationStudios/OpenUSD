@@ -78,13 +78,13 @@ public:
     /// @{
 
     HD_API
-    HdPathDataSourceHandle GetInstancer();
+    HdPathDataSourceHandle GetInstancer() const;
 
     HD_API
-    HdIntDataSourceHandle GetPrototypeIndex();
+    HdIntDataSourceHandle GetPrototypeIndex() const;
 
     HD_API
-    HdIntArrayDataSourceHandle GetInstanceIndices(); 
+    HdIntArrayDataSourceHandle GetInstanceIndices() const; 
 
     /// @} 
 

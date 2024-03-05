@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyClippingPlaneSchemaTokens,
 
 HdMatrixDataSourceHandle
 HdPrmanRileyClippingPlaneSchema::GetXform()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdMatrixDataSource>(
         HdPrmanRileyClippingPlaneSchemaTokens->xform);
@@ -58,6 +63,11 @@ HdPrmanRileyClippingPlaneSchema::GetXform()
 
 HdPrmanRileyParamListSchema
 HdPrmanRileyClippingPlaneSchema::GetParams()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyParamListSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdPrmanRileyClippingPlaneSchemaTokens->params));

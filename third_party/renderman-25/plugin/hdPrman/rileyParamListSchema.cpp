@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyParamListSchemaTokens,
 
 HdPrmanRileyParamContainerSchema
 HdPrmanRileyParamListSchema::GetParams()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyParamContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdPrmanRileyParamListSchemaTokens->params));

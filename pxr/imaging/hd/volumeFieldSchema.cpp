@@ -50,35 +50,35 @@ TF_DEFINE_PUBLIC_TOKENS(HdVolumeFieldSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdAssetPathDataSourceHandle
-HdVolumeFieldSchema::GetFilePath()
+HdVolumeFieldSchema::GetFilePath() const
 {
     return _GetTypedDataSource<HdAssetPathDataSource>(
         HdVolumeFieldSchemaTokens->filePath);
 }
 
 HdTokenDataSourceHandle
-HdVolumeFieldSchema::GetFieldName()
+HdVolumeFieldSchema::GetFieldName() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdVolumeFieldSchemaTokens->fieldName);
 }
 
 HdIntDataSourceHandle
-HdVolumeFieldSchema::GetFieldIndex()
+HdVolumeFieldSchema::GetFieldIndex() const
 {
     return _GetTypedDataSource<HdIntDataSource>(
         HdVolumeFieldSchemaTokens->fieldIndex);
 }
 
 HdTokenDataSourceHandle
-HdVolumeFieldSchema::GetFieldDataType()
+HdVolumeFieldSchema::GetFieldDataType() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdVolumeFieldSchemaTokens->fieldDataType);
 }
 
 HdTokenDataSourceHandle
-HdVolumeFieldSchema::GetVectorDataRoleHint()
+HdVolumeFieldSchema::GetVectorDataRoleHint() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdVolumeFieldSchemaTokens->vectorDataRoleHint);

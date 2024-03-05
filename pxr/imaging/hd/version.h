@@ -98,9 +98,11 @@
 // 64 -> 65: Introduce HdCollectionPredicateLibrary and 
 //           HdCollectionExpressionEvaluator for path expression evaluation on
 //           scene index prims.
+// 65 -> 66: Make HdSchema::_GetTypedDataSource and getters in generated
+//           hydra schemas const.
 //
 
-#define HD_API_VERSION 65
+#define HD_API_VERSION 66
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

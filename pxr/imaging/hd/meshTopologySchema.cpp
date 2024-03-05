@@ -51,28 +51,28 @@ TF_DEFINE_PUBLIC_TOKENS(HdMeshTopologySchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdIntArrayDataSourceHandle
-HdMeshTopologySchema::GetFaceVertexCounts()
+HdMeshTopologySchema::GetFaceVertexCounts() const
 {
     return _GetTypedDataSource<HdIntArrayDataSource>(
         HdMeshTopologySchemaTokens->faceVertexCounts);
 }
 
 HdIntArrayDataSourceHandle
-HdMeshTopologySchema::GetFaceVertexIndices()
+HdMeshTopologySchema::GetFaceVertexIndices() const
 {
     return _GetTypedDataSource<HdIntArrayDataSource>(
         HdMeshTopologySchemaTokens->faceVertexIndices);
 }
 
 HdIntArrayDataSourceHandle
-HdMeshTopologySchema::GetHoleIndices()
+HdMeshTopologySchema::GetHoleIndices() const
 {
     return _GetTypedDataSource<HdIntArrayDataSource>(
         HdMeshTopologySchemaTokens->holeIndices);
 }
 
 HdTokenDataSourceHandle
-HdMeshTopologySchema::GetOrientation()
+HdMeshTopologySchema::GetOrientation() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdMeshTopologySchemaTokens->orientation);

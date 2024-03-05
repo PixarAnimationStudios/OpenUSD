@@ -93,19 +93,19 @@ public:
     /// @{
 
     HD_API
-    HdMeshTopologySchema GetTopology();
+    HdMeshTopologySchema GetTopology() const;
 
     HD_API
-    HdTokenDataSourceHandle GetSubdivisionScheme();
+    HdTokenDataSourceHandle GetSubdivisionScheme() const;
 
     HD_API
-    HdSubdivisionTagsSchema GetSubdivisionTags();
+    HdSubdivisionTagsSchema GetSubdivisionTags() const;
 
     HD_API
-    HdGeomSubsetsSchema GetGeomSubsets();
+    HdGeomSubsetsSchema GetGeomSubsets() const;
 
     HD_API
-    HdBoolDataSourceHandle GetDoubleSided(); 
+    HdBoolDataSourceHandle GetDoubleSided() const; 
 
     /// @}
 

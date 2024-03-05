@@ -50,35 +50,35 @@ TF_DEFINE_PUBLIC_TOKENS(HdRenderVarSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdPathDataSourceHandle
-HdRenderVarSchema::GetPath()
+HdRenderVarSchema::GetPath() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdRenderVarSchemaTokens->path);
 }
 
 HdTokenDataSourceHandle
-HdRenderVarSchema::GetDataType()
+HdRenderVarSchema::GetDataType() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdRenderVarSchemaTokens->dataType);
 }
 
 HdTokenDataSourceHandle
-HdRenderVarSchema::GetSourceName()
+HdRenderVarSchema::GetSourceName() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdRenderVarSchemaTokens->sourceName);
 }
 
 HdTokenDataSourceHandle
-HdRenderVarSchema::GetSourceType()
+HdRenderVarSchema::GetSourceType() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdRenderVarSchemaTokens->sourceType);
 }
 
 HdContainerDataSourceHandle
-HdRenderVarSchema::GetNamespacedSettings()
+HdRenderVarSchema::GetNamespacedSettings() const
 {
     return _GetTypedDataSource<HdContainerDataSource>(
         HdRenderVarSchemaTokens->namespacedSettings);

@@ -51,42 +51,42 @@ TF_DEFINE_PUBLIC_TOKENS(HdNurbsPatchTrimCurveSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdIntArrayDataSourceHandle
-HdNurbsPatchTrimCurveSchema::GetCounts()
+HdNurbsPatchTrimCurveSchema::GetCounts() const
 {
     return _GetTypedDataSource<HdIntArrayDataSource>(
         HdNurbsPatchTrimCurveSchemaTokens->counts);
 }
 
 HdIntArrayDataSourceHandle
-HdNurbsPatchTrimCurveSchema::GetOrders()
+HdNurbsPatchTrimCurveSchema::GetOrders() const
 {
     return _GetTypedDataSource<HdIntArrayDataSource>(
         HdNurbsPatchTrimCurveSchemaTokens->orders);
 }
 
 HdIntArrayDataSourceHandle
-HdNurbsPatchTrimCurveSchema::GetVertexCounts()
+HdNurbsPatchTrimCurveSchema::GetVertexCounts() const
 {
     return _GetTypedDataSource<HdIntArrayDataSource>(
         HdNurbsPatchTrimCurveSchemaTokens->vertexCounts);
 }
 
 HdDoubleArrayDataSourceHandle
-HdNurbsPatchTrimCurveSchema::GetKnots()
+HdNurbsPatchTrimCurveSchema::GetKnots() const
 {
     return _GetTypedDataSource<HdDoubleArrayDataSource>(
         HdNurbsPatchTrimCurveSchemaTokens->knots);
 }
 
 HdVec2dArrayDataSourceHandle
-HdNurbsPatchTrimCurveSchema::GetRanges()
+HdNurbsPatchTrimCurveSchema::GetRanges() const
 {
     return _GetTypedDataSource<HdVec2dArrayDataSource>(
         HdNurbsPatchTrimCurveSchemaTokens->ranges);
 }
 
 HdVec3dArrayDataSourceHandle
-HdNurbsPatchTrimCurveSchema::GetPoints()
+HdNurbsPatchTrimCurveSchema::GetPoints() const
 {
     return _GetTypedDataSource<HdVec3dArrayDataSource>(
         HdNurbsPatchTrimCurveSchemaTokens->points);

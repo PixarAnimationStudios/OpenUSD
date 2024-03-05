@@ -41,6 +41,7 @@
 #include "hdPrman/rileySchemaTypeDefs.h"
 
 #include "pxr/imaging/hd/schema.h"
+#include "pxr/imaging/hd/version.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
 // --(END CUSTOM CODE: Includes)--
@@ -88,10 +89,22 @@ public:
     /// @{
 
     HDPRMAN_API
-    HdPrmanRileyShadingNodeVectorSchema GetLight();
+    HdPrmanRileyShadingNodeVectorSchema GetLight()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdPrmanRileyShadingNodeVectorSchema GetLightFilter(); 
+    HdPrmanRileyShadingNodeVectorSchema GetLightFilter()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+ 
 
     /// @}
 

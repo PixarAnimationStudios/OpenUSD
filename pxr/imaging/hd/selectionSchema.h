@@ -78,12 +78,12 @@ public:
     /// @{
 
     HD_API
-    HdBoolDataSourceHandle GetFullySelected();
+    HdBoolDataSourceHandle GetFullySelected() const;
 
     /// Starting with the outer most, list for each nesting level of
     /// instancing what instances are selected.
     HD_API
-    HdInstanceIndicesVectorSchema GetNestedInstanceIndices(); 
+    HdInstanceIndicesVectorSchema GetNestedInstanceIndices() const; 
 
     /// @} 
 

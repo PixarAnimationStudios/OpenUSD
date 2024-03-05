@@ -50,119 +50,119 @@ TF_DEFINE_PUBLIC_TOKENS(HdCameraSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdTokenDataSourceHandle
-HdCameraSchema::GetProjection()
+HdCameraSchema::GetProjection() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdCameraSchemaTokens->projection);
 }
 
 HdFloatDataSourceHandle
-HdCameraSchema::GetHorizontalAperture()
+HdCameraSchema::GetHorizontalAperture() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdCameraSchemaTokens->horizontalAperture);
 }
 
 HdFloatDataSourceHandle
-HdCameraSchema::GetVerticalAperture()
+HdCameraSchema::GetVerticalAperture() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdCameraSchemaTokens->verticalAperture);
 }
 
 HdFloatDataSourceHandle
-HdCameraSchema::GetHorizontalApertureOffset()
+HdCameraSchema::GetHorizontalApertureOffset() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdCameraSchemaTokens->horizontalApertureOffset);
 }
 
 HdFloatDataSourceHandle
-HdCameraSchema::GetVerticalApertureOffset()
+HdCameraSchema::GetVerticalApertureOffset() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdCameraSchemaTokens->verticalApertureOffset);
 }
 
 HdFloatDataSourceHandle
-HdCameraSchema::GetFocalLength()
+HdCameraSchema::GetFocalLength() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdCameraSchemaTokens->focalLength);
 }
 
 HdVec2fDataSourceHandle
-HdCameraSchema::GetClippingRange()
+HdCameraSchema::GetClippingRange() const
 {
     return _GetTypedDataSource<HdVec2fDataSource>(
         HdCameraSchemaTokens->clippingRange);
 }
 
 HdVec4dArrayDataSourceHandle
-HdCameraSchema::GetClippingPlanes()
+HdCameraSchema::GetClippingPlanes() const
 {
     return _GetTypedDataSource<HdVec4dArrayDataSource>(
         HdCameraSchemaTokens->clippingPlanes);
 }
 
 HdFloatDataSourceHandle
-HdCameraSchema::GetFStop()
+HdCameraSchema::GetFStop() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdCameraSchemaTokens->fStop);
 }
 
 HdFloatDataSourceHandle
-HdCameraSchema::GetFocusDistance()
+HdCameraSchema::GetFocusDistance() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdCameraSchemaTokens->focusDistance);
 }
 
 HdDoubleDataSourceHandle
-HdCameraSchema::GetShutterOpen()
+HdCameraSchema::GetShutterOpen() const
 {
     return _GetTypedDataSource<HdDoubleDataSource>(
         HdCameraSchemaTokens->shutterOpen);
 }
 
 HdDoubleDataSourceHandle
-HdCameraSchema::GetShutterClose()
+HdCameraSchema::GetShutterClose() const
 {
     return _GetTypedDataSource<HdDoubleDataSource>(
         HdCameraSchemaTokens->shutterClose);
 }
 
 HdFloatDataSourceHandle
-HdCameraSchema::GetExposure()
+HdCameraSchema::GetExposure() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdCameraSchemaTokens->exposure);
 }
 
 HdBoolDataSourceHandle
-HdCameraSchema::GetFocusOn()
+HdCameraSchema::GetFocusOn() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdCameraSchemaTokens->focusOn);
 }
 
 HdFloatDataSourceHandle
-HdCameraSchema::GetDofAspect()
+HdCameraSchema::GetDofAspect() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdCameraSchemaTokens->dofAspect);
 }
 
 HdSplitDiopterSchema
-HdCameraSchema::GetSplitDiopter()
+HdCameraSchema::GetSplitDiopter() const
 {
     return HdSplitDiopterSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdCameraSchemaTokens->splitDiopter));
 }
 
 HdLensDistortionSchema
-HdCameraSchema::GetLensDistortion()
+HdCameraSchema::GetLensDistortion() const
 {
     return HdLensDistortionSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdCameraSchemaTokens->lensDistortion));

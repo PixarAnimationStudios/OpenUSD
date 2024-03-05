@@ -85,9 +85,10 @@ public:
     /// @{
 
     HD_API
-    TfTokenVector GetCoordSysBindingNames();
+    TfTokenVector GetCoordSysBindingNames() const;
+
     HD_API
-    HdPathDataSourceHandle GetCoordSysBinding(const TfToken &name); 
+    HdPathDataSourceHandle GetCoordSysBinding(const TfToken &name) const; 
 
     /// @}
 

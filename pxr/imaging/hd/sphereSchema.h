@@ -86,7 +86,7 @@ public:
     /// @{
 
     HD_API
-    HdDoubleDataSourceHandle GetRadius(); 
+    HdDoubleDataSourceHandle GetRadius() const; 
 
     /// @}
 

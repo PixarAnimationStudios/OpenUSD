@@ -85,9 +85,10 @@ public:
     /// @{
 
     HD_API
-    TfTokenVector GetVolumeFieldBindingNames();
+    TfTokenVector GetVolumeFieldBindingNames() const;
+
     HD_API
-    HdPathDataSourceHandle GetVolumeFieldBinding(const TfToken &name); 
+    HdPathDataSourceHandle GetVolumeFieldBinding(const TfToken &name) const; 
 
     /// @}
 

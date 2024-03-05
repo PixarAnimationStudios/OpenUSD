@@ -67,6 +67,14 @@ TF_DEFINE_PUBLIC_TOKENS({{SCHEMA_CLASS_NAME}}Tokens,
 
 TfTokenVector
 {{ SCHEMA_CLASS_NAME }}::Get{{ name | capitalizeFirst }}Names()
+{%- if VERSION_GUARD_CONST_GETTER %}
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
+{% else %} const
+{% endif -%} {#- if VERSION_GUARD_CONST_GETTER -#}
 {
     if (_container) {
         return _container->GetNames();
@@ -77,6 +85,14 @@ TfTokenVector
 
 {{ type_name}}{% if not type_name.endswith('Schema') %}Handle{% endif %}
 {{ SCHEMA_CLASS_NAME }}::Get{{ name | capitalizeFirst }}(const TfToken &name)
+{%- if VERSION_GUARD_CONST_GETTER %}
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
+{% else %} const
+{% endif -%} {#- if VERSION_GUARD_CONST_GETTER -#}
 {
     {%- if type_name.endswith('Schema') %}
     return {{type_name}}(
@@ -94,6 +110,14 @@ TfTokenVector
 
 {{ type_name}}{% if not type_name.endswith('Schema') %}Handle{% endif %}
 {{ SCHEMA_CLASS_NAME }}::Get{{ name|capitalizeFirst }}()
+{%- if VERSION_GUARD_CONST_GETTER %}
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
+{% else %} const
+{% endif -%} {#- if VERSION_GUARD_CONST_GETTER -#}
 {
     return {% if type_name.endswith('Schema') %}{{ type_name }}({% endif %}_GetTypedDataSource<{{type_name | underlyingDataSource}}>(
         {{SCHEMA_CLASS_NAME}}Tokens->{{ name }}){% if type_name.endswith('Schema') %}){% endif %};

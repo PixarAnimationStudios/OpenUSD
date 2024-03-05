@@ -50,21 +50,21 @@ TF_DEFINE_PUBLIC_TOKENS(HdExtComputationInputComputationSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdTokenDataSourceHandle
-HdExtComputationInputComputationSchema::GetName()
+HdExtComputationInputComputationSchema::GetName() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdExtComputationInputComputationSchemaTokens->name);
 }
 
 HdPathDataSourceHandle
-HdExtComputationInputComputationSchema::GetSourceComputation()
+HdExtComputationInputComputationSchema::GetSourceComputation() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdExtComputationInputComputationSchemaTokens->sourceComputation);
 }
 
 HdTokenDataSourceHandle
-HdExtComputationInputComputationSchema::GetSourceComputationOutputName()
+HdExtComputationInputComputationSchema::GetSourceComputationOutputName() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdExtComputationInputComputationSchemaTokens->sourceComputationOutputName);

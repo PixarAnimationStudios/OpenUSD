@@ -88,10 +88,10 @@ public:
     /// @{
 
     HD_API
-    HdTetMeshTopologySchema GetTopology();
+    HdTetMeshTopologySchema GetTopology() const;
 
     HD_API
-    HdBoolDataSourceHandle GetDoubleSided(); 
+    HdBoolDataSourceHandle GetDoubleSided() const; 
 
     /// @}
 

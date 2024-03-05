@@ -50,14 +50,14 @@ TF_DEFINE_PUBLIC_TOKENS(HdXformSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdMatrixDataSourceHandle
-HdXformSchema::GetMatrix()
+HdXformSchema::GetMatrix() const
 {
     return _GetTypedDataSource<HdMatrixDataSource>(
         HdXformSchemaTokens->matrix);
 }
 
 HdBoolDataSourceHandle
-HdXformSchema::GetResetXformStack()
+HdXformSchema::GetResetXformStack() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdXformSchemaTokens->resetXformStack);

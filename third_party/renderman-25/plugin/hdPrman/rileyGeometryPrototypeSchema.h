@@ -41,6 +41,7 @@
 #include "hdPrman/rileyPrimvarListSchema.h"
 
 #include "pxr/imaging/hd/schema.h"
+#include "pxr/imaging/hd/version.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
 // --(END CUSTOM CODE: Includes)--
@@ -89,13 +90,31 @@ public:
     /// @{
 
     HDPRMAN_API
-    HdTokenDataSourceHandle GetType();
+    HdTokenDataSourceHandle GetType()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdPathDataSourceHandle GetDisplacement();
+    HdPathDataSourceHandle GetDisplacement()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdPrmanRileyPrimvarListSchema GetPrimvars(); 
+    HdPrmanRileyPrimvarListSchema GetPrimvars()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+ 
 
     /// @}
 

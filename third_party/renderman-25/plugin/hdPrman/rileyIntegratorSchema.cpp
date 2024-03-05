@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyIntegratorSchemaTokens,
 
 HdPrmanRileyShadingNodeSchema
 HdPrmanRileyIntegratorSchema::GetIntegratorNode()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyShadingNodeSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdPrmanRileyIntegratorSchemaTokens->integratorNode));

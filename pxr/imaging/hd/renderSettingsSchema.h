@@ -96,22 +96,22 @@ public:
     /// @{
 
     HD_API
-    HdContainerDataSourceHandle GetNamespacedSettings();
+    HdContainerDataSourceHandle GetNamespacedSettings() const;
 
     HD_API
-    HdBoolDataSourceHandle GetActive();
+    HdBoolDataSourceHandle GetActive() const;
 
     HD_API
-    HdRenderProductVectorSchema GetRenderProducts();
+    HdRenderProductVectorSchema GetRenderProducts() const;
 
     HD_API
-    HdTokenArrayDataSourceHandle GetIncludedPurposes();
+    HdTokenArrayDataSourceHandle GetIncludedPurposes() const;
 
     HD_API
-    HdTokenArrayDataSourceHandle GetMaterialBindingPurposes();
+    HdTokenArrayDataSourceHandle GetMaterialBindingPurposes() const;
 
     HD_API
-    HdTokenDataSourceHandle GetRenderingColorSpace();
+    HdTokenDataSourceHandle GetRenderingColorSpace() const;
 
     /// Frame-relative time interval representing the sampling window for data
     /// relevant to motion blur. Renderers can use this interval when querying
@@ -121,7 +121,7 @@ public:
     /// close times and is expected to span the union of the shutter intervals
     /// of cameras used in generating the render artifacts.
     HD_API
-    HdVec2dDataSourceHandle GetShutterInterval(); 
+    HdVec2dDataSourceHandle GetShutterInterval() const; 
 
     /// @}
 

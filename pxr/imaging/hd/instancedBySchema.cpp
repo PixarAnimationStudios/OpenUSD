@@ -50,14 +50,14 @@ TF_DEFINE_PUBLIC_TOKENS(HdInstancedBySchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdPathArrayDataSourceHandle
-HdInstancedBySchema::GetPaths()
+HdInstancedBySchema::GetPaths() const
 {
     return _GetTypedDataSource<HdPathArrayDataSource>(
         HdInstancedBySchemaTokens->paths);
 }
 
 HdPathArrayDataSourceHandle
-HdInstancedBySchema::GetPrototypeRoots()
+HdInstancedBySchema::GetPrototypeRoots() const
 {
     return _GetTypedDataSource<HdPathArrayDataSource>(
         HdInstancedBySchemaTokens->prototypeRoots);

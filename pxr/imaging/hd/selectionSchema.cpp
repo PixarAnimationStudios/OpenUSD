@@ -50,14 +50,14 @@ TF_DEFINE_PUBLIC_TOKENS(HdSelectionSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdBoolDataSourceHandle
-HdSelectionSchema::GetFullySelected()
+HdSelectionSchema::GetFullySelected() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdSelectionSchemaTokens->fullySelected);
 }
 
 HdInstanceIndicesVectorSchema
-HdSelectionSchema::GetNestedInstanceIndices()
+HdSelectionSchema::GetNestedInstanceIndices() const
 {
     return HdInstanceIndicesVectorSchema(_GetTypedDataSource<HdVectorDataSource>(
         HdSelectionSchemaTokens->nestedInstanceIndices));

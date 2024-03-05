@@ -76,7 +76,7 @@ public:
     /// @{
 
     HD_API
-    HdBoolDataSourceHandle GetMotionBlur(); 
+    HdBoolDataSourceHandle GetMotionBlur() const; 
 
     /// @} 
 

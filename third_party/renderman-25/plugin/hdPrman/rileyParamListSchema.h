@@ -41,6 +41,7 @@
 #include "hdPrman/rileySchemaTypeDefs.h"
 
 #include "pxr/imaging/hd/schema.h"
+#include "pxr/imaging/hd/version.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
 // --(END CUSTOM CODE: Includes)--
@@ -87,7 +88,13 @@ public:
     /// @{
 
     HDPRMAN_API
-    HdPrmanRileyParamContainerSchema GetParams(); 
+    HdPrmanRileyParamContainerSchema GetParams()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+ 
 
     /// @} 
 

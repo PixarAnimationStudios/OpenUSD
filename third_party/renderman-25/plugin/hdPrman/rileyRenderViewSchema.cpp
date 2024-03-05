@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyRenderViewSchemaTokens,
 
 HdPathDataSourceHandle
 HdPrmanRileyRenderViewSchema::GetRenderTarget()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdPrmanRileyRenderViewSchemaTokens->renderTarget);
@@ -58,6 +63,11 @@ HdPrmanRileyRenderViewSchema::GetRenderTarget()
 
 HdPathDataSourceHandle
 HdPrmanRileyRenderViewSchema::GetCamera()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdPrmanRileyRenderViewSchemaTokens->camera);
@@ -65,6 +75,11 @@ HdPrmanRileyRenderViewSchema::GetCamera()
 
 HdPathDataSourceHandle
 HdPrmanRileyRenderViewSchema::GetIntegrator()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdPrmanRileyRenderViewSchemaTokens->integrator);
@@ -72,6 +87,11 @@ HdPrmanRileyRenderViewSchema::GetIntegrator()
 
 HdPathArrayDataSourceHandle
 HdPrmanRileyRenderViewSchema::GetDisplayFilters()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathArrayDataSource>(
         HdPrmanRileyRenderViewSchemaTokens->displayFilters);
@@ -79,6 +99,11 @@ HdPrmanRileyRenderViewSchema::GetDisplayFilters()
 
 HdPathArrayDataSourceHandle
 HdPrmanRileyRenderViewSchema::GetSampleFilters()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathArrayDataSource>(
         HdPrmanRileyRenderViewSchemaTokens->sampleFilters);
@@ -86,6 +111,11 @@ HdPrmanRileyRenderViewSchema::GetSampleFilters()
 
 HdPrmanRileyParamListSchema
 HdPrmanRileyRenderViewSchema::GetParams()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyParamListSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdPrmanRileyRenderViewSchemaTokens->params));

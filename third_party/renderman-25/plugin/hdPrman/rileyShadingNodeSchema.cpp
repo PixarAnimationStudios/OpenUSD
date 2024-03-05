@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyShadingNodeSchemaTokens,
 
 HdTokenDataSourceHandle
 HdPrmanRileyShadingNodeSchema::GetType()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrmanRileyShadingNodeSchemaTokens->type);
@@ -58,6 +63,11 @@ HdPrmanRileyShadingNodeSchema::GetType()
 
 HdTokenDataSourceHandle
 HdPrmanRileyShadingNodeSchema::GetName()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrmanRileyShadingNodeSchemaTokens->name);
@@ -65,6 +75,11 @@ HdPrmanRileyShadingNodeSchema::GetName()
 
 HdTokenDataSourceHandle
 HdPrmanRileyShadingNodeSchema::GetHandle()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrmanRileyShadingNodeSchemaTokens->handle);
@@ -72,6 +87,11 @@ HdPrmanRileyShadingNodeSchema::GetHandle()
 
 HdPrmanRileyParamListSchema
 HdPrmanRileyShadingNodeSchema::GetParams()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyParamListSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdPrmanRileyShadingNodeSchemaTokens->params));

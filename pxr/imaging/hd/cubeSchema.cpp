@@ -50,7 +50,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdCubeSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdDoubleDataSourceHandle
-HdCubeSchema::GetSize()
+HdCubeSchema::GetSize() const
 {
     return _GetTypedDataSource<HdDoubleDataSource>(
         HdCubeSchemaTokens->size);

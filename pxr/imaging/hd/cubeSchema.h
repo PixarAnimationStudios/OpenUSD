@@ -86,7 +86,7 @@ public:
     /// @{
 
     HD_API
-    HdDoubleDataSourceHandle GetSize(); 
+    HdDoubleDataSourceHandle GetSize() const; 
 
     /// @}
 

@@ -50,21 +50,21 @@ TF_DEFINE_PUBLIC_TOKENS(HdRenderBufferSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdVec3iDataSourceHandle
-HdRenderBufferSchema::GetDimensions()
+HdRenderBufferSchema::GetDimensions() const
 {
     return _GetTypedDataSource<HdVec3iDataSource>(
         HdRenderBufferSchemaTokens->dimensions);
 }
 
 HdFormatDataSourceHandle
-HdRenderBufferSchema::GetFormat()
+HdRenderBufferSchema::GetFormat() const
 {
     return _GetTypedDataSource<HdFormatDataSource>(
         HdRenderBufferSchemaTokens->format);
 }
 
 HdBoolDataSourceHandle
-HdRenderBufferSchema::GetMultiSampled()
+HdRenderBufferSchema::GetMultiSampled() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdRenderBufferSchemaTokens->multiSampled);

@@ -77,10 +77,10 @@ public:
     /// @{
 
     HD_API
-    HdSampledDataSourceHandle GetValue();
+    HdSampledDataSourceHandle GetValue() const;
 
     HD_API
-    HdTokenDataSourceHandle GetColorSpace(); 
+    HdTokenDataSourceHandle GetColorSpace() const; 
 
     /// @} 
 

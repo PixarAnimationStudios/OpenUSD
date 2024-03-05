@@ -50,7 +50,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdInstanceCategoriesSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdVectorDataSourceHandle
-HdInstanceCategoriesSchema::GetCategoriesValues()
+HdInstanceCategoriesSchema::GetCategoriesValues() const
 {
     return _GetTypedDataSource<HdVectorDataSource>(
         HdInstanceCategoriesSchemaTokens->categoriesValues);

@@ -105,7 +105,7 @@ public:
     /// @{
 
     HDAR_API
-    HdResolverContextDataSourceHandle GetResolverContext(); 
+    HdResolverContextDataSourceHandle GetResolverContext() const; 
 
     /// @}
 

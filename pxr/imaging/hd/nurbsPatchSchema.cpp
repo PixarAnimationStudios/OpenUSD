@@ -50,91 +50,91 @@ TF_DEFINE_PUBLIC_TOKENS(HdNurbsPatchSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdIntDataSourceHandle
-HdNurbsPatchSchema::GetUVertexCount()
+HdNurbsPatchSchema::GetUVertexCount() const
 {
     return _GetTypedDataSource<HdIntDataSource>(
         HdNurbsPatchSchemaTokens->uVertexCount);
 }
 
 HdIntDataSourceHandle
-HdNurbsPatchSchema::GetVVertexCount()
+HdNurbsPatchSchema::GetVVertexCount() const
 {
     return _GetTypedDataSource<HdIntDataSource>(
         HdNurbsPatchSchemaTokens->vVertexCount);
 }
 
 HdIntDataSourceHandle
-HdNurbsPatchSchema::GetUOrder()
+HdNurbsPatchSchema::GetUOrder() const
 {
     return _GetTypedDataSource<HdIntDataSource>(
         HdNurbsPatchSchemaTokens->uOrder);
 }
 
 HdIntDataSourceHandle
-HdNurbsPatchSchema::GetVOrder()
+HdNurbsPatchSchema::GetVOrder() const
 {
     return _GetTypedDataSource<HdIntDataSource>(
         HdNurbsPatchSchemaTokens->vOrder);
 }
 
 HdDoubleArrayDataSourceHandle
-HdNurbsPatchSchema::GetUKnots()
+HdNurbsPatchSchema::GetUKnots() const
 {
     return _GetTypedDataSource<HdDoubleArrayDataSource>(
         HdNurbsPatchSchemaTokens->uKnots);
 }
 
 HdDoubleArrayDataSourceHandle
-HdNurbsPatchSchema::GetVKnots()
+HdNurbsPatchSchema::GetVKnots() const
 {
     return _GetTypedDataSource<HdDoubleArrayDataSource>(
         HdNurbsPatchSchemaTokens->vKnots);
 }
 
 HdTokenDataSourceHandle
-HdNurbsPatchSchema::GetUForm()
+HdNurbsPatchSchema::GetUForm() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdNurbsPatchSchemaTokens->uForm);
 }
 
 HdTokenDataSourceHandle
-HdNurbsPatchSchema::GetVForm()
+HdNurbsPatchSchema::GetVForm() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdNurbsPatchSchemaTokens->vForm);
 }
 
 HdVec2dDataSourceHandle
-HdNurbsPatchSchema::GetURange()
+HdNurbsPatchSchema::GetURange() const
 {
     return _GetTypedDataSource<HdVec2dDataSource>(
         HdNurbsPatchSchemaTokens->uRange);
 }
 
 HdVec2dDataSourceHandle
-HdNurbsPatchSchema::GetVRange()
+HdNurbsPatchSchema::GetVRange() const
 {
     return _GetTypedDataSource<HdVec2dDataSource>(
         HdNurbsPatchSchemaTokens->vRange);
 }
 
 HdNurbsPatchTrimCurveSchema
-HdNurbsPatchSchema::GetTrimCurve()
+HdNurbsPatchSchema::GetTrimCurve() const
 {
     return HdNurbsPatchTrimCurveSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdNurbsPatchSchemaTokens->trimCurve));
 }
 
 HdTokenDataSourceHandle
-HdNurbsPatchSchema::GetOrientation()
+HdNurbsPatchSchema::GetOrientation() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdNurbsPatchSchemaTokens->orientation);
 }
 
 HdBoolDataSourceHandle
-HdNurbsPatchSchema::GetDoubleSided()
+HdNurbsPatchSchema::GetDoubleSided() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdNurbsPatchSchemaTokens->doubleSided);

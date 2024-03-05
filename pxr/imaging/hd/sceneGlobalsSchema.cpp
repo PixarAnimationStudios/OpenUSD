@@ -65,7 +65,7 @@ HdSceneGlobalsSchema::GetFromSceneIndex(
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdPathDataSourceHandle
-HdSceneGlobalsSchema::GetActiveRenderSettingsPrim()
+HdSceneGlobalsSchema::GetActiveRenderSettingsPrim() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim);

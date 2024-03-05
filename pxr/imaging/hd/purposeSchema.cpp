@@ -50,7 +50,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdPurposeSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdTokenDataSourceHandle
-HdPurposeSchema::GetPurpose()
+HdPurposeSchema::GetPurpose() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPurposeSchemaTokens->purpose);

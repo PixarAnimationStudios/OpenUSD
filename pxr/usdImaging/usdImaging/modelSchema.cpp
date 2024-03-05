@@ -50,28 +50,28 @@ TF_DEFINE_PUBLIC_TOKENS(UsdImagingModelSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdPathDataSourceHandle
-UsdImagingModelSchema::GetModelPath()
+UsdImagingModelSchema::GetModelPath() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
         UsdImagingModelSchemaTokens->modelPath);
 }
 
 HdAssetPathDataSourceHandle
-UsdImagingModelSchema::GetAssetIdentifier()
+UsdImagingModelSchema::GetAssetIdentifier() const
 {
     return _GetTypedDataSource<HdAssetPathDataSource>(
         UsdImagingModelSchemaTokens->assetIdentifier);
 }
 
 HdStringDataSourceHandle
-UsdImagingModelSchema::GetAssetName()
+UsdImagingModelSchema::GetAssetName() const
 {
     return _GetTypedDataSource<HdStringDataSource>(
         UsdImagingModelSchemaTokens->assetName);
 }
 
 HdStringDataSourceHandle
-UsdImagingModelSchema::GetAssetVersion()
+UsdImagingModelSchema::GetAssetVersion() const
 {
     return _GetTypedDataSource<HdStringDataSource>(
         UsdImagingModelSchemaTokens->assetVersion);

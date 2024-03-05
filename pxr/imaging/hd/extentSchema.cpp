@@ -50,14 +50,14 @@ TF_DEFINE_PUBLIC_TOKENS(HdExtentSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdVec3dDataSourceHandle
-HdExtentSchema::GetMin()
+HdExtentSchema::GetMin() const
 {
     return _GetTypedDataSource<HdVec3dDataSource>(
         HdExtentSchemaTokens->min);
 }
 
 HdVec3dDataSourceHandle
-HdExtentSchema::GetMax()
+HdExtentSchema::GetMax() const
 {
     return _GetTypedDataSource<HdVec3dDataSource>(
         HdExtentSchemaTokens->max);

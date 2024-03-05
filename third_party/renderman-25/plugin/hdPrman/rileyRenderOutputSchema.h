@@ -41,6 +41,7 @@
 #include "hdPrman/rileyParamListSchema.h"
 
 #include "pxr/imaging/hd/schema.h"
+#include "pxr/imaging/hd/version.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
 // --(END CUSTOM CODE: Includes)--
@@ -98,28 +99,76 @@ public:
     /// @{
 
     HDPRMAN_API
-    HdTokenDataSourceHandle GetName();
+    HdTokenDataSourceHandle GetName()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdTokenDataSourceHandle GetType();
+    HdTokenDataSourceHandle GetType()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdTokenDataSourceHandle GetSource();
+    HdTokenDataSourceHandle GetSource()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdTokenDataSourceHandle GetAccumulationRule();
+    HdTokenDataSourceHandle GetAccumulationRule()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdTokenDataSourceHandle GetFilter();
+    HdTokenDataSourceHandle GetFilter()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdVec2fDataSourceHandle GetFilterSize();
+    HdVec2fDataSourceHandle GetFilterSize()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdFloatDataSourceHandle GetRelativePixelVariance();
+    HdFloatDataSourceHandle GetRelativePixelVariance()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdPrmanRileyParamListSchema GetParams(); 
+    HdPrmanRileyParamListSchema GetParams()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+ 
 
     /// @}
 

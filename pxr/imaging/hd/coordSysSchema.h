@@ -86,7 +86,7 @@ public:
     /// @{
 
     HD_API
-    HdTokenDataSourceHandle GetName(); 
+    HdTokenDataSourceHandle GetName() const; 
 
     /// @}
 

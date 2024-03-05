@@ -50,7 +50,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdVisibilitySchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdBoolDataSourceHandle
-HdVisibilitySchema::GetVisibility()
+HdVisibilitySchema::GetVisibility() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdVisibilitySchemaTokens->visibility);

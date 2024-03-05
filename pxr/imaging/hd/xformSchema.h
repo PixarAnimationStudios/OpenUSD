@@ -87,12 +87,12 @@ public:
     /// @{
 
     HD_API
-    HdMatrixDataSourceHandle GetMatrix();
+    HdMatrixDataSourceHandle GetMatrix() const;
 
     /// The "resetXformStack" flag tells consumers that this transform doesn't
     /// inherit from the parent prim's transform.
     HD_API
-    HdBoolDataSourceHandle GetResetXformStack(); 
+    HdBoolDataSourceHandle GetResetXformStack() const; 
 
     /// @}
 

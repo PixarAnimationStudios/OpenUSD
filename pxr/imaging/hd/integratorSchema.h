@@ -87,7 +87,7 @@ public:
     /// @{
 
     HD_API
-    HdMaterialNodeSchema GetResource(); 
+    HdMaterialNodeSchema GetResource() const; 
 
     /// @}
 

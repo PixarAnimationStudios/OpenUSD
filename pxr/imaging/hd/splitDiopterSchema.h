@@ -93,28 +93,28 @@ public:
     /// @{
 
     HD_API
-    HdIntDataSourceHandle GetCount();
+    HdIntDataSourceHandle GetCount() const;
 
     HD_API
-    HdFloatDataSourceHandle GetAngle();
+    HdFloatDataSourceHandle GetAngle() const;
 
     HD_API
-    HdFloatDataSourceHandle GetOffset1();
+    HdFloatDataSourceHandle GetOffset1() const;
 
     HD_API
-    HdFloatDataSourceHandle GetWidth1();
+    HdFloatDataSourceHandle GetWidth1() const;
 
     HD_API
-    HdFloatDataSourceHandle GetFocusDistance1();
+    HdFloatDataSourceHandle GetFocusDistance1() const;
 
     HD_API
-    HdFloatDataSourceHandle GetOffset2();
+    HdFloatDataSourceHandle GetOffset2() const;
 
     HD_API
-    HdFloatDataSourceHandle GetWidth2();
+    HdFloatDataSourceHandle GetWidth2() const;
 
     HD_API
-    HdFloatDataSourceHandle GetFocusDistance2(); 
+    HdFloatDataSourceHandle GetFocusDistance2() const; 
 
     /// @}
 

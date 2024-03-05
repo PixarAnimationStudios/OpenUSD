@@ -94,31 +94,31 @@ public:
     /// @{
 
     HD_API
-    HdIntDataSourceHandle GetRefineLevel();
+    HdIntDataSourceHandle GetRefineLevel() const;
 
     HD_API
-    HdBoolDataSourceHandle GetFlatShadingEnabled();
+    HdBoolDataSourceHandle GetFlatShadingEnabled() const;
 
     HD_API
-    HdBoolDataSourceHandle GetDisplacementEnabled();
+    HdBoolDataSourceHandle GetDisplacementEnabled() const;
 
     HD_API
-    HdBoolDataSourceHandle GetOccludedSelectionShowsThrough();
+    HdBoolDataSourceHandle GetOccludedSelectionShowsThrough() const;
 
     HD_API
-    HdBoolDataSourceHandle GetPointsShadingEnabled();
+    HdBoolDataSourceHandle GetPointsShadingEnabled() const;
 
     HD_API
-    HdBoolDataSourceHandle GetMaterialIsFinal();
+    HdBoolDataSourceHandle GetMaterialIsFinal() const;
 
     HD_API
-    HdTokenDataSourceHandle GetShadingStyle();
+    HdTokenDataSourceHandle GetShadingStyle() const;
 
     HD_API
-    HdTokenArrayDataSourceHandle GetReprSelector();
+    HdTokenArrayDataSourceHandle GetReprSelector() const;
 
     HD_API
-    HdTokenDataSourceHandle GetCullStyle(); 
+    HdTokenDataSourceHandle GetCullStyle() const; 
 
     /// @}
 

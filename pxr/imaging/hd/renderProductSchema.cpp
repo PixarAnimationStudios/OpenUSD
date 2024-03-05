@@ -50,91 +50,91 @@ TF_DEFINE_PUBLIC_TOKENS(HdRenderProductSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdPathDataSourceHandle
-HdRenderProductSchema::GetPath()
+HdRenderProductSchema::GetPath() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdRenderProductSchemaTokens->path);
 }
 
 HdTokenDataSourceHandle
-HdRenderProductSchema::GetType()
+HdRenderProductSchema::GetType() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdRenderProductSchemaTokens->type);
 }
 
 HdTokenDataSourceHandle
-HdRenderProductSchema::GetName()
+HdRenderProductSchema::GetName() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdRenderProductSchemaTokens->name);
 }
 
 HdVec2iDataSourceHandle
-HdRenderProductSchema::GetResolution()
+HdRenderProductSchema::GetResolution() const
 {
     return _GetTypedDataSource<HdVec2iDataSource>(
         HdRenderProductSchemaTokens->resolution);
 }
 
 HdRenderVarVectorSchema
-HdRenderProductSchema::GetRenderVars()
+HdRenderProductSchema::GetRenderVars() const
 {
     return HdRenderVarVectorSchema(_GetTypedDataSource<HdVectorDataSource>(
         HdRenderProductSchemaTokens->renderVars));
 }
 
 HdPathDataSourceHandle
-HdRenderProductSchema::GetCameraPrim()
+HdRenderProductSchema::GetCameraPrim() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdRenderProductSchemaTokens->cameraPrim);
 }
 
 HdFloatDataSourceHandle
-HdRenderProductSchema::GetPixelAspectRatio()
+HdRenderProductSchema::GetPixelAspectRatio() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdRenderProductSchemaTokens->pixelAspectRatio);
 }
 
 HdTokenDataSourceHandle
-HdRenderProductSchema::GetAspectRatioConformPolicy()
+HdRenderProductSchema::GetAspectRatioConformPolicy() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdRenderProductSchemaTokens->aspectRatioConformPolicy);
 }
 
 HdVec2fDataSourceHandle
-HdRenderProductSchema::GetApertureSize()
+HdRenderProductSchema::GetApertureSize() const
 {
     return _GetTypedDataSource<HdVec2fDataSource>(
         HdRenderProductSchemaTokens->apertureSize);
 }
 
 HdVec4fDataSourceHandle
-HdRenderProductSchema::GetDataWindowNDC()
+HdRenderProductSchema::GetDataWindowNDC() const
 {
     return _GetTypedDataSource<HdVec4fDataSource>(
         HdRenderProductSchemaTokens->dataWindowNDC);
 }
 
 HdBoolDataSourceHandle
-HdRenderProductSchema::GetDisableMotionBlur()
+HdRenderProductSchema::GetDisableMotionBlur() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdRenderProductSchemaTokens->disableMotionBlur);
 }
 
 HdBoolDataSourceHandle
-HdRenderProductSchema::GetDisableDepthOfField()
+HdRenderProductSchema::GetDisableDepthOfField() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdRenderProductSchemaTokens->disableDepthOfField);
 }
 
 HdContainerDataSourceHandle
-HdRenderProductSchema::GetNamespacedSettings()
+HdRenderProductSchema::GetNamespacedSettings() const
 {
     return _GetTypedDataSource<HdContainerDataSource>(
         HdRenderProductSchemaTokens->namespacedSettings);

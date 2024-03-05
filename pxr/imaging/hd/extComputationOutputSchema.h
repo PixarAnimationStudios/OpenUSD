@@ -77,10 +77,10 @@ public:
     /// @{
 
     HD_API
-    HdTokenDataSourceHandle GetName();
+    HdTokenDataSourceHandle GetName() const;
 
     HD_API
-    HdTupleTypeDataSourceHandle GetValueType(); 
+    HdTupleTypeDataSourceHandle GetValueType() const; 
 
     /// @} 
 

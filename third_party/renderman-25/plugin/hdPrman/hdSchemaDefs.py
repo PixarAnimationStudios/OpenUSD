@@ -25,7 +25,8 @@
     dict(
         SCHEMA_NAME = 'ALL_SCHEMAS',
         LIBRARY_PATH = 'ext/rmanpkg/25.0/plugin/renderman/plugin/hdPrman',
-        INCLUDE_PATH = 'hdPrman'
+        INCLUDE_PATH = 'hdPrman',
+        VERSION_GUARD_CONST_GETTER = True
     ),
 
     #--------------------------------------------------------------------------

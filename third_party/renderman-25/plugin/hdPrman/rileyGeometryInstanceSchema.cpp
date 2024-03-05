@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyGeometryInstanceSchemaTokens,
 
 HdPathDataSourceHandle
 HdPrmanRileyGeometryInstanceSchema::GetGroupPrototype()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdPrmanRileyGeometryInstanceSchemaTokens->groupPrototype);
@@ -58,6 +63,11 @@ HdPrmanRileyGeometryInstanceSchema::GetGroupPrototype()
 
 HdPathDataSourceHandle
 HdPrmanRileyGeometryInstanceSchema::GetGeoPrototype()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdPrmanRileyGeometryInstanceSchemaTokens->geoPrototype);
@@ -65,6 +75,11 @@ HdPrmanRileyGeometryInstanceSchema::GetGeoPrototype()
 
 HdPathDataSourceHandle
 HdPrmanRileyGeometryInstanceSchema::GetMaterial()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdPrmanRileyGeometryInstanceSchemaTokens->material);
@@ -72,6 +87,11 @@ HdPrmanRileyGeometryInstanceSchema::GetMaterial()
 
 HdPathArrayDataSourceHandle
 HdPrmanRileyGeometryInstanceSchema::GetCoordsys()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathArrayDataSource>(
         HdPrmanRileyGeometryInstanceSchemaTokens->coordsys);
@@ -79,6 +99,11 @@ HdPrmanRileyGeometryInstanceSchema::GetCoordsys()
 
 HdMatrixDataSourceHandle
 HdPrmanRileyGeometryInstanceSchema::GetXform()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdMatrixDataSource>(
         HdPrmanRileyGeometryInstanceSchemaTokens->xform);
@@ -86,6 +111,11 @@ HdPrmanRileyGeometryInstanceSchema::GetXform()
 
 HdPrmanRileyParamListSchema
 HdPrmanRileyGeometryInstanceSchema::GetAttributes()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyParamListSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdPrmanRileyGeometryInstanceSchemaTokens->attributes));

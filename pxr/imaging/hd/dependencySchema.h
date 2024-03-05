@@ -78,13 +78,13 @@ public:
     /// @{
 
     HD_API
-    HdPathDataSourceHandle GetDependedOnPrimPath();
+    HdPathDataSourceHandle GetDependedOnPrimPath() const;
 
     HD_API
-    HdLocatorDataSourceHandle GetDependedOnDataSourceLocator();
+    HdLocatorDataSourceHandle GetDependedOnDataSourceLocator() const;
 
     HD_API
-    HdLocatorDataSourceHandle GetAffectedDataSourceLocator(); 
+    HdLocatorDataSourceHandle GetAffectedDataSourceLocator() const; 
 
     /// @} 
 

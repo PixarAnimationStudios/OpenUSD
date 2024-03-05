@@ -50,7 +50,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrimvarsSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 TfTokenVector
-HdPrimvarsSchema::GetPrimvarNames()
+HdPrimvarsSchema::GetPrimvarNames() const
 {
     if (_container) {
         return _container->GetNames();
@@ -60,7 +60,7 @@ HdPrimvarsSchema::GetPrimvarNames()
 }
 
 HdPrimvarSchema
-HdPrimvarsSchema::GetPrimvar(const TfToken &name)
+HdPrimvarsSchema::GetPrimvar(const TfToken &name) const
 {
     return HdPrimvarSchema(
         _GetTypedDataSource<HdContainerDataSource>(name));

@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyDisplaySchemaTokens,
 
 HdPathDataSourceHandle
 HdPrmanRileyDisplaySchema::GetRenderTarget()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdPrmanRileyDisplaySchemaTokens->renderTarget);
@@ -58,6 +63,11 @@ HdPrmanRileyDisplaySchema::GetRenderTarget()
 
 HdTokenDataSourceHandle
 HdPrmanRileyDisplaySchema::GetName()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrmanRileyDisplaySchemaTokens->name);
@@ -65,6 +75,11 @@ HdPrmanRileyDisplaySchema::GetName()
 
 HdTokenDataSourceHandle
 HdPrmanRileyDisplaySchema::GetDriver()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrmanRileyDisplaySchemaTokens->driver);
@@ -72,6 +87,11 @@ HdPrmanRileyDisplaySchema::GetDriver()
 
 HdPathArrayDataSourceHandle
 HdPrmanRileyDisplaySchema::GetRenderOutputs()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathArrayDataSource>(
         HdPrmanRileyDisplaySchemaTokens->renderOutputs);
@@ -79,6 +99,11 @@ HdPrmanRileyDisplaySchema::GetRenderOutputs()
 
 HdPrmanRileyParamListSchema
 HdPrmanRileyDisplaySchema::GetDriverParams()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyParamListSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdPrmanRileyDisplaySchemaTokens->driverParams));

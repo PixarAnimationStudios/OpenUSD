@@ -50,70 +50,70 @@ TF_DEFINE_PUBLIC_TOKENS(UsdImagingGeomModelSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdTokenDataSourceHandle
-UsdImagingGeomModelSchema::GetDrawMode()
+UsdImagingGeomModelSchema::GetDrawMode() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         UsdImagingGeomModelSchemaTokens->drawMode);
 }
 
 HdBoolDataSourceHandle
-UsdImagingGeomModelSchema::GetApplyDrawMode()
+UsdImagingGeomModelSchema::GetApplyDrawMode() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         UsdImagingGeomModelSchemaTokens->applyDrawMode);
 }
 
 HdVec3fDataSourceHandle
-UsdImagingGeomModelSchema::GetDrawModeColor()
+UsdImagingGeomModelSchema::GetDrawModeColor() const
 {
     return _GetTypedDataSource<HdVec3fDataSource>(
         UsdImagingGeomModelSchemaTokens->drawModeColor);
 }
 
 HdTokenDataSourceHandle
-UsdImagingGeomModelSchema::GetCardGeometry()
+UsdImagingGeomModelSchema::GetCardGeometry() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         UsdImagingGeomModelSchemaTokens->cardGeometry);
 }
 
 HdAssetPathDataSourceHandle
-UsdImagingGeomModelSchema::GetCardTextureXPos()
+UsdImagingGeomModelSchema::GetCardTextureXPos() const
 {
     return _GetTypedDataSource<HdAssetPathDataSource>(
         UsdImagingGeomModelSchemaTokens->cardTextureXPos);
 }
 
 HdAssetPathDataSourceHandle
-UsdImagingGeomModelSchema::GetCardTextureYPos()
+UsdImagingGeomModelSchema::GetCardTextureYPos() const
 {
     return _GetTypedDataSource<HdAssetPathDataSource>(
         UsdImagingGeomModelSchemaTokens->cardTextureYPos);
 }
 
 HdAssetPathDataSourceHandle
-UsdImagingGeomModelSchema::GetCardTextureZPos()
+UsdImagingGeomModelSchema::GetCardTextureZPos() const
 {
     return _GetTypedDataSource<HdAssetPathDataSource>(
         UsdImagingGeomModelSchemaTokens->cardTextureZPos);
 }
 
 HdAssetPathDataSourceHandle
-UsdImagingGeomModelSchema::GetCardTextureXNeg()
+UsdImagingGeomModelSchema::GetCardTextureXNeg() const
 {
     return _GetTypedDataSource<HdAssetPathDataSource>(
         UsdImagingGeomModelSchemaTokens->cardTextureXNeg);
 }
 
 HdAssetPathDataSourceHandle
-UsdImagingGeomModelSchema::GetCardTextureYNeg()
+UsdImagingGeomModelSchema::GetCardTextureYNeg() const
 {
     return _GetTypedDataSource<HdAssetPathDataSource>(
         UsdImagingGeomModelSchemaTokens->cardTextureYNeg);
 }
 
 HdAssetPathDataSourceHandle
-UsdImagingGeomModelSchema::GetCardTextureZNeg()
+UsdImagingGeomModelSchema::GetCardTextureZNeg() const
 {
     return _GetTypedDataSource<HdAssetPathDataSource>(
         UsdImagingGeomModelSchemaTokens->cardTextureZNeg);

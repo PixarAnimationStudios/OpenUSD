@@ -50,7 +50,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdGeomSubsetsSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 TfTokenVector
-HdGeomSubsetsSchema::GetGeomSubsetNames()
+HdGeomSubsetsSchema::GetGeomSubsetNames() const
 {
     if (_container) {
         return _container->GetNames();
@@ -60,7 +60,7 @@ HdGeomSubsetsSchema::GetGeomSubsetNames()
 }
 
 HdGeomSubsetSchema
-HdGeomSubsetsSchema::GetGeomSubset(const TfToken &name)
+HdGeomSubsetsSchema::GetGeomSubset(const TfToken &name) const
 {
     return HdGeomSubsetSchema(
         _GetTypedDataSource<HdContainerDataSource>(name));

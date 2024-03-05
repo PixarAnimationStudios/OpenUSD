@@ -104,18 +104,18 @@ public:
     /// identify the entry: prototypeIndex is the outer index and
     /// instanceIndex the inner index.
     HD_API
-    HdPathDataSourceHandle GetInstancer();
+    HdPathDataSourceHandle GetInstancer() const;
 
     /// Index into vector data source at instancer's instancerTopology's
     /// instanceIndices to find entry corresponding to this instance.
     HD_API
-    HdIntDataSourceHandle GetPrototypeIndex();
+    HdIntDataSourceHandle GetPrototypeIndex() const;
 
     /// Index into int array within the vector data source at instancer's
     /// instancerTopology's instanceIndices to find entry corresponding to
     /// this instance.
     HD_API
-    HdIntDataSourceHandle GetInstanceIndex(); 
+    HdIntDataSourceHandle GetInstanceIndex() const; 
 
     /// @}
 

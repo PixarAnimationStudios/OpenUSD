@@ -80,10 +80,10 @@ public:
     /// @{
 
     HD_API
-    HdTokenDataSourceHandle GetType();
+    HdTokenDataSourceHandle GetType() const;
 
     HD_API
-    HdIntArrayDataSourceHandle GetIndices(); 
+    HdIntArrayDataSourceHandle GetIndices() const; 
 
     /// @} 
 

@@ -50,7 +50,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdMaterialBindingSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdPathDataSourceHandle
-HdMaterialBindingSchema::GetPath()
+HdMaterialBindingSchema::GetPath() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdMaterialBindingSchemaTokens->path);

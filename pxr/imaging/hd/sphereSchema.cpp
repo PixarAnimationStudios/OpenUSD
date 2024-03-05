@@ -50,7 +50,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdSphereSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdDoubleDataSourceHandle
-HdSphereSchema::GetRadius()
+HdSphereSchema::GetRadius() const
 {
     return _GetTypedDataSource<HdDoubleDataSource>(
         HdSphereSchemaTokens->radius);

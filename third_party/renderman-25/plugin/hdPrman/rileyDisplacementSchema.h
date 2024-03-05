@@ -42,6 +42,7 @@
 #include "hdPrman/rileyParamListSchema.h"
 
 #include "pxr/imaging/hd/schema.h"
+#include "pxr/imaging/hd/version.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
 // --(END CUSTOM CODE: Includes)--
@@ -89,10 +90,22 @@ public:
     /// @{
 
     HDPRMAN_API
-    HdPrmanRileyShadingNodeVectorSchema GetDisplacement();
+    HdPrmanRileyShadingNodeVectorSchema GetDisplacement()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdPrmanRileyParamListSchema GetAttributes(); 
+    HdPrmanRileyParamListSchema GetAttributes()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+ 
 
     /// @}
 

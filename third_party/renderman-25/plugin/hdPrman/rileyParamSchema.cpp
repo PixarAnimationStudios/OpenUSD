@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyParamSchemaTokens,
 
 HdSampledDataSourceHandle
 HdPrmanRileyParamSchema::GetValue()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdSampledDataSource>(
         HdPrmanRileyParamSchemaTokens->value);
@@ -58,6 +63,11 @@ HdPrmanRileyParamSchema::GetValue()
 
 HdTokenDataSourceHandle
 HdPrmanRileyParamSchema::GetRole()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrmanRileyParamSchemaTokens->role);

@@ -50,7 +50,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdCoordSysBindingSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 TfTokenVector
-HdCoordSysBindingSchema::GetCoordSysBindingNames()
+HdCoordSysBindingSchema::GetCoordSysBindingNames() const
 {
     if (_container) {
         return _container->GetNames();
@@ -60,7 +60,7 @@ HdCoordSysBindingSchema::GetCoordSysBindingNames()
 }
 
 HdPathDataSourceHandle
-HdCoordSysBindingSchema::GetCoordSysBinding(const TfToken &name)
+HdCoordSysBindingSchema::GetCoordSysBinding(const TfToken &name) const
 {
     return _GetTypedDataSource<HdPathDataSource>(name);
 }

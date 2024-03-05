@@ -50,21 +50,21 @@ TF_DEFINE_PUBLIC_TOKENS(HdDependencySchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdPathDataSourceHandle
-HdDependencySchema::GetDependedOnPrimPath()
+HdDependencySchema::GetDependedOnPrimPath() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdDependencySchemaTokens->dependedOnPrimPath);
 }
 
 HdLocatorDataSourceHandle
-HdDependencySchema::GetDependedOnDataSourceLocator()
+HdDependencySchema::GetDependedOnDataSourceLocator() const
 {
     return _GetTypedDataSource<HdLocatorDataSource>(
         HdDependencySchemaTokens->dependedOnDataSourceLocator);
 }
 
 HdLocatorDataSourceHandle
-HdDependencySchema::GetAffectedDataSourceLocator()
+HdDependencySchema::GetAffectedDataSourceLocator() const
 {
     return _GetTypedDataSource<HdLocatorDataSource>(
         HdDependencySchemaTokens->affectedDataSourceLocator);

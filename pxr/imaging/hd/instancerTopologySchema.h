@@ -135,16 +135,16 @@ public:
     /// @{
 
     HD_API
-    HdPathArrayDataSourceHandle GetPrototypes();
+    HdPathArrayDataSourceHandle GetPrototypes() const;
 
     HD_API
-    HdIntArrayVectorSchema GetInstanceIndices();
+    HdIntArrayVectorSchema GetInstanceIndices() const;
 
     HD_API
-    HdBoolArrayDataSourceHandle GetMask();
+    HdBoolArrayDataSourceHandle GetMask() const;
 
     HD_API
-    HdPathArrayDataSourceHandle GetInstanceLocations(); 
+    HdPathArrayDataSourceHandle GetInstanceLocations() const; 
 
     /// @}
 

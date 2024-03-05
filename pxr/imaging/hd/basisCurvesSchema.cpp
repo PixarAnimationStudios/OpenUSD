@@ -50,14 +50,14 @@ TF_DEFINE_PUBLIC_TOKENS(HdBasisCurvesSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdBasisCurvesTopologySchema
-HdBasisCurvesSchema::GetTopology()
+HdBasisCurvesSchema::GetTopology() const
 {
     return HdBasisCurvesTopologySchema(_GetTypedDataSource<HdContainerDataSource>(
         HdBasisCurvesSchemaTokens->topology));
 }
 
 HdGeomSubsetsSchema
-HdBasisCurvesSchema::GetGeomSubsets()
+HdBasisCurvesSchema::GetGeomSubsets() const
 {
     return HdGeomSubsetsSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdBasisCurvesSchemaTokens->geomSubsets));

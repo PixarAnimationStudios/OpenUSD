@@ -50,14 +50,14 @@ TF_DEFINE_PUBLIC_TOKENS(HdGeomSubsetSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdTokenDataSourceHandle
-HdGeomSubsetSchema::GetType()
+HdGeomSubsetSchema::GetType() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdGeomSubsetSchemaTokens->type);
 }
 
 HdIntArrayDataSourceHandle
-HdGeomSubsetSchema::GetIndices()
+HdGeomSubsetSchema::GetIndices() const
 {
     return _GetTypedDataSource<HdIntArrayDataSource>(
         HdGeomSubsetSchemaTokens->indices);

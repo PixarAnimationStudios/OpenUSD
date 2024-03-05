@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyDisplacementSchemaTokens,
 
 HdPrmanRileyShadingNodeVectorSchema
 HdPrmanRileyDisplacementSchema::GetDisplacement()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyShadingNodeVectorSchema(_GetTypedDataSource<HdVectorDataSource>(
         HdPrmanRileyDisplacementSchemaTokens->displacement));
@@ -58,6 +63,11 @@ HdPrmanRileyDisplacementSchema::GetDisplacement()
 
 HdPrmanRileyParamListSchema
 HdPrmanRileyDisplacementSchema::GetAttributes()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyParamListSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdPrmanRileyDisplacementSchemaTokens->attributes));

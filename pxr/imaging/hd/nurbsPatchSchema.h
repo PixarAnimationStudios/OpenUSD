@@ -104,43 +104,43 @@ public:
     /// @{
 
     HD_API
-    HdIntDataSourceHandle GetUVertexCount();
+    HdIntDataSourceHandle GetUVertexCount() const;
 
     HD_API
-    HdIntDataSourceHandle GetVVertexCount();
+    HdIntDataSourceHandle GetVVertexCount() const;
 
     HD_API
-    HdIntDataSourceHandle GetUOrder();
+    HdIntDataSourceHandle GetUOrder() const;
 
     HD_API
-    HdIntDataSourceHandle GetVOrder();
+    HdIntDataSourceHandle GetVOrder() const;
 
     HD_API
-    HdDoubleArrayDataSourceHandle GetUKnots();
+    HdDoubleArrayDataSourceHandle GetUKnots() const;
 
     HD_API
-    HdDoubleArrayDataSourceHandle GetVKnots();
+    HdDoubleArrayDataSourceHandle GetVKnots() const;
 
     HD_API
-    HdTokenDataSourceHandle GetUForm();
+    HdTokenDataSourceHandle GetUForm() const;
 
     HD_API
-    HdTokenDataSourceHandle GetVForm();
+    HdTokenDataSourceHandle GetVForm() const;
 
     HD_API
-    HdVec2dDataSourceHandle GetURange();
+    HdVec2dDataSourceHandle GetURange() const;
 
     HD_API
-    HdVec2dDataSourceHandle GetVRange();
+    HdVec2dDataSourceHandle GetVRange() const;
 
     HD_API
-    HdNurbsPatchTrimCurveSchema GetTrimCurve();
+    HdNurbsPatchTrimCurveSchema GetTrimCurve() const;
 
     HD_API
-    HdTokenDataSourceHandle GetOrientation();
+    HdTokenDataSourceHandle GetOrientation() const;
 
     HD_API
-    HdBoolDataSourceHandle GetDoubleSided(); 
+    HdBoolDataSourceHandle GetDoubleSided() const; 
 
     /// @}
 

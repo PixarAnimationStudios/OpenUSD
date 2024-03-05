@@ -50,7 +50,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdRenderCapabilitiesSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdBoolDataSourceHandle
-HdRenderCapabilitiesSchema::GetMotionBlur()
+HdRenderCapabilitiesSchema::GetMotionBlur() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdRenderCapabilitiesSchemaTokens->motionBlur);

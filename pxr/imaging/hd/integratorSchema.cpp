@@ -50,7 +50,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdIntegratorSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdMaterialNodeSchema
-HdIntegratorSchema::GetResource()
+HdIntegratorSchema::GetResource() const
 {
     return HdMaterialNodeSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdIntegratorSchemaTokens->resource));

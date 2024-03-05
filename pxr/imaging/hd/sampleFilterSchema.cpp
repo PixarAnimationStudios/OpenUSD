@@ -50,7 +50,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdSampleFilterSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdMaterialNodeSchema
-HdSampleFilterSchema::GetResource()
+HdSampleFilterSchema::GetResource() const
 {
     return HdMaterialNodeSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdSampleFilterSchemaTokens->resource));

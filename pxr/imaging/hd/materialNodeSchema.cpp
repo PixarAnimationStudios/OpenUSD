@@ -50,35 +50,35 @@ TF_DEFINE_PUBLIC_TOKENS(HdMaterialNodeSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdMaterialNodeParameterContainerSchema
-HdMaterialNodeSchema::GetParameters()
+HdMaterialNodeSchema::GetParameters() const
 {
     return HdMaterialNodeParameterContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdMaterialNodeSchemaTokens->parameters));
 }
 
 HdMaterialConnectionVectorContainerSchema
-HdMaterialNodeSchema::GetInputConnections()
+HdMaterialNodeSchema::GetInputConnections() const
 {
     return HdMaterialConnectionVectorContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdMaterialNodeSchemaTokens->inputConnections));
 }
 
 HdTokenDataSourceHandle
-HdMaterialNodeSchema::GetNodeIdentifier()
+HdMaterialNodeSchema::GetNodeIdentifier() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdMaterialNodeSchemaTokens->nodeIdentifier);
 }
 
 HdContainerDataSourceHandle
-HdMaterialNodeSchema::GetRenderContextNodeIdentifiers()
+HdMaterialNodeSchema::GetRenderContextNodeIdentifiers() const
 {
     return _GetTypedDataSource<HdContainerDataSource>(
         HdMaterialNodeSchemaTokens->renderContextNodeIdentifiers);
 }
 
 HdContainerDataSourceHandle
-HdMaterialNodeSchema::GetNodeTypeInfo()
+HdMaterialNodeSchema::GetNodeTypeInfo() const
 {
     return _GetTypedDataSource<HdContainerDataSource>(
         HdMaterialNodeSchemaTokens->nodeTypeInfo);

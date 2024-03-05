@@ -102,43 +102,43 @@ public:
     /// @{
 
     HD_API
-    HdPathDataSourceHandle GetPath();
+    HdPathDataSourceHandle GetPath() const;
 
     HD_API
-    HdTokenDataSourceHandle GetType();
+    HdTokenDataSourceHandle GetType() const;
 
     HD_API
-    HdTokenDataSourceHandle GetName();
+    HdTokenDataSourceHandle GetName() const;
 
     HD_API
-    HdVec2iDataSourceHandle GetResolution();
+    HdVec2iDataSourceHandle GetResolution() const;
 
     HD_API
-    HdRenderVarVectorSchema GetRenderVars();
+    HdRenderVarVectorSchema GetRenderVars() const;
 
     HD_API
-    HdPathDataSourceHandle GetCameraPrim();
+    HdPathDataSourceHandle GetCameraPrim() const;
 
     HD_API
-    HdFloatDataSourceHandle GetPixelAspectRatio();
+    HdFloatDataSourceHandle GetPixelAspectRatio() const;
 
     HD_API
-    HdTokenDataSourceHandle GetAspectRatioConformPolicy();
+    HdTokenDataSourceHandle GetAspectRatioConformPolicy() const;
 
     HD_API
-    HdVec2fDataSourceHandle GetApertureSize();
+    HdVec2fDataSourceHandle GetApertureSize() const;
 
     HD_API
-    HdVec4fDataSourceHandle GetDataWindowNDC();
+    HdVec4fDataSourceHandle GetDataWindowNDC() const;
 
     HD_API
-    HdBoolDataSourceHandle GetDisableMotionBlur();
+    HdBoolDataSourceHandle GetDisableMotionBlur() const;
 
     HD_API
-    HdBoolDataSourceHandle GetDisableDepthOfField();
+    HdBoolDataSourceHandle GetDisableDepthOfField() const;
 
     HD_API
-    HdContainerDataSourceHandle GetNamespacedSettings(); 
+    HdContainerDataSourceHandle GetNamespacedSettings() const; 
 
     /// @}
 

@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyCameraSchemaTokens,
 
 HdTokenDataSourceHandle
 HdPrmanRileyCameraSchema::GetName()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrmanRileyCameraSchemaTokens->name);
@@ -58,6 +63,11 @@ HdPrmanRileyCameraSchema::GetName()
 
 HdPrmanRileyShadingNodeSchema
 HdPrmanRileyCameraSchema::GetProjection()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyShadingNodeSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdPrmanRileyCameraSchemaTokens->projection));
@@ -65,6 +75,11 @@ HdPrmanRileyCameraSchema::GetProjection()
 
 HdMatrixDataSourceHandle
 HdPrmanRileyCameraSchema::GetXform()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdMatrixDataSource>(
         HdPrmanRileyCameraSchemaTokens->xform);
@@ -72,6 +87,11 @@ HdPrmanRileyCameraSchema::GetXform()
 
 HdPrmanRileyParamListSchema
 HdPrmanRileyCameraSchema::GetProperties()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyParamListSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdPrmanRileyCameraSchemaTokens->properties));

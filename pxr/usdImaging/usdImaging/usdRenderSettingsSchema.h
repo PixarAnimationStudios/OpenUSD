@@ -97,40 +97,40 @@ public:
     /// @{
 
     USDIMAGING_API
-    HdVec2iDataSourceHandle GetResolution();
+    HdVec2iDataSourceHandle GetResolution() const;
 
     USDIMAGING_API
-    HdFloatDataSourceHandle GetPixelAspectRatio();
+    HdFloatDataSourceHandle GetPixelAspectRatio() const;
 
     USDIMAGING_API
-    HdTokenDataSourceHandle GetAspectRatioConformPolicy();
+    HdTokenDataSourceHandle GetAspectRatioConformPolicy() const;
 
     USDIMAGING_API
-    HdVec4fDataSourceHandle GetDataWindowNDC();
+    HdVec4fDataSourceHandle GetDataWindowNDC() const;
 
     USDIMAGING_API
-    HdBoolDataSourceHandle GetDisableMotionBlur();
+    HdBoolDataSourceHandle GetDisableMotionBlur() const;
 
     USDIMAGING_API
-    HdBoolDataSourceHandle GetDisableDepthOfField();
+    HdBoolDataSourceHandle GetDisableDepthOfField() const;
 
     USDIMAGING_API
-    HdPathDataSourceHandle GetCamera();
+    HdPathDataSourceHandle GetCamera() const;
 
     USDIMAGING_API
-    HdTokenArrayDataSourceHandle GetIncludedPurposes();
+    HdTokenArrayDataSourceHandle GetIncludedPurposes() const;
 
     USDIMAGING_API
-    HdTokenArrayDataSourceHandle GetMaterialBindingPurposes();
+    HdTokenArrayDataSourceHandle GetMaterialBindingPurposes() const;
 
     USDIMAGING_API
-    HdTokenDataSourceHandle GetRenderingColorSpace();
+    HdTokenDataSourceHandle GetRenderingColorSpace() const;
 
     USDIMAGING_API
-    HdPathArrayDataSourceHandle GetProducts();
+    HdPathArrayDataSourceHandle GetProducts() const;
 
     USDIMAGING_API
-    HdContainerDataSourceHandle GetNamespacedSettings(); 
+    HdContainerDataSourceHandle GetNamespacedSettings() const; 
 
     /// @}
 

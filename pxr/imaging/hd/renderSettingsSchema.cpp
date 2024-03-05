@@ -50,49 +50,49 @@ TF_DEFINE_PUBLIC_TOKENS(HdRenderSettingsSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdContainerDataSourceHandle
-HdRenderSettingsSchema::GetNamespacedSettings()
+HdRenderSettingsSchema::GetNamespacedSettings() const
 {
     return _GetTypedDataSource<HdContainerDataSource>(
         HdRenderSettingsSchemaTokens->namespacedSettings);
 }
 
 HdBoolDataSourceHandle
-HdRenderSettingsSchema::GetActive()
+HdRenderSettingsSchema::GetActive() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdRenderSettingsSchemaTokens->active);
 }
 
 HdRenderProductVectorSchema
-HdRenderSettingsSchema::GetRenderProducts()
+HdRenderSettingsSchema::GetRenderProducts() const
 {
     return HdRenderProductVectorSchema(_GetTypedDataSource<HdVectorDataSource>(
         HdRenderSettingsSchemaTokens->renderProducts));
 }
 
 HdTokenArrayDataSourceHandle
-HdRenderSettingsSchema::GetIncludedPurposes()
+HdRenderSettingsSchema::GetIncludedPurposes() const
 {
     return _GetTypedDataSource<HdTokenArrayDataSource>(
         HdRenderSettingsSchemaTokens->includedPurposes);
 }
 
 HdTokenArrayDataSourceHandle
-HdRenderSettingsSchema::GetMaterialBindingPurposes()
+HdRenderSettingsSchema::GetMaterialBindingPurposes() const
 {
     return _GetTypedDataSource<HdTokenArrayDataSource>(
         HdRenderSettingsSchemaTokens->materialBindingPurposes);
 }
 
 HdTokenDataSourceHandle
-HdRenderSettingsSchema::GetRenderingColorSpace()
+HdRenderSettingsSchema::GetRenderingColorSpace() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdRenderSettingsSchemaTokens->renderingColorSpace);
 }
 
 HdVec2dDataSourceHandle
-HdRenderSettingsSchema::GetShutterInterval()
+HdRenderSettingsSchema::GetShutterInterval() const
 {
     return _GetTypedDataSource<HdVec2dDataSource>(
         HdRenderSettingsSchemaTokens->shutterInterval);

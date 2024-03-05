@@ -50,35 +50,35 @@ TF_DEFINE_PUBLIC_TOKENS(HdMeshSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdMeshTopologySchema
-HdMeshSchema::GetTopology()
+HdMeshSchema::GetTopology() const
 {
     return HdMeshTopologySchema(_GetTypedDataSource<HdContainerDataSource>(
         HdMeshSchemaTokens->topology));
 }
 
 HdTokenDataSourceHandle
-HdMeshSchema::GetSubdivisionScheme()
+HdMeshSchema::GetSubdivisionScheme() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdMeshSchemaTokens->subdivisionScheme);
 }
 
 HdSubdivisionTagsSchema
-HdMeshSchema::GetSubdivisionTags()
+HdMeshSchema::GetSubdivisionTags() const
 {
     return HdSubdivisionTagsSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdMeshSchemaTokens->subdivisionTags));
 }
 
 HdGeomSubsetsSchema
-HdMeshSchema::GetGeomSubsets()
+HdMeshSchema::GetGeomSubsets() const
 {
     return HdGeomSubsetsSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdMeshSchemaTokens->geomSubsets));
 }
 
 HdBoolDataSourceHandle
-HdMeshSchema::GetDoubleSided()
+HdMeshSchema::GetDoubleSided() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdMeshSchemaTokens->doubleSided);

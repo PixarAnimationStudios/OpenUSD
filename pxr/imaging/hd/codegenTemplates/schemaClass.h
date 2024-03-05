@@ -46,6 +46,9 @@
 {%- endif %}
 
 #include "pxr/imaging/hd/schema.h"
+{%- if VERSION_GUARD_CONST_GETTER %}
+#include "pxr/imaging/hd/version.h"
+{%- endif %}
 
 // --(BEGIN CUSTOM CODE: Includes)--
 {%- if 'Includes' in CUSTOM_CODE_HEADER %}
@@ -133,14 +136,31 @@ public:
 {%- if opt_dict.get('GETTER', True) %}
 
     {{ LIBRARY_API }}
-    TfTokenVector Get{{ name | capitalizeFirst }}Names();
+    TfTokenVector Get{{ name | capitalizeFirst }}Names()
+{%- if VERSION_GUARD_CONST_GETTER %}
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+{% else %} const;
+{% endif -%} {# if VERSION_GUARD_CONST_GETTER #}
+
 {%- if 'DOC' in opt_dict -%}
 {%- for l in (opt_dict['DOC'].split()|join(' ')|wordwrap(width=70)).split('\n') %}
     /// {{l}}
 {%- endfor -%}
 {%- endif %}
     {{ LIBRARY_API }}
-    {{ type_name}}{% if not type_name.endswith('Schema') %}Handle{% endif %} Get{{ name|capitalizeFirst }}(const TfToken &name);
+    {{ type_name}}{% if not type_name.endswith('Schema') %}Handle{% endif %} Get{{ name|capitalizeFirst }}(const TfToken &name)
+{%- if VERSION_GUARD_CONST_GETTER %}
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+{% else %} const;
+{%- endif -%} {# if VERSION_GUARD_CONST_GETTER #}
 {%- endif -%} {# if opt_dict.get('GETTER', True) #}
 {%- endif -%} {# if GENERIC_MEMBER is defined #}
 
@@ -153,7 +173,15 @@ public:
 {%- endfor -%}
 {%- endif %}
     {{ LIBRARY_API }}
-    {{ type_name}}{% if not type_name.endswith('Schema') %}Handle{% endif %} Get{{ name|capitalizeFirst }}();
+    {{ type_name}}{% if not type_name.endswith('Schema') %}Handle{% endif %} Get{{ name|capitalizeFirst }}()
+{%- if VERSION_GUARD_CONST_GETTER %}
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+{% else %} const;
+{%- endif -%} {# if VERSION_GUARD_CONST_GETTER #}
 {%- endif -%} {# if opt_dict.get('GETTER', True) #}
 {%- endfor -%}
 {%- endif %} {# if MEMBERS is defined #}

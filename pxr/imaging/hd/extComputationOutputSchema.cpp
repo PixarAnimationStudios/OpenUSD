@@ -50,14 +50,14 @@ TF_DEFINE_PUBLIC_TOKENS(HdExtComputationOutputSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdTokenDataSourceHandle
-HdExtComputationOutputSchema::GetName()
+HdExtComputationOutputSchema::GetName() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdExtComputationOutputSchemaTokens->name);
 }
 
 HdTupleTypeDataSourceHandle
-HdExtComputationOutputSchema::GetValueType()
+HdExtComputationOutputSchema::GetValueType() const
 {
     return _GetTypedDataSource<HdTupleTypeDataSource>(
         HdExtComputationOutputSchemaTokens->valueType);

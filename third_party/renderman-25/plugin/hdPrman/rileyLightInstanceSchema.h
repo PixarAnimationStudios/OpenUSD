@@ -41,6 +41,7 @@
 #include "hdPrman/rileyParamListSchema.h"
 
 #include "pxr/imaging/hd/schema.h"
+#include "pxr/imaging/hd/version.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
 // --(END CUSTOM CODE: Includes)--
@@ -93,25 +94,67 @@ public:
     /// @{
 
     HDPRMAN_API
-    HdPathDataSourceHandle GetGroupPrototype();
+    HdPathDataSourceHandle GetGroupPrototype()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdPathDataSourceHandle GetGeoPrototype();
+    HdPathDataSourceHandle GetGeoPrototype()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdPathDataSourceHandle GetMaterial();
+    HdPathDataSourceHandle GetMaterial()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdPathDataSourceHandle GetLightShader();
+    HdPathDataSourceHandle GetLightShader()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdPathArrayDataSourceHandle GetCoordsys();
+    HdPathArrayDataSourceHandle GetCoordsys()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdMatrixDataSourceHandle GetXform();
+    HdMatrixDataSourceHandle GetXform()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+
 
     HDPRMAN_API
-    HdPrmanRileyParamListSchema GetAttributes(); 
+    HdPrmanRileyParamListSchema GetAttributes()
+#if HD_API_VERSION >= 66
+                                            const;
+#else
+                                                 ;
+#endif
+ 
 
     /// @}
 

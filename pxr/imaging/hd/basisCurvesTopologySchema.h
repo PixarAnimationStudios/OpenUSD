@@ -90,19 +90,19 @@ public:
     /// @{
 
     HD_API
-    HdIntArrayDataSourceHandle GetCurveVertexCounts();
+    HdIntArrayDataSourceHandle GetCurveVertexCounts() const;
 
     HD_API
-    HdIntArrayDataSourceHandle GetCurveIndices();
+    HdIntArrayDataSourceHandle GetCurveIndices() const;
 
     HD_API
-    HdTokenDataSourceHandle GetBasis();
+    HdTokenDataSourceHandle GetBasis() const;
 
     HD_API
-    HdTokenDataSourceHandle GetType();
+    HdTokenDataSourceHandle GetType() const;
 
     HD_API
-    HdTokenDataSourceHandle GetWrap(); 
+    HdTokenDataSourceHandle GetWrap() const; 
 
     /// @}
 

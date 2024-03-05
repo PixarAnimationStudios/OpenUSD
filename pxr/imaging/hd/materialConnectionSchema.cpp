@@ -50,14 +50,14 @@ TF_DEFINE_PUBLIC_TOKENS(HdMaterialConnectionSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdTokenDataSourceHandle
-HdMaterialConnectionSchema::GetUpstreamNodePath()
+HdMaterialConnectionSchema::GetUpstreamNodePath() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdMaterialConnectionSchemaTokens->upstreamNodePath);
 }
 
 HdTokenDataSourceHandle
-HdMaterialConnectionSchema::GetUpstreamNodeOutputName()
+HdMaterialConnectionSchema::GetUpstreamNodeOutputName() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdMaterialConnectionSchemaTokens->upstreamNodeOutputName);

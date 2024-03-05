@@ -50,7 +50,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdVolumeFieldBindingSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 TfTokenVector
-HdVolumeFieldBindingSchema::GetVolumeFieldBindingNames()
+HdVolumeFieldBindingSchema::GetVolumeFieldBindingNames() const
 {
     if (_container) {
         return _container->GetNames();
@@ -60,7 +60,7 @@ HdVolumeFieldBindingSchema::GetVolumeFieldBindingNames()
 }
 
 HdPathDataSourceHandle
-HdVolumeFieldBindingSchema::GetVolumeFieldBinding(const TfToken &name)
+HdVolumeFieldBindingSchema::GetVolumeFieldBinding(const TfToken &name) const
 {
     return _GetTypedDataSource<HdPathDataSource>(name);
 }

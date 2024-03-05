@@ -76,7 +76,7 @@ public:
     /// @{
 
     HD_API
-    HdPathDataSourceHandle GetPath(); 
+    HdPathDataSourceHandle GetPath() const; 
 
     /// @} 
 

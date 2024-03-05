@@ -114,28 +114,28 @@ HdInstancerTopologySchema::ComputeInstanceIndicesForProto(SdfPath const &path)
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdPathArrayDataSourceHandle
-HdInstancerTopologySchema::GetPrototypes()
+HdInstancerTopologySchema::GetPrototypes() const
 {
     return _GetTypedDataSource<HdPathArrayDataSource>(
         HdInstancerTopologySchemaTokens->prototypes);
 }
 
 HdIntArrayVectorSchema
-HdInstancerTopologySchema::GetInstanceIndices()
+HdInstancerTopologySchema::GetInstanceIndices() const
 {
     return HdIntArrayVectorSchema(_GetTypedDataSource<HdVectorDataSource>(
         HdInstancerTopologySchemaTokens->instanceIndices));
 }
 
 HdBoolArrayDataSourceHandle
-HdInstancerTopologySchema::GetMask()
+HdInstancerTopologySchema::GetMask() const
 {
     return _GetTypedDataSource<HdBoolArrayDataSource>(
         HdInstancerTopologySchemaTokens->mask);
 }
 
 HdPathArrayDataSourceHandle
-HdInstancerTopologySchema::GetInstanceLocations()
+HdInstancerTopologySchema::GetInstanceLocations() const
 {
     return _GetTypedDataSource<HdPathArrayDataSource>(
         HdInstancerTopologySchemaTokens->instanceLocations);

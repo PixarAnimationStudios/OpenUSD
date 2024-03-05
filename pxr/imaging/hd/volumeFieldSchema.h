@@ -90,19 +90,19 @@ public:
     /// @{
 
     HD_API
-    HdAssetPathDataSourceHandle GetFilePath();
+    HdAssetPathDataSourceHandle GetFilePath() const;
 
     HD_API
-    HdTokenDataSourceHandle GetFieldName();
+    HdTokenDataSourceHandle GetFieldName() const;
 
     HD_API
-    HdIntDataSourceHandle GetFieldIndex();
+    HdIntDataSourceHandle GetFieldIndex() const;
 
     HD_API
-    HdTokenDataSourceHandle GetFieldDataType();
+    HdTokenDataSourceHandle GetFieldDataType() const;
 
     HD_API
-    HdTokenDataSourceHandle GetVectorDataRoleHint(); 
+    HdTokenDataSourceHandle GetVectorDataRoleHint() const; 
 
     /// @}
 

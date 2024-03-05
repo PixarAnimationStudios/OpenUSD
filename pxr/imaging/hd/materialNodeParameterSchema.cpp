@@ -50,14 +50,14 @@ TF_DEFINE_PUBLIC_TOKENS(HdMaterialNodeParameterSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdSampledDataSourceHandle
-HdMaterialNodeParameterSchema::GetValue()
+HdMaterialNodeParameterSchema::GetValue() const
 {
     return _GetTypedDataSource<HdSampledDataSource>(
         HdMaterialNodeParameterSchemaTokens->value);
 }
 
 HdTokenDataSourceHandle
-HdMaterialNodeParameterSchema::GetColorSpace()
+HdMaterialNodeParameterSchema::GetColorSpace() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdMaterialNodeParameterSchemaTokens->colorSpace);

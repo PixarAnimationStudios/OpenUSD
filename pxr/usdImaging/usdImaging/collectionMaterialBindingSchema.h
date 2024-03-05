@@ -88,13 +88,13 @@ public:
     /// @{
 
     USDIMAGING_API
-    HdPathDataSourceHandle GetCollectionPath();
+    HdPathDataSourceHandle GetCollectionPath() const;
 
     USDIMAGING_API
-    HdPathDataSourceHandle GetMaterialPath();
+    HdPathDataSourceHandle GetMaterialPath() const;
 
     USDIMAGING_API
-    HdTokenDataSourceHandle GetBindingStrength(); 
+    HdTokenDataSourceHandle GetBindingStrength() const; 
 
     /// @}
 

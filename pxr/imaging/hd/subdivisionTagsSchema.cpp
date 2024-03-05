@@ -51,56 +51,56 @@ TF_DEFINE_PUBLIC_TOKENS(HdSubdivisionTagsSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdTokenDataSourceHandle
-HdSubdivisionTagsSchema::GetFaceVaryingLinearInterpolation()
+HdSubdivisionTagsSchema::GetFaceVaryingLinearInterpolation() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdSubdivisionTagsSchemaTokens->faceVaryingLinearInterpolation);
 }
 
 HdTokenDataSourceHandle
-HdSubdivisionTagsSchema::GetInterpolateBoundary()
+HdSubdivisionTagsSchema::GetInterpolateBoundary() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdSubdivisionTagsSchemaTokens->interpolateBoundary);
 }
 
 HdTokenDataSourceHandle
-HdSubdivisionTagsSchema::GetTriangleSubdivisionRule()
+HdSubdivisionTagsSchema::GetTriangleSubdivisionRule() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdSubdivisionTagsSchemaTokens->triangleSubdivisionRule);
 }
 
 HdIntArrayDataSourceHandle
-HdSubdivisionTagsSchema::GetCornerIndices()
+HdSubdivisionTagsSchema::GetCornerIndices() const
 {
     return _GetTypedDataSource<HdIntArrayDataSource>(
         HdSubdivisionTagsSchemaTokens->cornerIndices);
 }
 
 HdFloatArrayDataSourceHandle
-HdSubdivisionTagsSchema::GetCornerSharpnesses()
+HdSubdivisionTagsSchema::GetCornerSharpnesses() const
 {
     return _GetTypedDataSource<HdFloatArrayDataSource>(
         HdSubdivisionTagsSchemaTokens->cornerSharpnesses);
 }
 
 HdIntArrayDataSourceHandle
-HdSubdivisionTagsSchema::GetCreaseIndices()
+HdSubdivisionTagsSchema::GetCreaseIndices() const
 {
     return _GetTypedDataSource<HdIntArrayDataSource>(
         HdSubdivisionTagsSchemaTokens->creaseIndices);
 }
 
 HdIntArrayDataSourceHandle
-HdSubdivisionTagsSchema::GetCreaseLengths()
+HdSubdivisionTagsSchema::GetCreaseLengths() const
 {
     return _GetTypedDataSource<HdIntArrayDataSource>(
         HdSubdivisionTagsSchemaTokens->creaseLengths);
 }
 
 HdFloatArrayDataSourceHandle
-HdSubdivisionTagsSchema::GetCreaseSharpnesses()
+HdSubdivisionTagsSchema::GetCreaseSharpnesses() const
 {
     return _GetTypedDataSource<HdFloatArrayDataSource>(
         HdSubdivisionTagsSchemaTokens->creaseSharpnesses);

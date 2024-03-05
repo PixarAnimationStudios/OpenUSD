@@ -51,56 +51,56 @@ TF_DEFINE_PUBLIC_TOKENS(HdSplitDiopterSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdIntDataSourceHandle
-HdSplitDiopterSchema::GetCount()
+HdSplitDiopterSchema::GetCount() const
 {
     return _GetTypedDataSource<HdIntDataSource>(
         HdSplitDiopterSchemaTokens->count);
 }
 
 HdFloatDataSourceHandle
-HdSplitDiopterSchema::GetAngle()
+HdSplitDiopterSchema::GetAngle() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdSplitDiopterSchemaTokens->angle);
 }
 
 HdFloatDataSourceHandle
-HdSplitDiopterSchema::GetOffset1()
+HdSplitDiopterSchema::GetOffset1() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdSplitDiopterSchemaTokens->offset1);
 }
 
 HdFloatDataSourceHandle
-HdSplitDiopterSchema::GetWidth1()
+HdSplitDiopterSchema::GetWidth1() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdSplitDiopterSchemaTokens->width1);
 }
 
 HdFloatDataSourceHandle
-HdSplitDiopterSchema::GetFocusDistance1()
+HdSplitDiopterSchema::GetFocusDistance1() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdSplitDiopterSchemaTokens->focusDistance1);
 }
 
 HdFloatDataSourceHandle
-HdSplitDiopterSchema::GetOffset2()
+HdSplitDiopterSchema::GetOffset2() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdSplitDiopterSchemaTokens->offset2);
 }
 
 HdFloatDataSourceHandle
-HdSplitDiopterSchema::GetWidth2()
+HdSplitDiopterSchema::GetWidth2() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdSplitDiopterSchemaTokens->width2);
 }
 
 HdFloatDataSourceHandle
-HdSplitDiopterSchema::GetFocusDistance2()
+HdSplitDiopterSchema::GetFocusDistance2() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdSplitDiopterSchemaTokens->focusDistance2);

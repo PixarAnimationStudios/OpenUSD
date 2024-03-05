@@ -92,25 +92,25 @@ public:
     /// @{
 
     HD_API
-    HdContainerDataSourceHandle GetInputValues();
+    HdContainerDataSourceHandle GetInputValues() const;
 
     HD_API
-    HdVectorDataSourceHandle GetInputComputations();
+    HdVectorDataSourceHandle GetInputComputations() const;
 
     HD_API
-    HdVectorDataSourceHandle GetOutputs();
+    HdVectorDataSourceHandle GetOutputs() const;
 
     HD_API
-    HdStringDataSourceHandle GetGlslKernel();
+    HdStringDataSourceHandle GetGlslKernel() const;
 
     HD_API
-    HdDataSourceBaseHandle GetCpuCallback();
+    HdDataSourceBaseHandle GetCpuCallback() const;
 
     HD_API
-    HdSizetDataSourceHandle GetDispatchCount();
+    HdSizetDataSourceHandle GetDispatchCount() const;
 
     HD_API
-    HdSizetDataSourceHandle GetElementCount(); 
+    HdSizetDataSourceHandle GetElementCount() const; 
 
     /// @}
 

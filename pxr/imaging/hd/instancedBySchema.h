@@ -106,10 +106,10 @@ public:
     /// @{
 
     HD_API
-    HdPathArrayDataSourceHandle GetPaths();
+    HdPathArrayDataSourceHandle GetPaths() const;
 
     HD_API
-    HdPathArrayDataSourceHandle GetPrototypeRoots(); 
+    HdPathArrayDataSourceHandle GetPrototypeRoots() const; 
 
     /// @}
 

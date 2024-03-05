@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyGeometryPrototypeSchemaTokens,
 
 HdTokenDataSourceHandle
 HdPrmanRileyGeometryPrototypeSchema::GetType()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrmanRileyGeometryPrototypeSchemaTokens->type);
@@ -58,6 +63,11 @@ HdPrmanRileyGeometryPrototypeSchema::GetType()
 
 HdPathDataSourceHandle
 HdPrmanRileyGeometryPrototypeSchema::GetDisplacement()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdPrmanRileyGeometryPrototypeSchemaTokens->displacement);
@@ -65,6 +75,11 @@ HdPrmanRileyGeometryPrototypeSchema::GetDisplacement()
 
 HdPrmanRileyPrimvarListSchema
 HdPrmanRileyGeometryPrototypeSchema::GetPrimvars()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyPrimvarListSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdPrmanRileyGeometryPrototypeSchemaTokens->primvars));

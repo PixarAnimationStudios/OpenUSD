@@ -50,35 +50,35 @@ TF_DEFINE_PUBLIC_TOKENS(HdImageShaderSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdBoolDataSourceHandle
-HdImageShaderSchema::GetEnabled()
+HdImageShaderSchema::GetEnabled() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         HdImageShaderSchemaTokens->enabled);
 }
 
 HdIntDataSourceHandle
-HdImageShaderSchema::GetPriority()
+HdImageShaderSchema::GetPriority() const
 {
     return _GetTypedDataSource<HdIntDataSource>(
         HdImageShaderSchemaTokens->priority);
 }
 
 HdStringDataSourceHandle
-HdImageShaderSchema::GetFilePath()
+HdImageShaderSchema::GetFilePath() const
 {
     return _GetTypedDataSource<HdStringDataSource>(
         HdImageShaderSchemaTokens->filePath);
 }
 
 HdSampledDataSourceContainerSchema
-HdImageShaderSchema::GetConstants()
+HdImageShaderSchema::GetConstants() const
 {
     return HdSampledDataSourceContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdImageShaderSchemaTokens->constants));
 }
 
 HdMaterialNetworkSchema
-HdImageShaderSchema::GetMaterialNetwork()
+HdImageShaderSchema::GetMaterialNetwork() const
 {
     return HdMaterialNetworkSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdImageShaderSchemaTokens->materialNetwork));

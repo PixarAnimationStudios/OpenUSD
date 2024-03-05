@@ -50,49 +50,49 @@ TF_DEFINE_PUBLIC_TOKENS(HdExtComputationSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdContainerDataSourceHandle
-HdExtComputationSchema::GetInputValues()
+HdExtComputationSchema::GetInputValues() const
 {
     return _GetTypedDataSource<HdContainerDataSource>(
         HdExtComputationSchemaTokens->inputValues);
 }
 
 HdVectorDataSourceHandle
-HdExtComputationSchema::GetInputComputations()
+HdExtComputationSchema::GetInputComputations() const
 {
     return _GetTypedDataSource<HdVectorDataSource>(
         HdExtComputationSchemaTokens->inputComputations);
 }
 
 HdVectorDataSourceHandle
-HdExtComputationSchema::GetOutputs()
+HdExtComputationSchema::GetOutputs() const
 {
     return _GetTypedDataSource<HdVectorDataSource>(
         HdExtComputationSchemaTokens->outputs);
 }
 
 HdStringDataSourceHandle
-HdExtComputationSchema::GetGlslKernel()
+HdExtComputationSchema::GetGlslKernel() const
 {
     return _GetTypedDataSource<HdStringDataSource>(
         HdExtComputationSchemaTokens->glslKernel);
 }
 
 HdDataSourceBaseHandle
-HdExtComputationSchema::GetCpuCallback()
+HdExtComputationSchema::GetCpuCallback() const
 {
     return _GetTypedDataSource<HdDataSourceBase>(
         HdExtComputationSchemaTokens->cpuCallback);
 }
 
 HdSizetDataSourceHandle
-HdExtComputationSchema::GetDispatchCount()
+HdExtComputationSchema::GetDispatchCount() const
 {
     return _GetTypedDataSource<HdSizetDataSource>(
         HdExtComputationSchemaTokens->dispatchCount);
 }
 
 HdSizetDataSourceHandle
-HdExtComputationSchema::GetElementCount()
+HdExtComputationSchema::GetElementCount() const
 {
     return _GetTypedDataSource<HdSizetDataSource>(
         HdExtComputationSchemaTokens->elementCount);

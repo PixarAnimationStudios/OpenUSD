@@ -89,10 +89,10 @@ public:
     /// @{
 
     HD_API
-    HdBasisCurvesTopologySchema GetTopology();
+    HdBasisCurvesTopologySchema GetTopology() const;
 
     HD_API
-    HdGeomSubsetsSchema GetGeomSubsets(); 
+    HdGeomSubsetsSchema GetGeomSubsets() const; 
 
     /// @}
 

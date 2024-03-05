@@ -50,21 +50,21 @@ TF_DEFINE_PUBLIC_TOKENS(UsdImagingCollectionMaterialBindingSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdPathDataSourceHandle
-UsdImagingCollectionMaterialBindingSchema::GetCollectionPath()
+UsdImagingCollectionMaterialBindingSchema::GetCollectionPath() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
         UsdImagingCollectionMaterialBindingSchemaTokens->collectionPath);
 }
 
 HdPathDataSourceHandle
-UsdImagingCollectionMaterialBindingSchema::GetMaterialPath()
+UsdImagingCollectionMaterialBindingSchema::GetMaterialPath() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
         UsdImagingCollectionMaterialBindingSchemaTokens->materialPath);
 }
 
 HdTokenDataSourceHandle
-UsdImagingCollectionMaterialBindingSchema::GetBindingStrength()
+UsdImagingCollectionMaterialBindingSchema::GetBindingStrength() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         UsdImagingCollectionMaterialBindingSchemaTokens->bindingStrength);

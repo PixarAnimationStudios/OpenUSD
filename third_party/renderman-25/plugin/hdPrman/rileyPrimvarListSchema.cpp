@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyPrimvarListSchemaTokens,
 
 HdSizetDataSourceHandle
 HdPrmanRileyPrimvarListSchema::GetNumUniform()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdSizetDataSource>(
         HdPrmanRileyPrimvarListSchemaTokens->numUniform);
@@ -58,6 +63,11 @@ HdPrmanRileyPrimvarListSchema::GetNumUniform()
 
 HdSizetDataSourceHandle
 HdPrmanRileyPrimvarListSchema::GetNumVertex()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdSizetDataSource>(
         HdPrmanRileyPrimvarListSchemaTokens->numVertex);
@@ -65,6 +75,11 @@ HdPrmanRileyPrimvarListSchema::GetNumVertex()
 
 HdSizetDataSourceHandle
 HdPrmanRileyPrimvarListSchema::GetNumVarying()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdSizetDataSource>(
         HdPrmanRileyPrimvarListSchemaTokens->numVarying);
@@ -72,6 +87,11 @@ HdPrmanRileyPrimvarListSchema::GetNumVarying()
 
 HdSizetDataSourceHandle
 HdPrmanRileyPrimvarListSchema::GetNumFaceVarying()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdSizetDataSource>(
         HdPrmanRileyPrimvarListSchemaTokens->numFaceVarying);
@@ -79,6 +99,11 @@ HdPrmanRileyPrimvarListSchema::GetNumFaceVarying()
 
 HdPrmanRileyPrimvarContainerSchema
 HdPrmanRileyPrimvarListSchema::GetParams()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyPrimvarContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdPrmanRileyPrimvarListSchemaTokens->params));

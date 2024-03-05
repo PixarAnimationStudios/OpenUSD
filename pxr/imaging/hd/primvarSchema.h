@@ -128,13 +128,13 @@ public:
     /// @{
 
     HD_API
-    HdIntArrayDataSourceHandle GetIndices();
+    HdIntArrayDataSourceHandle GetIndices() const;
 
     HD_API
-    HdTokenDataSourceHandle GetInterpolation();
+    HdTokenDataSourceHandle GetInterpolation() const;
 
     HD_API
-    HdTokenDataSourceHandle GetRole(); 
+    HdTokenDataSourceHandle GetRole() const; 
 
     /// @} 
 

@@ -50,84 +50,84 @@ TF_DEFINE_PUBLIC_TOKENS(UsdImagingUsdRenderSettingsSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdVec2iDataSourceHandle
-UsdImagingUsdRenderSettingsSchema::GetResolution()
+UsdImagingUsdRenderSettingsSchema::GetResolution() const
 {
     return _GetTypedDataSource<HdVec2iDataSource>(
         UsdImagingUsdRenderSettingsSchemaTokens->resolution);
 }
 
 HdFloatDataSourceHandle
-UsdImagingUsdRenderSettingsSchema::GetPixelAspectRatio()
+UsdImagingUsdRenderSettingsSchema::GetPixelAspectRatio() const
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         UsdImagingUsdRenderSettingsSchemaTokens->pixelAspectRatio);
 }
 
 HdTokenDataSourceHandle
-UsdImagingUsdRenderSettingsSchema::GetAspectRatioConformPolicy()
+UsdImagingUsdRenderSettingsSchema::GetAspectRatioConformPolicy() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         UsdImagingUsdRenderSettingsSchemaTokens->aspectRatioConformPolicy);
 }
 
 HdVec4fDataSourceHandle
-UsdImagingUsdRenderSettingsSchema::GetDataWindowNDC()
+UsdImagingUsdRenderSettingsSchema::GetDataWindowNDC() const
 {
     return _GetTypedDataSource<HdVec4fDataSource>(
         UsdImagingUsdRenderSettingsSchemaTokens->dataWindowNDC);
 }
 
 HdBoolDataSourceHandle
-UsdImagingUsdRenderSettingsSchema::GetDisableMotionBlur()
+UsdImagingUsdRenderSettingsSchema::GetDisableMotionBlur() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         UsdImagingUsdRenderSettingsSchemaTokens->disableMotionBlur);
 }
 
 HdBoolDataSourceHandle
-UsdImagingUsdRenderSettingsSchema::GetDisableDepthOfField()
+UsdImagingUsdRenderSettingsSchema::GetDisableDepthOfField() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
         UsdImagingUsdRenderSettingsSchemaTokens->disableDepthOfField);
 }
 
 HdPathDataSourceHandle
-UsdImagingUsdRenderSettingsSchema::GetCamera()
+UsdImagingUsdRenderSettingsSchema::GetCamera() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
         UsdImagingUsdRenderSettingsSchemaTokens->camera);
 }
 
 HdTokenArrayDataSourceHandle
-UsdImagingUsdRenderSettingsSchema::GetIncludedPurposes()
+UsdImagingUsdRenderSettingsSchema::GetIncludedPurposes() const
 {
     return _GetTypedDataSource<HdTokenArrayDataSource>(
         UsdImagingUsdRenderSettingsSchemaTokens->includedPurposes);
 }
 
 HdTokenArrayDataSourceHandle
-UsdImagingUsdRenderSettingsSchema::GetMaterialBindingPurposes()
+UsdImagingUsdRenderSettingsSchema::GetMaterialBindingPurposes() const
 {
     return _GetTypedDataSource<HdTokenArrayDataSource>(
         UsdImagingUsdRenderSettingsSchemaTokens->materialBindingPurposes);
 }
 
 HdTokenDataSourceHandle
-UsdImagingUsdRenderSettingsSchema::GetRenderingColorSpace()
+UsdImagingUsdRenderSettingsSchema::GetRenderingColorSpace() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         UsdImagingUsdRenderSettingsSchemaTokens->renderingColorSpace);
 }
 
 HdPathArrayDataSourceHandle
-UsdImagingUsdRenderSettingsSchema::GetProducts()
+UsdImagingUsdRenderSettingsSchema::GetProducts() const
 {
     return _GetTypedDataSource<HdPathArrayDataSource>(
         UsdImagingUsdRenderSettingsSchemaTokens->products);
 }
 
 HdContainerDataSourceHandle
-UsdImagingUsdRenderSettingsSchema::GetNamespacedSettings()
+UsdImagingUsdRenderSettingsSchema::GetNamespacedSettings() const
 {
     return _GetTypedDataSource<HdContainerDataSource>(
         UsdImagingUsdRenderSettingsSchemaTokens->namespacedSettings);

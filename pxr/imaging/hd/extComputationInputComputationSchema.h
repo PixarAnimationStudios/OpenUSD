@@ -78,13 +78,13 @@ public:
     /// @{
 
     HD_API
-    HdTokenDataSourceHandle GetName();
+    HdTokenDataSourceHandle GetName() const;
 
     HD_API
-    HdPathDataSourceHandle GetSourceComputation();
+    HdPathDataSourceHandle GetSourceComputation() const;
 
     HD_API
-    HdTokenDataSourceHandle GetSourceComputationOutputName(); 
+    HdTokenDataSourceHandle GetSourceComputationOutputName() const; 
 
     /// @} 
 

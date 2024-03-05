@@ -103,34 +103,34 @@ public:
     /// @{
 
     USDIMAGING_API
-    HdTokenDataSourceHandle GetDrawMode();
+    HdTokenDataSourceHandle GetDrawMode() const;
 
     USDIMAGING_API
-    HdBoolDataSourceHandle GetApplyDrawMode();
+    HdBoolDataSourceHandle GetApplyDrawMode() const;
 
     USDIMAGING_API
-    HdVec3fDataSourceHandle GetDrawModeColor();
+    HdVec3fDataSourceHandle GetDrawModeColor() const;
 
     USDIMAGING_API
-    HdTokenDataSourceHandle GetCardGeometry();
+    HdTokenDataSourceHandle GetCardGeometry() const;
 
     USDIMAGING_API
-    HdAssetPathDataSourceHandle GetCardTextureXPos();
+    HdAssetPathDataSourceHandle GetCardTextureXPos() const;
 
     USDIMAGING_API
-    HdAssetPathDataSourceHandle GetCardTextureYPos();
+    HdAssetPathDataSourceHandle GetCardTextureYPos() const;
 
     USDIMAGING_API
-    HdAssetPathDataSourceHandle GetCardTextureZPos();
+    HdAssetPathDataSourceHandle GetCardTextureZPos() const;
 
     USDIMAGING_API
-    HdAssetPathDataSourceHandle GetCardTextureXNeg();
+    HdAssetPathDataSourceHandle GetCardTextureXNeg() const;
 
     USDIMAGING_API
-    HdAssetPathDataSourceHandle GetCardTextureYNeg();
+    HdAssetPathDataSourceHandle GetCardTextureYNeg() const;
 
     USDIMAGING_API
-    HdAssetPathDataSourceHandle GetCardTextureZNeg(); 
+    HdAssetPathDataSourceHandle GetCardTextureZNeg() const; 
 
     /// @}
 

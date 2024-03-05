@@ -92,19 +92,19 @@ public:
     /// @{
 
     HD_API
-    HdBoolDataSourceHandle GetEnabled();
+    HdBoolDataSourceHandle GetEnabled() const;
 
     HD_API
-    HdIntDataSourceHandle GetPriority();
+    HdIntDataSourceHandle GetPriority() const;
 
     HD_API
-    HdStringDataSourceHandle GetFilePath();
+    HdStringDataSourceHandle GetFilePath() const;
 
     HD_API
-    HdSampledDataSourceContainerSchema GetConstants();
+    HdSampledDataSourceContainerSchema GetConstants() const;
 
     HD_API
-    HdMaterialNetworkSchema GetMaterialNetwork(); 
+    HdMaterialNetworkSchema GetMaterialNetwork() const; 
 
     /// @}
 

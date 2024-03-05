@@ -93,19 +93,19 @@ public:
     /// @{
 
     HD_API
-    HdDoubleDataSourceHandle GetHeight();
+    HdDoubleDataSourceHandle GetHeight() const;
 
     HD_API
-    HdDoubleDataSourceHandle GetRadius();
+    HdDoubleDataSourceHandle GetRadius() const;
 
     HD_API
-    HdDoubleDataSourceHandle GetRadiusTop();
+    HdDoubleDataSourceHandle GetRadiusTop() const;
 
     HD_API
-    HdDoubleDataSourceHandle GetRadiusBottom();
+    HdDoubleDataSourceHandle GetRadiusBottom() const;
 
     HD_API
-    HdTokenDataSourceHandle GetAxis(); 
+    HdTokenDataSourceHandle GetAxis() const; 
 
     /// @}
 

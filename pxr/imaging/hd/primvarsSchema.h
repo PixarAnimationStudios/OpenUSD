@@ -89,9 +89,10 @@ public:
     /// @{
 
     HD_API
-    TfTokenVector GetPrimvarNames();
+    TfTokenVector GetPrimvarNames() const;
+
     HD_API
-    HdPrimvarSchema GetPrimvar(const TfToken &name); 
+    HdPrimvarSchema GetPrimvar(const TfToken &name) const; 
 
     /// @}
 

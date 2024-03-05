@@ -78,10 +78,10 @@ public:
     /// @{
 
     HD_API
-    HdTokenDataSourceHandle GetNodePath();
+    HdTokenDataSourceHandle GetNodePath() const;
 
     HD_API
-    HdTokenDataSourceHandle GetInputName(); 
+    HdTokenDataSourceHandle GetInputName() const; 
 
     /// @} 
 

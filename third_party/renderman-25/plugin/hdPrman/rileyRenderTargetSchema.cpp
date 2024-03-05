@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyRenderTargetSchemaTokens,
 
 HdPathArrayDataSourceHandle
 HdPrmanRileyRenderTargetSchema::GetRenderOutputs()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathArrayDataSource>(
         HdPrmanRileyRenderTargetSchemaTokens->renderOutputs);
@@ -58,6 +63,11 @@ HdPrmanRileyRenderTargetSchema::GetRenderOutputs()
 
 HdVec3iDataSourceHandle
 HdPrmanRileyRenderTargetSchema::GetExtent()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdVec3iDataSource>(
         HdPrmanRileyRenderTargetSchemaTokens->extent);
@@ -65,6 +75,11 @@ HdPrmanRileyRenderTargetSchema::GetExtent()
 
 HdTokenDataSourceHandle
 HdPrmanRileyRenderTargetSchema::GetFilterMode()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrmanRileyRenderTargetSchemaTokens->filterMode);
@@ -72,6 +87,11 @@ HdPrmanRileyRenderTargetSchema::GetFilterMode()
 
 HdFloatDataSourceHandle
 HdPrmanRileyRenderTargetSchema::GetPixelVariance()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdFloatDataSource>(
         HdPrmanRileyRenderTargetSchemaTokens->pixelVariance);
@@ -79,6 +99,11 @@ HdPrmanRileyRenderTargetSchema::GetPixelVariance()
 
 HdPrmanRileyParamListSchema
 HdPrmanRileyRenderTargetSchema::GetParams()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyParamListSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdPrmanRileyRenderTargetSchemaTokens->params));

@@ -73,14 +73,14 @@ HdMaterialInterfaceMappingSchema::BuildNetworkRelativeLocator()
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdTokenDataSourceHandle
-HdMaterialInterfaceMappingSchema::GetNodePath()
+HdMaterialInterfaceMappingSchema::GetNodePath() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdMaterialInterfaceMappingSchemaTokens->nodePath);
 }
 
 HdTokenDataSourceHandle
-HdMaterialInterfaceMappingSchema::GetInputName()
+HdMaterialInterfaceMappingSchema::GetInputName() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdMaterialInterfaceMappingSchemaTokens->inputName);

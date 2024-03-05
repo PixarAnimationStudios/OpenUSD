@@ -89,16 +89,16 @@ public:
     /// @{
 
     HD_API
-    HdIntArrayDataSourceHandle GetCurveVertexCounts();
+    HdIntArrayDataSourceHandle GetCurveVertexCounts() const;
 
     HD_API
-    HdIntArrayDataSourceHandle GetOrder();
+    HdIntArrayDataSourceHandle GetOrder() const;
 
     HD_API
-    HdDoubleArrayDataSourceHandle GetKnots();
+    HdDoubleArrayDataSourceHandle GetKnots() const;
 
     HD_API
-    HdVec2dArrayDataSourceHandle GetRanges(); 
+    HdVec2dArrayDataSourceHandle GetRanges() const; 
 
     /// @}
 

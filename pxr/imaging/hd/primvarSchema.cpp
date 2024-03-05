@@ -238,21 +238,21 @@ HdPrimvarSchema::GetFlattenedPrimvarValue()
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdIntArrayDataSourceHandle
-HdPrimvarSchema::GetIndices()
+HdPrimvarSchema::GetIndices() const
 {
     return _GetTypedDataSource<HdIntArrayDataSource>(
         HdPrimvarSchemaTokens->indices);
 }
 
 HdTokenDataSourceHandle
-HdPrimvarSchema::GetInterpolation()
+HdPrimvarSchema::GetInterpolation() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrimvarSchemaTokens->interpolation);
 }
 
 HdTokenDataSourceHandle
-HdPrimvarSchema::GetRole()
+HdPrimvarSchema::GetRole() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdPrimvarSchemaTokens->role);

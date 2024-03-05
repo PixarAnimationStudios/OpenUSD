@@ -117,7 +117,7 @@ public:
     /// @{
 
     HD_API
-    HdPathDataSourceHandle GetActiveRenderSettingsPrim(); 
+    HdPathDataSourceHandle GetActiveRenderSettingsPrim() const; 
 
     /// @}
 

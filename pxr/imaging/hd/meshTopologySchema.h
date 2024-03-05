@@ -92,16 +92,16 @@ public:
     /// @{
 
     HD_API
-    HdIntArrayDataSourceHandle GetFaceVertexCounts();
+    HdIntArrayDataSourceHandle GetFaceVertexCounts() const;
 
     HD_API
-    HdIntArrayDataSourceHandle GetFaceVertexIndices();
+    HdIntArrayDataSourceHandle GetFaceVertexIndices() const;
 
     HD_API
-    HdIntArrayDataSourceHandle GetHoleIndices();
+    HdIntArrayDataSourceHandle GetHoleIndices() const;
 
     HD_API
-    HdTokenDataSourceHandle GetOrientation(); 
+    HdTokenDataSourceHandle GetOrientation() const; 
 
     /// @}
 

@@ -86,7 +86,7 @@ public:
     /// @{
 
     HD_API
-    HdVectorDataSourceHandle GetCategoriesValues(); 
+    HdVectorDataSourceHandle GetCategoriesValues() const; 
 
     /// @}
 

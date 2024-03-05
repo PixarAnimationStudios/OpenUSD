@@ -50,21 +50,21 @@ TF_DEFINE_PUBLIC_TOKENS(HdConeSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdDoubleDataSourceHandle
-HdConeSchema::GetHeight()
+HdConeSchema::GetHeight() const
 {
     return _GetTypedDataSource<HdDoubleDataSource>(
         HdConeSchemaTokens->height);
 }
 
 HdDoubleDataSourceHandle
-HdConeSchema::GetRadius()
+HdConeSchema::GetRadius() const
 {
     return _GetTypedDataSource<HdDoubleDataSource>(
         HdConeSchemaTokens->radius);
 }
 
 HdTokenDataSourceHandle
-HdConeSchema::GetAxis()
+HdConeSchema::GetAxis() const
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdConeSchemaTokens->axis);

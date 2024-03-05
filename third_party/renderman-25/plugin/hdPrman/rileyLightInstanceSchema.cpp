@@ -51,6 +51,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyLightInstanceSchemaTokens,
 
 HdPathDataSourceHandle
 HdPrmanRileyLightInstanceSchema::GetGroupPrototype()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdPrmanRileyLightInstanceSchemaTokens->groupPrototype);
@@ -58,6 +63,11 @@ HdPrmanRileyLightInstanceSchema::GetGroupPrototype()
 
 HdPathDataSourceHandle
 HdPrmanRileyLightInstanceSchema::GetGeoPrototype()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdPrmanRileyLightInstanceSchemaTokens->geoPrototype);
@@ -65,6 +75,11 @@ HdPrmanRileyLightInstanceSchema::GetGeoPrototype()
 
 HdPathDataSourceHandle
 HdPrmanRileyLightInstanceSchema::GetMaterial()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdPrmanRileyLightInstanceSchemaTokens->material);
@@ -72,6 +87,11 @@ HdPrmanRileyLightInstanceSchema::GetMaterial()
 
 HdPathDataSourceHandle
 HdPrmanRileyLightInstanceSchema::GetLightShader()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathDataSource>(
         HdPrmanRileyLightInstanceSchemaTokens->lightShader);
@@ -79,6 +99,11 @@ HdPrmanRileyLightInstanceSchema::GetLightShader()
 
 HdPathArrayDataSourceHandle
 HdPrmanRileyLightInstanceSchema::GetCoordsys()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdPathArrayDataSource>(
         HdPrmanRileyLightInstanceSchemaTokens->coordsys);
@@ -86,6 +111,11 @@ HdPrmanRileyLightInstanceSchema::GetCoordsys()
 
 HdMatrixDataSourceHandle
 HdPrmanRileyLightInstanceSchema::GetXform()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return _GetTypedDataSource<HdMatrixDataSource>(
         HdPrmanRileyLightInstanceSchemaTokens->xform);
@@ -93,6 +123,11 @@ HdPrmanRileyLightInstanceSchema::GetXform()
 
 HdPrmanRileyParamListSchema
 HdPrmanRileyLightInstanceSchema::GetAttributes()
+#if HD_API_VERSION >= 66
+                                            const
+#else
+                                                 
+#endif
 {
     return HdPrmanRileyParamListSchema(_GetTypedDataSource<HdContainerDataSource>(
         HdPrmanRileyLightInstanceSchemaTokens->attributes));
