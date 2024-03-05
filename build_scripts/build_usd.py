@@ -2072,11 +2072,12 @@ def InstallUSD(context, force, buildArgs):
             else:
                 extraArgs.append('-DPXR_EMSCRIPTEN_NODE=0')
 
+        else:
+            # JS binding is only possibly enabled for webassembly build
+            extraArgs.append('-DPXR_ENABLE_JS_BINDINGS_SUPPORT=OFF')
+
         if context.dawn:
             extraArgs.append('-DPXR_ENABLE_WEBGPU_SUPPORT=ON')
-
-        # JS binding is only possibly enabled for webassembly build
-        extraArgs.append('-DPXR_ENABLE_JS_BINDINGS_SUPPORT=OFF')
 
         RunCMake(context, force, extraArgs)
 
