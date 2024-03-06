@@ -63,7 +63,7 @@ ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
 ///
 /// \ingroup group_tf_Preprocessor
 /// \hideinitializer
-#if defined(ARCH_COMPILER_MSVC)
+#if defined(ARCH_MSVC_TRADITIONAL_PREPROCESSOR)
 #define TF_NUM_ARGS(...) \
     BOOST_PP_IIF(BOOST_VMD_IS_EMPTY(__VA_ARGS__),\
         0, BOOST_PP_VARIADIC_SIZE(__VA_ARGS__))
