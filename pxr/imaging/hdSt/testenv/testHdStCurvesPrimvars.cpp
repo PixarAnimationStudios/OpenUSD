@@ -95,9 +95,10 @@ _ComparePoints(std::string const & name,
     HdBufferSpecVector bufferSpecs;
     source->GetBufferSpecs(&bufferSpecs);
     HdBufferArrayRangeSharedPtr const range =
-        registry->AllocateNonUniformBufferArrayRange(HdTokens->primvar,
-                                                     bufferSpecs,
-                                                     HdBufferArrayUsageHint());
+        registry->AllocateNonUniformBufferArrayRange(
+            HdTokens->primvar,
+            bufferSpecs,
+            HdBufferArrayUsageHintBitsVertex);
     registry->AddSource(range, source);
 
     // execute computation
@@ -135,9 +136,10 @@ _CompareVertexPrimvar(std::string const & name,
     HdBufferSpecVector bufferSpecs;
     source->GetBufferSpecs(&bufferSpecs);
     HdBufferArrayRangeSharedPtr const range =
-        registry->AllocateNonUniformBufferArrayRange(HdTokens->primvar,
-                                                     bufferSpecs,
-                                                     HdBufferArrayUsageHint());
+        registry->AllocateNonUniformBufferArrayRange(
+            HdTokens->primvar,
+            bufferSpecs,
+            HdBufferArrayUsageHintBitsVertex);
     registry->AddSource(range, source);
 
     // execute computation

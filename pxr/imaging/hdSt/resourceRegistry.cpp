@@ -258,7 +258,7 @@ HdStResourceRegistry::AllocateNonUniformImmutableBufferArrayRange(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
 {
-    usageHint.bits.immutable = 1;
+    usageHint |= HdBufferArrayUsageHintBitsImmutable;
 
     return _AllocateBufferArrayRange(
                 _nonUniformImmutableAggregationStrategy.get(),
@@ -337,7 +337,7 @@ HdStResourceRegistry::UpdateNonUniformImmutableBufferArrayRange(
         HdBufferSpecVector const& removedSpecs,
         HdBufferArrayUsageHint usageHint)
 {
-    usageHint.bits.immutable = 1;
+    usageHint |= HdBufferArrayUsageHintBitsImmutable;
 
     return _UpdateBufferArrayRange(
         _nonUniformImmutableAggregationStrategy.get(),
@@ -1184,8 +1184,7 @@ HdStResourceRegistry::_UpdateBufferArrayRange(
         bool haveBuffersToUpdate = !updatedOrAddedSpecs.empty();
         bool dataUpdateForImmutableBar = curRange->IsImmutable() &&
                                         haveBuffersToUpdate;
-        bool usageHintChanged = curRange->GetUsageHint().value !=
-                                usageHint.value;
+        bool usageHintChanged = curRange->GetUsageHint() != usageHint;
         
         bool needsMigration =
             dataUpdateForImmutableBar ||

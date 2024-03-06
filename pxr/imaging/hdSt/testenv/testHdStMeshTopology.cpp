@@ -89,9 +89,10 @@ _CompareIndices(std::string const & name,
     HdBufferSpecVector bufferSpecs;
     source->GetBufferSpecs(&bufferSpecs);
     HdBufferArrayRangeSharedPtr const range =
-        registry->AllocateNonUniformBufferArrayRange(HdTokens->topology,
-                                                     bufferSpecs,
-                                                     HdBufferArrayUsageHint());
+        registry->AllocateNonUniformBufferArrayRange(
+            HdTokens->topology,
+            bufferSpecs,
+            HdBufferArrayUsageHintBitsIndex);
     registry->AddSource(range, source);
 
     // execute computation
@@ -131,9 +132,10 @@ _CompareFaceVarying(std::string const &name,
     HdBufferSpecVector bufferSpecs;
     source->GetBufferSpecs(&bufferSpecs);
     HdBufferArrayRangeSharedPtr const range =
-        registry->AllocateNonUniformBufferArrayRange(HdTokens->primvar,
-                                                     bufferSpecs,
-                                                     HdBufferArrayUsageHint());
+        registry->AllocateNonUniformBufferArrayRange(
+            HdTokens->primvar,
+            bufferSpecs,
+            HdBufferArrayUsageHintBitsStorage);
     registry->AddSource(range, source);
 
     // execute computation
@@ -295,7 +297,8 @@ _CompareGpuSmoothNormals(std::string const & name,
         adjGpuComputation->GetBufferSpecs(&bufferSpecs);
         HdBufferArrayRangeSharedPtr const adjRange =
             registry->AllocateNonUniformBufferArrayRange(
-                HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
+                HdTokens->topology, bufferSpecs,
+                HdBufferArrayUsageHintBitsStorage);
         adjacencyBuilder.SetVertexAdjacencyRange(adjRange);
         registry->AddSource(adjRange, adjGpuComputation);
     }
@@ -315,9 +318,10 @@ _CompareGpuSmoothNormals(std::string const & name,
 
     // allocate GPU buffer range
     HdBufferArrayRangeSharedPtr const range =
-        registry->AllocateNonUniformBufferArrayRange(HdTokens->primvar,
-                                                     bufferSpecs,
-                                                     HdBufferArrayUsageHint());
+        registry->AllocateNonUniformBufferArrayRange(
+            HdTokens->primvar,
+            bufferSpecs,
+            HdBufferArrayUsageHintBitsStorage);
 
     // commit points
     HdBufferSourceSharedPtrVector sources;
@@ -370,10 +374,12 @@ _CompareGpuFlatNormals(std::string const & name,
     // build the points range
     HdBufferSpecVector vertexSpecs;
     pointsSource->GetBufferSpecs(&vertexSpecs);
+    HdBufferArrayUsageHint vertexUsageHint =
+        HdBufferArrayUsageHintBitsVertex | HdBufferArrayUsageHintBitsStorage;
     HdBufferArrayRangeSharedPtr const vertexRange =
         registry->AllocateNonUniformBufferArrayRange(HdTokens->primvar,
                                                      vertexSpecs,
-                                                     HdBufferArrayUsageHint());
+                                                     vertexUsageHint);
 
     // index builder
     HdBufferSourceSharedPtr indexComputation;
@@ -393,10 +399,12 @@ _CompareGpuFlatNormals(std::string const & name,
     // build the topology range
     HdBufferSpecVector topoSpecs;
     indexComputation->GetBufferSpecs(&topoSpecs);
+    HdBufferArrayUsageHint topoUsageHint =
+        HdBufferArrayUsageHintBitsIndex | HdBufferArrayUsageHintBitsStorage;
     HdBufferArrayRangeSharedPtr const topoRange =
         registry->AllocateNonUniformBufferArrayRange(HdTokens->topology,
                                                      topoSpecs,
-                                                     HdBufferArrayUsageHint());
+                                                     topoUsageHint);
 
     // GPU flat normals computation
     const int numFaces = topology.GetFaceVertexCounts().size();
@@ -411,9 +419,10 @@ _CompareGpuFlatNormals(std::string const & name,
     HdBufferSpecVector elementSpecs;
     normalComputation->GetBufferSpecs(&elementSpecs);
     HdBufferArrayRangeSharedPtr const elementRange =
-        registry->AllocateNonUniformBufferArrayRange(HdTokens->primvar,
-                                                     elementSpecs,
-                                                     HdBufferArrayUsageHint());
+        registry->AllocateNonUniformBufferArrayRange(
+            HdTokens->primvar,
+            elementSpecs,
+            HdBufferArrayUsageHintBitsStorage);
 
     // Add sources
     if (quadInfoComputation) {

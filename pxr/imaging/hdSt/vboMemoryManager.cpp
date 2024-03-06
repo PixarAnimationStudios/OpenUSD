@@ -83,7 +83,7 @@ HdStVBOMemoryManager::ComputeAggregationId(
     static size_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
     return static_cast<AggregationId>(
         TfHash::Combine(
-            salt, bufferSpecs, usageHint.value
+            salt, bufferSpecs, usageHint
         )
     );
 }
@@ -151,7 +151,8 @@ HdStVBOMemoryManager::_StripedBufferArray::_StripedBufferArray(
       _resourceRegistry(resourceRegistry),
       _needsCompaction(false),
       _totalCapacity(0),
-      _maxBytesPerElement(0)
+      _maxBytesPerElement(0),
+      _bufferUsage(0)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -200,6 +201,19 @@ HdStVBOMemoryManager::_StripedBufferArray::_StripedBufferArray(
     if (!TF_VERIFY(_maxBytesPerElement != 0))
     {
         _maxBytesPerElement = 1;
+    }
+
+    if (usageHint & HdBufferArrayUsageHintBitsStorage) {
+        _bufferUsage |= HgiBufferUsageStorage;
+    }
+    if (usageHint & HdBufferArrayUsageHintBitsVertex) {
+        _bufferUsage |= HgiBufferUsageVertex;
+    }
+    if (usageHint & HdBufferArrayUsageHintBitsIndex) {
+        _bufferUsage |= HgiBufferUsageIndex32;
+    }
+    if (_bufferUsage == 0) {
+        TF_CODING_ERROR("Buffer usage was not specified!");
     }
 }
 
@@ -346,7 +360,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
         // Skip buffers of zero size
         if (bufferSize > 0) {
             HgiBufferDesc bufDesc;
-            bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageVertex;
+            bufDesc.usage = _bufferUsage;
             bufDesc.byteSize = bufferSize;
             bufDesc.vertexStride = bytesPerElement;
             bufDesc.debugName = resources[bresIdx].first.GetText();

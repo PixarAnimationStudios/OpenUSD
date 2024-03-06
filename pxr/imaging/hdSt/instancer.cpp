@@ -166,7 +166,7 @@ HdStInstancer::_SyncPrimvars(HdSceneDelegate *sceneDelegate,
         _instancePrimvarRange =
             resourceRegistry->UpdateNonUniformBufferArrayRange(
                 HdTokens->primvar, _instancePrimvarRange, bufferSpecs,
-                removedSpecs, HdBufferArrayUsageHint());
+                removedSpecs, HdBufferArrayUsageHintBitsStorage);
 
         TF_VERIFY(_instancePrimvarRange->IsValid());
 

@@ -297,7 +297,7 @@ HdSt_MaterialNetworkShader::SetBufferSources(
                 resourceRegistry->AllocateShaderStorageBufferArrayRange(
                     HdTokens->materialParams,
                     bufferSpecs,
-                    HdBufferArrayUsageHint());
+                    HdBufferArrayUsageHintBitsStorage);
 
             if (!TF_VERIFY(range->IsValid())) {
                 _paramArray.reset();
