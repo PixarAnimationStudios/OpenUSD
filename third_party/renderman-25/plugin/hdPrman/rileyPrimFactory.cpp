@@ -26,6 +26,7 @@
 
 #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
 
+#include "hdPrman/rileyCoordinateSystemPrim.h"
 #include "hdPrman/rileyRenderOutputPrim.h"
 #include "hdPrman/rileyRenderTargetPrim.h"
 #include "hdPrman/tokens.h"
@@ -63,6 +64,13 @@ HdPrman_RileyPrimFactory::CreatePrim(
 
     if (entry.primType == HdPrmanRileyPrimTypeTokens->renderTarget) {
         return std::make_shared<HdPrman_RileyRenderTargetPrim>(
+            _GetPrimSource(observer, entry.primPath),
+            observer,
+            _renderParam);
+    }
+
+    if (entry.primType == HdPrmanRileyPrimTypeTokens->coordinateSystem) {
+        return std::make_shared<HdPrman_RileyCoordinateSystemPrim>(
             _GetPrimSource(observer, entry.primPath),
             observer,
             _renderParam);

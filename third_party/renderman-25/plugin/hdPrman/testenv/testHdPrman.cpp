@@ -591,6 +591,8 @@ CreateRenderSpecDict(
             VtDictionary renderProduct;
             renderProduct[HdPrmanExperimentalRenderSpecTokens->name] =
                 product.name.GetString();
+            renderProduct[HdPrmanExperimentalRenderSpecTokens->params] =
+                product.namespacedSettings;
             {
                 VtIntArray renderVarIndices;
                 const size_t num = product.renderVarIndices.size();

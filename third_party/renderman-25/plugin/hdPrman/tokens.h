@@ -65,9 +65,10 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanTokens, HDPRMAN_API, HD_PRMAN_TOKENS);
 ///                                   /
 /// camera  <------------------------*
 ///
-#define HD_PRMAN_RILEY_PRIM_TYPE_TOKENS         \
-    ((renderOutput, "riley:renderOutput"))      \
-    ((renderTarget, "riley:renderTarget"))
+#define HD_PRMAN_RILEY_PRIM_TYPE_TOKENS             \
+    ((renderOutput,     "riley:renderOutput"))      \
+    ((renderTarget,     "riley:renderTarget"))      \
+    ((coordinateSystem, "riley:coordinateSystem"))
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanRileyPrimTypeTokens, HDPRMAN_API,
                          HD_PRMAN_RILEY_PRIM_TYPE_TOKENS);
