@@ -29,11 +29,11 @@
 #include "pxr/usdImaging/usdImaging/primvarUtils.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
-#include "pxr/imaging/hd/basisCurves.h"
-#include "pxr/imaging/hd/mesh.h"
-#include "pxr/imaging/hd/points.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/tokens.h"
+
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usdGeom/points.h"
@@ -55,7 +55,7 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/gf/vec4h.h"
-
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
 #include "pxr/base/tf/type.h"
@@ -73,15 +73,6 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 // ------------------------------------------------------------
-
-UsdImagingInstanceAdapter::UsdImagingInstanceAdapter() 
-    : BaseAdapter()
-{
-}
-
-UsdImagingInstanceAdapter::~UsdImagingInstanceAdapter() 
-{
-}
 
 bool
 UsdImagingInstanceAdapter::ShouldCullChildren() const
@@ -228,6 +219,19 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                                            TfToken(),
                                            TfToken(),
                                            instancerAdapter };
+        
+        UsdPrim instancerPrim = _GetPrim(instancerPath);
+        // Add this instancer into the render index
+        index->InsertInstancer(
+            instancerPath, instancerPrim, ctx.instancerAdapter);
+
+        // Add a dependency to the instance's proto root (to pick up scene
+        // edits to the proto root).
+        index->AddDependency(instancerPath, instancerPrim.GetPrototype());
+
+        // Mark this instancer as having TrackVariability/UpdateForTime queued,
+        // since we automatically queue them in InsertInstancer.
+        instancerData.refresh = true;
 
         // -------------------------------------------------------------- //
         // Allocate hydra prototype prims for the prims in the USD prototype.
@@ -238,7 +242,6 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         // prototypes.
         UsdPrimRange range(prototypePrim, _GetDisplayPredicate());
         int protoID = 0;
-        int primCount = 0;
 
         for (auto iter = range.begin(); iter != range.end(); ++iter) {
             // If we encounter an instance in this USD prototype, save it aside
@@ -298,7 +301,6 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
             //
             const TfToken protoName(TfStringPrintf(
                 "proto_%s_id%d", iter->GetName().GetText(), protoID++));
-            bool isLeafInstancer;
 
             // Inherited attribute resolution...
             SdfPath protoMaterialId =
@@ -309,16 +311,25 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
             TfToken protoDrawMode = GetModelDrawMode(instanceProxyPrim);
             TfToken protoInheritablePurpose = 
                 GetInheritablePurpose(instanceProxyPrim);
-
-            const SdfPath protoPath = 
-                _InsertProtoPrim(&iter, protoName, protoMaterialId,
-                                 protoDrawMode, protoInheritablePurpose, 
-                                 instancerPath, primAdapter, instancerAdapter, 
-                                 index, &isLeafInstancer);
-                    
-            // 
-            // Update instancer data.
-            //
+            
+            // XXX: Pre-resolve the prototype's cache path and update instancer
+            // data and proto prim maps before inserting so the instance
+            // adapter can respond to calls for information about the proto prim
+            // during insertion.
+            UsdImagingInstancerContext ctx = { instancerPath, protoName,
+                protoMaterialId, protoDrawMode, protoInheritablePurpose,
+                instancerAdapter };
+            SdfPath protoPath = primAdapter->ResolveCachePath(
+                iter->IsPrototype() ? instancerPath : iter->GetPath(), &ctx);
+            if (protoPath.IsPrimVariantSelectionPath()) {
+                // XXX: When the prototype is a point instancer that is in the
+                // prototype of more than one instancer, it must be populated at
+                // a unique variant name. ResolveCachePath() will return a prim
+                // variant selection path when this is the case. We must pass
+                // the variant number along to the point instancer adapter via
+                // the instancer context's childName field.
+                ctx.childName = protoPath.GetNameToken();
+            }
             _ProtoPrim& proto = instancerData.primMap[protoPath];
             if (iter->IsPrototype()) {
                 // If the hydra prim we're populating is the root prim of the
@@ -329,9 +340,7 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                 proto.path = iter->GetPath();
             }
             proto.adapter = primAdapter;
-            ++primCount;
-
-            if (!isLeafInstancer) {
+            if (primAdapter->IsInstancerAdapter()) {
                 instancerData.childPointInstancers.insert(protoPath);
 
                 // Store cache path and instancer path mapping that
@@ -340,6 +349,14 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                 if (cacheIt == _protoPrimToInstancerMap.end()) {
                     _protoPrimToInstancerMap[protoPath] = instancerPath;
                 }
+            }
+            const SdfPath newProtoPath = 
+                _InsertProtoPrim(&iter, primAdapter, ctx, index);
+            if (!TF_VERIFY(protoPath == newProtoPath, "protoPath changed from "
+                "<%s> to <%s>", protoPath.GetText(), newProtoPath.GetText())) {
+                instancerData.primMap[newProtoPath] = proto;
+                instancerData.primMap.erase(protoPath);
+                protoPath = newProtoPath;
             }
 
             TF_DEBUG(USDIMAGING_INSTANCER).Msg(
@@ -350,21 +367,6 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                     TfType::GetCanonicalTypeName(typeid(*primAdapter)).c_str() :
                     "none");
         }
-
-        UsdPrim instancerPrim = _GetPrim(instancerPath);
-
-        // Add this instancer into the render index
-        index->InsertInstancer(instancerPath,
-                               instancerPrim,
-                               ctx.instancerAdapter);
-
-        // Add a dependency to the instance's proto root (to pick up scene
-        // edits to the proto root).
-        index->AddDependency(instancerPath, instancerPrim.GetPrototype());
-
-        // Mark this instancer as having TrackVariability/UpdateForTime queued,
-        // since we automatically queue them in InsertInstancer.
-        instancerData.refresh = true;
     }
 
     // Add an entry to the instancer data for the given instance.
@@ -477,30 +479,17 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
 SdfPath
 UsdImagingInstanceAdapter::_InsertProtoPrim(
     UsdPrimRange::iterator *it,
-    TfToken const& protoName,
-    SdfPath materialUsdPath,
-    TfToken drawMode,
-    TfToken inheritablePurpose,
-    SdfPath instancerPath,
-    UsdImagingPrimAdapterSharedPtr const& primAdapter,
-    UsdImagingPrimAdapterSharedPtr const& instancerAdapter,
-    UsdImagingIndexProxy* index,
-    bool *isLeafInstancer)
+    const UsdImagingPrimAdapterSharedPtr& primAdapter,
+    const UsdImagingInstancerContext& ctx,
+    UsdImagingIndexProxy* index)
 {
     UsdPrim prim = **it;
     if ((*it)->IsPrototype()) {
         // If the hydra prim we're populating is the prototype root prim,
         // our prim handle should be to the instance, since the prototype
         // root prim doesn't have attributes.
-        prim = _GetPrim(instancerPath);
+        prim = _GetPrim(ctx.instancerCachePath);
     }
-
-    UsdImagingInstancerContext ctx = { instancerPath,
-                                       protoName,
-                                       materialUsdPath,
-                                       drawMode,
-                                       inheritablePurpose,
-                                       instancerAdapter };
 
     SdfPath protoPath = primAdapter->Populate(prim, index, &ctx);
 
@@ -508,7 +497,6 @@ UsdImagingInstanceAdapter::_InsertProtoPrim(
         it->PruneChildren();
     }
 
-    *isLeafInstancer = !(primAdapter->IsInstancerAdapter());
     return protoPath;
 }
 

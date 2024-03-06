@@ -91,7 +91,7 @@
                         "primTypeName": "Cylinder"
                     },
                     "UsdImagingDrawModeAdapter" : {
-                        "bases": ["UsdImagingPrimAdapter"],
+                        "bases": ["UsdImagingInstanceablePrimAdapter"],
                         "isInternal": true,
                         "primTypeName": "__drawModeAdapter"
                     },
@@ -169,7 +169,7 @@
                     },
                     "UsdImagingPointInstancerAdapter": {
                         "bases": [
-                            "UsdImagingPrimAdapter"
+                            "UsdImagingInstanceablePrimAdapter"
                         ],
                         "isInternal": true,
                         "primTypeName": "PointInstancer"
@@ -211,7 +211,7 @@
                     },
                     "UsdImagingLightAdapter": {
                         "bases": [
-                            "UsdImagingPrimAdapter"
+                            "UsdImagingInstanceablePrimAdapter"
                         ],
                         "isInternal": true,
                         "primTypeName": "LightAPI",

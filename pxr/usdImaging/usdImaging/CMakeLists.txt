@@ -94,6 +94,7 @@ pxr_library(usdImaging
         gprimAdapter
         hermiteCurvesAdapter
         implicitSurfaceMeshUtils
+        instanceablePrimAdapter
         instanceAdapter
         lightAdapter
         lightAPIAdapter
