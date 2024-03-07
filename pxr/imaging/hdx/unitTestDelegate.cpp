@@ -58,7 +58,49 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     (renderBufferDescriptor)
-);    
+);
+
+
+// XXX: These mostly-empty subclasses are here to prevent a link-time
+// optimization with HdRenderIndex::InsertTask<T>(), hdx/taskController.cpp and
+// HD_TRACE_FUNCTION() for address sanitized builds of USD. Without these
+// classes the linker will incorrectly "optimize" calls to the expanded
+// HD_TRACE_FUNCTION() in GetRenderIndex()->InsertTask<HdxPickTask>() for
+// taskController.cpp.
+class Hdx_UnitTestPickTask : public HdxPickTask {
+public:
+    HDX_API
+    Hdx_UnitTestPickTask(HdSceneDelegate *delegate, SdfPath const &id)
+        : HdxPickTask(delegate, id) {}
+};
+
+class Hdx_UnitTestShadowTask : public HdxShadowTask {
+public:
+    HDX_API
+    Hdx_UnitTestShadowTask(HdSceneDelegate *delegate, SdfPath const &id)
+        : HdxShadowTask(delegate, id) {}
+};
+
+class Hdx_UnitTestSimpleLightTask : public HdxSimpleLightTask {
+public:
+    HDX_API
+    Hdx_UnitTestSimpleLightTask(HdSceneDelegate *delegate, SdfPath const &id)
+        : HdxSimpleLightTask(delegate, id) {}
+};
+
+class Hdx_UnitTestSelectionTask : public HdxSelectionTask {
+public:
+    HDX_API
+    Hdx_UnitTestSelectionTask(HdSceneDelegate *delegate, SdfPath const &id)
+        : HdxSelectionTask(delegate, id) {}
+};
+
+class Hdx_UnitTestRenderTask : public HdxRenderTask {
+public:
+    HDX_API
+    Hdx_UnitTestRenderTask(HdSceneDelegate *delegate, SdfPath const &id)
+        : HdxRenderTask(delegate, id) {}
+};
 
 static void
 _CreateGrid(int nx, int ny, VtVec3fArray *points,
@@ -405,7 +447,7 @@ Hdx_UnitTestDelegate::SetDrawTarget(SdfPath const &id, TfToken const &key,
 void
 Hdx_UnitTestDelegate::AddRenderTask(SdfPath const &id)
 {
-    GetRenderIndex().InsertTask<HdxRenderTask>(this, id);
+    GetRenderIndex().InsertTask<Hdx_UnitTestRenderTask>(this, id);
     _ValueCache &cache = _valueCacheMap[id];
     cache[HdTokens->collection]
         = HdRprimCollection(HdTokens->geometry, 
@@ -430,7 +472,7 @@ Hdx_UnitTestDelegate::AddRenderSetupTask(SdfPath const &id)
 void
 Hdx_UnitTestDelegate::AddSimpleLightTask(SdfPath const &id)
 {
-    GetRenderIndex().InsertTask<HdxSimpleLightTask>(this, id);
+    GetRenderIndex().InsertTask<Hdx_UnitTestSimpleLightTask>(this, id);
     _ValueCache &cache = _valueCacheMap[id];
     HdxSimpleLightTaskParams params;
     params.cameraPath = _cameraId;
@@ -444,7 +486,7 @@ Hdx_UnitTestDelegate::AddSimpleLightTask(SdfPath const &id)
 void
 Hdx_UnitTestDelegate::AddShadowTask(SdfPath const &id)
 {
-    GetRenderIndex().InsertTask<HdxShadowTask>(this, id);
+    GetRenderIndex().InsertTask<Hdx_UnitTestShadowTask>(this, id);
     _ValueCache &cache = _valueCacheMap[id];
     HdxShadowTaskParams params;
     cache[HdTokens->params] = VtValue(params);
@@ -453,7 +495,7 @@ Hdx_UnitTestDelegate::AddShadowTask(SdfPath const &id)
 void
 Hdx_UnitTestDelegate::AddSelectionTask(SdfPath const &id)
 {
-    GetRenderIndex().InsertTask<HdxSelectionTask>(this, id);
+    GetRenderIndex().InsertTask<Hdx_UnitTestSelectionTask>(this, id);
 }
 
 void
@@ -470,7 +512,7 @@ Hdx_UnitTestDelegate::AddDrawTargetTask(SdfPath const &id)
 void
 Hdx_UnitTestDelegate::AddPickTask(SdfPath const &id)
 {
-    GetRenderIndex().InsertTask<HdxPickTask>(this, id);
+    GetRenderIndex().InsertTask<Hdx_UnitTestPickTask>(this, id);
     _ValueCache &cache = _valueCacheMap[id];
 
     HdxPickTaskParams params;
