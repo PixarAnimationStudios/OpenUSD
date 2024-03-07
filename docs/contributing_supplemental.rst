@@ -1,6 +1,6 @@
-===================
-Supplemental Terms
-===================
+=========================================================================
+Supplemental Terms for OpenUSD Technical Proposals ("Supplemental Terms")
+=========================================================================
 
 By and in consideration for using Pixar's OpenUSD proposals site, providing 
 Technical Proposals to Pixar for Pixar's OpenUSD project, or by clicking a box 
