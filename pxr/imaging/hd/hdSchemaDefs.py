@@ -1152,7 +1152,9 @@
         DOC = '''The {{ SCHEMA_CLASS_NAME }} encapsulates "global" state to orchestrate a
                  render. It currently houses the active render settings prim path that
                  describes the information necessary to generate images from a single
-                 invocation of a renderer.
+                 invocation of a renderer, and the active time sample range that
+                 may be relevant to downstream scene indices (e.g. procedural
+                 evaluation).
 
                  We shall use the convention of a container data source at the root prim
                  of the scene index that is populated with this global state.
@@ -1161,7 +1163,10 @@
         SCHEMA_TOKEN = 'sceneGlobals',
         ADD_DEFAULT_LOCATOR = True,
         MEMBERS = [
-            ('activeRenderSettingsPrim', T_PATH, dict(ADD_LOCATOR = True)),
+            ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
+            ('activeRenderSettingsPrim', T_PATH, {}),
+            ('startTimeCode', T_DOUBLE, {}),
+            ('endTimeCode', T_DOUBLE, {}),
         ],
     ),
 

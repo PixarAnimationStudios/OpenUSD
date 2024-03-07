@@ -71,20 +71,46 @@ HdSceneGlobalsSchema::GetActiveRenderSettingsPrim() const
         HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim);
 }
 
+HdDoubleDataSourceHandle
+HdSceneGlobalsSchema::GetStartTimeCode() const
+{
+    return _GetTypedDataSource<HdDoubleDataSource>(
+        HdSceneGlobalsSchemaTokens->startTimeCode);
+}
+
+HdDoubleDataSourceHandle
+HdSceneGlobalsSchema::GetEndTimeCode() const
+{
+    return _GetTypedDataSource<HdDoubleDataSource>(
+        HdSceneGlobalsSchemaTokens->endTimeCode);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdSceneGlobalsSchema::BuildRetained(
-        const HdPathDataSourceHandle &activeRenderSettingsPrim
+        const HdPathDataSourceHandle &activeRenderSettingsPrim,
+        const HdDoubleDataSourceHandle &startTimeCode,
+        const HdDoubleDataSourceHandle &endTimeCode
 )
 {
-    TfToken _names[1];
-    HdDataSourceBaseHandle _values[1];
+    TfToken _names[3];
+    HdDataSourceBaseHandle _values[3];
 
     size_t _count = 0;
 
     if (activeRenderSettingsPrim) {
         _names[_count] = HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim;
         _values[_count++] = activeRenderSettingsPrim;
+    }
+
+    if (startTimeCode) {
+        _names[_count] = HdSceneGlobalsSchemaTokens->startTimeCode;
+        _values[_count++] = startTimeCode;
+    }
+
+    if (endTimeCode) {
+        _names[_count] = HdSceneGlobalsSchemaTokens->endTimeCode;
+        _values[_count++] = endTimeCode;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -97,11 +123,29 @@ HdSceneGlobalsSchema::Builder::SetActiveRenderSettingsPrim(
     return *this;
 }
 
+HdSceneGlobalsSchema::Builder &
+HdSceneGlobalsSchema::Builder::SetStartTimeCode(
+    const HdDoubleDataSourceHandle &startTimeCode)
+{
+    _startTimeCode = startTimeCode;
+    return *this;
+}
+
+HdSceneGlobalsSchema::Builder &
+HdSceneGlobalsSchema::Builder::SetEndTimeCode(
+    const HdDoubleDataSourceHandle &endTimeCode)
+{
+    _endTimeCode = endTimeCode;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdSceneGlobalsSchema::Builder::Build()
 {
     return HdSceneGlobalsSchema::BuildRetained(
-        _activeRenderSettingsPrim
+        _activeRenderSettingsPrim,
+        _startTimeCode,
+        _endTimeCode
     );
 }
 
@@ -139,6 +183,26 @@ HdSceneGlobalsSchema::GetActiveRenderSettingsPrimLocator()
     static const HdDataSourceLocator locator =
         GetDefaultLocator().Append(
             HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdSceneGlobalsSchema::GetStartTimeCodeLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdSceneGlobalsSchemaTokens->startTimeCode);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdSceneGlobalsSchema::GetEndTimeCodeLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdSceneGlobalsSchemaTokens->endTimeCode);
     return locator;
 } 
 

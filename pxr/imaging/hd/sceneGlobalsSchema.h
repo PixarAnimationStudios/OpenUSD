@@ -54,6 +54,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_SCENE_GLOBALS_SCHEMA_TOKENS \
     (sceneGlobals) \
     (activeRenderSettingsPrim) \
+    (startTimeCode) \
+    (endTimeCode) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdSceneGlobalsSchemaTokens, HD_API,
     HD_SCENE_GLOBALS_SCHEMA_TOKENS);
@@ -63,7 +65,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdSceneGlobalsSchemaTokens, HD_API,
 // The HdSceneGlobalsSchema encapsulates "global" state to orchestrate a
 // render. It currently houses the active render settings prim path that
 // describes the information necessary to generate images from a single
-// invocation of a renderer.
+// invocation of a renderer, and the active time sample range that may be
+// relevant to downstream scene indices (e.g. procedural evaluation).
 //
 // We shall use the convention of a container data source at the root prim of
 // the scene index that is populated with this global state. The renderer and
@@ -117,7 +120,13 @@ public:
     /// @{
 
     HD_API
-    HdPathDataSourceHandle GetActiveRenderSettingsPrim() const; 
+    HdPathDataSourceHandle GetActiveRenderSettingsPrim() const;
+
+    HD_API
+    HdDoubleDataSourceHandle GetStartTimeCode() const;
+
+    HD_API
+    HdDoubleDataSourceHandle GetEndTimeCode() const; 
 
     /// @}
 
@@ -148,6 +157,14 @@ public:
     /// Prim-level relative data source locator to locate activeRenderSettingsPrim.
     HD_API
     static const HdDataSourceLocator &GetActiveRenderSettingsPrimLocator();
+
+    /// Prim-level relative data source locator to locate startTimeCode.
+    HD_API
+    static const HdDataSourceLocator &GetStartTimeCodeLocator();
+
+    /// Prim-level relative data source locator to locate endTimeCode.
+    HD_API
+    static const HdDataSourceLocator &GetEndTimeCodeLocator();
     /// @} 
 
     /// \name Schema construction
@@ -163,7 +180,9 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdPathDataSourceHandle &activeRenderSettingsPrim
+        const HdPathDataSourceHandle &activeRenderSettingsPrim,
+        const HdDoubleDataSourceHandle &startTimeCode,
+        const HdDoubleDataSourceHandle &endTimeCode
     );
 
     /// \class HdSceneGlobalsSchema::Builder
@@ -178,6 +197,12 @@ public:
         HD_API
         Builder &SetActiveRenderSettingsPrim(
             const HdPathDataSourceHandle &activeRenderSettingsPrim);
+        HD_API
+        Builder &SetStartTimeCode(
+            const HdDoubleDataSourceHandle &startTimeCode);
+        HD_API
+        Builder &SetEndTimeCode(
+            const HdDoubleDataSourceHandle &endTimeCode);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -185,6 +210,8 @@ public:
 
     private:
         HdPathDataSourceHandle _activeRenderSettingsPrim;
+        HdDoubleDataSourceHandle _startTimeCode;
+        HdDoubleDataSourceHandle _endTimeCode;
 
     };
 
