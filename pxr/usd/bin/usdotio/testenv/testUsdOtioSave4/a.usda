@@ -1,0 +1,89 @@
+#usda 1.0
+
+def Xform "hello"
+{
+    def Sphere "world"
+    {
+    }
+}
+
+def OtioTimeline "otio"
+{
+    uniform string metadata = "{}"
+    uniform string name = ""
+    uniform string OTIO_SCHEMA = "Timeline.1"
+
+    def OtioStack "Stack"
+    {
+        bool enabled = 1
+        uniform string metadata = "{}"
+        uniform string name = "tracks"
+        uniform string OTIO_SCHEMA = "Stack.1"
+
+        def OtioTrack "Video_1"
+        {
+            bool enabled = 1
+            uniform string kind = "Video"
+            uniform string metadata = "{}"
+            uniform string name = ""
+            uniform string OTIO_SCHEMA = "Track.1"
+
+            def OtioClip "Clip_1"
+            {
+                uniform string active_media_reference_key = "DEFAULT_MEDIA"
+                bool enabled = 1
+                uniform string metadata = "{}"
+                uniform string name = ""
+                uniform string OTIO_SCHEMA = "Clip.2"
+
+                def OtioMissingReference "missing_reference"
+                {
+                    uniform string metadata = "{}"
+                    uniform string name = ""
+                    uniform string OTIO_SCHEMA = "MissingReference.1"
+                }
+            }
+
+            def OtioStack "Stack_1"
+            {
+                bool enabled = 1
+                uniform string metadata = "{}"
+                uniform string name = ""
+                uniform string OTIO_SCHEMA = "Stack.1"
+
+                def OtioClip "Clip_2"
+                {
+                    uniform string active_media_reference_key = "DEFAULT_MEDIA"
+                    bool enabled = 1
+                    uniform string metadata = "{}"
+                    uniform string name = ""
+                    uniform string OTIO_SCHEMA = "Clip.2"
+
+                    def OtioMissingReference "missing_reference"
+                    {
+                        uniform string metadata = "{}"
+                        uniform string name = ""
+                        uniform string OTIO_SCHEMA = "MissingReference.1"
+                    }
+                }
+            }
+
+            def OtioClip "Clip_3"
+            {
+                uniform string active_media_reference_key = "DEFAULT_MEDIA"
+                bool enabled = 1
+                uniform string metadata = "{}"
+                uniform string name = ""
+                uniform string OTIO_SCHEMA = "Clip.2"
+
+                def OtioMissingReference "missing_reference"
+                {
+                    uniform string metadata = "{}"
+                    uniform string name = ""
+                    uniform string OTIO_SCHEMA = "MissingReference.1"
+                }
+            }
+        }
+    }
+}
+

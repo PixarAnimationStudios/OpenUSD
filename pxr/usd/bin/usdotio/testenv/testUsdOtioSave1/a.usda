@@ -1,0 +1,88 @@
+#usda 1.0
+
+def Xform "hello"
+{
+    def Sphere "world"
+    {
+    }
+}
+
+def OtioTimeline "otio"
+{
+    uniform string metadata = "{}"
+    uniform string name = "SingleClip"
+    uniform string OTIO_SCHEMA = "Timeline.1"
+
+    def OtioStack "Stack"
+    {
+        bool enabled = 1
+        uniform string metadata = "{}"
+        uniform string name = "Stack"
+        uniform string OTIO_SCHEMA = "Stack.1"
+
+        def OtioTrack "Video_1"
+        {
+            bool enabled = 1
+            uniform string kind = "Video"
+            uniform string metadata = "{}"
+            uniform string name = "Video"
+            uniform string OTIO_SCHEMA = "Track.1"
+
+            def OtioClip "Clip_1"
+            {
+                uniform string active_media_reference_key = "DEFAULT_MEDIA"
+                bool enabled = 1
+                uniform string metadata = "{}"
+                uniform string name = "BART_2021-02-07"
+                uniform string OTIO_SCHEMA = "Clip.2"
+
+                def OtioTimeRange "source_range"
+                {
+                    uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                    def OtioRationalTime "start_time"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 30
+                        double value = 90
+                    }
+
+                    def OtioRationalTime "duration"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 30
+                        double value = 90
+                    }
+                }
+
+                def OtioExternalReference "external_reference"
+                {
+                    uniform string metadata = "{}"
+                    uniform string name = ""
+                    uniform string OTIO_SCHEMA = "ExternalReference.1"
+                    uniform string target_url = "BART_2021-02-07.m4v"
+
+                    def OtioTimeRange "available_range"
+                    {
+                        uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                        def OtioRationalTime "start_time"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 30
+                            double value = 0
+                        }
+
+                        def OtioRationalTime "duration"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 30
+                            double value = 704
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

@@ -1,0 +1,59 @@
+{
+    "OTIO_SCHEMA": "Timeline.1", 
+    "metadata": {},
+    "name": "LinearTimeWarp",
+    "tracks": {
+        "OTIO_SCHEMA": "Stack.1", 
+        "children": [
+            {
+                "OTIO_SCHEMA": "Track.1", 
+                "children": [
+                    {
+                        "OTIO_SCHEMA": "Clip.1",
+                        "media_reference": {
+                            "OTIO_SCHEMA": "ExternalReference.1",
+                            "available_range": {
+                                "OTIO_SCHEMA": "TimeRange.1",
+                                "duration": {
+                                    "OTIO_SCHEMA": "RationalTime.1",
+                                    "rate": 30,
+                                    "value": 704
+                                },
+                                "start_time": {
+                                    "OTIO_SCHEMA": "RationalTime.1",
+                                    "rate": 30,
+                                    "value": 0
+                                }
+                            },
+                            "target_url": "BART_2021-02-07.m4v"
+                        },
+                        "source_range": {
+                            "OTIO_SCHEMA": "TimeRange.1",
+                            "duration": {
+                                "OTIO_SCHEMA": "RationalTime.1",
+                                "rate": 30,
+                                "value": 90
+                            },
+                            "start_time": {
+                                "OTIO_SCHEMA": "RationalTime.1",
+                                "rate": 30,
+                                "value": 90
+                            }
+                        },
+                        "name": "BART_2021-02-07", 
+                        "effects": [
+                            {
+                                "OTIO_SCHEMA": "LinearTimeWarp.1", 
+                                "effect_name": "LinearTimeWarp", 
+                                "time_scalar": 0.75
+                            }
+                        ]
+                    }
+                ],
+                "kind": "Video", 
+                "name": "Video"
+            }
+        ], 
+        "name": "Stack"
+    }
+}
