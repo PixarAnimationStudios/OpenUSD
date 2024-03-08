@@ -624,7 +624,7 @@ ArchDebuggerIsAttached()
 {
     Arch_DebuggerInit();
 #if defined(ARCH_OS_WINDOWS)
-    return IsDebuggerPresent() == TRUE;
+    return IsDebuggerPresent() != FALSE;
 #elif defined(ARCH_OS_DARWIN)
     return AmIBeingDebugged();
 #elif defined(ARCH_OS_LINUX)
