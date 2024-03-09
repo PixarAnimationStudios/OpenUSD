@@ -43,7 +43,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#if defined(ARCH_OS_WINDOWS)
+#if defined(ARCH_OS_WINDOWS) || defined(__EMSCRIPTEN__)
     // Older networked filesystems have reported incorrect file permissions
     // on Windows so the write permissions check has been disabled as a default
     static const bool requireWritePermissionDefault = false;
