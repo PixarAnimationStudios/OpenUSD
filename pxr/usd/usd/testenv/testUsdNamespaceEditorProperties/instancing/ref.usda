@@ -1,0 +1,13 @@
+#usda 1.0 
+
+def PrimTypeC "ReferencePrim" {
+    custom double ReferencePrim_Attr = 10.0 (
+    	displayGroup = "Ref"
+    )
+    
+    def PrimTypeB "B" {
+        custom int B_Attr = 1 (
+	    	displayGroup = "Ref"
+        )
+    }
+}

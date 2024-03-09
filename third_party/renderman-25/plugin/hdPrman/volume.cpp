@@ -313,7 +313,7 @@ _EmitOpenVDBVolume(HdSceneDelegate *sceneDelegate,
         // Build up JSON args for grid groups. For now we assume all grids in
         // the VDB provided should be included.
         std::map<std::string, JsArray> indexMap;
-        for (const auto grid : *grids) {
+        for (const auto& grid : *grids) {
             if (auto meta = grid->getMetadata<openvdb::TypedMetadata<int>>("index")) {
                 indexMap[grid->getName()].emplace_back(meta->value());
             }

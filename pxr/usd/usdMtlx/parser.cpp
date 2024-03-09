@@ -241,10 +241,11 @@ ShaderBuilder::AddProperty(
         if (converted.valueTypeName) {
             type = converted.valueTypeName.GetAsToken();
             // Do not use GetAsToken for comparison as recommended in the API
-            if (converted.valueTypeName == SdfValueTypeNames->Bool) {
+            if (converted.valueTypeName == SdfValueTypeNames->Bool ||
+                converted.valueTypeName == SdfValueTypeNames->Matrix3d) {
                  defaultValue = UsdMtlxGetUsdValue(element, isOutput);
                  metadata.emplace(SdrPropertyMetadata->SdrUsdDefinitionType,
-                           converted.valueTypeName.GetType().GetTypeName());
+                    converted.valueTypeName.GetAliasesAsTokens().front());
             }
         }
         else {

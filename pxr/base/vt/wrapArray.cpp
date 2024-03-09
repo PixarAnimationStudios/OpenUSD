@@ -34,12 +34,12 @@ namespace Vt_WrapArray {
 // GetVtArrayName (declared above) for each VtArray type.  The function bodies
 // simply return the "common name" for the VtArray.  For instance,
 // GetVtArrayName<VtArray<int> >() -> "VtIntArray".
-#define MAKE_NAME_FUNC(r, unused, elem) \
+#define MAKE_NAME_FUNC(unused, elem) \
 template <> \
 VT_API string GetVtArrayName< VT_TYPE(elem) >() { \
     return TF_PP_STRINGIZE(VT_TYPE_NAME(elem)); \
 }
-BOOST_PP_SEQ_FOR_EACH(MAKE_NAME_FUNC, ~, VT_ARRAY_VALUE_TYPES)
+TF_PP_SEQ_FOR_EACH(MAKE_NAME_FUNC, ~, VT_ARRAY_VALUE_TYPES)
 #undef MAKE_NAME_FUNC
 
 }

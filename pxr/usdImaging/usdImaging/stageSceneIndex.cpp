@@ -337,11 +337,13 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
 
 // ---------------------------------------------------------------------------
 
-void UsdImagingStageSceneIndex::SetTime(UsdTimeCode time)
+void UsdImagingStageSceneIndex::SetTime(
+    UsdTimeCode time,
+    const bool forceDirtyingTimeDeps)
 {
     TRACE_FUNCTION();
 
-    if (_stageGlobals.GetTime() == time) {
+    if (_stageGlobals.GetTime() == time && !forceDirtyingTimeDeps) {
         return;
     }
 

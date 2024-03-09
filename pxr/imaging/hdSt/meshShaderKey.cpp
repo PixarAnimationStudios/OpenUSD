@@ -127,6 +127,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainTriQuadGS,               "Mesh.Geometry.TriQuad"))
     ((mainQuadGS,                  "Mesh.Geometry.Quad"))
     ((mainPatchCoordFS,            "Mesh.Fragment.PatchCoord"))
+    ((mainPatchCoordNoGSFS,        "Mesh.Fragment.PatchCoord.NoGS"))
     ((mainPatchCoordTessFS,        "Mesh.Fragment.PatchCoord.Tess"))
     ((mainPatchCoordTriangleFS,    "Mesh.Fragment.PatchCoord.Triangle"))
     ((mainPatchCoordQuadFS,        "Mesh.Fragment.PatchCoord.Quad"))
@@ -624,6 +625,9 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     // Patches
     } else if (isPrimTypePatches && ptvsStageEnabled) {
         FS[fsIndex++] = _tokens->mainPatchCoordTessFS;
+    // Points/No GS
+    } else if (isPrimTypePoints || canSkipGS) {
+        FS[fsIndex++] = _tokens->mainPatchCoordNoGSFS;
     } else {
         FS[fsIndex++] = _tokens->mainPatchCoordFS;
     }

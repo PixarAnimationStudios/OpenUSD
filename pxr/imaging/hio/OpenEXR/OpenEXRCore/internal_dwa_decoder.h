@@ -34,6 +34,8 @@ typedef struct _LossyDctDecoder
     uint8_t* _packedAcEnd;
     uint8_t* _packedDc;
 
+    uint64_t _remDcCount;
+
     //
     // half -> half LUT to transform from nonlinear to linear
     //
@@ -57,6 +59,7 @@ static exr_result_t LossyDctDecoder_base_construct (
     uint8_t*         packedAc,
     uint8_t*         packedAcEnd,
     uint8_t*         packedDc,
+    uint64_t         remDcCount,
     const uint16_t*  toLinear,
     int              width,
     int              height);
@@ -67,6 +70,7 @@ static exr_result_t LossyDctDecoder_construct (
     uint8_t*             packedAc,
     uint8_t*             packedAcEnd,
     uint8_t*             packedDc,
+    uint64_t             remDcCount,
     const uint16_t*      toLinear,
     int                  width,
     int                  height);
@@ -79,6 +83,7 @@ static exr_result_t LossyDctDecoderCsc_construct (
     uint8_t*             packedAc,
     uint8_t*             packedAcEnd,
     uint8_t*             packedDc,
+    uint64_t             remDcCount,
     const uint16_t*      toLinear,
     int                  width,
     int                  height);
@@ -115,6 +120,7 @@ LossyDctDecoder_construct (
     uint8_t*             packedAc,
     uint8_t*             packedAcEnd,
     uint8_t*             packedDc,
+    uint64_t             remDcCount,
     const uint16_t*      toLinear,
     int                  width,
     int                  height)
@@ -127,7 +133,7 @@ LossyDctDecoder_construct (
     //
 
     rv = LossyDctDecoder_base_construct (
-        d, packedAc, packedAcEnd, packedDc, toLinear, width, height);
+        d, packedAc, packedAcEnd, packedDc, remDcCount, toLinear, width, height);
 
     d->_channel_decode_data[0]    = rowPtrs;
     d->_channel_decode_data_count = 1;
@@ -155,13 +161,14 @@ LossyDctDecoderCsc_construct (
     uint8_t*             packedAc,
     uint8_t*             packedAcEnd,
     uint8_t*             packedDc,
+    uint64_t             remDcCount,
     const uint16_t*      toLinear,
     int                  width,
     int                  height)
 {
     exr_result_t rv;
     rv = LossyDctDecoder_base_construct (
-        d, packedAc, packedAcEnd, packedDc, toLinear, width, height);
+        d, packedAc, packedAcEnd, packedDc, remDcCount, toLinear, width, height);
     if (rv != EXR_ERR_SUCCESS) return rv;
 
     d->_channel_decode_data[0]    = rowPtrsR;
@@ -180,6 +187,7 @@ LossyDctDecoder_base_construct (
     uint8_t*         packedAc,
     uint8_t*         packedAcEnd,
     uint8_t*         packedDc,
+    uint64_t         remDcCount,
     const uint16_t*  toLinear,
     int              width,
     int              height)
@@ -189,6 +197,7 @@ LossyDctDecoder_base_construct (
     d->_packedAc      = packedAc;
     d->_packedAcEnd   = packedAcEnd;
     d->_packedDc      = packedDc;
+    d->_remDcCount    = remDcCount;
     d->_toLinear      = toLinear;
     d->_width         = width;
     d->_height        = height;
@@ -214,18 +223,23 @@ LossyDctDecoder_execute (
     int                  numComp = d->_channel_decode_data_count;
     DctCoderChannelData* chanData[3];
     int                  lastNonZero = 0;
-    int                  numBlocksX  = (int) (ceilf ((float) d->_width / 8.0f));
-    int                  numBlocksY = (int) (ceilf ((float) d->_height / 8.0f));
+    int                  numBlocksX  = (d->_width + 7) / 8;
+    int                  numBlocksY = (d->_height + 7) / 8;
     int                  leftoverX  = d->_width - (numBlocksX - 1) * 8;
     int                  leftoverY  = d->_height - (numBlocksY - 1) * 8;
 
-    int numFullBlocksX = (int) (floorf ((float) d->_width / 8.0f));
+    int numFullBlocksX = d->_width / 8;
 
     uint16_t* currAcComp = (uint16_t*) (d->_packedAc);
     uint16_t* acCompEnd  = (uint16_t*) (d->_packedAcEnd);
     uint16_t* currDcComp[3];
     uint8_t*  rowBlockHandle;
     uint16_t* rowBlock[3];
+
+    if (d->_remDcCount < ((uint64_t)numComp * (uint64_t)numBlocksX * (uint64_t)numBlocksY))
+    {
+        return EXR_ERR_CORRUPT_CHUNK;
+    }
 
     for (int chan = 0; chan < numComp; ++chan)
     {

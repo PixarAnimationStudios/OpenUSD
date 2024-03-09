@@ -6,7 +6,7 @@
 #ifndef OPENEXR_ERRORS_H
 #define OPENEXR_ERRORS_H
 
-#include "openexr_conf.h"
+#include "openexr_config.h"
 
 #include <stdint.h>
 

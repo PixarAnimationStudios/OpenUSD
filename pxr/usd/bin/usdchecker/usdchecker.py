@@ -81,7 +81,7 @@ def main():
                         'aggregate stages.')
     parser.add_argument('--arkit', dest='arkit', action='store_true', 
                         help='Check if the given USD stage is compatible with '
-                        'ARKit\'s initial implementation of usdz. These assets '
+                        'RealityKit\'s implementation of USDZ as of 2023. These assets '
                         'operate under greater constraints that usdz files for '
                         'more general in-house uses, and this option attempts '
                         'to ensure that these constraints are met.')

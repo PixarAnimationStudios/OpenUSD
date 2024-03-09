@@ -36,6 +36,8 @@
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
+#include "pxr/base/work/dispatcher.h"
+
 #include <iostream>
 
 #ifdef PXR_OCIO_PLUGIN_ENABLED
@@ -64,6 +66,7 @@ HdxColorCorrectionTask::HdxColorCorrectionTask(
     HdSceneDelegate* delegate,
     SdfPath const& id)
   : HdxTask(id)
+  , _workDispatcher(std::make_unique<WorkDispatcher>())
 {
     _params.lut3dSizeOCIO = HDX_DEFAULT_LUT3D_SIZE_OCIO;
 }
@@ -73,8 +76,8 @@ HdxColorCorrectionTask::~HdxColorCorrectionTask()
     // If we had queued up work in Sync(), we expect a subsequent
     // invokation of Execute() will have waited on completion.
     // However, as a precaution, cancel and wait on any tasks here.
-    _workDispatcher.Cancel();
-    _workDispatcher.Wait();
+    _workDispatcher->Cancel();
+    _workDispatcher->Wait();
 
     if (_aovSampler) {
         _GetHgi()->DestroySampler(&_aovSampler);
@@ -409,8 +412,16 @@ HdxColorCorrectionTask::_CreateOpenColorIOResourcesImpl(
         uint32_t width, height;
         OCIO::GpuShaderCreator::TextureType channel;
         OCIO::Interpolation interpolation;
+
+#if OCIO_VERSION_HEX >= 0x02030000
+        OCIO::GpuShaderCreator::TextureDimensions dimensions;
+        shaderDesc->getTexture(i, textureName, samplerName, width, height,
+                                channel, dimensions, interpolation);
+#else
         shaderDesc->getTexture(i, textureName, samplerName, width, height,
                                 channel, interpolation);
+#endif // OCIO_VERSION_HEX >= 0x02030000
+
         shaderDesc->getTextureValues(i, lutValues);
 
         int channelPerPix =
@@ -432,7 +443,14 @@ HdxColorCorrectionTask::_CreateOpenColorIOResourcesImpl(
         // Texture description
         HgiTextureDesc texDesc;
         texDesc.debugName = textureName;
-        texDesc.type = height == 1 ? HgiTextureType1D : HgiTextureType2D;
+        texDesc.type =
+#if OCIO_VERSION_HEX >= 0x02030000
+            dimensions == OCIO::GpuShaderCreator::TextureDimensions::TEXTURE_1D
+                ? HgiTextureType1D
+                : HgiTextureType2D;
+#else
+            height == 1 ? HgiTextureType1D : HgiTextureType2D;
+#endif // OCIO_VERSION_HEX >= 0x02030000
         texDesc.dimensions = GfVec3i(width, height, 1);
         texDesc.format = fmt;
         texDesc.layerCount = 1;
@@ -742,7 +760,7 @@ HdxColorCorrectionTask::_CreateShaderResources()
     bool useOCIO =_GetUseOcio();
     if (useOCIO) {
         // Ensure the OICO resource prep task has completed.
-        _workDispatcher.Wait();
+        _workDispatcher->Wait();
         // Don't use OCIO if we weren't able to fill _ocioResources.
         useOCIO = !_ocioResources.gpuShaderText.empty();
     }
@@ -1086,9 +1104,9 @@ HdxColorCorrectionTask::_Sync(HdSceneDelegate* delegate,
             // It is possible for the prior prep task to have not
             // yet completed, so cancel and wait on it before enqueuing
             // a new task with updated parameters.
-            _workDispatcher.Cancel();
-            _workDispatcher.Wait();
-            _workDispatcher.Run(&_CreateOpenColorIOResources,
+            _workDispatcher->Cancel();
+            _workDispatcher->Wait();
+            _workDispatcher->Run(&_CreateOpenColorIOResources,
                                 _GetHgi(),
                                 _params,
                                 &_ocioResources);
@@ -1128,6 +1146,15 @@ HdxColorCorrectionTask::Execute(HdTaskContext* ctx)
     _GetTaskContextData(
         ctx, HdxAovTokens->colorIntermediate, &aovTextureIntermediate);
 
+    // We need to ensure the incoming color buffer is set to the correct layout
+    // ie: Shader Read Only Optimal
+    // since we are going to be sampling from this buffer and writing to a 
+    // color-corrected intermediate buffer.
+    // However, the intermediate color-corrected buffer is in the correct layout
+    // ie: Color Attachment Optimal.
+    // So, no layout transition there.
+    aovTexture->SubmitLayoutChange(HgiTextureUsageBitsShaderRead);
+
     if (!TF_VERIFY(_CreateBufferResources())) {
         return;
     }
@@ -1145,6 +1172,12 @@ HdxColorCorrectionTask::Execute(HdTaskContext* ctx)
     }
 
     _ApplyColorCorrection(aovTextureIntermediate);
+
+    // Before we ping-pong the buffers, we are going to ensure the color buffer 
+    // is converted to a Color Attachment Optimal layout.
+    // Hence, preserving the state atomicity of this pass.
+    // Otherwise, it's business as usual.
+    aovTexture->SubmitLayoutChange(HgiTextureUsageBitsColorTarget);
 
     // Toggle color and colorIntermediate
     _ToggleRenderTarget(ctx);

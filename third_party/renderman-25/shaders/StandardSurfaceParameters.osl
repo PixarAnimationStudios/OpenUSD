@@ -101,7 +101,7 @@ shader StandardSurfaceParameters
     float emission_value = 0.0,
     color emission_color = color(1.0, 1.0, 1.0),
 
-    normal input_normal = normal(0.0, 0.0, 0.0),
+    normal normalIn = normal(0.0, 0.0, 0.0),
 
     // Diffuse outputs
     output float diffuseGainOut = 0.0
@@ -398,14 +398,14 @@ shader StandardSurfaceParameters
         normal Ngn = N;
         getattribute("builtin", "Ngn", Ngn);
 
-        // If we do not have a valid input_normal set the bumpNormal to the 
+        // If we do not have a valid normalIn set the bumpNormal to the 
         // geometric normal
-        if (dot(input_normal, input_normal) <= 0.0) {
+        if (dot(normalIn, normalIn) <= 0.0) {
             bumpNormalOut = Ngn;
         }
-        // Otherwise use the given input_normal
+        // Otherwise use the given normalIn
         else {
-	        bumpNormalOut = normalize(input_normal);
+	        bumpNormalOut = normalize(normalIn);
 
             // Is it backwards from the geometric normal
             if (dot(Ngn, bumpNormalOut) < 0.0) {

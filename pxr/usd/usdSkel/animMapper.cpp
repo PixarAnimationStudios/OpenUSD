@@ -25,6 +25,7 @@
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/type.h"
 
 #include <algorithm>
@@ -216,13 +217,13 @@ UsdSkelAnimMapper::Remap(const VtValue& source,
                          int elementSize,
                          const VtValue& defaultValue) const
 {
-#define _UNTYPED_REMAP(r, unused, elem)                                 \
+#define _UNTYPED_REMAP(unused, elem)                                    \
     if(source.IsHolding<SDF_VALUE_CPP_ARRAY_TYPE(elem)>()) {            \
         return _UntypedRemap<SDF_VALUE_CPP_TYPE(elem)>(                 \
             source, target, elementSize, defaultValue);                 \
     }
 
-BOOST_PP_SEQ_FOR_EACH(_UNTYPED_REMAP, ~, SDF_VALUE_TYPES);
+TF_PP_SEQ_FOR_EACH(_UNTYPED_REMAP, ~, SDF_VALUE_TYPES);
 #undef _UNTYPED_REMAP
 
     return false;

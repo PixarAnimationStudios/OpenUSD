@@ -26,8 +26,6 @@
 
 #include "pxr/base/tf/mallocTag.h"
 
-#include <initializer_list>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 template <class DERIVED, class BASE>
@@ -57,19 +55,8 @@ struct Tf_AddBases<TfType::Bases<Bases...>>
     static void
     RegisterCasts(TfType const* type)
     {
-        struct Cast
-        {
-            const std::type_info *typeInfo;
-            TfType::_CastFunction func;
-        };
-
-        const std::initializer_list<Cast> baseCasts = {
-            { &typeid(Bases), &Tf_CastToParent<Derived, Bases> }...
-        };
-
-        for (const Cast &cast : baseCasts) {
-            type->_AddCppCastFunc(*cast.typeInfo, cast.func);
-        }
+        (type->_AddCppCastFunc(
+            typeid(Bases), &Tf_CastToParent<Derived, Bases>), ...);
     }
 };
 

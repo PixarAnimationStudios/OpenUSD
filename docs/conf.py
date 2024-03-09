@@ -77,7 +77,8 @@ release = version
 extensions = [
     'sphinx.ext.autosectionlabel',
     'sphinxcontrib.doxylink',
-    'sphinx_panels'
+    'sphinx_panels',
+    'myst_parser'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -154,3 +155,7 @@ html_js_files = [
 html_sidebars = { '**': ['globaltoc.html', 'relations.html', 'sourcelink.html', 'searchbox.html'] }
 
 html_favicon = 'https://openusd.org/images/USDIcon.ico'
+
+# Skip generating the "Built with Sphinx using a theme..." line in the footer, 
+# as it creates confusing formatting with our Terms of Use footer link
+html_show_sphinx = False

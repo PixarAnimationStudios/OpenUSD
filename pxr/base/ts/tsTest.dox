@@ -1,0 +1,69 @@
+/*!
+\page page_ts_tsTest The TsTest Framework
+
+TsTest is a framework that validates, graphs, and compares spline evaluations.
+It is used to test Ts itself, but it also has other "backends", which perform
+evaluation using other engines.
+
+TsTest lives inside the Ts library.  All files prefixed with \c tsTest, \c
+wrapTsTest, or \c TsTest are part of the TsTest framework.  They fall into these
+categories:
+
+- <b>Framework.</b>  The base implementation of TsTest.  Includes data
+  structures, generic evaluation interface, and graphical output.
+  
+  - \c tsTest_Evaluator (h, cpp, wrap): generic interface for spline evaluation.
+    Implemented by all backends.
+    
+  - \c tsTest_SplineData (h, cpp, wrap): input data structure for the evaluation
+    interface.  Provides a generic way of defining the control parameters of a
+    spline: knots, tangents, extrapolation, etc.
+    
+  - \c tsTest_SampleTimes (h, cpp, wrap): datatypes and convenience routines to
+    determine a set of times at which to perform sampling.
+    
+  - \c tsTest_Types (h, cpp, wrap): datatypes for the evaluation interface.
+    
+  - \c tsTest_SampleBezier (h, cpp, wrap): pseudo-evaluator that samples a
+    Bezier spline using the De Casteljau algorithm.  Useful for providing
+    "ground truth" in comparison tests.
+    
+  - \c TsTest_Grapher (py): takes a spline and evaluation results, and produces
+    a graph image.  Requires the Python \c matplotlib module.
+    
+  - \c TsTest_Comparator (py): takes two tuples of (spline, evaluation results),
+    draws both on the same graph, and produces a second graph showing the
+    difference curve.  Relies on \c TsTest_Grapher.
+  
+  - \c tsTest_CompareBaseline (py): test helper that creates baseline files,
+    compares results against baselines, and graphs differences.
+
+- <b>Backends.</b>  Implementations of the generic evaluation interface for
+  various spline evaluation engines.
+  
+  - \c tsTest_TsEvaluator (h, cpp, wrap): backend for the Ts library.
+  
+  - \c tsTest_MayapyEvaluator (py): backend for the `mayapy` interpreter.
+    Produces evaluations using Autodesk Maya.  Built optionally, and requires a
+    working installation of Maya.
+    
+    - \c tsTest_MayapyDriver (py): helper for `tsTest_MayapyEvaluator`.  A
+      script that runs inside `mayapy`.
+      
+  - \c tsTest_AnimXEvaluator (h, cpp, wrap): backend for the AnimX library, an
+    open-source Autodesk project that emulates Maya evaluation.  Built
+    optionally, and requires a working installation of AnimX.
+  
+- <b>Single-Backend Tests.</b>  CTest cases that call into one backend to
+  validate behavior.
+  
+  - Most tests in \c testenv that start with \c tsTest.  For example, \c
+    tsTest_TsFramework.
+  
+- <b>Comparison Tests.</b>  CTest cases that call into two backends to compare
+  their behavior with identical spline inputs.
+
+  - Tests in \c testenv that start with \c tsTest and include \c Vs.  For
+    example, \c tsTest_MayapyVsAnimX.
+
+*/

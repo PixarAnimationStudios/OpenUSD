@@ -177,6 +177,19 @@ public:
         : UsdImagingRepresentedByAncestorPrimAdapter() {}
 };
 
+/// \class UsdImagingNodeGraphAdapter
+/// \brief Delegates invalidation responsibility of a Noge Graph prim to an
+/// ancestor Material prim
+class UsdImagingNodeGraphAdapter :
+        public UsdImagingRepresentedByAncestorPrimAdapter
+{
+public:
+    using BaseAdapter = UsdImagingRepresentedByAncestorPrimAdapter;
+
+    UsdImagingNodeGraphAdapter()
+        : UsdImagingRepresentedByAncestorPrimAdapter() {}
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_IMAGING_USD_IMAGING_MATERIAL_ADAPTER_H

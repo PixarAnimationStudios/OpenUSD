@@ -1,0 +1,38 @@
+#usda 1.0
+(
+    customLayerData = {
+        asset baseAsset = @./base_a.usda@
+    }
+    defaultPrim = "foo"
+    subLayers = [
+        @./sub_a.usda@,
+        @./sub_b.usda@
+    ]
+)
+
+over "foo" (
+    assetInfo = {
+        asset identifier = @root.usda@
+        asset meta_a = @./meta_a.usda@
+        asset[] meta_b = [@./meta_b.usda@, @./meta_c.usda@]
+    }
+    payload = @./payload_a.usda@
+    variantSets = "standin"
+)
+{
+    asset attr_a = @./attr_a.usda@
+    asset[] attr_b = [@./attr_b.usda@, @./attr_c.usda@]
+    variantSet "standin" = {
+        "full" (
+            assetInfo = {
+                asset[] v_meta_a = [@./v_meta_a.usda@, @./v_meta_b.usda@]
+            }
+            references = @./v_ref_a.usda@
+        ) {
+            asset v_attr_a = @./v_attr_a.usda@
+            asset[] v_attr_b = [@./v_attr_b.usda@, @./v_attr_c.usda@]
+
+        }
+    }
+}
+

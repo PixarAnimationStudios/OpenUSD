@@ -14,6 +14,7 @@ pxr_library(hd
         cameraUtil
         hf
         pxOsd
+        sdr
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
@@ -38,6 +39,7 @@ pxr_library(hd
         command
         coneSchema
         containerDataSourceEditor
+        containerSchema
         coordSys
         coordSysSchema
         coordSysBindingSchema
@@ -74,7 +76,6 @@ pxr_library(hd
         flattenedDataSourceProvider
         flattenedDataSourceProviders
         flattenedOverlayDataSourceProvider
-        flattenedMaterialBindingsDataSourceProvider
         flattenedPrimvarsDataSourceProvider
         flattenedPurposeDataSourceProvider
         flattenedVisibilityDataSourceProvider
@@ -106,9 +107,11 @@ pxr_library(hd
         materialBindingsSchema
         materialConnectionSchema
         materialFilteringSceneIndexBase
+        materialInterfaceMappingSchema
         materialNetworkSchema
         materialNetwork2Interface
         materialNodeSchema
+        materialNodeParameterSchema
         materialSchema
         mergingSceneIndex
         mesh
@@ -134,6 +137,7 @@ pxr_library(hd
         purposeSchema
         renderBuffer
         renderBufferSchema
+        renderCapabilitiesSchema
         renderDelegate
         rendererPlugin
         rendererPluginHandle
@@ -172,6 +176,7 @@ pxr_library(hd
         splitDiopterSchema
         sprim
         subdivisionTagsSchema
+        systemMessages
         systemSchema
         task
         timeSampleArray
@@ -198,6 +203,7 @@ pxr_library(hd
         driver.h
         invalidatableContainerDataSource.h
         materialNetworkInterface.h
+        schemaTypeDefs.h
         vectorSchemaTypeDefs.h
         version.h
 

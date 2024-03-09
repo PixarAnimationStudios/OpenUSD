@@ -109,16 +109,22 @@ _BuildCurveDataSource(
 {
     HdDataSourceBaseHandle bcs =
         HdBasisCurvesSchema::Builder()
-        .SetTopology(
-            HdBasisCurvesTopologySchema::BuildRetained(
-                HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                    curve.curveVertexCounts),
-                HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                    curve.curveIndices),
-                _TokenDs::New(curve.basis),
-                _TokenDs::New(curve.type),
-                _TokenDs::New(curve.wrap)))
-        .Build();
+            .SetTopology(
+                HdBasisCurvesTopologySchema::Builder()
+                    .SetCurveVertexCounts(
+                        HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                            curve.curveVertexCounts))
+                    .SetCurveIndices(
+                        HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                            curve.curveIndices))
+                    .SetBasis(
+                        _TokenDs::New(curve.basis))
+                    .SetType(
+                        _TokenDs::New(curve.type))
+                    .SetWrap(
+                        _TokenDs::New(curve.wrap))
+                    .Build())
+            .Build();
 
     const _Primvars &primvars = curve.primvars;
     std::vector<TfToken> primvarNames;
@@ -130,17 +136,23 @@ _BuildCurveDataSource(
         primvarNames.push_back(pv.name);
 
         primvarDataSources.push_back(
-            HdPrimvarSchema::BuildRetained(
-                pv.indices.empty()?
-                    _GetRetainedDataSource(pv.value) :
-                    HdSampledDataSourceHandle(),
-                !pv.indices.empty()?
-                    _GetRetainedDataSource(pv.value) :
-                    HdSampledDataSourceHandle(),
-                HdRetainedTypedSampledDataSource<VtIntArray>::New(pv.indices),
-                HdPrimvarSchema::BuildInterpolationDataSource(pv.interp),
-                HdPrimvarSchema::BuildInterpolationDataSource(pv.role)
-            ));
+            HdPrimvarSchema::Builder()
+                .SetPrimvarValue(
+                    pv.indices.empty()
+                    ? _GetRetainedDataSource(pv.value)
+                    : HdSampledDataSourceHandle())
+                .SetIndexedPrimvarValue(
+                    !pv.indices.empty()
+                    ? _GetRetainedDataSource(pv.value)
+                    : HdSampledDataSourceHandle())
+                .SetIndices(
+                    HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                        pv.indices))
+                .SetInterpolation(
+                    HdPrimvarSchema::BuildInterpolationDataSource(pv.interp))
+                .SetRole(
+                    HdPrimvarSchema::BuildInterpolationDataSource(pv.role))
+                .Build());
     }
 
     HdDataSourceBaseHandle primvarsDs =

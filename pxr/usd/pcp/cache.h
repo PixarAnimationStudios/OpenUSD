@@ -197,8 +197,11 @@ public:
     ///
     /// A canonical identifier for each layer in \p layersToMute will be
     /// computed using ArResolver::CreateIdentifier using the cache's root
-    /// layer as the anchoring asset. Any layer encountered during composition
-    /// with the same identifier will be considered muted and ignored.
+    /// layer as the anchoring asset. If an identifier contains a file
+    /// format target that matches this cache's file format target, that
+    /// argument will be removed from the identifier. Any layer encountered
+    /// during composition with the same canonical identifier will be
+    /// considered muted and ignored.
     ///
     /// Note that muting a layer will cause this cache to release all
     /// references to that layer.  If no other client is holding on to

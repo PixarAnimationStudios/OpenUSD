@@ -48,7 +48,7 @@
 
 #include "pxr/base/tf/staticTokens.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <sstream>
 
@@ -90,18 +90,24 @@ HdStSimpleLightingShader::ComputeHash() const
         useShadows ? _lightingContext->ComputeNumShadowsUsed() : 0;
 
     size_t hash = glslfxFile.Hash();
-    boost::hash_combine(hash, numLights);
-    boost::hash_combine(hash, useShadows);
-    boost::hash_combine(hash, numShadows);
-    boost::hash_combine(hash, _lightingContext->ComputeShaderSourceHash());
+    hash = TfHash::Combine(
+        hash,
+        numLights,
+        useShadows,
+        numShadows,
+        _lightingContext->ComputeShaderSourceHash()
+    );
 
     for (const HdStShaderCode::NamedTextureHandle &namedHandle :
         _namedTextureHandles) {
         
         // Use name and hash only - not the texture itself as this
         // does not affect the generated shader source.
-        boost::hash_combine(hash, namedHandle.name);
-        boost::hash_combine(hash, namedHandle.hash);
+        hash = TfHash::Combine(
+            hash,
+            namedHandle.name,
+            namedHandle.hash
+        );
     }
 
     return (ID)hash;

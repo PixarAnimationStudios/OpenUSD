@@ -105,6 +105,13 @@ Pcp_GetArgumentsForFileFormatTarget(
     const SdfLayer::FileFormatArguments* defaultArgs,
     SdfLayer::FileFormatArguments* localArgs);
 
+// Removes the "target" argument from \p args if it exists and its value
+// is the same as \p target.
+void
+Pcp_StripFileFormatTarget(
+    const std::string& target,
+    SdfLayer::FileFormatArguments* args);
+
 // Find the starting node of the class hierarchy of which node n is a part.
 // This is the prim that starts the class chain, aka the 'instance' of the
 // class hierarchy. Also returns the node for the first class in the
@@ -192,6 +199,17 @@ Pcp_GetArgumentsForFileFormatTarget(
 // incorrectly excluded.
 std::pair<PcpNodeRef, PcpNodeRef>
 Pcp_FindStartingNodeOfClassHierarchy(const PcpNodeRef& n);
+
+// Translate the given path (which must be a prim or prim variant selection
+// path) from the namespace of the given node to the namespace of the root node
+// of the prim index that node belongs to. If that translation succeeds, returns
+// the translated path and the root node. If that translation fails, translate
+// the path to the ancestor node closest to the root node where the mapping is
+// successful and return the translated path and the ancestor node.
+std::pair<SdfPath, PcpNodeRef>
+Pcp_TranslatePathFromNodeToRootOrClosestNode(
+    const PcpNodeRef& node,
+    const SdfPath& path);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -101,7 +101,7 @@ public:
 
                 // confirm that existing data source is also a container
                 // if not, rebuild entirely
-                if (!HdContainerDataSource::Cast(dataSource)) {
+                if (!HdContainerDataSource::Cast(_dataSource)) {
                     _dataSource = dataSource;
                     _RebuildChildren();
                     return;
@@ -151,7 +151,7 @@ public:
                     HdVectorDataSource::Cast(dataSource)) {
 
                 HdVectorDataSourceHandle existingVectorDataSource = 
-                    HdVectorDataSource::Cast(dataSource);
+                    HdVectorDataSource::Cast(_dataSource);
 
                 // confirm that existing data source is also a vector
                 // of the same length (could reuse items but probably not

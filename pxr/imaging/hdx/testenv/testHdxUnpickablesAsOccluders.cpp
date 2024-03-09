@@ -293,7 +293,7 @@ My_TestGLDrawing::OffscreenTest()
     _selTracker->SetSelection(selection);
     DrawScene();
     _driver->WriteToFile("color", "color3_cube0_unpickable.png");
-    //TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 0);
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 0);
 }
 
 void

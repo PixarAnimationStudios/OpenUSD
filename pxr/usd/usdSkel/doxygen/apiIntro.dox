@@ -744,10 +744,12 @@ down into its component parts.
 
 - C++:
 \code{.cpp}
+using namespace pxr;
+
 bool
 WriteAnimatedSkel(
     const UsdStagePtr& stage,
-    const SdfPath& skelPath,
+    const SdfPath& skelRootPath,
     const SdfPathVector& jointPaths,
     const std::vector<GfMatrix4d>& rootTransformsPerFrame,
     const std::vector<VtMatrix4dArray>& jointWorldSpaceTransformsPerFrame,
@@ -762,11 +764,14 @@ WriteAnimatedSkel(
     if (bindTransforms.size() != jointPaths.size())
         return false;
 
-    UsdSkelSkeleton skel = UsdSkelSkeleton::Define(stage, skelPath);
-    if (!skel) {
-        TF_WARN("Failed creating a Skeleton prim at <%s>.", skelPath.GetText());
+    UsdSkelRoot skelRoot = UsdSkelRoot::Define(stage, skelRootPath);
+    if (!skelRoot) {
+        TF_WARN("Failed creating a Skeleton prim at <%s>.", skelRootPath.GetText());
         return false;
     }
+
+    UsdSkelSkeleton skel = UsdSkelSkeleton::Define(stage, skelRootPath.AppendChild(TfToken("Skel")));
+    
 
     const size_t numJoints = jointPaths.size();
 
@@ -795,10 +800,10 @@ WriteAnimatedSkel(
     }
 
     UsdSkelAnimation anim = UsdSkelAnimation::Define(
-        stage, skelPath.AppendChild(TfToken("Anim")));
+        stage, skel.GetPath().AppendChild(TfToken("Anim")));
 
     UsdSkelBindingAPI binding = UsdSkelBindingAPI::Apply(skel.GetPrim());
-    binding.CreateSkeletonRel().SetTargets(
+    binding.CreateAnimationSourceRel().SetTargets(
         SdfPathVector({anim.GetPrim().GetPath()}));
 
     anim.GetJointsAttr().Set(jointTokens);
@@ -824,11 +829,14 @@ WriteAnimatedSkel(
 
     // Don't forget to call Save() on the stage!
     return true;
+}
 \endcode
 
 - Python:
 \code{.py}
-def WriteAnimatedSkel(stage, skelPath, jointPaths,
+from pxr import UsdSkel, Vt, Tf
+
+def WriteAnimatedSkel(stage, skelRootPath, jointPaths,
                       rootTransformsPerFrame,
                       jointWorldSpaceTransformsPerFrame,
                       times, bindTransforms, restTransforms=None):
@@ -838,18 +846,20 @@ def WriteAnimatedSkel(stage, skelPath, jointPaths,
         return False
     if not len(bindTransforms) == len(jointPaths):
         return False
-
-    skel = UsdSkel.Skeleton.Define(stage, skelPath)
-    if not skel:
-        Tf.Warn("Failed defining a Skeleton at <%s>.", skelPath)
+    
+    skelRoot = UsdSkel.Root.Define(stage, skelRootPath)
+    if not skelRoot:
+        Tf.Warn("Failed defining a Skeleton at <%s>.", skelRootPath)
         return False
-
+    
+    skel = UsdSkel.Skeleton.Define(stage, skelRootPath.AppendChild("Skel"))
+ 
     numJoints = len(jointPaths)
 
     topo = UsdSkel.Topology(jointPaths)
-    valid,whyNot = topo.Validate()
+    valid, reason = topo.Validate()
     if not valid:
-        Tf.Warn("Invalid topology: %s"%reason)
+        Tf.Warn("Invalid topology: %s" % reason)
         return False
 
     jointTokens = Vt.TokenArray([jointPath.pathString for jointPath in jointPaths])
@@ -861,14 +871,14 @@ def WriteAnimatedSkel(stage, skelPath, jointPaths,
         skel.GetRestTransformsAttr().Set(restTransforms)
 
     rootTransformAttr = skel.MakeMatrixXform()
-    for i,time in enumerate(times):
+    for i, time in enumerate(times):
         rootTransformAttr.Set(rootTransformsPerFrame[i], time)
-
-    anim = UsdSkel.Animation.Define(stage, skelPath.AppendChild("Anim"))
-
+ 
+    anim = UsdSkel.Animation.Define(stage, skel.GetPath().AppendChild("Anim"))
+ 
     binding = UsdSkel.BindingAPI.Apply(skel.GetPrim())
-    binding.CreateSkeletonRel().SetTargets([anim.GetPrim().GetPath()])
-
+    binding.CreateAnimationSourceRel().SetTargets([anim.GetPrim().GetPath()])
+ 
     anim.GetJointsAttr().Set(jointTokens)
 
     for i,time in enumerate(times):
@@ -924,30 +934,37 @@ than simply returning _false_.
 
 - C++:
 \code{.cpp}
-    UsdSkelSkeleton skel = UsdSkelSkeleton::Define(stage, skelPath);
-    if (!skel) {
-        TF_WARN("Failed creating a Skeleton prim at <%s>.", skelPath.GetText());
+    UsdSkelRoot skelRoot = UsdSkelRoot::Define(stage, skelRootPath)
+    if (!skelRoot) {
+        TF_WARN("Failed creating a Skeleton prim at <%s>.", skelRootPath.GetText());
         return false;
     }
+
+    UsdSkelSkeleton skel = UsdSkelSkeleton::Define(stage, skelRootPath.AppendChild(TfToken("Skel")));
 \endcode
 
 - Python:
 \code{.py}
-    skel = UsdSkel.Skeleton.Define(stage, skelPath)
-    if not skel:
-        Tf.Warn("Failed defining a Skeleton at <%s>.", skelPath)
+    skelRoot = UsdSkel.Root.Define(stage, skelRootPath)
+    if not skelRoot:
+        Tf.Warn("Failed defining a Skeleton at <%s>.", skelRootPath)
         return False
+    
+    skel = UsdSkel.Skeleton.Define(stage, skelRootPath.AppendChild("Skel"))
 \endcode
 
-We start by defining a Skeleton primitive on the stage at the given path.
+We start by defining a SkelRoot primitive on the stage at the given path.
 It is good practice to check that the resulting prim is valid. Some reasons
 why we may be unable to create the prim include:
-- The provided _skelPath_ is not a valid, absolute prim path.
-- An ancestor of the prim at _skelPath_ is already inactive on the stage.
+- The provided _skelRootPath_ is not a valid, absolute prim path.
+- An ancestor of the prim at _skelRootPath_ is already inactive on the stage.
   It is not possible to acquire a UsdPrim for a descendant of an inactive prim.
 
 A more complete implementation would likely at least validate that the
- _skelPath_ is not invalid.
+ _skelRootPath_ is not invalid.
+
+Subsequently, this snippet also creates a Skeleton primitive as a child of the
+SkelRoot primitive. 
 
 - C++:
 \code{.cpp}
@@ -962,9 +979,9 @@ A more complete implementation would likely at least validate that the
 - Python:
 \code{.py}
     topo = UsdSkel.Topology(jointPaths)
-    valid,whyNot = topo.Validate()
+    valid, reason = topo.Validate()
     if not valid:
-        Tf.Warn("Invalid topology: %s"%reason)
+        Tf.Warn("Invalid topology: %s" % reason)
         return False
 \endcode
 
@@ -1048,7 +1065,7 @@ transform to instead be set on an ancestor of the Skeleton.
     anim = UsdSkel.Animation.Define(stage, skelPath.AppendChild("Anim"))
 \endcode
 
-For reasons that are covered in-depth \ref UsdSkel_SkelAnimation "elsewhere",
+For reasons that are covered in-depth in the \ref UsdSkel_SkelAnimation "Skel Animation Schema documentation",
 a Skeleton's joint animations are encoded on a separate primitive.
 
 Note that *where* on the stage we choose to place the UsdSkelAnimation primitive
@@ -1061,14 +1078,14 @@ not be a descendant of the Skeleton.
 - C++:
 \code{.cpp}
     UsdSkelBindingAPI binding = UsdSkelBindingAPI::Apply(skel.GetPrim());
-    binding.CreateSkeletonRel().SetTargets(
+    binding.CreateAnimationSourceRel().SetTargets(
         SdfPathVector({anim.GetPrim().GetPath()}));
 \endcode
 
 - Python:
 \code{.py}
     binding = UsdSkel.BindingAPI.Apply(skel.GetPrim())
-    binding.CreateSkeletonRel().SetTargets([anim.GetPrim().GetPath()])
+    binding.CreateAnimationSourceRel().SetTargets([anim.GetPrim().GetPath()])
 \endcode
 
 Here we apply the UsdSkelBindingAPI to the Skeleton, and use it to bind the

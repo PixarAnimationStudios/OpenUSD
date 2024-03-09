@@ -56,7 +56,7 @@ static const char Delimiter = '@';
 // advance 'cp' to the start of the next UTF-8 character.  If 'cp' does not
 // point to a valid UTF-8 char, leave 'cp' unmodified and return -1.
 static int
-_ReadUTF8(char const *&cp, std::string *errMsg)
+_ReadUTF8(unsigned char const *&cp, std::string *errMsg)
 {
     // Return a byte with the high `n` bits set, rest clear.
     auto highBits = [](int n) {
@@ -114,7 +114,7 @@ _ValidateAssetPathString(char const *path)
                 (0x80 <= code && code <= 0x9f));
     };
 
-    char const *cp = path;
+    unsigned char const *cp = reinterpret_cast<unsigned char const*>(path);
     std::string err;
     int utf8Char = _ReadUTF8(cp, &err);
     int charNum = 1;

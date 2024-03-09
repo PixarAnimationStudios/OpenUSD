@@ -292,7 +292,7 @@ SdfAbstractData::HasDictKey(const SdfPath &path,
     VtValue tmp;
     bool result = HasDictKey(path, fieldName, keyPath, value ? &tmp : NULL);
     if (result && value) {
-        value->StoreValue(tmp);
+        result = value->StoreValue(tmp);
     }
     return result;
 }

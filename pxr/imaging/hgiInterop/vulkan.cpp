@@ -175,6 +175,7 @@ HgiInteropVulkan::HgiInteropVulkan(Hgi* hgiVulkan)
     , _glColorTex(0)
     , _glDepthTex(0)
 {
+    GarchGLApiLoad();
     _vs = _CompileShader(_vertexFullscreen, GL_VERTEX_SHADER);
     _fsNoDepth = _CompileShader(_fragmentNoDepthFullscreen, GL_FRAGMENT_SHADER);
     _fsDepth = _CompileShader(_fragmentDepthFullscreen, GL_FRAGMENT_SHADER);

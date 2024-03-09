@@ -23,7 +23,7 @@
 //
 /// \file OpenEXRCoreUnity.h
 
-#include "OpenEXRCore/openexr_conf.h"
+#include "OpenEXRCore/openexr_config.h"
 
 #include "deflate/lib/lib_common.h"
 #include "deflate/common_defs.h"

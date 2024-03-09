@@ -1,0 +1,44 @@
+#usda 1.0 
+(
+#    subLayers = [
+#        @sub_1.usda@,
+#        @sub_2.usda@
+#    ]
+)
+
+def "PrimWithReference" (
+    references = @ref.usda@</ReferencePrim>
+) {
+	over "B" {
+		def PrimTypeB "B_Root_Child" {}
+	}
+}
+
+def "PrimWithSubrootReference" (
+    references = @ref.usda@</ReferencePrim/B>
+) {
+    over "A" {
+        def PrimTypeA "A_Root_Child" {}
+    }
+}
+
+def "PrimWithVariant" (
+    prepend variantSets = "v"
+    variants = {
+        string v = "one"
+    }
+)
+{
+    variantSet "v" = {
+        "one" (
+            references = @ref.usda@</ReferencePrim>
+        ) {
+            def PrimTypeB "V1_Root_Child" {}
+        }
+        "two" (
+            references = @ref.usda@</ReferencePrim/B>
+        ) {
+            def PrimTypeA "V2_Root_Child" {}
+        }
+    }
+}

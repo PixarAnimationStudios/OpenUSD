@@ -38,6 +38,7 @@ pxr_library(usd
         inherits
         interpolation
         modelAPI
+        namespaceEditor
         notice
         object
         payloads
@@ -121,6 +122,7 @@ pxr_library(usd
         wrapInherits.cpp
         wrapInterpolation.cpp
         wrapModelAPI.cpp
+        wrapNamespaceEditor.cpp
         wrapNotice.cpp
         wrapObject.cpp
         wrapPayloads.cpp
@@ -181,11 +183,13 @@ pxr_library(usd
         doxygen/multiThreading.dox
         doxygen/objectModel.dox
         doxygen/propertiesOfSceneDescription.dox 
+        doxygen/utf8Overview.dox
         doxygen/valueClips.dox
         doxygen/images/instancing/Instancing_Example.png
         doxygen/images/instancing/Nested_Instancing_Example.png
         doxygen/images/instancing/Relationship_Example.png
         doxygen/images/instancing/Uninstanced_vs_Instanced.png
+        examples_usd.cpp
 )
 
 if (NOT PXR_ENABLE_PYTHON_SUPPORT)
@@ -229,6 +233,8 @@ pxr_test_scripts(
     testenv/testUsdLoadUnloadDeepNestedInstancing.py
     testenv/testUsdMetadata.py
     testenv/testUsdModel.py
+    testenv/testUsdNamespaceEditor.py
+    testenv/testUsdNamespaceEditorProperties.py
     testenv/testUsdNotices.py
     testenv/testUsdOpaqueAttributes.py
     testenv/testUsdPathExpressionAttrs.py
@@ -237,6 +243,7 @@ pxr_test_scripts(
     testenv/testUsdPrimFlagsPredicate.py
     testenv/testUsdPrimRange.py
     testenv/testUsdPrims.py
+    testenv/testUsdReadOutOfBounds.py
     testenv/testUsdReferences.py
     testenv/testUsdRelationships.py
     testenv/testUsdResolveTargetPy.py
@@ -558,6 +565,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdReadOutOfBounds
+    DEST testUsdReadOutOfBounds
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdResolverChanged
     DEST testUsdResolverChanged
 )
@@ -575,6 +587,16 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdNotices.testenv
     DEST testUsdNotices
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdNamespaceEditor
+    DEST testUsdNamespaceEditor
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdNamespaceEditorProperties
+    DEST testUsdNamespaceEditorProperties
 )
 
 pxr_install_test_dir(
@@ -608,8 +630,8 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdSchemaGen
-    DEST testUsdSchemaGen
+    SRC testenv/testUsdGenSchema
+    DEST testUsdGenSchema
 )
 
 pxr_install_test_dir(
@@ -1120,6 +1142,24 @@ pxr_register_test(testUsdFlattenLayerStack
 pxr_register_test(testUsdNotices
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNotices"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdNamespaceEditor
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNamespaceEditor"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdNamespaceEditorProperties
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNamespaceEditorProperties"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdReadOutOfBounds
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdReadOutOfBounds"
     EXPECTED_RETURN_CODE 0
 )
 

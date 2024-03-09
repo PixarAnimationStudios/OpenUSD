@@ -3,12 +3,12 @@
 ** Copyright Contributors to the OpenEXR Project.
 */
 
-// this may be defined by std
 #ifndef _LARGEFILE64_SOURCE
+// define this if it hasn't been defined elsewhere
 #    define _LARGEFILE64_SOURCE
 #endif
 
-#include "openexr_conf.h"
+#include "openexr_config.h"
 #include "openexr_context.h"
 
 #include "openexr_part.h"

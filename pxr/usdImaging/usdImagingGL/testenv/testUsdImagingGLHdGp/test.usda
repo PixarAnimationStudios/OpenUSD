@@ -63,6 +63,34 @@ def Scope "World"
                 (0.5, 0.5, 0.5)]
         }
     }
+
+
+    def GenerativeProcedural "dependsOnChildNamesProc" (
+        prepend apiSchemas = ["HydraGenerativeProceduralAPI"]
+    )
+    {
+        token primvars:hdGp:proceduralType = "DependsOnChildNames"
+        rel primvars:targetPrim = </World/childNameTest>
+    }
+
+
+    def Scope "childNameTest"
+    {
+        def Mesh "A"
+        {
+
+        }
+
+        def Mesh "B"
+        {
+
+        }
+
+        def Mesh "C"
+        {
+
+        }
+    }
 }
 
 

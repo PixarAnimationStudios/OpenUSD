@@ -23,10 +23,14 @@
 //
 #include "pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h"
 
-#include "pxr/usdImaging/usdImaging/flattenedModelDataSourceProvider.h"
+#include "pxr/usdImaging/usdImaging/directMaterialBindingsSchema.h"
+#include "pxr/usdImaging/usdImaging/flattenedGeomModelDataSourceProvider.h"
+#include "pxr/usdImaging/usdImaging/flattenedDirectMaterialBindingsDataSourceProvider.h"
+#include "pxr/usdImaging/usdImaging/geomModelSchema.h"
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
 
 #include "pxr/imaging/hd/flattenedDataSourceProviders.h"
+#include "pxr/imaging/hd/flattenedOverlayDataSourceProvider.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 
@@ -39,10 +43,22 @@ UsdImagingFlattenedDataSourceProviders()
 
     static HdContainerDataSourceHandle const result =
         HdOverlayContainerDataSource::New(
-        HdRetainedContainerDataSource::New(
-            UsdImagingModelSchema::GetSchemaToken(),
-            Make<UsdImagingFlattenedModelDataSourceProvider>()),
-        HdFlattenedDataSourceProviders());
+            {
+            HdRetainedContainerDataSource::New(
+                UsdImagingDirectMaterialBindingsSchema::GetSchemaToken(),
+                Make<UsdImagingFlattenedDirectMaterialBindingsDataSourceProvider>()),
+
+            HdRetainedContainerDataSource::New(
+                UsdImagingGeomModelSchema::GetSchemaToken(),
+                Make<UsdImagingFlattenedGeomModelDataSourceProvider>()),
+
+            HdRetainedContainerDataSource::New(
+                UsdImagingModelSchema::GetSchemaToken(),
+                Make<HdFlattenedOverlayDataSourceProvider>()),
+
+            HdFlattenedDataSourceProviders()
+            });
+
     return result;
 }
 

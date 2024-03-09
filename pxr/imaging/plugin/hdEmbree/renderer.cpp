@@ -34,7 +34,7 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/work/loops.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <chrono>
 #include <thread>
@@ -515,7 +515,7 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
     // Initialize the RNG for this tile (each tile creates one as
     // a lazy way to do thread-local RNGs).
     size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
-    boost::hash_combine(seed, tileStart);
+    seed = TfHash::Combine(seed, tileStart);
     std::default_random_engine random(seed);
 
     // Create a uniform distribution for jitter calculations.

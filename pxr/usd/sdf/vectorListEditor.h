@@ -127,12 +127,12 @@ protected:
 
 private:
     static 
-    boost::optional<value_type> 
+    std::optional<value_type>
     _ModifyCallbackHelper(const ModifyCallback& cb,
                           const TypePolicy& typePolicy,
                           const value_type& v)
     {
-        boost::optional<value_type> value = cb(v);
+        std::optional<value_type> value = cb(v);
         return value ? typePolicy.Canonicalize(*value) : value;
     }
 

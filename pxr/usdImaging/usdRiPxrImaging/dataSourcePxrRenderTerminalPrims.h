@@ -29,6 +29,7 @@
 
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/materialNodeSchema.h"
+#include "pxr/imaging/hd/materialNodeParameterSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/usdImaging/usdRiPxrImaging/api.h"
 
@@ -123,7 +124,10 @@ _ComputeResourceDS(
         if (_HasInputPrefix(attr.GetName(), &inputName) && attr.Get(&value)) {
             paramsNames.push_back(TfToken(inputName));
             paramsValues.push_back(
-                HdRetainedTypedSampledDataSource<VtValue>::New(value)
+                HdMaterialNodeParameterSchema::Builder()
+                    .SetValue(
+                        HdRetainedTypedSampledDataSource<VtValue>::New(value))
+                    .Build()
             );
         }
     }

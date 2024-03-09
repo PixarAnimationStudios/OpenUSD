@@ -47,6 +47,7 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     , _vkPipeline(nullptr)
     , _vkRenderPass(nullptr)
     , _vkPipelineLayout(nullptr)
+    , _clearNeeded(false)
 {
     VkGraphicsPipelineCreateInfo pipeCreateInfo =
         {VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
@@ -131,19 +132,21 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
         vertBufs.push_back(std::move(vib));
     }
 
-    VkPipelineVertexInputDivisorStateCreateInfoEXT vertexInputDivisor =
-        {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT};
-    vertexInputDivisor.pVertexBindingDivisors = vertBindingDivisors.data();
-    vertexInputDivisor.vertexBindingDivisorCount =
-        (uint32_t) vertBindingDivisors.size();
-
     VkPipelineVertexInputStateCreateInfo vertexInput =
         {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
     vertexInput.pVertexAttributeDescriptions = vertAttrs.data();
     vertexInput.vertexAttributeDescriptionCount = (uint32_t) vertAttrs.size();
     vertexInput.pVertexBindingDescriptions = vertBufs.data();
     vertexInput.vertexBindingDescriptionCount = (uint32_t) vertBufs.size();
-    vertexInput.pNext = &vertexInputDivisor;
+
+    if (!vertBindingDivisors.empty()) {
+        VkPipelineVertexInputDivisorStateCreateInfoEXT vertexInputDivisor =
+            {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT};
+        vertexInputDivisor.pVertexBindingDivisors = vertBindingDivisors.data();
+        vertexInputDivisor.vertexBindingDivisorCount =
+            (uint32_t) vertBindingDivisors.size();
+        vertexInput.pNext = &vertexInputDivisor;
+    }
     
     pipeCreateInfo.pVertexInputState = &vertexInput;
 
@@ -225,7 +228,7 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     multisampleState.sampleShadingEnable = VK_FALSE;
     multisampleState.minSampleShading = 0.5f;
     multisampleState.alphaToCoverageEnable = ms.alphaToCoverageEnable;
-    multisampleState.alphaToOneEnable = VK_FALSE;
+    multisampleState.alphaToOneEnable = ms.alphaToOneEnable;
     pipeCreateInfo.pMultisampleState = &multisampleState;
 
     //
@@ -550,24 +553,17 @@ HgiVulkanGraphicsPipeline::GetDevice() const
     return _device;
 }
 
-VkClearValueVector const&
-HgiVulkanGraphicsPipeline::GetClearValues() const
-{
-    return _vkClearValues;
-}
-
 uint64_t &
 HgiVulkanGraphicsPipeline::GetInflightBits()
 {
     return _inflightBits;
 }
 
-static void
-_ProcessAttachment(
+void
+HgiVulkanGraphicsPipeline::_ProcessAttachment(
     HgiAttachmentDesc const& attachment,
     uint32_t attachmentIndex,
     HgiSampleCount sampleCount,
-    VkClearValue* vkClearValue,
     VkAttachmentDescription2* vkAttachDesc,
     VkAttachmentReference2* vkRef)
 {
@@ -604,25 +600,18 @@ _ProcessAttachment(
         attachment.format, isDepthAttachment);
     vkAttachDesc->initialLayout = layout;
     vkAttachDesc->loadOp = HgiVulkanConversions::GetLoadOp(attachment.loadOp);
+
+    // If any attachments specify a clear op, clearing the renderpass will be 
+    // needed.
+    if (attachment.loadOp == HgiAttachmentLoadOpClear) {
+        _clearNeeded = true;
+    }
+
     vkAttachDesc->samples = HgiVulkanConversions::GetSampleCount(sampleCount);
     vkAttachDesc->storeOp= HgiVulkanConversions::GetStoreOp(attachment.storeOp);
     // XXX Hgi doesn't provide stencil ops, assume it matches depth attachment.
     vkAttachDesc->stencilLoadOp = vkAttachDesc->loadOp;
     vkAttachDesc->stencilStoreOp = vkAttachDesc->storeOp;
-
-    //
-    // Clear value
-    //
-    if (isDepthAttachment) {
-        vkClearValue->depthStencil.depth = attachment.clearValue[0];
-        vkClearValue->depthStencil.stencil =
-            static_cast<uint32_t>(attachment.clearValue[1]);
-    } else {
-        vkClearValue->color.float32[0] = attachment.clearValue[0];
-        vkClearValue->color.float32[1] = attachment.clearValue[1];
-        vkClearValue->color.float32[2] = attachment.clearValue[2];
-        vkClearValue->color.float32[3] = attachment.clearValue[3];
-    }
 }
 
 void
@@ -637,7 +626,6 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
     }
 
     // Determine description and reference for each attachment
-    _vkClearValues.clear();
     std::vector<VkAttachmentDescription2> vkDescriptions;
     std::vector<VkAttachmentReference2> vkColorReferences;
     VkAttachmentReference2 vkDepthReference = 
@@ -649,11 +637,9 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
     // Process color attachments
     for (HgiAttachmentDesc const& desc : _descriptor.colorAttachmentDescs) {
         uint32_t slot = (uint32_t) vkDescriptions.size();
-        VkClearValue vkClear;
         VkAttachmentDescription2 vkDesc;
         VkAttachmentReference2 vkRef;
-        _ProcessAttachment(desc, slot, samples, &vkClear, &vkDesc, &vkRef);
-        _vkClearValues.push_back(vkClear);
+        _ProcessAttachment(desc, slot, samples, &vkDesc, &vkRef);
         vkDescriptions.push_back(vkDesc);
         vkColorReferences.push_back(vkRef);
     }
@@ -664,11 +650,9 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
     if (hasDepth) {
         HgiAttachmentDesc const& desc = _descriptor.depthAttachmentDesc;
         uint32_t slot = (uint32_t) vkDescriptions.size();
-        VkClearValue vkClear;
         VkAttachmentDescription2 vkDesc;
         VkAttachmentReference2* vkRef = &vkDepthReference;
-        _ProcessAttachment(desc, slot, samples, &vkClear, &vkDesc, vkRef);
-        _vkClearValues.push_back(vkClear);
+        _ProcessAttachment(desc, slot, samples, &vkDesc, vkRef);
         vkDescriptions.push_back(vkDesc);
     }
 
@@ -676,11 +660,10 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
     if (_descriptor.resolveAttachments) {
         for (HgiAttachmentDesc const& desc:_descriptor.colorAttachmentDescs){
             uint32_t slot = (uint32_t) vkDescriptions.size();
-            VkClearValue vkClear;
             VkAttachmentDescription2 vkDesc;
             VkAttachmentReference2 vkRef;
             _ProcessAttachment(
-                desc, slot, HgiSampleCount1, &vkClear, &vkDesc, &vkRef);
+                desc, slot, HgiSampleCount1, &vkDesc, &vkRef);
              // Don't care about initial contents of resolve attachment.
             vkDesc.loadOp =
                 HgiVulkanConversions::GetLoadOp(HgiAttachmentLoadOpDontCare);
@@ -696,11 +679,10 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
         if (hasDepth) {
             HgiAttachmentDesc const& desc = _descriptor.depthAttachmentDesc;
             uint32_t slot = (uint32_t) vkDescriptions.size();
-            VkClearValue vkClear;
             VkAttachmentDescription2 vkDesc;
             VkAttachmentReference2* vkRef = &vkDepthResolveReference;
             _ProcessAttachment(
-                desc, slot, HgiSampleCount1, &vkClear, &vkDesc, vkRef);
+                desc, slot, HgiSampleCount1, &vkDesc, vkRef);
             // Don't care about initial contents of resolve attachment.
             vkDesc.loadOp =
                 HgiVulkanConversions::GetLoadOp(HgiAttachmentLoadOpDontCare);

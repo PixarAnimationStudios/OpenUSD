@@ -157,6 +157,8 @@ private:
 class Pcp_MutedLayers
 {
 public:
+    explicit Pcp_MutedLayers(const std::string& fileFormatTarget);
+
     const std::vector<std::string>& GetMutedLayers() const;
     void MuteAndUnmuteLayers(const SdfLayerHandle& anchorLayer,
                              std::vector<std::string>* layersToMute,
@@ -166,6 +168,11 @@ public:
                       std::string* canonicalLayerIdentifier = nullptr) const;
 
 private:
+    std::string 
+    _GetCanonicalLayerId(const SdfLayerHandle& anchorLayer, 
+                         const std::string& layerId) const;
+
+    std::string _fileFormatTarget;
     std::vector<std::string> _layers;
 };
 

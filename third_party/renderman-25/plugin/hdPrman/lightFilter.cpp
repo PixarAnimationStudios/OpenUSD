@@ -25,6 +25,7 @@
 #include "hdPrman/renderParam.h"
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/rixStrings.h"
+#include "hdPrman/utils.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -43,10 +44,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdPrmanLightFilter::HdPrmanLightFilter(SdfPath const& id,
                                        TfToken const& lightFilterType)
     : HdSprim(id)
-    , _hdLightFilterType(lightFilterType)
-    , _lightFilter(NULL)
+    , _coordSysId(riley::CoordinateSystemId::InvalidId())
+    , _rileyIsInSync(false)
 {
-    /* NOTHING */
+    // XXX The lightFilterType parameter is always "lightFilter", so
+    // we ignore it.
 }
 
 HdPrmanLightFilter::~HdPrmanLightFilter() = default;
@@ -54,22 +56,14 @@ HdPrmanLightFilter::~HdPrmanLightFilter() = default;
 void
 HdPrmanLightFilter::Finalize(HdRenderParam *renderParam)
 {
+    std::lock_guard<std::mutex> lock(_syncToRileyMutex);
     HdPrman_RenderParam *param =
         static_cast<HdPrman_RenderParam*>(renderParam);
-    _ResetLightFilter(param);
-}
-
-void
-HdPrmanLightFilter::_ResetLightFilter(HdPrman_RenderParam *renderParam)
-{
-    // Currently, light filters are managed in light.cpp as part
-    // of the lights.  Eventually, we will probably want to add
-    // code here that deletes the light filter via 
-    //     if (_lightFilter) {
-    //        riley->DeleteLightFilter()
-    //        _lightFilter = NULL;
-    //     }
-    // or something like that. 
+    riley::Riley *riley = param->AcquireRiley();
+    if (_coordSysId != riley::CoordinateSystemId::InvalidId()) {
+        riley->DeleteCoordinateSystem(_coordSysId);
+        _coordSysId = riley::CoordinateSystemId::InvalidId();
+    }
 }
 
 /* virtual */
@@ -81,11 +75,68 @@ HdPrmanLightFilter::Sync(HdSceneDelegate *sceneDelegate,
     HdPrman_RenderParam *param =
         static_cast<HdPrman_RenderParam*>(renderParam);
 
-    if (*dirtyBits) {
-        _ResetLightFilter(param);
+    if (*dirtyBits & HdChangeTracker::DirtyTransform) {
+        std::lock_guard<std::mutex> lock(_syncToRileyMutex);
+        _rileyIsInSync = false;
+        _SyncToRileyWithLock(sceneDelegate, param->AcquireRiley());
     }
 
     *dirtyBits = HdChangeTracker::Clean;
+}
+
+void
+HdPrmanLightFilter::SyncToRiley(
+    HdSceneDelegate *sceneDelegate,
+    riley::Riley *riley)
+{
+    std::lock_guard<std::mutex> lock(_syncToRileyMutex);
+    if (!_rileyIsInSync) {
+        _SyncToRileyWithLock(sceneDelegate, riley);
+    }
+}
+
+void
+HdPrmanLightFilter::_SyncToRileyWithLock(
+    HdSceneDelegate *sceneDelegate,
+    riley::Riley *riley)
+{
+    SdfPath const& id = GetId();
+
+    // Sample transform
+    HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
+    sceneDelegate->SampleTransform(id, &xf);
+    TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>
+        xf_rt_values(xf.count);
+    for (size_t i=0; i < xf.count; ++i) {
+        xf_rt_values[i] = HdPrman_Utils::GfMatrixToRtMatrix(xf.values[i]);
+    }
+    const riley::Transform xform = {
+        unsigned(xf.count), xf_rt_values.data(), xf.times.data()};
+
+    RtParamList attrs;
+
+    // Use the full path to identify this coordinate system, which
+    // is not user-named but implicitly part of the light filter.
+    RtUString coordSysName(id.GetText());
+    attrs.SetString(RixStr.k_name, coordSysName);
+
+    if (_coordSysId == riley::CoordinateSystemId::InvalidId()) {
+        _coordSysId = riley->CreateCoordinateSystem(
+            riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
+            xform, attrs);
+    } else {
+        riley->ModifyCoordinateSystem(_coordSysId, &xform, &attrs);
+    }
+
+    _rileyIsInSync = true;
+}
+
+riley::CoordinateSystemId
+HdPrmanLightFilter::GetCoordSysId()
+{
+    std::lock_guard<std::mutex> lock(_syncToRileyMutex);
+    TF_VERIFY(_rileyIsInSync, "Must call SyncToRiley() first");
+    return _coordSysId;
 }
 
 /* virtual */
@@ -93,12 +144,6 @@ HdDirtyBits
 HdPrmanLightFilter::GetInitialDirtyBitsMask() const
 {
     return HdChangeTracker::AllDirty;
-}
-
-bool
-HdPrmanLightFilter::IsValid() const
-{
-    return _lightFilter != NULL;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

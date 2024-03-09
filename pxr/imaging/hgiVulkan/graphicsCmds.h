@@ -41,6 +41,7 @@ class HgiVulkanCommandBuffer;
 
 using HgiVulkanGfxFunction = std::function<void(void)>;
 using HgiVulkanGfxFunctionVector = std::vector<HgiVulkanGfxFunction>;
+using VkClearValueVector = std::vector<VkClearValue>;
 
 
 /// \class HgiVulkanGraphicsCmds
@@ -137,6 +138,7 @@ private:
     HgiVulkanGraphicsCmds & operator=(const HgiVulkanGraphicsCmds&) = delete;
     HgiVulkanGraphicsCmds(const HgiVulkanGraphicsCmds&) = delete;
 
+    void _ClearAttachmentsIfNeeded();
     void _ApplyPendingUpdates();
     void _EndRenderPass();
     void _CreateCommandBuffer();
@@ -149,6 +151,7 @@ private:
     bool _viewportSet;
     bool _scissorSet;
     HgiVulkanGfxFunctionVector _pendingUpdates;
+    VkClearValueVector _vkClearValues;
 
     // GraphicsCmds is used only one frame so storing multi-frame state on
     // GraphicsCmds will not survive.

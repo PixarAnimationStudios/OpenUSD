@@ -123,6 +123,9 @@ _ReadSettingsBase(UsdRenderSettingsBase const& rsBase,
             pd->disableMotionBlur = true;
         }
     }
+
+    _Get(rsBase.GetDisableDepthOfFieldAttr(), 
+        &pd->disableDepthOfField, getDefault);
 }
 
 // TODO: Consolidate with CameraUtilConformedWindow().  Resolve policy
@@ -235,7 +238,7 @@ UsdRenderComputeSpec(
                 }
                 if (!foundExisting) {
                     UsdPrim prim = stage->GetPrimAtPath(renderVarPath);
-                    if (prim.IsA<UsdRenderVar>()) {
+                    if (prim && prim.IsA<UsdRenderVar>()) {
                         UsdRenderVar rvPrim(prim);
                         UsdRenderSpec::RenderVar rvSpec;
 

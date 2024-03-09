@@ -832,6 +832,18 @@ class "PxrOptionsAPI"
                 Specifies dicing manifold used when baking integrator results.
             """
     )
+    bool ri:hider:raytracebaketesselation = 0 (
+        displayGroup = "Baking"
+        displayName = "Raytrace Bake Tesselation"
+        doc = """
+                Force the tesselation to be the same as the baking tesselation when raytracing 
+                (for example when using a PxrOcclusion or PxrDirt shader). 
+                This can reduce self intersections and give cleaner results but may increase the 
+                density of polygons when raytracing.
+                If you have multiple pattern bakes at different resolutions, the highest resolution 
+                will be chosen. Don't attempt to use this option alongside interactive rendering.
+            """
+    )
     bool ri:hider:samplemotion = 1 (
         displayGroup = "Common"
         displayName = "Sample Motion"
@@ -905,6 +917,15 @@ class "PxrOptionsAPI"
         displayName = "Hider Type"
         doc = """
                 Render mode.
+            """
+    )
+    bool ri:lighting:incorrectParticleLightSampling = 0 (
+        displayGroup = "Shading"
+        displayName = "Use old (incorrect) PxrParticleLight sampling for backward compatibility with R24"
+        doc = """
+                Use old method of sampling particle lights. This has been fixed in R25.3. Setting this option
+                will fall back to the old, incorrect, behavior for compatibility purposes. This option will be
+                removed in R26 and the new, correct, method will be used thereafter.
             """
     )
     float ri:lighting:minimumestimate = 0.000001 (
@@ -1156,6 +1177,15 @@ class "PxrOptionsAPI"
                 Shading debug level.
             """
     )
+    bool ri:shade:incorrectPointOpacityCalculation = 0 (
+        displayGroup = "Statistics"
+        displayName = "Use old (incorrect) RiPoints opacity and falloff calculation"
+        doc = """
+                Use old method of combining RiPoint falloff with presence or opacity. This has been fixed
+                in R25. Setting this option will fall back to the old, incorrect, behavior for compatibility
+                purposes. This option will be removed in R26 and the new, correct, method will always be used.
+            """
+    )
     float ri:shade:roughnessmollification = 1 (
         displayGroup = "Statistics"
         displayName = "Specular Roughness Mollification"
@@ -1195,13 +1225,21 @@ class "PxrOptionsAPI"
         doc = """
                 Suppress reporting of displacements that, when divided by the max
                 displacement, fall in the specified range.
+                (Legacy Stats)
             """
     )
     string ri:statistics:filename = "" (
         displayGroup = "Statistics"
-        displayName = "Filename"
+        displayName = "Legacy Filename"
         doc = """
                 File name for summary statistics reported in plain text.
+                (Legacy Stats)
+            """
+    )
+    string ri:statistics:jsonFilename = "" (
+        displayGroup = "Statistics"
+        displayName = "JSON Filename"
+        doc = """File name for raw statistics JSON report.
             """
     )
     bool ri:statistics:level = 0 (
@@ -1209,6 +1247,7 @@ class "PxrOptionsAPI"
         displayName = "Enable Statistics"
         doc = """
                 Enable statistics reporting.
+                (Legacy Stats)
             """
     )
     int ri:statistics:maxdispwarnings = 100 (
@@ -1217,18 +1256,23 @@ class "PxrOptionsAPI"
         doc = """
                 Modify the maximum reported displacement issues. If the value is set to 0,
                 then all displacements issues are reported.
+                (Legacy Stats)
             """
     )
     string ri:statistics:shaderprofile = "" (
         displayGroup = "Statistics"
         displayName = "Shader Profile"
-        doc = "<help />"
+        doc = """
+                Shader profile filename.
+                (Legacy Stats)
+            """
     )
     string ri:statistics:stylesheet = "" (
         displayGroup = "Statistics"
         displayName = "Style Sheet"
         doc = """
                 Stylesheet for XML detailed statistics.
+                (Legacy Stats)
             """
     )
     bool ri:statistics:texturestatslevel = 0 (
@@ -1236,13 +1280,15 @@ class "PxrOptionsAPI"
         displayName = "Enable Texture Statistics"
         doc = """
                 Enable texture statistics reporting.
+                (Legacy Stats)
             """
     )
     string ri:statistics:xmlfilename = "" (
         displayGroup = "Statistics"
-        displayName = "Xml Filename"
+        displayName = "Legacy XML Filename"
         doc = """
                 File name for detailed statistics reported as XML.
+                (Legacy Stats)
             """
     )
     bool ri:stitch:refwarning = 1 (
@@ -1350,7 +1396,7 @@ class "PxrPrimvarsAPI"
             """
     )
     token primvars:ri:dice:offscreenstrategy = "viewfrustumdistance" (
-        allowedTokens = ["viewfrustumdistance", "worlddistance", "objectdistance", "planarprojection"]
+        allowedTokens = ["viewfrustumdistance", "worlddistance", "objectdistance", "planarprojection", "sphericalprojection"]
         displayGroup = "Dicing"
         displayName = "Off Screen Dicing Strategy"
         doc = """
@@ -1395,7 +1441,7 @@ class "PxrPrimvarsAPI"
             """
     )
     token primvars:ri:dice:strategy = "instanceprojection" (
-        allowedTokens = ["instanceprojection", "worlddistance", "objectdistance"]
+        allowedTokens = ["instanceprojection", "worlddistance", "objectdistance", "sphericalprojection"]
         displayGroup = "Dicing"
         displayName = "Dicing strategy"
         doc = """
@@ -8774,6 +8820,7 @@ class PxrPathTracer "PxrPathTracer"
             """
     )
     float inputs:ri:jointScatteringBias = 0.5 (
+        connectability = "interfaceOnly"
         displayGroup = "Aggregate Volumes"
         displayName = "Joint Scattering Bias"
         doc = """

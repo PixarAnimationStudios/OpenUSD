@@ -184,9 +184,9 @@ UsdObjStream::GetGroups() const
 void
 UsdObjStream::AddFace(Face const &face)
 {
-    // If there aren't any groups, add one first.
+    // If there aren't any groups, add a default group to begin with.
     if (_groups.empty()) {
-        AddGroup(string());
+        AddGroup(string("default_mesh_0"));
     }
     _groups.back().faces.push_back(face);
 }
@@ -313,7 +313,6 @@ UsdObjStream::swap(UsdObjStream &other)
     _comments.swap(other._comments);
     _arbitraryText.swap(other._arbitraryText);
     _groups.swap(other._groups);
-
     _sequence.swap(other._sequence);
 }
 

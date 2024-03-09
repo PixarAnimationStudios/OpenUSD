@@ -433,7 +433,7 @@ class Controller(QtCore.QObject):
     def _GetStringLengthInPixels(cf, string):
         font = cf.font()
         fm = QtGui.QFontMetrics(font)
-        strlen = fm.boundingRect(string).width()
+        strlen = fm.horizontalAdvance(string)
         return strlen
 
     def _CompleteSlot(self):

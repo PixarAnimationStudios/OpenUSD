@@ -29,6 +29,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/base/vt/array.h"
 
 #include "pxr/base/gf/range3f.h"
@@ -58,9 +59,14 @@ UsdObjTranslateObjToUsd(const UsdObjStream &objStream)
     if (objVerts.empty())
         return layer;
 
-    // Copy objVerts into VtVec3fArray for Usd.
+    const std::vector<GfVec2f> &objUVs = objStream.GetUVs();
+
+    // Copy objVerts (resp. objUVs) into VtVec3fArrays (resp. VtVec2fArrays) for
+    // Usd.
     VtVec3fArray usdPoints;
+    VtVec2fArray usdUVs;
     usdPoints.assign(objVerts.begin(), objVerts.end());
+    usdUVs.assign(objUVs.begin(), objUVs.end());
 
     // Get the obj Points.
     const std::vector<UsdObjStream::Point> &objPoints = objStream.GetPoints();
@@ -94,20 +100,39 @@ UsdObjTranslateObjToUsd(const UsdObjStream &objStream)
 
         // Populate the mesh data from the obj data.  This is not a very smart
         // importer.  We throw all the verts onto everything for simplicity.  If
-        // this was for real, you would want to reindex verts per-group.
+        // this was a proper obj importer, it would reindex verts per-group.
         mesh.GetPointsAttr().Set(usdPoints);
 
-        VtArray<int> faceVertexCounts, faceVertexIndices;
+        VtArray<int> faceVertexCounts, faceVertexIndices, faceUVIndices;
         for (const auto& face : group.faces) {
             faceVertexCounts.push_back(face.size());
             for (int p = face.pointsBegin; p != face.pointsEnd; ++p) {
                 faceVertexIndices.push_back(objPoints[p].vertIndex);
+                if (objPoints[p].uvIndex >= 0) {
+                    faceUVIndices.push_back(objPoints[p].uvIndex);
+                }
             }
         }
 
         // Now set the attributes.
         mesh.GetFaceVertexCountsAttr().Set(faceVertexCounts);
         mesh.GetFaceVertexIndicesAttr().Set(faceVertexIndices);
+
+        // Create a primvar for the UVs if stored in the obj data. Note that
+        // it's valid in this layer for the UV mapping to not be fully defined
+        // in the obj data. For example, this layer may just provide the texture
+        // coordinates and another layer the indexing, or vice versa.
+        if (!usdUVs.empty() || !faceUVIndices.empty()) {
+            UsdGeomPrimvar uvPrimVar = UsdGeomPrimvarsAPI(mesh).CreatePrimvar(
+            TfToken("uv"), SdfValueTypeNames->TexCoord2fArray,
+            UsdGeomTokens->faceVarying);
+            if (!usdUVs.empty()) {
+                uvPrimVar.GetAttr().Set(usdUVs);
+            }
+            if (!faceUVIndices.empty()) {
+                uvPrimVar.CreateIndicesAttr().Set(faceUVIndices); // indexed
+            }
+        }
 
         // Set extent.
         mesh.GetExtentAttr().Set(extentArray);
@@ -116,8 +141,4 @@ UsdObjTranslateObjToUsd(const UsdObjStream &objStream)
     return layer;
 }
 
-
-
-
 PXR_NAMESPACE_CLOSE_SCOPE
-

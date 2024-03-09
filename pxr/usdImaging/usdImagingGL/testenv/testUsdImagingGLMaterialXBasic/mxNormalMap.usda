@@ -1,0 +1,182 @@
+#usda 1.0
+(
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Xform "NormalMapTest" 
+{
+    def Scope "Geom"
+    {
+        def "Reference" (
+            references = @./normalMapFiles/testGeom.usda@ </TestSphere>
+        )
+        {
+            rel material:binding = </NormalMapTest/Looks/Chrome>
+            color3f[] primvars:displayColor = [(1, 1, 1)]
+            double3 xformOp:translate = (5, 2, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def "UsdPreviewSurface" (
+            references = @normalMapFiles/testGeom.usda@ </TestPlane>
+        )
+        {
+            rel material:binding = </NormalMapTest/Looks/PS_NormalMap>
+            double3 xformOp:translate = (-4, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def "MaterialXPreviewSurface" (
+            references = @normalMapFiles/testGeom.usda@ </TestPlane>
+        )
+        {
+            rel material:binding = </NormalMapTest/Looks/MxPS_NormalMap> 
+            
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def "MaterialXStandardSurface" (
+            references = @normalMapFiles/testGeom.usda@ </TestPlane>
+        )
+        {
+            rel material:binding = </NormalMapTest/Looks/MxSS_NormalMap> 
+            
+            double3 xformOp:translate = (4, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Scope "Looks"
+    {
+        def Material "Chrome"
+        {
+            token outputs:surface.connect = </NormalMapTest/Looks/Chrome/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 1, 1)
+                float inputs:metallic = 1
+                float inputs:roughness = 0.001
+                token outputs:surface
+            }
+        }
+
+        def Material "PS_NormalMap"
+        {
+            token outputs:surface.connect = </NormalMapTest/Looks/PS_NormalMap/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 1, 1)
+                float inputs:metallic = 1
+                normal3f inputs:normal.connect = </NormalMapTest/Looks/PS_NormalMap/NormalMapTexture.outputs:rgb>
+                float inputs:roughness = 0.001
+                token outputs:surface
+            }
+
+            def Shader "NormalMapTexture"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @./normalMapFiles/normalMap.png@ (
+                    colorSpace = "raw"
+                )
+                float2 inputs:st.connect = </NormalMapTest/Looks/PS_NormalMap/TexCoordReader.outputs:result>
+                token inputs:sourceColorSpace = "raw"
+                float4 inputs:scale = (2.0, 2.0, 2.0, 1.0)
+                float4 inputs:bias = (-1.0, -1.0, -1.0, 0.0)
+                float3 outputs:rgb
+            }
+
+            def Shader "TexCoordReader"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname = "st"
+                float2 outputs:result
+            }
+        }
+
+        def Material "MxPS_NormalMap"
+        {
+            token outputs:mtlx:surface.connect = </NormalMapTest/Looks/MxPS_NormalMap/PreviewSurface.outputs:out>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+                color3f inputs:diffuseColor = (1, 1, 1)
+                float inputs:metallic = 1
+                float3 inputs:normal.connect = </NormalMapTest/Looks/MxPS_NormalMap/NormalMap.outputs:out>
+                float inputs:roughness = 0.001
+                token outputs:out
+            }
+
+            def Shader "NormalMap"
+            {
+                uniform token info:id = "ND_normalmap"
+                vector3f inputs:in.connect = </NormalMapTest/Looks/MxPS_NormalMap/Image.outputs:out>
+                string inputs:space = "object"
+                vector3f outputs:out
+            }
+
+            def Shader "Image"
+            {
+                uniform token info:id = "ND_image_vector3"
+                asset inputs:file = @./normalMapFiles/normalMap.png@ (
+                    colorSpace = "raw"
+                )
+                float3 outputs:out
+            }
+        }
+
+        def Material "MxSS_NormalMap"
+        {
+            token outputs:mtlx:surface.connect = </NormalMapTest/Looks/MxSS_NormalMap/PreviewSurface.outputs:out>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "ND_standard_surface_surfaceshader"
+                color3f inputs:base_color = (1, 1, 1)
+                float inputs:metalness = 1
+                float3 inputs:normal.connect = </NormalMapTest/Looks/MxSS_NormalMap/NormalMap.outputs:out>
+                float inputs:specular_roughness = 0.001
+                token outputs:out
+            }
+
+            def Shader "NormalMap"
+            {
+                uniform token info:id = "ND_normalmap"
+                vector3f inputs:in.connect = </NormalMapTest/Looks/MxSS_NormalMap/Image.outputs:out>
+                vector3f outputs:out
+            }
+
+            def Shader "Image"
+            {
+                uniform token info:id = "ND_image_vector3"
+                asset inputs:file = @./normalMapFiles/normalMap.png@ (
+                    colorSpace = "raw"
+                )
+                float3 outputs:out
+            }
+        }
+    }
+
+    def Xform "Lights" 
+    {
+        def DomeLight "DomeLight"
+        {
+            asset inputs:texture:file = @./StinsonBeach.hdr@
+        }
+        def DistantLight "DistantLight"
+        {
+            float inputs:angle = 25
+            float inputs:intensity = 5
+            float3 xformOp:rotateXYZ = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+        }
+    }
+}
+
+

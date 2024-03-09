@@ -49,18 +49,39 @@ if __name__ == '__main__':
                         type=int, action='store')
     parser.add_argument('--numErrors', dest='numErrors', default=0,
                         type=int, action='store')
+    parser.add_argument('--editLayersInPlace', dest='editLayersInPlace',
+                        default=False, action='store_true')
+    parser.add_argument('--expectedDirtyLayers', type=str, default='', 
+                        dest='expectedDirtyLayers')
 
     args = parser.parse_args()
 
     context = Ar.GetResolver().CreateDefaultContextForAsset(args.assetPath)
     with Ar.ResolverContextBinder(context):
+        assetPath = Sdf.AssetPath(args.assetPath)
+        layers, _, _ = UsdUtils.ComputeAllDependencies(assetPath)
+
+        expectedDirtyLayers = []
+        if args.expectedDirtyLayers:
+            for expectedDirtyLayer in args.expectedDirtyLayers.split(','):
+                layer = Sdf.Layer.FindOrOpen(expectedDirtyLayer.strip())
+                assert layer is not None
+                assert layer in layers
+                expectedDirtyLayers.append(layer)
+
         if not args.arkit:
-            assert UsdUtils.CreateNewUsdzPackage(Sdf.AssetPath(args.assetPath), 
-                    args.usdzFile, args.rename if args.rename else '')
+            assert UsdUtils.CreateNewUsdzPackage(assetPath, 
+                    args.usdzFile, args.rename if args.rename else '',
+                    args.editLayersInPlace)
         else:
             assert UsdUtils.CreateNewARKitUsdzPackage(
-                    Sdf.AssetPath(args.assetPath), args.usdzFile,
-                    args.rename if args.rename else '')
+                    assetPath, args.usdzFile,
+                    args.rename if args.rename else '',
+                    args.editLayersInPlace)
+
+        for layer in layers:
+            layerShouldBeDirty = layer in expectedDirtyLayers
+            assert layer.dirty is layerShouldBeDirty
 
     zipFile = Usd.ZipFile.Open(args.usdzFile)
     assert zipFile

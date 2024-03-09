@@ -81,8 +81,11 @@ public:
     void SetStage(UsdStageRefPtr stage);
 
     // Set the time, and call PrimsDirtied for any time-varying attributes.
+    //
+    // PrimsDirtied is only called if the time is different from the last call
+    // or forceDirtyingTimeDeps is true.
     USDIMAGING_API
-    void SetTime(UsdTimeCode time);
+    void SetTime(UsdTimeCode time, bool forceDirtyingTimeDeps = false);
 
     // Return the current time.
     USDIMAGING_API

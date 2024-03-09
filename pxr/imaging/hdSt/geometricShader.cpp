@@ -32,7 +32,7 @@
 
 #include "pxr/imaging/hio/glslfx.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iostream>
 #include <string>
@@ -80,12 +80,15 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
 
     std::stringstream ss(glslfxString);
     _glslfx.reset(new HioGlslfx(ss));
-    boost::hash_combine(_hash, _glslfx->GetHash());
-    boost::hash_combine(_hash, cullingPass);
-    boost::hash_combine(_hash, primType);
-    boost::hash_combine(_hash, cullStyle);
-    boost::hash_combine(_hash, useMetalTessellation);
-    boost::hash_combine(_hash, fvarPatchType);
+    _hash = TfHash::Combine(
+        _hash,
+        _glslfx->GetHash(),
+        cullingPass,
+        primType,
+        cullStyle,
+        useMetalTessellation,
+        fvarPatchType
+    );
     //
     // note: Don't include polygonMode into the hash.
     //       It is independent from the GLSL program.

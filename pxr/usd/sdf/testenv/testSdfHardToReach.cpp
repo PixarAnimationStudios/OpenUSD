@@ -476,6 +476,49 @@ _TestSdfSchemaPathValidation()
     TF_AXIOM(!schema.IsValidRelocatesPath(SdfPath("/A{x=y}B")));
 }
 
+static void 
+_TestSdfMapEditorProxyOperators()
+{
+    // SdfVariantSelectionProxy is used as a test here since it is
+    // typedef'd to std::map<std::string, std::string> which has
+    // the required operators defined for comparison
+
+    SdfLayerRefPtr layer = SdfLayer::CreateAnonymous();
+    SdfPrimSpecHandle prim = SdfCreatePrimInLayer(layer, SdfPath("/Test"));
+
+    SdfVariantSelectionProxy validProxy = prim->GetVariantSelections();
+    TF_AXIOM(validProxy);
+
+    // Two invalid SdfMapEditProxy objects should always compare equal.
+    SdfVariantSelectionProxy invalidProxyA, invalidProxyB;
+    TF_AXIOM((!invalidProxyA) && (!invalidProxyB));
+
+    TF_AXIOM(invalidProxyA == invalidProxyB);
+    TF_AXIOM(!(invalidProxyA != invalidProxyA));
+
+    // Invalid proxy should not compare equal to a valid one
+    TF_AXIOM(invalidProxyA != validProxy);
+    TF_AXIOM(!(invalidProxyA == validProxy));
+
+    // Invalid SdfMapEditProxy objects should always compare less to an object
+    // of their map type
+    std::map<std::string, std::string> testMap = {{"key", "value"}};
+
+    TF_AXIOM(!(invalidProxyA == testMap));
+    TF_AXIOM(invalidProxyA != testMap);
+    TF_AXIOM(invalidProxyA < testMap);
+    TF_AXIOM(invalidProxyA <= testMap);
+    TF_AXIOM(!(invalidProxyA > testMap));
+    TF_AXIOM(!(invalidProxyA >= testMap));
+
+    TF_AXIOM(!(testMap == invalidProxyA));
+    TF_AXIOM(testMap != invalidProxyA);
+    TF_AXIOM(!(testMap < invalidProxyA));
+    TF_AXIOM(!(testMap <= invalidProxyA));
+    TF_AXIOM(testMap > invalidProxyA);
+    TF_AXIOM(testMap >= invalidProxyA);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -486,6 +529,7 @@ main(int argc, char **argv)
     _TestSdfPathFindLongestPrefix();
     _TestSdfFpsAndTcps();
     _TestSdfSchemaPathValidation();
+    _TestSdfMapEditorProxyOperators();
 
     return 0;
 }

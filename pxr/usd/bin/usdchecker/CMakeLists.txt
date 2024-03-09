@@ -144,3 +144,13 @@ pxr_register_test(testUsdChecker12
     EXPECTED_RETURN_CODE 1
 )
 
+pxr_install_test_dir(
+    SRC testenv/testUsdChecker
+    DEST testUsdChecker13
+)
+
+pxr_register_test(testUsdChecker13
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker clean/cleanNormalMapReader.usda"
+    EXPECTED_RETURN_CODE 0
+)

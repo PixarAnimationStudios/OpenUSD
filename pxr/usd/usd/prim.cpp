@@ -1619,16 +1619,19 @@ struct UsdPrim_TargetFinder
     using Predicate = std::function<bool (PropertyType const &)>;
     
     static SdfPathVector
-    Find(UsdPrim const &prim, Predicate const &pred, bool recurse) {
-        UsdPrim_TargetFinder tf(prim, pred, recurse);
+    Find(UsdPrim const &prim, Usd_PrimFlagsPredicate const &traversal,
+         Predicate const &pred, bool recurse) {
+        UsdPrim_TargetFinder tf(prim, traversal, pred, recurse);
         tf._Find();
         return std::move(tf._result);
     }
 
 private:
     explicit UsdPrim_TargetFinder(
-        UsdPrim const &prim, Predicate const &pred, bool recurse)
+        UsdPrim const &prim, Usd_PrimFlagsPredicate const &traversal,
+        Predicate const &pred, bool recurse)
         : _prim(prim)
+        , _traversal(traversal)
         , _consumerTask(_dispatcher, [this]() { _ConsumerTask(); })
         , _predicate(pred)
         , _recurse(recurse) {}
@@ -1681,7 +1684,7 @@ private:
 
     void _VisitSubtree(UsdPrim const &prim) {
         _VisitPrim(prim);
-        auto range = prim.GetDescendants();
+        auto range = prim.GetFilteredDescendants(_traversal);
         WorkParallelForEach(range.begin(), range.end(),
                             [this](UsdPrim const &desc) { _VisitPrim(desc); });
     }
@@ -1707,6 +1710,7 @@ private:
     }
 
     UsdPrim _prim;
+    Usd_PrimFlagsPredicate _traversal;
     WorkDispatcher _dispatcher;
     WorkSingularTask _consumerTask;
     Predicate const &_predicate;
@@ -1737,19 +1741,41 @@ struct UsdPrim_AttrConnectionFinder
 USD_API
 SdfPathVector
 UsdPrim::FindAllAttributeConnectionPaths(
+    Usd_PrimFlagsPredicate const &traversal,
     std::function<bool (UsdAttribute const &)> const &predicate,
     bool recurseOnSources) const
 {
     return UsdPrim_AttrConnectionFinder
-        ::Find(*this, predicate, recurseOnSources);
+        ::Find(*this, traversal, predicate, recurseOnSources);
+}
+
+USD_API
+SdfPathVector
+UsdPrim::FindAllAttributeConnectionPaths(
+    std::function<bool (UsdAttribute const &)> const &predicate,
+    bool recurseOnSources) const
+{
+    return FindAllAttributeConnectionPaths(
+        UsdPrimDefaultPredicate, predicate, recurseOnSources);
 }
     
+SdfPathVector
+UsdPrim::FindAllRelationshipTargetPaths(
+    Usd_PrimFlagsPredicate const &traversal,
+    std::function<bool (UsdRelationship const &)> const &predicate,
+    bool recurseOnTargets) const
+{
+    return UsdPrim_RelTargetFinder::Find(
+        *this, traversal, predicate, recurseOnTargets);
+}
+
 SdfPathVector
 UsdPrim::FindAllRelationshipTargetPaths(
     std::function<bool (UsdRelationship const &)> const &predicate,
     bool recurseOnTargets) const
 {
-    return UsdPrim_RelTargetFinder::Find(*this, predicate, recurseOnTargets);
+    return FindAllRelationshipTargetPaths(
+        UsdPrimDefaultPredicate, predicate, recurseOnTargets);
 }
 
 bool

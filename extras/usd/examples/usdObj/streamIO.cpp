@@ -130,9 +130,18 @@ UsdObjReadDataFromStream(std::istream &input,
             pointsEnd = int(stream->GetPoints().size());
             stream->AddFace(UsdObjStream::Face(pointsBegin, pointsEnd));
         } else if (type == "g") {
-            // Create new group.
+            // Create new group, with a presumably unique name. A real importer
+            // would make some effort to create a unique name and would also
+            // have a notion of a current group. If two groups were encoutered
+            // with the same name in the OBJ file, the importer would append
+            // subsequent faces to the orginal group of that name, rather than
+            // creating a new group.
             string groupName;
             lineStream >> groupName;
+            if (!groupName.size()) {
+                groupName = TfStringPrintf("default_mesh_%d", 
+                                           int(stream->GetGroups().size()));
+            }
             stream->AddGroup(groupName);
         } else {
             // Add arbitrary text (or comment).

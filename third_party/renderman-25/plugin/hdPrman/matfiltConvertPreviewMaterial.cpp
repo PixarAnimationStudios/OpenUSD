@@ -144,7 +144,7 @@ _GetParameter(
     if (!TF_VERIFY(v)) {
         return false;
     }
-    *v = std::move(netInterface->GetNodeParameterValue(nodeName, paramName));
+    *v = netInterface->GetNodeParameterValue(nodeName, paramName);
     return !v->IsEmpty();
 }
 
@@ -158,7 +158,7 @@ _GetInputConnection(
     if (!TF_VERIFY(v)) {
         return false;
     }
-    *v = std::move(netInterface->GetNodeInputConnection(nodeName, inputName));
+    *v = netInterface->GetNodeInputConnection(nodeName, inputName);
     // Just check the length of the InputConnectionVector returned.
     // This skips validation of the upstreamNodeName in each connection.
     return !v->empty();
@@ -455,9 +455,9 @@ MatfiltConvertPreviewMaterial(
     TfTokenVector nodeNames = netInterface->GetNodeNames();
     if(nodeNames.size() > 1) {
         std::unordered_set<TfToken, TfHash> nameSet;
-        nameSet.insert(nodeNames.begin(), nodeNames.end());
+        nameSet.insert(nodeNames.cbegin(), nodeNames.cend());
         nodeNames.clear();
-        nodeNames.insert(nodeNames.end(), nameSet.begin(), nameSet.end());
+        nodeNames.insert(nodeNames.end(), nameSet.cbegin(), nameSet.cend());
     }
 
     bool foundPreviewSurface = false;

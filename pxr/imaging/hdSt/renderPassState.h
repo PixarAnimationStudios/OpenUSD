@@ -194,12 +194,14 @@ public:
     HDST_API
     void InitGraphicsPipelineDesc(
                 HgiGraphicsPipelineDesc * pipeDesc,
-                HdSt_GeometricShaderSharedPtr const & geometricShader) const;
+                HdSt_GeometricShaderSharedPtr const & geometricShader,
+                bool firstDrawBatch) const;
 
     /// Generates the hash for the settings used to init the graphics pipeline.
     HDST_API
     uint64_t GetGraphicsPipelineHash(
-        HdSt_GeometricShaderSharedPtr const & geometricShader) const;
+        HdSt_GeometricShaderSharedPtr const & geometricShader,
+        bool firstDrawBatch) const;
 
     // A 4d-vector v encodes a 2d-transform as follows:
     // (x, y) |-> (v[0] * x + v[2], v[1] * y + v[3]).
@@ -234,7 +236,8 @@ private:
     void _InitPrimitiveState(
                 HgiGraphicsPipelineDesc * pipeDesc,
                 HdSt_GeometricShaderSharedPtr const & geometricShader) const;
-    void _InitAttachmentState(HgiGraphicsPipelineDesc * pipeDesc) const;
+    void _InitAttachmentState(HgiGraphicsPipelineDesc * pipeDesc,
+                              bool firstDrawBatch) const;
     void _InitDepthStencilState(HgiDepthStencilState * depthState) const;
     void _InitMultiSampleState(HgiMultiSampleState * multisampleState) const;
     void _InitRasterizationState(

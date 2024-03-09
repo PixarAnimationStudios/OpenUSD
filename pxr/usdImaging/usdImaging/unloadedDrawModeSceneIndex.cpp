@@ -23,7 +23,7 @@
 
 #include "pxr/usdImaging/usdImaging/unloadedDrawModeSceneIndex.h"
 
-#include "pxr/usdImaging/usdImaging/modelSchema.h"
+#include "pxr/usdImaging/usdImaging/geomModelSchema.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
@@ -65,13 +65,13 @@ _DataSourceForcingBoundsDrawMode()
 {
     static HdContainerDataSourceHandle result =
         HdRetainedContainerDataSource::New(
-            UsdImagingModelSchema::GetSchemaToken(),
-            UsdImagingModelSchema::Builder()
+            UsdImagingGeomModelSchema::GetSchemaToken(),
+            UsdImagingGeomModelSchema::Builder()
                 .SetApplyDrawMode(
                     HdRetainedTypedSampledDataSource<bool>::New(true))
                 .SetDrawMode(
                     HdRetainedTypedSampledDataSource<TfToken>::New(
-                        UsdImagingModelSchemaTokens->bounds))
+                        UsdImagingGeomModelSchemaTokens->bounds))
                 .Build());
     return result;
 }

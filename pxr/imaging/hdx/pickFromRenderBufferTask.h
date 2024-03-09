@@ -45,7 +45,6 @@ struct HdxPickFromRenderBufferTaskParams
         , normalBufferPath()
         , depthBufferPath()
         , cameraId()
-        , overrideWindowPolicy{false, CameraUtilFit}
         , viewport()
     {}
 
@@ -62,7 +61,7 @@ struct HdxPickFromRenderBufferTaskParams
     // render buffers.
     CameraUtilFraming framing;
     // Is application overriding the window policy of the camera.
-    std::pair<bool, CameraUtilConformWindowPolicy> overrideWindowPolicy;
+    std::optional<CameraUtilConformWindowPolicy> overrideWindowPolicy;
 
     // The viewport of the camera used to generate the id buffers.
     // Only used if framing is invalid - for legacy clients.

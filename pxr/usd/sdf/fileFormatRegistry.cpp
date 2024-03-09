@@ -54,19 +54,6 @@ TF_DEFINE_PRIVATE_TOKENS(_PlugInfoKeyTokens,
     ((SupportsEditing, "supportsEditing"))
     );
 
-// Locale-independent tolower only for ascii/utf-8 A-Z.
-static inline std::string
-_ToLower(std::string const &str)
-{
-    std::string lowered;
-    lowered.resize(str.size());
-    std::transform(str.begin(), str.end(), lowered.begin(),
-                   [](char ch) {
-                       return ('A' <= ch && ch <= 'Z') ? ch - 'A' + 'a' : ch;
-                   });
-    return lowered;
-}
-
 // Searches plugin meta data to determine if a capability is supported for the
 // file format type.  All capabilities are enabled by default (for backwards
 // compatability) so the user must explicitly opt out in plugInfo.json
@@ -150,7 +137,8 @@ Sdf_FileFormatRegistry::_GetFormatInfo(
     }
 
     // Convert to lowercase for lookup.
-    string ext = _ToLower(SdfFileFormat::GetFileExtension(s));
+    string ext = TfStringToLowerAscii(
+        SdfFileFormat::GetFileExtension(s));
     if (ext.empty()) {
         TF_CODING_ERROR("Unable to determine extension for '%s'", s.c_str());
         return formatInfo;
@@ -235,8 +223,10 @@ Sdf_FileFormatRegistry::GetPrimaryFormatForExtension(
 {
     _RegisterFormatPlugins();
 
-    // Convert to lowercase for lookup.
-    _ExtensionIndex::const_iterator it = _extensionIndex.find(_ToLower(ext));
+    // Case fold [A-Z] for lookup.
+    _ExtensionIndex::const_iterator it = _extensionIndex.find(
+        TfStringToLowerAscii(ext)
+    );
     if (it != _extensionIndex.end()) {
         return it->second->formatId;
     }
@@ -366,10 +356,13 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             continue;
         }
 
-        // Convert 'extensions' to be all lower-case.
+        // Case fold [A-Z] all 'extensions'.
         std::transform(extensions.begin(), extensions.end(),
                        extensions.begin(),
-                       [](std::string const &ext) { return _ToLower(ext); });
+                       [](std::string const &ext) {
+                            return TfStringToLowerAscii(ext);
+                       }
+        );
 
         // The 'target' entry does not need to be specified in every
         // file format's plugin info. If it is not, then the value will be
@@ -419,7 +412,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
         TF_DEBUG(SDF_FILE_FORMAT).Msg("_RegisterFormatPlugins: "
             "  target '%s'\n", target.c_str());
 
-        const TfToken formatIdToken(formatId);
+        const TfToken formatIdToken(formatId, TfToken::Immortal);
 
         _InfoSharedPtr& info = formatInfo[formatIdToken];
         if (info) {
@@ -428,7 +421,8 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             continue;
         }
         info = std::make_shared<_Info>(
-            formatIdToken, formatType, TfToken(target), plugin, capabilities);
+            formatIdToken, formatType,
+            TfToken(target, TfToken::Immortal), plugin, capabilities);
 
         // Record the extensions that this file format plugin can handle.
         // Note that an extension may be supported by multiple file format

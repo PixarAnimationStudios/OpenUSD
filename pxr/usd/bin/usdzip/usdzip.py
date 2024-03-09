@@ -284,7 +284,7 @@ def main():
         with Ar.ResolverContextBinder(context):
             # Create the package only if the compliance check was passed.
             success = success and UsdUtils.CreateNewUsdzPackage(
-                Sdf.AssetPath(args.asset), usdzFile)
+                Sdf.AssetPath(args.asset), usdzFile, editLayersInPlace=True)
 
     elif args.arkitAsset:
         r = Ar.GetResolver()
@@ -297,7 +297,8 @@ def main():
         with Ar.ResolverContextBinder(context):
             # Create the package only if the compliance check was passed.
             success = success and UsdUtils.CreateNewARKitUsdzPackage(
-                    Sdf.AssetPath(args.arkitAsset), usdzFile)
+                    Sdf.AssetPath(args.arkitAsset), usdzFile, 
+                        editLayersInPlace=True)
 
     if args.listTarget or args.dumpTarget:
         if os.path.exists(usdzFile):

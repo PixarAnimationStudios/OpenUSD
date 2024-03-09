@@ -186,6 +186,23 @@ UsdRenderSettingsBase::CreateDisableMotionBlurAttr(VtValue const &defaultValue, 
                        writeSparsely);
 }
 
+UsdAttribute
+UsdRenderSettingsBase::GetDisableDepthOfFieldAttr() const
+{
+    return GetPrim().GetAttribute(UsdRenderTokens->disableDepthOfField);
+}
+
+UsdAttribute
+UsdRenderSettingsBase::CreateDisableDepthOfFieldAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRenderTokens->disableDepthOfField,
+                       SdfValueTypeNames->Bool,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
 UsdRelationship
 UsdRenderSettingsBase::GetCameraRel() const
 {
@@ -222,6 +239,7 @@ UsdRenderSettingsBase::GetSchemaAttributeNames(bool includeInherited)
         UsdRenderTokens->dataWindowNDC,
         UsdRenderTokens->instantaneousShutter,
         UsdRenderTokens->disableMotionBlur,
+        UsdRenderTokens->disableDepthOfField,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

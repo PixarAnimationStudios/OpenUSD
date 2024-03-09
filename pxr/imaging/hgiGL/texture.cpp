@@ -436,5 +436,10 @@ HgiGLTexture::GetBindlessHandle()
     return _bindlessHandle;
 }
 
+void 
+HgiGLTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
+{
+    return;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

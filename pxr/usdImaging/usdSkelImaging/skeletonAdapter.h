@@ -36,7 +36,6 @@
 #include "pxr/usd/usdSkel/skeleton.h"
 #include "pxr/usd/usdSkel/skeletonQuery.h"
 
-#include <boost/unordered_map.hpp>
 #include <unordered_map>
 
 

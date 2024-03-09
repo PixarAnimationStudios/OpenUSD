@@ -61,6 +61,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanRenderSettingsTokens, HDPRMAN_API,
     (renderVars)                   \
     (renderVarIndices)             \
     (name)                         \
+    (sourceName)                   \
+    (sourceType)                   \
     (type)                         \
     (params)                       \
     (camera)
@@ -174,6 +176,11 @@ public:
 #if HD_API_VERSION > 46
     HDPRMAN_API 
     TfTokenVector GetRenderSettingsNamespaces() const override;
+#endif
+
+#if HD_API_VERSION >= 60
+    HDPRMAN_API
+    HdContainerDataSourceHandle GetCapabilities() const override;
 #endif
 
     HDPRMAN_API 

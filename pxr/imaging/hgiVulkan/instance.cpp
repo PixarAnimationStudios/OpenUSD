@@ -40,7 +40,7 @@ HgiVulkanInstance::HgiVulkanInstance()
     , _vkInstance(nullptr)
 {
     VkApplicationInfo appInfo = {VK_STRUCTURE_TYPE_APPLICATION_INFO};
-    appInfo.apiVersion = VK_API_VERSION_1_0;
+    appInfo.apiVersion = VK_API_VERSION_1_3;
 
     VkInstanceCreateInfo createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
     createInfo.pApplicationInfo = &appInfo;
@@ -72,8 +72,7 @@ HgiVulkanInstance::HgiVulkanInstance()
     if (HgiVulkanIsDebugEnabled()) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         const char* debugLayers[] = {
-            // XXX Use "VK_LAYER_KHRONOS_validation" when upgrading SDK
-            "VK_LAYER_LUNARG_standard_validation"
+            "VK_LAYER_KHRONOS_validation"
         };
         createInfo.ppEnabledLayerNames = debugLayers;
         createInfo.enabledLayerCount = (uint32_t)  TfArraySize(debugLayers);

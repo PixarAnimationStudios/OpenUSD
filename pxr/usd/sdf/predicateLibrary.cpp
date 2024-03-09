@@ -30,6 +30,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_REGISTRY_FUNCTION(TfEnum)
+{
+    // SdfPredicateFunctionResult::Constancy
+    TF_ADD_ENUM_NAME(SdfPredicateFunctionResult::ConstantOverDescendants);
+    TF_ADD_ENUM_NAME(SdfPredicateFunctionResult::MayVaryOverDescendants);
+}
+
 size_t
 SdfPredicateParamNamesAndDefaults::_CountDefaults() const
 {

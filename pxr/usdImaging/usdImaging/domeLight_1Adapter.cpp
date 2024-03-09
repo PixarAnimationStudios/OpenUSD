@@ -110,6 +110,44 @@ private:
     UsdPrim _prim;
 };
 
+// An HdTypedSampledDataSource that determines the list of portals
+class _PortalsDataSource : public HdTypedSampledDataSource<SdfPathVector>
+{
+public:
+    HD_DECLARE_DATASOURCE(_PortalsDataSource);
+
+    _PortalsDataSource(const UsdPrim& prim)
+    : _prim(prim)
+    {
+    }
+
+    VtValue GetValue(HdSampledDataSource::Time shutterOffset) override
+    {
+        return VtValue(GetTypedValue(shutterOffset));
+    }
+
+    SdfPathVector GetTypedValue(HdSampledDataSource::Time shutterOffset) override
+    {
+        UsdRelationship portalsRel = UsdLuxDomeLight_1(_prim).GetPortalsRel();
+        SdfPathVector portalPaths;
+        if (portalsRel) {
+            portalsRel.GetForwardedTargets(&portalPaths);
+        }
+        return portalPaths;
+    }
+
+    bool GetContributingSampleTimesForInterval(
+        HdSampledDataSource::Time startTime,
+        HdSampledDataSource::Time endTime,
+        std::vector<HdSampledDataSource::Time>* outSampleTimes) override
+    {
+        return false;
+    }
+
+private:
+    UsdPrim _prim;
+};
+
 } // namespace anonymous
 
 UsdImagingDomeLight_1Adapter::~UsdImagingDomeLight_1Adapter() 
@@ -146,7 +184,9 @@ UsdImagingDomeLight_1Adapter::GetImagingSubprimData(
             HdLightSchema::GetSchemaToken(),
             HdRetainedContainerDataSource::New(
                 HdLightTokens->domeOffset,
-                _LazyDomeOffsetDataSource::New(prim))),
+                _LazyDomeOffsetDataSource::New(prim),
+                HdTokens->portals,
+                _PortalsDataSource::New(prim))),
         UsdImagingLightAdapter::GetImagingSubprimData(
             prim, subprim, stageGlobals));
 }
@@ -163,7 +203,8 @@ UsdImagingDomeLight_1Adapter::InvalidateImagingSubprim(
             prim, subprim, properties, invalidationType);
 
     for (const TfToken &propertyName : properties) {
-        if (propertyName == UsdLuxTokens->poleAxis) {
+        if (propertyName == UsdLuxTokens->poleAxis ||
+            propertyName == UsdLuxTokens->portals) {
             result.insert(HdLightSchema::GetDefaultLocator());
         }
     }

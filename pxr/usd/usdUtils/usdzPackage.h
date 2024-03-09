@@ -47,6 +47,23 @@ class SdfAssetPath;
 /// You can optionally specify a different package-internal name for the first
 /// layer of the asset by specifying \p firstLayerName. By default,
 /// \p firstLayerName is empty, meaning that the original name is preserved.
+///
+/// The \p editLayersInPlace parameter controls the strategy used for managing 
+/// changes to layers (including the root layer and all transitive layer 
+/// dependencies) that occur during the package creation process.  When 
+/// \p editLayersInPlace is false, a temporary, anonymous copy of each 
+/// modified layer is created and written into the package. This has the 
+/// advantage of leaving source layers untouched at the expense of creating a 
+/// copy of each modified layer in memory for the duration of this function.
+///
+/// When \p editLayersInPlace is set to true, layers are modified in-place and 
+/// not reverted or persisted once the package has been created. In this case, 
+/// there is no overhead of creating copies of each modified layer.  If you have
+/// UsdStages open during the function call that reference the layers being 
+/// modified, you may receive warnings or composition errors.  While these 
+/// errors will not affect the resulting package adversely, it is strongly 
+/// recommended that this function is run in isolation after any source 
+/// UsdStages have been closed.
 /// 
 /// Returns true if the package was created successfully.
 /// 
@@ -59,23 +76,14 @@ class SdfAssetPath;
 /// reference to a directory path), the dependency is ignored and the contents 
 /// of the directory are not included in the created package. 
 /// 
-/// \note This function modifies the layers referenced by \p assetPath 
-/// (including the root layer and all transitive layer dependencies) in-place. 
-/// However, it does not save the layers before copying them into the package 
-/// that is created. It also does not revert the changes it makes to the 
-/// layers. Therefore, it is strongly recommended that you run this function in 
-/// isolation after any source UsdStages have been closed. If you have UsdStages 
-/// open during the function call that reference the layers being modified, you 
-/// may receive warnings or composition errors which may not affect the 
-/// resulting package adversely.
-/// 
 /// \sa UsdUtilsCreateNewARKitUsdzPackage()
 USDUTILS_API
 bool
 UsdUtilsCreateNewUsdzPackage(
     const SdfAssetPath& assetPath,
     const std::string& usdzFilePath,
-    const std::string& firstLayerName=std::string());
+    const std::string& firstLayerName=std::string(),
+    bool editLayersInPlace = false);
 
 /// Similar to UsdUtilsCreateNewUsdzPackage, this function packages all of the 
 /// dependencies of the given asset. Assets targeted at the initial usdz 
@@ -88,6 +96,23 @@ UsdUtilsCreateNewUsdzPackage(
 ///
 /// If \p firstLayerName is specified, it is modified to have the ".usdc" 
 /// extension, as required by the initial usdz implementation in ARKit.
+///
+/// The \p editLayersInPlace parameter controls the strategy used for managing 
+/// changes to layers (including the root layer and all transitive layer 
+/// dependencies) that occur during the package creation process.  When 
+/// \p editLayersInPlace is false, a temporary, anonymous copy of each 
+/// modified layer is created and written into the package. This has the 
+/// advantage of leaving source layers untouched at the expense of creating a 
+/// copy of each modified layer in memory for the duration of this function.
+///
+/// When \p editLayersInPlace is set to true, layers are modified in-place and 
+/// not reverted or persisted once the package has been created. In this case, 
+/// there is no overhead of creating copies of each modified layer.  If you have
+/// UsdStages open during the function call that reference the layers being 
+/// modified, you may receive warnings or composition errors.  While these 
+/// errors will not affect the resulting package adversely, it is strongly 
+/// recommended that this function is run in isolation after any source 
+/// UsdStages have been closed.
 /// 
 /// Returns true if the package was created successfully.
 /// 
@@ -100,23 +125,14 @@ UsdUtilsCreateNewUsdzPackage(
 /// reference to a directory path), the dependency is ignored and the contents 
 /// of the directory are not included in the created package. 
 /// 
-/// \note This function modifies the layers referenced by \p assetPath 
-/// (including the root layer and all transitive layer dependencies) in-place. 
-/// However, it does not save the layers before copying them into the package 
-/// that is created. It also does not revert the changes it makes to the 
-/// layers. Therefore, it is strongly recommended that you run this function in 
-/// isolation after any source UsdStages have been closed. If you have UsdStages 
-/// open during the function call that reference the layers being modified, you 
-/// may receive warnings or composition errors which may not affect the 
-/// resulting package adversely.  
-/// 
 /// \sa UsdUtilsCreateNewUsdzPackage()
 USDUTILS_API
 bool
 UsdUtilsCreateNewARKitUsdzPackage(
     const SdfAssetPath &assetPath,
     const std::string &usdzFilePath,
-    const std::string &firstLayerName=std::string());
+    const std::string &firstLayerName=std::string(),
+    bool editLayersInplace = false);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

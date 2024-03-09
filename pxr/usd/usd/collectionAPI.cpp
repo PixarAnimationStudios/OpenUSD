@@ -650,9 +650,10 @@ UsdCollectionAPI::ComputeMembershipQuery(
     SdfPathSet collections = query->GetIncludedCollections();
 
     *query = UsdCollectionMembershipQuery(
-        std::move(map), std::move(collections),
-        { GetPrim().GetStage(), ResolveCompleteMembershipExpression() },
-        expRule);
+        std::move(map), std::move(collections), expRule);
+    query->SetExpressionEvaluator({
+            GetPrim().GetStage(), ResolveCompleteMembershipExpression()
+        });
 }
 
 void

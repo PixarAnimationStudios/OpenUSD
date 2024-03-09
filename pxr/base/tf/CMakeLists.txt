@@ -8,6 +8,108 @@ if(WIN32)
     set(WINLIBS Shlwapi.lib)
 endif()
 
+# Add a test that WindowsImportWrapper adds entries on the PATH in the correct order, to ensure
+# that the correct dlls needed by python modules are loaded
+function(add_py_dll_link_test)
+    # early return if we are not building tests or if we are not on windows.
+    if (NOT (PXR_BUILD_TESTS AND WIN32))
+        return()
+    endif()
+
+    # early return if python target is not built! (No python build enabled or
+    # doing a static build, etc)
+    if (NOT TARGET python)
+        return()
+    endif()
+
+    # The structure we are going to make is:
+    #  - python test script: testTfPyDllLink.py
+    #  - python module: testTfPyDllLinkModule/__init__.py
+    #  - python c extension: testTfPyDllLinkModule/_testTfPyDllLinkModule.pyd
+    #  - cpp lib: testTfPyDllLinkImplementation.dll
+    #    - for the cpp lib that the python extension links to, we create two dlls with the same name
+    #      - a "Good" one which returns 0, and
+    #      - a "Bad" one which returns 0xBAD
+    #    - they are placed in subdirs, in both build and install dirs:
+    #      - ImplementationGood/testTfPyDllLink.dll
+    #      - ImplementationBad/testTfPyDllLink.dll
+    #    - this will allow us to test which is loading by adding different directories to the PATH
+
+    # Create the good/bad implementations: testTfPyDllLinkImplementation.dll
+    foreach(implementation_suffix Good Bad)
+        set(implementation_name "testTfPyDllLinkImplementation${implementation_suffix}")
+        add_library(${implementation_name} SHARED
+            "testenv/${implementation_name}.cpp"
+        )
+
+        set(directory_name "Implementation${implementation_suffix}")
+
+        set_target_properties(${implementation_name} PROPERTIES
+            OUTPUT_NAME "testTfPyDllLinkImplementation"
+            RUNTIME_OUTPUT_DIRECTORY "${directory_name}"  # for the windows .dll
+            ARCHIVE_OUTPUT_DIRECTORY "${directory_name}"  # for the windows .lib
+        )
+
+        install(
+            TARGETS ${implementation_name}
+            RUNTIME DESTINATION "tests/ctest/TfPyDllLinkTestEnv/testTfPyDllLinkModule/Implementation${implementation_suffix}"
+        )
+    endforeach()
+
+    # create the _testTfPyDllLinkModule.pyd compiled python module
+    add_library(testTfPyDllLinkModule SHARED
+        "testenv/testTfPyDllLinkModule.c"
+    )
+    add_dependencies(python testTfPyDllLinkModule)
+
+    set(module_name testTfPyDllLinkModule)
+    if (PXR_USE_DEBUG_PYTHON)
+        target_compile_definitions(testTfPyDllLinkModule PRIVATE PXR_USE_DEBUG_PYTHON)
+        # On Windows when compiling with debug python the library must be named with _d.
+        set(module_filename "_${module_name}_d")
+    else()
+        set(module_filename "_${module_name}")
+    endif()
+
+    set_target_properties(testTfPyDllLinkModule PROPERTIES
+        PREFIX ""
+        # Python modules must be suffixed with .pyd on Windows.
+        SUFFIX ".pyd"
+        OUTPUT_NAME ${module_filename}
+    )
+    target_include_directories(testTfPyDllLinkModule
+        SYSTEM
+        PRIVATE
+            ${PYTHON_INCLUDE_DIRS}
+    )
+
+    target_link_libraries(testTfPyDllLinkModule PRIVATE ${PYTHON_LIBRARIES} testTfPyDllLinkImplementation)
+
+    # tell our python module to link against the "good" implementation while building
+    # (When actually running the test, which dll is found is controlled by the PATH env var)
+    add_dependencies(testTfPyDllLinkModule testTfPyDllLinkImplementationGood)
+    target_link_directories(testTfPyDllLinkModule PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/ImplementationGood")
+
+    install(
+        TARGETS testTfPyDllLinkModule
+        RUNTIME DESTINATION "tests/ctest/TfPyDllLinkTestEnv/testTfPyDllLinkModule"
+    )
+
+    # install the testenv dir, which has the testTfPyDllLinkModule.py python module
+    pxr_install_test_dir(
+        SRC testenv/TfPyDllLinkTestEnv
+        DEST TfPyDllLinkTestEnv
+    )
+
+    # finally register the test itself
+    pxr_register_test(testTfPyDllLink
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyDllLink"
+        TESTENV TfPyDllLinkTestEnv
+    )
+
+endfunction()
+
 pxr_library(tf
     LIBRARIES
         arch
@@ -59,7 +161,6 @@ pxr_library(tf
         pyObjWrapper
         pyTracing
         refBase
-        refCount
         refPtr
         refPtrTracker
         regTest
@@ -70,6 +171,7 @@ pxr_library(tf
         setenv
         singleton
         smallVector
+        spinMutex
         spinRWMutex
         stackTrace
         stacked
@@ -83,6 +185,7 @@ pxr_library(tf
         type
         typeFunctions
         typeNotice
+        unicodeUtils
         warning
         weakBase
         weakPtr
@@ -157,6 +260,7 @@ pxr_library(tf
         atomicRenameUtil
         debugCodes
         noticeRegistry
+        unicodeCharacterClasses
 
     PYTHON_PRIVATE_CLASSES
         pyErrorInternal
@@ -170,8 +274,10 @@ pxr_library(tf
         pxrDoubleConversion/bignum.h
         pxrDoubleConversion/cached-powers.h
         pxrDoubleConversion/diy-fp.h
+        pxrDoubleConversion/double-to-string.h
         pxrDoubleConversion/fast-dtoa.h
         pxrDoubleConversion/fixed-dtoa.h
+        pxrDoubleConversion/string-to-double.h
         pxrDoubleConversion/strtod.h
         pxrLZ4/lz4.h
         pyWeakObject.h
@@ -179,13 +285,13 @@ pxr_library(tf
     CPPFILES
         initConfig.cpp
         preprocessorUtils.cpp
-        pxrDoubleConversion/double-conversion.cc
         pxrDoubleConversion/bignum-dtoa.cc
         pxrDoubleConversion/bignum.cc
         pxrDoubleConversion/cached-powers.cc
-        pxrDoubleConversion/diy-fp.cc
+        pxrDoubleConversion/double-to-string.cc
         pxrDoubleConversion/fast-dtoa.cc
         pxrDoubleConversion/fixed-dtoa.cc
+        pxrDoubleConversion/string-to-double.cc
         pxrDoubleConversion/strtod.cc
         pxrLZ4/lz4.cpp
 
@@ -291,6 +397,8 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         CPPFILES
             testenv/testTfPyResultConversions.cpp
     )
+
+    add_py_dll_link_test()
 endif()
 
 pxr_build_test(testTfSIGFPE
@@ -362,6 +470,7 @@ pxr_build_test(testTf
         testenv/patternMatcher.cpp
         testenv/pointerAndBits.cpp
         testenv/preprocessorUtils.cpp
+        testenv/preprocessorUtilsLite.cpp
         testenv/probe.cpp
         testenv/refPtr.cpp
         testenv/registryManager.cpp
@@ -383,6 +492,7 @@ pxr_build_test(testTf
         testenv/type.cpp
         testenv/typeMultipleInheritance.cpp
         testenv/typeInfoMap.cpp
+        testenv/unicodeUtils.cpp
         testenv/weakPtr.cpp
 )
 
@@ -392,6 +502,7 @@ pxr_test_scripts(
     testenv/testTfNamedTemporaryFile.py
     testenv/testTfPathUtils.py
     testenv/testTfPython.py
+    testenv/testTfPyDllLink.py
     testenv/testTfPyNotice.py
     testenv/testTfPyOptional.py
     testenv/testTfPyScopeDescription.py
@@ -566,6 +677,9 @@ pxr_register_test(TfPointerAndBits
 pxr_register_test(TfPreprocessorUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPreprocessorUtils"
 )
+pxr_register_test(TfPreprocessorUtilsLite
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPreprocessorUtilsLite"
+)
 pxr_register_test(TfProbe
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfProbe"
 )
@@ -645,6 +759,9 @@ pxr_register_test(TfTypeInfoMap
 )
 pxr_register_test(TfType_MultipleInheritance
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfType_MultipleInheritance"
+)
+pxr_register_test(TfUnicodeUtils
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfUnicodeUtils"
 )
 pxr_register_test(TfWeakPtr
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfWeakPtr"

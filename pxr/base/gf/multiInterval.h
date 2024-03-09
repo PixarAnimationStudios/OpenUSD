@@ -146,7 +146,7 @@ public:
     /// minimum value is > x.  If no such interval exists, returns end().
     GF_API const_iterator upper_bound( double x ) const;
 
-    /// Returns an iterator identifying the first (loest) interval whose
+    /// Returns an iterator identifying the first (lowest) interval whose
     /// minimum value is > x.  If no such interval exists, returns end().
     GF_API const_iterator GetNextNonContainingInterval( double x ) const;
 

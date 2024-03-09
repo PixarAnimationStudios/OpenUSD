@@ -23,8 +23,14 @@
 //
 #include "hdPrman/extComputationPrimvarPruningSceneIndexPlugin.h"
 
+#include "hdPrman/tokens.h"
+
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+
+#include "pxr/pxr.h"
+#if PXR_VERSION >= 2402
 #include "pxr/imaging/hdsi/extComputationPrimvarPruningSceneIndex.h"
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,8 +42,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 ////////////////////////////////////////////////////////////////////////////////
 // Plugin registrations
 ////////////////////////////////////////////////////////////////////////////////
-
-static const char * const _rendererDisplayName = "Prman";
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -53,12 +57,15 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 0;
 
     // Register the plugins conditionally.
-    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        _rendererDisplayName,
-        _tokens->sceneIndexPluginName,
-        nullptr, // no argument data necessary
-        insertionPhase,
-        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    for(const auto& rendererDisplayName : HdPrman_GetPluginDisplayNames()) {
+        // Register the plugins conditionally.
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            rendererDisplayName,
+            _tokens->sceneIndexPluginName,
+            nullptr, // no argument data necessary
+            insertionPhase,
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -74,7 +81,11 @@ HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin::_AppendSceneIndex(
     const HdContainerDataSourceHandle &inputArgs)
 {
     TF_UNUSED(inputArgs);
+#if PXR_VERSION >= 2402
     return HdSiExtComputationPrimvarPruningSceneIndex::New(inputScene);
+#else
+    return inputScene;
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

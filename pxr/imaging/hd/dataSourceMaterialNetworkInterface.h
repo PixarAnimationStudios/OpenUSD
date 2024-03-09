@@ -27,6 +27,9 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/hd/containerDataSourceEditor.h"
 #include "pxr/imaging/hd/materialNetworkInterface.h"
+#include "pxr/imaging/hd/materialNetworkSchema.h"
+#include "pxr/imaging/hd/materialNodeSchema.h"
+#include "pxr/imaging/hd/schemaTypeDefs.h"
 #include <unordered_map>
 #include <unordered_set>
 
@@ -49,9 +52,13 @@ public:
         const HdContainerDataSourceHandle &networkContainer,
         const HdContainerDataSourceHandle &primContainer)
     : _materialPrimPath(materialPrimPath)
-    , _networkContainer(networkContainer)
+    , _networkSchema(networkContainer)
     , _networkEditor(networkContainer)
     , _primContainer(primContainer)
+    , _nodesSchema(nullptr)
+    , _lastAccessedNodeSchema(nullptr)
+    , _lastAccessedNodeParametersSchema(nullptr)
+    , _lastAccessedNodeConnectionsSchema(nullptr)
     {}
 
     HD_API
@@ -82,6 +89,11 @@ public:
     VtValue GetNodeParameterValue(
         const TfToken &nodeName,
         const TfToken &paramName) const override;
+    
+    HD_API
+    HdMaterialNetworkInterface::NodeParamData GetNodeParameterData(
+        const TfToken &nodeName,
+        const TfToken &paramName) const override;
 
     HD_API
     TfTokenVector GetNodeInputConnectionNames(
@@ -105,6 +117,12 @@ public:
         const TfToken &nodeName,
         const TfToken &paramName,
         const VtValue &value) override;
+
+    HD_API
+    void SetNodeParameterData(
+        const TfToken &nodeName,
+        const TfToken &paramName,
+        const NodeParamData &paramData) override;
 
     HD_API
     void DeleteNodeParameter(
@@ -156,7 +174,7 @@ private:
         const HdDataSourceBaseHandle &ds);
 
     SdfPath _materialPrimPath;
-    HdContainerDataSourceHandle _networkContainer;
+    mutable HdMaterialNetworkSchema _networkSchema;
     HdContainerDataSourceEditor _networkEditor;
     HdContainerDataSourceHandle _primContainer;
     _OverrideMap _existingOverrides;
@@ -165,18 +183,22 @@ private:
     bool _terminalsOverridden = false;
 
     // cache some common child containers to avoid repeated access
-    HdContainerDataSourceHandle _GetNode(
+    HdMaterialNodeSchema _ResetIfNecessaryAndGetNode(
         const TfToken &nodeName) const;
-    HdContainerDataSourceHandle _GetNodeParameters(
+    HdMaterialNodeParameterContainerSchema _GetNodeParameters(
         const TfToken &nodeName) const;
-    HdContainerDataSourceHandle _GetNodeConnections(
+    HdMaterialConnectionVectorContainerSchema _GetNodeConnections(
         const TfToken &nodeName) const;
 
-    mutable HdContainerDataSourceHandle _nodesContainer;
+    mutable HdMaterialNodeContainerSchema _nodesSchema;
+
+
     mutable TfToken _lastAccessedNodeName;
-    mutable HdContainerDataSourceHandle _lastAccessedNode;
-    mutable HdContainerDataSourceHandle _lastAccessedNodeParameters;
-    mutable HdContainerDataSourceHandle _lastAccessedNodeConnections;
+
+
+    mutable HdMaterialNodeSchema _lastAccessedNodeSchema;
+    mutable HdMaterialNodeParameterContainerSchema _lastAccessedNodeParametersSchema;
+    mutable HdMaterialConnectionVectorContainerSchema _lastAccessedNodeConnectionsSchema;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

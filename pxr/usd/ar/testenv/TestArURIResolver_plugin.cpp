@@ -55,8 +55,9 @@ protected:
         const ArResolvedPath& anchorAssetPath) const final
     {
         TF_AXIOM(
-            TfStringStartsWith(TfStringToLower(assetPath), _uriScheme) ||
-            TfStringStartsWith(TfStringToLower(anchorAssetPath), _uriScheme));
+            TfStringStartsWith(TfStringToLowerAscii(assetPath), _uriScheme) ||
+            TfStringStartsWith(TfStringToLowerAscii(anchorAssetPath),
+                               _uriScheme));
         return assetPath;
     }
 
@@ -65,15 +66,17 @@ protected:
         const ArResolvedPath& anchorAssetPath) const final
     {
         TF_AXIOM(
-            TfStringStartsWith(TfStringToLower(assetPath), _uriScheme) ||
-            TfStringStartsWith(TfStringToLower(anchorAssetPath), _uriScheme));
+            TfStringStartsWith(TfStringToLowerAscii(assetPath), _uriScheme) ||
+            TfStringStartsWith(TfStringToLowerAscii(anchorAssetPath),
+                               _uriScheme));
         return assetPath;
     }
 
     ArResolvedPath _Resolve(
         const std::string& assetPath) const final
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(assetPath), _uriScheme));
+        TF_AXIOM(TfStringStartsWith(TfStringToLowerAscii(assetPath),
+                                    _uriScheme));
 
         const _TestURIResolverContext* uriContext = _GetCurrentContextPtr();
         if (uriContext && !uriContext->data.empty()) {
@@ -105,7 +108,8 @@ protected:
     std::shared_ptr<ArAsset> _OpenAsset(
         const ArResolvedPath& resolvedPath) const final
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(resolvedPath), _uriScheme));
+        TF_AXIOM(TfStringStartsWith(TfStringToLowerAscii(resolvedPath),
+                                    _uriScheme));
         return nullptr;
     }
 
@@ -120,7 +124,8 @@ protected:
         const ArResolvedPath& resolvedPath,
         WriteMode writeMode) const final
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(resolvedPath), _uriScheme));
+        TF_AXIOM(TfStringStartsWith(TfStringToLowerAscii(resolvedPath),
+                                    _uriScheme));
         return nullptr;
     }
 

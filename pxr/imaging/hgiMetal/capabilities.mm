@@ -142,6 +142,19 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
         }
     }
 
+    // Return immediately from the fragment shader main function after
+    // executing discard_fragment() in order to avoid side effects
+    // from buffer writes. We disable this behavior for MTLGPUFamilyApple9
+    // (Apple M3) devices until macOS 14.4.
+    requiresReturnAfterDiscard = true;
+    if ([[device name] rangeOfString: @"Apple M3"].location != NSNotFound) {
+        if (@available(macOS 14.4, *)) {}
+        else
+        {
+            requiresReturnAfterDiscard = false;
+        }
+    }
+
     useParallelEncoder = true;
 }
 

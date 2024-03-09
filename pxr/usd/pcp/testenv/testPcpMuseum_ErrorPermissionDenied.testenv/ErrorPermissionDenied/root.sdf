@@ -1,25 +1,21 @@
 #sdf 1.4.32
 (
     """
-    This example has a prim, Root, with a reference to
-    A.sdf. Root has an opinion about attr, which is
+    This file has examples of prims with invalid opinions
+    due to prim and property permission restrictions.
+    """
+)
+
+def "Root" (
+    """
+    Root has a reference to A.sdf.
+    Root has an opinion about attr, which is
     private in A.sdf. This results in a property
     permission error. In addition, Root has opinions about
     a relationship and relational attribute that has been 
     marked private in A.sdf. This should also result in 
     permission errors, and the opinions should be ignored.
-
-    There is another prim, Parent, with a child prim, Child.
-    Parent has a reference to A.sdf, where Child is
-    private. This results in a prim permission error.
-
-    There is also a prim, Model, which inherits from
-    _PrivateClass. Since _PrivateClass is private, this
-    will result in an arc permission error.
     """
-)
-
-def "Root" (
     add references = @./A.sdf@</A>
 )
 {
@@ -29,7 +25,12 @@ def "Root" (
     add rel privateRel = </Root.localAttr>
     add rel publicRel = </Root.A_attr>
 }
+
 def "Parent" (
+    """
+    Parent has a reference to A.sdf, where Child is
+    private. This results in a prim permission error.
+    """
     add references = @./A.sdf@</Parent>
 )
 {
@@ -37,15 +38,62 @@ def "Parent" (
     {
     }
 }
+
 def "_PrivateClass" (
     permission = private
 )
 {
     custom double attr = -1
 }
+
 def "Model" (
+    """
+    Model inherits from _PrivateClass. Since _PrivateClass is
+    private, this will result in an arc permission error.
+    """
     add inherits = </_PrivateClass>
 )
 {
     custom double attr = 0
+}
+
+def "VariantsOpinionsOnRestrictedPrim" (
+    """
+    This prim has child prims Child and Child/Child2 that
+    come from across the reference. Child/Child2 has also
+    been marked as private across the reference. The opinions
+    on Child/Child2 in this layer stack defined in the
+    different variants should all be ignored.
+    """
+    references = @./ref.sdf@</Ref>
+)
+{
+    over "Child" (
+        variantSets = "child"
+        variants = {
+            string child = "a"
+        }
+    )
+    {
+        variantSet "child" = {
+            "a" {
+                over "Child2"
+                {
+                }
+            }
+        }
+
+        over "Child2" (
+            variantSets = "child2"
+            variants = {
+                string child2 = "a"
+            }
+        )
+        {
+            variantSet "child2" = {
+                "a" {
+                }
+            }
+        }
+    }
 }
