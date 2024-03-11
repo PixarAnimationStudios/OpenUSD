@@ -202,8 +202,10 @@ public:
     }
 
     /// Call `TfDelegatedCountDecrement` on the held pointer if it is not
-    /// `nullptr`.
-    ~TfDelegatedCountPtr() noexcept(DecrementIsNoExcept()) {
+    /// nullptr`. A bug occurs in VS2017 where calling DecrementIsNoExcept() 
+    /// may return void. The bug is possibly related to an issue with using
+    /// noexcept expressions in destructors.
+    ~TfDelegatedCountPtr() noexcept(DecrementIsNoExcept::value) {
         _DecrementIfValid();
     }
 
