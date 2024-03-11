@@ -151,6 +151,7 @@ HdSt_GenMaterialXShader(
     HdSt_MxShaderGenInfo const& mxHdInfo,
     TfToken const& apiName)
 {
+    TRACE_FUNCTION_SCOPE("Create GlslShader from MtlxDocument")
     // Initialize the Context for shaderGen. 
     mx::GenContext mxContext = _CreateHdStMaterialXContext(mxHdInfo, apiName);
 
@@ -786,6 +787,7 @@ _AddMaterialXParams(
     mx::ShaderPtr const& glslfxShader,
     HdSt_MaterialParamVector* materialParams)
 {
+    TRACE_FUNCTION_SCOPE("Collect Mtlx params from glslfx shader.")
     if (!glslfxShader) {
         return;
     }
@@ -977,6 +979,7 @@ HdSt_ApplyMaterialXFilter(
                                                      _tokens->mtlx);
 
     if (mtlxSdrNode) {
+        TRACE_FUNCTION_SCOPE("ApplyMaterialXFilter: Found Mtlx Node.")
 
         mx::ShaderPtr glslfxShader;
         const TfToken materialTagToken(_GetMaterialTag(terminalNode));
