@@ -38,6 +38,8 @@ pxr_library(hd
         changeTracker
         collectionExpressionEvaluator
         collectionPredicateLibrary
+        collectionSchema
+        collectionsSchema
         command
         coneSchema
         containerDataSourceEditor

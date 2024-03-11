@@ -37,6 +37,7 @@
 
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/assetPath.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -81,6 +82,9 @@ using HdStringDataSourceHandle = HdStringDataSource::Handle;
 
 using HdAssetPathDataSource = HdTypedSampledDataSource<SdfAssetPath>;
 using HdAssetPathDataSourceHandle = HdAssetPathDataSource::Handle;
+
+using HdPathExpressionDataSource = HdTypedSampledDataSource<SdfPathExpression>;
+using HdPathExpressionDataSourceHandle = HdPathExpressionDataSource::Handle;
 
 // Linear algebra
 using HdVec2iDataSource = HdTypedSampledDataSource<GfVec2i>;

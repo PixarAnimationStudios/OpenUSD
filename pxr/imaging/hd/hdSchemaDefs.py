@@ -1178,4 +1178,29 @@
             ('motionBlur', T_BOOL, {}),
         ],
     ),
+
+    #--------------------------------------------------------------------------
+    # collections
+    dict(
+        SCHEMA_NAME = 'Collections',
+        DOC = '''The {{ SCHEMA_CLASS_NAME }} specifies a wrapper container
+                 for collection entries with the key being the collection name.
+              ''',
+        SCHEMA_TOKEN = 'collections',
+        SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/collectionSchema'],
+        GENERIC_MEMBER = (
+            'collection', 'HdCollectionSchema', {}),
+        ADD_DEFAULT_LOCATOR = True,
+    ),
+
+    # collection
+    dict(
+        SCHEMA_NAME = 'Collection',
+        SCHEMA_TOKEN = 'collection',
+        MEMBERS = [
+            ('membershipExpression', T_PATHEXPRESSION, {}),
+        ],
+        ADD_DEFAULT_LOCATOR = True,
+    ),
+    #--------------------------------------------------------------------------
 ]
