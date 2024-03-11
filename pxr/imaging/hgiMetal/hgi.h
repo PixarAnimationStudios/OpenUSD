@@ -204,6 +204,8 @@ public:
     HGIMETAL_API
     id<MTLBuffer> GetArgBuffer();
 
+    inline void SetHasWork() { _workToFlush = true; }
+
 protected:
     HGIMETAL_API
     bool _SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait) override;

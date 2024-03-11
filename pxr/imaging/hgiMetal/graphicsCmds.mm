@@ -85,7 +85,6 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
     , _primitiveIndexSize(0)
     , _drawBufferBindingIndex(0)
     , _debugLabel(nil)
-    , _hasWork(false)
     , _viewportSet(false)
     , _scissorRectSet(false)
     , _enableParallelEncoder(false)
@@ -566,7 +565,7 @@ HgiMetalGraphicsCmds::Draw(
         }
     }
 
-    _hasWork = true;
+    _hgi->SetHasWork();
 }
 
 void
@@ -636,6 +635,7 @@ HgiMetalGraphicsCmds::DrawIndirect(
             });
         }
     });
+    _hgi->SetHasWork();
 }
 
 void
@@ -685,7 +685,7 @@ HgiMetalGraphicsCmds::DrawIndexed(
                           baseInstance:baseInstance];
     }
 
-    _hasWork = true;
+    _hgi->SetHasWork();
 }
 
 void
@@ -778,6 +778,7 @@ HgiMetalGraphicsCmds::DrawIndexedIndirect(
             });
         }
     });
+    _hgi->SetHasWork();
 }
 
 void
@@ -875,7 +876,7 @@ HgiMetalGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
     _encoders.clear();
     _CachedEncState.ResetCachedEncoderState();
     
-    return _hasWork;
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
