@@ -233,7 +233,6 @@ pxr_test_scripts(
 )
 
 pxr_build_test_shared_lib(TestSdfFileFormatCapabilities
-    CREATE_FRAMEWORK
     INSTALL_PREFIX SdfPlugins
     LIBRARIES
         sdf
@@ -244,7 +243,6 @@ pxr_build_test_shared_lib(TestSdfFileFormatCapabilities
 )
 
 pxr_build_test_shared_lib(TestSdfNoAssetFileFormat
-    CREATE_FRAMEWORK
     INSTALL_PREFIX SdfPlugins
     LIBRARIES
         sdf
@@ -255,7 +253,6 @@ pxr_build_test_shared_lib(TestSdfNoAssetFileFormat
 )
 
 pxr_build_test_shared_lib(TestSdfStreamingFileFormat
-    CREATE_FRAMEWORK
     INSTALL_PREFIX SdfPlugins
     LIBRARIES
         sdf
@@ -266,7 +263,6 @@ pxr_build_test_shared_lib(TestSdfStreamingFileFormat
 )
 
 pxr_build_test_shared_lib(TestSdfTargetFileFormat
-    CREATE_FRAMEWORK
     INSTALL_PREFIX SdfPlugins
     LIBRARIES
         sdf
@@ -277,7 +273,6 @@ pxr_build_test_shared_lib(TestSdfTargetFileFormat
 )
 
 pxr_build_test_shared_lib(TestSdfResolver
-    CREATE_FRAMEWORK
     INSTALL_PREFIX SdfPlugins
     LIBRARIES
         ar
