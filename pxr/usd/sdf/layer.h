@@ -1851,9 +1851,8 @@ private:
     // users to export and save to any file name, regardless of extension.
     bool _WriteToFile(const std::string& newFileName, 
                       const std::string& comment, 
-                      SdfFileFormatConstPtr fileFormat = TfNullPtr,
-                      const FileFormatArguments& args = FileFormatArguments())
-                      const;
+                      SdfFileFormatConstPtr fileFormat,
+                      const FileFormatArguments& args) const;
 
     // Swap contents of _data and data. This operation does not register
     // inverses or emit change notification.
