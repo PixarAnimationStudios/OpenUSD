@@ -33,7 +33,6 @@
 #include "pxr/base/trace/trace.h"
 
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
 
@@ -324,8 +323,7 @@ UsdUsdFileFormat::WriteToFile(
         fileFormat = _GetDefaultFileFormat();
     }
 
-    // XXX: Is it weird that we're not passing through the \p args?
-    return fileFormat->WriteToFile(layer, filePath, comment);
+    return fileFormat->WriteToFile(layer, filePath, comment, args);
 }
 
 bool
@@ -345,8 +343,7 @@ UsdUsdFileFormat::SaveToFile(
         fileFormat = _GetDefaultFileFormat();
     }
 
-    // XXX: Is it weird that we're not passing through the \p args?
-    return fileFormat->SaveToFile(layer, filePath, comment);
+    return fileFormat->SaveToFile(layer, filePath, comment, args);
 }
 
 bool 
