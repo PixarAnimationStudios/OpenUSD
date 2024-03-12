@@ -16,6 +16,7 @@ pxr_library(hdGp
         generativeProcedural
         generativeProceduralPlugin
         generativeProceduralPluginRegistry
+        generativeProceduralFilteringSceneIndex
         generativeProceduralResolvingSceneIndex
         sceneIndexPlugin
         
