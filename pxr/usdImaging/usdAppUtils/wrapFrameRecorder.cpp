@@ -61,5 +61,6 @@ wrapFrameRecorder()
              arg("usdCamera"),
              arg("timeCode"),
              arg("outputImagePath")))
+        .def("SetRendererSetting", &This::SetRendererSetting)
     ;
 }
