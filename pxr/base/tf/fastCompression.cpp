@@ -79,7 +79,7 @@ TfFastCompression::CompressToBuffer(
         compressed[0] = 0; // < zero byte means one chunk.
         compressed += 1 + LZ4_compress_default(
             input, compressed + 1, inputSize,
-            GetCompressedBufferSize(inputSize));
+            LZ4_compressBound(inputSize));
     } else {
         size_t nWholeChunks = inputSize / LZ4_MAX_INPUT_SIZE;
         size_t partChunkSz = inputSize % LZ4_MAX_INPUT_SIZE;
