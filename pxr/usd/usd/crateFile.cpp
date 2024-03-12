@@ -2437,23 +2437,6 @@ CrateFile::~CrateFile()
     _DeleteValueHandlers();
 }
 
-bool
-CrateFile::CanPackTo(string const &fileName) const
-{
-    if (_assetPath.empty()) {
-        return true;
-    }
-    // Try to open \p fileName and get its filename.
-    bool result = false;
-    if (FILE *f = ArchOpenFile(fileName.c_str(), "rb")) {
-        if (ArchGetFileName(f) == _fileReadFrom) {
-            result = true;
-        }
-        fclose(f);
-    }
-    return result;
-}
-
 CrateFile::Packer
 CrateFile::StartPacking(string const &fileName)
 {
@@ -2496,6 +2479,15 @@ CrateFile::Packer::Close()
 
     // Write contents. Always close the output asset even if writing failed.
     bool writeResult = _crate->_Write();
+
+    if (writeResult) {
+        // Abandon the asset here to release resources that the subsequent call
+        // to CloseOutputAsset() might need.  E.g. on Windows,
+        // CloseOutputAsset() may try to overwrite the file that _assetSrc has
+        // open for read.
+        _crate->_assetSrc.reset();
+    }
+    
     writeResult &= _crate->_packCtx->CloseOutputAsset();
     
     // If we wrote successfully, store the fileName.
