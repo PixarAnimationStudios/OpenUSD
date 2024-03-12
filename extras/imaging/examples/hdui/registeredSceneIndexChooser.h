@@ -24,6 +24,8 @@
 #ifndef PXR_IMAGING_HDUI_REGISTERED_SCENE_INDEX_CHOOSER_H
 #define PXR_IMAGING_HDUI_REGISTERED_SCENE_INDEX_CHOOSER_H
 
+#include "api.h"
+
 #include "pxr/imaging/hd/sceneIndex.h"
 
 #include <QPushButton>
@@ -31,7 +33,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HduiRegisteredSceneIndexChooser : public QPushButton
+class HDUI_API HduiRegisteredSceneIndexChooser : public QPushButton
 {
     Q_OBJECT;
 public:

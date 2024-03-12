@@ -24,13 +24,15 @@
 #ifndef PXR_IMAGING_HDUI_DATA_SOURCE_TREE_WIDGET_H
 #define PXR_IMAGING_HDUI_DATA_SOURCE_TREE_WIDGET_H
 
+#include "api.h"
+
 #include "pxr/imaging/hd/sceneIndex.h"
 
 #include <QTreeWidget>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HduiDataSourceTreeWidget : public QTreeWidget
+class HDUI_API HduiDataSourceTreeWidget : public QTreeWidget
 {
     Q_OBJECT;
 
