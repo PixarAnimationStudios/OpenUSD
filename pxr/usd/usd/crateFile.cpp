@@ -2243,7 +2243,6 @@ CrateFile::CrateFile(string const &assetPath, string const &fileName,
     : _mmapSrc(std::move(mapping))
     , _detached(false)
     , _assetPath(assetPath)
-    , _fileReadFrom(fileName)
     , _useMmap(true)
 {
     // Note that we intentionally do not store the asset -- we want to close the
@@ -2296,7 +2295,6 @@ CrateFile::_InitMMap() {
         }
     } else {
         _assetPath.clear();
-        _fileReadFrom.clear();
     }
 }
 
@@ -2306,7 +2304,6 @@ CrateFile::CrateFile(string const &assetPath, string const &fileName,
     , _assetSrc(asset)
     , _detached(false)
     , _assetPath(assetPath)
-    , _fileReadFrom(fileName)
     , _useMmap(false)
 {
     // Note that we *do* store the asset here, since we need to keep the FILE*
@@ -2328,7 +2325,6 @@ CrateFile::_InitPread()
     _ReadStructuralSections(reader, rangeLength);
     if (!m.IsClean()) {
         _assetPath.clear();
-        _fileReadFrom.clear();
     }
     // Restore default prefetch behavior.
     ArchFileAdvise(_preadSrc.file, _preadSrc.startOffset,
@@ -2515,9 +2511,6 @@ CrateFile::Packer::Close()
         FILE *file; size_t offset;
         std::tie(file, offset) = asset->GetFileUnsafe();
         if (file) {
-            // Reset the filename we've read content from.
-            _crate->_fileReadFrom = ArchGetFileName(file);
-
             if (_crate->_useMmap) {
                 // Must remap the file.
                 _crate->_mmapSrc = _MmapFile(_crate->_assetPath.c_str(), file);

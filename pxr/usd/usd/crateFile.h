@@ -1079,8 +1079,6 @@ private:
     const bool _detached;
 
     std::string _assetPath; // Empty if this file data is in-memory only.
-    std::string _fileReadFrom; // The file this object was populate from, if it
-                               // was populated from a file.
 
     std::unique_ptr<char []> _debugPageMap; // Debug page access map, see
                                             // USDC_DUMP_PAGE_MAPS.
