@@ -124,6 +124,8 @@ pxr_library(usdGeom
         images/USDCurveBasisMatrix.png
         images/USDCurveHydra.png
         images/USDCurvePrimvars.png
+        images/USDTetMeshRightHanded.svg
+        images/USDTetMeshLeftHanded.svg
         examples_usdGeom.cpp
 )
 
