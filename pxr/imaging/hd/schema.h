@@ -48,7 +48,7 @@ public:
 
     /// Returns the container data source that this schema is interpreting.
     HD_API
-    HdContainerDataSourceHandle GetContainer();
+    HdContainerDataSourceHandle GetContainer() const;
     HD_API
     bool IsDefined() const;
 

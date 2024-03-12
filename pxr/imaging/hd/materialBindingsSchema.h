@@ -83,10 +83,10 @@ public:
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 
     HD_API
-    HdMaterialBindingSchema GetMaterialBinding();
+    HdMaterialBindingSchema GetMaterialBinding() const;
     
     HD_API
-    HdMaterialBindingSchema GetMaterialBinding(TfToken const &purpose);
+    HdMaterialBindingSchema GetMaterialBinding(TfToken const &purpose) const;
 
 // --(END CUSTOM CODE: Schema Methods)--
 

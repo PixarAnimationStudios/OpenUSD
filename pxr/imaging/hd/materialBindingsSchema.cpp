@@ -49,7 +49,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdMaterialBindingsSchemaTokens,
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 
 HdMaterialBindingSchema
-HdMaterialBindingsSchema::GetMaterialBinding()
+HdMaterialBindingsSchema::GetMaterialBinding() const
 {
     return HdMaterialBindingSchema(
         _GetTypedDataSource<HdContainerDataSource>(
@@ -57,7 +57,7 @@ HdMaterialBindingsSchema::GetMaterialBinding()
 }
 
 HdMaterialBindingSchema
-HdMaterialBindingsSchema::GetMaterialBinding(TfToken const &purpose)
+HdMaterialBindingsSchema::GetMaterialBinding(TfToken const &purpose) const
 {
     if (auto b = _GetTypedDataSource<HdContainerDataSource>(purpose)) {
         return HdMaterialBindingSchema(b);
