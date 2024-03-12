@@ -1524,9 +1524,9 @@ EMBREE = Dependency("Embree", InstallEmbree, "include/embree3/rtcore.h")
 ############################################################
 # AnimX
 
-# This GitHub project has no releases, so we take the latest.
-# As of 2023, there have been no commits since 2018.
-ANIMX_URL = "https://github.com/Autodesk/animx/archive/refs/heads/master.zip"
+# This GitHub project has no releases, so we fixed on the latest commit as of
+# 2024-02-06 - 5db8ee4, which was committed on 2018-11-05
+ANIMX_URL = "https://github.com/Autodesk/animx/archive/5db8ee416d5fa7050357f498d4dcfaa6ff3f7738.zip"
 
 def InstallAnimX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ANIMX_URL, context, force)):
