@@ -61,6 +61,7 @@ pxr_library(usdImaging
         extentResolvingSceneIndex
         extentsHintSchema
         geomModelSchema
+        geomSubsetAdapter
         indexProxy
         materialParamUtils
         modelSchema

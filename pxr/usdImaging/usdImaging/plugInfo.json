@@ -95,6 +95,11 @@
                         "isInternal": true,
                         "primTypeName": "__drawModeAdapter"
                     },
+                    "UsdImagingGeomSubsetAdapter" : {
+                        "bases": ["UsdImagingPrimAdapter"],
+                        "isInternal": true,
+                        "primTypeName": "GeomSubset"
+                    },
                     "UsdImagingHermiteCurvesAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"

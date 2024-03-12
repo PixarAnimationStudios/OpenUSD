@@ -630,6 +630,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLGeomSubsets
+    DEST testUsdImagingGLGeomSubsets_SceneIndex
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdImagingGLInvalidMaterial
     DEST testUsdImagingGLInvalidMaterial
 )
@@ -4657,6 +4662,88 @@ pxr_register_test(testUsdImagingGLGeomSubsets_QuadrangulatedPoints
     TESTENV testUsdImagingGLGeomSubsets
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
+)
+
+pxr_register_test(testUsdImagingGLGeomSubsets_Low_SceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.0 -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage testUsdImagingGLGeomSubsets.usda -write testUsdImagingGLGeomSubsets_Low.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLGeomSubsets_Low.png
+    FAIL 1
+    FAIL_PERCENT 2
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLGeomSubsets_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+)
+
+
+pxr_register_test(testUsdImagingGLGeomSubsets_Medium_SceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.1 -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage testUsdImagingGLGeomSubsets.usda -write testUsdImagingGLGeomSubsets_Medium.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLGeomSubsets_Medium.png
+    FAIL 1
+    FAIL_PERCENT 2
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLGeomSubsets_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+)
+
+pxr_register_test(testUsdImagingGLGeomSubsets_Points_SceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading points -frameAll -stage testUsdImagingGLGeomSubsets.usda -write testUsdImagingGLGeomSubsets_Points.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLGeomSubsets_Points.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLGeomSubsets_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+)
+
+pxr_register_test(testUsdImagingGLGeomSubsets_Quadrangulated_SceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage testUsdImagingGLGeomSubsets.usda -write testUsdImagingGLGeomSubsets_Quadrangulated.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLGeomSubsets_Quadrangulated.png
+    FAIL 1
+    FAIL_PERCENT 2
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLGeomSubsets_SceneIndex
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+)
+
+
+pxr_register_test(testUsdImagingGLGeomSubsets_QuadrangulatedPoints_SceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading points -frameAll -stage testUsdImagingGLGeomSubsets.usda -write testUsdImagingGLGeomSubsets_QuadrangulatedPoints.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLGeomSubsets_QuadrangulatedPoints.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLGeomSubsets_SceneIndex
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+)
+
+pxr_register_test(testUsdImagingGLGeomSubsets_Primvars_SceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -shading wireOnSurface -stage primvars.usda -write testUsdImagingGLGeomSubsets_Primvars.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLGeomSubsets_Primvars.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLGeomSubsets_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
 )
 
 pxr_register_test(testUsdImagingGLAovVisualization_Storm_depth
