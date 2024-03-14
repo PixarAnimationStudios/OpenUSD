@@ -111,10 +111,16 @@ UsdImagingCreateSceneIndices(
         UsdImagingExtentResolvingSceneIndex::New(
             sceneIndex, _ExtentResolvingSceneIndexInputArgs());
 
-    sceneIndex =
-        UsdImagingPiPrototypePropagatingSceneIndex::New(sceneIndex);
+    {
+        TRACE_FUNCTION_SCOPE("UsdImagingPiPrototypePropagatingSceneIndex");
+
+        sceneIndex =
+            UsdImagingPiPrototypePropagatingSceneIndex::New(sceneIndex);
+    }
 
     {
+        TRACE_FUNCTION_SCOPE("UsdImagingNiPrototypePropagatingSceneIndex");
+
         // UsdImagingNiPrototypePropagatingSceneIndex
 
         // Names of data sources that need to have the same values
