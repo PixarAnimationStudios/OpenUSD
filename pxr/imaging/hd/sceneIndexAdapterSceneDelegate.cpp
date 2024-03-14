@@ -206,6 +206,16 @@ HdSceneIndexAdapterSceneDelegate::_PrimAdded(
             } else if (existingType == HdPrimTypeTokens->instancer) {
                 GetRenderIndex()._RemoveInstancer(indexPath);
             }
+
+            // If the prim type of an existing entry changed, also clear any
+            // cached data associated with it, e.g. computed primvars.
+            entry.primvarDescriptors.clear();
+            entry.primvarDescriptorsState.store(
+                _PrimCacheEntry::ReadStateUnread);
+            entry.extCmpPrimvarDescriptors.clear();
+            entry.extCmpPrimvarDescriptorsState.store(
+                _PrimCacheEntry::ReadStateUnread);
+
         } else {
             insertIfNeeded = false;
         }
