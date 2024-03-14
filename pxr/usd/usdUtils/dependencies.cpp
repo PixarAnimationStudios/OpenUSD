@@ -195,7 +195,7 @@ UsdUtilsComputeAllDependencies(
     if (outUnresolvedPaths) {
         outUnresolvedPaths->assign(
             client.unresolvedPaths.begin(), client.unresolvedPaths.end());
-        std::sort(outAssets->begin(), outAssets->end());
+        std::sort(outUnresolvedPaths->begin(), outUnresolvedPaths->end());
     }
 
     return true;

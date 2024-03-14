@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import Ar, Sdf, Usd, UsdUtils
+from pxr import Ar, Sdf, Tf, Usd, UsdUtils
 import os, sys, shutil, tempfile, unittest
 
 class TestUsdUtilsUserProcessFunc(unittest.TestCase):
@@ -192,6 +192,32 @@ class TestUsdUtilsUserProcessFunc(unittest.TestCase):
         ]
 
         self._CheckLocalizedPackageContents(localizationDir, expectedFiles)
+
+    def test_CodingErrorPackageLayer(self):
+        """Tests that a coding error is issued when trying to modify an asset
+        path in a layer that is a package"""
+        def ModifyPackageLayer(layer, depInfo):
+            if layer.GetFileFormat().IsPackage():
+                return UsdUtils.DependencyInfo("foo")
+            else:
+                return depInfo
+
+        with self.assertRaises(Tf.ErrorException):
+            self._Localize("package/package.usdz", "package_localized1", 
+                           ModifyPackageLayer)
+            
+    def test_CodingErrorLayerContainedInPackage(self):
+        """Tests that a coding error is issued when trying to modify an asset
+        path of a layer that is contained in a package"""
+        def ModifyLayerInPackage(layer, depInfo):
+            if Ar.IsPackageRelativePath(layer.identifier):
+                return UsdUtils.DependencyInfo("foo")
+            else:
+                return depInfo
+
+        with self.assertRaises(Tf.ErrorException):
+            self._Localize("package/package.usdz", "package_localized2", 
+                           ModifyLayerInPackage)
 
     def _Localize(self, rootPath, localizationDir, userFunc):
         if os.path.isdir(localizationDir):

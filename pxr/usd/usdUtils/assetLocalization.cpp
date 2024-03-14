@@ -75,12 +75,8 @@ UsdUtils_LocalizationContext::Process(
             continue;
         }
 
-        // Process the next layer in the queue.
-        // If the layer is a package then we halt traversal because the entire
-        // package should be included as dependency if any file contained inside 
-        // it is encountered.
         SdfLayerRefPtr layer = SdfLayer::FindOrOpen(anchoredPath);
-        if (layer && !layer->GetFileFormat()->IsPackage() ) {
+        if (layer) {
             _ProcessLayer(layer);
         }
     }

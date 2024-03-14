@@ -162,21 +162,28 @@ UsdUtils_AssetLocalizationPackage::_ProcessDependency(
             return UsdUtilsDependencyInfo();
         }
 
-        return _AddDependenciesToPackage(
-            layer, processedInfo);
+        return _AddDependenciesToPackage(layer, processedInfo);
     }
 
-    return _AddDependenciesToPackage(
-        layer, depInfo);
+    return _AddDependenciesToPackage(layer, depInfo);
 }
 
 UsdUtilsDependencyInfo 
 UsdUtils_AssetLocalizationPackage::_AddDependenciesToPackage( 
-    const SdfLayerRefPtr &layer, 
+    const SdfLayerRefPtr &layer,
     const UsdUtilsDependencyInfo &depInfo)
 {
     // If there are no dependencies then there is no need for remapping
     if (depInfo.GetAssetPath().empty()) {
+        return depInfo;
+    }
+
+    // We do not want to add individual dependencies of packages or layers
+    // contained within them. The entire package itself will be included in
+    // the final output.
+    if (layer->GetFileFormat()->IsPackage() || 
+        ArIsPackageRelativePath(layer->GetRealPath())) {
+
         return depInfo;
     }
 
