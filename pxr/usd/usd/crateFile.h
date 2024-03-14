@@ -31,6 +31,7 @@
 #include "crateValueInliners.h"
 
 #include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/tf/delegatedCountPtr.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
 #include "pxr/base/tf/token.h"
@@ -43,8 +44,6 @@
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
-
-#include <boost/intrusive_ptr.hpp>
 
 #include <tbb/concurrent_unordered_set.h>
 #include <tbb/spin_rw_mutex.h>
@@ -403,15 +402,15 @@ private:
             // other code reading/writing the file.)
             void _DetachReferencedRanges();
             
-            // This class is managed by a combination of boost::intrusive_ptr
+            // This class is managed by a combination of TfDelegatedCountPtr
             // and manual reference counting -- see explicit calls to
-            // intrusive_ptr_add_ref/release in the .cpp file.
+            // TfDelegatedCount{Increment,Decrement} in the .cpp file.
             friend inline void
-            intrusive_ptr_add_ref(_Impl const *m) {
+            TfDelegatedCountIncrement(_Impl const *m) noexcept {
                 m->_refCount.fetch_add(1, std::memory_order_relaxed);
             }
             friend inline void
-            intrusive_ptr_release(_Impl const *m) {
+            TfDelegatedCountDecrement(_Impl const *m) noexcept {
                 if (m->_refCount.fetch_sub(1, std::memory_order_release) == 1) {
                     std::atomic_thread_fence(std::memory_order_acquire);
                     delete m;
@@ -432,7 +431,8 @@ private:
         // Construct with new mapping.
         explicit _FileMapping(ArchConstFileMapping &&mapping,
                               int64_t offset=0, int64_t length=-1) noexcept
-            : _impl(new _Impl(std::move(mapping), offset, length)) {}
+            : _impl(TfDelegatedCountIncrementTag,
+                    new _Impl(std::move(mapping), offset, length)) {}
 
         _FileMapping(_FileMapping &&other) noexcept
             : _impl(std::move(other._impl)) {
@@ -477,7 +477,7 @@ private:
         }
 
     private:
-        boost::intrusive_ptr<_Impl> _impl;
+        TfDelegatedCountPtr<_Impl> _impl;
     };
     
     ////////////////////////////////////////////////////////////////////////

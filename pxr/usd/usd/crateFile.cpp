@@ -488,7 +488,7 @@ CrateFile::_FileMapping::_Impl
     // If we take the source's count from 0 -> 1, add a reference to the
     // mapping.
     if (iresult.first->NewRef()) {
-        intrusive_ptr_add_ref(this);
+        TfDelegatedCountIncrement(this);
     }
     return &(*iresult.first);
 }
@@ -562,7 +562,7 @@ bool CrateFile::_FileMapping::_Impl::ZeroCopySource::operator==(
 void CrateFile::_FileMapping::_Impl::ZeroCopySource::_Detached(
     Vt_ArrayForeignDataSource *selfBase) {
     auto *self = static_cast<ZeroCopySource *>(selfBase);
-    intrusive_ptr_release(self->_mapping);
+    TfDelegatedCountDecrement(self->_mapping);
 }
 
 template <class FileMappingPtr>
