@@ -16,8 +16,18 @@ pxr_python_bin(usdrecord
         usd
         usdAppUtils)
 
-if ( ${PXR_HEADLESS_TEST_MODE})
+if (${PXR_HEADLESS_TEST_MODE})
     message(STATUS "Skipping ${PXR_PACKAGE} tests because PXR_HEADLESS_TEST_MODE is ON")
+    return()
+endif()
+
+if (APPLE)
+    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on macOS")
+    return()
+endif()
+
+if (WIN32)
+    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
     return()
 endif()
 
@@ -46,7 +56,7 @@ pxr_install_test_dir(
 
 pxr_install_test_dir(
     SRC testenv/SmallObjectTest
-    DEST testUsdRecordSmallObject
+    DEST SmallObjectTest
 )
 
 
