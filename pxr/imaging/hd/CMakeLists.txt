@@ -255,15 +255,6 @@ pxr_build_test(testHdBufferSpec
        testenv/testHdBufferSpec.cpp
 )
 
-# Removing test from build while we modernize the Hydra architecture.
-# pxr_build_test(testHdChangeTracker
-#    LIBRARIES
-#        hd
-
-#    CPPFILES
-#        testenv/testHdChangeTracker.cpp
-# )
-
 pxr_build_test(testHdCommand
    LIBRARIES
        hd
@@ -326,15 +317,6 @@ pxr_build_test(testHdPerfLog
    CPPFILES
        testenv/testHdPerfLog.cpp
 )
-
-# Removing test from build while we modernize the Hydra architecture.
-# pxr_build_test(testHdRenderIndex
-#    LIBRARIES
-#        hd
-
-#    CPPFILES
-#        testenv/testHdRenderIndex.cpp
-# )
 
 pxr_build_test(testHdDataSource
    LIBRARIES
@@ -414,10 +396,6 @@ pxr_register_test(testHdBufferSpec
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdBufferSpec"
 )
 
-# pxr_register_test(testHdChangeTracker
-#     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdChangeTracker"
-# )
-
 pxr_register_test(testHdCommand
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdCommand"
 )
@@ -445,10 +423,6 @@ pxr_register_test(testHdExtComputationUtils
 pxr_register_test(testHdPerfLog
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdPerfLog"
 )
-
-# pxr_register_test(testHdRenderIndex
-#     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdRenderIndex"
-# )
 
 pxr_register_test(testHdDataSource
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDataSource"
