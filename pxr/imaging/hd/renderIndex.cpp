@@ -540,12 +540,17 @@ HdRenderIndex::_Clear()
 
 void
 HdRenderIndex::_TrackDelegateTask(HdSceneDelegate* delegate,
-                                    SdfPath const& taskId,
-                                    HdTaskSharedPtr const& task)
+                                  SdfPath const& taskId,
+                                  HdTaskCreateFnc taskCreateFnc)
 {
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
     if (taskId == SdfPath()) {
         return;
     }
+
+    HdTaskSharedPtr task = taskCreateFnc(delegate, taskId);
     _tracker.TaskInserted(taskId, task->GetInitialDirtyBitsMask());
     _taskMap.emplace(taskId, _TaskInfo{delegate, task});
 }
