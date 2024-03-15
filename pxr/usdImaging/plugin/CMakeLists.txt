@@ -1,2 +1,3 @@
 add_subdirectory(usdShaders)
 add_subdirectory(sdrGlslfx)
+add_subdirectory(hdUsdWriter)
