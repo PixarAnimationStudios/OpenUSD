@@ -441,13 +441,16 @@ private:
     // Allocate the next available instance id to the prim
     void _AllocatePrimId(HdRprim* prim);
 
+    using HdTaskCreateFnc =
+            std::function<HdTaskSharedPtr(HdSceneDelegate*, SdfPath const&)>;
+
     // Inserts the task into the index and updates tracking state.
     // _TrackDelegateTask is called by the inlined InsertTask<T>, so it needs
     // to be marked HD_API.
     HD_API
     void _TrackDelegateTask(HdSceneDelegate* delegate, 
                             SdfPath const& taskId,
-                            HdTaskSharedPtr const& task);
+                            HdTaskCreateFnc taskCreateFnc);
 
     template <typename T>
     static inline const TfToken & _GetTypeId();
@@ -593,11 +596,12 @@ template <typename T>
 void
 HdRenderIndex::InsertTask(HdSceneDelegate* delegate, SdfPath const& id)
 {
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
+    auto createTask = [](HdSceneDelegate* _delegate, SdfPath const& _id) -> HdTaskSharedPtr
+    {
+        return std::make_shared<T>(_delegate, _id);
+    };
 
-    HdTaskSharedPtr task = std::make_shared<T>(delegate, id);
-    _TrackDelegateTask(delegate, id, task);
+    _TrackDelegateTask(delegate, id, createTask);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
