@@ -111,7 +111,7 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
                 hdStResourceRegistry->AllocateSingleBufferArrayRange(
                     /*role*/HdxTokens->selection,
                     offsetSpecs,
-                    HdBufferArrayUsageHint());
+                    HdBufferArrayUsageHintBitsStorage);
         }
 
         const VtVec4fArray ptColors = sel->GetSelectedPointColors(renderIndex);
@@ -139,7 +139,7 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
                 hdStResourceRegistry->AllocateUniformBufferArrayRange(
                     /*role*/HdxTokens->selection,
                     uniformSpecs,
-                    HdBufferArrayUsageHint());
+                    HdBufferArrayUsageHintBitsUniform);
         }
 
 

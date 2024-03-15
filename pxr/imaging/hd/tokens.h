@@ -269,7 +269,8 @@ extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
     (displacement)                              \
     (volume)                                    \
     (light)                                     \
-    (lightFilter)
+    (lightFilter)                               \
+    (imageShader)
 
 #define HD_RENDERTAG_TOKENS                     \
     (geometry)                                  \
@@ -293,7 +294,9 @@ extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
     (cube)                                      \
     (cylinder)                                  \
     (cylinder_1)                                \
+    (geomSubset)                                \
     (mesh)                                      \
+    (tetMesh)                                   \
     (nurbsPatch)                                \
     (basisCurves)                               \
     (nurbsCurves)                               \

@@ -46,7 +46,6 @@ pxr_test_scripts(
 )
 
 pxr_build_test_shared_lib(TestSdrRegistry
-    CREATE_FRAMEWORK
     INSTALL_PREFIX SdrPlugins
     LIBRARIES
         tf

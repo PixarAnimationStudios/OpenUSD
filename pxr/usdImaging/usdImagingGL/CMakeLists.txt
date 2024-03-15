@@ -285,6 +285,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLTetMesh
+    DEST testUsdImagingGLTetMesh_SceneIndex
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdImagingGLPrimitiveDrawing
     DEST testUsdImagingGLPrimitiveDrawing
 )
@@ -622,6 +627,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdImagingGLGeomSubsets
     DEST testUsdImagingGLGeomSubsets
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLGeomSubsets
+    DEST testUsdImagingGLGeomSubsets_SceneIndex
 )
 
 pxr_install_test_dir(
@@ -1265,6 +1275,20 @@ pxr_register_test(testUsdImagingGLTetMesh
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLTetMesh
+)
+
+pxr_register_test(testUsdImagingGLTetMesh_SceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -offscreen -times 0 10 -stage tetMesh.usda -camera /Camera -write testUsdImagingGLTetMesh.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLTetMesh_000.png
+        testUsdImagingGLTetMesh_010.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLTetMesh_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPrimitiveDrawing
@@ -1972,6 +1996,17 @@ pxr_register_test(testUsdImagingGLPointInstancer_pi_pi
     TESTENV testUsdImagingGLPointInstancer
 )
 
+pxr_register_test(testUsdImagingGLPointInstancer_pi_pi_which_rot
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_pi_which_rot.usda -write pi_pi_which_rot.png"
+    IMAGE_DIFF_COMPARE
+        pi_pi_which_rot.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer
+)
+
 pxr_register_test(testUsdImagingGLPointInstancer_pi_pi2
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_pi2.usda -write pi_pi2.png"
     IMAGE_DIFF_COMPARE
@@ -2236,6 +2271,19 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi
         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi_which_rot
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_pi_which_rot.usda -write pi_pi_which_rot.png"
+    IMAGE_DIFF_COMPARE
+        pi_pi_which_rot.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi2
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_pi2.usda -write pi_pi2.png"
     IMAGE_DIFF_COMPARE
@@ -2421,6 +2469,34 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi_varying
     TESTENV testUsdImagingGLPointInstancer_SceneIndex
     ENV
         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_pi_pi_varyingf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -translate 0 -10 -40 -clear 0.2 0.2 0.2 1 -stage pi_pi_varyingf.usda -times 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 -write pi_pi_varyingf.png"
+    IMAGE_DIFF_COMPARE
+        pi_pi_varyingf_000.png
+        pi_pi_varyingf_001.png
+        pi_pi_varyingf_002.png
+        pi_pi_varyingf_003.png
+        pi_pi_varyingf_004.png
+        pi_pi_varyingf_005.png
+        pi_pi_varyingf_006.png
+        pi_pi_varyingf_007.png
+        pi_pi_varyingf_008.png
+        pi_pi_varyingf_009.png
+        pi_pi_varyingf_010.png
+        pi_pi_varyingf_011.png
+        pi_pi_varyingf_012.png
+        pi_pi_varyingf_013.png
+        pi_pi_varyingf_014.png
+        pi_pi_varyingf_015.png
+        pi_pi_varyingf_016.png
+        pi_pi_varyingf_017.png
+    FAIL .05
+    FAIL_PERCENT .03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi_time
@@ -4586,6 +4662,88 @@ pxr_register_test(testUsdImagingGLGeomSubsets_QuadrangulatedPoints
     TESTENV testUsdImagingGLGeomSubsets
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
+)
+
+pxr_register_test(testUsdImagingGLGeomSubsets_Low_SceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.0 -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage testUsdImagingGLGeomSubsets.usda -write testUsdImagingGLGeomSubsets_Low.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLGeomSubsets_Low.png
+    FAIL 1
+    FAIL_PERCENT 2
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLGeomSubsets_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+)
+
+
+pxr_register_test(testUsdImagingGLGeomSubsets_Medium_SceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.1 -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage testUsdImagingGLGeomSubsets.usda -write testUsdImagingGLGeomSubsets_Medium.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLGeomSubsets_Medium.png
+    FAIL 1
+    FAIL_PERCENT 2
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLGeomSubsets_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+)
+
+pxr_register_test(testUsdImagingGLGeomSubsets_Points_SceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading points -frameAll -stage testUsdImagingGLGeomSubsets.usda -write testUsdImagingGLGeomSubsets_Points.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLGeomSubsets_Points.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLGeomSubsets_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+)
+
+pxr_register_test(testUsdImagingGLGeomSubsets_Quadrangulated_SceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage testUsdImagingGLGeomSubsets.usda -write testUsdImagingGLGeomSubsets_Quadrangulated.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLGeomSubsets_Quadrangulated.png
+    FAIL 1
+    FAIL_PERCENT 2
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLGeomSubsets_SceneIndex
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+)
+
+
+pxr_register_test(testUsdImagingGLGeomSubsets_QuadrangulatedPoints_SceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading points -frameAll -stage testUsdImagingGLGeomSubsets.usda -write testUsdImagingGLGeomSubsets_QuadrangulatedPoints.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLGeomSubsets_QuadrangulatedPoints.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLGeomSubsets_SceneIndex
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+)
+
+pxr_register_test(testUsdImagingGLGeomSubsets_Primvars_SceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -shading wireOnSurface -stage primvars.usda -write testUsdImagingGLGeomSubsets_Primvars.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLGeomSubsets_Primvars.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLGeomSubsets_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
 )
 
 pxr_register_test(testUsdImagingGLAovVisualization_Storm_depth

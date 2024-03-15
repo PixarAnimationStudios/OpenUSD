@@ -67,6 +67,12 @@ public:
         const string& comment = string(),
         const FileFormatArguments& args = FileFormatArguments()) const override;
 
+    virtual bool SaveToFile(
+        const SdfLayer& layer,
+        const string& filePath,
+        const string& comment = string(),
+        const FileFormatArguments& args = FileFormatArguments()) const override;
+
     virtual bool ReadFromString(SdfLayer* layer,
                                 const string& str) const override;
 

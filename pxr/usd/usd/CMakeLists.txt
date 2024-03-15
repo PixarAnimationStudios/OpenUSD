@@ -183,6 +183,7 @@ pxr_library(usd
         doxygen/multiThreading.dox
         doxygen/objectModel.dox
         doxygen/propertiesOfSceneDescription.dox 
+        doxygen/utf8Overview.dox
         doxygen/valueClips.dox
         doxygen/images/instancing/Instancing_Example.png
         doxygen/images/instancing/Nested_Instancing_Example.png
@@ -252,6 +253,7 @@ pxr_test_scripts(
     testenv/testUsdSpecializes.py
     testenv/testUsdStage.py
     testenv/testUsdStageCache.py
+    testenv/testUsdStageDefaultResolver.py
     testenv/testUsdStageLoadUnload.py
     testenv/testUsdStagePopulationMasks.py
     testenv/testUsdTimeCodeRepr.py
@@ -267,7 +269,6 @@ pxr_test_scripts(
 )
 
 pxr_build_test_shared_lib(TestUsdProceduralExternalAssetsFileFormatPlugin
-    CREATE_FRAMEWORK
     INSTALL_PREFIX UsdPlugins
     LIBRARIES
         sdf
@@ -279,7 +280,6 @@ pxr_build_test_shared_lib(TestUsdProceduralExternalAssetsFileFormatPlugin
 )
 
 pxr_build_test_shared_lib(TestUsdResolverChangedResolver
-    CREATE_FRAMEWORK
     INSTALL_PREFIX UsdPlugins
     LIBRARIES
         ar
@@ -942,18 +942,13 @@ pxr_register_test(testUsdFileFormats
     EXPECTED_RETURN_CODE 0
 )
 
-# XXX:
-# Temporarily disable this test on Windows; the ArAsset-based
-# codepath in the .usdc file format code has issues.
-if (NOT WIN32)
-    pxr_register_test(testUsdFileFormats_asset
-        PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdFileFormats"
-        ENV
-            USDC_USE_ASSET=1
-        EXPECTED_RETURN_CODE 0
-    )
-endif()
+pxr_register_test(testUsdFileFormats_asset
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdFileFormats"
+    ENV
+        USDC_USE_ASSET=1
+    EXPECTED_RETURN_CODE 0
+)
 
 pxr_register_test(testUsdFileFormats_pread
     PYTHON
@@ -1034,6 +1029,12 @@ pxr_register_test(testUsdTimeOffsets
 pxr_register_test(testUsdPrimRange
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPrimRange"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdStageDefaultResolver
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdStageDefaultResolver"
     EXPECTED_RETURN_CODE 0
 )
 

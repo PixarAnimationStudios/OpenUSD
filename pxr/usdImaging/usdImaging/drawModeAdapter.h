@@ -25,8 +25,9 @@
 #define PXR_USD_IMAGING_USD_IMAGING_DRAW_MODE_ADAPTER_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usdImaging/usdImaging/api.h"
-#include "pxr/usdImaging/usdImaging/primAdapter.h"
+#include "pxr/usdImaging/usdImaging/instanceablePrimAdapter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -35,20 +36,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Delegate support for the drawMode attribute on UsdGeomModelAPI.
 ///
-class UsdImagingDrawModeAdapter : public UsdImagingPrimAdapter
+class UsdImagingDrawModeAdapter
+  : public UsdImagingInstanceablePrimAdapter
 {
 public:
-    using BaseAdapter = UsdImagingPrimAdapter;
-
-    USDIMAGING_API
+    using BaseAdapter = UsdImagingInstanceablePrimAdapter;
+    
     UsdImagingDrawModeAdapter();
-
-    USDIMAGING_API
-    ~UsdImagingDrawModeAdapter() override;
 
     /// Called to populate the RenderIndex for this UsdPrim. The adapter is
     /// expected to create one or more Rprims in the render index using the
     /// given proxy.
+    USDIMAGING_API
     SdfPath Populate(
             UsdPrim const& prim,
             UsdImagingIndexProxy* index,
@@ -56,14 +55,17 @@ public:
 
     // If the draw mode adapter is applied to a prim, it cuts off traversal of
     // that prim's subtree.
+    USDIMAGING_API
     bool ShouldCullChildren() const override;
 
     // Because draw mode can change usdImaging topology, we need to handle
     // render index compatibility at a later point than adapter lookup.
+    USDIMAGING_API
     bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
     // Cards mode can be applied to instance prims, so we need to let the
     // UsdImagingInstanceAdapter know we want special handling.
+    USDIMAGING_API
     bool CanPopulateUsdInstance() const override;
 
     // ---------------------------------------------------------------------- //

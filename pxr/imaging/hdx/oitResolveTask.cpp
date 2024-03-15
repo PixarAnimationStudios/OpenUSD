@@ -277,7 +277,7 @@ HdxOitResolveTask::_PrepareOitBuffers(
             renderIndex->GetResourceRegistry());
     
     const bool createOitBuffers = !_counterBar;
-    if (createOitBuffers) { 
+    if (createOitBuffers) {
         //
         // Counter Buffer
         //
@@ -287,7 +287,7 @@ HdxOitResolveTask::_PrepareOitBuffers(
         _counterBar = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                                             /*role*/HdxTokens->oitCounter,
                                             counterSpecs,
-                                            HdBufferArrayUsageHint());
+                                            HdBufferArrayUsageHintBitsStorage);
         //
         // Index Buffer
         //
@@ -297,7 +297,7 @@ HdxOitResolveTask::_PrepareOitBuffers(
         _indexBar = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                                             /*role*/HdxTokens->oitIndices,
                                             indexSpecs,
-                                            HdBufferArrayUsageHint());
+                                            HdBufferArrayUsageHintBitsStorage);
 
         //
         // Data Buffer
@@ -308,7 +308,7 @@ HdxOitResolveTask::_PrepareOitBuffers(
         _dataBar = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                                             /*role*/HdxTokens->oitData,
                                             dataSpecs,
-                                            HdBufferArrayUsageHint());
+                                            HdBufferArrayUsageHintBitsStorage);
 
         //
         // Depth Buffer
@@ -319,7 +319,7 @@ HdxOitResolveTask::_PrepareOitBuffers(
         _depthBar = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                                             /*role*/HdxTokens->oitDepth,
                                             depthSpecs,
-                                            HdBufferArrayUsageHint());
+                                            HdBufferArrayUsageHintBitsStorage);
 
         //
         // Uniforms
@@ -330,7 +330,7 @@ HdxOitResolveTask::_PrepareOitBuffers(
         _uniformBar = hdStResourceRegistry->AllocateUniformBufferArrayRange(
                                             /*role*/HdxTokens->oitUniforms,
                                             uniformSpecs,
-                                            HdBufferArrayUsageHint());
+                                            HdBufferArrayUsageHintBitsUniform);
     }
 
     // Make sure task context has our buffer each frame (in case its cleared)

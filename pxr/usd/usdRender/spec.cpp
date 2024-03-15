@@ -36,21 +36,16 @@ _ReadNamespacedSettings(
     TfTokenVector const& namespaces, 
     VtDictionary *namespacedSettings)
 {
-    const std::vector<UsdAttribute> attrs = prim.GetAuthoredAttributes();
-    const TfTokenVector &schemaProps =
-        prim.GetPrimDefinition().GetPropertyNames();
-
-    for (UsdAttribute attr: attrs) {
-        if (namespaces.empty()) {
-            // Skip schema attributes from being aggregated.
-            if (std::find(schemaProps.begin(), schemaProps.end(),
-                          attr.GetBaseName()) != schemaProps.end()) {
-                continue;
-            }
-        } else {
+    for (UsdAttribute attr: prim.GetAuthoredAttributes()) {
+        if (attr.GetNamespace().IsEmpty()) {
+            // Only collect namespaced settings.
+            continue;
+        }
+        if (!namespaces.empty()) {
             bool attrIsInRequestedNS = false;
             for (std::string const& ns: namespaces) {
-                if (TfStringStartsWith(attr.GetName(), ns)) {
+                // Namespaces are supplied without a trailing separator.
+                if (TfStringStartsWith(attr.GetName(), ns+":")) {
                     attrIsInRequestedNS = true;
                     break;
                 }

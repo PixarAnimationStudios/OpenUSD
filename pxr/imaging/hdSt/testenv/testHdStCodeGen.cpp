@@ -133,7 +133,8 @@ CodeGenTest(HdSt_ShaderKey const &key, bool useBindlessBuffer,
         }
         HdBufferArrayRangeSharedPtr range =
                 registry->AllocateNonUniformBufferArrayRange(
-                    HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
+                    HdTokens->topology, bufferSpecs,
+                    HdBufferArrayUsageHintBitsIndex);
 
         sharedData.barContainer.Set(
             drawingCoord->GetTopologyIndex(), range);
@@ -154,7 +155,8 @@ CodeGenTest(HdSt_ShaderKey const &key, bool useBindlessBuffer,
                                   HdTupleType { HdTypeFloat, 1 });
         HdBufferArrayRangeSharedPtr range =
             registry->AllocateShaderStorageBufferArrayRange(
-                HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
+                HdTokens->primvar, bufferSpecs,
+                HdBufferArrayUsageHintBitsStorage);
 
         sharedData.barContainer.Set(
             drawingCoord->GetConstantPrimvarIndex(), range);
@@ -167,7 +169,8 @@ CodeGenTest(HdSt_ShaderKey const &key, bool useBindlessBuffer,
                                   HdTupleType { HdTypeFloat, 1 });
         HdBufferArrayRangeSharedPtr range =
             registry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
+                HdTokens->primvar, bufferSpecs,
+                HdBufferArrayUsageHintBitsStorage);
 
         sharedData.barContainer.Set(
             drawingCoord->GetElementPrimvarIndex(), range);
@@ -192,7 +195,8 @@ CodeGenTest(HdSt_ShaderKey const &key, bool useBindlessBuffer,
 
         HdBufferArrayRangeSharedPtr range =
             registry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
+                HdTokens->primvar, bufferSpecs,
+                HdBufferArrayUsageHintBitsVertex);
 
         sharedData.barContainer.Set(
             drawingCoord->GetVertexPrimvarIndex(), range);
@@ -207,7 +211,8 @@ CodeGenTest(HdSt_ShaderKey const &key, bool useBindlessBuffer,
 
         HdBufferArrayRangeSharedPtr range =
             registry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
+                HdTokens->primvar, bufferSpecs,
+                HdBufferArrayUsageHintBitsStorage);
 
         sharedData.barContainer.Set(
             drawingCoord->GetFaceVaryingPrimvarIndex(), range);
@@ -224,7 +229,8 @@ CodeGenTest(HdSt_ShaderKey const &key, bool useBindlessBuffer,
                 HdTupleType { HdTypeFloatVec3, 1 });
             HdBufferArrayRangeSharedPtr range =
                 registry->AllocateNonUniformBufferArrayRange(
-                    HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
+                    HdTokens->primvar, bufferSpecs,
+                    HdBufferArrayUsageHintBitsStorage);
 
             drawingCoord->SetInstancePrimvarBaseIndex(/*hard-coded*/8);
             sharedData.instancerLevels = 1;
@@ -241,7 +247,8 @@ CodeGenTest(HdSt_ShaderKey const &key, bool useBindlessBuffer,
                                       HdTupleType { HdTypeInt32, 1 });
             HdBufferArrayRangeSharedPtr range =
                 registry->AllocateNonUniformBufferArrayRange(
-                    HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
+                    HdTokens->primvar, bufferSpecs,
+                    HdBufferArrayUsageHintBitsIndex);
             sharedData.barContainer.Set(
                 drawingCoord->GetInstanceIndexIndex(), range);
         }

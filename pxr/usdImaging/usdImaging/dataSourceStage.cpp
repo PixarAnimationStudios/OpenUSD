@@ -67,12 +67,18 @@ UsdImagingDataSourceStage::Get(const TfToken& name)
         }
 
         return HdSceneGlobalsSchema::Builder()
-                .SetActiveRenderSettingsPrim(
-                    pathStr.empty()
-                        ? nullptr
-                        : HdRetainedTypedSampledDataSource<SdfPath>::New(
-                            SdfPath(pathStr)))
-                .Build();
+               .SetActiveRenderSettingsPrim(
+                   pathStr.empty()
+                       ? nullptr
+                       : HdRetainedTypedSampledDataSource<SdfPath>::New(
+                           SdfPath(pathStr)))
+               .SetStartTimeCode(
+                   HdRetainedTypedSampledDataSource<double>::New(
+                       _stage->GetStartTimeCode()))
+               .SetEndTimeCode(
+                   HdRetainedTypedSampledDataSource<double>::New(
+                       _stage->GetEndTimeCode()))
+               .Build();
     }
     return nullptr;
 }

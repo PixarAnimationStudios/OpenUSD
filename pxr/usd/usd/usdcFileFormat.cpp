@@ -164,7 +164,7 @@ UsdUsdcFileFormat::WriteToFile(const SdfLayer& layer,
     if (auto const *constCrateData =
         dynamic_cast<Usd_CrateData const *>(get_pointer(dataSource))) {
         auto *crateData = const_cast<Usd_CrateData *>(constCrateData);
-        return crateData->Save(filePath);
+        return crateData->Export(filePath);
     }
 
     // Otherwise we're dealing with some arbitrary data object, just copy the
@@ -172,8 +172,29 @@ UsdUsdcFileFormat::WriteToFile(const SdfLayer& layer,
     if (auto dataDest = 
         TfDynamic_cast<Usd_CrateDataRefPtr>(InitData(FileFormatArguments()))) {
         dataDest->CopyFrom(dataSource);
-        return dataDest->Save(filePath);
+        return dataDest->Export(filePath);
     }
+    return false;
+}
+
+bool
+UsdUsdcFileFormat::SaveToFile(const SdfLayer& layer,
+                              const std::string& filePath,
+                              const std::string& comment,
+                              const FileFormatArguments& args) const
+{
+    SdfAbstractDataConstPtr dataSource = _GetLayerData(layer);
+
+    // XXX: WBN to avoid const-cast -- saving can't be non-mutating in general.
+    if (auto const *constCrateData =
+        dynamic_cast<Usd_CrateData const *>(get_pointer(dataSource))) {
+        auto *crateData = const_cast<Usd_CrateData *>(constCrateData);
+        return crateData->Save(filePath);
+    }
+
+    TF_CODING_ERROR("Called UsdUsdcFileFormat::SaveToFile with "
+                    "non-Crate-backed layer @%s@",
+                    layer.GetIdentifier().c_str());
     return false;
 }
 

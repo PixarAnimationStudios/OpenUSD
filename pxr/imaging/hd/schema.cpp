@@ -27,7 +27,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdContainerDataSourceHandle
-HdSchema::GetContainer()
+HdSchema::GetContainer() const
 {
     return _container;
 }

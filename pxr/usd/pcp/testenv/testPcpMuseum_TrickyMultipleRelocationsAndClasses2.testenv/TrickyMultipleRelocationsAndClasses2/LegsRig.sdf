@@ -3,7 +3,7 @@
 def Scope "LegsRig" (
     relocates = {
         <LLegRig/TentacleRig/Tentacle>: <Legs/LHip>, 
-        <LLegRig/TentacleRig/Tentacle/Seg2>: <Legs/LHip/Knee>, 
+        <Legs/LHip/Seg2>: <Legs/LHip/Knee>, 
     }
 )
 {

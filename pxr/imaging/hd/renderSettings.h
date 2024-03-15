@@ -108,7 +108,7 @@ public:
         // The name of the product, which uniquely identifies it.
         TfToken name;
         // The pixel resolution of the product.
-        GfVec2i resolution;
+        GfVec2i resolution = GfVec2i(0);
         // The render vars that the product is comprised of.
         std::vector<RenderVar> renderVars;
 
@@ -122,7 +122,7 @@ public:
         // mismatches between the aperture and image.
         TfToken aspectRatioConformPolicy;
         // The camera aperture size as adjusted by aspectRatioConformPolicy.
-        GfVec2f apertureSize;
+        GfVec2f apertureSize = GfVec2f(0);
         // The data window, in NDC terms relative to the aperture.
         // (0,0) corresponds to bottom-left and (1,1) corresponds to
         // top-right.  Note that the data window can partially cover

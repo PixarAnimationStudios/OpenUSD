@@ -863,6 +863,7 @@ SdfSchemaBase::_RegisterStandardFields()
 
         .Field(SdfChildrenKeys->PrimChildren)
         .Field(SdfFieldKeys->PrimOrder)
+        .Field(SdfFieldKeys->Relocates)
         .Field(SdfFieldKeys->SubLayers)
         .Field(SdfFieldKeys->SubLayerOffsets);
 

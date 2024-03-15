@@ -51,6 +51,7 @@ pxr_library(usdImaging
         dataSourceRenderPrims
         dataSourceStage
         dataSourceStageGlobals
+        dataSourceTetMesh
         dataSourceUsdPrimInfo
         dataSourceVolume
         debugCodes
@@ -60,6 +61,7 @@ pxr_library(usdImaging
         extentResolvingSceneIndex
         extentsHintSchema
         geomModelSchema
+        geomSubsetAdapter
         indexProxy
         materialParamUtils
         modelSchema
@@ -93,6 +95,7 @@ pxr_library(usdImaging
         gprimAdapter
         hermiteCurvesAdapter
         implicitSurfaceMeshUtils
+        instanceablePrimAdapter
         instanceAdapter
         lightAdapter
         lightAPIAdapter

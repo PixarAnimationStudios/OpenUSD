@@ -35,6 +35,7 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/stringUtils.h"
 
+#include <cassert>
 #include <limits>
 #include <sstream>
 #include <utility>

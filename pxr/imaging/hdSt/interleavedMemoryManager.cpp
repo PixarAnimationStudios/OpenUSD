@@ -144,7 +144,7 @@ HdStInterleavedUBOMemoryManager::ComputeAggregationId(
 
     return static_cast<AggregationId>(
         TfHash::Combine(
-            salt, bufferSpecs, usageHint.value
+            salt, bufferSpecs, usageHint
         )
     );
 }
@@ -183,7 +183,7 @@ HdStInterleavedSSBOMemoryManager::ComputeAggregationId(
 
     return static_cast<AggregationId>(
         TfHash::Combine(
-            salt, bufferSpecs, usageHint.value
+            salt, bufferSpecs, usageHint
         )
     );
 }
@@ -244,8 +244,8 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
       _needsCompaction(false),
       _stride(0),
       _bufferOffsetAlignment(bufferOffsetAlignment),
-      _maxSize(maxSize)
-
+      _maxSize(maxSize),
+      _bufferUsage(0)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -342,6 +342,19 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
     _SetMaxNumRanges(_maxSize / _stride);
 
     TF_VERIFY(_stride + offset);
+
+    if (usageHint & HdBufferArrayUsageHintBitsUniform) {
+        _bufferUsage |= HgiBufferUsageUniform;
+    }
+    if (usageHint & HdBufferArrayUsageHintBitsStorage) {
+        _bufferUsage |= HgiBufferUsageStorage;
+    }
+    if (usageHint & HdBufferArrayUsageHintBitsVertex) {
+        _bufferUsage |= HgiBufferUsageVertex;
+    }
+    if (_bufferUsage == 0) {
+        TF_CODING_ERROR("Buffer usage was not specified!");
+    }
 }
 
 HdStBufferResourceSharedPtr
@@ -463,7 +476,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     if (totalSize > 0) {
         HgiBufferDesc bufDesc;
         bufDesc.byteSize = totalSize;
-        bufDesc.usage = HgiBufferUsageUniform;
+        bufDesc.usage = _bufferUsage;
         newBuf = hgi->CreateBuffer(bufDesc);
     }
 

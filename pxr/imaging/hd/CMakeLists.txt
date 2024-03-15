@@ -36,6 +36,10 @@ pxr_library(hd
         capsuleSchema
         categoriesSchema
         changeTracker
+        collectionExpressionEvaluator
+        collectionPredicateLibrary
+        collectionSchema
+        collectionsSchema
         command
         coneSchema
         containerDataSourceEditor
@@ -179,6 +183,8 @@ pxr_library(hd
         systemMessages
         systemSchema
         task
+        tetMeshSchema
+        tetMeshTopologySchema
         timeSampleArray
         tokens
         topology
@@ -212,10 +218,22 @@ pxr_library(hd
 
     RESOURCE_FILES
         plugInfo.json
+        codegenTemplates/schemaClass.h
+        codegenTemplates/schemaClass.cpp
 
     DOXYGEN_FILES
         overview.dox
 )
+
+if (NOT PXR_ENABLE_PYTHON_SUPPORT)
+    message(STATUS "Skipping building hdGenSchema, Python modules required.")
+elseif (NOT JINJA2_FOUND)
+    message(WARNING "Skipping building hdGenSchema due to missing dependency: Jinja2")
+else()
+    pxr_python_bin(hdGenSchema
+        DEPENDENCIES
+    )
+endif()
 
 pxr_build_test(testHdBufferSourceEmptyVal
    LIBRARIES
@@ -372,6 +390,16 @@ pxr_build_test(testHdInstancerDeprecatedPrimvars
         testenv/testHdInstancerDeprecatedPrimvars.cpp
 )
 
+pxr_build_test(testHdCollectionExpressionEvaluator
+    LIBRARIES
+        hd
+        tf
+        sdf
+        
+    CPPFILES
+        testenv/testHdCollectionExpressionEvaluator.cpp
+)
+
 pxr_install_test_dir(
     SRC testenv/testHdSortedIds
     DEST testHdSortedIds
@@ -448,4 +476,8 @@ pxr_register_test(testHdInstancerDeprecatedPrimvars
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdInstancerDeprecatedPrimvars"
     ENV
         HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
+)
+
+pxr_register_test(testHdCollectionExpressionEvaluator
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdCollectionExpressionEvaluator"
 )

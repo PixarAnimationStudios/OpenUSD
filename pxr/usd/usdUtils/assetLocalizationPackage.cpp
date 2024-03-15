@@ -121,8 +121,15 @@ UsdUtils_AssetLocalizationPackage::Write(
             continue;
         }
 
-        success &= _AddLayerToPackage(SdfLayer::FindOrOpen(layerDep.first), 
-            layerDep.second);
+        const SdfLayerRefPtr &layerToAdd = SdfLayer::FindOrOpen(layerDep.first);
+        if (!layerToAdd) {
+            TF_WARN("Unable to open layer at path \"%s\" while writing package."
+                " Skipping export of dependency @%s@.",  
+                layerDep.first.c_str(), layerDep.second.c_str());
+            continue;
+        }
+
+        success &= _AddLayerToPackage(layerToAdd, layerDep.second);
     }
 
     for (const auto & fileDep : _filesToCopy) {
@@ -225,6 +232,18 @@ UsdUtils_AssetLocalizationPackage::_AddDependencyToPackage(
     }
 }
 
+static bool _PathIsURIResolvable(const std::string & path) {
+    size_t uriEnd = path.find(':');
+    if (uriEnd == std::string::npos) {
+        return false;
+    }
+
+    std::string scheme = path.substr(0, uriEnd);
+    const auto& registeredSchemes = ArGetRegisteredURISchemes();
+    return std::binary_search(
+        registeredSchemes.begin(), registeredSchemes.end(), scheme);
+}
+
 std::string 
 UsdUtils_AssetLocalizationPackage::_ProcessAssetPath(
     const SdfLayerRefPtr &layer, 
@@ -240,7 +259,11 @@ UsdUtils_AssetLocalizationPackage::_ProcessAssetPath(
     // assets as close as possible to their original layout. However, we
     // skip this for context-dependent paths because those must be resolved
     // to determine what asset is being referred to.
-    if (!isContextDependentPath) {
+    //
+    // Due to the open ended nature of URI based paths, there may not be a
+    // straightforward way to map them to a filesystem directory structure so
+    // we will always send them down the remap path.
+    if (!isContextDependentPath && !_PathIsURIResolvable(refPath)) {
         // We determine if refPath is relative by creating identifiers with
         // and without the anchoring layer and seeing if they're the same.
         // If they aren't, then refPath depends on the anchor, so we assume

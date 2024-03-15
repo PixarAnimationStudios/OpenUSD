@@ -351,6 +351,10 @@ public:
     bool GetSourceCode(
         std::string *sourceCode,
         const TfToken &sourceType=UsdShadeTokens->universalSourceType) const;
+    
+    /// Forwards to UsdShadeNodeDefAPI(prim).
+    USDSHADE_API
+    std::vector<std::string> GetSourceTypes() const; 
 
     /// Forwards to UsdShadeNodeDefAPI(prim).
     USDSHADE_API

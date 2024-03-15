@@ -108,6 +108,11 @@ pxr_library(ts
         tsTest.dox
 )
 
+if (${PXR_BUILD_ANIMX_TESTS})
+    target_compile_definitions(ts PRIVATE PXR_BUILD_ANIMX_TESTS)
+    target_compile_definitions(_ts PRIVATE PXR_BUILD_ANIMX_TESTS)
+endif()
+
 pxr_build_test(
     testTs_HardToReach
     CPPFILES

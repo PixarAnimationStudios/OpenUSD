@@ -1,0 +1,6 @@
+------------------------------------------------------------------------
+Errors while computing Layer Stack
+
+Relocation from </Model_1/A/B> to </Model_1{vset=vsel}TryInsideVariantSet> authored at @ErrorRelocateWithVariantSelection/root.sdf@</Model_1> is invalid and will be ignored: Relocates cannot have any variant selections.
+Relocation from </Model_1{vset=vsel}PrimOnlyInVariantSet> to </Model_1/TryOutsideVariantSet> authored at @ErrorRelocateWithVariantSelection/root.sdf@</Model_1> is invalid and will be ignored: Relocates cannot have any variant selections.
+

@@ -135,11 +135,6 @@ public:
     HDST_API
     virtual void Reload();
 
-    /// Returns if the two shaders can be aggregated into the same draw batch.
-    HDST_API
-    static bool CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
-                             HdStShaderCodeSharedPtr const &shaderB);
-
     /// Adds the fallback value of the given material param to
     /// buffer specs and sources using the param's name.
     ///

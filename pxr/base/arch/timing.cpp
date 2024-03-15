@@ -115,8 +115,23 @@ Arch_ComputeNanosecondsPerTick()
 #if defined(ARCH_CPU_ARM)
     uint64_t counter_hz;
     __asm __volatile("mrs	%0, CNTFRQ_EL0" : "=&r" (counter_hz));
-    Arch_NanosecondsPerTick = double(1e9) / double(counter_hz);
-#else
+
+    // As noted in this commit in the linux kernel:
+    //
+    // https://github.com/torvalds/linux/commit/c6f97add0f2ac83b98b06dbdda58fa47638ae7b0
+    //
+    // ...the value of CNTFRQ_EL0 is sometimes unreliable.  The linux kernel
+    // instead reads the tick rate from the device tree, and if that fails,
+    // only then falls back on CNTFRQ_EL0.
+    //
+    // Since we already have measurement-based code, and reading from the device
+    // tree seemed tricky, we instead check if CNTFRQ_EL0 seems "sane"
+    // (ie, > 1Hz), and if not, fall back on the measurement code used in all
+    // other linux flavors.
+    if (counter_hz > 1) {
+        return double(1e9) / double(counter_hz);
+    }
+#endif
 
     // Measure how long it takes to call ::now().
     uint64_t nowDuration =
@@ -135,7 +150,6 @@ Arch_ComputeNanosecondsPerTick()
     // as the overhead to call now() one time.
     return clockNanoSecs /
         double(ticks - ArchGetIntervalTimerTickOverhead() - nowDuration);
-#endif
 }
 #elif defined(ARCH_OS_WINDOWS)
 

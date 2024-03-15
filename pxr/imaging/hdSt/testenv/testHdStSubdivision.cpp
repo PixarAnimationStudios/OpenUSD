@@ -101,7 +101,7 @@ _DumpRefinedPoints(std::string const & name,
 
     index->GetBufferSpecs(&bufferSpecs);
     indexRange = registry->AllocateNonUniformBufferArrayRange(
-        HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
+        HdTokens->topology, bufferSpecs, HdBufferArrayUsageHintBitsIndex);
     registry->AddSource(indexRange, index);
 
     // execute
@@ -134,10 +134,12 @@ _DumpRefinedPoints(std::string const & name,
     bufferSpecs.clear();
     pointsSource->GetBufferSpecs(&bufferSpecs);
 
+    HdBufferArrayUsageHint usageHint =
+        HdBufferArrayUsageHintBitsVertex | HdBufferArrayUsageHintBitsStorage;
     HdBufferArrayRangeSharedPtr pointsRange =
         registry->AllocateNonUniformBufferArrayRange(HdTokens->points,
                                                      bufferSpecs,
-                                                     HdBufferArrayUsageHint());
+                                                     usageHint);
 
     if (gpu) {
         // add coarse points
@@ -517,7 +519,7 @@ PrimitiveIDMappingTest(bool usePtexIndex)
     index->GetBufferSpecs(&bufferSpecs);
 
     indexRange = registry->AllocateNonUniformBufferArrayRange(
-        HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
+        HdTokens->topology, bufferSpecs, HdBufferArrayUsageHintBitsIndex);
 
     registry->AddSource(indexRange, index);
 

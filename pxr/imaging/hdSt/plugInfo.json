@@ -44,6 +44,12 @@
                         "loadWithRenderer" : "GL",
                         "priority": 0,
                         "displayName": "Scene Index to resolve terminal names."
+                    },
+                    "HdSt_TetMeshConversionSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "GL",
+                        "priority": 0,
+                        "displayName": "Scene Index to convert tet meshes into standard triangle based meshes."
                     }
                 },
                 "ShaderResources": "shaders"

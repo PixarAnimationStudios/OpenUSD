@@ -1,0 +1,148 @@
+#sdf 1.4.32
+(
+    """
+    These cases exercise relocations that are not invalid on their own
+    but are invalid because they conflict with other relocates in the layer
+    stack. These invalid relocates will each produce an error and will be
+    ignored during composition.
+    """
+)
+
+# This case exercises the error condition where two different source paths
+# are relocated to the same target. An error is emitted for both relocates
+# and both are ignored.
+#
+def "Model_1" (
+    add references = @./model.sdf@</Model>
+    relocates = {
+        <Instance/ClassChild>: <Instance/Test>,
+        <Instance/InstanceChild>: <Instance/Test>
+    }
+)
+{
+    over "LocalClass"
+    {
+        def Scope "Test"
+        {
+        }
+    }
+
+    over "Instance" 
+    {
+        over "Test"
+        {
+        }
+    }
+}
+
+# This case exercises the error condition where the target path of one
+# relocate is the source path of another relocate. An error is emitted 
+# for both relocates and both are ignored.
+#
+def "Model_2" (
+    add references = @./model.sdf@</Model>
+    relocates = {
+        <Instance/InstanceChild>: <Test>,
+        <Test>: <Instance/Test>
+    }
+
+)
+{
+    over "LocalClass"
+    {
+        def Scope "Test"
+        {
+        }
+    }
+
+    over "Instance" {
+        over "Test"
+        {
+        }
+    }
+}
+
+# This case exercises the case where a single relocate is involved in 
+# two separate error conditions with two other relocates. This makes
+# sure that all existing error conditions are logged and all the 
+# participating relocates are ignored. I.e. the order in which we 
+# process errors doesn't affect what errors are reported; they are all
+# found and reported.
+#
+def "Model_3" (
+    add references = @./model.sdf@</Model>
+    relocates = {
+        <Instance/ClassChild>: <Instance/Test>,
+        <Instance/InstanceChild>: <Test>,
+        <Test>: <Instance/Test>
+    }
+
+)
+{
+    over "LocalClass"
+    {
+        def Scope "Test"
+        {
+        }
+    }
+
+    over "Instance" {
+        over "Test"
+        {
+        }
+    }
+}
+
+# This case exercises the error condition where the source path of one
+# relocate would be ancestrally relocated by another relocate. Only the
+# former relocate will report an error and be ignored.
+#
+def "Model_4" (
+    add references = @./model.sdf@</Model>
+    relocates = {
+        <Instance/InstanceChild>: <Test>,
+        <Instance/InstanceChild/InstanceGrandChild>: <Test/Child>
+    }
+
+)
+{
+    over "LocalClass"
+    {
+        def Scope "Test"
+        {
+        }
+    }
+
+    over "Instance" {
+        over "Test"
+        {
+        }
+    }
+}
+
+# This case exercises the error condition where the target path of one
+# relocate would be ancestrally relocated by another relocate. Only the
+# former relocate will report an error and be ignored.
+#
+def "Model_5" (
+    add references = @./model.sdf@</Model>
+    relocates = {
+        <Instance/InstanceChild>: <Test>,
+        <Instance/ClassChild>: <Instance/InstanceChild/ClassChild>
+    }
+
+)
+{
+    over "LocalClass"
+    {
+        def Scope "Test"
+        {
+        }
+    }
+
+    over "Instance" {
+        over "Test"
+        {
+        }
+    }
+}

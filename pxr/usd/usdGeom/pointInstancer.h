@@ -833,7 +833,18 @@ public:
     ///             this function returns true then orientationsf will be 
     ///             stored in rotationsAttr, and orientations if not
     USDGEOM_API
-    bool UsesOrientationsf(UsdAttribute &rotationsAttr) const;
+    bool UsesOrientationsf(UsdAttribute *rotationsAttr) const;
+    
+    /// \overload same functionality as 
+    /// UsesOrientationsf(UsdAttribute &rotationsAttr) but populates a
+    /// TfToken instead
+    ///
+    /// \param rotationsToken the outparameter for the corresponding attribute.
+    ///             If this function returns true then 
+    ///             UsdGeomTokens->orientationsf will be sotred in UsdToken,
+    ///             and orientations if not
+    USDGEOM_API
+    bool UsesOrientationsf(TfToken *rotationsToken) const;
     
     // --------------------------------------------------------------------- //
     /// @}

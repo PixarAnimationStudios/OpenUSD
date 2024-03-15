@@ -33,11 +33,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    ((resolvedGenerativeProcedural, "resolvedHydraGenerativeProcedural"))
-);
-
 /*static*/
 HdGpGenerativeProcedural *
 HdGpGenerativeProceduralResolvingSceneIndex::_ConstructProcedural(
@@ -93,7 +88,7 @@ HdGpGenerativeProceduralResolvingSceneIndex::GetPrim(
         //_Notices notices; 
         //_UpdateProcedural(primPath, false, &notices);
 
-        prim.primType = _tokens->resolvedGenerativeProcedural;
+        prim.primType = HdGpGenerativeProceduralTokens->resolvedGenerativeProcedural;
     }
 
     return prim;
@@ -201,7 +196,8 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
                 notices.added.insert(notices.added.end(), entries.begin(), it);
             }
             notices.added.emplace_back(
-                entry.primPath, _tokens->resolvedGenerativeProcedural);
+                entry.primPath,
+                HdGpGenerativeProceduralTokens->resolvedGenerativeProcedural);
 
             // force an update since an add of an existing prim is
             // considered a full invalidation as it may change type

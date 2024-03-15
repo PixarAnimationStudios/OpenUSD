@@ -145,6 +145,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::_SimpleBufferArray(
  , _resourceRegistry(resourceRegistry)
  , _capacity(0)
  , _maxBytesPerElement(0)
+ , _bufferUsage(0)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -163,6 +164,19 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::_SimpleBufferArray(
         _maxBytesPerElement = std::max(
             _maxBytesPerElement,
             HdDataSizeOfTupleType(bres->GetTupleType()));
+    }
+
+    if (usageHint & HdBufferArrayUsageHintBitsUniform) {
+        _bufferUsage |= HgiBufferUsageUniform;
+    }
+    if (usageHint & HdBufferArrayUsageHintBitsStorage) {
+        _bufferUsage |= HgiBufferUsageStorage;
+    }
+    if (usageHint & HdBufferArrayUsageHintBitsVertex) {
+        _bufferUsage |= HgiBufferUsageVertex;
+    }
+    if (_bufferUsage == 0) {
+        TF_CODING_ERROR("Buffer usage was not specified!");
     }
 }
 
@@ -292,7 +306,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
 
         HgiBufferDesc bufDesc;
         bufDesc.byteSize = bufferSize;
-        bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageVertex;
+        bufDesc.usage = _bufferUsage;
         bufDesc.vertexStride = bytesPerElement;
         bufDesc.debugName = bresIt->first.GetText();
         newBuf = hgi->CreateBuffer(bufDesc);
