@@ -2,6 +2,7 @@ set(DIRS
     usdrecord
     usdview
     testusdview
+    hdcapture
 )
 
 foreach(d ${DIRS})
