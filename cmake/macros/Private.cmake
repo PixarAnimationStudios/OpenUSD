@@ -334,8 +334,8 @@ function(_install_pyside_ui_files LIBRARY_NAME)
         endif()
         add_custom_command(
             OUTPUT ${outFilePath}
-            COMMAND "${PYSIDEUICBINARY}"
-            ARGS ${PYSIDEUIC_EXTRA_ARGS} -o ${outFilePath} ${uiFilePath}
+            COMMAND "${PYTHON_EXECUTABLE}"
+            ARGS  ${PYSIDEUICBINARY} ${PYSIDEUIC_EXTRA_ARGS} -o ${outFilePath} ${uiFilePath}
             MAIN_DEPENDENCY "${uiFilePath}"
             COMMENT "Generating Python for ${uiFilePath} ..."
             VERBATIM
