@@ -77,9 +77,6 @@ pxr_library(sdf
         variableExpression
         variantSetSpec
         variantSpec
-
-        # Flex/Bison generated code
-        textFileFormat.tab
    
     PYTHON_PUBLIC_CLASSES
         pyChildrenProxy
@@ -116,6 +113,7 @@ pxr_library(sdf
         parserValueContext
         pathParser
         subLayerListEditor
+        textFileFormatParser
         textParserContext
         textParserHelpers
         valueTypeRegistry
@@ -126,10 +124,6 @@ pxr_library(sdf
     PRIVATE_HEADERS
         instantiatePool.h
         valueTypePrivate.h
-
-    CPPFILES
-        # Flex/Bison generated code
-        textFileFormat.lex.cpp
 
     PYTHON_CPPFILES
         moduleDeps.cpp
@@ -349,6 +343,14 @@ pxr_build_test(testSdfPredicateExpression_Cpp
         testenv/testSdfPredicateExpression.cpp
 )
 
+pxr_build_test(testSdfTextFileFormatParsing
+    LIBRARIES
+        sdf
+        tf
+    CPPFILES
+        testenv/testSdfTextFileFormatParsing.cpp
+)
+
 pxr_install_test_dir(
     SRC testenv/testSdfBatchNamespaceEdit.testenv
     DEST testSdfBatchNamespaceEdit/testSdfBatchNamespaceEdit.testenv
@@ -513,6 +515,10 @@ pxr_register_test(testSdfPathThreading
 
 pxr_register_test(testSdfPredicateExpression_Cpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPredicateExpression_Cpp"
+)
+
+pxr_register_test(testSdfTextFileFormatParsing
+   COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTextFileFormatParsing"
 )
 
 pxr_register_test(testSdfPayload
