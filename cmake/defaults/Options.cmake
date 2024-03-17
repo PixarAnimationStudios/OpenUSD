@@ -217,3 +217,9 @@ if (${PXR_BUILD_PYTHON_DOCUMENTATION})
         set(PXR_BUILD_PYTHON_DOCUMENTATION "OFF" CACHE BOOL "" FORCE)
     endif()
 endif()
+
+# Customize the suffix of constructor and destructor section names
+if (DEFINED PXR_INIT_SECTION_NAME_SUFFIX)
+    message(STATUS "Setting initialization section name suffix to ${PXR_INIT_SECTION_NAME_SUFFIX}")
+    add_definitions(-DPXR_INIT_SECTION_NAME_SUFFIX=${PXR_INIT_SECTION_NAME_SUFFIX})
+endif()

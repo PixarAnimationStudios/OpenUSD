@@ -169,6 +169,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// [[no_unique_address]] tag.
 #   define ARCH_EMPTY_BASES
 
+/// The default constructor section name is "pxrctor," and "pxrdtor" is used
+/// for the destructor. By default, the macro PXR_INIT_SECTION_NAME_SUFFIX is
+/// empty. If defined in a customized build, it will be appended to the
+/// section names of both the constructor and destructor.
+///
+/// Note: This macro is intended to address section name conflict issues.
+/// When two or more USD builds are loaded into one large-scale program,
+/// having the same constructor section name can result in constructors
+/// being called multiple times.
+#   define PXR_INIT_SECTION_NAME_SUFFIX
+
 #elif defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
 
 #   define ARCH_PRINTF_FUNCTION(_fmt, _firstArg) \
@@ -227,12 +238,24 @@ StaticInit Arch_PerLibInit<StaticInit>::init;
 #define _ARCH_CAT(a, b) _ARCH_CAT_NOEXPAND(a, b)
 #define _ARCH_ENSURE_PER_LIB_INIT(T, prefix) \
     static Arch_PerLibInit<T> _ARCH_CAT(prefix, __COUNTER__)
+#define _ARCH_STRINGIZE_IMPL(x) #x
+#define _ARCH_STRINGIZE(x) _ARCH_STRINGIZE_IMPL(x)
+
+#ifndef PXR_INIT_SECTION_NAME_SUFFIX
+#define PXR_INIT_SECTION_NAME_SUFFIX
+#endif
+
+#define CONSTRUCTOR_NAME_ID _ARCH_CAT(pxrctor, PXR_INIT_SECTION_NAME_SUFFIX)
+#define DESTRUCTOR_NAME_ID  _ARCH_CAT(pxrdtor, PXR_INIT_SECTION_NAME_SUFFIX)
+
 
 #if defined(doxygen)
 
 // The macros are already defined above in doxygen.
 
 #elif defined(ARCH_OS_DARWIN)
+#define CONSTRUCTOR_SECTION_NAME _ARCH_STRINGIZE(CONSTRUCTOR_NAME_ID)
+#define DESTRUCTOR_SECTION_NAME  _ARCH_STRINGIZE(DESTRUCTOR_NAME_ID)
 
 // Entry for a constructor/destructor in the custom section.
 struct Arch_ConstructorEntry {
@@ -246,7 +269,7 @@ struct Arch_ConstructorEntry {
 #   define ARCH_CONSTRUCTOR(_name, _priority, ...)                             \
     static void _name(__VA_ARGS__);                                            \
     static const Arch_ConstructorEntry _ARCH_CAT_NOEXPAND(arch_ctor_, _name)   \
-        __attribute__((used, section("__DATA,pxrctor"))) = {                   \
+        __attribute__((used, section("__DATA," CONSTRUCTOR_SECTION_NAME))) = { \
         reinterpret_cast<Arch_ConstructorEntry::Type>(&_name),                 \
         0u,                                                                    \
         _priority                                                              \
@@ -257,7 +280,7 @@ struct Arch_ConstructorEntry {
 #   define ARCH_DESTRUCTOR(_name, _priority, ...)                              \
     static void _name(__VA_ARGS__);                                            \
     static const Arch_ConstructorEntry _ARCH_CAT_NOEXPAND(arch_dtor_, _name)   \
-        __attribute__((used, section("__DATA,pxrdtor"))) = {                   \
+        __attribute__((used, section("__DATA," DESTRUCTOR_SECTION_NAME))) = {  \
         reinterpret_cast<Arch_ConstructorEntry::Type>(&_name),                 \
         0u,                                                                    \
         _priority                                                              \
@@ -265,17 +288,23 @@ struct Arch_ConstructorEntry {
     static void _name(__VA_ARGS__)
 
 #elif defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
+#define CONSTRUCTOR_SECTION_NAME _ARCH_STRINGIZE(_ARCH_CAT(., CONSTRUCTOR_NAME_ID))
+#define DESTRUCTOR_SECTION_NAME  _ARCH_STRINGIZE(_ARCH_CAT(., DESTRUCTOR_NAME_ID))
+#define CONSTRUCTOR_SECTION_NAME_NODOT _ARCH_STRINGIZE(CONSTRUCTOR_NAME_ID)
+#define DESTRUCTOR_SECTION_NAME_NODOT  _ARCH_STRINGIZE(DESTRUCTOR_NAME_ID)
 
 // The used attribute is required to prevent these apparently unused functions
 // from being removed by the linker.
 #   define ARCH_CONSTRUCTOR(_name, _priority, ...) \
-        __attribute__((used, section(".pxrctor"), constructor((_priority) + 100))) \
+        __attribute__((used, section("." CONSTRUCTOR_SECTION_NAME_NODOT), constructor((_priority) + 100))) \
         static void _name(__VA_ARGS__)
 #   define ARCH_DESTRUCTOR(_name, _priority, ...) \
-        __attribute__((used, section(".pxrdtor"), destructor((_priority) + 100))) \
+        __attribute__((used, section("." DESTRUCTOR_SECTION_NAME_NODOT), destructor((_priority) + 100))) \
         static void _name(__VA_ARGS__)
 
 #elif defined(ARCH_OS_WINDOWS)
+#define CONSTRUCTOR_SECTION_NAME _ARCH_STRINGIZE(_ARCH_CAT(., CONSTRUCTOR_NAME_ID))
+#define DESTRUCTOR_SECTION_NAME  _ARCH_STRINGIZE(_ARCH_CAT(., DESTRUCTOR_NAME_ID))
     
 #    include "pxr/base/arch/api.h"
     
@@ -287,10 +316,9 @@ struct Arch_ConstructorEntry {
         unsigned int version:24;    // USD version
         unsigned int priority:8;    // Priority of function
     };
-
 // Declare the special sections.
-#   pragma section(".pxrctor", read)
-#   pragma section(".pxrdtor", read)
+#   pragma section(CONSTRUCTOR_SECTION_NAME, read)
+#   pragma section(DESTRUCTOR_SECTION_NAME, read)
 
 // Objects of this type run the ARCH_CONSTRUCTOR and ARCH_DESTRUCTOR functions
 // for the library containing the object in the c'tor and d'tor, respectively.
@@ -307,7 +335,7 @@ struct Arch_ConstructorInit {
 #   define ARCH_CONSTRUCTOR(_name, _priority, ...)                             \
     static void _name(__VA_ARGS__);                                            \
     namespace {                                                                \
-    __declspec(allocate(".pxrctor"))                                           \
+    __declspec(allocate(CONSTRUCTOR_SECTION_NAME))                                 \
     extern const Arch_ConstructorEntry                                         \
     _ARCH_CAT_NOEXPAND(arch_ctor_, _name) = {                                  \
         reinterpret_cast<Arch_ConstructorEntry::Type>(&_name),                 \
@@ -322,7 +350,7 @@ struct Arch_ConstructorInit {
 #   define ARCH_DESTRUCTOR(_name, _priority, ...)                              \
     static void _name(__VA_ARGS__);                                            \
     namespace {                                                                \
-    __declspec(allocate(".pxrdtor"))                                           \
+    __declspec(allocate(DESTRUCTOR_SECTION_NAME))                                  \
     extern const Arch_ConstructorEntry                                         \
     _ARCH_CAT_NOEXPAND(arch_dtor_, _name) = {                                  \
         reinterpret_cast<Arch_ConstructorEntry::Type>(&_name),                 \
