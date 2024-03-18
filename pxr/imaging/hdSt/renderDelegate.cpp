@@ -40,6 +40,10 @@
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/renderParam.h"
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+#include "pxr/imaging/hdSt/simpleText.h"
+#include "pxr/imaging/hdSt/markupText.h"
+#endif
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/volume.h"
@@ -76,7 +80,11 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_RPRIM_TYPES =
     HdPrimTypeTokens->mesh,
     HdPrimTypeTokens->basisCurves,
     HdPrimTypeTokens->points,
-    HdPrimTypeTokens->volume
+    HdPrimTypeTokens->volume,
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+    HdPrimTypeTokens->simpleText,
+    HdPrimTypeTokens->markupText
+#endif
 };
 
 const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
@@ -385,6 +393,12 @@ HdStRenderDelegate::CreateRprim(TfToken const& typeId,
         return new HdStPoints(rprimId);
     } else  if (typeId == HdPrimTypeTokens->volume) {
         return new HdStVolume(rprimId);
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+    } else  if (typeId == HdPrimTypeTokens->simpleText) {
+        return new HdStSimpleText(rprimId);
+    } else  if (typeId == HdPrimTypeTokens->markupText) {
+        return new HdStMarkupText(rprimId);
+#endif
     } else {
         TF_CODING_ERROR("Unknown Rprim Type %s", typeId.GetText());
     }

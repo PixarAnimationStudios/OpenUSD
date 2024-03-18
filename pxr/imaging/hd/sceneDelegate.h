@@ -35,6 +35,10 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/timeSampleArray.h"
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+#include "pxr/imaging/hd/simpleTextTopology.h"
+#include "pxr/imaging/hd/markupTextTopology.h"
+#endif
 
 #include "pxr/imaging/pxOsd/subdivTags.h"
 
@@ -53,6 +57,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdExtComputationContext;
+
+#ifndef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+class HdSimpleTextTopology
+{};
+class HdMarkupTextTopology
+{};
+#endif
 
 /// A shared pointer to a vector of id's.
 typedef std::shared_ptr<SdfPathVector> HdIdVectorSharedPtr;
@@ -453,6 +464,14 @@ public:
     /// Gets the topological curve data for a given prim.
     HD_API
     virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id);
+
+    /// Gets the topological simple text data for a given prim.
+    HD_API
+    virtual HdSimpleTextTopology GetSimpleTextTopology(SdfPath const& id);
+    
+    /// Gets the topological markupText data for a given prim.
+    HD_API
+    virtual HdMarkupTextTopology GetMarkupTextTopology(SdfPath const& id);
 
     /// Gets the subdivision surface tags (sharpness, holes, etc).
     HD_API

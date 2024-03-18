@@ -1,0 +1,42 @@
+#usda 1.0
+
+def MarkupText "TextA" (){
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (3, 0, 0)
+
+    string markupString = "\\fArial|markup string"
+    uniform token markupLanguage = "mtext"
+    color3f[] primvars:displayColor = [(0, 1, 0)]
+    rel textStyle:binding = </StyleA>
+    rel columnStyle:binding = [
+        </columnA>,
+        </columnB>,
+    ]
+    rel paragraphStyle:binding = </paragraphA>
+}
+
+def TextStyle "StyleA" {
+    string typeface = "Times New Roman"
+    int textHeight = 20
+}
+
+def ColumnStyle "columnA" {
+    float columnWidth = 1000
+    float columnHeight = 300
+    float2 offset = (0.0, 0.0)
+}
+
+def ColumnStyle "columnB" {
+    float columnWidth = 1000
+    float columnHeight = 300
+    float2 offset = (0.0, -320.0)
+}
+
+def ParagraphStyle "paragraphA" {
+    float leftIndent = 15.0
+    float rightIndent = 30.0
+    float firstLineIndent = 55.0
+    float paragraphSpace = 15.0
+    float[] tabStopPositions = [150.0, 350.0, 550.0, 750.0]
+    uniform token[] tabStopTypes = ["centerTab", "centerTab", "centerTab", "centerTab"]
+}

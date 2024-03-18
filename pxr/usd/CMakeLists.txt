@@ -16,6 +16,7 @@ set(DIRS
     usdHydra
     usdRi
     usdSkel
+    usdText
     usdUI
     usdUtils
     usdPhysics

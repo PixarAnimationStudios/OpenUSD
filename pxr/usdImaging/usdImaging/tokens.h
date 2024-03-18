@@ -61,9 +61,22 @@ PXR_NAMESPACE_OPEN_SCOPE
     (UsdTransform2d)         \
     ((stageSceneIndexRepopulate,  "__usdStageSceneIndexRepopulate"))
 
+#define USDIMAGING_TEXT_TOKENS   \
+    (doubleLines)           \
+    (fontFolder)            \
+    (fontSubstitution)      \
+    (none)                  \
+    (normal)                \
+    (posFirstLineOfDoubleStrikethrough) \
+    (tabSize)               \
+    (supportLanguages)
+
 TF_DECLARE_PUBLIC_TOKENS(
     UsdImagingTokens,
     USDIMAGING_API, USDIMAGING_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdImagingTextTokens,
+    USDIMAGING_API, USDIMAGING_TEXT_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

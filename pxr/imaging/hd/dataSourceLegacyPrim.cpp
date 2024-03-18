@@ -44,6 +44,10 @@
 #include "pxr/imaging/hd/extComputationPrimvarsSchema.h"
 #include "pxr/imaging/hd/extComputationSchema.h"
 #include "pxr/imaging/hd/extentSchema.h"
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+#include "pxr/imaging/hd/markupTextSchema.h"
+#include "pxr/imaging/hd/markupTextTopologySchema.h"
+#endif
 #include "pxr/imaging/hd/geomSubsetSchema.h"
 #include "pxr/imaging/hd/geomSubsetsSchema.h"
 #include "pxr/imaging/hd/imageShaderSchema.h"
@@ -71,6 +75,10 @@
 #include "pxr/imaging/hd/renderSettingsSchema.h"
 #include "pxr/imaging/hd/renderVarSchema.h"
 #include "pxr/imaging/hd/sampleFilterSchema.h"
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+#include "pxr/imaging/hd/simpleTextSchema.h"
+#include "pxr/imaging/hd/simpleTextTopologySchema.h"
+#endif
 #include "pxr/imaging/hd/splitDiopterSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
@@ -1123,6 +1131,366 @@ private:
 
 };
 
+// ----------------------------------------------------------------------------
+
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+using Hd_SimpleTextTopologyStoreSharedPtr =
+    std::shared_ptr<class Hd_SimpleTextTopologyStore>;
+using HdSimpleTextTopologySharedPtr = std::shared_ptr<HdSimpleTextTopology>;
+
+class Hd_SimpleTextTopologyStore
+{
+public:
+    Hd_SimpleTextTopologyStore(
+        const SdfPath &id, HdSceneDelegate *sceneDelegate)
+        : _id(id)
+        , _sceneDelegate(sceneDelegate)
+    {
+    }
+
+    HdSimpleTextTopologySharedPtr Get()
+    {
+        HdSimpleTextTopologySharedPtr stt = std::atomic_load(
+            &_simpleTextTopology);
+        if (stt) {
+            return stt;
+        }
+
+        stt = std::make_shared<HdSimpleTextTopology>(
+            _sceneDelegate->GetSimpleTextTopology(_id));
+        std::atomic_store(&_simpleTextTopology, stt);
+        return stt;
+    }
+
+    void Invalidate()
+    {
+        HdSimpleTextTopologySharedPtr nullstt;
+        std::atomic_store(&_simpleTextTopology, nullstt);
+    }
+
+    template <typename T>
+    class MemberDataSource : public HdTypedSampledDataSource<T>
+    {
+    public:
+        HD_DECLARE_DATASOURCE_ABSTRACT(MemberDataSource<T>);
+
+        T GetTypedValue(HdSampledDataSource::Time shutterOffset) override = 0;
+
+        VtValue GetValue(HdSampledDataSource::Time shutterOffset) override
+        {
+            return VtValue(GetTypedValue(shutterOffset));
+        }
+
+        bool GetContributingSampleTimesForInterval(
+            HdSampledDataSource::Time startTime,
+            HdSampledDataSource::Time endTime,
+            std::vector<HdSampledDataSource::Time> * outSampleTimes)
+            override
+        {
+            return false;
+        }
+
+        MemberDataSource(const Hd_SimpleTextTopologyStoreSharedPtr &stts)
+            : _stts(stts)
+        {
+        }
+
+    protected:
+        Hd_SimpleTextTopologyStoreSharedPtr _stts;
+    };
+
+#define DEFINE_SIMPLETEXT_TOPOLOGY_ACCESSOR_DATASOURCE(N, T, A) \
+    class N : public MemberDataSource<T> \
+    {                                                                         \
+    public:                                                                   \
+        HD_DECLARE_DATASOURCE(N);                                             \
+                                                                              \
+        N(const Hd_SimpleTextTopologyStoreSharedPtr &stts)                   \
+        : MemberDataSource(stts) {}                                           \
+                                                                              \
+        T GetTypedValue(HdSampledDataSource::Time shutterOffset) override     \
+        {                                                                     \
+            return _stts->Get()->A();                                         \
+        }                                                                     \
+    };
+
+    DEFINE_SIMPLETEXT_TOPOLOGY_ACCESSOR_DATASOURCE(
+        PointCountDataSource, int, GetPointCount);
+    DEFINE_SIMPLETEXT_TOPOLOGY_ACCESSOR_DATASOURCE(
+        DecorationCountDataSource, int, GetDecorationCount);
+
+private:
+    SdfPath _id;
+    HdSceneDelegate *_sceneDelegate;
+    HdSimpleTextTopologySharedPtr _simpleTextTopology;
+};
+
+
+
+class Hd_DataSourceSimpleTextTopology : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_DataSourceSimpleTextTopology);
+    Hd_DataSourceSimpleTextTopology(const Hd_SimpleTextTopologyStoreSharedPtr &stts)
+        : _stts(stts)
+    {
+    }
+
+    TfTokenVector GetNames() override
+    {
+        return{
+            HdSimpleTextTopologySchemaTokens->pointCount,
+            HdSimpleTextTopologySchemaTokens->decorationCount,
+        };
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        if (name == HdSimpleTextTopologySchemaTokens->pointCount) {
+            return Hd_SimpleTextTopologyStore::
+                PointCountDataSource::New(_stts);
+        }
+        if (name == HdSimpleTextTopologySchemaTokens->decorationCount) {
+            return Hd_SimpleTextTopologyStore::
+                DecorationCountDataSource::New(_stts);
+        }
+        return nullptr;
+    }
+
+private:
+    Hd_SimpleTextTopologyStoreSharedPtr _stts;
+};
+
+class Hd_DataSourceSimpleText : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_DataSourceSimpleText);
+
+    Hd_DataSourceSimpleText(const SdfPath &id, HdSceneDelegate *sceneDelegate)
+        : _id(id)
+        , _sceneDelegate(sceneDelegate)
+    {
+    }
+
+    TfTokenVector GetNames() override
+    {
+        return{
+            HdSimpleTextSchemaTokens->topology,
+
+        };
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        if (name == HdSimpleTextSchemaTokens->topology) {
+            return Hd_DataSourceSimpleTextTopology::New(
+                _GetSimpleTextTopologyStore());
+        }
+
+        return nullptr;
+    }
+private:
+
+    Hd_SimpleTextTopologyStoreSharedPtr _GetSimpleTextTopologyStore()
+    {
+        Hd_SimpleTextTopologyStoreSharedPtr stts =
+            std::atomic_load(&_simpleTextTopologyStore);
+        if (stts) {
+            return stts;
+        }
+
+        stts =
+            std::make_shared<Hd_SimpleTextTopologyStore>(_id, _sceneDelegate);
+        std::atomic_store(&_simpleTextTopologyStore, stts);
+
+        return stts;
+    }
+
+    SdfPath _id;
+    HdSceneDelegate *_sceneDelegate;
+    Hd_SimpleTextTopologyStoreSharedPtr _simpleTextTopologyStore;
+
+};
+
+using Hd_MarkupTextTopologyStoreSharedPtr =
+    std::shared_ptr<class Hd_MarkupTextTopologyStore>;
+using HdMarkupTextTopologySharedPtr = std::shared_ptr<HdMarkupTextTopology>;
+
+class Hd_MarkupTextTopologyStore
+{
+public:
+    Hd_MarkupTextTopologyStore(
+        const SdfPath &id, HdSceneDelegate *sceneDelegate)
+        : _id(id)
+        , _sceneDelegate(sceneDelegate)
+    {
+    }
+
+    HdMarkupTextTopologySharedPtr Get()
+    {
+        HdMarkupTextTopologySharedPtr stt = std::atomic_load(
+            &_markupTextTopology);
+        if (stt) {
+            return stt;
+        }
+
+        stt = std::make_shared<HdMarkupTextTopology>(
+            _sceneDelegate->GetMarkupTextTopology(_id));
+        std::atomic_store(&_markupTextTopology, stt);
+        return stt;
+    }
+
+    void Invalidate()
+    {
+        HdMarkupTextTopologySharedPtr nullstt;
+        std::atomic_store(&_markupTextTopology, nullstt);
+    }
+
+    template <typename T>
+    class MemberDataSource : public HdTypedSampledDataSource<T>
+    {
+    public:
+        HD_DECLARE_DATASOURCE_ABSTRACT(MemberDataSource<T>);
+
+        T GetTypedValue(HdSampledDataSource::Time shutterOffset) override = 0;
+
+        VtValue GetValue(HdSampledDataSource::Time shutterOffset) override
+        {
+            return VtValue(GetTypedValue(shutterOffset));
+        }
+
+        bool GetContributingSampleTimesForInterval(
+            HdSampledDataSource::Time startTime,
+            HdSampledDataSource::Time endTime,
+            std::vector<HdSampledDataSource::Time> * outSampleTimes)
+            override
+        {
+            return false;
+        }
+
+        MemberDataSource(const Hd_MarkupTextTopologyStoreSharedPtr &stts)
+            : _stts(stts)
+        {
+        }
+
+    protected:
+        Hd_MarkupTextTopologyStoreSharedPtr _stts;
+    };
+
+#define DEFINE_MARKUPTEXT_TOPOLOGY_ACCESSOR_DATASOURCE(N, T, A) \
+    class N : public MemberDataSource<T> \
+    {                                                                         \
+    public:                                                                   \
+        HD_DECLARE_DATASOURCE(N);                                             \
+                                                                              \
+        N(const Hd_MarkupTextTopologyStoreSharedPtr &stts)                   \
+        : MemberDataSource(stts) {}                                           \
+                                                                              \
+        T GetTypedValue(HdSampledDataSource::Time shutterOffset) override     \
+        {                                                                     \
+            return _stts->Get()->A();                                         \
+        }                                                                     \
+    };
+
+    DEFINE_MARKUPTEXT_TOPOLOGY_ACCESSOR_DATASOURCE(
+        PointCountDataSource, int, GetPointCount);
+    DEFINE_MARKUPTEXT_TOPOLOGY_ACCESSOR_DATASOURCE(
+        DecorationCountDataSource, int, GetDecorationCount);
+
+private:
+    SdfPath _id;
+    HdSceneDelegate *_sceneDelegate;
+    HdMarkupTextTopologySharedPtr _markupTextTopology;
+};
+
+
+
+class Hd_DataSourceMarkupTextTopology : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_DataSourceMarkupTextTopology);
+    Hd_DataSourceMarkupTextTopology(const Hd_MarkupTextTopologyStoreSharedPtr &stts)
+        : _stts(stts)
+    {
+    }
+
+    TfTokenVector GetNames() override
+    {
+        return{
+            HdMarkupTextTopologySchemaTokens->pointCount,
+            HdMarkupTextTopologySchemaTokens->decorationCount,
+        };
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        if (name == HdMarkupTextTopologySchemaTokens->pointCount) {
+            return Hd_MarkupTextTopologyStore::
+                PointCountDataSource::New(_stts);
+        }
+        if (name == HdMarkupTextTopologySchemaTokens->decorationCount) {
+            return Hd_MarkupTextTopologyStore::
+                DecorationCountDataSource::New(_stts);
+        }
+        return nullptr;
+    }
+
+private:
+    Hd_MarkupTextTopologyStoreSharedPtr _stts;
+};
+
+class Hd_DataSourceMarkupText : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_DataSourceMarkupText);
+
+    Hd_DataSourceMarkupText(const SdfPath &id, HdSceneDelegate *sceneDelegate)
+        : _id(id)
+        , _sceneDelegate(sceneDelegate)
+    {
+    }
+
+    TfTokenVector GetNames() override
+    {
+        return{
+            HdMarkupTextSchemaTokens->topology,
+
+        };
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        if (name == HdMarkupTextSchemaTokens->topology) {
+            return Hd_DataSourceMarkupTextTopology::New(
+                _GetMarkupTextTopologyStore());
+        }
+
+        return nullptr;
+    }
+private:
+
+    Hd_MarkupTextTopologyStoreSharedPtr _GetMarkupTextTopologyStore()
+    {
+        Hd_MarkupTextTopologyStoreSharedPtr stts =
+            std::atomic_load(&_markupTextTopologyStore);
+        if (stts) {
+            return stts;
+        }
+
+        stts =
+            std::make_shared<Hd_MarkupTextTopologyStore>(_id, _sceneDelegate);
+        std::atomic_store(&_markupTextTopologyStore, stts);
+
+        return stts;
+    }
+
+    SdfPath _id;
+    HdSceneDelegate *_sceneDelegate;
+    Hd_MarkupTextTopologyStoreSharedPtr _markupTextTopologyStore;
+
+};
+
+#endif
 // ----------------------------------------------------------------------------
 
 template <typename T>
@@ -2739,6 +3107,16 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdBasisCurvesSchemaTokens->basisCurves);
     }
 
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+    if (_type == HdPrimTypeTokens->simpleText) {
+        result.push_back(HdSimpleTextSchemaTokens->simpleText);
+    }
+
+    if (_type == HdPrimTypeTokens->markupText) {
+        result.push_back(HdMarkupTextSchemaTokens->markupText);
+    }
+#endif
+    
     // Allow all legacy prims to provide primvars as that's the only interface
     // for advertising what names/values are there.
     // Abstract prims which may need to be expressed via legacy scene delegate
@@ -3231,6 +3609,16 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
         if (_type == HdPrimTypeTokens->basisCurves) {
             return Hd_DataSourceBasisCurves::New(_id, _sceneDelegate);
         }
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+    } else if (name == HdSimpleTextSchemaTokens->simpleText) {
+        if (_type == HdPrimTypeTokens->simpleText) {
+            return Hd_DataSourceSimpleText::New(_id, _sceneDelegate);
+        }
+    } else if (name == HdMarkupTextSchemaTokens->markupText) {
+        if (_type == HdPrimTypeTokens->markupText) {
+            return Hd_DataSourceMarkupText::New(_id, _sceneDelegate);
+        }
+#endif
     } else if (name == HdPrimvarsSchemaTokens->primvars) {
         return _GetPrimvarsDataSource();
     } else if (

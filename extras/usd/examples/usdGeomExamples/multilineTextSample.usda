@@ -1,0 +1,156 @@
+#usda 1.0
+
+(
+    upAxis = "Y"
+)
+
+
+def Xform "Linear" {
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (0, 9, 0)
+    def Scope "Tubes"{
+        def BasisCurves "ConstantWidth1" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(0, 0, 0), (0, -300, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth2" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(0, -300, 0), (1000, -300, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth3" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(1000, -300, 0), (1000, 0, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth4" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(1000, 0, 0), (0, 0, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+
+        def BasisCurves "ConstantWidth5" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(0, -320, 0), (0, -620, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth6" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(0, -620, 0), (1000, -620, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth7" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(1000, -620, 0), (1000, -320, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth8" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(1000, -320, 0), (0, -320, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+    }
+}
+
+def Xform "Text1" {
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (0, 9, 0)
+    def Scope "Text11"{
+        def MarkupText "TextA" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+        ){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform string markupString = "\\fArial|b0|i0|p34|c0;\\H20;\\c65300;\\l\\oPipelines capable of producing computer graphics films and games typically generate, store, and transmit large quantities of 3D data, \\Owhich we call \\H30;\\c42137;scene description\\H20;\\o\\c65300;. Each of many cooperating applications in the pipeline (modeling, shading, animation, lighting, fx, rendering) typically has its own special form \\Oof scene description tailored to the specific needs and workflows of the application, which is neither readable nor editable by any other application.\\o \\P\\fArial|b0|i1|p34|c0;\\H30;\\c12255232;\\OUniversal Scene Description (USD)\\fArial|b0|i0|p34|c0;\\H20;\\c65300; is the first\\o publicly available \\Osoftware that \\oaddresses the need to robustly and scalably interchange and augment arbitrary 3D scenes that may be composed from many elemental assets.\\PUSD organizes data into hierarchical \\Lnamespaces of \\H30;\\c42137;Prims\\H20;\\c65300; (short for \"primitive\").\\lBuilt on top of this low-level, \\Lgeneric scene description, USD provides a set of schemas that establish\\l a standard encoding and client API for common 3D computer graphics concepts like:\n\tGeometry\tShading\tModel and Asset\\P\\H30;\\c42137;\\LComposition arcs\\H20;\\c65300; are the \"operators\" that \\lallow USD to create\\L rich compositions of many \\llayers containing \\Lmixes of \"base\" scene description and overrides. Composition arcs include:\n\tsublayers\tinherits\tvariantSets\treferences\n\tpayloads\tspecializes\tTestA\tTestB\n\tTestC\tTestD\tTestE\\l"
+            uniform token markupLanguage = "mtext"
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            rel textStyle:binding = </StyleA>
+            rel columnStyle:binding = [
+                </columnA>,
+                </columnB>,
+            ]
+            rel paragraphStyle:binding = </paragraphA>
+            rel material:binding = </TextRender>
+            uniform string renderer = "SampleTextRenderer"
+        }
+    }
+}
+
+def TextStyle "StyleA" {
+    uniform string typeface = "Times New Roman"
+    uniform int textHeight = 20
+}
+
+def ColumnStyle "columnA" {
+    uniform float columnWidth = 1000
+    uniform float columnHeight = 300
+    uniform float2 offset = (0.0, 0.0)
+}
+
+def ColumnStyle "columnB" {
+    uniform float columnWidth = 1000
+    uniform float columnHeight = 300
+    uniform float2 offset = (0.0, -320.0)
+}
+
+def ParagraphStyle "paragraphA" {
+    uniform float leftIndent = 15.0
+    uniform float rightIndent = 30.0
+    uniform float firstLineIndent = 55.0
+    uniform float paragraphSpace = 15.0
+    uniform float[] tabStopPositions = [150.0, 350.0, 550.0, 750.0]
+    uniform token[] tabStopTypes = ["centerTab", "centerTab", "centerTab", "centerTab"]
+}
+
+def Material "TextRender"
+{
+    token outputs:surface.connect = </TextRender/TextShader.outputs:surface>
+
+    def Shader "TextShader"
+    {
+        uniform token info:id = "SampleTextRendererSurface"
+        token outputs:surface
+    }
+}

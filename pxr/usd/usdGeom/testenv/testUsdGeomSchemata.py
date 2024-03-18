@@ -258,7 +258,6 @@ class TestUsdGeomSchemata(unittest.TestCase):
         self.assertFalse(prim.IsA(UsdGeom.Cylinder))   # Xform is not a Cylinder
         self.assertTrue(schema.GetXformOpOrderAttr())
 
-
     def test_Fallbacks(self):
         # Author Scene and Compose Stage
 

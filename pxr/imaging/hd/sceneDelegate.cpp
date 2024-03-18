@@ -99,6 +99,19 @@ HdSceneDelegate::GetBasisCurvesTopology(SdfPath const& id)
 }
 
 /*virtual*/
+HdSimpleTextTopology
+HdSceneDelegate::GetSimpleTextTopology(SdfPath const& id)
+{
+    return HdSimpleTextTopology();
+}
+/*virtual*/
+HdMarkupTextTopology
+HdSceneDelegate::GetMarkupTextTopology(SdfPath const& id)
+{
+    return HdMarkupTextTopology();
+}
+
+/*virtual*/
 PxOsdSubdivTags
 HdSceneDelegate::GetSubdivTags(SdfPath const& id)
 {

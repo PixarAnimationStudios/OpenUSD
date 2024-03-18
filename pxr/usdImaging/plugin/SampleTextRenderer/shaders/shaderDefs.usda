@@ -1,0 +1,21 @@
+#usda 1.0
+
+def Shader "SampleTextRendererSurface" (
+    doc = "Sample text renderer surface specification"
+)
+{
+    uniform token info:id = "SampleTextRendererSurface"
+    uniform token info:implementationSource = "sourceAsset"
+
+    # XXX: This doesn't resolve if it's defined as a search path.
+    # Might require special resolver configuration, to include the resources
+    # directory.
+    uniform asset info:glslfx:sourceAsset = @./SampleTextRendererSurface.glslfx@
+
+    # Outputs
+    token outputs:surface (
+        sdrMetadata = {
+            string renderType = "terminal surface"
+        }
+    )
+}

@@ -13,6 +13,7 @@ set(optionalLibs "")
 set(optionalIncludeDirs "")
 set(optionalPublicClasses "")
 set(optionalPrivateClasses "")
+set(optionalResourceFiles "")
 if (${PXR_ENABLE_MATERIALX_SUPPORT})
     list(APPEND optionalLibs
         MaterialXGenShader
@@ -36,6 +37,11 @@ if (PXR_ENABLE_PTEX_SUPPORT)
     list(APPEND optionalLibs ${PTEX_LIBRARY})
     list(APPEND optionalIncludeDirs ${PTEX_INCLUDE_DIR})
     list(APPEND optionalPublicClasses ptexMipmapTextureLoader)
+endif()
+if (PXR_ENABLE_TEXT_SUPPORT)
+    list(APPEND optionalPublicClasses simpleText markupText)
+    list(APPEND optionalPrivateClasses TextShaderKey simpleTextTopology markupTextTopology)
+    list(APPEND optionalResourceFiles shaders/text.glslfx)
 endif()
 
 pxr_library(hdSt
@@ -209,6 +215,7 @@ pxr_library(hdSt
         shaders/visibility.glslfx
         shaders/volume.glslfx
         textures/fallbackBlackDomeLight.png
+        ${optionalResourceFiles}
 
     DOXYGEN_FILES
         overview.dox

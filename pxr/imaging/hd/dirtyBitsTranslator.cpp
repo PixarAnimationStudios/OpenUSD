@@ -52,6 +52,10 @@
 #include "pxr/imaging/hd/extComputationPrimvarsSchema.h"
 #include "pxr/imaging/hd/extComputationSchema.h"
 #include "pxr/imaging/hd/extentSchema.h"
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+#include "pxr/imaging/hd/markupTextSchema.h"
+#include "pxr/imaging/hd/markupTextTopologySchema.h"
+#endif
 #include "pxr/imaging/hd/geomSubsetSchema.h"
 #include "pxr/imaging/hd/geomSubsetsSchema.h"
 #include "pxr/imaging/hd/imageShaderSchema.h"
@@ -74,6 +78,10 @@
 #include "pxr/imaging/hd/renderBufferSchema.h"
 #include "pxr/imaging/hd/renderSettingsSchema.h"
 #include "pxr/imaging/hd/sampleFilterSchema.h"
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+#include "pxr/imaging/hd/simpleTextSchema.h"
+#include "pxr/imaging/hd/simpleTextTopologySchema.h"
+#endif
 #include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/sphereSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
@@ -123,6 +131,22 @@ HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(TfToken const& primType,
         }
     }
 
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+    if (primType == HdPrimTypeTokens->simpleText) {
+        if (bits & HdChangeTracker::DirtyTopology) {
+            // could either be topology or geomsubsets
+            set->append(HdSimpleTextSchema::GetDefaultLocator());
+        }
+    }
+
+    if (primType == HdPrimTypeTokens->markupText) {
+        if (bits & HdChangeTracker::DirtyTopology) {
+            // could either be topology or geomsubsets
+            set->append(HdMarkupTextSchema::GetDefaultLocator());
+        }
+    }
+#endif
+
     if (primType == HdPrimTypeTokens->capsule) {
         if (bits & HdChangeTracker::DirtyPrimvar) {
             set->append(HdCapsuleSchema::GetDefaultLocator());
@@ -150,6 +174,7 @@ HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(TfToken const& primType,
             set->append(HdCylinderSchema::GetDefaultLocator());
         }
     }
+
 
     if (bits & HdChangeTracker::DirtyDisplayStyle) {
         set->append(HdLegacyDisplayStyleSchema::GetDefaultLocator());
@@ -547,6 +572,22 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
         }
     }
 
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+    if (primType == HdPrimTypeTokens->simpleText) {
+        if (_FindLocator(HdSimpleTextTopologySchema::GetDefaultLocator(),
+            end, &it)) {
+            bits |= HdChangeTracker::DirtyTopology;
+        }
+    }
+
+    if (primType == HdPrimTypeTokens->markupText) {
+        if (_FindLocator(HdMarkupTextTopologySchema::GetDefaultLocator(),
+            end, &it)) {
+            bits |= HdChangeTracker::DirtyTopology;
+        }
+    }
+#endif
+    
     if (primType == HdPrimTypeTokens->capsule) {
         // Locator (*): capsule
         if (_FindLocator(HdCapsuleSchema::GetDefaultLocator(), end, &it)) {
