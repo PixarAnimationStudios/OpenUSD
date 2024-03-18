@@ -38,7 +38,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Returns \c true if \p t1 and \p t2 denote the same type.
 inline bool TfSafeTypeCompare(const std::type_info& t1, const std::type_info& t2) {
+#if defined(__APPLE__)
+    // Workaround until issue 1475 aka USD-6608 is properly fixed. This way USD
+    // containers, in particular VtArray objects, can be passed between DSOs
+    // linked with USD (e.g. plugins) compiled with hidden visibility and have
+    // their contents safely accessed. USD itself still has to be compiled with
+    // default visibility.
+    // The two types are compared by name explicitly, as opposed to the default
+    // implementation which compares them as pointers and relies on typeinfos
+    // from different DSOs being properly merged at load time. __builtin_strcmp
+    // is used to avoid bringing in unneeded headers.
+    return __builtin_strcmp(t1.name(), t2.name()) == 0;
+#else
     return t1 == t2;
+#endif
 }
 
 /// Safely perform a dynamic cast.
