@@ -44,7 +44,7 @@ void* ArchLibraryOpen(const std::string &filename, int flag)
 {
 #if defined(ARCH_OS_WINDOWS)
     arch_lastLibraryError = 0;
-    if (void* result = LoadLibrary(filename.c_str())) {
+    if (void* result = LoadLibraryEx(filename.c_str(), NULL, flag)) {
         return result;
     }
     else {

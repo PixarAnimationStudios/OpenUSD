@@ -30,18 +30,21 @@
 #include <string>
 
 #if defined(ARCH_OS_WINDOWS)
-#   define ARCH_LIBRARY_LAZY    0
-#   define ARCH_LIBRARY_NOW     0
-#   define ARCH_LIBRARY_LOCAL   0
-#   define ARCH_LIBRARY_GLOBAL  0
+#   include <Windows.h>
+#   define ARCH_LIBRARY_LAZY                0
+#   define ARCH_LIBRARY_NOW                 0
+#   define ARCH_LIBRARY_LOCAL               0
+#   define ARCH_LIBRARY_GLOBAL              0
+#   define ARCH_LIBRARY_ALTERED_SEARCH_PATH LOAD_WITH_ALTERED_SEARCH_PATH
 #   define ARCH_LIBRARY_SUFFIX  ".dll"
 #   define ARCH_STATIC_LIBRARY_SUFFIX ".lib"
 #else
 #   include <dlfcn.h>
-#   define ARCH_LIBRARY_LAZY    RTLD_LAZY
-#   define ARCH_LIBRARY_NOW     RTLD_NOW
-#   define ARCH_LIBRARY_LOCAL   RTLD_LOCAL
-#   define ARCH_LIBRARY_GLOBAL  RTLD_GLOBAL
+#   define ARCH_LIBRARY_LAZY                RTLD_LAZY
+#   define ARCH_LIBRARY_NOW                 RTLD_NOW
+#   define ARCH_LIBRARY_LOCAL               RTLD_LOCAL
+#   define ARCH_LIBRARY_GLOBAL              RTLD_GLOBAL
+#   define ARCH_LIBRARY_ALTERED_SEARCH_PATH 0
 #   if defined(ARCH_OS_DARWIN)
 #       define ARCH_LIBRARY_SUFFIX  ".dylib"
 #   else
