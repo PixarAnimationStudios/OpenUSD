@@ -38,6 +38,7 @@ static const size_t INSERTION_SORT_MAX_ENTRIES = 32;
 
 Hd_SortedIds::Hd_SortedIds()
  : _ids()
+ , _idIndices()
  , _sortedCount(0)
  , _afterLastDeletePoint(INVALID_DELETE_POINT)
 {
@@ -46,6 +47,7 @@ Hd_SortedIds::Hd_SortedIds()
 
 Hd_SortedIds::Hd_SortedIds(Hd_SortedIds &&other)
  : _ids(std::move(other._ids))
+ , _idIndices(std::move(other._idIndices))
  , _sortedCount(other._sortedCount)
  , _afterLastDeletePoint(other._afterLastDeletePoint)
 {
@@ -63,88 +65,29 @@ void
 Hd_SortedIds::Insert(const SdfPath &id)
 {
     _ids.push_back(id);
+    _idIndices[id] = _ids.size() - 1;
     _afterLastDeletePoint = INVALID_DELETE_POINT;
 }
 
 void
 Hd_SortedIds::Remove(const SdfPath &id)
 {
-    // The first implementation of this deletion code deleted the
-    // element in place.  This kept the list sorted, but was a
-    // performance issue on unloading a stage as a lot of prims
-    // get removed and the shifting of the vector become a bottleneck
-    // So instead, we do a more efficient removal (by swapping the
-    // element to be removed with the element on the end of the vector).
-    // The down side is that the list is now unsorted, so needs to be
-    // sorted again (which is deferred).
-    //
-    // However, this means that the list is now unsorted in mass removal.
-    // In order to use the binary search, we need a sorted list, but sorting
-    // again would be too expensive in this case.
-    //
-    // We still need to optimize for batch deletions.  Typically these
-    // will be a sort list where the path to delete will be the next one
-    // in the list after the path just deleted.
-    //
-    // If it is not that path, then check to see if it is in the sorted
-    // portion.  If it is not in the sorted portion, do a linear search
-    // through the unsorted portion.
+    // For better removal, we use an extra index list to find the
+    // position of the id in the list. This is a trade-off between
+    // former implementation which can be partially sorted on demand.
 
-    // Try last removal point
-    SdfPathVector::iterator idToRemove = _ids.end();
-
-    if (_afterLastDeletePoint != INVALID_DELETE_POINT) {
-        if (_ids[_afterLastDeletePoint] == id) {
-            idToRemove = _ids.begin() + _afterLastDeletePoint;
-        }
-    }
-
-    // See if we can binary search sorted portion
-    if (idToRemove == _ids.end()) {
-        if (_sortedCount > 0) {
-            // Check to see if id is somewhere within the sorted range
-            if (id <= _ids[_sortedCount - 1]) {
-
-                SdfPathVector::iterator endSortedElements =
-                                                    _ids.begin() + _sortedCount;
-                idToRemove = std::lower_bound(_ids.begin(),
-                                              endSortedElements,
-                                              id);
-
-                if (idToRemove != endSortedElements) {
-                    // Id could actually exist in the unsorted part
-                    // because of an insert.
-                    // Lower bound will then return an iterator to
-                    // the element after where id should be.
-                    if (*idToRemove != id) {
-                        idToRemove = _ids.end();
-                    }
-                } else {
-                    // We checked that id should be in the sorted range
-                    // so lower_bound should return an iterator between
-                    // begin and endSortedElements - 1.
-                    TF_CODING_ERROR("Id (%s) greater than all items in "
-                                    " sorted list",
-                                    id.GetText());
-                    idToRemove = _ids.end();
-                }
-            }
-        }
-    }
-
-    // If all else fail, linear search through unsorted portion
-    if (idToRemove == _ids.end()) {
-        idToRemove = std::find(_ids.begin() + _sortedCount,
-                               _ids.end(),
-                               id);
-    }
-
-    if (idToRemove != _ids.end()) {
-        if (*idToRemove == id) {
-            SdfPathVector::iterator lastElement = _ids.end();
-            --lastElement;
-
+    // Search in the index list for fast access.
+    auto idIndexIter = _idIndices.find(id);
+    if (idIndexIter != _idIndices.end()) {
+        if (idIndexIter->first == id) {
+            SdfPathVector::iterator idToRemove = _ids.begin() + idIndexIter->second;
+            SdfPathVector::iterator lastElement = --_ids.end();
+            
             if (idToRemove != lastElement) {
+                // Update index
+                _idIndices[*lastElement] = idIndexIter->second;
+                _idIndices.erase(id);
+                
                 std::iter_swap(idToRemove, lastElement);
 
                 if (std::distance(idToRemove, lastElement) == 1) {
@@ -164,6 +107,7 @@ Hd_SortedIds::Remove(const SdfPath &id)
                                         static_cast<size_t>(
                                                   (idToRemove - _ids.begin())));
             } else {
+                _idIndices.erase(id);
                 _ids.pop_back();
                 _afterLastDeletePoint = INVALID_DELETE_POINT;
 
@@ -195,10 +139,13 @@ void Hd_SortedIds::RemoveRange(size_t start, size_t end)
         return;
     }
 
+    for(size_t index = start; index != end; index++)
+        _idIndices.erase(_ids[index]);
+    
     SdfPathVector::iterator itStart = _ids.begin() + start;
     SdfPathVector::iterator itEnd   = _ids.begin() + (end + 1);
-
     _ids.erase(itStart, itEnd);
+
     _sortedCount -= numToRemove;
     _afterLastDeletePoint = INVALID_DELETE_POINT;
 }
@@ -207,6 +154,7 @@ void
 Hd_SortedIds::Clear()
 {
     _ids.clear();
+    _idIndices.clear();
     _sortedCount = 0;
     _afterLastDeletePoint = INVALID_DELETE_POINT;
 }
@@ -217,7 +165,6 @@ Hd_SortedIds::_InsertSort()
     SdfPathVector::iterator sortPosIt = _ids.begin();
     // skip already sorted items
     sortPosIt += _sortedCount;
-
     while (sortPosIt != _ids.end()) {
         SdfPathVector::iterator insertPosIt = std::lower_bound(_ids.begin(),
                                                                sortPosIt,
@@ -226,6 +173,11 @@ Hd_SortedIds::_InsertSort()
         std::rotate(insertPosIt, sortPosIt, sortPosIt + 1);
         ++sortPosIt;
     }
+    
+    // Update indices.
+    size_t indexValue = 0;
+    for(auto const& id : _ids)
+        _idIndices[id] = indexValue++;
 }
 
 void
@@ -238,8 +190,17 @@ Hd_SortedIds::_FullSort()
     // If needed, merge
     if (mid == _ids.begin() || *(mid-1) < *(mid)) {
         // List is fully sorted.
+        
+        // Update remaining indices
+        for(size_t indexValue = _sortedCount; indexValue < _ids.size(); ++indexValue)
+            _idIndices[_ids[indexValue]] = indexValue;
     } else {
         std::inplace_merge(_ids.begin(), mid, _ids.end());
+        
+        // Update all indices
+        size_t indexValue = 0;
+        for(auto const& id : _ids)
+            _idIndices[id] = indexValue++;
     }
 }
 

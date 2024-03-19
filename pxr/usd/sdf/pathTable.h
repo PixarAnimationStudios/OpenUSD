@@ -91,104 +91,91 @@ private:
 
     // An _Entry represents an item in the table.  It holds the item's value, a
     // pointer (\a next) to the next item in the hash bucket's linked list, and
-    // two pointers (\a firstChild and \a nextSibling) that describe the tree
-    // structure.
+    // four pointers (\a firstChild, \a prevSibling, \a nextSibling and \a parent)
+    // that describe the tree structure.
     struct _Entry {
         _Entry(const _Entry&) = delete;
         _Entry& operator=(const _Entry&) = delete;
         _Entry(value_type const &value, _Entry *n)
-            : value(value)
+            : value(new value_type(value))
             , next(n)
             , firstChild(nullptr)
-            , nextSiblingOrParent(nullptr, false) {}
+        {}
 
         _Entry(value_type &&value, _Entry *n)
-            : value(std::move(value))
+            : value(new value_type(std::move(value)))
             , next(n)
             , firstChild(nullptr)
-            , nextSiblingOrParent(nullptr, false) {}
+        {
+        }
+        
+        ~_Entry() { if (value) delete value; }
 
         // If this entry's nextSiblingOrParent field points to a sibling, return
         // a pointer to it, otherwise return null.
-        _Entry *GetNextSibling() {
-            return nextSiblingOrParent.template BitsAs<bool>() ?
-                nextSiblingOrParent.Get() : 0;
-        }
+        _Entry *GetNextSibling() { return nextSibling; }
         // If this entry's nextSiblingOrParent field points to a sibling, return
         // a pointer to it, otherwise return null.
-        _Entry const *GetNextSibling() const {
-            return nextSiblingOrParent.template BitsAs<bool>() ?
-                nextSiblingOrParent.Get() : 0;
-        }
+        _Entry const *GetNextSibling() const { return nextSibling; }
 
         // If this entry's nextSiblingOrParent field points to a parent, return
         // a pointer to it, otherwise return null.
-        _Entry *GetParentLink() {
-            return nextSiblingOrParent.template BitsAs<bool>() ? 0 :
-                nextSiblingOrParent.Get();
-        }
+        _Entry *GetParentLink() { return parent;}
         // If this entry's nextSiblingOrParent field points to a parent, return
         // a pointer to it, otherwise return null.
-        _Entry const *GetParentLink() const {
-            return nextSiblingOrParent.template BitsAs<bool>() ? 0 :
-                nextSiblingOrParent.Get();
-        }
+        _Entry const *GetParentLink() const { return parent;}
 
-        // Set this entry's nextSiblingOrParent field to point to the passed
-        // sibling.
-        void SetSibling(_Entry *sibling) {
-            nextSiblingOrParent.Set(sibling, /* isSibling */ true);
-        }
+        // Append \a n before this entry.
+        void AddSibling(_Entry* n){
+            n->parent = parent;
 
-        // Set this entry's nextSiblingOrParent field to point to the passed
-        // parent.
-        void SetParentLink(_Entry *parent) {
-            nextSiblingOrParent.Set(parent, /* isSibling */ false);
+            // Establish n & original prev.
+            n->prevSibling = prevSibling;
+            prevSibling->nextSibling = n;
+
+            // Establish n & this.
+            n->nextSibling = this;
+            prevSibling = n;
         }
 
         // Add \a child as a child of this entry.
         void AddChild(_Entry *child) {
-            // If there are already one or more children, make \a child be our
-            // new first child.  Otherwise, add \a child as the first child.
+            child->parent = this;
             if (firstChild)
-                child->SetSibling(firstChild);
+                firstChild->AddSibling(child);
             else
-                child->SetParentLink(this);
-            firstChild = child;
-        }
-
-        void RemoveChild(_Entry *child) {
-            // Remove child from this _Entry's children.
-            if (child == firstChild) {
-                firstChild = child->GetNextSibling();
-            } else {
-                // Search the list to find the preceding child, then unlink the
-                // child to remove.
-                _Entry *prev, *cur = firstChild;
-                do {
-                    prev = cur;
-                    cur = prev->GetNextSibling();
-                } while (cur != child);
-                prev->nextSiblingOrParent = cur->nextSiblingOrParent;
+            {
+                firstChild = child;
+                child->prevSibling = child->nextSibling = child;
             }
         }
 
+        // Remove this entry from its sibling list.
+        // Update its parent's \a firstChild if needed.
+        void RemoveFromSiblings() {
+            nextSibling->prevSibling = prevSibling;
+            prevSibling->nextSibling = nextSibling;
+
+            if (!parent || parent->firstChild != this)
+                return;
+            parent->firstChild = (prevSibling == this) ? nullptr : prevSibling;
+        }
+
         // The value object mapped by this entry.
-        value_type value;
+        // Use pointer to make _Entry cache-friendly.
+        value_type *value{nullptr};
 
         // The next field links together entries in chained hash table buckets.
-        _Entry *next;
+        _Entry *next{nullptr};
 
-        // The firstChild and nextSiblingOrParent fields describe the tree
-        // structure of paths.  An entry has one or more children when
-        // firstChild is non null.  Its chlidren are stored in a singly linked
-        // list, where nextSiblingOrParent points to the next entry in the list.
-        //
-        // The end of the list is reached when the bit stored in
-        // nextSiblingOrParent is set false, indicating a pointer to the parent
-        // rather than another sibling.
-        _Entry *firstChild;
-        TfPointerAndBits<_Entry> nextSiblingOrParent;
+        // The firstChild, prevSibling, nextSibling and parent fields describe
+        // the tree structure of paths. An entry has one or more children when
+        // firstChild is non null. Its children are stored in a double linked
+        // list, where nextSibling points to the next entry in the list and
+        // prevSibling points to the previous one. If there is only one child,
+        // both nextSibling and prevSibling point to the entry itself.
+        _Entry *firstChild{nullptr};
+        _Entry *prevSibling{this}, *nextSibling{this}, *parent{nullptr};
     };
 
     // Hash table's list of buckets is a vector of _Entry ptrs.
@@ -249,7 +236,8 @@ public:
         Iterator GetNextSubtree() const {
             Iterator result(0);
             if (_entry) {
-                if (EntryPtr sibling = _entry->GetNextSibling()) {
+                EntryPtr sibling = _entry->GetNextSibling();
+                if (sibling->parent && sibling != sibling->parent->firstChild){
                     // Next subtree is next sibling, if present.
                     result._entry = sibling;
                 } else {
@@ -257,8 +245,9 @@ public:
                     // a next sibling or run out.
                     for (EntryPtr p = _entry->GetParentLink(); p;
                          p = p->GetParentLink()) {
-                        if (EntryPtr sibling = p->GetNextSibling()) {
-                            result._entry = sibling;
+                        EntryPtr sibling2 = p->GetNextSibling();
+                        if (sibling2->parent && sibling2 != sibling2->parent->firstChild){
+                            result._entry = sibling2;
                             break;
                         }
                     }
@@ -298,7 +287,7 @@ public:
 
         // Dereference.
         ValType &dereference() const {
-            return _entry->value;
+            return *(_entry->value);
         }
 
         // Store pointer to current entry.
@@ -348,28 +337,28 @@ public:
         /// must be valid to call this member function (see
         /// NodeHandle::IsValid).
         key_type const &GetKey() const {
-            return _unlinkedEntry->value.first;
+            return _unlinkedEntry->value->first;
         }
 
         /// Return a mutable reference to this NodeHandle's key.  This
         /// NodeHandle must be valid to call this member function (see
         /// NodeHandle::IsValid).
         key_type &GetMutableKey() {
-            return _unlinkedEntry->value.first;
+            return _unlinkedEntry->value->first;
         }
 
         /// Return a const reference to this NodeHandle's mapped object.  This
         /// NodeHandle must be valid to call this member function (see
         /// NodeHandle::IsValid).
         mapped_type const &GetMapped() const {
-            return _unlinkedEntry->value.second;
+            return _unlinkedEntry->value->second;
         }
 
         /// Return a mutable reference to this NodeHandle's mapped object.  This
         /// NodeHandle must be valid to call this member function (see
         /// NodeHandle::IsValid).
         mapped_type &GetMutableMapped() {
-            return _unlinkedEntry->value.second;
+            return _unlinkedEntry->value->second;
         }
 
         /// Return true if this NodeHandle owns a path table entry, false
@@ -410,16 +399,13 @@ public:
             iterator j = _InsertInTable(*i).first;
             // Ensure first child and next sibling links are created.
             if (i._entry->firstChild && !j._entry->firstChild) {
-                j._entry->firstChild =
-                    _InsertInTable(i._entry->firstChild->value).first._entry;
+                j._entry->AddChild(_InsertInTable(*(i._entry->firstChild->value)).first._entry);
             }
             // Ensure the nextSibling/parentLink is created.
-            if (i._entry->nextSiblingOrParent.Get() &&  
-                !j._entry->nextSiblingOrParent.Get()) {
-                j._entry->nextSiblingOrParent.Set(
-                    _InsertInTable(i._entry->nextSiblingOrParent.
-                                   Get()->value).first._entry,
-                    i._entry->nextSiblingOrParent.template BitsAs<bool>());
+            if (i._entry->GetParentLink() &&
+                !j._entry->GetParentLink()) {
+                j._entry->parent= _InsertInTable(*(i._entry->parent->value)).first._entry;
+                j._entry->parent->AddChild(j._entry);
             }
         }
     }
@@ -504,9 +490,7 @@ public:
         // Delete descendant nodes, if any.  Then remove from parent, finally
         // erase from hash table.
         _Entry * const entry = i._entry;
-        _EraseSubtree(entry);
-        _RemoveFromParent(entry);
-        _EraseFromTable(entry);
+        _EraseNode(entry);
     }
 
     /// Return an iterator to the element corresponding to \a path, or \a end()
@@ -515,7 +499,7 @@ public:
         if (!empty()) {
             // Find the item in the list.
             for (_Entry *e = _buckets[_Hash(path)]; e; e = e->next) {
-                if (e->value.first == path)
+                if (e->value->first == path)
                     return iterator(e);
             }
         }
@@ -528,7 +512,7 @@ public:
         if (!empty()) {
             // Find the item in the list.
             for (_Entry const *e = _buckets[_Hash(path)]; e; e = e->next) {
-                if (e->value.first == path)
+                if (e->value->first == path)
                     return const_iterator(e);
             }
         }
@@ -699,8 +683,8 @@ public:
             [&visitFn](void*& voidEntry) {
                 _Entry *entry = static_cast<_Entry *>(voidEntry);
                 while (entry) {
-                    visitFn(std::cref(entry->value.first),
-                            std::ref(entry->value.second));
+                    visitFn(std::cref(entry->value->first),
+                            std::ref(entry->value->second));
                     entry = entry->next;
                 }
             };
@@ -716,8 +700,8 @@ public:
             [&visitFn](void*& voidEntry) {
                 const _Entry *entry = static_cast<const _Entry *>(voidEntry);
                 while (entry) {
-                    visitFn(std::cref(entry->value.first),
-                            std::cref(entry->value.second));
+                    visitFn(std::cref(entry->value->first),
+                            std::cref(entry->value->second));
                     entry = entry->next;
                 }
             };
@@ -739,7 +723,7 @@ private:
     void _UpdateTreeForNewEntry(_IterBoolPair const &iresult) {
         // New element -- make sure the parent is inserted.
         _Entry * const newEntry = iresult.first._entry;
-        SdfPath const &parentPath = _GetParentPath(newEntry->value.first);
+        SdfPath const &parentPath = _GetParentPath(newEntry->value->first);
         if (!parentPath.IsEmpty()) {
             iterator parIter =
                 insert(value_type(parentPath, mapped_type())).first;
@@ -760,7 +744,7 @@ private:
         // Find the item, if present.
         _Entry **bucketHead = &(_buckets[_Hash(key)]);
         for (_Entry *e = *bucketHead; e; e = e->next) {
-            if (e->value.first == key) {
+            if (e->value->first == key) {
                 return _IterBoolPair(iterator(e), false);
             }
         }
@@ -800,7 +784,7 @@ private:
     // Erase \a entry from the hash table.  Does not consider tree structure.
     void _EraseFromTable(_Entry *entry) {
         // Remove from table.
-        _Entry **cur = &_buckets[_Hash(entry->value.first)];
+        _Entry **cur = &_buckets[_Hash(entry->value->first)];
         while (*cur != entry)
             cur = &((*cur)->next);
 
@@ -811,43 +795,28 @@ private:
         delete tmp;
     }
 
+    // Erase all the tree structure from the \a firstChild of the target entry.
+    void _EraseSubtree(_Entry *firstChild) {
+        auto entry = firstChild;
+
+        do {
+            auto next = entry->nextSibling;
+            if (entry->firstChild)
+                _EraseSubtree(entry->firstChild);
+            // No need to delete from sibling.
+            _EraseFromTable(entry);
+            entry = next;
+        } while(entry != firstChild);
+    }
+
     // Erase all the tree structure descendants of \a entry from the table.
-    void _EraseSubtree(_Entry *entry) {
+    void _EraseNode(_Entry *entry) {
         // Delete descendant nodes, if any.
-        if (_Entry * const firstChild = entry->firstChild) {
-            _EraseSubtreeAndSiblings(firstChild);
-            _EraseFromTable(firstChild);
-        }
-    }
+        if (entry->firstChild)
+            _EraseSubtree(entry->firstChild);
 
-    // Erase all the tree structure descendants and siblings of \a entry from
-    // the table.
-    void _EraseSubtreeAndSiblings(_Entry *entry) {
-        // Remove subtree.
-        _EraseSubtree(entry);
-
-        // And siblings.
-        _Entry *sibling = entry->GetNextSibling();
-        _Entry *nextSibling = sibling ? sibling->GetNextSibling() : nullptr;
-        while (sibling) {
-            _EraseSubtree(sibling);
-            _EraseFromTable(sibling);
-            sibling = nextSibling;
-            nextSibling = sibling ? sibling->GetNextSibling() : nullptr;
-        }
-    }
-
-    // Remove \a entry from its parent's list of children in the tree structure
-    // alone.  Does not consider the table.
-    void _RemoveFromParent(_Entry *entry) {
-        if (entry->value.first == SdfPath::AbsoluteRootPath())
-            return;
-
-        // Find parent in table.
-        iterator parIter = find(_GetParentPath(entry->value.first));
-
-        // Remove this entry from the parent's children.
-        parIter._entry->RemoveChild(entry);
+        entry->RemoveFromSiblings();
+        _EraseFromTable(entry);
     }
 
     // Grow the table's number of buckets to the next larger size.  Rehashes the
@@ -870,7 +839,7 @@ private:
                 _Entry *next = elem->next;
 
                 // Get the bucket in the new list
-                _Entry *&m = newBuckets[_Hash(elem->value.first)];
+                _Entry *&m = newBuckets[_Hash(elem->value->first)];
 
                 // Insert the item at the head
                 elem->next = m;

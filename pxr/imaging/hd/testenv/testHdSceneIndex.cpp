@@ -594,7 +594,7 @@ TestPrefixingSceneIndex()
     // 
     if (!_CompareValue("TESTING GetChildPrimPaths('/E/F/G/A'))",
             prefixingSceneIndex.GetChildPrimPaths(SdfPath("/E/F/G/A")), 
-            SdfPathVector({SdfPath("/E/F/G/A/C"), SdfPath("/E/F/G/A/B")})
+            SdfPathVector({SdfPath("/E/F/G/A/B"), SdfPath("/E/F/G/A/C")})
             )) {
         return false;
     }

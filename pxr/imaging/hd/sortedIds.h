@@ -75,6 +75,7 @@ public:
 
 private:
     SdfPathVector           _ids;
+    std::unordered_map<SdfPath, size_t, SdfPath::Hash> _idIndices;
     size_t                  _sortedCount;
     ptrdiff_t               _afterLastDeletePoint;
 
