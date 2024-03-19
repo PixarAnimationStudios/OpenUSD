@@ -652,8 +652,8 @@ pxr_register_test(testUsdImagingGLBasicDrawing
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage basicDrawing/basicDrawing.usda -write testUsdImagingGLBasicDrawing.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLBasicDrawing.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL 0.2
+    FAIL_PERCENT 0.5
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     ENV
@@ -691,7 +691,7 @@ pxr_register_test(testUsdImagingGLBasicDrawing_clipped
     IMAGE_DIFF_COMPARE
         testUsdImagingGLBasicDrawing_clipped.png
     FAIL 1
-    FAIL_PERCENT 1
+    FAIL_PERCENT 0.9
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLBasicDrawing
@@ -783,8 +783,8 @@ pxr_register_test(testUsdImagingGLBasicLighting
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage basicDrawing.usda -write testUsdImagingGLBasicLighting.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLBasicLighting.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL 0.5
+    FAIL_PERCENT 0.1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLBasicLighting
@@ -828,7 +828,7 @@ pxr_register_test(testUsdImagingGL_moreCurves
     IMAGE_DIFF_COMPARE
         testUsdImagingGL_moreCurves.png
     FAIL 1
-    FAIL_PERCENT 1
+    FAIL_PERCENT 0.5
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLCurves
@@ -839,7 +839,7 @@ pxr_register_test(testUsdImagingGL_moreCurves_refined
     IMAGE_DIFF_COMPARE
         testUsdImagingGL_moreCurves_refined.png
     FAIL 1
-    FAIL_PERCENT 1
+    FAIL_PERCENT 0.9
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLCurves
@@ -850,7 +850,7 @@ pxr_register_test(testUsdImagingGL_moreCurves_faketubes
     IMAGE_DIFF_COMPARE
         testUsdImagingGL_moreCurves_faketubes.png
     FAIL 1
-    FAIL_PERCENT 1
+    FAIL_PERCENT 0.9
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLCurves
@@ -861,7 +861,7 @@ pxr_register_test(testUsdImagingGL_moreCurves_tubes
     IMAGE_DIFF_COMPARE
         testUsdImagingGL_moreCurves_tubes.png
     FAIL 1
-    FAIL_PERCENT 1
+    FAIL_PERCENT 0.9
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLCurves
@@ -872,7 +872,7 @@ pxr_register_test(testUsdImagingGL_pinnedCurves
     IMAGE_DIFF_COMPARE
         testUsdImagingGL_pinnedCurves.png
     FAIL 1
-    FAIL_PERCENT 1
+    FAIL_PERCENT 0.2
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLCurves
@@ -883,7 +883,7 @@ pxr_register_test(testUsdImagingGLPoints
     IMAGE_DIFF_COMPARE
         testUsdImagingGLPoints.png
     FAIL 1
-    FAIL_PERCENT 1
+    FAIL_PERCENT 0.9
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPoints
@@ -1206,7 +1206,7 @@ pxr_register_test(testUsdImagingGLSubdivisionSchemeNone
     IMAGE_DIFF_COMPARE
         testUsdImagingGLSubdivisionSchemeNone_1.png
         testUsdImagingGLSubdivisionSchemeNone_1.3.png
-    FAIL 1
+    FAIL 0.3
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -1218,7 +1218,7 @@ pxr_register_test(testUsdImagingGLSubdivisionSchemeNone_NoLights
     IMAGE_DIFF_COMPARE
         testUsdImagingGLSubdivisionSchemeNone_NoLights_1.png
         testUsdImagingGLSubdivisionSchemeNone_NoLights_1.3.png
-    FAIL 1
+    FAIL 0.2
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -1306,9 +1306,8 @@ pxr_register_test(testUsdImagingGLFlatShading
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -shading flat -stage primitives.usda -write testUsdImagingGLFlatShading.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLFlatShading.png
-    FAIL 1
+    FAIL 0.1
     FAIL_PERCENT 1
-    PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLFlatShading
 )
@@ -1317,9 +1316,8 @@ pxr_register_test(testUsdImagingGLShadeMaterial
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage coloredCubes.usda -write testUsdImagingGLShadeMaterial.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLShadeMaterial.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
+    FAIL 0.3
+    FAIL_PERCENT 0.9
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLShadeMaterial
     ENV
@@ -2178,7 +2176,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_pi_pi_time
         pi_pi_time_001.png
     FAIL .05
     FAIL_PERCENT .03
-    PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPointInstancer
 )
@@ -2506,7 +2503,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi_time
         pi_pi_time_001.png
     FAIL .05
     FAIL_PERCENT .03
-    PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPointInstancer_SceneIndex
     ENV
@@ -2579,7 +2575,6 @@ pxr_register_test(testUsdImagingGLResync
         world_2.png
     FAIL .05
     FAIL_PERCENT .03
-    PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLResync
 )
@@ -2592,7 +2587,6 @@ pxr_register_test(testUsdImagingGLResync_instancer
         instancer_2.png
     FAIL .05
     FAIL_PERCENT .03
-    PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLResync
 )
@@ -2632,9 +2626,8 @@ pxr_register_test(testUsdImagingGLPrimvarSharing_refined
         refined_000.png
         refined_001.png
         refined_002.png
-    FAIL 1
+    FAIL 0.1
     FAIL_PERCENT 1
-    PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPrimvarSharing
     ENV
@@ -2798,9 +2791,8 @@ pxr_register_test(testUsdImagingGLNormals
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage testNormals.usda -write testNormals.png"
     IMAGE_DIFF_COMPARE
         testNormals.png
-    FAIL 1
+    FAIL 0.1
     FAIL_PERCENT 1
-    PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLNormals
 )
@@ -2908,7 +2900,7 @@ pxr_register_test(testUsdImagingGLPreviewSurface_Displacement
     IMAGE_DIFF_COMPARE
         testPreviewSurfaceDisplacement.png
     FAIL 1
-    FAIL_PERCENT 1
+    FAIL_PERCENT 0.7
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPreviewSurface
@@ -3188,7 +3180,7 @@ pxr_register_test(testUsdImagingGLPreviewSurfaceNonBindless_Displacement
     IMAGE_DIFF_COMPARE
         testPreviewSurfaceDisplacement.png
     FAIL 1
-    FAIL_PERCENT 1
+    FAIL_PERCENT 0.7
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPreviewSurface
@@ -3747,9 +3739,8 @@ pxr_register_test(testUsdImagingGLUsdLux
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage usdLux.usda -write usdLux.png"
     IMAGE_DIFF_COMPARE
         usdLux.png
-    FAIL 1
+    FAIL 0.1
     FAIL_PERCENT 1
-    PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLUsdLux
 )
@@ -3877,9 +3868,8 @@ pxr_register_test(testUsdImagingGLUsdSkelExtCompCPU_arm_baked
         usdSkel_arm_baked_001.png
         usdSkel_arm_baked_003.png
         usdSkel_arm_baked_007.png
-    FAIL 1
+    FAIL 0.1
     FAIL_PERCENT 1
-    PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLUsdSkel
     ENV
@@ -3892,9 +3882,8 @@ pxr_register_test(testUsdImagingGLUsdSkelExtCompCPU_arm
         usdSkel_arm_extComp_CPU_001.png
         usdSkel_arm_extComp_CPU_003.png
         usdSkel_arm_extComp_CPU_007.png
-    FAIL 1
+    FAIL 0.1
     FAIL_PERCENT 1
-    PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLUsdSkel
     ENV
@@ -3905,9 +3894,8 @@ pxr_register_test(testUsdImagingGLUsdSkelExtCompCPU_twoBends
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -shading wireOnSurface -stage twoBends.usda -write usdSkel_twoBends_extComp_CPU.png"
     IMAGE_DIFF_COMPARE
         usdSkel_twoBends_extComp_CPU.png
-    FAIL 1
+    FAIL 0.1
     FAIL_PERCENT 1
-    PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLUsdSkel
     ENV
@@ -3920,9 +3908,8 @@ pxr_register_test(testUsdImagingGLUsdSkelExtCompGPU_arm_baked
         usdSkel_arm_baked_001.png
         usdSkel_arm_baked_003.png
         usdSkel_arm_baked_007.png
-    FAIL 1
+    FAIL 0.1
     FAIL_PERCENT 1
-    PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLUsdSkel
     ENV
@@ -4027,7 +4014,6 @@ pxr_register_test(testUsdImagingGLMaterialStrengthOrder
     ENV
         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
-
 
 pxr_register_test(testUsdImagingGLInstancePrimvars
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage test.usda -write testUsdImagingGLInstancePrimvars.png"
@@ -4187,9 +4173,8 @@ pxr_register_test(testUsdImagingGLInheritedPurpose_none
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -guidesPurpose hide -renderPurpose hide -proxyPurpose hide -offscreen -lighting -frameAll -stage InheritedPurposes.usd -write testUsdImagingGLInheritedPurpose_none.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInheritedPurpose_none.png
-    FAIL 1
-    FAIL_PERCENT 2
-    PERCEPTUAL
+    FAIL 0.1
+    FAIL_PERCENT 0.2
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLInheritedPurpose
 )
@@ -4199,9 +4184,8 @@ pxr_register_test(testUsdImagingGLInheritedPurpose_guides
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -guidesPurpose show -renderPurpose hide -proxyPurpose hide -offscreen -lighting -frameAll -stage InheritedPurposes.usd -write testUsdImagingGLInheritedPurpose_guides.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInheritedPurpose_guides.png
-    FAIL 1
-    FAIL_PERCENT 2
-    PERCEPTUAL
+    FAIL 0.1
+    FAIL_PERCENT 0.4
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLInheritedPurpose
 )
@@ -4211,9 +4195,8 @@ pxr_register_test(testUsdImagingGLInheritedPurpose_render
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -guidesPurpose hide -renderPurpose show -proxyPurpose hide -offscreen -lighting -frameAll -stage InheritedPurposes.usd -write testUsdImagingGLInheritedPurpose_render.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInheritedPurpose_render.png
-    FAIL 1
-    FAIL_PERCENT 2
-    PERCEPTUAL
+    FAIL 0.1
+    FAIL_PERCENT 0.4
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLInheritedPurpose
 )
@@ -4223,9 +4206,8 @@ pxr_register_test(testUsdImagingGLInheritedPurpose_proxy
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -guidesPurpose hide -renderPurpose hide -proxyPurpose show -offscreen -lighting -frameAll -stage InheritedPurposes.usd -write testUsdImagingGLInheritedPurpose_proxy.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInheritedPurpose_proxy.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
+    FAIL 0.1
+    FAIL_PERCENT 0.35
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLInheritedPurpose
 )
@@ -4235,9 +4217,8 @@ pxr_register_test(testUsdImagingGLInheritedPurpose_all
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -guidesPurpose show -renderPurpose show -proxyPurpose show -offscreen -lighting -frameAll -stage InheritedPurposes.usd -write testUsdImagingGLInheritedPurpose_all.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInheritedPurpose_all.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
+    FAIL 0.1
+    FAIL_PERCENT 0.4
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLInheritedPurpose
 )
@@ -4249,9 +4230,8 @@ pxr_register_test(testUsdImagingGLInheritedPurpose_Instanced_none
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -guidesPurpose hide -renderPurpose hide -proxyPurpose hide -offscreen -lighting -frameAll -stage InheritedPurposes_Instanced.usd -write testUsdImagingGLInheritedPurpose_none.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInheritedPurpose_none.png
-    FAIL 1
-    FAIL_PERCENT 1.1
-    PERCEPTUAL
+    FAIL 0.1
+    FAIL_PERCENT 0.2
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLInheritedPurpose
 )
@@ -4261,9 +4241,8 @@ pxr_register_test(testUsdImagingGLInheritedPurpose_Instanced_guides
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -guidesPurpose show -renderPurpose hide -proxyPurpose hide -offscreen -lighting -frameAll -stage InheritedPurposes_Instanced.usd -write testUsdImagingGLInheritedPurpose_guides.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInheritedPurpose_guides.png
-    FAIL 1
-    FAIL_PERCENT 1.25
-    PERCEPTUAL
+    FAIL 0.1
+    FAIL_PERCENT 0.4
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLInheritedPurpose
 )
@@ -4273,9 +4252,8 @@ pxr_register_test(testUsdImagingGLInheritedPurpose_Instanced_render
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -guidesPurpose hide -renderPurpose show -proxyPurpose hide -offscreen -lighting -frameAll -stage InheritedPurposes_Instanced.usd -write testUsdImagingGLInheritedPurpose_render.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInheritedPurpose_render.png
-    FAIL 1
-    FAIL_PERCENT 1.85
-    PERCEPTUAL
+    FAIL 0.1
+    FAIL_PERCENT 0.4
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLInheritedPurpose
 )
@@ -4285,9 +4263,8 @@ pxr_register_test(testUsdImagingGLInheritedPurpose_Instanced_proxy
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -guidesPurpose hide -renderPurpose hide -proxyPurpose show -offscreen -lighting -frameAll -stage InheritedPurposes_Instanced.usd -write testUsdImagingGLInheritedPurpose_proxy.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInheritedPurpose_proxy.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
+    FAIL 0.1
+    FAIL_PERCENT 0.4
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLInheritedPurpose
 )
@@ -4297,9 +4274,8 @@ pxr_register_test(testUsdImagingGLInheritedPurpose_Instanced_all
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -guidesPurpose show -renderPurpose show -proxyPurpose show -offscreen -lighting -frameAll -stage InheritedPurposes_Instanced.usd -write testUsdImagingGLInheritedPurpose_all.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInheritedPurpose_all.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
+    FAIL 0.1
+    FAIL_PERCENT 0.4
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLInheritedPurpose
 )
@@ -4969,7 +4945,7 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -frameAll -stage mxGeomprop.usda -write mxGeomprop.png"
         IMAGE_DIFF_COMPARE
             mxGeomprop.png
-        FAIL 0.5
+        FAIL 0.3
         FAIL_PERCENT 0.005
         WARN 0.05
         WARN_PERCENT 0.02
