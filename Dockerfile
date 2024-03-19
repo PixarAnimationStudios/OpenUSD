@@ -15,5 +15,6 @@ RUN mkdir -p tmp && cd tmp && git clone --recursive https://github.com/emscripte
 RUN cd /tmp/emsdk && ./emsdk install ${EMSCRIPTEN_VERSION}
 RUN cd /tmp/emsdk && ./emsdk activate ${EMSCRIPTEN_VERSION} --permanent
 
-COPY . /src/
-RUN source /tmp/emsdk/emsdk_env.sh && cd /src && python3 ./build_scripts/build_usd.py -v ${BUILD_TARGET} --js-bindings USD_emscripten
+COPY . /usd/
+RUN source /tmp/emsdk/emsdk_env.sh && cd /usd && python3 ./build_scripts/build_usd.py -v ${BUILD_TARGET} --js-bindings USD_emscripten
+
