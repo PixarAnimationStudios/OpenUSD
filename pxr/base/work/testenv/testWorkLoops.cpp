@@ -35,6 +35,7 @@
 #include <functional>
 
 #include <cstdio>
+#include <cstring>
 #include <numeric>
 #include <iostream>
 #include <vector>

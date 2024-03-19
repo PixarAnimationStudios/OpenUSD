@@ -957,13 +957,19 @@ else:
     # Use point release with fix https://github.com/oneapi-src/oneTBB/pull/833
     TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2020.3.1.zip"
 
+TBB_2021_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.9.0.zip"
+
 def InstallTBB(context, force, buildArgs):
-    if Windows():
-        InstallTBB_Windows(context, force, buildArgs)
-    elif MacOS():
-        InstallTBB_MacOS(context, force, buildArgs)
+    if context.tbbVersion == "2021":
+        with CurrentWorkingDirectory(DownloadURL(TBB_2021_URL, context, force)):
+            RunCMake(context, force, buildArgs)
     else:
-        InstallTBB_Linux(context, force, buildArgs)
+        if Windows():
+            InstallTBB_Windows(context, force, buildArgs)
+        elif MacOS():
+            InstallTBB_MacOS(context, force, buildArgs)
+        else:
+            InstallTBB_Linux(context, force, buildArgs)
 
 def InstallTBB_Windows(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force, 
@@ -1220,17 +1226,20 @@ BLOSC = Dependency("Blosc", InstallBLOSC, "include/blosc.h")
 # OpenVDB
 
 OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v9.1.0.zip"
-
-# OpenVDB v9.1.0 requires TBB 2019.0 or above, but this script installs
-# TBB 2018 on macOS Intel systems for reasons documented above. So we
-# keep OpenVDB at the version specified for the VFX Reference Platform
-# CY2021, which is the last version that supported 2018.
-OPENVDB_INTEL_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v8.2.0.zip"
+OPENVDB_8_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v8.2.0.zip"
+OPENVDB_10_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v10.0.1.zip"
 
 def InstallOpenVDB(context, force, buildArgs):
     openvdb_url = OPENVDB_URL
-    if MacOS() and not apple_utils.IsTargetArm(context):
-        openvdb_url = OPENVDB_INTEL_URL
+    # OpenVDB 10 is the first release to support oneTBB.
+    if context.tbbVersion == "2021":
+        openvdb_url = OPENVDB_10_URL
+    # OpenVDB v9.1.0 requires TBB 2019.0 or above, but this script installs
+    # TBB 2018 on macOS Intel systems for reasons documented above. So we
+    # keep OpenVDB at the version specified for the VFX Reference Platform
+    # CY2021, which is the last version that supported 2018.
+    elif MacOS() and not apple_utils.IsTargetArm(context):
+            openvdb_url = OPENVDB_8_URL
 
     with CurrentWorkingDirectory(DownloadURL(openvdb_url, context, force)):
         extraArgs = [
@@ -1987,6 +1996,13 @@ subgroup.add_argument("--no-openvdb", dest="enable_openvdb",
                       action="store_false",
                       help="Disable OpenVDB support in imaging (default)")
 subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--onetbb", dest="enable_onetbb", action="store_true",
+                      default=False,
+                      help="Use new oneAPI TBB version")
+subgroup.add_argument("--no-onetbb", dest="enable_onetbb",
+                      action="store_false",
+                      help="Use old TBB version (default)")
+subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--usdview", dest="build_usdview",
                       action="store_true", default=True,
                       help="Build usdview (default)")
@@ -2225,6 +2241,9 @@ class InstallContext:
         self.buildMayapyTests = args.build_mayapy_tests
         self.mayapyLocation = args.mayapy_location
         self.buildAnimXTests = args.build_animx_tests
+
+        # - TBB
+        self.tbbVersion = "2021" if args.enable_onetbb else "2019"
 
     def GetBuildArguments(self, dep):
         return self.buildArgs.get(dep.name.lower(), [])
@@ -2488,6 +2507,7 @@ summaryMsg += """\
       HDF5 support:             {enableHDF5}
     Draco Plugin                {buildDraco}
     MaterialX Plugin            {buildMaterialX}
+    TBB version                 {tbbVersion}
 
   Dependencies                  {dependencies}"""
 
@@ -2550,7 +2570,8 @@ summaryMsg = summaryMsg.format(
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
     buildMayapyTests=("On" if context.buildMayapyTests else "Off"),
     buildAnimXTests=("On" if context.buildAnimXTests else "Off"),
-    enableHDF5=("On" if context.enableHDF5 else "Off"))
+    enableHDF5=("On" if context.enableHDF5 else "Off"),
+    tbbVersion=context.tbbVersion)
 
 Print(summaryMsg)
 
