@@ -45,8 +45,10 @@
 #include <cstring>
 #include <errno.h>
 #include <fcntl.h>
+#include <fstream>
 #include <unistd.h>
 #include <string>
+#include <string_view>
 #endif
 #if defined(ARCH_OS_DARWIN)
 #include <sys/sysctl.h>
@@ -344,50 +346,58 @@ Arch_DebuggerAttachExecPosix(void* data)
 
 #if defined(ARCH_OS_LINUX)
 
+// Reads /proc/self/status, finds the line starting with "field:", and
+// returns the portion following the ":".
+// Note that the returned string will generally include leading whitespace
+static
+std::string Arch_ReadProcStatusField(const std::string_view field)
+{
+    std::ifstream procStatusFile("/proc/self/status");
+    if (!procStatusFile) {
+        ARCH_WARNING("Unable to open /proc/self/status");
+        return std::string();
+    }
+    for (std::string line; std::getline(procStatusFile, line);) {
+        // the field needs to start with the given fieldLen AND the ':' char
+        if (line.size() < field.size() + 1 ) {
+            continue;
+        }
+
+        if (line.compare(0, field.size(), field) == 0 && line[field.size()] == ':') {
+            // We found our "field:" line
+            return line.substr(field.size() + 2);
+        }
+    }
+
+    std::string warningStr("Unable to find given field in /proc/self/status: ");
+    warningStr += field;
+    ARCH_WARNING(warningStr.c_str());
+    return std::string();
+}
+
+constexpr int INVALID_INT_STR = -1;
+constexpr int OUT_OF_RANGE_INT_STR = -2;
+
+// Reads the "TracerPid:" field from /proc/self/status
+// Returns a result < 0 if there was an error.
+static
+int Arch_ReadTracerPid() {
+    try {
+        return std::stoi(Arch_ReadProcStatusField("TracerPid"));
+    }
+    catch (std::invalid_argument const &ex) {
+        return INVALID_INT_STR;
+    }
+    catch (std::out_of_range const &ex) {
+        return OUT_OF_RANGE_INT_STR;
+    }
+}
+
 static
 bool
 Arch_DebuggerIsAttachedPosix()
 {
-    // Check for a ptrace based debugger by trying to ptrace.
-    pid_t parent = getpid();
-    pid_t pid = nonLockingFork();
-    if (pid < 0) {
-        // fork failed.  We'll guess there's no debugger.
-        return false;
-    }
-
-    // Child process.
-    if (pid == 0) {
-        // Attach to the parent with ptrace() this will fail if the
-        // parent is already being traced.
-        if (ptrace(PTRACE_ATTACH, parent, NULL, NULL) == -1) {
-            // A debugger is probably attached if the error is EPERM.
-            _exit(errno == EPERM ? 1 : 0);
-        }
-
-        // Wait for the parent to stop as a result of the attach.
-        int status;
-        while (waitpid(parent, &status, 0) == -1 && errno == EINTR) {
-            // Do nothing
-        }
-
-        // Detach and continue the parent.
-        ptrace(PTRACE_DETACH, parent, 0, SIGCONT);
-
-        // A debugger was not attached.
-        _exit(0);
-    }
-
-    // Parent process
-    int status;
-    while (waitpid(pid, &status, 0) == -1 && errno == EINTR) {
-        // Do nothing
-    }
-    if (WIFEXITED(status)) {
-        return WEXITSTATUS(status) != 0;
-    }
-    return false;
-
+    return Arch_ReadTracerPid() > 0;
 }
 
 #elif defined(ARCH_OS_DARWIN)
