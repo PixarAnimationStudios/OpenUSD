@@ -101,7 +101,7 @@ class SdfLayer
 public:
     /// Destructor
     SDF_API
-    virtual ~SdfLayer(); 
+    virtual ~SdfLayer() noexcept; // noexcept needed for std::atomic member
 
     /// Noncopyable
     SdfLayer(const SdfLayer&) = delete;
