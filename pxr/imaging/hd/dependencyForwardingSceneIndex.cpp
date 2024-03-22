@@ -217,7 +217,7 @@ HdDependencyForwardingSceneIndex::_PrimDirtied(
 void 
 HdDependencyForwardingSceneIndex::_ClearDependencies(const SdfPath &primPath)
 {
-    _AffectedPrimToDependsOnPathsEntryMap::const_iterator it =
+    _AffectedPrimToDependsOnPathsEntryMap::iterator it =
         _affectedPrimToDependsOnPathsMap.find(primPath);
     if (it == _affectedPrimToDependsOnPathsMap.end()) {
         return;
