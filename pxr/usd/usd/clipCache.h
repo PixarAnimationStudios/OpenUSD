@@ -30,7 +30,7 @@
 #include "pxr/usd/usd/clipSet.h"
 #include "pxr/usd/sdf/pathTable.h"
 
-#include <tbb/mutex.h>
+#include <mutex>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -61,7 +61,7 @@ public:
         explicit ConcurrentPopulationContext(Usd_ClipCache &cache);
         ~ConcurrentPopulationContext();
         Usd_ClipCache &_cache;
-        tbb::mutex _mutex;
+        std::mutex _mutex;
     };
 
     /// Populate the cache with clips for \p prim. Returns true if clips
