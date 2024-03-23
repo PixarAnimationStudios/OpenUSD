@@ -158,3 +158,207 @@ pxr_library(usdImaging
         plugInfo.json
 )
 
+# Build tests
+pxr_build_test(testUsdImagingDataSourceAttribute
+    LIBRARIES
+        usdImaging
+        usd
+        sdf
+        hd
+        tf
+    CPPFILES
+        testenv/testUsdImagingDataSourceAttribute.cpp
+)
+pxr_build_test(testUsdImagingDelegate
+    LIBRARIES
+        usdImaging
+        usdGeom
+        usd
+        hd
+        tf
+        gf
+        arch
+    CPPFILES
+        testenv/testUsdImagingDelegate.cpp
+)
+pxr_build_test(testUsdImagingDelegateChanges
+    LIBRARIES
+        usdImaging
+        usdShade
+        usdGeom
+        usd
+        sdf
+        hd
+        tf
+        gf
+        arch
+    CPPFILES
+        testenv/testUsdImagingDelegateChanges.cpp
+)
+pxr_build_test(testUsdImagingExcluded
+    LIBRARIES
+        usdImaging
+        usdGeom
+        usd
+        hd
+        gf
+        arch
+    CPPFILES
+        testenv/testUsdImagingExcluded.cpp
+)
+
+pxr_build_test(testUsdImagingNestedInstancingCategories
+    LIBRARIES
+        usdImaging
+        usd
+        tf
+    CPPFILES
+        testenv/testUsdImagingNestedInstancingCategories.cpp
+)
+pxr_build_test(testUsdImagingPrimvarUtils
+    LIBRARIES
+        usdImaging
+        usdGeom
+        tf
+    CPPFILES
+        testenv/testUsdImagingPrimvarUtils.cpp
+)
+pxr_build_test(testUsdImagingRerootingSceneIndex
+    LIBRARIES
+        usdImaging
+        hd
+        vt
+    CPPFILES
+        testenv/testUsdImagingRerootingSceneIndex.cpp
+)
+pxr_build_test(testUsdImagingRootPrim
+    LIBRARIES
+        usdImaging
+        usdGeom
+        usd
+        hd
+        gf
+        arch
+    CPPFILES
+        testenv/testUsdImagingRootPrim.cpp
+)
+pxr_build_test(testUsdImagingStageSceneIndex
+    LIBRARIES
+        usdImaging
+        usdGeom
+        usd
+        sdf
+        hd
+        tf
+    CPPFILES
+        testenv/testUsdImagingStageSceneIndex.cpp
+)
+pxr_build_test(testUsdImagingStageSceneIndexContents
+    LIBRARIES
+        usdImaging
+        hd
+    CPPFILES
+        testenv/testUsdImagingStageSceneIndexContents.cpp
+)
+
+# Install (copy test assets and baselines)
+pxr_install_test_dir(
+    SRC testenv/testUsdImagingDelegate
+    DEST testUsdImagingDelegate
+)
+pxr_install_test_dir(
+    SRC testenv/testUsdImagingDelegateChanges
+    DEST testUsdImagingDelegateChanges
+)
+pxr_install_test_dir(
+    SRC testenv/testUsdImagingNestedInstancingCategories
+    DEST testUsdImagingNestedInstancingCategories
+)
+pxr_install_test_dir(
+    SRC testenv/testUsdImagingStageSceneIndex
+    DEST testUsdImagingStageSceneIndex
+)
+pxr_install_test_dir(
+    SRC testenv/testUsdImagingStageSceneIndexContents
+    DEST testUsdImagingStageSceneIndexContents
+)
+
+# Register tests to be run
+pxr_register_test(testUsdImagingDataSourceAttribute
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingDataSourceAttribute"
+    EXPECTED_RETURN_CODE 0
+)
+pxr_register_test(testUsdImagingDelegate
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingDelegate"
+    EXPECTED_RETURN_CODE 0
+)
+pxr_register_test(testUsdImagingDelegateChanges
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingDelegateChanges"
+    EXPECTED_RETURN_CODE 0
+)
+pxr_register_test(testUsdImagingExcluded
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingExcluded"
+    EXPECTED_RETURN_CODE 0
+)
+pxr_register_test(testUsdImagingNestedInstancingCategories
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingNestedInstancingCategories"
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
+)
+pxr_register_test(testUsdImagingPrimvarUtils
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingPrimvarUtils"
+    EXPECTED_RETURN_CODE 0
+)
+pxr_register_test(testUsdImagingRerootingSceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingRerootingSceneIndex"
+    EXPECTED_RETURN_CODE 0
+)
+pxr_register_test(testUsdImagingRootPrim
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingRootPrim"
+    EXPECTED_RETURN_CODE 0
+)
+pxr_register_test(testUsdImagingStageSceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingStageSceneIndex"
+    EXPECTED_RETURN_CODE 0
+)
+pxr_register_test(testUsdImagingStageSceneIndexContents
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingStageSceneIndexContents basic.usda basic.txt"
+    EXPECTED_RETURN_CODE 0
+    DIFF_COMPARE 
+        basic.txt
+)
+
+# testUsdImagingMaterialBinding uses a plugin, which requires shared libraries.
+if (BUILD_SHARED_LIBS)
+pxr_build_test(testUsdImagingMaterialBinding
+    LIBRARIES
+        usdImagingGL
+        usdImaging
+        usdShade
+        usd
+        hd
+        glf
+        garch
+        tf
+        gf
+        vt
+    CPPFILES
+        testenv/testUsdImagingMaterialBinding.cpp
+)
+
+# testUsdImagingMaterialBinding also requires a window.
+if (NOT ${PXR_HEADLESS_TEST_MODE})
+pxr_install_test_dir(
+    SRC testenv/testUsdImagingMaterialBinding
+    DEST testUsdImagingMaterialBinding
+)
+pxr_register_test(testUsdImagingMaterialBinding
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingMaterialBinding"
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+)
+endif()
+
+endif()

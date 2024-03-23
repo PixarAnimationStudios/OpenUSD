@@ -1,0 +1,29 @@
+#usda 1.0
+
+def "Geom" (
+    append payload = @./geo.usda@
+)
+{
+}
+
+def Xform "instancer1"
+{
+    def "Instance0" (
+        instanceable = true
+        append references = </Geom>
+    )
+    {
+        matrix4d xformOp:transform:instancer1 = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-5, -5, -5, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform:instancer1"]
+    }
+
+    def "Instance1" (
+        instanceable = true
+        append references = </Geom>
+    )
+    {
+        matrix4d xformOp:transform:instancer1 = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (5, -5, -5, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform:instancer1"]
+    }
+}
+
