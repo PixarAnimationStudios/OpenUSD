@@ -133,8 +133,10 @@ HdPrman_RenderParam::HdPrman_RenderParam(
     _resolution(0),
     _renderDelegate(renderDelegate)
 {
+#if _PRMANAPI_VERSION_MAJOR_ < 26
     // Create the stats session
     _CreateStatsSession();
+#endif
 
     // Setup to use the default GPU
     _xpuGpuConfig.push_back(0);
@@ -1220,9 +1222,11 @@ HdPrman_RenderParam::RegisterIntegratorCallbackForCamera(
 void
 HdPrman_RenderParam::_CreateStatsSession(void)
 {
-    // Set log level for diagnostics relating to initialization. If we succeed in loading a
-    // config file then the log level specified in the config file will take precedence.
-    stats::Logger::LogLevel statsDebugLevel = stats::GlobalLogger()->DefaultLogLevel();
+    // Set log level for diagnostics relating to initialization.
+    // If we succeed in loading a config file then the log level specified
+    // in the config file will take precedence.
+    stats::Logger::LogLevel statsDebugLevel =
+        stats::GlobalLogger()->DefaultLogLevel();
     stats::SetGlobalLogLevel(statsDebugLevel);
     stats::SetGlobalLogLevel(stats::Logger::k_debug);
 
@@ -1266,6 +1270,65 @@ HdPrman_RenderParam::_CreateStatsSession(void)
                                       _statsSession->GetName() + "'.");
 }
 
+void HdPrman_RenderParam::_PRManSystemBegin(
+    const std::vector<std::string>& extraArgs)
+{
+#if _PRMANAPI_VERSION_MAJOR_ >= 26
+    // Must invoke PRManSystemBegin() and PRManRenderBegin()
+    // before we start using Riley.
+    // Turning off unwanted statistics warnings
+    // TODO: Fix incorrect tear-down handling of these statistics in
+    // interactive contexts as described in PRMAN-2353
+
+    std::vector<std::string> sArgs;
+    sArgs.reserve(3+extraArgs.size());
+    sArgs.push_back(""); // Empty argv[0]: hdPrman will do Xcpt/signal handling
+    sArgs.push_back("-woff");
+    sArgs.push_back("R56008,R56009");
+    sArgs.insert(std::end(sArgs), std::begin(extraArgs), std::end(extraArgs));
+
+    // PRManSystemBegin expects array of char* rather than std::string
+    std::vector<const char*> cArgs;
+    cArgs.reserve(sArgs.size());
+    std::transform(sArgs.begin(), sArgs.end(), std::back_inserter(cArgs),
+                   [](const std::string& str) { return str.c_str();} );
+
+    _ri->PRManSystemBegin(cArgs.size(),
+        const_cast<const char **>(cArgs.data()));
+#endif
+}
+
+int HdPrman_RenderParam::_PRManRenderBegin(
+    const std::vector<std::string>& extraArgs)
+{
+    // Must invoke PRManSystemBegin() and PRManRenderBegin()
+    // before we start using Riley.
+    std::vector<std::string> sArgs;
+#if _PRMANAPI_VERSION_MAJOR_ >= 26
+    sArgs.reserve(2+extraArgs.size());
+#else
+    sArgs.reserve(5+extraArgs.size());
+    sArgs.push_back("hdPrman");  // Empty argv[0]: hdPrman will do Xcpt/signal handling
+    sArgs.push_back("-woff");
+    sArgs.push_back("R56008,R56009");
+#endif
+    sArgs.push_back("-statssession");
+    sArgs.push_back(_statsSession->GetName());
+    sArgs.insert(std::end(sArgs), std::begin(extraArgs), std::end(extraArgs));
+
+    // PRManRenderBegin expects array of char* rather than std::string
+    std::vector<const char*> cArgs;
+    cArgs.reserve(sArgs.size());
+    std::transform(sArgs.begin(), sArgs.end(), std::back_inserter(cArgs),
+                   [](const std::string& str) { return str.c_str();} );
+#if _PRMANAPI_VERSION_MAJOR_ >= 26
+    return _ri->PRManRenderBegin(cArgs.size(),
+        const_cast<const char **>(cArgs.data()));
+#else
+    return _ri->PRManBegin(cArgs.size(), const_cast<char **>(cArgs.data()));
+#endif
+}
+
 void
 HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
     const std::string &xpuDevices,
@@ -1282,27 +1345,21 @@ HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
         return;
     }
 
-    // Must invoke PRManBegin() before we start using Riley.
-    // Turning off unwanted statistics warnings
-    // TODO: Fix incorrect tear-down handling of these statistics in 
-    // interactive contexts as described in PRMAN-2353
+#if _PRMANAPI_VERSION_MAJOR_ >= 26
+    // Initialize internals of PRMan system
+    _PRManSystemBegin(extraArgs);
 
-    std::vector<std::string> sArgs;
-    sArgs.push_back("hdPrman");
-    sArgs.push_back("-woff");
-    sArgs.push_back("R56008,R56009");
-    sArgs.push_back("-statssession");
-    sArgs.push_back(_statsSession->GetName());
-    sArgs.insert(std::end(sArgs), std::begin(extraArgs), std::end(extraArgs));
+    // Create the RenderMan stats session
+    _CreateStatsSession();
+#endif
 
-    std::vector<const char*> cArgs;
-
-    // PRManBegin expects array of char* rather than std::string
-    cArgs.reserve(sArgs.size());
-    std::transform(sArgs.cbegin(), sArgs.cend(), std::back_inserter(cArgs),
-                   [](const std::string& str) { return str.c_str();} );
-
-    _ri->PRManBegin(cArgs.size(), const_cast<char **>(cArgs.data()));
+    // Instantiate PRMan renderer ahead of CreateRiley
+    int err = _PRManRenderBegin(extraArgs);
+    if (err)
+    {
+        TF_RUNTIME_ERROR("Could not initialize Renderer.");
+        return;
+    }
 
     // Register an Xcpt handler
     RixXcpt* rix_xcpt = (RixXcpt*)_rix->GetRixInterface(k_RixXcpt);
@@ -1708,18 +1765,40 @@ HdPrman_RenderParam::_DestroyRiley()
             }
             _mgr->DestroyRiley(_riley);
         }
+        if (_ri) {
+            // Tear down renderer
+#if _PRMANAPI_VERSION_MAJOR_ >= 26
+            _ri->PRManRenderEnd();
+#endif
+        }
         _mgr = nullptr;
     }
 
     _riley = nullptr;
 
     if (_rix) {
+        // Remove our exception handler
         RixXcpt* rix_xcpt = (RixXcpt*)_rix->GetRixInterface(k_RixXcpt);
         rix_xcpt->Unregister(&_xcpt);
     }
 
+#if _PRMANAPI_VERSION_MAJOR_ >= 26
+    if (_statsSession)
+    {
+        // We own the session, it's our responsibility to tell Roz to remove
+        // its reference and free the memory
+        stats::RemoveSession(*_statsSession);
+        _statsSession = nullptr;
+    }
+#endif
+
     if (_ri) {
+        // Final prman shutdown
+#if _PRMANAPI_VERSION_MAJOR_ >= 26
+        _ri->PRManSystemEnd();
+#else
         _ri->PRManEnd();
+#endif
         _ri = nullptr;
     }
 }
