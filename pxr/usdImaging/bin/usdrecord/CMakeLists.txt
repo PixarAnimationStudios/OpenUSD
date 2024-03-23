@@ -56,7 +56,7 @@ pxr_install_test_dir(
 
 pxr_install_test_dir(
     SRC testenv/SmallObjectTest
-    DEST SmallObjectTest
+    DEST testUsdRecordSmallObject
 )
 
 
