@@ -2786,7 +2786,8 @@ UsdStage::_InstantiatePrim(const SdfPath &primPath)
     Usd_PrimDataPtr p = new Usd_PrimData(this, primPath);
 
     // Insert entry into the map -- should always succeed.
-    TF_VERIFY(_primMap.emplace(primPath, p),
+    TF_VERIFY(_primMap.emplace(
+                  primPath, Usd_PrimDataIPtr{TfDelegatedCountIncrementTag, p}),
               "Newly instantiated prim <%s> already present in _primMap",
               primPath.GetText());
     return p;
