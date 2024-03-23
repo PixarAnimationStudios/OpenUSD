@@ -54,6 +54,29 @@ option(PXR_PREFER_SAFETY_OVER_SPEED
        "Enable certain checks designed to avoid crashes or out-of-bounds memory reads with malformed input files.  These checks may negatively impact performance."
         ON)
 
+if(APPLE)
+    # Cross Compilation detection as defined in CMake docs
+    # Required to be handled here so it can configure options later on
+    # https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html#cross-compiling-for-ios-tvos-visionos-or-watchos
+    # Note: All these SDKs may not be supported by OpenUSD, but are all listed here for future proofing
+    set(PXR_APPLE_EMBEDDED OFF)
+    if (CMAKE_SYSTEM_NAME MATCHES "iOS"
+            OR CMAKE_SYSTEM_NAME MATCHES "tvOS"
+            OR CMAKE_SYSTEM_NAME MATCHES "visionOS"
+            OR CMAKE_SYSTEM_NAME MATCHES "watchOS")
+        set(PXR_APPLE_EMBEDDED ON)
+        if(${PXR_BUILD_USD_TOOLS})
+            MESSAGE(STATUS "Setting PXR_BUILD_USD_TOOLS=OFF because they are not supported on Apple embedded platforms")
+            set(PXR_BUILD_USD_TOOLS OFF)
+        endif()
+        if (${PXR_BUILD_IMAGING})
+            MESSAGE(STATUS "Setting PXR_BUILD_USD_IMAGING=OFF because it is not supported on Apple embedded platforms")
+            set(PXR_BUILD_IMAGING OFF)
+        endif ()
+    endif ()
+endif()
+
+
 # Determine GFX api
 # Metal only valid on Apple platforms
 set(pxr_enable_metal "OFF")
