@@ -162,6 +162,22 @@ HgiGLMemberShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
         return true;
     }
 
+    WriteInterpolation(ss);
+    WriteSampling(ss);
+    WriteStorage(ss);
+    WriteDeclaration(ss);
+    return true;
+}
+
+void
+HgiGLMemberShaderSection::WriteType(std::ostream& ss) const
+{
+    ss << _typeName;
+}
+
+void
+HgiGLMemberShaderSection::WriteInterpolation(std::ostream& ss) const
+{
     switch (_interpolation) {
     case HgiInterpolationDefault:
         break;
@@ -172,6 +188,11 @@ HgiGLMemberShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
         ss << "noperspective ";
         break;
     }
+}
+
+void
+HgiGLMemberShaderSection::WriteSampling(std::ostream& ss) const
+{
     switch (_sampling) {
     case HgiSamplingDefault:
         break;
@@ -182,6 +203,11 @@ HgiGLMemberShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
         ss << "sample ";
         break;
     }
+}
+
+void
+HgiGLMemberShaderSection::WriteStorage(std::ostream& ss) const
+{
     switch (_storage) {
     case HgiStorageDefault:
         break;
@@ -189,14 +215,6 @@ HgiGLMemberShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
         ss << "patch ";
         break;
     }
-    WriteDeclaration(ss);
-    return true;
-}
-
-void
-HgiGLMemberShaderSection::WriteType(std::ostream& ss) const
-{
-    ss << _typeName;
 }
 
 HgiGLBlockShaderSection::HgiGLBlockShaderSection(
@@ -537,7 +555,7 @@ HgiGLInterstageBlockShaderSection::HgiGLInterstageBlockShaderSection(
     const std::string &blockInstanceIdentifier,
     const std::string &qualifier,
     const std::string &arraySize,
-    const HgiGLShaderSectionPtrVector &members)
+    const HgiGLMemberShaderSectionPtrVector &members)
     : HgiGLShaderSection(blockIdentifier,
                          HgiShaderSectionAttributeVector(),
                          qualifier,
@@ -556,8 +574,11 @@ HgiGLInterstageBlockShaderSection::VisitGlobalMemberDeclarations(
     ss << _qualifier << " ";
     WriteIdentifier(ss);
     ss << " {\n";
-    for (const HgiGLShaderSection* member : _members) {
+    for (const HgiGLMemberShaderSection* member : _members) {
         ss << "  ";
+        member->WriteInterpolation(ss);
+        member->WriteSampling(ss);
+        member->WriteStorage(ss);
         member->WriteType(ss);
         ss << " ";
         member->WriteIdentifier(ss);

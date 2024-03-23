@@ -64,18 +64,47 @@ _GetInputValueVector(InputValue const & input)
     return input.GetWithDefault(InputValueVector());
 }
 
+// Check fpr specific storage and interpolation qualifiers.
+bool
+_IsMemberQualifier(TfToken const & input)
+{
+    return (input == HioGlslfxResourceLayoutTokens->centroid ||
+            input == HioGlslfxResourceLayoutTokens->sample ||
+            input == HioGlslfxResourceLayoutTokens->flat ||
+            input == HioGlslfxResourceLayoutTokens->noperspective ||
+            input == HioGlslfxResourceLayoutTokens->smooth);
+}
+
 // e.g. ["vec4", "Peye"]
+// e.g. ["float", "length", "3"] The member is a float array with 3 elements.
+// e.g. ["vec3", "color", "flat"] The member type is vec3, and there is no 
+// interpolation across the face.
+// e.g. ["float", "length", "3", "flat"] The member is a float array with 3 
+// elements, and there is no interpolation across the face.
 MemberVector
 _ParseMembers(InputValueVector const & input, int fromElement)
 {
     MemberVector result;
     for (auto const & inputValue : input) {
         InputValueVector memberInput = _GetInputValueVector(inputValue);
-        if (memberInput.size() != 2 && memberInput.size() != 3) continue;
+        const size_t n = memberInput.size();
+        if (!(2 <= n && n <= 4)) {
+            continue;
+        }
         result.emplace_back(/*dataType=*/_Token(memberInput[0]),
                             /*name=*/_Token(memberInput[1]));
-        if (input.size() == 3) {
-            result.back().arraySize = _Token(input[2]);
+        if (n == 3) {
+            TfToken const inputToken = _Token(memberInput[2]);
+            // Try to parse qualifier.
+            if (_IsMemberQualifier(inputToken)) {
+                result.back().qualifiers = inputToken;
+            // If fails, parse as array size.
+            } else {
+                result.back().arraySize = inputToken;
+            }
+        } else if (n == 4) {
+            result.back().arraySize = _Token(memberInput[2]);
+            result.back().qualifiers = _Token(memberInput[3]);
         }
     }
     return result;
