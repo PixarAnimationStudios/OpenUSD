@@ -102,6 +102,8 @@ public:
 #endif
 
 
+    /// Disambiguates what call to RtPrimvarList::SetFOO to use. Can take
+    /// values from HdPrimvarRoleTokens and HdPrmanRileyAdditionalRoleTokens.
     HDPRMAN_API
     HdTokenDataSourceHandle GetRole()
 #if HD_API_VERSION >= 66

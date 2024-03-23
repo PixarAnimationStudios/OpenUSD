@@ -107,10 +107,12 @@ pxr_plugin(${PXR_PACKAGE}
         renderSettings
         rileyCameraSchema
         rileyClippingPlaneSchema
+        rileyConversionSceneIndexPlugin
         rileyCoordinateSystemSchema
         rileyDisplacementSchema
         rileyDisplayFilterSchema
         rileyDisplaySchema
+        rileyFallbackMaterialSceneIndexPlugin
         rileyGeometryInstanceSchema
         rileyGeometryPrototypeSchema
         rileyIntegratorSchema
