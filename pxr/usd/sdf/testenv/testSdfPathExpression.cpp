@@ -58,7 +58,7 @@ struct MatchEval {
         MatchEval(SdfPathExpression(exprStr)) {}
     SdfPredicateFunctionResult
     Match(SdfPath const &p) {
-        return _eval.Match(p, PathIdentity {}, PathIdentity {});
+        return _eval.Match(p, PathIdentity {});
     }
     SdfPathExpressionEval<SdfPath const &> _eval;
 };
@@ -356,8 +356,7 @@ TestSearch()
 
         auto eval = SdfMakePathExpressionEval(
             SdfPathExpression(exprStr), predLib);
-        auto search = eval.MakeIncrementalSearcher(
-            PathIdentity {}, PathIdentity {});
+        auto search = eval.MakeIncrementalSearcher(PathIdentity {});
 
         std::vector<std::string> matches;
         for (SdfPath const &p: paths) {

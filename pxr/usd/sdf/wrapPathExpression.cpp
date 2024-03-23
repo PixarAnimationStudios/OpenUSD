@@ -102,7 +102,7 @@ struct _BasicMatchEval
         : _BasicMatchEval(SdfPathExpression(expr)) {}
     SdfPredicateFunctionResult
     Match(SdfPath const &p) {
-        return _eval.Match(p, _PathIdentity {}, _PathIdentity {});
+        return _eval.Match(p, _PathIdentity {});
     }
     SdfPathExpressionEval<SdfPath const &> _eval;
 };
