@@ -1040,6 +1040,8 @@ _Walk(
             for (const TfToken &name : renderContexts) {
                 
                 if (name.IsEmpty() && !nodeId.IsEmpty()) {
+                    // The universal renderContext was requested, so
+                    // use the universal nodeId if we found one above.
                     break;
                 }
                 if (HdTokenDataSourceHandle ds = HdTokenDataSource::Cast(
