@@ -407,10 +407,14 @@ UsdGeomPointInstancer::UsesOrientationsf(TfToken *rotationToken) const
     GetOrientationsfAttr().Get(&orientationsfTimeSamples, 
                                 UsdTimeCode::EarliestTime());
     if (!orientationsfTimeSamples.empty()){
-        *rotationToken = UsdGeomTokens->orientationsf;
+        if (rotationToken) {
+            *rotationToken = UsdGeomTokens->orientationsf;
+        }
         return true;
-    } 
-    *rotationToken = UsdGeomTokens->orientations;
+    }
+    if (rotationToken) {
+        *rotationToken = UsdGeomTokens->orientations;
+    }
     return false;
 }
 
