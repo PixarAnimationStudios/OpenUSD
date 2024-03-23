@@ -1122,6 +1122,12 @@ PcpLayerStack::GetLayerTree() const
     return _layerTree;
 }
 
+const SdfLayerTreeHandle& 
+PcpLayerStack::GetSessionLayerTree() const
+{
+    return _sessionLayerTree;
+}
+
 // We have this version so that we can avoid weakptr/refptr conversions on the
 // \p layer arg.
 template <class LayerPtr>
@@ -1262,6 +1268,7 @@ PcpLayerStack::_BlowLayers()
     _layers.clear();
     _mapFunctions.clear();
     _layerTree = TfNullPtr;
+    _sessionLayerTree = TfNullPtr;
     _sublayerSourceInfo.clear();
     _mutedAssetPaths.clear();
     _expressionVariableDependencies.clear();
@@ -1362,7 +1369,7 @@ PcpLayerStack::_Compute(const std::string &fileFormatTarget,
                 }
             }
 
-            SdfLayerTreeHandle sessionLayerTree = 
+            _sessionLayerTree = 
                 _BuildLayerStack(_identifier.sessionLayer, sessionLayerOffset,
                                  sessionTcps,
                                  _identifier.pathResolverContext, layerArgs,
@@ -1388,7 +1395,7 @@ PcpLayerStack::_Compute(const std::string &fileFormatTarget,
                 }
             };
 
-            _Helper::FindSessionOwner(sessionLayerTree, &sessionOwner);
+            _Helper::FindSessionOwner(_sessionLayerTree, &sessionOwner);
         }
     }
 

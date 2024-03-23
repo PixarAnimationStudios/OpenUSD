@@ -88,10 +88,15 @@ public:
     PCP_API
     SdfLayerHandleVector GetSessionLayers() const;
 
-    /// Returns the layer tree representing the structure of this layer
-    /// stack.
+    /// Returns the layer tree representing the structure of the non-session
+    /// layers in the layer stack.
     PCP_API
     const SdfLayerTreeHandle& GetLayerTree() const;
+
+    /// Returns the layer tree representing the structure of the session
+    /// layers in the layer stack or null if there are no session layers.
+    PCP_API
+    const SdfLayerTreeHandle& GetSessionLayerTree() const;
 
     /// Returns the layer offset for the given layer, or NULL if the layer
     /// can't be found or is the identity.
@@ -276,6 +281,10 @@ private:
     /// The tree structure of the layer stack.
     /// Stored separately because this is needed only occasionally.
     SdfLayerTreeHandle _layerTree;
+
+    /// The tree structure of the session layer stack.
+    /// Stored separately because this is needed only occasionally.
+    SdfLayerTreeHandle _sessionLayerTree;
 
     /// Tracks information used to compute sublayer asset paths.
     struct _SublayerSourceInfo {
