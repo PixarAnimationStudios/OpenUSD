@@ -71,7 +71,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (openvdbAsset)
     (field3dAsset)
     (ri)
-    ((outputsRi, "outputs:ri"))
     ((mtlxRenderContext, "mtlx"))
     (renderCameraPath)
 );
@@ -583,7 +582,7 @@ HdPrmanRenderDelegate::GetShaderSourceTypes() const
 TfTokenVector
 HdPrmanRenderDelegate::GetRenderSettingsNamespaces() const
 {
-    return {_tokens->ri, _tokens->outputsRi};
+    return {_tokens->ri};
 }
 #endif
 
