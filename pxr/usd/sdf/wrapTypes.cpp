@@ -341,6 +341,17 @@ void wrapTypes()
         _UnregisteredValueVector,
         TfPyContainerConversions::variable_capacity_policy >();
 
+    // Register python conversions for SdfRelocate and SdfRelocates
+    to_python_converter<SdfRelocate, 
+        TfPyContainerConversions::to_tuple<SdfRelocate>>();
+    TfPyContainerConversions::from_python_tuple_pair<SdfRelocate>();
+
+    to_python_converter<SdfRelocates,
+                        TfPySequenceToPython<SdfRelocates> >();
+    TfPyContainerConversions::from_python_sequence<
+        SdfRelocates,
+        TfPyContainerConversions::variable_capacity_policy >();
+
     TfPyWrapEnum<SdfListOpType>();
     TfPyWrapEnum<SdfPermission>();
     TfPyWrapEnum<SdfSpecifier>();

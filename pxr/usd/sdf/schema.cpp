@@ -395,6 +395,7 @@ SDF_VALIDATE_WRAPPER(Payload, SdfPayload);
 SDF_VALIDATE_WRAPPER(Reference, SdfReference);
 SDF_VALIDATE_WRAPPER(RelationshipTargetPath, SdfPath);
 SDF_VALIDATE_WRAPPER(RelocatesPath, SdfPath);
+SDF_VALIDATE_WRAPPER(Relocate, SdfRelocate);
 SDF_VALIDATE_WRAPPER(SpecializesPath, SdfPath);
 SDF_VALIDATE_WRAPPER(SubLayer, std::string);
 SDF_VALIDATE_WRAPPER(VariantIdentifier, std::string);
@@ -784,6 +785,8 @@ SdfSchemaBase::_RegisterStandardFields()
         .ReadOnly()
         .ListValueValidator(&_ValidateRelationshipTargetPath);
 
+    _DoRegisterField(SdfFieldKeys->LayerRelocates, SdfRelocates())
+        .ListValueValidator(&_ValidateRelocate);
     _DoRegisterField(SdfFieldKeys->Relocates, SdfRelocatesMap())
         .MapKeyValidator(&_ValidateRelocatesPath)
         .MapValueValidator(&_ValidateRelocatesPath);
@@ -862,8 +865,8 @@ SdfSchemaBase::_RegisterStandardFields()
         .MetadataField(SdfFieldKeys->StartFrame)
 
         .Field(SdfChildrenKeys->PrimChildren)
+        .Field(SdfFieldKeys->LayerRelocates)
         .Field(SdfFieldKeys->PrimOrder)
-        .Field(SdfFieldKeys->Relocates)
         .Field(SdfFieldKeys->SubLayers)
         .Field(SdfFieldKeys->SubLayerOffsets);
 
@@ -1349,6 +1352,19 @@ SdfSchemaBase::IsValidRelocatesPath(const SdfPath& path)
     if (!(path.IsPrimPath())) {
         return SdfAllowed("Relocate path <" + path.GetString() + 
                           "> must be a prim path");
+    }
+
+    return true;
+}
+
+SdfAllowed 
+SdfSchemaBase::IsValidRelocate(const SdfRelocate &relocate)
+{
+    if (SdfAllowed isValid = IsValidRelocatesPath(relocate.first); !isValid) {
+        return isValid;
+    }
+    if (SdfAllowed isValid = IsValidRelocatesPath(relocate.second); !isValid) {
+        return isValid;
     }
 
     return true;

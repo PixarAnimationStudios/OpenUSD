@@ -240,24 +240,6 @@ _WrapGetSubLayerOffsets(const SdfLayerHandle &self)
     return Sdf_SubLayerOffsetsProxy(self);
 }
 
-static void
-_WrapSetRelocates(SdfLayerHandle &self, const dict &d)
-{
-    SdfRelocatesMap reloMap;
-
-    auto items = d.attr("items")();
-    auto end =  stl_input_iterator<tuple>();
-    for (auto it = stl_input_iterator<tuple>(items); it != end; ++it) {
-        tuple kv = *it;
-        SdfPath key = extract<SdfPath>(kv[0]);
-        SdfPath val = extract<SdfPath>(kv[1]);
-
-        reloMap[key] = val;
-    }
-
-    self->SetRelocates(reloMap);
-}
-
 ////////////////////////////////////////////////////////////////////////
 
 static bool
@@ -884,11 +866,9 @@ void wrapLayer()
 
         .add_property("relocates", 
             &This::GetRelocates,
-            &_WrapSetRelocates,
-            "An editing proxy for the layers's map of relocation paths.\n\n"
-            "The map of source-to-target paths specifying namespace "
-            "relocation may be set or cleared whole, or individual map "
-            "entries may be added, removed, or edited.")
+            &This::SetRelocates)
+        .def("HasRelocates", &This::HasRelocates)
+        .def("ClearRelocates", &This::ClearRelocates)
 
         .def("GetLoadedLayers",
             make_function(&This::GetLoadedLayers, 
@@ -961,7 +941,7 @@ void wrapLayer()
         .setattr("FramesPerSecondKey", SdfFieldKeys->FramesPerSecond)
         .setattr("FramePrecisionKey", SdfFieldKeys->FramePrecision)
         .setattr("OwnerKey", SdfFieldKeys->Owner)
-        .setattr("RelocatesKey", SdfFieldKeys->Relocates)
+        .setattr("LayerRelocatesKey", SdfFieldKeys->LayerRelocates)
         .setattr("SessionOwnerKey", SdfFieldKeys->SessionOwner)
         .setattr("TimeCodesPerSecondKey", SdfFieldKeys->TimeCodesPerSecond)
 

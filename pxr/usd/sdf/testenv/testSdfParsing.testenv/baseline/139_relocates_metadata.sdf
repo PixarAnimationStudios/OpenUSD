@@ -3,9 +3,9 @@
     framePrecision = 3
     framesPerSecond = 24
     relocates = {
+        </source>: </target>, 
         </absolute>: </some/nested/relative/path>, 
-        </relative/path>: </some/other/relative/path>, 
-        </source>: </target>
+        </relative/path>: </some/other/relative/path>
     }
 )
 

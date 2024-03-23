@@ -276,6 +276,13 @@ typedef std::map<std::string, std::vector<std::string> > SdfVariantsMap;
 //        the Compare template parameter.
 typedef std::map<SdfPath, SdfPath> SdfRelocatesMap;
 
+/// A single relocate specifying a source SdfPath and a target SdfPath for a 
+/// relocation.
+typedef std::pair<SdfPath, SdfPath> SdfRelocate;
+
+/// A vector of relocation source path to target path pairs.
+typedef std::vector<SdfRelocate> SdfRelocates;
+
 /// A map from sample times to sample values.
 typedef std::map<double, VtValue> SdfTimeSampleMap;
 
@@ -453,6 +460,11 @@ std::ostream & operator<<( std::ostream &out, const SdfSpecifier &spec );
 SDF_API 
 std::ostream & operator<<( std::ostream &out,
                            const SdfRelocatesMap &reloMap );
+
+/// Writes the string representation of \c SdfRelocates to \a out.
+SDF_API 
+std::ostream & operator<<( std::ostream &out,
+                           const SdfRelocates &relocates );
 
 /// Writes the string representation of \c SdfTimeSampleMap to \a out.
 SDF_API 
