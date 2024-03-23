@@ -219,7 +219,8 @@ main(int argc, char *argv[])
 
         TF_AXIOM(GfNumericCast<unsigned>(
                      std::numeric_limits<int>::max()).value() ==
-                 std::numeric_limits<int>::max());
+                 static_cast<unsigned>(
+                     std::numeric_limits<int>::max()));
 
         // unsigned -> signed
         TF_AXIOM(GfNumericCast<int>(0u).value() == 0);
