@@ -741,8 +741,9 @@ class ShaderPropertyTypeConformanceChecker(BaseRuleChecker):
             if inputName in sdrNameToTypeMapping:
                 sdrSdfType = sdrNameToTypeMapping[inputName]
                 if not (sdrSdfType == schemaSdfType):
-                    self._AddFailedCheck("Incorrect type expected '%s'; got "
-                            "'%s'." % (sdrSdfType, schemaSdfType))
+                    self._AddFailedCheck("Incorrect type for %s. Expected '%s'"
+                        "; got '%s'." %
+                        (input.GetAttr().GetPath(), sdrSdfType, schemaSdfType))
 
 class ARKitPackageEncapsulationChecker(BaseRuleChecker):
     @staticmethod
