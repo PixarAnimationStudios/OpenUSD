@@ -423,8 +423,15 @@ private:
             for (auto &authoredRelocatesEntry : processedRelocates) {
                 const SdfPath &targetPath = 
                     authoredRelocatesEntry.second.targetPath;                        
-                targetPathToProcessedRelocateMap.emplace(
+                auto [it, inserted] = targetPathToProcessedRelocateMap.emplace(
                     targetPath, &authoredRelocatesEntry);
+                // With the legacy behavior you can end up with the erroneous behavior
+                // of more than one source mapping to the same target. We need to at 
+                // least make this consistent by making sure we choose the 
+                // lexicographically greater source when we have a target conflict.
+                if (!inserted && authoredRelocatesEntry.first > it->second->first) {
+                    it->second = &authoredRelocatesEntry;
+                }
             }
             return;
         }
@@ -704,15 +711,37 @@ Pcp_ComputeRelocationsForLayerStack(
 
     // Use the processed relocates to populate the bi-directional mapping of all
     // the relocates maps.
-    for (const auto &[source, reloInfo] : ws.processedRelocates) {
+    if (TfGetEnvSetting(PCP_ENABLE_LEGACY_RELOCATES_BEHAVIOR)) {
+        for (const auto &[source, reloInfo] : ws.processedRelocates) {
+            incrementalRelocatesSourceToTarget->emplace(
+                source, reloInfo.targetPath);
+            // XXX: With the legacy behavior you can end up with the erroneous 
+            // behavior of more than one source mapping to the same target. We 
+            // need to at least make this consistent by making sure we choose 
+            // the lexicographically greater source when we have a target conflict.
+            auto [it, inserted] = incrementalRelocatesTargetToSource->emplace(
+                reloInfo.targetPath, source);
+            if (!inserted && source > it->second) {
+                it->second = source;
+            }
 
-        (*incrementalRelocatesSourceToTarget)[source] = reloInfo.targetPath;
-        (*incrementalRelocatesTargetToSource)[reloInfo.targetPath] = source;
+            relocatesTargetToSource->emplace(
+                reloInfo.targetPath, reloInfo.computedSourceOrigin);
+            relocatesSourceToTarget->emplace(
+                reloInfo.computedSourceOrigin, reloInfo.targetPath);
+        }       
+    } else {
+        for (const auto &[source, reloInfo] : ws.processedRelocates) {
+            incrementalRelocatesSourceToTarget->emplace(
+                source, reloInfo.targetPath);
+            incrementalRelocatesTargetToSource->emplace(
+                reloInfo.targetPath, source);
 
-        relocatesTargetToSource->emplace(
-            reloInfo.targetPath, reloInfo.computedSourceOrigin);
-        relocatesSourceToTarget->emplace(
-            reloInfo.computedSourceOrigin, reloInfo.targetPath);
+            relocatesTargetToSource->emplace(
+                reloInfo.targetPath, reloInfo.computedSourceOrigin);
+            relocatesSourceToTarget->emplace(
+                reloInfo.computedSourceOrigin, reloInfo.targetPath);
+        }       
     }
 
     // Take any encountered errors.

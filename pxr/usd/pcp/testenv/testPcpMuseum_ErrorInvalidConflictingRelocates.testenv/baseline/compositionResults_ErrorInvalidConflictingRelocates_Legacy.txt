@@ -65,16 +65,16 @@ Results for composing </Model_1/Instance/Test>
 
 Prim Stack:
     root.sdf             /Model_1/Instance/Test
-    model.sdf            /Model/LocalClass/ClassChild
+    model.sdf            /Model/Instance/InstanceChild
 
 Child names:
-     ['ClassGrandChild']
+     ['InstanceGrandChild']
 
 ------------------------------------------------------------------------
-Results for composing </Model_1/Instance/Test/ClassGrandChild>
+Results for composing </Model_1/Instance/Test/InstanceGrandChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+    model.sdf            /Model/Instance/InstanceChild/InstanceGrandChild
 
 ------------------------------------------------------------------------
 Results for composing </Model_2>
