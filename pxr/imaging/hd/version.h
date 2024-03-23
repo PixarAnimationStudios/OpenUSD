@@ -100,9 +100,11 @@
 //           scene index prims.
 // 65 -> 66: Make HdSchema::_GetTypedDataSource and getters in generated
 //           hydra schemas const.
+// 66 -> 67: Removes legacy internal instancer primvar names and the
+//           TfEnvSetting for using them (see 56).
 //
 
-#define HD_API_VERSION 66
+#define HD_API_VERSION 67
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

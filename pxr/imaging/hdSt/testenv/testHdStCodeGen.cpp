@@ -223,9 +223,7 @@ CodeGenTest(HdSt_ShaderKey const &key, bool useBindlessBuffer,
         {
             HdBufferSpecVector bufferSpecs;
             bufferSpecs.emplace_back(
-                (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-                ? HdInstancerTokens->translate
-                : HdInstancerTokens->instanceTranslations),
+                HdInstancerTokens->instanceTranslations,
                 HdTupleType { HdTypeFloatVec3, 1 });
             HdBufferArrayRangeSharedPtr range =
                 registry->AllocateNonUniformBufferArrayRange(

@@ -83,8 +83,7 @@ HdStInstancer::_SyncPrimvars(HdSceneDelegate *sceneDelegate,
         VtValue value = sceneDelegate->Get(instancerId, primvar.name);
         if (!value.IsEmpty()) {
             HdBufferSourceSharedPtr source;
-            if ((primvar.name == HdInstancerTokens->instanceTransform ||
-                 primvar.name == HdInstancerTokens->instanceTransforms)) {
+            if (primvar.name == HdInstancerTokens->instanceTransforms) {
                 if (value.IsHolding<VtArray<GfMatrix4d>>()) {
                     // Explicitly invoke the c'tor taking a
                     // VtArray<GfMatrix4d> to ensure we properly convert to
