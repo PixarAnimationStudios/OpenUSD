@@ -402,7 +402,7 @@ _ComputeHeader(id<MTLDevice> device, HgiShaderStage stage)
     }
 
     if (@available(macos 100.100, ios 12.0, *)) {
-        header  << "#define ARCH_OS_IOS\n";
+        header  << "#define ARCH_OS_IPHONE\n";
         // Define all iOS 12 feature set enums onwards
         if ([device supportsFeatureSet:MTLFeatureSet(12)])
             header << "#define METAL_FEATURESET_IOS_GPUFAMILY1_v5\n";
