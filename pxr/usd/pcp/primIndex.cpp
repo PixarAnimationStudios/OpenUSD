@@ -1060,11 +1060,68 @@ struct Pcp_PrimIndexer
             {node, pathInNode}, node, pathInNode).first->second;
     }
 
-    // Map the given node's path to the root of the final prim index
-    // being computed.
-    SdfPath MapNodePathToRoot(PcpNodeRef const& node) const {
-        // First, map the node's path to the root of the prim index it's in.
-        SdfPath p = node.GetMapToRoot().MapSourceToTarget(
+    // Helper for mapping payload inclusion paths correctly to a node's parent
+    static inline SdfPath _MapPathToNodeParentPayloadInclusionPath(
+        PcpMapExpression const& mapToParentExpr, 
+        PcpArcType arcType,
+        SdfPath const &path)
+    {
+        const PcpMapFunction &mapToParent = mapToParentExpr.Evaluate();
+
+        // Internal references and payloads will have an additional 
+        // identity mapping that we want to ignore when mapping this path.
+        const bool isInternalReferenceOrPayload =
+             mapToParent.HasRootIdentity() && 
+             (arcType == PcpArcTypeReference || arcType == PcpArcTypePayload);
+        if (isInternalReferenceOrPayload) {
+            // Create a copy of the map to parent function with identity map 
+            // removed and map the path using that instead.
+            PcpMapFunction::PathMap sourceToTargetMap = 
+                mapToParent.GetSourceToTargetMap();
+            sourceToTargetMap.erase(SdfPath::AbsoluteRootPath());
+            PcpMapFunction newMapFunction = PcpMapFunction::Create(
+                sourceToTargetMap, mapToParent.GetTimeOffset());
+            
+            return newMapFunction.MapSourceToTarget(path);
+        } 
+
+        return mapToParent.MapSourceToTarget(path);
+    }
+
+    // Helper for mapping payload inclusion paths correctly to a node's current
+    // prim index root.
+    static inline SdfPath _MapPathToNodeRootPayloadInclusionPath(
+        PcpNodeRef const& node, SdfPath const &path) {
+
+        // First, try mapping the node's path to the root of the prim index it's
+        // in using mapToRoot directly.
+        const PcpMapFunction &mapToRoot = node.GetMapToRoot().Evaluate();
+        SdfPath mappedPath = mapToRoot.MapSourceToTarget(path);
+
+        // If the path maps to itself at the root and the map function has an
+        // identity mapping, we may have an unintended mapping for payload 
+        // inclusion purposes. In particular, internal references and payload
+        // nodes will always have an additional identity mapping that we don't
+        // want to factor into payload inclusion so we have to manually map the
+        // path up to the root to make sure we ignore the identity mapping in 
+        // these arcs if they are present.
+        if (mappedPath == path && mapToRoot.HasRootIdentity()) {
+            for (PcpNodeRef curNode = node; 
+                    !mappedPath.IsEmpty() && !curNode.IsRootNode(); 
+                    curNode = curNode.GetParentNode()) {
+                mappedPath = _MapPathToNodeParentPayloadInclusionPath(
+                    curNode.GetMapToParent(), curNode.GetArcType(), mappedPath);
+            }
+        }
+        return mappedPath;
+    }
+
+    // Map the payload inclusion path for the given node's path to the root of 
+    // the final prim index being computed.
+    SdfPath MapNodePathToPayloadInclusionPath(PcpNodeRef const& node) const {
+        // First, map the node's path to the payload inclusion path for the root
+        // of the prim index it's in.
+        SdfPath p = _MapPathToNodeRootPayloadInclusionPath(node,
             node.GetPath().StripAllVariantSelections());
 
         // If we're in a recursive prim indexing call, we need to map the
@@ -1073,13 +1130,18 @@ struct Pcp_PrimIndexer
              !p.IsEmpty() && it.previousFrame; it.NextFrame()) {
 
             // p is initially in the namespace of the root node of the current
-            // stack frame. Map it to the parent node in the previous stack
-            // frame.
-            p = it.previousFrame->arcToParent->mapToParent.MapSourceToTarget(p);
+            // stack frame. Map it to payload inclusion path in the parent node
+            // in the previous stack frame using the same.
+            p = _MapPathToNodeParentPayloadInclusionPath(
+                it.previousFrame->arcToParent->mapToParent,
+                it.previousFrame->arcToParent->type,
+                p);
 
             // Map p from the parent node in the previous stack frame to the
-            // root node of the previous stack frame.
-            p = it.previousFrame->parentNode.GetMapToRoot().MapSourceToTarget(p);
+            // payload inclusion path for the root node of the previous stack 
+            // frame.
+            p = _MapPathToNodeRootPayloadInclusionPath(
+                it.previousFrame->parentNode, p);
         };
         
         return p;
@@ -2323,7 +2385,7 @@ _EvalNodePayloads(
     // to the root namespace. In particular, this handles the case where
     // we're computing ancestral payloads as part of a recursive prim index
     // computation.
-    SdfPath const path = indexer->MapNodePathToRoot(node);
+    SdfPath const path = indexer->MapNodePathToPayloadInclusionPath(node);
 
     if (path.IsEmpty()) {
         // If the path mapping failed, it means there is no path in the

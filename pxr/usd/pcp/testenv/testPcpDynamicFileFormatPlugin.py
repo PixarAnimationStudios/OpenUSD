@@ -358,15 +358,6 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         self.assertTrue(rootLayer)
         cache = self._CreatePcpCache(rootLayer)
 
-        # Request payload for /RootCone.
-        # 
-        # XXX:
-        # This is a bug. This is currently needed for the payload to be loaded
-        # when we compose /SubrootReference below. However, /RootCone is an
-        # ancestral payload to /SubrootReference and should be automatically
-        # included.
-        cache.RequestPayloads([Sdf.Path("/RootCone")], [])
-
         # Compute the prim index for /SubrootReference, which references
         # /RootCone/Xform__3_2. When composing that prim index to incorporate
         # ancestral opinions, Pcp should ignore the parameters authored on
@@ -412,9 +403,6 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
 
         # Compute the prim index for /Root. We should not see any composition
         # errors for the same reasons mentioned in test_AncestralPayloads.
-        # 
-        # XXX: Note that requesting the payload for /Root is not necessary
-        # since this case does not run into the same bug mentioned above.
         pi, err = cache.ComputePrimIndex("/Root")
         self.assertFalse(err)
         self.assertTrue(
@@ -433,15 +421,6 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
         self.assertTrue(rootLayer)
         cache = self._CreatePcpCache(rootLayer)
-
-        # Request payload for /Variant.
-        # 
-        # XXX:
-        # This is a bug. This is currently needed for the payload to be loaded
-        # when we compose /SubrootReference below. However, /Variant is an
-        # ancestral payload to /SubrootReferenceAndVariant and should be
-        # automatically included.
-        cache.RequestPayloads([Sdf.Path("/Variant")], [])
 
         # Compute the prim index for /SubrootReferenceAndVariant, which
         # references /Variant/Xform__4_3. When composing that prim index to
