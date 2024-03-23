@@ -454,7 +454,7 @@ _TypeSupportsColorSpace(const mx::ConstValueElementPtr& mxElem)
         mx::ConstNodeDefPtr parentNodeDef =
             _GetNodeDef(mxElem->getParent()->asA<mx::Node>());
         if (parentNodeDef) {
-            for (const mx::OutputPtr output : parentNodeDef->getOutputs()) {
+            for (const mx::OutputPtr& output : parentNodeDef->getOutputs()) {
                 const std::string &type = output->getType();
                 colorImageNode |= type == "color3" || type == "color4";
             }

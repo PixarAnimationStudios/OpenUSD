@@ -132,7 +132,7 @@ public:
         TfTokenVector result;
         result.reserve(_values.size());
 
-        for (const auto I : _values) {
+        for (const auto &I : _values) {
             result.push_back(I.first);
         }
         return result;

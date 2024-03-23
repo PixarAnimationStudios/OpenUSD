@@ -324,7 +324,7 @@ _RenderProductsGenerated(
     SdfPathVector renderProductTargets;
     settings.GetProductsRel().GetForwardedTargets(&renderProductTargets);
 
-    for (const auto productPath : renderProductTargets) {
+    for (const auto& productPath : renderProductTargets) {
         UsdRenderProduct product =
             UsdRenderProduct(stage->GetPrimAtPath(productPath));
         TfToken productName;

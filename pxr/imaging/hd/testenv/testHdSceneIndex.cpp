@@ -878,7 +878,7 @@ bool TestMergingSceneIndexPrimAddedNotices()
     };
 
     auto _Compare = [&mergingSceneIndex, &observer, &expectedTypes]() {
-        for (const RecordingSceneIndexObserver::Event event :
+        for (const RecordingSceneIndexObserver::Event& event :
                 observer.GetEvents()) {
 
             if (event.eventType !=

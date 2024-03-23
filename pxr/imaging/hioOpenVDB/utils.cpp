@@ -126,7 +126,7 @@ HioOpenVDBGridFromAsset(const std::string& name, const std::string& assetPath)
                 _ReadVDBGridsFromAssetBuffer(asset)) {
 
             // Find the first grid that matches name in grids vector.
-            for (const openvdb::GridBase::Ptr grid : *grids) {
+            for (const openvdb::GridBase::Ptr& grid : *grids) {
                 if (grid->getName() == name) {
                     return grid;
                 }
