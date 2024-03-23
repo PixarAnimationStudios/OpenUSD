@@ -4733,19 +4733,6 @@ pxr_register_test(testUsdImagingGLGeomSubsets_QuadrangulatedPoints_SceneIndex
         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
 )
 
-pxr_register_test(testUsdImagingGLGeomSubsets_Primvars_SceneIndex
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -shading wireOnSurface -stage primvars.usda -write testUsdImagingGLGeomSubsets_Primvars.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLGeomSubsets_Primvars.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLGeomSubsets_SceneIndex
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
-)
-
 pxr_register_test(testUsdImagingGLAovVisualization_Storm_depth
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage viz_aov.usda -rendererAov depth -clear 0 0 0 1 -lighting -camera /main_cam -write testUsdImagingGLAovVisualization_Storm_depth.png"
     IMAGE_DIFF_COMPARE
@@ -5280,6 +5267,21 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         ENV
             PXR_MTLX_PLUGIN_SEARCH_PATHS=./customNodeDefs
     )
+    
+    # Not a MaterialX test as such, but requires MaterialX support
+    pxr_register_test(testUsdImagingGLGeomSubsets_Primvars_SceneIndex
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading wireOnSurface -stage primvars.usda -write testUsdImagingGLGeomSubsets_Primvars.png"
+        IMAGE_DIFF_COMPARE
+            testUsdImagingGLGeomSubsets_Primvars.png
+        FAIL 1
+        FAIL_PERCENT 1
+        PERCEPTUAL
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLGeomSubsets_SceneIndex
+        ENV
+            USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+    )
+
 endif() # MaterialX tests
 
 #
