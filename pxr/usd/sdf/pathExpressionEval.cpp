@@ -88,6 +88,8 @@ Sdf_PathExpressionEvalBase::_EvalExpr(
             result.SetAndPropagateConstancy(evalPattern(/*skip=*/false));
             break;
         case Not:
+            DEBUG_MSG("- Not %s -> %s\n",
+                      Stringify(result), Stringify(!result));
             result = !result;
             break;
         case And:
@@ -96,6 +98,9 @@ Sdf_PathExpressionEvalBase::_EvalExpr(
             // If the And/Or result is already the deciding value,
             // short-circuit.  Otherwise the result is the rhs, so continue.
             if (result == decidingValue) {
+                DEBUG_MSG("- Short-circuiting '%s', with %s\n",
+                          *opIter == And ? "And" : "Or",
+                          Stringify(result));
                 shortCircuit();
             }
         }
@@ -218,7 +223,8 @@ _PatternImplBase::_Match(
     if (_components.empty()) {
         // Accepts all descendant paths.
         if (_stretchBegin || _stretchEnd) {
-            DEBUG_MSG("pattern accepts all paths -> constant true\n");
+            DEBUG_MSG("pattern accepts all descendant paths "
+                      "-> constant true\n");
             return Result::MakeConstant(true);
         }
         // Accepts only the prefix exactly.
@@ -391,9 +397,16 @@ _PatternImplBase::_Match(
         }
     }
 
+    // We've successfully completed matching.  If we end with a stretch '//'
+    // component, we can mark the result constant over descendants.
+    if (_stretchEnd) {
+        DEBUG_MSG("_Match(<%s>) succeeds with trailing stretch -> "
+                  "constant true\n", path.GetAsString().c_str());
+        return Result::MakeConstant(true);
+    }
+
     DEBUG_MSG("_Match(<%s>) succeeds -> varying true\n",
               path.GetAsString().c_str());
-
     return Result::MakeVarying(true);
 }
 
