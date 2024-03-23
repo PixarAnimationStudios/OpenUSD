@@ -248,7 +248,7 @@ struct Arch_ConstructorEntry {
     static const Arch_ConstructorEntry _ARCH_CAT_NOEXPAND(arch_ctor_, _name)   \
         __attribute__((used, section("__DATA,pxrctor"))) = {                   \
         reinterpret_cast<Arch_ConstructorEntry::Type>(&_name),                 \
-        0u,                                                                    \
+        static_cast<unsigned>(PXR_VERSION),                                    \
         _priority                                                              \
     };                                                                         \
     static void _name(__VA_ARGS__)
@@ -259,7 +259,7 @@ struct Arch_ConstructorEntry {
     static const Arch_ConstructorEntry _ARCH_CAT_NOEXPAND(arch_dtor_, _name)   \
         __attribute__((used, section("__DATA,pxrdtor"))) = {                   \
         reinterpret_cast<Arch_ConstructorEntry::Type>(&_name),                 \
-        0u,                                                                    \
+        static_cast<unsigned>(PXR_VERSION),                                    \
         _priority                                                              \
     };                                                                         \
     static void _name(__VA_ARGS__)
@@ -311,7 +311,7 @@ struct Arch_ConstructorInit {
     extern const Arch_ConstructorEntry                                         \
     _ARCH_CAT_NOEXPAND(arch_ctor_, _name) = {                                  \
         reinterpret_cast<Arch_ConstructorEntry::Type>(&_name),                 \
-        0u,                                                                    \
+        static_cast<unsigned>(PXR_VERSION),                                    \
         _priority                                                              \
     };                                                                         \
     }                                                                          \
@@ -326,7 +326,7 @@ struct Arch_ConstructorInit {
     extern const Arch_ConstructorEntry                                         \
     _ARCH_CAT_NOEXPAND(arch_dtor_, _name) = {                                  \
         reinterpret_cast<Arch_ConstructorEntry::Type>(&_name),                 \
-        0u,                                                                    \
+        static_cast<unsigned>(PXR_VERSION),                                    \
         _priority                                                              \
     };                                                                         \
     }                                                                          \
