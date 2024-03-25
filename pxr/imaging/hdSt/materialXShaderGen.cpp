@@ -409,8 +409,12 @@ HdStMaterialXShaderGen<Base>::_EmitMxInitFunction(
     Base::emitComment("Convert HdData to MxData", mxStage);
 
     // Initialize the position of the view in worldspace
-    emitLine("u_viewPosition = vec3(HdGet_worldToViewInverseMatrix()"
-             " * vec4(0.0, 0.0, 0.0, 1.0))", mxStage);
+    const mx::VariableBlock& uniforms = mxStage.getUniformBlock(mx::HW::PRIVATE_UNIFORMS);
+    if (uniforms.find(mx::HW::T_VIEW_POSITION) != nullptr) {
+        emitLine("u_viewPosition = vec3(HdGet_worldToViewInverseMatrix()"
+                " * vec4(0.0, 0.0, 0.0, 1.0))", mxStage);
+    }
+
     
     // Calculate the worldspace position, normal and tangent vectors
     const std::string texcoordName =
