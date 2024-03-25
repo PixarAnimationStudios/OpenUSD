@@ -540,7 +540,7 @@ function(_pxr_enable_precompiled_header TARGET_NAME)
     # Headers live in subdirectories.
     set(rel_output_header_path "${PXR_PREFIX}/${TARGET_NAME}/${output_header_name}")
     set(abs_output_header_path "${PROJECT_BINARY_DIR}/include/${rel_output_header_path}")
-    set(abs_precompiled_path ${PROJECT_BINARY_DIR}/include/${PXR_PREFIX}/${TARGET_NAME}/${precompiled_name})
+    set(abs_precompiled_path ${PROJECT_BINARY_DIR}/include/${PXR_PREFIX}/${TARGET_NAME}/${CMAKE_BUILD_TYPE}/${precompiled_name})
 
     # Additional compile flags to use precompiled header.  This will be
     set(compile_flags "")
