@@ -11,6 +11,12 @@ if (NOT ${PXR_BUILD_GPU_SUPPORT})
     return()
 endif()
 
+if (EMBREE_VERSION VERSION_GREATER_EQUAL 4.0.0)
+    add_definitions(-DEMBREE_MAJOR_VERSION=4)
+else()
+    add_definitions(-DEMBREE_MAJOR_VERSION=3)
+endif()
+
 pxr_plugin(hdEmbree
    LIBRARIES
         plug
