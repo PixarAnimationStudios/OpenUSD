@@ -107,4 +107,16 @@
 #define ARCH_HAS_MMAP_MAP_POPULATE
 #endif
 
+// When using MSVC, provide an easy way to detect whether the older
+// "traditional" preprocessor is being used as opposed to the newer, more
+// standards-conforming preprocessor. The traditional preprocessor may require
+// custom versions of macros.
+// See here for more detail about MSVC's preprocessors:
+// https://learn.microsoft.com/en-us/cpp/preprocessor/preprocessor-experimental-overview
+#if defined(ARCH_COMPILER_MSVC)
+    #if !defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL
+    #define ARCH_PREPROCESSOR_MSVC_TRADITIONAL
+    #endif
+#endif
+
 #endif // PXR_BASE_ARCH_DEFINES_H 
