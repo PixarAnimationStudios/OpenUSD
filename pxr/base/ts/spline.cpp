@@ -106,7 +106,7 @@ TsSpline::_Detach()
 {
     TfAutoMallocTag2 tag( "Ts", "TsSpline::_Detach" );
     
-    if (!_data.unique()) {
+    if (_data.use_count() != 1) {
         std::shared_ptr<TsSpline_KeyFrames> newData(
             new TsSpline_KeyFrames(*_data));
         _data.swap(newData);
@@ -576,7 +576,7 @@ TsSpline::Clear()
     // the keyframes here which is the heaviest part of the spline.  A normal
     // detach copies the whole spline including the keyframes.  We'd like to
     // avoid that copy since we're going to overwite the keyframes anyway.
-    if (!_data.unique()) {
+    if (_data.use_count() != 1) {
         // Invoke TsSpline_KeyFrames's generalized copy ctor that lets us
         // specify keyframes to copy.
         std::shared_ptr<TsSpline_KeyFrames> newData(
