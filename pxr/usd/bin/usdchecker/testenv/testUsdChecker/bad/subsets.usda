@@ -1,0 +1,168 @@
+#usda 1.0
+(
+    defaultPrim = "SubsetsTest"
+    metersPerUnit = 0.01
+    upAxis = "Z"
+)
+
+def Xform "SubsetsTest" (
+    kind = "component"
+)
+{
+    def Xform "Geom"
+    {
+        def Mesh "Cube"
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+            point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+
+            uniform token subsetFamily:incompletePartition:familyType = "partition"
+            uniform token subsetFamily:materialBind:familyType = "unrestricted"
+            uniform token subsetFamily:nonOverlappingWithDuplicates:familyType = "nonOverlapping"
+
+            def GeomSubset "emptyIndicesAtAllTimes"
+            {
+                uniform token elementType = "face"
+                uniform token familyName = "emptyIndicesAtAllTimes"
+            }
+
+            def GeomSubset "incompletePartition_1"
+            {
+                uniform token elementType = "face"
+                uniform token familyName = "incompletePartition"
+                int[] indices = [0, 1]
+            }
+
+            def GeomSubset "incompletePartition_2"
+            {
+                uniform token elementType = "face"
+                uniform token familyName = "incompletePartition"
+                int[] indices = [4, 5]
+            }
+
+            def GeomSubset "materialBindShouldNotBeUnrestricted" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token elementType = "face"
+                uniform token familyName = "materialBind"
+                int[] indices = [0, 2, 4]
+                rel material:binding = </SubsetsTest/Materials/TestMaterial>
+            }
+
+            def GeomSubset "materialBindMissingElementType" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token familyName = "materialBind"
+                int[] indices = [1, 3, 5]
+                rel material:binding = </SubsetsTest/Materials/TestMaterial>
+            }
+
+            def GeomSubset "materialBindMissingFamilyName" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token elementType = "face"
+                int[] indices = [1, 3, 5]
+                rel material:binding = </SubsetsTest/Materials/TestMaterial>
+            }
+
+            def GeomSubset "materialBindShouldBeFaceElementType" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token elementType = "point"
+                uniform token familyName = "materialBind"
+                int[] indices = [0, 2, 4]
+                rel material:binding = </SubsetsTest/Materials/TestMaterial>
+            }
+
+            def GeomSubset "nonOverlappingWithDuplicates_1"
+            {
+                uniform token elementType = "face"
+                uniform token familyName = "nonOverlappingWithDuplicates"
+                int[] indices = [0, 3]
+            }
+
+            def GeomSubset "nonOverlappingWithDuplicates_2"
+            {
+                uniform token elementType = "face"
+                uniform token familyName = "nonOverlappingWithDuplicates"
+                int[] indices = [3, 5]
+            }
+
+            def GeomSubset "onlyNegativeIndices"
+            {
+                uniform token elementType = "face"
+                uniform token familyName = "onlyNegativeIndices"
+                int[] indices = [-1, -2, -3, -4, -5]
+            }
+
+            def GeomSubset "outOfRangeIndices"
+            {
+                uniform token elementType = "face"
+                uniform token familyName = "outOfRangeIndices"
+                int[] indices = [3, 4, 5, 6, 7]
+            }
+        }
+
+        def Mesh "NullMesh"
+        {
+            def GeomSubset "noElementsInGeometry"
+            {
+                uniform token elementType = "face"
+                uniform token familyName = "noElementsInGeometry"
+                int[] indices = [0, 1, 2, 3]
+            }
+        }
+
+        def Mesh "VaryingMesh"
+        {
+            int[] faceVertexCounts.timeSamples = {
+                1: [4],
+                2: [4, 4],
+                3: [4, 4, 4]
+            }
+
+            def GeomSubset "noDefaultTimeElementsInGeometry"
+            {
+                uniform token elementType = "face"
+                uniform token familyName = "noDefaultTimeElementsInGeometry"
+                int[] indices = [0]
+                int[] indices.timeSamples = {
+                    1: [0],
+                    2: [1],
+                    3: [2]
+                }
+            }
+        }
+
+        def Material "NonImageable"
+        {
+            def GeomSubset "parentIsNotImageable"
+            {
+                uniform token elementType = "face"
+                uniform token familyName = "parentIsNotImageable"
+                int[] indices = [0]
+            }
+        }
+    }
+
+    def Scope "Materials"
+    {
+        def Material "TestMaterial"
+        {
+            token outputs:surface.connect = </SubsetsTest/Materials/TestMaterial/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1.0, 0.0, 0.0)
+                token outputs:surface
+            }
+        }
+    }
+}

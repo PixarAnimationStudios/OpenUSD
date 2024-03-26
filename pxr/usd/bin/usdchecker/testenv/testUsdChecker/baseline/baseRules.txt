@@ -49,4 +49,19 @@ Specifically:
 [SkelBindingAPIAppliedChecker]:
  A prim providing skelBinding properties, must have SkelBindingAPI applied on the prim.
 ------------------------------
-Success!
+[GeomSubsetsChecker]:
+ Validates various aspects of UsdGeomSubsets:
+   - GeomSubsets must be authored as direct children of an Imageable prim
+   - The set of all subset family names is fetched for each subset parent
+     Imageable, and each family is checked for validity
+   - If the "materialBind" subset family is authored on an Imageable, it is
+     checked to ensure that it is of a restricted type (either "nonOverlapping"
+     or "partition"), since it is invalid for an element of geometry to be
+     bound to multiple materials.
+   - All subsets belonging to the "materialBind" family must be of element type "face",
+     since material bindings may only be applied to geometric faces.
+   - If a subset has authored material bindings but no authored subset
+     family name, it is suggested that the family name should be set to
+     "materialBind" to ensure that the material bindings are visible to
+     renderers. The material bindings will have no effect otherwise.
+------------------------------
