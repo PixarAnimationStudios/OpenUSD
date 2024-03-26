@@ -42,7 +42,7 @@ def Xform "Scene" (
             def Shader "Primvar"
             {
                 uniform token info:id = "UsdPrimvarReader_float2"
-                token inputs:varname = "st"
+                string inputs:varname = "st"
                 float2 outputs:result
             }
 
