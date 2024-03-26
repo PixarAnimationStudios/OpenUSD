@@ -463,7 +463,9 @@ class ViewSettingsDataModel(StateSource, QtCore.QObject):
         """Specifies the OCIO settings to be used. Setting the OCIO 'display'
            requires a 'view' to be specified."""
 
-        if colorSpace:
+        if colorSpace and colorSpace == "<USE_DISPLAY_NAME>":
+                self._ocioSettings._colorSpace = display
+        elif colorSpace:
             self._ocioSettings._colorSpace = colorSpace
 
         if display:
