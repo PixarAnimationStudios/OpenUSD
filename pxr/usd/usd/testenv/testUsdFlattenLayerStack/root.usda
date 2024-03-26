@@ -5,6 +5,10 @@
     subLayers = [
         @./sub.usda@ (offset = -10)
     ]
+    relocates = {
+        </Sphere/ChildFromReference> : </Sphere/RootReloChildFromReference>,
+        </Sphere/ChildFromNestedVariant> : </Sphere/RootReloChildFromNestedVariant>
+    }
 )
 
 over "Sphere"

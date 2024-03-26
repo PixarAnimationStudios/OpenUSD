@@ -2076,6 +2076,7 @@ _IsPrivateFieldKey(const TfToken& fieldKey)
     std::call_once(once, [](){
         // Composition keys.
         ignoredKeys.insert(SdfFieldKeys->InheritPaths);
+        ignoredKeys.insert(SdfFieldKeys->LayerRelocates);
         ignoredKeys.insert(SdfFieldKeys->Payload);
         ignoredKeys.insert(SdfFieldKeys->References);
         ignoredKeys.insert(SdfFieldKeys->Specializes);

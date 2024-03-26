@@ -159,6 +159,15 @@ _Reduce(const SdfVariantSelectionMap &lhs, const SdfVariantSelectionMap &rhs)
 
 template <>
 VtValue
+_Reduce(const SdfRelocates &lhs, const SdfRelocates &rhs)
+{
+    SdfRelocates result(lhs);
+    result.insert(result.end(), rhs.begin(), rhs.end());
+    return VtValue::Take(result);
+}
+
+template <>
+VtValue
 _Reduce(const SdfSpecifier &lhs, const SdfSpecifier &rhs)
 {
     // SdfSpecifierOver is the equivalent of "no opinion"
@@ -214,6 +223,7 @@ _Reduce(const VtValue &lhs, const VtValue &rhs, const TfToken &field)
     TYPE_DISPATCH(SdfReferenceListOp);
     TYPE_DISPATCH(SdfUnregisteredValueListOp);
     TYPE_DISPATCH(VtDictionary);
+    TYPE_DISPATCH(SdfRelocates);
     TYPE_DISPATCH(SdfTimeSampleMap);
     TYPE_DISPATCH(SdfVariantSelectionMap);
 #undef TYPE_DISPATCH
