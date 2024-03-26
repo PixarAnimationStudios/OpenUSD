@@ -245,13 +245,13 @@ PcpMapExpression::_Node::New( _Op op_,
             // killing the other node it looks for itself in the table, it will
             // either not find itself or will find a different node and so won't
             // remove it.
-            _NodeRefPtr newNode(new _Node(key));
+            _NodeRefPtr newNode{TfDelegatedCountIncrementTag, new _Node(key)};
             accessor->second = newNode.get();
             return newNode;
         }
-        return _NodeRefPtr(accessor->second, /*add_ref =*/ false);
+        return {TfDelegatedCountDoNotIncrementTag, accessor->second};
     }
-    return _NodeRefPtr(new _Node(key));
+    return {TfDelegatedCountIncrementTag, new _Node(key)};
 }
 
 PcpMapExpression::_Node::_Node( const Key & key_ )
@@ -364,8 +364,8 @@ PcpMapExpression::_Node::Key::GetHash() const
 {
     return TfHash::Combine(
         op,
-        get_pointer(arg1),
-        get_pointer(arg2),
+        arg1.get(),
+        arg2.get(),
         valueForConstant
     );
 }
@@ -380,13 +380,13 @@ PcpMapExpression::_Node::Key::operator==(const Key &key) const
 }
 
 void
-intrusive_ptr_add_ref(PcpMapExpression::_Node* p)
+TfDelegatedCountIncrement(PcpMapExpression::_Node* p)
 {
     ++p->_refCount;
 }
 
 void
-intrusive_ptr_release(PcpMapExpression::_Node* p)
+TfDelegatedCountDecrement(PcpMapExpression::_Node* p) noexcept
 {
     if (p->_refCount.fetch_and_decrement() == 1)
         delete p;
