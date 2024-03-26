@@ -206,7 +206,20 @@ pxr_build_test(testUsdImagingExcluded
     CPPFILES
         testenv/testUsdImagingExcluded.cpp
 )
-
+pxr_build_test(testUsdImagingMaterialBinding
+    LIBRARIES
+        usdImaging
+        usdShade
+        usd
+        hd
+        glf
+        garch
+        tf
+        gf
+        vt
+    CPPFILES
+        testenv/testUsdImagingMaterialBinding.cpp
+)
 pxr_build_test(testUsdImagingNestedInstancingCategories
     LIBRARIES
         usdImaging
@@ -271,6 +284,10 @@ pxr_install_test_dir(
     DEST testUsdImagingDelegateChanges
 )
 pxr_install_test_dir(
+    SRC testenv/testUsdImagingMaterialBinding
+    DEST testUsdImagingMaterialBinding
+)
+pxr_install_test_dir(
     SRC testenv/testUsdImagingNestedInstancingCategories
     DEST testUsdImagingNestedInstancingCategories
 )
@@ -300,6 +317,12 @@ pxr_register_test(testUsdImagingExcluded
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingExcluded"
     EXPECTED_RETURN_CODE 0
 )
+pxr_register_test(testUsdImagingMaterialBinding
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingMaterialBinding"
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+)
 pxr_register_test(testUsdImagingNestedInstancingCategories
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingNestedInstancingCategories"
     EXPECTED_RETURN_CODE 0
@@ -328,37 +351,3 @@ pxr_register_test(testUsdImagingStageSceneIndexContents
     DIFF_COMPARE 
         basic.txt
 )
-
-# testUsdImagingMaterialBinding uses a plugin, which requires shared libraries.
-if (BUILD_SHARED_LIBS)
-pxr_build_test(testUsdImagingMaterialBinding
-    LIBRARIES
-        usdImagingGL
-        usdImaging
-        usdShade
-        usd
-        hd
-        glf
-        garch
-        tf
-        gf
-        vt
-    CPPFILES
-        testenv/testUsdImagingMaterialBinding.cpp
-)
-
-# testUsdImagingMaterialBinding also requires a window.
-if (NOT ${PXR_HEADLESS_TEST_MODE})
-pxr_install_test_dir(
-    SRC testenv/testUsdImagingMaterialBinding
-    DEST testUsdImagingMaterialBinding
-)
-pxr_register_test(testUsdImagingMaterialBinding
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingMaterialBinding"
-    EXPECTED_RETURN_CODE 0
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
-)
-endif()
-
-endif()

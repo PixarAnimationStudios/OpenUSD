@@ -29,15 +29,11 @@
 
 #include "pxr/base/vt/dictionary.h"
 
-#include "pxr/imaging/garch/glDebugWindow.h"
-#include "pxr/imaging/glf/contextCaps.h"
-#include "pxr/imaging/glf/drawTarget.h"
-#include "pxr/imaging/glf/glContext.h"
-#include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
-#include "pxr/imaging/garch/glApi.h"
+#include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/unitTestNullRenderDelegate.h"
 
+#include "pxr/usdImaging/usdImaging/sceneIndices.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
-#include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usd/stage.h"
@@ -46,8 +42,6 @@
 #include <iostream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using UsdImagingGLEngineSharedPtr = std::shared_ptr<class UsdImagingGLEngine>;
 
 namespace {
 
@@ -154,48 +148,22 @@ _HydraDumpForUsdStage(
     const UsdTimeCode& frame,
     VtDictionary* out)
 {
-    // XXX For now, this has to set up a whole GL renderIndex, but in the
-    // future, we can hopefully just create the appropriate scene indices for
-    // the renderer.
-    GarchGLDebugWindow window("Hydra Dump", 512, 512);
-    window.Init();
-    GarchGLApiLoad();
-
-    // wrap into GlfGLContext so that GlfDrawTarget works
-    GlfGLContextSharedPtr ctx = GlfGLContext::GetCurrentGLContext();
-    GlfContextCaps::InitInstance();
-
-    // prep draw target
-    int width = 512, height = 512;
-    GlfDrawTargetRefPtr drawTarget = GlfDrawTarget::New(GfVec2i(width, height));
-    drawTarget->Bind();
-    drawTarget->AddAttachment("color", GL_RGBA, GL_FLOAT, GL_RGBA);
-    drawTarget->Unbind();
-
-    UsdImagingGLEngineSharedPtr engine;
-    SdfPathVector excludedPaths;
-
-    UsdImagingGLRenderParams params;
-    params.drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
-    params.enableLighting = false;
-    params.showGuides = false;
-    params.showProxy = false;
-    params.showRender = false;
-    params.frame = frame;
-
-    engine.reset(new UsdImagingGLEngine(
-        stage->GetPseudoRoot().GetPath(), excludedPaths));
-
-#define _Render()                                                              \
-    drawTarget->Bind();                                                        \
-    engine->Render(stage->GetPseudoRoot(), params);                            \
-    drawTarget->Unbind();
-
-    //-------------------------------------------------------------------------
-    _Render();
+    Hd_UnitTestNullRenderDelegate renderDelegate;
+    std::unique_ptr<HdRenderIndex> renderIndex(
+        HdRenderIndex::New(&renderDelegate, HdDriverVector()));
+    
+    UsdImagingCreateSceneIndicesInfo info;
+    info.stage = stage;
+    const UsdImagingSceneIndices sceneIndices =
+        UsdImagingCreateSceneIndices(info);
+    UsdImagingStageSceneIndexRefPtr stageSceneIndex =
+        sceneIndices.stageSceneIndex;
+    stageSceneIndex->SetTime(frame);
+    HdSceneIndexBaseRefPtr finalSceneIndex = sceneIndices.finalSceneIndex;
+    renderIndex->InsertSceneIndex(finalSceneIndex, SdfPath("/"));
 
     // NOTE: this makes assumptions based on scene index emulation and will
-    //       need to be updated when UsdImagingGLEngine no longer uses the
+    //       need to be updated when HdRenderIndex no longer uses the
     //       emulated legacy APIs.
     auto registeredSceneIndexNames
         = HdSceneIndexNameRegistry::GetInstance().GetRegisteredNames();
