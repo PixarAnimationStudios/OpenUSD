@@ -6,6 +6,9 @@
     should not be affected by loading payloads on the ancestor
     prim where the payload was authored.
     """
+    relocates = {
+        </PayloadedModel/Anim>: </PayloadedModel/Test/Anim>
+    }
 )
 
 def "Model" (
@@ -38,9 +41,6 @@ def "PayloadedModel" (
     Test prim that contains the same payload as model.sdf.
     """
     payload = @./model_payload.sdf@</Model>
-    relocates = {
-        <Anim>: <Test/Anim>
-    }
 )
 {
     def Scope "Test"

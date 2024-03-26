@@ -1,10 +1,12 @@
 #sdf 1.4.32
+(
+    relocates = {
+        </CurveTrackRig/rig/ConstRig/Anim/Const>: </CurveTrackRig/Anim/Curve/Const>
+    }
+)
 
 def "CurveTrackRig" (
     inherits = </_class_MultiLevelCurveRig>
-    relocates = {
-        <rig/ConstRig/Anim/Const>: <Anim/Curve/Const>
-    }
 )
 {
     def "Anim"

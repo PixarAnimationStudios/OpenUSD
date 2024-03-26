@@ -1,10 +1,10 @@
 ------------------------------------------------------------------------
 Errors while computing Layer Stack
 
-Relocation from </Model_5> to </Model_4/Model_5> authored at @ErrorInvalidAuthoredRelocates/root.sdf@</Model_5> is invalid and will be ignored: Root prims cannot be the source or target of a relocate.
-Relocation from </Model_5/Instance/Test> to </Test> authored at @ErrorInvalidAuthoredRelocates/root.sdf@</Model_5> is invalid and will be ignored: Root prims cannot be the source or target of a relocate.
-Relocation from </Model_4/Instance/Test> to </Model_3/Test> authored at @ErrorInvalidAuthoredRelocates/root.sdf@</Model_4> is invalid and will be ignored: Prims cannot be relocated to be a descendant of a different root prim.
-Relocation from </Model_3/Instance> to </Model_3/Instance/Test> authored at @ErrorInvalidAuthoredRelocates/root.sdf@</Model_3> is invalid and will be ignored: The target of a relocate cannot be a descendant of its source.
-Relocation from </Model_2/Instance/Test> to </Model_2/Instance> authored at @ErrorInvalidAuthoredRelocates/root.sdf@</Model_2> is invalid and will be ignored: The target of a relocate cannot be an ancestor of its source.
-Relocation from </Model_1/Instance/Test> to </Model_1/Instance/Test> authored at @ErrorInvalidAuthoredRelocates/root.sdf@</Model_1> is invalid and will be ignored: The target of a relocate cannot be the same as its source.
+Relocation from </Model_1/Instance/Test> to </Model_1/Instance/Test> authored at @ErrorInvalidAuthoredRelocates/root.sdf@</> is invalid and will be ignored: The target of a relocate cannot be the same as its source.
+Relocation from </Model_2/Instance/Test> to </Model_2/Instance> authored at @ErrorInvalidAuthoredRelocates/root.sdf@</> is invalid and will be ignored: The target of a relocate cannot be an ancestor of its source.
+Relocation from </Model_3/Instance> to </Model_3/Instance/Test> authored at @ErrorInvalidAuthoredRelocates/root.sdf@</> is invalid and will be ignored: The target of a relocate cannot be a descendant of its source.
+Relocation from </Model_4/Instance/Test> to </Model_3/Test> authored at @ErrorInvalidAuthoredRelocates/root.sdf@</> is invalid and will be ignored: Prims cannot be relocated to be a descendant of a different root prim.
+Relocation from </Model_5> to </Model_4/Model_5> authored at @ErrorInvalidAuthoredRelocates/root.sdf@</> is invalid and will be ignored: Root prims cannot be the source or target of a relocate.
+Relocation from </Model_5/Instance/Test> to </Test> authored at @ErrorInvalidAuthoredRelocates/root.sdf@</> is invalid and will be ignored: Root prims cannot be the source or target of a relocate.
 

@@ -6,6 +6,19 @@
     stack. These invalid relocates will each produce an error and will be
     ignored during composition.
     """
+    relocates = {
+        </Model_1/Instance/ClassChild>: </Model_1/Instance/Test>, 
+        </Model_1/Instance/InstanceChild>: </Model_1/Instance/Test>, 
+        </Model_2/Instance/InstanceChild>: </Model_2/Test>, 
+        </Model_2/Test>: </Model_2/Instance/Test>, 
+        </Model_3/Instance/ClassChild>: </Model_3/Instance/Test>, 
+        </Model_3/Instance/InstanceChild>: </Model_3/Test>, 
+        </Model_3/Test>: </Model_3/Instance/Test>, 
+        </Model_4/Instance/InstanceChild>: </Model_4/Test>, 
+        </Model_4/Instance/InstanceChild/InstanceGrandChild>: </Model_4/Test/Child>, 
+        </Model_5/Instance/ClassChild>: </Model_5/Instance/InstanceChild/ClassChild>, 
+        </Model_5/Instance/InstanceChild>: </Model_5/Test>
+    }
 )
 
 # This case exercises the error condition where two different source paths
@@ -14,10 +27,6 @@
 #
 def "Model_1" (
     add references = @./model.sdf@</Model>
-    relocates = {
-        <Instance/ClassChild>: <Instance/Test>,
-        <Instance/InstanceChild>: <Instance/Test>
-    }
 )
 {
     over "LocalClass"
@@ -41,11 +50,6 @@ def "Model_1" (
 #
 def "Model_2" (
     add references = @./model.sdf@</Model>
-    relocates = {
-        <Instance/InstanceChild>: <Test>,
-        <Test>: <Instance/Test>
-    }
-
 )
 {
     over "LocalClass"
@@ -71,12 +75,6 @@ def "Model_2" (
 #
 def "Model_3" (
     add references = @./model.sdf@</Model>
-    relocates = {
-        <Instance/ClassChild>: <Instance/Test>,
-        <Instance/InstanceChild>: <Test>,
-        <Test>: <Instance/Test>
-    }
-
 )
 {
     over "LocalClass"
@@ -99,11 +97,6 @@ def "Model_3" (
 #
 def "Model_4" (
     add references = @./model.sdf@</Model>
-    relocates = {
-        <Instance/InstanceChild>: <Test>,
-        <Instance/InstanceChild/InstanceGrandChild>: <Test/Child>
-    }
-
 )
 {
     over "LocalClass"
@@ -126,11 +119,6 @@ def "Model_4" (
 #
 def "Model_5" (
     add references = @./model.sdf@</Model>
-    relocates = {
-        <Instance/InstanceChild>: <Test>,
-        <Instance/ClassChild>: <Instance/InstanceChild/ClassChild>
-    }
-
 )
 {
     over "LocalClass"

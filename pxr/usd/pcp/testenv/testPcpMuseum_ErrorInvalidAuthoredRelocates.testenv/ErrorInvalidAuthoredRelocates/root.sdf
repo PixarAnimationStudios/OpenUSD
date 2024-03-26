@@ -6,6 +6,14 @@
     invalid relocate will produce an error and will be ignored during 
     composition.
     """
+    relocates = {
+        </Model_1/Instance/Test>: </Model_1/Instance/Test>, 
+        </Model_2/Instance/Test>: </Model_2/Instance>, 
+        </Model_3/Instance>: </Model_3/Instance/Test>, 
+        </Model_4/Instance/Test>: </Model_3/Test>, 
+        </Model_5>: </Model_4/Model_5>, 
+        </Model_5/Instance/Test>: </Test>
+    }
 )
 
 # This case exercises a relocation from a path back to that same path.
@@ -14,9 +22,6 @@
 #
 def "Model_1" (
     add references = @./model.sdf@</Model>
-    relocates = {
-        <Instance/Test>: <Instance/Test>
-    }
 )
 {
     over "LocalClass"
@@ -39,10 +44,6 @@ def "Model_1" (
 #
 def "Model_2" (
     add references = @./model.sdf@</Model>
-    relocates = {
-        <Instance/Test>: <Instance>
-    }
-
 )
 {
     over "LocalClass"
@@ -64,9 +65,6 @@ def "Model_2" (
 #
 def "Model_3" (
     add references = @./model.sdf@</Model>
-    relocates = {
-        <Instance>: <Instance/Test>
-    }
 )
 {
     over "LocalClass"
@@ -90,9 +88,6 @@ def "Model_3" (
 #
 def "Model_4" (
     add references = @./model.sdf@</Model>
-    relocates = {
-        <Instance/Test>: </Model_3/Test>
-    }
 )
 {
     over "LocalClass"
@@ -115,10 +110,6 @@ def "Model_4" (
 #
 def "Model_5" (
     add references = @./model.sdf@</Model>
-    relocates = {
-        <Instance/Test>: </Test>,
-        </Model_5>: </Model_4/Model_5>
-    }
 )
 {
     over "LocalClass"

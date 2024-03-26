@@ -1,10 +1,11 @@
 #sdf 1.4.32
-
-def Scope "TentaclesRig" (
+(
     relocates = {
-        <TentacleRigs/R1TentacleRig/Tentacle> : <Arms/R1Arm>
+        </TentaclesRig/TentacleRigs/R1TentacleRig/Tentacle>: </TentaclesRig/Arms/R1Arm>
     }
 )
+
+def Scope "TentaclesRig"
 {
     def Scope "Arms"
     {

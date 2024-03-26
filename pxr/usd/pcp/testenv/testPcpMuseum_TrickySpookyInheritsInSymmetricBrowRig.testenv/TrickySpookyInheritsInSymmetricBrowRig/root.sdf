@@ -4,14 +4,13 @@
     This exercises path translation in the presence of
     multiple levels of relocations.
     '''
-)
-
-def MfScope "FaceRig" (
     relocates = {
-        <BrowRig/Anim/LBrow>: <Anim/Face/Eyes/LBrow>, 
-        <BrowRig/Anim/RBrow>: <Anim/Face/Eyes/RBrow>, 
+        </FaceRig/BrowRig/Anim/LBrow>: </FaceRig/Anim/Face/Eyes/LBrow>, 
+        </FaceRig/BrowRig/Anim/RBrow>: </FaceRig/Anim/Face/Eyes/RBrow>
     }
 )
+
+def MfScope "FaceRig"
 {
     def MfScope "BrowRig" (
         references = @./BrowRig.sdf@</BrowRig>

@@ -942,6 +942,10 @@ PcpChanges::DidChange(const PcpCache* cache,
                 if (entry.HasInfoChange(SdfFieldKeys->ExpressionVariables)) {
                     layerStackChangeMask |= LayerStackExpressionVarsChange;
                 }
+
+                if (entry.HasInfoChange(SdfFieldKeys->LayerRelocates)) {
+                    layerStackChangeMask |= LayerStackRelocatesChange;
+                }
             }
 
             // Handle changes that require a prim graph change.
@@ -1200,7 +1204,7 @@ PcpChanges::DidChange(const PcpCache* cache,
         // check if it or any of its descendant prim specs contains relocates.
         // If so, all dependent layer stacks need to recompute its cached
         // relocates. We can skip this if the cache is in USD mode, since 
-        // relocates are disabled for those caches.
+        // relocates can only be authored in layer metadata in those caches.
         if (!cacheInUsdMode) {
             for (const auto& value : pathsWithSpecChangesTypes) {
                 const SdfPath& path = value.first;
@@ -1216,37 +1220,36 @@ PcpChanges::DidChange(const PcpCache* cache,
                     }
                 }
             }
-        }
 
-        // For every path we've found that has a significant change,
-        // check layer stacks that have discovered relocations that
-        // could be affected by that change. We can skip this if the cache
-        // is in USD mode, since relocates are disabled for those caches.
-        if (!pathsWithSignificantChanges.empty() && !cacheInUsdMode) {
-            // If this scope turns out to be expensive, we should look
-            // at switching PcpLayerStack's _relocatesPrimPaths from
-            // a std::vector to a path set.  _AddRelocateEditsForLayerStack
-            // also does a traversal and might see a similar benefit.
-            TRACE_SCOPE("PcpChanges::DidChange -- Checking layer stack "
-                        "relocations against significant prim resyncs");
+            // For every path we've found that has a significant change,
+            // check layer stacks that have discovered relocations that
+            // could be affected by that change.
+            if (!pathsWithSignificantChanges.empty()) {
+                // If this scope turns out to be expensive, we should look
+                // at switching PcpLayerStack's _relocatesPrimPaths from
+                // a std::vector to a path set.  _AddRelocateEditsForLayerStack
+                // also does a traversal and might see a similar benefit.
+                TRACE_SCOPE("PcpChanges::DidChange -- Checking layer stack "
+                            "relocations against significant prim resyncs");
 
-            for (const PcpLayerStackPtr &layerStack: layerStacks) {
-                const SdfPathVector& reloPaths =
-                    layerStack->GetPathsToPrimsWithRelocates();
-                if (reloPaths.empty()) {
-                    continue;
-                }
-                for (const SdfPath &changedPath : pathsWithSignificantChanges) {
-                    for (const SdfPath &reloPath: reloPaths) {
-                        if (reloPath.HasPrefix(changedPath)) {
-                            layerStackChangesMap[layerStack]
-                                |= LayerStackRelocatesChange;
-                            goto doneWithLayerStack;
+                for (const PcpLayerStackPtr &layerStack: layerStacks) {
+                    const SdfPathVector& reloPaths =
+                        layerStack->GetPathsToPrimsWithRelocates();
+                    if (reloPaths.empty()) {
+                        continue;
+                    }
+                    for (const SdfPath &changedPath : pathsWithSignificantChanges) {
+                        for (const SdfPath &reloPath: reloPaths) {
+                            if (reloPath.HasPrefix(changedPath)) {
+                                layerStackChangesMap[layerStack]
+                                    |= LayerStackRelocatesChange;
+                                goto doneWithLayerStack;
+                            }
                         }
                     }
+                    doneWithLayerStack:
+                    ;
                 }
-                doneWithLayerStack:
-                ;
             }
         }
 

@@ -1,16 +1,15 @@
 #sdf 1.4.32
-
-def Prim "CharRig" (
+(
     relocates = {
-        <Rig/PathRig/Path>: <Anim/Path>
+        </CharRig/Anim/Path/Anim>: </CharRig/Anim/Path/AnimScope>, 
+        </CharRig/Rig/PathRig/Path>: </CharRig/Anim/Path>
     }
 )
+
+def Prim "CharRig"
 {
     def Scope "Anim" (
         doc = "This scope has an additional relocation that must compose together with the ancestral relocation above."
-        relocates = {
-            <Path/Anim>: <Path/AnimScope>
-        }
     )
     {
         over "Path" (

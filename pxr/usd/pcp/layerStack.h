@@ -77,6 +77,11 @@ public:
     PCP_API
     const PcpLayerStackIdentifier& GetIdentifier() const;
 
+    /// Return true if this layer stack is in USD mode.
+    bool IsUsd() const {
+        return _isUsd;
+    };
+
     /// Returns the layers in this layer stack in strong-to-weak order.
     /// Note that this is only the *local* layer stack -- it does not
     /// include any layers brought in by references inside prims.
@@ -215,6 +220,11 @@ public:
     /// they are changed later.
     PCP_API
     PcpMapExpression GetExpressionForRelocatesAtPath(const SdfPath &path);
+
+    /// Return true if there are any relocated prim paths in this layer
+    /// stack.
+    PCP_API
+    bool HasRelocates() const;
 
 private:
     // Only a registry can create a layer stack.

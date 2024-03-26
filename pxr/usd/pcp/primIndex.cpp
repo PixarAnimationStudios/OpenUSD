@@ -637,11 +637,9 @@ _CreateMapExpressionForArc(const SdfPath &sourcePath,
         PcpMapFunction::Create( sourceToTargetMap, offset ) );
 
     // Apply relocations that affect namespace at and below this site.
-    if (!inputs.usd) {
-        arcExpr = targetNode.GetLayerStack()
-            ->GetExpressionForRelocatesAtPath(targetPath)
-            .Compose(arcExpr);
-    }
+    arcExpr = targetNode.GetLayerStack()
+        ->GetExpressionForRelocatesAtPath(targetPath)
+        .Compose(arcExpr);
 
     return arcExpr;
 }
@@ -652,7 +650,8 @@ enum _ArcFlags {
     _ArcFlagVariants    = 1<<1,
     _ArcFlagReferences  = 1<<2,
     _ArcFlagPayloads    = 1<<3,
-    _ArcFlagSpecializes = 1<<4
+    _ArcFlagSpecializes = 1<<4,
+    _ArcFlagRelocates   = 1<<5
 };
 
 // Scan a node's specs for presence of fields describing composition arcs.
@@ -662,15 +661,22 @@ enum _ArcFlags {
 inline static size_t
 _ScanArcs(PcpNodeRef const& node)
 {
+    size_t arcs = 0;
+    // Relocates mappings are defined for an entire layer stack so if the node's
+    // layer stack has any relocates we have to check for relocates on this 
+    // node.
+    if (node.GetLayerStack()->HasRelocates()) {
+        arcs |= _ArcFlagRelocates;
+    }
+
     // If the node does not have specs or cannot contribute specs,
     // we can avoid even enqueueing certain kinds of tasks that will
     // end up being no-ops.
     const bool contributesSpecs = node.HasSpecs() && node.CanContributeSpecs();
     if (!contributesSpecs) {
-        return 0;
+        return arcs;
     }
 
-    size_t arcs = 0;
     SdfPath const& path = node.GetPath();
     for (SdfLayerRefPtr const& layer: node.GetLayerStack()->GetLayers()) {
         SdfLayer const *layerPtr = get_pointer(layer);
@@ -1260,11 +1266,11 @@ struct Pcp_PrimIndexer
                 if (arcMask & _ArcFlagReferences) {
                     AddTask(Task(Task::Type::EvalNodeReferences, n));
                 }
-                if (!isUsd) {
+                if (arcMask & _ArcFlagRelocates) {
                     AddTask(Task(Task::Type::EvalNodeRelocations, n));
                 }
             }
-            if (!isUsd && n.GetArcType() == PcpArcTypeRelocate) {
+            if (n.GetArcType() == PcpArcTypeRelocate) {
                 AddTask(Task(Task::Type::EvalImpliedRelocations, n));
             }
         }
@@ -1744,7 +1750,8 @@ _AddArc(
     // Optimizations:
     // - We only need to do this for non-root prims because root prims can't
     //   be relocated. This is indicated by the includeAncestralOpinions flag.
-    if (opts.directNodeShouldContributeSpecs && opts.includeAncestralOpinions) {
+    if (opts.directNodeShouldContributeSpecs && opts.includeAncestralOpinions &&
+            site.layerStack->HasRelocates()) {
         const SdfRelocatesMap & layerStackRelocates =
             site.layerStack->GetRelocatesSourceToTarget();
         SdfRelocatesMap::const_iterator
@@ -5323,12 +5330,11 @@ static void
 _ComposePrimChildNamesAtNode(
     const PcpPrimIndex& primIndex,
     const PcpNodeRef& node,
-    bool usd,
     TfTokenVector *nameOrder,
     PcpTokenSet *nameSet,
     PcpTokenSet *prohibitedNameSet)
 {
-    if (!usd) {
+    if (node.GetLayerStack()->HasRelocates()) {
         // Apply relocations from just this layer stack.
         // Classify them into three groups:  names to add, remove, or replace.
         std::set<TfToken> namesToAdd, namesToRemove;
@@ -5464,7 +5470,6 @@ _ComposePrimChildNamesAtNode(
 static void
 _ComposePrimChildNames( const PcpPrimIndex& primIndex,
                         const PcpNodeRef& node,
-                        bool usd,
                         TfTokenVector *nameOrder,
                         PcpTokenSet *nameSet,
                         PcpTokenSet *prohibitedNameSet )
@@ -5475,12 +5480,12 @@ _ComposePrimChildNames( const PcpPrimIndex& primIndex,
 
     // Reverse strength-order traversal (weak-to-strong).
     TF_REVERSE_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
-        _ComposePrimChildNames(primIndex, *child, usd,
+        _ComposePrimChildNames(primIndex, *child,
                                nameOrder, nameSet, prohibitedNameSet);
     }
 
     _ComposePrimChildNamesAtNode(
-        primIndex, node, usd, nameOrder, nameSet, prohibitedNameSet);
+        primIndex, node, nameOrder, nameSet, prohibitedNameSet);
 }
 
 // Helper struct for _ComposePrimChildNamesForInstance, see comments
@@ -5488,12 +5493,10 @@ _ComposePrimChildNames( const PcpPrimIndex& primIndex,
 struct Pcp_PrimChildNameVisitor
 {
     Pcp_PrimChildNameVisitor( const PcpPrimIndex& primIndex,
-                              bool usd,
                               TfTokenVector *nameOrder,
                               PcpTokenSet *nameSet,
                               PcpTokenSet *prohibitedNameSet )
         : _primIndex(primIndex)
-        , _usd(usd)
         , _nameOrder(nameOrder)
         , _nameSet(nameSet)
         , _prohibitedNameSet(prohibitedNameSet)
@@ -5504,14 +5507,13 @@ struct Pcp_PrimChildNameVisitor
     {
         if (nodeIsInstanceable) {
             _ComposePrimChildNamesAtNode(
-                _primIndex, node, _usd,
+                _primIndex, node,
                 _nameOrder, _nameSet, _prohibitedNameSet);
         }
     }
 
 private:
     const PcpPrimIndex& _primIndex;
-    bool _usd;
     TfTokenVector* _nameOrder;
     PcpTokenSet* _nameSet;
     PcpTokenSet* _prohibitedNameSet;
@@ -5519,13 +5521,12 @@ private:
 
 static void
 _ComposePrimChildNamesForInstance( const PcpPrimIndex& primIndex,
-                                   bool usd,
                                    TfTokenVector *nameOrder,
                                    PcpTokenSet *nameSet,
                                    PcpTokenSet *prohibitedNameSet )
 {
     Pcp_PrimChildNameVisitor visitor(
-        primIndex, usd, nameOrder, nameSet, prohibitedNameSet);
+        primIndex, nameOrder, nameSet, prohibitedNameSet);
     Pcp_TraverseInstanceableWeakToStrong(primIndex, &visitor);
 }
 
@@ -5571,13 +5572,11 @@ PcpPrimIndex::ComputePrimChildNames( TfTokenVector *nameOrder,
     // Walk the graph to compose prim child names.
     if (IsInstanceable()) {
         _ComposePrimChildNamesForInstance(
-            *this, IsUsd(),
-            nameOrder, &nameSet, prohibitedNameSet);
+            *this, nameOrder, &nameSet, prohibitedNameSet);
     }
     else {
         _ComposePrimChildNames(
-            *this, GetRootNode(), IsUsd(),
-            nameOrder, &nameSet, prohibitedNameSet);
+            *this, GetRootNode(), nameOrder, &nameSet, prohibitedNameSet);
     }
 
     // Remove prohibited names from the composed prim child names.

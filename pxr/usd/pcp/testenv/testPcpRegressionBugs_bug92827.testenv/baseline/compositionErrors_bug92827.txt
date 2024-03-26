@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------
 Errors while computing Layer Stack
 
-Relocation from </Rig/Other/A/Instance/A> to </Rig/Other/A> authored at @bug92827/root.sdf@</Rig> is invalid and will be ignored: The target of a relocate cannot be an ancestor of its source.
+Relocation from </Rig/Other/A/Instance/A> to </Rig/Other/A> authored at @bug92827/root.sdf@</> is invalid and will be ignored: The target of a relocate cannot be an ancestor of its source.
 

@@ -1,10 +1,12 @@
 #sdf 1.4.32
+(
+    relocates = {
+        </Pigeon/Rig/ToesRig/LToesRig/ThumbToeLOCALRig/Toe>: </Pigeon/Anim/Legs/LToes/Thumb>
+    }
+)
 
 def Scope "Pigeon" (
     inherits = </_class_CharRig>
-    relocates = {
-        <Rig/ToesRig/LToesRig/ThumbToeLOCALRig/Toe>: <Anim/Legs/LToes/Thumb>
-    }
 )
 {
     def Scope "Anim"
