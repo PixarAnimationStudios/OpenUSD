@@ -31,8 +31,6 @@
 #include "pxr/base/gf/numericCast.h"
 #include "pxr/base/vt/value.h"
 
-#include <boost/variant/get.hpp>
-
 #include <functional>
 #include <limits>
 #include <string>
@@ -45,6 +43,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 bool Sdf_BoolFromString(const std::string &, bool *parseOk);
 
 namespace Sdf_ParserHelpers {
+
+class ConversionError : public std::exception {
+public:
+    const char* what() const noexcept override { return "Conversion error."; }
+};
 
 // Internal variant type.
 using _Variant = std::variant<uint64_t, int64_t, double,
@@ -68,8 +71,8 @@ struct _GetImpl
 
 ////////////////////////////////////////////////////////////////////////
 // _GetImpl<T> for integral type T.  Convert finite doubles by static_cast,
-// throw bad_get for non-finite doubles.  Throw bad_get for out-of-range
-// integral values.
+// throw ConversionError for non-finite doubles.  Throw ConversionError for
+// out-of-range integral values.
 template <class T>
 struct _GetImpl<
     T, std::enable_if_t<std::is_integral<T>::value>>
@@ -80,9 +83,9 @@ struct _GetImpl<
         return std::visit(*this, variant);
     }
 
-    // Fallback case: throw bad_get.
+    // Fallback case: throw ConversionError.
     template <class Held>
-    T operator()(Held held) { throw boost::bad_get(); }
+    T operator()(Held held) { throw ConversionError(); }
 
     // Attempt to cast unsigned and signed int64_t.
     T operator()(uint64_t in) { return _Cast(in); }
@@ -92,7 +95,7 @@ struct _GetImpl<
     T operator()(double in) {
         if (std::isfinite(in))
             return _Cast(in);
-        throw boost::bad_get();
+        throw ConversionError();
     }
 
 private:
@@ -101,7 +104,7 @@ private:
         try {
             return GfNumericCast<T>(in).value();
         } catch (const std::bad_optional_access &) {
-            throw boost::bad_get();
+            throw ConversionError();
         }
     }
 };
@@ -121,9 +124,9 @@ struct _GetImpl<
         return std::visit(*this, variant);
     }
 
-    // Fallback case: throw bad_get.
+    // Fallback case: throw ConversionError.
     template <class Held>
-    T operator()(Held held) { throw boost::bad_get(); }
+    T operator()(Held held) { throw ConversionError(); }
 
     // For numeric types, attempt to cast.
     T operator()(uint64_t in) { return _Cast(in); }
@@ -143,7 +146,7 @@ private:
             return -std::numeric_limits<T>::infinity();
         if (str == "nan")
             return std::numeric_limits<T>::quiet_NaN();
-        throw boost::bad_get();
+        throw ConversionError();
     }
 
     template <class In>
@@ -151,7 +154,7 @@ private:
         try {
             return GfNumericCast<T>(in).value();
         } catch (const std::bad_optional_access &) {
-            throw boost::bad_get();
+            throw ConversionError();
         }
     }
 };
@@ -159,7 +162,7 @@ private:
 
 ////////////////////////////////////////////////////////////////////////
 
-// Get an asset path: converts string to asset path, otherwise throw bad_get.
+// Get an asset path: converts string to asset path, otherwise throw bad_variant_access.
 template <>
 struct _GetImpl<SdfAssetPath>
 {
@@ -174,7 +177,7 @@ struct _GetImpl<SdfAssetPath>
 
 // Get a bool.  Numbers are considered true if nonzero, false otherwise.
 // Strings and tokens get parsed via Sdf_BoolFromString.  Otherwise throw
-// bad_get.
+// ConversionError.
 template <>
 struct _GetImpl<bool>
 {
@@ -189,7 +192,7 @@ struct _GetImpl<bool>
         bool parseOK = false;
         bool result = Sdf_BoolFromString(str, &parseOK);
         if (!parseOK)
-            throw boost::bad_get();
+            throw ConversionError();
         return result;
     }
 
@@ -203,10 +206,10 @@ struct _GetImpl<bool>
         return val != static_cast<Number>(0);
     }
 
-    // For anything else, throw bad_get().
+    // For anything else, throw ConversionError().
     template <class T>
     std::enable_if_t<!std::is_arithmetic<T>::value, bool>
-    operator()(T) { throw boost::bad_get(); }
+    operator()(T) { throw ConversionError(); }
 };
 
 // A parser value.  This is used as the fundamental value object in the text
@@ -223,7 +226,7 @@ struct _GetImpl<bool>
 // to call Get<float>() on a Value that's holding an integral type, a double, or
 // a string if that string's value is one of 'inf', '-inf', or 'nan'.  Similarly
 // Get<bool>() works on numbers and strings like 'yes', 'no', 'on', 'off',
-// 'true', 'false'.  If a Get<T>() call fails, it throws boost::bad_get, which
+// 'true', 'false'.  If a Get<T>() call fails, it throws ConversionError, which
 // the parser responds to and raises a parse error.
 //
 // The lexer constructs Value objects from input tokens.  It creates them to
@@ -266,13 +269,13 @@ struct Value
     
     // Attempt to get a value of type T from this Value, applying appropriate
     // conversions.  If this value cannot be converted to T, throw
-    // boost::bad_get.
+    // ConversionError.
     template <class T>
     typename _GetImpl<T>::ResultType Get() const {
         try {
             return _GetImpl<T>().Visit(_variant);
         } catch (std::bad_variant_access& e) {
-            throw boost::bad_get();
+            throw ConversionError();
         }
     }
 

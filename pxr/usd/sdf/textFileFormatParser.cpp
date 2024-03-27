@@ -3528,9 +3528,9 @@ Sdf_ParseLayer(
             *hints = context.layerHints;
         }
     }
-    catch (boost::bad_get const &)
+    catch (Sdf_ParserHelpers::ConversionError const &)
     {
-        TF_CODING_ERROR("Bad boost:get<T>() in layer parser.");
+        TF_CODING_ERROR("ConversionError() in layer parser.");
         Sdf_TextFileFormatParser::Sdf_TextFileFormatParser_Err(
             context,
             content,
@@ -3583,9 +3583,9 @@ Sdf_ParseLayerFromString(
             Sdf_TextFileFormatParser::TextParserAction,
             Sdf_TextFileFormatParser::TextParserControl>(content, context);
     }
-    catch (boost::bad_get const &)
+    catch (Sdf_ParserHelpers::ConversionError const &)
     {
-        TF_CODING_ERROR("Bad boost:get<T>() in layer parser.");
+        TF_CODING_ERROR("ConversionError() in layer parser.");
         Sdf_TextFileFormatParser::Sdf_TextFileFormatParser_Err(
             context,
             content,
