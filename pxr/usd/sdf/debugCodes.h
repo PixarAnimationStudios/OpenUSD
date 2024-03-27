@@ -38,6 +38,15 @@ TF_DEBUG_CODES(
     SDF_VARIABLE_EXPRESSION_PARSING
 );
 
+////////////////////////////////////////////////////////////////////////
+// Debugging Symbols for Grammar
+// These symbols can be turned off at compile time by setting the first
+// argument value to `false`.
+TF_CONDITIONALLY_COMPILE_TIME_ENABLED_DEBUG_CODES(
+    true,
+    SDF_TEXT_FILE_FORMAT_CONTEXT
+);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_SDF_DEBUG_CODES_H
