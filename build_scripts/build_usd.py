@@ -2262,7 +2262,7 @@ if extraPythonPaths:
 
 # Determine list of dependencies that are required based on options
 # user has selected.
-requiredDependencies = [ZLIB, BOOST, TBB]
+requiredDependencies = [BOOST, TBB]
 
 if context.buildAlembic:
     if context.enableHDF5:
@@ -2277,18 +2277,18 @@ if context.buildMaterialX:
 
 if context.buildImaging:
     if context.enablePtex:
-        requiredDependencies += [PTEX]
+        requiredDependencies += [ZLIB, PTEX]
 
     requiredDependencies += [OPENSUBDIV]
 
     if context.enableOpenVDB:
-        requiredDependencies += [BLOSC, BOOST, OPENEXR, OPENVDB, TBB]
+        requiredDependencies += [ZLIB, BLOSC, BOOST, OPENEXR, OPENVDB, TBB]
     
     if context.buildOIIO:
-        requiredDependencies += [BOOST, JPEG, TIFF, PNG, OPENEXR, OPENIMAGEIO]
+        requiredDependencies += [ZLIB, BOOST, JPEG, TIFF, PNG, OPENEXR, OPENIMAGEIO]
 
     if context.buildOCIO:
-        requiredDependencies += [OPENCOLORIO]
+        requiredDependencies += [ZLIB, OPENCOLORIO]
 
     if context.buildEmbree:
         requiredDependencies += [TBB, EMBREE]
@@ -2303,7 +2303,7 @@ if context.buildAnimXTests:
 # our own. This avoids potential issues where a host application
 # loads an older version of zlib than the one we'd build and link
 # our libraries against.
-if Linux():
+if Linux() and ZLIB in requiredDependencies:
     requiredDependencies.remove(ZLIB)
 
 # Error out if user is building monolithic library on windows with draco plugin
