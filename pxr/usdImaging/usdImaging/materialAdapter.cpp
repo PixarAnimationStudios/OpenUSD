@@ -335,8 +335,12 @@ UsdImagingMaterialAdapter::GetMaterialResource(UsdPrim const &prim,
                                                UsdTimeCode time) const
 {
     TRACE_FUNCTION();
-    if (!prim || !_GetSceneMaterialsEnabled()) {
+    if (!prim) {
         TF_RUNTIME_ERROR("Received prim is null.");
+        return VtValue();
+    }
+
+    if (!_GetSceneMaterialsEnabled()) {
         return VtValue();
     }
 
