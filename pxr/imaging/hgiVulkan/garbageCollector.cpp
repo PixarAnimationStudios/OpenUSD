@@ -36,6 +36,7 @@
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/diagnostic.h"
 
+#include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
