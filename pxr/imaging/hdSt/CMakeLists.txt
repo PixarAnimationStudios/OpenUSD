@@ -20,17 +20,13 @@ if (${PXR_ENABLE_MATERIALX_SUPPORT})
         MaterialXCore
         MaterialXFormat
         MaterialXGenGlsl
+        MaterialXGenMsl
         hdMtlx
     )
     list(APPEND optionalPrivateClasses
          materialXFilter
          materialXShaderGen
     )
-    if (MaterialX_VERSION VERSION_GREATER_EQUAL "1.38.7")
-        list(APPEND optionalLibs
-            MaterialXGenMsl
-        )
-    endif()
 endif()
 if (PXR_ENABLE_PTEX_SUPPORT)
     list(APPEND optionalLibs ${PTEX_LIBRARY})
