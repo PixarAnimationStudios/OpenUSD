@@ -108,6 +108,15 @@ Tf_HasAttribute(
         SetLastError(olderr);
     }
 
+    // Because we remove the REPARSE_POINT attribute above for reparse points
+    // on network shares, the behavior of this bit of code will be slightly
+    // different than for reparse points on non-network volumes. We will not
+    // try to follow the link and get the attributes of the destination. This
+    // will result in a link to an invalid destination directory claiming that
+    // the directory exists. It might be possible to use some other function
+    // to test for the existence of the destination directory in this case
+    // (such as FindFirstFile), but doing this doesn't seem to be relevent
+    // to how USD uses this method.
     if (!resolveSymlinks || (attribs & FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
         return attribute == 0 || (attribs & attribute) == expected;
     }
