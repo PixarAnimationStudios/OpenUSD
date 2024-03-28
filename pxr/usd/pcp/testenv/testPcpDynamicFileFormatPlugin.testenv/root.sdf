@@ -66,3 +66,15 @@ def "SubrootReferenceAndVariant" (
     int TestPcp_depth = 1
     int TestPcp_num = 1
 }
+
+def "ReferenceAndNestedVariants" (
+    prepend references = @payload.sdf@</PayloadWithNestedVariants>
+    variants = {
+        string resolution = "resSmall"
+        string preset = "PresetB"
+    }
+    TestPcp_height = 120.0
+)
+{
+    double TestPcp_height = 120.0
+}

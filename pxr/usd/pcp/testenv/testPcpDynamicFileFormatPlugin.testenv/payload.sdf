@@ -20,3 +20,59 @@ payload = [@cone.testpcpdynamic:SDF_FORMAT_ARGS:TestPcp_payloadId=Pl2@,
 )
 {
 }
+
+def "PayloadWithNestedVariants" (
+    variants = {
+        string resolution = "resSmall"
+    }
+    prepend variantSets = "resolution"
+    TestPcp_depth = 2
+    TestPcp_num = 2
+)
+{
+    int TestPcp_depth = 2
+    int TestPcp_num = 2
+
+    variantSet "resolution" = {
+        "resSmall" (
+            variants = {
+                string preset = "__default__"
+            }
+            prepend variantSets = "preset"
+            TestPcp_radius = 50.0
+        ) {
+            double TestPcp_radius = 50.0
+            variantSet "preset" = {
+                "PresetB" (
+                    payload = @cone.testpcpdynamic@
+                    TestPcp_height = 22.0
+                ) {
+                    double TestPcp_height = 22.0
+                }
+                "__default__"  (
+                    payload = @cone.testpcpdynamic@
+                    TestPcp_height = 33.0
+                ) {
+                    double TestPcp_height = 33.0
+                }
+            }
+        }
+        "resBig" (
+            variants = {
+                string preset = "__default__"
+            }
+            prepend variantSets = "preset"
+            TestPcp_radius = 100.0
+        ) {
+            double TestPcp_radius = 100.0
+            variantSet "preset" = {
+                "__default__" (
+                    TestPcp_height = 66.0
+                    payload = @cone.testpcpdynamic@
+                ) {
+                    double TestPcp_height = 66.0
+                }
+            }
+        }
+    }
+}
