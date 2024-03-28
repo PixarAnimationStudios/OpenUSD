@@ -242,7 +242,9 @@
 #include <boost/variant.hpp>
 #include <boost/variant/get.hpp>
 #include <boost/variant/variant.hpp>
+#ifndef PXR_ONETBB_SUPPORT_ENABLED
 #include <tbb/atomic.h>
+#endif 
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_mutex.h>
 #include <tbb/spin_rw_mutex.h>

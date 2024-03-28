@@ -36,12 +36,18 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+#define TBB_TASK_CONST const
+#else 
+#define TBB_TASK_CONST
+#endif 
+
 template <class Fn>
 struct Work_DetachedTask
 {
     explicit Work_DetachedTask(Fn &&fn) : _fn(std::move(fn)) {}
     explicit Work_DetachedTask(Fn const &fn) : _fn(fn) {}
-    void operator()() {
+    void operator()() TBB_TASK_CONST {
         TfErrorMark m;
         _fn();
         m.Clear();

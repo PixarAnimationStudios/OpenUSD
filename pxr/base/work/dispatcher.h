@@ -35,6 +35,9 @@
 
 #include <tbb/concurrent_vector.h>
 #include <tbb/task.h>
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+#include <tbb/task_group.h>
+#endif 
 
 #include <functional>
 #include <type_traits>
@@ -103,7 +106,11 @@ public:
 
     template <class Callable>
     inline void Run(Callable &&c) {
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+        _taskGroup->run(std::forward<Callable>(c));
+#else 
         _rootTask->spawn(_MakeInvokerTask(std::forward<Callable>(c)));
+#endif 
     }
 
     template <class Callable, class A0, class ... Args>
@@ -133,6 +140,7 @@ public:
 private:
     typedef tbb::concurrent_vector<TfErrorTransport> _ErrorTransports;
 
+#ifndef PXR_ONETBB_SUPPORT_ENABLED
     // Function invoker helper that wraps the invocation with an ErrorMark so we
     // can transmit errors that occur back to the thread that Wait() s for tasks
     // to complete.
@@ -164,6 +172,7 @@ private:
             _InvokerTask<typename std::remove_reference<Fn>::type>(
                 std::forward<Fn>(fn), &_errors);
     }
+#endif 
 
     // Helper function that removes errors from \p m and stores them in a new
     // entry in \p errors.
@@ -172,8 +181,14 @@ private:
 
     // Task group context and associated root task that allows us to cancel
     // tasks invoked directly by this dispatcher.
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+    tbb::detail::d1::task_group_context _context;
+    tbb::detail::d1::task_group *_taskGroup;
+#else 
     tbb::task_group_context _context;
     tbb::empty_task* _rootTask;
+#endif 
+    
 
     // The error transports we use to transmit errors in other threads back to
     // this thread.

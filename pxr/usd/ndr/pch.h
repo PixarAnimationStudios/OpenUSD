@@ -198,7 +198,9 @@
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
+#ifndef PXR_ONETBB_SUPPORT_ENABLED
 #include <tbb/atomic.h>
+#endif 
 #include <tbb/blocked_range.h>
 #include <tbb/cache_aligned_allocator.h>
 #include <tbb/enumerable_thread_specific.h>

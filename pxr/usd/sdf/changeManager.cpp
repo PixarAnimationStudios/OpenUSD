@@ -34,7 +34,11 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/stackTrace.h"
 
+#ifndef PXR_ONETBB_SUPPORT_ENABLED
 #include <tbb/atomic.h>
+#else 
+#include <atomic>
+#endif 
 
 using std::string;
 using std::vector;
@@ -150,9 +154,17 @@ Sdf_ChangeManager::_ProcessRemoveIfInert(_Data *data)
     TF_VERIFY(data->outermostBlock);
 }
 
+#ifndef PXR_ONETBB_SUPPORT_ENABLED
 static tbb::atomic<size_t> &
+#else
+static std::atomic<size_t> &
+#endif 
 _InitChangeSerialNumber() {
+#ifndef PXR_ONETBB_SUPPORT_ENABLED
     static tbb::atomic<size_t> value;
+#else 
+    static std::atomic<size_t> value;
+#endif 
     value = 1;
     return value;
 }
@@ -191,8 +203,14 @@ Sdf_ChangeManager::_SendNotices(_Data *data)
     }
 
     // Obtain a serial number for this round of change processing.
+#ifndef PXR_ONETBB_SUPPORT_ENABLED
     static tbb::atomic<size_t> &changeSerialNumber = _InitChangeSerialNumber();
     size_t serialNumber = changeSerialNumber.fetch_and_increment();
+#else 
+    static std::atomic<size_t> &changeSerialNumber = _InitChangeSerialNumber();
+    size_t serialNumber = changeSerialNumber.fetch_add(1, std::memory_order_relaxed);
+#endif 
+   
 
     // Send global notice.
     SdfNotice::LayersDidChange(changes, serialNumber).Send();

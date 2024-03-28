@@ -49,6 +49,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+#define TBB_TASK_CONST const
+#else 
+#define TBB_TASK_CONST
+#endif 
+
 namespace {
 
 // For code that knows at compile time whether we need to apply a transform.
@@ -99,9 +105,13 @@ public:
     explicit operator bool() const {
         return _owner;
     }
-    void operator()() {
+    void operator()() TBB_TASK_CONST {
         // Do not save state here; all state should be accumulated externally.
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+        _owner->_ResolvePrim(const_cast<_BBoxTask*>(this), _primContext, _inverseComponentCtm);
+#else 
         _owner->_ResolvePrim(this, _primContext, _inverseComponentCtm);
+#endif 
     }
     _ThreadXformCache* GetXformCaches() { return _xfCaches; }
 };
@@ -126,9 +136,21 @@ private:
     {
         _PrototypeTask() : numDependencies(0) { }
 
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+        _PrototypeTask(const _PrototypeTask& other)
+        {
+            dependentPrototypes = other.dependentPrototypes;
+            numDependencies.store(other.numDependencies.load(std::memory_order_relaxed), std::memory_order_relaxed);
+        }
+#endif 
+
         // Number of dependencies -- prototype prims that must be resolved
         // before this prototype can be resolved.
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+        std::atomic<size_t> numDependencies;
+#else 
         tbb::atomic<size_t> numDependencies;
+#endif 
 
         // List of prototype prims that depend on this prototype.
         std::vector<_PrimContext> dependentPrototypes;
@@ -172,9 +194,17 @@ private:
     void _PopulateTasksForPrototype(const _PrimContext& prototypePrim,
                                  _PrototypeTaskMap* prototypeTasks)
     {
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+        const std::pair<const _PrimContext, _PrototypeTask> pair = std::make_pair(
+            std::ref(prototypePrim), _PrototypeTask()
+        );
         std::pair<_PrototypeTaskMap::iterator, bool> prototypeTaskStatus =
-            prototypeTasks->insert(std::make_pair(
+            prototypeTasks->insert(pair);
+#else 
+        std::pair<_PrototypeTaskMap::iterator, bool> prototypeTaskStatus =
+         prototypeTasks->insert(std::make_pair(
                     prototypePrim, _PrototypeTask()));
+#endif 
         if (!prototypeTaskStatus.second) {
             return;
         }
@@ -220,7 +250,11 @@ private:
             _PrototypeTask& dependentPrototypeData =
                 prototypeTasks->find(dependentPrototype)->second;
             if (dependentPrototypeData.numDependencies
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+                .fetch_sub(1, std::memory_order_relaxed) == 1){
+#else 
                 .fetch_and_decrement() == 1){
+#endif 
                 dispatcher->Run(
                     &_PrototypeBBoxResolver::_ExecuteTaskForPrototype,
                     this, dependentPrototype, prototypeTasks, xfCaches,

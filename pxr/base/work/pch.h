@@ -110,7 +110,9 @@
 #include <boost/type_traits/is_enum.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
+#ifndef PXR_ONETBB_SUPPORT_ENABLED
 #include <tbb/atomic.h>
+#endif 
 #include <tbb/blocked_range.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_vector.h>
@@ -121,4 +123,8 @@
 #include <tbb/spin_rw_mutex.h>
 #include <tbb/task.h>
 #include <tbb/task_arena.h>
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+#include <tbb/global_control.h>
+#else 
 #include <tbb/task_scheduler_init.h>
+#endif 
