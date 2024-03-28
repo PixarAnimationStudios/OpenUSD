@@ -36,6 +36,7 @@
 #include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/imaging/hd/renderDelegate.h"
 
@@ -176,7 +177,10 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
 
     gfxCmds->PushDebugGroup(passName.c_str());
 
-    gfxCmds->SetViewport(stRenderPassState->ComputeViewport());
+    gfxCmds->SetViewport(
+        stRenderPassState->ComputeViewport(
+            /* flip = */ _hgi->GetAPIName() == HgiTokens->OpenGL));
+
 
     // Camera state needs to be updated once per pass (not per batch).
     stRenderPassState->ApplyStateFromCamera();

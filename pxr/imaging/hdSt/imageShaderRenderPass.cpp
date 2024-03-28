@@ -37,6 +37,7 @@
 #include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/tokens.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -173,7 +174,8 @@ HdSt_ImageShaderRenderPass::_Execute(
     
     gfxCmds->PushDebugGroup(__ARCH_PRETTY_FUNCTION__);
 
-    const GfVec4i viewport = stRenderPassState->ComputeViewport();
+    const GfVec4i viewport = stRenderPassState->ComputeViewport(
+        /* flip = */ _hgi->GetAPIName() == HgiTokens->OpenGL);
     gfxCmds->SetViewport(viewport);
 
     // Camera state needs to be updated once per pass (not per batch).

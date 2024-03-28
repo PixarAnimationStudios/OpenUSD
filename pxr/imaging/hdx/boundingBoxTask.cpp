@@ -464,7 +464,8 @@ HdxBoundingBoxTask::_DrawBBoxes(
     gfxCmds->BindPipeline(_pipeline);
     gfxCmds->BindVertexBuffers({{_vertexBuffer, 0, 0}});
 
-    const GfVec4i viewport = hdStRenderPassState.ComputeViewport();
+    const GfVec4i viewport = hdStRenderPassState.ComputeViewport(
+        /* flip = */ _GetHgi()->GetAPIName() == HgiTokens->OpenGL);
     gfxCmds->SetViewport(viewport);
 
     _UpdateShaderConstants(gfxCmds.get(), viewport, hdStRenderPassState);

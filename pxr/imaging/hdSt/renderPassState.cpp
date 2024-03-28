@@ -210,6 +210,21 @@ _ComputeDataWindow(
 
 static
 GfVec4i
+_FlipViewport(const GfVec4i &viewport,
+              unsigned int framebufferHeight)
+{
+    if (framebufferHeight > 0) {
+        return GfVec4i(viewport[0],
+                       framebufferHeight - (viewport[1] + viewport[3]),
+                       viewport[2],
+                       viewport[3]);
+    } else {
+        return viewport;
+    }
+}
+
+static
+GfVec4i
 _ToVec4i(const GfVec4f &v)
 {
     return GfVec4i(int(v[0]), int(v[1]), int(v[2]), int(v[3]));
@@ -217,27 +232,29 @@ _ToVec4i(const GfVec4f &v)
 
 static
 GfVec4i
-_ComputeViewport(const GfRect2i &dataWindow, unsigned int framebufferHeight)
+_ToVec4i(const GfRect2i &r)
 {
-    if (framebufferHeight > 0) {
-        return GfVec4i(
-            dataWindow.GetMinX(),
-            framebufferHeight - (dataWindow.GetMinY() + dataWindow.GetHeight()),
-            dataWindow.GetWidth(),
-            dataWindow.GetHeight());
-    } else {
-        return GfVec4i(dataWindow.GetMinX(),  dataWindow.GetMinY(),
-                       dataWindow.GetWidth(), dataWindow.GetHeight());
-    }
+    return GfVec4i(r.GetMinX(),  r.GetMinY(),
+                   r.GetWidth(), r.GetHeight());
 }
 
+
 GfVec4i
-HdStRenderPassState::ComputeViewport() const
+HdStRenderPassState::ComputeViewport(
+    const bool flip) const
 {
     const CameraUtilFraming &framing = GetFraming();
-    // Use data window for clients using the new camera framing API.
     if (framing.IsValid()) {
-        return _ComputeViewport(framing.dataWindow, _GetFramebufferHeight());
+        // Use data window for clients using the new camera framing
+        // API.
+        const GfVec4i viewport = _ToVec4i(framing.dataWindow);
+        if (flip) {
+            // Note that in OpenGL, the coordinates for the viewport
+            // are y-Up but the camera framing is y-Down.
+            return _FlipViewport(viewport, _GetFramebufferHeight());
+        } else {
+            return viewport;
+        }
     }
 
     // For clients not using the new camera framing API, fallback
