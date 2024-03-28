@@ -24,8 +24,9 @@
 #ifndef PXR_USD_IMAGING_USD_IMAGING_DATA_SOURCE_RELATIONSHIP_H
 #define PXR_USD_IMAGING_USD_IMAGING_DATA_SOURCE_RELATIONSHIP_H
 
-#include "pxr/usd/usd/relationship.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
+#include "pxr/usd/usd/relationship.h"
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 
@@ -42,14 +43,17 @@ public:
 
     /// Returns the extracted path array value of the attribute, as a VtValue.
     /// \p shutterOffset is ignored.
+    USDIMAGING_API
     VtValue GetValue(HdSampledDataSource::Time shutterOffset) override;
 
     /// Returns the extracted path array value of the attribute.
     /// \p shutterOffset is ignored.
+    USDIMAGING_API
     VtArray<SdfPath> GetTypedValue(
             HdSampledDataSource::Time shutterOffset) override;
 
     /// Returns \c false indicating USD relationhips cannot vary with time.
+    USDIMAGING_API
     bool GetContributingSampleTimesForInterval(
             HdSampledDataSource::Time startTime,
             HdSampledDataSource::Time endTime,
@@ -61,6 +65,7 @@ private:
     ///
     /// \p stageGlobals represents the context object for the UsdStage with
     /// which to evaluate this relationship.
+    USDIMAGING_API
     UsdImagingDataSourceRelationship(
             const UsdRelationship &usdRel,
             const UsdImagingDataSourceStageGlobals &stageGlobals);

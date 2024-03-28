@@ -403,48 +403,22 @@ float mx_ggx_NDF(vec3 H, vec2 alpha)
     return 1.0 / (M_PI * alpha.x * alpha.y * mx_square(denom));
 }
 
-// https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
-// Appendix B.1 Equation 3
-float mx_ggx_PDF(vec3 H, float LdotH, vec2 alpha)
-{
-    float NdotH = H.z;
-    return mx_ggx_NDF(H, alpha) * NdotH / (4.0 * LdotH);
-}
-
-// https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
-// Appendix B.2 Equation 15
-vec3 mx_ggx_importance_sample_NDF(vec2 Xi, vec2 alpha)
-{
-    float phi = 2.0 * M_PI * Xi.x;
-    float tanTheta = sqrt(Xi.y / (1.0 - Xi.y));
-    vec3 H = vec3(tanTheta * alpha.x * cos(phi),
-                  tanTheta * alpha.y * sin(phi),
-                  1.0);
-    return normalize(H);
-}
-
-// http://jcgt.org/published/0007/04/01/paper.pdf
-// Appendix A Listing 1
+// https://ggx-research.github.io/publication/2023/06/09/publication-ggx.html
 vec3 mx_ggx_importance_sample_VNDF(vec2 Xi, vec3 V, vec2 alpha)
 {
     // Transform the view direction to the hemisphere configuration.
     V = normalize(vec3(V.xy * alpha, V.z));
 
-    // Construct an orthonormal basis from the view direction.
-    float len = length(V.xy);
-    vec3 T1 = (len > 0.0) ? vec3(-V.y, V.x, 0.0) / len : vec3(1.0, 0.0, 0.0);
-    vec3 T2 = cross(V, T1);
-
-    // Parameterization of the projected area.
-    float r = sqrt(Xi.y);
+    // Sample a spherical cap in (-V.z, 1].
     float phi = 2.0 * M_PI * Xi.x;
-    float t1 = r * cos(phi);
-    float t2 = r * sin(phi);
-    float s = 0.5 * (1.0 + V.z);
-    t2 = (1.0 - s) * sqrt(1.0 - mx_square(t1)) + s * t2;
+    float z = (1.0 - Xi.y) * (1.0 + V.z) - V.z;
+    float sinTheta = sqrt(clamp(1.0 - z * z, 0.0, 1.0));
+    float x = sinTheta * cos(phi);
+    float y = sinTheta * sin(phi);
+    vec3 c = vec3(x, y, z);
 
-    // Reprojection onto hemisphere.
-    vec3 H = t1 * T1 + t2 * T2 + sqrt(max(0.0, 1.0 - mx_square(t1) - mx_square(t2))) * V;
+    // Compute the microfacet normal.
+    vec3 H = c + V;
 
     // Transform the microfacet normal back to the ellipsoid configuration.
     H = normalize(vec3(H.xy * alpha, max(H.z, 0.0)));
@@ -1030,27 +1004,33 @@ void sampleLightSource(LightData light, vec3 position, out lightshader result)
     }
 }
 
-const mat3 AP1_TO_REC709 = mat3( 1.705050992658, -0.130256417507, -0.024003356805,
-                                -0.621792120657,  1.140804736575, -0.128968976065,
-                                -0.083258872001, -0.010548319068,  1.15297233287);
-
-const mat3 ADOBERGB_TO_REC709 = mat3( 1.39835574e+00, -2.50233861e-16,  2.77555756e-17,
-                                     -3.98355744e-01,  1.00000000e+00, -4.29289893e-02,
-                                      0.00000000e+00,  0.00000000e+00,  1.04292899e+00);
-
-const float ADOBERGB_GAMMA = 563.0 / 256.0;
-
-vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
+void NG_srgb_texture_to_lin_rec709_color3(vec3 in1, out vec3 out1)
 {
-    bvec3 isAbove = greaterThan(color, vec3(0.04045));
-    vec3 linSeg = color / 12.92;
-    vec3 powSeg = pow(max(color + vec3(0.055), vec3(0.0)) / 1.055, vec3(2.4));
-    return mix(linSeg, powSeg, vec3(isAbove));
-}
-
-void mx_srgb_texture_to_lin_rec709_color3(vec3 _in, out vec3 result)
-{
-    result = mx_srgb_texture_to_lin_rec709(_in);
+    const float bias_in2_tmp = 0.055000;
+    vec3 bias_out = in1 + bias_in2_tmp;
+    const float linSeg_in2_tmp = 12.920000;
+    vec3 linSeg_out = in1 / linSeg_in2_tmp;
+    const float isAboveR_value2_tmp = 0.040450;
+    const float isAboveR_in1_tmp = 1.000000;
+    const float isAboveR_in2_tmp = 0.000000;
+    float isAboveR_out = (in1.x > isAboveR_value2_tmp) ? isAboveR_in1_tmp : isAboveR_in2_tmp;
+    const float isAboveG_value2_tmp = 0.040450;
+    const float isAboveG_in1_tmp = 1.000000;
+    const float isAboveG_in2_tmp = 0.000000;
+    float isAboveG_out = (in1.y > isAboveG_value2_tmp) ? isAboveG_in1_tmp : isAboveG_in2_tmp;
+    const float isAboveB_value2_tmp = 0.040450;
+    const float isAboveB_in1_tmp = 1.000000;
+    const float isAboveB_in2_tmp = 0.000000;
+    float isAboveB_out = (in1.z > isAboveB_value2_tmp) ? isAboveB_in1_tmp : isAboveB_in2_tmp;
+    const float max_in2_tmp = 0.000000;
+    vec3 max_out = max(bias_out, max_in2_tmp);
+    vec3 isAbove_out = vec3(isAboveR_out, isAboveG_out, isAboveB_out);
+    const float scale_in2_tmp = 1.055000;
+    vec3 scale_out = max_out / scale_in2_tmp;
+    const float powSeg_in2_tmp = 2.400000;
+    vec3 powSeg_out = pow(scale_out, vec3(powSeg_in2_tmp));
+    vec3 mix_out = mix(linSeg_out, powSeg_out, isAbove_out);
+    out1 = mix_out;
 }
 
 void mx_roughness_anisotropy(float roughness, float anisotropy, out vec2 result)
@@ -1884,9 +1864,9 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     vec3 geomprop_Nworld_out1 = normalize(vd.normalWorld);
     vec3 geomprop_Tworld_out1 = normalize(vd.tangentWorld);
     vec3 SR_copper_coat_color_cm_out = vec3(0.0);
-    mx_srgb_texture_to_lin_rec709_color3(coat_color, SR_copper_coat_color_cm_out);
+    NG_srgb_texture_to_lin_rec709_color3(coat_color, SR_copper_coat_color_cm_out);
     vec3 SR_copper_base_color_cm_out = vec3(0.0);
-    mx_srgb_texture_to_lin_rec709_color3(base_color, SR_copper_base_color_cm_out);
+    NG_srgb_texture_to_lin_rec709_color3(base_color, SR_copper_base_color_cm_out);
     surfaceshader SR_copper_out = surfaceshader(vec3(0.0),vec3(0.0));
     NG_standard_surface_surfaceshader_100(base, SR_copper_base_color_cm_out, diffuse_roughness, metalness, specular, specular_color, specular_roughness, specular_IOR, specular_anisotropy, specular_rotation, transmission, transmission_color, transmission_depth, transmission_scatter, transmission_scatter_anisotropy, transmission_dispersion, transmission_extra_roughness, subsurface, subsurface_color, subsurface_radius, subsurface_scale, subsurface_anisotropy, sheen, sheen_color, sheen_roughness, coat, SR_copper_coat_color_cm_out, coat_roughness, coat_anisotropy, coat_rotation, coat_IOR, geomprop_Nworld_out1, coat_affect_color, coat_affect_roughness, thin_film_thickness, thin_film_IOR, emission, emission_color, opacity, thin_walled, geomprop_Nworld_out1, geomprop_Tworld_out1, SR_copper_out);
     vec4 mxOut = vec4(SR_copper_out.color, 1.0);

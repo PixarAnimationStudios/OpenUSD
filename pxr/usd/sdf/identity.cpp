@@ -66,15 +66,15 @@ public:
         if (iter != _ids.end()) {
             rawId = iter->second;
             ++rawId->_refCount;
-            Sdf_IdentityRefPtr ret(rawId, /* add_ref = */ false);
-            return ret;
+            return Sdf_IdentityRefPtr(
+                TfDelegatedCountDoNotIncrementTag, rawId);
         }
 
         TfAutoMallocTag2 tag("Sdf", "Sdf_IdentityRegistry::Identify");
         rawId = new Sdf_Identity(this, path);
         _ids[path] = rawId;
         _deadThreshold = std::max(_MinDeadThreshold, _ids.size() / 8);
-        return rawId;
+        return Sdf_IdentityRefPtr(TfDelegatedCountIncrementTag, rawId);
     }
 
     void UnregisterOrDelete() {
@@ -168,7 +168,7 @@ void Sdf_Identity::_Forget()
 
 void
 Sdf_Identity::_UnregisterOrDelete(Sdf_IdRegistryImpl *regImpl,
-                                  Sdf_Identity *id)
+                                  Sdf_Identity *id) noexcept
 {
     if (regImpl) {
         regImpl->UnregisterOrDelete();

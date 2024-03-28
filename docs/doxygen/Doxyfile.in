@@ -755,7 +755,9 @@ WARN_LOGFILE           =
 # to be ordered by "package" and low-to-high-level module order.
 
 INPUT                  = docs/doxygen/externalOverview.dox \
+                         docs/doxygen/developer_guides.dox \
                          docs/doxygen/architecture-guides \
+                         docs/include/pxr/extras/imaging \
                          docs/include/pxr/base \
                          docs/include/pxr/usd \
                          docs/include/pxr/imaging \

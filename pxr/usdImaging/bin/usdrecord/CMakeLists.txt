@@ -16,8 +16,18 @@ pxr_python_bin(usdrecord
         usd
         usdAppUtils)
 
-if ( ${PXR_HEADLESS_TEST_MODE})
+if (${PXR_HEADLESS_TEST_MODE})
     message(STATUS "Skipping ${PXR_PACKAGE} tests because PXR_HEADLESS_TEST_MODE is ON")
+    return()
+endif()
+
+if (APPLE)
+    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on macOS")
+    return()
+endif()
+
+if (WIN32)
+    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
     return()
 endif()
 
@@ -63,19 +73,6 @@ pxr_register_test(testUsdRecordSingleFrame
     TESTENV testUsdRecordSingleFrame
 )
 
-pxr_register_test(testUsdRecordSingleFrame_NoGpu
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --disableGpu AnimCube.usda AnimCubeNoGpu.1.png"
-    IMAGE_DIFF_COMPARE
-        AnimCubeNoGpu.1.png
-    FAIL 0.5
-    FAIL_PERCENT 0.005
-    WARN 0.05
-    WARN_PERCENT 0.0075
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdRecordSingleFrame
-)
-
 pxr_register_test(testUsdRecordMultipleFrames
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord AnimCube.usda AnimCube.#.png --frames 1,5,10"
@@ -91,20 +88,40 @@ pxr_register_test(testUsdRecordMultipleFrames
     TESTENV testUsdRecordMultipleFrames
 )
 
-pxr_register_test(testUsdRecordMultipleFrames_NoGpu
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --disableGpu AnimCube.usda AnimCubeNoGpu.#.png --frames 1,5,10"
-    IMAGE_DIFF_COMPARE
-        AnimCubeNoGpu.1.png
-        AnimCubeNoGpu.5.png
-        AnimCubeNoGpu.10.png
-    FAIL 0.5
-    FAIL_PERCENT 0.005
-    WARN 0.05
-    WARN_PERCENT 0.0075
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdRecordMultipleFrames
-)
+if (PXR_BUILD_PRMAN_PLUGIN OR PXR_BUILD_EMBREE_PLUGIN)
+    pxr_register_test(testUsdRecordSingleFrame_NoGpu
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --disableGpu AnimCube.usda AnimCubeNoGpu.1.png"
+        IMAGE_DIFF_COMPARE
+            AnimCubeNoGpu.1.png
+        FAIL 0.5
+        FAIL_PERCENT 0.005
+        WARN 0.05
+        WARN_PERCENT 0.0075
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdRecordSingleFrame
+        ENV
+            RMANTREE=${RENDERMAN_LOCATION}
+    )
+
+    pxr_register_test(testUsdRecordMultipleFrames_NoGpu
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --disableGpu AnimCube.usda AnimCubeNoGpu.#.png --frames 1,5,10"
+        IMAGE_DIFF_COMPARE
+            AnimCubeNoGpu.1.png
+            AnimCubeNoGpu.5.png
+            AnimCubeNoGpu.10.png
+        FAIL 0.5
+        FAIL_PERCENT 0.005
+        WARN 0.05
+        WARN_PERCENT 0.0075
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdRecordMultipleFrames
+        ENV
+            RMANTREE=${RENDERMAN_LOCATION}
+    )
+endif()
+
 
 pxr_register_test(testUsdRecordSessionLayer
     PYTHON

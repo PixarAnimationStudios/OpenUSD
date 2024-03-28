@@ -26,14 +26,15 @@
 #include "pxr/usdImaging/usdImaging/piPrototypeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 #include "pxr/usdImaging/usdImaging/rerootingSceneIndex.h"
-#include "pxr/imaging/hd/sceneIndexPrimView.h"
 
 #include "pxr/imaging/hd/mergingSceneIndex.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
 #include "pxr/imaging/hd/retainedSceneIndex.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
 
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/stringUtils.h"
 
@@ -559,6 +560,8 @@ void
 _InstancerObserver::PrimsAdded(const HdSceneIndexBase &sender,
                     const AddedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     for (const AddedPrimEntry &entry : entries) {
         const SdfPath &path = entry.primPath;
         if (entry.primType == HdPrimTypeTokens->instancer) {
@@ -578,6 +581,8 @@ void
 _InstancerObserver::PrimsDirtied(const HdSceneIndexBase &sender,
                                  const DirtiedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     static const HdDataSourceLocator locator =
         HdInstancerTopologySchema::GetDefaultLocator().Append(
             HdInstancerTopologySchemaTokens->prototypes);
@@ -599,6 +604,8 @@ void
 _InstancerObserver::PrimsRemoved(const HdSceneIndexBase &sender,
                                  const RemovedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     HdSceneIndexObserver::RemovedPrimEntries removedInstancers;
 
     for (const RemovedPrimEntry &entry : entries) {
@@ -662,6 +669,8 @@ HdSceneIndexPrim
 UsdImagingPiPrototypePropagatingSceneIndex::GetPrim(
     const SdfPath &primPath) const
 {
+    TRACE_FUNCTION();
+
     return _context->mergingSceneIndex->GetPrim(primPath);
 }
 
@@ -669,6 +678,8 @@ SdfPathVector
 UsdImagingPiPrototypePropagatingSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
+    TRACE_FUNCTION();
+
     return _context->mergingSceneIndex->GetChildPrimPaths(primPath);
 }
 

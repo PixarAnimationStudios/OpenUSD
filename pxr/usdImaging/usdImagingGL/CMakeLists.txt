@@ -1609,209 +1609,6 @@ pxr_register_test(testUsdImagingGLInstancing_SceneIndex_pi_ni_xform
         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
-pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_instancedCubes
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage instancedCubes.usda -write testUsdImagingGLInstancing_instancedCubes.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLInstancing_instancedCubes.png
-    FAIL 0.01
-    FAIL_PERCENT 0.005
-    WARN 0.02
-    WARN_PERCENT 0.0025
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars
-    ENV
-        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-)
-
-pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_instancedCubes2
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage instancedCubes2.usda -write testUsdImagingGLInstancing_instancedCubes2.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLInstancing_instancedCubes2.png
-    FAIL 0.01
-    FAIL_PERCENT 0.005
-    WARN 0.02
-    WARN_PERCENT 0.0025
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars
-    ENV
-        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-)
-
-pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_instancedCubes2NoInstancing
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage instancedCubes2NoInstancing.usda -write testUsdImagingGLInstancing_instancedCubes2NoInstancing.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLInstancing_instancedCubes2NoInstancing.png
-    FAIL 0.01
-    FAIL_PERCENT 0.005
-    WARN 0.02
-    WARN_PERCENT 0.0025
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars
-    ENV
-        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-)
-
-pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_nestedInstancedCubes
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -frameAll -stage nestedInstancedCubes.usda -write testUsdImagingGLInstancing_nestedInstancedCubes.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLInstancing_nestedInstancedCubes.png
-    FAIL 0.01
-    FAIL_PERCENT 0.005
-    WARN 0.02
-    WARN_PERCENT 0.0025
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars
-    ENV
-        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-)
-
-pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_ni_pi
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage ni_pi.usda -write testUsdImagingGLInstancing_ni_pi.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLInstancing_ni_pi.png
-    FAIL 0.01
-    FAIL_PERCENT 0.005
-    WARN 0.02
-    WARN_PERCENT 0.0025
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars
-    ENV
-        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-)
-
-pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_internal_ni
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage internal_ni.usda -write testUsdImagingGLInstancing_internal_ni.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLInstancing_internal_ni.png
-    FAIL 0.01
-    FAIL_PERCENT 0.005
-    WARN 0.02
-    WARN_PERCENT 0.0025
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars
-    ENV
-        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-)
-
-pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_pi_ni_xform
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -camera /main_cam -lighting -stage pi_ni_xform.usda -write testUsdImagingGLInstancing_pi_ni_xform.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLInstancing_pi_ni_xform.png
-    FAIL 0.01
-    FAIL_PERCENT 0.005
-    WARN 0.02
-    WARN_PERCENT 0.0025
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars
-    ENV
-        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-)
-
-pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex_instancedCubes
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage instancedCubes.usda -write testUsdImagingGLInstancing_instancedCubes.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLInstancing_instancedCubes.png
-    FAIL 0.01
-    FAIL_PERCENT 0.005
-    WARN 0.02
-    WARN_PERCENT 0.0025
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
-        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-)
-
-pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex_instancedCubes2
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage instancedCubes2.usda -write testUsdImagingGLInstancing_instancedCubes2.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLInstancing_instancedCubes2.png
-    FAIL 0.01
-    FAIL_PERCENT 0.005
-    WARN 0.02
-    WARN_PERCENT 0.0025
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
-        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-)
-
-pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex_instancedCubes2NoInstancing
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage instancedCubes2NoInstancing.usda -write testUsdImagingGLInstancing_instancedCubes2NoInstancing.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLInstancing_instancedCubes2NoInstancing.png
-    FAIL 0.01
-    FAIL_PERCENT 0.005
-    WARN 0.02
-    WARN_PERCENT 0.0025
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
-        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-)
-
-pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex_nestedInstancedCubes
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -frameAll -stage nestedInstancedCubes.usda -write testUsdImagingGLInstancing_nestedInstancedCubes.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLInstancing_nestedInstancedCubes.png
-    FAIL 0.01
-    FAIL_PERCENT 0.005
-    WARN 0.02
-    WARN_PERCENT 0.0025
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
-        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-)
-
-pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex_ni_pi
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage ni_pi.usda -write testUsdImagingGLInstancing_ni_pi.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLInstancing_ni_pi.png
-    FAIL 0.01
-    FAIL_PERCENT 0.005
-    WARN 0.02
-    WARN_PERCENT 0.0025
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
-        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-)
-
-pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex_internal_ni
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage internal_ni.usda -write testUsdImagingGLInstancing_internal_ni.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLInstancing_internal_ni.png
-    FAIL 0.01
-    FAIL_PERCENT 0.005
-    WARN 0.02
-    WARN_PERCENT 0.0025
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
-        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-)
-
-pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex_pi_ni_xform
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -camera /main_cam -lighting -stage pi_ni_xform.usda -write testUsdImagingGLInstancing_pi_ni_xform.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLInstancing_pi_ni_xform.png
-    FAIL 0.01
-    FAIL_PERCENT 0.005
-    WARN 0.02
-    WARN_PERCENT 0.0025
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
-        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-)
-
 pxr_register_test(testUsdImagingGLPickAndHighlight
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPickAndHighlight -offscreen -frameAll -stage instance.usda -write testUsdImagingGLPickAndHighlight.png"
     IMAGE_DIFF_COMPARE
@@ -4733,19 +4530,6 @@ pxr_register_test(testUsdImagingGLGeomSubsets_QuadrangulatedPoints_SceneIndex
         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
 )
 
-pxr_register_test(testUsdImagingGLGeomSubsets_Primvars_SceneIndex
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -shading wireOnSurface -stage primvars.usda -write testUsdImagingGLGeomSubsets_Primvars.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLGeomSubsets_Primvars.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLGeomSubsets_SceneIndex
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
-)
-
 pxr_register_test(testUsdImagingGLAovVisualization_Storm_depth
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage viz_aov.usda -rendererAov depth -clear 0 0 0 1 -lighting -camera /main_cam -write testUsdImagingGLAovVisualization_Storm_depth.png"
     IMAGE_DIFF_COMPARE
@@ -5280,6 +5064,21 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         ENV
             PXR_MTLX_PLUGIN_SEARCH_PATHS=./customNodeDefs
     )
+    
+    # Not a MaterialX test as such, but requires MaterialX support
+    pxr_register_test(testUsdImagingGLGeomSubsets_Primvars_SceneIndex
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading wireOnSurface -stage primvars.usda -write testUsdImagingGLGeomSubsets_Primvars.png"
+        IMAGE_DIFF_COMPARE
+            testUsdImagingGLGeomSubsets_Primvars.png
+        FAIL 1
+        FAIL_PERCENT 1
+        PERCEPTUAL
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLGeomSubsets_SceneIndex
+        ENV
+            USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+    )
+
 endif() # MaterialX tests
 
 #
@@ -5691,116 +5490,6 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         TESTENV testUsdImagingGLInstancing_SceneIndex
         ENV
             USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
-    )
-
-    pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_instance
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance.usda -write testUsdImagingGLInstancing_instance.png"
-        IMAGE_DIFF_COMPARE
-            testUsdImagingGLInstancing_instance.png
-        FAIL 0.01
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
-        EXPECTED_RETURN_CODE 0
-        TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars
-        ENV
-            HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-    )
-
-    pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_instance2
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance2.usda -write testUsdImagingGLInstancing_instance2.png"
-        IMAGE_DIFF_COMPARE
-            testUsdImagingGLInstancing_instance2.png
-        FAIL 0.01
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
-        EXPECTED_RETURN_CODE 0
-        TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars
-        ENV
-            HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-    )
-
-    pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_instance3
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance3.usda -write testUsdImagingGLInstancing_instance3.png"
-        IMAGE_DIFF_COMPARE
-            testUsdImagingGLInstancing_instance3.png
-        FAIL 0.02
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
-        EXPECTED_RETURN_CODE 0
-        TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars
-        ENV
-            HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-    )
-
-    pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_nestedInstance
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage nestedInstance.usda -write testUsdImagingGLInstancing_nestedInstance.png"
-        IMAGE_DIFF_COMPARE
-            testUsdImagingGLInstancing_nestedInstance.png
-        FAIL 0.02
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
-        EXPECTED_RETURN_CODE 0
-        TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars
-        ENV
-            HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-    )
-
-    pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex_instance
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance.usda -write testUsdImagingGLInstancing_instance.png"
-        IMAGE_DIFF_COMPARE
-            testUsdImagingGLInstancing_instance.png
-        FAIL 0.01
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
-        EXPECTED_RETURN_CODE 0
-        TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex
-            HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-    )
-
-    pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex_instance2
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance2.usda -write testUsdImagingGLInstancing_instance2.png"
-        IMAGE_DIFF_COMPARE
-            testUsdImagingGLInstancing_instance2.png
-        FAIL 0.01
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
-        EXPECTED_RETURN_CODE 0
-        TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex
-            HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-    )
-
-    pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex_instance3
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance3.usda -write testUsdImagingGLInstancing_instance3.png"
-        IMAGE_DIFF_COMPARE
-            testUsdImagingGLInstancing_instance3.png
-        FAIL 0.02
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
-        EXPECTED_RETURN_CODE 0
-        TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex
-            HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
-    )
-
-    pxr_register_test(testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex_nestedInstance
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage nestedInstance.usda -write testUsdImagingGLInstancing_nestedInstance.png"
-        IMAGE_DIFF_COMPARE
-            testUsdImagingGLInstancing_nestedInstance.png
-        FAIL 0.02
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
-        EXPECTED_RETURN_CODE 0
-        TESTENV testUsdImagingGLInstancing_DeprecatedPrimvars_SceneIndex
-        ENV
-            USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
-            HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
     )
 
     pxr_register_test(testUsdImagingGLBasicDrawingNonBindless_shaders

@@ -162,6 +162,7 @@ protected:
         const RenamedPrimEntries &entries) override;
 
 private:
+    HDSI_API
     HdsiPrimManagingSceneIndexObserver(
         HdSceneIndexBaseRefPtr const &sceneIndex,
         HdContainerDataSourceHandle const &inputArgs);

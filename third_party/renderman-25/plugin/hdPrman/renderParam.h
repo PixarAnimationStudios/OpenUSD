@@ -386,6 +386,11 @@ private:
     void _DestroyRiley();
     void _DestroyStatsSession();
 
+    // Initialize internals of PRMan system
+    void _PRManSystemBegin(const std::vector<std::string>& extraArgs);
+    // Initialize internals of PRMan renderer
+    int _PRManRenderBegin(const std::vector<std::string>& extraArgs);
+
     // Updates clear colors of AOV descriptors of framebuffer.
     // If this is not possible because the set of AOVs changed,
     // returns false.

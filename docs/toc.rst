@@ -46,6 +46,7 @@
    OpenUSD Forum <https://forum.openusd.org>
    Contributing <contributing_to_usd>
    Contributors <contributors>
+   Release Schedule <release_schedule>
 
 .. toctree::
    :hidden:

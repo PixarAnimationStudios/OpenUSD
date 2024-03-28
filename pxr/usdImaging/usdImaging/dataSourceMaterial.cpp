@@ -60,7 +60,7 @@ _RelativePath(const SdfPath &prefix, const SdfPath &path)
         : path.ReplacePrefix(prefix, SdfPath::ReflexiveRelativePath());
 }
 
-// Extract the render context from an output name, ex:
+// Extract the renderContext from an output name, ex:
 // "outputs:surface" -> ""
 // "outputs:ri:surface" -> "ri"
 TfToken
@@ -323,7 +323,7 @@ public:
         for (const TfToken &propNameToken : _t.GetPrim().GetPropertyNames()) {
             const std::string &propName = propNameToken.GetString();
             static const std::string suffix =
-                ":" + UsdLuxTokens->lightShaderId.GetString();
+                ":" + _GetTypedShaderId().GetString();
             if (TfStringEndsWith(propName, suffix)) {
                 result.push_back(
                     TfToken(propName.substr(0, propName.size() - suffix.size())));
@@ -346,6 +346,10 @@ public:
     }
 
 private:
+    TfToken _GetTypedShaderId();
+//    {
+//        return TfToken();
+//    }
 
     _UsdImagingDataSourceRenderContextIdentifiers(
         const T &t)
@@ -353,6 +357,21 @@ private:
 
     T _t;
 };
+
+template <>
+TfToken
+_UsdImagingDataSourceRenderContextIdentifiers<UsdLuxLightAPI>::_GetTypedShaderId()
+{
+    return UsdLuxTokens->lightShaderId;
+}
+
+template <>
+TfToken
+_UsdImagingDataSourceRenderContextIdentifiers<UsdLuxLightFilter>::_GetTypedShaderId()
+{
+    return UsdLuxTokens->lightFilterShaderId;
+}
+
 
 // Populate the "nodeTypeInfo" of a node using the "info:" attributes and
 // the meta data (skipping info:id).
@@ -435,10 +454,10 @@ public:
                 nodeDef.GetShaderId(&nodeId);
             } else if (UsdLuxLightFilter lightFilter =
                     UsdLuxLightFilter(_shaderNode.GetPrim())) {
-                nodeId = lightFilter.GetShaderId({});
+                nodeId = lightFilter.GetShaderId({_renderContext});
             } else if (UsdLuxLightAPI light =
                     UsdLuxLightAPI(_shaderNode.GetPrim())) {
-                nodeId = light.GetShaderId({});
+                nodeId = light.GetShaderId({_renderContext});
             } else if (UsdShadeNodeGraph nodegraph = 
                     UsdShadeNodeGraph(_shaderNode.GetPrim())) {
                 nodeId = TfToken();
@@ -494,11 +513,13 @@ private:
     _UsdImagingDataSourceShadingNode(
         UsdShadeShader shaderNode,
         const UsdImagingDataSourceStageGlobals &stageGlobals,
+        const TfToken &renderContext,
         const SdfPath &sceneIndexPath,
         const HdDataSourceLocator &locatorPrefix,
         const SdfPath &materialPrefix)
     : _shaderNode(shaderNode)
     , _stageGlobals(stageGlobals)
+    , _renderContext(renderContext)
     , _sceneIndexPath(sceneIndexPath)
     , _locatorPrefix(locatorPrefix)
     , _materialPrefix(materialPrefix)
@@ -506,6 +527,7 @@ private:
 
     UsdShadeShader _shaderNode;
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
+    const TfToken _renderContext;
     SdfPath _sceneIndexPath;
     HdDataSourceLocator _locatorPrefix;
     const SdfPath _materialPrefix;
@@ -544,7 +566,7 @@ UsdImagingDataSourceMaterial::GetNames()
         const TfToken renderContext = _GetRenderContextForShaderOutput(output);
         // Only add a renderContext if it has not been added before so
         // we do not have duplicates (there may be multiple outputs for
-        // the same context).
+        // the same renderContext).
         if (!_Contains(renderContexts, renderContext)) {
             renderContexts.push_back(renderContext);
         }
@@ -560,6 +582,7 @@ _WalkGraph(
     UsdShadeConnectableAPI const &shadeNode,
     _TokenDataSourceMap * const outputNodes,
     const UsdImagingDataSourceStageGlobals &stageGlobals,
+    const TfToken &renderContext,
     const SdfPath &sceneIndexPath,
     const HdDataSourceLocator &locatorPrefix,
     const SdfPath &materialPrefix = SdfPath())
@@ -581,7 +604,7 @@ _WalkGraph(
 
     HdDataSourceBaseHandle nodeValue =
         _UsdImagingDataSourceShadingNode::New(
-            shadeNode, stageGlobals, sceneIndexPath,
+            shadeNode, stageGlobals, renderContext, sceneIndexPath,
             locatorPrefix, materialPrefix);
 
     outputNodes->insert({nodeName, nodeValue});
@@ -594,6 +617,7 @@ _WalkGraph(
                 UsdShadeConnectableAPI(attr.GetPrim()),
                 outputNodes,
                 stageGlobals,
+                renderContext,
                 sceneIndexPath,
                 locatorPrefix,
                 materialPrefix);
@@ -607,7 +631,7 @@ _BuildNetwork(
     UsdShadeConnectableAPI const &terminalNode,
     const TfToken &terminalName,
     UsdImagingDataSourceStageGlobals const &stageGlobals,
-    TfToken const& context,
+    TfToken const& renderContext,
     const SdfPath &sceneIndexPath,
     const HdDataSourceLocator &locatorPrefix)
 {
@@ -615,6 +639,7 @@ _BuildNetwork(
     _WalkGraph(terminalNode,
                 &nodeDataSources,
                 stageGlobals,
+                renderContext,
                 sceneIndexPath,
                 locatorPrefix.IsEmpty()
                     ? locatorPrefix
@@ -692,7 +717,7 @@ HdDataSourceBaseHandle
 _BuildMaterial(
     UsdShadeNodeGraph const &usdMat, 
     UsdImagingDataSourceStageGlobals const &stageGlobals,
-    TfToken const& context,
+    TfToken const& renderContext,
     const SdfPath &sceneIndexPath,
     const HdDataSourceLocator &locatorPrefix)
 {
@@ -713,18 +738,18 @@ _BuildMaterial(
 
     for (UsdShadeOutput &output : usdMat.GetOutputs()) {
         // Skip terminals from other contexts.
-        if (_GetRenderContextForShaderOutput(output) != context) {
+        if (_GetRenderContextForShaderOutput(output) != renderContext) {
             continue;
         }
 
         // E.g. "ri:surface"
         TfToken outputName = output.GetBaseName();
 
-        // Strip the context, if there is one.
-        if (!context.IsEmpty()) {
-            // Skip the context and subsequent ':'
+        // Strip the renderContext, if there is one.
+        if (!renderContext.IsEmpty()) {
+            // Skip the renderContext and subsequent ':'
             outputName = TfToken(
-                outputName.GetString().substr(context.size()+1));
+                outputName.GetString().substr(renderContext.size()+1));
         }
 
         for (const UsdShadeConnectionSourceInfo &sourceInfo :
@@ -734,11 +759,12 @@ _BuildMaterial(
             }
 
             UsdShadeConnectableAPI upstreamShader = _ComputeOutputSource(
-                UsdShadeMaterial(usdMat), outputName, {context}, sourceInfo);
+                UsdShadeMaterial(usdMat), outputName, {renderContext}, sourceInfo);
 
             _WalkGraph(upstreamShader,
                 &nodeDataSources,
                 stageGlobals,
+                renderContext,
                 sceneIndexPath,
                 locatorPrefix.IsEmpty()
                     ? locatorPrefix

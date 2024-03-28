@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import UsdUtils, Sdf, Usd
+from pxr import Ar, UsdUtils, Sdf, Usd
 from pathlib import Path
 import os
 import unittest
@@ -292,6 +292,25 @@ class TestUsdUtilsDependencies(unittest.TestCase):
         self.assertEqual([os.path.normcase(f) for f in references],
             [os.path.normcase(os.path.abspath("file.txt"))])
         self.assertEqual(unresolved, [])
+
+    def test_ComputeAllDependenciesMissingExternalDep(self):
+        """Tests detecting missing external dependencies from package files"""
+        packageFile = "computeAllDependenciesUsdz/package_missing_external.usdz"
+        layers, references, unresolved = \
+            UsdUtils.ComputeAllDependencies(packageFile)
+
+        expectedLayers = [ Ar.JoinPackageRelativePath(p) for p in [
+            [packageFile],
+            [packageFile, "missing_in_package.usdz"],
+            [packageFile, "missing_in_reference.usda"]
+        ]]
+
+        self.assertEqual(layers, 
+                             [Sdf.Layer.FindOrOpen(l) for l in expectedLayers])
+        self.assertEqual(len(references), 0)
+        self.assertEqual(unresolved, ["missing.png",
+                                      "missing_in_package.png", 
+                                      "missing_in_reference.png"])
 
 if __name__=="__main__":
     unittest.main()

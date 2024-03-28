@@ -26,6 +26,7 @@
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/renderParam.h" // HDPRMAN_SHUTTER{OPEN,CLOSE}_DEFAULT
 #include "hdPrman/rixStrings.h"
+#include "hdPrman/tokens.h"
 
 #include "pxr/base/arch/env.h"
 #include "pxr/base/arch/library.h"
@@ -238,7 +239,13 @@ struct _VtValueToRtParamList
     // String-like types
     //
     bool operator()(const TfToken &v) {
-        return params->SetString(name, RtUString(v.GetText()));
+        if (role == HdPrmanRileyAdditionalRoleTokens->colorReference) {
+            return params->SetColorReference(name, RtUString(v.GetText()));
+        } else if (role == HdPrmanRileyAdditionalRoleTokens->floatReference) {
+            return params->SetFloatReference(name, RtUString(v.GetText()));
+        } else {
+            return params->SetString(name, RtUString(v.GetText()));
+        }
     }
     bool operator()(const std::string &v) {
         return params->SetString(name, RtUString(v.c_str()));

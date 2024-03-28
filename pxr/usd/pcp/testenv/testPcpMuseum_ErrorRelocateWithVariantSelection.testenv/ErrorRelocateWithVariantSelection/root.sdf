@@ -5,14 +5,14 @@
     embedded variant selection, which are disallowed,
     both as a source or target of a relocation.
     """
-)
-
-def "Model_1" (
-    add references = @./model.sdf@</Model>
     relocates = {
         </Model_1{vset=vsel}PrimOnlyInVariantSet>: </Model_1/TryOutsideVariantSet>,
         </Model_1/A/B>: </Model_1{vset=vsel}TryInsideVariantSet>
     }
+)
+
+def "Model_1" (
+    add references = @./model.sdf@</Model>
 )
 {
 }

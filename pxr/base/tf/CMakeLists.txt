@@ -242,7 +242,6 @@ pxr_library(tf
         pxrTslRobinMap/robin_hash.h
         pxrTslRobinMap/robin_map.h
         pxrTslRobinMap/robin_set.h
-        preprocessorUtils.h
         preprocessorUtilsLite.h
         safeTypeCompare.h
         span.h
@@ -285,7 +284,6 @@ pxr_library(tf
 
     CPPFILES
         initConfig.cpp
-        preprocessorUtils.cpp
         pxrDoubleConversion/bignum-dtoa.cc
         pxrDoubleConversion/bignum.cc
         pxrDoubleConversion/cached-powers.cc
@@ -470,7 +468,6 @@ pxr_build_test(testTf
         testenv/pathUtils.cpp
         testenv/patternMatcher.cpp
         testenv/pointerAndBits.cpp
-        testenv/preprocessorUtils.cpp
         testenv/preprocessorUtilsLite.cpp
         testenv/probe.cpp
         testenv/refPtr.cpp
@@ -675,9 +672,6 @@ pxr_register_test(TfPatternMatcher
 )
 pxr_register_test(TfPointerAndBits
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPointerAndBits"
-)
-pxr_register_test(TfPreprocessorUtils
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPreprocessorUtils"
 )
 pxr_register_test(TfPreprocessorUtilsLite
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPreprocessorUtilsLite"

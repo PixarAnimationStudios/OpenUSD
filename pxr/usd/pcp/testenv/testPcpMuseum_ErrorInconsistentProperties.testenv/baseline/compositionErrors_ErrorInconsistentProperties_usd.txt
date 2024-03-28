@@ -1,0 +1,6 @@
+------------------------------------------------------------------------
+Errors while composing </InconsistentPropertyType>
+
+The property </InconsistentPropertyType.x> has inconsistent spec types.  The defining spec is @ErrorInconsistentProperties/root.sdf@</InconsistentPropertyType.x> and is an attribute spec.  The conflicting spec is @ErrorInconsistentProperties/ref.sdf@</InconsistentPropType.x> and is a relationship spec.  The conflicting spec will be ignored.
+The property </InconsistentPropertyType.x> has inconsistent spec types.  The defining spec is @ErrorInconsistentProperties/root.sdf@</InconsistentPropertyType.x> and is an attribute spec.  The conflicting spec is @ErrorInconsistentProperties/ref.sdf@</InconsistentPropType.x> and is a relationship spec.  The conflicting spec will be ignored.
+

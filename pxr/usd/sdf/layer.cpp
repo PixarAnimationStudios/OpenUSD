@@ -2012,30 +2012,30 @@ SdfLayer::SetSubLayerOffset(const SdfLayerOffset& offset, int index)
         VtValue(offsets));
 }
 
-SdfRelocatesMapProxy
+SdfRelocates
 SdfLayer::GetRelocates() const
 {
-    return SdfRelocatesMapProxy(GetPseudoRoot(), SdfFieldKeys->Relocates);                
+    return GetFieldAs<SdfRelocates>(
+        SdfPath::AbsoluteRootPath(), SdfFieldKeys->LayerRelocates);
 }
 
 void
-SdfLayer::SetRelocates(const SdfRelocatesMap& newMap)
+SdfLayer::SetRelocates(const SdfRelocates& relocates)
 {
-    GetRelocates() = newMap;
+    SetField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->LayerRelocates, relocates);
 }
 
 bool
 SdfLayer::HasRelocates() const
 {
-    return HasField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->Relocates);
+    return HasField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->LayerRelocates);
 }
 
 void
 SdfLayer::ClearRelocates()
 {
-    EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->Relocates);
+    EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->LayerRelocates);
 }
-
 
 bool 
 SdfLayer::_CanGetSpecAtPath(

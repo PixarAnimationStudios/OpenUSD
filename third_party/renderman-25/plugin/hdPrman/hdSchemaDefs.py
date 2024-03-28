@@ -35,7 +35,12 @@
         SCHEMA_NAME = 'RileyParam',
         MEMBERS = [
             ('value', T_SAMPLED, {}),
-            ('role', T_TOKEN, {}),
+            ('role', T_TOKEN,
+             dict(DOC = '''
+             Disambiguates what call to RtParamList::SetFOO to use.
+
+             Can take values from HdPrimvarRoleTokens and
+             HdPrmanRileyAdditionalRoleTokens.''')),
         ],
     ),
 
@@ -68,7 +73,12 @@
         MEMBERS = [
             ('value', T_SAMPLED, {}),
             ('detailType', T_TOKEN, {}),
-            ('role', T_TOKEN, {}),
+            ('role', T_TOKEN,
+             dict(DOC = '''
+             Disambiguates what call to RtPrimvarList::SetFOO to use.
+
+             Can take values from HdPrimvarRoleTokens and
+             HdPrmanRileyAdditionalRoleTokens.''')),
         ],
 
         STATIC_TOKEN_DATASOURCE_BUILDERS = [

@@ -32,8 +32,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
-
 #define HD_TOKENS                               \
     (accelerations)                             \
     (adjacency)                                 \
@@ -141,15 +139,7 @@ extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
     ((instanceTransforms,   "hydra:instanceTransforms"))   \
     ((instanceRotations,    "hydra:instanceRotations"))    \
     ((instanceScales,       "hydra:instanceScales"))       \
-    ((instanceTranslations, "hydra:instanceTranslations")) \
-                                                           \
-    /* Deprecated versions of the above */                 \
-    /* To be removed in 2024, along with the */            \
-    /* HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES env var*/ \
-    (instanceTransform)                                    \
-    (rotate)                                               \
-    (scale)                                                \
-    (translate)
+    ((instanceTranslations, "hydra:instanceTranslations"))
 
 #define HD_REPR_TOKENS                          \
     (disabled)                                  \

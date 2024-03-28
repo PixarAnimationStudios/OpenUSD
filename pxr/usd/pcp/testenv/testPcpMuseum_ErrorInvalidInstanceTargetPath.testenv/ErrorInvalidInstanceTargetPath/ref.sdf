@@ -1,11 +1,12 @@
 #sdf 1.4.32
-
-def "BrowRig" (
+(
     relocates = {
-        <LBrow/Anim/Brow> : <Anim/LBrow>,
-        <RBrow/Anim/Brow> : <Anim/RBrow>,
+        </BrowRig/LBrow/Anim/Brow>: </BrowRig/Anim/LBrow>, 
+        </BrowRig/RBrow/Anim/Brow>: </BrowRig/Anim/RBrow>
     }
 )
+
+def "BrowRig"
 {
     class "SymBrow"
     {
@@ -42,3 +43,4 @@ def "BrowRig" (
     {
     }
 }
+

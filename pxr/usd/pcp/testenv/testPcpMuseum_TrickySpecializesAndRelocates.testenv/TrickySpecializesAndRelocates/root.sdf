@@ -4,13 +4,13 @@
     This test case demonstrates the behavior when mixing specializes
     arcs and relocates.
     """
+    relocates = {
+        </Model/Brass>: </Model/Brass_2>
+    }
 )
 
 def "Model" (
     references = @./ref.sdf@</Ref>
-    relocates = {
-        <Brass> : <Brass_2>
-    }
 )
 {
     over "Brass_2"

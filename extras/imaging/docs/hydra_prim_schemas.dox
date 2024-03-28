@@ -1,0 +1,244 @@
+/*!
+\page Page_Hydra_Prim_Schemas Hydra Prim Schemas
+
+Hydra schemas are constantly evolving. The following list of schemas is a 
+snapshot from November 2023.
+
+<b>Prim</b>: the flattening scene index will produce these attributes on all 
+prims in the scene.
+
+- xform (HdXformSchema)
+    - matrix (GfMatrix4d)
+    - resetXformStack (bool)
+- visibility (HdVisibilitySchema)
+    - visibility (bool)
+- purpose (HdPurposeSchema)
+    - purpose (TfToken)
+- extent (HdExtentSchema)
+    - min (GfVec3d)
+    - max (GfVec3d)
+
+<b>Gprim</b>: all prims for which HdPrimTypeIsGprim(type) is true optionally 
+have these.
+
+- displayStyle (HdLegacyDisplayStyleSchema)
+    - refineLevel (int)
+    - flatShadingEnabled (bool)
+    - displacementEnabled (bool)
+    - occludedSelectionShowsThrough (bool)
+    - pointsShadingEnabled (bool)
+    - materialIsFinal (bool)
+    - shadingStyle (TfToken)
+    - reprSelector (VtArray<TfToken>)
+    - cullStyle (TfToken)
+- instancedBy (HdInstancedBySchema)
+    - paths (VtArray<SdfPath>)
+    - prototypeRoots (VtArray<SdfPath>)
+- coordSysBinding (HdCoordSysBindingSchema)
+    - <name> (SdfPath) - representing the path of the coordSys prim bound to 
+      <name>
+- categories (HdCategoriesSchema)
+    - <name> (bool) - representing whether the prim is included or excluded from 
+      category <name>
+- primvars (HdPrimvarsSchema)
+    - <name> (HdPrimvarSchema) - primvar data for <name>
+        - primvarValue (HdSampledDataSource) - flattened primvar data, one value 
+          per topological primvar element.
+        - indexedPrimvarValue (HdSampledDataSource) - for indexed primvars, 
+          de-duplicated primvar data, arbitrary size
+        - indices (VtArray<int>) - for indexed primvars, indices into 
+          indexedPrimvarValue, one value per topological primvar element.
+        - interpolation (Token)
+        - role (Token)
+- materialBindings (HdMaterialBindingsSchema)
+    - <name> (HdMaterialBindingSchema)  - material binding for purpose <name>
+        - path (SdfPath)
+
+<b>Mesh</b>
+
+- mesh - HdMeshSchema
+    - topology (HdMeshTopologySchema)
+        - faceVertexCounts (VtArray<int>)
+        - faceVertexIndices (VtArray<int>)
+        - holeIndices (VtArray<int>)
+        - Orientation (TfToken)
+    - subdivisionScheme (TfToken)
+    - subdivisionTags (HdSubdivisionTagsSchema) - optional based on 
+      subdivisionScheme
+        - faceVaryingLinearInterpolation (TfToken)
+        - interpolateBoundary (TfToken)
+        - triangleSubdivisionRule (TfToken)
+        - cornerIndices (VtArray<int>)
+        - cornerSharpnesses (VtArray<float>)
+        - creaseIndices (VtArray<int>)
+        - creaseLengths (VtArray<int>)
+        - creaseSharpnesses (VtArray<float>)
+    - geomSubsets (HdGeomSubsetsSchema)
+        - <name> (HdGeomSubsetSchema) - geom subset with identifier <name>
+            - type (TfToken) - typeFaceSet, typeCurveSet, typePointSet
+            - indices (VtArray<int>)
+            - _Optional_ - visibility (bool)
+            - _Optional_ - <name> (HdMaterialBindingSchema) - material binding 
+              for purpose <name>
+    - doubleSided (bool)
+- primvars (HdPrimvarsSchema)
+    - points (HdPrimvarSchema) - required to have interpolation "vertex"
+
+<b>Basis Curves</b>
+
+- basisCurves - HdBasisCurvesSchema
+    - topology (HdBasisCurvesTopologySchema)
+        - curveVertexCounts (VtArray<int>)
+        - curveIndices (VtArray<int>)
+        - basis (TfToken)
+        - type (TfToken)
+        - wrap (TfToken)
+    - geomSubsets (HdGeomSubsetsSchema)
+- primvars (HdPrimvarsSchema)
+    - points (HdPrimvarSchema) - required to have interpolation "vertex"
+
+<b>Volume</b>
+
+- volumeFieldBindings (HdVolumeFieldBindingsSchema)
+    - <name> (SdfPath) - volume field to bind to input <name>
+
+<b>VolumeField</b>
+
+- volumeField (HdVolumeFieldSchema)
+    - filePath (SdfAssetPath) - library agnostic but OpenUSD ships with OpenVDB 
+      and Field3D support.
+    - fieldName (TfToken)
+    - fieldIndex (int)
+    - fieldDataType (TfToken)
+    - vectorDataRoleHint (TfToken)
+
+<b>Material</b>
+
+- material (HdMaterialSchema)
+    - <name> (HdMaterialNetworkSchema) - material network for material context 
+      <name>
+        - nodes (HdContainerDataSource)
+            - <name> (HdMaterialNodeSchema)
+                - nodeIdentifier (TfToken) - matches the Sdr identifier
+                - renderContextNodeIdentifiers (HdContainerDataSource)
+                    - <name> (TfToken) - Sdr node identifier for render context 
+                      <name>
+                - nodeTypeInfo (HdContainerDataSource)
+                - parameters (HdContainerDataSource)
+                    - <name> (HdMaterialNodeParameterSchema)
+                        - value (HdSampledDataSource)
+                        - _Optional_ - colorSpace (TfToken)
+                - inputConnections (HdContainerDataSource)
+                    - <name> (HdMaterialConnectionSchema) - connection to a 
+                      material node output providing input <name> to this node
+        - terminals (HdContainerDataSource)
+            - <name> (HdMaterialConnectionSchema) - connection to a material 
+              node output providing the material terminal <name>
+                - upstreamNodePath (TfToken)
+                - upstreamNodeOutputName (TfToken)
+- primvars (HdPrimvarsSchema)
+
+<b>Light</b>
+
+- material (HdMaterialSchema) - we expect a "light" terminal
+- light (HdLightSchema)
+    - isLight (bool)
+    - materialSyncMode
+    - filters (SdfPathVector)
+    - lightLink (TfToken)
+    - shadowLink (TfToken)
+    - lightFilterLink (TfToken)
+- primvars (HdPrimvarsSchema)
+- instancedBy (HdInstancedBySchema)
+
+<b>Camera</b>
+
+- camera (HdCameraSchema)
+    - projection (TfToken)
+    - horizontalAperture (float)
+    - verticalAperture (float)
+    - horizontalApertureOffset (float)
+    - verticalApertureOffset (float)
+    - focalLength (float)
+    - clippingRange (GfVec2f)
+    - clippingPlanes (VtArray<GfVec4d>)
+    - fStop (float)
+    - focusDistance (float)
+    - shutterOpen (double)
+    - shutterClose (double)
+    - exposure (float)
+    - focusOn (float)
+    - dofAspect (float)
+    - splitDiopter (HdSplitDiopterSchema)
+        - count (int)
+        - angle (float)
+        - offset1 (float)
+        - width1 (float)
+        - focusDistance1 (float)
+        - offset2 (float)
+        - width2 (float)
+        - focusDistance2 (float)
+    - lensDistortion (HdLensDistortionSchema)
+        - type (TfToken)
+        - k1 (float)
+        - k2 (float)
+        - center (GfVec2f)
+        - anaSq (float)
+        - asym (GfVec2f)
+        - scale (float)
+        - ior (float)
+- primvars (HdPrimvarsSchema)
+
+<b>Instancer</b>
+
+- instancerTopology - HdInstancerTopologySchema
+    - prototypes (VtArray<SdfPath>)
+    - instanceIndices(HdVectorDataSource)
+        - <index> (HdInstanceIndicesSchema)
+            - instancer (SdfPath)
+            - prototypeIndex (int)
+            - instanceIndices (VtArray<int>)
+    - mask (VtArray<bool>)
+    - instanceLocations (VtArray<SdfPath>)
+- instancedBy (HdInstancedBySchema)
+- primvars (HdPrimvarsSchema)
+
+<b>RenderBuffer</b>
+
+- renderBuffer - HdRenderBufferSchema
+    - dimensions (GfVec3i)
+    - format (HdFormat)
+    - multiSampled (bool)
+
+<b>RenderSettings</b>
+
+- renderSettings - HdRenderSettingsSchema
+    - namespacedSettings (HdContainerDataSource)
+        - <name> (HdContainerDataSource) - settings for renderer identifier 
+          <name> (e.g. "ri", "storm")
+    - active (bool) - whether the settings on this prim should be applied
+    - includedPurposes (VtArray<TfToken>)
+    - materialBindingPurposes (VtArray<TfToken>)
+    - renderingColorSpace (TfToken)
+    - renderProducts (HdVectorDataSource)
+        - <index> (HdRenderProductSchema)
+            - path (SdfPath)
+            - type (TfToken)
+            - name (TfToken)
+            - resolution (GfVec2i)
+            - cameraPrim (SdfPath)
+            - pixelAspectRatio (float)
+            - aspectRatioConformPolicy (TfToken)
+            - apertureSize (GfVec2f)
+            - dataWindowNDC (GfVec4f)
+            - disableMotionBlur (bool)
+            - namespacedSettings (HdContainerDataSource)
+            - renderVars (HdVectorDataSource)
+                - <index> (HdRenderVarSchema)
+                    - path (SdfPath)
+                    - dataType (TfToken)
+                    - sourceName (TfToken)
+                    - sourceType (TfToken)
+                    - namespacedSettings (HdContainerDataSource)
+
+*/

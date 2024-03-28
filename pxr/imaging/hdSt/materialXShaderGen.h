@@ -27,10 +27,7 @@
 #include "pxr/pxr.h"
 
 #include <MaterialXGenGlsl/GlslShaderGenerator.h>
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 7
 #include <MaterialXGenMsl/MslShaderGenerator.h>
-#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -91,13 +88,6 @@ protected:
                                   MaterialX::GenContext& context, 
                                   MaterialX::ShaderStage& stage,
                                   bool assignValue = true) const override;
-
-    // This method was introduced in MaterialX 1.38.5 and replaced the
-    // emitInclude method. We add this method for older versions of MaterialX
-    // for backwards compatibility.
-    void emitLibraryInclude(const MaterialX::FilePath& filename,
-                            MaterialX::GenContext& context,
-                            MaterialX::ShaderStage& stage) const;
 
     void _EmitConstantsUniformsAndTypeDefs(
         MaterialX::GenContext& mxContext,
@@ -161,8 +151,6 @@ private:
 /// Generates a Glslfx shader with some additional Metal code, and a 
 /// surfaceShader function for a MaterialX network
 
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 7
 class HdStMaterialXShaderGenMsl
     : public HdStMaterialXShaderGen<MaterialX::MslShaderGenerator>
 {
@@ -190,7 +178,6 @@ private:
                           MaterialX::GenContext& mxContext,
                           MaterialX::ShaderStage& mxStage) const;
 };
-#endif
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

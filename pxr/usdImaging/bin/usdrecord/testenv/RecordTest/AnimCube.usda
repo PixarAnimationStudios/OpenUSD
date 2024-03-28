@@ -97,11 +97,35 @@ def Xform "Cameras" (
         float2 clippingRange = (0.1, 10000)
         float focalLength = 35
         float focusDistance = 5
-        float fStop = 5.6
         float horizontalAperture = 35.999928
         float verticalAperture = 23.999952
         float3 xformOp:rotateXYZ = (62.482925, -3.1805547e-15, 43.994915)
         double3 xformOp:translate = (3.8079010269722375, -3.943897492221248, 3.3559257702291783)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+}
+
+def Scope "Render"
+{
+    def RenderSettings "Settings"
+    {
+        rel camera = </Cameras/main_cam>
+        rel products = </Render/Product>
+    }
+    
+    def RenderProduct "Product"
+    {
+        rel orderedVars = [
+            </Render/Vars/Ci>,
+        ]
+        token productType = "raster"
+        token productName = "test.exr"
+    }
+    def Scope "Vars"
+    {
+        def RenderVar "Ci"
+        {
+            string sourceName = "Ci"
+        }
     }
 }

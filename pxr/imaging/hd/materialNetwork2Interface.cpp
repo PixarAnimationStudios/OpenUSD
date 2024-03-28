@@ -79,7 +79,7 @@ HdMaterialNetwork2Interface::GetNodeNames() const
     TfTokenVector result;
     if (_materialNetwork) {
         result.reserve(_materialNetwork->nodes.size());
-        for (const auto nameNodePair : _materialNetwork->nodes) {
+        for (const auto& nameNodePair : _materialNetwork->nodes) {
             result.push_back(TfToken(nameNodePair.first.GetString()));
         }
     }
@@ -117,7 +117,7 @@ HdMaterialNetwork2Interface::GetAuthoredNodeParameterNames(
     TfTokenVector result;
     if (HdMaterialNode2 *node = _GetNode(nodeName)) {
         result.reserve(node->parameters.size());
-        for (const auto nameValuePair : node->parameters) {
+        for (const auto& nameValuePair : node->parameters) {
             result.push_back(nameValuePair.first);
         }
     }
@@ -169,7 +169,7 @@ HdMaterialNetwork2Interface::GetNodeInputConnectionNames(
     TfTokenVector result;
     if (HdMaterialNode2 *node = _GetNode(nodeName)) {
         result.reserve(node->inputConnections.size());
-        for (const auto nameConnectionsPair : node->inputConnections) {
+        for (const auto& nameConnectionsPair : node->inputConnections) {
             result.push_back(nameConnectionsPair.first);
         }
     }
@@ -286,7 +286,7 @@ HdMaterialNetwork2Interface::GetTerminalNames() const
     TfTokenVector result;
     if (_materialNetwork) {
         result.reserve(_materialNetwork->terminals.size());
-        for (const auto nameConnectionPair : _materialNetwork->terminals) {
+        for (const auto& nameConnectionPair : _materialNetwork->terminals) {
             result.push_back(nameConnectionPair.first);
         }
     }

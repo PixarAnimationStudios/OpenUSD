@@ -206,6 +206,16 @@ HdSceneIndexAdapterSceneDelegate::_PrimAdded(
             } else if (existingType == HdPrimTypeTokens->instancer) {
                 GetRenderIndex()._RemoveInstancer(indexPath);
             }
+
+            // If the prim type of an existing entry changed, also clear any
+            // cached data associated with it, e.g. computed primvars.
+            entry.primvarDescriptors.clear();
+            entry.primvarDescriptorsState.store(
+                _PrimCacheEntry::ReadStateUnread);
+            entry.extCmpPrimvarDescriptors.clear();
+            entry.extCmpPrimvarDescriptorsState.store(
+                _PrimCacheEntry::ReadStateUnread);
+
         } else {
             insertIfNeeded = false;
         }
@@ -1030,6 +1040,8 @@ _Walk(
             for (const TfToken &name : renderContexts) {
                 
                 if (name.IsEmpty() && !nodeId.IsEmpty()) {
+                    // The universal renderContext was requested, so
+                    // use the universal nodeId if we found one above.
                     break;
                 }
                 if (HdTokenDataSourceHandle ds = HdTokenDataSource::Cast(

@@ -15,7 +15,7 @@ def Xform "Scene" (
         def Material "Material"
         {
             float inputs:roughness = 0.8
-            token inputs:textureCoords = "st"
+            string inputs:textureCoords = "st"
             token outputs:surface.connect = </Scene/Looks/Material/PbrPreview.outputs:surface>
 
             def Shader "PbrPreview"
@@ -31,7 +31,7 @@ def Xform "Scene" (
             def Shader "Primvar"
             {
                 uniform token info:id = "UsdPrimvarReader_float2"
-                token inputs:varname.connect = </Scene/Looks/Material.inputs:textureCoords>
+                string inputs:varname.connect = </Scene/Looks/Material.inputs:textureCoords>
                 float2 outputs:result
             }
 

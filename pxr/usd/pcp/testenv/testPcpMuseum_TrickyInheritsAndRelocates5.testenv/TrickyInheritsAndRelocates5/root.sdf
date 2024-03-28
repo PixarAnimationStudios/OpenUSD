@@ -10,13 +10,12 @@
     propagated across relocates so that opinions in the classes
     are taken into account during composition.
     """
-)
-
-def Scope "CharRig" (
     relocates = {
-        <Rig/TentaclesRig/Arms> : <Anim/Arms>
+        </CharRig/Rig/TentaclesRig/Arms>: </CharRig/Anim/Arms>
     }
 )
+
+def Scope "CharRig"
 {
     def Scope "Anim"
     {

@@ -47,7 +47,7 @@ def Scope "Scene" (
             {
                 uniform token info:id = "UsdPrimvarReader_float3"
                 float3 inputs:fallback = (0, 0, 1)
-                token inputs:varname = "displayColo2r"
+                string inputs:varname = "displayColo2r"
                 float3 outputs:result
             }
         }

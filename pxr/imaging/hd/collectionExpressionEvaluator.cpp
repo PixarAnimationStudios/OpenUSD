@@ -114,13 +114,6 @@ HdCollectionExpressionEvaluator::Match(
         return SdfPredicateFunctionResult::MakeConstant(false);
     }
 
-    // It seems redundant to pass the domain object (scene index prim) in
-    // addition to both functors. The SdfPathExpressionEval::Match API
-    // doesn't provide an overload that takes just the path and path-to-object
-    // functor as arguments.
-    //
-    const HdSceneIndexPrim prim = _sceneIndex->GetPrim(path);
-
     // XXX For a prim path that isn't in the scene index, we'll get an empty
     //     prim entry. The only way to determine if a prim exists at a path is
     //     to query GetChildPrimPaths with its parent path and check if it is
@@ -136,11 +129,7 @@ HdCollectionExpressionEvaluator::Match(
     //     children of room instead of stopping the evaluation at
     //     /world/sets/room.
     //     
-    return
-        _eval.Match(
-            prim,
-            _SceneIndexPrimToPath {path},
-            _PathToSceneIndexPrim {_sceneIndex});
+    return _eval.Match(path, _PathToSceneIndexPrim {_sceneIndex});
 }
 
 void

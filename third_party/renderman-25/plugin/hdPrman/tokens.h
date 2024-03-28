@@ -62,6 +62,13 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanTokens, HDPRMAN_API, HD_PRMAN_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanRileyPrimTypeTokens, HDPRMAN_API,
                          HD_PRMAN_RILEY_PRIM_TYPE_TOKENS);
 
+#define HD_PRMAN_RILEY_ADDITIONAL_ROLE_TOKENS         \
+    (colorReference)                                  \
+    (floatReference)
+
+TF_DECLARE_PUBLIC_TOKENS(HdPrmanRileyAdditionalRoleTokens, HDPRMAN_API,
+                         HD_PRMAN_RILEY_ADDITIONAL_ROLE_TOKENS);
+
 #define HD_PRMAN_PLUGIN_TOKENS \
     ((motionBlur,       "HdPrman_MotionBlurSceneIndexPlugin")) \
     ((extComp,          "HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin"))

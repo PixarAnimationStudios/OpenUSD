@@ -343,12 +343,6 @@ private:
 ///
 /// \brief Evaluates SdfPathExpressions with objects from a given UsdStage.
 class UsdObjectCollectionExpressionEvaluator {
-    struct ObjToPath {
-        SdfPath operator()(UsdObject const &obj) const {
-            return obj.GetPath();
-        }
-    };
-    
     struct PathToObj {
         UsdObject operator()(SdfPath const &path) const {
             return stage->GetObjectAtPath(path);
@@ -359,7 +353,7 @@ class UsdObjectCollectionExpressionEvaluator {
 public:
     using PathExprEval = SdfPathExpressionEval<UsdObject>;
     using IncrementalSearcher =
-        typename PathExprEval::IncrementalSearcher<ObjToPath, PathToObj>;
+        typename PathExprEval::IncrementalSearcher<PathToObj>;
     
     /// Construct an empty evaluator.
     UsdObjectCollectionExpressionEvaluator() = default;

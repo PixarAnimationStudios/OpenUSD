@@ -8,6 +8,10 @@
     path translation.
     
     """
+    relocates = {
+        </FaceRig/BrowRig/Anim/LBrow>: </FaceRig/Anim/Face/Eyes/LBrow>, 
+        </FaceRig/BrowRig/Anim/RBrow>: </FaceRig/Anim/Face/Eyes/RBrow>
+    }
 )
 
 def "ConnectionToLocalClass" (
@@ -46,10 +50,6 @@ def "FaceRig" (
    This is a trickier test case involving relocates
    and reference arcs.
    """
-   relocates = {
-       <BrowRig/Anim/LBrow>: <Anim/Face/Eyes/LBrow>, 
-       <BrowRig/Anim/RBrow>: <Anim/Face/Eyes/RBrow>, 
-   }
 )
 {
     def "BrowRig" (

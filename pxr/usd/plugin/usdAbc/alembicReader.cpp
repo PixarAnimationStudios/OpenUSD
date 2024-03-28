@@ -952,7 +952,12 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog,
     // Get info.
     uint32_t apiVersion;
     std::string writer, version, date, comment;
+    double fps = 0.0;
+#if ALEMBIC_LIBRARY_VERSION >= 10712
+    GetArchiveInfo(archive, writer, version, apiVersion, date, comment, fps);
+#else
     GetArchiveInfo(archive, writer, version, apiVersion, date, comment);
+#endif
 
     // Report.
     if (IsFlagSet(UsdAbc_AlembicContextFlagNames->verbose)) {
@@ -989,9 +994,13 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog,
             root.getProperties().getPropertyHeader("Usd")) {
         const MetaData& metadata = property->getMetaData();
         _pseudoRoot->metadata[SdfFieldKeys->TimeCodesPerSecond] = 24.0;
-       _GetDoubleMetadata(metadata, _pseudoRoot->metadata,
+        _GetDoubleMetadata(metadata, _pseudoRoot->metadata,
                            SdfFieldKeys->TimeCodesPerSecond);
-       _timeScale = _pseudoRoot->metadata[SdfFieldKeys->TimeCodesPerSecond].Get<double>();
+        _timeScale = _pseudoRoot->metadata[SdfFieldKeys->TimeCodesPerSecond].Get<double>();
+    }
+    else if (fps != 0.0) {
+        _pseudoRoot->metadata[SdfFieldKeys->TimeCodesPerSecond] = fps;
+        _timeScale = _pseudoRoot->metadata[SdfFieldKeys->TimeCodesPerSecond].Get<double>();
     }
 
     // Collect instancing information.

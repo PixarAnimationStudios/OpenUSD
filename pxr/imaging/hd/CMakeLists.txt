@@ -255,15 +255,6 @@ pxr_build_test(testHdBufferSpec
        testenv/testHdBufferSpec.cpp
 )
 
-# Removing test from build while we modernize the Hydra architecture.
-# pxr_build_test(testHdChangeTracker
-#    LIBRARIES
-#        hd
-
-#    CPPFILES
-#        testenv/testHdChangeTracker.cpp
-# )
-
 pxr_build_test(testHdCommand
    LIBRARIES
        hd
@@ -327,15 +318,6 @@ pxr_build_test(testHdPerfLog
        testenv/testHdPerfLog.cpp
 )
 
-# Removing test from build while we modernize the Hydra architecture.
-# pxr_build_test(testHdRenderIndex
-#    LIBRARIES
-#        hd
-
-#    CPPFILES
-#        testenv/testHdRenderIndex.cpp
-# )
-
 pxr_build_test(testHdDataSource
    LIBRARIES
        hd
@@ -382,14 +364,6 @@ pxr_build_test(testHdTypes
        testenv/testHdTypes.cpp
 )
 
-pxr_build_test(testHdInstancerDeprecatedPrimvars
-    LIBRARIES
-        hd
-        
-    CPPFILES
-        testenv/testHdInstancerDeprecatedPrimvars.cpp
-)
-
 pxr_build_test(testHdCollectionExpressionEvaluator
     LIBRARIES
         hd
@@ -413,10 +387,6 @@ pxr_register_test(testHdBufferSourceEmptyVal
 pxr_register_test(testHdBufferSpec
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdBufferSpec"
 )
-
-# pxr_register_test(testHdChangeTracker
-#     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdChangeTracker"
-# )
 
 pxr_register_test(testHdCommand
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdCommand"
@@ -446,10 +416,6 @@ pxr_register_test(testHdPerfLog
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdPerfLog"
 )
 
-# pxr_register_test(testHdRenderIndex
-#     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdRenderIndex"
-# )
-
 pxr_register_test(testHdDataSource
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDataSource"
 )
@@ -470,12 +436,6 @@ pxr_register_test(testHdTimeSampleArray
 
 pxr_register_test(testHdTypes
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTypes"
-)
-
-pxr_register_test(testHdInstancerDeprecatedPrimvars
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdInstancerDeprecatedPrimvars"
-    ENV
-        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
 )
 
 pxr_register_test(testHdCollectionExpressionEvaluator

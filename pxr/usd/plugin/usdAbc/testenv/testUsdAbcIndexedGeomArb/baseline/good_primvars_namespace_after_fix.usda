@@ -4,6 +4,7 @@
     doc = "Exported from: /home/belal/maya/projects/default/untitled"
     endTimeCode = 0
     startTimeCode = 0
+    timeCodesPerSecond = 24
     upAxis = "Y"
 )
 

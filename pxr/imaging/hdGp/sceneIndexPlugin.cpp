@@ -49,11 +49,12 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
     // For now, do not add the procedural resolving scene index by default but
     // allow activation of a default configured instance via envvar.
     if (TfGetEnvSetting(HDGP_INCLUDE_DEFAULT_RESOLVER) == true) {
+
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
             TfToken(), // empty token means all renderers
             TfToken("HdGpSceneIndexPlugin"),
             nullptr,   // no argument data necessary
-            0,         // insertion phase
+            HdGpSceneIndexPlugin::GetInsertionPhase(),
             HdSceneIndexPluginRegistry::InsertionOrderAtStart);
     }
 }

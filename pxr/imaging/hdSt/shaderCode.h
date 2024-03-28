@@ -105,6 +105,7 @@ public:
     /// avoid re-computing the draw batches over time, we use the this
     /// hash when grouping the draw batches.
     ///
+    HDST_API
     virtual ID ComputeTextureSourceHash() const;
 
     /// Returns the shader source provided by this shader

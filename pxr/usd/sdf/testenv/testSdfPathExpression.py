@@ -264,6 +264,26 @@ class TestSdfPathExpression(unittest.TestCase):
         self.assertTrue(evl.Match(Sdf.Path("/prefix/path")).IsConstant())
         self.assertFalse(evl.Match(Sdf.Path("/prefix/wrong")))
         self.assertTrue(evl.Match(Sdf.Path("/prefix/wrong")).IsConstant())
+        
+        evl = MatchEval("//World//")
+        self.assertTrue(evl.Match(Sdf.Path("/World")))
+        self.assertTrue(evl.Match(Sdf.Path("/World")).IsConstant())
+        self.assertTrue(evl.Match(Sdf.Path("/World/Foo")))
+        self.assertTrue(evl.Match(Sdf.Path("/World/Foo")).IsConstant())
+
+        evl = MatchEval("//World//Foo/Bar//")
+        self.assertTrue(evl.Match(Sdf.Path("/World/Foo/Bar")))
+        self.assertTrue(evl.Match(Sdf.Path("/World/Foo/Bar")).IsConstant())
+        self.assertTrue(evl.Match(Sdf.Path("/World/X/Foo/Bar")))
+        self.assertTrue(evl.Match(Sdf.Path("/World/X/Foo/Bar")).IsConstant())
+        self.assertTrue(evl.Match(Sdf.Path("/World/X/Y/Foo/Bar")))
+        self.assertTrue(evl.Match(Sdf.Path("/World/X/Y/Foo/Bar")).IsConstant())
+        self.assertTrue(evl.Match(Sdf.Path("/World/X/Y/Foo/Bar/Baz")))
+        self.assertTrue(evl.Match(Sdf.Path("/World/X/Y/Foo/Bar/Baz"))
+                        .IsConstant())
+        self.assertTrue(evl.Match(Sdf.Path("/World/X/Y/Foo/Bar/Baz/Qux")))
+        self.assertTrue(evl.Match(Sdf.Path("/World/X/Y/Foo/Bar/Baz/Qux"))
+                        .IsConstant())
 
     def test_SceneDescription(self):
         l = Sdf.Layer.CreateAnonymous()

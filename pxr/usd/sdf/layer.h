@@ -1221,30 +1221,30 @@ public:
     /// \name Relocates
     /// @{
 
-    /// Get an editing proxy for the map of namespace relocations
-    /// specified in this layer's metadata.
+    /// Get the list of relocates specified in this layer's metadata.
     ///
-    /// The map of namespace relocation paths is editable in-place via
-    /// this editing proxy.  Individual source-target pairs can be added,
-    /// removed, or altered using common map operations.
+    /// Each individual relocate in the list is specified as a pair of 
+    /// \c \SdfPath where the first is the source path of the relocate and the
+    /// second is target path.
     ///
-    /// The map is organized as target \c SdfPath indexed by source \c SdfPath.
+    /// Note that is NOT a proxy object and cannot be used to edit the field in
+    /// place. 
     SDF_API
-    SdfRelocatesMapProxy GetRelocates() const;
+    SdfRelocates GetRelocates() const;
     
-    /// Set the entire map of namespace relocations specified on this layer.
-    /// Use the editing proxy for modifying single paths in the map.
+    /// Set the entire list of namespace relocations specified on this layer to
+    /// \p relocates.
     SDF_API
-    void SetRelocates(const SdfRelocatesMap& newMap);
+    void SetRelocates(const SdfRelocates& relocates);
 
     /// Returns true if this layer's metadata has any relocates opinion, 
-    /// including that there should be no relocates (i.e. an empty map).  An 
-    /// empty map (no relocates) does not mean the same thing as a missing map
+    /// including that there should be no relocates (i.e. an empty list).  An 
+    /// empty list (no relocates) does not mean the same thing as a missing list
     /// (no opinion).
     SDF_API
     bool HasRelocates() const;
     
-    /// Clears the relocates opinion for this layer.
+    /// Clears the layer relocates opinion in the layer's metadata.
     SDF_API
     void ClearRelocates();
 

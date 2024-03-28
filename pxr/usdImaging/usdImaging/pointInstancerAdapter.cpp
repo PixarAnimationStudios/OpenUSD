@@ -715,9 +715,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             if (instancer.GetPositionsAttr().Get(&positions, time)) {
                 _MergePrimvar(
                     &vPrimvars,
-                    (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-                        ? HdInstancerTokens->translate
-                        : HdInstancerTokens->instanceTranslations),
+                    HdInstancerTokens->instanceTranslations,
                     HdInterpolationInstance,
                     HdPrimvarRoleTokens->vector);
             }
@@ -728,10 +726,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                 if (orientationsAttr.Get(&orientationsf, time)) {
                     _MergePrimvar(
                         &vPrimvars,
-                        (TfGetEnvSetting(
-                            HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-                            ? HdInstancerTokens->rotate
-                            : HdInstancerTokens->instanceRotations),
+                        HdInstancerTokens->instanceRotations,
                         HdInterpolationInstance);
                 }
             } else {
@@ -739,10 +734,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                 if (orientationsAttr.Get(&orientations, time)) {
                     _MergePrimvar(
                         &vPrimvars,
-                        (TfGetEnvSetting(
-                            HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-                            ? HdInstancerTokens->rotate
-                            : HdInstancerTokens->instanceRotations),
+                        HdInstancerTokens->instanceRotations,
                         HdInterpolationInstance);
                 }
             }
@@ -751,9 +743,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             if (instancer.GetScalesAttr().Get(&scales, time)) {
                 _MergePrimvar(
                     &vPrimvars,
-                    (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-                        ? HdInstancerTokens->scale
-                        : HdInstancerTokens->instanceScales),
+                    HdInstancerTokens->instanceScales,
                     HdInterpolationInstance);
             }
 
@@ -842,21 +832,13 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
 
         TfToken primvarName = propertyName;
         if (propertyName == UsdGeomTokens->positions) {
-            primvarName = (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-                ? HdInstancerTokens->translate
-                : HdInstancerTokens->instanceTranslations);
+            primvarName = HdInstancerTokens->instanceTranslations;
         } else if (propertyName == UsdGeomTokens->orientations) {
-            primvarName = (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-                ? HdInstancerTokens->rotate
-                : HdInstancerTokens->instanceRotations);
+            primvarName = HdInstancerTokens->instanceRotations;
         } else if (propertyName == UsdGeomTokens->orientationsf) {
-            primvarName = (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-                ? HdInstancerTokens->rotate
-                : HdInstancerTokens->instanceRotations);
+            primvarName = HdInstancerTokens->instanceRotations;
         } else if (propertyName == UsdGeomTokens->scales) {
-            primvarName = (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-                ? HdInstancerTokens->scale
-                : HdInstancerTokens->instanceScales);
+            primvarName = HdInstancerTokens->instanceScales;
         } else if (propertyName == UsdGeomTokens->velocities) {
             primvarName = HdTokens->velocities;
         } else if (propertyName == UsdGeomTokens->accelerations) {
@@ -1861,14 +1843,11 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
     } else {
         // Map Hydra-PI transform keys to their USD equivalents.
         TfToken usdKey = key;
-        if (key == HdInstancerTokens->instanceTranslations ||
-            key == HdInstancerTokens->translate) {
+        if (key == HdInstancerTokens->instanceTranslations) {
             usdKey = UsdGeomTokens->positions;
-        } else if (key == HdInstancerTokens->instanceScales ||
-                   key == HdInstancerTokens->scale) {
+        } else if (key == HdInstancerTokens->instanceScales) {
             usdKey = UsdGeomTokens->scales;
-        } else if (key == HdInstancerTokens->instanceRotations ||
-                   key == HdInstancerTokens->rotate) {
+        } else if (key == HdInstancerTokens->instanceRotations) {
             UsdGeomPointInstancer instancer(usdPrim);
             instancer.UsesOrientationsf(&usdKey);
         } else if (key == HdTokens->velocities) {
@@ -2121,16 +2100,14 @@ UsdImagingPointInstancerAdapter::Get(UsdPrim const& usdPrim,
                 TfMapLookupPtr(_instancerData, cachePath)) {
         TF_UNUSED(instrData);
 
-        if (key == HdInstancerTokens->instanceTranslations ||
-            key == HdInstancerTokens->translate) {
+        if (key == HdInstancerTokens->instanceTranslations) {
             UsdGeomPointInstancer instancer(usdPrim);
             VtVec3fArray positions;
             if (instancer.GetPositionsAttr().Get(&positions, time)) {
                 return VtValue(positions);
             }
 
-        } else if (key == HdInstancerTokens->instanceRotations ||
-                   key == HdInstancerTokens->rotate) {
+        } else if (key == HdInstancerTokens->instanceRotations) {
             UsdGeomPointInstancer instancer(usdPrim);
             UsdAttribute orientationsAttr;
             if (instancer.UsesOrientationsf(&orientationsAttr)){
@@ -2145,8 +2122,7 @@ UsdImagingPointInstancerAdapter::Get(UsdPrim const& usdPrim,
                 }
             }
 
-        } else if (key == HdInstancerTokens->instanceScales ||
-                   key == HdInstancerTokens->scale) {
+        } else if (key == HdInstancerTokens->instanceScales) {
             UsdGeomPointInstancer instancer(usdPrim);
             VtVec3fArray scales;
             if (instancer.GetScalesAttr().Get(&scales, time)) {
