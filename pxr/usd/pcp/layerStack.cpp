@@ -1313,6 +1313,11 @@ PcpLayerStack::GetPathsToPrimsWithRelocates() const
 PcpMapExpression
 PcpLayerStack::GetExpressionForRelocatesAtPath(const SdfPath &path)
 {
+    // Don't waste time and memory if there are no relocates.
+    if (IsUsd() && !HasRelocates()) {
+        return PcpMapExpression();
+    }
+
     const PcpMapExpression::Variable *var = nullptr;
     {
         tbb::spin_mutex::scoped_lock lock{_relocatesVariablesMutex};

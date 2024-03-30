@@ -217,7 +217,8 @@ public:
     /// Return a PcpMapExpression representing the relocations that affect
     /// namespace at and below the given path.  The value of this
     /// expression will continue to track the effective relocations if
-    /// they are changed later.
+    /// they are changed later. In USD mode only, this will return a null 
+    /// expression if there are no relocations on this layer stack.
     PCP_API
     PcpMapExpression GetExpressionForRelocatesAtPath(const SdfPath &path);
 
