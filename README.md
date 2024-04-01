@@ -46,11 +46,11 @@ Dependencies
 Required:
  - C/C++ compiler
  - [CMake](https://cmake.org/documentation/)
- - [Boost](https://boost.org)
  - [Intel TBB](https://www.threadingbuildingblocks.org/)
 
 Optional:
  - [Python](https://python.org)
+ - [Boost](https://boost.org)
 
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 

@@ -2240,7 +2240,10 @@ if extraPythonPaths:
 
 # Determine list of dependencies that are required based on options
 # user has selected.
-requiredDependencies = [ZLIB, BOOST, TBB]
+requiredDependencies = [ZLIB, TBB]
+
+if context.buildPython:
+    requiredDependencies += [BOOST]
 
 if context.buildAlembic:
     if context.enableHDF5:
@@ -2546,7 +2549,7 @@ if pythonDependencies:
 
 # Ensure directory structure is created and is writable.
 for dir in [context.usdInstDir, context.instDir, context.srcDir, 
-            context.buildDir]:
+            context.buildDir, os.path.join(context.instDir, 'lib')]:
     try:
         if os.path.isdir(dir):
             testFile = os.path.join(dir, "canwrite")

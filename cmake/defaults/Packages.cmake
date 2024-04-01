@@ -20,10 +20,11 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
 set(PXR_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 
-# Find Boost package before getting any boost specific components as we need to
-# disable boost-provided cmake config, based on the boost version found.
-find_package(Boost REQUIRED)
-
+if(PXR_ENABLE_PYTHON_SUPPORT OR PXR_ENABLE_OPENVDB_SUPPORT OR PXR_BUILD_OPENIMAGEIO_PLUGIN)
+    # Find Boost package before getting any boost specific components as we need to
+    # disable boost-provided cmake config, based on the boost version found.
+    find_package(Boost REQUIRED)
+endif()
 # Boost provided cmake files (introduced in boost version 1.70) result in 
 # inconsistent build failures on different platforms, when trying to find boost 
 # component dependencies like python, etc. Refer some related
