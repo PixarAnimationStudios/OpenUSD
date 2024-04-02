@@ -105,7 +105,7 @@ TestNestedInstancingCategories()
                                     "/W/LiExBB.collection:lightLink"  } ),
         Instance("/W/B/B/Sphere", { "/W/ShExBA.collection:shadowLink" } ) };
 
-    const SdfPath protoPath = SdfPath("/__Prototype_1/A.proto_Sphere_id0");
+    const SdfPath protoPath = SdfPath("/__Prototype_1/A/proto_Sphere_id0");
     const SdfPath& instancerId = delegate->GetInstancerId(protoPath);
     const std::vector<VtTokenArray> instanceCategories = 
         delegate->GetInstanceCategories(instancerId);

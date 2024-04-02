@@ -247,7 +247,11 @@ UsdImagingDrawModeAdapter::Populate(UsdPrim const& prim,
     // If this prim isn't instanced, cachePrim will be the same as "prim", but
     // if it is instanced the instancer adapters expect us to pass in this
     // prim, which should point to the instancer.
-    UsdPrim cachePrim = _GetPrim(cachePath.GetAbsoluteRootOrPrimPath());
+    UsdPrim cachePrim =
+        (instancerContext && !instancerContext->instancerCachePath.IsEmpty())
+          // GetPrimPath() to strip any variant selection
+          ? _GetPrim(instancerContext->instancerCachePath.GetPrimPath())
+          : _GetPrim(cachePath);
 
     if (drawMode == UsdGeomTokens->origin ||
         drawMode == UsdGeomTokens->bounds) {

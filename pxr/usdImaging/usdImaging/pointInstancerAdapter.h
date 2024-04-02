@@ -226,6 +226,8 @@ public:
                                   UsdTimeCode time) const override;
 
     USDIMAGING_API
+    bool IsChildPath(const SdfPath& path) const override;
+
     bool GetVisible(UsdPrim const& prim, 
                     SdfPath const& cachePath,
                     UsdTimeCode time) const override;

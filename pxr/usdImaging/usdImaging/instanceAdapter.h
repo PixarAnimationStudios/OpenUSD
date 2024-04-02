@@ -27,6 +27,7 @@
 /// \file usdImaging/instanceAdapter.h
 
 #include "pxr/pxr.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
 #include "pxr/base/tf/hashmap.h"
@@ -258,6 +259,8 @@ public:
                         UsdTimeCode time) const override;
 
     USDIMAGING_API
+    bool IsChildPath(const SdfPath& path) const override;
+
     bool GetVisible(UsdPrim const& usdPrim, 
                     SdfPath const& cachePath,
                     UsdTimeCode time) const override;
