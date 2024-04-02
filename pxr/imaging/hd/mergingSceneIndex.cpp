@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hd/mergingSceneIndex.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/base/tf/denseHashSet.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/dispatcher.h"
@@ -407,8 +408,11 @@ HdMergingSceneIndex::_PrimsRemoved(
         if (primFullyRemoved) {
             filteredEntries.push_back(entry);
         } else {
-            addedEntries.emplace_back(entry.primPath,
-                    GetPrim(entry.primPath).primType);
+            for (const SdfPath& descendantPath : HdSceneIndexPrimView(
+                     HdMergingSceneIndexRefPtr(this), entry.primPath)) {
+                addedEntries.emplace_back(
+                    descendantPath, GetPrim(descendantPath).primType);
+            }
         }
     }
 
