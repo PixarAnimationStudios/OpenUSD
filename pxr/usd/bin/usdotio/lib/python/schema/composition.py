@@ -1,4 +1,5 @@
-# Copyright 2024 Gonzalo Garramuño
+#
+# Copyright 2024 Gonzalo Garramuño for Signly
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in
@@ -67,22 +68,22 @@ class Composition(Item, TimeRangeMixin, RationalTimeMixin):
         for child in usd_prim.GetChildren():
             usd_type = child.GetTypeName()
             child_prim = None
-            if usd_type == 'OtioTrack':
+            if child.IsA('OtioTrack'):
                 child_prim = self._create_track()
-            elif usd_type == 'OtioStack':
+            elif child.IsA('OtioStack'):
                 child_prim = self._create_stack()
-            elif usd_type == 'OtioClip':
+            elif child.IsA('OtioClip'):
                 child_prim = Clip()
-            elif usd_type == 'OtioGap':
+            elif child.IsA('OtioGap'):
                 child_prim = Gap()
-            elif usd_type == 'OtioTransition':
+            elif child.IsA('OtioTransition'):
                 child_prim = Transition()
-            elif usd_type == 'OtioRationalTime':
+            elif child.IsA('OtioRationalTime'):
                 time_prim = RationalTime()
                 usd_name = child.GetName()
                 self.jsonData[usd_name] = time_prim.from_usd(child)
                 continue
-            elif usd_type == 'OtioTimeRange':
+            elif child.IsA('OtioTimeRange'):
                 range_prim = TimeRange()
                 usd_name = child.GetName()
                 self.jsonData[usd_name] = range_prim.from_usd(child)

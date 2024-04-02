@@ -1,4 +1,5 @@
-# Copyright 2024 Gonzalo Garramuño
+#
+# Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in
@@ -18,7 +19,7 @@
 # distributed under the Apache License with the above modification is
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 # KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# language governing permissions and limitations under the Apasche License.
 #
 
 #
@@ -56,14 +57,8 @@ Please run:
 #
 # usdotio helper classes' imports here
 #
-from usdotio.schema.clip import Clip
-from usdotio.schema.gap import Gap
-from usdotio.schema.options import Options, LogLevel
-from usdotio.schema.stack import Stack
 from usdotio.schema.timeline import Timeline
-from usdotio.schema.transition import Transition
-from usdotio.schema.track import Track
-from usdotio.schema.effect import Effect
+from usdotio.schema.options import Options, LogLevel
     
 class UsdOtioSave:
     """Class used to save (extract) an OpenTimelineIO (.otio) file from an

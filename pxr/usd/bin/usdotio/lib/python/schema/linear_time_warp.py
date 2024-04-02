@@ -1,4 +1,5 @@
-# Copyright 2024 Gonzalo Garramuño
+#
+# Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in
@@ -33,8 +34,8 @@ class LinearTimeWarp(Effect):
     def __init__(self, otio_item = None):
         super().__init__(otio_item)
         if not otio_item:
-            self.jsonData = \
-                json.loads(otio.schema.LinearTimeWarp().to_json_string())
+            self.jsonData.update(
+                json.loads(otio.schema.LinearTimeWarp().to_json_string()))
         
     def to_usd(self, stage, usd_path):
         usd_prim = self._create_usd(stage, usd_path, 'OtioLinearTimeWarp')

@@ -1,4 +1,5 @@
-# Copyright 2024 Gonzalo Garramuño
+#
+# Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in
@@ -51,10 +52,10 @@ class TimeRange(Base, RationalTimeMixin):
         
         for child_prim in usd_prim.GetChildren():
             usd_name = child_prim.GetName()
-            usd_type = child_prim.GetTypeName()
-            if usd_type == 'OtioRationalTime':
+            if child_prim.IsA('OtioRationalTime'):
                 self.jsonData[usd_name] = self._create_rational_time(child_prim)
             else:
+                usd_type = child_prim.GetTypeName()
                 print(f'WARNING: (time_range.py) Unknown node {usd_type} for '
                       f'{usd_prim}')
 

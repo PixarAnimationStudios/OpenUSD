@@ -1,4 +1,5 @@
-# Copyright 2024 Gonzalo Garramuño
+#
+# Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in
@@ -57,20 +58,19 @@ class Clip(Item, Box2dMixin):
         #
         for x in usd_prim.GetChildren():
             usd_name = x.GetName()
-            usd_type = x.GetTypeName()
-            if usd_type == 'OtioExternalReference':
+            if x.IsA('OtioExternalReference'):
                 ref_prim = ExternalReference()
                 ref_prim.from_usd(x)
                 self.append_media_reference(ref_prim)
-            elif usd_type == 'OtioImageSequenceReference':
+            elif x.IsA('OtioImageSequenceReference'):
                 ref_prim = ImageSequenceReference()
                 ref_prim.from_usd(x)
                 self.append_media_reference(ref_prim)
-            elif usd_type == 'OtioMissingReference':
+            elif x.IsA('OtioMissingReference'):
                 ref_prim = MissingReference()
                 ref_prim.from_usd(x)
                 self.append_media_reference(ref_prim)
-            elif usd_type == 'OtioBox2d':
+            elif x.IsA('OtioBox2d'):
                 ref_prim = Box2d()
                 self.imaging_bounds = ref_prim.from_usd(x)
             else:

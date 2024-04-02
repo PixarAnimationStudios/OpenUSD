@@ -1,4 +1,5 @@
-# Copyright 2024 Gonzalo Garramuño
+#
+# Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in
@@ -180,7 +181,24 @@ class UsdOtioAdd:
                 self.recurse_track(stage, track_path, child)
             else:
                 self.process_child(stage, stack_path, child)
-            
+
+    def recurse_timeline(self, stage, usd_path, timeline):
+        usd_otio_item = Timeline(timeline)
+        usd_otio_item.to_usd(stage, usd_path)
+
+        # Check if there's a stacks attribute.
+        stack = None
+        stack_path = usd_path + '/Stack'
+        
+        stack = timeline.tracks
+        if stack:
+            usd_stack_item = Stack(stack)
+        else:
+            usd_stack_item = Stack(otio.schema.Stack())
+        usd_stack_item.to_usd(stage, stack_path)
+
+        self.recurse_stack(stage, stack_path, stack)
+                
     def run(self):
         """
         Run the otio add algorithm.
@@ -228,22 +246,10 @@ Valid OtioTimeline primitives in stage:''')
                 if not found:
                     print('\tNone')
                 exit(1)
-        
-        usd_otio_item = Timeline(timeline)
-        usd_otio_item.to_usd(stage, usd_path)
 
-        # Check if there's a stacks attribute.
-        stack = None
-        stack_path = usd_path + '/Stack'
-        
-        stack = timeline.tracks
-        if stack:
-            usd_stack_item = Stack(stack)
-        else:
-            usd_stack_item = Stack(otio.schema.Stack())
-        usd_stack_item.to_usd(stage, stack_path)
 
-        self.recurse_stack(stage, stack_path, stack)
+        self.recurse_timeline(stage, usd_path, timeline)
+        
         
         #
         # Export modified stage to output file
@@ -258,7 +264,7 @@ Valid OtioTimeline primitives in stage:''')
             #
             if os.path.isfile(self.output_file):
                 if Options.log_level >= LogLevel.NORMAL:
-                    print(f'"{self.otio_file}" already exists!  '
+                    print(f'"{self.output_file}" already exists!  '
                           'Will overwrite it.')
                     Options.continue_prompt()
                 

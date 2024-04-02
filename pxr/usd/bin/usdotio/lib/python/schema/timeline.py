@@ -1,4 +1,5 @@
-# Copyright 2024 Gonzalo Garramuño
+#
+# Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in
@@ -53,11 +54,10 @@ class Timeline(NamedBase, RationalTimeMixin):
         # Traverse the stage to get the jsonData of each node
         #
         for child in usd_prim.GetChildren():
-            usd_type = child.GetTypeName()
-            if usd_type == 'OtioStack':
+            if child.IsA('OtioStack'):
                 stack_prim = Stack()
                 self.jsonData['tracks'] = stack_prim.from_usd(child)
-            elif usd_type == 'OtioRationalTime': 
+            elif child.IsA('OtioRationalTime'): 
                 self.jsonData['global_start_time'] = \
                     self._create_rational_time(child)
             else:

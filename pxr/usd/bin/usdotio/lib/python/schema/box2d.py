@@ -1,4 +1,5 @@
-# Copyright 2024 Gonzalo Garramuño
+#
+# Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in
@@ -49,7 +50,7 @@ class Box2d(Base):
     def from_usd(self, usd_prim):
         for x in usd_prim.GetChildren():
             usd_type = x.GetTypeName()
-            if usd_type == 'OtioV2d':
+            if x.IsA('OtioV2d'):
                 time = RationalTime()
                 usd_name = x.GetName()
                 self.jsonData[usd_name] = time.from_usd(x)

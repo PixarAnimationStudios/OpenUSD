@@ -1,4 +1,5 @@
-# Copyright 2024 Gonzalo Garramuño
+#
+# Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in
@@ -51,7 +52,7 @@ class Marker(NamedBase, TimeRangeMixin):
         #
         for x in usd_prim.GetChildren():
             usd_type = x.GetTypeName()
-            if usd_type == 'OtioTimeRange':
+            if x.IsA('OtioTimeRange'):
                 usd_name = x.GetName()
                 self.jsonData[usd_name] = self._create_time_range(x)
             else:

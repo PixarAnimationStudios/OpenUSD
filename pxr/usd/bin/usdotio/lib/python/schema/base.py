@@ -1,4 +1,5 @@
-# Copyright 2024 Gonzalo Garramuño
+#
+# Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in
@@ -30,7 +31,7 @@ from .options import Options, LogLevel
 class Base:
     """Base abstract class.  Derived classes may override many of its
     methods.  At the very least, a concrete class should override
-    to_usd() and the constructor.
+    to_usd().
 
     The usdotion schema defines an 'unknown' attribute which is used to
     be compatible with potential new parameters that the schema does not

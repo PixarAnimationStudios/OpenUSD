@@ -1,4 +1,5 @@
-# Copyright 2024 Gonzalo Garramuño
+#
+# Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in
@@ -52,7 +53,7 @@ class Transition(NamedBase, RationalTimeMixin):
         
         for child in usd_prim.GetChildren():
             usd_type = child.GetTypeName()
-            if usd_type == 'OtioRationalTime':
+            if child.IsA('OtioRationalTime'):
                 usd_name = child.GetName()
                 self.jsonData[usd_name] = self._create_rational_time(child)
             else:
