@@ -113,6 +113,19 @@ class TestVtValue(unittest.TestCase):
         with self.assertRaises(TypeError):
             Vt._ReturnDictionary(bad2)
 
+        # Test passing and returning python lists of dicts <->
+        # std::vector<VtDictionary>
+        testDictList = [{'foo':'bar'}, {'baz':123}, {'good':good}]
+        self.assertEqual(testDictList, Vt._DictionaryArrayIdent(testDictList))
+        self.assertEqual([], Vt._DictionaryArrayIdent([]))
+
+        with self.assertRaises(TypeError):
+            Vt._DictionaryArrayIdent('notAList')
+        with self.assertRaises(TypeError):
+            Vt._DictionaryArrayIdent(['notADict'])
+        with self.assertRaises(TypeError):
+            Vt._DictionaryArrayIdent([{1234:'keyNotAString'}])
+
     def test_WrappedTypesComparable(self):
         """
         Makes sure that values wrapped in a value wrapper are still
