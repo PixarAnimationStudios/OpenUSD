@@ -60,6 +60,7 @@ public:
         SdfPath primPath;
         TfToken primType;
 
+        AddedPrimEntry() {}
         AddedPrimEntry(const SdfPath &primPath, const TfToken &primType)
         : primPath(primPath)
         , primType(primType)
@@ -106,6 +107,24 @@ public:
 
     using DirtiedPrimEntries = TfSmallVector<DirtiedPrimEntry, 16>;
 
+    //----------------------------------
+
+    /// A notice indicating a prim (and its descendents) was renamed or
+    /// reparented.
+    struct RenamedPrimEntry
+    {
+        SdfPath oldPrimPath;
+        SdfPath newPrimPath;
+        RenamedPrimEntry(
+            const SdfPath &oldPrimPath,
+            const SdfPath &newPrimPath)
+        : oldPrimPath(oldPrimPath)
+        , newPrimPath(newPrimPath)
+        {}
+    };
+
+    using RenamedPrimEntries = TfSmallVector<RenamedPrimEntry, 16>;
+
     //-------------------------------------------------------------------------
 
     /// A notification indicating prims have been added to the scene. The
@@ -139,6 +158,36 @@ public:
     virtual void PrimsDirtied(
             const HdSceneIndexBase &sender,
             const DirtiedPrimEntries &entries) = 0;
+
+    /// A notification indicating prims (and their descendants) have been
+    /// renamed or reparented.
+    /// This function is not expected to be threadsafe.
+    HD_API
+    virtual void PrimsRenamed(
+            const HdSceneIndexBase &sender,
+            const RenamedPrimEntries &entries) = 0;
+
+    /// A utility for converting prims renamed messages into equivalent removed
+    /// and added notices.
+    HD_API
+    static void ConvertPrimsRenamedToRemovedAndAdded(
+        const HdSceneIndexBase &sender,
+        const HdSceneIndexObserver::RenamedPrimEntries &renamedEntries,
+        HdSceneIndexObserver::RemovedPrimEntries *outputRemovedEntries,
+        HdSceneIndexObserver::AddedPrimEntries *outputAddedEntries);
+
+    /// A utility for converting prims renamed messages into equivalent removed
+    /// and added notices at the observer level
+    HD_API
+    static void ConvertPrimsRenamedToRemovedAndAdded(
+        const HdSceneIndexBase &sender,
+        const HdSceneIndexObserver::RenamedPrimEntries &renamedEntries,
+        HdSceneIndexObserver *observer);
+
+
+
+
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

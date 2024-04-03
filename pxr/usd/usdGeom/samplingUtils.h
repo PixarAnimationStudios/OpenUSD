@@ -66,14 +66,28 @@ UsdGeom_GetScales(
 /// transform computation. This method fails if the orientations can't be
 /// fetched. If angular velocities can't be fetched or orientations are not
 /// time-varying, then \p angularVelocities is cleared and
-/// \p angularVelocitiesSampleTime is not changed.
-bool 
+/// \p angularVelocitiesSampleTime is not changed. This method supports half
+/// precision rotations
+bool
 UsdGeom_GetOrientationsAndAngularVelocities(
     const UsdAttribute& orientationsAttr,
     const UsdAttribute& angularVelocitiesAttr,
     UsdTimeCode baseTime,
     size_t expectedNumOrientations,
     VtQuathArray* orientations,
+    VtVec3fArray* angularVelocities,
+    UsdTimeCode* angularVelocitiesSampleTime,
+    UsdPrim const &prim);
+
+/// \overload UsdGeom_GetOrientationsAndAngularVelocities to handle single
+/// precision rotations
+bool
+UsdGeom_GetOrientationsAndAngularVelocities(
+    const UsdAttribute& orientationsAttr,
+    const UsdAttribute& angularVelocitiesAttr,
+    UsdTimeCode baseTime,
+    size_t expectedNumOrientations,
+    VtQuatfArray* orientations,
     VtVec3fArray* angularVelocities,
     UsdTimeCode* angularVelocitiesSampleTime,
     UsdPrim const &prim);

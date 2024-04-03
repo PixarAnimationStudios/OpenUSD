@@ -122,6 +122,8 @@ wrapUsdZipFile()
             .def_readonly("size", &UsdZipFile::FileInfo::size)
             .def_readonly("uncompressedSize", 
                 &UsdZipFile::FileInfo::uncompressedSize)
+            .def_readonly("crc", 
+                &UsdZipFile::FileInfo::crc)
             .def_readonly("compressionMethod", 
                 &UsdZipFile::FileInfo::compressionMethod)
             .def_readonly("encrypted",

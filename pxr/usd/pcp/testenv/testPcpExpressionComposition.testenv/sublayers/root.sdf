@@ -1,0 +1,13 @@
+#sdf 1.4.32
+(
+    subLayers = [
+        @`"./${X}.sdf"`@
+    ]
+    expressionVariables = {
+        string "X" = "A"
+    }
+)
+
+def "Test"
+{
+}

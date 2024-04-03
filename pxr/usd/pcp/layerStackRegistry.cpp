@@ -27,6 +27,7 @@
 #include "pxr/usd/pcp/layerStackRegistry.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
+#include "pxr/usd/pcp/utils.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/layerUtils.h"
@@ -35,9 +36,8 @@
 
 #include <tbb/queuing_rw_mutex.h>
 
-#include <boost/unordered_map.hpp>
-
 #include <algorithm>
+#include <unordered_map>
 #include <utility>
 
 using std::pair;
@@ -48,23 +48,26 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Pcp_LayerStackRegistryData {
 public:
     Pcp_LayerStackRegistryData(
+        const PcpLayerStackIdentifier& rootLayerStackId_,
         const std::string& fileFormatTarget_, bool isUsd) 
-        : fileFormatTarget(fileFormatTarget_)
+        : rootLayerStackId(rootLayerStackId_)
+        , fileFormatTarget(fileFormatTarget_)
         , isUsd(isUsd)
+        , mutedLayers(fileFormatTarget_)
     { }
 
     typedef SdfLayerHandleVector Layers;
     typedef PcpLayerStackPtrVector LayerStacks;
-    typedef boost::unordered_map<PcpLayerStackIdentifier, PcpLayerStackPtr>
-        IdentifierToLayerStack;
-    typedef boost::unordered_map<SdfLayerHandle, LayerStacks>
+    typedef std::unordered_map<PcpLayerStackIdentifier, PcpLayerStackPtr,
+                               TfHash> IdentifierToLayerStack;
+    typedef std::unordered_map<SdfLayerHandle, LayerStacks, TfHash>
         LayerToLayerStacks;
-    typedef boost::unordered_map<PcpLayerStackPtr, Layers>
+    typedef std::unordered_map<PcpLayerStackPtr, Layers, TfHash>
         LayerStackToLayers;
 
-    typedef boost::unordered_map<std::string, LayerStacks>
+    typedef std::unordered_map<std::string, LayerStacks, TfHash>
         MutedLayerIdentifierToLayerStacks;
-    typedef boost::unordered_map<PcpLayerStackPtr, std::set<std::string> >
+    typedef std::unordered_map<PcpLayerStackPtr, std::set<std::string>, TfHash>
         LayerStackToMutedLayerIdentifiers;
 
     IdentifierToLayerStack identifierToLayerStack;
@@ -74,6 +77,7 @@ public:
     LayerStackToMutedLayerIdentifiers layerStackToMutedLayerIdentifiers;
 
     const PcpLayerStackPtrVector empty;
+    const PcpLayerStackIdentifier rootLayerStackId;
     const std::string fileFormatTarget;
     bool isUsd;
     Pcp_MutedLayers mutedLayers;
@@ -82,14 +86,19 @@ public:
 };
 
 Pcp_LayerStackRegistryRefPtr
-Pcp_LayerStackRegistry::New(const std::string& fileFormatTarget, bool isUsd)
+Pcp_LayerStackRegistry::New(
+    const PcpLayerStackIdentifier& rootLayerStackId,
+    const std::string& fileFormatTarget, bool isUsd)
 {
-    return TfCreateRefPtr(new Pcp_LayerStackRegistry(fileFormatTarget, isUsd));
+    return TfCreateRefPtr(
+        new Pcp_LayerStackRegistry(rootLayerStackId, fileFormatTarget, isUsd));
 }
 
 Pcp_LayerStackRegistry::Pcp_LayerStackRegistry(
+    const PcpLayerStackIdentifier& rootLayerStackId,
     const std::string& fileFormatTarget, bool isUsd)
-    : _data(new Pcp_LayerStackRegistryData(fileFormatTarget, isUsd))
+    : _data(new Pcp_LayerStackRegistryData(
+            rootLayerStackId, fileFormatTarget, isUsd))
 {
     // Do nothing
 }
@@ -154,9 +163,7 @@ Pcp_LayerStackRegistry::FindOrCreate(const PcpLayerStackIdentifier& identifier,
         lock.release();
 
         PcpLayerStackRefPtr createdLayerStack =
-            TfCreateRefPtr(new PcpLayerStack(
-                identifier, _GetFileFormatTarget(), _GetMutedLayers(), 
-                _IsUsd()));
+            TfCreateRefPtr(new PcpLayerStack(identifier, *this));
 
         // Take the lock and check again for an existing layer stack, or
         // install the one we just created.
@@ -335,6 +342,12 @@ Pcp_LayerStackRegistry::_SetLayers(const PcpLayerStack* layerStack)
     }
 }
 
+const PcpLayerStackIdentifier&
+Pcp_LayerStackRegistry::_GetRootLayerStackIdentifier() const
+{
+    return _data->rootLayerStackId;
+}
+
 const std::string&
 Pcp_LayerStackRegistry::_GetFileFormatTarget() const
 {
@@ -355,24 +368,46 @@ Pcp_LayerStackRegistry::_GetMutedLayers() const
 
 // ------------------------------------------------------------
 
-namespace
-{
 std::string 
-_GetCanonicalLayerId(const SdfLayerHandle& anchorLayer, 
-                     const std::string& layerId)
+Pcp_MutedLayers::_GetCanonicalLayerId(const SdfLayerHandle& anchorLayer, 
+                                      const std::string& layerId) const
 {
-    if (SdfLayer::IsAnonymousLayerIdentifier(layerId)) {
-        return layerId;
+    // Split out any file format arguments embedded in layerId so we
+    // can anchor the layer path separately.
+    std::string layerPath;
+    SdfLayer::FileFormatArguments args;
+    if (!SdfLayer::SplitIdentifier(layerId, &layerPath, &args)) {
+        return std::string();
     }
-
+    
     // XXX: 
     // We may ultimately want to use the resolved path here but that's
     // possibly a bigger change and there are questions about what happens if
     // the muted path doesn't resolve to an existing asset and how/when to
     // invalidate the resolved paths stored in the Pcp_MutedLayers object.
-    return ArGetResolver().CreateIdentifier(
-        layerId, anchorLayer->GetResolvedPath());
+    const std::string anchoredPath =
+        SdfLayer::IsAnonymousLayerIdentifier(layerPath) ?
+        layerPath :
+        ArGetResolver().CreateIdentifier(
+            layerPath, anchorLayer->GetResolvedPath());
+
+    if (anchoredPath.empty()) {
+        return std::string();
+    }
+
+    // If the layer identifier specified a file format target that matches
+    // our own, we strip it off. This simplifies the matching done in
+    // IsLayerMuted, e.g. in the case where the user specified a muted
+    // layer with a file format target that matches our own, and the
+    // layer identifier being checked has no file format target.
+    Pcp_StripFileFormatTarget(_fileFormatTarget, &args);
+
+    return SdfLayer::CreateIdentifier(anchoredPath, args);
 }
+
+Pcp_MutedLayers::Pcp_MutedLayers(const std::string& fileFormatTarget)
+    : _fileFormatTarget(fileFormatTarget)
+{
 }
 
 const std::vector<std::string>& 
@@ -391,6 +426,9 @@ Pcp_MutedLayers::MuteAndUnmuteLayers(const SdfLayerHandle& anchorLayer,
     for (const auto& layerToMute : *layersToMute) {
         const std::string canonicalId = 
             _GetCanonicalLayerId(anchorLayer, layerToMute);
+        if (canonicalId.empty()) {
+            continue;
+        }
 
         const auto layerIt = std::lower_bound(
             _layers.begin(), _layers.end(), canonicalId);
@@ -403,6 +441,9 @@ Pcp_MutedLayers::MuteAndUnmuteLayers(const SdfLayerHandle& anchorLayer,
     for (const auto& layerToUnmute : *layersToUnmute) {
         const std::string canonicalId = 
             _GetCanonicalLayerId(anchorLayer, layerToUnmute);
+        if (canonicalId.empty()) {
+            continue;
+        }
 
         const auto layerIt = std::lower_bound(
             _layers.begin(), _layers.end(), canonicalId);
@@ -426,6 +467,10 @@ Pcp_MutedLayers::IsLayerMuted(const SdfLayerHandle& anchorLayer,
     }
 
     std::string canonicalId = _GetCanonicalLayerId(anchorLayer, layerId);
+    if (canonicalId.empty()) {
+        return false;
+    }
+
     if (std::binary_search(_layers.begin(), _layers.end(), canonicalId)) {
         if (canonicalLayerId) {
             canonicalLayerId->swap(canonicalId);

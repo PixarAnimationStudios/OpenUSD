@@ -355,7 +355,7 @@ Multiple apply schemas (in addition to single apply) can also be auto applied
 using this plugin metadata as long as the fully qualified instance name for the 
 mulitple apply schema is provided.
 
-\subsection Usd_APISchemaStrengthOrdering Property conflicts and API schema strength ordering
+\subsection Usd_APISchemaStrengthOrdering Property conflicts, composition, and API schema strength ordering
 
 Given that we encourage (or even require in the case of multi apply schemas) the
 use of namespace prefixes for API schema property names, we expect most 
@@ -363,16 +363,12 @@ properties defined in API schemas will be unique to the schema. However, there
 will always be the possibility that properties with the same name may be defined 
 in multiple API schemas applied to the same prim. To account for this, there is 
 a strength ordering for applied API schemas that we use to determine which 
-property definition "wins" when more than one API schema can define it. Note 
-that in this situation, we do not compose the competing property definitions; 
-the entirety of the "winning" property definition is used and any weaker 
-definitions are ignored.
+property definition "wins" when more than one API schema can define it. 
 
-Firstly, the strongest opinion for a built-in property in an IsA schema's
-\ref UsdPrimDefinition "prim definition" will always come from the IsA schema 
-itself. This is what allows us to override things like property default values 
-from a built-in API schema.
- 
+Firstly, the strongest opinion for all aspects of a built-in property in an IsA 
+schema's \ref UsdPrimDefinition "prim definition" will always come from the IsA
+schema itself. 
+
 Next, any auto applied API schemas, whether defined in the 
 \ref Usd_AutoAppliedAPISchemas "API schema's definition" or in a 
 \ref Usd_PluginAutoAppliedAPISchemas "plugin's metadata", will be appended to 
@@ -380,9 +376,9 @@ the end of the list of built-in applied API schemas for the IsA or single-apply
 API they apply to. Since the built-in schema list is ordered strongest to 
 weakest for application, this also means that <b> auto applied schemas will 
 always be weaker relative to the built-in API schemas defined in the schema they
-are auto applied to</b>. When more then one API schema is auto applied to the 
-same schema type, they are always sorted into alphabetical order by schema name 
-before they are appended to the built-in schemas. The alphabetical ordering is 
+are auto applied to</b>. When more than one API schema is auto applied to the 
+same schema type, they are always sorted into reverse dictionary order by schema name 
+before they are appended to the built-in schemas. The dictionary ordering is 
 arbitrary but deterministic as there is no provided way to indicate strength 
 ordering between auto applied API schemas.
  
@@ -394,18 +390,21 @@ schemas. This list order is strongest to weakest, so property name conflicts
 will prefer a property definition from an API schema earlier in the list.
 
 Any API schemas that are applied to a prim instance in scene description (which
-we'll refer to as "authored API schemas") are considered to be applied over the
-prim's type schema definition and will have a stronger opinion on any properties
-they define that are also present in the prim's type schema definition. But
-there's one exception: authored API schemas are **not allowed to change the 
-property type** of any property found in the prim's schema type definition (which
-includes its built-in API schemas). The property type consists of whether the 
-property is an attribute or a relationship and, if the property is an attribute,
-the type name (int, float, color3f, etc.) of the attribute. If the strongest 
-property opinion from the authored API schemas would end up changing the
-property type of an existing prim type schema property, all opinions on that
-property from the authored API schemas are ignored and the prim type schema's 
-property is used.
+we'll refer to as "authored API schemas") are appended to the prim type's API 
+schemas and will therefore have a weaker opinion on any properties they define 
+that are also present in the prim type's schema definition, including all of its built-in
+and auto-applied API schemas. In other words, authored API schemas cannnot override any
+properties in the prim type's definition.
+
+For properties that are defined by more than one of the included schema,
+fields for which the strongest property definition does *not* express an opinion, 
+**may** be composed from weaker API schema definitions if the following 
+conditions are met:
+- The property type of the stronger and weaker property definitions match. Specifically,
+  the property definitions must both be attributes or both be relationships, and if they
+  are attributes, their type names must be exactly the same.
+- The field is in the set of _allowed composable fields_ which currently includes only
+  _default_ and _hidden_. We may expand the set of allowed composable fields in the future.
 
 \subsection Usd_APISchemaPropertyOverride API schema property overrides
 
@@ -465,19 +464,19 @@ API schema's plugin isn't included).
 
 There are some limitations to how API schema override properties can be used:
 1. Any property declared as an API schema override **must have the exact same 
-   type and variability** (uniform vs variable) of the property it ends up 
-   overriding. The property type consists of whether the property is an 
-   attribute or a relationship and, if the property is an attribute, the type
-   name (int, float, color3f, etc.) of the attribute. Any API schema property
-   overrides that do not conform to the underlying property type and variability
-   are ignored.
+   type** of the property it overrides. The property type consists of
+   whether the property is an attribute or a relationship and, if the property
+   is an attribute, the type name (int, float, color3f, etc.) of the attribute. 
+   Any API schema property overrides that do not conform to the underlying 
+   property type are ignored. Note that the variability of an API schema override
+   property is allowed to be different than the defined property but the override's
+   variability will be ignored.
 
-2. API schema override properties are only resolved when generating the static
-   \ref UsdPrimDefinition "prim definitions" for registered IsA and applied API
-   schema types in the schema registry. All "dangling overrides" are thrown away
-   which means they cannot be used to override a prim's built-in schema 
-   properties when an API schema is authored in scene description to apply to
-   prim.
+2. API schema override properties are currently only resolved when generating the
+   static \ref UsdPrimDefinition "prim definitions" for registered IsA and applied
+   API schema types in the schema registry. "Dangling overrides" are not retained
+   which means they cannot be used by an IsA schema to provide overrides to 
+   properties from authored API schemas applied in scene description.
 
 3. API schema property overrides only apply to the properties defined by API 
    schemas directly or indirectly included by the schema defining the override

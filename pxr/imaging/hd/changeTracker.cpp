@@ -48,6 +48,7 @@ HdChangeTracker::HdChangeTracker()
     , _generalState()
     , _collectionState()
     , _instancerRprimDependencies()
+    , _instancerSprimDependencies()
     , _instancerInstancerDependencies()
     , _sprimSprimTargetDependencies()
     , _sprimSprimSourceDependencies()
@@ -521,7 +522,7 @@ HdChangeTracker::_MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits)
     // DirtyTransform -> DirtyTransform.
     //
     // Both DirtyInstanceIndex and DirtyTransform are consumed at the rprim
-    // level, so this gives the rprim a signal that upstream instancer data
+    // level, so this gives the prim a signal that upstream instancer data
     // relevant to transform composition or instance indices has changed.
     // XXX: The DirtyTransform dependency here is technically an hdSt dependency
     // and we should find a better way to express it, although it won't harm
@@ -535,7 +536,7 @@ HdChangeTracker::_MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits)
         ++_instanceIndicesChangeCount;
     }
 
-    // Now mark any associated rprims or instancers dirty.
+    // Now mark any associated prims or instancers dirty.
     _DependencyMap::const_accessor aII;
     if (_instancerInstancerDependencies.find(aII, id)) {
         for (SdfPath const& dep : aII->second) {
@@ -547,6 +548,13 @@ HdChangeTracker::_MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits)
     if (_instancerRprimDependencies.find(aIR, id)) {
         for (SdfPath const& dep : aIR->second) {
             _MarkRprimDirty(dep, toPropagate);
+        }
+    }
+
+    _DependencyMap::const_accessor aIS;
+    if (_instancerSprimDependencies.find(aIS, id)) {
+        for (SdfPath const& dep : aIS->second) {
+            _MarkSprimDirty(dep, toPropagate);
         }
     }
 }
@@ -643,6 +651,20 @@ HdChangeTracker::MarkSprimClean(SdfPath const& id, HdDirtyBits newBits)
     if (!TF_VERIFY(it != _sprimState.end()))
         return;
     it->second = newBits;
+}
+
+void
+HdChangeTracker::AddInstancerSprimDependency(SdfPath const& instancerId,
+                                             SdfPath const& sprimId)
+{
+    _AddDependency(_instancerSprimDependencies, instancerId, sprimId);
+}
+
+void
+HdChangeTracker::RemoveInstancerSprimDependency(SdfPath const& instancerId,
+                                                SdfPath const& sprimId)
+{
+    _RemoveDependency(_instancerSprimDependencies, instancerId, sprimId);
 }
 
 // -------------------------------------------------------------------------- //

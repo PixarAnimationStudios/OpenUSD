@@ -53,6 +53,9 @@ HDST_API
 TfToken HdStPackageFallbackMaterialNetworkShader();
 
 HDST_API
+TfToken HdStPackageInvalidMaterialNetworkShader();
+
+HDST_API
 TfToken HdStPackageFallbackVolumeShader();
 
 HDST_API

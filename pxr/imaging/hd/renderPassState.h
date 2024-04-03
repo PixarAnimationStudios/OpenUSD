@@ -43,6 +43,8 @@
 
 #include <memory>
 
+#include <optional>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -78,21 +80,30 @@ public:
 
     using ClipPlanesVector = std::vector<GfVec4d>;
 
-    /// Camera setter API
-    ///
-    /// Sets the camera transform (aka view inverse matrix) and physical
-    /// parameters, the framing information and a possible overide value
-    /// for the window policy used to conform the camera frustum if its
-    /// aspect ratio is not matching the display window.
-    ///
-    /// Note: using std::pair<bool, ...> here instead of std::optional<...>
-    /// since the latter is only available in C++17 or later.
+    /// Sets the camera.
     HD_API
-    void SetCameraAndFraming(
-        HdCamera const *camera,
-        CameraUtilFraming const &framing,
-        const std::pair<bool, CameraUtilConformWindowPolicy> &
-                                            overrideWindowPolicy);
+    void SetCamera(const HdCamera *camera);
+
+    /// Sets whether to override the window policy used to conform the camera
+    /// if its aspect ratio is not matching the display window/viewport.
+    /// If first value is false, the HdCamera's window policy is used.
+    ///
+    HD_API
+    void SetOverrideWindowPolicy(
+        const std::optional<CameraUtilConformWindowPolicy> &
+            overrideWindowPolicy);
+
+    /// Sets the framing to show the camera. If a valid framing is set, a
+    /// viewport set earlier with SetViewport will be ignored.
+    HD_API
+    void SetFraming(const CameraUtilFraming &framing);
+
+    /// Sets the viewport to show the camera. If SetViewport is called,
+    /// any framing set earlier with SetFraming will be ignored.
+    ///
+    /// \deprecated Use the more expressive SetFraming instead.
+    HD_API
+    void SetViewport(const GfVec4d &viewport);
 
     /// Get camera
     HdCamera const *
@@ -105,7 +116,7 @@ public:
 
     /// The override value for the window policy to conform the camera 
     /// frustum that can be specified by the application.
-    const std::pair<bool, CameraUtilConformWindowPolicy> &
+    const std::optional<CameraUtilConformWindowPolicy> &
     GetOverrideWindowPolicy() const { return _overrideWindowPolicy; }
 
     /// The resolved window policy to conform the camera frustum.
@@ -115,13 +126,6 @@ public:
     CameraUtilConformWindowPolicy
     GetWindowPolicy() const;
 
-    /// Camera setter API
-    /// The view, projection and clipping plane info of the camera will be used.
-    ///
-    /// \deprecated Use the more expressive SetCameraAndFraming instead.
-    HD_API
-    void SetCameraAndViewport(HdCamera const *camera,
-                              GfVec4d const& viewport);
     /// Camera getter API
     ///
     /// Returns inverse of HdCamera's transform.
@@ -352,7 +356,7 @@ protected:
     HdCamera const *_camera;
     GfVec4f _viewport;
     CameraUtilFraming _framing;
-    std::pair<bool, CameraUtilConformWindowPolicy> _overrideWindowPolicy;
+    std::optional<CameraUtilConformWindowPolicy> _overrideWindowPolicy;
 
     // ---------------------------------------------------------------------- //
     // Application rendering state

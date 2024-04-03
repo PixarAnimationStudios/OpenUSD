@@ -105,7 +105,6 @@
 #include <boost/call_traits.hpp>
 #include <boost/compressed_pair.hpp>
 #include <boost/container/flat_map.hpp>
-#include <boost/crc.hpp>
 #include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/functional/hash_fwd.hpp>

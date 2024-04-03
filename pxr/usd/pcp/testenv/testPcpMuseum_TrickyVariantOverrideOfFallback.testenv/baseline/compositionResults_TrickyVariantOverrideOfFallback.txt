@@ -17,12 +17,24 @@ Variant Selections:
     {vset1 = selection}
     {vset2 = selection}
 
+Child names:
+     ['Child']
+
 Property names:
      ['result']
 
 Property stacks:
 /A.result:
     root.sdf             /A{vset1=selection}.result
+
+------------------------------------------------------------------------
+Results for composing </A/Child>
+
+Prim Stack:
+    root.sdf             /A/Child
+    root.sdf             /A{vset1=selection}Child
+    root.sdf             /B/Child
+    root.sdf             /B{vset2=selection}Child
 
 ------------------------------------------------------------------------
 Results for composing </B>
@@ -33,4 +45,24 @@ Prim Stack:
 
 Variant Selections:
     {vset2 = selection}
+
+Child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </B/Child>
+
+Prim Stack:
+    root.sdf             /B/Child
+    root.sdf             /B{vset2=selection}Child
+
+------------------------------------------------------------------------
+Results for composing </C>
+
+Prim Stack:
+    root.sdf             /C
+    root.sdf             /A/Child
+    root.sdf             /A{vset1=selection}Child
+    root.sdf             /B/Child
+    root.sdf             /B{vset2=selection}Child
 

@@ -63,6 +63,7 @@ void TfHashAppend(
             rp.apertureSize,
             rp.dataWindowNDC,
             rp.disableMotionBlur,
+            rp.disableDepthOfField,
             rp.namespacedSettings);
 }
 
@@ -84,6 +85,14 @@ HdRenderSettings::IsActive() const
     return _active;
 }
 
+bool
+HdRenderSettings::IsValid() const
+{
+    // The RenderSettings prim is considered valid if there is at least one 
+    // RenderProduct, and we have a camera path specified.
+    return !_products.empty() && !_products[0].cameraPath.IsEmpty();
+}
+
 const HdRenderSettings::NamespacedSettings&
 HdRenderSettings::GetNamespacedSettings() const
 {
@@ -96,13 +105,13 @@ HdRenderSettings::GetRenderProducts() const
     return _products;
 }
 
-const TfTokenVector&
+const VtArray<TfToken>&
 HdRenderSettings::GetIncludedPurposes() const
 {
     return _includedPurposes;
 }
 
-const TfTokenVector&
+const VtArray<TfToken>&
 HdRenderSettings::GetMaterialBindingPurposes() const
 {
     return _materialBindingPurposes;
@@ -112,6 +121,12 @@ const TfToken&
 HdRenderSettings::GetRenderingColorSpace() const
 {
     return _renderingColorSpace;
+}
+
+const VtValue&
+HdRenderSettings::GetShutterInterval() const
+{
+    return _vShutterInterval;
 }
 
 void
@@ -151,8 +166,8 @@ HdRenderSettings::Sync(
 
         const VtValue vPurposes = sceneDelegate->Get(
             GetId(), HdRenderSettingsPrimTokens->includedPurposes);
-        if (vPurposes.IsHolding<TfTokenVector>()) {
-            _includedPurposes = vPurposes.UncheckedGet<TfTokenVector>();
+        if (vPurposes.IsHolding<VtArray<TfToken>>()) {
+            _includedPurposes = vPurposes.UncheckedGet<VtArray<TfToken>>();
         }
     }
 
@@ -160,8 +175,9 @@ HdRenderSettings::Sync(
 
         const VtValue vPurposes = sceneDelegate->Get(
             GetId(), HdRenderSettingsPrimTokens->materialBindingPurposes);
-        if (vPurposes.IsHolding<TfTokenVector>()) {
-            _materialBindingPurposes = vPurposes.UncheckedGet<TfTokenVector>();
+        if (vPurposes.IsHolding<VtArray<TfToken>>()) {
+            _materialBindingPurposes =
+                vPurposes.UncheckedGet<VtArray<TfToken>>();
         }
     }
 
@@ -172,6 +188,11 @@ HdRenderSettings::Sync(
         if (vColorSpace.IsHolding<TfToken>()) {
             _renderingColorSpace = vColorSpace.UncheckedGet<TfToken>();
         }
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyShutterInterval) {
+        _vShutterInterval = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->shutterInterval);
     }
 
     // Allow subclasses to do any additional processing if necessary.
@@ -235,6 +256,7 @@ bool operator==(const HdRenderSettings::RenderProduct& lhs,
         && lhs.apertureSize == rhs.apertureSize
         && lhs.dataWindowNDC == rhs.dataWindowNDC
         && lhs.disableMotionBlur == rhs.disableMotionBlur
+        && lhs.disableDepthOfField == rhs.disableDepthOfField
         && lhs.namespacedSettings == rhs.namespacedSettings;
 }
 

@@ -140,14 +140,6 @@ class SkelAnimation "SkelAnimation" (
     )
 }
 
-
-class PackedJointAnimation "PackedJointAnimation" (
-    inherits = </SkelAnimation>
-    doc = """Deprecated. Please use SkelAnimation instead."""
-)
-{
-}
-
 class "SkelBindingAPI" (
     inherits = </APISchemaBase>
     doc = """Provides API for authoring and extracting all the skinning-related

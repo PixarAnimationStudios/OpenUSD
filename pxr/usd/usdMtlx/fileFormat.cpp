@@ -150,9 +150,7 @@ UsdMtlxFileFormat::ReadFromString(
     auto stage = UsdStage::CreateInMemory();
     if (!_Read(stage,
                [&str]() {
-                    auto d = mx::createDocument();
-                    mx::readFromXmlString(d, str);
-                    return d;
+                    return UsdMtlxGetDocumentFromString(str);
                })) {
         return false;
     }

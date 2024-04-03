@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -42,7 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HDDISPLAYFILTER_SCHEMA_TOKENS \
     (displayFilter) \
-    (displayFilterResource) \
+    (resource) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdDisplayFilterSchemaTokens, HD_API,
     HDDISPLAYFILTER_SCHEMA_TOKENS);
@@ -58,7 +58,7 @@ public:
     //ACCESSORS
 
     HD_API
-    HdMaterialNodeSchema GetDisplayFilterResource();
+    HdMaterialNodeSchema GetResource();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -70,7 +70,7 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdContainerDataSourceHandle &displayFilterResource
+        const HdContainerDataSourceHandle &resource
     );
 
     /// \class HdDisplayFilterSchema::Builder
@@ -83,15 +83,15 @@ public:
     {
     public:
         HD_API
-        Builder &SetDisplayFilterResource(
-            const HdContainerDataSourceHandle &displayFilterResource);
+        Builder &SetResource(
+            const HdContainerDataSourceHandle &resource);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
         HdContainerDataSourceHandle Build();
 
     private:
-        HdContainerDataSourceHandle _displayFilterResource;
+        HdContainerDataSourceHandle _resource;
     };
 
     /// Retrieves a container data source with the schema's default name token
@@ -103,10 +103,23 @@ public:
     static HdDisplayFilterSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    HD_API
+    static const TfToken &GetSchemaToken();
+
     /// Returns an HdDataSourceLocator (relative to the prim-level data source)
     /// where the container representing this schema is found by default.
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
+
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the resource data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetResourceLocator();
 
 };
 

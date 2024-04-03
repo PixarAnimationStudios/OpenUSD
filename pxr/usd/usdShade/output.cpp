@@ -181,7 +181,8 @@ UsdShadeOutput::ClearSdrMetadataByKey(const TfToken &key) const
 bool 
 UsdShadeOutput::IsOutput(const UsdAttribute &attr)
 {
-    return TfStringStartsWith(attr.GetName().GetString(), 
+    return attr && attr.IsDefined() &&
+        TfStringStartsWith(attr.GetName().GetString(),
                               UsdShadeTokens->outputs);
 }
 

@@ -48,6 +48,20 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
+        
+static UsdAttribute
+_CreateWidthAttr(UsdLuxPortalLight &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateWidthAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateHeightAttr(UsdLuxPortalLight &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateHeightAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
 
 static std::string
 _Repr(const UsdLuxPortalLight &self)
@@ -90,6 +104,20 @@ void wrapUsdLuxPortalLight()
 
         .def(!self)
 
+        
+        .def("GetWidthAttr",
+             &This::GetWidthAttr)
+        .def("CreateWidthAttr",
+             &_CreateWidthAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetHeightAttr",
+             &This::GetHeightAttr)
+        .def("CreateHeightAttr",
+             &_CreateHeightAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;

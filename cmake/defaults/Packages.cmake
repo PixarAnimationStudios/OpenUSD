@@ -159,6 +159,9 @@ add_definitions(${TBB_DEFINITIONS})
 if(WIN32)
     # Math functions are linked automatically by including math.h on Windows.
     set(M_LIB "")
+elseif (APPLE)
+    # On Apple platforms, its idiomatic to just provide the -l linkage for sdk libs to be portable across SDK versions
+    set(M_LIB "-lm")
 else()
     find_library(M_LIB m)
 endif()
@@ -182,14 +185,16 @@ if (PXR_BUILD_DOCUMENTATION)
                 "doxygen not found, required for PXR_BUILD_DOCUMENTATION")
     endif()
 
-    find_program(DOT_EXECUTABLE
-        NAMES dot
-    )
-    if (EXISTS ${DOT_EXECUTABLE})
-        message(STATUS "Found dot: ${DOT_EXECUTABLE}") 
-    else()
-        message(FATAL_ERROR
-                "dot not found, required for PXR_BUILD_DOCUMENTATION")
+    if (PXR_BUILD_HTML_DOCUMENTATION)
+        find_program(DOT_EXECUTABLE
+            NAMES dot
+        )
+        if (EXISTS ${DOT_EXECUTABLE})
+            message(STATUS "Found dot: ${DOT_EXECUTABLE}") 
+        else()
+            message(FATAL_ERROR
+                    "dot not found, required for PXR_BUILD_DOCUMENTATION")
+        endif()
     endif()
 endif()
 
@@ -226,7 +231,12 @@ if (PXR_BUILD_IMAGING)
         if (POLICY CMP0072)
             cmake_policy(SET CMP0072 OLD)
         endif()
-        find_package(OpenGL REQUIRED)
+        if (APPLE)
+            set(OPENGL_gl_LIBRARY "-framework OpenGL")
+        else ()
+            find_package(OpenGL REQUIRED)
+        endif()
+        add_definitions(-DPXR_GL_SUPPORT_ENABLED)
     endif()
     # --Metal
     if (PXR_ENABLE_METAL_SUPPORT)
@@ -328,6 +338,10 @@ if(PXR_ENABLE_OSL_SUPPORT)
     find_package(OSL REQUIRED)
     set(REQUIRES_Imath TRUE)
     add_definitions(-DPXR_OSL_SUPPORT_ENABLED)
+endif()
+
+if (PXR_BUILD_ANIMX_TESTS)
+    find_package(AnimX REQUIRED)
 endif()
 
 # ----------------------------------------------

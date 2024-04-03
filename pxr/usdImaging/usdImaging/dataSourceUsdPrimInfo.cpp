@@ -76,6 +76,7 @@ TfTokenVector
 UsdImagingDataSourceUsdPrimInfo::GetNames()
 {
     TfTokenVector result = { 
+        UsdImagingUsdPrimInfoSchemaTokens->isLoaded,
         UsdImagingUsdPrimInfoSchemaTokens->specifier
     };
 
@@ -93,6 +94,10 @@ UsdImagingDataSourceUsdPrimInfo::GetNames()
 HdDataSourceBaseHandle
 UsdImagingDataSourceUsdPrimInfo::Get(const TfToken &name)
 {
+    if (name == UsdImagingUsdPrimInfoSchemaTokens->isLoaded) {
+        return HdRetainedTypedSampledDataSource<bool>::New(
+            _usdPrim.IsLoaded());
+    }
     if (name == UsdImagingUsdPrimInfoSchemaTokens->specifier) {
         return _SpecifierToDataSource(_usdPrim.GetSpecifier());
     }

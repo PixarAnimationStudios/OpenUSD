@@ -132,6 +132,8 @@ std::string Pcp_Dump(
         _GetString(node.IsInert()));
     s += TfStringPrintf("    Contribute specs:         %s\n",
         _GetString(node.CanContributeSpecs()));
+    s += TfStringPrintf("        Restricted at depth:  %zu\n",
+        node.GetSpecContributionRestrictedDepth());
     s += TfStringPrintf("    Has specs:                %s\n",
         _GetString(node.HasSpecs()));
     s += TfStringPrintf("    Has symmetry:             %s\n",
@@ -272,17 +274,26 @@ _WriteGraph(
     if (!node.CanContributeSpecs()) {
         nodeDesc += "\\nCANNOT contribute specs";
     }
-    nodeDesc += TfStringPrintf("\\ndepth: %i", node.GetNamespaceDepth());
+    nodeDesc += TfStringPrintf(
+        "\\ndepth (below intro): %i (%i)", 
+        node.GetNamespaceDepth(), node.GetDepthBelowIntroduction());
 
     std::string nodeStyle = (hasSpecs ? "solid" : "dotted");
     if (nodesToHighlight.count(node) != 0) {
         nodeStyle += ", filled";
     }
-    
+
+    std::string nodeSite = [&]() {
+        std::ostringstream stream;
+        stream << PcpIdentifierFormatBaseName << node.GetLayerStack()
+               << "\\n" << "<" << node.GetPath() << ">";
+        return stream.str();
+    }();
+        
     out << TfStringPrintf(
         "\t%zu [label=\"%s (%i)\\n%s\", shape=\"box\", style=\"%s\"];\n",
         size_t(node.GetUniqueIdentifier()),
-        Pcp_FormatSite(node.GetSite()).c_str(),
+        nodeSite.c_str(),
         count,
         nodeDesc.c_str(),
         nodeStyle.c_str());
@@ -627,11 +638,15 @@ private:
 
             std::stringstream ss;
 
+            const bool includeInheritOriginInfo = true;
+            const bool includeMaps = 
+                TfDebug::IsEnabled(PCP_PRIM_INDEX_GRAPHS_MAPPINGS);
+
             _WriteGraph(
                 ss, 
                 currentIndex.index->GetRootNode(),
-                /* includeInheritOriginInfo = */ true,
-                /* includeMaps = */ false, 
+                includeInheritOriginInfo,
+                includeMaps,
                 currentPhase.nodesToHighlight);
     
             currentIndex.dotGraph = ss.str();

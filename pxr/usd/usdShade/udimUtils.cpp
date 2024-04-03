@@ -91,7 +91,7 @@ std::vector<UsdShadeUdimUtils::ResolvedPathAndTile> _ResolveUdimPaths(
 
     ArResolver& resolver = ArGetResolver();
     
-    for (int i = UDIM_START_TILE; i < UDIM_END_TILE; i++) {
+    for (int i = UDIM_START_TILE; i <= UDIM_END_TILE; i++) {
         const std::string tile = std::to_string(i);
 
         // Fill in integer

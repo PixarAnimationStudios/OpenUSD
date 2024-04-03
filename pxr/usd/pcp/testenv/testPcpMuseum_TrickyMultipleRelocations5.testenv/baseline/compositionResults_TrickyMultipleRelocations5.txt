@@ -1,0 +1,35 @@
+Loading @TrickyMultipleRelocations5/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Group>
+
+Prim Stack:
+    root.sdf             /Group
+    variant.sdf          /Group
+    variant.sdf          /Group{v=x}
+    relocates.sdf        /Group
+    chargroup.sdf        /CHARGROUP
+
+Variant Selections:
+    {v = x}
+
+Child names:
+     ['Model']
+
+Prohibited child names:
+     ['CHARACTER', 'Character']
+
+------------------------------------------------------------------------
+Results for composing </Group/Model>
+
+Prim Stack:
+    root.sdf             /Group/Model
+    variant.sdf          /Group/Character
+    variant.sdf          /Group{v=x}Character
+    relocates.sdf        /Group/Character
+    chargroup.sdf        /CHARGROUP/CHARACTER
+

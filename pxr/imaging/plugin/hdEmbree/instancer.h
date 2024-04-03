@@ -59,8 +59,10 @@ public:
 
     /// Computes all instance transforms for the provided prototype id,
     /// taking into account the scene delegate's instancerTransform and the
-    /// instance primvars "instanceTransform", "translate", "rotate", "scale".
-    /// Computes and flattens nested transforms, if necessary.
+    /// instance primvars "hydra:instanceTransforms",
+    /// "hydra:instanceTranslations", "hydra:instanceRotations", and
+    /// "hydra:instanceScales". Computes and flattens nested transforms,
+    /// if necessary.
     ///   \param prototypeId The prototype to compute transforms for.
     ///   \return One transform per instance, to apply when drawing.
     VtMatrix4dArray ComputeInstanceTransforms(SdfPath const &prototypeId);

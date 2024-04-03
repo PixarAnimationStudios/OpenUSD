@@ -25,15 +25,6 @@
 Utilities to help image common geometry.
 """
 
-from . import _geomUtil
 from pxr import Tf
-Tf.PrepareModule(_geomUtil, locals())
-del _geomUtil, Tf
-
-try:
-    import __DOC
-    __DOC.Execute(locals())
-    del __DOC
-except Exception:
-    pass
-
+Tf.PreparePythonModule()
+del Tf

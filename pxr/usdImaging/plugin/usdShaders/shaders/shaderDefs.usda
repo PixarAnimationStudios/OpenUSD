@@ -203,9 +203,11 @@ def Shader "UsdUVTexture" (
         connectability = "interfaceOnly"
         allowedTokens = ["raw", "sRGB", "auto"]
         doc = """<options> raw, sRGB, auto. Flag indicating the color
-                 space in which the source texture is encoded.
-                 Please see UsdPreviewSurface.inputs:normal for special 
-                 considerations for reading normal maps."""
+                 space in which the source texture is encoded. If set to sRGB,
+                 the texture will be read using the sRGB transfer curve, but
+                 not filtered against the sRGB gamut. Please see 
+                 UsdPreviewSurface.inputs:normal for special considerations for 
+                 reading normal maps."""
     )
 
     float outputs:r ( 

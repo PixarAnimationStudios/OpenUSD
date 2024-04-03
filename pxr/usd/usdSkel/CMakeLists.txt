@@ -30,7 +30,6 @@ pxr_library(usdSkel
         cache
         debugCodes
         inbetweenShape
-        packedJointAnimation
         root
         skeleton
         skeletonQuery
@@ -66,7 +65,6 @@ pxr_library(usdSkel
         wrapBlendShape.cpp
         wrapCache.cpp
         wrapInbetweenShape.cpp
-        wrapPackedJointAnimation.cpp
         wrapRoot.cpp
         wrapSkeleton.cpp
         wrapSkeletonQuery.cpp

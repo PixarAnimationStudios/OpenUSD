@@ -1,0 +1,130 @@
+/*!
+
+\page Sdf_Page_VariableExpressions Variable Expressions
+
+Variable expressions are specially formatted strings that contain expressions 
+that USD will evaluate at runtime. The expressions can contain variable data and 
+logic used to dynamically create values. Variable expressions make use of named 
+expression variables that can be easily defined and changed in layer metadata. 
+Expression variables are defined in a "expressionVariables" dictionary metadata 
+field in a layer. 
+
+Variable expressions can currently be used in:
+
+- Asset paths (including sublayer, reference, and payload asset paths as well as
+asset-valued attributes and metadata)
+- Variant selections
+
+The following simple example demonstrates using variable expressions to specify 
+a reference path and a variant selection. An ASSET_PATH expression variable is 
+set to a directory, and then used in a reference variable expression. Similarly, 
+a VARIANT_CHOICE expression variable is defined and then used in a variable 
+expression for selecting a variant. 
+
+\code
+#usda 1.0
+(
+    expressionVariables = {
+        # Define path to reference that can be changed as needed
+        string ASSET_PATH = "/finalAssets/SetA"
+        # Define the expression variable that can be changed as needed
+        string VARIANT_CHOICE = "variantA"
+    }
+)
+over "asset0" (
+    # Use a variable expression to complete the reference asset path
+    references = @`"${ASSET_PATH}/extraAssets.usda"`@</asset0>
+)
+{
+}
+
+def Xform "asset1" (
+    variants = {
+        # Use a variable expression for specifying the variant
+        string displayVariantSet = "`${VARIANT_CHOICE}`"
+    }
+    prepend variantSets = "displayVariantSet"
+)
+{
+    ...displayVariantSet definition omitted...
+}
+\endcode
+
+See <a href="https://openusd.org/release/user_guides/variable_expressions.html">Variable Expressions</a> 
+for user documentation on using variable expressions in your USD scene data, and 
+reference information on the variable expressions supported syntax.
+
+\section VariableExpressions_Composition_Evaluation Understanding Variable Expression Composition and Evaluation
+
+Expression variables do not compose across sublayers, but do compose in 
+references and payloads, as described in 
+<a href="https://openusd.org/release/user_guides/variable_expressions.html#expression-variables-and-composition">Expression Variables and Composition</a>. 
+
+For asset paths using variable expressions, USD will always evaluate the 
+expression before passing the result to Ar for path resolution. If Ar returns a 
+resolved path that looks like an expression, USD doesn't evaluate that 
+expression. 
+
+Expressions in asset paths used in composition arcs are evaluated during the 
+composition process. For asset path-valued attributes, USD will do the 
+evaluation and resolution when UsdAttribute::Get (or similar methods) are called.
+
+\section VariableExpressions_Variables Working with Expression Variables 
+
+To work with a layer's expression variables dictionary, use SdfLayer's 
+GetExpressionVariables(), SetExpressionVariables(), HasExpressionVariables(), 
+and ClearExpressionVariables() methods.
+
+\code
+SdfLayerHandle rootLayer = stage->GetRootLayer();
+if (rootLayer->HasExpressionVariables()) {
+    // Inspect expression variables using GetExpressionVariables() 
+    VtDictionary expressionVars = rootLayer->GetExpressionVariables();
+    // ... 
+    // Clear expression variables using ClearExpressionVariables()
+    rootLayer->ClearExpressionVariables();
+}
+\endcode
+
+\section VariableExpressions_Expressions Working with Expressions
+
+Variable expressions are treated as strings in USD data, so there's no special
+API for creating expressions. You can use expression strings in existing 
+asset path and variant APIs.
+
+\code
+// Asset Paths:
+SdfAssetPath assetPathWithExpr("`extraAsset_${referenceQualifier}.usda`");
+ 
+// Variant Selections:
+workVariantSet.SetVariantSelection("`${variantSel}`");
+\endcode
+
+For evaluating a variable expression, use Sdf's VariableExpression class.
+
+\code
+SdfVariableExpression workVarExp("`${myVariable}`");
+VtDictionary expressionVars = rootLayer->GetExpressionVariables();
+SdfVariableExpression::Result workResult = workVarExp.Evaluate(expressionVars);
+// Inspect evaluation errors
+std::cout << "Evaluation errors:\n";
+for (std::string &error : workResult.errors) {
+    std::cout << error << "\n";
+}
+// ...inspect and use workResult.value as needed...
+\endcode
+
+\section VariableExpressions_Notifications Change Notifications
+
+Changes to expression variables that are used in expressions in references and 
+other composition arcs will trigger recomposition as needed.
+
+Changes that affect expressions in asset path-valued attributes and metadata
+will trigger a UsdNotice::ObjectsChange notice containing resolved asset path
+resyncs to be sent. This informs clients that asset paths in the specified 
+subtrees of the scenegraph may now resolve to different locations. This broad 
+notification is needed because UsdStage currently does not cache or pre-compute 
+expression values to know precisely which objects (if any) were affected by
+such a change.
+
+*/

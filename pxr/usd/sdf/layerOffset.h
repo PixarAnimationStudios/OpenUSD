@@ -29,7 +29,6 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
 
-#include <boost/operators.hpp>
 #include <iosfwd>
 #include <vector>
 
@@ -58,7 +57,7 @@ class SdfTimeCode;
 /// GetReferenceLayerOffset() methods (the latter is the referenceLayerOffset 
 /// property in Python) of the SdfPrimSpec class.
 ///
-class SdfLayerOffset : public boost::totally_ordered<SdfLayerOffset>
+class SdfLayerOffset
 {
 public:
     /// \name Constructors
@@ -127,10 +126,30 @@ public:
     SDF_API
     bool operator==(const SdfLayerOffset &rhs) const;
 
+    /// \sa SdfLayerOffset::operator==
+    bool operator!=(const SdfLayerOffset &rhs) const {
+        return !(*this == rhs);
+    }
+
     /// Returns whether this offset is less than another.  The meaning
     /// of less than is somewhat arbitrary.
     SDF_API
     bool operator<(const SdfLayerOffset &rhs) const;
+
+    /// \sa SdfLayerOffset::operator<
+    bool operator>(const SdfLayerOffset& rhs) const {
+        return rhs < *this;
+    }
+
+    /// \sa SdfLayerOffset::operator<
+    bool operator>=(const SdfLayerOffset& rhs) const {
+        return !(*this < rhs);
+    }
+
+    /// \sa SdfLayerOffset::operator<
+    bool operator<=(const SdfLayerOffset& rhs) const {
+        return !(*this > rhs);
+    }
 
     /// Composes this with the offset \e rhs, such that the resulting
     /// offset is equivalent to first applying \e rhs and then \e *this.

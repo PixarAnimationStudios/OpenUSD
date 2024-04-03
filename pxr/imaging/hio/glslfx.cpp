@@ -40,8 +40,7 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/pathUtils.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iostream>
 #include <istream>
@@ -320,7 +319,7 @@ HioGlslfx::_ProcessInput(std::istream * input,
         ++context.lineNo;
 
         // update hash
-        boost::hash_combine(_hash, context.currentLine);
+        _hash = TfHash::Combine(_hash, context.currentLine);
 
         if (context.lineNo > 1 && context.version < 0) {
             TF_RUNTIME_ERROR("Syntax Error on line 1 of %s. First line in file "
@@ -479,9 +478,16 @@ HioGlslfx::_ParseGLSLSectionLine(vector<string> const & tokens,
 
     // Emit a comment for more helpful compile / link diagnostics.
     // note: #line with source file name is not allowed in GLSL.
+    //
+    // Use the file's basename rather than full path to avoid
+    // burning unnecessary extra context into the generated code
+    // that could weaken GL driver shader caching, such as build
+    // artifact serial numbers.
+    //
     _sourceMap[context.currentSectionId].append(
         TfStringPrintf("// line %d \"%s\"\n",
-                       context.lineNo, context.filename.c_str()));
+                       context.lineNo,
+                       TfGetBaseName(context.filename).c_str()));
 
     return true;
 }

@@ -69,14 +69,16 @@ public:
     HDST_API
     void EncodeDraw(
         HdStRenderPassStateSharedPtr const & renderPassState,
-        HdStResourceRegistrySharedPtr const & resourceRegistry) override;
+        HdStResourceRegistrySharedPtr const & resourceRegistry,
+        bool firstDrawBatch) override;
 
     /// Executes the drawing commands for this batch.
     HDST_API
     void ExecuteDraw(
         HgiGraphicsCmds *gfxCmds,
         HdStRenderPassStateSharedPtr const &renderPassState,
-        HdStResourceRegistrySharedPtr const &resourceRegistry) override;
+        HdStResourceRegistrySharedPtr const &resourceRegistry,
+        bool firstDrawBatch) override;
 
     HDST_API
     void DrawItemInstanceChanged(

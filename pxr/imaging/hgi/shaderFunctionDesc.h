@@ -570,7 +570,8 @@ HgiShaderFunctionAddStageOutput(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const std::string &type,
-    const std::string &role = std::string());
+    const std::string &role = std::string(),
+    const std::string &arraySize = std::string());
 
 /// Adds stage output function param descriptor to given shader function
 /// descriptor.

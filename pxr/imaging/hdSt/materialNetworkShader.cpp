@@ -30,7 +30,6 @@
 #include "pxr/imaging/hdSt/materialParam.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
-#include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -40,7 +39,7 @@
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/envSetting.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -152,16 +151,12 @@ HdSt_MaterialNetworkShader::BindResources(const int program,
                                  HdSt_ResourceBinder const &binder)
 {
     HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
-
-    binder.BindShaderResources(this);
 }
 /*virtual*/
 void
 HdSt_MaterialNetworkShader::UnbindResources(const int program,
                                    HdSt_ResourceBinder const &binder)
 {
-    binder.UnbindShaderResources(this);
-
     HdSt_TextureBinder::UnbindResources(binder, _namedTextureHandles);
 }
 /*virtual*/
@@ -210,12 +205,11 @@ HdSt_MaterialNetworkShader::_ComputeHash() const
 {
     size_t hash = HdSt_MaterialParam::ComputeHash(_params);
 
-    boost::hash_combine(hash, 
-        ArchHash(_fragmentSource.c_str(), _fragmentSource.size()));
-    boost::hash_combine(hash, 
-        ArchHash(_geometrySource.c_str(), _geometrySource.size()));
-    boost::hash_combine(hash,
-        ArchHash(_displacementSource.c_str(), _displacementSource.size()));
+    hash = TfHash::Combine(hash, 
+        ArchHash(_fragmentSource.c_str(), _fragmentSource.size()),
+        ArchHash(_geometrySource.c_str(), _geometrySource.size()),
+        ArchHash(_displacementSource.c_str(), _displacementSource.size())
+    );
 
     // Codegen is inspecting the shader bar spec to generate some
     // of the struct's, so we should probably use _paramSpec
@@ -238,8 +232,7 @@ HdSt_MaterialNetworkShader::_ComputeTextureSourceHash() const
              _namedTextureHandles) {
 
         // Use name, texture object and sampling parameters.
-        boost::hash_combine(hash, namedHandle.name);
-        boost::hash_combine(hash, namedHandle.hash);
+        hash = TfHash::Combine(hash, namedHandle.name, namedHandle.hash);
     }
     
     return hash;

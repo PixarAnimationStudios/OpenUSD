@@ -113,7 +113,8 @@ PcpCache::PcpCache(
     _layerStackIdentifier(layerStackIdentifier),
     _usd(usd),
     _fileFormatTarget(fileFormatTarget),
-    _layerStackCache(Pcp_LayerStackRegistry::New(_fileFormatTarget, _usd)),
+    _layerStackCache(Pcp_LayerStackRegistry::New(
+        _layerStackIdentifier, _fileFormatTarget, _usd)),
     _primDependencies(new Pcp_Dependencies())
 {
     // Do nothing
@@ -277,6 +278,8 @@ PcpCache::RequestLayerMuting(const std::vector<std::string>& layersToMute,
                              std::vector<std::string>* newLayersMuted,
                              std::vector<std::string>* newLayersUnmuted)
 {
+    TRACE_FUNCTION();
+
     ArResolverContextBinder binder(_layerStackIdentifier.pathResolverContext);
 
     std::vector<std::string> finalLayersToMute;
@@ -932,9 +935,17 @@ PcpCache::IsInvalidAssetPath(const std::string& resolvedAssetPath) const
 }
 
 bool 
-PcpCache::HasAnyDynamicFileFormatArgumentDependencies() const
+PcpCache::HasAnyDynamicFileFormatArgumentFieldDependencies() const
 {
-    return _primDependencies->HasAnyDynamicFileFormatArgumentDependencies();
+    return 
+        _primDependencies->HasAnyDynamicFileFormatArgumentFieldDependencies();
+}
+
+bool 
+PcpCache::HasAnyDynamicFileFormatArgumentAttributeDependencies() const
+{
+    return 
+        _primDependencies->HasAnyDynamicFileFormatArgumentAttributeDependencies();
 }
 
 bool 
@@ -944,12 +955,37 @@ PcpCache::IsPossibleDynamicFileFormatArgumentField(
     return _primDependencies->IsPossibleDynamicFileFormatArgumentField(field);
 }
 
+bool 
+PcpCache::IsPossibleDynamicFileFormatArgumentAttribute(
+    const TfToken &attributeName) const
+{
+    return _primDependencies->IsPossibleDynamicFileFormatArgumentAttribute(
+        attributeName);
+}
+
 const PcpDynamicFileFormatDependencyData &
 PcpCache::GetDynamicFileFormatArgumentDependencyData(
     const SdfPath &primIndexPath) const
 {
     return _primDependencies->GetDynamicFileFormatArgumentDependencyData(
         primIndexPath);
+}
+
+const SdfPathVector&
+PcpCache::GetPrimsUsingExpressionVariablesFromLayerStack(
+    const PcpLayerStackPtr &layerStack) const
+{
+    return _primDependencies->GetPrimsUsingExpressionVariablesFromLayerStack(
+        layerStack);
+}
+
+const std::unordered_set<std::string>& 
+PcpCache::GetExpressionVariablesFromLayerStackUsedByPrim(
+    const SdfPath &primIndexPath,
+    const PcpLayerStackPtr &layerStack) const
+{
+    return _primDependencies->GetExpressionVariablesFromLayerStackUsedByPrim(
+        primIndexPath, layerStack);
 }
 
 void
@@ -1195,7 +1231,7 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
     // local layers.
     SdfLayerHandleSet layersToReload;
     for (const PcpLayerStackPtr& layerStack: layerStacksAtOrUnderPrim) {
-        for (const SdfLayerHandle& layer: layerStack->GetLayers()) {
+        for (const auto& layer: layerStack->GetLayers()) {
             if (!_layerStack->HasLayer(layer)) {
                 layersToReload.insert(layer);
             }
@@ -1535,12 +1571,14 @@ struct PcpCache::_ParallelIndexer
         _cache->_primDependencies->Add(
             *mutableIndex, 
             std::move(outputItem.second.culledDependencies),
-            std::move(outputItem.second.dynamicFileFormatDependency));
+            std::move(outputItem.second.dynamicFileFormatDependency),
+            std::move(outputItem.second.expressionVariablesDependency));
         return mutableIndex;
     }
                      
 
     void _PublishOutputs() {
+        TRACE_FUNCTION();
         // Publish.
         std::pair<_PrimIndexCache::NodeHandle, PcpPrimIndexOutputs> outputItem;
         while (_toPublish.try_pop(outputItem)) {
@@ -1671,7 +1709,8 @@ PcpCache::_ComputePrimIndexWithCompatibleInputs(
     _primDependencies->Add(
         outputs.primIndex, 
         std::move(outputs.culledDependencies),
-        std::move(outputs.dynamicFileFormatDependency));
+        std::move(outputs.dynamicFileFormatDependency),
+        std::move(outputs.expressionVariablesDependency));
 
     // Update _includedPayloads if we included a discovered payload.
     if (outputs.payloadState == PcpPrimIndexOutputs::IncludedByPredicate) {

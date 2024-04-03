@@ -6,7 +6,7 @@
 // oslc -o TestNodeSourceAsset.oso TestNodeSourceAsset.osl
 //
 
-shader TestNodeSourceAsset
+node TestNodeSourceAsset
 (
     float inputA = .0
 )

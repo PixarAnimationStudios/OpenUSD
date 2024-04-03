@@ -226,7 +226,7 @@ HgiVulkanShaderGenerator::_WriteExtensions(std::ostream &ss)
 
     if (_GetShaderStage() & HgiShaderStageFragment) {
         if (builtinBarycentricsEnabled) {
-            ss << "#extension GL_NV_fragment_shader_barycentric: require\n";
+            ss << "#extension GL_EXT_fragment_shader_barycentric: require\n";
         }
     }
 }
@@ -240,6 +240,8 @@ HgiVulkanShaderGenerator::_WriteMacros(std::ostream &ss)
           "#define ATOMIC_STORE(a, v) (a) = (v)\n"
           "#define ATOMIC_ADD(a, v) atomicAdd(a, v)\n"
           "#define ATOMIC_EXCHANGE(a, v) atomicExchange(a, v)\n"
+          "#define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, "
+          "expected, desired)\n"
           "#define atomic_int int\n"
           "#define atomic_uint uint\n";
 
@@ -359,8 +361,13 @@ HgiVulkanShaderGenerator::_WriteInOuts(
         "gl_FragColor",
         "gl_FragDepth",
         "gl_PointSize",
-        "gl_ClipDistance",
         "gl_CullDistance",
+    };
+
+    // Some params are built-in, but we may want to declare them in the shader 
+    // anyway, such as to declare their array size.
+    const static std::set<std::string> takenOutParamsToDeclare {
+        "gl_ClipDistance"
     };
 
     const static std::unordered_map<std::string, std::string> takenInParams {
@@ -380,7 +387,7 @@ HgiVulkanShaderGenerator::_WriteInOuts(
         { HgiShaderKeywordTokens->hdLayer, "gl_Layer"},
         { HgiShaderKeywordTokens->hdViewportIndex, "gl_ViewportIndex"},
         { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"},
-        { HgiShaderKeywordTokens->hdBaryCoordNoPerspNV, "gl_BaryCoordNoPerspNV"},
+        { HgiShaderKeywordTokens->hdBaryCoordNoPersp, "gl_BaryCoordNoPerspEXT"}
     };
 
     const bool in_qualifier = qualifier == "in";
@@ -392,26 +399,29 @@ HgiVulkanShaderGenerator::_WriteInOuts(
                 takenOutParams.find(paramName) != takenOutParams.end()) {
             continue;
         }
+        if (out_qualifier && takenOutParamsToDeclare.find(paramName) !=
+                             takenOutParamsToDeclare.end()) {
+            CreateShaderSection<HgiVulkanMemberShaderSection>(
+                paramName,
+                param.type,
+                param.interpolation,
+                param.sampling,
+                param.storage,
+                HgiShaderSectionAttributeVector(),
+                qualifier,
+                std::string(),
+                param.arraySize);
+            continue;
+        }
         if (in_qualifier) {
             const std::string &role = param.role;
             auto const& keyword = takenInParams.find(role);
             if (keyword != takenInParams.end()) {
-                if (role == HgiShaderKeywordTokens->hdGlobalInvocationID) {
-                    CreateShaderSection<HgiVulkanKeywordShaderSection>(
-                        paramName,
-                        param.type,
-                        keyword->second);
-                } else if (role == HgiShaderKeywordTokens->hdVertexID) {
-                    CreateShaderSection<HgiVulkanKeywordShaderSection>(
-                        paramName,
-                        param.type,
-                        keyword->second);
-                } else if (role == HgiShaderKeywordTokens->hdInstanceID) {
-                    CreateShaderSection<HgiVulkanKeywordShaderSection>(
-                        paramName,
-                        param.type,
-                        keyword->second);
-                } else if (role == HgiShaderKeywordTokens->hdBaseInstance) {
+                if (role == HgiShaderKeywordTokens->hdGlobalInvocationID ||
+                    role == HgiShaderKeywordTokens->hdVertexID ||
+                    role == HgiShaderKeywordTokens->hdInstanceID ||
+                    role == HgiShaderKeywordTokens->hdBaseInstance ||
+                    role == HgiShaderKeywordTokens->hdBaryCoordNoPersp) {
                     CreateShaderSection<HgiVulkanKeywordShaderSection>(
                         paramName,
                         param.type,

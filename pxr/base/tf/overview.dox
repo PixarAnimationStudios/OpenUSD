@@ -94,7 +94,7 @@ The high-level grouping of C++ classes and functions is as follows:
 	<li> \link group_tf_DebuggingOutput \b Output \b For \b Debugging - \endlink 
 		TfDebug,  TF_DEBUG(),  TF_FUNC_NAME() 
 	<li> \link group_tf_String \b String \b Utilities - \endlink 
-		TfStringPrintf(),  TfHash, (and a large number of miscellaneous free functions) 
+		TfStringPrintf(), TfHash, TfUtf8CodePointView, (and a large number of miscellaneous free functions)
 	<li> \link group_tf_Containers \b Containers - \endlink 
 		TfByteData,  TfArray2,  TfArray3, TfTypeInfoMap
 	<li> \link group_tf_Stl \b STL \b Utilities - \endlink 

@@ -170,13 +170,18 @@ vec2 HorizontallyNormalizedFilmbackCoordinates()
 
 void ApplyClipPlanes(vec4 Peye)
 {
+#if defined(HD_HAS_numClipPlanes)
 #if defined(HD_HAS_clipPlanes)
-#if defined(HD_NUM_clipPlanes) // more than 1 (clipPlanes[N])
     for (int i=0; i<HD_NUM_clipPlanes; ++i) {
-        gl_ClipDistance[i] = dot(HdGet_clipPlanes(i), Peye);
+        // For Hgi backends like Metal, we declare a shader stage output of 
+        // gl_ClipDistance[HD_NUM_clipPlanes], since we need to know the array 
+        // size at compile time. To avoid having any uninitialized values in 
+        // that array, we initialize them all to zero first.
+        gl_ClipDistance[i] = 0;
+        if (i < HdGet_numClipPlanes()) {
+            gl_ClipDistance[i] = dot(HdGet_clipPlanes(i), Peye);
+        }
     }
-#else                          // only 1      (clipPlanes)
-    gl_ClipDistance[0] = dot(HdGet_clipPlanes(), Peye);
 #endif
 #endif
 }

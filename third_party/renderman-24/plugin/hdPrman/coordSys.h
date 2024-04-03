@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/coordSys.h"
+#include "pxr/imaging/hd/version.h"
 #include "Riley.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -47,11 +48,13 @@ public:
     void Sync(HdSceneDelegate *sceneDelegate,
               HdRenderParam   *renderParam,
               HdDirtyBits     *dirtyBits) override;
-    
+
+#if HD_API_VERSION < 53
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
     /// Typically this would be all dirty bits.
     HdDirtyBits GetInitialDirtyBitsMask() const override;
+#endif
 
     riley::CoordinateSystemId GetCoordSysId() const { return _coordSysId; }
 

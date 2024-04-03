@@ -103,7 +103,9 @@ HdSt_ExpandVarying(const SdfPath &id, const TfToken &name,
                 id.GetText(), name.GetText());
     }
 
-    if (basis == HdTokens->catmullRom || basis == HdTokens->bSpline) {
+    if (basis == HdTokens->catmullRom || 
+        basis == HdTokens->centripetalCatmullRom ||
+        basis == HdTokens->bspline) {
         for (const int nVerts : vertexCounts) {
             // Handling for the case of potentially incorrect vertex counts 
             if (nVerts < 1) {

@@ -8,6 +8,7 @@ over "AssetPathTest" (
         asset empty = @@
         asset looksLikeEscapes = @\x01\x03\x7f@
         asset overlay = @///global/unit_defs.sdf@
+        asset pathWithJapaneseCharacter = @path/to/響@
         asset relative1 = @sdf/Model.sdf@
         asset relative2 = @../sdf/Model.sdf@
         asset repo = @//menv30/global/unit_defs.sdf@
@@ -24,6 +25,7 @@ over "AssetPathTest" (
     asset empty = @@
     asset looksLikeEscapes = @\x01\x03\x7f@
     asset overlay = @///global/unit_defs.sdf@
+    asset pathWithJapaneseCharacter = @path/to/響@
     asset relative1 = @sdf/Model.sdf@
     asset relative2 = @../sdf/Model.sdf@
     asset repo = @//menv30/global/unit_defs.sdf@
@@ -43,6 +45,7 @@ over "AssetPathTest2" (
         asset escapeddelimiter = @@@foo.sdf\@@@testing\\@@@@@@
         asset looksLikeEscapes = @\x01\x03\x7f@
         asset overlay = @///global/unit_defs.sdf@
+        asset pathWithJapaneseCharacter = @path/to/響@
         asset relative1 = @sdf/Model.sdf@
         asset relative2 = @../sdf/Model.sdf@
         asset repo = @//menv30/global/unit_defs.sdf@
@@ -65,6 +68,7 @@ over "AssetPathTest2" (
     asset escapeddelimiter = @@@foo.sdf\@@@testing\\@@@@@@
     asset looksLikeEscapes = @\x01\x03\x7f@
     asset overlay = @///global/unit_defs.sdf@
+    asset pathWithJapaneseCharacter = @path/to/響@
     asset relative1 = @sdf/Model.sdf@
     asset relative2 = @../sdf/Model.sdf@
     asset repo = @//menv30/global/unit_defs.sdf@

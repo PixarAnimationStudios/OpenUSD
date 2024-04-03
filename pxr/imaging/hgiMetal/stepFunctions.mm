@@ -73,18 +73,20 @@ void
 HgiMetalStepFunctions::Bind(HgiVertexBufferBindingVector const &bindings)
 {
     for (HgiVertexBufferBinding const &binding : bindings) {
-        HgiBufferDesc const& desc = binding.buffer->GetDescriptor();
+        if (binding.buffer) {
+            HgiBufferDesc const& desc = binding.buffer->GetDescriptor();
 
-        TF_VERIFY(desc.usage & HgiBufferUsageVertex);
+            TF_VERIFY(desc.usage & HgiBufferUsageVertex);
 
-        for (auto & stepFunction : _vertexBufferDescs) {
-            if (stepFunction.bindingIndex == binding.index) {
-                stepFunction.byteOffset = binding.byteOffset;
+            for (auto & stepFunction : _vertexBufferDescs) {
+                if (stepFunction.bindingIndex == binding.index) {
+                    stepFunction.byteOffset = binding.byteOffset;
+                }
             }
-        }
-        for (auto & stepFunction : _patchBaseDescs) {
-            if (stepFunction.bindingIndex == binding.index) {
-                stepFunction.byteOffset = binding.byteOffset;
+            for (auto & stepFunction : _patchBaseDescs) {
+                if (stepFunction.bindingIndex == binding.index) {
+                    stepFunction.byteOffset = binding.byteOffset;
+                }
             }
         }
     }

@@ -207,7 +207,7 @@ Explicit Built-in API Schemas (not auto-apply)
 
 As with schema inheritance, built-in API schemas are included in other
 schemas by schema identifier (e.g. as `LightAPI is a built-in of MeshLightAPI
-<https://github.com/PixarAnimationStudios/USD/blob/release/pxr/usd/usdLux/schema.usda#L223-L235>`_)
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/pxr/usd/usdLux/schema.usda#L223-L235>`_)
 so they will always be built-in with a specific version. If an API schema
 that is included as built-in API schema for one or more other schemas is
 upgraded to a new version, then all of those schemas that include the API
@@ -262,7 +262,7 @@ versions of an API schema to be applied to the same prim might facilitate
 interchange between DCCs that are running different versions of USD. We
 believe that a preferable approach with fewer side-effects for accomplishing
 this same goal might be to extend the existing feature of `fallback prim types
-<https://graphics.pixar.com/usd/release/api/_usd__page__object_model.html#Usd_OM_FallbackPrimTypes>`_
+<https://openusd.org/release/api/_usd__page__object_model.html#Usd_OM_FallbackPrimTypes>`_
 to apply to authored API schemas (currently the feature is only defined for
 concrete prim type names) and to automatically determine fallback types for
 schema versions that are authored but don’t exist in the USD version. But
@@ -529,7 +529,7 @@ API schemas are best explained through an example. Right now, we have an API sch
 called PxrMeshLightAPI, which exists in the USD RenderMan plugin, to extend
 RenderMan properties to MeshLightAPI and VolumeLightAPI in usdLux. Thus
 `PxrMeshLightAPI is set to auto-apply to MeshLightAPI and VolumeLightAPI
-<https://github.com/PixarAnimationStudios/USD/blob/v22.05/third_party/renderman-24/plugin/usdRiPxr/schema.usda#L1649-L1651>`_
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/v22.05/third_party/renderman-24/plugin/usdRiPxr/schema.usda#L1649-L1651>`_
 and becomes a built-in API of those schemas at runtime. Here, we run this
 schema, PxrMeshLIghtAPI, through a hypothetical versioning scenario to
 explain the behaviors we need to support. 

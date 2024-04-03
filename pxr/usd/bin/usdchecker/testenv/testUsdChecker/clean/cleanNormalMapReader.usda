@@ -35,5 +35,34 @@ def "World"
             normal3f inputs:normal.connect = </World/material/NormalMap.outputs:rgb>
         }
     }
-}
 
+    # Normal map compliance checker should handle connected asset attributes.
+    def Material "assetOnMaterial"
+    {
+        asset inputs:file = @texture.jpg@
+
+        def Shader "ColorMap"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file.connect = </World/assetOnMaterial.inputs:file>
+            float3 outputs:rgb
+        }
+
+        def Shader "NormalMap"
+        {
+            uniform token info:id = "UsdUVTexture"
+            token inputs:sourceColorSpace = "raw"
+            float4 inputs:scale = (2.0, 2.0, 2.0, 1.0)
+            float4 inputs:bias = (-1.0, -1.0, -1.0, 0.0)
+            asset inputs:file.connect = </World/assetOnMaterial.inputs:file>
+            float3 outputs:rgb
+        }
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </World/assetOnMaterial/ColorMap.outputs:rgb>
+            normal3f inputs:normal.connect = </World/assetOnMaterial/NormalMap.outputs:rgb>
+        }
+    }
+}

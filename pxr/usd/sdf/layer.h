@@ -45,11 +45,10 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/dispatcher.h"
 
-#include <boost/optional.hpp>
-
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <vector>
@@ -82,6 +81,10 @@ struct Sdf_AssetInfo;
 /// back out to the original asset.  You can use the Export() method to write
 /// the layer to a different location. You can use the GetIdentifier() method
 /// to get the layer's Id or GetRealPath() to get the resolved, full URI.
+///
+/// Layer identifiers are UTF-8 encoded strings. A layer's file format is
+/// determined via the identifier's extension (as resolved by Ar) with [A-Z]
+/// (and no other characters) explicitly case folded.
 ///
 /// Layers can have a timeCode range (startTimeCode and endTimeCode). This range
 /// represents the suggested playback range, but has no impact on the extent of 
@@ -1042,6 +1045,23 @@ public:
     SDF_API
     void ClearCustomLayerData();
 
+    /// Returns the expression variables dictionary authored on this layer.
+    /// See \ref Sdf_Page_VariableExpressions for more details.
+    SDF_API
+    VtDictionary GetExpressionVariables() const;
+    
+    /// Sets the expression variables dictionary for this layer.
+    SDF_API
+    void SetExpressionVariables(const VtDictionary& expressionVars);
+
+    /// Returns true if expression variables are authored on this layer.
+    SDF_API
+    bool HasExpressionVariables() const;
+
+    /// Clears the expression variables dictionary authored on this layer.
+    SDF_API
+    void ClearExpressionVariables();
+
     /// @}
     /// \name Prims
     /// @{
@@ -1613,7 +1633,7 @@ private:
     // reference itself internally without being susceptible to a race.)
     bool _WaitForInitializationAndCheckIfSuccessful();
 
-    // Returns whether or not this menv layer should post change 
+    // Returns whether or not this layer should post change 
     // notification.  This simply returns (!_GetIsLoading())
     bool _ShouldNotify() const;
 
@@ -1935,7 +1955,7 @@ private:
 
     // This is an optional<bool> that is only set once initialization
     // is complete, before _initializationComplete is set.
-    boost::optional<bool> _initializationWasSuccessful;
+    std::optional<bool> _initializationWasSuccessful;
 
     // remembers the last 'IsDirty' state.
     mutable bool _lastDirtyState;

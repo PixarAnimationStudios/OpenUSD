@@ -400,6 +400,10 @@ private:
         void PrimsRemoved(
             const HdSceneIndexBase &sender,
             const RemovedPrimEntries &entries) override;
+        void PrimsRenamed(
+            const HdSceneIndexBase &sender,
+            const RenamedPrimEntries &entries) override;
+
     private:
         UsdImagingPiPrototypePropagatingSceneIndex * const _owner;
     };

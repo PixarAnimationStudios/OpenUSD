@@ -41,7 +41,8 @@
 // NOTE: this is not actually used, but AttributeSpec requires it
 #include "pxr/usd/sdf/relationshipSpec.h"
 
-#include <boost/preprocessor/seq/for_each.hpp>
+#include "pxr/base/tf/preprocessorUtilsLite.h"
+
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -198,9 +199,9 @@ UsdAttribute::HasValue() const
 bool
 UsdAttribute::HasFallbackValue() const
 {
-    SdfAttributeSpecHandle attrDef =
-        _GetStage()->_GetSchemaAttributeSpec(*this);
-    return attrDef && attrDef->HasDefaultValue();
+    UsdPrimDefinition::Attribute attrDef =
+        _GetStage()->_GetSchemaAttribute(*this);
+    return attrDef && attrDef.GetFallbackValue<VtValue>(nullptr);
 }
 
 bool 
@@ -347,7 +348,7 @@ ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION
 
 // Explicitly instantiate templated getters and setters for all Sdf value
 // types.
-#define _INSTANTIATE_GET(r, unused, elem)                               \
+#define _INSTANTIATE_GET(unused, elem)                                  \
     template USD_API bool UsdAttribute::_Get(                           \
         SDF_VALUE_CPP_TYPE(elem)*, UsdTimeCode) const;                  \
     template USD_API bool UsdAttribute::_Get(                           \
@@ -357,7 +358,7 @@ ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION
     template USD_API bool UsdAttribute::_Set(                           \
         const SDF_VALUE_CPP_ARRAY_TYPE(elem)&, UsdTimeCode) const;
 
-BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
+TF_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET
 
 // In addition to the Sdf value types, _Set can also be called with an 

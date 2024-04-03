@@ -1,0 +1,41 @@
+Loading @ExpressionsInPayloads/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </SinglePayload>
+
+Prim Stack:
+    root.sdf             /SinglePayload
+    A.sdf                /A
+
+------------------------------------------------------------------------
+Results for composing </ChainedPayload>
+
+Prim Stack:
+    root.sdf             /ChainedPayload
+    ref2.sdf             /Ref2
+    B.sdf                /B
+
+------------------------------------------------------------------------
+Results for composing </ChainedPayloadOverride>
+
+Prim Stack:
+    root.sdf             /ChainedPayloadOverride
+    ref3.sdf             /Ref3
+    ref2.sdf             /Ref2
+    A.sdf                /A
+
+------------------------------------------------------------------------
+Results for composing </MultiPayload>
+
+Prim Stack:
+    root.sdf             /MultiPayload
+    ref3.sdf             /Ref3
+    ref2.sdf             /Ref2
+    A.sdf                /A
+    ref2.sdf             /Ref2
+    B.sdf                /B
+

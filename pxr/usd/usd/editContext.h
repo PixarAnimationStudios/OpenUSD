@@ -71,12 +71,18 @@ class UsdEditContext
 public:
     /// Construct without modifying \a stage's current EditTarget.  Save
     /// \a stage's current EditTarget to restore on destruction.
+    ///
+    /// If \a stage is invalid, a coding error will be issued by the
+    /// constructor, and this class takes no action.
     USD_API
     explicit UsdEditContext(const UsdStagePtr &stage);
 
     /// Construct and save \a stage's current EditTarget to restore on
     /// destruction, then invoke stage->SetEditTarget(editTarget).
     /// 
+    /// If \a stage is invalid, a coding error will be issued by the
+    /// constructor, and this class takes no action.
+    ///
     /// If \a editTarget is invalid, a coding error will be issued by the
     /// \a stage, and its EditTarget will not be modified.
     USD_API
@@ -86,6 +92,9 @@ public:
     /// This ctor is handy to construct an edit context from the return
     /// value of another function (Cannot return a UsdEditContext since it
     /// needs to be noncopyable).
+    /// 
+    /// If \a stage is invalid, a coding error will be issued by the
+    /// constructor, and this class takes no action.
     /// 
     /// If \a editTarget is invalid, a coding error will be issued by the
     /// \a stage, and its EditTarget will not be modified.

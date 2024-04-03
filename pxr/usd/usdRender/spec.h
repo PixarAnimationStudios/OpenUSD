@@ -64,6 +64,8 @@ struct UsdRenderSpec {
         SdfPath cameraPath;
         /// If set to true, disables motion blur.
         bool disableMotionBlur;
+        /// If set to true, disables depth of field.
+        bool disableDepthOfField;
         /// The pixel resolution of the product.
         GfVec2i resolution;
         /// The pixel aspect ratio as adjusted by aspectRatioConformPolicy.

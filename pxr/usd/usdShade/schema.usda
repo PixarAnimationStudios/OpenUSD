@@ -89,13 +89,14 @@ class NodeGraph "NodeGraph" (
 
 class Material "Material" (
     inherits = </NodeGraph>
-    doc = """A Material provides a container into which multiple "render targets"
-    can add data that defines a "shading material" for a renderer.  Typically
-    this consists of one or more UsdRelationship properties that target
-    other prims of type \\em Shader - though a target/client is free to add
-    any data that is suitable.  We <b>strongly advise</b> that all targets
+    doc = """A Material provides a container into which multiple "render contexts"
+    can add data that defines a "shading material" for a renderer. Typically 
+    this consists of one or more UsdShadeOutput properties connected to outputs 
+    of nested Shader prims - though a context/client is free to add
+    any data that is suitable. We <b>strongly advise</b> that all contexts
     adopt the convention that all properties be prefixed with a namespace
-    that identifies the target, e.g. "rel ri:surface = </Shaders/mySurf>".
+    that identifies the context e.g. "token outputs:ri:surface.connect = 
+    </MyselfMaterial/previewSurface.outputs:surface". 
     
     ## Binding Materials
     
@@ -329,7 +330,7 @@ class "NodeDefAPI"
     uniform token info:id (
         doc = """The id is an identifier for the type or purpose of the 
         shader. E.g.: Texture or FractalFloat.
-        The use of this id will depend on the render target: some will turn it
+        The use of this id will depend on the render context: some will turn it
         into an actual shader path, some will use it to generate shader source 
         code dynamically.
         
@@ -419,19 +420,19 @@ class "MaterialBindingAPI"
     binding relationship. 
     <ul><li>
     In the case of a direct binding, the <i>allPurpose</i> binding is 
-    represented by the relationship named <b>"material:binding"</b>. 
+    represented by the relationship named <b>material:binding</b>. 
     Special-purpose direct bindings are represented by relationships named
-    <b>"material:binding:<i>purpose</i></b>. A direct binding relationship 
+    <b>material:binding:<i>purpose</i></b>. A direct binding relationship 
     must have a single target path that points to a <b>UsdShadeMaterial</b>.</li>
     <li>
     In the case of a collection-based binding, the <i>allPurpose</i> binding is 
     represented by a relationship named 
-    "material:binding:collection:<i>bindingName</i>", where 
+    <b>material:binding:collection:<i>bindingName</i></b>, where 
     <b>bindingName</b> establishes an identity for the binding that is unique 
     on the prim. Attempting to establish two collection bindings of the same 
     name on the same prim will result in the first binding simply being 
     overridden. A special-purpose collection-based binding is represented by a 
-    relationship named "material:binding:collection:<i>purpose:bindingName</i>".
+    relationship named <b>material:binding:collection:<i>purpose:bindingName</i></b>.
     A collection-based binding relationship must have exacly two targets, one of 
     which should be a collection-path (see 
     \ref UsdCollectionAPI::GetCollectionPath()) and the other should point to a

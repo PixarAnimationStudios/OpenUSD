@@ -51,7 +51,7 @@
 #include "pxr/imaging/hgiGL/graphicsCmds.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iostream>
 
@@ -899,11 +899,9 @@ HdxPrimOriginInfo::FromPickHit(HdRenderIndex * const renderIndex,
         sceneIndex->GetPrim(path).dataSource;
 
     // First, ask the prim itself for the prim origin data source.
+    // This will only be valid when scene indices are enabled.
     result.primOrigin =
         HdPrimOriginSchema::GetFromParent(primSource).GetContainer();
-    if (!result.primOrigin) {
-        return result;
-    }
 
     // instanceIndex encodes the index of the instance at each level of
     // instancing.
@@ -1018,16 +1016,20 @@ size_t
 HdxPickResult::_GetHash(int index) const
 {
     size_t hash = 0;
-    boost::hash_combine(hash, _GetPrimId(index));
-    boost::hash_combine(hash, _GetInstanceId(index));
+    hash = TfHash::Combine(
+        hash,
+        _GetPrimId(index),
+        _GetInstanceId(index)
+    );
     if (_pickTarget == HdxPickTokens->pickFaces) {
-        boost::hash_combine(hash, _GetElementId(index));
+        hash = TfHash::Combine(hash, _GetElementId(index));
     }
     if (_pickTarget == HdxPickTokens->pickEdges) {
-        boost::hash_combine(hash, _GetEdgeId(index));
+        hash = TfHash::Combine(hash, _GetEdgeId(index));
     }
-    if (_pickTarget == HdxPickTokens->pickPoints) {
-        boost::hash_combine(hash, _GetPointId(index));
+    if (_pickTarget == HdxPickTokens->pickPoints ||
+        _pickTarget == HdxPickTokens->pickPointsAndInstances) {
+        hash = TfHash::Combine(hash, _GetPointId(index));
     }
     return hash;
 }
@@ -1038,15 +1040,37 @@ HdxPickResult::_IsValidHit(int index) const
     // Inspect the id buffers to determine if the pixel index is a valid hit
     // by accounting for the pick target when picking points and edges.
     // This allows the hit(s) returned to be relevant.
-    bool validPrim = (_GetPrimId(index) != -1);
-    bool invalidTargetEdgePick = (_pickTarget == HdxPickTokens->pickEdges)
-        && (_GetEdgeId(index) == -1);
-    bool invalidTargetPointPick = (_pickTarget == HdxPickTokens->pickPoints)
-        && (_GetPointId(index) == -1);
+    if (_GetPrimId(index) == -1) {
+        return false;
+    }
+    if (_pickTarget == HdxPickTokens->pickEdges) {
+        return (_GetEdgeId(index) != -1);
+    } else if (_pickTarget == HdxPickTokens->pickPoints) {
+        return (_GetPointId(index) != -1);
+    } else if (_pickTarget == HdxPickTokens->pickPointsAndInstances) {
+        if (_GetPointId(index) != -1) {
+            return true;
+        }
+        if (_GetInstanceId(index) != -1) {
+            SdfPath const primId =
+                _index->GetRprimPathFromPrimId(_GetPrimId(index));
+            if (!primId.IsEmpty()) {
+                SdfPath delegateId;
+                SdfPath instancerId;
+                _index->GetSceneDelegateAndInstancerIds(
+                    primId,
+                    &delegateId,
+                    &instancerId);
+            
+                if (!instancerId.IsEmpty()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
-    return validPrim
-           && !invalidTargetEdgePick
-           && !invalidTargetPointPick;
+    return true;
 }
 
 void
@@ -1213,20 +1237,23 @@ HdxPickHit::GetHash() const
 {
     size_t hash = 0;
 
-    boost::hash_combine(hash, delegateId.GetHash());
-    boost::hash_combine(hash, objectId.GetHash());
-    boost::hash_combine(hash, instancerId);
-    boost::hash_combine(hash, instanceIndex);
-    boost::hash_combine(hash, elementIndex);
-    boost::hash_combine(hash, edgeIndex);
-    boost::hash_combine(hash, pointIndex);
-    boost::hash_combine(hash, worldSpaceHitPoint[0]);
-    boost::hash_combine(hash, worldSpaceHitPoint[1]);
-    boost::hash_combine(hash, worldSpaceHitPoint[2]);
-    boost::hash_combine(hash, worldSpaceHitNormal[0]);
-    boost::hash_combine(hash, worldSpaceHitNormal[1]);
-    boost::hash_combine(hash, worldSpaceHitNormal[2]);
-    boost::hash_combine(hash, normalizedDepth);
+    hash = TfHash::Combine(
+        hash,
+        delegateId.GetHash(),
+        objectId.GetHash(),
+        instancerId,
+        instanceIndex,
+        elementIndex,
+        edgeIndex,
+        pointIndex,
+        worldSpaceHitPoint[0],
+        worldSpaceHitPoint[1],
+        worldSpaceHitPoint[2],
+        worldSpaceHitNormal[0],
+        worldSpaceHitNormal[1],
+        worldSpaceHitNormal[2],
+        normalizedDepth
+    );
     
     return hash;
 }

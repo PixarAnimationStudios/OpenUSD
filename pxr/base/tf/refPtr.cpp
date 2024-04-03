@@ -32,77 +32,80 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-int
-Tf_RefPtr_UniqueChangedCounter::_AddRef(TfRefBase const *refBase)
+void
+Tf_RefPtr_UniqueChangedCounter
+::_AddRefMaybeLocked(TfRefBase const *refBase, int prevCount)
 {
-    // Read the current value, and try to CAS it one greater if it looks like we
-    // won't take it 1 -> 2.  If we're successful at this, we can skip the whole
-    // locking business.  If instead the current count is 1, we pay the price
-    // with the locking stuff.
-    auto &counter = refBase->GetRefCount()._counter;
-
-    int prevCount = counter.load();
-    while (prevCount != 1) {
-        if (counter.compare_exchange_weak(prevCount, prevCount+1)) {
-            return prevCount;
+    const auto relaxed = std::memory_order_relaxed;
+    auto &counter = refBase->_GetRefCount();
+    // While we haven't seen a -1, just try to bump the count.
+    while (prevCount != -1) {
+        if (counter.compare_exchange_weak(prevCount, prevCount-1, relaxed)) {
+            return;
         }
     }
-
-    // prevCount is 1 or it changed in the meantime.
-    TfRefBase::UniqueChangedListener const &listener =
-        TfRefBase::_uniqueChangedListener;
+    // We saw a -1, so we'll pay for the locking.
+    TfRefBase::UniqueChangedListener const &
+        listener = TfRefBase::_uniqueChangedListener;
     listener.lock();
-    prevCount = refBase->GetRefCount()._FetchAndAdd(1);
-    if (prevCount == 1) {
+    prevCount = counter.fetch_add(-1, relaxed);
+    if (prevCount == -1) {
+        // Invoke uniqueness changed listener.
         listener.func(refBase, false);
     }
     listener.unlock();
-    
-    return prevCount;
 }
 
 bool
-Tf_RefPtr_UniqueChangedCounter::_RemoveRef(TfRefBase const *refBase)
+Tf_RefPtr_UniqueChangedCounter
+::_RemoveRefMaybeLocked(TfRefBase const *refBase, int prevCount)
 {
-    // Read the current value, and try to CAS it one less if it looks like we
-    // won't take it 2 -> 1.  If we're successful at this, we can skip the whole
-    // locking business.  If instead the current count is 2, we pay the price
-    // with the locking stuff.
-    auto &counter = refBase->GetRefCount()._counter;
-
-    int prevCount = counter.load();
-    while (prevCount != 2) {
-        if (counter.compare_exchange_weak(prevCount, prevCount-1)) {
-            return prevCount == 1;
+    const auto release = std::memory_order_release;
+    auto &counter = refBase->_GetRefCount();
+    // While we haven't seen a -2, just try to drop the count.
+    while (prevCount != -2) {
+        if (counter.compare_exchange_weak(prevCount, prevCount+1, release)) {
+            return prevCount == -1;
         }
     }
-
-    // prevCount is 2 or it changed in the meantime.
+    // We saw a -2, so we'll pay for the locking.
     TfRefBase::UniqueChangedListener const &listener =
         TfRefBase::_uniqueChangedListener;
     listener.lock();
-    prevCount = refBase->GetRefCount()._FetchAndAdd(-1);
-    if (prevCount == 2) {
+    prevCount = counter.fetch_add(1, release);
+    if (prevCount == -2) {
+        // Invoke uniqueness changed listener.
         listener.func(refBase, true);
     }
     listener.unlock();
-    
-    return prevCount == 1;
+    return prevCount == -1;
 }
 
-bool Tf_RefPtr_UniqueChangedCounter::_AddRefIfNonzero(
-    TfRefBase const *refBase)
+bool
+Tf_RefPtr_UniqueChangedCounter
+::AddRefIfNonzero(TfRefBase const *refBase)
 {
     // Read the current value, and try to CAS it one greater if it looks like we
     // won't take it 1 -> 2.  If we're successful at this, we can skip the whole
     // locking business.  If instead the current count is 1, we pay the price
     // with the locking stuff.
-    auto &counter = refBase->GetRefCount()._counter;
-
+    auto &counter = refBase->_GetRefCount();
     int prevCount = counter.load();
-    while (prevCount != 0 && prevCount != 1) {
+
+    // If we don't need to worry about locking, just try to bump the count.
+    while (prevCount > 0) {
         if (counter.compare_exchange_weak(prevCount, prevCount+1)) {
             return true;
+        }
+    }
+
+    // Note! Counts are negative here.
+    // See if we can CAS to one more ref without locking.
+    if (prevCount < 0) {
+        while (prevCount != 0 && prevCount != -1) {
+            if (counter.compare_exchange_weak(prevCount, prevCount-1)) {
+                return true;
+            }
         }
     }
 
@@ -111,31 +114,22 @@ bool Tf_RefPtr_UniqueChangedCounter::_AddRefIfNonzero(
         return false;
     }
 
-    // Otherwise we saw a 1, so we may have to lock & invoke the unique changed
-    // counter.
-    TfRefBase::UniqueChangedListener const &listener =
-        TfRefBase::_uniqueChangedListener;
+    // We saw a -1, so we'll pay for the locking.
+    TfRefBase::UniqueChangedListener const &
+        listener = TfRefBase::_uniqueChangedListener;
     listener.lock();
-    prevCount = counter.load();
-    while (true) {
-        if (prevCount == 0) {
-            listener.unlock();
-            return false;
-        }
-        if (prevCount == 1) {
-            listener.func(refBase, false);
-            counter.store(2, std::memory_order_relaxed);
-            listener.unlock();
-            return true;
-        }
-        if (counter.compare_exchange_weak(prevCount, prevCount+1)) {
-            listener.unlock();
-            return true;
+    while (prevCount != 0) {
+        if (counter.compare_exchange_weak(prevCount, prevCount-1)) {
+            if (prevCount == -1) {
+                // Invoke uniqueness changed listener.
+                listener.func(refBase, false);
+            }
+            break;
         }
     }
-    // Unreachable...
     listener.unlock();
-    return true;
+
+    return prevCount != 0;
 }
 
 void

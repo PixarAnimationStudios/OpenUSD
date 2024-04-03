@@ -128,6 +128,20 @@ class TestUsdGeomSchemata(unittest.TestCase):
         self.assertFalse(prim.IsA(UsdGeom.Mesh))       # Capsule is not a Mesh
         self.assertTrue(prim.IsA(UsdGeom.Xformable))   # Capsule is a Xformable
         self.assertFalse(prim.IsA(UsdGeom.Cylinder))   # Capsule is not a Cylinder
+        # Belongs to Cylinder family
+        self.assertTrue(prim.IsInFamily(UsdGeom.Tokens.Capsule))
+        self.assertTrue(schema.GetAxisAttr())
+
+        # Capsule_1 Tests
+
+        schema = UsdGeom.Capsule_1.Define(stage, "/Capsule_1")
+        self.assertTrue(schema)
+        prim = schema.GetPrim()
+        self.assertFalse(prim.IsA(UsdGeom.Mesh))       # Capsule is not a Mesh
+        self.assertTrue(prim.IsA(UsdGeom.Xformable))   # Capsule is a Xformable
+        self.assertFalse(prim.IsA(UsdGeom.Cylinder))   # Capsule is not a Cylinder
+        # Belongs to Cylinder family
+        self.assertTrue(prim.IsInFamily(UsdGeom.Tokens.Capsule))
         self.assertTrue(schema.GetAxisAttr())
 
         # Cone Tests
@@ -158,6 +172,20 @@ class TestUsdGeomSchemata(unittest.TestCase):
         self.assertFalse(prim.IsA(UsdGeom.Mesh))       # Cylinder is not a Mesh
         self.assertTrue(prim.IsA(UsdGeom.Xformable))   # Cylinder is a Xformable
         self.assertTrue(prim.IsA(UsdGeom.Cylinder))    # Cylinder is a Cylinder
+        # Belongs to Cylinder family
+        self.assertTrue(prim.IsInFamily(UsdGeom.Tokens.Cylinder))
+        self.assertTrue(schema.GetAxisAttr())
+
+        # Cylinder_1 Tests
+
+        schema = UsdGeom.Cylinder_1.Define(stage, "/Cylinder_1")
+        self.assertTrue(schema)
+        prim = schema.GetPrim()
+        self.assertFalse(prim.IsA(UsdGeom.Mesh))       # Cylinder is not a Mesh
+        self.assertTrue(prim.IsA(UsdGeom.Xformable))   # Cylinder is a Xformable
+        self.assertTrue(prim.IsA(UsdGeom.Cylinder_1))    # Cylinder is a Cylinder
+        # Belongs to Cylinder family
+        self.assertTrue(prim.IsInFamily(UsdGeom.Tokens.Cylinder))
         self.assertTrue(schema.GetAxisAttr())
 
         # Mesh Tests

@@ -73,7 +73,8 @@ public:
     HdDataSourceLocatorSet InvalidateImagingSubprim(
             UsdPrim const& prim,
             TfToken const& subprim,
-            TfTokenVector const& properties) override;
+            TfTokenVector const& properties,
+            UsdImagingPropertyInvalidationType invalidationType) override;
 
     /// Returns RepresentsSelfAndDescendents to suppress population of child
     /// Shader prims and receive notice when their properties change/
@@ -85,7 +86,8 @@ public:
             UsdPrim const& prim,
             UsdPrim const& descendentPrim,
             TfToken const& subprim,
-            TfTokenVector const& properties) override;
+            TfTokenVector const& properties,
+            UsdImagingPropertyInvalidationType invalidationType) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Initialization
@@ -172,6 +174,19 @@ public:
     using BaseAdapter = UsdImagingRepresentedByAncestorPrimAdapter;
 
     UsdImagingShaderAdapter()
+        : UsdImagingRepresentedByAncestorPrimAdapter() {}
+};
+
+/// \class UsdImagingNodeGraphAdapter
+/// \brief Delegates invalidation responsibility of a Noge Graph prim to an
+/// ancestor Material prim
+class UsdImagingNodeGraphAdapter :
+        public UsdImagingRepresentedByAncestorPrimAdapter
+{
+public:
+    using BaseAdapter = UsdImagingRepresentedByAncestorPrimAdapter;
+
+    UsdImagingNodeGraphAdapter()
         : UsdImagingRepresentedByAncestorPrimAdapter() {}
 };
 

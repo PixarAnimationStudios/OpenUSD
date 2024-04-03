@@ -53,6 +53,7 @@
 #include <boost/python/to_python_converter.hpp>
 
 #include <memory>
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -114,8 +115,8 @@ using namespace boost::python;
 template <typename Ptr>
 struct _PtrInterface {
     typedef typename Ptr::DataType Pointee;
-    typedef typename boost::add_const<Pointee>::type ConstPointee;
-    typedef typename boost::remove_const<Pointee>::type NonConstPointee;
+    using ConstPointee = std::add_const_t<Pointee>;
+    using NonConstPointee = std::remove_const_t<Pointee>;
     
     template <typename U>
     struct Rebind {

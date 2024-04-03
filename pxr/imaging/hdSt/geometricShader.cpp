@@ -32,7 +32,7 @@
 
 #include "pxr/imaging/hio/glslfx.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iostream>
 #include <string>
@@ -80,12 +80,15 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
 
     std::stringstream ss(glslfxString);
     _glslfx.reset(new HioGlslfx(ss));
-    boost::hash_combine(_hash, _glslfx->GetHash());
-    boost::hash_combine(_hash, cullingPass);
-    boost::hash_combine(_hash, primType);
-    boost::hash_combine(_hash, cullStyle);
-    boost::hash_combine(_hash, useMetalTessellation);
-    boost::hash_combine(_hash, fvarPatchType);
+    _hash = TfHash::Combine(
+        _hash,
+        _glslfx->GetHash(),
+        cullingPass,
+        primType,
+        cullStyle,
+        useMetalTessellation,
+        fvarPatchType
+    );
     //
     // note: Don't include polygonMode into the hash.
     //       It is independent from the GLSL program.
@@ -99,6 +102,66 @@ HioGlslfx const *
 HdSt_GeometricShader::_GetGlslfx() const
 {
     return _glslfx.get();
+}
+
+// Note: The geometric shader may override the state if necessary, including
+// disabling h/w culling altogether.  This is required to handle instancing
+// since instanceScale / instanceTransform can flip the xform handedness.
+HgiCullMode
+HdSt_GeometricShader::ResolveCullMode(
+    HdCullStyle const renderStateCullStyle) const
+{
+    if (!_useHardwareFaceCulling) {
+        // Use fragment shader culling via discard.
+        return HgiCullModeNone;
+    }
+
+    // If the Rprim has an opinion, that wins, else use the render state style.
+    HdCullStyle const resolvedCullStyle =
+        _cullStyle == HdCullStyleDontCare ? renderStateCullStyle : _cullStyle;
+
+    HgiCullMode resolvedCullMode = HgiCullModeNone;
+
+    switch (resolvedCullStyle) {
+        case HdCullStyleFront:
+            if (_hasMirroredTransform) {
+                resolvedCullMode = HgiCullModeBack;
+            } else {
+                resolvedCullMode = HgiCullModeFront;
+            }
+            break;
+        case HdCullStyleFrontUnlessDoubleSided:
+            if (!_doubleSided) {
+                if (_hasMirroredTransform) {
+                    resolvedCullMode = HgiCullModeBack;
+                } else {
+                    resolvedCullMode = HgiCullModeFront;
+                }
+            }
+            break;
+        case HdCullStyleBack:
+            if (_hasMirroredTransform) {
+                resolvedCullMode = HgiCullModeFront;
+            } else {
+                resolvedCullMode = HgiCullModeBack;
+            }
+            break;
+        case HdCullStyleBackUnlessDoubleSided:
+            if (!_doubleSided) {
+                if (_hasMirroredTransform) {
+                    resolvedCullMode = HgiCullModeFront;
+                } else {
+                    resolvedCullMode = HgiCullModeBack;
+                }
+            }
+            break;
+        case HdCullStyleNothing:
+        default:
+            resolvedCullMode = HgiCullModeNone;
+            break;
+    }
+
+    return resolvedCullMode;
 }
 
 /* virtual */

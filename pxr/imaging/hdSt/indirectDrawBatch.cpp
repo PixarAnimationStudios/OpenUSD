@@ -929,7 +929,8 @@ HdSt_IndirectDrawBatch::PrepareDraw(
 void
 HdSt_IndirectDrawBatch::EncodeDraw(
     HdStRenderPassStateSharedPtr const & renderPassState,
-    HdStResourceRegistrySharedPtr const & resourceRegistry)
+    HdStResourceRegistrySharedPtr const & resourceRegistry,
+    bool /*firstDrawBatch*/)
 {
     // No implementation.
 }
@@ -1083,7 +1084,8 @@ void
 HdSt_IndirectDrawBatch::ExecuteDraw(
     HgiGraphicsCmds * gfxCmds,
     HdStRenderPassStateSharedPtr const & renderPassState,
-    HdStResourceRegistrySharedPtr const & resourceRegistry)
+    HdStResourceRegistrySharedPtr const & resourceRegistry,
+    bool /*firstDrawBatch*/)
 {
     HgiGLGraphicsCmds* glGfxCmds = dynamic_cast<HgiGLGraphicsCmds*>(gfxCmds);
 
@@ -1356,6 +1358,7 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
         GfMatrix4f cullMatrix;
         GfVec2f drawRangeNDC;
         uint32_t drawCommandNumUints;
+        uint32_t drawBatchId;
         int32_t resetPass;
     };
 
@@ -1418,6 +1421,7 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
                 _dispatchBuffer->GetCommandNumUints();
         cullParamsInstanced.cullMatrix = cullMatrix;
         cullParamsInstanced.drawRangeNDC = drawRangeNdc;
+        cullParamsInstanced.drawBatchId = reinterpret_cast<uintptr_t>(this);
 
         // Reset Pass
         cullParamsInstanced.resetPass = 1;
@@ -1539,7 +1543,7 @@ HdSt_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
 
         _resultBuffer =
             resourceRegistry->RegisterBufferResource(
-                _tokens->drawIndirectResult, tupleType);
+                _tokens->drawIndirectResult, tupleType, HgiBufferUsageStorage);
     }
 
     // Reset visible item count

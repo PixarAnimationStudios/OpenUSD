@@ -78,55 +78,6 @@ namespace {
         return tokenTypeToSdfArrayType;
     }
 
-    // Map of SdfValueTypeName's aliases to corresponding SdfValueTypeName
-    // Refer SdfValueTypeName::GetAliasesAsTokens.
-    // This is used to determine SdfValueTypeName from the ExecUsdDefinitionType
-    // metadata.
-    const TokenToSdfTypeMap& _GetAliasesTokensToSdfValueTypeNames()
-    {
-        auto MapBuilder = []() {
-            TokenToSdfTypeMap result;
-            for (const auto& typeName : SdfSchema::GetInstance().GetAllTypes()) {
-                // Insert typeName itself as an alias
-                result.emplace(typeName.GetAsToken(), typeName);
-                // Insert all other aliases for the type
-                for (const auto& aliasToken : typeName.GetAliasesAsTokens()) {
-                    result.emplace(aliasToken, typeName);
-                }
-            }
-            return result;
-        };
-        static const TokenToSdfTypeMap &aliasesTokensToSdfValueTypeNames =
-            MapBuilder();
-        return aliasesTokensToSdfValueTypeNames;
-    }
-
-    // -------------------------------------------------------------------------
-
-    SdfValueTypeName
-    _GetExecUsdDefinitionType(const NdrTokenMap &metadata)
-    {
-        const TfToken &execUsdDefinitionType = 
-            TfToken(StringVal(
-                        ExecPropertyMetadata->ExecUsdDefinitionType, metadata));
-
-        if (execUsdDefinitionType.IsEmpty()) {
-            return SdfValueTypeName();
-        }
-
-        const TokenToSdfTypeMap &aliasesTokensToSdfValueTypeNames =
-            _GetAliasesTokensToSdfValueTypeNames();
-
-        if (aliasesTokensToSdfValueTypeNames.find(execUsdDefinitionType) == 
-                aliasesTokensToSdfValueTypeNames.end()) {
-            TF_WARN("Invalid SdfValueTypeName or alias provided for "
-                    "execUsdDefinitionType metadata: %s", 
-                    execUsdDefinitionType.GetText());
-            return SdfValueTypeName();
-        }
-
-        return aliasesTokensToSdfValueTypeNames.at(execUsdDefinitionType);
-    }
 
     // Returns true if the arraySize or the metadata indicate that the property
     // has an array type
@@ -136,21 +87,6 @@ namespace {
         bool isDynamicArray =
             IsTruthy(ExecPropertyMetadata->IsDynamicArray, metadata);
         return arraySize > 0 || isDynamicArray;
-    }
-
-    // Determines if the metadata contains a key identifying the property as an
-    // asset identifier
-    bool
-    _IsAssetIdentifier(const NdrTokenMap& metadata)
-    {
-        return metadata.count(ExecPropertyMetadata->IsAssetIdentifier);
-    }
-
-    // Returns true is this property is a default input on the node
-    bool
-    _IsDefaultInput(const NdrTokenMap &metadata)
-    {
-        return metadata.count(ExecPropertyMetadata->DefaultInput);
     }
 
     // Returns the type indicator based on the type mappings defined in
@@ -226,30 +162,11 @@ namespace {
             return execDefaultValue;
         }
 
-        // Special conformance for when ExecUsdDefinitionType is provided, we
-        // want to set the sdfTypeDefaultValue as the original parsed default 
-        // value. This assumes that the node writer has provided 
-        // SdfValueTypeName corresponding default value in the node since the 
-        // node provides an explicit SdfValueTypeName by specifying a
-        // ExecUsdDefinitionType metadata, if not its possible the type and value
-        // could mismatch.
-        if (metadata.find(ExecPropertyMetadata->ExecUsdDefinitionType) !=
-                metadata.end()) {
-            // Make sure the types match, or try to extract the correct typed
-            // vtvalue from the default
-            VtValue sdfTypeValue = VtValue::CastToTypeid(execDefaultValue,
-                    sdfType.GetType().GetTypeid());
-            if (!sdfTypeValue.IsEmpty()) {
-                return sdfTypeValue;
-            }
-        }
-
         bool isArray = _IsArray(arraySize, metadata);
 
         // ASSET and ASSET ARRAY
         // ---------------------------------------------------------------------
-        if (execType == ExecPropertyTypes->String &&
-            _IsAssetIdentifier(metadata)) {
+        if (execType == ExecPropertyTypes->String) {
             if (isArray) {
                 VtStringArray arrayVal;
                 _GetValue(execDefaultValue, &arrayVal);
@@ -355,21 +272,12 @@ ExecProperty::ExecProperty(
 
     // Tokenize metadata
     _label = TokenVal(ExecPropertyMetadata->Label, _metadata);
-    _page = TokenVal(ExecPropertyMetadata->Page, _metadata);
-    _widget = TokenVal(ExecPropertyMetadata->Widget, _metadata);
 }
 
 std::string
 ExecProperty::GetHelp() const
 {
     return StringVal(ExecPropertyMetadata->Help, _metadata);
-}
-
-std::string
-ExecProperty::GetImplementationName() const
-{
-    return StringVal(ExecPropertyMetadata->ImplementationName, _metadata,
-                     GetName().GetString());
 }
 
 bool
@@ -441,18 +349,6 @@ const NdrSdfTypeIndicator
 ExecProperty::GetTypeAsSdfType() const
 {
     return _GetTypeAsSdfType(_type, _arraySize, _metadata);
-}
-
-bool
-ExecProperty::IsAssetIdentifier() const
-{
-    return _IsAssetIdentifier(_metadata);
-}
-
-bool
-ExecProperty::IsDefaultInput() const
-{
-    return _IsDefaultInput(_metadata);
 }
 
 

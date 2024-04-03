@@ -1,0 +1,59 @@
+#usda1.0
+(
+    renderSettingsPrimPath = "/Render/PrimarySettings"
+)
+
+def Scope "Render"
+{
+    def RenderSettings "PrimarySettings" {
+        rel products = </Render/PrimaryProduct>
+        int2 resolution = (512, 512)
+    }
+    def RenderProduct "PrimaryProduct" {
+        rel camera = </World/main_cam>
+        token productName = "/scratch/tmp/render000009.exr"
+        rel orderedVars = [
+            </Render/Vars/color>,
+            </Render/Vars/alpha>,
+            </Render/Vars/directDiffuse>,
+            </Render/Vars/id>
+        ]
+    }
+    def Scope "Vars"
+    {
+        def RenderVar "color" {
+            string sourceName = "Ci"
+        }
+        def RenderVar "alpha" {
+            token dataType = "float"
+            string sourceName = "a"
+        }
+        def RenderVar "directDiffuse" {
+            string sourceName = "C<RD>[<L.>O]"
+            token sourceType = "lpe"
+        }
+        def RenderVar "id" {
+            token dataType = "int"
+            string sourceName = "id"
+        }
+    }
+
+    def Scope "Passes"
+    {
+        def RenderPass "beauty"{
+            token passType = "prman"
+            rel renderSource = <Render/PrimarySettings>
+            string[] command = ["prman"]
+        }
+        def RenderPass "composite"{
+            token passType = "nuke"
+            asset fileName = @composite.nk@
+            # this Nuke-namespaced property might come from a hypothetical 
+            # Nuke-supplied API schema applied to this prim
+            string nuke:writeNode = "WriteFinalComposite"
+            rel renderSource = </Render/Passes/composite.nuke:writeNode>
+            string[] command = ["nuke", "-x", "-c", "32G"]
+            rel inputPasses = </Render/Passes/beauty>
+        }        
+    }
+}

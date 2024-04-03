@@ -33,10 +33,9 @@
 
 #include "pxr/base/vt/value.h"  // for Vt_DefaultValueFactory
 
-#include <boost/optional.hpp>
-
 #include <functional>
 #include <memory>
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -63,11 +62,11 @@ public:
     typedef std::vector<value_type> value_vector_type;
 
     // ApplyEdits types.
-    typedef std::function<boost::optional<value_type>
+    typedef std::function<std::optional<value_type>
                         (SdfListOpType, const value_type&)> ApplyCallback;
 
     // ModifyEdits types.
-    typedef std::function<boost::optional<value_type>
+    typedef std::function<std::optional<value_type>
                         (const value_type&)> ModifyCallback;
 
     /// Creates a default proxy object. The object evaluates to \c false in a 

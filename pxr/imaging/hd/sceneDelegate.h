@@ -41,6 +41,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/gf/vec2i.h"
@@ -200,6 +201,79 @@ struct HdPrimvarDescriptor {
 };
 
 typedef std::vector<HdPrimvarDescriptor> HdPrimvarDescriptorVector;
+
+/// \struct HdModelDrawMode
+///
+/// Describes optional alternative imaging behavior for prims.
+/// 
+/// Some scene delegates, like the UsdImagingDelegate, will pre-flatten this
+/// data, but other scene delegates may wish to use this to pipe the data 
+/// through to a draw mode resolving scene index (see 
+/// UsdImagingDrawModeSceneIndex as an example of such a scene index).
+/// 
+/// There is currently no plan to add emulation support for this information,
+/// such as via HdLegacyPrimSceneIndex or HdSceneIndexAdapterSceneDelegate.
+/// 
+struct HdModelDrawMode {
+    // Alternate imaging mode. Options are origin, bounds, cards, default, and 
+    // inherited.
+    TfToken drawMode;
+    // Specifies whether to apply the alternative imaging mode or not.
+    bool applyDrawMode;
+    // The color in which to draw the geometry.
+    GfVec3f drawModeColor;
+    // The specific geometry to use in cards mode. Options are cross, box, and 
+    // fromTexture. 
+    TfToken cardGeometry;
+    // The textures applied to the respective quads in cards mode.
+    SdfAssetPath cardTextureXPos;
+    SdfAssetPath cardTextureYPos;
+    SdfAssetPath cardTextureZPos;
+    SdfAssetPath cardTextureXNeg;
+    SdfAssetPath cardTextureYNeg;
+    SdfAssetPath cardTextureZNeg;
+
+    HdModelDrawMode()
+    : drawMode(HdModelDrawModeTokens->inherited)
+    , applyDrawMode(false)
+    , drawModeColor(GfVec3f(0.18))
+    , cardGeometry(HdModelDrawModeTokens->cross)
+    {}
+
+    HdModelDrawMode(
+        TfToken const& drawMode_,
+        bool applyDrawMode_=false,
+        GfVec3f drawModeColor_=GfVec3f(0.18),
+        TfToken const& cardGeometry_=HdModelDrawModeTokens->cross,
+        SdfAssetPath cardTextureXPos_=SdfAssetPath(),
+        SdfAssetPath cardTextureYPos_=SdfAssetPath(),
+        SdfAssetPath cardTextureZPos_=SdfAssetPath(),
+        SdfAssetPath cardTextureXNeg_=SdfAssetPath(),
+        SdfAssetPath cardTextureYNeg_=SdfAssetPath(),
+        SdfAssetPath cardTextureZNeg_=SdfAssetPath())
+        : drawMode(drawMode_), applyDrawMode(applyDrawMode_),
+          drawModeColor(drawModeColor_), cardGeometry(cardGeometry_),
+          cardTextureXPos(cardTextureXPos_), cardTextureYPos(cardTextureYPos_),
+          cardTextureZPos(cardTextureZPos_), cardTextureXNeg(cardTextureXNeg_),
+          cardTextureYNeg(cardTextureYNeg_), cardTextureZNeg(cardTextureZNeg_)
+    {}
+
+    bool operator==(HdModelDrawMode const& rhs) const {
+        return drawMode == rhs.drawMode && 
+               applyDrawMode == rhs.applyDrawMode &&
+               drawModeColor == rhs.drawModeColor &&
+               cardGeometry == rhs.cardGeometry &&
+               cardTextureXPos == rhs.cardTextureXPos &&
+               cardTextureYPos == rhs.cardTextureYPos &&
+               cardTextureZPos == rhs.cardTextureZPos &&
+               cardTextureXNeg == rhs.cardTextureXNeg &&
+               cardTextureYNeg == rhs.cardTextureYNeg &&
+               cardTextureZNeg == rhs.cardTextureZNeg;
+    }
+    bool operator!=(HdModelDrawMode const& rhs) const {
+        return !(*this == rhs);
+    }
+};
 
 /// \struct HdExtComputationPrimvarDescriptor
 ///
@@ -456,6 +530,10 @@ public:
     /// Returns the coordinate system bindings, or a nullptr if none are bound.
     HD_API
     virtual HdIdVectorSharedPtr GetCoordSysBindings(SdfPath const& id);
+
+    /// Returns the model draw mode object for the given prim.
+    HD_API
+    virtual HdModelDrawMode GetModelDrawMode(SdfPath const& id);
 
     // -----------------------------------------------------------------------//
     /// \name Motion samples

@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 #include "pxr/imaging/hdsi/materialBindingResolvingSceneIndex.h"
 
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 
 #include <algorithm>
 
@@ -30,12 +30,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-class _MaterialBindingDataSource final : public HdContainerDataSource
+class _MaterialBindingsDataSource final : public HdContainerDataSource
 {
 public:
-    HD_DECLARE_DATASOURCE(_MaterialBindingDataSource);
+    HD_DECLARE_DATASOURCE(_MaterialBindingsDataSource);
 
-    _MaterialBindingDataSource(
+    _MaterialBindingsDataSource(
         const HdContainerDataSourceHandle& input,
         const TfTokenVector& purposePriorityOrder,
         const TfToken& dstPurpose)
@@ -124,10 +124,10 @@ public:
         }
 
         auto data = _input->Get(name);
-        if (name == HdMaterialBindingSchemaTokens->materialBinding) {
+        if (name == HdMaterialBindingsSchema::GetSchemaToken()) {
             if (auto materialBindingContainer
                 = HdContainerDataSource::Cast(data)) {
-                return _MaterialBindingDataSource::New(
+                return _MaterialBindingsDataSource::New(
                     materialBindingContainer, _purposePriorityOrder, _dstPurpose);
             }
         }

@@ -30,7 +30,6 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
 
-#include "pxr/imaging/hgi/capabilities.h"
 #include "pxr/imaging/hgi/computeCmds.h"
 
 #include "pxr/imaging/hd/perfLog.h"
@@ -41,7 +40,7 @@
 
 #include "pxr/base/work/loops.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <tbb/enumerable_thread_specific.h>
 
@@ -64,9 +63,9 @@ HdStCommandBuffer::~HdStCommandBuffer() = default;
 static
 HdSt_DrawBatchSharedPtr
 _NewDrawBatch(HdStDrawItemInstance * drawItemInstance, 
-              HgiCapabilities const * hgiCapabilities)
+              Hgi const * hgi)
 {
-    if (HdSt_PipelineDrawBatch::IsEnabled(hgiCapabilities)) {
+    if (HdSt_PipelineDrawBatch::IsEnabled(hgi)) {
         return std::make_shared<HdSt_PipelineDrawBatch>(drawItemInstance);
     } else {
         return std::make_shared<HdSt_IndirectDrawBatch>(drawItemInstance);
@@ -75,17 +74,18 @@ _NewDrawBatch(HdStDrawItemInstance * drawItemInstance,
 
 static
 bool
-_IsEnabledFrustumCullCPU(HgiCapabilities const * const capabilities)
+_IsEnabledFrustumCullCPU(Hgi const *hgi)
 {
     if (TfDebug::IsEnabled(HDST_DISABLE_FRUSTUM_CULLING)) {
         return false;
     }
+    HgiCapabilities const * const capabilities = hgi->GetCapabilities();
 
     const bool multiDrawIndirectEnabled =
         capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
 
     const bool gpuFrustumCullingEnabled =
-        HdSt_PipelineDrawBatch::IsEnabled(capabilities) ?
+        HdSt_PipelineDrawBatch::IsEnabled(hgi) ?
             HdSt_PipelineDrawBatch::IsEnabledGPUFrustumCulling() :
             HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling();
 
@@ -110,9 +110,8 @@ HdStCommandBuffer::PrepareDraw(
     }
 
     Hgi const * const hgi = resourceRegistry->GetHgi();
-    HgiCapabilities const * const capabilities = hgi->GetCapabilities();
 
-    if (_IsEnabledFrustumCullCPU(capabilities)) {    
+    if (_IsEnabledFrustumCullCPU(hgi)) {    
         const bool freezeCulling = TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM);
 
         if (!freezeCulling) {
@@ -140,7 +139,8 @@ HdStCommandBuffer::PrepareDraw(
     computeCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
 
     for (auto const& batch : _drawBatches) {
-        batch->EncodeDraw(renderPassState, resourceRegistry);
+        batch->EncodeDraw(renderPassState, resourceRegistry,
+            /*firstDrawBatch*/batch == *_drawBatches.begin());
     }
 
     computeCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
@@ -172,7 +172,8 @@ HdStCommandBuffer::ExecuteDraw(
     // draw batches
     //
     for (auto const& batch : _drawBatches) {
-        batch->ExecuteDraw(gfxCmds, renderPassState, resourceRegistry);
+        batch->ExecuteDraw(gfxCmds, renderPassState, resourceRegistry,
+            /*firstDrawBatch*/batch == *_drawBatches.begin());
     }
 
     HD_PERF_COUNTER_SET(HdPerfTokens->drawBatches, _drawBatches.size());
@@ -182,20 +183,20 @@ void
 HdStCommandBuffer::SetDrawItems(
     HdDrawItemConstPtrVectorSharedPtr const &drawItems,
     unsigned currentDrawBatchesVersion,
-    HgiCapabilities const *hgiCapabilities)
+    Hgi const *hgi)
 {
     if (drawItems == _drawItems &&
         currentDrawBatchesVersion == _drawBatchesVersion) {
         return;
     }
     _drawItems = drawItems;
-    _RebuildDrawBatches(hgiCapabilities);
+    _RebuildDrawBatches(hgi);
     _drawBatchesVersion = currentDrawBatchesVersion;
 }
 
 void
 HdStCommandBuffer::RebuildDrawBatchesIfNeeded(unsigned currentBatchesVersion,
-    HgiCapabilities const *hgiCapabilities)
+    Hgi const *hgi)
 {
     HD_TRACE_FUNCTION();
 
@@ -253,12 +254,12 @@ HdStCommandBuffer::RebuildDrawBatchesIfNeeded(unsigned currentBatchesVersion,
     }
 
     if (rebuildAllDrawBatches) {
-        _RebuildDrawBatches(hgiCapabilities);
+        _RebuildDrawBatches(hgi);
     }   
 }
 
 void
-HdStCommandBuffer::_RebuildDrawBatches(HgiCapabilities const *hgiCapabilities)
+HdStCommandBuffer::_RebuildDrawBatches(Hgi const *hgi)
 {
     HD_TRACE_FUNCTION();
 
@@ -313,8 +314,6 @@ HdStCommandBuffer::_RebuildDrawBatches(HgiCapabilities const *hgiCapabilities)
         _drawItemInstances.push_back(HdStDrawItemInstance(drawItem));
         HdStDrawItemInstance* drawItemInstance = &_drawItemInstances.back();
 
-        size_t key = drawItem->GetGeometricShader()->ComputeHash();
-        boost::hash_combine(key, drawItem->GetBufferArraysHash());
         // Geometric, RenderPass and Lighting shaders should never break
         // batches, however materials can. We consider the textures
         // used by the material to be part of the batch key for that
@@ -322,9 +321,12 @@ HdStCommandBuffer::_RebuildDrawBatches(HgiCapabilities const *hgiCapabilities)
         // Since textures can be animated and thus materials can be batched
         // at some times but not other times, we use the texture prim path
         // for the hash which does not vary over time.
-        // 
-        boost::hash_combine(key,
-            drawItem->GetMaterialNetworkShader()->ComputeTextureSourceHash());
+        size_t key = TfHash::Combine(
+            drawItem->GetGeometricShader()->ComputeHash(),
+            drawItem->GetBufferArraysHash(),
+            drawItem->GetMaterialNetworkShader()->ComputeTextureSourceHash()
+        );
+        
 
         // Do a quick check to see if the draw item can be batched with the
         // previous draw item, before checking the batchMap.
@@ -350,7 +352,7 @@ HdStCommandBuffer::_RebuildDrawBatches(HgiCapabilities const *hgiCapabilities)
 
         if (!batched) {
             HdSt_DrawBatchSharedPtr batch =
-                _NewDrawBatch(drawItemInstance, hgiCapabilities);
+                _NewDrawBatch(drawItemInstance, hgi);
             _drawBatches.emplace_back(batch);
             prevBatch.Update(key, batch);
 

@@ -25,6 +25,8 @@
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/base/tf/denseHashSet.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/work/dispatcher.h"
+#include <tbb/concurrent_queue.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -33,20 +35,31 @@ HdMergingSceneIndex::HdMergingSceneIndex()
 {
 }
 
-void
-HdMergingSceneIndex::
-_FillAddedEntriesRecursively(
-    const HdSceneIndexBaseRefPtr &sceneIndex,
-    const SdfPath &primPath,
-    HdSceneIndexObserver::AddedPrimEntries * const addedEntries)
-{
-    // Old scene indices might have a prim of different type at the given path,
-    // so we need to query the merging scene index itself here.
-    const TfToken resolvedPrimType = GetPrim(primPath).primType;
+// Concurrent queue of added entries that worker threads produce.
+using _AddedPrimEntryQueue =
+    tbb::concurrent_queue<HdSceneIndexObserver::AddedPrimEntry>;
 
-    addedEntries->emplace_back(primPath, resolvedPrimType);
-    for (const SdfPath &childPath : sceneIndex->GetChildPrimPaths(primPath)) {
-        _FillAddedEntriesRecursively(sceneIndex, childPath, addedEntries);
+static void
+_FillAddedChildEntriesRecursively(
+    WorkDispatcher *dispatcher,
+    HdMergingSceneIndex *mergingSceneIndex,
+    const HdSceneIndexBaseRefPtr &inputSceneIndex,
+    SdfPath parentPath,
+    _AddedPrimEntryQueue *queue)
+{
+    for (SdfPath childPath : inputSceneIndex->GetChildPrimPaths(parentPath)) {
+        // Old scene indices might have a prim of different type at the given path,
+        // so we need to query the merging scene index itself here.
+        const TfToken resolvedPrimType =
+            mergingSceneIndex->GetPrim(childPath).primType;
+
+        queue->emplace(childPath, resolvedPrimType);
+
+        dispatcher->Run([=]() {
+            _FillAddedChildEntriesRecursively(
+                dispatcher, mergingSceneIndex, 
+                inputSceneIndex, childPath, queue);
+            });
     }
 }
 
@@ -69,6 +82,8 @@ HdMergingSceneIndex::AddInputScene(
     const HdSceneIndexBaseRefPtr &inputScene,
     const SdfPath &activeInputSceneRoot)
 {
+    TRACE_FUNCTION();
+
     if (!inputScene) {
         return;
     }
@@ -102,8 +117,24 @@ HdMergingSceneIndex::AddInputScene(
         return;
     }
 
-    _FillAddedEntriesRecursively(
-        inputScene, activeInputSceneRoot, &addedEntries);
+    // Add entries for input scene
+    {
+        _AddedPrimEntryQueue queue;
+
+        // Old scene indices might have a prim of different type at the given path,
+        // so we need to query the merging scene index itself here.
+        queue.emplace(activeInputSceneRoot,
+                       GetPrim(activeInputSceneRoot).primType);
+
+        WorkDispatcher dispatcher;
+        _FillAddedChildEntriesRecursively(
+            &dispatcher, this, inputScene, activeInputSceneRoot, &queue);
+        dispatcher.Wait();
+
+        addedEntries.insert(
+            addedEntries.end(),
+            queue.unsafe_begin(), queue.unsafe_end());
+    }
 
     _SendPrimsAdded(addedEntries);
 }
@@ -111,6 +142,8 @@ HdMergingSceneIndex::AddInputScene(
 void
 HdMergingSceneIndex::RemoveInputScene(const HdSceneIndexBaseRefPtr &sceneIndex)
 {
+    TRACE_FUNCTION();
+
     for (_InputEntries::iterator it = _inputs.begin(); it != _inputs.end();
             ++it) {
         if (sceneIndex == it->sceneIndex) {
@@ -418,5 +451,15 @@ HdMergingSceneIndex::_Observer::PrimsDirtied(
 {
     _owner->_PrimsDirtied(sender, entries);
 }
+
+void
+HdMergingSceneIndex::_Observer::PrimsRenamed(
+    const HdSceneIndexBase &sender,
+    const RenamedPrimEntries &entries)
+{
+    // initial implementation converts to adds and removes
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

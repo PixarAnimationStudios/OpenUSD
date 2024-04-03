@@ -39,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdRenderIndex;
 class HdStDrawItem;
 class HdStDrawItemInstance;
-class HgiCapabilities;
+class Hgi;
 class HgiGraphicsCmds;
 
 using HdStRenderPassStateSharedPtr = std::shared_ptr<class HdStRenderPassState>;
@@ -90,12 +90,12 @@ public:
     HDST_API
     void SetDrawItems(HdDrawItemConstPtrVectorSharedPtr const &drawItems,
                       unsigned currentBatchVersion,
-                      HgiCapabilities const *hgiCapabilities);
+                      Hgi const *hgi);
 
     /// Rebuild all draw batches if any underlying buffer array is invalidated.
     HDST_API
     void RebuildDrawBatchesIfNeeded(unsigned currentBatchVersion,
-                                    HgiCapabilities const *hgiCapabilities);
+                                    Hgi const *hgi);
 
     /// Returns the total number of draw items, including culled items.
     size_t GetTotalSize() const {
@@ -118,7 +118,7 @@ public:
     void SetEnableTinyPrimCulling(bool tinyPrimCulling);
 
 private:
-    void _RebuildDrawBatches(HgiCapabilities const *hgiCapabilities);
+    void _RebuildDrawBatches(Hgi const *hgi);
     
     /// Cull drawItemInstances based on view frustum cull matrix
     void _FrustumCullCPU(GfMatrix4d const &cullMatrix);

@@ -38,13 +38,13 @@
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/function.h"
 
-#include <boost/any.hpp>
+#include <any>
 #include <cstdarg>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::any TfDiagnosticInfo;
+typedef std::any TfDiagnosticInfo;
 
 class TfDiagnosticMgr;
 
@@ -160,7 +160,7 @@ public:
     /// then GetInfo() returns NULL.
     template <typename T>
     const T* GetInfo() const {
-        return boost::any_cast<T>(&_info);
+        return std::any_cast<T>(&_info);
     }
 
     /// Set the info object associated with this diagnostic message.

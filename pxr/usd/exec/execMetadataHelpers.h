@@ -72,18 +72,6 @@ namespace ExecNodeMetadataHelpers
     std::string
     CreateStringFromStringVec(const NdrStringVec& stringVec);
 
-    /// Determines if the specified property metadata has a widget that
-    /// indicates the property is an asset identifier.
-    EXEC_API
-    bool
-    IsPropertyAnAssetIdentifier(const NdrTokenMap& metadata);
-
-    /// Determines if the specified property metadata has a 'renderType' that
-    /// indicates the property should be a ExecPropertyTypes->Terminal
-    EXEC_API
-    bool
-    IsPropertyATerminal(const NdrTokenMap& metadata);
-
     /// Gets the "role" from metadata if one is provided. Only returns a value
     // if it's a valid role as defined by ExecPropertyRole tokens.
     EXEC_API

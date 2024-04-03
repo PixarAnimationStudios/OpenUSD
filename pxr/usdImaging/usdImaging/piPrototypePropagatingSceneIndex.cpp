@@ -157,7 +157,7 @@ _UsdPrimInfoSceneIndex::_CreateDataSource(
         { { prototype,
               TfToken(),
               HdRetainedContainerDataSource::New(
-                  UsdImagingUsdPrimInfoSchemaTokens->__usdPrimInfo,
+                  UsdImagingUsdPrimInfoSchema::GetSchemaToken(),
                   UsdImagingUsdPrimInfoSchema::Builder()
                       .SetPiPropagatedPrototypes(ds)
                       .Build()) } } );
@@ -274,6 +274,11 @@ public:
     void PrimsRemoved(
         const HdSceneIndexBase &sender,
         const RemovedPrimEntries &entries) override;
+
+    void PrimsRenamed(
+        const HdSceneIndexBase &sender,
+        const RenamedPrimEntries &entries) override;
+
 
 private:
     // For point instancers nested within this prototype, we store the map
@@ -426,7 +431,7 @@ _InstancerTopology(const VtArray<SdfPath> &prototypes)
 {
     return
         HdRetainedContainerDataSource::New(
-            HdInstancerTopologySchemaTokens->instancerTopology,
+            HdInstancerTopologySchema::GetSchemaToken(),
             HdInstancerTopologySchema::Builder()
                 .SetPrototypes(
                     HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
@@ -613,6 +618,14 @@ _InstancerObserver::PrimsRemoved(const HdSceneIndexBase &sender,
     }
 }
 
+
+void
+_InstancerObserver::PrimsRenamed(const HdSceneIndexBase &sender,
+                                 const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
+}
+
 }
 
 using namespace UsdImagingPiPrototypePropagatingSceneIndex_Impl;
@@ -694,6 +707,15 @@ _MergingSceneIndexObserver::PrimsRemoved(
     const RemovedPrimEntries &entries)
 {
     _owner->_SendPrimsRemoved(entries);
+}
+
+void
+UsdImagingPiPrototypePropagatingSceneIndex::
+_MergingSceneIndexObserver::PrimsRenamed(
+    const HdSceneIndexBase &sender,
+    const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

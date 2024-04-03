@@ -175,6 +175,7 @@ HgiInteropVulkan::HgiInteropVulkan(Hgi* hgiVulkan)
     , _glColorTex(0)
     , _glDepthTex(0)
 {
+    GarchGLApiLoad();
     _vs = _CompileShader(_vertexFullscreen, GL_VERTEX_SHADER);
     _fsNoDepth = _CompileShader(_fragmentNoDepthFullscreen, GL_FRAGMENT_SHADER);
     _fsDepth = _CompileShader(_fragmentDepthFullscreen, GL_FRAGMENT_SHADER);
@@ -320,7 +321,7 @@ HgiInteropVulkan::CompositeToInterop(
     glBlendFuncSeparate(/*srcColor*/GL_ONE,
                         /*dstColor*/GL_ONE_MINUS_SRC_ALPHA,
                         /*srcAlpha*/GL_ONE,
-                        /*dstAlpha*/GL_ONE);
+                        /*dstAlpha*/GL_ONE_MINUS_SRC_ALPHA);
     GLint restoreColorOp, restoreAlphaOp;
     glGetIntegerv(GL_BLEND_EQUATION_RGB, &restoreColorOp);
     glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &restoreAlphaOp);

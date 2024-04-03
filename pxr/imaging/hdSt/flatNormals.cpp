@@ -21,11 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/hdSt/flatNormals.h"
+
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hdSt/flatNormals.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/perfLog.h"
@@ -47,6 +48,87 @@
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+HdSt_FlatNormalsComputationCPU::HdSt_FlatNormalsComputationCPU(
+    HdMeshTopology const * topology,
+    HdBufferSourceSharedPtr const &points,
+    TfToken const &dstName,
+    bool packed)
+    : _topology(topology)
+    , _points(points)
+    , _dstName(dstName)
+    , _packed(packed)
+{
+}
+
+void
+HdSt_FlatNormalsComputationCPU::GetBufferSpecs(HdBufferSpecVector *specs) const
+{
+    // The datatype of normals is the same as that of points, unless the
+    // packed format was requested.
+    specs->emplace_back(_dstName,
+        _packed
+            ? HdTupleType { HdTypeInt32_2_10_10_10_REV, 1 }
+            : _points->GetTupleType() );
+}
+
+TfToken const &
+HdSt_FlatNormalsComputationCPU::GetName() const
+{
+    return _dstName;
+}
+
+bool
+HdSt_FlatNormalsComputationCPU::Resolve()
+{
+    if (!_points->IsResolved()) { return false; }
+    if (!_TryLock()) { return false; }
+
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    if (!TF_VERIFY(_topology)) return true;
+
+    VtValue normals;
+
+    switch (_points->GetTupleType().type) {
+    case HdTypeFloatVec3:
+        if (_packed) {
+            normals = Hd_FlatNormals::ComputeFlatNormalsPacked(
+                _topology, static_cast<const GfVec3f*>(_points->GetData()));
+        } else {
+            normals = Hd_FlatNormals::ComputeFlatNormals(
+                _topology, static_cast<const GfVec3f*>(_points->GetData()));
+        }
+        break;
+    case HdTypeDoubleVec3:
+        if (_packed) {
+            normals = Hd_FlatNormals::ComputeFlatNormalsPacked(
+                _topology, static_cast<const GfVec3d*>(_points->GetData()));
+        } else {
+            normals = Hd_FlatNormals::ComputeFlatNormals(
+                _topology, static_cast<const GfVec3d*>(_points->GetData()));
+        }
+        break;
+    default:
+        TF_CODING_ERROR("Unsupported points type for computing flat normals");
+        break;
+    }
+
+    HdBufferSourceSharedPtr normalsBuffer = HdBufferSourceSharedPtr(
+        new HdVtBufferSource(_dstName, VtValue(normals)));
+    _SetResult(normalsBuffer);
+    _SetResolved();
+    return true;
+}
+
+bool
+HdSt_FlatNormalsComputationCPU::_CheckValid() const
+{
+    bool valid = _points ? _points->IsValid() : false;
+    return valid;
+}
 
 namespace {
 
@@ -139,8 +221,11 @@ HdSt_FlatNormalsComputationGPU::HdSt_FlatNormalsComputationGPU(
     HdBufferArrayRangeSharedPtr const &vertexRange,
     int numFaces, TfToken const &srcName, TfToken const &dstName,
     HdType srcDataType, bool packed)
-    : _topologyRange(topologyRange), _vertexRange(vertexRange)
-    , _numFaces(numFaces), _srcName(srcName), _dstName(dstName)
+    : _topologyRange(topologyRange)
+    , _vertexRange(vertexRange)
+    , _numFaces(numFaces)
+    , _srcName(srcName)
+    , _dstName(dstName)
     , _srcDataType(srcDataType)
 {
     if (srcDataType != HdTypeFloatVec3 && srcDataType != HdTypeDoubleVec3) {
@@ -325,7 +410,7 @@ HdSt_FlatNormalsComputationGPU::Execute(
     // float/double, float/int etc.
     //
     // The offset and stride values we pass to the shader are in terms
-    // of indexes, not bytes, so we must convert the HdBufferResource
+    // of indexes, not bytes, so we must convert the HdStBufferResource
     // offset/stride (which are in bytes) to counts of float[]/double[]
     // entries.
     const size_t pointComponentSize =

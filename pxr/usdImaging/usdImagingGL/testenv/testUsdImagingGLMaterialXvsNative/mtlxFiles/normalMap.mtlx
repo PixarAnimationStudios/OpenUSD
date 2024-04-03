@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!-- 
+  UsdPreviewSurface Materials with a NormalMap
+-->
+<materialx version="1.38">
+
+  <nodegraph name="NG_NormalMap">
+    <image name="Image" type="vector3">
+      <input name="file" type="filename" value="normalMap.png" colorspace="raw" />
+    </image>
+    <normalmap name="normalMap" type="vector3">
+      <input name="in" type="vector3" nodename="Image"/>
+      <input name="space" type="string" value="object" />
+    </normalmap>
+    <output name="out_normal" type="vector3" nodename="normalMap" />
+  </nodegraph>
+
+  <UsdPreviewSurface name="SR_NormalMap" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="1, 1, 1"/>
+    <input name="roughness" type="float" value="0.2" />
+    <input name="normal" type="vector3" nodegraph="NG_NormalMap" output="out_normal" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_NormalMap" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_NormalMap" />
+  </surfacematerial>
+
+</materialx>

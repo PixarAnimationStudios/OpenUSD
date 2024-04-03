@@ -108,11 +108,7 @@ _GetDisplayName(const HdSceneIndexBaseRefPtr &sceneIndex)
         return std::string();
     }
 
-    // XXX stevel: low-tech temporary symbol name demangling until we manage
-    // these display names via a formal plug-in/type registry
-    return TfStringTrimLeft(
-        typeid(*sceneIndex).name(),
-        "0123456789");
+    return sceneIndex->GetDisplayName();
 }
 
 std::string
@@ -218,6 +214,15 @@ UsdviewqHydraObserver::_Observer::PrimsDirtied(
         notices.emplace_back(entries);
     }
 }
+
+void
+UsdviewqHydraObserver::_Observer::PrimsRenamed(
+        const HdSceneIndexBase &sender,
+        const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
+}
+
 
 bool
 UsdviewqHydraObserver::HasPendingNotices()

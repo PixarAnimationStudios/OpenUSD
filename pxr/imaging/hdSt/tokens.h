@@ -75,7 +75,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (pointSizeScale)                            \
     (screenSpaceWidths)                         \
     (minScreenSpaceWidths)                      \
-    (shadowCompareTextures)
+    (shadowCompareTextures)                     \
+    (storm)
 
 #define HDST_TEXTURE_TOKENS                     \
     (wrapS)                                     \

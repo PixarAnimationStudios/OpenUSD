@@ -88,7 +88,9 @@ namespace {
 // Registry -- The implementation of the value type name registry.
 //
 
-class Registry : boost::noncopyable {
+class Registry {
+    Registry(const Registry&) = delete;
+    Registry& operator=(const Registry&) = delete;
 public:
     typedef Sdf_ValueTypePrivate::CoreType CoreType;
 
@@ -304,19 +306,11 @@ Registry::_AddType(
         return false;
     }
     // Construct the array name.
-    const TfToken arrayName(name.GetString() + "[]");
+    const TfToken arrayName(name.GetString() + "[]", TfToken::Immortal);
     existing = _FindType(arrayName);
     if (!TF_VERIFY(existing == Sdf_ValueTypePrivate::GetEmptyTypeName(),
                    "Type '%s' already exists", arrayName.GetText())) {
         return false;
-    }
-
-    // Make the name and array name tokens immortal -- they will always persist
-    // in the registry, so no need to reference count them.
-    {
-        TfToken immortal;
-        immortal = TfToken(name.GetString(), TfToken::Immortal);
-        immortal = TfToken(arrayName.GetString(), TfToken::Immortal);
     }
 
     // Use the default dimensionless unit if the given default unit is

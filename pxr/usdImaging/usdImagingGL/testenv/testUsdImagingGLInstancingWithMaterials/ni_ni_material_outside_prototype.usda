@@ -1,0 +1,105 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+# Two-level nested native instancing test with material binding authored only
+# on the prototype. The material lives outside the prototype hierarchy.
+#
+# All 9 spheres should appear green.
+#
+def Camera "main_cam"
+{
+     point3f xformOp:translate = (0,5,28)
+     float xformOp:rotateX = -10
+     uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX"]
+}
+
+def DistantLight "Sun"
+{
+    # Use default intensity and direction (light is emitted along -Z).
+    # The latter is fine since the stage is Y up.
+}
+
+def Xform "World"
+{
+    def Xform "NI_NI"
+    {
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "Outer"
+        {
+            def Xform "Inner"
+            {
+                def Xform "Prototype"
+                {
+                    def Sphere "MeshLight"
+                    (
+                        prepend apiSchemas = [ "MaterialBindingAPI" ]
+                    )
+                    {
+                        float3 xformOp:translate = (0, 0, 0)
+                        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+                        rel material:binding = </Looks/Green>
+                    }
+                }
+
+                def Xform "InnerInstanceA"
+                (
+                    instanceable = true
+                    references = </World/NI_NI/Outer/Inner/Prototype>
+                )
+                {
+                    float3 xformOp:translate = (0,-3,0)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }
+
+                def Xform "InnerInstanceB"
+                (
+                    instanceable = true
+                    references = </World/NI_NI/Outer/Inner/Prototype>
+                )
+                {
+                    float3 xformOp:translate = (0,3,0)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }
+            }
+
+            def Xform "OuterInstanceA"
+            (
+                instanceable = true
+                references = </World/NI_NI/Outer/Inner>
+            )
+            {
+                float3 xformOp:translate = (-3,0,0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Xform "OuterInstanceB"
+            (
+                instanceable = true
+                references = </World/NI_NI/Outer/Inner>
+            )
+            {
+                float3 xformOp:translate = (3,0,0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+    }
+}
+
+def Scope "Looks"
+{
+    def Material "Green"
+    {
+        token outputs:surface.connect = </Looks/Green/Surface.outputs:out>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.0, 1.0, 0.0)
+            token outputs:out
+        }
+    }
+}

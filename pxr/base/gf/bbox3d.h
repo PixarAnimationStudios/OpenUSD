@@ -95,15 +95,6 @@ class GfBBox3d {
         _hasZeroAreaPrimitives = false;
     }
 
-    /// Copy constructor
-    GfBBox3d(const GfBBox3d& rhs) :
-        _box(rhs._box) {
-        _matrix = rhs._matrix;
-        _inverse = rhs._inverse;
-        _isDegenerate = rhs._isDegenerate;
-        _hasZeroAreaPrimitives = rhs._hasZeroAreaPrimitives;
-    }
-
     /// This constructor takes a box and sets the matrix to identity.
     GfBBox3d(const GfRange3d &box) :
         _box(box) {

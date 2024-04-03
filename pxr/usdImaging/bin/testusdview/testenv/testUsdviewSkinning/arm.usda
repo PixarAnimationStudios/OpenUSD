@@ -4,8 +4,14 @@
     endTimeCode = 10
     upAxis = "Z"
 )
-def SkelRoot "Model" {
-    def Skeleton "Skel" {
+def SkelRoot "Model"(
+    prepend apiSchemas = ["SkelBindingAPI"]
+) 
+{
+    def Skeleton "Skel"(
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
+    {
         uniform token[] joints = ["Shoulder", "Shoulder/Elbow", "Shoulder/Elbow/Hand"]
         uniform matrix4d[] bindTransforms = [
             ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1)),
@@ -32,7 +38,10 @@ def SkelRoot "Model" {
     }
     rel skel:skeleton = </Model/Skel>
 
-    def Mesh "Arm" {
+    def Mesh "Arm"(
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
+    {
         int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
         int[] faceVertexIndices = [
             2, 3, 1, 0,
@@ -78,7 +87,10 @@ def SkelRoot "Model" {
 
     # While we can view the mesh as points (via the shading mode), this is to
     # test if the points prim can be skinned.
-    def Points "ArmPoints" {
+    def Points "ArmPoints"(
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
+    {
  
         point3f[] points = [
             (0.5, -0.5, 4), (-0.5, -0.5, 4), (0.5, 0.5, 4), (-0.5, 0.5, 4),

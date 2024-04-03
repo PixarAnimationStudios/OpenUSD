@@ -76,7 +76,7 @@ struct UsdGeomTokensType {
     const TfToken angularVelocities;
     /// \brief "axis"
     /// 
-    /// UsdGeomCylinder, UsdGeomCapsule, UsdGeomCone, UsdGeomPlane
+    /// UsdGeomCylinder, UsdGeomCapsule, UsdGeomCone, UsdGeomCylinder_1, UsdGeomCapsule_1, UsdGeomPlane
     const TfToken axis;
     /// \brief "basis"
     /// 
@@ -186,6 +186,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomGprim, UsdGeomPlane
     const TfToken doubleSided;
+    /// \brief "edge"
+    /// 
+    /// Possible value for UsdGeomSubset::GetElementTypeAttr()
+    const TfToken edge;
     /// \brief "edgeAndCorner"
     /// 
     /// Fallback value for UsdGeomMesh::GetInterpolateBoundaryAttr()
@@ -208,7 +212,7 @@ struct UsdGeomTokensType {
     const TfToken exposure;
     /// \brief "extent"
     /// 
-    /// UsdGeomBoundable, UsdGeomCube, UsdGeomSphere, UsdGeomCylinder, UsdGeomCapsule, UsdGeomCone, UsdGeomPlane
+    /// UsdGeomBoundable, UsdGeomCube, UsdGeomSphere, UsdGeomCylinder, UsdGeomCapsule, UsdGeomCone, UsdGeomCylinder_1, UsdGeomCapsule_1, UsdGeomPlane
     const TfToken extent;
     /// \brief "extentsHint"
     /// 
@@ -264,7 +268,7 @@ struct UsdGeomTokensType {
     const TfToken guideVisibility;
     /// \brief "height"
     /// 
-    /// UsdGeomCylinder, UsdGeomCapsule, UsdGeomCone
+    /// UsdGeomCylinder, UsdGeomCapsule, UsdGeomCone, UsdGeomCylinder_1, UsdGeomCapsule_1
     const TfToken height;
     /// \brief "hermite"
     /// 
@@ -430,6 +434,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomPointInstancer
     const TfToken orientations;
+    /// \brief "orientationsf"
+    /// 
+    /// UsdGeomPointInstancer
+    const TfToken orientationsf;
     /// \brief "origin"
     /// 
     /// Possible value for UsdGeomModelAPI::GetModelDrawModeAttr()
@@ -458,6 +466,10 @@ struct UsdGeomTokensType {
     /// 
     /// Op suffix for the standard scale-rotate pivot on a UsdGeomXformCommonAPI-compatible prim. 
     const TfToken pivot;
+    /// \brief "point"
+    /// 
+    /// Possible value for UsdGeomSubset::GetElementTypeAttr()
+    const TfToken point;
     /// \brief "points"
     /// 
     /// UsdGeomPointBased
@@ -514,6 +526,14 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomSphere, UsdGeomCylinder, UsdGeomCapsule, UsdGeomCone
     const TfToken radius;
+    /// \brief "radiusBottom"
+    /// 
+    /// UsdGeomCylinder_1, UsdGeomCapsule_1
+    const TfToken radiusBottom;
+    /// \brief "radiusTop"
+    /// 
+    /// UsdGeomCylinder_1, UsdGeomCapsule_1
+    const TfToken radiusTop;
     /// \brief "ranges"
     /// 
     /// UsdGeomNurbsCurves
@@ -562,10 +582,22 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomMesh
     const TfToken subdivisionScheme;
+    /// \brief "surfaceFaceVertexIndices"
+    /// 
+    /// UsdGeomTetMesh
+    const TfToken surfaceFaceVertexIndices;
     /// \brief "tangents"
     /// 
     /// UsdGeomHermiteCurves
     const TfToken tangents;
+    /// \brief "tetrahedron"
+    /// 
+    /// Possible value for UsdGeomSubset::GetElementTypeAttr()
+    const TfToken tetrahedron;
+    /// \brief "tetVertexIndices"
+    /// 
+    /// UsdGeomTetMesh
+    const TfToken tetVertexIndices;
     /// \brief "triangleSubdivisionRule"
     /// 
     /// UsdGeomMesh
@@ -696,7 +728,7 @@ struct UsdGeomTokensType {
     const TfToken wrap;
     /// \brief "X"
     /// 
-    /// Possible value for UsdGeomCylinder::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomPlane::GetAxisAttr()
+    /// Possible value for UsdGeomCylinder::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCylinder_1::GetAxisAttr(), Possible value for UsdGeomCapsule_1::GetAxisAttr(), Possible value for UsdGeomPlane::GetAxisAttr()
     const TfToken x;
     /// \brief "xformOpOrder"
     /// 
@@ -704,11 +736,11 @@ struct UsdGeomTokensType {
     const TfToken xformOpOrder;
     /// \brief "Y"
     /// 
-    /// Possible value for UsdGeomCylinder::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomPlane::GetAxisAttr()
+    /// Possible value for UsdGeomCylinder::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCylinder_1::GetAxisAttr(), Possible value for UsdGeomCapsule_1::GetAxisAttr(), Possible value for UsdGeomPlane::GetAxisAttr()
     const TfToken y;
     /// \brief "Z"
     /// 
-    /// Fallback value for UsdGeomCylinder::GetAxisAttr(), Fallback value for UsdGeomCapsule::GetAxisAttr(), Fallback value for UsdGeomCone::GetAxisAttr(), Fallback value for UsdGeomPlane::GetAxisAttr()
+    /// Fallback value for UsdGeomCylinder::GetAxisAttr(), Fallback value for UsdGeomCapsule::GetAxisAttr(), Fallback value for UsdGeomCone::GetAxisAttr(), Fallback value for UsdGeomCylinder_1::GetAxisAttr(), Fallback value for UsdGeomCapsule_1::GetAxisAttr(), Fallback value for UsdGeomPlane::GetAxisAttr()
     const TfToken z;
     /// \brief "BasisCurves"
     /// 
@@ -724,8 +756,12 @@ struct UsdGeomTokensType {
     const TfToken Camera;
     /// \brief "Capsule"
     /// 
-    /// Schema identifer and family for UsdGeomCapsule
+    /// Schema identifer and family for UsdGeomCapsule, Schema family for UsdGeomCapsule_1
     const TfToken Capsule;
+    /// \brief "Capsule_1"
+    /// 
+    /// Schema identifer for UsdGeomCapsule_1
+    const TfToken Capsule_1;
     /// \brief "Cone"
     /// 
     /// Schema identifer and family for UsdGeomCone
@@ -740,8 +776,12 @@ struct UsdGeomTokensType {
     const TfToken Curves;
     /// \brief "Cylinder"
     /// 
-    /// Schema identifer and family for UsdGeomCylinder
+    /// Schema identifer and family for UsdGeomCylinder, Schema family for UsdGeomCylinder_1
     const TfToken Cylinder;
+    /// \brief "Cylinder_1"
+    /// 
+    /// Schema identifer for UsdGeomCylinder_1
+    const TfToken Cylinder_1;
     /// \brief "GeomModelAPI"
     /// 
     /// Schema identifer and family for UsdGeomModelAPI
@@ -806,6 +846,10 @@ struct UsdGeomTokensType {
     /// 
     /// Schema identifer and family for UsdGeomSphere
     const TfToken Sphere;
+    /// \brief "TetMesh"
+    /// 
+    /// Schema identifer and family for UsdGeomTetMesh
+    const TfToken TetMesh;
     /// \brief "VisibilityAPI"
     /// 
     /// Schema identifer and family for UsdGeomVisibilityAPI

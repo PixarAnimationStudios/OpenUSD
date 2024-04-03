@@ -24,6 +24,7 @@
 #
 
 from pxr import Usd
+from pxr import Sdf
 from pxr import UsdAppUtils
 from pxr import Tf
 
@@ -50,14 +51,9 @@ def _SetupOpenGLContext(width=100, height=100):
         from PySide6.QtWidgets import QApplication
         PySideModule = 'PySide6'
     except ImportError:
-        try:
-            from PySide2 import QtOpenGL
-            from PySide2.QtWidgets import QApplication
-            PySideModule = 'PySide2'
-        except ImportError:
-            from PySide import QtOpenGL
-            from PySide.QtGui import QApplication
-            PySideModule = 'PySide'
+        from PySide2 import QtOpenGL
+        from PySide2.QtWidgets import QApplication
+        PySideModule = 'PySide2'
 
     application = QApplication(sys.argv)
 
@@ -131,6 +127,11 @@ def main():
             'more than one extra purpose, either use commas with no spaces or '
             'quote the argument and separate purposes by commas and/or spaces.'))
 
+    parser.add_argument('--sessionLayer', action='store', type=str,
+        dest='sessionLayerPath', metavar='SESSIONLAYER',
+        help=("If specified, the stage will be opened with the "
+              "'sessionLayer' in place of the default anonymous layer."))
+
     # Note: The argument passed via the command line (disableGpu) is inverted
     # from the variable in which it is stored (gpuEnabled).
     parser.add_argument('--disableGpu', action='store_false',
@@ -153,6 +154,16 @@ def main():
             'Width of the output image. The height will be computed from this '
             'value and the camera\'s aspect ratio (default=%(default)s)'))
 
+    parser.add_argument('--renderSettingsPrimPath', '-rs', action='store', 
+        type=str, dest='rsPrimPath', 
+        help=(
+            'Specify the Render Settings Prim to use to render the given '
+            'usdFile. '
+            'Note that if a renderSettingsPrimPath has been specified in the '
+            'stage metadata, using this argument will override that opinion. '
+            'Furthermore any properties authored on the RenderSettings will '
+            'override other arguments (imageWidth, camera, outputImagePath)'))
+
     args = parser.parse_args()
 
     UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args,
@@ -162,6 +173,21 @@ def main():
 
     purposes = args.purposes.replace(',', ' ').split()
 
+    # Load the root layer.
+    rootLayer = Sdf.Layer.FindOrOpen(args.usdFilePath)
+    if not rootLayer:
+        _Err('Could not open layer: %s' % args.usdFilePath)
+        return 1
+
+    # Load the session layer.
+    if args.sessionLayerPath:
+        sessionLayer = Sdf.Layer.FindOrOpen(args.sessionLayerPath)
+        if not sessionLayer:
+            _Err('Could not open layer: %s' % args.sessionLayerPath)
+            return 1
+    else:
+        sessionLayer = Sdf.Layer.CreateAnonymous()
+
     # Open the USD stage, using a population mask if paths were given.
     if args.populationMask:
         populationMaskPaths = args.populationMask.replace(',', ' ').split()
@@ -170,9 +196,9 @@ def main():
         for maskPath in populationMaskPaths:
             populationMask.Add(maskPath)
 
-        usdStage = Usd.Stage.OpenMasked(args.usdFilePath, populationMask)
+        usdStage = Usd.Stage.OpenMasked(rootLayer, sessionLayer, populationMask)
     else:
-        usdStage = Usd.Stage.Open(args.usdFilePath)
+        usdStage = Usd.Stage.Open(rootLayer, sessionLayer)
 
     if not usdStage:
         _Err('Could not open USD stage: %s' % args.usdFilePath)
@@ -180,6 +206,10 @@ def main():
 
     # Get the camera at the given path (or with the given name).
     usdCamera = UsdAppUtils.GetCameraAtPath(usdStage, args.camera)
+
+    # Get the RenderSettings Prim Path from the stage metadata if not specified.
+    if not args.rsPrimPath:
+        args.rsPrimPath = usdStage.GetMetadata('renderSettingsPrimPath')
 
     if args.gpuEnabled:
         # UsdAppUtils.FrameRecorder will expect that an OpenGL context has
@@ -192,7 +222,10 @@ def main():
 
     rendererPluginId = UsdAppUtils.rendererArgs.GetPluginIdFromArgument(
         args.rendererPlugin) or ''
-    frameRecorder = UsdAppUtils.FrameRecorder(rendererPluginId, args.gpuEnabled)
+
+    # Initialize FrameRecorder 
+    frameRecorder = UsdAppUtils.FrameRecorder(
+        rendererPluginId, args.gpuEnabled, args.rsPrimPath)
     frameRecorder.SetImageWidth(args.imageWidth)
     frameRecorder.SetComplexity(args.complexity.value)
     frameRecorder.SetColorCorrectionMode(args.colorCorrectionMode)

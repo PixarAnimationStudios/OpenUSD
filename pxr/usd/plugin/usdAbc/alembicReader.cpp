@@ -36,8 +36,6 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/ostreamMethods.h"
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/utility/enable_if.hpp>
 #include <Alembic/Abc/ArchiveInfo.h>
 #include <Alembic/Abc/IArchive.h>
 #include <Alembic/Abc/IObject.h>
@@ -54,6 +52,7 @@
 #include <Alembic/AbcGeom/IXform.h>
 #include <Alembic/AbcGeom/SchemaInfoDeclarations.h>
 #include <Alembic/AbcGeom/Visibility.h>
+#include <optional>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -90,7 +89,7 @@ TF_DEFINE_ENV_SETTING(
 
 #if ALEMBIC_LIBRARY_VERSION >= 10709
 TF_DEFINE_ENV_SETTING(
-    USD_ABC_READ_ARCHIVE_USE_MMAP, false,
+    USD_ABC_READ_ARCHIVE_USE_MMAP, true,
     "Use mmap when reading from an Ogawa archive.");
 #endif
 
@@ -658,7 +657,7 @@ public:
                                 const ISampleSelector&)> Converter;
 
     /// An optional ordering of name children or properties.
-    typedef boost::optional<TfTokenVector> Ordering;
+    typedef std::optional<TfTokenVector> Ordering;
 
     /// Sample times.
     typedef UsdAbc_AlembicDataReader::TimeSamples TimeSamples;
@@ -820,11 +819,14 @@ private:
                    const UsdAbc_AlembicDataAny& value) const;
 
     // Custom auto-lock that safely ignores a NULL pointer.
-    class _Lock : boost::noncopyable {
+    class _Lock {
     public:
         _Lock(std::recursive_mutex* mutex) : _mutex(mutex) {
             if (_mutex) _mutex->lock();
         }
+        _Lock (const _Lock&) = delete;
+        _Lock& operator= (const _Lock&) = delete;
+
         ~_Lock() { if (_mutex) _mutex->unlock(); }
 
     private:
@@ -915,6 +917,13 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog,
     IFactory::CoreType abcType;
     factory.setPolicy(Abc::ErrorHandler::Policy::kQuietNoopPolicy);
     factory.setOgawaNumStreams(_GetNumOgawaStreams());
+
+#if ALEMBIC_LIBRARY_VERSION >= 10709
+    if (!TfGetEnvSetting(USD_ABC_READ_ARCHIVE_USE_MMAP)) {
+        factory.setOgawaReadStrategy(Alembic::AbcCoreFactory::IFactory::kFileStreams);
+    }
+#endif
+
     IArchive archive = factory.getArchive(layeredABC, abcType);
 
 #if PXR_HDF5_SUPPORT_ENABLED && !H5_HAVE_THREADSAFE
@@ -2623,7 +2632,7 @@ struct _CopyXform {
     }
 
 private:
-    mutable boost::optional<MetaData> _metadata;
+    mutable std::optional<MetaData> _metadata;
 };
 
 /// Base class to copy attributes of an almebic camera to a USD camera
@@ -3793,7 +3802,7 @@ _ReadPrim(
 
         // Discard name children ordering since we don't have any name
         // children (except via the prototype reference).
-        instance->primOrdering = boost::none;
+        instance->primOrdering = std::nullopt;
     }
 
     // Get the prim cache.  If instance is true then prim is the prototype,
@@ -3844,7 +3853,7 @@ _ReadPrim(
         if (instance && instance->promoted) {
             // prim is the prototype.
             prim.properties.clear();
-            prim.propertyOrdering = boost::none;
+            prim.propertyOrdering = std::nullopt;
             prim.metadata.clear();
             prim.propertiesCache.clear();
         }

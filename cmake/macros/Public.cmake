@@ -24,6 +24,14 @@
 include(Private)
 
 function(pxr_build_documentation)
+    # Cmake booleans are often, ie, "OFF", while Doxyfile requires booleans
+    # to be "YES" or "NO"
+    if(PXR_BUILD_HTML_DOCUMENTATION)
+        set(DOXYGEN_GENERATE_HTML "YES")
+    else()
+        set(DOXYGEN_GENERATE_HTML "NO")
+    endif()
+
     configure_file(${PROJECT_SOURCE_DIR}/docs/doxygen/Doxyfile.in
                    ${PROJECT_BINARY_DIR}/Doxyfile)
 
@@ -45,7 +53,7 @@ function(pxr_build_documentation)
     # Execute doxygen during the install step. All of the files we want
     # doxygen to process should already have been copied to the docs
     # directory during the build step
-    install(CODE "execute_process(COMMAND ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/Doxyfile)")
+    install(CODE "execute_process(COMMAND ${DOXYGEN_EXECUTABLE} \"${PROJECT_BINARY_DIR}/Doxyfile\")")
 
     set(INST_DOCS_ROOT  "${CMAKE_INSTALL_PREFIX}/docs")
 
@@ -55,11 +63,13 @@ function(pxr_build_documentation)
         DESTINATION ${INST_DOCS_ROOT}
     )
 
-    set(BUILT_HTML_DOCS "${PROJECT_BINARY_DIR}/docs/doxy_html")
-    install(
-        DIRECTORY ${BUILT_HTML_DOCS}
-        DESTINATION ${INST_DOCS_ROOT}
-    )
+    if(PXR_BUILD_HTML_DOCUMENTATION)
+        set(BUILT_HTML_DOCS "${PROJECT_BINARY_DIR}/docs/doxy_html")
+        install(
+            DIRECTORY ${BUILT_HTML_DOCS}
+            DESTINATION ${INST_DOCS_ROOT}
+        )
+    endif()
 
     set(BUILT_XML_DOCS "${PROJECT_BINARY_DIR}/docs/doxy_xml")
     install(
@@ -409,10 +419,14 @@ function (pxr_create_test_module MODULE_NAME)
         return()
     endif()
 
-    cmake_parse_arguments(tm "" "INSTALL_PREFIX;SOURCE_DIR" "" ${ARGN})
+    cmake_parse_arguments(tm "" "INSTALL_PREFIX;SOURCE_DIR;DEST_DIR" "" ${ARGN})
 
     if (NOT tm_SOURCE_DIR)
         set(tm_SOURCE_DIR testenv)
+    endif()
+
+    if (NOT tm_DEST_DIR)
+        set(tm_DEST_DIR ${MODULE_NAME})
     endif()
 
     # Look specifically for an __init__.py and a plugInfo.json prefixed by the
@@ -428,7 +442,7 @@ function (pxr_create_test_module MODULE_NAME)
             RENAME 
                 __init__.py
             DESTINATION 
-                tests/${tm_INSTALL_PREFIX}/lib/python/${MODULE_NAME}
+                tests/${tm_INSTALL_PREFIX}/lib/python/${tm_DEST_DIR}
         )
     endif()
     if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${plugInfoFile}")
@@ -438,7 +452,7 @@ function (pxr_create_test_module MODULE_NAME)
             RENAME 
                 plugInfo.json
             DESTINATION 
-                tests/${tm_INSTALL_PREFIX}/lib/python/${MODULE_NAME}
+                tests/${tm_INSTALL_PREFIX}/lib/python/${tm_DEST_DIR}
         )
     endif()
 endfunction() # pxr_create_test_module
@@ -1270,12 +1284,24 @@ function(pxr_build_python_documentation)
     string(REPLACE ";" "," pxrPythonModulesStr "${pxrPythonModules}")
     # Run convertDoxygen on the module list, setting PYTHONPATH 
     # to the install path for the USD Python modules
-    install(CODE "execute_process(\
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/cmake \
-        COMMAND ${PYTHON_EXECUTABLE} ${CONVERT_DOXYGEN_TO_PYTHON_DOCS_SCRIPT} \
-        --package pxr --module ${pxrPythonModulesStr} \
-        --inputIndex ${BUILT_XML_DOCS}/index.xml \
-        --pythonPath ${CMAKE_INSTALL_PREFIX}/lib/python \
-        --output ${INSTALL_PYTHON_PXR_ROOT})")
+    if (WIN32)
+        set(DLL_PATH_FLAG "--dllPath \"${CMAKE_INSTALL_PREFIX}/lib;${CMAKE_INSTALL_PREFIX}/bin;${CMAKE_INSTALL_PREFIX}/plugin/usd;${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin\"")
+    else()
+        set(DLL_PATH_FLAG "")
+    endif()
+    install(CODE "\
+        execute_process(\
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/cmake \
+            RESULT_VARIABLE convert_doxygen_return_code
+            COMMAND ${PYTHON_EXECUTABLE} ${CONVERT_DOXYGEN_TO_PYTHON_DOCS_SCRIPT} \
+                --package pxr --module ${pxrPythonModulesStr} \
+                --inputIndex ${BUILT_XML_DOCS}/index.xml \
+                --pythonPath ${CMAKE_INSTALL_PREFIX}/lib/python \
+                ${DLL_PATH_FLAG} \
+                --output ${INSTALL_PYTHON_PXR_ROOT})
+        if (NOT \${convert_doxygen_return_code} EQUAL \"0\")
+            message( FATAL_ERROR \"Error generating python docstrings - ${CONVERT_DOXYGEN_TO_PYTHON_DOCS_SCRIPT} return code: \${convert_doxygen_return_code} \")
+        endif()
+    ")
 
 endfunction() # pxr_build_python_documentation

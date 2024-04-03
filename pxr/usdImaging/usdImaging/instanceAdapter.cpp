@@ -56,9 +56,9 @@
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/gf/vec4h.h"
 
+#include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
 #include "pxr/base/tf/type.h"
-
-#include <boost/unordered_map.hpp>
 
 #include <limits>
 #include <queue>
@@ -953,7 +953,7 @@ struct UsdImagingInstanceAdapter::_IsInstanceTransformVaryingFn
 
     // We keep a simple cache directly on _IsInstanceTransformVaryingFn because
     // we only need it during initialization and resyncs (not in UpdateForTime).
-    boost::unordered_map<UsdPrim, bool, boost::hash<UsdPrim>> cache;
+    pxr_tsl::robin_map<UsdPrim, bool, TfHash> cache;
 };
 
 bool 
@@ -1129,6 +1129,9 @@ UsdImagingInstanceAdapter::_ComputeInheritedPrimvar(UsdPrim const& instancer,
     } else if (dv.IsHolding<std::string>()) {
         return _ComputeInheritedPrimvar<std::string>(
                 instancer, primvarName, result, time);
+    } else if (dv.IsHolding<SdfAssetPath>()) {
+        return _ComputeInheritedPrimvar<SdfAssetPath>(
+                instancer, primvarName, result, time);
     } else {
         TF_WARN("Native instancing: unrecognized inherited primvar type '%s' "
                 "for primvar '%s'", 
@@ -1247,7 +1250,9 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
             if (_ComputeInstanceTransforms(prim, &instanceXforms, time)) {
                 _MergePrimvar(
                     &primvarDescCache->GetPrimvars(cachePath),
-                    HdInstancerTokens->instanceTransform,
+                    (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+                        ? HdInstancerTokens->instanceTransform
+                        : HdInstancerTokens->instanceTransforms),
                     HdInterpolationInstance);
             }
             for (auto const& ipv : instrData->inheritedPrimvars) {
@@ -1296,7 +1301,7 @@ UsdImagingInstanceAdapter::ProcessPropertyChange(UsdPrim const& prim,
     }
 
     // Transform changes to instance prims end up getting folded into the
-    // "instanceTransform" instance-rate primvar.
+    // "hydra:instanceTransforms" instance-rate primvar.
     if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(propertyName)) {
         return HdChangeTracker::DirtyPrimvar;
     }
@@ -1606,6 +1611,12 @@ UsdImagingInstanceAdapter::GetInstancerTransform(UsdPrim const& instancerPrim,
                                                  UsdTimeCode time) const
 {
     TRACE_FUNCTION();
+     UsdImagingInstancerContext instancerContext;
+    _ProtoPrim const *proto;
+    if (_GetProtoPrimForChild(instancerPrim, instancerPath, &proto, &instancerContext)) {
+        return proto->adapter->GetInstancerTransform(
+            _GetPrim(proto->path), instancerPath, time);
+    }
     return GetRootTransform();
 }
 
@@ -1748,10 +1759,11 @@ UsdImagingInstanceAdapter::SamplePrimvar(
     std::vector<double> timeSamples;
     SdfValueTypeName type;
 
-    if (key != HdInstancerTokens->instanceTransform) {
-        // "instanceTransform" is built-in and synthesized, but other primvars
-        // need to be in the inherited primvar list. Loop through to check
-        // existence and find the correct type.
+    if (key != HdInstancerTokens->instanceTransform &&
+        key != HdInstancerTokens->instanceTransforms) {
+        // "hydra:instanceTransforms" is built-in and synthesized, but other
+        // primvars need to be in the inherited primvar list. Loop through to
+        // check existence and find the correct type.
         _InstancerData const* instrData =
             TfMapLookupPtr(_instancerData, usdPrim.GetPath());
         if (!instrData) {
@@ -1770,7 +1782,8 @@ UsdImagingInstanceAdapter::SamplePrimvar(
         }
     }
 
-    if (key == HdInstancerTokens->instanceTransform) {
+    if (key == HdInstancerTokens->instanceTransform ||
+        key == HdInstancerTokens->instanceTransforms) {
         _GatherInstanceTransformsTimeSamples(usdPrim, interval, &timeSamples);
     } else {
         _GatherInstancePrimvarTimeSamples(usdPrim, key, interval, &timeSamples);
@@ -1790,7 +1803,8 @@ UsdImagingInstanceAdapter::SamplePrimvar(
 
     for (size_t i=0; i < numSamplesToEvaluate; ++i) {
         sampleTimes[i] = timeSamples[i] - time.GetValue();
-        if (key == HdInstancerTokens->instanceTransform) {
+        if (key == HdInstancerTokens->instanceTransform ||
+            key == HdInstancerTokens->instanceTransforms) {
             VtMatrix4dArray xf;
             _ComputeInstanceTransforms(usdPrim, &xf, timeSamples[i]);
             sampleValues[i] = xf;
@@ -1955,6 +1969,40 @@ UsdImagingInstanceAdapter::GetMaterialId(UsdPrim const& usdPrim,
 }
 
 /*virtual*/
+VtValue
+UsdImagingInstanceAdapter::GetLightParamValue(
+    const UsdPrim& prim,
+    const SdfPath& cachePath,
+    const TfToken& paramName,
+    UsdTimeCode time) const
+{
+    UsdImagingInstancerContext instancerContext;
+    const _ProtoPrim* proto;
+    if (_GetProtoPrimForChild(prim, cachePath, &proto, &instancerContext)) {
+        UsdPrim protoPrim = _GetPrim(proto->path);
+        return proto->adapter->GetLightParamValue(
+            protoPrim, cachePath, paramName, time);
+    }
+    return BaseAdapter::GetLightParamValue(prim, cachePath, paramName, time);
+}
+
+/*virtual*/
+VtValue
+UsdImagingInstanceAdapter::GetMaterialResource(
+    const UsdPrim& prim,
+    const SdfPath& cachePath,
+    UsdTimeCode time) const
+{
+    UsdImagingInstancerContext instancerContext;
+    const _ProtoPrim* proto;
+    if (_GetProtoPrimForChild(prim, cachePath, &proto, &instancerContext)) {
+        UsdPrim protoPrim = _GetPrim(proto->path);
+        return proto->adapter->GetMaterialResource(protoPrim, cachePath, time);
+    }
+    return BaseAdapter::GetMaterialResource(prim, cachePath, time);
+}
+
+/*virtual*/
 HdExtComputationInputDescriptorVector
 UsdImagingInstanceAdapter::GetExtComputationInputs(
     UsdPrim const& usdPrim,
@@ -2100,7 +2148,8 @@ UsdImagingInstanceAdapter::Get(UsdPrim const& usdPrim,
     } else if (_InstancerData const* instrData =
         TfMapLookupPtr(_instancerData, usdPrim.GetPath())) {
 
-        if (key == HdInstancerTokens->instanceTransform) {
+        if (key == HdInstancerTokens->instanceTransform ||
+            key == HdInstancerTokens->instanceTransforms) {
             VtMatrix4dArray instanceXforms;
             if (_ComputeInstanceTransforms(usdPrim, &instanceXforms, time)) {
                 return VtValue(instanceXforms);
@@ -2365,7 +2414,7 @@ struct UsdImagingInstanceAdapter::_ComputeInstanceMapVariabilityFn
     // We keep a simple cache of visibility varying states directly on
     // _ComputeInstanceMapVariabilityFn because we only need it for the
     // variability calculation and during resyncs.
-    boost::unordered_map<UsdPrim, bool, boost::hash<UsdPrim>> varyingCache;
+    pxr_tsl::robin_map<UsdPrim, bool, TfHash> varyingCache;
     const UsdImagingInstanceAdapter* adapter;
     std::vector<_InstancerData::Visibility>* visibility;
 };

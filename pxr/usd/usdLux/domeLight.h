@@ -53,9 +53,12 @@ class SdfAssetPath;
 /// \class UsdLuxDomeLight
 ///
 /// Light emitted inward from a distant external environment,
-/// such as a sky or IBL light probe.  The orientation of a dome light with a
-/// latlong texture is expected to match the OpenEXR specification for latlong 
-/// environment maps.  From the OpenEXR documentation:
+/// such as a sky or IBL light probe.
+/// 
+/// In this version of the dome light, the dome's default orientation is such
+/// that its top pole is aligned with the world's +Y axis. This adheres to the
+/// OpenEXR specification for latlong environment maps.  From the OpenEXR
+/// documentation:
 /// 
 /// -------------------------------------------------------------------------
 /// Latitude-Longitude Map:

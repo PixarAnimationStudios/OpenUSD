@@ -62,7 +62,8 @@ class TestUsdView(Usdviewq.Launcher):
     def __LaunchProcess(self, arg_parse_result):
         callBack = self._ValidateTestFile(arg_parse_result.testScript)
         (app, appController) = (
-            super(TestUsdView, self).LaunchPreamble(arg_parse_result))
+            super(TestUsdView, self).LaunchPreamble(
+                arg_parse_result, overrideMaxSamples = False))
 
         # Set a fixed size on the stage view so that any image tests get a
         # consistent resolution - but only if we've created a viewer

@@ -57,7 +57,7 @@ _FsHelpersExamineFiles(
     const NdrParseIdentifierFn &parseIdentifierFn)
 {
     for (const std::string& fileName : dirFileNames) {
-        std::string extension = TfStringToLower(TfGetExtension(fileName));
+        std::string extension = TfStringToLowerAscii(TfGetExtension(fileName));
 
         // Does the extension match one of the known-good extensions?
         NdrStringVec::const_iterator extIter = std::find(
@@ -267,7 +267,7 @@ NdrFsHelpersDiscoverFiles(
 
         for (const std::string& fileName : dirFileNames) {
             const std::string extension = 
-                TfStringToLower(TfGetExtension(fileName));
+                TfStringToLowerAscii(TfGetExtension(fileName));
 
             // Does the extension match one of the known-good extensions?
             if (std::find(allowedExtensions.begin(), allowedExtensions.end(), 

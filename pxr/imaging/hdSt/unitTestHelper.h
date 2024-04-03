@@ -140,8 +140,8 @@ private:
     HgiUniquePtr _hgi;
     HdDriver _hgiDriver;
 
-    HdEngine _engine;
     HdStRenderDelegate _renderDelegate;
+    HdEngine _engine;
     HdRenderIndex *_renderIndex;
     SceneDelegate *_sceneDelegate;
 
@@ -156,8 +156,8 @@ HdSt_TestDriverBase<SceneDelegate>::HdSt_TestDriverBase()
  : _collection(TfToken("testCollection"), HdReprSelector())
  , _hgi(Hgi::CreatePlatformDefaultHgi())
  , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
- , _engine()
  , _renderDelegate()
+ , _engine()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
  , _clearColor(GfVec4f(0, 0, 0, 1))
@@ -302,8 +302,9 @@ HdSt_TestDriverBase<SceneDelegate>::SetCamera(
     TF_VERIFY(camera);
 
     for (const HdRenderPassStateSharedPtr &renderPassState: _renderPassStates) {
-        renderPassState->SetCameraAndFraming(
-            camera, framing, { false, CameraUtilFit });
+        renderPassState->SetCamera(camera);
+        renderPassState->SetFraming(framing);
+        renderPassState->SetOverrideWindowPolicy(std::nullopt);
     }
 }
 

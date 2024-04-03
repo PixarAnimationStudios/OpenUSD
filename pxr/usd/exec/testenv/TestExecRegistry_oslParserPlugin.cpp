@@ -82,11 +82,6 @@ public:
         VtFloatArray v4 = {0.0f, 0.0f, 0.0f, 0.0f};
         ADD_PROPERTY(Float, _Vec4, 4, v4, {})
 
-        // Add a String_Asset property
-        NdrTokenMap assetMetadata =
-            {{ExecPropertyMetadata->IsAssetIdentifier, std::string()}};
-        ADD_PROPERTY(String, _Asset, 0, std::string(), assetMetadata)
-
         #undef ADD_PROPERTY
 
         return NdrNodeUniquePtr(

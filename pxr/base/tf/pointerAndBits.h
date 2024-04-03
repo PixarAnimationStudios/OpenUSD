@@ -120,6 +120,8 @@ public:
     constexpr Integral BitsAs() const noexcept {
         ARCH_PRAGMA_PUSH
         ARCH_PRAGMA_FORCING_TO_BOOL
+        // XXX: http://bug/DEV-16691
+        ARCH_PRAGMA_MAYBE_UNINITIALIZED
         return static_cast<Integral>(_GetBits());
         ARCH_PRAGMA_POP
     }

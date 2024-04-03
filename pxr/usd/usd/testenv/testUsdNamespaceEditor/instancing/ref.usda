@@ -1,0 +1,23 @@
+#usda 1.0 
+
+def PrimTypeC "ReferencePrim" (
+    doc = "Ref"
+    prepend apiSchemas = ["C_Ref_API"]
+) {
+    custom double C_Ref_Attr
+    
+    def PrimTypeB "B" (
+        doc = "Ref"
+        prepend apiSchemas = ["B_Ref_API"]
+    ) {
+        custom double B_Ref_Attr
+
+        def PrimTypeA "A" (
+            doc = "Ref"
+            prepend apiSchemas = ["A_Ref_API"]
+        )
+        {
+            custom double A_Ref_Attr
+        }
+    }
+}

@@ -33,6 +33,7 @@
 #include "pxr/imaging/hdSt/textureIdentifier.h"
 #include "pxr/imaging/hf/perfLog.h"
 
+#include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/work/loops.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -179,6 +180,7 @@ HdSt_TextureObjectRegistry::Commit()
     {
         TRACE_FUNCTION_SCOPE("Loading textures");
         HF_TRACE_FUNCTION_SCOPE("Loading textures");
+        TF_DESCRIBE_SCOPE("Loading %zu textures", result.size());
 
         if (_isGlfBaseTextureDataThreadSafe) {
             // Loading a texture file of a previously unseen type might
@@ -202,7 +204,9 @@ HdSt_TextureObjectRegistry::Commit()
         HF_TRACE_FUNCTION_SCOPE("Committing textures");
 
         // Commit loaded files to GPU.
+        size_t i = 1;
         for (const HdStTextureObjectSharedPtr &texture : result) {
+            TF_DESCRIBE_SCOPE("Comitting texture %zu / %zu", i++, result.size());
             texture->_Commit();
         }
     }

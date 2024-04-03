@@ -166,7 +166,7 @@ public:
     /// to resolve assets when no other context is explicitly specified.
     ///
     /// The returned ArResolverContext will contain the default context 
-    /// returned by the primary resolver and all URI resolvers.
+    /// returned by the primary resolver and all URI/IRI resolvers.
     AR_API
     ArResolverContext CreateDefaultContext() const;
 
@@ -175,7 +175,8 @@ public:
     /// that asset when no other context is explicitly specified.
     ///
     /// The returned ArResolverContext will contain the default context 
-    /// for \p assetPath returned by the primary resolver and all URI resolvers.
+    /// for \p assetPath returned by the primary resolver and all URI/IRI
+    /// resolvers.
     AR_API
     ArResolverContext CreateDefaultContextForAsset(
         const std::string& assetPath) const;
@@ -194,6 +195,8 @@ public:
     ///
     /// If no resolver is registered for \p uriScheme, returns an empty
     /// ArResolverContext.
+    ///
+    /// \note 'uriScheme' can be used to register IRI resolvers
     AR_API
     ArResolverContext CreateContextFromString(
         const std::string& uriScheme, const std::string& contextStr) const;
@@ -202,25 +205,25 @@ public:
     /// objects created from the given \p contextStrs.
     ///
     /// \p contextStrs is a list of pairs of strings. The first element in the
-    /// pair is the URI scheme for the ArResolver that will be used to create
-    /// the ArResolverContext from the second element in the pair. An empty
-    /// URI scheme indicates the primary resolver.
+    /// pair is the URI/IRI scheme for the ArResolver that will be used to
+    /// create the ArResolverContext from the second element in the pair. An
+    /// empty resource identifier scheme indicates the primary resolver.
     ///
     /// For example:
     ///
     /// \code
     /// ArResolverContext ctx = ArGetResolver().CreateContextFromStrings(
     ///    { {"", "context str 1"}, 
-    ///      {"my_scheme", "context str 2"} });
+    ///      {"my-scheme", "context str 2"} });
     /// \endcode
     /// 
     /// This will use the primary resolver to create an ArResolverContext
     /// using the string "context str 1" and use the resolver registered for
-    /// the "my_scheme" URI scheme to create an ArResolverContext using
+    /// the "my-scheme" URI/IRI scheme to create an ArResolverContext using
     /// "context str 2". These contexts will be combined into a single
     /// ArResolverContext and returned.
     ///
-    /// If no resolver is registered for a URI scheme in an entry in
+    /// If no resolver is registered for a URI/IRI scheme in an entry in
     /// \p contextStrs, that entry will be ignored.
     AR_API
     ArResolverContext CreateContextFromStrings(
@@ -453,9 +456,9 @@ protected:
     /// same asset, so implementations should take care to canonicalize and
     /// normalize the returned identifier to a consistent format.
     ///
-    /// If either \p assetPath or \p anchorAssetPath have a URI scheme, this
-    /// function will be called on the resolver associated with that URI scheme,
-    /// if any.
+    /// If either \p assetPath or \p anchorAssetPath have a URI/IRI scheme,
+    /// this function will be called on the resolver associated with that
+    /// URI/IRI scheme, if any.
     ///
     /// Example uses:
     /// - When opening a layer via SdfLayer::FindOrOpen or Find,
@@ -563,9 +566,9 @@ protected:
     /// to resolve assets when no other context is explicitly specified.
     ///
     /// When CreateDefaultContext is called on the configured asset resolver,
-    /// Ar will call this method on the primary resolver and all URI resolvers
-    /// and merge the results into a single ArResolverContext that will be
-    /// returned to the consumer.
+    /// Ar will call this method on the primary resolver and all URI/IRI
+    /// resolvers and merge the results into a single ArResolverContext that
+    /// will be returned to the consumer.
     ///
     /// This function should not automatically bind this context, but should
     /// create one that may be used later.
@@ -585,16 +588,16 @@ protected:
     /// that asset when no other context is explicitly specified.
     ///
     /// When CreateDefaultContextForAsset is called on the configured asset
-    /// resolver, Ar will call this method on the primary resolver and all URI
-    /// resolvers and merge the results into a single ArResolverContext that
-    /// will be returned to the consumer.
+    /// resolver, Ar will call this method on the primary resolver and all
+    /// URI/IRI resolvers and merge the results into a single ArResolverContext
+    /// that will be returned to the consumer.
     ///
     /// Note that this means this method may be called with asset paths that
     /// are not associated with this resolver. For example, this method may
-    /// be called on a URI resolver with a non-URI asset path. This is to
-    /// support cases where the asset at \p assetPath references other
-    /// assets with URI schemes that differ from the URI scheme (if any)
-    /// in \p assetPath.
+    /// be called on a URI/IRI resolver with a non-URI/IRI asset path. This is
+    /// to support cases where the asset at \p assetPath references other
+    /// assets with URI/IRI schemes that differ from the URI/IRI scheme
+    /// (if any) in \p assetPath.
     ///
     /// This function should not automatically bind this context, but should
     /// create one that may be used later.

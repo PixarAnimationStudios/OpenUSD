@@ -32,6 +32,7 @@
 
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
@@ -43,7 +44,6 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 
-#include <boost/container/flat_map.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include <tbb/concurrent_unordered_set.h>
@@ -949,15 +949,10 @@ private:
 
     ////////////////////////////////////////////////////////////////////////
 
-    // Base class, to have a pointer type.
-    struct _ValueHandlerBase;
-    template <class, class=void> struct _ScalarValueHandlerBase;
-    template <class, class=void> struct _ArrayValueHandlerBase;
+    // Type-specific _ValueHandler<T> derives _ValueHandlerBase, just so we can
+    // have common pointers to specific instances.
+    struct _ValueHandlerBase {};
     template <class> struct _ValueHandler;
-
-    friend struct _ValueHandlerBase;
-    template <class, class> friend struct _ScalarValueHandlerBase;
-    template <class, class> friend struct _ArrayValueHandlerBase;
     template <class> friend struct _ValueHandler;
 
     template <class T> inline _ValueHandler<T> &_GetValueHandler();
@@ -1046,7 +1041,7 @@ private:
     mutable tbb::spin_rw_mutex _sharedTimesMutex;
 
     // functions to write VtValues to file by type.
-    boost::container::flat_map<
+    pxr_tsl::robin_map<
         std::type_index, std::function<ValueRep (VtValue const &)>>
         _packValueFunctions;
 

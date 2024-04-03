@@ -33,8 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // ----------------------------------------------------------------------------
 
-/// Vector schema classes represent a view of a vector data source
-/// which is returning untyped data sources.
+/// Base class wrapping a vector data source.
 ///
 class HdVectorSchema
 {
@@ -46,7 +45,7 @@ public:
     static HdVectorDataSourceHandle
     BuildRetained(
         size_t count,
-        HdDataSourceBaseHandle *values);
+        const HdDataSourceBaseHandle *values);
 
     /// Returns the vector data source that this schema is interpreting.
     HD_API
@@ -62,34 +61,37 @@ public:
     HD_API
     size_t GetNumElements() const;
 
+    using UnderlyingDataSource = HdVectorDataSource;
+
 protected:
+    template<typename T>
+    typename T::Handle _GetTyped(const size_t element) const {
+        return
+            _vector
+            ? T::Cast(_vector->GetElement(element))
+            : nullptr;
+    }
+
     HdVectorDataSourceHandle _vector;
 };
 
-/// Base class for vector schema classes that represent a view of
-/// a vector data source containing data source of a given type.
+/// Template class wrapping a vector data source whose children are
+/// data source of an expected type.
 ///
 template<typename T>
 class HdTypedVectorSchema : public HdVectorSchema
 {
 public:
-    using DataSource = HdTypedSampledDataSource<T>;
-    using DataSourceHandle = typename DataSource::Handle;
-
     HdTypedVectorSchema(HdVectorDataSourceHandle const &vector)
       : HdVectorSchema(vector) {}
 
-    DataSourceHandle GetElement(const size_t element) const {
-        return
-            _vector
-            ? DataSource::Cast(_vector->GetElement(element))
-            : nullptr;
+    typename T::Handle GetElement(const size_t element) const {
+        return _GetTyped<T>(element);
     }
 };
 
-/// Base class for vector schema classes that represent a view of
-/// a vector data source containing container data sources conforming
-/// to a given HdSchema.
+/// Template class wrapping a vector data source whose children are
+/// container data source conforming to an expected schema.
 ///
 template<typename Schema>
 class HdSchemaBasedVectorSchema : public HdVectorSchema
@@ -99,10 +101,8 @@ public:
       : HdVectorSchema(vector) {}
     
     Schema GetElement(const size_t element) const {
-        return Schema(
-            _vector
-            ? HdContainerDataSource::Cast(_vector->GetElement(element))
-            : nullptr);
+        using DataSource = typename Schema::UnderlyingDataSource;
+        return Schema(_GetTyped<DataSource>(element));
     }
 };
 

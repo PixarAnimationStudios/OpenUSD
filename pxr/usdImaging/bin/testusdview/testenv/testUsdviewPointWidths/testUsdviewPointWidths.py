@@ -44,21 +44,21 @@ def _createPoints(stage):
     points.CreatePointsAttr().Set(Vt.Vec3fArray(positions))
     return points
 
+def _widths(points, widthSize):
+    return [ widthSize * (1.0 + i / 10.0)
+             for i in range(0, len(points.GetPointsAttr().Get())) ]
+
 def _createWidths(points, widthSize):
     # initialize the widths attribute to a specific value
-    widths = []
-    for _ in range(0, len(points.GetPointsAttr().Get())):
-        widths.append(widthSize)
-
-    points.CreateWidthsAttr().Set(widths)
+    attr = points.CreateWidthsAttr()
+    attr.Set(_widths(points, widthSize))
 
 def _createWidthsPrimvar(points, widthSize):
-    widths = []
-    for _ in range(0, len(points.GetPointsAttr().Get())):
-        widths.append(widthSize)
-
     api = UsdGeom.PrimvarsAPI(points)
-    api.CreatePrimvar(UsdGeom.Tokens.widths, Sdf.ValueTypeNames.FloatArray).Set(widths)
+    attr = api.CreatePrimvar(UsdGeom.Tokens.widths,
+                             Sdf.ValueTypeNames.FloatArray,
+                             UsdGeom.Tokens.vertex)
+    attr.Set(_widths(points, widthSize))
 
 def _removeWidthsPrimvar(points):
     api = UsdGeom.PrimvarsAPI(points)

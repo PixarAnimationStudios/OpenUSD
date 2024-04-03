@@ -318,12 +318,13 @@ enum HgiAttachmentStoreOp
 ///
 enum HgiBufferUsageBits : HgiBits
 {
-    HgiBufferUsageUniform = 1 << 0,
-    HgiBufferUsageIndex32 = 1 << 1,
-    HgiBufferUsageVertex  = 1 << 2,
-    HgiBufferUsageStorage = 1 << 3,
+    HgiBufferUsageUniform  = 1 << 0,
+    HgiBufferUsageIndex32  = 1 << 1,
+    HgiBufferUsageVertex   = 1 << 2,
+    HgiBufferUsageStorage  = 1 << 3,
+    HgiBufferUsageIndirect = 1 << 4,
 
-    HgiBufferUsageCustomBitsBegin = 1 << 4,
+    HgiBufferUsageCustomBitsBegin = 1 << 5,
 };
 using HgiBufferUsage = HgiBits;
 

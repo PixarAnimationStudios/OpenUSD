@@ -210,7 +210,7 @@ public:
     static bool IsOutput(const UsdAttribute &attr);
 
     /// Explicit UsdAttribute extractor.
-    UsdAttribute GetAttr() const { return _attr; }
+    const UsdAttribute &GetAttr() const { return _attr; }
     
     /// Allow UsdShadeOutput to auto-convert to UsdAttribute, so you can
     /// pass a UsdShadeOutput to any function that accepts a UsdAttribute or

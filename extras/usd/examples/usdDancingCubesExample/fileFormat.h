@@ -108,14 +108,24 @@ public:
         FileFormatArguments *args,
         VtValue *contextDependencyData) const override;
 
-    /// A required PcpDynamicFileFormatInterface override for processing whether
-    /// a field change may affect the file format arguments within a given
-    /// context.
+    /// A PcpDynamicFileFormatInterface override for more finely processing 
+    /// whether a field change may affect the file format arguments within a 
+    /// given context.
     bool CanFieldChangeAffectFileFormatArguments(
         const TfToken &field,
         const VtValue &oldValue,
         const VtValue &newValue,
         const VtValue &contextDependencyData) const override;
+
+    // Calling out that this function could be overridden to more finely tune
+    // change processing of attribute default value changes. But in this example
+    // we don't override it and let it fall back to processing all default value
+    // changes of the relevant attributes.
+    // bool CanAttributeDefaultValueChangeAffectFileFormatArguments(
+    //     const TfToken &field,
+    //     const VtValue &oldValue,
+    //     const VtValue &newValue,
+    //     const VtValue &contextDependencyData) const override;
 
 protected:
     SDF_FILE_FORMAT_FACTORY_ACCESS;

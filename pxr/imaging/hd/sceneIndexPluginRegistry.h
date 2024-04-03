@@ -80,7 +80,8 @@ public:
     HD_API
     HdSceneIndexBaseRefPtr AppendSceneIndicesForRenderer(
         const std::string &rendererDisplayName,
-        const HdSceneIndexBaseRefPtr &inputScene);
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const std::string &renderInstanceId=std::string());
 
     enum InsertionOrder
     {
@@ -88,10 +89,10 @@ public:
         InsertionOrderAtEnd,
     };
 
-    using InsertionPhase = unsigned int;
+    using InsertionPhase = int;
 
     ///
-    /// Register a scene index to be instantiated whenever a specified 
+    /// Register a scene index to be instantiated for a specified 
     /// renderer (or all renderers if rendererDisplayName is empty).
     /// 
     /// Insertion phase is a broad ordering value with lower values indicating
@@ -105,6 +106,41 @@ public:
         const HdContainerDataSourceHandle &inputArgs,
         InsertionPhase insertionPhase,
         InsertionOrder insertionOrder);
+
+
+    using SceneIndexAppendCallback = 
+        std::function<
+            HdSceneIndexBaseRefPtr(
+                const std::string &renderInstanceId,
+                const HdSceneIndexBaseRefPtr &inputScene,
+                const HdContainerDataSourceHandle &inputArgs)>;
+
+    ///
+    /// Register a scene index to be instantiated via a callback for a
+    /// specified renderer (or all renderers if rendererDisplayName is empty).
+    ///
+    /// This is most useful for application-specific behavior which wants to
+    /// append and manage scene index instances associated with a specific
+    /// render. To aid in that association, the callback is provided a
+    /// renderInstanceId value typically defined by the application itself.
+    ///
+    /// Insertion phase is a broad ordering value with lower values indicating
+    /// earlier instantiation (possibly given render plugin-specific meaning
+    /// via enum values). Insertion order indicates whether this entry
+    /// should go at the start or end of the specified phase.
+    ///
+    /// \note This method should be invoked *before* render index construction
+    ///       when Hydra scene index emulation is enabled.
+    ///
+    HD_API
+    void RegisterSceneIndexForRenderer(
+        const std::string &rendererDisplayName,
+        SceneIndexAppendCallback callback,
+        const HdContainerDataSourceHandle &inputArgs,
+        InsertionPhase insertionPhase,
+        InsertionOrder insertionOrder);
+
+
 
 protected:
 
@@ -128,8 +164,15 @@ private:
         , args(args)
         {}
 
+        _Entry(SceneIndexAppendCallback callback,
+                const HdContainerDataSourceHandle &args)
+        : args(args)
+        , callback(callback)
+        {}
+
         TfToken sceneIndexPluginId;
         HdContainerDataSourceHandle args;
+        SceneIndexAppendCallback callback;
     };
 
     using _EntryList = std::vector<_Entry>;
@@ -139,7 +182,8 @@ private:
     HdSceneIndexBaseRefPtr _AppendForPhases(
         const HdSceneIndexBaseRefPtr &inputScene,
         const _PhasesMap &phasesMap,
-        const HdContainerDataSourceHandle &argsUnderlay);
+        const HdContainerDataSourceHandle &argsUnderlay,
+        const std::string &renderInstanceId);
 
     _RenderersMap _sceneIndicesForRenderers;
 

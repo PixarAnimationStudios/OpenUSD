@@ -39,7 +39,7 @@ which has the following virtues:
     * Does an outstanding job of returning freed memory to the kernel
 
 In the `Advanced Build Configuration
-<https://github.com/PixarAnimationStudios/USD/blob/release/BUILDING.md>`_
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md>`_
 document, you can find instructions for how to build USD linked against a
 third-party malloc package such as jemalloc. If you are using USD in a third
 party application as an embedded plugin, you can force the application to use a
@@ -131,7 +131,7 @@ seconds or minutes to open, but typically the Model Hierarchy view can be opened
 in under a second, or a small number of seconds.
 
 The USD distribution includes an `example python script
-<https://github.com/PixarAnimationStudios/USD/blob/release/extras/usd/examples/usdMakeFileVariantModelAsset/usdMakeFileVariantModelAsset.py>`_
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/extras/usd/examples/usdMakeFileVariantModelAsset/usdMakeFileVariantModelAsset.py>`_
 that demonstrates one simple kind of asset packaging using payloads.
 
 What makes a USD scene heavy/expensive?

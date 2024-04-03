@@ -142,6 +142,18 @@ UsdDancingCubesExampleFileFormat::ComposeFieldsForFileFormatArguments(
             val.UncheckedGet<VtDictionary>());
     }
 
+    // In addition, each parameter can optionally be specified via an attribute
+    // on the prim with the same name and type as the parameter. If present, the
+    // attributes default value will be used as the parameter value.
+    #define xx(TYPE, NAME, DEFAULT) \
+    if (context.ComposeAttributeDefaultValue( \
+            UsdDancingCubesExample_DataParamsTokens->NAME, &val) && \
+            val.IsHolding<TYPE>()) { \
+        params.NAME = val.UncheckedGet<TYPE>(); \
+    }
+    USD_DANCING_CUBES_EXAMPLE_DATA_PARAMS_X_FIELDS
+    #undef xx       
+
     // Convert the entire params object to file format arguments. We always 
     // convert all parameters even if they're default as the args are part of
     // the identity of the layer.

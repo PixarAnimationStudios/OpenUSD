@@ -23,14 +23,18 @@
 //
 #include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
 
+#include "pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h"
 #include "pxr/usdImaging/usdImaging/niInstanceAggregationSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/niPrototypePruningSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/niPrototypeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/rerootingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
+#include "pxr/imaging/hd/dataSourceHash.h"
+#include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/mergingSceneIndex.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -48,8 +52,12 @@ TF_DEFINE_ENV_SETTING(USDIMAGING_SHOW_NATIVE_PROTOTYPE_SCENE_INDICES, false,
 class UsdImagingNiPrototypePropagatingSceneIndex::_SceneIndexCache
 {
 public:
-    _SceneIndexCache(HdSceneIndexBaseRefPtr const &inputSceneIndex)
+    _SceneIndexCache(HdSceneIndexBaseRefPtr const &inputSceneIndex,
+                     const TfTokenVector &instanceDataSourceNames,
+                     const SceneIndexAppendCallback &sceneIndexAppendCallback)
       : _inputSceneIndex(inputSceneIndex)
+      , _instanceDataSourceNames(instanceDataSourceNames)
+      , _sceneIndexAppendCallback(sceneIndexAppendCallback)
     {
     }
 
@@ -67,97 +75,191 @@ public:
         HdSceneIndexBaseRefPtr instanceAggregationSceneIndex;
     };
 
+    // Get scene indices to propagate the USD prototype with
+    // given name.
+    //
+    // We will also overlay the prototype root with the given
+    // data source. We need the hash of the given data source
+    // for caching the result by the pair (prototype name, hash).
     SceneIndices
-    GetSceneIndicesForPrototype(const TfToken &prototypeName)
+    GetSceneIndicesForPrototype(
+        const TfToken &prototypeName,
+        const size_t prototypeRootOverlayDsHash,
+        HdContainerDataSourceHandle const &prototypeRootOverlayDs)
     {
         SceneIndices result;
 
-        _SceneIndices &sceneIndices = _prototypeToSceneIndices[prototypeName];
+        _SceneIndices2 &sceneIndices2 =
+            _prototypeToBindingHashToSceneIndices[prototypeName];
+        _SceneIndices1 &sceneIndices1 =
+            sceneIndices2.hashToSceneIndices[prototypeRootOverlayDsHash];
 
+        // Check whether weak ptr references valid scene index.
         HdSceneIndexBaseRefPtr isolatingSceneIndex =
-            sceneIndices.isolatingSceneIndex;
+            sceneIndices2.isolatingSceneIndex;
         if (!isolatingSceneIndex) {
+            // Allocate new scene index if not.
             isolatingSceneIndex =
                 _ComputeIsolatingSceneIndex(
                     prototypeName);
+            // Store weak ptr so that it can be re-used in the future.
+            sceneIndices2.isolatingSceneIndex =
+                isolatingSceneIndex;
         }
 
-        result.prototypeSceneIndex = sceneIndices.prototypeSceneIndex;
+        // Are we instantiating, e.g., the instance aggregation scene index
+        // to aggregate instances inside a prototype or for everything outside
+        // any USD prototype?
+        const bool forPrototype = !prototypeName.IsEmpty();
+
+        result.prototypeSceneIndex = sceneIndices1.prototypeSceneIndex;
         if (!result.prototypeSceneIndex) {
             result.prototypeSceneIndex =
                 _ComputePrototypeSceneIndex(
-                    prototypeName, isolatingSceneIndex);
-            sceneIndices.prototypeSceneIndex = result.prototypeSceneIndex;
+                    isolatingSceneIndex,
+                    forPrototype,
+                    prototypeRootOverlayDs);
+            sceneIndices1.prototypeSceneIndex =
+                result.prototypeSceneIndex;
         }
 
         result.instanceAggregationSceneIndex =
-            sceneIndices.instanceAggregationSceneIndex;
+            sceneIndices1.instanceAggregationSceneIndex;
         if (!result.instanceAggregationSceneIndex) {
             result.instanceAggregationSceneIndex =
                 _ComputeInstanceAggregationSceneIndex(
-                    prototypeName, isolatingSceneIndex);
-            sceneIndices.instanceAggregationSceneIndex = result.instanceAggregationSceneIndex;
+                    result.prototypeSceneIndex,
+                    forPrototype);
+            sceneIndices1.instanceAggregationSceneIndex =
+                result.instanceAggregationSceneIndex;
         }
 
         return result;
     }
 
+    void
+    GarbageCollect(const TfToken &prototypeName,
+                   const size_t prototypeRootOverlayDsHash)
+    {
+        auto it = _prototypeToBindingHashToSceneIndices.find(prototypeName);
+        if (it == _prototypeToBindingHashToSceneIndices.end()) {
+            return;
+        }
+        _GarbageCollect(&it->second.hashToSceneIndices, prototypeRootOverlayDsHash);
+        if (!it->second.hashToSceneIndices.empty()) {
+            return;
+        }
+        if (it->second.isolatingSceneIndex) {
+            return;
+        }
+
+        _prototypeToBindingHashToSceneIndices.erase(it);
+    }
+
 private:
+    // Scene indices that can only be created if we have both
+    // the prototype name and the overlay data source.
+    struct _SceneIndices1
+    {
+        HdSceneIndexBasePtr instanceAggregationSceneIndex;
+        HdSceneIndexBasePtr prototypeSceneIndex;
+    };
+
+    // Scene indices that can be created if we have only the
+    // prototype name.
+    struct _SceneIndices2
+    {
+        HdSceneIndexBasePtr isolatingSceneIndex;
+        std::map<size_t, _SceneIndices1> hashToSceneIndices;
+    };
+
     HdSceneIndexBaseRefPtr
-    _ComputeIsolatingSceneIndex(const TfToken &prototypeName) const
+    _ComputeIsolatingSceneIndex(
+        const TfToken &prototypeName) const
     {
         if (prototypeName.IsEmpty()) {
             return UsdImaging_NiPrototypePruningSceneIndex::New(
                 _inputSceneIndex);
         } else {
-            const SdfPath prototypePath =
-                SdfPath::AbsoluteRootPath().AppendChild(prototypeName);
+            // Isolate prototype from UsdImagingStageSceneIndex and
+            // move it under the instancer.
             return UsdImagingRerootingSceneIndex::New(
-                _inputSceneIndex, prototypePath, prototypePath);
+                _inputSceneIndex,
+                // Path of prototype on UsdImagingStageSceneIndex
+                SdfPath::AbsoluteRootPath().AppendChild(prototypeName),
+                UsdImaging_NiPrototypeSceneIndex::GetPrototypePath());
         }
     }
 
     HdSceneIndexBaseRefPtr
     _ComputePrototypeSceneIndex(
-        const TfToken &prototypeName,
-        HdSceneIndexBaseRefPtr const &commonSceneIndex) const
+        HdSceneIndexBaseRefPtr const &isolatingSceneIndex,
+        const bool forPrototype,
+        HdContainerDataSourceHandle const &prototypeRootOverlayDs)
     {
-        const SdfPath prototypeRoot =
-            prototypeName.IsEmpty()
-            ? SdfPath()
-            : SdfPath::AbsoluteRootPath().AppendChild(prototypeName);
-        
-        return UsdImaging_NiPrototypeSceneIndex::New(
-            commonSceneIndex, prototypeRoot);
+        HdSceneIndexBaseRefPtr sceneIndex = isolatingSceneIndex;
+
+        sceneIndex = 
+            UsdImaging_NiPrototypeSceneIndex::New(
+                sceneIndex,
+                forPrototype,
+                prototypeRootOverlayDs);
+        // We insert the flattening scene index at every recursion level of
+        // native instancing.
+        //
+        // Thus, if we have a nested instance with opinions inside a prototype
+        // instanced by a nested instance with opinions, we will flatten them
+        // correctly.
+        sceneIndex =
+            HdFlatteningSceneIndex::New(
+                sceneIndex,
+                UsdImagingFlattenedDataSourceProviders());
+        if (_sceneIndexAppendCallback) {
+            // Typically adds the UsdImagingDrawModeSceneIndex.
+            sceneIndex =
+                _sceneIndexAppendCallback(sceneIndex);
+        }
+
+        return sceneIndex;
     }
 
     HdSceneIndexBaseRefPtr
     _ComputeInstanceAggregationSceneIndex(
-        const TfToken &prototypeName,
-        HdSceneIndexBaseRefPtr const &commonSceneIndex) const
+        HdSceneIndexBaseRefPtr const &prototypeSceneIndex,
+        const bool forPrototype)
     {
-        const SdfPath prototypeRoot =
-            prototypeName.IsEmpty()
-            ? SdfPath()
-            : SdfPath::AbsoluteRootPath().AppendChild(prototypeName);
+        return
+            UsdImaging_NiInstanceAggregationSceneIndex::New(
+                prototypeSceneIndex,
+                forPrototype,
+                _instanceDataSourceNames);
+    }
 
-        return UsdImaging_NiInstanceAggregationSceneIndex::New(
-            commonSceneIndex, prototypeRoot);
+    static
+    void
+    _GarbageCollect(std::map<size_t, _SceneIndices1> * hashToSceneIndices,
+                    const size_t prototypeRootOverlayDsHash)
+    {
+        auto it = hashToSceneIndices->find(prototypeRootOverlayDsHash);
+        if (it == hashToSceneIndices->end()) {
+            return;
+        }
+        if (it->second.instanceAggregationSceneIndex) {
+            return;
+        }
+        if (it->second.prototypeSceneIndex) {
+            return;
+        }
+
+        hashToSceneIndices->erase(it);
     }
 
     HdSceneIndexBaseRefPtr const _inputSceneIndex;
+    const TfTokenVector _instanceDataSourceNames;
+    const SceneIndexAppendCallback _sceneIndexAppendCallback;
 
-    struct _SceneIndices
-    {
-        HdSceneIndexBasePtr isolatingSceneIndex;
-        HdSceneIndexBasePtr instanceAggregationSceneIndex;
-        HdSceneIndexBasePtr prototypeSceneIndex;
-    };
-
-    // We don't clear this map - but the keys will always be
-    // __Prototype_1, __Prototype_2,
-    // and there won't be too many of those.
-    std::map<TfToken, _SceneIndices> _prototypeToSceneIndices;
+    // Nested map.
+    std::map<TfToken, _SceneIndices2> _prototypeToBindingHashToSceneIndices;
 };
 
 // An RAII helper that inserts the given scene index followed by a
@@ -174,7 +276,12 @@ public:
         HdMergingSceneIndexRefPtr const &mergingSceneIndex)
       : _rerootingSceneIndex(
           UsdImagingRerootingSceneIndex::New(
-              sceneIndex, SdfPath::AbsoluteRootPath(), prefix))
+              sceneIndex,
+              // Re-root, but only prims under the instancer,
+              // i.e., the instancer and the prototype.
+              // This way paths inside the prototype pointing to
+              // stuff outside the prototype will not be changed.
+              UsdImaging_NiPrototypeSceneIndex::GetInstancerPath(), prefix))
       , _mergingSceneIndex(mergingSceneIndex)
     {
         _mergingSceneIndex->AddInputScene(_rerootingSceneIndex, prefix);
@@ -192,33 +299,47 @@ private:
 
 UsdImagingNiPrototypePropagatingSceneIndexRefPtr
 UsdImagingNiPrototypePropagatingSceneIndex::New(
-    HdSceneIndexBaseRefPtr const &inputSceneIndex)
+    HdSceneIndexBaseRefPtr const &inputSceneIndex,
+    const TfTokenVector &instanceDataSourceNames,
+    const SceneIndexAppendCallback &sceneIndexAppendCallback)
 {
     return _New(/* prototypeName = */ TfToken(),
-                std::make_shared<_SceneIndexCache>(inputSceneIndex));
+                /* protoypeRootDs =*/ nullptr,
+                std::make_shared<_SceneIndexCache>(
+                    inputSceneIndex,
+                    instanceDataSourceNames,
+                    sceneIndexAppendCallback));
 }
 
 UsdImagingNiPrototypePropagatingSceneIndexRefPtr
 UsdImagingNiPrototypePropagatingSceneIndex::_New(
     const TfToken &prototypeName,
+    HdContainerDataSourceHandle const &prototypeRootOverlayDs,
     _SceneIndexCacheSharedPtr const &cache)
 {
     return TfCreateRefPtr(
-        new UsdImagingNiPrototypePropagatingSceneIndex(prototypeName, cache));
+        new UsdImagingNiPrototypePropagatingSceneIndex(
+            prototypeName, prototypeRootOverlayDs, cache));
 }
 
 UsdImagingNiPrototypePropagatingSceneIndex::
 UsdImagingNiPrototypePropagatingSceneIndex(
         const TfToken &prototypeName,
+        HdContainerDataSourceHandle const &prototypeRootOverlayDs,
         _SceneIndexCacheSharedPtr const &cache)
   : _prototypeName(prototypeName)
+  , _prototypeRootOverlayDsHash(
+      HdDataSourceHash(prototypeRootOverlayDs, 0.0f, 0.0f))
   , _cache(cache)
   , _mergingSceneIndex(HdMergingSceneIndex::New())
   , _instanceAggregationSceneIndexObserver(this)
   , _mergingSceneIndexObserver(this)
 {
     const _SceneIndexCache::SceneIndices sceneIndices =
-        _cache->GetSceneIndicesForPrototype(prototypeName);
+        _cache->GetSceneIndicesForPrototype(
+            prototypeName, _prototypeRootOverlayDsHash, prototypeRootOverlayDs);
+
+    _instanceAggregationSceneIndex = sceneIndices.instanceAggregationSceneIndex;
 
     _mergingSceneIndex->AddInputScene(
         sceneIndices.prototypeSceneIndex,
@@ -235,6 +356,19 @@ UsdImagingNiPrototypePropagatingSceneIndex(
     _Populate(sceneIndices.instanceAggregationSceneIndex);
 }
 
+UsdImagingNiPrototypePropagatingSceneIndex::
+~UsdImagingNiPrototypePropagatingSceneIndex()
+{
+    // We need to release all references we have to the scene indices...
+    _instancersToMergingSceneIndexEntry.clear();
+    _instanceAggregationSceneIndex = nullptr;
+    _mergingSceneIndex = nullptr;
+    
+    // ... before we can garbage collect.
+    _cache->GarbageCollect(_prototypeName, _prototypeRootOverlayDsHash);
+}
+    
+
 void
 UsdImagingNiPrototypePropagatingSceneIndex::_Populate(
     HdSceneIndexBaseRefPtr const &instanceAggregationSceneIndex)
@@ -246,25 +380,27 @@ UsdImagingNiPrototypePropagatingSceneIndex::_Populate(
     }
 }
 
+static
+HdContainerDataSourceHandle
+_GetBindingScopeDataSource(HdSceneIndexBaseRefPtr const &sceneIndex,
+                           const SdfPath &primPath)
+{
+    const SdfPath bindingScope =
+        UsdImaging_NiInstanceAggregationSceneIndex::
+        GetBindingScopeFromInstancerPath(primPath);
+
+    return sceneIndex->GetPrim(bindingScope).dataSource;
+}
+
 void
 UsdImagingNiPrototypePropagatingSceneIndex::_AddPrim(const SdfPath &primPath)
 {
-    // Use the convention from the UsdImaging_NiInstanceAggregationSceneIndex
-    // that instancers will have paths such as
-    // /Foo/__Usd_Prototypes/Binding435..f52/__Prototype_1
-    // find them.
-    if (primPath.GetPathElementCount() < 3) {
+    const TfToken prototypeName =
+        UsdImaging_NiInstanceAggregationSceneIndex::
+        GetPrototypeNameFromInstancerPath(primPath);
+    if (prototypeName.IsEmpty()) {
         return;
     }
-
-    // Path has __Usd_Prototypes at correct place.
-    const TfToken parentParentName =
-        primPath.GetParentPath().GetParentPath().GetNameToken();
-    if (parentParentName != UsdImagingTokens->propagatedPrototypesScope) {
-        return;
-    }
-
-    const TfToken prototypeName = primPath.GetNameToken();
 
     _MergingSceneIndexEntryUniquePtr &entry =
         _instancersToMergingSceneIndexEntry[primPath];
@@ -275,7 +411,29 @@ UsdImagingNiPrototypePropagatingSceneIndex::_AddPrim(const SdfPath &primPath)
     // Insert scene index for given instancer.
     entry = std::make_unique<_MergingSceneIndexEntry>(
         primPath,
-        UsdImagingNiPrototypePropagatingSceneIndex::_New(prototypeName, _cache),
+        UsdImagingNiPrototypePropagatingSceneIndex::_New(
+            prototypeName,
+            // Apply the container data source from the binding scope
+            // to the prototype root.
+            // This data source contains opinions of the
+            // aggregated native instances about, e.g., purpose.
+            //
+            // Note that the flattening scene index will
+            // propagate these opinions to the descendants of
+            // the prototype root without stronger opinion.
+            //
+            // The bool data source model:applyDrawMode in the container
+            // data source has a special role. It will not be touched
+            // by the flattening scene index. However, the draw mode
+            // scene index will turn the prototype into a draw mode
+            // standin if model:applyDrawMode is true and model:drawMode
+            // is non-trivial. The draw mode scene index would be called
+            // through the AppendSceneIndexCallback.
+
+            /* prototypeRootOverlayDs = */
+            _GetBindingScopeDataSource(
+                _instanceAggregationSceneIndex, primPath),
+            _cache),
         _mergingSceneIndex);
 }
 
@@ -359,6 +517,15 @@ _InstanceAggregationSceneIndexObserver::PrimsRemoved(
     }
 }
 
+void
+UsdImagingNiPrototypePropagatingSceneIndex::
+_InstanceAggregationSceneIndexObserver::PrimsRenamed(
+    const HdSceneIndexBase &sender,
+    const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
+}
+
 UsdImagingNiPrototypePropagatingSceneIndex::
 _MergingSceneIndexObserver::_MergingSceneIndexObserver(
     UsdImagingNiPrototypePropagatingSceneIndex * const owner)
@@ -391,6 +558,15 @@ _MergingSceneIndexObserver::PrimsRemoved(
     const RemovedPrimEntries &entries)
 {
     _owner->_SendPrimsRemoved(entries);
+}
+
+void
+UsdImagingNiPrototypePropagatingSceneIndex::
+_MergingSceneIndexObserver::PrimsRenamed(
+    const HdSceneIndexBase &sender,
+    const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
