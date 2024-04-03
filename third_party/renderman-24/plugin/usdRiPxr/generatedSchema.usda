@@ -170,6 +170,26 @@ class "PxrCameraProjectionAPI" (
 
 class "PxrAttributesAPI"
 {
+    string primvars:ri:attributes:bake:activeudims = "" (
+        displayGroup = "Common"
+        displayName = "Active Udims"
+        doc = '''
+                Active udims for Integrator baking of texture atlases.  Lists and ranges of udims 
+                can be provided in the string, for example:
+                  Attribute "bake" "string activeudims" "1001,1003,1005-1006".
+                The default is "" which means all udims get baked.
+            '''
+    )
+    string primvars:ri:attributes:bake:udimresolutions = "" (
+        displayGroup = "Common"
+        displayName = "Udim Resolutions"
+        doc = '''
+                Udim texure resolutions for Integrator baking of texture atlases.  Lists and ranges
+                of udims can be provided in the string, for example:
+                Attribute "bake" "string udimresolutions" "1001 512 512  1002,1003 64 32  1005-1006 16 16"
+                If the string is empty (the default) then the Display Format resolution will be used.
+            '''
+    )
     int primvars:ri:attributes:grouping:id = 0 (
         displayGroup = "Common"
         displayName = "Grouping Id"
@@ -630,16 +650,18 @@ class "PxrOptionsAPI"
     point3f ri:hider:bakebboxmax = (1e30, 1e30, 1e30) (
         displayGroup = "Baking"
         displayName = "Baking bbox max"
-        doc = """
-                Bounding box max for baking 3D point clouds.  In world space.
-            """
+        doc = '''
+                Bounding box max for "integrator" baking of 3D point clouds (and for the integrator
+                part of "all" baking.  In world space.  Ignored for "pattern" baking and for 2D baking.
+            '''
     )
     point3f ri:hider:bakebboxmin = (-1e30, -1e30, -1e30) (
         displayGroup = "Baking"
         displayName = "Baking bbox min"
-        doc = """
-                Bounding box min for baking 3D point clouds.  In world space.
-            """
+        doc = '''
+                Bounding box min for "integrator" baking of 3D point clouds (and for the integrator
+                part of "all" baking.  In world space.  Ignored for "pattern" baking and for 2D baking.
+            '''
     )
     token ri:hider:bakemode = "pattern" (
         allowedTokens = ["pattern", "integrator", "all"]
@@ -741,6 +763,17 @@ class "PxrOptionsAPI"
         doc = """
                 Specifies whether or not to invert the T texture coordinate when baking integrator
                 results.
+            """
+    )
+    bool ri:hider:jitter = 1 (
+        displayGroup = "Common"
+        displayName = "Jitter"
+        doc = """
+                This option toggles the jitter (variation) in camera samples.
+                By default, this hider option is enabled (set to 1), meaning that camera samples
+                will be placed randomly in a pixel location. When it is turned off,
+                camera rays are placed in the center of the pixel. When turned off, 
+                surface edges will appear aliased and jagged.
             """
     )
     int ri:hider:maxsamples = 0 (
@@ -1304,6 +1337,15 @@ class "PxrOptionsAPI"
         doc = """
                 Set a new world origin to give better floating point precision.
             """
+    )
+    string ri:volume:aggregatespace = "world" (
+        displayGroup = "Volumes"
+        displayName = "Aggregate space"
+        doc = '''
+                Space in which to compute aggregate volume metadata. Valid spaces are
+                "world" and "camera". Generally the space should be chosen to minimize
+                the range of motion of the volumes.
+            '''
     )
 }
 

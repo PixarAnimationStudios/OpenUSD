@@ -21,6 +21,20 @@
                         ], 
                         "displayName": "MakeSomeStuff",
                         "priority" : 0
+                    },
+                    "DependsOnChildNamesProceduralPlugin": {
+                        "bases": [
+                            "HdGpGenerativeProceduralPlugin"
+                        ], 
+                        "displayName": "DependsOnChildNames",
+                        "priority" : 0
+                    },
+                    "AsyncTestProceduralPlugin": {
+                        "bases": [
+                            "HdGpGenerativeProceduralPlugin"
+                        ], 
+                        "displayName": "AsyncTest",
+                        "priority" : 0
                     }
                 }
             }

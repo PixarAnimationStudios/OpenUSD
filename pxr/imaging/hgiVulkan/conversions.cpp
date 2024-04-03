@@ -156,12 +156,14 @@ static_assert(HgiTextureUsageCustomBitsBegin == 1 << 5, "");
 static const uint32_t
 _BufferUsageTable[][2] =
 {
-    {HgiBufferUsageUniform, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT},
-    {HgiBufferUsageIndex32, VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
-    {HgiBufferUsageVertex,  VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
-    {HgiBufferUsageStorage, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT},
+    {HgiBufferUsageUniform,  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT},
+    {HgiBufferUsageIndex32,  VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
+    {HgiBufferUsageVertex,   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
+    {HgiBufferUsageStorage,  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT},
+    {HgiBufferUsageIndirect, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT},
+
 };
-static_assert(HgiBufferUsageCustomBitsBegin == 1 << 4, "");
+static_assert(HgiBufferUsageCustomBitsBegin == 1 << 5, "");
 
 static const uint32_t
 _CullModeTable[HgiCullModeCount][2] =
@@ -198,9 +200,10 @@ _BindResourceTypeTable[HgiBindResourceTypeCount][2] =
     {HgiBindResourceTypeCombinedSamplerImage, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER},
     {HgiBindResourceTypeStorageImage,         VK_DESCRIPTOR_TYPE_STORAGE_IMAGE},
     {HgiBindResourceTypeUniformBuffer,        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER},
-    {HgiBindResourceTypeStorageBuffer,        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER}
+    {HgiBindResourceTypeStorageBuffer,        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER},
+    {HgiBindResourceTypeTessFactors,          VK_DESCRIPTOR_TYPE_STORAGE_BUFFER},
 };
-static_assert(HgiBindResourceTypeCount==6, "");
+static_assert(HgiBindResourceTypeCount==7, "");
 
 static const uint32_t
 _blendEquationTable[HgiBlendOpCount][2] =

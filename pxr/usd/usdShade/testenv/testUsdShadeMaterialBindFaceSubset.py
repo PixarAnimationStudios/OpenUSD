@@ -63,28 +63,6 @@ class TestUsdShadeMaterialBindFaceSubset(unittest.TestCase):
                             UsdShade.Tokens.materialBind)
         self.assertTrue(valid)
 
-        (valid, reason) = UsdGeom.Subset.ValidateSubsets(
-                            [subset1, subset2], 
-                            elementCount=16,
-                            familyType=UsdGeom.Tokens.nonOverlapping)
-        self.assertTrue(valid)
-
-        # Not quite a partition yet.
-        (valid, reason) = UsdGeom.Subset.ValidateSubsets(
-                            [subset1, subset2], 
-                            elementCount=16,
-                            familyType=UsdGeom.Tokens.partition)
-        self.assertFalse(valid)
-
-        # Add a subset that makes the family a partition.
-        subset3 = UsdShade.MaterialBindingAPI(sphere).CreateMaterialBindSubset(
-            'subset3', faceIndices3)
-        (valid, reason) = UsdGeom.Subset.ValidateSubsets(
-                            [subset1, subset2, subset3], 
-                            elementCount=16,
-                            familyType=UsdGeom.Tokens.partition)
-        self.assertTrue(valid)
-
         self.assertEqual(
             UsdShade.MaterialBindingAPI(sphere) \
             .GetMaterialBindSubsetsFamilyType(),UsdGeom.Tokens.nonOverlapping)
@@ -92,6 +70,15 @@ class TestUsdShadeMaterialBindFaceSubset(unittest.TestCase):
         UsdShade.MaterialBindingAPI(sphere).SetMaterialBindSubsetsFamilyType(
                 UsdGeom.Tokens.partition)
 
+        # Not quite a partition yet.
+        (valid, reason) = UsdGeom.Subset.ValidateFamily(geomSphere, 
+                            UsdGeom.Tokens.face, 
+                            UsdShade.Tokens.materialBind)
+        self.assertFalse(valid)
+
+        # Add a subset that makes the family a partition.
+        subset3 = UsdShade.MaterialBindingAPI(sphere).CreateMaterialBindSubset(
+            'subset3', faceIndices3)
         (valid, reason) = UsdGeom.Subset.ValidateFamily(geomSphere, 
                             UsdGeom.Tokens.face, 
                             UsdShade.Tokens.materialBind)

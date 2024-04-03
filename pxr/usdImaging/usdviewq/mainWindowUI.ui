@@ -527,6 +527,7 @@
             <addaction name="separator"/>
             <addaction name="menuBackground_Color"/>
             <addaction name="actionCull_Backfaces"/>
+            <addaction name="actionDomeLightTexturesVisible"/>
            </widget>
            <widget class="QMenu" name="menuCamera">
             <property name="title">
@@ -1932,6 +1933,17 @@
    </property>
    <property name="text">
     <string>Enable Default Dome Light</string>
+   </property>
+  </action>
+  <action name="actionDomeLightTexturesVisible">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Dome Light Textures</string>
    </property>
   </action>
   <action name="actionLevel_6">

@@ -27,12 +27,11 @@
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/ostreamMethods.h"
-
-#include <boost/functional/hash.hpp>
 
 #include <limits>
 
@@ -392,6 +391,113 @@ PcpMapFunction::MapTargetToSource(const SdfPath & path) const
                 /* invert */ true);
 }
 
+SdfPathExpression
+PcpMapFunction::MapSourceToTarget(
+    const SdfPathExpression &pathExpr,
+    std::vector<SdfPathExpression::PathPattern> *unmappedPatterns,
+    std::vector<SdfPathExpression::ExpressionReference> *unmappedRefs
+    ) const
+{
+    return _MapPathExpressionImpl(/* invert */ false,
+                                  pathExpr, unmappedPatterns, unmappedRefs);
+}
+
+SdfPathExpression
+PcpMapFunction::MapTargetToSource(
+    const SdfPathExpression &pathExpr,
+    std::vector<SdfPathExpression::PathPattern> *unmappedPatterns,
+    std::vector<SdfPathExpression::ExpressionReference> *unmappedRefs
+    ) const
+{
+    return _MapPathExpressionImpl(/* invert */ true,
+                                  pathExpr, unmappedPatterns, unmappedRefs);
+}
+
+SdfPathExpression
+PcpMapFunction::_MapPathExpressionImpl(
+    bool invert,
+    const SdfPathExpression &pathExpr,
+    std::vector<SdfPathExpression::PathPattern> *unmappedPatterns,
+    std::vector<SdfPathExpression::ExpressionReference> *unmappedRefs
+    ) const
+{
+    using PathExpr = SdfPathExpression;
+    using Op = PathExpr::Op;
+    using PathPattern = PathExpr::PathPattern;
+    using ExpressionReference = PathExpr::ExpressionReference;
+    std::vector<SdfPathExpression> stack;
+
+    auto map = [&](SdfPath const &path) {
+        return _Map(path, _data.begin(), _data.numPairs,
+                    _data.hasRootIdentity, invert);
+    };
+
+    auto logic = [&stack](Op op, int argIndex) {
+        if (op == PathExpr::Complement) {
+            if (argIndex == 1) {
+                stack.back() =
+                    PathExpr::MakeComplement(std::move(stack.back()));
+            }
+        }
+        else {
+            if (argIndex == 2) {
+                PathExpr arg2 = std::move(stack.back());
+                stack.pop_back();
+                stack.back() = PathExpr::MakeOp(
+                    op, std::move(stack.back()), std::move(arg2));
+            }
+        }
+    };
+
+    auto mapRef =
+        [&stack, &map, &unmappedRefs](ExpressionReference const &ref) {
+        if (ref.path.IsEmpty()) {
+            // If empty path, retain the reference unchanged.
+            stack.push_back(PathExpr::MakeAtom(ref));
+        }
+        else {
+            SdfPath mapped = map(ref.path);
+            // This reference is outside the domain, push the Nothing()
+            // subexpression.
+            if (mapped.IsEmpty()) {
+                if (unmappedRefs) {
+                    unmappedRefs->push_back(ref);
+                }
+                stack.push_back(SdfPathExpression::Nothing());
+            }
+            // Otherwise push the mapped reference.
+            else {
+                stack.push_back(PathExpr::MakeAtom(
+                                    PathExpr::ExpressionReference {
+                                        mapped, ref.name }));
+            }
+        }
+    };
+    
+    auto mapPattern =
+        [&stack, &map, &unmappedPatterns](PathPattern const &pattern) {
+        SdfPath mapped = map(pattern.GetPrefix());
+        // If the prefix path is outside the domain, push the Nothing()
+        // subexpression.
+        if (mapped.IsEmpty()) {
+            if (unmappedPatterns) {
+                unmappedPatterns->push_back(pattern);
+            }
+            stack.push_back(SdfPathExpression::Nothing());
+        }
+        // Otherwise push the mapped pattern.
+        else {
+            PathPattern mappedPattern(pattern);
+            mappedPattern.SetPrefix(mapped);
+            stack.push_back(PathExpr::MakeAtom(mappedPattern));
+        }
+    };
+
+    // Walk the expression to map.
+    pathExpr.Walk(logic, mapRef, mapPattern);
+    return stack.empty() ? SdfPathExpression {} : stack.back();
+}
+
 PcpMapFunction
 PcpMapFunction::Compose(const PcpMapFunction &inner) const
 {
@@ -535,14 +641,7 @@ PcpMapFunction::GetString() const
 size_t
 PcpMapFunction::Hash() const
 {
-    size_t hash = _data.hasRootIdentity;
-    boost::hash_combine(hash, _data.numPairs);
-    for (PathPair const &p: _data) {
-        boost::hash_combine(hash, p.first.GetHash());
-        boost::hash_combine(hash, p.second.GetHash());
-    }
-    boost::hash_combine(hash, _offset.GetHash());
-    return hash;
+    return TfHash{}(*this);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/simpleLightingShader.h"
+#include "pxr/imaging/hdSt/binding.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/textureObject.h"
@@ -39,7 +40,6 @@
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/binding.h"
 
 #include "pxr/imaging/hio/glslfx.h"
 
@@ -48,7 +48,7 @@
 
 #include "pxr/base/tf/staticTokens.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <sstream>
 
@@ -90,18 +90,24 @@ HdStSimpleLightingShader::ComputeHash() const
         useShadows ? _lightingContext->ComputeNumShadowsUsed() : 0;
 
     size_t hash = glslfxFile.Hash();
-    boost::hash_combine(hash, numLights);
-    boost::hash_combine(hash, useShadows);
-    boost::hash_combine(hash, numShadows);
-    boost::hash_combine(hash, _lightingContext->ComputeShaderSourceHash());
+    hash = TfHash::Combine(
+        hash,
+        numLights,
+        useShadows,
+        numShadows,
+        _lightingContext->ComputeShaderSourceHash()
+    );
 
     for (const HdStShaderCode::NamedTextureHandle &namedHandle :
         _namedTextureHandles) {
         
         // Use name and hash only - not the texture itself as this
         // does not affect the generated shader source.
-        boost::hash_combine(hash, namedHandle.name);
-        boost::hash_combine(hash, namedHandle.hash);
+        hash = TfHash::Combine(
+            hash,
+            namedHandle.name,
+            namedHandle.hash
+        );
     }
 
     return (ID)hash;
@@ -169,8 +175,6 @@ HdStSimpleLightingShader::BindResources(const int program,
     }
     
     HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
-
-    binder.BindShaderResources(this);
 }
 
 /* virtual */
@@ -186,14 +190,9 @@ HdStSimpleLightingShader::UnbindResources(const int program,
 }
 
 void
-HdStSimpleLightingShader::AddBufferBinding(HdBindingRequest const& req)
+HdStSimpleLightingShader::AddBufferBinding(HdStBindingRequest const& req)
 {
-    auto it = _customBuffers.insert({req.GetName(), req});
-    // Entry already existed and was equal to what we want to set it.
-    if (!it.second && it.first->second == req) {
-        return;
-    }
-    it.first->second = req;
+    _customBuffers[req.GetName()] = req;
 }
 
 void
@@ -210,7 +209,7 @@ HdStSimpleLightingShader::ClearBufferBindings()
 
 /*virtual*/
 void
-HdStSimpleLightingShader::AddBindings(HdBindingRequestVector *customBindings)
+HdStSimpleLightingShader::AddBindings(HdStBindingRequestVector *customBindings)
 {
     customBindings->reserve(customBindings->size() + _customBuffers.size() + 1);
     TF_FOR_ALL(it, _customBuffers) {
@@ -273,31 +272,6 @@ HdSt_MaterialParamVector const&
 HdStSimpleLightingShader::GetParams() const 
 {
     return _lightTextureParams;
-}
-
-void
-HdStSimpleLightingShader::SetLightingStateFromOpenGL()
-{
-    _lightingContext->SetStateFromOpenGL();
-}
-
-void
-HdStSimpleLightingShader::SetLightingState(
-    GlfSimpleLightingContextPtr const &src)
-{
-    if (src) {
-        _useLighting = true;
-        _lightingContext->SetUseLighting(!src->GetLights().empty());
-        _lightingContext->SetLights(src->GetLights());
-        _lightingContext->SetMaterial(src->GetMaterial());
-        _lightingContext->SetSceneAmbient(src->GetSceneAmbient());
-        _lightingContext->SetShadows(src->GetShadows());
-    } else {
-        // XXX:
-        // if src is null, turn off lights (this is temporary used for shadowmap drawing).
-        // see GprimUsdBaseIcBatch::Draw()
-        _useLighting = false;
-    }
 }
 
 static

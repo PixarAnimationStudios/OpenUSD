@@ -24,18 +24,18 @@
 #include "pxr/usdImaging/usdImaging/coordSysAPIAdapter.h"
 
 #include "pxr/usd/usdShade/coordSysAPI.h"
+#include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/imaging/hd/coordSysBindingSchema.h"
+#include "pxr/imaging/hd/coordSysSchema.h"
+#include "pxr/imaging/hd/dependenciesSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/xformSchema.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/tf/stringUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (coordSys)
-    (binding)
-);
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -46,48 +46,6 @@ TF_REGISTRY_FUNCTION(TfType)
 
 // ----------------------------------------------------------------------------
 
-namespace
-{
-
-class _CoordsSysContainerDataSource : public HdContainerDataSource
-{
-public:
-    HD_DECLARE_DATASOURCE(_CoordsSysContainerDataSource);
-
-    _CoordsSysContainerDataSource(
-            const UsdPrim &prim,
-            const TfToken &name,
-            const UsdImagingDataSourceStageGlobals &stageGlobals) :
-        _coordSysAPI(prim, name),
-        _stageGlobals(stageGlobals) {}
-
-    TfTokenVector GetNames() override {
-        return { _coordSysAPI.GetName() };
-    }
-
-    HdDataSourceBaseHandle Get(const TfToken &name) override {
-        if (name == _coordSysAPI.GetName()) {
-            UsdShadeCoordSysAPI::Binding binding = 
-                _coordSysAPI.GetLocalBinding();
-            if (!binding.name.IsEmpty()) {
-                return HdRetainedTypedSampledDataSource<SdfPath>::New(
-                        binding.bindingRelPath);
-            }
-        }
-        return nullptr;
-    }
-
-private:
-    UsdShadeCoordSysAPI _coordSysAPI;
-    const UsdImagingDataSourceStageGlobals &_stageGlobals;
-};
-
-HD_DECLARE_DATASOURCE_HANDLES(_CoordsSysContainerDataSource);
-
-} // anonymous namespace
-
-// ----------------------------------------------------------------------------
-
 HdContainerDataSourceHandle
 UsdImagingCoordSysAPIAdapter::GetImagingSubprimData(
     UsdPrim const& prim,
@@ -95,15 +53,26 @@ UsdImagingCoordSysAPIAdapter::GetImagingSubprimData(
     TfToken const& appliedInstanceName,
     const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
-    if (!subprim.IsEmpty() || appliedInstanceName.IsEmpty()) {
+    if (appliedInstanceName.IsEmpty()) {
         return nullptr;
     }
 
-    return HdRetainedContainerDataSource::New(
-        HdCoordSysBindingSchemaTokens->coordSysBinding,
-        _CoordsSysContainerDataSource::New(
-            prim, appliedInstanceName, stageGlobals)
-    );
+    if (subprim.IsEmpty()) {
+        UsdShadeCoordSysAPI::Binding binding =
+            UsdShadeCoordSysAPI(prim, appliedInstanceName).GetLocalBinding();
+        if (binding.name.IsEmpty()) {
+            return nullptr;
+        }
+
+        return HdRetainedContainerDataSource::New(
+            HdCoordSysBindingSchemaTokens->coordSysBinding,
+            HdRetainedContainerDataSource::New(
+                appliedInstanceName,
+                HdRetainedTypedSampledDataSource<SdfPath>::New(
+                    binding.coordSysPrimPath)));
+    }
+
+    return nullptr;
 }
 
 HdDataSourceLocatorSet
@@ -111,22 +80,20 @@ UsdImagingCoordSysAPIAdapter::InvalidateImagingSubprim(
     UsdPrim const& prim,
     TfToken const& subprim,
     TfToken const& appliedInstanceName,
-    TfTokenVector const& properties)
+    TfTokenVector const& properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
-    if (!subprim.IsEmpty() || appliedInstanceName.IsEmpty()) {
+    if (appliedInstanceName.IsEmpty()) {
         return HdDataSourceLocatorSet();
     }
 
-    const TfTokenVector &tokens = 
-        {_tokens->coordSys, appliedInstanceName, _tokens->binding};
-
-    const std::string &bindingName = SdfPath::JoinIdentifier(tokens);
-
-    for (const TfToken &propertyName : properties) {
-        if (propertyName == bindingName) {
-            return HdDataSourceLocator(
-                HdCoordSysBindingSchemaTokens->coordSysBinding, 
-                appliedInstanceName);
+    if (subprim.IsEmpty()) {
+        for (const TfToken &propertyName : properties) {
+             // Could use coord sys name for more targeted invalidation
+             // to improve performance.
+            if (UsdShadeCoordSysAPI::CanContainPropertyName(propertyName)) {
+                return HdCoordSysBindingSchema::GetDefaultLocator();
+            }
         }
     }
 

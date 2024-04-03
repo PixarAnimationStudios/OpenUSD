@@ -41,7 +41,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-using HdBindingRequestVector = std::vector<class HdBindingRequest>;
+using HdStBindingRequestVector = std::vector<class HdStBindingRequest>;
 
 using HdStShaderCodeSharedPtr =
     std::shared_ptr<class HdStShaderCode>;
@@ -58,8 +58,8 @@ using HdBufferArrayRangeSharedPtr =
     std::shared_ptr<class HdBufferArrayRange>;
 using HdStTextureHandleSharedPtr =
     std::shared_ptr<class HdStTextureHandle>;
-using HdComputationSharedPtr =
-    std::shared_ptr<class HdComputation>;
+using HdStComputationSharedPtr =
+    std::shared_ptr<class HdStComputation>;
 
 class HioGlslfx;
 class HdSt_ResourceBinder;
@@ -183,7 +183,7 @@ public:
                                  HdSt_ResourceBinder const &binder) = 0;
 
     /// Add custom bindings (used by codegen)
-    virtual void AddBindings(HdBindingRequestVector* customBindings) = 0;
+    virtual void AddBindings(HdStBindingRequestVector* customBindings) = 0;
 
     /// Material tags can be set in the meta-data of a glslfx file to control
     /// what rprim collection that prims using this shader should go into.
@@ -209,7 +209,7 @@ public:
 
         HDST_API
         void AddComputation(HdBufferArrayRangeSharedPtr const &range,
-                            HdComputationSharedPtr const &computation,
+                            HdStComputationSharedPtr const &computation,
                             HdStComputeQueue const queue);
         
         HdStResourceRegistry * GetResourceRegistry() const {

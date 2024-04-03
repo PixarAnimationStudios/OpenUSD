@@ -226,35 +226,27 @@ HdxRenderTask::_SetHdStRenderPassState(HdTaskContext *ctx,
     // it can access rprimIDs populated in RenderTask::_Sync.
     VtValue vo = (*ctx)[HdxTokens->selectionOffsets];
     VtValue vu = (*ctx)[HdxTokens->selectionUniforms];
-    VtValue vc = (*ctx)[HdxTokens->selectionPointColors];
 
     HdStRenderPassShaderSharedPtr renderPassShader
         = renderPassState->GetRenderPassShader();
 
-    if (!vo.IsEmpty() && !vu.IsEmpty() && !vc.IsEmpty()) {
+    if (!vo.IsEmpty() && !vu.IsEmpty()) {
         HdBufferArrayRangeSharedPtr obar
             = vo.Get<HdBufferArrayRangeSharedPtr>();
         HdBufferArrayRangeSharedPtr ubar
             = vu.Get<HdBufferArrayRangeSharedPtr>();
-        HdBufferArrayRangeSharedPtr cbar
-            = vc.Get<HdBufferArrayRangeSharedPtr>();
 
         renderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::SSBO,
-                             HdxTokens->selectionOffsets, obar,
-                             /*interleave*/false));
+            HdStBindingRequest(HdStBinding::SSBO,
+                               HdxTokens->selectionOffsets, obar,
+                               /*interleave*/false));
         renderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO,
-                             HdxTokens->selectionUniforms, ubar,
-                             /*interleave*/true));
-        renderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::SSBO,
-                             HdxTokens->selectionPointColors, cbar,
-                             /*interleave*/false));
+            HdStBindingRequest(HdStBinding::UBO,
+                               HdxTokens->selectionUniforms, ubar,
+                               /*interleave*/true));
     } else {
         renderPassShader->RemoveBufferBinding(HdxTokens->selectionOffsets);
         renderPassShader->RemoveBufferBinding(HdxTokens->selectionUniforms);
-        renderPassShader->RemoveBufferBinding(HdxTokens->selectionPointColors);
     }
 }
 

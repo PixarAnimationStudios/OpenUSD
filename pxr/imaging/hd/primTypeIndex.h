@@ -155,7 +155,8 @@ public:
     /// Also updates an internal list of scene delegates for the dirty prims.
     ///
     void SyncPrims(HdChangeTracker &tracker,
-                   HdRenderParam *renderParam);
+                   HdRenderParam *renderParam,
+                   HdRenderDelegate *renderDelegate);
     
     /// Returns a vector of unique scene delegates corresponding to the dirty
     /// prims that were sync'd in SyncPrims.
@@ -190,6 +191,7 @@ private:
     _PrimTypeList _entries;
     _TypeIndex    _index;
     HdSceneDelegatePtrVector _dirtyPrimDelegates;
+    TfTokenVector _primTypeNames;
 
 
     // Template methods that are expected to be specialized on PrimType.

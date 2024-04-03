@@ -29,8 +29,7 @@
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/trace/trace.h"
-
-#include <boost/preprocessor/seq/for_each.hpp>
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -298,13 +297,13 @@ ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION
 
 // Explicitly instantiate templated getters for all Sdf value
 // types.
-#define _INSTANTIATE_GET(r, unused, elem)                               \
+#define _INSTANTIATE_GET(unused, elem)                                  \
     template USD_API bool UsdAttributeQuery::_Get(                      \
         SDF_VALUE_CPP_TYPE(elem)*, UsdTimeCode) const;                  \
     template USD_API bool UsdAttributeQuery::_Get(                      \
         SDF_VALUE_CPP_ARRAY_TYPE(elem)*, UsdTimeCode) const;
 
-BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
+TF_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET
 
 ARCH_PRAGMA_POP

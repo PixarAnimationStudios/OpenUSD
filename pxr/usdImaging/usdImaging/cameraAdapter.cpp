@@ -81,11 +81,12 @@ HdDataSourceLocatorSet
 UsdImagingCameraAdapter::InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (subprim.IsEmpty()) {
-        return UsdImagingDataSourceCameraPrim::Invalidate(prim, subprim,
-            properties);
+        return UsdImagingDataSourceCameraPrim::Invalidate(
+            prim, subprim, properties, invalidationType);
     }
 
     return HdDataSourceLocatorSet();
@@ -144,7 +145,7 @@ UsdImagingCameraAdapter::TrackVariability(UsdPrim const& prim,
         // Don't double-count clipping-plane or transform attrs.
         if (attr.GetBaseName() == UsdGeomTokens->clippingPlanes) { continue; }
         if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(
-                attr.GetBaseName())) {
+                attr.GetName())) {
             continue;
         }
         if (_IsVarying(prim,

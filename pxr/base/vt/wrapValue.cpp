@@ -33,7 +33,7 @@
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/inttypes.h"
-#include "pxr/base/tf/py3Compat.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyResultConversions.h"
@@ -42,7 +42,6 @@
 #include "pxr/base/tf/type.h"
 
 #include <boost/numeric/conversion/cast.hpp>
-#include <boost/preprocessor.hpp>
 
 #include <boost/python/class.hpp>
 #include <boost/python/copy_const_reference.hpp>
@@ -108,6 +107,19 @@ struct Vt_ValueWrapper {
     template <typename T> explicit Vt_ValueWrapper(T val) : _val(val) {}
 
     VtValue const &GetValue() const { return _val; }
+
+    bool operator==(const Vt_ValueWrapper &other) {
+        return _val == other._val;
+    }
+
+    bool operator!=(const Vt_ValueWrapper &other) {
+        return _val != other._val;
+    }
+
+    std::string GetAsString() {
+        return TfStringPrintf(
+            "%s(%s)", _val.GetTypeName().c_str(), TfStringify(_val).c_str());
+    }
     
   private:
     VtValue _val;
@@ -178,26 +190,10 @@ struct Vt_ValueFromPython {
         }
         if (PyBool_Check(obj_ptr)) {
             // Python bool -> C++ bool.
-            new (storage) VtValue(bool(TfPyInt_AS_LONG(obj_ptr)));
+            new (storage) VtValue(bool(PyLong_AsLong(obj_ptr)));
             data->convertible = storage;
             return;
         }
-#if PY_MAJOR_VERSION == 2
-        if (PyInt_Check(obj_ptr)) {
-            // Python int -> either c++ int or long depending on range.
-            // In Python 3 it will always be a long, so we want to be sure
-            // we fall into the "long" clause below
-            long val = PyInt_AS_LONG(obj_ptr);
-            if (std::numeric_limits<int>::min() <= val && 
-                val <= std::numeric_limits<int>::max()) {
-                new (storage) VtValue(boost::numeric_cast<int>(val));
-            } else {
-                new (storage) VtValue(boost::numeric_cast<long>(val));
-            }
-            data->convertible = storage;
-            return;
-        }
-#endif
         if (PyLong_Check(obj_ptr)) {
             // Python long -> either c++ int or long or unsigned long or long
             // long or unsigned long long or fail, depending on range.
@@ -233,7 +229,7 @@ struct Vt_ValueFromPython {
             data->convertible = storage;
             return;
         }
-        if (TfPyBytes_Check(obj_ptr) || PyUnicode_Check(obj_ptr)) {
+        if (PyBytes_Check(obj_ptr) || PyUnicode_Check(obj_ptr)) {
             // Py string or unicode -> std::string.
             new (storage) VtValue(std::string(extract<std::string>(obj_ptr)));
             data->convertible = storage;
@@ -269,7 +265,12 @@ void wrapValue()
     Vt_ValueFromPython();
     Vt_ValueWrapperFromPython();
 
-    class_<Vt_ValueWrapper>("_ValueWrapper", no_init);
+    class_<Vt_ValueWrapper>("_ValueWrapper", no_init)
+        .def(self == self)
+        .def(self != self)
+        .def("__str__", &Vt_ValueWrapper::GetAsString)
+        .def("__repr__", &Vt_ValueWrapper::GetAsString)
+        ;
 
     static char const *funcDocString = "%s(value) -> _ValueWrapper\n\n"
         "value : %s\n\n"
@@ -322,15 +323,15 @@ void wrapValue()
     // register conversion types in reverse order, because the extractor
     // iterates through the registered list backwards
     // Repetitively register conversions for each known class value type.
-#define REGISTER_VALUE_FROM_PYTHON(r, unused, elem) \
+#define REGISTER_VALUE_FROM_PYTHON(unused, elem) \
     VtValueFromPythonLValue< VT_TYPE(elem) >();
-    BOOST_PP_SEQ_FOR_EACH(REGISTER_VALUE_FROM_PYTHON, ~, VT_ARRAY_VALUE_TYPES)
+    TF_PP_SEQ_FOR_EACH(REGISTER_VALUE_FROM_PYTHON, ~, VT_ARRAY_VALUE_TYPES)
 #undef REGISTER_VALUE_FROM_PYTHON
 
-#define REGISTER_VALUE_FROM_PYTHON(r, unused, elem) \
+#define REGISTER_VALUE_FROM_PYTHON(unused, elem) \
     VtValueFromPython< VT_TYPE(elem) >();
-    BOOST_PP_SEQ_FOR_EACH(REGISTER_VALUE_FROM_PYTHON, ~,
-                          VT_SCALAR_CLASS_VALUE_TYPES VT_NONARRAY_VALUE_TYPES)
+    TF_PP_SEQ_FOR_EACH(REGISTER_VALUE_FROM_PYTHON, ~,
+                       VT_SCALAR_CLASS_VALUE_TYPES VT_NONARRAY_VALUE_TYPES)
 #undef REGISTER_VALUE_FROM_PYTHON
 
     VtValueFromPython<string>();

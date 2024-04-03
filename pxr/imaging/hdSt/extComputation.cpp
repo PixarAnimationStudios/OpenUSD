@@ -23,11 +23,12 @@
 //
 
 #include "pxr/imaging/hdSt/extComputation.h"
+#include "pxr/imaging/hdSt/extCompComputedInputSource.h"
 #include "pxr/imaging/hdSt/primUtils.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/renderParam.h"
+
 #include "pxr/imaging/hd/extComputationContext.h"
-#include "pxr/imaging/hd/compExtCompInputSource.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -38,9 +39,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 HdStExtComputation::HdStExtComputation(SdfPath const &id)
- : HdExtComputation(id)
- , _inputRange()
+    : HdExtComputation(id)
+    , _inputRange()
 {
 }
 
@@ -104,7 +106,7 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
     // During Sprim sync, we only commit GPU resources when directly executing a
     // GPU computation or when aggregating inputs for a downstream computation.
     // Note: For CPU computations, we pull the inputs when we create the
-    // HdExtCompCpuComputation, which happens during Rprim sync.
+    // HdStExtCompCpuComputation, which happens during Rprim sync.
     if (GetGpuKernelSource().empty() && !IsInputAggregation()) {
         return;
     }
@@ -234,4 +236,6 @@ HdStExtComputation::Finalize(HdRenderParam *renderParam)
     HdStMarkGarbageCollectionNeeded(renderParam);
 }
 
+
 PXR_NAMESPACE_CLOSE_SCOPE
+

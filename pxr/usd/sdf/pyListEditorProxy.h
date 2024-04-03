@@ -54,7 +54,7 @@ public:
             // Do nothing
         }
 
-        boost::optional<V> operator()(SdfListOpType op, const V& value)
+        std::optional<V> operator()(SdfListOpType op, const V& value)
         {
             using namespace boost::python;
 
@@ -63,14 +63,14 @@ public:
             if (! TfPyIsNone(result)) {
                 extract<V> e(result);
                 if (e.check()) {
-                    return boost::optional<V>(e());
+                    return std::optional<V>(e());
                 }
                 else {
                     TF_CODING_ERROR("ApplyEditsToList callback has "
                                     "incorrect return type.");
                 }
             }
-            return boost::optional<V>();
+            return std::optional<V>();
         }
 
     private:
@@ -87,7 +87,7 @@ public:
             // Do nothing
         }
 
-        boost::optional<V> operator()(const V& value)
+        std::optional<V> operator()(const V& value)
         {
             using namespace boost::python;
 
@@ -96,14 +96,14 @@ public:
             if (! TfPyIsNone(result)) {
                 extract<V> e(result);
                 if (e.check()) {
-                    return boost::optional<V>(e());
+                    return std::optional<V>(e());
                 }
                 else {
                     TF_CODING_ERROR("ModifyItemEdits callback has "
                                     "incorrect return type.");
                 }
             }
-            return boost::optional<V>();
+            return std::optional<V>();
         }
 
     private:
@@ -155,7 +155,9 @@ private:
             .add_property("orderedItems",
                 &Type::GetOrderedItems,
                 &This::_SetOrderedProxy)
-            .def("GetAddedOrExplicitItems", &Type::GetAddedOrExplicitItems,
+            .def("GetAddedOrExplicitItems", &Type::GetAppliedItems,
+                return_value_policy<TfPySequenceToTuple>()) // deprecated
+            .def("GetAppliedItems", &Type::GetAppliedItems,
                 return_value_policy<TfPySequenceToTuple>())
             .add_property("isExplicit", &Type::IsExplicit)
             .add_property("isOrderedOnly", &Type::IsOrderedOnly)
@@ -198,8 +200,7 @@ private:
 
     static std::string _GetStr(const Type& x)
     {
-        return x._listEditor ? 
-            boost::lexical_cast<std::string>(*x._listEditor) : std::string();
+        return x._listEditor ? TfStringify(*x._listEditor) : std::string();
     }
 
     static void _SetExplicitProxy(Type& x, const value_vector_type& v)

@@ -3,7 +3,6 @@
 \page usd_page_front Usd : Universal Scene Description (Core)
 \if ( PIXAR_MFB_BUILD )
 \mainpage Usd : Universal Scene Description
-\publicLib
 \endif
 
 <b>Usd</b> is the core client-facing module for authoring, composing, 
@@ -55,6 +54,15 @@ import/export.
      <li> \ref Usd_Array_Datatypes </li>
      <li> \ref Usd_Dictionary_Type </li>
      </ol>
+<li> \subpage Usd_Page_UTF_8 </li>
+     <ol type="i">
+     <li> \ref Usd_UTF_8_Overview </li>
+     <li> \ref Usd_UTF_8_Encoding </li>
+     <li> \ref Usd_UTF_8_Language_Support </li>
+     <li> \ref Usd_UTF_8_Identifiers </li>
+     <li> \ref Usd_UTF_8_Operation_Reference </li>
+     <li> \ref Usd_UTF_8_Encoding_Reference </li>
+     </ol>
 <li> \subpage Usd_Page_PropertiesOfSceneDescription </li>
      <ol type="i">
      <li> \ref Usd_Ordering </li>
@@ -66,6 +74,11 @@ import/export.
      <li> \ref Usd_AssetResolution </li>
      </ol>
 <li> \subpage Usd_Page_AdvancedFeatures </li>
+     <ol type="i">
+     <li> \ref Usd_Page_DynamicFileFormat </li>
+     <li> \ref Usd_Page_ScenegraphInstancing </li>
+     <li> \ref Usd_Page_ValueClips </li>
+     </ol>
 <li> \subpage Usd_Page_AuthoringEditing </li>
      <ol type="i">
      <li> \ref Usd_SelectiveEditing </li>

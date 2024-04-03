@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using HdBindingRequestVector = std::vector<HdBindingRequest>;
+using HdStBindingRequestVector = std::vector<class HdStBindingRequest>;
 
 /// \class HdSt_IndirectDrawBatch
 ///
@@ -69,14 +69,16 @@ public:
     HDST_API
     void EncodeDraw(
         HdStRenderPassStateSharedPtr const & renderPassState,
-        HdStResourceRegistrySharedPtr const & resourceRegistry) override;
+        HdStResourceRegistrySharedPtr const & resourceRegistry,
+        bool firstDrawBatch) override;
 
     /// Executes the drawing commands for this batch.
     HDST_API
     void ExecuteDraw(
         HgiGraphicsCmds *gfxCmds,
         HdStRenderPassStateSharedPtr const &renderPassState,
-        HdStResourceRegistrySharedPtr const &resourceRegistry) override;
+        HdStResourceRegistrySharedPtr const &resourceRegistry,
+        bool firstDrawBatch) override;
 
     HDST_API
     void DrawItemInstanceChanged(
@@ -132,7 +134,7 @@ private:
     protected:
         // _DrawingProgram overrides
         void _GetCustomBindings(
-            HdBindingRequestVector *customBindings,
+            HdStBindingRequestVector *customBindings,
             bool *enableInstanceDraw) const override;
     private:
         bool _useDrawIndexed;

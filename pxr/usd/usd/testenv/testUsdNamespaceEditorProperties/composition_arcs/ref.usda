@@ -1,0 +1,25 @@
+#usda 1.0 
+
+def "ReferencePrim" (
+    inherits = </RefClass>
+) {
+    custom double Ref_ReferencePrim_Attr
+    
+    def "B"
+    {
+        custom double Ref_B_Attr
+
+        def "A"
+        {
+            custom double Ref_A_Attr
+        }
+    }
+}
+
+class "RefClass" {
+	custom double Ref_RefClass_Attr
+	
+    def "ClassChild" {
+        custom double Ref_ClassChild_Attr
+    }
+}

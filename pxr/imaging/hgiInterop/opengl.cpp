@@ -249,7 +249,7 @@ HgiInteropOpenGL::CompositeToInterop(
     glBlendFuncSeparate(/*srcColor*/GL_ONE,
                         /*dstColor*/GL_ONE_MINUS_SRC_ALPHA,
                         /*srcAlpha*/GL_ONE,
-                        /*dstAlpha*/GL_ONE);
+                        /*dstAlpha*/GL_ONE_MINUS_SRC_ALPHA);
     GLint restoreColorOp, restoreAlphaOp;
     glGetIntegerv(GL_BLEND_EQUATION_RGB, &restoreColorOp);
     glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &restoreAlphaOp);

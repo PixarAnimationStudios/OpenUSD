@@ -29,7 +29,6 @@
 #include "pxr/base/vt/valueFromPython.h"
 
 #include <boost/python.hpp>
-#include <boost/function.hpp>
 
 #include <string>
 
@@ -67,6 +66,11 @@ _Repr(const SdfPayload &self)
     }
 
     return TF_PY_REPR_PREFIX + "Payload(" + args + ")";
+}
+
+static size_t __hash__(const SdfPayload &self)
+{
+    return TfHash()(self);
 }
 
 } // anonymous namespace 
@@ -107,6 +111,7 @@ void wrapPayload()
         .def(self >= self)
 
         .def("__repr__", _Repr)
+        .def("__hash__", __hash__)
 
         ;
 

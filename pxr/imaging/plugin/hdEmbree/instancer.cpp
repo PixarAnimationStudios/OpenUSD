@@ -97,8 +97,11 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
 
     // The transforms for this level of instancer are computed by:
     // foreach(index : indices) {
-    //     instancerTransform * translate(index) * rotate(index) *
-    //     scale(index) * instanceTransform(index)
+    //     instancerTransform
+    //     * hydra:instanceTranslations(index)
+    //     * hydra:instanceRotations(index)
+    //     * hydra:instanceScales(index)
+    //     * hydra:instanceTransforms(index)
     // }
     // If any transform isn't provided, it's assumed to be the identity.
 
@@ -112,10 +115,23 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
         transforms[i] = instancerTransform;
     }
 
-    // "translate" holds a translation vector for each index.
-    if (_primvarMap.count(HdInstancerTokens->translate) > 0) {
+    // XXX: Remove the variables in 24.05
+    TfToken instanceTranslationsToken = HdInstancerTokens->instanceTranslations;
+    TfToken instanceRotationsToken = HdInstancerTokens->instanceRotations;
+    TfToken instanceScalesToken = HdInstancerTokens->instanceScales;
+    TfToken instanceTransformsToken = HdInstancerTokens->instanceTransforms;
+
+    if (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)) {
+        instanceTranslationsToken = HdInstancerTokens->translate;
+        instanceRotationsToken = HdInstancerTokens->rotate;
+        instanceScalesToken = HdInstancerTokens->scale;
+        instanceTransformsToken = HdInstancerTokens->instanceTransform;
+    }
+
+    // "hydra:instanceTranslations" holds a translation vector for each index.
+    if (_primvarMap.count(instanceTranslationsToken) > 0) {
         HdEmbreeBufferSampler
-                sampler(*_primvarMap[HdInstancerTokens->translate]);
+                sampler(*_primvarMap[instanceTranslationsToken]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
             GfVec3f translate;
             if (sampler.Sample(instanceIndices[i], &translate)) {
@@ -126,9 +142,10 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
         }
     }
 
-    // "rotate" holds a quaternion in <real, i, j, k> format for each index.
-    if (_primvarMap.count(HdInstancerTokens->rotate) > 0) {
-        HdEmbreeBufferSampler sampler(*_primvarMap[HdInstancerTokens->rotate]);
+    // "hydra:instanceRotations" holds a quaternion in <real, i, j, k>
+    // format for each index.
+    if (_primvarMap.count(instanceRotationsToken) > 0) {
+        HdEmbreeBufferSampler sampler(*_primvarMap[instanceRotationsToken]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
             GfVec4f quat;
             if (sampler.Sample(instanceIndices[i], &quat)) {
@@ -140,9 +157,9 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
         }
     }
 
-    // "scale" holds an axis-aligned scale vector for each index.
-    if (_primvarMap.count(HdInstancerTokens->scale) > 0) {
-        HdEmbreeBufferSampler sampler(*_primvarMap[HdInstancerTokens->scale]);
+    // "hydra:instanceScales" holds an axis-aligned scale vector for each index.
+    if (_primvarMap.count(instanceScalesToken) > 0) {
+        HdEmbreeBufferSampler sampler(*_primvarMap[instanceScalesToken]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
             GfVec3f scale;
             if (sampler.Sample(instanceIndices[i], &scale)) {
@@ -153,10 +170,10 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
         }
     }
 
-    // "instanceTransform" holds a 4x4 transform matrix for each index.
-    if (_primvarMap.count(HdInstancerTokens->instanceTransform) > 0) {
+    // "hydra:instanceTransforms" holds a 4x4 transform matrix for each index.
+    if (_primvarMap.count(instanceTransformsToken) > 0) {
         HdEmbreeBufferSampler
-                sampler(*_primvarMap[HdInstancerTokens->instanceTransform]);
+                sampler(*_primvarMap[instanceTransformsToken]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
             GfMatrix4d instanceTransform;
             if (sampler.Sample(instanceIndices[i], &instanceTransform)) {

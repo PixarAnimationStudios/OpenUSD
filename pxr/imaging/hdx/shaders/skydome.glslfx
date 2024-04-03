@@ -24,12 +24,15 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#import $TOOLS/hdSt/shaders/surfaceHelpers.glslfx
+
 -- configuration
 {
     "techniques": {
         "default": {
             "SkydomeFragment": {
-                "source": [ "Skydome.Fragment" ]
+                "source": [ "SurfaceHelpers.Lighting", 
+                            "Skydome.Fragment" ]
             }
         }
     }
@@ -37,7 +40,6 @@
 
 -- glsl Skydome.Fragment
 
-const float PI = 3.1415926535898;
 const float farPlane = 1.0;
 
 float wrapSampleValue(float value)
@@ -51,15 +53,10 @@ float wrapSampleValue(float value)
     return value;
 }
 
-// from PreviewSurface.glslfx
-vec2 projectToLatLong(vec3 sample3D)
+vec2 getSampleCoord(vec3 sample3D)
 {
-    // project spherical coord onto latitude-longitude map with
-    // latitude: +y == pi/2 and longitude: +z == 0, +x == pi/2
-    float x = (atan(sample3D.z, sample3D.x) + 0.5 * PI) / (2.0 * PI);
-    float y = acos(sample3D.y) / PI;
-
-    return vec2(wrapSampleValue(x), wrapSampleValue(y));
+    vec2 latLong = ProjectToLatLong(sample3D);
+    return vec2(wrapSampleValue(latLong.x), wrapSampleValue(latLong.y));
 }
 
 
@@ -78,7 +75,7 @@ void main(void)
         ( lightTransform * viewToWorld * vec4(sampleDirection, 0.0) ).xyz;
     
     // Sample Skydome Texture with the sampleDirection
-    vec2 sampleCoord = projectToLatLong(sampleDirection);
+    vec2 sampleCoord = getSampleCoord(sampleDirection);
     hd_FragColor = vec4(HgiGet_skydomeTexture(sampleCoord).xyz, 1.0);
     gl_FragDepth = farPlane;
 }

@@ -33,7 +33,6 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/noncopyable.hpp>
 #include <unordered_map>
 #include <vector>
 
@@ -68,8 +67,10 @@ TF_DECLARE_PUBLIC_TOKENS(KindTokens, KIND_API, KIND_TOKENS);
 /// To make this robust, KindRegistry exposes no means to mutate the registry.
 /// All extensions must be accomplished via plugInfo.json files, which are
 /// consumed once during the registry initialization (See \ref kind_extensions )
-class KindRegistry : public TfWeakBase, boost::noncopyable
+class KindRegistry : public TfWeakBase
 {
+    KindRegistry(const KindRegistry&) = delete;
+    KindRegistry& operator=(const KindRegistry&) = delete;
 public:
     /// Return the single \c KindRegistry instance.
     KIND_API static KindRegistry& GetInstance();
@@ -95,6 +96,21 @@ public:
 
     /// Return an unordered vector of all kinds known to the registry.
     KIND_API static std::vector<TfToken>  GetAllKinds();
+
+    /// Returns true if \p kind IsA model kind
+    KIND_API static bool IsModel(const TfToken& kind);
+
+    /// Returns true if \p kind IsA group kind
+    KIND_API static bool IsGroup(const TfToken& kind);
+
+    /// Return true if \p kind IsA assembly kind
+    KIND_API static bool IsAssembly(const TfToken& kind);
+
+    /// Returns true if \p kind IsA component kind
+    KIND_API static bool IsComponent(const TfToken& kind);
+
+    /// Returns true if \p kind IsA subcomponent kind
+    KIND_API static bool IsSubComponent(const TfToken& kind);
 
 private:
     friend class TfSingleton<KindRegistry>;

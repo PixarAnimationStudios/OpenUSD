@@ -28,9 +28,9 @@
 #include "pxr/usd/sdf/valueTypePrivate.h"
 #include "pxr/usd/sdf/types.h" // For SdfDimensionlessUnitDefault
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/type.h"
-#include <boost/functional/hash.hpp>
 
 #include <tbb/spin_rw_mutex.h>
 
@@ -88,7 +88,9 @@ namespace {
 // Registry -- The implementation of the value type name registry.
 //
 
-class Registry : boost::noncopyable {
+class Registry {
+    Registry(const Registry&) = delete;
+    Registry& operator=(const Registry&) = delete;
 public:
     typedef Sdf_ValueTypePrivate::CoreType CoreType;
 
@@ -183,17 +185,7 @@ private:
     // can be the core type for multiple roles but all types that have
     // the same TfType and role are aliases of each other.
     typedef std::pair<TfType, TfToken> CoreTypeKey;
-    struct CoreTypeKeyHash {
-        size_t operator()(const CoreTypeKey& x) const
-        {
-            size_t hash = 0;
-            boost::hash_combine(hash, TfHash()(x.first));
-            boost::hash_combine(hash, x.second.Hash());
-            return hash;
-        }
-    };
-
-    typedef TfHashMap<CoreTypeKey, CoreType, CoreTypeKeyHash> CoreTypeMap;
+    typedef TfHashMap<CoreTypeKey, CoreType, TfHash> CoreTypeMap;
     typedef TfHashMap<TfToken, Sdf_ValueTypeImpl, TfHash> TypeMap;
     typedef TfHashMap<TfToken, CoreType, TfHash> TemporaryCoreTypeMap;
     typedef TfHashMap<TfToken, Sdf_ValueTypeImpl, TfHash> TemporaryNameMap;
@@ -314,19 +306,11 @@ Registry::_AddType(
         return false;
     }
     // Construct the array name.
-    const TfToken arrayName(name.GetString() + "[]");
+    const TfToken arrayName(name.GetString() + "[]", TfToken::Immortal);
     existing = _FindType(arrayName);
     if (!TF_VERIFY(existing == Sdf_ValueTypePrivate::GetEmptyTypeName(),
                    "Type '%s' already exists", arrayName.GetText())) {
         return false;
-    }
-
-    // Make the name and array name tokens immortal -- they will always persist
-    // in the registry, so no need to reference count them.
-    {
-        TfToken immortal;
-        immortal = TfToken(name.GetString(), TfToken::Immortal);
-        immortal = TfToken(arrayName.GetString(), TfToken::Immortal);
     }
 
     // Use the default dimensionless unit if the given default unit is

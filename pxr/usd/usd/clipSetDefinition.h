@@ -31,9 +31,9 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/tf/declarePtrs.h"
+#include "pxr/base/tf/hash.h"
 
-#include <boost/optional.hpp>
-
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -76,46 +76,45 @@ public:
 
     size_t GetHash() const
     {
-        size_t hash = indexOfLayerWhereAssetPathsFound;
-        boost::hash_combine(hash, sourceLayerStack);
-        boost::hash_combine(hash, sourcePrimPath);
+        size_t hash = TfHash::Combine(
+            indexOfLayerWhereAssetPathsFound,
+            sourceLayerStack,
+            sourcePrimPath
+        );
 
         if (clipAssetPaths) {
-            for (const auto& assetPath : *clipAssetPaths) {
-                boost::hash_combine(hash, assetPath.GetHash());
-            }
+            hash = TfHash::Combine(hash, *clipAssetPaths);
         }
         if (clipManifestAssetPath) {
-            boost::hash_combine(hash, clipManifestAssetPath->GetHash());
+            hash = TfHash::Combine(hash, *clipManifestAssetPath);
         }
         if (clipPrimPath) {
-            boost::hash_combine(hash, *clipPrimPath);
+            hash = TfHash::Combine(hash, *clipPrimPath);
         }               
         if (clipActive) {
-            for (const auto& active : *clipActive) {
-                boost::hash_combine(hash, active[0]);
-                boost::hash_combine(hash, active[1]);
-            }
+            hash = TfHash::Combine(hash, *clipActive);
         }
         if (clipTimes) {
-            for (const auto& time : *clipTimes) {
-                boost::hash_combine(hash, time[0]);
-                boost::hash_combine(hash, time[1]);
-            }
+            hash = TfHash::Combine(hash, *clipTimes);
         }
         if (interpolateMissingClipValues) {
-            boost::hash_combine(hash, *interpolateMissingClipValues);
+            hash = TfHash::Combine(hash, *interpolateMissingClipValues);
         }
-
         return hash;
     }
 
-    boost::optional<VtArray<SdfAssetPath> > clipAssetPaths;
-    boost::optional<SdfAssetPath> clipManifestAssetPath;
-    boost::optional<std::string> clipPrimPath;
-    boost::optional<VtVec2dArray> clipActive;
-    boost::optional<VtVec2dArray> clipTimes;
-    boost::optional<bool> interpolateMissingClipValues;
+    template <typename HashState>
+    friend void TfHashAppend(HashState& h,
+                             const Usd_ClipSetDefinition& definition) {
+        h.Append(definition.GetHash());
+    }
+
+    std::optional<VtArray<SdfAssetPath>> clipAssetPaths;
+    std::optional<SdfAssetPath> clipManifestAssetPath;
+    std::optional<std::string> clipPrimPath;
+    std::optional<VtVec2dArray> clipActive;
+    std::optional<VtVec2dArray> clipTimes;
+    std::optional<bool> interpolateMissingClipValues;
 
     PcpLayerStackPtr sourceLayerStack;
     SdfPath sourcePrimPath;

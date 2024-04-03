@@ -61,6 +61,35 @@ _Repr(GfMultiInterval const &self)
     return r;
 }
 
+static object
+_GetNextNonContainingInterval(
+    GfMultiInterval const &self,
+    double x) 
+{
+    const GfMultiInterval::const_iterator it = 
+        self.GetNextNonContainingInterval(x);
+    return it == self.end() ? /* None */ object() : object(*it);
+}
+
+static object
+_GetPriorNonContainingInterval(
+    GfMultiInterval const &self,
+    double x) 
+{
+    const GfMultiInterval::const_iterator it = 
+        self.GetPriorNonContainingInterval(x);
+    return it == self.end() ? /* None */ object() : object(*it);
+}
+
+static object
+_GetContainingInterval(
+    GfMultiInterval const &self,
+    double x) 
+{
+    const GfMultiInterval::const_iterator it = self.GetContainingInterval(x);
+    return it == self.end() ? /* None */ object() : object(*it);
+}
+
 } // anonymous namespace 
 
 void wrapMultiInterval()
@@ -111,6 +140,10 @@ void wrapMultiInterval()
         .def("IsEmpty", &This::IsEmpty)
         .def("GetSize", &This::GetSize)
         .def("GetBounds", &This::GetBounds)
+
+        .def("GetNextNonContainingInterval", _GetNextNonContainingInterval)
+        .def("GetPriorNonContainingInterval", _GetPriorNonContainingInterval)
+        .def("GetContainingInterval", _GetContainingInterval)
 
         .def("GetFullInterval", &This::GetFullInterval)
         .staticmethod("GetFullInterval")

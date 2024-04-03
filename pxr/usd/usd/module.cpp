@@ -78,6 +78,7 @@ TF_WRAP_MODULE
     TF_WRAP(UsdCollectionMembershipQuery);
     TF_WRAP(UsdCrateInfo);
     TF_WRAP(UsdFileFormat);
+    TF_WRAP(UsdNamespaceEditor);
     TF_WRAP(UsdResolveInfo);
     TF_WRAP(Version);
     TF_WRAP(UsdZipFile);

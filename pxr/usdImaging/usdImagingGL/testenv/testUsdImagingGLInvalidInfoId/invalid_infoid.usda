@@ -34,11 +34,11 @@ def Scope "Scene" (
 
     def Xform "Geom"
     {
-        def Sphere "SphereWithFloatRadius"
+        def Sphere "Sphere"
         {
             rel material:binding = </Scene/Looks/mat>
             color3f[] primvars:displayColor = [(0, 0, 1)]
-            float radius = 2
+            double radius = 2
             custom double3 xformOp:translate = (0, 0, 0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
         }

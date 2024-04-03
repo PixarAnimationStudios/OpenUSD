@@ -5,8 +5,8 @@
         "Types": {
           "HioOIIO_Image" : {
             "bases": ["HioImage"],
-            "imageTypes": ["exr", "tif", "zfile", "tx"],
-            "precedence": 0
+            "imageTypes": ["tif", "tiff", "zfile", "tx"],
+            "precedence": 10
           }
         }
       },

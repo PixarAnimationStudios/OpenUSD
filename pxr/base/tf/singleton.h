@@ -57,9 +57,10 @@
 /// \code
 ///     // file: registry.h
 ///     #include "pxr/base/tf/singleton.h"
-///     #include <boost/noncopyable.hpp>
 ///
-///     class Registry : boost::noncopyable {
+///     class Registry {
+///         Registry(const Registry&) = delete;
+///         Registry& operator=(const Registry&) = delete;
 ///     public:
 ///         static Registry& GetInstance() {
 ///              return TfSingleton<Registry>::GetInstance();
@@ -92,9 +93,10 @@
 /// \endcode
 ///
 /// The constructor and destructor are declared private, and the singleton
-/// object will typically derive off of \c boost::noncopyable to prevent
-/// copying. Note that singleton objects quite commonly also make use of \c
-/// TfRegistryManager to acquire the data they need throughout a program.
+/// object will typically delete its copy constructor and assignment operator
+/// to prevent copying. Note that singleton objects quite commonly also make
+/// use of \c TfRegistryManager to acquire the data they need throughout a
+/// program.
 ///
 /// The friend class \c TfSingleton<Registry> is the only class allowed to
 /// create an instance of a Registry.  The helper function \c
@@ -103,6 +105,7 @@
 /// to the sole instance of the registry.
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/pragmas.h"
 
 #include <atomic>
 
@@ -132,10 +135,16 @@ public:
     /// (for example, letting only one thread at a time call a member
     /// function) are the responsibility of the class author.
     inline static T& GetInstance() {
+        // Suppress undefined-var-template warnings from clang; _instance
+        // is expected to be instantiated in another translation unit via
+        // the TF_INSTANTIATE_SINGLETON macro.
+        ARCH_PRAGMA_PUSH
+        ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
         T *p = _instance.load();
         if (!p) {
             p = _CreateInstance(_instance);
         }
+        ARCH_PRAGMA_POP
         return *p;
     }
 
@@ -144,7 +153,13 @@ public:
     ///
     /// This call tests whether or not the singleton currently exists.
     inline static bool CurrentlyExists() {
+        // Suppress undefined-var-template warnings from clang; _instance
+        // is expected to be instantiated in another translation unit via
+        // the TF_INSTANTIATE_SINGLETON macro.
+        ARCH_PRAGMA_PUSH
+        ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
         return static_cast<bool>(_instance.load());
+        ARCH_PRAGMA_POP
     }
 
     /// Indicate that the sole instance object has already been created.

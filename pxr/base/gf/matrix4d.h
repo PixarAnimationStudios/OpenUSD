@@ -41,8 +41,7 @@
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/vec3d.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iosfwd>
 #include <vector>
@@ -303,12 +302,24 @@ public:
 
     /// Hash.
     friend inline size_t hash_value(GfMatrix4d const &m) {
-        int nElems = 4 * 4;
-        size_t h = 0;
-        const double *p = m.GetArray();
-        while (nElems--)
-            boost::hash_combine(h, *p++);
-        return h;
+        return TfHash::Combine(
+            m._mtx[0][0],
+            m._mtx[0][1],
+            m._mtx[0][2],
+            m._mtx[0][3],
+            m._mtx[1][0],
+            m._mtx[1][1],
+            m._mtx[1][2],
+            m._mtx[1][3],
+            m._mtx[2][0],
+            m._mtx[2][1],
+            m._mtx[2][2],
+            m._mtx[2][3],
+            m._mtx[3][0],
+            m._mtx[3][1],
+            m._mtx[3][2],
+            m._mtx[3][3]
+        );
     }
 
     /// Tests for element-wise matrix equality. All elements must match

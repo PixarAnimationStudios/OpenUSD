@@ -1,0 +1,64 @@
+#usda 1.0
+(
+    "This file is a contrived schema file."
+    subLayers = [
+        @baseSchema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "usdContrived"
+        string libraryPath      = "pxr/usd/usdContrived"
+        # string libraryPrefix  = "Usd"
+        # string tokensPrefix   = "Usd"
+        bool useLiteralIdentifier = 0
+        dictionary libraryTokens = {
+            dictionary libraryToken1 = {}
+            dictionary libraryToken2 = {
+                string value = "/non-identifier-tokenValue!"
+                string doc = """libraryToken2 doc"""
+            }
+        }
+    }
+)
+{
+}
+
+class "Base" (
+    inherits = </Typed>
+    doc = "This doc should only exist on the \"Base\" class."
+) {
+    
+    token myVaryingToken = "VariableTokenDefault" (
+        allowedTokens = ["VariableTokenAllowed1", "VariableTokenAllowed2",
+        "VariableTokenAllowed<3>",""]
+        doc = "VariableToken attribute docs.")
+    
+    uniform token[] myVaryingTokenArray = ["VariableTokenArrayAllowed1", ""] (
+        allowedTokens = [
+            "VariableTokenArrayAllowed1",
+            "VariableTokenArrayAllowed2",
+            "VariableTokenArrayAllowed<3>",
+            ""]
+        doc = "VariableTokenArray attribute docs.")
+        
+    # Validating that we DO want to support custom schema properties 
+    # even in Typed schemas!
+    custom double myDouble
+
+    float myFloat = 1.0
+
+    color3f myColorFloat = (1.0, 1.0, 1.0)
+
+    normal3f[] myNormals
+
+    point3f[] myPoints
+
+    vector3f[] myVelocities
+
+    uint unsignedInt
+    uchar unsignedChar
+    uint64[] unsignedInt64Array
+
+}

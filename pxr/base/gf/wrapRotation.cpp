@@ -152,19 +152,11 @@ static string _Repr(GfRotation const &self) {
         TfPyRepr(self.GetAngle()) + ")";
 }
 
-#if PY_MAJOR_VERSION == 2
-static GfRotation __truediv__(const GfRotation &self, double value)
-{
-    return self / value;
-}
-
-static GfRotation __itruediv__(GfRotation &self, double value)
-{
-    return self /= value;
-}
-#endif
-
 } // anonymous namespace 
+
+static size_t __hash__(GfRotation const &self) {
+    return TfHash()(self);
+}
 
 void wrapRotation()
 {    
@@ -176,6 +168,7 @@ void wrapRotation()
         .def(init<const GfQuaternion &>())
         .def(init<const GfQuatd &>())
         .def(init<const GfVec3d &, const GfVec3d &>())
+        .def(init<const GfRotation &>())
 
         .def( TfTypePythonClass() )
 
@@ -250,15 +243,9 @@ void wrapRotation()
         .def( double() * self )
         .def( self / double() )
 
- #if PY_MAJOR_VERSION == 2
-        // Needed only to support "from __future__ import division" in
-        // python 2. In python 3 builds boost::python adds this for us.
-        .def("__truediv__", __truediv__ )
-        .def("__itruediv__", __itruediv__ )
-#endif
+        .def("__repr__", _Repr)
+        .def("__hash__", __hash__)
 
-       .def("__repr__", _Repr)
-        
         ;
     to_python_converter<std::vector<This>,
         TfPySequenceToPython<std::vector<This> > >();

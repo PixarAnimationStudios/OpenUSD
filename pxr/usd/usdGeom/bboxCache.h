@@ -30,11 +30,11 @@
 #include "pxr/usd/usdGeom/pointInstancer.h"
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/base/gf/bbox3d.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/work/dispatcher.h"
 
-#include <boost/optional.hpp>
-#include <boost/shared_array.hpp>
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -370,13 +370,13 @@ public:
     /// Return the base time if set, otherwise GetTime().  Use HasBaseTime() to
     /// observe if a base time has been set.
     UsdTimeCode GetBaseTime() const {
-        return _baseTime.get_value_or(GetTime());
+        return _baseTime.value_or(GetTime());
     }
 
     /// Clear this cache's baseTime if one has been set.  After calling this,
     /// the cache will use its time as the baseTime value.
     void ClearBaseTime() {
-        _baseTime = boost::none;
+        _baseTime = std::nullopt;
     }
 
     /// Return true if this cache has a baseTime that's been explicitly set,
@@ -486,7 +486,7 @@ private:
 
         // Queries for attributes that need to be re-computed at each
         // time for this entry. This will be invalid for non-varying entries.
-        boost::shared_array<UsdAttributeQuery> queries;
+        std::shared_ptr<UsdAttributeQuery[]> queries;
 
         // Computed purpose info of the prim that's associated with the entry.
         // This data includes the prim's actual computed purpose as well as
@@ -541,10 +541,18 @@ private:
     // Helper to determine if we should use extents hints for \p prim.
     inline bool _UseExtentsHintForPrim(UsdPrim const &prim) const;
 
-    // Need hash_value for boost to key cache entries by prim context.
-    friend size_t hash_value(const _PrimContext &key);
+    // Specialize TfHashAppend for TfHash
+    template <typename HashState>
+    friend void TfHashAppend(HashState& h, const _PrimContext &key)
+    {
+        h.Append(key.prim);
+        h.Append(key.instanceInheritablePurpose);
+    }
 
-    typedef boost::hash<_PrimContext> _PrimContextHash;
+    // Need hash_value for boost to key cache entries by prim context.
+    friend size_t hash_value(const _PrimContext &key) { return TfHash{}(key); }
+
+    typedef TfHash _PrimContextHash;
     typedef TfHashMap<_PrimContext, _Entry, _PrimContextHash> _PrimBBoxHashMap;
 
     // Finds the cache entry for the prim context if it exists.
@@ -562,7 +570,7 @@ private:
 
     WorkDispatcher _dispatcher;
     UsdTimeCode _time;
-    boost::optional<UsdTimeCode> _baseTime;
+    std::optional<UsdTimeCode> _baseTime;
     TfTokenVector _includedPurposes;
     UsdGeomXformCache _ctmCache;
     _PrimBBoxHashMap _bboxCache;

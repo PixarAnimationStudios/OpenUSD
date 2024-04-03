@@ -508,10 +508,10 @@ public:
     /// same value is repeated many times in the array value of a primvar. An 
     /// indexed primvar can be used in such cases to optimize for data storage
     /// if the primvar's interpolation is uniform, varying, or vertex.
-    /// For **faceVarying primvars,**  however, indexing serves a higher
+    /// For **faceVarying primvars**, however, indexing serves a higher
     /// purpose (and should be used *only* for this purpose, since renderers
     /// and OpenSubdiv will assume it) of establishing a surface topology
-    /// for the primvar.  That is, faveVarying primvars use indexing to 
+    /// for the primvar.  That is, faceVarying primvars use indexing to 
     /// unambiguously define discontinuities in their functions at edges
     /// and vertices.  Please see the <a href="http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#face-varying-interpolation-rules">
     /// OpenSubdiv documentation on FaceVarying Primvars</a> for more 
@@ -610,7 +610,8 @@ public:
     bool ComputeFlattened(VtValue *value, 
                           UsdTimeCode time=UsdTimeCode::Default()) const;
 
-    /// Computes the flattened value of \p attrValue given \p indices.
+    /// Computes the flattened value of \p attrValue given \p indices, assuming
+    /// an elementSize of 1.
     ///
     /// This method is a static convenience function that performs the main
     /// work of ComputeFlattened above without needing an instance of a 
@@ -624,7 +625,24 @@ public:
     static bool ComputeFlattened(VtValue *value, const VtValue &attrVal,
                                  const VtIntArray &indices, 
                                  std::string *errString);
-                          
+    
+    /// Computes the flattened value of \p attrValue given \p indices and
+    /// \p elementSize.
+    ///
+    /// This method is a static convenience function that performs the main
+    /// work of ComputeFlattened above without needing an instance of a 
+    /// UsdGeomPrimvar.
+    ///
+    /// Returns \c false if the value contained in \p attrVal is not a supported
+    /// type for flattening. Otherwise returns \c true.  The output 
+    /// \p errString variable may be populated with an error string if an error
+    /// is encountered during flattening.
+    USDGEOM_API
+    static bool ComputeFlattened(VtValue *value, const VtValue &attrVal,
+                                 const VtIntArray &indices,
+                                 int elementSize,
+                                 std::string *errString);
+
 
     /// @}
 
@@ -694,10 +712,15 @@ public:
         return lhs.GetAttr().GetPath() < rhs.GetAttr().GetPath();
     }
 
+    // Specialize TfHashAppend for TfHash
+    template <typename HashState>
+    friend void TfHashAppend(HashState& h, const UsdGeomPrimvar& obj) {
+        h.Append(obj.GetAttr());
+    }
+
     // hash_value overload for std/boost hash.
-    USDGEOM_API
     friend size_t hash_value(const UsdGeomPrimvar &obj) {
-        return hash_value(obj.GetAttr());
+        return TfHash{}(obj);
     }
 
 
@@ -751,6 +774,7 @@ private:
     template<typename ScalarType>
     static bool _ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
                                         const VtIntArray &indices,
+                                        int elementSize,
                                         VtArray<ScalarType> *value,
                                         std::string *errString);
     
@@ -759,6 +783,7 @@ private:
     template <typename ArrayType>
     static bool _ComputeFlattenedArray(const VtValue &attrVal,
                                        const VtIntArray &indices,
+                                       int elementSize,
                                        VtValue *value, 
                                        std::string *errString);
 
@@ -818,7 +843,7 @@ UsdGeomPrimvar::ComputeFlattened(VtArray<ScalarType> *value, UsdTimeCode time) c
         return false;
 
     std::string errString;
-    bool res = _ComputeFlattenedHelper(authored, indices, value, &errString);
+    bool res = _ComputeFlattenedHelper(authored, indices, GetElementSize(), value, &errString);
     if (!errString.empty()) {
         TF_WARN("For primvar %s: %s", 
                 UsdDescribe(_attr).c_str(), errString.c_str());
@@ -830,44 +855,53 @@ template<typename ScalarType>
 bool
 UsdGeomPrimvar::_ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
                                         const VtIntArray &indices,
+                                        int elementSize,
                                         VtArray<ScalarType> *value,
                                         std::string *errString)
 {
-    value->resize(indices.size());
+    TF_VERIFY(elementSize >= 1);
+    value->resize(indices.size() * elementSize);
     bool success = true;
 
     std::vector<size_t> invalidIndexPositions;
     for (size_t i=0; i < indices.size(); i++) {
-        int index = indices[i];
-        if (index >= 0 && (size_t)index < authored.size()) {
-            (*value)[i] = authored[index];
-        } else {
+        if (indices[i] < 0 || static_cast<size_t>((indices[i] + 1) * elementSize) > authored.size()) {
             invalidIndexPositions.push_back(i);
             success = false;
+            continue;
+        }
+
+        const size_t indicesIdx = indices[i] * elementSize;
+        const size_t valuesIdx = i * elementSize;
+        for (size_t j=0; j < static_cast<size_t>(elementSize); j++) {
+            size_t index = indicesIdx + j;
+            (*value)[valuesIdx + j] = authored[index];
         }
     }
 
-    if (!invalidIndexPositions.empty()) {
-        std::vector<std::string> invalidPositionsStrVec;
+    if (!invalidIndexPositions.empty() && errString) {
+        *errString = TfStringPrintf(
+            "Found %ld invalid indices into authored array of size %ld with" 
+            " element size of %i:", 
+            invalidIndexPositions.size(), 
+            authored.size(), elementSize);
+
         // Print a maximum of 5 invalid index positions.
         size_t numElementsToPrint = std::min(invalidIndexPositions.size(), 
                                              size_t(5));
-        invalidPositionsStrVec.reserve(numElementsToPrint);
         for (size_t i = 0; i < numElementsToPrint ; ++i) {
-            invalidPositionsStrVec.push_back(
-                    TfStringify(invalidIndexPositions[i]));
-        }
+            int invalidIndex = indices[invalidIndexPositions[i]];
+            int authoredStartIndex = invalidIndex * elementSize;
 
-        if (errString) {
-            *errString = TfStringPrintf(
-                "Found %ld invalid indices at positions [%s%s] that are out of "
-                "range [0,%ld).", invalidIndexPositions.size(), 
-                TfStringJoin(invalidPositionsStrVec, ", ").c_str(), 
-                invalidIndexPositions.size() > 5 ? ", ..." : "",
-                authored.size());
+            *errString += TfStringPrintf(
+            "\n\t Invalid index %i at position %ld refers to %s of the"
+            " authored array, which is out of bounds", 
+            invalidIndex,
+            invalidIndexPositions[i],
+            elementSize == 1 ? TfStringPrintf("index %i", authoredStartIndex).c_str() 
+            : TfStringPrintf("indices [%i,...,%i]", authoredStartIndex, authoredStartIndex + elementSize - 1).c_str());
         }
     }
-
     return success;
 }
 

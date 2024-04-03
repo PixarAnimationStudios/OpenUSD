@@ -63,6 +63,20 @@ _CreateIncludeRootAttr(UsdCollectionAPI &self,
     return self.CreateIncludeRootAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateMembershipExpressionAttr(UsdCollectionAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateMembershipExpressionAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->PathExpression), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateCollectionAttr(UsdCollectionAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateCollectionAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Opaque), writeSparsely);
+}
 
 static bool _WrapIsCollectionAPIPath(const SdfPath &path) {
     TfToken collectionName;
@@ -74,7 +88,7 @@ static std::string
 _Repr(const UsdCollectionAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
-    std::string instanceName = self.GetName();
+    std::string instanceName = TfPyRepr(self.GetName());
     return TfStringPrintf(
         "Usd.CollectionAPI(%s, '%s')",
         primRepr.c_str(), instanceName.c_str());
@@ -108,8 +122,8 @@ void wrapUsdCollectionAPI()
         cls("CollectionAPI");
 
     cls
-        .def(init<UsdPrim, TfToken>())
-        .def(init<UsdSchemaBase const&, TfToken>())
+        .def(init<UsdPrim, TfToken>((arg("prim"), arg("name"))))
+        .def(init<UsdSchemaBase const&, TfToken>((arg("schemaObj"), arg("name"))))
         .def(TfTypePythonClass())
 
         .def("Get",
@@ -167,6 +181,20 @@ void wrapUsdCollectionAPI()
              &This::GetIncludeRootAttr)
         .def("CreateIncludeRootAttr",
              &_CreateIncludeRootAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetMembershipExpressionAttr",
+             &This::GetMembershipExpressionAttr)
+        .def("CreateMembershipExpressionAttr",
+             &_CreateMembershipExpressionAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetCollectionAttr",
+             &This::GetCollectionAttr)
+        .def("CreateCollectionAttr",
+             &_CreateCollectionAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

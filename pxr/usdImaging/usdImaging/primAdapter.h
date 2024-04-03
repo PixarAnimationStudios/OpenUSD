@@ -32,6 +32,7 @@
 #include "pxr/usdImaging/usdImaging/collectionCache.h"
 #include "pxr/usdImaging/usdImaging/primvarDescCache.h"
 #include "pxr/usdImaging/usdImaging/resolvedAttributeCache.h"
+#include "pxr/usdImaging/usdImaging/types.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/selection.h"
@@ -96,7 +97,8 @@ public:
     virtual HdDataSourceLocatorSet InvalidateImagingSubprim(
             UsdPrim const& prim,
             TfToken const& subprim,
-            TfTokenVector const& properties);
+            TfTokenVector const& properties,
+            UsdImagingPropertyInvalidationType invalidationType);
 
     /// \enum Scope
     ///
@@ -139,7 +141,8 @@ public:
             UsdPrim const& prim,
             UsdPrim const& descendentPrim,
             TfToken const& subprim,
-            TfTokenVector const& properties);
+            TfTokenVector const& properties,
+            UsdImagingPropertyInvalidationType invalidationType);
 
     // ---------------------------------------------------------------------- //
     /// \name Initialization
@@ -470,6 +473,18 @@ public:
                               UsdTimeCode time) const;
 
     // ---------------------------------------------------------------------- //
+    /// \name Light Params
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    virtual VtValue
+    GetLightParamValue(
+        const UsdPrim& prim,
+        const SdfPath& cachePath,
+        const TfToken& paramName,
+        UsdTimeCode time) const;
+
+    // ---------------------------------------------------------------------- //
     /// \name Utilities 
     // ---------------------------------------------------------------------- //
 
@@ -554,6 +569,11 @@ public:
     /// the namespace if necessary.
     USDIMAGING_API
     TfToken GetModelDrawMode(UsdPrim const& prim);
+
+    /// Gets the model draw mode object for the given prim, walking up the 
+    /// namespace if necessary.
+    USDIMAGING_API
+    HdModelDrawMode GetFullModelDrawMode(UsdPrim const& prim);
 
     /// Computes the per-prototype instance indices for a UsdGeomPointInstancer.
     /// XXX: This needs to be defined on the base class, to have access to the
@@ -669,6 +689,17 @@ public:
         return true;
     }
 
+
+    // ---------------------------------------------------------------------- //
+    /// \name Utilties
+    // ---------------------------------------------------------------------- //
+
+    /// Provides to paramName->UsdAttribute value mappings
+    USDIMAGING_API
+    static UsdAttribute LookupLightParamAttribute(
+            UsdPrim const& prim,
+            TfToken const& paramName);
+
 protected:
     using Keys = UsdImagingPrimvarDescCache::Key;
 
@@ -738,6 +769,11 @@ protected:
     // Returns the material contexts from the renderer delegate.
     USDIMAGING_API
     TfTokenVector _GetMaterialRenderContexts() const;
+
+    // Returns the namespace prefixes for render settings attributes relevant 
+    // to a renderer delegate.
+    USDIMAGING_API
+    TfTokenVector _GetRenderSettingsNamespaces() const;
 
     /// Returns whether custom shading of prims is enabled.
     USDIMAGING_API

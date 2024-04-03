@@ -184,6 +184,10 @@ class Launcher(object):
                             dest='timing',
                             help='Echo timing stats to console. NOTE: timings will be unreliable when the --memstats option is also in use')
 
+        parser.add_argument('--allow-async', action='store_true',
+                            dest='allowAsync',
+                            help='Enable asynchronous hydra scene processing')
+
         parser.add_argument('--traceToFile', action='store',
                             type=str,
                             dest='traceToFile',
@@ -365,7 +369,7 @@ class Launcher(object):
         return r.CreateDefaultContextForAsset(usdFile)
 
 
-    def LaunchPreamble(self, arg_parse_result):
+    def LaunchPreamble(self, arg_parse_result, overrideMaxSamples = True):
         # Initialize concurrency limit as early as possible so that it is
         # respected by subsequent imports.
         from pxr import Work
@@ -374,7 +378,8 @@ class Launcher(object):
         # XXX Override HdPrman's defaults using the env var.  In the
         # future we expect there may be more formal ways to represent
         # per-app settings for particular Hydra plugins.
-        os.environ.setdefault('HD_PRMAN_MAX_SAMPLES', '1024')
+        if overrideMaxSamples:
+            os.environ.setdefault('HD_PRMAN_MAX_SAMPLES', '1024')
 
         if arg_parse_result.clearSettings:
             AppController.clearSettings()

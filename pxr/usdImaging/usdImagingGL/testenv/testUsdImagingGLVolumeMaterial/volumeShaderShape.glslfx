@@ -39,7 +39,7 @@
 -- glsl VolumeShaderShape.VolumeShader
 
 // Forward declare function.
-vec3 coordsToLocalVolumeSpace(vec3);
+FORWARD_DECL(vec3 coordsToLocalVolumeSpace(vec3));
 
 // Computes the distance of a point with respect to the L^p-norm where p
 // is given by HdGet_eta(). The clients below use the step function to produce

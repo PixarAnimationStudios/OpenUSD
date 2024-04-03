@@ -1,0 +1,62 @@
+#usda 1.0 
+
+def "PrimWithReference" (
+    references = @ref.usda@</ReferencePrim>
+) {
+    custom double Ref_ReferencePrim_Attr = 2.0
+    custom int Root_PrimWithReference_Attr = 2
+
+	over "B" {
+        custom double Ref_B_Attr = 1.0
+        custom int Root_B_Attr = 1
+	}
+}
+
+def "PrimWithSubrootReference" (
+    references = @ref.usda@</ReferencePrim/B>
+) {
+    custom double Ref_B_Attr = 4.0
+    custom int Root_B_Attr = 4
+
+    over "A" {
+        custom double Ref_A_Attr = 3.0
+        custom int Root_A_Attr = 3
+    }
+}
+
+def "PrimWithVariant" (
+    prepend variantSets = "v"
+    variants = {
+        string v = "one"
+    }
+)
+{
+	custom int Root_OutsideTheVariant_Attr = 6
+
+    variantSet "v" = {
+        "one" (
+            references = @ref.usda@</ReferencePrim>
+        ) {
+		    custom double Ref_ReferencePrim_Attr = 1.0
+		    custom string Root_VariantOne_Attr = "one"
+        }
+        "two" (
+            references = @ref.usda@</ReferencePrim/B>
+        ) {
+		    custom double Ref_ReferencePrim_Attr = 2.0
+		    custom string Root_VariantTwo_Attr = "two"
+        }
+    }
+}
+
+class "RefClass" {
+	custom double Ref_RefClass_Attr = 5.0
+	
+    def "ClassChild" {
+        custom double Root_ClassChild_Attr = 5.0
+    }
+}
+
+def "BasicRootPrim" 
+{
+}

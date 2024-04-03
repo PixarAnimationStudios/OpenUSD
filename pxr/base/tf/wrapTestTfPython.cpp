@@ -42,7 +42,6 @@
 #include "pxr/base/tf/pyArg.h"
 #include "pxr/base/tf/pyPolymorphic.h"
 
-#include <boost/assign/list_of.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/list.hpp>
@@ -52,8 +51,6 @@
 #include <boost/python/register_ptr_to_python.hpp>
 #include <boost/python/return_arg.hpp>
 #include <boost/python/tuple.hpp>
-
-#include <boost/smart_ptr.hpp>
 
 #include <functional>
 #include <string>
@@ -467,10 +464,10 @@ _MakeClassWithVarArgInit(bool allowExtraArgs,
 {
     // To Python consumer, this class has 3 explicit optional arguments, named 
     // 'a', 'b', and 'c'.
-    const TfPyArgs optionalArgs = boost::assign::list_of<>
-        (TfPyArg("a", ""))
-        (TfPyArg("b", ""))
-        (TfPyArg("c", ""));
+    TfPyArgs optionalArgs {{
+        TfPyArg("a", ""),
+        TfPyArg("b", ""),
+        TfPyArg("c", "") }};
 
     const std::pair<tuple, dict> params = 
         TfPyProcessOptionalArgs(args, kwargs, optionalArgs, allowExtraArgs);
@@ -609,9 +606,3 @@ void wrapTf_TestTfPython()
         ;
 
 }
-
-TF_REFPTR_CONST_VOLATILE_GET(Tf_ClassWithVarArgInit)
-TF_REFPTR_CONST_VOLATILE_GET(Tf_TestBase)
-TF_REFPTR_CONST_VOLATILE_GET(Tf_TestDerived)
-TF_REFPTR_CONST_VOLATILE_GET(polymorphic_Tf_TestBase<class Tf_TestBase>)
-TF_REFPTR_CONST_VOLATILE_GET(polymorphic_Tf_TestDerived<class Tf_TestDerived>)

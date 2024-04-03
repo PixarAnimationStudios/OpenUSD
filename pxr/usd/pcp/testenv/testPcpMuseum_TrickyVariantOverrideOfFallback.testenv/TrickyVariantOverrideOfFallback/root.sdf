@@ -7,11 +7,15 @@
     """
 )
 
-def Scope "A" (
+def "A" (
     add variantSets = ["vset1"]
     references = [ </B> ]
 )
 {
+    def "Child"
+    {
+    }
+
     variantSet "vset1" = {
         "fallback" (
             # This selection will not apply, because we
@@ -31,17 +35,25 @@ def Scope "A" (
             }
         ) {
             string result = "used_selection";
+
+            def "Child"
+            {
+            }
         }
     }
 }
 
-def scope "B" (
+def "B" (
     add variantSets = ["vset2"]
     variants = {
         string vset2 = "selection"
     }
 )
 {
+    def "Child"
+    {
+    }
+
     variantSet "vset2" = {
         "fallback" {
         }
@@ -50,8 +62,17 @@ def scope "B" (
                 string vset1 = "selection"
             }
         ) {
+            def "Child"
+            {
+            }
         }
         "ignored_selection" {
         }
     }
+}
+
+def "C" (
+    references = </A/Child>
+)
+{
 }

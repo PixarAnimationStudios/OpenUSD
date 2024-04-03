@@ -24,6 +24,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/errors.h"
+
+#include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/stringUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -56,11 +58,12 @@ TF_REGISTRY_FUNCTION(TfEnum) {
     TF_ADD_ENUM_NAME(PcpErrorType_SublayerCycle);
     TF_ADD_ENUM_NAME(PcpErrorType_TargetPermissionDenied);
     TF_ADD_ENUM_NAME(PcpErrorType_UnresolvedPrimPath);
+    TF_ADD_ENUM_NAME(PcpErrorType_VariableExpressionError);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PcpErrorBase::PcpErrorBase(TfEnum errorType) :
+PcpErrorBase::PcpErrorBase(PcpErrorType errorType) :
     errorType(errorType)
 {
 }
@@ -226,8 +229,8 @@ PcpErrorCapacityExceeded::ToString() const
 ///////////////////////////////////////////////////////////////////////////////
 
 PcpErrorInconsistentPropertyBase::PcpErrorInconsistentPropertyBase(
-    TfEnum errorType) :
-    PcpErrorBase(errorType)
+    PcpErrorType errorType)
+    : PcpErrorBase(errorType)
 {
 }
 
@@ -371,7 +374,8 @@ std::string
 PcpErrorInvalidPrimPath::ToString() const
 {
     return TfStringPrintf("Invalid %s path <%s> introduced by %s"
-                          "-- must be an absolute prim path.", 
+                          "-- must be an absolute prim path with no "
+                          "variant selections.", 
                           TfEnum::GetDisplayName(arcType).c_str(), 
                           primPath.GetText(),
                           TfStringify(PcpSite(sourceLayer, site.path)).c_str());
@@ -380,8 +384,8 @@ PcpErrorInvalidPrimPath::ToString() const
 ///////////////////////////////////////////////////////////////////////////////
 
 PcpErrorInvalidAssetPathBase::PcpErrorInvalidAssetPathBase(
-    TfEnum errorType) :
-    PcpErrorBase(errorType)
+    PcpErrorType errorType)
+    : PcpErrorBase(errorType)
 {
 }
 
@@ -449,7 +453,7 @@ PcpErrorMutedAssetPath::ToString() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PcpErrorTargetPathBase::PcpErrorTargetPathBase(TfEnum errorType)
+PcpErrorTargetPathBase::PcpErrorTargetPathBase(PcpErrorType errorType)
     : PcpErrorBase(errorType)
 {
 }
@@ -615,13 +619,14 @@ PcpErrorInvalidReferenceOffset::~PcpErrorInvalidReferenceOffset()
 std::string
 PcpErrorInvalidReferenceOffset::ToString() const
 {
-    return TfStringPrintf("Invalid %s offset %s for @%s@<%s> introduced by %s. "
-                          "Using no offset instead.",
-                          TfEnum::GetDisplayName(arcType).c_str(), 
-                          TfStringify(offset).c_str(),
-                          assetPath.c_str(),
-                          targetPath.GetText(),
-                          TfStringify(PcpSite(sourceLayer, sourcePath)).c_str());
+    return TfStringPrintf(
+        "Invalid %s offset %s for @%s@<%s> introduced by %s. "
+        "Using no offset instead.",
+        TfEnum::GetDisplayName(arcType).c_str(), 
+        TfStringify(offset).c_str(),
+        assetPath.c_str(),
+        targetPath.GetText(),
+        TfStringify(PcpSite(sourceLayer, sourcePath)).c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -862,10 +867,58 @@ PcpErrorUnresolvedPrimPath::~PcpErrorUnresolvedPrimPath()
 std::string
 PcpErrorUnresolvedPrimPath::ToString() const
 {
-    return TfStringPrintf("Unresolved %s prim path %s introduced by %s",
-                          TfEnum::GetDisplayName(arcType).c_str(), 
-                          TfStringify(PcpSite(targetLayer, unresolvedPath)).c_str(),
-                          TfStringify(PcpSite(sourceLayer, site.path)).c_str());
+    return TfStringPrintf(
+        "Unresolved %s prim path %s introduced by %s",
+        TfEnum::GetDisplayName(arcType).c_str(), 
+        TfStringify(PcpSite(targetLayer, unresolvedPath)).c_str(),
+        TfStringify(PcpSite(sourceLayer, site.path)).c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PcpErrorVariableExpressionErrorPtr
+PcpErrorVariableExpressionError::New()
+{
+    return PcpErrorVariableExpressionErrorPtr(
+        new PcpErrorVariableExpressionError);
+}
+
+PcpErrorVariableExpressionError::PcpErrorVariableExpressionError()
+    : PcpErrorBase(PcpErrorType_VariableExpressionError)
+{
+}
+
+PcpErrorVariableExpressionError::~PcpErrorVariableExpressionError()
+{
+}
+
+std::string
+PcpErrorVariableExpressionError::ToString() const
+{
+    // Example error messages:
+    // Error evaluating expression "`if(${FOO}, ..."
+    // for sublayer in @foo.sdf@: invalid syntax
+    //
+    // Error evaluating expression "`if(${FOO}, ..."
+    // for reference at </Foo> in @bar.sdf@: invalid syntax
+    auto makeSourceStr = [this]() {
+        std::string result;
+        if (!sourcePath.IsAbsoluteRootPath()) {
+            result += TfStringPrintf(
+                "at %s ", sourcePath.GetAsString().c_str());
+        }
+        result += TfStringPrintf(
+            "in @%s@", 
+            sourceLayer ? sourceLayer->GetIdentifier().c_str() : "<expired>");
+        return result;
+
+    };
+
+    return TfStringPrintf(
+        R"(Error evaluating expression %s for %s %s: %s)",
+        expression.substr(0, 32).c_str(), 
+        context.c_str(), makeSourceStr().c_str(),
+        expressionError.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

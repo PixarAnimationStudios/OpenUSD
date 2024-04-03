@@ -44,8 +44,6 @@
 
 #include <atomic>
 
-#include <boost/functional/hash.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -72,7 +70,7 @@ HdStVBOSimpleMemoryManager::CreateBufferArrayRange()
                 (_resourceRegistry);
 }
 
-HdAggregationStrategy::AggregationId
+HdStAggregationStrategy::AggregationId
 HdStVBOSimpleMemoryManager::ComputeAggregationId(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint) const

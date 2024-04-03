@@ -244,19 +244,21 @@ UsdSkel_SkelDefinition::_ComputeJointSkelRestTransforms()
     if (TF_VERIFY(GetJointLocalRestTransforms(&jointLocalRestXforms))) {
 
         std::lock_guard<std::mutex> lock(_mutex);
-        
-        VtArray<Matrix4>& skelXforms = _jointSkelRestXforms.Get<Matrix4>();
-        skelXforms.resize(_topology.size());
 
-        const bool success =
-            UsdSkelConcatJointTransforms(_topology, jointLocalRestXforms,
-                                         skelXforms);
+        if (!(_flags & ComputeFlag)) {
+            VtArray<Matrix4>& skelXforms = _jointSkelRestXforms.Get<Matrix4>();
+            skelXforms.resize(_topology.size());
 
-        // XXX: Topology was validated when the definition was constructed,
-        /// so this should not have failed.
-        TF_VERIFY(success);
+            const bool success =
+                UsdSkelConcatJointTransforms(_topology, jointLocalRestXforms,
+                                             skelXforms);
 
-        _flags = _flags|ComputeFlag;
+            // XXX: Topology was validated when the definition was constructed,
+            /// so this should not have failed.
+            TF_VERIFY(success);
+
+            _flags |= ComputeFlag;
+        }
 
         return true;
     }
@@ -360,11 +362,18 @@ UsdSkel_SkelDefinition::_ComputeJointWorldInverseBindTransforms()
 
         std::lock_guard<std::mutex> lock(_mutex);
 
-        _InvertTransforms<Matrix4>(
-            jointWorldBindXforms,
-            &_jointWorldInverseBindXforms.Get<Matrix4>());
+        // Check the flag again after acquiring the lock to avoid re-computing.
+        // It is not safe to call mutating member functions that can cause a
+        // copy-on-write detach while other threads may be making copies of the
+        // array.
+        if (!(_flags & ComputeFlag)) {
+            _InvertTransforms<Matrix4>(
+                jointWorldBindXforms,
+                &_jointWorldInverseBindXforms.Get<Matrix4>());
 
-        _flags = _flags|ComputeFlag;
+            _flags |= ComputeFlag;
+        }
+
         return true;
     }
     return false;
@@ -430,11 +439,13 @@ UsdSkel_SkelDefinition::_ComputeJointLocalInverseRestTransforms()
 
         std::lock_guard<std::mutex> lock(_mutex);
 
-        _InvertTransforms<Matrix4>(
-            jointLocalRestXforms,
-            &_jointLocalInverseRestXforms.Get<Matrix4>());
+        if (!(_flags & ComputeFlag)) {
+            _InvertTransforms<Matrix4>(
+                jointLocalRestXforms,
+                &_jointLocalInverseRestXforms.Get<Matrix4>());
 
-        _flags = _flags|ComputeFlag;
+            _flags |= ComputeFlag;
+        }
 
         return true;
     }

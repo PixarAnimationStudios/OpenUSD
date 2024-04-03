@@ -31,7 +31,7 @@ from __future__ import print_function
 from .qt import QtCore, QtGui, QtWidgets, QtActionWidgets
 
 # Stdlib components
-import re, sys, os, cProfile, pstats, traceback
+import re, sys, os, cProfile, pstats, traceback, unicodedata
 from itertools import groupby
 from time import time, sleep
 from collections import deque, OrderedDict
@@ -372,6 +372,7 @@ class AppController(QtCore.QObject):
         with self._makeTimer('bring up the UI'):
 
             self._primToItemMap = {}
+            self._allSceneCameras = None
             self._itemsToPush = []
             self._currentSpec = None
             self._currentLayer = None
@@ -387,15 +388,12 @@ class AppController(QtCore.QObject):
             self._lastViewContext = {}
             self._paused = False
             self._stopped = False
-            if QT_BINDING == 'PySide':
-                self._statusFileName = 'state'
-                self._deprecatedStatusFileNames = ('.usdviewrc')
-            else:
-                self._statusFileName = 'state.%s'%QT_BINDING
-                self._deprecatedStatusFileNames = ('state', '.usdviewrc')
+            self._statusFileName = 'state.%s'%QT_BINDING
+            self._deprecatedStatusFileNames = ('state', '.usdviewrc')
             self._mallocTags = parserData.mallocTagStats
 
             self._allowViewUpdates = True
+            self._allowAsync = parserData.allowAsync
 
             # When viewer mode is active, the panel sizes are cached so they can
             # be restored later.
@@ -535,6 +533,14 @@ class AppController(QtCore.QObject):
             # to slow down rendering to self.framesPerSecond fps.
             self._qtimer.setInterval(0)
             self._lastFrameTime = time()
+
+            if self._allowAsync:
+                self._asyncTimer = QtCore.QTimer(self)
+                self._asyncTimer.setInterval(100)
+                self._asyncTimer.timeout.connect(self._updateAsyncTimer)
+                self._asyncTimer.start()
+            else:
+                self._asyncTimer = None
 
             # Initialize the upper HUD info
             self._upperHUDInfo = dict()
@@ -778,8 +784,10 @@ class AppController(QtCore.QObject):
 
             # XXX:
             # To avoid PYSIDE-79 (https://bugreports.qt.io/browse/PYSIDE-79)
-            # with Qt4/PySide, we must hold the prim view's selectionModel
-            # in a local variable before connecting its signals.
+            # we must hold the prim view's selectionModel in a local variable
+            # before connecting its signals. Note this bug was originally
+            # associated with PySide 1.x/Qt4, but comments on the bug report
+            # above indicate this is still be an issue in newer PySide releases.
             primViewSelModel = self._ui.primView.selectionModel()
             primViewSelModel.selectionChanged.connect(self._selectionChanged)
 
@@ -960,7 +968,11 @@ class AppController(QtCore.QObject):
             self._ui.actionAmbient_Only.triggered[bool].connect(
                 self._ambientOnlyClicked)
 
-            self._ui.actionDomeLight.triggered[bool].connect(self._onDomeLightClicked)
+            self._ui.actionDomeLight.triggered[bool].connect(
+                self._onDomeLightClicked)
+
+            self._ui.actionDomeLightTexturesVisible.triggered[bool].connect(
+                self._onDomeLightTexturesVisibleClicked)
 
             self._ui.colorGroup.triggered.connect(self._changeBgColor)
 
@@ -1279,6 +1291,7 @@ class AppController(QtCore.QObject):
         if self._stageView:
             self._stageView.closeRenderer()
         self._dataModel.stage = None
+        self._allSceneCameras = None
 
     def _startQtShutdownTimer(self):
         self._qtShutdownTimer = self._makeTimer('tear down the UI')
@@ -1749,7 +1762,7 @@ class AppController(QtCore.QObject):
         def setOcioConfig(action):
             display = str(action.parent().title())
             view = str(action.text())
-            if config.hasattr('getDisplayViewColorSpaceName'):
+            if hasattr(config, 'getDisplayViewColorSpaceName'):
                 # OCIO version 2
                 colorSpace = config.getDisplayViewColorSpaceName(display, view)
             else:
@@ -1820,11 +1833,15 @@ class AppController(QtCore.QObject):
 
         if not self._stageView:
 
-            # The second child is self._ui.glFrame, which disappears if
+            # The second child is self._ui.renderFrame, which disappears if
             # its size is set to zero.
             if self._noRender:
-                # remove glFrame from the ui
-                self._ui.glFrame.setParent(None)
+                # hiding the widget would usually be sufficient,
+                # but _cacheViewerModeEscapeSizes() assumes the splitter has
+                # only two children, so we additionally remove renderFrame 
+                # from the ui
+                self._ui.renderFrame.hide()
+                self._ui.renderFrame.setParent(None)
 
                 # move the attributeBrowser into the primSplitter instead
                 self._ui.primStageSplitter.addWidget(self._ui.attributeBrowserFrame)
@@ -1834,6 +1851,8 @@ class AppController(QtCore.QObject):
                     parent=self._mainWindow,
                     dataModel=self._dataModel,
                     makeTimer=self._makeTimer)
+
+                self._stageView.allowAsync = self._allowAsync
 
                 self._stageView.fpsHUDInfo = self._fpsHUDInfo
                 self._stageView.fpsHUDKeys = self._fpsHUDKeys
@@ -1944,6 +1963,7 @@ class AppController(QtCore.QObject):
             self._updateCompositionView()
 
             if self._stageView:
+                self._stageView.updateSelection()
                 self._stageView.update()
 
     def updateGUI(self):
@@ -2184,6 +2204,13 @@ class AppController(QtCore.QObject):
 
     # Prim/Attribute search functionality =====================================
 
+    # Defaults to NFKC for ease of use for users. NFKC has a compatbility 
+    # decomposition that NFC does not. This makes it much easier to search with 
+    # just ASCII characters. Some information is lost with the additional 
+    # decomposition, but it's intentional to enable simpler searching.
+    def _normalize_unicode(self, str: str, form = 'NFKC'):
+        return unicodedata.normalize(form, str) 
+
     def _isMatch(self, pattern, isRegex, prim, useDisplayName):
         """
         Determines if the given prim has a name that matches the
@@ -2210,11 +2237,13 @@ class AppController(QtCore.QObject):
         Returns:
             True if the pattern matches the specified prim content, False otherwise. 
         """
+
+        pattern = self._normalize_unicode(pattern)
         if isRegex:
             matchLambda = re.compile(pattern, re.IGNORECASE).search
         else:
-            pattern = pattern.lower()
-            matchLambda = lambda x: pattern in x.lower()
+            pattern = pattern.casefold()
+            matchLambda = lambda x: pattern in x.casefold()
 
         if useDisplayName:
             # typically we would check prim.HasAuthoredDisplayName()
@@ -2224,13 +2253,13 @@ class AppController(QtCore.QObject):
             # so we'd be paying twice the price for each prim
             # search, which on large scenes would be a big performance
             # hit, so we do it this way instead
-            displayName = prim.GetDisplayName()
+            displayName = self._normalize_unicode(prim.GetDisplayName())
             if displayName:
                 return matchLambda(displayName)
             else:
-                return matchLambda(prim.GetName())
+                return matchLambda(self._normalize_unicode(prim.GetName()))
         else:
-            return matchLambda(prim.GetName())
+            return matchLambda(self._normalize_unicode(prim.GetName()))
 
 
     def _findPrims(self, pattern, useRegex=True):
@@ -2355,13 +2384,15 @@ class AppController(QtCore.QObject):
                                 self._propertyLegendAnim)
 
     def _attrViewFindNext(self):
-        if (self._attrSearchString == self._ui.attrViewLineEdit.text() and
+        if (self._attrSearchString == self._normalize_unicode(self._ui.attrViewLineEdit.text()) and
             len(self._attrSearchResults) > 0 and
             self._lastPrimSearched == self._dataModel.selection.getFocusPrim()):
 
             # Go to the next result of the currently ongoing search
-            nextResult = self._attrSearchResults.popleft()
-            itemName = str(nextResult.text(PropertyViewIndex.NAME))
+            index = self._attrSearchResults.popleft()
+            nextResult = self._ui.propertyView.model().data(index)
+            item = self._ui.propertyView.itemFromIndex(index)
+            itemName = nextResult
 
             selectedProp = self._propertiesDict[itemName]
             if isinstance(selectedProp, CustomAttribute):
@@ -2370,9 +2401,9 @@ class AppController(QtCore.QObject):
             else:
                 self._dataModel.selection.setProp(selectedProp)
                 self._dataModel.selection.clearComputedProps()
-            self._ui.propertyView.scrollToItem(nextResult)
+            self._ui.propertyView.scrollToItem(item)
 
-            self._attrSearchResults.append(nextResult)
+            self._attrSearchResults.append(index)
             self._lastPrimSearched = self._dataModel.selection.getFocusPrim()
 
             self._ui.attributeValueEditor.populate(
@@ -2381,25 +2412,16 @@ class AppController(QtCore.QObject):
             self._updateLayerStackView(self._getSelectedObject())
         else:
             # Begin a new search
-            self._attrSearchString = self._ui.attrViewLineEdit.text()
-            attrSearchItems = self._ui.propertyView.findItems(
-                self._ui.attrViewLineEdit.text(),
-                QtCore.Qt.MatchRegExp,
-                PropertyViewIndex.NAME)
+            self._attrSearchString = self._normalize_unicode(self._ui.attrViewLineEdit.text())
+            
+            search1 = deque(self._ui.propertyView.model().match(self._ui.propertyView.model().index(0, 1),
+                PropertyViewDataRoles.NORMALIZED_NAME, self._attrSearchString, -1, QtCore.Qt.MatchContains))
+            search2 = deque(self._ui.propertyView.model().match(self._ui.propertyView.model().index(0, 1),
+                PropertyViewDataRoles.NORMALIZED_NAME, self._attrSearchString, -1, QtCore.Qt.MatchRegExp))
 
-            # Now just search for the string itself
-            otherSearch = self._ui.propertyView.findItems(
-                self._ui.attrViewLineEdit.text(),
-                QtCore.Qt.MatchContains,
-                PropertyViewIndex.NAME)
-
-            # Combine search results and sort by model index so that
-            # we iterate over results from top to bottom.
-            combinedItems = set(attrSearchItems + otherSearch)
+            combinedItems = set(search1 + search2)
             self._attrSearchResults = deque(
-                sorted(combinedItems, 
-                       key=lambda i: self._ui.propertyView.indexFromItem(
-                           i, PropertyViewIndex.NAME)))
+                sorted(combinedItems))
 
             self._lastPrimSearched = self._dataModel.selection.getFocusPrim()
             if (len(self._attrSearchResults) > 0):
@@ -2470,6 +2492,9 @@ class AppController(QtCore.QObject):
         longer exists"""
 
         self._hasPrimResync = hasPrimResync or self._hasPrimResync
+
+        # Scene cameras may need to update when something in the stage changes
+        self._allSceneCameras = None
 
         self._clearCaches(preserveCamera=True)
 
@@ -2575,6 +2600,10 @@ class AppController(QtCore.QObject):
     def _onDomeLightClicked(self, checked=None):
         if self._stageView and checked is not None:
             self._dataModel.viewSettings.domeLightEnabled = checked
+    
+    def _onDomeLightTexturesVisibleClicked(self, checked=None):
+        if self._stageView and checked is not None:
+            self._dataModel.viewSettings.domeLightTexturesVisible = checked
 
     def _changeBgColor(self, mode):
         self._dataModel.viewSettings.clearColorText = str(mode.text())
@@ -2781,7 +2810,7 @@ class AppController(QtCore.QObject):
             caption,
             './' + recommendedFilename,
             'USD Files (*.usd)'
-            ';;USD ASCII Files (*.usda)'
+            ';;USD Text Files (*.usda)'
             ';;USD Crate Files (*.usdc)'
             ';;Any USD File (*.usd *.usda *.usdc)',
             'Any USD File (*.usd *.usda *.usdc)')
@@ -2964,8 +2993,11 @@ class AppController(QtCore.QObject):
         self._dataModel.viewSettings.cameraPrim = camera
 
     def _refreshCameraListAndMenu(self, preserveCurrCamera):
-        self._allSceneCameras = Utils._GetAllPrimsOfType(
-            self._dataModel.stage, Tf.Type.Find(UsdGeom.Camera))
+    	# Scene cameras should only change when something in the stage
+    	# changes so only update them if needed.
+        if self._allSceneCameras is None:
+            self._allSceneCameras = Utils._GetAllPrimsOfType(
+                self._dataModel.stage, Tf.Type.Find(UsdGeom.Camera))
         currCamera = self._startingPrimCamera
         if self._stageView:
             currCamera = self._dataModel.viewSettings.cameraPrim
@@ -3020,7 +3052,9 @@ class AppController(QtCore.QObject):
             currCameraPath = None
             if currCamera:
                 currCameraPath = currCamera.GetPath()
-            for camera in self._allSceneCameras:
+            
+            cameraListMaxLen = 20
+            for camera in self._allSceneCameras[:cameraListMaxLen]:
                 action = self._ui.menuCameraSelect.addAction(camera.GetName())
                 action.setData(camera.GetPath())
                 action.setToolTip(str(camera.GetPath()))
@@ -3029,6 +3063,82 @@ class AppController(QtCore.QObject):
                 action.triggered[bool].connect(
                     lambda _, cam = camera: self._cameraSelectionChanged(cam))
                 action.setChecked(action.data() == currCameraPath)
+            
+            if len(self._allSceneCameras) > cameraListMaxLen:
+                self._ui.menuCameraSelect.addSeparator()
+                moreCamerasAction = self._ui.menuCameraSelect.addAction("More Cameras...")
+                moreCamerasAction.setToolTip("View All Cameras")
+                moreCamerasAction.triggered.connect(self._showMoreCamerasDialog)
+
+    def _showMoreCamerasDialog(self):
+        """Open dialog box containing all scene cameras."""
+        
+        class CameraItem(QtWidgets.QListWidgetItem):
+
+            def __init__(self, camera, parent=None):
+                super(CameraItem, self).__init__(parent)
+
+                self.camera = camera
+                self.setText(camera.GetName())
+
+         # Recreate the settings dialog
+        self._ui.camerasMoreDialog = QtWidgets.QDialog(self._mainWindow)
+        self._ui.camerasMoreDialog.setWindowTitle("Select Camera")
+        self._ui.camerasMoreDialog.setMinimumSize(400, 500)
+        layout = QtWidgets.QVBoxLayout()
+
+        # Make camera list widget
+        self._ui.cameraList = QtWidgets.QListWidget()
+        for camera in self._allSceneCameras:
+            item = CameraItem(camera)
+            self._ui.cameraList.addItem(item)
+
+        self._ui.cameraList.currentItemChanged.connect(
+            lambda cam, _: self._cameraSelectionChanged(cam.camera))
+
+        # Make scroll widget
+        scrollArea = QtWidgets.QScrollArea()
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setWidget(self._ui.cameraList)  
+        scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)  
+        layout.addWidget(scrollArea)
+
+        # Add search bar
+        searchBar = QtWidgets.QLineEdit()
+        searchBar.textChanged.connect(self._onCameraSearchTextChanged)
+        searchBar.editingFinished.connect(self._onCameraSearchComplete)
+        searchBar.setPlaceholderText("Search for camera by name")
+        layout.addWidget(searchBar)
+
+        # Add buttons
+        ok = QtWidgets.QPushButton("Ok")
+        ok.setAutoDefault(False)
+        ok.setDefault(False)
+        layout.addWidget(ok)
+        ok.clicked.connect(self._ui.camerasMoreDialog.accept)
+
+        self._ui.camerasMoreDialog.setLayout(layout)
+        self._ui.camerasMoreDialog.show()
+
+
+    def _onCameraSearchComplete(self):
+        for i in range(self._ui.cameraList.count()):
+            cam = self._ui.cameraList.item(i)
+            if not cam.isHidden():
+                self._ui.cameraList.setCurrentItem(cam)
+                break
+
+
+    def _onCameraSearchTextChanged(self, text):
+        text_lower = text.lower()
+        for i in range(self._ui.cameraList.count()):
+            cam = self._ui.cameraList.item(i)
+            if text_lower not in cam.text().lower():
+                cam.setHidden(True)
+            else:
+                cam.setHidden(False)
+        
 
     def _updatePropertiesFromPropertyView(self):
         """Update the data model's property selection to match property view's
@@ -3042,28 +3152,16 @@ class AppController(QtCore.QObject):
             # with targets etc etc.
             role = item.data(PropertyViewIndex.TYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
             if role in (PropertyViewDataRoles.CONNECTION, PropertyViewDataRoles.TARGET):
-
-                # Get the owning property's set of selected targets.
-                propName = str(item.parent().text(PropertyViewIndex.NAME))
-                prop = self._propertiesDict[propName]
-                targets = selectedProperties.setdefault(prop, set())
-
-                # Add the target to the set of targets.
                 targetPath = Sdf.Path(str(item.text(PropertyViewIndex.NAME)))
-                if role == PropertyViewDataRoles.CONNECTION:
-                    prim = self._dataModel.stage.GetPrimAtPath(
-                        targetPath.GetPrimPath())
-                    target = prim.GetProperty(targetPath.name)
-                else: # role == PropertyViewDataRoles.TARGET
-                    target = self._dataModel.stage.GetPrimAtPath(
-                        targetPath)
-                targets.add(target)
-
+                propName = str(item.parent().text(PropertyViewIndex.NAME))
             else:
-
+                targetPath = None
                 propName = str(item.text(PropertyViewIndex.NAME))
-                prop = self._propertiesDict[propName]
-                selectedProperties.setdefault(prop, set())
+
+            prop = self._propertiesDict[propName]
+            targetPaths = selectedProperties.setdefault(prop, [])
+            if targetPath:
+                targetPaths.append(targetPath)
 
         with self._dataModel.selection.batchPropChanges:
             self._dataModel.selection.clearProps()
@@ -3071,7 +3169,8 @@ class AppController(QtCore.QObject):
                 if not isinstance(prop, CustomAttribute):
                     self._dataModel.selection.addProp(prop)
                     for target in targets:
-                        self._dataModel.selection.addPropTarget(prop, target)
+                        self._dataModel.selection.addPropTargetPath(
+                            prop.GetPath(), target)
 
         with self._dataModel.selection.batchComputedPropChanges:
             self._dataModel.selection.clearComputedProps()
@@ -3907,6 +4006,9 @@ class AppController(QtCore.QObject):
             treeWidget.topLevelItem(currRow).setData(PropertyViewIndex.TYPE,
                     QtCore.Qt.ItemDataRole.WhatsThisRole,
                     typeRole)
+            treeWidget.topLevelItem(currRow).setData(PropertyViewIndex.NAME,
+                PropertyViewDataRoles.NORMALIZED_NAME,
+                self._normalize_unicode(str(key)))
 
             currItem = treeWidget.topLevelItem(currRow)
 
@@ -3942,6 +4044,10 @@ class AppController(QtCore.QObject):
                             QtWidgets.QTreeWidgetItem(["", str(t), ""]))
                     currItem.setFont(PropertyViewIndex.VALUE, valTextFont)
                     child = currItem.child(childRow)
+
+                    child.setData(PropertyViewIndex.NAME,
+                        PropertyViewDataRoles.NORMALIZED_NAME,
+                        self._normalize_unicode(str(t)))
 
                     if typeRole == PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS:
                         child.setIcon(PropertyViewIndex.TYPE, 
@@ -4146,8 +4252,8 @@ class AppController(QtCore.QObject):
         #
         # XXX: Would be nice to have some official facility to query
         # this.
-        compKeys = [# composition related metadata
-                    "references", "inheritPaths", "specializes",
+        compKeys = [# composition related metadata (inherits handled below)
+                    "references", "specializes",
                     "payload", "subLayers"]
 
 
@@ -4172,6 +4278,12 @@ class AppController(QtCore.QObject):
         variantSets = {}
         setlessVariantSelections = {}
         if (isinstance(obj, Usd.Prim)):
+            # Get the inherits via API instead of the "inheritPaths" metadata
+            # which can be incomplete.
+            inheritPaths = obj.GetInherits().GetAllDirectInherits()
+            if inheritPaths:
+                m["inherits"] = inheritPaths
+
             # Get all variant selections as setless and remove the ones we find
             # sets for.
             setlessVariantSelections = obj.GetVariantSets().GetAllVariantSelections()
@@ -5280,6 +5392,8 @@ class AppController(QtCore.QObject):
             self._dataModel.viewSettings.displayPrimId)
         self._ui.actionCull_Backfaces.setChecked(
             self._dataModel.viewSettings.cullBackfaces)
+        self._ui.actionDomeLightTexturesVisible.setChecked(
+            self._dataModel.viewSettings.domeLightTexturesVisible)
         self._ui.actionAuto_Compute_Clipping_Planes.setChecked(
             self._dataModel.viewSettings.autoComputeClippingPlanes)
 
@@ -5343,3 +5457,9 @@ class AppController(QtCore.QObject):
         from .rootDataModel import ChangeNotice
         self._updateForStageChanges(
             hasPrimResync=(primsChange==ChangeNotice.RESYNC))
+
+    def _updateAsyncTimer(self):
+        if not self._stageView:
+            return
+        if self._stageView.PollForAsynchronousUpdates():
+            self._usdviewApi.UpdateViewport()

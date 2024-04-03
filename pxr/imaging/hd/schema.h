@@ -56,6 +56,7 @@ public:
     /// container.
     explicit operator bool() const { return IsDefined(); }
 
+    using UnderlyingDataSource = HdContainerDataSource;
 
 protected:
     HdContainerDataSourceHandle _container;

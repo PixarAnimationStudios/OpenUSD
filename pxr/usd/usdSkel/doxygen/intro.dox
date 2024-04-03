@@ -31,7 +31,7 @@ of scalability:
    animation-layering capabilities may eventually be introduced as part of an
    encoding of animation blending.
 
-2. UsdSkel leverages <a href="https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Instancing">scene graph instancing</a>
+2. UsdSkel leverages <a href="https://openusd.org/release/glossary.html#usdglossary-instancing">scene graph instancing</a>
    to describe _rest state_ instancing, by which the rest state of
    characters may be shared across multiple instances of a character, each of
    which has been assigned a unique animation -- *without deinstancing*.
@@ -54,7 +54,7 @@ common terminology:
 - \anchor UsdSkel_Term_Skeleton **Skeleton**:
 
   An encoding of an animated joint hierarchy.
-  A Skeleton may additional hold other properties that affect deformations,
+  A Skeleton may additionally hold other properties that affect deformations,
   such as weights for a set of blend shapes.
 
 - \anchor UsdSkel_Term_SkeletonTopology **Skeleton Topology**:
@@ -69,7 +69,7 @@ common terminology:
 - **Binding**:
   
   An encoding of the binding of a _Skeleton_ to a geometry hierarchy,
-  describing which geometric primitves the _Skeleton_ deforms (if any),
+  describing which geometric primitives the _Skeleton_ deforms (if any),
   and how.
 
 - \anchor UsdSkel_Term_JointInfluences **Joint Influences**:
@@ -146,7 +146,7 @@ The _World Space_ transform of a joint is computed as:
 \endcode
 
 Where _skelLocalToWorldTransform_ is the world space transform of the Skeleton
-primtiive.
+primitive.
     
 
 \section UsdSkel_PointSkinning Skinning a Point (Linear Blend Skinning)

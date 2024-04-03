@@ -34,11 +34,9 @@
 #include "pxr/base/gf/traits.h"
 
 #include "pxr/base/tf/preprocessorUtilsLite.h"
-#include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/preprocessor.hpp>
 #include <boost/python.hpp>
 
 #include <numeric>
@@ -219,48 +217,6 @@ struct Vt_ArrayBufferWrapper
 ////////////////////////////////////////////////////////////////////////
 // Python buffer protocol entry points.
 
-#if PY_MAJOR_VERSION == 2
-// Python's getreadbuf interface function.
-template <class T>
-Py_ssize_t
-Vt_getreadbuf(PyObject *self, Py_ssize_t segment, void **ptrptr) {
-    if (segment != 0) {
-        // Always one-segment for arrays.
-        PyErr_SetString(PyExc_ValueError, "accessed non-existent segment");
-        return -1;
-    }
-    T &selfT = bp::extract<T &>(self);
-    *ptrptr = const_cast<void *>(static_cast<void const *>(selfT.cdata()));
-    // Return size in bytes.
-    return selfT.size() * sizeof(typename T::value_type);
-}
-
-// Python's getwritebuf interface function.
-template <class T>
-Py_ssize_t
-Vt_getwritebuf(PyObject *self, Py_ssize_t segment, void **ptrptr) {
-    PyErr_SetString(PyExc_ValueError, "writable buffers unsupported");
-    return -1;
-}
-
-// Python's getsegcount interface function.
-template <class T>
-Py_ssize_t
-Vt_getsegcount(PyObject *self, Py_ssize_t *lenp) {
-    T &selfT = bp::extract<T &>(self);
-    if (lenp)
-        *lenp = selfT.size() * sizeof(typename T::value_type);
-    return 1; // Always one contiguous segment.
-}
-
-// Python's getcharbuf interface function.
-template <class T>
-Py_ssize_t
-Vt_getcharbuf(PyObject *self, Py_ssize_t segment, const char **ptrptr) {
-    return Vt_getreadbuf<T>(self, segment, (void **) ptrptr);
-}
-#endif
-
 // Python's releasebuffer interface function.
 template <class T>
 void
@@ -337,12 +293,6 @@ struct Vt_ArrayBufferProcs
 };
 template <class T>
 PyBufferProcs Vt_ArrayBufferProcs<T>::procs = {
-#if PY_MAJOR_VERSION == 2
-    (readbufferproc) Vt_getreadbuf<T>,   /*bf_getreadbuffer*/
-    (writebufferproc) Vt_getwritebuf<T>, /*bf_getwritebuffer*/
-    (segcountproc) Vt_getsegcount<T>,    /*bf_getsegcount*/
-    (charbufferproc) Vt_getcharbuf<T>,   /*bf_getcharbuffer*/
-#endif
     (getbufferproc) Vt_getbuffer<T>,
     (releasebufferproc) Vt_releasebuffer<T>,
 };
@@ -365,12 +315,9 @@ Vt_AddBufferProtocol()
     }
 
     // Set the tp_as_buffer slot to point to a structure of function pointers
-    // that implement the buffer protocol for this type, and set the type flags
-    // to indicate that this type supports the buffer protocol.
+    // that implement the buffer protocol for this type.
     auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
     typeObj->tp_as_buffer = &Vt_ArrayBufferProcs<ArrayType>::procs;
-    typeObj->tp_flags |= (TfPy_TPFLAGS_HAVE_NEWBUFFER |
-                          TfPy_TPFLAGS_HAVE_GETCHARBUFFER);
 }
 
 
@@ -599,17 +546,17 @@ VtArrayFromPyBuffer(TfPyObjWrapper const &obj, std::string *err)
     return result;
 }
 
-#define INSTANTIATE(r, unused, elem)                                       \
+#define INSTANTIATE(unused, elem)                                          \
 template boost::optional<VtArray<VT_TYPE(elem)> >                          \
 VtArrayFromPyBuffer<VT_TYPE(elem)>(TfPyObjWrapper const &obj, string *err);
-BOOST_PP_SEQ_FOR_EACH(INSTANTIATE, ~, VT_ARRAY_PYBUFFER_TYPES)
+TF_PP_SEQ_FOR_EACH(INSTANTIATE, ~, VT_ARRAY_PYBUFFER_TYPES)
 #undef INSTANTIATE
 
 VT_API void Vt_AddBufferProtocolSupportToVtArrays()
 {
 
 // Add the buffer protocol support to every array type that we support it for.
-#define VT_ADD_BUFFER_PROTOCOL(r, unused, elem)                      \
+#define VT_ADD_BUFFER_PROTOCOL(unused, elem)                         \
     Vt_AddBufferProtocol<VtArray<VT_TYPE(elem)> >();                 \
     VtValue::RegisterCast<TfPyObjWrapper, VtArray<VT_TYPE(elem)> >(  \
         Vt_CastPyObjToArray<VT_TYPE(elem)>);                         \
@@ -619,7 +566,7 @@ VT_API void Vt_AddBufferProtocolSupportToVtArrays()
                         "ArrayFromBuffer",                           \
                         Vt_WrapArrayFromBuffer<VT_TYPE(elem)>);
 
-BOOST_PP_SEQ_FOR_EACH(VT_ADD_BUFFER_PROTOCOL, ~, VT_ARRAY_PYBUFFER_TYPES)
+TF_PP_SEQ_FOR_EACH(VT_ADD_BUFFER_PROTOCOL, ~, VT_ARRAY_PYBUFFER_TYPES)
 
 #undef VT_ADD_BUFFER_PROTOCOL
 }

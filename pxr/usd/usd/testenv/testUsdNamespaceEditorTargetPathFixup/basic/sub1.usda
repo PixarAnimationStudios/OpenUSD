@@ -1,0 +1,31 @@
+#usda 1.0 
+
+over "Root"
+{
+	over "A"
+	{
+	    custom int otherAttr
+	    prepend int otherAttr.connect = [<.targetAttr>]
+
+	    def "B" 
+	    {
+	        custom int targetAttr
+		    prepend int targetAttr.connect = [</Root/A.targetAttr>, </Root/A/C.targetAttr>]
+	    }
+	}
+
+	def "OtherPrim"
+	{
+		custom int otherAttr
+		prepend int otherAttr.connect = </Root/A/B.targetAttr>
+		append int otherAttr.connect = </Root/A/C.targetAttr>
+		delete int otherAttr.connect = </Root/A.targetAttr>
+
+		custom rel otherRel
+		prepend rel otherRel = </Root/A.targetAttr>
+		append rel otherRel = [</Root/A/B.targetAttr>, </Root/A/C.targetAttr>]
+		delete rel otherRel = [
+			</Root/A>, </Root/A/B>, </Root/A/C>
+		]
+	}
+}

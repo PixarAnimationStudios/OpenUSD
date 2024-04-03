@@ -233,7 +233,17 @@ WRAP_CUSTOM {
             (arg("geom"), arg("familyName")))
             .staticmethod("GetFamilyType")
 
-        .def("GetUnassignedIndices", &This::GetUnassignedIndices,
+        .def("GetUnassignedIndices", (VtIntArray(*)(
+            const UsdGeomImageable &geom, 
+            const TfToken &elementType,
+            const TfToken &familyName,
+            const UsdTimeCode &time))&This::GetUnassignedIndices,
+            (arg("geom"), arg("elementType"), arg("familyName"),
+             arg("time")=UsdTimeCode::EarliestTime()))
+        .def("GetUnassignedIndices", (VtIntArray(*)(
+            const std::vector<UsdGeomSubset> &subsets,
+            const size_t elementCount,
+            const UsdTimeCode &time))&This::GetUnassignedIndices,
             (arg("subsets"), arg("elementCount"), 
              arg("time")=UsdTimeCode::EarliestTime()))
             .staticmethod("GetUnassignedIndices")

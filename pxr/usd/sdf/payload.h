@@ -31,9 +31,7 @@
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/path.h"
-
-#include <boost/functional/hash.hpp>
-#include <boost/operators.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iosfwd>
 #include <string>
@@ -57,7 +55,7 @@ typedef std::vector<SdfPayload> SdfPayloadVector;
 /// system behaviors will not traverse across, providing a user-visible
 /// way to manage the working set of the scene.
 ///
-class SdfPayload : boost::totally_ordered<SdfPayload> {
+class SdfPayload {
 public:
     /// Create a payload. See SdfAssetPath for what characters are valid in \p
     /// assetPath.  If \p assetPath contains invalid characters, issue an error
@@ -107,17 +105,37 @@ public:
     /// Returns whether this payload equals \a rhs.
     SDF_API bool operator==(const SdfPayload &rhs) const;
 
+    /// \sa SdfPayload::operator==
+    bool operator!=(const SdfPayload& rhs) const {
+        return !(*this == rhs);
+    }
+
     /// Returns whether this payload is less than \a rhs.
     /// The meaning of less than is arbitrary but stable.
     SDF_API bool operator<(const SdfPayload &rhs) const;
 
+    /// \sa SdfPayload::operator<
+    bool operator>(const SdfPayload& rhs) const {
+        return rhs < *this;
+    }
+
+    /// \sa SdfPayload::operator<
+    bool operator<=(const SdfPayload& rhs) const {
+        return !(rhs < *this);
+    }
+
+    /// \sa SdfPayload::operator<
+    bool operator>=(const SdfPayload& rhs) const {
+        return !(*this < rhs);
+    }
+
 private:
     friend inline size_t hash_value(const SdfPayload &p) {
-        size_t h = 0;
-        boost::hash_combine(h, p._assetPath);
-        boost::hash_combine(h, p._primPath);
-        boost::hash_combine(h, p._layerOffset);
-        return h;
+        return TfHash::Combine(
+            p._assetPath,
+            p._primPath,
+            p._layerOffset
+        );
     }
 
     // The asset path to the external layer.

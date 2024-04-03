@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/primFlags.h"
 
@@ -30,7 +31,6 @@
 #include <boost/python/implicit.hpp>
 #include <boost/python/operators.hpp>
 #include <boost/python/scope.hpp>
-#include <boost/functional/hash.hpp>
 
 #include <string>
 
@@ -80,13 +80,11 @@ namespace {
 
 // Hash implementations.
 size_t __hash__Term(const Usd_Term &t) {
-    size_t h = static_cast<size_t>(t.flag);
-    boost::hash_combine(h, t.negated);
-    return h;
+    return TfHash::Combine(t.flag, t.negated);
 }
 
 size_t __hash__Predicate(const Usd_PrimFlagsPredicate &p) {
-    return hash_value(p);
+    return TfHash{}(p);
 }
 
 // Call implementations.

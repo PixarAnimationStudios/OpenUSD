@@ -62,7 +62,11 @@ _InitPaths()
         }
     }
 
-    std::mt19937 randomGen(0);
+    // Shuffle paths randomly.
+    const size_t seed =
+        std::chrono::system_clock::now().time_since_epoch().count();
+    std::cout << "Random seed: " << seed << "\n";
+    std::mt19937 randomGen(seed);
 
     std::shuffle(populatePaths.begin(), populatePaths.end(), randomGen);
 
@@ -183,14 +187,27 @@ RemoveTest()
 
     _Populate(&sortedIds);
 
+    SdfPathVector removedIds;
+
     std::cout << "Remove Set:\n";
     for (size_t pathNum = 10; pathNum < 20; ++pathNum) {
-        std::cout << populatePaths[pathNum] << "\n";
-
-        sortedIds.Remove(populatePaths[pathNum]);
+        const SdfPath& removedId = populatePaths[pathNum];
+        std::cout << removedId << "\n";
+        sortedIds.Remove(removedId);
+        removedIds.push_back(removedId);
     }
 
-    _Dump(&sortedIds, "testHdSortedId_removeTest.txt");
+    const SdfPathVector& sortedIdsVector = sortedIds.GetIds();
+
+    // Veryify sortedIds are still sorted.
+    TF_VERIFY(std::is_sorted(sortedIdsVector.cbegin(), sortedIdsVector.cend()));
+    // Verify size of sortedIds.
+    TF_VERIFY(sortedIdsVector.size() == populatePaths.size() - 10);
+    // Verify correct ids were removed.
+    for (const SdfPath& removedId : removedIds) {
+        TF_VERIFY(std::find(sortedIdsVector.begin(), sortedIdsVector.end(),
+            removedId) == sortedIdsVector.end());
+    }
 
     return true;
 }

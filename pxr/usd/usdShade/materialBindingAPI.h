@@ -96,19 +96,19 @@ class SdfAssetPath;
 /// binding relationship. 
 /// <ul><li>
 /// In the case of a direct binding, the <i>allPurpose</i> binding is 
-/// represented by the relationship named <b>"material:binding"</b>. 
+/// represented by the relationship named <b>material:binding</b>. 
 /// Special-purpose direct bindings are represented by relationships named
-/// <b>"material:binding:<i>purpose</i></b>. A direct binding relationship 
+/// <b>material:binding:<i>purpose</i></b>. A direct binding relationship 
 /// must have a single target path that points to a <b>UsdShadeMaterial</b>.</li>
 /// <li>
 /// In the case of a collection-based binding, the <i>allPurpose</i> binding is 
 /// represented by a relationship named 
-/// "material:binding:collection:<i>bindingName</i>", where 
+/// <b>material:binding:collection:<i>bindingName</i></b>, where 
 /// <b>bindingName</b> establishes an identity for the binding that is unique 
 /// on the prim. Attempting to establish two collection bindings of the same 
 /// name on the same prim will result in the first binding simply being 
 /// overridden. A special-purpose collection-based binding is represented by a 
-/// relationship named "material:binding:collection:<i>purpose:bindingName</i>".
+/// relationship named <b>material:binding:collection:<i>purpose:bindingName</i></b>.
 /// A collection-based binding relationship must have exacly two targets, one of 
 /// which should be a collection-path (see 
 /// ef UsdCollectionAPI::GetCollectionPath()) and the other should point to a
@@ -341,6 +341,14 @@ public:
             return _materialPurpose;
         }
 
+        /// Returns true if there is a material bound.  
+        ///
+        /// Note, GetMaterialPath() could be empty, which would indicate that no
+        /// material should be bound (and nothing should be inherited).
+        bool IsBound() const {
+            return _isBound;
+        }
+
     private:
         // The path to the material that is bound to.
         SdfPath _materialPath; 
@@ -350,6 +358,10 @@ public:
 
         // The purpose of the material binding.
         TfToken _materialPurpose;
+
+        // Store if there was a binding here.  This allows us to distinguish if
+        // a direct binding is purposefully empty.
+        bool _isBound;
     };
 
     /// \class CollectionBinding 
@@ -565,6 +577,8 @@ public:
     /// Unbinds the direct binding for the given material purpose 
     /// (\p materialPurpose) on this prim. It accomplishes this by blocking
     /// the targets of the binding relationship in the current edit target.
+    ///
+    /// This does not remove the UsdShadeMaterialBindingAPI schema application.
     USDSHADE_API
     bool UnbindDirectBinding(
         const TfToken &materialPurpose=UsdShadeTokens->allPurpose) const;
@@ -577,6 +591,8 @@ public:
     /// If a binding was created without specifying a \p bindingName, then
     /// the correct \p bindingName to use for unbinding is the instance name
     /// of the targetted collection.
+    ///
+    /// This does not remove the UsdShadeMaterialBindingAPI schema application.
     USDSHADE_API
     bool UnbindCollectionBinding(
         const TfToken &bindingName, 
@@ -686,8 +702,15 @@ public:
         /// Inspects all the material:binding* properties on the \p prim and 
         /// computes direct and collection-based bindings for the given 
         /// value of \p materialPurpose.
+        ///
+        /// To provide backward compatibility with old assets not having
+        /// MaterialBindingAPI applied, \p supportLegacyBindings is used to
+        /// determine whether we perform the full computation even if 
+        /// MaterialBindingAPI is not applied to \p prim.
+        ///
         USDSHADE_API
-        BindingsAtPrim(const UsdPrim &prim, const TfToken &materialPurpose);
+        BindingsAtPrim(const UsdPrim &prim, const TfToken &materialPurpose,
+                bool supportLegacyBindings);
 
         /// If the prim has a restricted purpose direct binding, then it is 
         /// stored here. If there is no restricted purpose binding on the prim, 
@@ -765,6 +788,14 @@ public:
     /// UsdShadeMaterialBindingAPI::GetResolvedTargetPathFromBindingRel to get 
     /// the path of the resolved target identified by the winning bindingRel.
     ///
+    /// In order for backward compatibility with old assets not having
+    /// MaterialBindingAPI applied, \p supportLegacyBindings defaults to true.
+    /// Though its recommended for clients to update the assets to have
+    /// MaterialBindingAPI applied for optimized computation of bound material.
+    ///
+    /// Note: In a future release the default for \p supportLegacyBindings will
+    /// be updated to "false".
+    ///
     /// See \ref UsdShadeMaterialBindingAPI_MaterialResolution "Bound Material Resolution"
     /// for details on the material resolution process.
     /// 
@@ -775,7 +806,8 @@ public:
         BindingsCache *bindingsCache,
         CollectionQueryCache *collectionQueryCache,
         const TfToken &materialPurpose=UsdShadeTokens->allPurpose,
-        UsdRelationship *bindingRel=nullptr) const;
+        UsdRelationship *bindingRel=nullptr,
+        bool supportLegacyBindings=true) const;
 
     /// \overload
     /// Computes the resolved bound material for this prim, for the given 
@@ -788,6 +820,14 @@ public:
     /// If \p bindingRel is not null, then it is set to the winning binding
     /// relationship.
     /// 
+    /// In order for backward compatibility with old assets not having
+    /// MaterialBindingAPI applied, \p supportLegacyBindings defaults to true.
+    /// Though its recommended for clients to update the assets to have
+    /// MaterialBindingAPI applied for optimized computation of bound material.
+    ///
+    /// Note: In a future release the default for \p supportLegacyBindings will
+    /// be updated to "false".
+    ///
     /// See \ref UsdShadeMaterialBindingAPI_MaterialResolution "Bound Material Resolution"
     /// for details on the material resolution process.
     ///
@@ -796,7 +836,8 @@ public:
     USDSHADE_API
     UsdShadeMaterial ComputeBoundMaterial(
         const TfToken &materialPurpose=UsdShadeTokens->allPurpose,
-        UsdRelationship *bindingRel=nullptr) const;
+        UsdRelationship *bindingRel=nullptr,
+        bool supportLegacyBindings=true) const;
 
     /// Static API for efficiently and concurrently computing the resolved 
     /// material bindings for a vector of UsdPrims, \p prims for the 
@@ -809,6 +850,14 @@ public:
     /// If the pointer \p bindingRels points to a valid vector, then it is 
     /// populated with the set of all "winning" binding relationships.
     /// 
+    /// In order for backward compatibility with old assets not having
+    /// MaterialBindingAPI applied, \p supportLegacyBindings defaults to true.
+    /// Though its recommended for clients to update the assets to have
+    /// MaterialBindingAPI applied for optimized computation of bound material.
+    ///
+    /// Note: In a future release the default for \p supportLegacyBindings will
+    /// be updated to "false".
+    ///
     /// The python version of this method returns a tuple containing two lists -
     /// the bound materials and the corresponding "winning" binding 
     /// relationships.
@@ -816,7 +865,8 @@ public:
     static std::vector<UsdShadeMaterial> ComputeBoundMaterials(
         const std::vector<UsdPrim> &prims, 
         const TfToken &materialPurpose=UsdShadeTokens->allPurpose,
-        std::vector<UsdRelationship> *bindingRels=nullptr);
+        std::vector<UsdRelationship> *bindingRels=nullptr,
+        bool supportLegacyBindings=true);
 
     /// @}
         
@@ -860,15 +910,15 @@ public:
     /// //.. populate faceIndices here.
     /// //.. 
     /// 
-    /// UsdGeomMaterialBindingAPI meshBindingAPI(mesh.GetPrim());
+    /// UsdShadeMaterialBindingAPI meshBindingAPI(mesh.GetPrim());
     /// UsdGeomSubset plasticSubset = meshBindingAPI.CreateMaterialBindSubset(
     ///                 "plasticSubset", plasticFaces);
     /// UsdGeomSubset metalSubset = meshBindingAPI.CreateMaterialBindSubset( 
     ///                 "metalSubset", metalFaces);
     /// 
     /// // Bind materials to the created geom-subsets.               
-    /// UsdShadeMaterialBindingAPI(pasticSubset.GetPrim()).Bind(plastic)
-    /// UsdShadeMaterialBindingAPI(metalSubset.GetPrim()).Bind(metal)
+    /// UsdShadeMaterialBindingAPI::Apply(plasticSubset.GetPrim()).Bind(plastic)
+    /// UsdShadeMaterialBindingAPI::Apply(metalSubset.GetPrim()).Bind(metal)
     /// 
     /// \endcode
     /// @{

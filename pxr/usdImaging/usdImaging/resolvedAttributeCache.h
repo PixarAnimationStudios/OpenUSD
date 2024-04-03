@@ -33,9 +33,11 @@
 #include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/sdf/path.h"
 
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/work/utils.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
+
 #include <tbb/concurrent_unordered_map.h>
 #include <functional>
 
@@ -68,15 +70,12 @@ class UsdImaging_ResolvedAttributeCache
 {
     friend Strategy;
     struct _Entry;
-    typedef tbb::concurrent_unordered_map<UsdPrim,
-                                          _Entry,
-                                          boost::hash<UsdPrim> > _CacheMap;
+    using _CacheMap = tbb::concurrent_unordered_map<UsdPrim, _Entry, TfHash>;
 public:
     typedef typename Strategy::value_type value_type;
     typedef typename Strategy::query_type query_type;
 
-    typedef TfHashMap<UsdPrim, value_type, boost::hash<UsdPrim> > 
-        ValueOverridesMap;
+    using ValueOverridesMap = TfHashMap<UsdPrim, value_type, TfHash>;
 
     /// Construct a new for the specified \p time.
     explicit UsdImaging_ResolvedAttributeCache(
@@ -728,7 +727,8 @@ struct UsdImaging_MaterialStrategy {
                 &implData->GetBindingsCache(), 
                 &implData->GetCollectionQueryCache(),
                 implData->GetMaterialPurpose(),
-                &bindingRel);
+                &bindingRel,
+                true /*supportLegacyBindings*/);
 
         if (materialPrim) {
             return materialPrim.GetPath();
@@ -1009,9 +1009,6 @@ struct UsdImaging_CoordSysBindingStrategy
                 }
             }
         };
-
-        const std::string usdShadeCoordSysMultApply = 
-            TfGetEnvSetting(USD_SHADE_COORD_SYS_IS_MULTI_APPLY);
 
         // XXX: Make sure to update the following code when
         // UsdShadeCoordSysAPI's old non-applied mode is completely removed.

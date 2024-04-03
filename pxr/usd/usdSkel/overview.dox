@@ -47,6 +47,7 @@ an introduction key schemas and API concepts.
   - \ref UsdSkel_Skeleton
     - \ref UsdSkel_JointHierarchy
   - \ref UsdSkel_SkelAnimation
+    - \ref UsdSkel_SkelAnimation_Blendshapes
     - \ref UsdSkel_SkelAnimation_Binding
   - \ref UsdSkel_BlendShape
   - \ref UsdSkel_BindingAPI

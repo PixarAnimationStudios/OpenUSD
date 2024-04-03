@@ -1,0 +1,28 @@
+#usda 1.0 
+(
+    subLayers = [ 
+        @baseSchema.usda@
+    ]  
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "schemaFail10"
+        string libraryPath      = "pxr/usd/fakelib"
+    }
+)
+{
+}
+
+class VersionedTypedSchema "VersionedTypedSchema" (
+    inherits = </Typed>
+)
+{
+}
+
+# A versioned schema can't inherit from another schema in the same family
+class VersionedTypedSchema_1 "VersionedTypedSchema_1" (
+    inherits = </VersionedTypedSchema>
+)
+{
+}

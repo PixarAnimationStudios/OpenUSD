@@ -108,11 +108,20 @@ class SdfAssetPath;
 /// 
 /// Each instance's transformation is a combination of the SRT affine transform
 /// described by its scale, orientation, and position, applied \em after
-/// (i.e. less locally) than the transformation computed at the root of the
-/// prototype it is instancing.  In other words, to put an instance of a 
-/// PointInstancer into the space of the PointInstancer's parent prim:
+/// (i.e. less locally than) the local to parent transformation computed at 
+/// the root of the prototype it is instancing. 
 /// 
-/// 1. Apply (most locally) the authored transformation for 
+/// If your processing of prototype geometry naturally takes into account the 
+/// transform of the prototype root, then this term can be omitted from the 
+/// computation of each instance transform, and this can be controlled when 
+/// computing instance transformation matrices using the 
+/// UsdGeomPointInstancer::PrototypeXformInclusion enumeration.
+/// 
+/// To understand the computation of the instance transform, in order to put
+/// an instance of a PointInstancer into the space of the PointInstancer's 
+/// parent prim we do the following:
+/// 
+/// 1. Apply (most locally) the authored local to parent transformation for 
 /// <em>prototypes[protoIndices[i]]</em>
 /// 2. If *scales* is authored, next apply the scaling matrix from *scales[i]*
 /// 3. If *orientations* is authored: **if *angularVelocities* is authored**, 
@@ -158,7 +167,7 @@ class SdfAssetPath;
 /// the root of the instance.  When you are authoring primvars on a 
 /// PointInstancer, think about it as if you were authoring them on a 
 /// point-cloud (e.g. a UsdGeomPoints gprim).  The same 
-/// <A HREF="http://renderman.pixar.com/resources/current/rps/appnote.22.html#classSpecifiers">interpolation rules for points</A> apply here, substituting
+/// <A HREF="https://renderman.pixar.com/resources/RenderMan_20/appnote.22.html#classSpecifiers">interpolation rules for points</A> apply here, substituting
 /// "instance" for "point".
 /// 
 /// In other words, the (constant) value extracted for each instance
@@ -467,6 +476,41 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
     UsdAttribute CreateOrientationsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // ORIENTATIONSF 
+    // --------------------------------------------------------------------- //
+    /// If authored, per-instance orientation of each instance about its 
+    /// prototype's origin, represented as a unit length quaternion, encoded
+    /// as a GfQuatf to support higher precision computations.
+    /// 
+    /// It is client's responsibility to ensure that authored quaternions are
+    /// unit length; the convenience API below for authoring orientations from
+    /// rotation matrices will ensure that quaternions are unit length, though
+    /// it will not make any attempt to select the "better (for interpolation
+    /// with respect to neighboring samples)" of the two possible quaternions
+    /// that encode the rotation. Note that if the earliest time sample (or
+    /// default value if there are no time samples) of orientationsf is not empty
+    /// orientationsf will be preferred over orientations if both are authored.
+    /// 
+    /// See also \ref UsdGeomPointInstancer_transform .
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `quatf[] orientationsf` |
+    /// | C++ Type | VtArray<GfQuatf> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->QuatfArray |
+    USDGEOM_API
+    UsdAttribute GetOrientationsfAttr() const;
+
+    /// See GetOrientationsfAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateOrientationsfAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
@@ -779,6 +823,17 @@ public:
     static bool ApplyMaskToArray(std::vector<bool> const &mask,
                           VtArray<T> *dataArray,
                           const int elementSize = 1);
+
+    /// Determines if we should prefer orientationsf over orientations 
+    /// based on whether or not orientationsf has been authored to a non
+    /// empty array. Assumes that orientationsf is empty if the earliest time
+    /// sample or default value if there are no time samples are empty
+    ///
+    /// \param rotationsAttr the outparameter for the corresponding attribute. If 
+    ///             this function returns true then orientationsf will be 
+    ///             stored in rotationsAttr, and orientations if not
+    USDGEOM_API
+    bool UsesOrientationsf(UsdAttribute &rotationsAttr) const;
     
     // --------------------------------------------------------------------- //
     /// @}
@@ -947,6 +1002,29 @@ public:
         UsdTimeCode velocitiesSampleTime,
         const VtVec3fArray& accelerations,
         const VtVec3fArray& scales,
+        const VtQuatfArray& orientations,
+        const VtVec3fArray& angularVelocities,
+        UsdTimeCode angularVelocitiesSampleTime,
+        const SdfPathVector& protoPaths,
+        const std::vector<bool>& mask,
+        float velocityScale = 1.0);
+    
+    /// \overload Perform the per-instance transform computation as described
+    /// in \ref UsdGeomPointInstancer_transform . This does the same 
+    /// computation as the static ComputeInstanceTransformsAtTime method, but 
+    /// supports half precision rotations
+    USDGEOM_API
+    static bool
+    ComputeInstanceTransformsAtTime(
+        VtArray<GfMatrix4d>* xforms,
+        UsdStageWeakPtr& stage,
+        UsdTimeCode time,
+        const VtIntArray& protoIndices,
+        const VtVec3fArray& positions,
+        const VtVec3fArray& velocities,
+        UsdTimeCode velocitiesSampleTime,
+        const VtVec3fArray& accelerations,
+        const VtVec3fArray& scales,
         const VtQuathArray& orientations,
         const VtVec3fArray& angularVelocities,
         UsdTimeCode angularVelocitiesSampleTime,
@@ -978,6 +1056,39 @@ private:
         VtIntArray* protoIndices,
         SdfPathVector* protoPaths,
         std::vector<bool>* mask) const;
+    
+    /// Compute the per-instance transforms as in
+    /// ComputeInstanceTransformsAtTime, but using multiple sample times.
+    /// Returns am array of matrix arrays where each matrix array contains the
+    /// instance transforms for the corresponding time in \p times . Templated
+    /// to support both full and half precision rotations.
+    template<class QuatType>
+    bool _DoComputeInstanceTransformsAtTimes(
+        std::vector<VtArray<GfMatrix4d>>* xformsArray,
+        const std::vector<UsdTimeCode>& times,
+        const UsdTimeCode baseTime,
+        const ProtoXformInclusion doProtoXforms,
+        const MaskApplication applyMask,
+        const UsdAttribute orientationsAttr) const;
+    
+    /// Helper implementation for static ComputeInstanceTransformsAtTime
+    template <class QuatType>
+    static bool _DoComputeInstanceTransformsAtTime(
+        VtArray<GfMatrix4d>* xforms,
+        UsdStageWeakPtr& stage,
+        UsdTimeCode time,
+        const VtIntArray& protoIndices,
+        const VtVec3fArray& positions,
+        const VtVec3fArray& velocities,
+        UsdTimeCode velocitiesSampleTime,
+        const VtVec3fArray& accelerations,
+        const VtVec3fArray& scales,
+        const VtArray<QuatType>& orientations,
+        const VtVec3fArray& angularVelocities,
+        UsdTimeCode angularVelocitiesSampleTime,
+        const SdfPathVector& protoPaths,
+        const std::vector<bool>& mask,
+        float velocityScale = 1.0);
 
 public:
 

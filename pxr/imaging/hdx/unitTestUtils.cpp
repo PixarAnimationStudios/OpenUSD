@@ -29,7 +29,8 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
+
 #include <iostream>
 #include <unordered_map>
 #include <set>
@@ -51,10 +52,13 @@ _GetPartialHitHash(HdxPickHit const& hit)
 {
     size_t hash = 0;
 
-    boost::hash_combine(hash, hit.delegateId.GetHash());
-    boost::hash_combine(hash, hit.objectId.GetHash());
-    boost::hash_combine(hash, hit.instancerId.GetHash());
-    boost::hash_combine(hash, hit.instanceIndex);
+    hash = TfHash::Combine(
+        hash,
+        hit.delegateId.GetHash(),
+        hit.objectId.GetHash(),
+        hit.instancerId.GetHash(),
+        hit.instanceIndex
+    );
 
     return hash;
 }

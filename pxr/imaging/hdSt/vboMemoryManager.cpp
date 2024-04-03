@@ -44,6 +44,8 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/enum.h"
 
+#include "pxr/base/tf/hash.h"
+
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -73,21 +75,17 @@ HdStVBOMemoryManager::CreateBufferArrayRange()
 }
 
 
-HdAggregationStrategy::AggregationId
+HdStAggregationStrategy::AggregationId
 HdStVBOMemoryManager::ComputeAggregationId(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint) const
 {
     static size_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
-    size_t result = salt;
-    for (HdBufferSpec const &spec : bufferSpecs) {
-        boost::hash_combine(result, spec.Hash());
-    }
-
-    boost::hash_combine(result, usageHint.value);
-
-    // promote to size_t
-    return (AggregationId)result;
+    return static_cast<AggregationId>(
+        TfHash::Combine(
+            salt, bufferSpecs, usageHint.value
+        )
+    );
 }
 
 

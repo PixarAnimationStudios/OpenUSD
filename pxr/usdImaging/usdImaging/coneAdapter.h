@@ -74,7 +74,8 @@ public:
     HdDataSourceLocatorSet InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties) override;
+        TfTokenVector const& properties,
+        UsdImagingPropertyInvalidationType invalidationType) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Initialization
@@ -92,7 +93,7 @@ public:
     USDIMAGING_API
     HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      TfToken const& propertyName);
+                                      TfToken const& propertyName) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve

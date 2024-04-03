@@ -1,6 +1,6 @@
 #usda 1.0
 (
-    endFrame = 2
+    endFrame = 3
     startFrame = 0
     upAxis = "Y"
 )
@@ -21,12 +21,19 @@ def Xform "World" (
         float3[] points = [(-1, -1, 0), (1, -1, 0), (1, 1, 0), (1, 2, 0), (0, 2, 0), (0, 1, 0), (-1, 1, -0)]
 
         float3 xformOp:translate = (0, 0, 0)
+        float xformOp:rotateY.timeSamples = {
+            0: 0,
+            1: 180,
+            2: 0,
+            3: 180
+        }
         float3 xformOp:scale.timeSamples = {
             0: (1, 1, 1),
-            1: (-1, 1, 1),
-            2: (1, 1, 1)
+            1: (1, 1, 1),
+            2: (-1, 1, 1),
+            3: (-1, 1, 1)
         }
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale", "xformOp:rotateY"]
         color3f[] primvars:displayColor = [(1, 0, 0)]
     }
 
@@ -38,17 +45,23 @@ def Xform "World" (
         int[] faceVertexIndices = [0, 1, 6, 1, 2, 5, 6, 5, 2, 3, 4]
         float3[] points = [(-1, -1, 0), (1, -1, 0), (1, 1, 0), (1, 2, 0), (0, 2, 0), (0, 1, 0), (-1, 1, -0)]
 
-        bool doubleSided.timeSamples = {
-            0: 1,
-            1: 0,
-            2: 1
-        }
+        bool doubleSided = 1
 
         float3 xformOp:translate = (3, 0, 0)
-        # rotate such that we're looking at the back
-        float xformOp:rotateY = 180
+        float xformOp:rotateY.timeSamples = {
+            0: 0,
+            1: 180,
+            2: 0,
+            3: 180
+        }
+        float3 xformOp:scale.timeSamples = {
+            0: (1, 1, 1),
+            1: (1, 1, 1),
+            2: (-1, 1, 1),
+            3: (-1, 1, 1)
+        }
 
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY"]
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale", "xformOp:rotateY"]
         color3f[] primvars:displayColor = [(0, 1, 0)]
     }
 }

@@ -41,9 +41,7 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
   , _shaderId(nil)
 {
     if (desc.shaderCode) {
-        id<MTLDevice> device = hgi->GetPrimaryDevice();
-
-        HgiMetalShaderGenerator shaderGenerator {desc, device};
+        HgiMetalShaderGenerator shaderGenerator(hgi, desc);
         shaderGenerator.Execute();
         const char *shaderCode = shaderGenerator.GetGeneratedShaderCode();
 
@@ -79,6 +77,9 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
                 break;
             case HgiShaderStageCompute:
                 entryPoint = @"computeEntryPoint";
+                break;
+            case HgiShaderStagePostTessellationControl:
+                entryPoint = @"vertexEntryPoint";
                 break;
             case HgiShaderStagePostTessellationVertex:
                 entryPoint = @"vertexEntryPoint";

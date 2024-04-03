@@ -29,7 +29,6 @@
 
 #include "pxr/pxr.h"
 
-#include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyIdentity.h"
 #include "pxr/base/tf/pyObjectFinder.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
@@ -54,6 +53,7 @@
 #include <boost/python/to_python_converter.hpp>
 
 #include <memory>
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -115,8 +115,8 @@ using namespace boost::python;
 template <typename Ptr>
 struct _PtrInterface {
     typedef typename Ptr::DataType Pointee;
-    typedef typename boost::add_const<Pointee>::type ConstPointee;
-    typedef typename boost::remove_const<Pointee>::type NonConstPointee;
+    using ConstPointee = std::add_const_t<Pointee>;
+    using NonConstPointee = std::remove_const_t<Pointee>;
     
     template <typename U>
     struct Rebind {
@@ -375,7 +375,7 @@ struct WeakPtr : def_visitor<WeakPtr> {
         c.add_property("expired", _IsPtrExpired<UnwrappedPtrType>,
                        (const char *)
                        "True if this object has expired, False otherwise.");
-        c.def(TfPyBoolBuiltinFuncName, _IsPtrValid<UnwrappedPtrType>,
+        c.def("__bool__", _IsPtrValid<UnwrappedPtrType>,
               (char const *)
               "True if this object has not expired.  False otherwise.");
         c.def("__eq__", _ArePtrsEqual<UnwrappedPtrType>,

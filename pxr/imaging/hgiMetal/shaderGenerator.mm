@@ -23,9 +23,12 @@
 //
 
 #include "pxr/imaging/hgiMetal/shaderGenerator.h"
+#include "pxr/imaging/hgiMetal/hgi.h"
+#include "pxr/imaging/hgiMetal/conversions.h"
 #include "pxr/imaging/hgiMetal/resourceBindings.h"
 #include "pxr/imaging/hgi/tokens.h"
 
+#include <sstream>
 #include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -153,7 +156,7 @@ _GetBuiltinKeyword(HgiShaderFunctionParamDesc const &param,
        {HgiShaderKeywordTokens->hdPrimitiveID, "primitive_id"},
        {HgiShaderKeywordTokens->hdFrontFacing, "front_facing"},
        {HgiShaderKeywordTokens->hdPosition, "position"},
-       {HgiShaderKeywordTokens->hdBaryCoordNoPerspNV, "barycentric_coord"},
+       {HgiShaderKeywordTokens->hdBaryCoordNoPersp, "barycentric_coord"},
        {HgiShaderKeywordTokens->hdFragCoord, "position"}
     };
 
@@ -273,6 +276,9 @@ _GetDeclarationDefinitions()
         " atomic_fetch_add_explicit(&a, v, memory_order_relaxed)\n"
         "#define ATOMIC_EXCHANGE(a, desired)"
         " atomic_exchange_explicit(&a, desired, memory_order_relaxed)\n"
+        "#define ATOMIC_COMP_SWAP(a, expected, desired) \\"
+        "  atomic_compare_exchange_strong_explicit(&a, &expected, desired, "
+        "memory_order_relaxed, memory_order_relaxed)\n"
         "\n";
 }
 
@@ -431,7 +437,6 @@ _ComputeHeader(id<MTLDevice> device, HgiShaderStage stage)
     header  << _GetPackedTypeDefinitions();
 
     header << "#define in /*in*/\n"
-              "#define discard discard_fragment();\n"
               "#define radians(d) (d * 0.01745329252)\n"
               "#define noperspective /*center_no_perspective MTL_FIXME*/\n"
               "#define dFdx    dfdx\n"
@@ -581,7 +586,8 @@ _AccumulateParamsAndBlockParams(
 bool
 _IsTessFunction(const HgiShaderFunctionDesc &descriptor)
 {
-    return descriptor.shaderStage == HgiShaderStagePostTessellationVertex;
+    return descriptor.shaderStage == HgiShaderStagePostTessellationControl ||
+           descriptor.shaderStage == HgiShaderStagePostTessellationVertex;
 }
 
 ShaderStageData::ShaderStageData(
@@ -613,6 +619,8 @@ ShaderStageData::ShaderStageData(
                 generator,
                 descriptor.shaderStage,
                 descriptor.shaderStage == HgiShaderStageVertex
+                || descriptor.shaderStage ==
+                  HgiShaderStagePostTessellationControl
                 || descriptor.shaderStage ==
                   HgiShaderStagePostTessellationVertex)))
     , _outputs(
@@ -1227,8 +1235,8 @@ _BuildTessAttribute(
         case HgiShaderFunctionTessellationDesc::PatchType::Quads:
             ss << "quad, ";
             break;
-            default:
-                TF_CODING_ERROR("Unknown patch type");
+        default:
+            TF_CODING_ERROR("Unknown patch type");
             break;
     }
     ss << tessDesc.numVertsPerPatchIn << ")]]";
@@ -1325,6 +1333,19 @@ HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
                             "tvInput",
                             functionAttributesSS.str());
         }
+        case HgiShaderStagePostTessellationControl: {
+            _BuildTessAttribute(functionAttributesSS,
+                                descriptor.tessellationDescriptor);
+            return std::make_unique
+                    <HgiMetalShaderStageEntryPoint>(
+                            stageData,
+                            this,
+                            "ptc",
+                            "TessControl",
+                            "vertex",
+                            "tcInput",
+                            functionAttributesSS.str());
+        }
         default: {
             TF_CODING_ERROR("Unknown shader stage");
             return nullptr;
@@ -1333,9 +1354,10 @@ HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
 }
 
 HgiMetalShaderGenerator::HgiMetalShaderGenerator(
-    const HgiShaderFunctionDesc &descriptor,
-    id<MTLDevice> device)
+    HgiMetal const *hgi,
+    const HgiShaderFunctionDesc &descriptor)
   : HgiShaderGenerator(descriptor)
+  , _hgi(hgi)
   , _generatorShaderSections(_BuildShaderStageEntryPoints(descriptor))
 {
     for (const auto &member: descriptor.stageGlobalMembers) {
@@ -1347,12 +1369,21 @@ HgiMetalShaderGenerator::HgiMetalShaderGenerator(
                 attrs,
                 member.arraySize);
     }
+
     std::stringstream macroSection;
-    macroSection << _GetHeader(device, descriptor.shaderStage);
+    macroSection << _GetHeader(hgi->GetPrimaryDevice(), descriptor.shaderStage);
+
     if (_IsTessFunction(descriptor)) {
         macroSection << "#define VERTEX_CONTROL_POINTS_PER_PATCH "
         << descriptor.tessellationDescriptor.numVertsPerPatchIn
         << "\n";
+    }
+
+    if (_hgi->GetCapabilities()->requiresReturnAfterDiscard) {
+        macroSection << "#define discard discard_fragment(); "
+                        "discarded_fragment = true;\n";
+    } else {
+        macroSection << "#define discard discard_fragment();\n";
     }
     
     CreateShaderSection<HgiMetalMacroShaderSection>(
@@ -1394,6 +1425,11 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
         section->VisitScopeStructs(ss);
     }
     ss << "\n// //////// Scope Member Declarations ////////\n";
+    if (_hgi->GetCapabilities()->requiresReturnAfterDiscard) {
+        if (this->_GetShaderStage() == HgiShaderStageFragment) {
+            ss << "bool discarded_fragment;\n";
+        }
+    }
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         section->VisitScopeMemberDeclarations(ss);
     }
@@ -1448,7 +1484,8 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
     HgiMetalStageOutputShaderSection* const outputs =
         _generatorShaderSections->GetOutputs();
     std::stringstream returnSS;
-    if (outputs) {
+    if (outputs &&
+        (_GetShaderStage() != HgiShaderStagePostTessellationControl)) {
         const HgiMetalStructTypeDeclarationShaderSection* const decl =
             outputs->GetStructTypeDeclaration();
         decl->WriteIdentifier(returnSS);
@@ -1506,15 +1543,34 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
 
     // Execute all code that hooks into the entry point function
     ss << "\n// //////// Entry Point Function Executions ////////\n";
+    if (_hgi->GetCapabilities()->requiresReturnAfterDiscard) {
+        if (this->_GetShaderStage() == HgiShaderStageFragment) {
+            ss << _generatorShaderSections->GetScopeInstanceName()
+               << ".discarded_fragment = false;\n";
+        }
+    }
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         if (section->VisitEntryPointFunctionExecutions(
                 ss, _generatorShaderSections->GetScopeInstanceName())) {
             ss << "\n";
         }
     }
+    if (_hgi->GetCapabilities()->requiresReturnAfterDiscard) {
+        if (this->_GetShaderStage() == HgiShaderStageFragment) {
+            ss << "if (" << _generatorShaderSections->GetScopeInstanceName()
+               << ".discarded_fragment)\n";
+            ss << "{\n";
+            if (outputs) {
+                ss << "    return {};\n";
+            } else {
+                ss << "    return;\n";
+            }
+            ss << "}\n";
+        }
+    }
     //return the instance of the shader entrypoint output type
-    if(outputs)
-    {
+    if (outputs &&
+        (_GetShaderStage() != HgiShaderStagePostTessellationControl)) {
         const std::string outputInstanceName =
                 _generatorShaderSections->GetOutputInstanceName();
         ss << "return " << outputInstanceName << ";\n";

@@ -1,0 +1,15 @@
+#sdf 1.4.32
+(
+    defaultPrim = "Ref3"
+
+    # Override the REF2 expression variable used in ref2.sdf
+    expressionVariables = {
+        string REF2 = "A"
+    }
+)
+
+def "Ref3" (
+    payload = @./ref2.sdf@
+)
+{
+}

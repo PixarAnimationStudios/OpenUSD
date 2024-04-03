@@ -48,6 +48,7 @@
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/extComputation.h"
+#include "pxr/imaging/hd/imageShader.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -90,13 +91,16 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->distantLight,
     HdPrimTypeTokens->rectLight,
     HdPrimTypeTokens->simpleLight,
-    HdPrimTypeTokens->sphereLight
+    HdPrimTypeTokens->sphereLight,
+    HdPrimTypeTokens->imageShader
 };
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (mtlx)
 );
+#endif
 
 using HdStResourceRegistryWeakPtr =  std::weak_ptr<HdStResourceRegistry>;
 
@@ -330,7 +334,8 @@ HdStRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
                 HdFormatFloat32, colorDepthMSAA, VtValue(1.0f));
     } else if (HdAovHasDepthStencilSemantic(name)) {
         return HdAovDescriptor(
-                HdFormatFloat32UInt8, colorDepthMSAA, VtValue(1.0f));
+                HdFormatFloat32UInt8, colorDepthMSAA,
+                VtValue(HdDepthStencilType(1.0f, 0)));
     } else if (_AovHasIdSemantic(name)) {
         return HdAovDescriptor(
                 HdFormatUNorm8Vec4, colorDepthMSAA, VtValue(GfVec4f(0)));
@@ -413,6 +418,8 @@ HdStRenderDelegate::CreateSprim(TfToken const& typeId,
                 typeId == HdPrimTypeTokens->cylinderLight ||
                 typeId == HdPrimTypeTokens->rectLight) {
         return new HdStLight(sprimId, typeId);
+    } else if (typeId == HdPrimTypeTokens->imageShader) {
+        return new HdImageShader(sprimId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -439,6 +446,8 @@ HdStRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
                 typeId == HdPrimTypeTokens->cylinderLight ||
                 typeId == HdPrimTypeTokens->rectLight) {
         return new HdStLight(SdfPath::EmptyPath(), typeId);
+    } else if (typeId == HdPrimTypeTokens->imageShader) {
+        return new HdImageShader(SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }

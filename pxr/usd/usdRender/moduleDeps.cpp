@@ -40,6 +40,7 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
         TfToken("tf"),
         TfToken("usd"),
         TfToken("usdGeom"),
+        TfToken("usdShade"),
         TfToken("vt")
     };
     TfScriptModuleLoader::GetInstance().

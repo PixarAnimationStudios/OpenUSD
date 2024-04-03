@@ -14,7 +14,7 @@ def "World"
         def Shader "ColorMap"
         {
             uniform token info:id = "UsdUVTexture"
-            
+
             asset inputs:file = @texture.jpg@
 
             float3 outputs:rgb
@@ -38,6 +38,99 @@ def "World"
             color3f inputs:diffuseColor.connect = </World/material/ColorMap.outputs:rgb>
             normal3f inputs:normal.connect = </World/material/NormalMap.outputs:rgb>
 
+        }
+    }
+
+    def Material "material2"
+    {
+        # No requirements on color readers, identified as such by tracing
+        # connections from PreviewSurface node
+        def Shader "ColorMap"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @texture.jpg@
+            float3 outputs:rgb
+        }
+
+        # A normal map reader, however, should specify a [-1, -1, -1, 0] bias
+        # for an 8 bit texture.
+        def Shader "NormalMapWarnBias"
+        {
+            uniform token info:id = "UsdUVTexture"
+            token inputs:sourceColorSpace = "raw"
+            float4 inputs:scale = (2.0, 2.0, 2.0, 1.0)
+            float4 inputs:bias = (0.0, 0.0, 0.0, 0.0)
+            asset inputs:file = @texture.jpg@
+            float3 outputs:rgb
+        }
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </World/material2/ColorMap.outputs:rgb>
+            normal3f inputs:normal.connect =</World/material2/NormalMapWarnBias.outputs:rgb>
+        }
+    }
+
+    def Material "material3"
+    {
+        # No requirements on color readers, identified as such by tracing
+        # connections from PreviewSurface node
+        def Shader "ColorMap"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @texture.jpg@
+            float3 outputs:rgb
+        }
+
+        # A normal map reader, however, should specify a "raw" colorSpace
+        # for an 8 bit texture.
+        def Shader "NormalMapIncorrectColorSpace"
+        {
+            uniform token info:id = "UsdUVTexture"
+            token inputs:sourceColorSpace = "auto"
+            float4 inputs:scale = (2.0, 2.0, 2.0, 1.0)
+            float4 inputs:bias = (-1.0, -1.0, -1.0, 0.0)
+            asset inputs:file = @texture.jpg@
+            float3 outputs:rgb
+        }
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </World/material3/ColorMap.outputs:rgb>
+            normal3f inputs:normal.connect = </World/material3/NormalMapIncorrectColorSpace.outputs:rgb>
+        }
+    }
+
+    def Material "material4"
+    {
+        # No requirements on color readers, identified as such by tracing
+        # connections from PreviewSurface node
+        def Shader "ColorMap"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @texture.jpg@
+            float3 outputs:rgb
+        }
+
+        # A normal map reader, however, should specify a [2, 2, 2, 1] scale
+        # for an 8 bit texture. (Note only warning shown, no error)
+        def Shader "NormalMapWarnScale"
+        {
+            uniform token info:id = "UsdUVTexture"
+            token inputs:sourceColorSpace = "raw"
+            float4 inputs:scale = (1.0, 1.0, 1.0, 1.0)
+            float4 inputs:bias = (-1.0, -1.0, -1.0, 0.0)
+            asset inputs:file = @texture.jpg@
+            float3 outputs:rgb
+        }
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </World/material4/ColorMap.outputs:rgb>
+            normal3f inputs:normal.connect =</World/material4/NormalMapWarnScale.outputs:rgb>
         }
     }
 }

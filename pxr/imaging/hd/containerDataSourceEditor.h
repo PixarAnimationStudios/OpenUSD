@@ -55,6 +55,7 @@ public:
         const HdDataSourceLocator &locator,
         const HdContainerDataSourceHandle &containerDataSource);
 
+    // Returns final container data source with all edits applied.
     HD_API
     HdContainerDataSourceHandle Finish();
 

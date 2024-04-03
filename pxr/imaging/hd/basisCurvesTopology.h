@@ -65,7 +65,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     in each segment.
 ///
 ///  If Type == cubic, the type of curve is specified by basis:
-///     The Basis can be bezier, bspline or catmullRom.
+///     The Basis can be bezier, bspline, catmullRom, or centripetalCatmullRom.
 ///
 ///     Wrap can be either periodic or nonperiodic (segmented is unsupported).
 ///

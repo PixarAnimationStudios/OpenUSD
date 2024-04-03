@@ -50,6 +50,11 @@ pxr_register_test(testUsdCatMissingOrInvalidFiles2
     EXPECTED_RETURN_CODE 1 
 )
 
+pxr_register_test(testUsdCatMissingOrInvalidFiles3
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --flattenLayerStack missingFile.usda"
+    EXPECTED_RETURN_CODE 1
+)
+
 pxr_install_test_dir(
     SRC testenv/testUsdCatMask
     DEST testUsdCatMask
@@ -83,6 +88,17 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCatLayerMetadata
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --layerMetadata input.usda -o output.usda"
+    DIFF_COMPARE output.usda
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdCatFlattenLayerStack
+    DEST testUsdCatFlattenLayerStack
+)
+
+pxr_register_test(testUsdCatFlattenLayerStack
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --flattenLayerStack input.usda --out output.usda"
     DIFF_COMPARE output.usda
     EXPECTED_RETURN_CODE 0
 )

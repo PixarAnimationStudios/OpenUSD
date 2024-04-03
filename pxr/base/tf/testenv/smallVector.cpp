@@ -26,6 +26,8 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/regTest.h"
 
+#include "pxr/base/arch/defines.h"
+
 #include <algorithm>
 #include <array>
 #include <iostream>
@@ -1487,12 +1489,17 @@ testResize()
     // grow where T is trivial
     {
         TfSmallVector<int, 10> v;
-        v.insert(v.end(), sourceA.begin(), sourceA.end());
 
+        v.insert(v.end(), sourceA.begin(), sourceA.end());
         TF_AXIOM(v.size() == 100);
 
-        v.resize(150, 17);
+        // Shrink first -- this magically sidesteps a GCC bug (possibly this
+        // one, but there are other candidates too:
+        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=89689)
+        v.resize(5, 17);
+        TF_AXIOM(v.size() == 5);
 
+        v.resize(150, 17);
         TF_AXIOM(v.size() == 150);
     }
 }

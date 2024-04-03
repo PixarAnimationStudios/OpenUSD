@@ -37,9 +37,8 @@
 
 #include "pxr/base/trace/trace.h"
 
-#include <boost/optional.hpp>
-
 #include <functional>
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -319,7 +318,7 @@ _RemoveTargetPathErrorsForPath(
 
 // Callback used to translate paths as path list operations from
 // various nodes are applied.
-static boost::optional<SdfPath>
+static std::optional<SdfPath>
 _PathTranslateCallback(
     SdfListOpType opType,
     const PcpSite &propSite,
@@ -352,7 +351,7 @@ _PathTranslateCallback(
             _RemoveTargetPathErrorsForPath(translatedPath, targetPathErrors);
             return translatedPath;
         }
-        return boost::optional<SdfPath>();
+        return std::optional<SdfPath>();
     }
     
     if (!pathIsMappable) {
@@ -367,11 +366,11 @@ _PathTranslateCallback(
         err->layer = owningProp->GetLayer();
         err->composedTargetPath = SdfPath();
         targetPathErrors->push_back(err);
-        return boost::optional<SdfPath>();
+        return std::optional<SdfPath>();
     }
 
     if (translatedPath.IsEmpty()) {
-        return boost::optional<SdfPath>();
+        return std::optional<SdfPath>();
     }
 
     if (cacheForValidation) {
@@ -390,7 +389,7 @@ _PathTranslateCallback(
             err->layer = owningProp->GetLayer();
             err->composedTargetPath = translatedPath;
             targetPathErrors->push_back(err);
-            return boost::optional<SdfPath>();
+            return std::optional<SdfPath>();
         }
 
         // Check if the connection is invalid due to permissions or
@@ -410,7 +409,7 @@ _PathTranslateCallback(
                 err->layer = owningProp->GetLayer();
                 err->composedTargetPath = translatedPath;
                 targetPathErrors->push_back(err);
-                return boost::optional<SdfPath>();
+                return std::optional<SdfPath>();
             }
 
             case InvalidTarget:
@@ -424,7 +423,7 @@ _PathTranslateCallback(
                 err->layer = owningProp->GetLayer();
                 err->composedTargetPath = translatedPath;
                 targetPathErrors->push_back(err);
-                return boost::optional<SdfPath>();
+                return std::optional<SdfPath>();
             }
 
             case NoError:

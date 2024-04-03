@@ -91,7 +91,7 @@ it to a :filename:`.usd` file using a different format, pass the
 :option:`--usdFormat` option to :ref:`toolset:usdcat`.  Starting with
 :filename:`Sphere.usd` in
 :filename:`USD/extras/usd/tutorials/convertingLayerFormats`, which is a text
-format file, we can converty to a binary format file:
+format file, we can convert it to a binary format file:
 
 .. code-block:: sh
 

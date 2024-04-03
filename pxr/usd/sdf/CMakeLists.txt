@@ -48,10 +48,14 @@ pxr_library(sdf
         notice
         opaqueValue
         path
+        pathExpression
+        pathExpressionEval
         pathNode
         pathTable
         payload
         pool
+        predicateExpression
+        predicateLibrary
         primSpec
         propertySpec
         proxyPolicies
@@ -69,11 +73,11 @@ pxr_library(sdf
         tokens
         types
         valueTypeName
+        variableExpression
         variantSetSpec
         variantSpec
 
         # Flex/Bison generated code
-        path.tab
         textFileFormat.tab
    
     PYTHON_PUBLIC_CLASSES
@@ -90,7 +94,10 @@ pxr_library(sdf
         api.h
         accessorHelpers.h
         declareSpec.h
+        invoke.hpp
         layerHints.h
+        predicateExpressionParser.h
+        predicateProgram.h
         schemaTypeRegistration.h
 
     PRIVATE_CLASSES
@@ -109,7 +116,10 @@ pxr_library(sdf
         pathParser
         subLayerListEditor
         textParserContext
+        textParserHelpers
         valueTypeRegistry
+        variableExpressionImpl
+        variableExpressionParser
         vectorListEditor
 
     PRIVATE_HEADERS
@@ -118,7 +128,6 @@ pxr_library(sdf
 
     CPPFILES
         # Flex/Bison generated code
-        path.lex.cpp
         textFileFormat.lex.cpp
 
     PYTHON_CPPFILES
@@ -142,13 +151,17 @@ pxr_library(sdf
         wrapNotice.cpp
         wrapOpaqueValue.cpp
         wrapPath.cpp
+        wrapPathExpression.cpp
         wrapPayload.cpp
+        wrapPredicateExpression.cpp
+        wrapPredicateFunctionResult.cpp
         wrapPrimSpec.cpp
         wrapPropertySpec.cpp
         wrapPseudoRootSpec.cpp
         wrapRelationshipSpec.cpp
         wrapReference.cpp
         wrapSpec.cpp
+        wrapVariableExpression.cpp
         wrapTimeCode.cpp
         wrapTypes.cpp
         wrapValueTypeName.cpp
@@ -163,6 +176,8 @@ pxr_library(sdf
 
     DOXYGEN_FILES
         overview.dox
+        doxygen/fileFormatPlugin.dox
+        doxygen/variableExpressions.dox
 )
 
 # Validate that the checked in generated code matches the sources. This requires
@@ -183,15 +198,17 @@ else()
             --srcDir ${CMAKE_CURRENT_SOURCE_DIR}
             --bison ${BISON_EXECUTABLE}
             --flex ${FLEX_EXECUTABLE}
-            --bases textFileFormat path 
+            --bases textFileFormat
             --validate
     )
 endif()
 
 pxr_test_scripts(
+    testenv/testSdfAssetPath.py
     testenv/testSdfAttribute.py
     testenv/testSdfAttributeBlocking.py
     testenv/testSdfBatchNamespaceEdit.py
+    testenv/testSdfFileFormatCapabilities.py
     testenv/testSdfCopyUtils.py
     testenv/testSdfCustomLayerData.py
     testenv/testSdfDetachedLayer.py
@@ -203,12 +220,26 @@ pxr_test_scripts(
     testenv/testSdfPath.py
     testenv/testSdfPath2.py
     testenv/testSdfPath2Construct.py
+    testenv/testSdfPathExpression.py
     testenv/testSdfPayload.py
     testenv/testSdfPrim.py
     testenv/testSdfReference.py
     testenv/testSdfSpecHash.py
     testenv/testSdfTimeCode.py
     testenv/testSdfTypes.py
+    testenv/testSdfVariableExpression.py
+    testenv/testSdfVariants.py
+)
+
+pxr_build_test_shared_lib(TestSdfFileFormatCapabilities
+    CREATE_FRAMEWORK
+    INSTALL_PREFIX SdfPlugins
+    LIBRARIES
+        sdf
+        tf
+
+    CPPFILES
+        testenv/TestSdfFileFormatCapabilities.cpp
 )
 
 pxr_build_test_shared_lib(TestSdfNoAssetFileFormat
@@ -284,6 +315,13 @@ pxr_build_test(testSdfMetaDataPlugInfo
         testenv/testSdfMetaDataPlugInfo.cpp
 )
 
+pxr_build_test(testSdfPathExpression_Cpp
+    LIBRARIES
+        sdf
+    CPPFILES
+        testenv/testSdfPathExpression.cpp
+)
+
 pxr_build_test(testSdfPathParser
     LIBRARIES
         sdf
@@ -304,6 +342,14 @@ pxr_build_test(testSdfPathThreading
         tf
     CPPFILES
         testenv/testSdfPathThreading.cpp
+)
+
+pxr_build_test(testSdfPredicateExpression_Cpp
+    LIBRARIES
+        sdf
+        tf
+    CPPFILES
+        testenv/testSdfPredicateExpression.cpp
 )
 
 pxr_install_test_dir(
@@ -332,13 +378,13 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testSdfParsingOld.testenv
-    DEST testSdfParsingOld/testSdfParsing.testenv
-)
-
-pxr_install_test_dir(
     SRC testenv/testSdfParsing.testenv
     DEST testSdfParsing/testSdfParsing.testenv
+)
+
+pxr_register_test(testSdfAssetPath
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfAssetPath"
 )
 
 pxr_register_test(testSdfAttribute
@@ -400,6 +446,11 @@ pxr_register_test(testSdfFileFormat
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfFileFormat"
 )
 
+pxr_register_test(testSdfFileFormatCapabilities
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfFileFormatCapabilities"
+)
+
 pxr_register_test(testSdfLayer
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfLayer"
@@ -423,12 +474,16 @@ pxr_register_test(testSdfMetaDataPlugInfo
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfMetaDataPlugInfo"
 )
 
-pxr_register_test(testSdfParsing
+pxr_register_test(testSdfPathExpression
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPathExpression"
 )
 
-pxr_register_test(testSdfParsingOld
+pxr_register_test(testSdfPathExpression_Cpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPathExpression_Cpp"
+)
+
+pxr_register_test(testSdfParsing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing"
 )
@@ -458,6 +513,11 @@ pxr_register_test(testSdfPathTable
 pxr_register_test(testSdfPathThreading
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPathThreading"
 )
+
+pxr_register_test(testSdfPredicateExpression_Cpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPredicateExpression_Cpp"
+)
+
 pxr_register_test(testSdfPayload
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPayload"
@@ -481,4 +541,12 @@ pxr_register_test(testSdfTimeCode
 pxr_register_test(testSdfTypes
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTypes"
+)
+pxr_register_test(testSdfVariableExpression
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfVariableExpression"
+)
+pxr_register_test(testSdfVariants
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfVariants"
 )

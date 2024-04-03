@@ -61,7 +61,43 @@
 // 44 -> 45: Added HdSceneDelegate::GetScenePrimPaths.
 // 45 -> 46: New signatures for HdRendererPlugin::IsSupported and
 //           HdRendererPluginRegistry::GetDefaultPluginId
-#define HD_API_VERSION 46
+// 46 -> 47: Adding HdRenderDelegate::GetRenderSettingsNamespaces()
+// 47 -> 48: New signature for HdRenderIndex::InsertSceneIndex: added optional 
+//           argument needsPrefixing
+// 48 -> 49: Moved HdExtCompCpuComputation, Hd_ExtCompInputSource,
+//           Hd_CompExtCompInputSource, and Hd_SceneExtCompInputSource to hdSt.
+// 49 -> 50: Added HdModelDrawMode struct and getter API to HdSceneDelegate.
+// 50 -> 51: HdMaterialBindingSchema became HdMaterialBindingsSchema which uses
+//           the new HdMaterialBindingSchema.
+// 51 -> 52: Added lens distortion, focus, and split diopter parameters to
+//           HdCamera.
+// 52 -> 53: Changing dirty bits of HdCoordSys.
+// 53 -> 54: Introducing HdFlattenedDataSourceProvider to make
+//           HdFlatteningSceneIndex modular.
+// 54 -> 55: Introduce API in HdRenderDelegate to aid in transitioning
+//           render delegates to a Hydra 2.0 world.
+// 55 -> 56: Adds hydra-namespaced internal instancer primvars
+// 56 -> 57: Changing SetOverrideWindowPolicy to std::optional on
+//           HdRenderPassState, HdxPickFromRenderBufferTaskParams,
+//           HdxTaskController and UsdImagingGLEngine.
+// 57 -> 58: Introducing hdsi/version.h
+// 58 -> 59: HdGeomSubsetsSchema::GetIds() renamed to
+//           HdGeomSubsetsSchema::GetGeomSubsetNames().
+// 59 -> 60: Introduced HdRenderDelegate::GetCapabilities().
+// 60 -> 61: Adding HdPrimvarSchema::GetFlattenedPrimvarValue().
+//           Note that in an upcoming change,
+//           HdPrimvarSchema::GetPrimvarValue() might change and
+//           simply return the data source source at primvarValue.
+// 61 -> 62: Remove 'bindingStrength' from HdMaterialBindingSchema.
+// 62 -> 63: HdMaterialSchema::GetMaterialNetwork,
+//           HdMaterialNetwork::GetNodes, GetTerminals,
+//           HdMaterialNode::GetParameters, GetInputConnections
+//           return Hydra schemas instead of just container data sources.
+//           schemaTypeDefs.h replaces vectorSchemaTypeDefs.h.
+// 63 -> 64: Adding disableDepthOfField to HdRenderSettings::RenderProduct
+//
+
+#define HD_API_VERSION 64
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

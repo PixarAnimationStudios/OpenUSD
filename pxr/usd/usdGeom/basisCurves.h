@@ -242,7 +242,7 @@ class SdfAssetPath;
 /// \image html USDCurveHydra.png
 /// 
 /// The file used to generate these curves can be found in
-/// pxr/extras/examples/usdGeomExamples/basisCurves.usda.  It's provided
+/// extras/usd/examples/usdGeomExamples/basisCurves.usda.  It's provided
 /// as a reference on how to properly image both tubes and ribbons. The first
 /// row of curves are linear; the second are cubic bezier. (We aim in future
 /// releases of HdSt to fix the discontinuity seen with broken tangents to

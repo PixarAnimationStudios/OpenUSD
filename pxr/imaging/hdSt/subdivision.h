@@ -25,10 +25,11 @@
 #define PXR_IMAGING_HD_ST_SUBDIVISION_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/computation.h"
+#include "pxr/imaging/hdSt/computation.h"
 #include "pxr/imaging/hdSt/meshTopology.h"
+
+#include "pxr/imaging/hd/bufferSource.h"
+
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/token.h"
 
@@ -104,7 +105,7 @@ public:
         HdSt_MeshTopology::Interpolation interpolation,
         int fvarChannel = 0);
 
-    HdComputationSharedPtr CreateRefineComputationGPU(
+    HdStComputationSharedPtr CreateRefineComputationGPU(
         HdSt_MeshTopology *topology,
         HdBufferSourceSharedPtr const &osdTopology,
         TfToken const &name,
@@ -218,7 +219,7 @@ private:
 ///
 /// OpenSubdiv GPU Refinement.
 ///
-class HdSt_OsdRefineComputationGPU final : public HdComputation
+class HdSt_OsdRefineComputationGPU final : public HdStComputation
 {
 public:
     HdSt_OsdRefineComputationGPU(

@@ -32,9 +32,6 @@
 #include <boost/python/list.hpp>
 #include <boost/python/dict.hpp>
 
-#include <boost/type_traits/add_reference.hpp>
-#include <boost/type_traits/remove_reference.hpp>
-
 #include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -138,7 +135,7 @@ struct TfPyPairToTuple {
 
 template <typename T>
 struct Tf_PySequenceToListConverter {
-    typedef typename boost::remove_reference<T>::type SeqType;
+    typedef std::remove_reference_t<T> SeqType;
     bool convertible() const {
         return true;
     }
@@ -152,7 +149,7 @@ struct Tf_PySequenceToListConverter {
 
 template <typename T>
 struct Tf_PySequenceToSetConverter {
-    typedef typename std::remove_reference<T>::type SeqType;
+    typedef std::remove_reference_t<T> SeqType;
     bool convertible() const {
         return true;
     }
@@ -166,7 +163,7 @@ struct Tf_PySequenceToSetConverter {
 
 template <typename T>
 struct Tf_PyMapToDictionaryConverter {
-    typedef typename boost::remove_reference<T>::type SeqType;
+    typedef std::remove_reference_t<T> SeqType;
     // TODO: convertible() should be made more robust by checking that the
     // value_type of the container is pair<const key_type, data_type> 
     bool convertible() const {
@@ -182,7 +179,7 @@ struct Tf_PyMapToDictionaryConverter {
 
 template <typename T>
 struct Tf_PySequenceToTupleConverter {
-    typedef typename boost::remove_reference<T>::type SeqType;
+    typedef std::remove_reference_t<T> SeqType;
     bool convertible() const {
         return true;
     }

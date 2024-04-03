@@ -52,6 +52,10 @@ public:
 
     virtual SdfPath GetMaterialPrimPath() const = 0;
 
+    /// Returns the nearest enclosing model asset name, as described by
+    /// the model schema, or empty string if none is available.
+    virtual std::string GetModelAssetName() const = 0;
+
     virtual TfTokenVector GetNodeNames() const  = 0;
     virtual TfToken GetNodeType(const TfToken &nodeName) const = 0;
 
@@ -69,6 +73,16 @@ public:
         const TfToken &nodeName) const = 0;
     
     virtual VtValue GetNodeParameterValue(
+        const TfToken &nodeName,
+        const TfToken &paramName) const = 0;
+    
+    struct NodeParamData
+    {
+        VtValue value;
+        TfToken colorSpace;
+    };
+
+    virtual NodeParamData GetNodeParameterData(
         const TfToken &nodeName,
         const TfToken &paramName) const = 0;
 
@@ -96,6 +110,11 @@ public:
         const TfToken &nodeName,
         const TfToken &paramName,
         const VtValue &value) = 0;
+    
+    virtual void SetNodeParameterData(
+        const TfToken &nodeName,
+        const TfToken &paramName,
+        const NodeParamData &paramData) = 0;
 
     virtual void DeleteNodeParameter(
         const TfToken &nodeName,

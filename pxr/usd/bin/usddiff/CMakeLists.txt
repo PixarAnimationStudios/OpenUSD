@@ -316,3 +316,57 @@ pxr_register_test(testUsdDiffWithDirectories8
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
 )
+
+pxr_install_test_dir(
+    SRC testenv/testDiffToolIterateUsdz
+    DEST testDiffToolIterateUsdz1
+)
+
+pxr_register_test(testDiffToolIterateUsdz1
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff a.usdz a.usdz"
+    EXPECTED_RETURN_CODE 0
+    PRE_PATH
+        ${CMAKE_INSTALL_PREFIX}/bin
+)
+
+pxr_install_test_dir(
+    SRC testenv/testDiffToolIterateUsdz
+    DEST testDiffToolIterateUsdz2
+)
+
+pxr_register_test(testDiffToolIterateUsdz2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff a.usdz b.usdz"
+    EXPECTED_RETURN_CODE 1
+    STDOUT_REDIRECT iterate_usd.txt
+    DIFF_COMPARE iterate_usd.txt
+    PRE_PATH
+        ${CMAKE_INSTALL_PREFIX}/bin
+)
+
+pxr_install_test_dir(
+    SRC testenv/testDiffToolIterateUsdz
+    DEST testDiffToolIterateUsdz3
+)
+
+pxr_register_test(testDiffToolIterateUsdz3
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff imagea.usdz imagea.usdz"
+    EXPECTED_RETURN_CODE 0
+    PRE_PATH
+        ${CMAKE_INSTALL_PREFIX}/bin
+)
+
+pxr_install_test_dir(
+    SRC testenv/testDiffToolIterateUsdz
+    DEST testDiffToolIterateUsdz4
+)
+
+pxr_register_test(testDiffToolIterateUsdz4
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff imagea.usdz imageb.usdz"
+    EXPECTED_RETURN_CODE 1
+    PRE_PATH
+        ${CMAKE_INSTALL_PREFIX}/bin
+)

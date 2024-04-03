@@ -21,7 +21,7 @@ notion of instancing the _bind state_ of a skeletally posed model. It is
 important that that level of instancing can be encoded in USD.
 
 UsdSkel encodes this concept using a combination of inherited properties
-and <a href="https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Instancing">scene graph instancing</a>.
+and <a href="https://openusd.org/release/glossary.html#usdglossary-instancing">scene graph instancing</a>.
 
 \subsection UsdSkel_Instancing_Example Instancing Example
 
@@ -100,7 +100,7 @@ def SkelAnimation "ModelAnim_N" {}
 Here, we encode unique joint animations, so that we can bind them to the
 copies of `</Model>` that will follow.
 
-Note that when a scene graphf location is instanced in USD, it is not possible
+Note that when a scene graph location is instanced in USD, it is not possible
 to add additional primitives beneath that scene graph location.  
 So we cannot add the SkelAnimation primitives as children of each copy of
 `</Model>`.
@@ -126,12 +126,13 @@ over Model_N (
 \endcode
 
 
-As discussed in other sections, such as the UsdSkel_SchemaOverview_SkelAnimations
-"skel animation overview", the _skel:animationSource_ relationship is
-"inherited" down namespace, onto Skeleton primitives. This inheritance property
-passes down into instances as well. So each instanced Skeleton beneath our
-`</Model_1>, ... </Model_N>` instances adopts the SkelAnimation that has been
-assigned on the instance itself.
+As discussed in other sections, such as the 
+\ref UsdSkel_SchemaOverview_SkelAnimations "skel animation overview", the 
+_skel:animationSource_ relationship is "inherited" down namespace, onto 
+Skeleton primitives. This inheritance property passes down into instances as 
+well. So each instanced Skeleton beneath our `</Model_1>, ... </Model_N>` 
+instances adopts the SkelAnimation that has been assigned on the instance 
+itself.
 
 Note that this ability to specify overrides on an instance is not unique to
 UsdSkel: Primvars in USD work the same way.

@@ -34,8 +34,10 @@
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/hints.h"
+#include "pxr/base/arch/pragmas.h"
 #include "pxr/base/tf/anyUniquePtr.h"
 #include "pxr/base/tf/pointerAndBits.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/safeTypeCompare.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/tf.h"
@@ -48,10 +50,6 @@
 #include "pxr/base/vt/types.h"
 
 #include <boost/intrusive_ptr.hpp>
-#include <boost/type_traits/has_trivial_assign.hpp>
-#include <boost/type_traits/has_trivial_constructor.hpp>
-#include <boost/type_traits/has_trivial_copy.hpp>
-#include <boost/type_traits/has_trivial_destructor.hpp>
 
 #include <iosfwd>
 #include <typeinfo>
@@ -202,10 +200,10 @@ class VtValue
 
     template <class T>
     using _IsTriviallyCopyable = std::integral_constant<bool,
-        boost::has_trivial_constructor<T>::value &&
-        boost::has_trivial_copy<T>::value &&
-        boost::has_trivial_assign<T>::value &&
-        boost::has_trivial_destructor<T>::value>;
+        std::is_trivially_default_constructible_v<T> &&
+        std::is_trivially_copyable_v<T> &&
+        std::is_trivially_copy_assignable_v<T> &&
+        std::is_trivially_destructible_v<T>>;
 
     // Metafunction that returns true if T should be stored locally, false if it
     // should be stored remotely.
@@ -1047,6 +1045,36 @@ public:
         return result;
     }
 
+    /// If this value holds an object of type \p T, invoke \p mutateFn, passing
+    /// it a non-const reference to the held object and return true.  Otherwise
+    /// do nothing and return false.
+    template <class T, class Fn>
+    std::enable_if_t<
+        std::is_same<T, typename Vt_ValueGetStored<T>::Type>::value, bool>
+    Mutate(Fn &&mutateFn) {
+        if (!IsHolding<T>()) {
+            return false;
+        }
+        UncheckedMutate<T>(std::forward<Fn>(mutateFn));
+        return true;
+    }
+
+    /// Invoke \p mutateFn, it a non-const reference to the held object which
+    /// must be of type \p T.  If the held object is not of type \p T, this
+    /// function invokes undefined behavior.
+    template <class T, class Fn>
+    std::enable_if_t<
+        std::is_same<T, typename Vt_ValueGetStored<T>::Type>::value>
+    UncheckedMutate(Fn &&mutateFn) {
+        // We move to a temporary, mutate the temporary, then move back.  This
+        // prevents callers from escaping a mutable reference to the held object
+        // via a side-effect of mutateFn.
+        T &stored =_GetMutable<T>();
+        T tmp = std::move(stored);
+        std::forward<Fn>(mutateFn)(tmp);
+        stored = std::move(tmp);
+    }
+
     /// Return true if this value is holding an object of type \p T, false
     /// otherwise.
     template <class T>
@@ -1175,7 +1203,8 @@ public:
     template <typename T>
     static VtValue Cast(VtValue const &val) {
         VtValue ret = val;
-        return ret.Cast<T>();
+        ret.Cast<T>();
+        return ret;
     }
 
     /// Return a VtValue holding \c val cast to same type that \c other is
@@ -1358,10 +1387,18 @@ private:
     }
 
     template <class T>
-    inline bool _TypeIs() const {
+    inline std::enable_if_t<VtIsKnownValueType_Workaround<T>::value, bool>
+    _TypeIs() const {
+        return _info->knownTypeIndex == VtGetKnownValueTypeIndex<T>() ||
+            ARCH_UNLIKELY(_IsProxy() && _TypeIsImpl(typeid(T)));
+    }
+
+    template <class T>
+    inline std::enable_if_t<!VtIsKnownValueType_Workaround<T>::value, bool>
+    _TypeIs() const {
         std::type_info const &t = typeid(T);
-        bool cmp = TfSafeTypeCompare(_info->typeInfo, t);
-        return ARCH_UNLIKELY(_IsProxy() && !cmp) ? _TypeIsImpl(t) : cmp;
+        return TfSafeTypeCompare(_info->typeInfo, t) ||
+            ARCH_UNLIKELY(_IsProxy() && _TypeIsImpl(t));
     }
 
     VT_API bool _TypeIsImpl(std::type_info const &queriedType) const;
@@ -1415,8 +1452,12 @@ private:
 
     inline void _Clear() {
         // optimize for local types not to deref _info.
+ARCH_PRAGMA_PUSH
+// XXX: http://bug/DEV-16695
+ARCH_PRAGMA_MAYBE_UNINITIALIZED
         if (_info.GetLiteral() && !_IsLocalAndTriviallyCopyable())
             _info.Get()->Destroy(_storage);
+ARCH_PRAGMA_POP
         _info.Set(nullptr, 0);
     }
 
@@ -1497,16 +1538,15 @@ Vt_DefaultValueFactory<T>::Invoke() {
 // to construct zeroed out vectors, matrices, and quaternions by
 // explicitly instantiating the factory for these types. 
 //
-#define _VT_DECLARE_ZERO_VALUE_FACTORY(r, unused, elem)                 \
+#define _VT_DECLARE_ZERO_VALUE_FACTORY(unused, elem)                    \
 template <>                                                             \
 VT_API Vt_DefaultValueHolder Vt_DefaultValueFactory<VT_TYPE(elem)>::Invoke();
 
-BOOST_PP_SEQ_FOR_EACH(_VT_DECLARE_ZERO_VALUE_FACTORY,
-                      unused,
-                      VT_VEC_VALUE_TYPES
-                      VT_MATRIX_VALUE_TYPES
-                      VT_QUATERNION_VALUE_TYPES
-                      VT_DUALQUATERNION_VALUE_TYPES)
+TF_PP_SEQ_FOR_EACH(_VT_DECLARE_ZERO_VALUE_FACTORY, ~,
+                   VT_VEC_VALUE_TYPES
+                   VT_MATRIX_VALUE_TYPES
+                   VT_QUATERNION_VALUE_TYPES
+                   VT_DUALQUATERNION_VALUE_TYPES)
 
 #undef _VT_DECLARE_ZERO_VALUE_FACTORY
 

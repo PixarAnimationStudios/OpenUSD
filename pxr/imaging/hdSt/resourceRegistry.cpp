@@ -505,7 +505,7 @@ HdStResourceRegistry::AddSource(HdBufferSourceSharedPtr const &source)
 
 void
 HdStResourceRegistry::AddComputation(HdBufferArrayRangeSharedPtr const &range,
-                                   HdComputationSharedPtr const &computation,
+                                   HdStComputationSharedPtr const &computation,
                                    HdStComputeQueue const queue)
 {
     HD_TRACE_FUNCTION();
@@ -535,7 +535,8 @@ HdStResourceRegistry::RegisterDispatchBuffer(
 HdStBufferResourceSharedPtr
 HdStResourceRegistry::RegisterBufferResource(
     TfToken const &role, 
-    HdTupleType tupleType)
+    HdTupleType tupleType,
+    HgiBufferUsage bufferUsage)
 {
     HdStBufferResourceSharedPtr const result =
         std::make_shared<HdStBufferResource>(
@@ -544,8 +545,8 @@ HdStResourceRegistry::RegisterBufferResource(
     size_t byteSize = HdDataSizeOfTupleType(tupleType);
 
     HgiBufferDesc bufDesc;
-    bufDesc.usage= HgiBufferUsageUniform;
-    bufDesc.byteSize= byteSize;
+    bufDesc.usage = bufferUsage;
+    bufDesc.byteSize = byteSize;
     HgiBufferHandle buffer = _hgi->CreateBuffer(bufDesc);
 
     result->SetAllocation(buffer, byteSize);
@@ -600,11 +601,11 @@ HdStResourceRegistry::RegisterBasisCurvesTopology(
                      HdPerfTokens->instBasisCurvesTopology);
 }
 
-HdInstance<Hd_VertexAdjacencySharedPtr>
-HdStResourceRegistry::RegisterVertexAdjacency(
-        HdInstance<Hd_VertexAdjacencySharedPtr>::ID id)
+HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>
+HdStResourceRegistry::RegisterVertexAdjacencyBuilder(
+        HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>::ID id)
 {
-    return _Register(id, _vertexAdjacencyRegistry,
+    return _Register(id, _vertexAdjacencyBuilderRegistry,
                      HdPerfTokens->instVertexAdjacency);
 }
 
@@ -801,19 +802,15 @@ HdStResourceRegistry::_Commit()
         // for each pending source, resolve and check if it needs buffer
         // reallocation or not.
 
-        size_t numBufferSourcesResolved = 0;
-        int numThreads = 1; //omp_get_max_threads();
+        std::atomic_size_t numBufferSourcesResolved { 0 };
         int numIterations = 0;
 
         // iterate until all buffer sources have been resolved.
         while (numBufferSourcesResolved < _numBufferSourcesToResolve) {
-            // XXX: Parallel for is currently much slower than a single
-            // thread in all tested scenarios, disabling until we can
-            // figure out what's going on here.
-//#pragma omp parallel for
-            for (int i = 0; i < numThreads; ++i) {
-                // iterate over all pending sources
-                for (_PendingSource const& req: _pendingSources) {
+            // iterate over all pending sources
+            WorkParallelForEach(_pendingSources.begin(), _pendingSources.end(),
+                [&numBufferSourcesResolved, &stagingBufferSize](
+                        _PendingSource &req) {
                     for (HdBufferSourceSharedPtr const& source: req.sources) {
                         // execute computation.
                         // call IsResolved first since Resolve is virtual and
@@ -824,13 +821,6 @@ HdStResourceRegistry::_Commit()
                                 "Name = %s", source->GetName().GetText());
 
                                 ++numBufferSourcesResolved;
-
-                                // call resize if it's the first in sources.
-                                if (req.range &&
-                                    source == *req.sources.begin()) {
-                                    req.range->Resize(
-                                        source->GetNumElements());
-                                }
 
                                 // Calculate the size of the staging buffer.
                                 if (req.range && req.range->RequiresStaging()) {
@@ -849,12 +839,19 @@ HdStResourceRegistry::_Commit()
                             }
                         }
                     }
-                }
-            }
+                });
             if (++numIterations > 100) {
                 TF_WARN("Too many iterations in resolving buffer source. "
                         "It's likely due to inconsistent dependency.");
                 break;
+            }
+        }
+
+        for (_PendingSource &req: _pendingSources) {
+            // We resize using the size of the first source in the request
+            // since all sources for the request will have the same size.
+            if (req.range && TF_VERIFY(!req.sources.empty())) {
+                req.range->Resize(req.sources[0]->GetNumElements());
             }
         }
 
@@ -871,7 +868,7 @@ HdStResourceRegistry::_Commit()
         //
         for (_PendingComputationList& compVec : _pendingComputations) {
             for (_PendingComputation &pendingComp : compVec) {
-                HdComputationSharedPtr const &comp = pendingComp.computation;
+                HdStComputationSharedPtr const &comp = pendingComp.computation;
                 HdBufferArrayRangeSharedPtr &dstRange = pendingComp.range;
                 if (dstRange) {
                     // ask the size of destination buffer of the gpu computation
@@ -979,7 +976,7 @@ HdStResourceRegistry::_Commit()
         //
         for (_PendingComputationList& compVec : _pendingComputations) {
             for (_PendingComputation &pendingComp : compVec) {
-                HdComputationSharedPtr const &comp = pendingComp.computation;
+                HdStComputationSharedPtr const &comp = pendingComp.computation;
                 HdBufferArrayRangeSharedPtr &dstRange = pendingComp.range;
                 comp->Execute(dstRange, this);
                 HD_PERF_COUNTER_INCR(HdPerfTokens->computationsCommited);
@@ -1059,7 +1056,7 @@ HdStResourceRegistry::_GarbageCollect()
     }
 
     {
-        size_t count = _vertexAdjacencyRegistry.GarbageCollect();
+        size_t count = _vertexAdjacencyBuilderRegistry.GarbageCollect();
         HD_PERF_COUNTER_SET(HdPerfTokens->instVertexAdjacency, count);
     }
 
@@ -1120,8 +1117,8 @@ HdStResourceRegistry::_GarbageCollect()
 
 HdBufferArrayRangeSharedPtr
 HdStResourceRegistry::_AllocateBufferArrayRange(
-    HdAggregationStrategy *strategy,
-    HdBufferArrayRegistry &bufferArrayRegistry,
+    HdStAggregationStrategy *strategy,
+    HdStBufferArrayRegistry &bufferArrayRegistry,
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
@@ -1135,8 +1132,8 @@ HdStResourceRegistry::_AllocateBufferArrayRange(
 
 HdBufferArrayRangeSharedPtr
 HdStResourceRegistry::_UpdateBufferArrayRange(
-        HdAggregationStrategy *strategy,
-        HdBufferArrayRegistry &bufferArrayRegistry,
+        HdStAggregationStrategy *strategy,
+        HdStBufferArrayRegistry &bufferArrayRegistry,
         TfToken const &role,
         HdBufferArrayRangeSharedPtr const& curRange,
         HdBufferSpecVector const &updatedOrAddedSpecs,

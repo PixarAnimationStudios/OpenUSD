@@ -26,41 +26,75 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/computation.h"
+
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/computation.h"
+#include "pxr/imaging/hd/flatNormals.h"
 
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class Hd_FaceCoords;
-
-/// flat normal computation GPU
+/// \class HdSt_FlatNormalsComputationCPU
 ///
+/// Flat normal computation CPU.
 ///
-class HdSt_FlatNormalsComputationGPU : public HdComputation {
+class HdSt_FlatNormalsComputationCPU : public HdComputedBufferSource
+{
 public:
-
-    /// Constructor
     HDST_API
-    HdSt_FlatNormalsComputationGPU(HdBufferArrayRangeSharedPtr const
-                                       &topologyRange,
-                                   HdBufferArrayRangeSharedPtr const
-                                       &vertexRange,
-                                   int numFaces,
-                                   TfToken const &srcName,
-                                   TfToken const &dstName,
-                                   HdType srcDataType,
-                                   bool packed);
+    HdSt_FlatNormalsComputationCPU(
+        HdMeshTopology const *topology,
+        HdBufferSourceSharedPtr const &points,
+        TfToken const &dstName,
+        bool packed);
 
     HDST_API
-    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
-    HDST_API
-    virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
-                         HdResourceRegistry *resourceRegistry) override;
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
 
-    virtual int GetNumOutputElements() const override;
+    HDST_API
+    bool Resolve() override;
+
+    HDST_API
+    TfToken const &GetName() const override;
+
+protected:
+    HDST_API
+    bool _CheckValid() const override;
+
+private:
+    HdMeshTopology const *_topology;
+    HdBufferSourceSharedPtr const _points;
+    TfToken _dstName;
+    bool _packed;
+};
+
+/// \class HdSt_FlatNormalsComputationGPU
+///
+/// Flat normal computation GPU.
+///
+class HdSt_FlatNormalsComputationGPU : public HdStComputation
+{
+public:
+    HDST_API
+    HdSt_FlatNormalsComputationGPU(
+        HdBufferArrayRangeSharedPtr const &topologyRange,
+        HdBufferArrayRangeSharedPtr const &vertexRange,
+        int numFaces,
+        TfToken const &srcName,
+        TfToken const &dstName,
+        HdType srcDataType,
+        bool packed);
+
+    HDST_API
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+
+    HDST_API
+    void Execute(HdBufferArrayRangeSharedPtr const &range,
+                 HdResourceRegistry *resourceRegistry) override;
+
+    int GetNumOutputElements() const override;
 
 private:
     HdBufferArrayRangeSharedPtr const _topologyRange;

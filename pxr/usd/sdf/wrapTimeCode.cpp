@@ -26,9 +26,9 @@
 #include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/wrapArray.h"
 
-#include <boost/functional/hash.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/implicit.hpp>
@@ -49,7 +49,7 @@ namespace {
 
 static std::string _Str(SdfTimeCode const &self)
 {
-    return boost::lexical_cast<std::string>(self);
+    return TfStringify(self);
 }
 
 static std::string
@@ -60,7 +60,7 @@ _Repr(SdfTimeCode const &self)
     return repr.str();
 }
 
-static bool _Nonzero(SdfTimeCode const &self)
+static bool _HasNonZeroTimeCode(SdfTimeCode const &self)
 {
     return self != SdfTimeCode(0.0);
 }
@@ -83,7 +83,7 @@ void wrapTimeCode()
 
         .def("__repr__", _Repr)
         .def("__str__", _Str)
-        .def(TfPyBoolBuiltinFuncName, _Nonzero)
+        .def("__bool__", _HasNonZeroTimeCode)
         .def("__hash__", &This::GetHash)
         .def("__float__", _Float)
 
@@ -109,12 +109,6 @@ void wrapTimeCode()
         .def( self - self )
         .def( double() - self )
         ;
-
-#if PY_MAJOR_VERSION == 2
-    // Needed to support "from __future__ import division" in python 2.
-    selfCls.attr("__truediv__") = selfCls.attr("__div__");
-    selfCls.attr("__rtruediv__") = selfCls.attr("__rdiv__");
-#endif
 
     implicitly_convertible<double, This>();
 

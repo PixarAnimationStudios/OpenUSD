@@ -54,7 +54,7 @@ public:
     ~HdSt_VolumeShader() override;
 
     /// Adds custom bindings.
-    void AddBindings(HdBindingRequestVector * customBindings) override;
+    void AddBindings(HdStBindingRequestVector * customBindings) override;
     
     /// Querries render delegate for step sizes and binds the uniforms and
     /// calls base class's method.

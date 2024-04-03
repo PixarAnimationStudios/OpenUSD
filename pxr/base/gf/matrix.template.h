@@ -37,8 +37,7 @@
 #include "pxr/base/gf/traits.h"
 {% block includes %}
 {% endblock %}
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iosfwd>
 #include <vector>
@@ -218,12 +217,9 @@ public:
 
     /// Hash.
     friend inline size_t hash_value({{ MAT }} const &m) {
-        int nElems = {{ DIM }} * {{ DIM }};
-        size_t h = 0;
-        const {{ SCL }} *p = m.GetArray();
-        while (nElems--)
-            boost::hash_combine(h, *p++);
-        return h;
+        return TfHash::Combine(
+            {{ MATRIX("m._mtx[%(i)s][%(j)s]", sep=',\n            ') }}
+        );
     }
 
     /// Tests for element-wise matrix equality. All elements must match

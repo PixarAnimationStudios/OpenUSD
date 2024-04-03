@@ -246,9 +246,10 @@ PxOsdMeshTopologyValidation::_ValidateCreasesAndCorners(
 
     if (std::any_of(cornerIndices.cbegin(), cornerIndices.cend(),
                     [&sortedFaceIndices](int index) {
-                        return std::find(sortedFaceIndices.begin(),
-                                         sortedFaceIndices.end(),
-                                         index) == sortedFaceIndices.end();
+                        return !std::binary_search(
+                                sortedFaceIndices.begin(),
+                                sortedFaceIndices.end(), 
+                                index);
                     })) {
         _AppendInvalidation(
             {Code::InvalidCornerIndicesElement,
@@ -256,9 +257,10 @@ PxOsdMeshTopologyValidation::_ValidateCreasesAndCorners(
     }
     if (std::any_of(creaseIndices.cbegin(), creaseIndices.cend(),
                     [&sortedFaceIndices](int index) {
-                        return std::find(sortedFaceIndices.begin(),
-                                         sortedFaceIndices.end(),
-                                         index) == sortedFaceIndices.end();
+                        return !std::binary_search(
+                                sortedFaceIndices.begin(), 
+                                sortedFaceIndices.end(), 
+                                index);
                     })) {
         _AppendInvalidation(
             {Code::InvalidCreaseIndicesElement,

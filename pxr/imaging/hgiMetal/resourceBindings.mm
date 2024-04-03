@@ -149,9 +149,19 @@ HgiMetalResourceBindings::BindResources(
         
         id<MTLBuffer> bufferId = metalbuffer->GetBufferId();
         NSUInteger offset = bufDesc.offsets.front();
+        
+        if (bufDesc.resourceType == HgiBindResourceTypeTessFactors) {
+            [renderEncoder setTessellationFactorBuffer:bufferId
+                                                offset:offset
+                                        instanceStride:0];
+            // Tess factors buffers need no futher binding.
+            continue;
+        }
 
         if ((bufDesc.stageUsage & HgiShaderStageVertex) ||
+            (bufDesc.stageUsage & HgiShaderStagePostTessellationControl) ||
             (bufDesc.stageUsage & HgiShaderStagePostTessellationVertex)) {
+
             NSUInteger argBufferOffset = HgiMetalArgumentOffsetBufferVS
                                        + bufDesc.bindingIndex * sizeof(void*);
             [argEncoderBuffer setArgumentBuffer:argBuffer

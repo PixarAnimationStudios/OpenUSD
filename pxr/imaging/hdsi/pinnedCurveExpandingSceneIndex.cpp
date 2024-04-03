@@ -763,13 +763,14 @@ public:
                 _SafeGetTypedValue<TfToken>(ts.GetBasis());
 
             if (wrap == HdTokens->pinned &&
-                (basis == HdTokens->bSpline ||
-                 basis == HdTokens->catmullRom)) {
+                (basis == HdTokens->bspline ||
+                 basis == HdTokens->catmullRom ||
+                 basis == HdTokens->centripetalCatmullRom)) {
 
-                // Add 2 additional end points for bSpline and
-                // 1 for catmullRom.
+                // Add 2 additional end points for bspline and
+                // 1 for catmullRom|centripetalCatmullRom.
                 const size_t numExtraEnds =
-                    (basis == HdTokens->bSpline)? 2 : 1;
+                    (basis == HdTokens->bspline)? 2 : 1;
                 
                 // Need to cache the per-curve vertex counts since the
                 // expansion is per-curve.

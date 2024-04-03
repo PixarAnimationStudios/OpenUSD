@@ -4,8 +4,14 @@
     endTimeCode = 10
     upAxis = "Z"
 )
-def SkelRoot "Model" {
-    def Skeleton "Skel" {
+def SkelRoot "Model"(
+    prepend apiSchemas = ["SkelBindingAPI"]
+)
+{
+    def Skeleton "Skel"(
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
+    {
         uniform token[] joints = ["Shoulder", "Shoulder/Elbow", "Shoulder/Elbow/Hand"]
         uniform matrix4d[] bindTransforms = [
             ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1)),
@@ -30,9 +36,12 @@ def SkelRoot "Model" {
         
         rel skel:animationSource = <Anim1>
     }
-   rel skel:skeleton = </Model/Skel>
+    rel skel:skeleton = </Model/Skel>
 
-    def Mesh "Arm" {
+    def Mesh "Arm" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    ) 
+    {
  
        int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
        int[] faceVertexIndices = [

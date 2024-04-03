@@ -31,6 +31,8 @@
 
 #include "pxr/imaging/hd/api.h"
 
+#include <iosfwd>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdDataSourceLocator
@@ -212,6 +214,9 @@ HdDataSourceLocator::Hash() const
     return TfHash()(*this);
 }
 
+HD_API std::ostream& operator<<(std::ostream& out,
+    const HdDataSourceLocator &self);
+
 //-----------------------------------------------------------------------------
 
 ///
@@ -235,7 +240,12 @@ private:
 public:
     using const_iterator = typename _Locators::const_iterator;
 
+    /// The empty set.
     explicit HdDataSourceLocatorSet() {}
+
+    /// The set containing everything.
+    HD_API
+    static const HdDataSourceLocatorSet &UniversalSet();
 
     HD_API
     HdDataSourceLocatorSet(const HdDataSourceLocator &locator);
@@ -265,6 +275,10 @@ public:
     HD_API
     void insert(const HdDataSourceLocatorSet &locatorSet);
 
+    /// Changes this set to be the union of this set and the given set.
+    HD_API
+    void insert(HdDataSourceLocatorSet &&locatorSet);
+
     /// append() is semantically equivalent to insert(), but works much faster
     /// if \p locator would be added to the end of the set, lexicographically.
     HD_API
@@ -284,7 +298,7 @@ public:
     const_iterator begin() const;
     HD_API
     const_iterator end() const;
-    
+
     /// True if and only if locator or any of its descendants is
     /// in the set (closed under descendancy).
     ///
@@ -324,16 +338,114 @@ public:
         const HdDataSourceLocator &oldPrefix,
         const HdDataSourceLocator &newPrefix) const;
 
+    class IntersectionIterator;
+    class IntersectionView;
+
+    /// Returns intersection with a locator as a range-like object so that it
+    /// can be used in a for-loop.
+    ///
+    /// Every element in the intersection has locator as a prefix.
+    ///
+    /// Examples:
+    /// Intersection of { primvars:color } with primvars is
+    ///                 { primvars:color }.
+    /// Intersection of { primvars:color } with primvars:color:interpolation is
+    ///                 { primvars:color:interpolation }.
+    ///
+    HD_API
+    IntersectionView Intersection(const HdDataSourceLocator &locator) const;
+
 private:
     // Sort and uniquify it.
     void _Normalize();
 
     void _InsertAndDeleteSuffixes(_Locators::iterator *position,
                                   const HdDataSourceLocator &locator);
+
+    const_iterator _FirstIntersection(const HdDataSourceLocator &locator) const;
+
     // Lexicographically sorted minimal list of locators generating
     // the set.
     _Locators _locators;
 };
+
+class HdDataSourceLocatorSet::IntersectionIterator
+{
+public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = const HdDataSourceLocator;
+    using reference = value_type&;
+    using pointer = value_type*;
+    using difference_type = std::ptrdiff_t;
+
+    IntersectionIterator()
+      : _isFirst(false)
+    {
+    }
+
+    IntersectionIterator(const bool isFirst,
+                         const const_iterator &iterator,
+                         const const_iterator &end,
+                         const HdDataSourceLocator &locator)
+      : _isFirst(isFirst)
+      , _iterator(iterator)
+      , _end(end)
+      , _locator(locator)
+    {
+    }
+
+    HD_API
+    const HdDataSourceLocator &operator*() const;
+
+    const HdDataSourceLocator* operator->() const
+    {
+        return std::addressof(**this);
+    }
+
+    HD_API
+    IntersectionIterator& operator++();
+
+    HD_API
+    IntersectionIterator operator++(int);
+
+    bool operator==(const IntersectionIterator &other) const noexcept
+    {
+        return _iterator == other._iterator;
+    }
+
+    bool operator!=(const IntersectionIterator &other) const noexcept
+    {
+        return _iterator != other._iterator;
+    }
+
+private:
+    bool _isFirst;
+    const_iterator _iterator;
+    const_iterator _end;
+    HdDataSourceLocator _locator;
+};
+
+class HdDataSourceLocatorSet::IntersectionView
+{
+public:
+    IntersectionView(const IntersectionIterator &begin,
+                     const IntersectionIterator &end)
+      : _begin(begin)
+      , _end(end)
+    {
+    }
+
+    const IntersectionIterator &begin() const { return _begin; }
+
+    const IntersectionIterator &end() const { return _end; }
+
+private:
+    const IntersectionIterator _begin;
+    const IntersectionIterator _end;
+};
+
+HD_API std::ostream& operator<<(std::ostream& out,
+    const HdDataSourceLocatorSet &self);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

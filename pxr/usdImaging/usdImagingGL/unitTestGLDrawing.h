@@ -45,7 +45,8 @@ class UsdImagingGL_UnitTestWindow;
 ///
 /// A helper class for unit tests which need to perform GL drawing.
 ///
-class UsdImagingGL_UnitTestGLDrawing {
+class UsdImagingGL_UnitTestGLDrawing
+{
 public:
     UsdImagingGL_UnitTestGLDrawing();
     virtual ~UsdImagingGL_UnitTestGLDrawing();
@@ -88,6 +89,8 @@ public:
     float GetPixelAspectRatio() const { return _pixelAspectRatio; }
     GfRange2f const & GetDisplayWindow() const { return _displayWindow; }
     GfRect2i const & GetDataWindow() const { return _dataWindow; }
+    CameraUtilConformWindowPolicy const &
+    GetWindowPolicy() const { return _windowPolicy; }
     UsdImagingGLCullStyle GetCullStyle() const { return _cullStyle; }
 
     void RunTest(int argc, char *argv[]);
@@ -127,11 +130,6 @@ protected:
         engine->RenderBatch(roots, params);
     }
 
-    void _SetDisplayUnloadedPrimsWithBounds(UsdImagingGLEngine *engine,
-                                            bool enable) {
-        engine->_sceneDelegate->SetDisplayUnloadedPrimsWithBounds(enable);
-    }
-
 private:
     struct _Args;
     void _Parse(int argc, char *argv[], _Args* args);
@@ -164,6 +162,8 @@ private:
     float _pixelAspectRatio;
     GfRange2f _displayWindow;
     GfRect2i _dataWindow;
+    CameraUtilConformWindowPolicy _windowPolicy;
+
     VtDictionary _renderSettings;
     TfToken _rendererAov;
     std::string _perfStatsFile;

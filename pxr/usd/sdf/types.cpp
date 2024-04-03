@@ -37,6 +37,7 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/type.h"
 
+#include <array>
 #include <unordered_map>
 
 using std::map;
@@ -67,6 +68,31 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<SdfUnregisteredValue>();
     TfType::Define<SdfValueBlock>(); 
 }
+
+// Max units is computed by running `TF_PP_SEQ_SIZE`
+// on every sequence in the varaidic args to populate an
+// initializer list for `std::max`.
+// A comma is appended to each element.
+#define _SDF_UNIT_MAX_UNITS_IMPL(seq) TF_PP_SEQ_SIZE(seq),
+#define _SDF_UNIT_MAX_UNITS_OP(elem)                     \
+    _SDF_UNIT_MAX_UNITS_IMPL(TF_PP_TUPLE_ELEM(1, elem))
+
+constexpr size_t _Sdf_UnitMaxUnits =
+    std::max(
+        {
+            _SDF_FOR_EACH_UNITS(_SDF_UNIT_MAX_UNITS_OP,
+                                _SDF_UNITS)
+        }
+    );
+
+// Compute the number of unit enums
+constexpr size_t _Sdf_UnitNumTypes =
+    TF_PP_VARIADIC_SIZE(TF_PP_EAT_PARENS(_SDF_UNITS));
+
+static_assert(_Sdf_UnitNumTypes > 0,
+              "There must be at least one define Sdf unit enum.");
+static_assert(_Sdf_UnitMaxUnits > 0,
+              "There must be at least one defined Sdf unit .");
 
 template <typename T>
 static VtValue
@@ -129,8 +155,8 @@ struct _UnitsInfo {
     map<string, TfEnum> _DefaultUnitsMap;
     map<string, TfEnum> _UnitCategoryToDefaultUnitMap;
     map<string, string> _UnitTypeNameToUnitCategoryMap;
-    TfEnum _UnitIndicesTable[_SDF_UNIT_NUM_TYPES][_SDF_UNIT_MAX_UNITS];
-    string _UnitNameTable[_SDF_UNIT_NUM_TYPES][_SDF_UNIT_MAX_UNITS];
+    std::array<std::array<std::string, _Sdf_UnitMaxUnits>,
+               _Sdf_UnitNumTypes> _UnitNameTable;
     map<string, TfEnum> _UnitNameToUnitMap;
     map<string, uint32_t> _UnitTypeIndicesTable;
 };
@@ -164,41 +190,40 @@ static void _AddToUnitsMaps(_UnitsInfo &info,
     else {
         typeIndex = i->second;
     }
-    info._UnitIndicesTable[typeIndex][unit.GetValueAsInt()] = unit;
     info._UnitNameTable[typeIndex][unit.GetValueAsInt()] = unitName;
     info._UnitNameToUnitMap[unitName] = unit;
 }
 
-#define _ADD_UNIT_ENUM(r, category, elem)                               \
+#define _ADD_UNIT_ENUM(category, elem)                                  \
     TF_ADD_ENUM_NAME(                                                   \
-        BOOST_PP_CAT(Sdf ## category ## Unit, _SDF_UNIT_TAG(elem)),     \
+        TF_PP_CAT(Sdf ## category ## Unit, _SDF_UNIT_TAG(elem)),        \
         _SDF_UNIT_NAME(elem));
 
-#define _REGISTRY_FUNCTION(r, unused, elem)                          \
+#define _REGISTRY_FUNCTION(elem)                                     \
 TF_REGISTRY_FUNCTION_WITH_TAG(TfEnum, _SDF_UNITSLIST_CATEGORY(elem)) \
 {                                                                    \
-    BOOST_PP_SEQ_FOR_EACH(_ADD_UNIT_ENUM,                            \
-                          _SDF_UNITSLIST_CATEGORY(elem),             \
-                          _SDF_UNITSLIST_TUPLES(elem));              \
+    TF_PP_SEQ_FOR_EACH(_ADD_UNIT_ENUM,                               \
+                       _SDF_UNITSLIST_CATEGORY(elem),                \
+                       _SDF_UNITSLIST_TUPLES(elem));                 \
 }
 
-BOOST_PP_LIST_FOR_EACH(_REGISTRY_FUNCTION, ~, _SDF_UNITS)
+_SDF_FOR_EACH_UNITS(_REGISTRY_FUNCTION, _SDF_UNITS)
 
-#define _ADD_UNIT_TO_MAPS(r, category, elem)                            \
+#define _ADD_UNIT_TO_MAPS(category, elem)                               \
     _AddToUnitsMaps(                                                    \
         *info,                                                          \
-        BOOST_PP_CAT(Sdf ## category ## Unit, _SDF_UNIT_TAG(elem)),     \
+        TF_PP_CAT(Sdf ## category ## Unit, _SDF_UNIT_TAG(elem)),        \
         _SDF_UNIT_NAME(elem),                                           \
         _SDF_UNIT_SCALE(elem), #category);
 
-#define _POPULATE_UNIT_MAPS(r, unused, elem)                          \
-    BOOST_PP_SEQ_FOR_EACH(_ADD_UNIT_TO_MAPS,                          \
-                          _SDF_UNITSLIST_CATEGORY(elem),              \
-                          _SDF_UNITSLIST_TUPLES(elem))                \
+#define _POPULATE_UNIT_MAPS(elem)                                     \
+    TF_PP_SEQ_FOR_EACH(_ADD_UNIT_TO_MAPS,                             \
+                       _SDF_UNITSLIST_CATEGORY(elem),                 \
+                       _SDF_UNITSLIST_TUPLES(elem))                   \
 
 static _UnitsInfo *_MakeUnitsMaps() {
     _UnitsInfo *info = new _UnitsInfo;
-    BOOST_PP_LIST_FOR_EACH(_POPULATE_UNIT_MAPS, ~, _SDF_UNITS);
+    _SDF_FOR_EACH_UNITS(_POPULATE_UNIT_MAPS, _SDF_UNITS);
     return info;
 }
 
@@ -210,16 +235,16 @@ static _UnitsInfo &_GetUnitsInfo() {
 #undef _REGISTRY_FUNCTION
 #undef _PROCESS_ENUMERANT
 
-#define _REGISTRY_FUNCTION(r, unused, elem)                          \
-TF_REGISTRY_FUNCTION_WITH_TAG(TfType, BOOST_PP_CAT(Type, _SDF_UNITSLIST_CATEGORY(elem))) \
+#define _REGISTRY_FUNCTION(elem)                                     \
+TF_REGISTRY_FUNCTION_WITH_TAG(TfType, TF_PP_CAT(Type, _SDF_UNITSLIST_CATEGORY(elem))) \
 {                                                                    \
     TfType::Define<_SDF_UNITSLIST_ENUM(elem)>();                     \
 }                                                                    \
-TF_REGISTRY_FUNCTION_WITH_TAG(VtValue, BOOST_PP_CAT(Value, _SDF_UNITSLIST_CATEGORY(elem))) \
+TF_REGISTRY_FUNCTION_WITH_TAG(VtValue, TF_PP_CAT(Value, _SDF_UNITSLIST_CATEGORY(elem))) \
 {                                                                    \
     _RegisterEnumWithVtValue<_SDF_UNITSLIST_ENUM(elem)>();           \
 }
-BOOST_PP_LIST_FOR_EACH(_REGISTRY_FUNCTION, ~, _SDF_UNITS)
+_SDF_FOR_EACH_UNITS(_REGISTRY_FUNCTION, _SDF_UNITS)
 #undef _REGISTRY_FUNCTION
 
 TfEnum
@@ -450,14 +475,14 @@ _GetTypedValueVectorToVtArrayFn(TfType const &type)
     using FnMap = std::unordered_map<
         TfType, _ValueVectorToVtArrayFn, TfHash>;
     static FnMap *valueVectorToVtArrayFnMap = []() {
-        FnMap *ret = new FnMap(BOOST_PP_SEQ_SIZE(SDF_VALUE_TYPES));
+        FnMap *ret = new FnMap(TF_PP_SEQ_SIZE(SDF_VALUE_TYPES));
 
 // Add conversion functions for all SDF_VALUE_TYPES.
-#define _ADD_FN(r, unused, elem)                                        \
+#define _ADD_FN(unused, elem)                                           \
         ret->emplace(TfType::Find<SDF_VALUE_CPP_TYPE(elem)>(),          \
                      _ValueVectorToVtArray<SDF_VALUE_CPP_TYPE(elem)>);
 
-        BOOST_PP_SEQ_FOR_EACH(_ADD_FN, ~, SDF_VALUE_TYPES)
+        TF_PP_SEQ_FOR_EACH(_ADD_FN, ~, SDF_VALUE_TYPES)
 #undef _ADD_FN
         return ret;
     }();
@@ -566,14 +591,14 @@ _GetTypedPySeqToVtArrayFn(TfType const &type)
 {
     using FnMap = std::unordered_map<TfType, _PySeqToVtArrayFn, TfHash>;
     static FnMap *pySeqToVtArrayFnMap = []() {
-        FnMap *ret = new FnMap(BOOST_PP_SEQ_SIZE(SDF_VALUE_TYPES));
+        FnMap *ret = new FnMap(TF_PP_SEQ_SIZE(SDF_VALUE_TYPES));
 
 // Add conversion functions for all SDF_VALUE_TYPES.
-#define _ADD_FN(r, unused, elem)                                        \
+#define _ADD_FN(unused, elem)                                           \
         ret->emplace(TfType::Find<SDF_VALUE_CPP_TYPE(elem)>(),          \
                      _PySeqToVtArray<SDF_VALUE_CPP_TYPE(elem)>);
 
-        BOOST_PP_SEQ_FOR_EACH(_ADD_FN, ~, SDF_VALUE_TYPES)
+        TF_PP_SEQ_FOR_EACH(_ADD_FN, ~, SDF_VALUE_TYPES)
 #undef _ADD_FN
         return ret;
     }();
@@ -754,6 +779,11 @@ SdfUnregisteredValue::SdfUnregisteredValue(
 bool SdfUnregisteredValue::operator==(const SdfUnregisteredValue &other) const
 {
     return _value == other._value;
+}
+
+bool SdfUnregisteredValue::operator!=(const SdfUnregisteredValue &other) const
+{
+    return !(*this == other);
 }
 
 std::ostream &operator << (std::ostream &out, const SdfUnregisteredValue &value)

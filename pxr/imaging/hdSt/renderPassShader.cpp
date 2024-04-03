@@ -22,10 +22,10 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/aov.h"
-#include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hdSt/binding.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/renderBuffer.h"
@@ -38,7 +38,7 @@
 
 #include "pxr/imaging/hio/glslfx.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <string>
 
@@ -157,7 +157,7 @@ HdStRenderPassShader::ComputeHash() const
     // Custom buffer bindings may vary over time, requiring invalidation
     // of down stream clients.
     TF_FOR_ALL(it, _customBuffers) {
-        boost::hash_combine(_hash, it->second.ComputeHash());
+        _hash = TfHash::Combine(_hash, it->second.ComputeHash());
     }
 
     for (const HdStShaderCode::NamedTextureHandle &namedHandle :
@@ -165,8 +165,7 @@ HdStRenderPassShader::ComputeHash() const
         
         // Use name and hash only - not the texture itself as this
         // does not affect the generated shader source.
-        boost::hash_combine(_hash, namedHandle.name);
-        boost::hash_combine(_hash, namedHandle.hash);
+        _hash = TfHash::Combine(_hash, namedHandle.name, namedHandle.hash);
     }
 
     _hashValid = true;
@@ -209,14 +208,9 @@ HdStRenderPassShader::UnbindResources(const int program,
 }
 
 void
-HdStRenderPassShader::AddBufferBinding(HdBindingRequest const& req)
+HdStRenderPassShader::AddBufferBinding(HdStBindingRequest const& req)
 {
-    auto it = _customBuffers.insert({req.GetName(), req});
-    // Entry already existed and was equal to what we want to set it.
-    if (!it.second && it.first->second == req) {
-        return;
-    }
-    it.first->second = req;
+    _customBuffers[req.GetName()] = req;
     _hashValid = false;
 }
 
@@ -236,7 +230,7 @@ HdStRenderPassShader::ClearBufferBindings()
 
 /*virtual*/
 void
-HdStRenderPassShader::AddBindings(HdBindingRequestVector *customBindings)
+HdStRenderPassShader::AddBindings(HdStBindingRequestVector *customBindings)
 {
     // note: be careful, the logic behind this function is tricky.
     //

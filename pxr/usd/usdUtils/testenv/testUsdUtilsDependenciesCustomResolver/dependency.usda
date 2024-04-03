@@ -1,0 +1,11 @@
+#usda 1.0
+(
+    upAxis = "Y"
+    metersPerUnit = 0.01
+    defaultPrim = "dependency"
+)
+
+def XForm "dependency"
+{
+
+}

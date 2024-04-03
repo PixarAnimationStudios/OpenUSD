@@ -26,11 +26,9 @@
 
 #include "pxr/pxr.h"
 
-#include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/operators.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/operators.hpp>
 #include <boost/python/return_by_value.hpp>
@@ -40,8 +38,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 template <class Annotation>
-struct TfPyAnnotatedBoolResult :
-    boost::equality_comparable<TfPyAnnotatedBoolResult<Annotation>, bool>
+struct TfPyAnnotatedBoolResult
 {
     TfPyAnnotatedBoolResult() {}
     
@@ -66,6 +63,18 @@ struct TfPyAnnotatedBoolResult :
         return _val == rhs;
     }
 
+    friend bool operator==(bool lhs, const TfPyAnnotatedBoolResult& rhs) {
+        return rhs == lhs;
+    }
+
+    friend bool operator!=(const TfPyAnnotatedBoolResult& lhs, bool rhs) {
+        return !(lhs == rhs);
+    }
+
+    friend bool operator!=(bool lhs, const TfPyAnnotatedBoolResult& rhs) {
+        return !(lhs == rhs);
+    }
+
     template <class Derived>
     static boost::python::class_<Derived>
     Wrap(char const *name, char const *annotationName) {
@@ -73,7 +82,7 @@ struct TfPyAnnotatedBoolResult :
         using namespace boost::python;
         TfPyLock lock;
         return class_<Derived>(name, init<bool, Annotation>())
-            .def(TfPyBoolBuiltinFuncName, &Derived::GetValue)
+            .def("__bool__", &Derived::GetValue)
             .def("__repr__", &Derived::GetRepr)
             .def(self == bool())
             .def(self != bool())

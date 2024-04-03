@@ -101,7 +101,14 @@ def Shader "UsdPreviewSurface" (
         doc = """Expects normal in tangent space [(-1,-1,-1), (1,1,1)]
             This means your texture reader implementation should provide
             data to this node that is properly scaled and ready
-            to be consumed as a tangent space normal."""
+            to be consumed as a tangent space normal.
+            If the texture has 8 bits per component, then scale and bias must be
+            adjusted to be (2.0, 2.0, 2.0, 1.0) and (-1, -1, -1, 0) respectively
+            in order to satisfy tangent space requirements.
+            Normal map data is commonly expected to be linearly encoded. 
+            However, many image-writing tools automatically set the profile of
+            three-channel, 8-bit images to SRGB. To prevent an unwanted
+            transformation, the sourceColorSpace must also be set to "raw"."""
     )
 
     float inputs:displacement = 0.0 (
@@ -179,20 +186,28 @@ def Shader "UsdUVTexture" (
     float4 inputs:scale = (1.0, 1.0, 1.0, 1.0) (
         connectability = "interfaceOnly"
         doc = """Scale to be applied to all components of the texture. 
-                 value * scale + bias"""
+                 value * scale + bias.
+                 Please see UsdPreviewSurface.inputs:normal for special 
+                 considerations for reading normal maps."""
     )
 
     float4 inputs:bias = (0.0, 0.0, 0.0, 0.0) (
         connectability = "interfaceOnly"
         doc = """Bias to be applied to all components of the texture. 
-                 value * scale + bias)"""
+                 value * scale + bias).
+                 Please see UsdPreviewSurface.inputs:normal for special 
+                 considerations for reading normal maps."""
     )
 
     token inputs:sourceColorSpace = "auto" (
         connectability = "interfaceOnly"
         allowedTokens = ["raw", "sRGB", "auto"]
         doc = """<options> raw, sRGB, auto. Flag indicating the color
-                 space in which the source texture is encoded."""
+                 space in which the source texture is encoded. If set to sRGB,
+                 the texture will be read using the sRGB transfer curve, but
+                 not filtered against the sRGB gamut. Please see 
+                 UsdPreviewSurface.inputs:normal for special considerations for 
+                 reading normal maps."""
     )
 
     float outputs:r ( 

@@ -267,6 +267,8 @@ HgiGLShaderGenerator::_WriteMacros(std::ostream &ss)
           "#define ATOMIC_STORE(a, v) (a) = (v)\n"
           "#define ATOMIC_ADD(a, v) atomicAdd(a, v)\n"
           "#define ATOMIC_EXCHANGE(a, v) atomicExchange(a, v)\n"
+          "#define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, "
+          "expected, desired)\n"
           "#define atomic_int int\n"
           "#define atomic_uint uint\n";
 
@@ -386,8 +388,6 @@ HgiGLShaderGenerator::_WriteInOuts(
         "gl_FragColor",
         "gl_FragDepth",
         "gl_PointSize",
-        "gl_ClipDistance",
-        "gl_CullDistance",
     };
 
     const static std::unordered_map<std::string, std::string> takenInParams {
@@ -407,7 +407,7 @@ HgiGLShaderGenerator::_WriteInOuts(
         { HgiShaderKeywordTokens->hdLayer, "gl_Layer"},
         { HgiShaderKeywordTokens->hdViewportIndex, "gl_ViewportIndex"},
         { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"},
-        { HgiShaderKeywordTokens->hdBaryCoordNoPerspNV, "gl_BaryCoordNoPerspNV"},
+        { HgiShaderKeywordTokens->hdBaryCoordNoPersp, "gl_BaryCoordNoPerspNV"},
     };
 
     const bool in_qualifier = qualifier == "in";
@@ -423,22 +423,11 @@ HgiGLShaderGenerator::_WriteInOuts(
             const std::string &role = param.role;
             auto const& keyword = takenInParams.find(role);
             if (keyword != takenInParams.end()) {
-                if (role == HgiShaderKeywordTokens->hdGlobalInvocationID) {
-                    CreateShaderSection<HgiGLKeywordShaderSection>(
-                        paramName,
-                        param.type,
-                        keyword->second);
-                } else if (role == HgiShaderKeywordTokens->hdVertexID) {
-                    CreateShaderSection<HgiGLKeywordShaderSection>(
-                        paramName,
-                        param.type,
-                        keyword->second);
-                } else if (role == HgiShaderKeywordTokens->hdInstanceID) {
-                    CreateShaderSection<HgiGLKeywordShaderSection>(
-                        paramName,
-                        param.type,
-                        keyword->second);
-                } else if (role == HgiShaderKeywordTokens->hdBaseInstance) {
+                if (role == HgiShaderKeywordTokens->hdGlobalInvocationID ||
+                    role == HgiShaderKeywordTokens->hdVertexID ||
+                    role == HgiShaderKeywordTokens->hdInstanceID ||
+                    role == HgiShaderKeywordTokens->hdBaseInstance ||
+                    role == HgiShaderKeywordTokens->hdBaryCoordNoPersp) {
                     CreateShaderSection<HgiGLKeywordShaderSection>(
                         paramName,
                         param.type,

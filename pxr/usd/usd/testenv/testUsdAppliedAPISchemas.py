@@ -105,17 +105,17 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(primDef.GetAppliedAPISchemas(), [])
         self.assertEqual(primDef.GetDocumentation(), "Testing typed schema")
 
-        # Verify property specs for named properties.
+        # Verify properties exist for all named properties.
         for propName in primDef.GetPropertyNames():
-            self.assertTrue(primDef.GetSchemaPropertySpec(propName))
+            self.assertTrue(primDef.GetPropertyDefinition(propName))
 
-        # Verify the attribute spec and its fallback value and type
-        testAttr = primDef.GetSchemaAttributeSpec("testAttr")
-        self.assertEqual(testAttr.default, "foo")
-        self.assertEqual(testAttr.typeName.cppTypeName, "std::string")
+        # Verify the attribute definition and its fallback value and type
+        testAttr = primDef.GetAttributeDefinition("testAttr")
+        self.assertEqual(testAttr.GetFallbackValue(), "foo")
+        self.assertEqual(testAttr.GetTypeName(), "string")
 
         # Verify the relationship spec
-        self.assertTrue(primDef.GetSchemaRelationshipSpec("testRel"))
+        self.assertTrue(primDef.GetRelationshipDefinition("testRel"))
 
     def test_TypedSchemaWithBuiltinAPISchemas(self):
         """
@@ -131,7 +131,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(singleApplyAPIDef.GetAppliedAPISchemas(), 
                          ["TestSingleApplyAPI"])
         self.assertEqual(singleApplyAPIDef.GetPropertyNames(), [
-            "single:bool_attr", "single:token_attr", "single:relationship"])
+            "single:bool_attr", "single:relationship", "single:token_attr"])
         self.assertEqual(singleApplyAPIDef.GetDocumentation(),
             "Test single apply API schema")
 
@@ -145,8 +145,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             ["TestMultiApplyAPI:__INSTANCE_NAME__"])
         self.assertEqual(multiApplyAPIDef.GetPropertyNames(), [
             "multi:__INSTANCE_NAME__:bool_attr", 
-            "multi:__INSTANCE_NAME__:token_attr", 
-            "multi:__INSTANCE_NAME__:relationship"])
+            "multi:__INSTANCE_NAME__:relationship",
+            "multi:__INSTANCE_NAME__:token_attr"])
         self.assertEqual(multiApplyAPIDef.GetDocumentation(),
             "Test multi-apply API schema")
 
@@ -174,69 +174,76 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
 
         # Verify property specs for all named properties.
         for propName in primDef.GetPropertyNames():
-            self.assertTrue(primDef.GetSchemaPropertySpec(propName))
+            self.assertTrue(primDef.GetPropertyDefinition(propName))
 
         # Verify fallback value and type for properties defined in the 
         # concrete prim
-        testAttr = primDef.GetSchemaAttributeSpec("testAttr")
-        self.assertEqual(testAttr.default, "foo")
-        self.assertEqual(testAttr.typeName.cppTypeName, "std::string")
+        testAttr = primDef.GetAttributeDefinition("testAttr")
+        self.assertEqual(testAttr.GetFallbackValue(), "foo")
+        self.assertEqual(testAttr.GetTypeName(), Sdf.ValueTypeNames.String)
 
-        self.assertTrue(primDef.GetSchemaRelationshipSpec("testRel"))
+        self.assertTrue(primDef.GetRelationshipDefinition("testRel"))
+
+        def _VerifySameMetadata(prop1, prop2):
+            self.assertEqual(prop1.ListMetadataFields(), 
+                             prop2.ListMetadataFields())
+            for field in prop1.ListMetadataFields():
+                self.assertEqual(prop1.GetMetadata(field),
+                                 prop2.GetMetadata(field))
 
         # Verify fallback value and type for properties from the single applied
         # schema. These properties will return the same property spec as the
         # API schema prim definition.
-        singleBoolAttr = primDef.GetSchemaAttributeSpec("single:bool_attr")
-        self.assertEqual(singleBoolAttr, 
-            singleApplyAPIDef.GetSchemaAttributeSpec("single:bool_attr"))
-        self.assertEqual(singleBoolAttr.default, True)
-        self.assertEqual(singleBoolAttr.typeName.cppTypeName, "bool")
+        singleBoolAttr = primDef.GetAttributeDefinition("single:bool_attr")
+        _VerifySameMetadata(singleBoolAttr, 
+            singleApplyAPIDef.GetAttributeDefinition("single:bool_attr"))
+        self.assertEqual(singleBoolAttr.GetFallbackValue(), True)
+        self.assertEqual(singleBoolAttr.GetTypeName(), Sdf.ValueTypeNames.Bool)
 
-        singleTokenAttr = primDef.GetSchemaAttributeSpec("single:token_attr")
-        self.assertEqual(singleTokenAttr, 
-            singleApplyAPIDef.GetSchemaAttributeSpec("single:token_attr"))
-        self.assertEqual(singleTokenAttr.default, "bar")
-        self.assertEqual(singleTokenAttr.typeName.cppTypeName, "TfToken")
 
-        singleRelationship = primDef.GetSchemaRelationshipSpec(
+        singleTokenAttr = primDef.GetAttributeDefinition("single:token_attr")
+        _VerifySameMetadata(singleTokenAttr, 
+            singleApplyAPIDef.GetAttributeDefinition("single:token_attr"))
+        self.assertEqual(singleTokenAttr.GetFallbackValue(), "bar")
+        self.assertEqual(singleTokenAttr.GetTypeName(), Sdf.ValueTypeNames.Token)
+
+        singleRelationship = primDef.GetRelationshipDefinition(
             "single:relationship")
         self.assertTrue(singleRelationship)
-        self.assertEqual(singleRelationship, 
-            singleApplyAPIDef.GetSchemaRelationshipSpec("single:relationship"))
+        _VerifySameMetadata(singleRelationship, 
+            singleApplyAPIDef.GetRelationshipDefinition("single:relationship"))
 
         # Verify fallback value and type for properties from the multi applied
         # schema. These properties will return the same property spec as the
         # API schema prim definition even the properties on the concrete prim
         # definion are namespace prefixed.
-        multiTokenAttr = primDef.GetSchemaAttributeSpec(
+        multiTokenAttr = primDef.GetAttributeDefinition(
             "multi:builtin:token_attr")
-        self.assertEqual(multiTokenAttr, 
-            multiApplyAPIDef.GetSchemaAttributeSpec(
+        _VerifySameMetadata(multiTokenAttr, 
+            multiApplyAPIDef.GetAttributeDefinition(
                 "multi:__INSTANCE_NAME__:token_attr"))
-        self.assertEqual(multiTokenAttr.default, "foo")
-        self.assertEqual(multiTokenAttr.typeName.cppTypeName, "TfToken")
+        self.assertEqual(multiTokenAttr.GetFallbackValue(), "foo")
+        self.assertEqual(multiTokenAttr.GetTypeName(), Sdf.ValueTypeNames.Token)
 
-        multiRelationship = primDef.GetSchemaRelationshipSpec(
+        multiRelationship = primDef.GetRelationshipDefinition(
             "multi:builtin:relationship")
         self.assertTrue(multiRelationship)
-        self.assertEqual(multiRelationship, 
-            multiApplyAPIDef.GetSchemaRelationshipSpec(
+        _VerifySameMetadata(multiRelationship, 
+            multiApplyAPIDef.GetRelationshipDefinition(
                 "multi:__INSTANCE_NAME__:relationship"))
 
         # Verify the case where the concrete type overrides a property from 
         # one of its applied API schemas. In this case the property spec from
         # the concrete prim is returned instead of the property spec from the
         # API schema.
-        multiBoolAttr = primDef.GetSchemaAttributeSpec(
+        multiBoolAttr = primDef.GetAttributeDefinition(
             "multi:builtin:bool_attr")
-        apiBoolAttr = multiApplyAPIDef.GetSchemaAttributeSpec(
+        apiBoolAttr = multiApplyAPIDef.GetAttributeDefinition(
             "multi:__INSTANCE_NAME__:bool_attr")
-        self.assertNotEqual(multiBoolAttr, apiBoolAttr)
-        self.assertEqual(multiBoolAttr.default, False)
-        self.assertEqual(apiBoolAttr.default, True)
-        self.assertEqual(multiBoolAttr.typeName.cppTypeName, "bool")
-        self.assertEqual(apiBoolAttr.typeName.cppTypeName, "bool")
+        self.assertEqual(multiBoolAttr.GetFallbackValue(), False)
+        self.assertEqual(apiBoolAttr.GetFallbackValue(), True)
+        self.assertEqual(multiBoolAttr.GetTypeName(), Sdf.ValueTypeNames.Bool)
+        self.assertEqual(apiBoolAttr.GetTypeName(), Sdf.ValueTypeNames.Bool)
 
     def test_UntypedPrimOnStage(self):
         """
@@ -389,18 +396,19 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "testAttr", 
             "testRel"])
 
-        # Add a new api schemas to the prim's metadata.
+        # Add a new API schema to the prim's metadata.
         typedPrim.ApplyAPI(self.MultiApplyAPIType, "garply")
 
         # Prim has the same type and now has both its original API schemas and
         # the new one. Note that the new schema was added using an explicit 
-        # list op but was still prepended to the original list. Built-in API 
+        # list op but was still appended to the original list. Built-in API 
         # schemas cannot be deleted and any authored API schemas will always be
-        # prepended to the built-ins.
+        # appended to the built-ins.
         self.assertEqual(typedPrim.GetTypeName(), 'TestWithBuiltinAppliedSchema')
         self.assertEqual(typedPrim.GetAppliedSchemas(), 
-            ["TestMultiApplyAPI:garply", 
-             "TestSingleApplyAPI", "TestMultiApplyAPI:builtin"])
+            ["TestSingleApplyAPI", 
+             "TestMultiApplyAPI:builtin",
+             "TestMultiApplyAPI:garply",])
         self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
                          'TestWithBuiltinAppliedSchema')
         # Note that prim type info does NOT contain the built-in applied API
@@ -409,173 +417,89 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
                          ["TestMultiApplyAPI:garply"])
 
-        self.assertTrue(typedPrim.HasAPI(self.SingleApplyAPIType))
-        self.assertTrue(typedPrim.HasAPI(self.MultiApplyAPIType))
+        # Helper for verifying the same expected prim data before and after 
+        # applying redundant API schemas.
+        def _VerifyExpectedPrimData(prim):
+            self.assertTrue(prim.HasAPI(self.SingleApplyAPIType))
+            self.assertTrue(prim.HasAPI(self.MultiApplyAPIType))
 
-        # Properties have been expanded to include the new API schema
-        self.assertEqual(typedPrim.GetPropertyNames(), [
-            "multi:builtin:bool_attr", 
-            "multi:builtin:relationship",
-            "multi:builtin:token_attr", 
-            "multi:garply:bool_attr", 
-            "multi:garply:relationship", 
-            "multi:garply:token_attr", 
-            "single:bool_attr", 
-            "single:relationship", 
-            "single:token_attr", 
-            "testAttr", 
-            "testRel"])
+            # Properties have been expanded to include the new API schema
+            self.assertEqual(prim.GetPropertyNames(), [
+                "multi:builtin:bool_attr", 
+                "multi:builtin:relationship",
+                "multi:builtin:token_attr", 
+                "multi:garply:bool_attr", 
+                "multi:garply:relationship", 
+                "multi:garply:token_attr", 
+                "single:bool_attr", 
+                "single:relationship", 
+                "single:token_attr", 
+                "testAttr", 
+                "testRel"])
 
-        # Property fallback comes from TestSingleApplyAPI
-        attr = typedPrim.GetAttribute("single:token_attr")
-        self.assertEqual(attr.Get(), "bar")
-        self.assertEqual(attr.GetResolveInfo().GetSource(), 
-                         Usd.ResolveInfoSourceFallback)
-        # Property fallback comes from TestMultiApplyAPI
-        attr = typedPrim.GetAttribute("multi:garply:bool_attr")
-        self.assertEqual(attr.Get(), True)
-        self.assertEqual(attr.GetResolveInfo().GetSource(), 
-                         Usd.ResolveInfoSourceFallback)
-        # Property fallback actually comes from TestWithBuiltinAppliedSchema as
-        # the typed schema overrides this property from its built-in API schema.
-        attr = typedPrim.GetAttribute("multi:builtin:bool_attr")
-        self.assertEqual(attr.Get(), False)
-        self.assertEqual(attr.GetResolveInfo().GetSource(), 
-                         Usd.ResolveInfoSourceFallback)
-        # Property fallback comes from TestWithBuiltinAppliedSchema
-        attr = typedPrim.GetAttribute("testAttr")
-        self.assertEqual(attr.Get(), "foo")
-        self.assertEqual(attr.GetResolveInfo().GetSource(), 
-                         Usd.ResolveInfoSourceFallback)
+            # Property fallback comes from TestSingleApplyAPI
+            attr = prim.GetAttribute("single:token_attr")
+            self.assertEqual(attr.Get(), "bar")
+            self.assertEqual(attr.GetResolveInfo().GetSource(), 
+                            Usd.ResolveInfoSourceFallback)
+            # Property fallback comes from TestMultiApplyAPI
+            attr = prim.GetAttribute("multi:garply:bool_attr")
+            self.assertEqual(attr.Get(), True)
+            self.assertEqual(attr.GetResolveInfo().GetSource(), 
+                            Usd.ResolveInfoSourceFallback)
+            # Property fallback actually comes from TestWithBuiltinAppliedSchema as
+            # the typed schema overrides this property from its built-in API schema.
+            attr = prim.GetAttribute("multi:builtin:bool_attr")
+            self.assertEqual(attr.Get(), False)
+            self.assertEqual(attr.GetResolveInfo().GetSource(), 
+                            Usd.ResolveInfoSourceFallback)
+            # Property fallback comes from TestWithBuiltinAppliedSchema
+            attr = prim.GetAttribute("testAttr")
+            self.assertEqual(attr.Get(), "foo")
+            self.assertEqual(attr.GetResolveInfo().GetSource(), 
+                            Usd.ResolveInfoSourceFallback)
 
-        # Metadata "hidden" has a fallback value defined in 
-        # TestWithBuiltinAppliedSchema. It will be returned by GetMetadata and 
-        # GetAllMetadata but will return false for queries about whether it's 
-        # authored
-        self.assertEqual(typedPrim.GetAllMetadata()["hidden"], False)
-        self.assertEqual(typedPrim.GetMetadata("hidden"), False)
-        self.assertFalse(typedPrim.HasAuthoredMetadata("hidden"))
-        self.assertFalse("hidden" in typedPrim.GetAllAuthoredMetadata())
+            # Metadata "hidden" has a fallback value defined in 
+            # TestWithBuiltinAppliedSchema. It will be returned by GetMetadata and 
+            # GetAllMetadata but will return false for queries about whether it's 
+            # authored
+            self.assertEqual(prim.GetAllMetadata()["hidden"], False)
+            self.assertEqual(prim.GetMetadata("hidden"), False)
+            self.assertFalse(prim.HasAuthoredMetadata("hidden"))
+            self.assertFalse("hidden" in typedPrim.GetAllAuthoredMetadata())
 
-        # Documentation metadata comes from prim type definition even with API
-        # schemas applied.
-        self.assertEqual(typedPrim.GetMetadata("documentation"), 
-                         "Test with built-in API schemas")
+            # Documentation metadata comes from prim type definition even with API
+            # schemas applied.
+            self.assertEqual(prim.GetMetadata("documentation"), 
+                            "Test with built-in API schemas")
 
-    def test_TypedPrimsOnStageWithBuiltinReapply(self):
-        """
-        Tests the fallback properties of typed prims on a stage when the same 
-        API schemas are applied again to a prim whose type already has applied 
-        API schemas.
-        """
-        stage = Usd.Stage.CreateInMemory()
+        # Verify the prim has all the data we expect.
+        _VerifyExpectedPrimData(typedPrim)
 
-        # Add a typed prim. It has API schemas already from its prim definition
-        # and has properties from both its type and its APIs.
-        typedPrim = stage.DefinePrim("/TypedPrim", "TestWithBuiltinAppliedSchema")
-        self.assertEqual(typedPrim.GetTypeName(), 'TestWithBuiltinAppliedSchema')
-        self.assertEqual(typedPrim.GetAppliedSchemas(), 
-                         ["TestSingleApplyAPI", "TestMultiApplyAPI:builtin"])
-        self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
-                         'TestWithBuiltinAppliedSchema')
-        # Note that prim type info does NOT contain the built-in applied API
-        # schemas from the concrete type's prim definition as these are not part
-        # of the type identity.
-        self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), [])
-
-        self.assertTrue(typedPrim.HasAPI(self.SingleApplyAPIType))
-        self.assertTrue(typedPrim.HasAPI(self.MultiApplyAPIType))
-        self.assertEqual(typedPrim.GetPropertyNames(), [
-            "multi:builtin:bool_attr", 
-            "multi:builtin:relationship",
-            "multi:builtin:token_attr", 
-            "single:bool_attr",
-            "single:relationship", 
-            "single:token_attr", 
-            "testAttr", 
-            "testRel"])
-        # Property fallback comes from TestSingleApplyAPI
-        attr = typedPrim.GetAttribute("single:token_attr")
-        self.assertEqual(attr.Get(), "bar")
-        self.assertEqual(attr.GetResolveInfo().GetSource(), 
-                         Usd.ResolveInfoSourceFallback)
-        # Property fallback actually comes from TestTypedSchema as the typed
-        # schema overrides this property from its built-in API schema.
-        attr = typedPrim.GetAttribute("multi:builtin:bool_attr")
-        self.assertEqual(attr.Get(), False)
-        self.assertEqual(attr.GetResolveInfo().GetSource(), 
-                         Usd.ResolveInfoSourceFallback)
-        # Property fallback comes from TestTypedSchema
-        attr = typedPrim.GetAttribute("testAttr")
-        self.assertEqual(attr.Get(), "foo")
-        self.assertEqual(attr.GetResolveInfo().GetSource(), 
-                         Usd.ResolveInfoSourceFallback)
-
-        # Add the built-in api schemas again to the prim's metadata.
+        # Now explicitly apply the same built-in API schemas again to the prim
+        # so they show up as authored schemas.
         typedPrim.ApplyAPI(self.MultiApplyAPIType, "builtin")
         typedPrim.ApplyAPI(self.SingleApplyAPIType)
 
-        # Prim has the same type and now has both its original API schemas and
-        # plus the same schemas again appended to the list (i.e. both schemas
-        # now show up twice). 
-        self.assertEqual(typedPrim.GetTypeName(), 'TestWithBuiltinAppliedSchema')
-        self.assertEqual(typedPrim.GetAppliedSchemas(), 
-            ["TestMultiApplyAPI:builtin", "TestSingleApplyAPI", 
-             "TestSingleApplyAPI", "TestMultiApplyAPI:builtin"])
-        self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
-                         'TestWithBuiltinAppliedSchema')
-        # Note that prim type info does NOT contain the built-in applied API
-        # schemas from the concrete type's prim definition as these are not part
-        # of the type identity.
+        # The prim type info now DOES contain the built-in applied API
+        # schemas in the order we applied them now that they are explicitly
+        # authored schemas. These schemas are now part of the prim's type ID.
         self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
-                         ["TestMultiApplyAPI:builtin", "TestSingleApplyAPI"])
-
-        self.assertTrue(typedPrim.HasAPI(self.SingleApplyAPIType))
-        self.assertTrue(typedPrim.HasAPI(self.MultiApplyAPIType))
-
-        # The list of properties hasn't changed as there are no "new" schemas,
-        # however the defaults may have changed.
-        self.assertEqual(typedPrim.GetPropertyNames(), [
-            "multi:builtin:bool_attr", 
-            "multi:builtin:relationship",
-            "multi:builtin:token_attr", 
-            "single:bool_attr", 
-            "single:relationship", 
-            "single:token_attr", 
-            "testAttr", 
-            "testRel"])
-
-        # Property fallback comes from TestSingleApplyAPI - no change
-        attr = typedPrim.GetAttribute("single:token_attr")
-        self.assertEqual(attr.Get(), "bar")
-        self.assertEqual(attr.GetResolveInfo().GetSource(), 
-                         Usd.ResolveInfoSourceFallback)
-        # Property fallback has now changed from False to True as the 
-        # TestTypedSchema originally overrode the fallback from 
-        # TestMultiApplyAPI. But by applying TestMultiApplyAPI again with the 
-        # same instance, we've re-overridden the attribute getting the default
-        # from the applied schema.
-        attr = typedPrim.GetAttribute("multi:builtin:bool_attr")
-        self.assertEqual(attr.Get(), True)
-        self.assertEqual(attr.GetResolveInfo().GetSource(), 
-                         Usd.ResolveInfoSourceFallback)
-        # Property fallback comes from TestTypedSchema - no change
-        attr = typedPrim.GetAttribute("testAttr")
-        self.assertEqual(attr.Get(), "foo")
-        self.assertEqual(attr.GetResolveInfo().GetSource(), 
-                         Usd.ResolveInfoSourceFallback)
-
-        # Prim metadata is unchanged from the case above as there is still
-        # no way for applied API schemas to impart prim metadata defaults.
-        self.assertEqual(typedPrim.GetAllMetadata()["hidden"], False)
-        self.assertEqual(typedPrim.GetMetadata("hidden"), False)
-        self.assertFalse(typedPrim.HasAuthoredMetadata("hidden"))
-        self.assertFalse("hidden" in typedPrim.GetAllAuthoredMetadata())
-
-        # Documentation metadata comes from prim type definition even with API
-        # schemas applied.
-        self.assertEqual(typedPrim.GetMetadata("documentation"), 
-                         "Test with built-in API schemas")
+                         ["TestMultiApplyAPI:garply",
+                          "TestMultiApplyAPI:builtin", 
+                          "TestSingleApplyAPI"])
+        
+        # However, the actual list of applied schemas on the prim has not 
+        # changed at all because these two authored schemas are already applied
+        # as built-ins and don't get reapplied in the composed prim definition.
+        self.assertEqual(typedPrim.GetAppliedSchemas(), 
+            ["TestSingleApplyAPI", 
+             "TestMultiApplyAPI:builtin",
+             "TestMultiApplyAPI:garply",])
+        
+        # Verify the prim has all the same expected data as before we reapplied
+        # the built-ins.
+        _VerifyExpectedPrimData(typedPrim)
 
     @unittest.skipIf(Tf.GetEnvSetting('USD_DISABLE_AUTO_APPLY_API_SCHEMAS'),
                     "Auto apply API schemas are disabled")
@@ -599,8 +523,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(typedPrim.GetTypeName(), 'TestTypedSchemaForAutoApply')
         self.assertEqual(typedPrim.GetAppliedSchemas(), 
                          ["TestMultiApplyAPI:builtin", 
-                          "TestMultiApplyAPI:autoFoo",
-                          "TestSingleApplyAPI"])
+                          "TestSingleApplyAPI",
+                          "TestMultiApplyAPI:autoFoo"])
         self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
                          'TestTypedSchemaForAutoApply')
         # Note that prim type info does NOT contain the applied API
@@ -1423,10 +1347,9 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
                           "TestNestedInnerSingleApplyAPI"])
 
         # The composed applied API schemas are fully expanded from both authored
-        # APIs and will contain duplicates. We don't check for duplicates that 
-        # occur because different authored APIs include the same applied schema
-        # even though we do remove duplicates when determining what API schemas
-        # a single API includes.
+        # APIs but will not contain duplicates. Thus, the authored 
+        # TestNestedInnerSingleApplyAPI is redundant and doesn't add any schemas
+        # that weren't already added by expanding TestNestedOuterSingleApplyAPI
         self.assertEqual(outerSinglePrim.GetTypeName(), '')
         expectedAPISchemas = [
             # API schemas from expanded TestNestedOuterSingleApplyAPI
@@ -1434,12 +1357,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "TestMultiApplyAPI:foo",
             "TestNestedInnerSingleApplyAPI",
             "TestSingleApplyAPI",
-            "TestMultiApplyAPI:bar",
-            # API schemas from expanded TestNestedInnerSingleApplyAPI (even
-            # though they're already in the list)
-            "TestNestedInnerSingleApplyAPI",
-            "TestSingleApplyAPI",
-            "TestMultiApplyAPI:bar"]
+            "TestMultiApplyAPI:bar"
+            ]
         self.assertEqual(outerSinglePrim.GetAppliedSchemas(), 
                          expectedAPISchemas)
 
@@ -1463,12 +1382,11 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "TestNestedInnerSingleApplyAPI",
             "TestSingleApplyAPI",
             "TestMultiApplyAPI:bar",
-            # API schemas from expanded TestNestedOuterSingleApplyAPI
+            # API schemas from expanded TestNestedOuterSingleApplyAPI excluding
+            # a re-expansion of TestNestedInnerSingleApplyAPI
             "TestNestedOuterSingleApplyAPI",
-            "TestMultiApplyAPI:foo",
-            "TestNestedInnerSingleApplyAPI",
-            "TestSingleApplyAPI",
-            "TestMultiApplyAPI:bar"]
+            "TestMultiApplyAPI:foo"
+            ]
         self.assertEqual(outerSinglePrim.GetAppliedSchemas(), 
                          expectedAPISchemas)
 
@@ -2259,12 +2177,12 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "TestAutoAppliedToAPI",
             # Built-in API of 'TestAutoAppliedToAPI'
             "TestMultiApplyAPI:builtin",
-            # Defined in plugin metadata that 'TestMultiApplyAPI:autoFoo' auto
-            # applies to 'TestAutoAppliedToAPI'
-            "TestMultiApplyAPI:autoFoo",
             # 'TestSingleApplyAPI' defines in its schema def that it auto 
             # applies to 'TestAutoAppliedToAPI'
-            "TestSingleApplyAPI"])
+            "TestSingleApplyAPI",
+            # Defined in plugin metadata that 'TestMultiApplyAPI:autoFoo' auto
+            # applies to 'TestAutoAppliedToAPI'
+            "TestMultiApplyAPI:autoFoo"])
         self.assertTrue(prim.HasAPI(self.AutoAppliedToAPIType))
         self.assertTrue(prim.HasAPI(self.MultiApplyAPIType, "builtin"))
         self.assertTrue(prim.HasAPI(self.MultiApplyAPIType, "autoFoo"))
@@ -2308,12 +2226,12 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "TestAutoAppliedToAPI",
             # Built-in API of 'TestAutoAppliedToAPI'
             "TestMultiApplyAPI:builtin",
-            # Defined in plugin metadata that 'TestMultiApplyAPI:autoFoo' auto
-            # applies to 'TestAutoAppliedToAPI'
-            "TestMultiApplyAPI:autoFoo",
             # 'TestSingleApplyAPI' defines in its schema def that it auto 
             # applies to 'TestAutoAppliedToAPI'
-            "TestSingleApplyAPI"])
+            "TestSingleApplyAPI",
+            # Defined in plugin metadata that 'TestMultiApplyAPI:autoFoo' auto
+            # applies to 'TestAutoAppliedToAPI'
+            "TestMultiApplyAPI:autoFoo"])
         self.assertTrue(prim.HasAPI(self.NestedAutoAppliedToAPIType))
         self.assertTrue(prim.HasAPI(self.AutoAppliedToAPIType))
         self.assertTrue(prim.HasAPI(self.MultiApplyAPIType, "foo"))
@@ -2363,12 +2281,12 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "TestAutoAppliedToAPI",
             # Built-in API of 'TestAutoAppliedToAPI'
             "TestMultiApplyAPI:builtin",
-            # Defined in plugin metadata that 'TestMultiApplyAPI:autoFoo' auto
-            # applies to 'TestAutoAppliedToAPI'
-            "TestMultiApplyAPI:autoFoo",
             # 'TestSingleApplyAPI' defines in its schema def that it auto 
             # applies to 'TestAutoAppliedToAPI'
-            "TestSingleApplyAPI"])
+            "TestSingleApplyAPI",
+            # Defined in plugin metadata that 'TestMultiApplyAPI:autoFoo' auto
+            # applies to 'TestAutoAppliedToAPI'
+            "TestMultiApplyAPI:autoFoo"])
 
         # Prim's authored applied API schemas is empty as the API schemas are
         # part of the type (through auto apply).
@@ -2496,367 +2414,631 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
 
     @unittest.skipIf(Tf.GetEnvSetting('USD_DISABLE_AUTO_APPLY_API_SCHEMAS'),
                     "Auto apply API schemas are disabled")
-    def test_PropertyTypeConflicts(self):
+    def test_PropertyComposition(self):
         """
-        Test the resolution of property type conflicts between prim type and 
-        API schema prim definitions when API schemas are applied to prims.
+        Test the composition of properties in a prim definition built from API
+        schemas that define properties with the same name.
         """
         stage = Usd.Stage.CreateInMemory()
 
-        # Helper for verifying the attribute types and computed values of 
-        # any arbitrary set of attributes on the prim. The arguments are the 
-        # prim followed by any number of keyword arguments of the form:
-        #   <attrName> = (<attrTypeNameStr>, <attrValue>, <docStr>)
-        # For each keyword arg, it verifies that the prim has an attribute
-        # named <attrName> whose typeName computes to <attrTypeNameStr> and 
-        # computed valued computes to <attrValue>. Also verifies that the 
-        # attribute's documentation matches <docStr>
-        def _VerifyAttrTypes(prim, **kwargs):
-            for name, (attrTypeNameStr, attrValue, docStr) in kwargs.items():
-                attr = prim.GetAttribute(name)
-                self.assertEqual(attr.GetTypeName(), attrTypeNameStr)
-                self.assertEqual(attr.Get(), attrValue)
-                self.assertEqual(attr.GetDocumentation(), docStr)
+        # Helper for verifying the expected values field for an attribute named
+        # by attrName on the the given prim.
+        def _VerifyAttribute(prim, attrName, typeName, 
+                doc = "", 
+                default = None,
+                hidden = None,
+                variability = Sdf.VariabilityVarying, 
+                **kwargs):
+            # Get the attribute by name
+            attr = prim.GetAttribute(attrName)
+            self.assertTrue(attr)
 
-        # Helper for verifying that an arbitrary set of properties is or isn't 
-        # a relationship. The arguments are the prim followed by any number of 
-        # keyword arguments of the form:
-        #   <propertyName> = (<isRelationship>, <docStr>)
-        # For each keyword arg, it verifies that the prim has a property
-        # named <propertyName> that is a relationship iff <isRelationship> is 
-        # True. Also verifies that the property's documentation matches <docStr>
-        def _VerifyIsRel(prim, **kwargs):
-            for name, (isRelationship, docStr) in kwargs.items():
-                prop = prim.GetProperty(name)
-                self.assertTrue(prop)
-                if isRelationship:
-                    self.assertTrue(prim.GetRelationship(name))
+            # Verify type name, variability, and doc string.
+            self.assertEqual(attr.GetTypeName(), typeName)
+            self.assertEqual(attr.GetVariability(), variability)
+            self.assertEqual(attr.GetDocumentation(), doc)
+
+            # The attribute may or may not be expected to have default value;
+            # verify the expected default or lack thereof.
+            if default is None:
+                self.assertIsNone(attr.Get())
+            else:
+                self.assertEqual(attr.Get(), default)
+
+            # The attribute may or may not be expected to have an opinion about
+            # hidden; verify the expected value of hidden.
+            if hidden is None:
+                self.assertIsNone(attr.GetMetadata("hidden"))
+                self.assertFalse(attr.IsHidden())
+            else:
+                self.assertIsNotNone(attr.GetMetadata("hidden"))
+                self.assertEqual(attr.IsHidden(), hidden)
+
+            # Test the presence (or lack thereof) of addtional metadata fields
+            # as need for test cases that provide them.
+            for key, value in kwargs.items():
+                if value is None:
+                    self.assertIsNone(attr.GetMetadata(key))
                 else:
-                    self.assertFalse(prim.GetRelationship(name))
-                self.assertEqual(prop.GetDocumentation(), docStr)
+                    self.assertEqual(attr.GetMetadata(key), value)
 
         # We've defined 3 API schema types for applying directly to a prim
-        authoredOneAPIName = "TestPropTypeConflictAuthoredOneAPI"
-        authoredTwoAPIName = "TestPropTypeConflictAuthoredTwoAPI" 
-        nestedAPIName = "TestPropTypeConflictNestedAuthoredAPI"
-        # We also typed prim type for this test case that includes a separate
-        # built-in API schema type.
-        conflictPrimTypeName = "TestPropTypeConflictsPrim"
-        builtinAPIName = "TestPropTypeConflictBuiltinAPI" 
+        oneAPIName = "TestPropCompOneAPI"
+        twoAPIName = "TestPropCompTwoAPI" 
+        nestedAPIName = "TestPropCompNestedAPI"
+        # We also defined a prim type for this test case that includes a
+        # separate built-in API schema type.
+        compPrimTypeName = "TestPropCompsPrim"
 
         # Each of the defined schema types above uses a single doc string for
         # all of it properties which we can use to help verify which schemas
         # the property definitions come from.
-        authoredOneAPIDocStr = "From TestPropTypeConflictAuthoredOneAPI"
-        authoredTwoAPIDocStr = "From TestPropTypeConflictAuthoredTwoAPI"
-        nestedAPIDocStr = "From TestPropTypeConflictNestedAuthoredAPI"
-        conflictPrimTypeDocStr = "From TestPropTypeConflictsPrim"
-        builtinAPIDocStr = "From TestPropTypeConflictBuiltinAPI"
+        oneAPIDoc = "From TestPropCompOneAPI"
+        twoAPIDoc = "From TestPropCompTwoAPI"
+        nestedAPIDoc = "From TestPropCompNestedAPI"
+        primDoc = "From TestPropCompsPrim"
 
-        # Test 1: Prim with no type name; apply the authoredOneAPI and 
-        # authoredTwoAPI schemas in that strength order.
-        untypedPrim = stage.DefinePrim("/UntypedPrim")
-        untypedPrim.AddAppliedSchema(authoredOneAPIName)
-        untypedPrim.AddAppliedSchema(authoredTwoAPIName)
-        self.assertEqual(untypedPrim.GetAppliedSchemas(),
-                         [authoredOneAPIName,
-                          authoredTwoAPIName])
-
-        # Only the authoredOneAPI defines attr1 and attr2
-        # Only the authoredTwoAPI defines attr3 and attr4
-        # Both define attr5 and attr6, so authoredOneAPI's version of those 
-        # attributes are used since it's stronger.
-        _VerifyAttrTypes(untypedPrim,
-            attr1 = ("int",     0,                  authoredOneAPIDocStr),
-            attr2 = ("double",  0.0,                authoredOneAPIDocStr),
-            attr3 = ("int",     10,                 authoredTwoAPIDocStr),
-            attr4 = ("string",  "foo",              authoredTwoAPIDocStr),
-            attr5 = ("point3f", Gf.Vec3f(0, 0, 0),  authoredOneAPIDocStr),
-            attr6 = ("int",     20,                 authoredOneAPIDocStr))
-        # Both define rel1 and rel2, but since authoredOneAPI is stronger, it wins
-        # and only rel2 is a relationship.
-        _VerifyIsRel(untypedPrim,
-            rel1 = (False, authoredOneAPIDocStr),
-            rel2 = (True, authoredOneAPIDocStr))
-
-        # Test 2: Prim with no type name; apply the authoredTwoAPI and builtAPI
-        # schemas in that strength order. This is the reverse order of Test 1
-        untypedPrim = stage.DefinePrim("/UntypedPrim2")
-        untypedPrim.AddAppliedSchema(authoredTwoAPIName)
-        untypedPrim.AddAppliedSchema(authoredOneAPIName)
-        self.assertEqual(untypedPrim.GetAppliedSchemas(),
-                         [authoredTwoAPIName,
-                          authoredOneAPIName])
-
-        # Only the authoredOneAPI defines attr1 and attr2 (same as Test 1)
-        # Only the authoredTwoAPI defines attr3 and attr4 (same as Test 1)
-        # Both define attr5 and attr6, but now authoredTwoAPI is stronger so
-        # its version of those attributes are used. Note that this leads to a
-        # different type and default value for attr5 and just a different 
-        # default value for attr6.
-        _VerifyAttrTypes(untypedPrim,
-            attr1 = ("int",     0,                  authoredOneAPIDocStr),
-            attr2 = ("double",  0.0,                authoredOneAPIDocStr),
-            attr3 = ("int",     10,                 authoredTwoAPIDocStr),
-            attr4 = ("string",  "foo",              authoredTwoAPIDocStr),
-            attr5 = ("float3",  Gf.Vec3f(1, 2, 3),  authoredTwoAPIDocStr),
-            attr6 = ("int",     10,                 authoredTwoAPIDocStr))
-        # Both define rel1 and rel2, but now since authoredTwoAPI is stronger, 
-        # it wins and only rel1 is a relationship (opposite of Test 1).
-        _VerifyIsRel(untypedPrim,
-            rel1 = (True, authoredTwoAPIDocStr),
-            rel2 = (False, authoredTwoAPIDocStr))
-
-        # Test 3: Prim with type name set to the conflictPrimType; no authored
-        # applied API schemas. The conflictPrimType has a single built-in API 
-        # schema builtinAPI.
-        prim = stage.DefinePrim("/TypedPrim", conflictPrimTypeName)
+        # Test 1: Prim with no type name; apply the OneAPI schema.
+        prim = stage.DefinePrim("/UntypedPrim")
+        prim.AddAppliedSchema(oneAPIName)
         self.assertEqual(prim.GetAppliedSchemas(),
-                         [builtinAPIName])
+                         [oneAPIName])
 
-        # The conflictPrimType schema defines all of attr1-6 attributes EXCEPT
-        # attr4. It also defines rel1 and rel2. So outside of attr4, the typed 
-        # schema's version of these properties are used. 
-        # For attr4, it is defined in the builtinAPI schema so that attribute's
-        # opinion comes from the builtinAPI. Note that builtinAPI does define
-        # attr2, rel1, and rel2 (all with different types than the 
-        # conflictPrimType schema) but the stronger conflictPrimType still wins
-        # over its built-in APIs.
-        _VerifyAttrTypes(prim, 
-            attr1 = ("int",     1,                  conflictPrimTypeDocStr),
-            attr2 = ("int",     2,                  conflictPrimTypeDocStr),
-            attr3 = ("int",     3,                  conflictPrimTypeDocStr),
-            attr4 = ("int",     4,                  builtinAPIDocStr),
-            attr5 = ("color3f", Gf.Vec3f(1, 1, 1),  conflictPrimTypeDocStr),
-            attr6 = ("int",     6,                  conflictPrimTypeDocStr))
-        _VerifyIsRel(prim,
-            rel1 = (True, conflictPrimTypeDocStr),
-            rel2 = (False, conflictPrimTypeDocStr))
+        # Verify the expected attributes all match the attributes as defined in
+        # OneAPI schema.
+        _VerifyAttribute(prim, "oneAttr1", "int", doc = oneAPIDoc, 
+            default = 1, 
+            hidden = False)
+        _VerifyAttribute(prim, "oneAttr2", "double", doc = oneAPIDoc, 
+            default = 1.0)
+        _VerifyAttribute(prim, "oneAttr3", "color3f", doc = oneAPIDoc, 
+            hidden = False)
+        _VerifyAttribute(prim, "oneAttr4", "token", doc = oneAPIDoc)
+        _VerifyAttribute(prim, "oneAttr5", "token", doc = oneAPIDoc)
 
-        # Test 4: Take the same prim from Test 3 above, with type name set to 
-        # the conflictPrimType, and author authoredOneAPI and authoredTwoAPI 
-        # applied schemas in that strength order (like in Test 1).
-        prim.AddAppliedSchema(authoredOneAPIName)
-        prim.AddAppliedSchema(authoredTwoAPIName)
+        _VerifyAttribute(prim, "twoAttr1", "int", doc = oneAPIDoc, 
+            default = 1, 
+            hidden = True)
+        _VerifyAttribute(prim, "twoAttr2", "double", doc = oneAPIDoc, 
+            default = 1.0, 
+            hidden = True)
+        _VerifyAttribute(prim, "twoAttr3", "color3f", doc = oneAPIDoc, 
+            default = (1.0, 1.0, 1.0), 
+            hidden = True)
+        _VerifyAttribute(prim, "twoAttr4", "token", doc = oneAPIDoc, 
+            default = "one", 
+            hidden = True)
+        _VerifyAttribute(prim, "twoAttr5", "float", doc = oneAPIDoc, 
+            default = 1.0,
+            hidden = True)
+
+        _VerifyAttribute(prim, "nestedAttr1", "string", doc = oneAPIDoc, 
+            default = "one", 
+            hidden = True)
+        _VerifyAttribute(prim, "nestedAttr2", "int", doc = oneAPIDoc,
+            hidden = True)
+        _VerifyAttribute(prim, "nestedAttr3", "double", doc = oneAPIDoc, 
+            default = 1.0, 
+            hidden = True),
+        _VerifyAttribute(prim, "nestedAttr4", "point3f", doc = oneAPIDoc, 
+            default = (1.0, 1.0, 1.0), 
+            hidden = False)
+
+        # This attribute is to verify that only default value and hidden 
+        # metadata is composed from a weaker property definition. With OneAPI
+        # applied the otherMetadataAttr is defined with just its type name; no
+        # other metadata like default, documentation, displayGroup, displayName,
+        # allowedTokens is defined.
+        _VerifyAttribute(prim, "otherMetadataAttr", "token",
+            displayGroup = None,
+            displayName = None,
+            allowedTokens = None)
+
+        # Test 2: Apply the TwoAPI to test case 1 prim. The prim now has
+        # OneAPI and TwoAPI applied in that strength order.
+        prim.AddAppliedSchema(twoAPIName)
         self.assertEqual(prim.GetAppliedSchemas(),
-                         [authoredOneAPIName,
-                          authoredTwoAPIName,
-                          builtinAPIName])
+                         [oneAPIName,
+                          twoAPIName])
 
-        _VerifyAttrTypes(prim,
-            # attr1 is defined in authoredOneAPI which is now the strongest 
-            # opinion. Since its type name matches attr1's type name in the prim
-            # type's definition, it can be used for attr1 in the composed prim
-            #  definition.
-            attr1 = ("int",     0,                  authoredOneAPIDocStr),
-            # attr2 is defined in authoredOneAPI which would be the strongest 
-            # opinion. However, its type name is "double" which doesn't match
-            # the existing prim type's definition of the attribute which has it
-            # as "int". We use the prim type's definition for this attribute
-            # ignoring the API schema.
-            attr2 = ("int",     2,                  conflictPrimTypeDocStr),
-            # attr3 is defined in authoredTwoAPI (and not authoredOneAPI) which
-            # makes it the strongest opinion. Since its type name matches
-            # attr3's type name in the prim type's definition, it can be used
-            # for attr3 in the composed prim definition.
-            attr3 = ("int",     10,                 authoredTwoAPIDocStr),
-            # attr4 is defined in authoredTwoAPI (and not authoredOneAPI) which 
-            # would be the strongest opinion. However, its type name is "string" 
-            # which doesn't match the existing prim type's definition of the 
-            # attribute which has it as "int". We use the prim type's definition
-            # for this attribute ignoring the API schema. Note the prim type's 
-            # definition actually gets its opinion on attr4 from the builtinAPI
-            # (as the typed schema itself doesn't define attr4). The builtinAPI
-            # attr4 opinion is part of the composed prim type definition which
-            # is type wins over any applied API schemas authored over the prim.
-            attr4 = ("int",     4,                  builtinAPIDocStr),
-            # attr5 is defined in both authoredOneAPI and authoredTwoAPI which
-            # makes authoredOneAPI the strongest opiniion. However its type of
-            # "point3f" doesn't match the prim type's opinion of the type name
-            # "color3f". Even though the default values for these types are
-            # stored as GfVec3f, the type name mismatch means we still used the
-            # prim type's version in the composed prim definition.
-            attr5 = ("color3f", Gf.Vec3f(1, 1, 1),  conflictPrimTypeDocStr),
-            # attr6 is defined in both authoredOneAPI and authoredTwoAPI which
-            # makes authoredOneAPI the strongest opiniion. And since its type
-            # name matches the prim type definition's attr6 type name, we use
-            # the attr6 from authoredOneAPI.
-            attr6 = ("int",     20,                 authoredOneAPIDocStr))
-        # For rel1 and rel2, authoredOneAPI, authoredTwoAPI and the prim type 
-        # all define them both. Both authoredTwoAPI and the prim type definition 
-        # define rel1 as a relationship and rel2 as an attribute, but 
-        # authoredOneAPI defines the reverse with rel2 as the relationship. 
-        # Since authoredOneAPI is stronger than authoredTwoAPI, its opinions for
-        # these properties override the ones from authoredTwoAPI. However, since
-        # the property types of these strongest opinions don't match match the
-        # property types from the prim type definition, they fall back to the
-        # prim type definition's opinions of these properties in the composed
-        # prim definition.
-        _VerifyIsRel(prim,
-            rel1 = (True, conflictPrimTypeDocStr),
-            rel2 = (False, conflictPrimTypeDocStr))
+        # Both API schemas define the same attributes but with different 
+        # field values. Some of these properties will be composed from fields
+        # in both API schemas with OneAPI's opinions being stronger than 
+        # TwoAPI's.
+
+        # OneAPI has opinions for both "default" and "hidden", so TwoAPI will
+        # not contribute opinions to this attribute.
+        _VerifyAttribute(prim, "oneAttr1", "int", doc = oneAPIDoc, 
+            default = 1,                  
+            hidden = False)
+        # OneAPI has no opinion about "hidden", but TwoAPI has hidden = true 
+        # so hidden = true is composed in..
+        _VerifyAttribute(prim, "oneAttr2", "double", doc = oneAPIDoc, 
+            default = 1.0,                
+            hidden = True)
+        # OneAPI has no opinion about "default", but TwoAPI has it set to
+        # (2,2,2) so default = (2,2,2) is composed in.
+        _VerifyAttribute(prim, "oneAttr3", "color3f", doc = oneAPIDoc, 
+            default = (2.0, 2.0, 2.0),    
+            hidden = False)
+        # OneAPI has no opinion about "default" or "hidden", but TwoAPI 
+        # has default = "two" and hidden = true so both are composed in.
+        _VerifyAttribute(prim, "oneAttr4", "token", doc = oneAPIDoc, 
+            default = "two",              
+            hidden = True)
+        # OneAPI has no opinion about default or hidden, but TwoAPI has this
+        # attribute as typeName = "string". This is a typeName conflict with
+        # OneAPI's typeName = "token", so all of TwoAPI's opinions are ignored.
+        _VerifyAttribute(prim, "oneAttr5", "token", doc = oneAPIDoc)
+
+        # OneAPI has opinions for both "default" and "hidden" for all of 
+        # these attributes, so TwoAPI will not contribute opinions to any of
+        # these attributes.
+        _VerifyAttribute(prim, "twoAttr1", "int", doc = oneAPIDoc, 
+            default = 1,                  
+            hidden = True)
+        _VerifyAttribute(prim, "twoAttr2", "double", doc = oneAPIDoc, 
+            default = 1.0,                
+            hidden = True)
+        _VerifyAttribute(prim, "twoAttr3", "color3f", doc = oneAPIDoc, 
+            default = (1.0, 1.0, 1.0),    
+            hidden = True)
+        _VerifyAttribute(prim, "twoAttr4", "token", doc = oneAPIDoc, 
+            default = "one",              
+            hidden = True)
+        _VerifyAttribute(prim, "twoAttr5", "float", doc = oneAPIDoc, 
+            default = 1.0,                
+            hidden = True)
+
+        # For these four attributes, OneAPI has opinions for both "default"
+        # and "hidden" with the exception of "nestedAttr2" (for which OneAPI
+        # has no opinion for "default"). Thus TwoAPI only contributes 
+        # default = 2 to "nestedAttr2", otherwise everything else comes from
+        # OneAPI.
+        _VerifyAttribute(prim, "nestedAttr1", "string", doc = oneAPIDoc, 
+            default = "one",           
+            hidden = True)
+        _VerifyAttribute(prim, "nestedAttr2", "int", doc = oneAPIDoc, 
+            default = 2,               
+            hidden = True)
+        _VerifyAttribute(prim, "nestedAttr3", "double", doc = oneAPIDoc, 
+            default = 1.0,             
+            hidden = True)
+        _VerifyAttribute(prim, "nestedAttr4", "point3f", doc = oneAPIDoc, 
+            default = (1.0, 1.0, 1.0), 
+            hidden = False)
+
+        # This attribute is to verify that only default value and hidden 
+        # metadata is composed from a weaker property definition. With OneAPI 
+        # and TwoAPI both applied in that order, the default value and value
+        # for hidden come through from TwoAPI since OneAPI. TwoAPI DOES define
+        # additional metadata, like displayName, documentation, allowedTokens, 
+        # etc., that OneAPI does not define, however this metadata will not be 
+        # composed.
+        _VerifyAttribute(prim, "otherMetadataAttr", "token",
+            default = "two",
+            hidden = False,
+            displayGroup = None,
+            displayName = None,
+            allowedTokens = None)
+
+        # Test 3: New prim with no type name; apply only the TwoAPI schema.
+        prim = stage.DefinePrim("/UntypedPrim2")
+        prim.AddAppliedSchema(twoAPIName)
+        self.assertEqual(prim.GetAppliedSchemas(),
+                         [twoAPIName])
+
+        # Verify the expected attributes all match the attributes as defined in
+        # TwoAPI schema.
+        _VerifyAttribute(prim, "oneAttr1", "int", doc = twoAPIDoc, 
+            variability = Sdf.VariabilityUniform,
+            default = 2, 
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr2", "double", doc = twoAPIDoc, 
+            variability = Sdf.VariabilityUniform,
+            default = 2.0,
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr3", "color3f", doc = twoAPIDoc, 
+            variability = Sdf.VariabilityUniform,
+            default = (2.0, 2.0, 2.0),
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr4", "token", doc = twoAPIDoc,
+            variability = Sdf.VariabilityUniform,
+            default = "two", 
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr5", "string", doc = twoAPIDoc,
+            variability = Sdf.VariabilityUniform,
+            default = "two", 
+            hidden = True)
+
+        _VerifyAttribute(prim, "twoAttr1", "int", doc = twoAPIDoc, 
+            default = 2, 
+            hidden = False)
+        _VerifyAttribute(prim, "twoAttr2", "double", doc = twoAPIDoc, 
+            default = 2.0)
+        _VerifyAttribute(prim, "twoAttr3", "color3f", doc = twoAPIDoc, 
+            hidden = False)
+        _VerifyAttribute(prim, "twoAttr4", "token", doc = twoAPIDoc)
+        _VerifyAttribute(prim, "twoAttr5", "double", doc = twoAPIDoc)
+
+        _VerifyAttribute(prim, "nestedAttr1", "string", doc = twoAPIDoc, 
+            default = "two", 
+            hidden = True)
+        _VerifyAttribute(prim, "nestedAttr2", "int", doc = twoAPIDoc,
+            default = 2)
+        _VerifyAttribute(prim, "nestedAttr3", "double", doc = twoAPIDoc, 
+            default = 2.0, 
+            hidden = True),
+        _VerifyAttribute(prim, "nestedAttr4", "color3f", doc = twoAPIDoc, 
+            default = (2.0, 2.0, 2.0), 
+            hidden = True)
+
+        # This attribute is to verify that only default value and hidden 
+        # metadata is composed from a weaker property definition. With only 
+        # TwoAPI applied, all of the metadata from TwoAPI is present on the 
+        # property. This contrasts with the case where OneAPI is applied before
+        # TwoAPI which prevents the metadata other than default and hidden from
+        # coming through.
+        _VerifyAttribute(prim, "otherMetadataAttr", "token", doc = twoAPIDoc,
+            default = "two",
+            hidden = False,
+            displayGroup = "Two Group",
+            displayName = "OtherTwoAttr",
+            allowedTokens = ["two", "2"])
+
+        # Test 4: Apply the OneAPI to test case 3 prim. The prim now has
+        # TwoAPI and OneAPI applied in that strength order. This
+        # is the reverse order of test case 2.
+        prim.AddAppliedSchema(oneAPIName)
+        self.assertEqual(prim.GetAppliedSchemas(),
+                         [twoAPIName,
+                          oneAPIName])
+
+        # Both API schemas define the same attributes but with different 
+        # field values. Some of these properties will be composed from fields
+        # in both API schemas with TwoAPI's opinions being stronger than 
+        # OneAPI's.
+
+        # TwoAPI has opinions for both "default" and "hidden" for all of 
+        # these attributes, so OneAPI will not contribute opinions to any of
+        # these attributes.
+        _VerifyAttribute(prim, "oneAttr1", "int", doc = twoAPIDoc, 
+            variability = Sdf.VariabilityUniform,
+            default = 2, 
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr2", "double", doc = twoAPIDoc, 
+            variability = Sdf.VariabilityUniform,
+            default = 2.0,
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr3", "color3f", doc = twoAPIDoc, 
+            variability = Sdf.VariabilityUniform,
+            default = (2.0, 2.0, 2.0),
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr4", "token", doc = twoAPIDoc,
+            variability = Sdf.VariabilityUniform,
+            default = "two", 
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr5", "string", doc = twoAPIDoc,
+            variability = Sdf.VariabilityUniform,
+            default = "two", 
+            hidden = True)
+
+        # TwoAPI has opinions for both "default" and "hidden", so OneAPI will
+        # not contribute opinions to this attribute.
+        _VerifyAttribute(prim, "twoAttr1", "int", doc = twoAPIDoc, 
+            default = 2, 
+            hidden = False)
+        # TwoAPI has no opinion about "hidden", but OneAPI has hidden = true 
+        # so hidden = true is composed in..
+        _VerifyAttribute(prim, "twoAttr2", "double", doc = twoAPIDoc, 
+            default = 2.0,
+            hidden = True)
+        # TwoAPI has no opinion about "default", but OneAPI has 
+        # default = (1.0, 1.0, 1.0), so default = (1.0, 1.0, 1.0) is composed in.
+        _VerifyAttribute(prim, "twoAttr3", "color3f", doc = twoAPIDoc, 
+            default = (1.0, 1.0, 1.0),
+            hidden = False)
+        # TwoAPI has no opinion about "default" or "hidden", but OneAPI 
+        # has default = "one" and hidden = true so both are composed in.
+        _VerifyAttribute(prim, "twoAttr4", "token", doc = twoAPIDoc, 
+            default = "one",
+            hidden = True)
+        # TwoAPI has no opinion about default or hidden, but OneAPI has this
+        # attribute as typeName = "float".  This is a typeName conflict with
+        # TwoAPI's typeName = "double", so all of OneAPI's opinions are ignored.
+        _VerifyAttribute(prim, "twoAttr5", "double", doc = twoAPIDoc)
+
+        # For these four attributes, TwoAPI has opinions for both "default"
+        # and "hidden" with the exception of "nestedAttr2" (for which TwoAPI
+        # has no opinion for "hidden"). Thus OneAPI only contributes 
+        # hidden = true to "nestedAttr2", otherwise everything else comes from
+        # TwoAPI.
+        _VerifyAttribute(prim, "nestedAttr1", "string", doc = twoAPIDoc, 
+            default = "two", 
+            hidden = True)
+        _VerifyAttribute(prim, "nestedAttr2", "int", doc = twoAPIDoc,
+            default = 2,
+            hidden = True)
+        _VerifyAttribute(prim, "nestedAttr3", "double", doc = twoAPIDoc, 
+            default = 2.0, 
+            hidden = True),
+        _VerifyAttribute(prim, "nestedAttr4", "color3f", doc = twoAPIDoc, 
+            default = (2.0, 2.0, 2.0), 
+            hidden = True)
+
+        # This attribute is to verify that only default value and hidden 
+        # metadata is composed from a weaker property definition. Here, TwoAPI
+        # and OneAPI are applied in that order. All of the metadata from TwoAPI
+        # is present on the property as OneAPI is weaker and doesn't prevent the
+        # metadata other than default and hidden from coming through like it 
+        # does when OneAPI is applied first.
+        _VerifyAttribute(prim, "otherMetadataAttr", "token", doc = twoAPIDoc,
+            default = "two",
+            hidden = False,
+            displayGroup = "Two Group",
+            displayName = "OtherTwoAttr",
+            allowedTokens = ["two", "2"])
 
         # Test 5: Prim with no type name; apply the nestedAPI schema only to 
-        # the prim. The nestedAPI has authoredOneAPI included as a built-in and
-        # authoredTwoAPI auto-applied to it. So all three schemas end up as 
+        # the prim. The nestedAPI has OneAPI included as a built-in and
+        # TwoAPI auto-applied to it. So all three schemas end up as 
         # applied schemas on the prim.
-        nestedAPIPrim = stage.DefinePrim("/NestedAPIPrim")
-        nestedAPIPrim.AddAppliedSchema(nestedAPIName)
-        self.assertEqual(nestedAPIPrim.GetAppliedSchemas(),
-                         [nestedAPIName,
-                          authoredOneAPIName,
-                          authoredTwoAPIName])
-
-        # The nestedAPI schema defines its own opinions for all of attr1-6 
-        # attributes as well as rel1 and rel2. Since it is stronger than all its
-        # built-in API schemas, its version of all these properties win for this
-        # prim, regardless of the property and attributes types.
-        _VerifyAttrTypes(nestedAPIPrim,
-            attr1 = ("int",     1,                  nestedAPIDocStr),
-            attr2 = ("int",     2,                  nestedAPIDocStr),
-            attr3 = ("int",     3,                  nestedAPIDocStr),
-            attr4 = ("int",     4,                  nestedAPIDocStr),
-            attr5 = ("color3f", Gf.Vec3f(1, 1, 1),  nestedAPIDocStr),
-            attr6 = ("token",   "bar",              nestedAPIDocStr))
-        _VerifyIsRel(nestedAPIPrim,
-            rel1 = (True, nestedAPIDocStr),
-            rel2 = (False, nestedAPIDocStr))
-
-        # Test 6: Prim with no type name; apply the bultinAPI, authoredTwoAPI, 
-        # and nestedAPI schemas to the prim in that strength order. The same
-        # three schemas are applied to the prim as in Test 5, but now the 
-        # strength order is different.
-        nestedAPIPrim2 = stage.DefinePrim("/NestedAPIPrim2")
-        nestedAPIPrim2.AddAppliedSchema(authoredOneAPIName)
-        nestedAPIPrim2.AddAppliedSchema(authoredTwoAPIName)
-        nestedAPIPrim2.AddAppliedSchema(nestedAPIName)
-        self.assertEqual(nestedAPIPrim2.GetAppliedSchemas(),
-                         [authoredOneAPIName,
-                          authoredTwoAPIName,
-                          nestedAPIName,
-                          authoredOneAPIName,
-                          authoredTwoAPIName])
-
-        # Only the authoredOneAPI and nestedAPI define attr1 and attr2; 
-        # authoredOneAPI is stronger and wins
-        # Only the authoredTwoAPI and nestedAPI define attr3 and attr4; 
-        # authoredTwoAPI is stronger and wins
-        # All define attr5 and attr6, so authoredOneAPI's version of those 
-        # attributes are used since it's strongest.
-        _VerifyAttrTypes(nestedAPIPrim2,
-            attr1 = ("int",     0,                  authoredOneAPIDocStr),
-            attr2 = ("double",  0.0,                authoredOneAPIDocStr),
-            attr3 = ("int",     10,                 authoredTwoAPIDocStr),
-            attr4 = ("string",  "foo",              authoredTwoAPIDocStr),
-            attr5 = ("point3f", Gf.Vec3f(0, 0, 0),  authoredOneAPIDocStr),
-            attr6 = ("int",     20,                 authoredOneAPIDocStr))
-        # All define rel1 and rel2, but since authoredOneAPI is strongest, it 
-        # wins and only rel2 is a relationship.
-        _VerifyIsRel(nestedAPIPrim2,
-            rel1 = (False, authoredOneAPIDocStr),
-            rel2 = (True, authoredOneAPIDocStr))
-
-        # Test 7: Prim with type name set to the conflictPrimType; author the 
-        # nestedAPI schema on this prim. nestedAPI still brings in the 
-        # authoredOneAPI and authoredTwoAPI as its own built-ins to the applied 
-        # API schemas which will be stronger than the prim type definition 
-        # itself.
-        prim = stage.DefinePrim("/TypedPrim2", conflictPrimTypeName)
+        prim = stage.DefinePrim("/NestedAPIPrim")
         prim.AddAppliedSchema(nestedAPIName)
         self.assertEqual(prim.GetAppliedSchemas(),
                          [nestedAPIName,
-                          authoredOneAPIName,
-                          authoredTwoAPIName,
-                          builtinAPIName])
+                          oneAPIName,
+                          twoAPIName])
 
-        # nestedAPI defines all same properties as the prim type definition,
-        # is the strongest opinion, and, with the exception of attr6, uses the 
-        # same property types and type names as the prim type definition. So 
-        # all properties except attr6 in the composed definition use property
-        # definitions from nestedAPI.
-        # For attr6, the strongest opinion from nestedAPI has the type name 
-        # "token" which doesn't match the type name "int" in the prim type
-        # definition. So, we have to use the opinion from the prim type 
-        # definition. Note that both authoredOneAPI and authoredTwoAPI are 
-        # technically stronger than prim type definition in this case AND have 
-        # the attribute type of "int" for attr6. However, we still fall back to
-        # the prim type definition's opinion as we only consider the strongest
-        # opinion from the authored applied API schemas.
-        _VerifyAttrTypes(prim, 
-            attr1 = ("int",     1,                  nestedAPIDocStr),
-            attr2 = ("int",     2,                  nestedAPIDocStr),
-            attr3 = ("int",     3,                  nestedAPIDocStr),
-            attr4 = ("int",     4,                  nestedAPIDocStr),
-            attr5 = ("color3f", Gf.Vec3f(1, 1, 1),  nestedAPIDocStr),
-            attr6 = ("int",     6,                  conflictPrimTypeDocStr))
-        _VerifyIsRel(prim,
-            rel1 = (True, nestedAPIDocStr),
-            rel2 = (False, nestedAPIDocStr))
+        # NestedAPI has no opinions about these attributes so they will
+        # be identical to test case 2 where OneAPI and TwoAPI are applied
+        # in the same order.
+        _VerifyAttribute(prim, "oneAttr1", "int", doc = oneAPIDoc, 
+            default = 1,                  
+            hidden = False)
+        _VerifyAttribute(prim, "oneAttr2", "double", doc = oneAPIDoc, 
+            default = 1.0,                
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr3", "color3f", doc = oneAPIDoc, 
+            default = (2.0, 2.0, 2.0),    
+            hidden = False)
+        _VerifyAttribute(prim, "oneAttr4", "token", doc = oneAPIDoc, 
+            default = "two",              
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr5", "token", doc = oneAPIDoc)
 
-        # Now also apply authoredOneAPI and authoredTwoAPI directly to the same
-        # prim (previously they were included as built-ins under nestedAPI).
-        # These are still weaker than nestedAPI but this means they're also now 
-        # siblings of nestedAPI in the composed definition as opposed to 
-        # built-in to nestedAPI's own prim definition.
-        prim.AddAppliedSchema(authoredOneAPIName)
-        prim.AddAppliedSchema(authoredTwoAPIName)
+        # Same for these attributes, NestedAPI has no opinions and they 
+        # match test case 2.
+        _VerifyAttribute(prim, "twoAttr1", "int", doc = oneAPIDoc, 
+            default = 1,                  
+            hidden = True)
+        _VerifyAttribute(prim, "twoAttr2", "double", doc = oneAPIDoc, 
+            default = 1.0,                
+            hidden = True)
+        _VerifyAttribute(prim, "twoAttr3", "color3f", doc = oneAPIDoc, 
+            default = (1.0, 1.0, 1.0),    
+            hidden = True)
+        _VerifyAttribute(prim, "twoAttr4", "token", doc = oneAPIDoc, 
+            default = "one",              
+            hidden = True)
+        _VerifyAttribute(prim, "twoAttr5", "float", doc = oneAPIDoc, 
+            default = 1.0,                
+            hidden = True)
+
+        # NestedAPI has opinions for both "default" and "hidden", so OneAPI and 
+        # TwoAPI will not contribute opinions to this attribute.
+        _VerifyAttribute(prim, "nestedAttr1", "string", doc = nestedAPIDoc, 
+            default = "nested",           
+            hidden = False)
+        # NestedAPI has no opinion about "default" or "hidden".
+        # OneAPI has hidden = true, but no opinion about "default".
+        # TwoAPI has default = 2.
+        # Thus we get the following attribute composed with fields from all 3 
+        # API schemas.
+        _VerifyAttribute(prim, "nestedAttr2", "int", doc = nestedAPIDoc, 
+            default = 2,               
+            hidden = True)
+        # NestedAPI has no opinion for "default" but does have hidden = false.
+        # OneAPI has default = 1.0 so its default value is composed in. 
+        # No opinions from TwoAPI are used as the stronger API schemas have
+        # opinions for the composable fields.
+        _VerifyAttribute(prim, "nestedAttr3", "double", doc = nestedAPIDoc, 
+            default = 1.0,             
+            hidden = False)
+        # NestedAPI has no opinion about "default" or "hidden".
+        # OneAPI has this attribute with typeName = "point3f" which is a type
+        # conflict with typeName = "color3f" so all of its opinions are ignored.
+        # TwoAPI has default = (2.0, 2.0, 2.0) and hidden = true so both of 
+        # these opinions are composed in.
+        _VerifyAttribute(prim, "nestedAttr4", "color3f", doc = nestedAPIDoc, 
+            default = (2.0, 2.0, 2.0), 
+            hidden = True)
+
+        # Test 6: Prim with type name set to the compPrimType; no authored
+        # applied API schemas. The compPrimType has a single built-in API 
+        # schema TwoAPI.
+        prim = stage.DefinePrim("/TypedPrim", compPrimTypeName)
         self.assertEqual(prim.GetAppliedSchemas(),
-                         [nestedAPIName,
-                          authoredOneAPIName,
-                          authoredTwoAPIName,
-                          authoredOneAPIName,
-                          authoredTwoAPIName,
-                          builtinAPIName])
+                         [twoAPIName])
 
-        # This extra condition changes nothing about the composed prim 
-        # definition but is here to verify that the same behavior for attr6 
-        # above (where only the strongest authored API schema opinion for an 
-        # attribute is considered) still hold for sibling applied API schemas.
-        _VerifyAttrTypes(prim, 
-            attr1 = ("int", 1, nestedAPIDocStr),
-            attr2 = ("int", 2, nestedAPIDocStr),
-            attr3 = ("int", 3, nestedAPIDocStr),
-            attr4 = ("int", 4, nestedAPIDocStr),
-            attr5 = ("color3f", Gf.Vec3f(1, 1, 1), nestedAPIDocStr),
-            attr6 = ("int", 6, conflictPrimTypeDocStr))
-        _VerifyIsRel(prim,
-            rel1 = (True, nestedAPIDocStr),
-            rel2 = (False, nestedAPIDocStr))
+        # The prim type schema has no opinions about the following attributes
+        # so they get all their values from TwoAPI.
+        _VerifyAttribute(prim, "oneAttr1", "int", doc = twoAPIDoc, 
+            variability = Sdf.VariabilityUniform,
+            default = 2, 
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr2", "double", doc = twoAPIDoc, 
+            variability = Sdf.VariabilityUniform,
+            default = 2.0,
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr3", "color3f", doc = twoAPIDoc, 
+            variability = Sdf.VariabilityUniform,
+            default = (2.0, 2.0, 2.0),
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr4", "token", doc = twoAPIDoc,
+            variability = Sdf.VariabilityUniform,
+            default = "two", 
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr5", "string", doc = twoAPIDoc,
+            variability = Sdf.VariabilityUniform,
+            default = "two", 
+            hidden = True)
 
-        # Test 8: Prim with type name set to the conflictPrimType; author the 
-        # authoredOneAPI, authoredTwoAPI, and nestedAPI schemas on this prim in
-        # that strength order. This brings in the same 3 applied API schemas as
-        # Test 7, but now authoredOneAPI and authoredTwoAPI are stronger than
-        # when they were just brought in as built-ins of nestedAPI.
-        prim = stage.DefinePrim("/TypedPrim3", conflictPrimTypeName)
-        prim.AddAppliedSchema(authoredOneAPIName)
-        prim.AddAppliedSchema(authoredTwoAPIName)
+        _VerifyAttribute(prim, "twoAttr1", "int", doc = twoAPIDoc, 
+            default = 2, 
+            hidden = False)
+        _VerifyAttribute(prim, "twoAttr2", "double", doc = twoAPIDoc, 
+            default = 2.0)
+        _VerifyAttribute(prim, "twoAttr3", "color3f", doc = twoAPIDoc, 
+            hidden = False)
+        _VerifyAttribute(prim, "twoAttr4", "token", doc = twoAPIDoc)
+        _VerifyAttribute(prim, "twoAttr5", "double", doc = twoAPIDoc)
+
+        # PrimType schema has opinions for both "default" and "hidden", so  
+        # TwoAPI will not contribute opinions to this attribute.
+        _VerifyAttribute(prim, "nestedAttr1", "string", doc = primDoc, 
+            default = "prim",           
+            hidden = False)
+        # PrimType schema has no opinion about "default" or "hidden".
+        # TwoAPI has default = 2, but still no opinion about "hidden", so the
+        # attribute composes in default = 2 but remains with no opinion about
+        # "hidden".
+        _VerifyAttribute(prim, "nestedAttr2", "int", doc = primDoc, 
+            default = 2)
+        # PrimType schema has no opinion for "default" but does have 
+        # hidden = false.
+        # TwoAPI has default = 2.0 so its default value is composed in. 
+        _VerifyAttribute(prim, "nestedAttr3", "double", doc = primDoc, 
+            default = 2.0,             
+            hidden = False)
+        # PrimType schema has no opinion about "default" or "hidden".
+        # TwoAPI has this attribute with typeName = "color3f" which is a type
+        # conflict with typeName = "point3f" so all of its opinions are ignored.
+        _VerifyAttribute(prim, "nestedAttr4", "point3f", doc = primDoc)
+
+        # Test 7: Take the same prim from Test 6 above, with type name set to 
+        # the compPrimType, and author nestedAPI. This gives us a prim with
+        # API schema order TwoAPI, NestedAPI, OneAPI. Note that NestedAPI doesn't 
+        # bring in TwoAPI again as TwoAPI is already present as a built-in of the 
+        # prim type and therefore is stronger than the authored API schemas.
         prim.AddAppliedSchema(nestedAPIName)
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(),
+                         [nestedAPIName])
         self.assertEqual(prim.GetAppliedSchemas(),
-                         [authoredOneAPIName,
-                          authoredTwoAPIName,
+                         [twoAPIName,
                           nestedAPIName,
-                          authoredOneAPIName,
-                          authoredTwoAPIName,
-                          builtinAPIName])
+                          oneAPIName])
 
-        # The results of this test case are identical to Test 4 above as 
-        # builtAPI is the strongest opinion and authoredTwoAPI is next and the 
-        # same property type conflicts exist. Even though nestedAPI is stronger
-        # than the prim type definition and has opinions for attr2, attr4, 
-        # attr5, rel1, and rel2 of the matching property/attribute type, these 
-        # are never the strongest API schema property opinion and are not
-        # considered.
-        _VerifyAttrTypes(prim,
-            attr1 = ("int",     0,                  authoredOneAPIDocStr),
-            attr2 = ("int",     2,                  conflictPrimTypeDocStr),
-            attr3 = ("int",     10,                 authoredTwoAPIDocStr),
-            attr4 = ("int",     4,                  builtinAPIDocStr),
-            attr5 = ("color3f", Gf.Vec3f(1, 1, 1),  conflictPrimTypeDocStr),
-            attr6 = ("int",     20,                 authoredOneAPIDocStr))
-        _VerifyIsRel(prim,
-            rel1 = (True, conflictPrimTypeDocStr),
-            rel2 = (False, conflictPrimTypeDocStr))
+        # The following attributes do not have definitions "directly" in 
+        # NestedAPI (though they are include through its built-ins). These 
+        # attributes match test case 2 where TwoAPI is applied followed by
+        # OneAPI.
+        _VerifyAttribute(prim, "oneAttr1", "int", doc = twoAPIDoc, 
+            variability = Sdf.VariabilityUniform,
+            default = 2, 
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr2", "double", doc = twoAPIDoc, 
+            variability = Sdf.VariabilityUniform,
+            default = 2.0,
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr3", "color3f", doc = twoAPIDoc, 
+            variability = Sdf.VariabilityUniform,
+            default = (2.0, 2.0, 2.0),
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr4", "token", doc = twoAPIDoc,
+            variability = Sdf.VariabilityUniform,
+            default = "two", 
+            hidden = True)
+        _VerifyAttribute(prim, "oneAttr5", "string", doc = twoAPIDoc,
+            variability = Sdf.VariabilityUniform,
+            default = "two", 
+            hidden = True)
+
+        _VerifyAttribute(prim, "twoAttr1", "int", doc = twoAPIDoc, 
+            default = 2, 
+            hidden = False)
+        _VerifyAttribute(prim, "twoAttr2", "double", doc = twoAPIDoc, 
+            default = 2.0,
+            hidden = True)
+        _VerifyAttribute(prim, "twoAttr3", "color3f", doc = twoAPIDoc, 
+            default = (1.0, 1.0, 1.0), 
+            hidden = False)
+        _VerifyAttribute(prim, "twoAttr4", "token", doc = twoAPIDoc,
+            default = "one", 
+            hidden = True)
+        _VerifyAttribute(prim, "twoAttr5", "double", doc = twoAPIDoc)
+
+        # PrimType schema has opinions for both "default" and "hidden", so none 
+        # of the API schemas contribute opinions to this attribute.
+        _VerifyAttribute(prim, "nestedAttr1", "string", doc = primDoc, 
+            default = "prim",           
+            hidden = False)
+        # PrimType schema has no opinion about "default" or "hidden".
+        # TwoAPI has default = 2, but no opinion about hidden.
+        # NestedAPI has no opinion about "default" or "hidden".
+        # OneAPI has hidden = true.
+        # Thus we get the following PrimType's attribute composed with fields 
+        # from TwoAPI (default) and OneAPI (hidden).
+        _VerifyAttribute(prim, "nestedAttr2", "int", doc = primDoc, 
+            default = 2,               
+            hidden = True)
+        # PrimType schema has no opinion for "default" but does have 
+        # hidden = false.
+        # TwoAPI has default = 2.0 so its default value is composed in. 
+        # No opinions from NestedAPI and OneAPI are used as the stronger API 
+        # schemas have opinions for the composable fields.
+        _VerifyAttribute(prim, "nestedAttr3", "double", doc = primDoc, 
+            default = 2.0,             
+            hidden = False)
+        # PrimType schema has no opinion about "default" or "hidden".
+        # TwoAPI has this attribute with typeName = "color3f" which is a type
+        # conflict with typeName = "point3f" so all of its opinions are ignored.
+        #
+        # NestedAPI has a composed set of opinions that come from itself and its
+        # built-ins, OneAPI and TwoAPI. But since NestedAPI defines this 
+        # attribute as typeName = "color3f", which is a type conflict with 
+        # typeName = "point3f", all its opinions are ignored.
+        #
+        # And while OneAPI has a compatible typeName of "point3f" and opinions
+        # for default = (1.0, 1.0, 1.0) and hidden = false, its existence as a
+        # built-in of NestedAPI means it is only used to compose into NestedAPI's
+        # definition of the property and is not considered on its own. (See the
+        # next test case.)
+        _VerifyAttribute(prim, "nestedAttr4", "point3f", doc = primDoc)
+
+        # Test 8: This is purely to test an edge case with nested API schemas
+        # and property type conflicts. Take the same prim from the previous
+        # case and now apply OneAPI to it. The prim's type signature will 
+        # change (both NestedAPI and OneAPI are now authored API schemas), but
+        # composed list of API schemas does NOT change from from the previous
+        # example since NestedAPI already included OneAPI. However, the composed
+        # property definition for "nestedAttr4" will be different.
+        prim.AddAppliedSchema(oneAPIName)
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(),
+                         [nestedAPIName,
+                          oneAPIName])
+        self.assertEqual(prim.GetAppliedSchemas(),
+                         [twoAPIName,
+                          nestedAPIName,
+                          oneAPIName])
+
+        # PrimType schema has no opinion about "default" or "hidden".
+        # TwoAPI has this attribute with typeName = "color3f" which is a type
+        # conflict with typeName = "point3f" so all of its opinions are ignored.
+        #
+        # NestedAPI has a composed set of opinions that come from itself and its
+        # built-ins, OneAPI and TwoAPI. But since NestedAPI defines this 
+        # attribute as typeName = "color3f", which is a type conflict with 
+        # typeName = "point3f", all its opinions are ignored.
+        #
+        # But now, since OneAPI is itself an authored API schema, it is also 
+        # composed in even though it is technically already included by 
+        # NestedAPI. And since OneAPI has a compatible typeName of "point3f" and
+        # opinions for default = (1.0, 1.0, 1.0) and hidden = false these 
+        # opinions are composed into the property definition.
+        _VerifyAttribute(prim, "nestedAttr4", "point3f", doc = primDoc,
+            default = (1.0, 1.0, 1.0),
+            hidden = False)
 
     @unittest.skipIf(Tf.GetEnvSetting('USD_DISABLE_AUTO_APPLY_API_SCHEMAS'),
                     "Auto apply API schemas are disabled")
@@ -3492,31 +3674,34 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         #   variability = uniform
         #   allowedTokens = "uni_four", "uni_4"
         #   doc = "Uniform token defined in Four"
-        # Override in PropertyOversThreeAPI tries to override the default value
-        #   and allowed token but declares the attribute as a non-uniform token
-        #   attribute.
+        # Override in PropertyOversThreeAPI overrides the default value and 
+        #   allowed tokens. The override attribute is declared as a non-uniform
+        #   token attribute, but the attempt to override variability is ignored.
         # Override in PropertyOversOneAPI overrides the default value on a 
         #   properly uniform attribute.
-        # Override in PropertyOversTypedPrimDerived tries to override the 
-        #   default value but declares the attribute as a non-uniform token
-        #   attribute.
+        # Override in PropertyOversTypedPrimDerived overrides the 
+        #   default value. The override attribute is declared as a non-uniform
+        #   token attribute, but the attempt to override variability is ignored.
         propName = "uniform_token_defined_in_four"
         # OversOneAPI includes OversThreeAPI which includes OversFourAPI.
-        # The OversThreeAPI's override is a variability mismatch which causes
-        # it to be ignored but that doesn't prevent the correctly matched
-        # override from OversOneAPI from overriding the default value.
+        # OversThreeAPI overrides the allowed tokens and is the strongest 
+        # opinion on that field.
+        # OversOneAPI and OversThreeAPI both override the default value but the
+        # stronger OversOneAPI wins.
+        # OversThreeAPI tries to override variabilty to "varying" but the 
+        # variability field is always ignored.
         _VerifyAttribute(prim_1, propName, 'token',
                          variability = Sdf.VariabilityUniform,
-                         allowedTokens = Vt.TokenArray(["uni_four", "uni_4"]),
+                         allowedTokens = Vt.TokenArray(["uni_three", "uni_3"]),
                          default = "uni_1",
                          documentation = "Uniform token defined in Four")
         self.assertFalse(prim_2.GetAttribute(propName))
-        # The OversThreeAPI override variability mismatch causes it to be
-        # ignored.
+        # OversThreeAPI overrides default and allowedTokens. The variability 
+        # of the override is always ignored.
         _VerifyAttribute(prim_3, propName, 'token',
                          variability = Sdf.VariabilityUniform,
-                         allowedTokens = Vt.TokenArray(["uni_four", "uni_4"]),
-                         default = "uni_four",
+                         allowedTokens = Vt.TokenArray(["uni_three", "uni_3"]),
+                         default = "uni_3",
                          documentation = "Uniform token defined in Four")
         _VerifyAttribute(prim_4, propName, 'token',
                          variability = Sdf.VariabilityUniform,
@@ -3524,13 +3709,18 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
                          default = "uni_four",
                          documentation = "Uniform token defined in Four")
 
-        # TypedPrimBase does not include the property. TypedPrimDerived's
-        # override is a variability mismatch and is ignored.
+        # TypedPrimBase does not include the property. 
+        # OversThreeAPI overrides the allowed tokens and is the strongest 
+        # opinion on that field.
+        # TypedPrimDerived and OversThreeAPI both override the default value but
+        # the stronger TypedPrimDerived wins.
+        # The variability of the overrides from TypedPrimDerived and 
+        # OversThreeAPI are always ignored.
         self.assertFalse(primBase.GetAttribute(propName))
         _VerifyAttribute(primDerived, propName, 'token',
                          variability = Sdf.VariabilityUniform,
-                         allowedTokens = Vt.TokenArray(["uni_four", "uni_4"]),
-                         default = "uni_four",
+                         allowedTokens = Vt.TokenArray(["uni_three", "uni_3"]),
+                         default = "uni_derived",
                          documentation = "Uniform token defined in Four")
 
         # Property: defined_in_auto

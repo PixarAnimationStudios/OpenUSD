@@ -1,0 +1,10 @@
+#usda 1.0
+
+def "foo"
+{
+    asset udim_style_a = @./style_a.<UDIM>.exr@
+    asset udim_style_b = @./style_b_<UDIM>.exr@
+    asset udim_package = @udims.usdz[udim_tex_<UDIM>_.foo.bar.baz]@
+    asset not_udim = @./style_a.1001.exr@
+    asset udim_missing = @./missing.<UDIM>.exr@
+}

@@ -20,7 +20,8 @@
 // distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
-#include "nodeIdentifierResolvingSceneIndex.h"
+
+#include "pxr/imaging/hdSt/nodeIdentifierResolvingSceneIndex.h"
 
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdr/registry.h"
@@ -33,99 +34,165 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (glslfx)
+    (implementationSource)
+    (sourceCode)
+    (sourceAsset)
+    ((sourceAssetSubIdentifier, "sourceAsset:subIdentifier"))
     (sdrMetadata)
-    ((glslfxSourceAsset, "glslfx:sourceAsset"))
-    ((glslfxSubidentifier, "glslfx:subIdentifier"))
+
+    (glslfx)
 );
 
-// static
-HdSt_NodeIdentifierResolvingSceneIndexRefPtr
-HdSt_NodeIdentifierResolvingSceneIndex::New(
-    const HdSceneIndexBaseRefPtr& inputSceneIndex)
+namespace {
+
+const TfToken _sourceType = _tokens->glslfx;
+
+template<typename T>
+T
+_GetNodeTypeInfo(
+    const HdMaterialNetworkInterface * const interface,
+    const TfToken &nodeName,
+    const TfToken &key)
 {
-    return TfCreateRefPtr(
-        new HdSt_NodeIdentifierResolvingSceneIndex(inputSceneIndex));
+    return
+        interface
+            ->GetNodeTypeInfoValue(nodeName, key)
+            .GetWithDefault<T>();
+}    
+
+template<typename T>
+T
+_GetNodeTypeInfoForSourceType(
+    const HdMaterialNetworkInterface * const interface,
+    const TfToken &nodeName,
+    const TfToken &key)
+{
+    static const std::string prefix = _sourceType.GetString() + ":";
+    const TfToken fullKey(prefix + key.GetString());
+
+    return _GetNodeTypeInfo<T>(interface, nodeName, fullKey);
 }
 
-static bool
-_ReadSourceAssetData(
-    const TfToken& nodeName,
-    HdMaterialNetworkInterface* interface,
-    SdfAssetPath* sourceAsset,
-    NdrTokenMap* metadata,
-    TfToken* subIdentifier)
+NdrTokenMap
+_ToNdrTokenMap(const VtDictionary &d)
 {
-    VtValue sourceAssetValue
-        = interface->GetNodeTypeInfoValue(nodeName, _tokens->glslfxSourceAsset);
-    if (!sourceAssetValue.IsHolding<SdfAssetPath>()) {
-        return false;
+    NdrTokenMap result;
+    for (const auto &it : d) {
+        result[TfToken(it.first)] = TfStringify(it.second);
     }
-
-    *sourceAsset = sourceAssetValue.UncheckedGet<SdfAssetPath>();
-
-    VtValue metadataValue
-        = interface->GetNodeTypeInfoValue(nodeName, _tokens->sdrMetadata);
-    if (metadataValue.IsHolding<VtDictionary>()) {
-        // convert from VtDictionary to NdrTokenMap
-        for (const auto& it : metadataValue.UncheckedGet<VtDictionary>()) {
-            (*metadata)[TfToken(it.first)] = TfStringify(it.second);
-        }
-    }
-
-    VtValue subIdentifierValue = interface->GetNodeTypeInfoValue(
-        nodeName, _tokens->glslfxSubidentifier);
-    if (subIdentifierValue.IsHolding<TfToken>()) {
-        *subIdentifier = metadataValue.UncheckedGet<TfToken>();
-    }
-
-    return true;
+    return result;
 }
 
-static void
+SdrShaderNodeConstPtr
+_GetSdrShaderNodeFromSourceAsset(
+    const HdMaterialNetworkInterface * const interface,
+    const TfToken &nodeName)
+{
+    const SdfAssetPath shaderAsset =
+        _GetNodeTypeInfoForSourceType<SdfAssetPath>(
+            interface, nodeName, _tokens->sourceAsset);
+
+    const NdrTokenMap metadata =
+        _ToNdrTokenMap(
+            _GetNodeTypeInfo<VtDictionary>(
+                interface, nodeName, _tokens->sdrMetadata));
+    const TfToken subIdentifier =
+        _GetNodeTypeInfoForSourceType<TfToken>(
+            interface, nodeName, _tokens->sourceAssetSubIdentifier);
+
+    return
+        SdrRegistry::GetInstance().GetShaderNodeFromAsset(
+            shaderAsset, metadata, subIdentifier, _sourceType);
+}
+
+SdrShaderNodeConstPtr
+_GetSdrShaderNodeFromSourceCode(
+    const HdMaterialNetworkInterface * const interface,
+    const TfToken &nodeName)
+{
+    const std::string sourceCode =
+        _GetNodeTypeInfoForSourceType<std::string>(
+            interface, nodeName, _tokens->sourceCode);
+
+    if (sourceCode.empty()) {
+        return nullptr;
+    }
+    const NdrTokenMap metadata =
+        _ToNdrTokenMap(
+            _GetNodeTypeInfo<VtDictionary>(
+                interface, nodeName, _tokens->sdrMetadata));
+    
+    return
+        SdrRegistry::GetInstance().GetShaderNodeFromSourceCode(
+            sourceCode, _sourceType, metadata);
+}    
+
+SdrShaderNodeConstPtr
+_GetSdrShaderNode(
+    const HdMaterialNetworkInterface * const interface,
+    const TfToken &nodeName)
+{
+    const TfToken implementationSource =
+        _GetNodeTypeInfo<TfToken>(
+            interface, nodeName, _tokens->implementationSource);
+
+    if (implementationSource == _tokens->sourceAsset) {
+        return _GetSdrShaderNodeFromSourceAsset(interface, nodeName);
+    }
+    if (implementationSource == _tokens->sourceCode) {
+        return _GetSdrShaderNodeFromSourceCode(interface, nodeName);
+    }
+    return nullptr;
+}
+
+void
 _SetNodeTypeFromSourceAssetInfo(
-    const TfToken& nodeName, HdMaterialNetworkInterface* interface)
+    const TfToken &nodeName,
+    HdMaterialNetworkInterface * const interface)
 {
-    if (interface->GetNodeType(nodeName).IsEmpty()) {
-        SdfAssetPath sourceAsset;
-        NdrTokenMap metadata;
-        TfToken subIdentifier;
-        if (!_ReadSourceAssetData(
-                nodeName, interface, &sourceAsset, &metadata, &subIdentifier)) {
-            return;
-        }
-
-        if (SdrShaderNodeConstPtr sdrNode
-            = SdrRegistry::GetInstance().GetShaderNodeFromAsset(
-                sourceAsset, metadata, subIdentifier, _tokens->glslfx)) {
-            const TfToken nodeIdentifier = sdrNode->GetIdentifier();
-            interface->SetNodeType(nodeName, nodeIdentifier);
-        }
+    if (!interface->GetNodeType(nodeName).IsEmpty()) {
+        return;
+    }
+     
+    if (SdrShaderNodeConstPtr const sdrNode =
+            _GetSdrShaderNode(interface, nodeName)) {
+        interface->SetNodeType(nodeName, sdrNode->GetIdentifier());
     }
 }
 
 void
-_SetNodeTypesFromSourceAssetInfo(HdMaterialNetworkInterface* interface)
+_SetNodeTypesFromSourceAssetInfo(HdMaterialNetworkInterface* const interface)
 {
     for (const TfToken& nodeName : interface->GetNodeNames()) {
         _SetNodeTypeFromSourceAssetInfo(nodeName, interface);
     }
 }
 
+} // anonymous namespace
+
+// static
+HdSt_NodeIdentifierResolvingSceneIndexRefPtr
+HdSt_NodeIdentifierResolvingSceneIndex::New(
+    HdSceneIndexBaseRefPtr const &inputSceneIndex)
+{
+    return TfCreateRefPtr(
+        new HdSt_NodeIdentifierResolvingSceneIndex(inputSceneIndex));
+}
+
+HdSt_NodeIdentifierResolvingSceneIndex::HdSt_NodeIdentifierResolvingSceneIndex(
+    HdSceneIndexBaseRefPtr const &inputSceneIndex)
+  : HdMaterialFilteringSceneIndexBase(inputSceneIndex)
+{
+}
+
+HdSt_NodeIdentifierResolvingSceneIndex::
+~HdSt_NodeIdentifierResolvingSceneIndex()
+    = default;
+
 HdSt_NodeIdentifierResolvingSceneIndex::FilteringFnc
 HdSt_NodeIdentifierResolvingSceneIndex::_GetFilteringFunction() const
 {
     return _SetNodeTypesFromSourceAssetInfo;
 }
-
-HdSt_NodeIdentifierResolvingSceneIndex::HdSt_NodeIdentifierResolvingSceneIndex(
-    const HdSceneIndexBaseRefPtr& inputSceneIndex)
-    : HdMaterialFilteringSceneIndexBase(inputSceneIndex)
-{
-}
-
-HdSt_NodeIdentifierResolvingSceneIndex::
-    ~HdSt_NodeIdentifierResolvingSceneIndex()
-    = default;
 
 PXR_NAMESPACE_CLOSE_SCOPE

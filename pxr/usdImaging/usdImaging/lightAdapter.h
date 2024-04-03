@@ -67,7 +67,8 @@ public:
     HdDataSourceLocatorSet InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties) override;
+        TfTokenVector const& properties,
+        UsdImagingPropertyInvalidationType invalidationType) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Initialization
@@ -149,6 +150,31 @@ public:
                                 SdfPath const& cachePath, 
                                 UsdTimeCode time) const override;
 
+    // Helper function: map USD path to UsdImaging cache path,
+    // applying any name-encoding required by the instancerContext.
+    USDIMAGING_API
+    static SdfPath
+    _ResolveCachePath(
+        const SdfPath& usdPath,
+        const UsdImagingInstancerContext* instancerContext);
+
+    // Helper function: add a given type of sprim, potentially with instancer
+    // name mangling
+    USDIMAGING_API
+    SdfPath
+    _AddSprim(
+        const TfToken& primType,
+        const UsdPrim& usdPrim,
+        UsdImagingIndexProxy* index,
+        const UsdImagingInstancerContext* instancerContext = nullptr);
+
+    USDIMAGING_API
+    void
+    _RemoveSprim(
+        const TfToken& primType,
+        const SdfPath& cachePath,
+        UsdImagingIndexProxy* index);
+        
 protected:
     void _RemovePrim(SdfPath const& cachePath,
                      UsdImagingIndexProxy* index) override;

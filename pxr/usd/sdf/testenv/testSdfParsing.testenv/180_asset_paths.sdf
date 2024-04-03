@@ -13,6 +13,7 @@ over "AssetPathTest" (
         asset wversion = @//menv30/global/unit_defs.sdf#20@
         asset allchars = @ !"#$%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~@
         asset utf8 = @aɪ kæn iːt glɑːs ænd ɪt dɐz nɒt hɜːt miː Можам да јадам стакло, а не ме штета ನನಗೆ ಹಾನಿ ಆಗದೆ, ನಾನು ಗಜನ್ನು ತಿನಬಹುದು@
+        asset pathWithJapaneseCharacter = @path/to/響@
         asset looksLikeEscapes = @\x01\x03\x7f@
         asset[] array = [@@, @sdf/Model.sdf@, @//$STAGEDIR/sim/$MODELINSTANCE.sdf@, @//menv30/global/unit_defs.sdf#20@]
     }
@@ -30,6 +31,7 @@ over "AssetPathTest" (
 
     asset allchars = @ !"#$%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~@
     asset utf8 = @aɪ kæn iːt glɑːs ænd ɪt dɐz nɒt hɜːt miː Можам да јадам стакло, а не ме штета ನನಗೆ ಹಾನಿ ಆಗದೆ, ನಾನು ಗಜನ್ನು ತಿನಬಹುದು@
+    asset pathWithJapaneseCharacter = @path/to/響@
     asset looksLikeEscapes = @\x01\x03\x7f@
     asset[] array = [@@, @sdf/Model.sdf@, @//$STAGEDIR/sim/$MODELINSTANCE.sdf@, @//menv30/global/unit_defs.sdf#20@]
 }
@@ -53,6 +55,7 @@ over "AssetPathTest2" (
         asset escapeddelimiter = @@@foo.sdf\@@@testing\\@@@@@@
         asset beginandendwithextradelim = @@@@foo.sdf@@@@
         asset utf8 = @@@aɪ kæn iːt glɑːs ænd ɪt dɐz nɒt hɜːt miː Можам да јадам стакло, а не ме штета ನನಗೆ ಹಾನಿ ಆಗದೆ, ನಾನು ಗಜನ್ನು ತಿನಬಹುದು@@@
+        asset pathWithJapaneseCharacter = @path/to/響@
         asset looksLikeEscapes = @@@\x01\x03\x7f@@@
         asset[] array = [@@@@@@, @@@sdf/Model.sdf@@@, @@@//menv30/global/unit_defs.sdf@stable-prepro_0.42@@@, @@@//menv30/global/unit_defs.sdf@2012/06/20@@@]
     }
@@ -78,6 +81,7 @@ over "AssetPathTest2" (
     asset beginandendwithextradelim = @@@@foo.sdf@@@@
 
     asset utf8 = @@@aɪ kæn iːt glɑːs ænd ɪt dɐz nɒt hɜːt miː Можам да јадам стакло, а не ме штета ನನಗೆ ಹಾನಿ ಆಗದೆ, ನಾನು ಗಜನ್ನು ತಿನಬಹುದು@@@
+    asset pathWithJapaneseCharacter = @path/to/響@
     asset looksLikeEscapes = @@@\x01\x03\x7f@@@
     asset[] array = [@@@@@@, @@@sdf/Model.sdf@@@, @@@//menv30/global/unit_defs.sdf@stable-prepro_0.42@@@, @@@//menv30/global/unit_defs.sdf@2012/06/20@@@]
 }

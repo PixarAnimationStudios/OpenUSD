@@ -81,8 +81,6 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
     const typename PointType::ScalarType bottomRadius,
     const typename PointType::ScalarType topRadius,
     const typename PointType::ScalarType height,
-    const typename PointType::ScalarType bottomCapHeight,
-    const typename PointType::ScalarType topCapHeight,
     const typename PointType::ScalarType sweepDegrees,
     const _PointWriter<PointType>& ptWriter)
 {
@@ -110,19 +108,34 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
         ringXY[radIdx][1] = sin(longAngle);
     }
 
+    ScalarType latitudeRange = 0.0;
+    if (bottomRadius != topRadius)
+    {
+        // We're going to tesselate two spheres for the end caps. We need to
+        // calculate the latitude at which to clip the spheres, which we can
+        // derive from the line tangent to the two spheres.
+        // Consider the larger circle at (0,0) of radius r1 and the smaller
+        // at (0, height), of radius r2.
+        // Shrink both circles by r2 - i.e. one circle is reduced to a point.
+        const ScalarType rDiff = (bottomRadius - topRadius);
+
+        // Now, the latidude at which to clip the sphere is the angle of
+        // this point from the horizontal:
+        latitudeRange = acos(rDiff / height);
+    }
+
     // Bottom point:
-    ptWriter.Write(PointType(0.0, 0.0, -(bottomCapHeight + (0.5 * height))));
+    ptWriter.Write(PointType(0.0, 0.0, -(bottomRadius + (0.5 * height))));
 
     // Bottom hemisphere latitude rings:
     for (size_t axIdx = 1; axIdx < (numCapAxial + 1); ++axIdx) {
-        // Latitude range: (-0.5pi, 0]
-        const ScalarType latAngle =
-            ((ScalarType(axIdx) / ScalarType(numCapAxial)) - 1.0) *
-            (0.5 * M_PI);
+        // Latitude range: (-0.5pi, latitudeRange]
+        const ScalarType latAngle = GfLerp(double(axIdx) / double(numCapAxial),
+            ScalarType(-0.5 * M_PI), latitudeRange);
 
         const ScalarType radScale = cos(latAngle);
         const ScalarType latitude =
-            -(0.5 * height) + (bottomCapHeight * sin(latAngle));
+            -(0.5 * height) + (bottomRadius * sin(latAngle));
 
         for (size_t radIdx = 0; radIdx < numRadialPoints; ++radIdx) {
             ptWriter.Write(
@@ -134,13 +147,13 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
 
     // Top hemisphere latitude rings:
     for (size_t axIdx = 0; axIdx < numCapAxial; ++axIdx) {
-        // Latitude range: [0, 0.5pi)
-        const ScalarType latAngle =
-            (ScalarType(axIdx) / ScalarType(numCapAxial)) * (0.5 * M_PI);
+        // Latitude range: [latitudeRange, 0.5pi)
+        const ScalarType latAngle = GfLerp(double(axIdx) / double(numCapAxial),
+            latitudeRange, ScalarType(0.5 * M_PI));
 
         const ScalarType radScale = cos(latAngle);
         const ScalarType latitude =
-            (0.5 * height) + (topCapHeight * sin(latAngle));
+            (0.5 * height) + (topRadius * sin(latAngle));
 
         for (size_t radIdx = 0; radIdx < numRadialPoints; ++radIdx) {
             ptWriter.Write(PointType(radScale * topRadius * ringXY[radIdx][0],
@@ -150,21 +163,19 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
     }
 
     // Top point:
-    ptWriter.Write(PointType(0.0, 0.0, topCapHeight + (0.5 * height)));
+    ptWriter.Write(PointType(0.0, 0.0, topRadius + (0.5 * height)));
 }
 
 // Force-instantiate _GeneratePointsImpl for the supported point types.  Only
 // these instantiations will ever be needed due to the SFINAE machinery on the
 // calling method template (the public GeneratePoints, in the header).
 template GEOMUTIL_API void GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
-    const size_t, const size_t, const float, const float,
-    const float, const float, const float, const float,
-    const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3f>&);
+    const size_t, const size_t, const float, const float, const float,
+    const float, const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3f>&);
 
 template GEOMUTIL_API void GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
-    const size_t, const size_t, const double, const double,
-    const double, const double, const double, const double,
-    const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3d>&);
+    const size_t, const size_t, const double, const double, const double,
+    const double, const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3d>&);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

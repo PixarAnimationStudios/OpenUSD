@@ -24,7 +24,6 @@
 
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
 
-#include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/gf/matrix4d.h"

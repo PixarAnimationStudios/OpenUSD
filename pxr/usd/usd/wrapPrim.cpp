@@ -71,27 +71,53 @@ namespace {
 static SdfPathVector
 _FindAllAttributeConnectionPaths(
     UsdPrim const &self,
+    Usd_PrimFlagsPredicate const &traversal,
     boost::python::object pypred,
     bool recurseOnSources)
 {
     using Predicate = std::function<bool (UsdAttribute const &)>;
     Predicate pred;
-    if (!pypred.is_none())
+    if (!pypred.is_none()) {
         pred = boost::python::extract<Predicate>(pypred);
-    return self.FindAllAttributeConnectionPaths(pred, recurseOnSources);
+    }
+    return self.FindAllAttributeConnectionPaths(
+        traversal, pred, recurseOnSources);
+}
+
+static SdfPathVector
+_FindAllAttributeConnectionPathsDefault(
+    UsdPrim const &self,
+    boost::python::object pypred,
+    bool recurseOnSources)
+{
+    return _FindAllAttributeConnectionPaths(
+        self, UsdPrimDefaultPredicate, pypred, recurseOnSources);
 }
 
 static SdfPathVector
 _FindAllRelationshipTargetPaths(
     UsdPrim const &self,
+    Usd_PrimFlagsPredicate const &traversal,
     boost::python::object pypred,
     bool recurseOnTargets)
 {
     using Predicate = std::function<bool (UsdRelationship const &)>;
     Predicate pred;
-    if (!pypred.is_none())
+    if (!pypred.is_none()) {
         pred = boost::python::extract<Predicate>(pypred);
-    return self.FindAllRelationshipTargetPaths(pred, recurseOnTargets);
+    }
+    return self.FindAllRelationshipTargetPaths(
+        traversal, pred, recurseOnTargets);
+}
+
+static SdfPathVector
+_FindAllRelationshipTargetPathsDefault(
+    UsdPrim const &self,
+    boost::python::object pypred,
+    bool recurseOnTargets)
+{
+    return _FindAllRelationshipTargetPaths(self, UsdPrimDefaultPredicate,
+                                           pypred, recurseOnTargets);
 }
 
 static string
@@ -199,6 +225,13 @@ _WrapGetVersionIfHasAPIInFamily_2(
     return object();
 }
 
+static TfToken _GetKind(const UsdPrim &self)
+{
+    TfToken kind;
+    self.GetKind(&kind);
+    return kind;
+}
+
 
 } // anonymous namespace 
 
@@ -244,9 +277,14 @@ void wrapUsdPrim()
         .def("ClearActive", &UsdPrim::ClearActive)
         .def("HasAuthoredActive", &UsdPrim::HasAuthoredActive)
 
+        .def("GetKind", _GetKind)
+        .def("SetKind", &UsdPrim::SetKind, arg("value"))
+
         .def("IsLoaded", &UsdPrim::IsLoaded)
         .def("IsModel", &UsdPrim::IsModel)
         .def("IsGroup", &UsdPrim::IsGroup)
+        .def("IsComponent", &UsdPrim::IsComponent)
+        .def("IsSubComponent", &UsdPrim::IsSubComponent)
         .def("IsAbstract", &UsdPrim::IsAbstract)
         .def("IsDefined", &UsdPrim::IsDefined)
         .def("HasDefiningSpecifier", &UsdPrim::HasDefiningSpecifier)
@@ -572,9 +610,14 @@ void wrapUsdPrim()
         .def("HasAttribute", &UsdPrim::HasAttribute, arg("attrName"))
 
         .def("FindAllAttributeConnectionPaths",
-             &_FindAllAttributeConnectionPaths,
+             &_FindAllAttributeConnectionPathsDefault,
              (arg("predicate")=object(), arg("recurseOnSources")=false))
         
+        .def("FindAllAttributeConnectionPaths",
+             &_FindAllAttributeConnectionPaths,
+             (arg("traversalPredicate"),
+              arg("predicate")=object(), arg("recurseOnSources")=false))
+
         .def("CreateRelationship",
              (UsdRelationship (UsdPrim::*)(const TfToken &, bool) const)
              &UsdPrim::CreateRelationship, (arg("name"), arg("custom")=true))
@@ -592,8 +635,13 @@ void wrapUsdPrim()
         .def("HasRelationship", &UsdPrim::HasRelationship, arg("relName"))
 
         .def("FindAllRelationshipTargetPaths",
-             &_FindAllRelationshipTargetPaths,
+             &_FindAllRelationshipTargetPathsDefault,
              (arg("predicate")=object(), arg("recurseOnTargets")=false))
+
+        .def("FindAllRelationshipTargetPaths",
+             &_FindAllRelationshipTargetPaths,
+             (arg("traversalPredicate"),
+              arg("predicate")=object(), arg("recurseOnTargets")=false))
 
         .def("HasPayload", &UsdPrim::HasPayload)
         .def("SetPayload",

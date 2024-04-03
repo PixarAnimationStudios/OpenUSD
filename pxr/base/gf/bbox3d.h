@@ -95,15 +95,6 @@ class GfBBox3d {
         _hasZeroAreaPrimitives = false;
     }
 
-    /// Copy constructor
-    GfBBox3d(const GfBBox3d& rhs) :
-        _box(rhs._box) {
-        _matrix = rhs._matrix;
-        _inverse = rhs._inverse;
-        _isDegenerate = rhs._isDegenerate;
-        _hasZeroAreaPrimitives = rhs._hasZeroAreaPrimitives;
-    }
-
     /// This constructor takes a box and sets the matrix to identity.
     GfBBox3d(const GfRange3d &box) :
         _box(box) {
@@ -210,10 +201,10 @@ class GfBBox3d {
 
     /// Hash.
     friend inline size_t hash_value(const GfBBox3d &b) {
-        size_t h = 0;
-        boost::hash_combine(h, b._box);
-        boost::hash_combine(h, b._matrix);
-        return h;
+        return TfHash::Combine(
+            b._box,
+            b._matrix
+        );
     }
     
     /// Component-wise equality test. The axis-aligned boxes and

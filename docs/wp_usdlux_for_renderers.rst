@@ -83,7 +83,7 @@ The **limitation** of fully representing lights as Sdr-based shaders is that
 Sdr's dynamic and fluid nature cannot provide any mechanism for standardization
 of classes or types of shaders, and therefore it cannot help us define a
 standard for cross-renderer interchange - this analysis extends to the pattern
-(which has been suggested on the *usd-interest* forum) of binding lights to
+(which has been suggested on the OpenUSD forum) of binding lights to
 UsdShadeMaterials to achieve complete expressiveness of light-shader networks.
 Cross-renderer interchange of lights is the entire point of UsdLux, which, in
 addition to providing certain core encodings and behaviors such as light
@@ -428,7 +428,7 @@ these definitions should adhere to the following rules:
 
     * The *source type* each renderer queries is the same string it already uses
       as a "`material network selector
-      <https://github.com/PixarAnimationStudios/USD/blob/release/pxr/imaging/hd/renderDelegate.h>`_",
+      <https://github.com/PixarAnimationStudios/OpenUSD/blob/release/pxr/imaging/hd/renderDelegate.h>`_",
       for simplicity (for RenderMan and hdPrman, this is "ri")
 
     * The :usdcpp:`context <NdrNode::GetContext>` provided for each definition

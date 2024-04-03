@@ -239,9 +239,7 @@ HgiVulkanTextureShaderSection::HgiVulkanTextureShaderSection(
                         attributes,
                         _storageQualifier,
                         defaultValue,
-                        arraySize > 0 ? 
-                        "[" + std::to_string(arraySize) + "]" :
-                        "")
+                        arraySize > 0 ? std::to_string(arraySize) : "")
   , _dimensions(dimensions)
   , _format(format)
   , _textureType(textureType)
@@ -337,13 +335,11 @@ HgiVulkanTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
         "vec" + std::to_string(coordDim);
 
     if (_arraySize > 0) {
-        WriteType(ss);
-        ss << " HgiGetSampler_";
+        ss << "#define HgiGetSampler_";
         WriteIdentifier(ss);
-        ss << "(uint index) {\n";
-        ss << "    return ";
+        ss << "(index) ";
         WriteIdentifier(ss);
-        ss << "[index];\n}\n";
+        ss << "[index]\n";
     } else {
         ss << "#define HgiGetSampler_";
         WriteIdentifier(ss);

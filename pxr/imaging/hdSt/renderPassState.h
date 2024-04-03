@@ -105,9 +105,9 @@ public:
     /// multi-sampled aovs, the aovs will be resolved at the end of the render
     /// pass. If false or the aov is not multi-sampled or the render pass is not
     /// rendering into the multi-sampled aov, no resolution takes place.
-    HD_API
+    HDST_API
     void SetResolveAovMultiSample(bool state);
-    HD_API
+    HDST_API
     bool GetResolveAovMultiSample() const;
 
     /// Set lighting shader
@@ -179,7 +179,7 @@ public:
     /// This is either using the modern camera framing, which is always y-down,
     /// or the legacy viewport.
     HDST_API
-    GfVec4i ComputeViewport(const HgiGraphicsCmdsDesc &desc) const;
+    GfVec4i ComputeViewport() const;
 
     // Helper to get graphics cmds descriptor describing textures
     // we render into and the blend state, constructed from
@@ -194,25 +194,50 @@ public:
     HDST_API
     void InitGraphicsPipelineDesc(
                 HgiGraphicsPipelineDesc * pipeDesc,
-                HdSt_GeometricShaderSharedPtr const & geometricShader) const;
+                HdSt_GeometricShaderSharedPtr const & geometricShader,
+                bool firstDrawBatch) const;
 
     /// Generates the hash for the settings used to init the graphics pipeline.
     HDST_API
-    uint64_t GetGraphicsPipelineHash() const;
+    uint64_t GetGraphicsPipelineHash(
+        HdSt_GeometricShaderSharedPtr const & geometricShader,
+        bool firstDrawBatch) const;
+
+    // A 4d-vector v encodes a 2d-transform as follows:
+    // (x, y) |-> (v[0] * x + v[2], v[1] * y + v[3]).
+    using AxisAlignedAffineTransform = GfVec4f;
+
+    // Computes the transform from pixel coordinates to the horizontally
+    // normalized filmback space which has the following properties:
+    // 1. x = -1 and +1 corresponds to the left and right edge of the filmback,
+    //    respectively.
+    // 2. (0, 0) corresponds to the center of the filmback.
+    // 3. Moving a unit in either the x- or y-direction moves by the same
+    //    distance on the filmback. In other words, y = -1/a and +1/a
+    //    corresponds to the bottom and top edge of the filmback, respectively,
+    //    where a is the camera's aspect ratio.
+    HDST_API
+    AxisAlignedAffineTransform
+    ComputeImageToHorizontallyNormalizedFilmback() const;
 
 private:
     bool _UseAlphaMask() const;
+    unsigned int _GetFramebufferHeight() const;
+    GfRange2f _ComputeFlippedFilmbackWindow() const;
 
     // Helper to set up the aov attachment desc so that it matches the blend
     // setting of the render pipeline state.
     // If an aovIndex is specified then the color mask will be correlated.
     void _InitAttachmentDesc(HgiAttachmentDesc &attachmentDesc,
-                             int aovIndex = -1) const;
+                             HdRenderPassAovBinding const & binding,
+                             HdRenderBuffer const * renderBuffer,
+                             int aovIndex) const;
 
     void _InitPrimitiveState(
                 HgiGraphicsPipelineDesc * pipeDesc,
                 HdSt_GeometricShaderSharedPtr const & geometricShader) const;
-    void _InitAttachmentState(HgiGraphicsPipelineDesc * pipeDesc) const;
+    void _InitAttachmentState(HgiGraphicsPipelineDesc * pipeDesc,
+                              bool firstDrawBatch) const;
     void _InitDepthStencilState(HgiDepthStencilState * depthState) const;
     void _InitMultiSampleState(HgiMultiSampleState * multisampleState) const;
     void _InitRasterizationState(

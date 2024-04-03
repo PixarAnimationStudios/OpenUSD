@@ -14,6 +14,7 @@ pxr_library(hd
         cameraUtil
         hf
         pxOsd
+        sdr
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
@@ -25,12 +26,9 @@ pxr_library(hd
         basisCurvesSchema
         basisCurvesTopology
         basisCurvesTopologySchema
-        binding
         bprim
         bufferArray
         bufferArrayRange
-        bufferArrayRegistry
-        bufferResource
         bufferSource
         bufferSpec
         camera
@@ -39,15 +37,16 @@ pxr_library(hd
         categoriesSchema
         changeTracker
         command
-        compExtCompInputSource
-        computation
         coneSchema
         containerDataSourceEditor
+        containerSchema
         coordSys
+        coordSysSchema
         coordSysBindingSchema
         cubeSchema
         cylinderSchema
         dataSource
+        dataSourceHash
         dataSourceLegacyPrim
         dataSourceLocator
         dataSourceMaterialNetworkInterface
@@ -62,9 +61,6 @@ pxr_library(hd
         drawItem
         engine
         enums
-        extCompCpuComputation
-        extCompInputSource
-        extCompPrimvarBufferSource
         extComputation
         extComputationContext
         extComputationContextInternal
@@ -77,30 +73,45 @@ pxr_library(hd
         extentSchema
         field
         filteringSceneIndex
+        flattenedDataSourceProvider
+        flattenedDataSourceProviders
+        flattenedOverlayDataSourceProvider
+        flattenedPrimvarsDataSourceProvider
+        flattenedPurposeDataSourceProvider
+        flattenedVisibilityDataSourceProvider
+        flattenedXformDataSourceProvider
         flatteningSceneIndex
         flatNormals
         geomSubset
         geomSubsetSchema
         geomSubsetsSchema
+        imageShader
+        imageShaderSchema
         instanceCategoriesSchema
         instancedBySchema
+        instanceIndicesSchema
         instancer
         instanceRegistry
         instancerTopologySchema
         instanceSchema
+        integratorSchema
         lazyContainerDataSource
         legacyDisplayStyleSchema
         legacyPrimSceneIndex
+        lensDistortionSchema
         light
         lightSchema
         mapContainerDataSource
         material
         materialBindingSchema
+        materialBindingsSchema
         materialConnectionSchema
         materialFilteringSceneIndexBase
+        materialInterfaceMappingSchema
         materialNetworkSchema
         materialNetwork2Interface
         materialNodeSchema
+        materialNodeParameterSchema
         materialSchema
         mergingSceneIndex
         mesh
@@ -109,6 +120,9 @@ pxr_library(hd
         meshTopologySchema
         meshUtil
         noticeBatchingSceneIndex
+        nurbsCurvesSchema
+        nurbsPatchSchema
+        nurbsPatchTrimCurveSchema
         overlayContainerDataSource
         perfLog
         pluginRenderDelegateUniqueHandle
@@ -123,6 +137,7 @@ pxr_library(hd
         purposeSchema
         renderBuffer
         renderBufferSchema
+        renderCapabilitiesSchema
         renderDelegate
         rendererPlugin
         rendererPluginHandle
@@ -130,11 +145,12 @@ pxr_library(hd
         renderIndex
         renderPass
         renderPassState
+        renderProductSchema
         renderSettings
         renderSettingsSchema
+        renderVarSchema
         renderThread
         repr
-        resource
         resourceRegistry
         retainedDataSource
         retainedSceneIndex
@@ -143,12 +159,13 @@ pxr_library(hd
         rprimSharedData
         sampleFilterSchema
         sceneDelegate
-        sceneExtCompInputSource
+        sceneGlobalsSchema
         sceneIndex
         sceneIndexAdapterSceneDelegate
         sceneIndexObserver
         sceneIndexPlugin
         sceneIndexPluginRegistry
+        sceneIndexPrimView
         schema
         selection
         selectionSchema
@@ -156,9 +173,10 @@ pxr_library(hd
         smoothNormals
         sortedIds
         sphereSchema
+        splitDiopterSchema
         sprim
-        strategyBase
         subdivisionTagsSchema
+        systemMessages
         systemSchema
         task
         timeSampleArray
@@ -169,6 +187,7 @@ pxr_library(hd
         unitTestHelper
         unitTestNullRenderDelegate
         unitTestNullRenderPass
+        utils
         vectorSchema
         vertexAdjacency
         visibilitySchema
@@ -182,7 +201,10 @@ pxr_library(hd
         api.h
         dataSourceTypeDefs.h
         driver.h
+        invalidatableContainerDataSource.h
         materialNetworkInterface.h
+        schemaTypeDefs.h
+        vectorSchemaTypeDefs.h
         version.h
 
     PRIVATE_CLASSES
@@ -342,6 +364,13 @@ pxr_build_test(testHdTypes
        testenv/testHdTypes.cpp
 )
 
+pxr_build_test(testHdInstancerDeprecatedPrimvars
+    LIBRARIES
+        hd
+        
+    CPPFILES
+        testenv/testHdInstancerDeprecatedPrimvars.cpp
+)
 
 pxr_install_test_dir(
     SRC testenv/testHdSortedIds
@@ -404,7 +433,7 @@ pxr_register_test(testHdSceneIndex
 pxr_register_test(testHdSortedIds
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdSortedIds"
     # XXX Disabling compare for now. testHdSortedId_removeTest.txt differs on Mac and Windows.
-    # DIFF_COMPARE testHdSortedId_populateTest.txt testHdSortedId_singleInsertTest.txt testHdSortedId_multiInsertTest.txt testHdSortedId_removeTest.txt testHdSortedId_removeOnlyElementTest.txt testHdSortedId_removeRangeTest.txt testHdSortedId_removeBatchTest.txt testHdSortedId_removeSortedTest.txt testHdSortedId_removeUnsortedTest.txt testHdSortedId_removeAfterInsertNoSyncTest.txt
+    # DIFF_COMPARE testHdSortedId_populateTest.txt testHdSortedId_singleInsertTest.txt testHdSortedId_multiInsertTest.txt testHdSortedId_removeOnlyElementTest.txt testHdSortedId_removeRangeTest.txt testHdSortedId_removeBatchTest.txt testHdSortedId_removeSortedTest.txt testHdSortedId_removeUnsortedTest.txt testHdSortedId_removeAfterInsertNoSyncTest.txt
 )
 
 pxr_register_test(testHdTimeSampleArray
@@ -413,4 +442,10 @@ pxr_register_test(testHdTimeSampleArray
 
 pxr_register_test(testHdTypes
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTypes"
+)
+
+pxr_register_test(testHdInstancerDeprecatedPrimvars
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdInstancerDeprecatedPrimvars"
+    ENV
+        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
 )

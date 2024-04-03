@@ -29,8 +29,8 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/functional/hash.hpp>
 #include <ostream>
+#include <tuple>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -42,11 +42,13 @@ PcpLayerStackIdentifier::PcpLayerStackIdentifier() : _hash(0)
 PcpLayerStackIdentifier::PcpLayerStackIdentifier(
     const SdfLayerHandle& rootLayer_,
     const SdfLayerHandle& sessionLayer_,
-    const ArResolverContext& pathResolverContext_) :
-    rootLayer(rootLayer_),
-    sessionLayer(sessionLayer_),
-    pathResolverContext(pathResolverContext_),
-    _hash(rootLayer ? _ComputeHash() : 0)
+    const ArResolverContext& pathResolverContext_,
+    const PcpExpressionVariablesSource& expressionVariablesOverrideSource_)
+    : rootLayer(rootLayer_)
+    , sessionLayer(sessionLayer_)
+    , pathResolverContext(pathResolverContext_)
+    , expressionVariablesOverrideSource(expressionVariablesOverrideSource_)
+    , _hash(rootLayer ? _ComputeHash() : 0)
 {
     // Do nothing
 }
@@ -57,110 +59,50 @@ PcpLayerStackIdentifier::operator=(const PcpLayerStackIdentifier& rhs)
     if (this != &rhs) {
         const_cast<SdfLayerHandle&>(rootLayer)    = rhs.rootLayer;
         const_cast<SdfLayerHandle&>(sessionLayer) = rhs.sessionLayer;
-        const_cast<ArResolverContext&>
-                           (pathResolverContext) = rhs.pathResolverContext;
-        const_cast<size_t&>(_hash)               = rhs._hash;
+        const_cast<ArResolverContext&>(pathResolverContext) = 
+            rhs.pathResolverContext;
+        const_cast<PcpExpressionVariablesSource&>(expressionVariablesOverrideSource) =
+            rhs.expressionVariablesOverrideSource;
+        const_cast<size_t&>(_hash) = rhs._hash;
     }
     return *this;
 }
 
-PcpLayerStackIdentifier::operator UnspecifiedBoolType() const
+PcpLayerStackIdentifier::operator bool() const
 {
-    return rootLayer ? &This::_hash : NULL;
+    return static_cast<bool>(rootLayer);
 }
 
 bool
 PcpLayerStackIdentifier::operator==(const This &rhs) const
 {
-    return _hash           == rhs._hash         &&
-           rootLayer       == rhs.rootLayer     &&
-           sessionLayer    == rhs.sessionLayer  &&
-           pathResolverContext == rhs.pathResolverContext;
+    return 
+        std::tie(
+            _hash, rootLayer, sessionLayer,
+            pathResolverContext, expressionVariablesOverrideSource) ==
+        std::tie(
+            rhs._hash, rhs.rootLayer, rhs.sessionLayer, 
+            rhs.pathResolverContext, rhs.expressionVariablesOverrideSource);
 }
 
 bool
 PcpLayerStackIdentifier::operator<(const This &rhs) const
 {
-    if (sessionLayer < rhs.sessionLayer)
-        return true;
-    if (rhs.sessionLayer < sessionLayer)
-        return false;
-    if (rootLayer < rhs.rootLayer)
-        return true;
-    if (rhs.rootLayer < rootLayer)
-        return false;
-    return pathResolverContext < rhs.pathResolverContext;
+    return
+        std::tie(
+            sessionLayer, rootLayer, pathResolverContext,
+            expressionVariablesOverrideSource) <
+        std::tie(
+            rhs.sessionLayer, rhs.rootLayer, rhs.pathResolverContext,
+            rhs.expressionVariablesOverrideSource);
 }
 
 size_t
 PcpLayerStackIdentifier::_ComputeHash() const
 {
-    size_t hash = 0;
-    boost::hash_combine(hash, TfHash()(rootLayer));
-    boost::hash_combine(hash, TfHash()(sessionLayer));
-    boost::hash_combine(hash, pathResolverContext);
-    return hash;
-}
-
-PcpLayerStackIdentifierStr::PcpLayerStackIdentifierStr(
-        std::string const &rootLayerId,
-        std::string const &sessionLayerId,
-        ArResolverContext const &resolverContext)
-    : rootLayerId(rootLayerId)
-    , sessionLayerId(sessionLayerId)
-    , pathResolverContext(resolverContext)
-    , _hash(!rootLayerId.empty() ? _ComputeHash() : 0)
-{
-    // Do nothing
-}
-
-PcpLayerStackIdentifierStr::PcpLayerStackIdentifierStr(
-    PcpLayerStackIdentifier const &id)
-    : rootLayerId(id.rootLayer ? id.rootLayer->GetIdentifier() : std::string())
-    , sessionLayerId(id.sessionLayer ?
-                     id.sessionLayer->GetIdentifier() : std::string())
-    , pathResolverContext(id.pathResolverContext)
-    , _hash(!rootLayerId.empty() ? _ComputeHash() : 0)
-{
-    // Do nothing
-}
-
-PcpLayerStackIdentifierStr::operator UnspecifiedBoolType() const
-{
-    return rootLayerId.empty() ? &This::_hash : nullptr;
-}
-
-bool
-PcpLayerStackIdentifierStr::operator==(const This &rhs) const
-{
-    return _hash == rhs._hash &&
-           rootLayerId == rhs.rootLayerId &&
-           sessionLayerId == rhs.sessionLayerId &&
-           pathResolverContext == rhs.pathResolverContext;
-}
-
-bool
-PcpLayerStackIdentifierStr::operator<(const This &rhs) const
-{
-    if (sessionLayerId < rhs.sessionLayerId)
-        return true;
-    if (rhs.sessionLayerId < sessionLayerId)
-        return false;
-    if (rootLayerId < rhs.rootLayerId)
-        return true;
-    if (rhs.rootLayerId < rootLayerId)
-        return false;
-    return pathResolverContext < rhs.pathResolverContext;
-}
-
-size_t
-PcpLayerStackIdentifierStr::_ComputeHash() const
-{
-    size_t hash = 0;
-    boost::hash_combine(hash, TfHash()(rootLayerId));
-    boost::hash_combine(hash, TfHash()(sessionLayerId));
-    boost::hash_combine(hash, pathResolverContext);
-    return hash;
+    return TfHash::Combine(
+        rootLayer, sessionLayer, pathResolverContext,
+        expressionVariablesOverrideSource);
 }
 
 enum Pcp_IdentifierFormat {
@@ -196,24 +138,6 @@ Pcp_FormatIdentifier(std::ostream& os, const SdfLayerHandle& layer)
     }
 }
 
-static std::string
-Pcp_FormatIdentifier(std::ostream& os, std::string const& layerId)
-{
-    if (layerId.empty()) {
-        return std::string("<empty>");
-    }
-
-    switch (os.iword(Pcp_IdentifierFormatIndex())) {
-    default:
-    case Pcp_IdentifierFormatIdentifier:
-    case Pcp_IdentifierFormatRealPath:
-        return layerId;
-
-    case Pcp_IdentifierFormatBaseName:
-        return TfGetBaseName(layerId);
-    }
-}
-
 std::ostream& PcpIdentifierFormatBaseName(std::ostream& os)
 {
     os.iword(Pcp_IdentifierFormatIndex()) = Pcp_IdentifierFormatBaseName;
@@ -232,34 +156,26 @@ std::ostream& PcpIdentifierFormatIdentifier(std::ostream& os)
     return os;
 }
 
-std::ostream&
-operator<<(std::ostream& s, const PcpLayerStackIdentifier& x)
+static void
+_PrintIdentifier(std::ostream& s, const PcpLayerStackIdentifier& x)
 {
     // XXX: Should probably write the resolver context, too.
+    s << "@" << Pcp_FormatIdentifier(s, x.rootLayer) << "@";
     if (x.sessionLayer) {
-        return s << "@" << Pcp_FormatIdentifier(s, x.rootLayer) << "@,"
-                 << "@" << Pcp_FormatIdentifier(s, x.sessionLayer) << "@"
-                 << PcpIdentifierFormatIdentifier;
+        s << ",@" << Pcp_FormatIdentifier(s, x.sessionLayer) << "@";
     }
-    else {
-        return s << "@" << Pcp_FormatIdentifier(s, x.rootLayer) << "@"
-                 << PcpIdentifierFormatIdentifier;
+    if (const PcpLayerStackIdentifier* exprOverrideSource =
+        x.expressionVariablesOverrideSource.GetLayerStackIdentifier()) {
+        s << ",exprVarOverrideSource=";
+        _PrintIdentifier(s, *exprOverrideSource);
     }
 }
 
 std::ostream&
-operator<<(std::ostream& s, const PcpLayerStackIdentifierStr& x)
+operator<<(std::ostream& s, const PcpLayerStackIdentifier& x)
 {
-    // XXX: Should probably write the resolver context, too.
-    if (!x.sessionLayerId.empty()) {
-        return s << "@" << Pcp_FormatIdentifier(s, x.rootLayerId) << "@,"
-                 << "@" << Pcp_FormatIdentifier(s, x.sessionLayerId) << "@"
-                 << PcpIdentifierFormatIdentifier;
-    }
-    else {
-        return s << "@" << Pcp_FormatIdentifier(s, x.rootLayerId) << "@"
-                 << PcpIdentifierFormatIdentifier;
-    }
+    _PrintIdentifier(s, x);
+    return s << PcpIdentifierFormatIdentifier;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

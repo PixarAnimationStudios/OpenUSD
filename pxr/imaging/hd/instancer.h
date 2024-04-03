@@ -48,7 +48,7 @@ class HdRenderParam;
 /// binding.
 ///
 ///     "/InstancerA": prototypes = ["/sphere", "/cube", "/sphere"]; 
-///                    translate  = [  <0,0,0>, <1,0,0>,   <0,1,0>]
+///                    hydra:instanceTranslations  = [<0,0,0>, <1,0,0>, <0,1,0>]
 ///
 /// Hydra stores this in reverse: Rprims store which instancer is drawing them,
 /// and the instancer stores which indices in that array of N objects are the
@@ -58,7 +58,7 @@ class HdRenderParam;
 ///     "/cube": instancerId = "/InstancerA"
 ///     Instancer A: indices("/sphere") = [0, 2]
 ///                  indices("/cube") = [1]
-///                  translate = [<0,0,0>, <1,0,0>, <0,1,0>]
+///                  hydra:instanceTranslations = [<0,0,0>, <1,0,0>, <0,1,0>]
 ///
 /// Instancing is implemented by the prototype drawing itself multiple times,
 /// and looking up per-instance data each time based on "indices": so
@@ -70,26 +70,27 @@ class HdRenderParam;
 ///     "/cube": instancerId = "/InstancerA"
 ///     "/InstancerA": instancerId = "/InstancerB"
 ///                    indices("/cube") = [0, 1]
-///                    translate = [<0,0,0>, <1,0,0>]
+///                    hydra:instanceTranslations = [<0,0,0>, <1,0,0>]
 ///     "/InstancerB": indices("/InstancerA") = [0, 1]
-///                    translate = [<0,0,0>, <0,1,0>]
+///                    hydra:instanceTranslations = [<0,0,0>, <0,1,0>]
 ///
 /// In this case, "/cube" draws itself four times, for each of the
 /// index tuples <0,0>, <0,1>, <1,0>, <1,1> where the first index is
 /// the index in instancerA, and the second index is in instancerB.
 ///
-/// If the same primvar (e.g. "translate") shows up at multiple levels of
-/// nesting, it's resolved as follows:
+/// If the same primvar (e.g. "hydra:instanceTranslations") shows up at multiple
+/// levels of nesting, it's resolved as follows:
 ///
 /// Transforms
 /// ----------
 ///
-/// Instance primvars "translate", "rotate", "scale", and "instanceTransform"
-/// are used to compute the final transform of an instance. "translate"
-/// and "scale" are interpreted as vec3: position, and axis-aligned scale
-/// respectively. "rotate" is interpreted as a vec4 quaternion, and
-/// "instanceTransform" is a 4x4 matrix.  In the transform computation,
-/// everything is converted to a 4x4 matrix.
+/// Instance primvars "hydra:instanceTranslations", "hydra:instanceRotations",
+/// "hydra:instanceScales", and "hydra:instanceTransforms" are used to compute
+/// the final transform of an instance. "hydra:instanceTranslations" and
+/// "hydra:instanceScales" are interpreted as vec3: position, and axis-aligned
+/// scale respectively. "hydra:instanceRotations" is interpreted as a vec4
+/// quaternion (<real, i, j k>), and "hydra:instanceTransforms" is a 4x4 matrix.
+/// In the transform computation, everything is converted to a 4x4 matrix.
 ///
 /// There are additional transforms: "instancerTransform" comes from
 /// HdSceneDelegate::GetInstancerTransform(instancer, proto), and represents
@@ -101,10 +102,10 @@ class HdRenderParam;
 /// The final instance transform for instance "index" is computed as:
 ///
 ///     nested_transform(level) = instancerTransform(level) *
-///                               translate(level, index) *
-///                               rotate(level, index) *
-///                               scale(level, index) *
-///                               instanceTransform(level, index);
+///                               hydra:instanceTranslations(level, index) *
+///                               hydra:instanceRotations(level, index) *
+///                               hydra:instanceScales(level, index) *
+///                               hydra:instanceTransforms(level, index);
 ///     output_transform = product(i : nested-levels - 1 -> 0) {
 ///                           nested_transform(i)
 ///                        } * transform;

@@ -36,6 +36,17 @@ HdLegacyPrimSceneIndex::AddLegacyPrim(SdfPath const &id, TfToken const &type,
 }
 
 void
+HdLegacyPrimSceneIndex::RemovePrim(SdfPath const &id)
+{
+    if (!GetChildPrimPaths(id).empty()) {
+        AddPrims({{id, TfToken(), nullptr}});
+    }
+    else {
+        RemovePrims({id});
+    }
+}
+
+void
 HdLegacyPrimSceneIndex::DirtyPrims(
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {

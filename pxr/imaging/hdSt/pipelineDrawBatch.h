@@ -34,9 +34,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HgiCapabilities;
+class Hgi;
 struct HgiIndirectCommands;
-using HdBindingRequestVector = std::vector<HdBindingRequest>;
+using HdStBindingRequestVector = std::vector<class HdStBindingRequest>;
 
 /// \class HdSt_PipelineDrawBatch
 ///
@@ -72,14 +72,16 @@ public:
     HDST_API
     void EncodeDraw(
         HdStRenderPassStateSharedPtr const & renderPassState,
-        HdStResourceRegistrySharedPtr const & resourceRegistry) override;
+        HdStResourceRegistrySharedPtr const & resourceRegistry,
+        bool firstDrawBatch) override;
 
     /// Executes the drawing commands for this batch.
     HDST_API
     void ExecuteDraw(
         HgiGraphicsCmds *gfxCmds,
         HdStRenderPassStateSharedPtr const & renderPassState,
-        HdStResourceRegistrySharedPtr const & resourceRegistry) override;
+        HdStResourceRegistrySharedPtr const & resourceRegistry,
+        bool firstDrawBatch) override;
 
     HDST_API
     void DrawItemInstanceChanged(
@@ -90,7 +92,7 @@ public:
 
     /// Returns whether pipeline draw batching is enabled.
     HDST_API
-    static bool IsEnabled(HgiCapabilities const *hgiCapabilities);
+    static bool IsEnabled(Hgi const *hgi);
 
     /// Returns whether to do frustum culling on the GPU
     HDST_API
@@ -124,7 +126,7 @@ private:
     protected:
         // _DrawingProgram overrides
         void _GetCustomBindings(
-            HdBindingRequestVector * customBindings,
+            HdStBindingRequestVector * customBindings,
             bool * enableInstanceDraw) const override;
     private:
         bool _useDrawIndexed;
@@ -139,7 +141,8 @@ private:
     
     void _PrepareIndirectCommandBuffer(
         HdStRenderPassStateSharedPtr const & renderPassState,
-        HdStResourceRegistrySharedPtr const & resourceRegistry);
+        HdStResourceRegistrySharedPtr const & resourceRegistry,
+        bool firstDrawBatch);
 
     bool _HasNothingToDraw() const;
 
@@ -156,6 +159,12 @@ private:
                 HdStRenderPassStateSharedPtr const & renderPassState,
                 HdStResourceRegistrySharedPtr const & resourceRegistry);
 
+    void _ExecutePTCS(
+            HgiGraphicsCmds *ptcsGfxCmds,
+            HdStRenderPassStateSharedPtr const & renderPassState,
+            HdStResourceRegistrySharedPtr const & resourceRegistry,
+            bool firstDrawBatch);
+
     void _BeginGPUCountVisibleInstances(
         HdStResourceRegistrySharedPtr const & resourceRegistry);
 
@@ -165,6 +174,8 @@ private:
 
     HdStDispatchBufferSharedPtr _dispatchBuffer;
     HdStDispatchBufferSharedPtr _dispatchBufferCullInput;
+
+    HdStBufferResourceSharedPtr _tessFactorsBuffer;
 
     std::vector<uint32_t> _drawCommandBuffer;
     bool _drawCommandBufferDirty;

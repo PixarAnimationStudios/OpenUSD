@@ -1,0 +1,19 @@
+{
+    "Plugins": [
+        {
+            "Type": "library",
+            "Name": "rmanArgsParser",
+            "Root": "@PLUG_INFO_ROOT@",
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Info": {
+                "Types": {
+                    "RmanArgsParserPlugin" : {
+                        "bases": ["NdrParserPlugin"],
+                        "displayName": "RenderMan .args Node Parser"
+                    }
+                }
+            }
+        }
+    ]
+}

@@ -28,18 +28,19 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/bprim.h"
 
+#include "pxr/base/vt/array.h"
+#include "pxr/base/vt/dictionary.h"
+#include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec2d.h"
+#include "pxr/base/gf/range2f.h"
+
+#include <vector>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 ///
-/// XXX Empty for now, but will be filled up in a follow-up change to mirror
-///     UsdRenderSpec.
-///
-struct HdRenderSettingsParams
-{
-};
-
-///
-/// Abstract hydra prim backing render settings scene description.
+/// Hydra prim backing render settings scene description.
 /// While it is a state prim (Sprim) in spirit, it is made to be a Bprim to
 /// ensure that it is sync'd prior to Sprims and Rprims to allow render setting 
 /// opinions to be discovered and inform the sync process of those prims.
@@ -54,7 +55,7 @@ struct HdRenderSettingsParams
 ///   use, the AOV outputs, etc.
 ///
 /// We aim to transition away from the API and task based render settings
-/// opinions (above 2) to using render settings scene description to drive
+/// opinions above to using render settings scene description to drive
 /// rendering in Hydra.
 ///
 /// \sa HdRenderSettingsPrimTokens (defined in hd/tokens.h) for tokens
@@ -68,11 +69,76 @@ class HdRenderSettings : public HdBprim
 public:
     // Change tracking for HdRenderSettings.
     enum DirtyBits : HdDirtyBits {
-        Clean                 = 0,
-        DirtyActive           = 1 << 1,
-        DirtyParams           = 1 << 2,
-        AllDirty              = (DirtyActive | DirtyParams)
+        Clean                        = 0,
+        DirtyActive                  = 1 << 1,
+        DirtyNamespacedSettings      = 1 << 2,
+        DirtyRenderProducts          = 1 << 3,
+        DirtyIncludedPurposes        = 1 << 4,
+        DirtyMaterialBindingPurposes = 1 << 5,
+        DirtyRenderingColorSpace     = 1 << 6,
+        DirtyShutterInterval         = 1 << 7,
+        AllDirty                     =    DirtyActive
+                                        | DirtyNamespacedSettings
+                                        | DirtyRenderProducts
+                                        | DirtyIncludedPurposes
+                                        | DirtyMaterialBindingPurposes
+                                        | DirtyRenderingColorSpace
+                                        | DirtyShutterInterval
     };
+
+    // Parameters that may be queried and invalidated.
+    //
+    // \note This mirrors UsdRender except that the render products and vars
+    //       are "flattened out" similar to UsdRenderSpec.
+    struct RenderProduct {
+        struct RenderVar {
+            SdfPath varPath;
+            TfToken dataType;
+            std::string sourceName;
+            TfToken sourceType;
+            VtDictionary namespacedSettings;
+        };
+
+        /// Identification & output information
+        //
+        // Path to product prim in scene description.
+        SdfPath productPath;
+        // The type of product, ex: "raster".
+        TfToken type;
+        // The name of the product, which uniquely identifies it.
+        TfToken name;
+        // The pixel resolution of the product.
+        GfVec2i resolution;
+        // The render vars that the product is comprised of.
+        std::vector<RenderVar> renderVars;
+
+        /// Camera and framing
+        //
+        // Path to the camera to use for this product.
+        SdfPath cameraPath;
+        // The pixel aspect ratio as adjusted by aspectRatioConformPolicy.
+        float pixelAspectRatio;
+        // The policy that was applied to conform aspect ratio
+        // mismatches between the aperture and image.
+        TfToken aspectRatioConformPolicy;
+        // The camera aperture size as adjusted by aspectRatioConformPolicy.
+        GfVec2f apertureSize;
+        // The data window, in NDC terms relative to the aperture.
+        // (0,0) corresponds to bottom-left and (1,1) corresponds to
+        // top-right.  Note that the data window can partially cover
+        // or extend beyond the unit range, for representing overscan
+        // or cropped renders.
+        GfRange2f dataWindowNDC;
+
+        /// Settings overrides
+        //
+        bool disableMotionBlur;
+        bool disableDepthOfField;
+        VtDictionary namespacedSettings;
+    };
+
+    using RenderProducts = std::vector<RenderProduct>;
+    using NamespacedSettings = VtDictionary;
 
     HD_API
     ~HdRenderSettings() override;
@@ -84,7 +150,26 @@ public:
     bool IsActive() const;
 
     HD_API
-    const HdRenderSettingsParams& GetParams() const;
+    bool IsValid() const;
+
+    HD_API
+    const NamespacedSettings& GetNamespacedSettings() const;
+
+    HD_API
+    const RenderProducts& GetRenderProducts() const;
+
+    HD_API
+    const VtArray<TfToken>& GetIncludedPurposes() const;
+
+    HD_API
+    const VtArray<TfToken>& GetMaterialBindingPurposes() const;
+
+    HD_API
+    const TfToken& GetRenderingColorSpace() const;
+
+    // XXX Using VtValue in a std::optional (C++17) sense.
+    HD_API
+    const VtValue& GetShutterInterval() const;
 
     // ------------------------------------------------------------------------
     // Satisfying HdBprim
@@ -121,8 +206,38 @@ private:
     HdRenderSettings &operator =(const HdRenderSettings &) = delete;
 
     bool _active;
-    HdRenderSettingsParams _params;
+    NamespacedSettings _namespacedSettings;
+    RenderProducts _products;
+    VtArray<TfToken> _includedPurposes;
+    VtArray<TfToken> _materialBindingPurposes;
+    TfToken _renderingColorSpace;
+    VtValue _vShutterInterval;
 };
+
+// VtValue requirements
+HD_API
+size_t hash_value(HdRenderSettings::RenderProduct const &rp);
+
+HD_API
+std::ostream& operator<<(
+    std::ostream& out, const HdRenderSettings::RenderProduct&);
+
+HD_API
+bool operator==(const HdRenderSettings::RenderProduct& lhs, 
+                const HdRenderSettings::RenderProduct& rhs);
+HD_API
+bool operator!=(const HdRenderSettings::RenderProduct& lhs, 
+                const HdRenderSettings::RenderProduct& rhs);
+HD_API
+std::ostream& operator<<(
+    std::ostream& out, const HdRenderSettings::RenderProduct::RenderVar&);
+
+HD_API
+bool operator==(const HdRenderSettings::RenderProduct::RenderVar& lhs, 
+                const HdRenderSettings::RenderProduct::RenderVar& rhs);
+HD_API
+bool operator!=(const HdRenderSettings::RenderProduct::RenderVar& lhs, 
+                const HdRenderSettings::RenderProduct::RenderVar& rhs);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

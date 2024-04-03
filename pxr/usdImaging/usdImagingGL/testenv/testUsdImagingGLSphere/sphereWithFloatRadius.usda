@@ -1,0 +1,20 @@
+#usda 1.0
+(
+    startTimeCode = 1 
+    endTimeCode = 10 
+)
+
+def Sphere "SphereWithFloatRadius"
+{
+    float radius = 10
+    float radius.timeSamples = {
+         1: 0.5,
+        11: 1.5
+    }
+}
+
+def Camera "main_cam"
+{
+    custom double3 xformOp:translate = (0, 0, 10)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}

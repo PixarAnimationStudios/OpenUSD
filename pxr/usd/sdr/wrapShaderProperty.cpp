@@ -34,13 +34,7 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-struct TfTokenPairToPythonConverter
-{
-    static PyObject* convert(const std::pair<TfToken, TfToken>& pair)
-    {
-        return incref(make_tuple(pair.first, pair.second).ptr());
-    }
-};
+namespace {
 
 // Boost treats a const ptr differently than a non-const ptr, so a custom
 // converter is needed to deal with the const-ness
@@ -52,6 +46,8 @@ struct SdrShaderPropertyConstPtrToPythonConverter
         return incref(shaderPropertyObject.ptr());
     }
 };
+
+} // anonymous namespace
 
 void wrapShaderProperty()
 {
@@ -72,7 +68,6 @@ void wrapShaderProperty()
         SDR_PROPERTY_ROLE_TOKENS
     );
 
-    to_python_converter<NdrOption, TfTokenPairToPythonConverter>();
     return_value_policy<copy_const_reference> copyRefPolicy;
 
     to_python_converter<SdrShaderPropertyConstPtr,

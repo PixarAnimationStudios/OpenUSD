@@ -23,14 +23,18 @@
 //
 #include "pxr/usdImaging/usdImaging/piPrototypeSceneIndex.h"
 
-#include "pxr/usdImaging/usdImaging/tokens.h"
-#include "pxr/usdImaging/usdImaging/sceneIndexPrimView.h"
+#include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/xformSchema.h"
+#include "pxr/base/trace/trace.h"
+#include "pxr/base/work/loops.h"
+
+#include <tbb/enumerable_thread_specific.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,15 +42,16 @@ namespace
 {
 
 bool
-_ContainsStrictPrefixOfPath(const SdfPathSet &pathSet,
-                            const SdfPath &path)
+_ContainsStrictPrefixOfPath(
+    const std::unordered_set<SdfPath, SdfPath::Hash> &pathSet,
+    const SdfPath &path)
 {
-    const auto it = std::lower_bound(
-        pathSet.crbegin(), pathSet.crend(),
-        path,
-        [](const SdfPath &a, const SdfPath &b) {
-            return a > b;});
-    return it != pathSet.crend() && path.HasPrefix(*it) && path != *it;
+    for (SdfPath p=path.GetParentPath(); !p.IsEmpty(); p = p.GetParentPath()) {
+        if (pathSet.find(p) != pathSet.end()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 HdContainerDataSourceHandle
@@ -60,7 +65,7 @@ _ComputeUnderlaySource(const SdfPath &instancer, const SdfPath &prototypeRoot)
 
     return
         HdRetainedContainerDataSource::New(
-            HdInstancedBySchemaTokens->instancedBy,
+            HdInstancedBySchema::GetSchemaToken(),
             HdInstancedBySchema::Builder()
                 .SetPaths(DataSource::New({ instancer }))
                 .SetPrototypeRoots(DataSource::New({ prototypeRoot }))
@@ -76,7 +81,7 @@ _ComputePrototypeRootOverlaySource(const SdfPath &instancer)
     
     return
         HdRetainedContainerDataSource::New(
-            HdXformSchemaTokens->xform,
+            HdXformSchema::GetSchemaToken(),
             HdXformSchema::Builder()
                 .SetResetXformStack(
                     HdRetainedTypedSampledDataSource<bool>::New(
@@ -87,16 +92,13 @@ _ComputePrototypeRootOverlaySource(const SdfPath &instancer)
 bool
 _IsOver(const HdSceneIndexPrim &prim)
 {
-    if (!prim.dataSource) {
-        return false;
-    }
-    HdBoolDataSourceHandle const ds =
-        HdBoolDataSource::Cast(
-            prim.dataSource->Get(UsdImagingSpecifierTokens->usdSpecifier));
+    UsdImagingUsdPrimInfoSchema schema =
+        UsdImagingUsdPrimInfoSchema::GetFromParent(prim.dataSource);
+    HdTokenDataSourceHandle const ds = schema.GetSpecifier();
     if (!ds) {
         return false;
     }
-    return ds->GetTypedValue(0.0f);
+    return ds->GetTypedValue(0.0f) == UsdImagingUsdPrimInfoSchemaTokens->over;
 }
 
 }
@@ -130,7 +132,7 @@ UsdImaging_PiPrototypeSceneIndex(
 void
 UsdImaging_PiPrototypeSceneIndex::_Populate()
 {
-    UsdImaging_SceneIndexPrimView view(_GetInputSceneIndex(), _prototypeRoot);
+    HdSceneIndexPrimView view(_GetInputSceneIndex(), _prototypeRoot);
     for (auto it = view.begin(); it != view.end(); ++it) {
         const SdfPath &path = *it;
         
@@ -165,8 +167,10 @@ _MakeUnrenderable(HdSceneIndexPrim * const prim)
     //
     static HdContainerDataSourceHandle const overlaySource =
         HdRetainedContainerDataSource::New(
-            UsdImagingNativeInstancingTokens->usdPrototypePath,
-            HdBlockDataSource::New());
+            UsdImagingUsdPrimInfoSchema::GetSchemaToken(),
+            HdRetainedContainerDataSource::New(
+                UsdImagingUsdPrimInfoSchemaTokens->niPrototypePath,
+                HdBlockDataSource::New()));
     prim->dataSource = HdOverlayContainerDataSource::New(
         overlaySource,
         prim->dataSource);
@@ -220,29 +224,49 @@ UsdImaging_PiPrototypeSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
-    HdSceneIndexObserver::AddedPrimEntries newEntries;
+    TRACE_FUNCTION();
 
-    for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
-        const SdfPath &path = entry.primPath;
-        if (_ContainsStrictPrefixOfPath(_instancersAndOvers, path)) {
-            newEntries.emplace_back(path, TfToken());
-            continue;
-        }
+    // First pass: Identify instancers and overs.
+    // Use thread-local results to avoid synchronizing.
+    tbb::enumerable_thread_specific<SdfPathVector> perThreadResults;
+    WorkParallelForN(
+        //entries.begin(), entries.end(),
+        entries.size(),
+        [&](size_t begin, size_t end)
+        {
+            SdfPathVector &results = perThreadResults.local();
+            for (size_t i=begin; i<end; ++i) {
+                const HdSceneIndexObserver::AddedPrimEntry &entry = entries[i];
+                if (entry.primType == HdPrimTypeTokens->instancer ||
+                    _IsOver(_GetInputSceneIndex()->GetPrim(entry.primPath))) {
+                    results.push_back(entry.primPath);
+                }
+            }
+        },
+        256 /* note: relatively coarse grain size */ );
 
-        if (entry.primType == HdPrimTypeTokens->instancer ||
-            _IsOver(_GetInputSceneIndex()->GetPrim(path))) {
-            _instancersAndOvers.insert(path);
-        }
-
-        // Note that we do not handle the case that the type of a prim
-        // changes and we get a single AddedPrimEntry about it.
-        //
-        // E.g. if a prim becomes an instancer, we need to re-sync
-        // its namespace descendants since their type change to empty.
-        // Similarly, if a prim was an instancer.
-
-        newEntries.push_back(entry);
+    // Commit per-thread results back into _instancersAndOvers.
+    for (const SdfPath &path: tbb::flatten2d(perThreadResults)) {
+        _instancersAndOvers.insert(path);
     }
+
+    // Second pass: Clear out types for any prims under instancers or overs.
+    HdSceneIndexObserver::AddedPrimEntries newEntries(entries);
+    WorkParallelForEach(
+        newEntries.begin(), newEntries.end(),
+        [&](HdSceneIndexObserver::AddedPrimEntry &entry)
+    {
+        if (_ContainsStrictPrefixOfPath(_instancersAndOvers, entry.primPath)) {
+            entry.primType = TfToken();
+        }
+    });
+
+    // Note that we do not handle the case that the type of a prim
+    // changes and we get a single AddedPrimEntry about it.
+    //
+    // E.g. if a prim becomes an instancer, we need to re-sync
+    // its namespace descendants since their type change to empty.
+    // Similarly, if a prim was an instancer.
 
     _SendPrimsAdded(newEntries);
 }
@@ -260,11 +284,18 @@ UsdImaging_PiPrototypeSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
-        auto it = _instancersAndOvers.lower_bound(entry.primPath);
-        while (it != _instancersAndOvers.end() &&
-               it->HasPrefix(entry.primPath)) {
-            it = _instancersAndOvers.erase(it);
+        // Remove all items in _instancersAndOvers that have the removed
+        // path as a prefix.
+        for (_PathSet::iterator i = _instancersAndOvers.begin();
+             i != _instancersAndOvers.end();) {
+            if (i->HasPrefix(entry.primPath)) {
+                i = _instancersAndOvers.erase(i);
+            } else {
+                ++i;
+            }
         }
     }
 

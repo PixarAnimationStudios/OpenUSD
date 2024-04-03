@@ -39,6 +39,7 @@
 
 #include "pxr/base/work/withScopedParallelism.h"
 
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
@@ -1119,6 +1120,9 @@ UsdGeomBBoxCache::_Resolve(
     
     // If the bound is in the cache, return it.
     entry = _FindEntry(primContext);
+    if (entry == nullptr) {
+        return false;
+    }
     *bboxes = entry->bboxes;
     return (!bboxes->empty());
 }
@@ -1204,7 +1208,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
     const UsdPrim &prim = primContext.prim;
     const bool useExtentsHintForPrim = _UseExtentsHintForPrim(prim);
 
-    boost::shared_array<UsdAttributeQuery> &queries = entry->queries;
+    std::shared_ptr<UsdAttributeQuery[]> &queries = entry->queries;
     if (!queries) {
         // If this cache doesn't use extents hints, we don't need the
         // corresponding query.
@@ -1519,14 +1523,6 @@ UsdGeomBBoxCache::_PrimContext::ToString() const {
                               prim.GetPath().GetText());
     }
 }
-
-size_t hash_value(const UsdGeomBBoxCache::_PrimContext &key)
-{
-    size_t hash = hash_value(key.prim);
-    boost::hash_combine(hash, key.instanceInheritablePurpose.Hash());
-    return hash;
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

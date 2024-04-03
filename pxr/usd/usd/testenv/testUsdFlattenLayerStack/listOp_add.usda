@@ -1,0 +1,14 @@
+#usda 1.0 
+
+def Scope "A" {
+}
+
+def Scope "B" {
+    # Adds flatten into appends
+    add rel test = </A>
+}
+
+def Scope "C" {
+    # Explicit list stays explicit
+    rel test = </A>
+}

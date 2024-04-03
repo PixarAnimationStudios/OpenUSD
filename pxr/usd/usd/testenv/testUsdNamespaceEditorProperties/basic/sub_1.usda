@@ -1,0 +1,19 @@
+#usda 1.0
+
+over "C"
+{
+    custom int C_Sub1_Attr (
+        displayGroup = "Sub1"
+    )
+
+    custom double C_Sub2_Attr (
+        displayGroup = "Sub2"
+    )
+
+    def "B"
+    {
+        custom int B_Sub1_Attr (
+           displayGroup = "Sub1"
+        )
+    }
+}

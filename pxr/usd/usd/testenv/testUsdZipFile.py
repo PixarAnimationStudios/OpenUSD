@@ -66,6 +66,7 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertEqual(fileInfo.dataOffset, 64)
         self.assertEqual(fileInfo.size, 82)
         self.assertEqual(fileInfo.uncompressedSize, 82)
+        self.assertEqual(fileInfo.crc, 3011207731)
         self.assertEqual(fileInfo.compressionMethod, 0)
         self.assertFalse(fileInfo.encrypted)
         self._ValidateSourceAndZippedFile(
@@ -75,6 +76,7 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertEqual(fileInfo.dataOffset, 192)
         self.assertEqual(fileInfo.size, 7228)
         self.assertEqual(fileInfo.uncompressedSize, 7228)
+        self.assertEqual(fileInfo.crc, 384784137)
         self.assertEqual(fileInfo.compressionMethod, 0)
         self.assertFalse(fileInfo.encrypted)
         self._ValidateSourceAndZippedFile("src/b.png", zf, "b.png")
@@ -83,6 +85,7 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertEqual(fileInfo.dataOffset, 7488)
         self.assertEqual(fileInfo.size, 6139)
         self.assertEqual(fileInfo.uncompressedSize, 6139)
+        self.assertEqual(fileInfo.crc, 2488450460)
         self.assertEqual(fileInfo.compressionMethod, 0)
         self.assertFalse(fileInfo.encrypted)
         self._ValidateSourceAndZippedFile("src/sub/c.png", zf, "sub/c.png")
@@ -91,6 +94,7 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertEqual(fileInfo.dataOffset, 13696)
         self.assertEqual(fileInfo.size, 87)
         self.assertEqual(fileInfo.uncompressedSize, 87)
+        self.assertEqual(fileInfo.crc, 2546026356)
         self.assertEqual(fileInfo.compressionMethod, 0)
         self.assertFalse(fileInfo.encrypted)
         self._ValidateSourceAndZippedFile(
@@ -132,6 +136,7 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertEqual(fileInfo.dataOffset, 64)
         self.assertEqual(fileInfo.size, _GetFileSize("src/a.txt"))
         self.assertEqual(fileInfo.uncompressedSize, _GetFileSize("src/a.txt"))
+        self.assertEqual(fileInfo.crc, 3011207731)
         self.assertEqual(fileInfo.compressionMethod, 0)
         self.assertFalse(fileInfo.encrypted)
 
@@ -139,6 +144,7 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertEqual(fileInfo.dataOffset, 192)
         self.assertEqual(fileInfo.size, 7228)
         self.assertEqual(fileInfo.uncompressedSize, 7228)
+        self.assertEqual(fileInfo.crc, 384784137)
         self.assertEqual(fileInfo.compressionMethod, 0)
         self.assertFalse(fileInfo.encrypted)
 

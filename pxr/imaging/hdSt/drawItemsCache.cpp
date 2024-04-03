@@ -32,7 +32,6 @@
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/perfLog.h"
 
-#include <boost/functional/hash.hpp>
 #include <sstream>
 #include <string>
 

@@ -325,7 +325,6 @@ HdxVisualizeAovTask::_CreatePipeline(HgiTextureDesc const& outputTextureDesc)
     if (_pipeline) {
         return true;
     }
-    _GetHgi()->DestroyGraphicsPipeline(&_pipeline);
 
     HgiGraphicsPipelineDesc desc;
     desc.debugName = "AOV Visualiztion Pipeline";

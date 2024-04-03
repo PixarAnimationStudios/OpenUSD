@@ -68,3 +68,26 @@ def "InheritsOrder2" (
 )
 {
 }
+
+def Prim "ModelWithVariant" (
+    add variantSets = ["vset"]
+    variants = {
+        string vset = "vsel"
+    }
+)
+{
+    variantSet "vset" = {
+        "vsel" {
+            class Prim "_class" {
+            }
+            def Prim "InvalidInherit" (
+                inherits = [</ModelWithVariant{vset=sel}_class>] 
+            ) {
+            }
+            def Prim "ValidInherit" (
+                inherits = [</ModelWithVariant/_class>] 
+            ) {
+            }
+        }
+    }
+}

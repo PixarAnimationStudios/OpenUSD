@@ -24,10 +24,13 @@
 #include "pxr/imaging/hdSt/extCompComputeShader.h"
 #include "pxr/imaging/hdSt/extComputation.h"
 
-#include "pxr/imaging/hd/binding.h"
+#include "pxr/imaging/hdSt/binding.h"
+
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/arch/hash.h"
+
+#include "pxr/base/tf/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -79,7 +82,7 @@ HdSt_ExtCompComputeShader::UnbindResources(const int program,
 
 /*virtual*/
 void
-HdSt_ExtCompComputeShader::AddBindings(HdBindingRequestVector *customBindings)
+HdSt_ExtCompComputeShader::AddBindings(HdStBindingRequestVector *customBindings)
 {
     // Resource binding is managed explicitly. See above comment.
 }
@@ -94,7 +97,7 @@ HdSt_ExtCompComputeShader::ComputeHash() const
 
     size_t hash = 0;
     std::string const & kernel = _extComp->GetGpuKernelSource();
-    boost::hash_combine(hash, ArchHash(kernel.c_str(), kernel.size()));
+    hash = TfHash::Combine(hash, ArchHash(kernel.c_str(), kernel.size()));
     return hash;
 }
 
