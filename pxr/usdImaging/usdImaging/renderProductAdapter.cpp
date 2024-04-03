@@ -106,7 +106,10 @@ bool
 UsdImagingRenderProductAdapter::IsSupported(
     UsdImagingIndexProxy const* index) const
 {
-    return false;
+    // Since we flatten products and vars into the targeting settings prim, 1.0
+    // render delegates won't typically support render product prims as such.
+    // Return true to supress warnings that the prim type isn't supported.
+    return true;
 }
 
 SdfPath
