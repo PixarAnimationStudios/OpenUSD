@@ -107,6 +107,8 @@ static void _ResolveInfinityType(const TfToken &src, adsk::InfinityType *dst)
         *dst = adsk::InfinityType::Linear;
     } else if(src == UsdAnimXTokens->oscillate) {
         *dst = adsk::InfinityType::Oscillate;
+    } else {
+        *dst = adsk::InfinityType::Constant;
     }
 }
 
@@ -122,6 +124,8 @@ static const TfToken& _ResolveInfinityType(const adsk::InfinityType& type)
         return UsdAnimXTokens->linear;
     } else if(type == adsk::InfinityType::Oscillate) {
         return UsdAnimXTokens->oscillate;
+    } else {
+        return UsdAnimXTokens->constant;
     }
 }
 } // end anonymous namespace
