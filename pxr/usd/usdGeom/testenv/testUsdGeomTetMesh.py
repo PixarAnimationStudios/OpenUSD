@@ -71,41 +71,19 @@ class TestUsdGeomTetMesh(unittest.TestCase):
         invertedElementsTime10 = UsdGeom.TetMesh.FindInvertedElements(myTetMesh, 10.0)
         self.assertEqual(len(invertedElementsTime10), 0) 
 
-        surfaceFacesTime0 = UsdGeom.TetMesh.ComputeSurfaceFaces(myTetMesh, 0.0)
+        surfaceFaceVertexIndicesAttr = myTetMesh.GetSurfaceFaceVertexIndicesAttr();
 
+        surfaceFacesTime0 = UsdGeom.TetMesh.ComputeSurfaceFaces(myTetMesh, 0.0)
+         
+        surfaceFaceVertexIndicesAttr.Set(surfaceFacesTime0, 0.0) 
         # When the tets are joined we have 6 faces
         self.assertEqual(len(surfaceFacesTime0), 6)
 
         surfaceFacesTime10 = UsdGeom.TetMesh.ComputeSurfaceFaces(myTetMesh, 10.0)
-       
+        surfaceFaceVertexIndicesAttr.Set(surfaceFacesTime10, 10.0) 
         # When they separate we have 8 faces
         self.assertEqual(len(surfaceFacesTime10), 8)
 
-        triMesh = UsdGeom.Mesh.Define(stage,"/triMesh")
-        triMeshPointsAttr = triMesh.GetPointsAttr()
-        triMeshPointsAttr.Set(pointsTime0, 0.0)
-        triMeshPointsAttr.Set(pointsTime10, 10.0)
-        triMeshFaceVertexCountsAttr = triMesh.GetFaceVertexCountsAttr()
-
-        faceVertexCountsTime0 = Vt.IntArray(6, (3,3,3,3,3,3))
-        triMeshFaceVertexCountsAttr.Set(faceVertexCountsTime0, 0.0)
-        faceVertexCountsTime10 = Vt.IntArray(8, (3,3,3,3,3,3,3,3))
-        triMeshFaceVertexCountsAttr.Set(faceVertexCountsTime10, 10.0)
-
-        # Need to convert surfaceFaceIndices from VtVec3iArray to VtIntArray
-        faceVertexIndicesTime0 = Vt.IntArray(18)
-        for i in range(0,6):
-            for j in range(0,3):
-                faceVertexIndicesTime0[i * 3 + j] = surfaceFacesTime0[i][j]
-
-        faceVertexIndicesTime10 = Vt.IntArray(24)
-        for i in range(0,8):
-            for j in range(0,3):
-                faceVertexIndicesTime10[i * 3 + j] = surfaceFacesTime10[i][j]
-
-        triMeshFaceVertexIndicesAttr = triMesh.GetFaceVertexIndicesAttr()
-        triMeshFaceVertexIndicesAttr.Set(faceVertexIndicesTime0, 0.0)
-        triMeshFaceVertexIndicesAttr.Set(faceVertexIndicesTime10, 10.0)
         stage.SetStartTimeCode(0.0)
         stage.SetEndTimeCode(15.0)
         stage.Export('tetMeshRH.usda')
@@ -158,43 +136,20 @@ class TestUsdGeomTetMesh(unittest.TestCase):
         invertedElementsTime10 = UsdGeom.TetMesh.FindInvertedElements(myTetMesh, 10.0)
         self.assertEqual(len(invertedElementsTime10), 0) 
 
-        surfaceFacesTime0 = UsdGeom.TetMesh.ComputeSurfaceFaces(myTetMesh, 0.0)
+        surfaceFaceVertexIndicesAttr = myTetMesh.GetSurfaceFaceVertexIndicesAttr();
 
+        surfaceFacesTime0 = UsdGeom.TetMesh.ComputeSurfaceFaces(myTetMesh, 0.0)
+        
+        surfaceFaceVertexIndicesAttr.Set(surfaceFacesTime0, 0.0)
         # When the tets are joined we have 6 faces
         self.assertEqual(len(surfaceFacesTime0), 6)
 
         surfaceFacesTime10 = UsdGeom.TetMesh.ComputeSurfaceFaces(myTetMesh, 10.0)
-       
+        
+        surfaceFaceVertexIndicesAttr.Set(surfaceFacesTime10, 10.0)
         # When they separate we have 8 faces
         self.assertEqual(len(surfaceFacesTime10), 8)
-
-        triMesh = UsdGeom.Mesh.Define(stage,"/triMesh")
-        triMeshOrientationAttr = triMesh.GetOrientationAttr();   
-        triMeshOrientationAttr.Set(UsdGeom.Tokens.leftHanded)           
-        triMeshPointsAttr = triMesh.GetPointsAttr()
-        triMeshPointsAttr.Set(pointsTime0, 0.0)
-        triMeshPointsAttr.Set(pointsTime10, 10.0)
-        triMeshFaceVertexCountsAttr = triMesh.GetFaceVertexCountsAttr()
-
-        faceVertexCountsTime0 = Vt.IntArray(6, (3,3,3,3,3,3))
-        triMeshFaceVertexCountsAttr.Set(faceVertexCountsTime0, 0.0)
-        faceVertexCountsTime10 = Vt.IntArray(8, (3,3,3,3,3,3,3,3))
-        triMeshFaceVertexCountsAttr.Set(faceVertexCountsTime10, 10.0)
-
-        # Need to convert surfaceFaceIndices from VtVec3iArray to VtIntArray
-        faceVertexIndicesTime0 = Vt.IntArray(18)
-        for i in range(0,6):
-            for j in range(0,3):
-                faceVertexIndicesTime0[i * 3 + j] = surfaceFacesTime0[i][j]
-
-        faceVertexIndicesTime10 = Vt.IntArray(24)
-        for i in range(0,8):
-            for j in range(0,3):
-                faceVertexIndicesTime10[i * 3 + j] = surfaceFacesTime10[i][j]
-
-        triMeshFaceVertexIndicesAttr = triMesh.GetFaceVertexIndicesAttr()
-        triMeshFaceVertexIndicesAttr.Set(faceVertexIndicesTime0, 0.0)
-        triMeshFaceVertexIndicesAttr.Set(faceVertexIndicesTime10, 10.0)
+        
         stage.SetStartTimeCode(0.0)
         stage.SetEndTimeCode(15.0)
         stage.Export('tetMeshLH.usda')
