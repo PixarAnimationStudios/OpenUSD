@@ -1235,10 +1235,10 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
         return VtValue();
     }
 
-    HdContainerDataSourceHandle camera =
-        HdContainerDataSource::Cast(
-            prim.dataSource->Get(HdCameraSchemaTokens->camera));
-    if (!camera) {
+    HdCameraSchema cameraSchema =
+        HdCameraSchema::GetFromParent(prim.dataSource);
+
+    if (!cameraSchema) {
         return VtValue();
     }
 
@@ -1250,9 +1250,20 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
     if (!locator.IsEmpty()) {
         if (HdSampledDataSourceHandle const ds =
                 HdSampledDataSource::Cast(
-                    HdContainerDataSource::Get(camera, locator))) {
+                    HdContainerDataSource::Get(
+                        cameraSchema.GetNamespacedProperties().GetContainer(),
+                        locator))) {
             return ds->GetValue(0.0f);
         }
+
+        if (HdSampledDataSourceHandle const ds =
+                HdSampledDataSource::Cast(
+                    HdContainerDataSource::Get(
+                        cameraSchema.GetContainer(),
+                        locator))) {
+            return ds->GetValue(0.0f);
+        }
+
         // If there was no nested data source for the data source locator
         // we constructed, fall through to query for "foo:bar".
         //
@@ -1272,7 +1283,7 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
 
     HdSampledDataSourceHandle valueDs =
         HdSampledDataSource::Cast(
-            camera->Get(cameraSchemaToken));
+            cameraSchema.GetContainer()->Get(cameraSchemaToken));
     if (!valueDs) {
         return VtValue();
     }

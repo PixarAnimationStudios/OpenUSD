@@ -39,6 +39,8 @@ struct _Mapping;
 
 /// \class UsdImagingDataSourceSchemaBased
 ///
+/// \deprecated Use UsdImagingDataSourceMapped instead.
+///
 /// A container data source created from a Usd schema and optionally some
 /// of its base classes which accesses the attributes on the underlying Usd
 /// prim performing translation between the Usd attribute name and the key in

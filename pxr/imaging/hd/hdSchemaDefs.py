@@ -873,6 +873,7 @@
         SCHEMA_NAME = 'Camera',
         SCHEMA_TOKEN = 'camera',
         SCHEMA_INCLUDES = [
+            '{{LIBRARY_PATH}}/schemaTypeDefs',
             '{{LIBRARY_PATH}}/splitDiopterSchema',
             '{{LIBRARY_PATH}}/lensDistortionSchema'],
         ADD_DEFAULT_LOCATOR = True,
@@ -894,6 +895,7 @@
             ('dofAspect', T_FLOAT, {}),
             ('splitDiopter', 'HdSplitDiopterSchema', {}),
             ('lensDistortion', 'HdLensDistortionSchema', {}),
+            ('namespacedProperties', 'HdSampledDataSourceContainerContainerSchema', dict(ADD_LOCATOR = True)),
         ],
         STATIC_TOKEN_DATASOURCE_BUILDERS = [ # optional for shared token ds's
             ('projection', ['perspective', 'orthographic']),
