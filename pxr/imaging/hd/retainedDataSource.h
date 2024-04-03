@@ -354,7 +354,7 @@ public:
     HD_API
     HdRetainedSmallVectorDataSource(
         size_t count, 
-        HdDataSourceBaseHandle *values);
+        const HdDataSourceBaseHandle *values);
 
     HD_API
     size_t GetNumElements() override;
@@ -375,6 +375,18 @@ HD_DECLARE_DATASOURCE_HANDLES(HdRetainedSmallVectorDataSource);
 HD_API
 HdSampledDataSourceHandle
 HdCreateTypedRetainedDataSource(VtValue const &v);
+
+/// Attempt to make a copy of the given data source using the sample at
+/// time 0.0f if it or a descendant data source is sampled.
+HD_API
+HdDataSourceBaseHandle
+HdMakeStaticCopy(HdDataSourceBaseHandle const &ds);
+
+/// Attempt to make a copy of the given container data source using the sample
+/// at time 0.0f if a descendant data source is sampled.
+HD_API
+HdContainerDataSourceHandle
+HdMakeStaticCopy(HdContainerDataSourceHandle const &ds);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

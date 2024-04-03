@@ -5,7 +5,7 @@ UsdPreviewSurface Specification
 .. include:: rolesAndUtils.rst
 .. include:: <isonum.txt>
 
-Copyright |copy| 2019, Pixar Animation Studios,  *version 2.4*
+Copyright |copy| 2019, Pixar Animation Studios,  *version 2.5*
 
 .. contents:: :local:
 
@@ -143,11 +143,13 @@ and :usda:`opacity`.
 
 * **clearcoat - float - 0.0** 
 
-  Second specular lobe amount. The color is white.
+  Second specular lobe amount. The color is white. Clearcoat results are 
+  calculated using the same normal map data used by the primary specular lobe.
 
 * **clearcoatRoughness - float - 0.01**
 
-  Roughness for the second specular lobe.
+  Roughness for the second specular lobe. Clearcoat results are 
+  calculated using the same normal map data used by the primary specular lobe.
 
 * **opacity - float - 1.0** 
 
@@ -281,11 +283,15 @@ typeName information that may be useful to a renderer or shading system.
        )
     
        float inputs:clearcoat = 0.0 (
-           doc = """Second specular lobe amount. The color is white."""
+           doc = """Second specular lobe amount. The color is white. Clearcoat 
+           results are calculated using the same normal map data used by the 
+           primary specular lobe."""
        )
     
        float inputs:clearcoatRoughness = 0.01 (
-           doc = """Roughness for the second specular lobe."""
+           doc = """Roughness for the second specular lobe. Clearcoat results 
+           are calculated using the same normal map data used by the primary 
+           specular lobe."""
        )
     
        float inputs:opacity = 1.0 (
@@ -347,13 +353,15 @@ Texture Reader
 Node that can be used to read UV textures, including tiled textures such as Mari
 UDIM's.
 
+.. _updateudim:
+
 .. note:: UDIM Tiling Constraints
    
    To keep interchange simple(r) and to aid in efficient processing of UDIM
    textures:
    
    * **We stipulate a maximum of ten tiles in the U direction**
-   * **We stipulate that the tiles must be within the range [1001, 1099]**
+   * **We stipulate that the tiles must be within the range [1001, 1100]**
 
 
 **Node Id**: 
@@ -381,9 +389,10 @@ UDIM's.
 
 * **wrapS - token - useMetadata** 
 
-  Wrap mode when reading this texture.Possible Values:
+  Wrap mode when reading this texture. Possible values:
 
-    * *black* : Reader returns black outside unit square
+    * *black* : Reader returns transparent black (0.0, 0.0, 0.0, 0.0) outside 
+      unit square. 
 
     * *clamp* : extend edge values outside unit square
 
@@ -429,7 +438,8 @@ UDIM's.
     * *raw* : Use texture data as it was read from the texture and do not mark
       it as using a specific color space.
 
-    * *sRGB* : Mark texture as sRGB when reading.
+    * *sRGB* : Mark texture as sRGB when reading. The texture will be read using
+      the sRGB transfer curve, but not filtered against the sRGB gamut. 
 
     * *auto* : Check for gamma/color space metadata in the texture file itself;
       if metadata is indicative of sRGB, mark texture as *sRGB* . If no relevant
@@ -1000,7 +1010,7 @@ Changes, by Version
 Version 2.0 - Initial Public Specification
 ##########################################
 
-`USD Preview Surface Proposal Version 2.0 <https://graphics.pixar.com/usd/files/UsdPreviewSurfaceProposal_v2_0.pdf>`_
+`USD Preview Surface Proposal Version 2.0 <https://openusd.org/files/UsdPreviewSurfaceProposal_v2_0.pdf>`_
 
 Version 2.2 - Before Type Changes
 #################################
@@ -1012,7 +1022,7 @@ From version 2.0...
     * Adds :ref:`opacityThreshold <addopacitythreshold>`
       and clarification of *opacity* behavior for UsdPreviewSurface
 
-`USD Preview Surface Proposal Version 2.2 <https://graphics.pixar.com/usd/files/UsdPreviewSurfaceProposal_v_2_2.pdf>`_
+`USD Preview Surface Proposal Version 2.2 <https://openusd.org/files/UsdPreviewSurfaceProposal_v_2_2.pdf>`_
 
 Version 2.3
 ###########
@@ -1053,8 +1063,8 @@ From version 2.2...
       :usda:`UsdPreviewSurface.opacityThreshold` acts as a binary cutoff for
       determining at what :usda:`opacity` values the surface will be rendered.
 
-Version 2.4 - Current Head
-##########################
+Version 2.4
+###########
 
 From version 2.3...
 
@@ -1062,3 +1072,11 @@ From version 2.3...
       Clarifies that the :usda:`ior` input can also be used in the calculation
       of specular components, including the clearcoat when
       :math:`UsdPreviewSurface.clearcoat > 0`.
+
+Version 2.5 - Current Head
+##########################
+
+From version 2.4...
+    * :ref:`Updates UDIM specification to include tile 1100.<updateudim>`
+      Changes the baseline UDIM tile support from 1001-1099, inclusive, to 
+      1001-1100.  This allows for a 10x10 grid of UDIM tiles.

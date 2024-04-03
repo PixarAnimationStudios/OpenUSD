@@ -44,13 +44,20 @@ HgiMetalSampler::HgiMetalSampler(HgiMetal *hgi, HgiSamplerDesc const& desc)
         HgiMetalConversions::GetSamplerAddressMode(desc.addressModeV);
     smpDesc.rAddressMode =
         HgiMetalConversions::GetSamplerAddressMode(desc.addressModeW);
-    smpDesc.minFilter = HgiMetalConversions::GetMinMagFilter(desc.magFilter);
-    smpDesc.magFilter = HgiMetalConversions::GetMinMagFilter(desc.minFilter);
+    smpDesc.minFilter = HgiMetalConversions::GetMinMagFilter(desc.minFilter);
+    smpDesc.magFilter = HgiMetalConversions::GetMinMagFilter(desc.magFilter);
     smpDesc.mipFilter = HgiMetalConversions::GetMipFilter(desc.mipFilter);
     smpDesc.supportArgumentBuffers = true;
     smpDesc.borderColor = HgiMetalConversions::GetBorderColor(desc.borderColor);
     smpDesc.compareFunction = 
         HgiMetalConversions::GetCompareFunction(desc.compareFunction);
+
+    if ((desc.minFilter != HgiSamplerFilterNearest ||
+         desc.mipFilter == HgiMipFilterLinear) &&
+         desc.magFilter != HgiSamplerFilterNearest) {
+        static const int maxAnisotropy = 16;
+        smpDesc.maxAnisotropy = maxAnisotropy;
+    }
     
     HGIMETAL_DEBUG_LABEL(smpDesc, _descriptor.debugName.c_str());
     

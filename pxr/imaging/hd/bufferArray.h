@@ -28,7 +28,6 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSpec.h"
-#include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
 

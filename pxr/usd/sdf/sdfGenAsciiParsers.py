@@ -311,9 +311,10 @@ def _validateSourceDirectory(configuration):
                 + [join(srcDir, base + '.tab.h') for base in bases]
                 + [join(srcDir, base + '.lex.cpp') for base in bases])
 
-    if not all(isfile(f) for f in allFiles):
-        exit('*** Invalid source directory. This directory must '
-             'contain all necessary flex/bison sources.')
+    for f in allFiles:
+        if not isfile(f):
+            exit('*** Invalid source directory. This directory must '
+                 'contain all necessary flex/bison sources; missing: %s' % f)
 
 # -----------------------------------------------------------------------------
 

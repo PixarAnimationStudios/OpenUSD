@@ -67,7 +67,6 @@ wrapUsdCollectionMembershipQuery()
         return_value_policy<TfPySequenceToList>());
 
     class_<UsdCollectionMembershipQuery>("UsdCollectionMembershipQuery")
-        .def(init<>())
         .def("IsPathIncluded", _WrapIsPathIncluded_1, arg("path"))
         .def("IsPathIncluded", _WrapIsPathIncluded_2, 
              (arg("path"), arg("parentExpansionRule")))

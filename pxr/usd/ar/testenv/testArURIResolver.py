@@ -79,24 +79,46 @@ class TestArURIResolver(unittest.TestCase):
         self.assertEqual(resolver.Resolve("test://foo.package[bar.file]"), 
                          "test://foo.package[bar.file]")
 
-        self.assertEqual(resolver.Resolve("test_other://foo"), 
-                         "test_other://foo")
+        self.assertEqual(resolver.Resolve("test-other://foo"),
+                         "test-other://foo")
         self.assertEqual(
-            resolver.Resolve("test_other://foo.package[bar.file]"), 
-            "test_other://foo.package[bar.file]")
+            resolver.Resolve("test-other://foo.package[bar.file]"),
+            "test-other://foo.package[bar.file]")
 
         # These calls should hit the URI resolver since schemes are
         # case-insensitive.
-        self.assertEqual(resolver.Resolve("TEST://foo"), 
+        self.assertEqual(resolver.Resolve("TEST://foo"),
                          "TEST://foo")
-        self.assertEqual(resolver.Resolve("TEST://foo.package[bar.file]"), 
+        self.assertEqual(resolver.Resolve("TEST://foo.package[bar.file]"),
                          "TEST://foo.package[bar.file]")
 
-        self.assertEqual(resolver.Resolve("TEST_OTHER://foo"), 
-                         "TEST_OTHER://foo")
+        self.assertEqual(resolver.Resolve("TEST-OTHER://foo"),
+                         "TEST-OTHER://foo")
         self.assertEqual(
-            resolver.Resolve("TEST_OTHER://foo.package[bar.file]"), 
-            "TEST_OTHER://foo.package[bar.file]")
+            resolver.Resolve("TEST-OTHER://foo.package[bar.file]"),
+            "TEST-OTHER://foo.package[bar.file]")
+
+    def test_InvalidScheme(self):
+        resolver = Ar.GetResolver()
+        invalid_underbar_path = "test_other:/abc.xyz"
+        invalid_utf8_path = "test-π-utf8:/abc.xyz"
+        invalid_numeric_prefix_path = "113-test:/abc.xyz"
+        invalid_colon_path = "other:test:/abc.xyz"
+        if Tf.GetEnvSetting("PXR_AR_DISABLE_STRICT_SCHEME_VALIDATION"):
+            self.assertEqual(resolver.Resolve(invalid_underbar_path),
+                             invalid_underbar_path)
+            self.assertEqual(resolver.Resolve(invalid_utf8_path),
+                             invalid_utf8_path)
+            self.assertEqual(resolver.Resolve(invalid_numeric_prefix_path),
+                             invalid_numeric_prefix_path)
+            # Even when strict scheme validation mode is disabled
+            # schemes with colons in them may fail to resolve
+            self.assertFalse(resolver.Resolve(invalid_colon_path))
+        else:
+            self.assertFalse(resolver.Resolve(invalid_underbar_path))
+            self.assertFalse(resolver.Resolve(invalid_utf8_path))
+            self.assertFalse(resolver.Resolve(invalid_numeric_prefix_path))
+            self.assertFalse(resolver.Resolve(invalid_colon_path))
 
     def test_ResolveForNewAsset(self):
         resolver = Ar.GetResolver()

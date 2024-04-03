@@ -58,6 +58,21 @@ HdOverlayContainerDataSource::HdOverlayContainerDataSource(
     _containers = { src1, src2, src3 };
 }
 
+HdContainerDataSourceHandle
+HdOverlayContainerDataSource::OverlayedContainerDataSources(
+        const HdContainerDataSourceHandle &src1,
+        const HdContainerDataSourceHandle &src2)
+{
+    if (!src1) {
+        return src2;
+    }
+    if (!src2) {
+        return src1;
+    }
+    return HdOverlayContainerDataSource::New(src1, src2);
+}
+
+
 TfTokenVector
 HdOverlayContainerDataSource::GetNames()
 {

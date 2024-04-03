@@ -1,0 +1,28 @@
+#sdf 1.4.32
+(
+    expressionVariables = {
+        string A = "A"
+        string B = "A"
+        string C = "C"
+    }
+    subLayers = [
+        # This expression uses the value of A authored above.
+        @`"${A}.sdf"`@,
+
+        # This expression uses the value of B authored in the session
+        # layer, which overrides the value of B authored above.
+        @`"${B}.sdf"`@, 
+
+        # Expressions that return an empty string or no result should
+        # be silently ignored.
+        @`""`@,
+
+        # Expressions that are badly-formed or hit errors during evaluation
+        # should result in composition errors.
+        @`"${BOGUS"`@
+    ]
+)
+
+over "Root"
+{
+}

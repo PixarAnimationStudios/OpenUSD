@@ -1,0 +1,27 @@
+#sdf 1.4.32
+(
+    """
+    This museum test exercises behavior with subroot references,
+    ancestral variant selections, and inherit arcs.
+    """
+)
+
+def "Inherit"
+{
+    def "CHARACTER"
+    {
+    }
+}
+
+def "Character" (
+    """
+    The ancestral /CHARGROUP prim in the reference has a variant
+    that brings in another reference, which inherits /Inherit.
+    The inherit arc should be implied back to the root layer
+    stack and cause the /Inherit/CHARACTER opinion authored in
+    this layer to be included.
+    """
+    references = @./CharGroup.sdf@</CHARGROUP/CHARACTER>
+)
+{
+}

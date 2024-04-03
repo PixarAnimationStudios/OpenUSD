@@ -105,8 +105,6 @@ static bool TestTopologyAndPointGeneration(
                 /* bottomRadius =    */ radius,
                 /* topRadius    =    */ radius,
                 height,
-                /* bottomCapHeight = */ radius,
-                /* topCapHeight =    */ radius,
                 sweep);
         }
         

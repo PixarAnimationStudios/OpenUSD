@@ -27,14 +27,11 @@
 /// \file tf/denseHashMap.h
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/hashmap.h"
 
 #include <memory>
 #include <vector>
-
-#include <boost/compressed_pair.hpp>
-#include <boost/iterator/iterator_facade.hpp>
-#include <boost/utility.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -56,6 +53,7 @@ template <
     class    EqualKey  = std::equal_to<Key>,
     unsigned Threshold = 128
 >
+
 class TfDenseHashMap
 {
 public:
@@ -136,30 +134,65 @@ private:
     //
     // Clearly not a good thing.
     //
-    // Therefore we use boost::iterator_facade to create an iterator that uses
-    // the map's value_type as externally visible type.
+    // Therefore we create an iterator that uses the map's value_type as
+    // externally visible type.
     //
     template <class ElementType, class UnderlyingIterator>
-    class _IteratorBase :
-        public boost::iterator_facade<
-            _IteratorBase<ElementType, UnderlyingIterator>,
-            ElementType,
-            boost::bidirectional_traversal_tag>
+    class _IteratorBase
     {
     public:
+        using iterator_category = std::bidirectional_iterator_tag;
+        using value_type = ElementType;
+        using reference = ElementType&;
+        using pointer = ElementType*;
+        using difference_type = typename UnderlyingIterator::difference_type;
 
         // Empty ctor.
-        _IteratorBase() {}
+        _IteratorBase() = default;
 
         // Allow conversion of an iterator to a const_iterator.
         template<class OtherIteratorType>
         _IteratorBase(const OtherIteratorType &rhs)
         :   _iter(rhs._GetUnderlyingIterator()) {}
 
+        reference operator*() const { return dereference(); }
+        pointer operator->() const { return &(dereference()); }
+
+        _IteratorBase& operator++() {
+            increment();
+            return *this;
+        }
+
+        _IteratorBase& operator--() {
+            decrement();
+            return *this;
+        }
+
+        _IteratorBase operator++(int) {
+            _IteratorBase result(*this);
+            increment();
+            return result;
+        }
+
+        _IteratorBase operator--(int) {
+            _IteratorBase result(*this);
+            decrement();
+            return result;
+        }
+
+        template <class OtherIteratorType>
+        bool operator==(const OtherIteratorType& other) const {
+            return equal(other);
+        }
+
+        template <class OtherIteratorType>
+        bool operator!=(const OtherIteratorType& other) const {
+            return !equal(other);
+        }
+
     private:
 
         friend class TfDenseHashMap;
-        friend class boost::iterator_core_access;
 
         // Ctor from an underlying iterator.
         _IteratorBase(const UnderlyingIterator &iter)
@@ -241,12 +274,11 @@ public:
     /// Copy Ctor.
     ///
     TfDenseHashMap(const TfDenseHashMap &rhs)
-    :   _vectorHashFnEqualFn(rhs._vectorHashFnEqualFn) {
+    :   _storage(rhs._storage) {
         if (rhs._h) {
-            _h.reset(new _HashMap(*rhs._h));
+            _h = std::make_unique<_HashMap>(*rhs._h);
         }
     }
-
     /// Move Ctor.
     ///
     TfDenseHashMap(TfDenseHashMap &&rhs) = default;
@@ -308,7 +340,7 @@ public:
     /// Swaps the contents of two maps.
     ///
     void swap(TfDenseHashMap &rhs) {
-        _vectorHashFnEqualFn.swap(rhs._vectorHashFnEqualFn);
+        _storage.swap(rhs._storage);
         _h.swap(rhs._h);
     }
 
@@ -543,32 +575,32 @@ private:
 
     // Helper to access the storage vector.
     _Vector &_vec() {
-        return _vectorHashFnEqualFn.first().first();
+        return _storage.vector;
     }
 
     // Helper to access the hash functor.
     HashFn &_hash() {
-        return _vectorHashFnEqualFn.first().second();
+        return _storage;
     }
 
     // Helper to access the equality functor.
     EqualKey &_equ() {
-        return _vectorHashFnEqualFn.second();
+        return _storage;
     }
 
     // Helper to access the storage vector.
     const _Vector &_vec() const {
-        return _vectorHashFnEqualFn.first().first();
+        return _storage.vector;
     }
 
     // Helper to access the hash functor.
     const HashFn &_hash() const {
-        return _vectorHashFnEqualFn.first().second();
+        return _storage;
     }
 
     // Helper to access the equality functor.
     const EqualKey &_equ() const {
-        return _vectorHashFnEqualFn.second();
+        return _storage;
     }
 
     // Helper to linear-search the vector for a key.
@@ -612,17 +644,28 @@ private:
         }
     }
 
-    // Vector holding all elements along with the EqualKey functor.  Since
-    // sizeof(EqualKey) == 0 in many cases we use a compressed_pair to not
-    // pay a size penalty.
+    // Since sizeof(EqualKey) == 0 and sizeof(HashFn) == 0 in many cases
+    // we use the empty base optimization to not pay a size penalty.
+    // In C++20, explore using [[no_unique_address]] as an alternative
+    // way to get this optimization.
+    struct ARCH_EMPTY_BASES _CompressedStorage :
+        private EqualKey, private HashFn {
+        static_assert(!std::is_same<EqualKey, HashFn>::value,
+                      "EqualKey and HashFn must be distinct types.");
+        _CompressedStorage() = default;
+        _CompressedStorage(const EqualKey& equalKey, const HashFn& hashFn)
+            : EqualKey(equalKey), HashFn(hashFn) {}
 
-    typedef
-        boost::compressed_pair<
-            boost::compressed_pair<_Vector, HashFn>,
-            EqualKey>
-        _VectorHashFnEqualFn;
-
-    _VectorHashFnEqualFn _vectorHashFnEqualFn;
+        void swap(_CompressedStorage& other) {
+            using std::swap;
+            vector.swap(other.vector);
+            swap(static_cast<EqualKey&>(*this), static_cast<EqualKey&>(other));
+            swap(static_cast<HashFn&>(*this), static_cast<HashFn&>(other));
+        }
+        _Vector vector;
+        friend class TfDenseHashMap;
+    };
+    _CompressedStorage _storage;
 
     // Optional hash map that maps from keys to vector indices.
     std::unique_ptr<_HashMap> _h;

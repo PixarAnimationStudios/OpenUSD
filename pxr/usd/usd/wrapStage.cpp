@@ -39,7 +39,6 @@
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/makePyConstructor.h"
 
 #include <boost/python/class.hpp>
@@ -166,6 +165,7 @@ _GetEditTargetForLocalLayer(const UsdStagePtr &self,
 
 static void
 _ExpandPopulationMask(UsdStage &self,
+                      Usd_PrimFlagsPredicate const &traversal,
                       boost::python::object pyRelPred,
                       boost::python::object pyAttrPred)
 {
@@ -179,7 +179,16 @@ _ExpandPopulationMask(UsdStage &self,
     if (!pyAttrPred.is_none()) {
         attrPred = boost::python::extract<AttrPredicate>(pyAttrPred);
     }
-    return self.ExpandPopulationMask(relPred, attrPred);
+    return self.ExpandPopulationMask(traversal, relPred, attrPred);
+}
+
+static void
+_ExpandPopulationMaskDefault(UsdStage &self,
+                             boost::python::object pyRelPred,
+                             boost::python::object pyAttrPred)
+{
+    return _ExpandPopulationMask(
+        self, UsdPrimDefaultPredicate, pyRelPred, pyAttrPred);
 }
 
 static object 
@@ -435,8 +444,12 @@ void wrapUsdStage()
 
         .def("GetPopulationMask", &UsdStage::GetPopulationMask)
         .def("SetPopulationMask", &UsdStage::SetPopulationMask, arg("mask"))
-        .def("ExpandPopulationMask", &_ExpandPopulationMask,
+        .def("ExpandPopulationMask", &_ExpandPopulationMaskDefault,
              (arg("relationshipPredicate")=object(),
+              arg("attributePredicate")=object()))
+        .def("ExpandPopulationMask", &_ExpandPopulationMask,
+             (arg("traversalPredicate"),
+              arg("relationshipPredicate")=object(),
               arg("attributePredicate")=object()))
 
         .def("GetPseudoRoot", &UsdStage::GetPseudoRoot)
@@ -563,5 +576,3 @@ void wrapUsdStage()
              return_internal_reference<>())
         ;
 }
-
-TF_REFPTR_CONST_VOLATILE_GET(UsdStage)

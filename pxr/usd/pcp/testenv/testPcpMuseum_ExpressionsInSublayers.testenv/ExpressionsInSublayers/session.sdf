@@ -1,0 +1,23 @@
+#sdf 1.4.32
+(
+    expressionVariables = {
+        string B = "B"
+    }
+    subLayers = [
+        # This expression uses the value of A authored in the
+        # root layer.
+        @`"${A}_session.sdf"`@,
+
+        # This expression uses the value of B authored above, which
+        # overrides the value of B authored in the root layer.
+        @`"${B}_session.sdf"`@,
+
+        # Expressions that return an empty string or no result should
+        # be silently ignored.
+        @`""`@
+    ]
+)
+
+over "Root"
+{
+}

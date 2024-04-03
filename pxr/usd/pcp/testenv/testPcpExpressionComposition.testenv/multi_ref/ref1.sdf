@@ -1,0 +1,12 @@
+#sdf 1.4.32
+(
+    expressionVariables = {
+        string SOURCE = "ref1"
+    }
+)
+
+def "Ref1" (
+    references = @base_ref.sdf@</BaseRef>
+)
+{
+}

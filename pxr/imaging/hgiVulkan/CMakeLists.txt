@@ -40,15 +40,48 @@ pxr_library(hgiVulkan
         shaderProgram
         shaderSection
         texture
+        vk_mem_alloc
 
     PUBLIC_HEADERS
         api.h
         vulkan.h
-        vk_mem_alloc.h
 
     PRIVATE_CLASSES
         spirv_reflect
 
     RESOURCE_FILES
         plugInfo.json
+)
+
+if (${PXR_HEADLESS_TEST_MODE})
+    message(STATUS "Skipping ${PXR_PACKAGE} tests because PXR_HEADLESS_TEST_MODE is ON")
+    return()
+endif()
+
+if (APPLE)
+    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on macOS")
+    return()
+endif()
+
+if (WIN32)
+    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
+    return()
+endif()
+
+pxr_install_test_dir(
+    SRC testenv/testHgiVulkanCommand
+    DEST testHgiVulkanCommand
+)
+pxr_register_test(testHgiVulkanCommand
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHgiCommand --write testHgiVulkanCommand_triangle.png"
+    # IMAGE_DIFF_COMPARE
+    #     testHgiVulkanCommand_triangle.png
+    # FAIL 1
+    # FAIL_PERCENT 0.001
+    # PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    ENV
+        HGI_ENABLE_VULKAN=1
+        HGIVULKAN_DEBUG=1
+        HGIVULKAN_DEBUG_VERBOSE=1
 )

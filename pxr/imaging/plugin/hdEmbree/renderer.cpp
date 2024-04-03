@@ -34,7 +34,7 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/work/loops.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <chrono>
 #include <thread>
@@ -446,9 +446,10 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 
         // Render by scheduling square tiles of the sample buffer in a parallel
         // for loop.
+        // Always pass the renderThread to _RenderTiles to allow the first frame
+        // to be interrupted.
         WorkParallelForN(numTilesX*numTilesY,
-            std::bind(&HdEmbreeRenderer::_RenderTiles, this,
-                (i == 0) ? nullptr : renderThread,
+            std::bind(&HdEmbreeRenderer::_RenderTiles, this, renderThread,
                 std::placeholders::_1, std::placeholders::_2));
 
         // After the first pass, mark the single-sampled attachments as
@@ -514,7 +515,7 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
     // Initialize the RNG for this tile (each tile creates one as
     // a lazy way to do thread-local RNGs).
     size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
-    boost::hash_combine(seed, tileStart);
+    seed = TfHash::Combine(seed, tileStart);
     std::default_random_engine random(seed);
 
     // Create a uniform distribution for jitter calculations.

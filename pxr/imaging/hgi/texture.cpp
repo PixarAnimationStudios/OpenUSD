@@ -23,6 +23,8 @@
 //
 #include "pxr/imaging/hgi/texture.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HgiTexture::HgiTexture(HgiTextureDesc const& desc)

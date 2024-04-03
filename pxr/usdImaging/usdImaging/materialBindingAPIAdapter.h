@@ -46,7 +46,8 @@ public:
             UsdPrim const& prim,
             TfToken const& subprim,
             TfToken const& appliedInstanceName,
-            TfTokenVector const& properties) override;
+            TfTokenVector const& properties,
+            UsdImagingPropertyInvalidationType invalidationType) override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

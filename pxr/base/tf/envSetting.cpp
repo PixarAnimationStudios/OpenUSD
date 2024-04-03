@@ -40,9 +40,8 @@
 #include "pxr/base/tf/pyUtils.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
-#include <boost/variant/get.hpp>
-#include <boost/variant/variant.hpp>
 #include <mutex>
+#include <variant>
 
 using std::string;
 
@@ -119,7 +118,7 @@ public:
         TfRegistryManager::GetInstance().SubscribeTo<Tf_EnvSettingRegistry>();
     }
 
-    using VariantType = boost::variant<int, bool, std::string>;
+    using VariantType = std::variant<int, bool, std::string>;
 
     template <typename U>
     bool Define(string const& varName,
@@ -141,7 +140,7 @@ public:
             TfHashMap<string, VariantType, TfHash>::iterator it;
             std::tie(it, inserted) = _valuesByName.insert({varName, value});
 
-            U* entryPointer = boost::get<U>(&(it->second));
+            U* entryPointer = std::get_if<U>(std::addressof(it->second));
             cachedValue->store(entryPointer);
         }
 
@@ -228,7 +227,7 @@ template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<int> *);
 template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<string> *);
 
 TF_API
-boost::variant<int, bool, std::string> const *
+std::variant<int, bool, std::string> const *
 Tf_GetEnvSettingByName(std::string const& name)
 {
     return Tf_EnvSettingRegistry::GetInstance().LookupByName(name);

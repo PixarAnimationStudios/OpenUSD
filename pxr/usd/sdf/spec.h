@@ -38,9 +38,6 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/utility/enable_if.hpp>
-
 #include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE

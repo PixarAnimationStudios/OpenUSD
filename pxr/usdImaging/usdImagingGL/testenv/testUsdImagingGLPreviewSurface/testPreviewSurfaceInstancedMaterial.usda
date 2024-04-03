@@ -1,0 +1,79 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Z"
+)
+
+def Xform "Scene" (
+kind = "component"
+)
+{
+    def Scope "Looks"
+    {
+        def Material "MaterialPrototype"
+        {
+            string inputs:colorPrimvarName = "mydisplayColor1"
+            float inputs:roughness = 0.3
+            token outputs:surface.connect = </Scene/Looks/MaterialPrototype/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+
+                float inputs:roughness.connect = </Scene/Looks/MaterialPrototype.inputs:roughness>
+
+                color3f inputs:diffuseColor = (1.0, 0.0, 0.0)
+                color3f inputs:diffuseColor.connect  = </Scene/Looks/MaterialPrototype/Primvar.outputs:result>
+
+                float inputs:opacity = 1.0
+            
+                token outputs:surface
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float3"
+                string inputs:varname.connect = </Scene/Looks/MaterialPrototype.inputs:colorPrimvarName>
+                float3 outputs:result
+            }
+        }
+
+        def Material "MaterialInstance" (
+            references = </Scene/Looks/MaterialPrototype>
+            instanceable = true
+        )
+        {
+            string inputs:colorPrimvarName = "mydisplayColor2"
+            float inputs:roughness = 0.8
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def Sphere "Sphere1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            color3f[] primvars:mydisplayColor1 = [(0.0, 1.0, 0.0)]
+            color3f[] primvars:mydisplayColor2 = [(0.0, 0.0, 1.0)]
+            rel material:binding = </Scene/Looks/MaterialPrototype>
+            double3 xformOp:translate = (-5, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Sphere "Sphere2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            color3f[] primvars:mydisplayColor1 = [(0.0, 1.0, 0.0)]
+            color3f[] primvars:mydisplayColor2 = [(0.0, 0.0, 1.0)]
+            rel material:binding = </Scene/Looks/MaterialInstance>
+            double3 xformOp:translate = (5, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+}

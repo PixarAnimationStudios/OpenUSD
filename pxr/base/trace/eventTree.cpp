@@ -30,8 +30,6 @@
 
 #include "pxr/base/js/json.h"
 
-#include <boost/optional.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TraceEventTreeRefPtr

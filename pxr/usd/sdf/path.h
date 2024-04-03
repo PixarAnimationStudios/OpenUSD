@@ -28,12 +28,12 @@
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/pool.h"
 #include "pxr/usd/sdf/tokens.h"
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/traits.h"
 
 #include <boost/intrusive_ptr.hpp>
-#include <boost/operators.hpp>
 
 #include <algorithm>
 #include <iterator>
@@ -145,7 +145,7 @@ public:
         _poolHandle = Handle { nullptr };
     }
 
-    Sdf_PathNode const *
+    inline Sdf_PathNode const *
     get() const noexcept {
         return reinterpret_cast<Sdf_PathNode *>(_poolHandle.GetPtr());
     }
@@ -179,17 +179,17 @@ public:
     }
 private:
 
-    void _AddRef(Sdf_PathNode const *p) const {
+    inline void _AddRef(Sdf_PathNode const *p) const {
         if (Counted) {
             intrusive_ptr_add_ref(p);
         }
     }
 
-    void _AddRef() const {
+    inline void _AddRef() const {
         _AddRef(get());
     }
 
-    void _DecRef() const {
+    inline void _DecRef() const {
         if (Counted) {
             intrusive_ptr_release(get());
         }
@@ -287,7 +287,7 @@ VT_TYPE_IS_CHEAP_TO_COPY(class SdfPath);
 /// the number of values created (since it requires synchronized access to
 /// this table) or copied (since it requires atomic ref-counting operations).
 ///
-class SdfPath : boost::totally_ordered<SdfPath>
+class SdfPath
 {
 public:
     /// The empty path value, equivalent to SdfPath().
@@ -305,11 +305,7 @@ public:
     
     /// Constructs the default, empty path.
     ///
-    SdfPath() noexcept {
-        // This generates a single instruction instead of 2 on gcc 6.3.  Seems
-        // to be fixed on gcc 7+ and newer clangs.  Remove when we're there!
-        memset(this, 0, sizeof(*this));
-    }
+    SdfPath() noexcept = default;
 
     /// Creates a path from the given string.
     ///
@@ -479,6 +475,16 @@ public:
     /// produces an equivalent set of paths, ordered from longest to shortest.
     SDF_API SdfPathVector GetPrefixes() const;
 
+    /// Return up to \p numPrefixes prefix paths of this path.
+    ///
+    /// Prefixes are returned in order of shortest to longest.  The path itself
+    /// is returned as the last prefix.  Note that if the prefix order does not
+    /// need to be from shortest to longest, it is more efficient to use
+    /// GetAncestorsRange, which produces an equivalent set of paths, ordered
+    /// from longest to shortest.  If \p numPrefixes is 0 or greater than the
+    /// number of this path's prefixes, fill all prefixes.
+    SDF_API SdfPathVector GetPrefixes(size_t numPrefixes) const;
+
     /// Fills prefixes with prefixes of this path.
     /// 
     /// This avoids copy constructing the return value.
@@ -486,9 +492,19 @@ public:
     /// Prefixes are returned in order of shortest to longest.  The path
     /// itself is returned as the last prefix.
     /// Note that if the prefix order does not need to be from shortest to
-    /// longest, it is more efficient to use GetAncestorsRange, which
+    /// longest, it is more efficient to use GetAncestorsRange(), which
     /// produces an equivalent set of paths, ordered from longest to shortest.
     SDF_API void GetPrefixes(SdfPathVector *prefixes) const;
+
+    /// Fill \p prefixes with up to \p numPrefixes prefixes of this path.
+    /// 
+    /// Prefixes are filled in order of shortest to longest.  The path itself is
+    /// included as the last prefix.  Note that if the prefix order does not
+    /// need to be from shortest to longest, it can be more efficient to use
+    /// GetAncestorsRange(), which produces an equivalent set of paths, ordered
+    /// from longest to shortest.  If \p numPrefixes is 0 or greater than the
+    /// number of this path's prefixes, fill all prefixes.
+    SDF_API void GetPrefixes(SdfPathVector *prefixes, size_t numPrefixes) const;
 
     /// Return a range for iterating over the ancestors of this path.
     ///
@@ -616,7 +632,7 @@ public:
     /// grandparent path ('../..').  Use caution writing loops that walk to
     /// parent paths since relative paths have infinitely many ancestors.  To
     /// more safely traverse ancestor paths, consider iterating over an
-    /// SdfPathAncestorsRange instead, as returend by GetAncestorsRange().
+    /// SdfPathAncestorsRange instead, as returned by GetAncestorsRange().
     SDF_API SdfPath GetParentPath() const;
 
     /// Creates a path by stripping all relational attributes, targets,
@@ -881,9 +897,13 @@ public:
     /// @{
 
     /// Equality operator.
-    /// (Boost provides inequality from this.)
     inline bool operator==(const SdfPath &rhs) const {
         return _AsInt() == rhs._AsInt();
+    }
+
+    /// Inequality operator.
+    inline bool operator!=(const SdfPath &rhs) const {
+        return !(*this == rhs);
     }
 
     /// Comparison operator.
@@ -899,6 +919,24 @@ public:
         }
         // Valid prim parts -- must walk node structure, etc.
         return _LessThanInternal(*this, rhs);
+    }
+
+    /// Greater than operator.
+    /// \sa SdfPath::operator<(const SdfPath&)
+    inline bool operator>(const SdfPath& rhs) const {
+        return rhs < *this;
+    }
+
+    /// Less than or equal operator.
+    /// \sa SdfPath::operator<(const SdfPath&)
+    inline bool operator<=(const SdfPath& rhs) const {
+        return !(rhs < *this);
+    }
+
+    /// Greater than or equal operator.
+    /// \sa SdfPath::operator<(const SdfPath&)
+    inline bool operator>=(const SdfPath& rhs) const {
+        return !(*this < rhs);
     }
 
     template <class HashState>

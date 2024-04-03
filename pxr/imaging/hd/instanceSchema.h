@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -39,32 +39,34 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
 
-#define HDINSTANCE_SCHEMA_TOKENS \
+#define HD_INSTANCE_SCHEMA_TOKENS \
     (instance) \
     (instancer) \
     (prototypeIndex) \
     (instanceIndex) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdInstanceSchemaTokens, HD_API,
-    HDINSTANCE_SCHEMA_TOKENS);
+    HD_INSTANCE_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
-
 // This schema can be considered the opposite of instancerTopology's
-// "instanceLocations".  When the scene coalesces scene prims into multiple
-// instances of a single prototype, it inserts "instance" prims at the site
-// of de-duplication.  The instancer prim added to manage the prototype
-// uses "instanceLocations" to point back to all of these instance prims.
+// "instanceLocations". When the scene coalesces scene prims into multiple
+// instances of a single prototype, it inserts "instance" prims at the site of
+// de-duplication. The instancer prim added to manage the prototype uses
+// "instanceLocations" to point back to all of these instance prims.
 //
 // The instance prims aren't directly useful for rendering but can be useful
 // for scene processing and data aggregation.
-
+//
 
 class HdInstanceSchema : public HdSchema
 {
 public:
     HdInstanceSchema(HdContainerDataSourceHandle container)
     : HdSchema(container) {}
+
+// --(BEGIN CUSTOM CODE: Schema Methods)--
+// --(END CUSTOM CODE: Schema Methods)--
 
     //ACCESSORS
 
@@ -142,6 +144,11 @@ public:
     HD_API
     static HdInstanceSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
+
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    HD_API
+    static const TfToken &GetSchemaToken();
 
     /// Returns an HdDataSourceLocator (relative to the prim-level data source)
     /// where the container representing this schema is found by default.

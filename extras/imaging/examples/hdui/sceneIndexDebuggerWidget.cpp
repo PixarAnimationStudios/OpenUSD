@@ -30,7 +30,9 @@
 #include "sceneIndexObserverLoggingTreeView.h"
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
+#include "pxr/imaging/hd/utils.h"
 
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <QHBoxLayout>
@@ -38,20 +40,12 @@
 #include <QSplitter>
 #include <QWidgetAction>
 
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <typeinfo>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-// XXX stevel: low-tech temporary symbol name demangling until we manage these
-// via a formal plug-in/type registry
-static
-std::string
-Hdui_StripNumericPrefix(const std::string &s)
-{
-    return TfStringTrimLeft(s, "0123456789");
-}
 
 HduiSceneIndexDebuggerWidget::HduiSceneIndexDebuggerWidget(QWidget *parent)
 : QWidget(parent)
@@ -75,6 +69,9 @@ HduiSceneIndexDebuggerWidget::HduiSceneIndexDebuggerWidget(QWidget *parent)
 
     QPushButton * loggerButton = new QPushButton("Show Notice Logger");
     toolbarLayout->addWidget(loggerButton);
+
+    QPushButton * writeToFileButton = new QPushButton("Write to file");
+    toolbarLayout->addWidget(writeToFileButton);
 
     toolbarLayout->addStretch();
 
@@ -135,6 +132,33 @@ HduiSceneIndexDebuggerWidget::HduiSceneIndexDebuggerWidget(QWidget *parent)
                     this->_currentSceneIndex);
             }
     });
+
+    QObject::connect(writeToFileButton, &QPushButton::clicked,
+        [this](){
+            const HdSceneIndexBaseRefPtr si = this->_currentSceneIndex;
+            if (si) {
+                const std::string fileNamePrefix =
+                    "si_" + si->GetDisplayName() + "_";
+                
+                std::string filePath;
+                if (ArchMakeTmpFile(fileNamePrefix, &filePath) == -1) {
+                    TF_RUNTIME_ERROR(
+                        "Could not create file to write out scene index.");
+                    return;
+                }
+
+                // XXX May be useful to allow a subtree to be dumped.
+                //     For now, use the absolute root.
+                const SdfPath &rootPath = SdfPath::AbsoluteRootPath();
+
+                std::fstream output(filePath, std::ios::out);
+                HdUtils::PrintSceneIndex(output, si, rootPath);
+                output.close();
+
+                std::cerr << "Wrote scene index contents to "
+                          << filePath << std::endl;
+            }
+    });
 }
 
 void
@@ -156,8 +180,7 @@ HduiSceneIndexDebuggerWidget::SetSceneIndex(const std::string &displayName,
     std::ostringstream buffer;
     if (sceneIndex) {
         buffer << "<b><i>(";
-        std::string typeName = typeid(*sceneIndex).name();
-        buffer << Hdui_StripNumericPrefix(typeName);
+        buffer << sceneIndex->GetDisplayName();
         buffer << ")</i></b> ";
     }
     buffer << displayName;
@@ -238,7 +261,8 @@ HduiSceneIndexDebuggerWidget::_AddSceneIndexToTreeMenu(
     if (includeSelf) {
         _InputSelectionItem *item = new _InputSelectionItem(parentItem);
         item->setText(0,
-            Hdui_StripNumericPrefix(typeid(*sceneIndex).name()).c_str());
+            sceneIndex->GetDisplayName().c_str());
+
         item->sceneIndex = sceneIndex;
         
         parentItem = item;

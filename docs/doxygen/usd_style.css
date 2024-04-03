@@ -19,3 +19,16 @@ table.doxtable th:empty {
     padding: 0;
     border: 0;
 }
+
+/* Style used for "warning banner" shown on non-release version pages, see
+   also the doxygen header.html AddWarningBanner() fcn */
+.non_release_version_warning {
+  padding: 0.5em;
+  text-align: center;
+  background-color: #FFBABA;
+  color: #6A0E0E;
+  margin-bottom: 10px;
+  font-family: var(--san-serif);
+  font-weight: 400;
+  font-size: 16px;
+}

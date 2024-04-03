@@ -14,6 +14,9 @@ Prim Stack:
 Child names:
      ['Rig', 'Test']
 
+Prohibited child names:
+     ['Anim']
+
 Property names:
      ['doc']
 
@@ -84,6 +87,9 @@ Prim Stack:
     rig.sdf              /Rig/SymRig
     rig.sdf              /Rig/SymRigBase
 
+Prohibited child names:
+     ['Anim']
+
 ------------------------------------------------------------------------
 Results for composing </PayloadedModel/Test>
 
@@ -125,6 +131,9 @@ Prim Stack:
 
 Child names:
      ['Rig', 'Test']
+
+Prohibited child names:
+     ['Anim']
 
 Property names:
      ['doc']
@@ -196,9 +205,37 @@ Prim Stack:
     rig.sdf              /Rig/SymRig
     rig.sdf              /Rig/SymRigBase
 
+Prohibited child names:
+     ['Anim']
+
 ------------------------------------------------------------------------
 Results for composing </ReferencePayloadedModel/Test>
 
 Prim Stack:
     model.sdf            /Model/Test
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Test/Anim>
+
+Prim Stack:
+    model_payload.sdf    /Model/Anim
+
+Child names:
+     ['LRig']
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Test/Anim/LRig>
+
+Prim Stack:
+    rig.sdf              /Rig/SymRigBase/Anim
+
+Property names:
+     ['foo']
+
+Property stacks:
+/ReferencePayloadedModel/Test/Anim/LRig.foo:
+    rig.sdf              /Rig/SymRigBase/Anim.foo
 

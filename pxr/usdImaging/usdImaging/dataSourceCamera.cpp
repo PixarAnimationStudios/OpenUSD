@@ -148,15 +148,18 @@ UsdImagingDataSourceCamera::GetNames()
 HdDataSourceBaseHandle
 UsdImagingDataSourceCamera::Get(const TfToken &name)
 {
-    // Note that scene index emulation calls this method with
-    // "shutterOpen" (Usd attribute is shutter:open)
-    // "shutterClose" (Usd attribute is shutter:close)
-    // "windowPolicy" - does not exist on UsdGeomCamera
-    //
-    // We need to either do the right translation/ignore these values here
-    // or update scene index emulation to translate and check our Has method.
-    //
-    UsdAttribute attr = _usdCamera.GetPrim().GetAttribute(name);
+    TfToken usdName = name;
+    // UsdGeomTokens->shutterOpen is "shutter:open" and thus different
+    // from the camera schema.
+    if (name == HdCameraSchemaTokens->shutterOpen) {
+        usdName = UsdGeomTokens->shutterOpen;
+    }
+    // Similar to shutterOpen.
+    if (name == HdCameraSchemaTokens->shutterClose) {
+        usdName = UsdGeomTokens->shutterClose;
+    }
+
+    UsdAttribute attr = _usdCamera.GetPrim().GetAttribute(usdName);
 
     if (!attr) {
         return nullptr;
@@ -201,14 +204,14 @@ TfTokenVector
 UsdImagingDataSourceCameraPrim::GetNames()
 {
     TfTokenVector result = UsdImagingDataSourcePrim::GetNames();
-    result.push_back(HdCameraSchemaTokens->camera);
+    result.push_back(HdCameraSchema::GetSchemaToken());
     return result;
 }
 
 HdDataSourceBaseHandle 
 UsdImagingDataSourceCameraPrim::Get(const TfToken & name)
 {
-    if (name == HdCameraSchemaTokens->camera) {
+    if (name == HdCameraSchema::GetSchemaToken()) {
         return UsdImagingDataSourceCamera::New(
                 _GetSceneIndexPath(),
                 UsdGeomCamera(_GetUsdPrim()),
@@ -222,12 +225,14 @@ HdDataSourceLocatorSet
 UsdImagingDataSourceCameraPrim::Invalidate(
     UsdPrim const& prim,
     const TfToken &subprim,
-    const TfTokenVector &properties)
+    const TfTokenVector &properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     TRACE_FUNCTION();
 
     HdDataSourceLocatorSet locators =
-        UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
+        UsdImagingDataSourcePrim::Invalidate(
+            prim, subprim, properties, invalidationType);
 
     static TfTokenVector usdNames = 
         UsdGeomCamera::GetSchemaAttributeNames(/* includeInherited = */ false);
@@ -235,8 +240,20 @@ UsdImagingDataSourceCameraPrim::Invalidate(
     for (const TfToken &propertyName : properties) {
         for (const TfToken &usdName : usdNames) {
             if (propertyName == usdName) {
-                locators.insert(
-                    HdCameraSchema::GetDefaultLocator().Append(propertyName));
+                if (usdName == UsdGeomTokens->shutterOpen) {
+                    // UsdGeomTokens->shutterOpen is "shutter:open" and thus
+                    // different from camera schema.
+                    locators.insert(
+                        HdCameraSchema::GetShutterOpenLocator());
+                } else if (usdName == UsdGeomTokens->shutterClose) {
+                    // Similar to shutterOpen.
+                    locators.insert(
+                        HdCameraSchema::GetShutterCloseLocator());
+                } else {
+                    locators.insert(
+                        HdCameraSchema::GetDefaultLocator().Append(
+                            propertyName));
+                }
             }
         }
     }

@@ -1,0 +1,60 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "UsdRiPxrImagingBarnLightFilterAdapter": {
+                        "bases": [
+                            "UsdImagingLightFilterAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "PxrBarnLightFilter"
+                    },
+                    "UsdRiPxrImagingDisplayFilterAdapter": {
+                        "bases": [
+                            "UsdImagingPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "PxrDisplayFilterPluginBase",
+                        "includeDerivedPrimTypes": true
+                    },
+                    "UsdRiPxrImagingIntegratorAdapter": {
+                        "bases": [
+                            "UsdImagingPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "PxrIntegratorPluginBase",
+                        "includeDerivedPrimTypes" : true 
+                    },
+                    "UsdRiPxrImagingIntMultLightFilterAdapter": {
+                        "bases": [
+                            "UsdImagingLightFilterAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "PxrIntMultLightFilter"
+                    },
+                    "UsdRiPxrImagingRodLightFilterAdapter": {
+                        "bases": [
+                            "UsdImagingLightFilterAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "PxrRodLightFilter"
+                    },
+                    "UsdRiPxrImagingSampleFilterAdapter": {
+                        "bases": [
+                            "UsdImagingPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "PxrSampleFilterPluginBase",
+                        "includeDerivedPrimTypes" : true 
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "usdRiPxrImaging",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

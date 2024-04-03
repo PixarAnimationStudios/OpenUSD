@@ -1,0 +1,61 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+def Sphere "ball1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/USD_Default_Green>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1.5, 0, 1.5, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+def Sphere "ball2" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/USD_Gold>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1.5, 0, 1.5, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+def Sphere "ball3" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/USD_Plastic>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1.5, 0, -1.5, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+def Sphere "ball4" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/USD_Plastic_Rough>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1.5, 0, -1.5, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Scope "Materials" {
+    def "MaterialX" (
+        references = [
+            # USD Preview Surface MaterialX Nodes
+            @./mtlxFiles/usd_preview_surface_nodes.mtlx@</MaterialX>,
+        ]
+    )
+    {
+    }
+}
+
+def Xform "lights" 
+{
+    def DomeLight "DomeLight"
+    {
+        asset inputs:texture:file = @./StinsonBeach.hdr@
+        float xformOp:rotateX:Zup = 90
+        uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
+    }
+}

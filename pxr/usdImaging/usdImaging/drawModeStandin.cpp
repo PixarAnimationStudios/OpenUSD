@@ -23,17 +23,19 @@
 
 #include "pxr/usdImaging/usdImaging/drawModeStandin.h"
 
-#include "pxr/usdImaging/usdImaging/modelSchema.h"
+#include "pxr/usdImaging/usdImaging/geomModelSchema.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/basisCurvesSchema.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
 #include "pxr/imaging/hd/extentSchema.h"
+#include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/legacyDisplayStyleSchema.h"
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/materialConnectionSchema.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialNodeSchema.h"
+#include "pxr/imaging/hd/materialNodeParameterSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/meshTopologySchema.h"
 #include "pxr/imaging/hd/meshSchema.h"
@@ -55,6 +57,7 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/range3d.h"
 
+#include <array>
 #include <functional>
 #include <bitset>
 
@@ -190,12 +193,12 @@ public:
     }
 
 private:
-    _DisplayColorVec3fDataSource(const UsdImagingModelSchema schema)
+    _DisplayColorVec3fDataSource(const UsdImagingGeomModelSchema schema)
       : _schema(schema)
     {
     }
 
-    UsdImagingModelSchema _schema;
+    UsdImagingGeomModelSchema _schema;
 };
 
 /// A vec4f wrapper around a HdVec3fDataSource, for use when a vec4f
@@ -329,7 +332,7 @@ public:
             ///
             return _PrimvarDataSource::New(
                 _DisplayColorVec3fDataSource::New(
-                    UsdImagingModelSchema::GetFromParent(_primSource)),
+                    UsdImagingGeomModelSchema::GetFromParent(_primSource)),
                 HdPrimvarSchemaTokens->constant,
                 HdPrimvarSchemaTokens->color);
         }
@@ -372,23 +375,15 @@ public:
             HdXformSchemaTokens->xform,
             HdPurposeSchemaTokens->purpose,
             HdVisibilitySchemaTokens->visibility,
+            HdInstancedBySchemaTokens->instancedBy,
             HdLegacyDisplayStyleSchemaTokens->displayStyle };
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
-        if (name == HdXformSchemaTokens->xform) {
-            if (_primSource) {
-                return _primSource->Get(name);
-            }
-            return nullptr;
-        }
-        if (name == HdPurposeSchemaTokens->purpose) {
-            if (_primSource) {
-                return _primSource->Get(name);
-            }
-            return nullptr;
-        }
-        if (name == HdVisibilitySchemaTokens->visibility) {
+        if (name == HdXformSchemaTokens->xform ||
+            name == HdPurposeSchemaTokens->purpose ||
+            name == HdVisibilitySchemaTokens->visibility ||
+            name == HdInstancedBySchemaTokens->instancedBy) {
             if (_primSource) {
                 return _primSource->Get(name);
             }
@@ -661,8 +656,8 @@ public:
 
         // Check whether model:drawModeColor is dirty.
         static const HdDataSourceLocator colorLocator =
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->drawModeColor);
+            UsdImagingGeomModelSchema::GetDefaultLocator().Append(
+                UsdImagingGeomModelSchemaTokens->drawModeColor);
         const bool dirtyColor =
             dirtyLocators.Intersects(colorLocator);
         
@@ -873,8 +868,8 @@ public:
 
         // Check whether model:drawModeColor is dirty.
         static const HdDataSourceLocator colorLocator =
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->drawModeColor);
+            UsdImagingGeomModelSchema::GetDefaultLocator().Append(
+                UsdImagingGeomModelSchemaTokens->drawModeColor);
         const bool dirtyColor =
             dirtyLocators.Intersects(colorLocator);
         
@@ -908,7 +903,7 @@ namespace _CardsDrawMode {
 TF_DEFINE_PRIVATE_TOKENS(
     _primNameTokens,
 
-    (mesh)
+    (cardsMesh)
 );
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -929,6 +924,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _imageMetadataTokens,
 
     (worldtoscreen)
+    (worldToNDC)
 );
 
 // Helper to produce, e.g., FooXPosBar.
@@ -954,7 +950,7 @@ using _MaterialsDict = std::unordered_map<
 /// It is providing a mesh with a material. The mesh consists of up to 6 quads.
 /// Besides points, it has the vertex-varying cardsUv and face-varying
 /// cardsTexAssgin - determining where to sample which of the up to 6 textures
-/// that can be specified by the UsdImagingModelSchema.
+/// that can be specified by the UsdImagingGeomModelSchema.
 ///
 /// Details vary based on the card geometry which is box, cross, or fromTexture.
 ///
@@ -1011,7 +1007,7 @@ public:
     }
 
 private:
-    /// A helper extracing values from UsdImagingModelSchema.
+    /// A helper extracing values from UsdImagingGeomModelSchema.
     ///
     /// Note that the order of the six given textures is assumed to be:
     /// XPos, YPos, ZPos, XNeg, YNeg, ZNeg.
@@ -1022,7 +1018,7 @@ private:
     /// So we do not support motion-blur for these attributes.
     struct _SchemaValues
     {
-        _SchemaValues(UsdImagingModelSchema schema);
+        _SchemaValues(UsdImagingGeomModelSchema schema);
 
         /// Card geometry, that is box, cross, or fromTexture.
         TfToken cardGeometry;
@@ -1085,7 +1081,7 @@ private:
             return cached;
         }
         auto data = std::make_shared<_CardsData>(
-            _SchemaValues(UsdImagingModelSchema::GetFromParent(_primSource)),
+            _SchemaValues(UsdImagingGeomModelSchema::GetFromParent(_primSource)),
             _primPath
         );
 
@@ -1152,34 +1148,58 @@ GetWorldToScreenFromImageMetadata(
     //   in row major order.
     // - GfMatrix4f or GfMatrix4d
     VtValue worldtoscreen;
-    if (!img->GetMetadata(_imageMetadataTokens->worldtoscreen, &worldtoscreen)) {
-        return false;
-    }
 
+    // XXX: OpenImageIO >= 2.2 no longer flips 'worldtoscreen' with 'worldToNDC'
+    // on read and write, so assets where 'worldtoscreen' was written with > 2.2
+    // have 'worldToNDC' actually in the metadata, and OIIO < 2.2 would read
+    // and return 'worldToNDC' from the file in response to a request for 
+    // 'worldtoscreen'. OIIO >= 2.2 no longer does either, so 'worldtoscreen'
+    // gets written as 'worldtoscreen' and returned when asked for
+    // 'worldtoscreen'. Issues only arise when trying to read 'worldtoscreen'
+    // from an asset written with OIIO < 2.2, when the authoring program told
+    // OIIO to write it as 'worldtoscreen'. Old OIIO flipped it to 'worldToNDC'.
+    // So new OIIO needs to read 'worldToNDC' to retrieve it.
+    //
+    // See https://github.com/OpenImageIO/oiio/pull/2609
+    //
+    // OIIO's change is correct -- the two metadata matrices have different
+    // semantic meanings, and should not be conflated. Unfortunately, users will
+    // have to continue to conflate them for a while as assets transition into
+    // vfx2022 (which uses OIIO 2.3). So we will need to check for both.
+    
+    if (!img->GetMetadata(_imageMetadataTokens->worldtoscreen, &worldtoscreen)) {
+        if (img->GetMetadata(_imageMetadataTokens->worldToNDC, &worldtoscreen)) {
+            TF_WARN("The texture asset '%s' may have been authored by an "
+            "earlier version of the VFX toolset. To silence this warning, "
+            "please regenerate the asset with the current toolset.",
+            file.c_str());
+        } else {
+            TF_WARN("The texture asset '%s' lacks a worldtoscreen matrix in "
+            "metadata. Cards draw mode may not appear as expected.", 
+            file.c_str());
+            return false;
+        }
+    }
+    
     if (worldtoscreen.IsHolding<std::vector<float>>()) {
         return _ConvertToMatrix(
             worldtoscreen.UncheckedGet<std::vector<float>>(), mat);
-    }
-    if (worldtoscreen.IsHolding<std::vector<double>>()) {
+    } else if (worldtoscreen.IsHolding<std::vector<double>>()) {
         return _ConvertToMatrix(
             worldtoscreen.UncheckedGet<std::vector<double>>(), mat);
-    }
-    if (worldtoscreen.IsHolding<GfMatrix4f>()) {
+    } else if (worldtoscreen.IsHolding<GfMatrix4f>()) {
         *mat = GfMatrix4d(worldtoscreen.UncheckedGet<GfMatrix4f>());
         return true;
-    }
-    if (worldtoscreen.IsHolding<GfMatrix4d>()) {
+    } else if (worldtoscreen.IsHolding<GfMatrix4d>()) {
         *mat = worldtoscreen.UncheckedGet<GfMatrix4d>();
         return true;
     }
-
-    TF_WARN(
-        "worldtoscreen metadata holding unexpected type '%s'",
+    TF_WARN("worldtoscreen metadata holding unexpected type '%s'",
         worldtoscreen.GetTypeName().c_str());
     return false;
 }
 
-_CardsDataCache::_SchemaValues::_SchemaValues(UsdImagingModelSchema schema)
+_CardsDataCache::_SchemaValues::_SchemaValues(UsdImagingGeomModelSchema schema)
 {
     if (HdTokenDataSourceHandle src = schema.GetCardGeometry()) {
         cardGeometry = src->GetTypedValue(0.0f);
@@ -1368,7 +1388,7 @@ _CardsDataCache::_CardsData::_ComputePoints(const _SchemaValues &values)
                     // symmetry about the center of the box.
                     // We also reverse the order of the points.
                     points.push_back(
-                        GfVec3f(1.0f) - _Transform(pts[3 - k], i));
+                        one - _Transform(pts[3 - k], i));
                 }
             }
         }
@@ -1386,8 +1406,6 @@ _CardsDataCache::_CardsData::_ComputeGeomSubsets(
     static const std::array<TfToken, 6> materialNameTokens = 
         _AddAxesToNames("subsetMaterial", "");
     
-    TfToken purposeToken[] = { HdMaterialBindingSchemaTokens->allPurpose };
-
     std::vector<TfToken> subsetNames;
     std::vector<HdDataSourceBaseHandle> subsets;
 
@@ -1413,26 +1431,49 @@ _CardsDataCache::_CardsData::_ComputeGeomSubsets(
         for (size_t i = 0; i < 6; i++) {
             const size_t vi = (i % 2 == 0 ? 0 : 3) + i / 2;
             if (values.hasFace[vi]) {
-                // use the opposite face's material if no texture for this face
-                size_t matIndex = values.hasTexture[vi] ? vi : (vi + 3) % 6;
-                // geomSubset's materialBinding path must be absolute
-                HdDataSourceBaseHandle materialPath[] = {
-                    HdRetainedTypedSampledDataSource<SdfPath>::New(primPath
-                        .AppendChild(materialNameTokens[matIndex])) };
+                static HdTokenDataSourceHandle const typeSource =
+                    HdGeomSubsetSchema::BuildTypeDataSource(
+                        HdGeomSubsetSchemaTokens->typeFaceSet);
                 const int subsetIndex(subsets.size());
-                HdContainerDataSourceHandle containers[] = {
-                    HdGeomSubsetSchema::BuildRetained(
-                        HdGeomSubsetSchema::BuildTypeDataSource(
-                            HdGeomSubsetSchemaTokens->typeFaceSet),
-                        HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                            { subsetIndex })),
-                    HdRetainedContainerDataSource::New(
-                        HdMaterialBindingSchemaTokens->materialBinding,
-                        HdMaterialBindingSchema::BuildRetained(
-                            1, purposeToken, materialPath)) };
+                // use the opposite face's material if no texture for this face
+                const size_t matIndex = values.hasTexture[vi] ? vi : (vi + 3) % 6;
+                static const TfToken purposes[] = {
+                    HdMaterialBindingsSchemaTokens->allPurpose
+                };
+                const SdfPath materialPath =
+                    // geomSubset's materialBinding path must be absolute
+                    primPath.AppendChild(materialNameTokens[matIndex]);
+
+                // Note that we use the hydra material bindings schema here (and
+                // below) rather than UsdImagingDirectMaterialBinding(s)Schema.
+                // We want these bindings to be unaffected by any USD material
+                // bindings up-namespace.
+                //
+                HdDataSourceBaseHandle const materialBindingSources[] = {
+                    HdMaterialBindingSchema::Builder()
+                        .SetPath(
+                            HdRetainedTypedSampledDataSource<SdfPath>::New(
+                                materialPath))
+                        .Build()
+                };
+
                 subsetNames.push_back(subsetNameTokens[vi]);
-                subsets.push_back(HdOverlayContainerDataSource::New(
-                    TfArraySize(containers), containers));
+                subsets.push_back(
+                    HdOverlayContainerDataSource::New(
+                        HdGeomSubsetSchema::Builder()
+                            .SetType(typeSource)
+                            .SetIndices(
+                                HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                                    { subsetIndex }))
+                            .Build(),
+
+                        HdRetainedContainerDataSource::New(
+                            HdMaterialBindingsSchema::GetSchemaToken(),
+                            HdMaterialBindingsSchema::BuildRetained(
+                                TfArraySize(purposes),
+                                purposes,
+                                materialBindingSources))));
+                        
             }
         }
     }
@@ -1552,17 +1593,40 @@ _ComputeConnection(const TfToken &nodeName, const TfToken &outputName)
 HdDataSourceBaseHandle
 _CardsTextureNode(const HdAssetPathDataSourceHandle &file,
                   const HdDataSourceBaseHandle &fallback)
-                  
 {
-    const TfToken inputConnectionNames[] = {
-        _UsdUVTextureTokens->st };
-
+    static const TfToken inputConnectionNames[] = { _UsdUVTextureTokens->st };
     const HdDataSourceBaseHandle inputConnections[] = {
         _ComputeConnection(
             _materialNodeNameTokens->cardUvCoords, 
             _UsdPrimvarReaderTokens->result) };
 
-
+    static const TfToken paramsNames[] = {
+        _UsdUVTextureTokens->wrapS,
+        _UsdUVTextureTokens->wrapT,
+        _UsdUVTextureTokens->fallback,
+        _UsdUVTextureTokens->file,
+        _UsdUVTextureTokens->st
+    };
+    const HdDataSourceBaseHandle paramsValues[] = {
+        HdMaterialNodeParameterSchema::Builder()
+            .SetValue(HdRetainedTypedSampledDataSource<TfToken>::New(
+                _UsdUVTextureTokens->clamp))
+            .Build(),
+        HdMaterialNodeParameterSchema::Builder()
+            .SetValue(HdRetainedTypedSampledDataSource<TfToken>::New(
+                _UsdUVTextureTokens->clamp))
+            .Build(),
+        HdMaterialNodeParameterSchema::Builder()
+            .SetValue(HdSampledDataSource::Cast(fallback))
+            .Build(),
+        HdMaterialNodeParameterSchema::Builder()
+            .SetValue(file)
+            .Build(),
+        HdMaterialNodeParameterSchema::Builder()
+            .SetValue(HdRetainedTypedSampledDataSource<TfToken>::New(
+                _primvarNameTokens->cardsUv))
+            .Build()
+    };
 
     return
         HdMaterialNodeSchema::Builder()
@@ -1571,19 +1635,9 @@ _CardsTextureNode(const HdAssetPathDataSourceHandle &file,
                     UsdImagingTokens->UsdUVTexture))
             .SetParameters(
                 HdRetainedContainerDataSource::New(
-                    _UsdUVTextureTokens->wrapS,
-                    HdRetainedTypedSampledDataSource<TfToken>::New(
-                        _UsdUVTextureTokens->clamp),
-                    _UsdUVTextureTokens->wrapT,
-                    HdRetainedTypedSampledDataSource<TfToken>::New(
-                        _UsdUVTextureTokens->clamp),
-                    _UsdUVTextureTokens->fallback,
-                    fallback,
-                    _UsdUVTextureTokens->file,
-                    file,
-                    _UsdUVTextureTokens->st,
-                    HdRetainedTypedSampledDataSource<TfToken>::New(
-                        _primvarNameTokens->cardsUv)))
+                    TfArraySize(paramsNames),
+                    paramsNames,
+                    paramsValues))
             .SetInputConnections(
                 HdRetainedContainerDataSource::New(
                     TfArraySize(inputConnectionNames),
@@ -1599,9 +1653,17 @@ _CardsSurfaceNode(const bool hasTexture, const HdDataSourceBaseHandle& fallback)
         HdRetainedTypedSampledDataSource<TfToken>::New(
             UsdImagingTokens->UsdPreviewSurface);
     static const HdDataSourceBaseHandle one =
-        HdRetainedTypedSampledDataSource<float>::New(1.0f);
+        HdMaterialNodeParameterSchema::Builder()
+            .SetValue(HdRetainedTypedSampledDataSource<float>::New(1.0f))
+            .Build();
     static const HdDataSourceBaseHandle pointOne =
-        HdRetainedTypedSampledDataSource<float>::New(0.1f);
+        HdMaterialNodeParameterSchema::Builder()
+            .SetValue(HdRetainedTypedSampledDataSource<float>::New(0.1f))
+            .Build();
+    static const HdDataSourceBaseHandle fallbackParam = 
+        HdMaterialNodeParameterSchema::Builder()
+            .SetValue(HdSampledDataSource::Cast(fallback))
+            .Build();
 
     std::vector<TfToken> parameterNames;
     std::vector<HdDataSourceBaseHandle> parameters;
@@ -1626,7 +1688,7 @@ _CardsSurfaceNode(const bool hasTexture, const HdDataSourceBaseHandle& fallback)
         parameters.push_back(pointOne);
     } else {
         parameterNames.push_back(_UsdPreviewSurfaceTokens->diffuseColor);
-        parameters.push_back(fallback);
+        parameters.push_back(fallbackParam);
         parameterNames.push_back(_UsdPreviewSurfaceTokens->opacity);
         parameters.push_back(one);
     }
@@ -1649,15 +1711,22 @@ _CardsSurfaceNode(const bool hasTexture, const HdDataSourceBaseHandle& fallback)
 HdDataSourceBaseHandle
 _CardsUVNode()
 {
+    static const TfToken paramsNames[] = { _UsdPrimvarReaderTokens->varname };
+    const HdDataSourceBaseHandle paramsValues[] = {
+        HdMaterialNodeParameterSchema::Builder()
+            .SetValue(HdRetainedTypedSampledDataSource<TfToken>::New(
+                _primvarNameTokens->cardsUv))
+            .Build()
+    };
     return HdMaterialNodeSchema::Builder()
         .SetNodeIdentifier(
             HdRetainedTypedSampledDataSource<TfToken>::New(
                 UsdImagingTokens->UsdPrimvarReader_float2))
         .SetParameters(
             HdRetainedContainerDataSource::New(
-                _UsdPrimvarReaderTokens->varname,
-                HdRetainedTypedSampledDataSource<TfToken>::New(
-                    _primvarNameTokens->cardsUv)))
+                TfArraySize(paramsNames),
+                paramsNames,
+                paramsValues))
         .Build();
 }
 
@@ -1667,8 +1736,8 @@ _CardsDataCache::_CardsData::_ComputeMaterials(const _SchemaValues &values)
     static const std::array<TfToken, 6> materialNameTokens = 
         _AddAxesToNames("subsetMaterial", "");
 
-    const HdDataSourceBaseHandle vec4Fallback = _Vec4fFromVec3fDataSource::New(
-        values.drawModeColor, 1.0f);
+    const HdDataSourceBaseHandle vec4Fallback = 
+        _Vec4fFromVec3fDataSource::New(values.drawModeColor, 1.0f);
 
     _MaterialsDict materials;
     
@@ -1685,12 +1754,17 @@ _CardsDataCache::_CardsData::_ComputeMaterials(const _SchemaValues &values)
                 std::vector<TfToken> networkNames;
                 std::vector<HdDataSourceBaseHandle> networks;
 
+                // Card Surface
                 nodeNames.push_back(_materialNodeNameTokens->cardSurface);
-                nodes.push_back(_CardsSurfaceNode(
-                    values.hasTexture[i], values.drawModeColor));
+                nodes.push_back(
+                    _CardsSurfaceNode(
+                        values.hasTexture[i], values.drawModeColor));
+                // Card Texture
                 nodeNames.push_back(_materialNodeNameTokens->cardTexture);
-                nodes.push_back(_CardsTextureNode(
-                    values.texturePaths[i], vec4Fallback));
+                nodes.push_back(
+                    _CardsTextureNode(
+                        values.texturePaths[i], vec4Fallback));
+                // Card UvCords
                 nodeNames.push_back(_materialNodeNameTokens->cardUvCoords);
                 nodes.push_back(_CardsUVNode());
 
@@ -1948,7 +2022,7 @@ public:
 
     const TfTokenVector
     _GetChildNames() const override {
-        TfTokenVector names = { _primNameTokens->mesh };
+        TfTokenVector names = { _primNameTokens->cardsMesh };
         const _MaterialsDict mats = _dataCache->GetMaterials();
         for (const auto &kv : mats) {
             names.push_back(kv.first);
@@ -1958,7 +2032,7 @@ public:
 
     TfToken
     _GetChildPrimType(const TfToken &name) const override {
-        if (name == _primNameTokens->mesh) {
+        if (name == _primNameTokens->cardsMesh) {
             return HdPrimTypeTokens->mesh;
         }
         return HdPrimTypeTokens->material;
@@ -1985,20 +2059,20 @@ public:
         // we send to the observer.
 
         static const HdDataSourceLocatorSet cardLocators{
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardGeometry),
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureXPos),
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureYPos),
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureZPos),
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureXNeg),
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureYNeg),
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureZNeg) };
+            UsdImagingGeomModelSchema::GetDefaultLocator().Append(
+                UsdImagingGeomModelSchemaTokens->cardGeometry),
+            UsdImagingGeomModelSchema::GetDefaultLocator().Append(
+                UsdImagingGeomModelSchemaTokens->cardTextureXPos),
+            UsdImagingGeomModelSchema::GetDefaultLocator().Append(
+                UsdImagingGeomModelSchemaTokens->cardTextureYPos),
+            UsdImagingGeomModelSchema::GetDefaultLocator().Append(
+                UsdImagingGeomModelSchemaTokens->cardTextureZPos),
+            UsdImagingGeomModelSchema::GetDefaultLocator().Append(
+                UsdImagingGeomModelSchemaTokens->cardTextureXNeg),
+            UsdImagingGeomModelSchema::GetDefaultLocator().Append(
+                UsdImagingGeomModelSchemaTokens->cardTextureYNeg),
+            UsdImagingGeomModelSchema::GetDefaultLocator().Append(
+                UsdImagingGeomModelSchemaTokens->cardTextureZNeg) };
         
         // Blast the entire thing.
         if (dirtyLocators.Intersects(cardLocators)) {
@@ -2012,8 +2086,8 @@ public:
         }
 
         static const HdDataSourceLocator colorLocator =
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->drawModeColor);
+            UsdImagingGeomModelSchema::GetDefaultLocator().Append(
+                UsdImagingGeomModelSchemaTokens->drawModeColor);
         if (dirtyLocators.Intersects(colorLocator)) {
             HdDataSourceLocatorSet primDirtyLocators = dirtyLocators;
             static const HdDataSourceLocator displayColorValue =
@@ -2022,7 +2096,8 @@ public:
                     .Append(HdPrimvarSchemaTokens->primvarValue);
             primDirtyLocators.insert(displayColorValue);
             entries->push_back(
-                {_path.AppendChild(_primNameTokens->mesh), primDirtyLocators});
+                {_path.AppendChild(_primNameTokens->cardsMesh),
+                    primDirtyLocators});
             static const HdDataSourceLocatorSet materialColorInputs =
                 _ComputeMaterialColorInputLocators();
             for (const auto &kv : _dataCache->GetMaterials()) {
@@ -2033,7 +2108,7 @@ public:
         }
 
         entries->push_back(
-            {_path.AppendChild(_primNameTokens->mesh), dirtyLocators});
+            {_path.AppendChild(_primNameTokens->cardsMesh), dirtyLocators});
     }
 
     TfToken GetDrawMode() const override {
@@ -2056,8 +2131,8 @@ private:
 
 UsdImaging_DrawModeStandinSharedPtr
 UsdImaging_GetDrawModeStandin(const TfToken &drawMode,
-                                const SdfPath &path,
-                                const HdContainerDataSourceHandle &primSource)
+                              const SdfPath &path,
+                              const HdContainerDataSourceHandle &primSource)
 {
     if (drawMode.IsEmpty()) {
         return nullptr;

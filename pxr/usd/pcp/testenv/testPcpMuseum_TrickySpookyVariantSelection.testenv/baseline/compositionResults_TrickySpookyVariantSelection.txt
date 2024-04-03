@@ -31,14 +31,17 @@ Prim Stack:
     root.sdf             /CharRig/Anim/Lip
     FaceRig.sdf          /FaceRig/Anim/Lip
     LipRig.sdf           /LipRig/Anim
+    TwoLips.sdf          /LipsRig/Anim
     SingleLip.sdf        /LipsRig/Anim
 
 Property names:
-     ['Lip1']
+     ['Lip1', 'Lip2']
 
 Property stacks:
 /CharRig/Anim/Lip.Lip1:
     SingleLip.sdf        /LipsRig/Anim.Lip1
+/CharRig/Anim/Lip.Lip2:
+    TwoLips.sdf          /LipsRig/Anim.Lip2
 
 ------------------------------------------------------------------------
 Results for composing </CharRig/Rig>
@@ -66,6 +69,9 @@ Variant Selections:
 
 Child names:
      ['Rig']
+
+Prohibited child names:
+     ['Anim']
 
 ------------------------------------------------------------------------
 Results for composing </CharRig/Rig/LipRig/Rig>

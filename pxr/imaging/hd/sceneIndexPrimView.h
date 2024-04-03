@@ -90,6 +90,9 @@ public:
     };
 
     HD_API
+    HdSceneIndexPrimView(HdSceneIndexBaseRefPtr const &inputSceneIndex);
+
+    HD_API
     HdSceneIndexPrimView(HdSceneIndexBaseRefPtr const &inputSceneIndex,
                          const SdfPath &root);
 

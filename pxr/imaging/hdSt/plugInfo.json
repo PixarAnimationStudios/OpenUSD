@@ -21,23 +21,29 @@
                         "priority": 0,
                         "displayName": "Scene Index to resolve material bindings."
                     },
+                    "HdSt_MaterialPrimvarTransferSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "GL",
+                        "priority": 0,
+                        "displayName": "Scene Index to transfer primvars from material to prim."
+                    },
                     "HdSt_NodeIdentifierResolvingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "GL",
                         "priority": 0,
                         "displayName": "Scene Index to resolve nodeIdentifier from glslfx sourceAsset."
                     },
-                    "HdSt_TerminalsResolvingSceneIndexPlugin" : {
-                        "bases": ["HdSceneIndexPlugin"],
-                        "loadWithRenderer" : "GL",
-                        "priority": 0,
-                        "displayName": "Scene Index to resolve terminal names."
-                    },
                     "HdSt_ImplicitSurfaceSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "GL",
                         "priority": 0,
                         "displayName": "Scene Index to turn implicit surfaces into prims suitable for Storm"
+                    },
+                    "HdSt_NurbsApproximatingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "GL",
+                        "priority": 0,
+                        "displayName": "Scene Index to resolve terminal names."
                     }
                 },
                 "ShaderResources": "shaders"

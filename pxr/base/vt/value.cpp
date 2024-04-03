@@ -33,11 +33,11 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/preprocessor.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include <tbb/spin_mutex.h>
 #include <tbb/concurrent_unordered_map.h>
@@ -576,7 +576,7 @@ VtStreamOut(vector<VtValue> const &val, std::ostream &stream) {
     return stream;
 }    
 
-#define _VT_IMPLEMENT_ZERO_VALUE_FACTORY(r, unused, elem)                \
+#define _VT_IMPLEMENT_ZERO_VALUE_FACTORY(unused, elem)                   \
 template <>                                                              \
 Vt_DefaultValueHolder Vt_DefaultValueFactory<VT_TYPE(elem)>::Invoke()    \
 {                                                                        \
@@ -584,11 +584,11 @@ Vt_DefaultValueHolder Vt_DefaultValueFactory<VT_TYPE(elem)>::Invoke()    \
 }                                                                        \
 template struct Vt_DefaultValueFactory<VT_TYPE(elem)>;
 
-BOOST_PP_SEQ_FOR_EACH(_VT_IMPLEMENT_ZERO_VALUE_FACTORY,
-                      unused,
-                      VT_VEC_VALUE_TYPES
-                      VT_MATRIX_VALUE_TYPES
-                      VT_QUATERNION_VALUE_TYPES
-                      VT_DUALQUATERNION_VALUE_TYPES)
+TF_PP_SEQ_FOR_EACH(_VT_IMPLEMENT_ZERO_VALUE_FACTORY,
+                   ~,
+                   VT_VEC_VALUE_TYPES
+                   VT_MATRIX_VALUE_TYPES
+                   VT_QUATERNION_VALUE_TYPES
+                   VT_DUALQUATERNION_VALUE_TYPES)
 
 PXR_NAMESPACE_CLOSE_SCOPE

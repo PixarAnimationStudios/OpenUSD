@@ -491,7 +491,7 @@ FilterLayer(SdfLayerHandle const &inLayer,
         SdfSpecType specType, TfToken const &field,
         SdfLayerHandle const &srcLayer, const SdfPath& srcPath, bool fieldInSrc,
         const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
-        boost::optional<VtValue> *valueToCopy) {
+        std::optional<VtValue> *valueToCopy) {
 
         if (!p.fieldMatcher || p.fieldMatcher->Match(field.GetString())) {
             *valueToCopy = GetReportFieldValue(

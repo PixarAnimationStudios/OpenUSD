@@ -207,14 +207,17 @@ HdxOitResolveTask::_UpdateCameraFraming(
         return;
     }
 
+    _renderPassState->SetCamera(
+        ctxRenderPassState->GetCamera());
+    _renderPassState->SetOverrideWindowPolicy(
+        ctxRenderPassState->GetOverrideWindowPolicy());
+
     const CameraUtilFraming& framing = ctxRenderPassState->GetFraming();
     if (framing.IsValid()) {
-        _renderPassState->SetCameraAndFraming(
-            ctxRenderPassState->GetCamera(), framing,
-            ctxRenderPassState->GetOverrideWindowPolicy());
+        _renderPassState->SetFraming(framing);
     } else {
-        _renderPassState->SetCameraAndViewport(
-            ctxRenderPassState->GetCamera(), ctxRenderPassState->GetViewport());
+        _renderPassState->SetViewport(
+            ctxRenderPassState->GetViewport());
     }
 }
 

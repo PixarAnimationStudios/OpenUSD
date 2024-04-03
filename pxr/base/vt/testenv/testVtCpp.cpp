@@ -63,6 +63,7 @@
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/fileUtils.h"
@@ -219,6 +220,13 @@ static void testArray() {
 
         TF_AXIOM(array.size() == 5);
 
+        array.resize(10, 9.99);
+        TF_AXIOM(array.size() == 10);
+        TF_AXIOM(array[5] == 9.99 &&
+                 array[6] == 9.99 &&
+                 array[7] == 9.99 &&
+                 array[8] == 9.99 &&
+                 array[9] == 9.99);
     }
 
     {
@@ -1494,6 +1502,16 @@ static void testValue() {
         t = v.UncheckedRemove<string>();
         TF_AXIOM(t == "hello world!");
         TF_AXIOM(v.IsEmpty());
+
+        // Held value mutation.
+        v = t;
+        TF_AXIOM(v.Mutate<string>([](std::string &str) { str += "!"; }));
+        TF_AXIOM(v.Get<string>() == "hello world!!");
+        v.UncheckedMutate<string>([](std::string &str) { str += "!"; });
+        TF_AXIOM(v.Get<string>() == "hello world!!!");
+
+        TF_AXIOM(!v.Mutate<int>([](int &i) { ++i; }));
+        TF_AXIOM(v.Get<string>() == "hello world!!!");
     }
 
     // Test calling Get with incorrect type.  Should issue an error and produce
@@ -1507,7 +1525,7 @@ static void testValue() {
         m.Clear();
     }
 
-#define _VT_TEST_ZERO_VALUE(r, unused, elem)                            \
+#define _VT_TEST_ZERO_VALUE(unused, elem)                               \
     {                                                                   \
         VtValue empty;                                                  \
         TfErrorMark m;                                                  \
@@ -1516,8 +1534,7 @@ static void testValue() {
         m.Clear();                                                      \
     }
     
-    BOOST_PP_SEQ_FOR_EACH(_VT_TEST_ZERO_VALUE,
-        unused, 
+    TF_PP_SEQ_FOR_EACH(_VT_TEST_ZERO_VALUE, ~,
         VT_VEC_VALUE_TYPES
         VT_MATRIX_VALUE_TYPES
         VT_QUATERNION_VALUE_TYPES
@@ -1847,6 +1864,16 @@ testKnownValueTypeIndex()
     TF_AXIOM(!VtIsKnownValueType<TypeNotKnownToVt>());
 }
 
+static void testVtCheapToCopy() {
+    static_assert(VtValueTypeHasCheapCopy<float>::value, "");
+    static_assert(VtValueTypeHasCheapCopy<int>::value, "");
+    static_assert(VtValueTypeHasCheapCopy<GfVec3d>::value, "");
+    static_assert(VtValueTypeHasCheapCopy<TfToken>::value, "");
+    static_assert(!VtValueTypeHasCheapCopy<std::string>::value, "");
+    static_assert(!VtValueTypeHasCheapCopy<VtArray<float>>::value, "");
+    static_assert(!VtValueTypeHasCheapCopy<VtArray<TfToken>>::value, "");
+}
+
 int main(int argc, char *argv[])
 {
     testArray();
@@ -1867,6 +1894,7 @@ int main(int argc, char *argv[])
 
     testVisitValue();
     testKnownValueTypeIndex();
+    testVtCheapToCopy();
 
     printf("Test SUCCEEDED\n");
 

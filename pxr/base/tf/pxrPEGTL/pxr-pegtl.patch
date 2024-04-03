@@ -1,0 +1,36 @@
+diff --git a/pxr/base/tf/pxrPEGTL/pegtl.h b/pxr/base/tf/pxrPEGTL/pegtl.h
+index b14aebed2..e6b8962d7 100644
+--- a/pxr/base/tf/pxrPEGTL/pegtl.h
++++ b/pxr/base/tf/pxrPEGTL/pegtl.h
+@@ -29,6 +29,31 @@ SOFTWARE.
+ 
+ */
+ 
++// PIXAR:
++// This header is not meant to be included in a .h file, to guard against
++// conflicts if a program includes their own pegtl header and then transitively
++// includes this header.
++#ifdef PXR_PEGTL_H
++#error This file should only be included once in any given source (.cpp) file.
++#endif
++#define PXR_PEGTL_H
++
++// PIXAR: 
++// Define TAO_PEGTL_NAMESPACE based on internal namespace to isolate
++// it from other versions of USD/PEGTL in client code.
++//
++// This would typically be done by wrapping the contents of this header in
++// PXR_NAMESPACE_OPEN_SCOPE and PXR_NAMESPACE_CLOSE_SCOPE, but that would
++// require more invasive changes to this header since there are STL header
++// includes scattered throughout.
++#include "pxr/pxr.h"
++
++#if PXR_USE_NAMESPACES
++#define TAO_PEGTL_NAMESPACE PXR_INTERNAL_NS ## _pegtl
++#else
++#define TAO_PEGTL_NAMESPACE pxr_pegtl
++#endif
++
+ #line 1 "amalgamated.hpp"
+ #line 1 "<built-in>"
+ #line 1 "<command-line>"

@@ -94,9 +94,9 @@ void _SetOverrideWindowPolicy(UsdImagingGLEngine & self,
 {
     extract<CameraUtilConformWindowPolicy> extractor(pyObj);
     if (extractor.check()) {
-        self.SetOverrideWindowPolicy({true, extractor()});
+        self.SetOverrideWindowPolicy(extractor());
     } else {
-        self.SetOverrideWindowPolicy({false, CameraUtilFit});
+        self.SetOverrideWindowPolicy(std::nullopt);
     }
 }
     
@@ -105,11 +105,14 @@ void _SetOverrideWindowPolicy(UsdImagingGLEngine & self,
 void wrapEngine()
 {
     { 
+        using Parameters = UsdImagingGLEngine::Parameters;
+
         scope engineScope = class_<UsdImagingGLEngine, boost::noncopyable>(
                 "Engine", "UsdImaging Renderer class")
             .def( init<>() )
             .def( init<const SdfPath &, const SdfPathVector&,
                     const SdfPathVector& >() )
+            .def( init<const Parameters &>() )
             .def("Render", &UsdImagingGLEngine::Render)
             .def("SetWindowPolicy", &UsdImagingGLEngine::SetWindowPolicy)
             .def("SetRenderViewport", &UsdImagingGLEngine::SetRenderViewport)
@@ -144,6 +147,12 @@ void wrapEngine()
                  return_value_policy< TfPySequenceToList >())
             .def("GetRendererSetting", &UsdImagingGLEngine::GetRendererSetting)
             .def("SetRendererSetting", &UsdImagingGLEngine::SetRendererSetting)
+            .def("SetActiveRenderSettingsPrimPath",
+                 &UsdImagingGLEngine::SetActiveRenderSettingsPrimPath)
+            .def("GetAvailableRenderSettingsPrimPaths",
+                 &UsdImagingGLEngine::GetAvailableRenderSettingsPrimPaths,
+                 return_value_policy< TfPySequenceToList >())
+                 .staticmethod("GetAvailableRenderSettingsPrimPaths")
             .def("SetColorCorrectionSettings", 
                     &UsdImagingGLEngine::SetColorCorrectionSettings)
             .def("IsColorCorrectionCapable", 
@@ -167,8 +176,25 @@ void wrapEngine()
             .def("SetRenderBufferSize", &UsdImagingGLEngine::SetRenderBufferSize)
             .def("SetFraming", &UsdImagingGLEngine::SetFraming)
             .def("SetOverrideWindowPolicy", _SetOverrideWindowPolicy)
+            .def("PollForAsynchronousUpdates",
+                &UsdImagingGLEngine::PollForAsynchronousUpdates)
+            
         ;
 
+
+        class_<Parameters>(
+                "Parameters", "Parameters to construct renderer engine")
+            .def_readwrite("rootPath", &Parameters::rootPath)
+            .def_readwrite("excludedPaths", &Parameters::excludedPaths)
+            .def_readwrite("invisedPaths", &Parameters::invisedPaths)
+            .def_readwrite("sceneDelegateID", &Parameters::sceneDelegateID)
+            .def_readwrite("driver", &Parameters::driver)
+            .def_readwrite("rendererPluginId", &Parameters::rendererPluginId)
+            .def_readwrite("gpuEnabled", &Parameters::gpuEnabled)
+            .def_readwrite("allowAsynchronousSceneProcessing",
+                &Parameters::allowAsynchronousSceneProcessing)
+            
+        ;
     }
 
     // Wrap the constants.

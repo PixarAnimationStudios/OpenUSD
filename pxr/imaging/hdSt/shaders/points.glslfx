@@ -47,6 +47,69 @@
 FORWARD_DECL(int GetPointId());
 FORWARD_DECL(void ProcessPointId(int));
 
+// The approach used below transforms a unit diagonal vector by the provided
+// matrix and returns its length.
+// This works when the provided transform is computed from a chain of
+// transformations wherein the scale operation doesn't follow a rotation.
+// This is typically true with scene-graph hierachies wherein the parent nodes 
+// are rigid-body transformations.
+//
+// When that isn't the case, this approach would result in scaling that is
+// coordinate-system dependent.
+// The accurate way to calculate the scale would be to compute the determinant.
+// 
+float ExtractAverageScaleFromMatrix(
+    MAT4 transform)
+{
+    const vec4 eyeScale = vec4(transform * normalize(vec4(1,1,1,0)));
+    return length(eyeScale.xyz);
+}
+
+
+// Compute the point size in pixels based on the authored width.
+float ComputeRasterPointSize(
+    MAT4 modelToWorldTransform, float eyeZ)
+{
+    // Check for primvar 'widths'. This is in model space.
+#if defined(HD_HAS_widths)
+    float modelWidth = HdGet_widths();
+#else
+    float modelWidth = 1.0;
+#endif
+
+    // Compute scaling from the modelToWorld and worldToView transforms.
+    const float modelToEyeScale =
+        ExtractAverageScaleFromMatrix(
+            GetWorldToViewMatrix() * modelToWorldTransform);
+
+    // Compute the scaling factor in X when transforming from eye space to NDC
+    // space. We want to know how much the x-value of the result of the
+    // perspective division varies as the x-value of the position (x,y,z,1) in
+    // eye space varies.
+    //
+    // With 'p' being the projection matrix and using row-major order, the
+    // x-value in NDC space is:
+    //
+    // (x * p[0][0] + y * p[1][0] + z * p[2][0] + 1 * p[3][0]) /
+    // (x * p[0][3] + y * p[1][3] + z * p[2][3] + 1 * p[3][3])
+    //
+    // The derivative with respect to x under the assumption that p[0][3] and 
+    // p[1][3] is zero (which is the case for perspective and orthographic
+    // projection) then simply is p[0][0] / (z * p[2][3] + p[3][3]).
+    //
+    const MAT4 projMat = GetProjectionMatrix();
+    const float eyeToClipXScale = float(projMat[0][0]);
+    const float clipW = float(eyeZ * projMat[2][3] + projMat[3][3]);
+    const float eyeToNDCScale = eyeToClipXScale / clipW;
+
+    // Our final scaling factor is from the viewport transform, transforming
+    // from [-1,1] NDC space to image (pixel) space.
+    const float viewportSizeX = GetViewport().z;
+    const float NDCToImageScale = viewportSizeX * 0.5;
+
+    return modelWidth * modelToEyeScale * eyeToNDCScale * NDCToImageScale;
+}
+
 void main(void)
 {
     MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
@@ -59,21 +122,8 @@ void main(void)
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    // check for primvar 'widths'
-#if defined(HD_HAS_widths)
-    float pvWidth = HdGet_widths();
-#else
-    float pvWidth = 1.0;
-#endif
-    // scale width following prman's behavior
-    vec4 w = vec4(transform * pvWidth * normalize(vec4(1,1,1,0)));
-    float width = length(w.xyz);
-
-    // compute screenspace width
-    vec4 diameter = vec4(GetProjectionMatrix() * vec4(width, 0, outData.Peye.z, 1));
-    vec2 viewportScale = GetViewport().zw * 0.5;
-
-    gl_PointSize = clamp(viewportScale.x * diameter.x/diameter.w,
+    float screenSpaceWidth = ComputeRasterPointSize(transform, outData.Peye.z);
+    gl_PointSize = clamp(screenSpaceWidth,
                          HD_GL_POINT_SIZE_MIN, HD_GL_POINT_SIZE_MAX);
 
     ProcessPointId(GetPointId());

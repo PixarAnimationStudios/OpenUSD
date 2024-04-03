@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/imaging/hf/pluginRegistry.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdGp/api.h"
 
 #include "pxr/imaging/hdGp/generativeProceduralPlugin.h"
 
@@ -39,7 +39,7 @@ public:
     ///
     /// Returns the singleton registry for \c HdSceneIndexPlugin
     ///
-    HD_API
+    HDGP_API
     static HdGpGenerativeProceduralPluginRegistry &GetInstance();
 
     ///
@@ -48,7 +48,7 @@ public:
     template<typename T, typename... Bases>
     static void Define();
 
-    HD_API
+    HDGP_API
     HdGpGenerativeProcedural *ConstructProcedural(
         const TfToken &proceduralTypeName,
         const SdfPath &proceduralPrimPath);

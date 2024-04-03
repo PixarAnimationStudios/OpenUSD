@@ -75,6 +75,20 @@ class TestSdfPath(unittest.TestCase):
         self.assertTrue(Sdf.Path('aaa') < Sdf.Path('aab'))
         self.assertTrue(not Sdf.Path('aaa') < Sdf.Path())
         self.assertTrue(Sdf.Path('/') < Sdf.Path('/a'))
+
+        # Test greaterthan
+        self.assertGreater(Sdf.Path('aab'), Sdf.Path('aaa'))
+        self.assertGreater(Sdf.Path('/a'), Sdf.Path.emptyPath)
+
+        # Test lessequal
+        self.assertLessEqual(Sdf.Path('aaa'), Sdf.Path('aab'))
+        self.assertLessEqual(Sdf.Path('aaa'), Sdf.Path('aaa'))
+        self.assertLessEqual(Sdf.Path.emptyPath, Sdf.Path('/a'))
+
+        # Test greaterequal
+        self.assertGreaterEqual(Sdf.Path('aab'), Sdf.Path('aaa'))
+        self.assertGreaterEqual(Sdf.Path('aaa'), Sdf.Path('aaa'))
+        self.assertGreaterEqual(Sdf.Path('/a'), Sdf.Path.emptyPath)
         
         # XXX test path from elements ['.prop'] when we have that wrapped?
         
@@ -100,10 +114,14 @@ class TestSdfPath(unittest.TestCase):
             "Foo.bar[targ.attr].boom",
             "/A/B/C.rel3[/Blah].attr3",
             "A/B.rel2[/A/B/C.rel3[/Blah].attr3].attr2",
-            "/A.rel1[/A/B.rel2[/A/B/C.rel3[/Blah].attr3].attr2].attr1"
+            "/A.rel1[/A/B.rel2[/A/B/C.rel3[/Blah].attr3].attr2].attr1",
+            "/root_utf8_umlaute_ß_3",
+            "Süßigkeiten.bar",
+            "/ß34/情報/información",
+            "情報._جيد"
         ]
-        testAbsolute = [True, False, False, False, False, False, True, False, False, False, True, False, False, False, True, False, True]
-        testProperty = [True, False, False, True, True, True, False, True, False, True, True, True, True, True, True, True, True]
+        testAbsolute = [True, False, False, False, False, False, True, False, False, False, True, False, False, False, True, False, True, True, False, True, False]
+        testProperty = [True, False, False, True, True, True, False, True, False, True, True, True, True, True, True, True, True, False, True, False, True]
         testElements = [
             ["Foo", "Bar", ".baz"],
             ["Foo"],
@@ -121,7 +139,11 @@ class TestSdfPath(unittest.TestCase):
             ["Foo", ".bar", "[targ.attr]", ".boom"],
             ["A", "B", "C", ".rel3", "[/Blah]", ".attr3"],
             ["A", "B", ".rel2", "[/A/B/C.rel3[/Blah].attr3]", ".attr2"],
-            ["A", ".rel1", "[/A/B.rel2[/A/B/C.rel3[/Blah].attr3].attr2]", ".attr1"]
+            ["A", ".rel1", "[/A/B.rel2[/A/B/C.rel3[/Blah].attr3].attr2]", ".attr1"],
+            ["root_utf8_umlaute_ß_3"],
+            ["Süßigkeiten", ".bar"],
+            ["ß34", "情報", "información"],
+            ["情報", "._جيد"]
         ]
         
         # Test IsAbsolutePath and IsPropertyPath
@@ -130,6 +152,10 @@ class TestSdfPath(unittest.TestCase):
             self.assertEqual(path.IsPropertyPath(), testProperty[testIndex])
             prefixes = Sdf._PathElemsToPrefixes(path.IsAbsolutePath(), elements)
             self.assertEqual(path.GetPrefixes(), prefixes)
+            for i in range(path.pathElementCount):
+                prefixes = Sdf._PathElemsToPrefixes(
+                    path.IsAbsolutePath(), elements, i)
+                self.assertEqual(path.GetPrefixes(i), prefixes)
             self.assertEqual(path, eval(repr(path)))
             assert Sdf.Path.IsValidPathString(str(path))
         

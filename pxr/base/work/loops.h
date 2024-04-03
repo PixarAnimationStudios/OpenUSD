@@ -32,7 +32,7 @@
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_for_each.h>
-#include <tbb/task.h>
+#include <tbb/task_group.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

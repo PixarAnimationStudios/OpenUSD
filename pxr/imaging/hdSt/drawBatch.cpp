@@ -41,13 +41,75 @@
 
 #include "pxr/imaging/hio/glslfx.h"
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_BROKEN_SHADER_VISUAL_FEEDBACK, false,
+    "Provide visual feedback for prims when the composed shader fails to "
+    "compile or link by using the invalid material shader.");
+
+namespace
+{
+
+bool
+_ProvideVisualFeedbackForBrokenShaders()
+{
+    static const bool enabled =
+        TfGetEnvSetting(HDST_ENABLE_BROKEN_SHADER_VISUAL_FEEDBACK);
+    return enabled;
+}
+
+const std::string&
+_GetPrimPathSubstringForDebugLogging()
+{
+    // To aid debugging of shader programs and caching behavior in Storm,
+    // use the env var HDST_DEBUG_SHADER_PROGRAM_FOR_PRIM to provide a prim path
+    // substring to limit logging of drawing (i.e. non-compute) shader program 
+    // caching behavior to just those draw batches with draw items for prims
+    // matching the substring.
+    //
+    static const std::string substring =
+        TfGetenv("HDST_DEBUG_SHADER_PROGRAM_FOR_PRIM");
+    return substring;
+}
+
+bool
+_LogShaderCacheLookupForDrawBatch(
+    std::vector<HdStDrawItemInstance const*> const &_drawItemInstances)
+{
+    const std::string &substring = _GetPrimPathSubstringForDebugLogging();
+    if (substring.empty()) {
+        return true; // log all batches.
+    }
+
+    for (auto const &drawItemInstance : _drawItemInstances) {
+        HdStDrawItem const *drawItem = drawItemInstance->GetDrawItem();
+        if (TF_VERIFY(drawItem)) {
+            if (drawItem->GetRprimID().GetString().find(substring)
+                    != std::string::npos) {
+                
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool
+_LogShaderCacheLookup()
+{
+    return TfDebug::IsEnabled(HDST_LOG_DRAWING_SHADER_PROGRAM_MISSES) ||
+           TfDebug::IsEnabled(HDST_LOG_DRAWING_SHADER_PROGRAM_HITS);
+}
+
+}
 
 
 HdSt_DrawBatch::HdSt_DrawBatch(HdStDrawItemInstance * drawItemInstance)
@@ -228,6 +290,24 @@ _GetFallbackMaterialNetworkShader()
     return fallbackShader;
 }
 
+static
+HdSt_MaterialNetworkShaderSharedPtr
+_GetInvalidMaterialNetworkShader()
+{
+    static std::once_flag once;
+    static HdSt_MaterialNetworkShaderSharedPtr invalidShader;
+   
+    std::call_once(once, [](){
+        HioGlslfxSharedPtr glslfx =
+            std::make_shared<HioGlslfx>(
+                HdStPackageInvalidMaterialNetworkShader());
+
+        invalidShader.reset(new HdStGLSLFXShader(glslfx));
+    });
+
+    return invalidShader;
+}
+
 HdSt_DrawBatch::_DrawingProgram &
 HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
                                  HdStResourceRegistrySharedPtr const &resourceRegistry)
@@ -239,8 +319,7 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
 
     // Calculate unique hash to detect if the shader (composed) has changed
     // recently and we need to recompile it.
-    size_t shaderHash = state->GetShaderHash();
-    boost::hash_combine(shaderHash,
+    size_t shaderHash = TfHash::Combine(state->GetShaderHash(),
                         firstDrawItem->GetGeometricShader()->ComputeHash());
 
     HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader =
@@ -253,7 +332,7 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
 
     size_t materialNetworkShaderHash =
         materialNetworkShader ? materialNetworkShader->ComputeHash() : 0;
-    boost::hash_combine(shaderHash, materialNetworkShaderHash);
+    shaderHash = TfHash::Combine(shaderHash, materialNetworkShaderHash);
 
     bool shaderChanged = (_shaderHash != shaderHash);
     
@@ -271,32 +350,44 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
         
         _program.SetMaterialNetworkShader(materialNetworkShader);
 
+        const bool logCacheLookup =
+            _LogShaderCacheLookup() &&
+            _LogShaderCacheLookupForDrawBatch(_drawItemInstances);
+
         // Try to compile the shader and if it fails to compile we go back
         // to use the specified fallback material network shader.
-        if (!_program.CompileShader(firstDrawItem, resourceRegistry)){
+        if (!_program.CompileShader(
+                firstDrawItem, resourceRegistry, logCacheLookup)){
 
             // While the code should gracefully handle shader compilation
             // failures, it is also undesirable for shaders to silently fail.
             TF_CODING_ERROR("Failed to compile shader for prim %s.",
                             firstDrawItem->GetRprimID().GetText());
 
-
             // If we failed to compile the material network, replace it
-            // with the fallback material network shader and try again.
+            // either with the invalid material network shader OR the
+            // fallback material network shader and try again.
             // XXX: Note that we only say "material network shader" here
             // because it is currently the only one for which we allow
             // customization.  We expect all the other shaders to compile
             // or else the shipping code is broken and needs to be fixed.
             // When we open up more shaders for customization, we will
             // need to check them as well.
-            
-            _program.SetMaterialNetworkShader(
-                _GetFallbackMaterialNetworkShader());
+
+            const HdSt_MaterialNetworkShaderSharedPtr shader =
+                _ProvideVisualFeedbackForBrokenShaders()
+                ? _GetInvalidMaterialNetworkShader()
+                : _GetFallbackMaterialNetworkShader();
+                
+            _program.SetMaterialNetworkShader(shader);
 
             bool res = _program.CompileShader(firstDrawItem, 
-                                              resourceRegistry);
-            // We expect the fallback shader to always compile.
-            TF_VERIFY(res, "Failed to compile with fallback material network");
+                                              resourceRegistry,
+                                              logCacheLookup);
+
+            // We expect the invalid/fallback shader to always compile.
+            TF_VERIFY(res, "Failed to compile with the invalid/fallback "
+                           "material network shader.");
         }
 
         _shaderHash = shaderHash;
@@ -314,7 +405,8 @@ HdSt_DrawBatch::_DrawingProgram::IsValid() const
 bool
 HdSt_DrawBatch::_DrawingProgram::CompileShader(
         HdStDrawItem const *drawItem,
-        HdStResourceRegistrySharedPtr const &resourceRegistry)
+        HdStResourceRegistrySharedPtr const &resourceRegistry,
+        bool logCacheLookup /* = false */)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -336,18 +428,22 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
         (*it)->AddBindings(&customBindings);
     }
 
-    HdSt_CodeGen codeGen(_geometricShader, shaders, drawItem->GetMaterialTag());
-
+    std::unique_ptr<HdSt_ResourceBinder::MetaData> metaData =
+        std::make_unique<HdSt_ResourceBinder::MetaData>();
+    
     // let resourcebinder resolve bindings and populate metadata
     // which is owned by codegen.
     _resourceBinder.ResolveBindings(drawItem,
                                     shaders,
-                                    codeGen.GetMetaData(),
+                                    metaData.get(),
                                     _drawingCoordBufferBinding,
                                     instanceDraw,
                                     customBindings,
                                     resourceRegistry->GetHgi()->
                                         GetCapabilities());
+
+    HdSt_CodeGen codeGen(_geometricShader, shaders,
+                         drawItem->GetMaterialTag(), std::move(metaData));
 
     HdStGLSLProgram::ID hash = codeGen.ComputeHash();
 
@@ -357,11 +453,30 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
                                 resourceRegistry->RegisterGLSLProgram(hash);
 
         if (programInstance.IsFirstInstance()) {
+
+            if (TfDebug::IsEnabled(HDST_LOG_DRAWING_SHADER_PROGRAM_MISSES) &&
+                logCacheLookup) {
+
+                TfDebug::Helper().Msg(
+                    "(MISS) First program instance for batch with head draw "
+                    "item %s (hash = %zu)\n",
+                    drawItem->GetRprimID().GetText(), hash);
+            }
+
             HdStGLSLProgramSharedPtr glslProgram = codeGen.Compile(
                 resourceRegistry.get());
             if (glslProgram && _Link(glslProgram)) {
                 // store the program into the program registry.
                 programInstance.SetValue(glslProgram);
+            }
+        } else {
+            if (TfDebug::IsEnabled(HDST_LOG_DRAWING_SHADER_PROGRAM_HITS) &&
+                logCacheLookup) {
+            
+                TfDebug::Helper().Msg(
+                    "(HIT) Found program instance with hash = %zu for batch "
+                    "with head draw item %s\n",
+                    hash, drawItem->GetRprimID().GetText());
             }
         }
 

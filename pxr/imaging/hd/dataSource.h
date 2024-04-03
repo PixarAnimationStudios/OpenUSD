@@ -51,6 +51,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     static void AtomicStore(AtomicHandle &ptr, const Handle &v) { \
         std::atomic_store(&ptr, v); \
     } \
+    static bool AtomicCompareExchange(AtomicHandle &ptr, \
+                                      AtomicHandle &expected, \
+                                      const Handle &desired) { \
+        return std::atomic_compare_exchange_strong(&ptr, &expected, desired); \
+    } \
     static Handle Cast(const HdDataSourceBase::Handle &v) { \
         return std::dynamic_pointer_cast<type>(v); \
     }

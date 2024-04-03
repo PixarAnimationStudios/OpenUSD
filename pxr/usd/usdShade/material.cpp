@@ -221,12 +221,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (material)
-);
-
-
 std::pair<UsdStagePtr, UsdEditTarget >
 UsdShadeMaterial::GetEditContextForVariant(const TfToken &materialVariation,
                                        const SdfLayerHandle &layer) const

@@ -130,8 +130,13 @@
     //
     // This file is outside the documentation build; it is expected to live on
     // whatever server is hosting the docs publicly.
-    $.getJSON("../versions.json", function(data) {
-
+    //
+    // NOTE: We look for versions.json relative to the in-use script path
+    // rather than relative to the page path, because pages can now be in 
+    // various subdirs
+    var jsFileLocation = $('script[src*=versions]').attr('src');
+    jsFileLocation = jsFileLocation.replace('versions.js', '');    
+    $.getJSON(jsFileLocation + "../../../versions.json", function(data) {
       var dev_version, release_version
       var all_versions = []
       $.each(data.versions, function(index, entry) {

@@ -23,7 +23,7 @@
 #include "pxr/imaging/hdsi/materialPrimvarTransferSceneIndex.h"
 
 #include "pxr/imaging/hd/dependenciesSchema.h"
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
@@ -61,21 +61,14 @@ public:
         TfTokenVector result;
         if (_inputDs) {
             result = _inputDs->GetNames();
-            if (HdMaterialBindingSchema::GetFromParent(_inputDs)) {
-
-                const TfToken primvarsName =
-                    HdPrimvarsSchema::GetDefaultLocator().GetFirstElement();
-
-                if (std::find(result.begin(), result.end(), primvarsName)
-                        == result.end()) {
-                    result.push_back(primvarsName);
-                }
-
-                const TfToken dependenciesName =
-                    HdDependenciesSchema::GetDefaultLocator().GetFirstElement();
-                if (std::find(result.begin(), result.end(), dependenciesName)
-                        == result.end()) {
-                    result.push_back(dependenciesName);
+            if (HdMaterialBindingsSchema::GetFromParent(_inputDs)) {
+                for (const TfToken &name : {
+                        HdPrimvarsSchema::GetSchemaToken(),
+                        HdDependenciesSchema::GetSchemaToken() }) {
+                    if (std::find(result.begin(), result.end(), name)
+                            == result.end()) {
+                        result.push_back(name);
+                    }
                 }
             }
         }
@@ -89,8 +82,8 @@ public:
             inputResult = _inputDs->Get(name);
         }
 
-        if (name == HdDependenciesSchemaTokens->__dependencies) {
-            if (HdPathDataSourceHandle pathDs = _GetMaterialBinding()) {
+        if (name == HdDependenciesSchema::GetSchemaToken()) {
+            if (HdPathDataSourceHandle pathDs = _GetMaterialBindingPath()) {
 
                 // We need to create three dependencies here:
                 // 1) Our primvars potentially depend on the value of the
@@ -104,9 +97,9 @@ public:
                     HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
                             HdPrimvarsSchema::GetDefaultLocator());
 
-                const static HdLocatorDataSourceHandle materialBindingLocDs =
+                const static HdLocatorDataSourceHandle materialBindingsLocDs =
                     HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
-                            HdMaterialBindingSchema::GetDefaultLocator());
+                            HdMaterialBindingsSchema::GetDefaultLocator());
 
                 static const HdLocatorDataSourceHandle primvarsToMaterialLocDs =
                     HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
@@ -129,7 +122,7 @@ public:
                         HdDependencySchema::Builder()
                             .SetDependedOnPrimPath(nullptr) // self
                             .SetDependedOnDataSourceLocator(
-                                materialBindingLocDs)
+                                materialBindingsLocDs)
                             .SetAffectedDataSourceLocator(primvarsLocDs)
                             .Build(),
 
@@ -138,7 +131,7 @@ public:
                         HdDependencySchema::Builder()
                             .SetDependedOnPrimPath(nullptr) // self
                             .SetDependedOnDataSourceLocator(
-                                materialBindingLocDs)
+                                materialBindingsLocDs)
                             .SetAffectedDataSourceLocator(
                                 primvarsToMaterialLocDs)
                             .Build());
@@ -151,9 +144,9 @@ public:
                     return depsDs;
                 }
             }
-        } else if (name == HdPrimvarsSchemaTokens->primvars) {
+        } else if (name == HdPrimvarsSchema::GetSchemaToken()) {
 
-            if (HdPathDataSourceHandle pathDs = _GetMaterialBinding()) {
+            if (HdPathDataSourceHandle pathDs = _GetMaterialBindingPath()) {
                 const SdfPath materialPath = pathDs->GetTypedValue(0.0f);
                 HdSceneIndexPrim prim = _inputScene->GetPrim(materialPath);
 
@@ -176,13 +169,13 @@ public:
 
 private:
 
-    HdPathDataSourceHandle _GetMaterialBinding()
+    HdPathDataSourceHandle _GetMaterialBindingPath()
     {
-        if (HdMaterialBindingSchema bindingSchema =
-                    HdMaterialBindingSchema::GetFromParent(_inputDs)) {
-            return bindingSchema.GetMaterialBinding();
-        }
-        return nullptr;
+        HdMaterialBindingsSchema materialBindings =
+            HdMaterialBindingsSchema::GetFromParent(_inputDs);
+        HdMaterialBindingSchema materialBinding =
+            materialBindings.GetMaterialBinding();
+        return materialBinding.GetPath();
     }
 
     HdSceneIndexBaseRefPtr _inputScene;

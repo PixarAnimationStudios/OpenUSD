@@ -60,6 +60,19 @@ class TestVtArray(unittest.TestCase):
         with self.assertRaises(TypeError):
             a = d['foo']
 
+    def test_NegativeIndexes(self):
+        d = Vt.DoubleArray([1.0, 3.0, 5.0])
+        d[-1] = 2.0
+        d[-2] = 4.0
+        self.assertEqual(d, [1.0, 4.0, 2.0])
+
+        # Indexing off-the-end with negative indexes should raise.
+        with self.assertRaises(IndexError):
+            d[-4] = 6.0
+
+        with self.assertRaises(IndexError):
+            x = d[-4]
+
     def test_TooFewElements(self):
         d = Vt.DoubleArray(4)
         with self.assertRaises(ValueError):
@@ -142,6 +155,10 @@ class TestVtArray(unittest.TestCase):
         da = Vt.DoubleArray((1.0000000000000002, 1e39, 1e309, float('-inf')))
         self.assertGreater(da[0], 1.0)
         self.assertEqual(da, eval(repr(da)))
+
+        ha = Vt.HalfArray((1.0001, 1e39, float('-inf')))
+        self.assertGreater(da[0], 1.0)
+        self.assertEqual(ha, eval(repr(ha)))
 
     def test_Overflows(self):
         overflows = [

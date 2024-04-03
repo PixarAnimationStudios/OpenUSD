@@ -31,8 +31,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /*static*/
 HdVectorDataSourceHandle
 HdVectorSchema::BuildRetained(
-    size_t count,
-    HdDataSourceBaseHandle *values)
+    const size_t count,
+    const HdDataSourceBaseHandle *values)
 {
     return HdRetainedSmallVectorDataSource::New(count, values);
 }

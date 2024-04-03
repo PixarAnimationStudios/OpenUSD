@@ -54,13 +54,13 @@ public:
     HDST_API
     virtual bool Resolve() override;
 
-    HD_API
+    HDST_API
     virtual TfToken const &GetName() const override;
 
     HDST_API
     virtual size_t GetNumElements() const override;
 
-    HD_API
+    HDST_API
     virtual HdTupleType GetTupleType() const override;
 
     HDST_API

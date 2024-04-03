@@ -18,6 +18,9 @@ pxr_library(hdGp
         generativeProceduralPluginRegistry
         generativeProceduralResolvingSceneIndex
         sceneIndexPlugin
+        
+    PUBLIC_HEADERS
+        api.h
 
     RESOURCE_FILES
         plugInfo.json

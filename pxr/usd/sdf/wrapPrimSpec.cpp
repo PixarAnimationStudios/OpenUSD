@@ -42,7 +42,6 @@
 
 #include <boost/python.hpp>
 #include <boost/python/stl_iterator.hpp>
-#include <boost/function.hpp>
 
 using namespace boost::python;
 

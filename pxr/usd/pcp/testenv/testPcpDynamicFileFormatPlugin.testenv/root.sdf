@@ -26,3 +26,43 @@ references = [@./params.sdf@</Params>, @./payload.sdf@</PayloadMulti>]
 {
 }
 
+def "Variant" (
+    TestPcp_depth = 5
+    variantSets = "x"
+    variants = {
+        string x = "a"
+    }
+)
+{
+    int TestPcp_depth = 5
+
+    variantSet "x" = {
+       "a" (
+           TestPcp_num = 4
+           references = [@./params.sdf@</Params>, @./payload.sdf@</PayloadCone>]
+       )
+       {
+           int TestPcp_num = 4
+       }
+    }
+}
+
+def "SubrootReference" (
+    TestPcp_depth = 1
+    TestPcp_num = 1
+    references = </RootCone/Xform__3_2>
+)
+{
+    int TestPcp_depth = 1
+    int TestPcp_num = 1
+}
+
+def "SubrootReferenceAndVariant" (
+    TestPcp_depth = 1
+    TestPcp_num = 1
+    references = </Variant/Xform__4_3>
+)
+{
+    int TestPcp_depth = 1
+    int TestPcp_num = 1
+}

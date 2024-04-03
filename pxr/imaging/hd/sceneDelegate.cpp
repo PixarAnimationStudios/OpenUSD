@@ -247,6 +247,12 @@ HdSceneDelegate::GetCoordSysBindings(SdfPath const& id)
     return nullptr;
 }
 
+HdModelDrawMode
+HdSceneDelegate::GetModelDrawMode(SdfPath const& id)
+{
+    return HdModelDrawMode();
+}
+
 // -----------------------------------------------------------------------//
 /// \name Instancer prototypes
 // -----------------------------------------------------------------------//

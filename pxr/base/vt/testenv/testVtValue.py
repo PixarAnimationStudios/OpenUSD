@@ -113,5 +113,23 @@ class TestVtValue(unittest.TestCase):
         with self.assertRaises(TypeError):
             Vt._ReturnDictionary(bad2)
 
+    def test_WrappedTypesComparable(self):
+        """
+        Makes sure that values wrapped in a value wrapper are still
+        equality-comparable.
+        """
+        t1 = Vt.Token("hello")
+        t2 = Vt.Token("hello")
+        t3 = Vt.Token("world")
+        f1 = Vt.Float(1.0)
+        f2 = Vt.Float(1.0)
+        d1 = Vt.Double(1.0)
+
+        self.assertEqual(t1, t2)
+        self.assertNotEqual(t1, t3)
+        self.assertNotEqual(t1, f1)
+        self.assertEqual(f1, f2)
+        self.assertNotEqual(f1, d1)
+
 if __name__ == '__main__':
     unittest.main()

@@ -87,14 +87,17 @@ public:
 
     static
     HdDataSourceLocatorSet
-    Invalidate(UsdPrim const& prim, const TfToken &subprim,
-            const TfTokenVector &properties) {
+    Invalidate(UsdPrim const& prim,
+               const TfToken &subprim,
+               const TfTokenVector &properties,
+               const UsdImagingPropertyInvalidationType invalidationType) {
         HdDataSourceLocatorSet locators =
             _DataSource::Invalidate(
                 subprim, properties);
 
         locators.insert(
-            UsdImagingDataSourceGprim::Invalidate(prim, subprim, properties));
+            UsdImagingDataSourceGprim::Invalidate(
+                prim, subprim, properties, invalidationType));
 
         return locators;
     }
@@ -103,6 +106,7 @@ private:
     using _DataSource =
         UsdImagingDataSourceSchemaBased<
             UsdSchemaType,
+            /* UsdSchemaBaseTypes = */ std::tuple<>,
             UsdImagingImplicitsSchemaTranslator<HdSchemaType>>;
 
     // Private constructor, use static New() instead.

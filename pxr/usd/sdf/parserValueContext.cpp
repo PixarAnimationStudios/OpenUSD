@@ -30,7 +30,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct Sdf_ToStringVisitor : boost::static_visitor<std::string>
+struct Sdf_ToStringVisitor
 {
     template <typename T>
     std::string operator () (const T &value)

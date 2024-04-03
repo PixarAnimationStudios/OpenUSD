@@ -32,8 +32,8 @@
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/types.h"
 
-#include <boost/optional.hpp>
 #include <functional>
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -100,7 +100,7 @@ using SdfShouldCopyValueFn = std::function<
     bool(SdfSpecType specType, const TfToken& field,
          const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
          const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
-         boost::optional<VtValue>* valueToCopy)>;
+         std::optional<VtValue>* valueToCopy)>;
 
 /// \class SdfCopySpecsValueEdit
 /// Value containing an editing operation for SdfCopySpecs.
@@ -152,8 +152,8 @@ using SdfShouldCopyChildrenFn = std::function<
     bool(const TfToken& childrenField,
          const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
          const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
-         boost::optional<VtValue>* srcChildren, 
-         boost::optional<VtValue>* dstChildren)>;
+         std::optional<VtValue>* srcChildren,
+         std::optional<VtValue>* dstChildren)>;
 
 /// SdfShouldCopyValueFn used by the simple version of SdfCopySpec.
 ///
@@ -170,7 +170,7 @@ SdfShouldCopyValue(
     SdfSpecType specType, const TfToken& field,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
-    boost::optional<VtValue>* valueToCopy);
+    std::optional<VtValue>* valueToCopy);
 
 /// SdfShouldCopyChildrenFn used by the simple version of SdfCopySpec.
 ///
@@ -187,8 +187,8 @@ SdfShouldCopyChildren(
     const TfToken& childrenField,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
-    boost::optional<VtValue>* srcChildren, 
-    boost::optional<VtValue>* dstChildren);
+    std::optional<VtValue>* srcChildren,
+    std::optional<VtValue>* dstChildren);
 
 /// Utility function for copying spec data at \p srcPath in \p srcLayer to
 /// \p destPath in \p destLayer. Various behaviors (such as which parts of the

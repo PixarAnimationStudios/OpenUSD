@@ -81,17 +81,18 @@ _GetPrimvarsForMaterial(const VtValue & vtMaterial)
     return primvars;
 }
 
-UsdImagingGprimAdapter::~UsdImagingGprimAdapter() 
-{
-}
+UsdImagingGprimAdapter::~UsdImagingGprimAdapter() = default;
 
 HdDataSourceLocatorSet
 UsdImagingGprimAdapter::InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
-    return UsdImagingDataSourceGprim::Invalidate(prim, subprim, properties);
+    return
+        UsdImagingDataSourceGprim::Invalidate(
+            prim, subprim, properties, invalidationType);
 }
 
 /* static */
@@ -397,9 +398,14 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
     if (requestedBits & HdChangeTracker::DirtyPrimvar) {
         if (UsdGeomImageable imageable = UsdGeomImageable(prim)) {
             for (const UsdGeomSubset &subset: UsdGeomSubset::GetAllGeomSubsets(imageable)) {
-                SdfPath materialUsdPath = GetMaterialUsdPath(subset.GetPrim());
-                if (!materialUsdPath.IsEmpty()) {
-                    materialUsdPaths.push_back(materialUsdPath);
+                // Only consider face subsets
+                TfToken elementType;
+                if (subset.GetElementTypeAttr().Get(&elementType) && 
+                        elementType == UsdGeomTokens->face) {
+                    SdfPath materialUsdPath = GetMaterialUsdPath(subset.GetPrim());
+                    if (!materialUsdPath.IsEmpty()) {
+                        materialUsdPaths.push_back(materialUsdPath);
+                    }
                 }
             }
         }

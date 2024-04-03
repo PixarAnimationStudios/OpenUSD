@@ -3,6 +3,11 @@
     upAxis = "Z"
 )
 
+# Provide a material binding on each instance (of green).
+# The prototype cube has a material binding (of red) which wins here because
+# the ancestor (instance) binding has a weaker strength.
+# Both instances should appear red.
+#
 def Xform "Scene"
 {
 
@@ -12,7 +17,7 @@ def Xform "Scene"
     )
     {
         rel material:binding = </Scene/Green>
-        float3 xformOp:translate = (-10, 0, 0)
+        float3 xformOp:translate = (-3, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 
@@ -22,7 +27,7 @@ def Xform "Scene"
     )
     {
         rel material:binding = </Scene/Green>
-        float3 xformOp:translate = (10, 0, 0)
+        float3 xformOp:translate = (3, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 

@@ -38,10 +38,12 @@ public:
     HD_DECLARE_DATASOURCE(_MaterialDataSource);
 
     _MaterialDataSource(
-        const HdContainerDataSourceHandle &input,
+        const HdContainerDataSourceHandle &materialInput,
+        const HdContainerDataSourceHandle &primInput,
         const SdfPath &primPath,
         const HdMaterialFilteringSceneIndexBase::FilteringFnc &fnc)
-    : _input(input)
+    : _materialInput(materialInput)
+    , _primInput(primInput)
     , _primPath(primPath)
     , _fnc(fnc)
     {}
@@ -49,8 +51,8 @@ public:
     TfTokenVector
     GetNames() override
     {
-        if (_input) {
-            return _input->GetNames();
+        if (_materialInput) {
+            return _materialInput->GetNames();
         }
         return {};
     }
@@ -58,13 +60,13 @@ public:
     HdDataSourceBaseHandle
     Get(const TfToken &name) override
     {
-        if (_input) {
-            HdDataSourceBaseHandle result = _input->Get(name);
+        if (_materialInput) {
+            HdDataSourceBaseHandle result = _materialInput->Get(name);
             if (HdContainerDataSourceHandle networkContainer =
                     HdContainerDataSource::Cast(result)) {
 
                 HdDataSourceMaterialNetworkInterface networkInterface(
-                    _primPath, networkContainer);
+                    _primPath, networkContainer, _primInput);
                 _fnc(&networkInterface);
                 return networkInterface.Finish();
             }
@@ -75,7 +77,8 @@ public:
 
 
 private:
-    HdContainerDataSourceHandle _input;
+    HdContainerDataSourceHandle _materialInput;
+    HdContainerDataSourceHandle _primInput;
     SdfPath _primPath;
     HdMaterialFilteringSceneIndexBase::FilteringFnc _fnc;
 };
@@ -88,18 +91,18 @@ public:
 
     _PrimDataSource(
         const HdMaterialFilteringSceneIndexBase* base,
-        const HdContainerDataSourceHandle &input,
+        const HdContainerDataSourceHandle &primInput,
         const SdfPath &primPath)
     : _base(base)
-    , _input(input)
+    , _primInput(primInput)
     , _primPath(primPath)
     {}
 
     TfTokenVector
     GetNames() override
     {
-        if (_input) {
-            return _input->GetNames();
+        if (_primInput) {
+            return _primInput->GetNames();
         }
         return {};
     }
@@ -107,13 +110,14 @@ public:
     HdDataSourceBaseHandle
     Get(const TfToken &name) override
     {
-        if (_input) {
-            HdDataSourceBaseHandle result = _input->Get(name);
+        if (_primInput) {
+            HdDataSourceBaseHandle result = _primInput->Get(name);
             if (result && name == HdMaterialSchemaTokens->material) {
                 if (HdContainerDataSourceHandle materialContainer =
                         HdContainerDataSource::Cast(result)) {
                     return _MaterialDataSource::New(
-                        materialContainer, _primPath, _base->GetFilteringFunction());
+                        materialContainer, _primInput, _primPath,
+                        _base->GetFilteringFunction());
                 }
             }
             return result;
@@ -126,7 +130,7 @@ private:
     // pointer to HdMaterialFilteringSceneIndexBase so that we can query for the
     // filtering function.
     const HdMaterialFilteringSceneIndexBase* _base;
-    HdContainerDataSourceHandle _input;
+    HdContainerDataSourceHandle _primInput;
     SdfPath _primPath;
 };
 

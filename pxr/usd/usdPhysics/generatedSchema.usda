@@ -904,7 +904,7 @@ class "PhysicsDriveAPI" (
     float drive:__INSTANCE_NAME__:physics:damping = 0 (
         doc = """Damping of the drive. Units: 
 \t\tif linear drive: mass/second
-\t\tIf angular drive: mass*DIST_UNITS*DIST_UNITS/second/second/degrees."""
+\t\tIf angular drive: mass*DIST_UNITS*DIST_UNITS/second/degrees."""
     )
     float drive:__INSTANCE_NAME__:physics:maxForce = inf (
         displayName = "Max Force"
@@ -917,7 +917,7 @@ class "PhysicsDriveAPI" (
     float drive:__INSTANCE_NAME__:physics:stiffness = 0 (
         doc = """Stiffness of the drive. Units:
 \t\tif linear drive: mass/second/second
-\t\tif angular drive: mass*DIST_UNITS*DIST_UNITS/degree/second/second."""
+\t\tif angular drive: mass*DIST_UNITS*DIST_UNITS/degrees/second/second."""
     )
     float drive:__INSTANCE_NAME__:physics:targetPosition = 0 (
         displayName = "Target Position"

@@ -619,6 +619,7 @@ HdSt_TextureTestDriver::_CreateTextureBindings(
         if (desc == resourceDesc) {
             return true;
         }
+        _hgi->DestroyResourceBindings(&_resourceBindings);
     }
 
     _resourceBindings = _hgi->CreateResourceBindings(resourceDesc);

@@ -193,7 +193,7 @@ class "CollectionAPI" (
 
     <b>Creating collections in C++</b>
     
-    \\snippet examples.cpp ApplyCollections
+    \\snippet examples_usd.cpp ApplyCollections
     """
 )
 {
@@ -236,6 +236,10 @@ class "CollectionAPI" (
         the rules of another collection by making its <i>includes</i>
         relationship target the <b>collection:{collectionName}</b> property on
         the owning prim of the collection to be included"""
+    )
+    uniform pathExpression collection:__INSTANCE_NAME__:membershipExpression (
+        doc = """Specifies a path expression that determines membership in this
+        collection."""
     )
 }
 

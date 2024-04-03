@@ -23,11 +23,8 @@
 //
 #include "pxr/imaging/hd/flatNormals.h"
 #include "pxr/imaging/hd/meshTopology.h"
-#include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/vtBufferSource.h"
 
-#include "pxr/imaging/hf/perfLog.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/work/loops.h"
 
@@ -146,81 +143,6 @@ Hd_FlatNormals::ComputeFlatNormalsPacked(
         topology, pointsPtr);
 }
 
-Hd_FlatNormalsComputation::Hd_FlatNormalsComputation(
-    HdMeshTopology const * topology,
-    HdBufferSourceSharedPtr const &points,
-    TfToken const &dstName,
-    bool packed)
-    : _topology(topology), _points(points), _dstName(dstName),
-      _packed(packed)
-{
-}
-
-void
-Hd_FlatNormalsComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
-{
-    // The datatype of normals is the same as that of points, unless the
-    // packed format was requested.
-    specs->emplace_back(_dstName,
-        _packed ? HdTupleType { HdTypeInt32_2_10_10_10_REV, 1 }
-        : _points->GetTupleType() );
-}
-
-TfToken const &
-Hd_FlatNormalsComputation::GetName() const
-{
-    return _dstName;
-}
-
-bool
-Hd_FlatNormalsComputation::Resolve()
-{
-    if (!_points->IsResolved()) { return false; }
-    if (!_TryLock()) { return false; }
-
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    if (!TF_VERIFY(_topology)) return true;
-
-    VtValue normals;
-
-    switch (_points->GetTupleType().type) {
-    case HdTypeFloatVec3:
-        if (_packed) {
-            normals = Hd_FlatNormals::ComputeFlatNormalsPacked(
-                _topology, static_cast<const GfVec3f*>(_points->GetData()));
-        } else {
-            normals = Hd_FlatNormals::ComputeFlatNormals(
-                _topology, static_cast<const GfVec3f*>(_points->GetData()));
-        }
-        break;
-    case HdTypeDoubleVec3:
-        if (_packed) {
-            normals = Hd_FlatNormals::ComputeFlatNormalsPacked(
-                _topology, static_cast<const GfVec3d*>(_points->GetData()));
-        } else {
-            normals = Hd_FlatNormals::ComputeFlatNormals(
-                _topology, static_cast<const GfVec3d*>(_points->GetData()));
-        }
-        break;
-    default:
-        TF_CODING_ERROR("Unsupported points type for computing flat normals");
-        break;
-    }
-
-    HdBufferSourceSharedPtr normalsBuffer = HdBufferSourceSharedPtr(
-        new HdVtBufferSource(_dstName, VtValue(normals)));
-    _SetResult(normalsBuffer);
-    _SetResolved();
-    return true;
-}
-
-bool
-Hd_FlatNormalsComputation::_CheckValid() const
-{
-    bool valid = _points ? _points->IsValid() : false;
-    return valid;
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
+

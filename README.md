@@ -12,8 +12,8 @@ Build Status
 
 |         |   Linux   |  Windows  |   macOS   |
 |:-------:|:---------:|:---------:|:---------:|
-|   dev   | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=dev&amp;jobName=Linux)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=dev) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=dev&amp;jobName=Windows)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=dev) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=dev&amp;jobName=macOS)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=dev) |
-|  release | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=release&amp;jobName=Linux)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=release) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=release&amp;jobName=Windows)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=release) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=release&amp;jobName=macOS)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=release) |
+|   dev   | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=dev&amp;jobName=Linux)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=dev) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=dev&amp;jobName=Windows)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=dev) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=dev&amp;jobName=macOS)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=dev) |
+|  release | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=release&amp;jobName=Linux)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=release) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=release&amp;jobName=Windows)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=release) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=release&amp;jobName=macOS)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=release) |
 
 Additional Documentation
 ------------------------
@@ -30,7 +30,7 @@ Need help understanding certain concepts in USD? See
 visit our [forum](https://groups.google.com/forum/#!forum/usd-interest).
 
 If you are experiencing undocumented problems with the software, please 
-[file a bug](https://github.com/PixarAnimationStudios/USD/issues/new).
+[file a bug](https://github.com/PixarAnimationStudios/OpenUSD/issues/new).
 
 Supported Platforms
 -------------------
@@ -107,22 +107,26 @@ additional documentation for running cmake directly.
 
 #### 2. Download the USD source code
 
-You can download source code archives from [GitHub](https://www.github.com/PixarAnimationStudios/USD) or use `git` to clone the repository.
+You can download source code archives from [GitHub](https://www.github.com/PixarAnimationStudios/OpenUSD) or use `git` to clone the repository.
 
 ```
-> git clone https://github.com/PixarAnimationStudios/USD
-Cloning into 'USD'...
+> git clone https://github.com/PixarAnimationStudios/OpenUSD
+Cloning into 'OpenUSD'...
 ```
 
 #### 3. Run the script
 
+Run the build_usd.py script to build and install USD. Note that the build script 
+is structured with an out-of-source build in mind -- installing a build into the  
+directory where the repository was cloned is untested. 
+
 ##### Linux:
 
 For example, the following will download, build, and install USD's dependencies,
-then build and install USD into `/usr/local/USD`.
+then build and install USD into `/path/to/my_usd_install_dir`.
 
 ```
-> python USD/build_scripts/build_usd.py /usr/local/USD
+> python USD/build_scripts/build_usd.py /path/to/my_usd_install_dir
 ```
 
 ##### MacOS:
@@ -131,10 +135,10 @@ In a terminal, run `xcode-select` to ensure command line developer tools are
 installed. Then run the script.
 
 For example, the following will download, build, and install USD's dependencies,
-then build and install USD into `/opt/local/USD`.
+then build and install USD into `/path/to/my_usd_install_dir`.
 
 ```
-> python USD/build_scripts/build_usd.py /opt/local/USD
+> python USD/build_scripts/build_usd.py /path/to/my_usd_install_dir
 ```
 
 ##### Windows:
@@ -146,10 +150,10 @@ command prompt and not the 32-bit (x86) command prompt.
 See https://docs.microsoft.com/en-us/cpp/build/how-to-enable-a-64-bit-visual-cpp-toolset-on-the-command-line for more details.
 
 For example, the following will download, build, and install USD's dependencies,
-then build and install USD into `C:\USD`.
+then build and install USD into `C:\path\to\my_usd_install_dir`.
 
 ```
-C:\> python USD\build_scripts\build_usd.py "C:\USD"
+C:\> python USD\build_scripts\build_usd.py "C:\path\to\my_usd_install_dir"
 ```
 
 #### 4. Try it out

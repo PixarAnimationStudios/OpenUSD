@@ -250,6 +250,17 @@ public:
                           SdfPath const& cachePath, 
                           UsdTimeCode time) const override;
 
+    VtValue GetLightParamValue(
+        const UsdPrim& prim,
+        const SdfPath& cachePath,
+        const TfToken& paramName,
+        UsdTimeCode time) const override;
+    
+    VtValue GetMaterialResource(
+        const UsdPrim& prim,
+        const SdfPath& cachePath,
+        UsdTimeCode time) const override;
+
     HdExtComputationInputDescriptorVector
     GetExtComputationInputs(UsdPrim const& prim,
                             SdfPath const& cachePath,

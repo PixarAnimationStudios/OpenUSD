@@ -88,12 +88,6 @@ private:
         const HdSceneIndexBase &sender,
         const HdSceneIndexObserver::DirtiedPrimEntries &entries);
 
-    void _FillAddedEntriesRecursively(
-        const HdSceneIndexBaseRefPtr &newSceneIndex,
-        const SdfPath &primPath,
-        HdSceneIndexObserver::AddedPrimEntries * const addedEntries);
-
-
     friend class _Observer;
 
     class _Observer : public HdSceneIndexObserver
@@ -113,6 +107,11 @@ private:
         void PrimsDirtied(
             const HdSceneIndexBase &sender,
             const DirtiedPrimEntries &entries) override;
+
+        void PrimsRenamed(
+            const HdSceneIndexBase &sender,
+            const RenamedPrimEntries &entries) override;
+
     private:
         HdMergingSceneIndex *_owner;
     };

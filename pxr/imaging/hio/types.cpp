@@ -27,6 +27,8 @@
 #include "pxr/base/gf/vec3i.h"
 #include "pxr/base/tf/iterator.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 

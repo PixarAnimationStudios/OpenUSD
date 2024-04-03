@@ -35,10 +35,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class Hgi;
-class HgiInteropMetal;
-class HgiInteropOpenGL;
-class HgiInteropVulkan;
 class VtValue;
+
+struct HgiInteropImpl;
 
 /// \class HgiInterop
 ///
@@ -100,13 +99,7 @@ private:
     HgiInterop & operator=(const HgiInterop&) = delete;
     HgiInterop(const HgiInterop&) = delete;
 
-#if defined(PXR_METAL_SUPPORT_ENABLED)
-    std::unique_ptr<HgiInteropMetal> _metalToOpenGL;
-#elif defined(PXR_VULKAN_SUPPORT_ENABLED)
-    std::unique_ptr<HgiInteropVulkan> _vulkanToOpenGL;
-#else
-    std::unique_ptr<HgiInteropOpenGL> _openGLToOpenGL;
-#endif
+    std::unique_ptr<HgiInteropImpl> _hgiInteropImpl;
 };
 
 

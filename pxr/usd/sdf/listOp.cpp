@@ -36,8 +36,6 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/trace/trace.h"
 
-#include <boost/optional.hpp>
-
 #include <ostream>
 
 using std::string;
@@ -344,7 +342,7 @@ SdfListOp<T>::ApplyOperations(ItemVector* vec, const ApplyCallback& cb) const
 }
 
 template <typename T>
-boost::optional<SdfListOp<T>>
+std::optional<SdfListOp<T>>
 SdfListOp<T>::ApplyOperations(const SdfListOp<T> &inner) const
 {
     if (IsExplicit()) {
@@ -422,7 +420,7 @@ SdfListOp<T>::ApplyOperations(const SdfListOp<T> &inner) const
     // and there is no way to express the relative order dependency
     // between 0 and 1.
     //
-    return boost::optional<SdfListOp<T>>();
+    return std::optional<SdfListOp<T>>();
 }
 
 template <class ItemType, class ListType, class MapType>
@@ -468,7 +466,7 @@ SdfListOp<T>::_AddKeys(
 {
     TF_FOR_ALL(i, GetItems(op)) {
         if (callback) {
-            if (boost::optional<T> item = callback(op, *i)) {
+            if (std::optional<T> item = callback(op, *i)) {
                 // Only append if the item isn't already present.
                 _InsertIfUnique(*item, result, search);
             }
@@ -490,7 +488,7 @@ SdfListOp<T>::_PrependKeys(
     const ItemVector& items = GetItems(op);
     if (callback) {
         for (auto i = items.rbegin(), iEnd = items.rend(); i != iEnd; ++i) {
-            if (boost::optional<T> mappedItem = callback(op, *i)) {
+            if (std::optional<T> mappedItem = callback(op, *i)) {
                 _InsertOrMove(*mappedItem, result->begin(), result, search);
             }
         }
@@ -512,7 +510,7 @@ SdfListOp<T>::_AppendKeys(
     const ItemVector& items = GetItems(op);
     if (callback) {
         for (const T& item: items) {
-            if (boost::optional<T> mappedItem = callback(op, item)) {
+            if (std::optional<T> mappedItem = callback(op, item)) {
                 _InsertOrMove(*mappedItem, result->end(), result, search);
             }
         }
@@ -533,7 +531,7 @@ SdfListOp<T>::_DeleteKeys(
 {
     TF_FOR_ALL(i, GetItems(op)) {
         if (callback) {
-            if (boost::optional<T> item = callback(op, *i)) {
+            if (std::optional<T> item = callback(op, *i)) {
                 _RemoveIfPresent(*item, result, search);
             }
         }
@@ -556,7 +554,7 @@ SdfListOp<T>::_ReorderKeys(
     std::set<ItemType, _ItemComparator> orderSet;
     TF_FOR_ALL(i, GetItems(op)) {
         if (callback) {
-            if (boost::optional<T> item = callback(op, *i)) {
+            if (std::optional<T> item = callback(op, *i)) {
                 if (orderSet.insert(*item).second) {
                     order.push_back(*item);
                 }
@@ -612,10 +610,10 @@ _ModifyCallbackHelper(const typename SdfListOp<T>::ModifyCallback& cb,
     TfDenseHashSet<T, TfHash> existingSet;
 
     for (const T& item : *itemVector) {
-        boost::optional<T> modifiedItem = cb(item);
+        std::optional<T> modifiedItem = cb(item);
         if (removeDuplicates && modifiedItem) {
             if (!existingSet.insert(*modifiedItem).second) {
-                modifiedItem = boost::none;
+                modifiedItem = std::nullopt;
             }
         }
 

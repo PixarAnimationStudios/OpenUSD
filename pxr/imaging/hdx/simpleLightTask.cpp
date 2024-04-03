@@ -71,7 +71,10 @@ HdxSimpleLightTask::HdxSimpleLightTask(
   , _lightingBar(nullptr)
   , _lightSourcesBar(nullptr)
   , _shadowsBar(nullptr)
-  , _materialBar(nullptr)
+  // Build all buffer sources the first time.
+  , _rebuildLightingBufferSources(true)
+  , _rebuildLightAndShadowBufferSources(true)
+  , _rebuildMaterialBufferSources(true)
 {
 }
 
@@ -134,6 +137,8 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
         //      more formal material plumbing.
         _material = params.material;
         _sceneAmbient = params.sceneAmbient;
+
+        _rebuildMaterialBufferSources = true;
     }
 
     static const TfTokenVector lightTypes = 
@@ -328,7 +333,16 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
 
     TF_VERIFY(_glfSimpleLights.size() <= _maxLights);
 
-    lightingContext->SetUseLighting(!_glfSimpleLights.empty());
+    const bool useLighting = !_glfSimpleLights.empty();
+    if (useLighting != lightingContext->GetUseLighting()) {
+        _rebuildLightingBufferSources = true;
+    }
+
+    if (_glfSimpleLights != lightingContext->GetLights()) {
+        _rebuildLightAndShadowBufferSources = true;
+    }
+
+    lightingContext->SetUseLighting(useLighting);
     lightingContext->SetLights(_glfSimpleLights);
     lightingContext->SetCamera(viewMatrix, projectionMatrix);
     // XXX: compatibility hack for passing some unit tests until we have
@@ -379,6 +393,8 @@ void
 HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
                             HdRenderIndex* renderIndex)
 {
+    HD_TRACE_FUNCTION();
+
     GlfSimpleLightingContextRefPtr const& lightingContext = 
         _lightingShader->GetLightingContext(); 
     if (!TF_VERIFY(lightingContext)) {
@@ -417,7 +433,7 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
     }
   
     // Add lighting buffer sources
-    {
+    if (_rebuildLightingBufferSources) {
         HdBufferSourceSharedPtrVector sources = {
             std::make_shared<HdVtBufferSource>(
                 HdxSimpleLightTaskTokens->useLighting,
@@ -532,7 +548,7 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
     }
 
     // Add light and shadow buffer sources
-    {
+    if (_rebuildLightAndShadowBufferSources) {
         // Light sources
         VtVec4fArray position(numLights);
         VtVec4fArray ambient(numLights);
@@ -691,7 +707,7 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
     }
     
     // Add material buffer sources
-    {
+    if (_rebuildMaterialBufferSources) {
         GlfSimpleMaterial const & material = lightingContext->GetMaterial();
 
         HdBufferSourceSharedPtrVector sources = {
@@ -717,6 +733,10 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
 
         hdStResourceRegistry->AddSources(_materialBar, std::move(sources));
     }
+
+    _rebuildLightingBufferSources = false;
+    _rebuildLightAndShadowBufferSources = false;
+    _rebuildMaterialBufferSources = false;
 }
 
 void

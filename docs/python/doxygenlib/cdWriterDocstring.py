@@ -35,12 +35,84 @@
 #      This is called once the entire file has been traversed.
 #
 
+import importlib
+import os
+import re
 import sys
 import textwrap
 import types
-import re
+
+from typing import Dict
 
 from .cdUtils import *
+
+
+API_RE_FIND = re.compile(r"""\b[A-Z]+_API(?:\s+|$)""")
+API_RE_REPLACE = ""
+
+NONWORD_RE = re.compile(r"(\W+)")
+
+MULTIPLE_WHITESPACE_RE = re.compile(r'\s+')
+MULTIPLE_WHITESPACE_REPLACE = ' '
+
+SQUARE_BRACKET_WITH_SPACE_RE = re.compile(r" *(\[|\]) *")
+SQUARE_BRACKET_WITH_SPACE_REPLACE = r"\1"
+
+COMMA_WITH_SPACE_RE = re.compile(r" *, *")
+COMMA_WITH_SPACE_REPLACE = ", "
+
+CHAR_STAR_RE = re.compile(r"\*\s*char|char\s*\*")
+CHAR_STAR_REPLACE = "str"
+
+PTR_NAME_SUFFIXES_RE = re.compile(r"(Handle|ConstPtr|RefPtr|Ptr)$")
+PTR_NAME_SUFFIXES_REPLACE = ""
+
+SMART_PTR_TEMPLATE_RE = re.compile(r"(?:shared|unique)_ptr\s*<(.*)>")
+SMART_PTR_TEMPLATE_REPLACE = r"\1"
+
+VECTOR_SUFFIX_RE = re.compile(r"\b(\w+)Vector\b")
+VECTOR_SUFFIX_REPLACE = r"list[\1]"
+
+
+def importPxrModule(moduleName: str) -> types.ModuleType:
+    """Import a single pxr submodule
+
+    moduleName is the package that follows pxr, ie, pxr.{moduleName}
+    """
+    return importlib.import_module(f"pxr.{moduleName}")
+
+def getAllPxrModules() -> Dict[str, types.ModuleType]:
+    """Find and import all pxr.* modules
+
+    Returns a dictionary mapping from submodule name to module object
+    """
+    pxrModule = importlib.import_module("pxr")
+    modules = {}
+
+    for folder in pxrModule.__path__:
+        for entry in os.scandir(folder):
+            pxrModuleName = ""
+            if entry.is_dir():
+                init_file = os.path.join(entry.path, "__init__.py")
+                if os.path.isfile(init_file):
+                    pxrModuleName = entry.name
+            elif entry.is_file():
+                if entry.name.endswith(".py"):
+                    basename = entry.name[:-len(".py")]
+                    if basename != "__init__":
+                        pxrModuleName = basename
+            if pxrModuleName:
+                modules[pxrModuleName] = importPxrModule(pxrModuleName)
+    return modules
+
+pxrModules = getAllPxrModules()
+pxrModuleNames = sorted(pxrModules)
+
+# we use the reversed sorted order of the module names, because this ensures that longer names (ie, UsdGeom) come
+# before shorter ones (Usd), so the more exact matches are preferred
+PXR_MODULES_OR_JOINED = "|".join(re.escape(m) for m in reversed(pxrModuleNames))
+PXR_MODULE_PREFIX = re.compile(rf"^\s*(?P<module>{PXR_MODULES_OR_JOINED})(?P<suffix>[A-Za-z0-9_]+)")
+
 
 class Writer:
     """
@@ -52,36 +124,16 @@ class Writer:
     # we can combine property docstrings for getters/setters.
     propertyTable = {}
 
-    # Default constructor that assumes we're processing a single module
-    def __init__(self):
-        #
-        # Parse the extra arguments required by this plugin
-        #
-        project = GetArgValue(['--package', '-p'])
-        package = GetArgValue(['--module', '-m'])
-
-        if not project:
-            Error("Required option --package not specified")
-        if not package:
-            Error("Required option --module not specified")
-
-        # Import the python module that these docs pertain to
-        if not Import("from " +project+ " import " +package+ " as " +package):
-            Error("Could not import %s" % (package))
-
-        self.module = eval(package)
-        self.prefix = self.module.__name__.split('.')[-1]
-        self.seenPaths = {}
-
-    # Constructor that takes package and module name, used when processing 
-    # a list of modules
     def __init__(self, packageName, moduleName):
 
-        # Import the python module 
-        if not Import("from " +packageName+ " import " +moduleName+ " as " +moduleName):
-            Error("Could not import %s" % (moduleName))
-
-        self.module = eval(moduleName)
+        # Import the python module...
+        if packageName == "pxr":
+            self.module = pxrModules[moduleName]
+        else:
+            try:
+                self.module = importlib.import_module("." + moduleName, package=packageName)
+            except ImportError:
+                Error("Could not import %s.%s" % (packageName, moduleName))
         self.prefix = self.module.__name__.split('.')[-1]
         self.seenPaths = {}
         self.propertyTable = {}
@@ -106,7 +158,7 @@ class Writer:
         docstring = self.__wordWrapDocString(docstring.split('\n'))
 
         if docstring:
-            summary = re.sub(r'\s+', ' ', docstring[:40].strip())
+            summary = MULTIPLE_WHITESPACE_RE.sub(MULTIPLE_WHITESPACE_REPLACE, docstring[:40].strip())
             Debug("Returning docstring: %s..." % summary)
 
         return docstring
@@ -228,11 +280,17 @@ class Writer:
         # following lines of a list item are indented at the same
         # level. We word wrap the text, but don't break long words
         # as we don't want to word wrap code sections.
+        # Take extra care with doxygen lifted CODE block lines.
         textWrapper = textwrap.TextWrapper(width=70, break_long_words=False)
-        newlines = list(map(textWrapper.fill, newlines))
+        wrapped_lines = []
+        for line in newlines:
+            if line.startswith("CODE_START"): # skip line wrapping on codeblock - manually unwrapped below
+                wrapped_lines.append(line)
+            else:
+                wrapped_lines.append(textWrapper.fill(line))
         lines = []
         inlistitem = False
-        for curline in newlines:
+        for curline in wrapped_lines:
             # the textwrap.fill call adds \n's at line breaks
             for line in curline.split('\n'):
                 if line.startswith("   - "):
@@ -295,11 +353,14 @@ class Writer:
         if len(lines) == 1:
             lines.append("    pass")
 
+        outputDir = os.path.split(output_file)[0]
+        if not os.path.exists(outputDir):
+            os.makedirs(outputDir)
+
         # output the lines to disk...
         try:
-            logfile = open(output_file, 'w')
-            logfile.write('\n'.join(lines))
-            logfile.close()
+            with open(output_file, 'w') as logfile:
+                logfile.write('\n'.join(lines))
         except:
             Error("Could not write to file: %s" % output_file)
 
@@ -395,9 +456,11 @@ class Writer:
                         pname2 = name[0].lower() + name[1:]
                         pret2 = ret[:]
                         pret2.append(pname2)
-            
+
             if name.startswith(self.prefix) and name != self.prefix:
-                name = name[len(self.prefix):]
+                shortName = name[len(self.prefix):]
+                if hasattr(self.module, shortName):
+                    name = shortName
             ret.append(name)
 
         return (ret, pret, pret2)
@@ -474,19 +537,76 @@ class Writer:
     def __convertTypeName(self, cppName):
         """Convert a C++ type name into a Python type name."""
         # get rid of const, volatile, &, *.
-        ret = cppName
-        ret = ret.replace('const', '')
-        ret = ret.replace('volatile ', '')
-        ret = ret.replace('&', '')
-        ret = ret.replace('*', '')
+        ret = cppName.strip()
+
+        # replacements that need multiple tokens, or that would change tokenization
         ret = ret.replace('std::', '')
         ret = ret.replace('boost::', '')
-        ret = ret.replace('vector', 'sequence')
+        ret = ret.replace('unsigned char', 'int')
+        ret = ret.replace('unsigned int', 'int')
+        ret = ret.replace('unsigned long', 'int')
+
+        ret = SMART_PTR_TEMPLATE_RE.sub(SMART_PTR_TEMPLATE_REPLACE, ret)
+        ret = CHAR_STAR_RE.sub(CHAR_STAR_REPLACE, ret)
+        ret = VECTOR_SUFFIX_RE.sub(VECTOR_SUFFIX_REPLACE, ret)
+
+        tokens = [self.__convertTypeNameToken(x) for x in NONWORD_RE.split(ret) if x]
+        ret = ''.join(tokens).strip()
+
+        # post token conversion cleanup
+
+        # space cleanup
+        ret = SQUARE_BRACKET_WITH_SPACE_RE.sub(SQUARE_BRACKET_WITH_SPACE_REPLACE, ret)
+        ret = COMMA_WITH_SPACE_RE.sub(COMMA_WITH_SPACE_REPLACE, ret)
+        ret = MULTIPLE_WHITESPACE_RE.sub(MULTIPLE_WHITESPACE_REPLACE, ret)
+
+        if ret == 'unsigned':
+            ret = 'int'
+        return ret
+
+    def __convertTypeNameToken(self, cppName):
+        ret = cppName
+
+        # words are guaranteed to come in by themselves
+        if ret in ('const', 'constexpr', 'expr', 'volatile', 'class', 'typename'):
+            return ''
+
+        # word replacements
+        replacement = {
+            'TfToken': 'str',
+            'double': 'float',
+            'int64_t': 'int',
+            'pair': 'tuple',
+            'sequence': 'list',
+            'size_t': 'int',
+            'string': 'str',
+            'vector': 'list',
+            'void': 'None',
+        }.get(ret)
+        if replacement is not None:
+            return replacement
+
+        ret = PTR_NAME_SUFFIXES_RE.sub(PTR_NAME_SUFFIXES_REPLACE, ret)
+
+        # see if it's a name that starts with a module, like ArResolver, or UsdPrim...
+        match = PXR_MODULE_PREFIX.match(ret)
+        if match:
+            moduleName = match.group("module")
+            objName = match.group("suffix")
+            module = pxrModules.get(moduleName)
+            if module and hasattr(module, objName):
+                ret = objName
+
+        # non-words may be mixed with other things, need to replace pieces at a time
+        ret = ret.replace('&', '')
+        ret = ret.replace('*', '')
         ret = ret.replace('::', '.')
-        ret = ret.strip()
-        if ret.startswith(self.prefix):
-            ret = ret[len(self.prefix):]
-        return ret.strip()
+        ret = API_RE_FIND.sub(API_RE_REPLACE, ret)
+
+        ret = ret.replace('<', '[')
+        ret = ret.replace('>', ']')
+
+        return ret
 
     def __convertCppSyntax(self, line):
         """Convert C++ terminology into Python terminology."""
@@ -502,11 +622,14 @@ class Writer:
         if doxy.isFunction():
             cnt = 1;
             pnames = []
-            for ptype, pname in doxy.params:
+            for ptype, pname, pdefault in doxy.params:
                 if len(pname):
-                    pnames.append(pname)
+                    arg = pname
                 else:
-                    pnames.append('arg%s' % cnt)
+                    arg = 'arg%s' % cnt
+                if pdefault is not None:
+                    arg += '=...'
+                pnames.append(arg)
                 cnt += 1
             sig = '('+', '.join(pnames)+')'
             retType = self.__convertTypeName(doxy.returnType)
@@ -520,7 +643,7 @@ class Writer:
         if doxy.isFunction():
             cnt = 0
             lines = []
-            for ptype, pname in doxy.params:
+            for ptype, pname, pdefault in doxy.params:
                 cnt += 1
                 if not len(pname):
                     pname = 'arg%s' % cnt
@@ -593,11 +716,11 @@ class Writer:
         
         if len(overloads) == 1:
             lines += self.__getFullDoc(pyname, pyobj, overloads[0])
-            if overloads[0].static == 'yes':
+            if overloads[0].isStatic():
                 docString = LABEL_STATIC # set the return type to static
         else:
             for doxy in overloads:
-                if doxy.static == 'yes':
+                if doxy.isStatic():
                     docString = LABEL_STATIC # set the return type to static
                     
                 desc = self.__getFullDoc(pyname, pyobj, doxy)

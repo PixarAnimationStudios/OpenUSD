@@ -569,8 +569,7 @@ private:
     void _ComposeAPISchemasIntoPrimDefinition(
         UsdPrimDefinition *primDef, 
         const TfTokenVector &appliedAPISchemas,
-        _FamilyAndInstanceToVersionMap *seenSchemaFamilyVersions,
-        bool allowDupes = false) const;
+        _FamilyAndInstanceToVersionMap *seenSchemaFamilyVersions) const;
 
     // Private class for helping initialize the schema registry. Defined 
     // entirely in the implementation. Declared here for private access to the

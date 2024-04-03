@@ -24,7 +24,6 @@
 #include "hdPrman/matfiltSceneIndexPlugins.h"
 #include "hdPrman/material.h"
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
-#include "hdPrman/matfiltResolveTerminals.h"
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include "hdPrman/matfiltMaterialX.h"
@@ -33,8 +32,6 @@
 #include "hdPrman/virtualStructResolvingSceneIndex.h"
 
 #include "pxr/base/tf/stringUtils.h"
-
-#include "pxr/imaging/hdsi/terminalsResolvingSceneIndex.h"
 
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/materialFilteringSceneIndexBase.h"
@@ -52,8 +49,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     (applyConditionals)
     ((previewMatPluginName, "HdPrman_PreviewMaterialFilteringSceneIndexPlugin"))
     ((materialXPluginName,  "HdPrman_MaterialXFilteringSceneIndexPlugin"))
-    ((terminalPluginName,   "HdPrman_TerminalsResolvingSceneIndexPlugin"))
     ((vstructPluginName,    "HdPrman_VirtualStructResolvingSceneIndexPlugin"))
+);
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _materialContextTokens,
+    (ri)
+    (mtlx)
 );
 
 /// Ordering of the matfilt operations. This is necessary when using scene
@@ -82,9 +84,6 @@ TF_REGISTRY_FUNCTION(TfType)
     
     HdSceneIndexPluginRegistry::Define<
         HdPrman_MaterialXFilteringSceneIndexPlugin>();
-
-    HdSceneIndexPluginRegistry::Define<
-        HdPrman_TerminalsResolvingSceneIndexPlugin>();
     
     HdSceneIndexPluginRegistry::Define<
         HdPrman_VirtualStructResolvingSceneIndexPlugin>();
@@ -92,17 +91,6 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    // This one needs to run as early on as possible. This will allow
-    // scene index filters that interact with materials to have access to
-    // terminal names in a renderer agnostic way early on in the scene
-    // index stack, if needed.
-    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        _rendererDisplayName,
-        _tokens->terminalPluginName,
-        nullptr,
-        _MatfiltOrder::Start, // Run as early as possible.
-        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
-
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
         _rendererDisplayName,
         _tokens->previewMatPluginName,
@@ -226,9 +214,6 @@ protected:
 
 #endif
 
-// Note: HdPrman_TerminalsResolvingSceneIndex is defined in its own
-// translation unit
-
 /// ----------------------------------------------------------------------------
 
 // Note: HdPrman_VirtualStructResolvingSceneIndex is defined in its own
@@ -269,21 +254,6 @@ HdPrman_MaterialXFilteringSceneIndexPlugin::_AppendSceneIndex(
 #else
     return inputScene;
 #endif
-}
-
-/// ----------------------------------------------------------------------------
-
-HdPrman_TerminalsResolvingSceneIndexPlugin::
-HdPrman_TerminalsResolvingSceneIndexPlugin() = default;
-
-HdSceneIndexBaseRefPtr
-HdPrman_TerminalsResolvingSceneIndexPlugin::_AppendSceneIndex(
-        const HdSceneIndexBaseRefPtr &inputScene,
-        const HdContainerDataSourceHandle &inputArgs)
-{
-    return HdsiTerminalsResolvingSceneIndex::New(
-        inputScene,
-        MatfiltResolveTerminalsGetTerminalMappings());
 }
 
 /// ----------------------------------------------------------------------------

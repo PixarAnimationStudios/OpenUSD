@@ -24,9 +24,11 @@
 #ifndef PXR_USD_IMAGING_USD_IMAGING_PI_PROTOTYPE_SCENE_INDEX_H
 #define PXR_USD_IMAGING_USD_IMAGING_PI_PROTOTYPE_SCENE_INDEX_H
 
-#include "pxr/usdImaging/usdImaging/api.h"
+#include "pxr/pxr.h"
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
+
+#include <unordered_set>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -170,7 +172,8 @@ protected:
     // Instancers and overs within the prototype.
     // Note that this does not include instancers or overs nested
     // under an instancer or over.
-    SdfPathSet _instancersAndOvers;
+    using _PathSet = std::unordered_set<SdfPath, SdfPath::Hash>;
+    _PathSet _instancersAndOvers;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
