@@ -147,7 +147,6 @@ pxr_library(usdImaging
 
     PUBLIC_HEADERS
         api.h
-        dataSourceSchemaBased.h
         types.h
         unitTestHelper.h
         version.h
