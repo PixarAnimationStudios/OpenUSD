@@ -1,4 +1,3 @@
-#
 # Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
@@ -61,6 +60,7 @@ class MediaReference(NamedBase, TimeRangeMixin):
         # the translation
         #
         for x in usd_prim.GetChildren():
+            usd_type = x.GetTypeName()
             if x.IsA('OtioTimeRange'):
                 usd_name = x.GetName()
                 self.jsonData[usd_name] = self._create_time_range(x)

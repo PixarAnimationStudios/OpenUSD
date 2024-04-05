@@ -1,4 +1,3 @@
-#
 # Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
@@ -19,7 +18,7 @@
 # distributed under the Apache License with the above modification is
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 # KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apasche License.
+# language governing permissions and limitations under the Apache License.
 #
 
 #

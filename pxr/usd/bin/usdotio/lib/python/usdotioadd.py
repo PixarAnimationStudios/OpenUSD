@@ -1,4 +1,3 @@
-#
 # Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
@@ -100,6 +99,7 @@ class UsdOtioAdd:
         #
         # Initialize some counters
         #
+        self.other_track_index = 1
         self.audio_track_index = 1
         self.clip_index = 1
         self.effect_index = 1
@@ -173,9 +173,11 @@ class UsdOtioAdd:
                     track_path = stack_path + f'/Audio_{self.audio_track_index}'
                     self.audio_track_index += 1
                 else:
-                    if Options.log_level >= LogLevel.WARNING:
-                        print(f'Unknown track type {child}!')
-                    continue
+                    kind = child.kind.replace('.', '_')
+                    track_path = stack_path + \
+                        f'/{kind}_{self.other_track_index}'
+                    self.other_track_index += 1
+                    
                 track_item = Track(child)
                 track_item.to_usd(stage, track_path)
                 self.recurse_track(stage, track_path, child)

@@ -1,4 +1,3 @@
-#
 # Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
@@ -49,7 +48,6 @@ class Box2d(Base):
         
     def from_usd(self, usd_prim):
         for x in usd_prim.GetChildren():
-            usd_type = x.GetTypeName()
             if x.IsA('OtioV2d'):
                 time = RationalTime()
                 usd_name = x.GetName()

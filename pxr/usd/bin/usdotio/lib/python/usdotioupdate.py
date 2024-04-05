@@ -1,4 +1,4 @@
-# Copyright 2024 Gonzalo Garramuño for Signly
+# Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in
@@ -69,7 +69,7 @@ from usdotio.usdotioadd import UsdOtioAdd
 
 #
 # usdotio's omni classes should go here, but to simplify we are using
-# IsA() comparisons against string CONSTANTS
+# string comparisons against CONSTANTS
 #
 import usdotio.schema.omni as omnischema
 
@@ -115,6 +115,17 @@ class UsdOtioUpdate:
         self.endTimecode = 1000
         self.fps = 24.0
 
+    def _to_otio_track_type(self, omni_track_type):
+        if omni_track_type == omnischema.TRACK_AUDIO_TYPE or \
+           omni_track_type == omnischema.TRACK_VIDEO_TYPE:
+            return omni_track_type
+        elif omni_track_type == omnischema.TRACK_ASSET_TYPE:
+            return omnischema.OTIO_TRACK_ASSET_SCHEMA
+        elif omni_track_type == omnischema.TRACK_SHOT_TYPE:
+            return omnischema.OTIO_TRACK_SHOT_SCHEMA
+        else:
+            return "Unknown.1"
+        
     def add_gap(self, track, index, duration):
         source_range = otime.TimeRange(otime.RationalTime(0.0, self.fps),
                                        otime.RationalTime(duration, self.fps))
@@ -141,14 +152,83 @@ class UsdOtioUpdate:
             
         self.clip.media_reference = media
 
+    def process_camera(self, stage, asset_path, asset_prim):
+        name = asset_prim.GetName()
+        pass
+        
+        
+    def process_shot_clip(self, stage, track_path, shot_clip_prim):
+        startTime = get_timecode(shot_clip_prim, 'startTime')
+        endTime =  get_timecode(shot_clip_prim, 'endTime')
+
+        playStart = get_timecode(shot_clip_prim, 'playStart')
+        playEnd = get_timecode(shot_clip_prim, 'playEnd')
+        
+        name = shot_clip_prim.GetName()
+
+        #
+        # Update current time to start of this shot
+        #
+        self.current_time = startTime - self.startTimecode
+
+        source_range = otime.TimeRange.range_from_start_end_time_inclusive(
+            otime.RationalTime(startTime, self.fps),
+            otime.RationalTime(endTime, self.fps))
+        
+        self.available_range = None
+        
+        if not math.isnan(playStart) or not math.isnan(playEnd):
+
+            if math.isnan(playStart):
+                playStart = startTime
+
+            if math.isnan(playEnd):
+                playEnd = endTime
+
+            if not (playStart == 0 and playStart == playEnd): 
+                
+                self.available_range = \
+                    otime.TimeRange.range_from_start_end_time_inclusive(
+                        otime.RationalTime(playStart, self.fps),
+                        otime.RationalTime(playEnd, self.fps))
+
+        
+        self.clip = otio.schema.Clip()
+        self.clip.name = name
+        self.clip.source_range = source_range
+
+        #
+        # Get the latest track
+        #
+        track = self.tracks[-1]
+        
+        #
+        # Add the clip at the end
+        #
+        track.append(self.clip)
+
+        #
+        # Check if its start time is less than our current time
+        #
+        trimmed_range = self.clip.trimmed_range_in_parent()
+        clip_start_time = trimmed_range.start_time.value
+        if clip_start_time < self.current_time:
+            gap_duration = self.current_time - clip_start_time
+            previous_to_last_child = len(track) - 1
+            self.add_gap(track, previous_to_last_child, gap_duration)
+
+        # Reset clip
+        self.clip = None
         
         
     def process_asset_clip(self, stage, track_path, asset_clip_prim):
         startTime = get_timecode(asset_clip_prim, 'startTime')
         endTime =  get_timecode(asset_clip_prim, 'endTime')
 
-        playStart = get_timecode(asset_clip_prim, 'playStart')
-        playEnd = get_timecode(asset_clip_prim, 'playEnd')
+        playStart = get_optional_timecode(asset_clip_prim, 'playStart')
+        playEnd = get_optional_timecode(asset_clip_prim, 'playEnd')
+
+        name = asset_clip_prim.GetName()
 
         #
         # Update current time to start of this asset
@@ -161,36 +241,51 @@ class UsdOtioUpdate:
 
         self.available_range = None
         
-        if not math.isnan(playStart) or not math.isnan(playEnd):
+        if playStart and playEnd:
+            if not math.isnan(playStart) or not math.isnan(playEnd):
 
-            if math.isnan(playStart):
-                playStart = startTime
+                if math.isnan(playStart):
+                    playStart = startTime
 
-            if math.isnan(playEnd):
-                playEnd = endTime
+                if math.isnan(playEnd):
+                    playEnd = endTime
+
+                if not (playStart == 0 and playStart == playEnd): 
                 
-            self.available_range = \
-                otime.TimeRange.range_from_start_end_time_inclusive(
-                otime.RationalTime(playStart, self.fps),
-                otime.RationalTime(playEnd, self.fps))
+                    self.available_range = \
+                        otime.TimeRange.range_from_start_end_time_inclusive(
+                            otime.RationalTime(playStart, self.fps),
+                            otime.RationalTime(playEnd, self.fps))
 
-        name = asset_clip_prim.GetName()
         
         self.clip = otio.schema.Clip()
         self.clip.name = name
         self.clip.source_range = source_range
 
+        #
+        # Get the latest track
+        #
+        track = self.tracks[-1]
+
         valid_asset = False
+
+        #
+        # Asset schemas have no children, so they are already valid
+        #
+        if track.kind == omnischema.OTIO_TRACK_ASSET_SCHEMA:
+            valid_asset = True
+
+        
         for usd_prim in asset_clip_prim.GetChildren():
             usd_path = usd_prim.GetPath()
-            if usd_prim.IsA(omnischema.OMNI_SOUND):
+            usd_type = usd_prim.GetTypeName()
+            if usd_type == omnischema.OMNI_SOUND:
                 self.process_omnisound(stage, usd_path, usd_prim)
                 valid_asset = True
                 break
             else:
                 pass
 
-        track = self.tracks[-1]
         
         if valid_asset:
             #
@@ -218,14 +313,13 @@ class UsdOtioUpdate:
     def recurse_track(self, stage, track_path, track_prim):
         track_usd_type = track_prim.GetAttribute('trackType').Get()
 
-        if not track_prim.IsA(omnischema.TRACK_AUDIO_TYPE) and \
-           not track_prim.IsA(omnischema.TRACK_VIDEO_TYPE):
-            return
-
-        track_kind = track_usd_type
+        track_kind = self._to_otio_track_type(track_usd_type)
 
         name = track_prim.GetName()
-        
+
+        #
+        # Create the OTIO track
+        #
         track = otio.schema.Track()
         track.name = name
         track.kind = track_kind
@@ -238,8 +332,13 @@ class UsdOtioUpdate:
         
         for usd_prim in track_prim.GetAllChildren():
             usd_path  = usd_prim.GetPath()
-            if usd_prim.IsA(omnischema.ASSET_CLIP):
+            usd_type  = usd_prim.GetTypeName()
+            if usd_type == omnischema.ASSET_CLIP:
                 self.process_asset_clip(stage, usd_path, usd_prim)
+            if usd_type == omnischema.SHOT_CLIP:
+                self.process_shot_clip(stage, usd_path, usd_prim)
+            elif usd_type == omnischema.CAMERA:
+                self.process_camera(stage, usd_path, usd_prim)
 
         track_duration = track.duration().value
         sequence_duration = self.endTimecode - self.startTimecode
@@ -263,7 +362,8 @@ class UsdOtioUpdate:
         #
         for usd_prim in sequence_prim.GetAllChildren():
             usd_path  = usd_prim.GetPath()
-            if usd_prim.IsA(omnischema.TRACK):
+            prim_type = usd_prim.GetTypeName()
+            if prim_type == omnischema.TRACK:
                 self.current_time = 0.0
                 self.recurse_track(stage, usd_path, usd_prim)
 
@@ -300,7 +400,8 @@ path or an already existing Sequence primitive.
 Valid Sequence primitives in stage:''')
             found = False
             for x in stage.Traverse():
-                if x.IsA(omnischema.SEQUENCE):
+                usd_type = x.GetTypeName()
+                if usd_type == omnischema.SEQUENCE:
                     print(f'\t{x} is a Sequence primitive.')
                     found = True
             if not found:
@@ -310,7 +411,7 @@ Valid Sequence primitives in stage:''')
         
         if usd_prim: 
             prim_type = usd_prim.GetTypeName()
-            if not usd_prim.IsA(omnischema.SEQUENCE):
+            if not prim_type == omnischema.SEQUENCE:
                 print(f'''USD path "{usd_path}" already has a primitive, 
 of type {prim_type}!
 

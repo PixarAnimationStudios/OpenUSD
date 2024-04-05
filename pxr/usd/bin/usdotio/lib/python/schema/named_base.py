@@ -1,4 +1,3 @@
-#
 # Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
@@ -30,11 +29,8 @@ from .options    import Options, LogLevel
 class NamedBase(Base):
 
     """Base abstract class that handles metadata.  
-       Derived classes may override many of its methods.
-  
-       At the very least, a concrete class should override the
-       constructor to create a new otio_item with default parameters
-       and to_usd() to create the actual USD primitive.
+       Derived classes may override many of its methods.  
+       At the very least, a concrete class should override to_usd().
 
     """
     
