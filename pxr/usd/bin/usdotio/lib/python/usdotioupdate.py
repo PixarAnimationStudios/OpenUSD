@@ -278,7 +278,7 @@ class UsdOtioUpdate:
         
         for usd_prim in asset_clip_prim.GetChildren():
             usd_path = usd_prim.GetPath()
-            usd_type = usd_prim.GetTypeName()x
+            usd_type = usd_prim.GetTypeName()
             if is_a(usd_prim, omnischema.OMNI_SOUND):
                 self.process_omnisound(stage, usd_path, usd_prim)
                 valid_asset = True
