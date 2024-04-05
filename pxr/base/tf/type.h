@@ -269,7 +269,10 @@ public:
 
     /// Return a C++ RTTI type_info for this type.
     ///
-    /// If this type is unknown or has not yet had a C++ type defined,
+    /// If this type is unknown, this will return a unique \c type_info
+    /// specifically for the unknown type.
+    ///
+    /// If this type has been declared, but not yet had a C++ type defined,
     /// \c typeid(void) will be returned.
     ///
     /// \see Define()
