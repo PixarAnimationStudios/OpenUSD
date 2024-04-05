@@ -110,6 +110,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // main for all the shader stages
     ((mainVS,                      "Mesh.Vertex"))
+    ((mainPatchCommonTCS,          "Mesh.TessControl.PatchCommon"))
     ((mainBSplineQuadTCS,          "Mesh.TessControl.BSplineQuad"))
     ((mainBezierQuadTES,           "Mesh.TessEval.BezierQuad"))
     ((mainBoxSplineTriangleTCS,    "Mesh.TessControl.BoxSplineTriangle"))
@@ -118,6 +119,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainTrianglePTVS,            "Mesh.PostTessVertex.Triangle"))
     ((mainQuadPTVS,                "Mesh.PostTessVertex.Quad"))
     ((mainTriQuadPTVS,             "Mesh.PostTessVertex.TriQuad"))
+    ((mainPatchCommonPTCS,         "Mesh.PostTessControl.PatchCommon"))
     ((mainBSplineQuadPTCS,         "Mesh.PostTessControl.BSplineQuad"))
     ((mainBSplineQuadPTVS,         "Mesh.PostTessVertex.BSplineQuad"))
     ((mainBoxSplineTrianglePTCS,   "Mesh.PostTessControl.BoxSplineTriangle"))
@@ -347,10 +349,12 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             PTVS[ptvsIndex++] = _tokens->mainTriQuadPTVS;
         } else if (isPrimTypePatchesBSpline) {
             PTCS[ptcsIndex++] = _tokens->instancing;
+            PTCS[ptcsIndex++] = _tokens->mainPatchCommonPTCS;
             PTCS[ptcsIndex++] = _tokens->mainBSplineQuadPTCS;
             PTVS[ptvsIndex++] = _tokens->mainBSplineQuadPTVS;
         } else if (isPrimTypePatchesBoxSplineTriangle) {
             PTCS[ptcsIndex++] = _tokens->instancing;
+            PTCS[ptcsIndex++] = _tokens->mainPatchCommonPTCS;
             PTCS[ptcsIndex++] = _tokens->mainBoxSplineTrianglePTCS;
             PTVS[ptvsIndex++] = _tokens->mainBoxSplineTrianglePTVS;
         }
@@ -362,22 +366,24 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     bool const ptvsStageEnabled = !PTVS[0].IsEmpty();
 
     // tessellation control shader
-    if (!ptvsStageEnabled) {
-        TCS[0] = isPrimTypePatches ? _tokens->instancing : TfToken();
-        TCS[1] = isPrimTypePatches ? isPrimTypePatchesBSpline
-                                     ? _tokens->mainBSplineQuadTCS
-                                     : _tokens->mainBoxSplineTriangleTCS
-                                   : TfToken();
-        TCS[2] = TfToken();
+    if (isPrimTypePatches && !ptvsStageEnabled) {
+        TCS[0] = _tokens->instancing;
+        TCS[1] = _tokens->mainPatchCommonTCS;
+        TCS[2] = isPrimTypePatchesBSpline
+                     ? _tokens->mainBSplineQuadTCS
+                     : _tokens->mainBoxSplineTriangleTCS;
+        TCS[3] = TfToken();
 
         // tessellation evaluation shader
-        TES[0] = isPrimTypePatches ? _tokens->instancing : TfToken();
-        TES[1] = isPrimTypePatches ? isPrimTypePatchesBSpline
-                                     ? _tokens->mainBezierQuadTES
-                                     : _tokens->mainBezierTriangleTES
-                                   : TfToken();
-        TES[2] = isPrimTypePatches ? _tokens->mainVaryingInterpTES : TfToken();
+        TES[0] = _tokens->instancing;
+        TES[1] = isPrimTypePatchesBSpline
+                     ? _tokens->mainBezierQuadTES
+                     : _tokens->mainBezierTriangleTES;
+        TES[2] = _tokens->mainVaryingInterpTES;
         TES[3] = TfToken();
+    } else {
+        TCS[0] = TfToken();
+        TES[0] = TfToken();
     }
 
     // geometry shader
