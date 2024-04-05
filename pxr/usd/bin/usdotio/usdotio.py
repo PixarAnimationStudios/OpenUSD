@@ -139,15 +139,15 @@ class UsdOtio:
                   'Otio primitive.\n')
             print('Valid Otio primitives in stage:\n')
             for x in stage.Traverse():
-                if x.GetTypeName() == 'Otio':
-                    print(f'\t{x} is an Otio primitive.')
+                if x.IsA('OtioTimeline'):
+                    print(f'\t{x} is an OtioTimeline primitive.')
             exit(1)
 
         #
         # Check we have an Otio primitive
         #
-        prim_type = usd_prim.GetTypeName()
-        if prim_type != 'OtioTimeline':
+        if not usd_prim.IsA('OtioTimeline'):
+            prim_type = usd_prim.GetTypeName()
             print(f'Invalid Otio primitive type. Is {prim_type}. ')
             exit(1)
 
