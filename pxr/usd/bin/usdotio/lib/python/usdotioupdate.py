@@ -120,9 +120,9 @@ class UsdOtioUpdate:
            omni_track_type == omnischema.TRACK_VIDEO_TYPE:
             return omni_track_type
         elif omni_track_type == omnischema.TRACK_ASSET_TYPE:
-            return omnischema.OTIO_TRACK_ASSET_SCHEMA
+            return omnischema.OTIO_NVIDIA_ASSET_SCHEMA
         elif omni_track_type == omnischema.TRACK_SHOT_TYPE:
-            return omnischema.OTIO_TRACK_SHOT_SCHEMA
+            return omnischema.OTIO_NVIDIA_SHOT_SCHEMA
         else:
             return "Unknown.1"
         
@@ -272,14 +272,14 @@ class UsdOtioUpdate:
         #
         # Asset schemas have no children, so they are already valid
         #
-        if track.kind == omnischema.OTIO_TRACK_ASSET_SCHEMA:
+        if track.kind == omnischema.OTIO_NVIDIA_ASSET_SCHEMA:
             valid_asset = True
 
         
         for usd_prim in asset_clip_prim.GetChildren():
             usd_path = usd_prim.GetPath()
-            usd_type = usd_prim.GetTypeName()
-            if usd_type == omnischema.OMNI_SOUND:
+            usd_type = usd_prim.GetTypeName()x
+            if is_a(usd_prim, omnischema.OMNI_SOUND):
                 self.process_omnisound(stage, usd_path, usd_prim)
                 valid_asset = True
                 break
@@ -332,12 +332,11 @@ class UsdOtioUpdate:
         
         for usd_prim in track_prim.GetAllChildren():
             usd_path  = usd_prim.GetPath()
-            usd_type  = usd_prim.GetTypeName()
-            if usd_type == omnischema.ASSET_CLIP:
+            if is_a(usd_prim, omnischema.ASSET_CLIP):
                 self.process_asset_clip(stage, usd_path, usd_prim)
-            if usd_type == omnischema.SHOT_CLIP:
+            elif is_a(usd_prim, omnischema.SHOT_CLIP):
                 self.process_shot_clip(stage, usd_path, usd_prim)
-            elif usd_type == omnischema.CAMERA:
+            elif is_a(usd_prim, omnischema.CAMERA):
                 self.process_camera(stage, usd_path, usd_prim)
 
         track_duration = track.duration().value
@@ -362,8 +361,7 @@ class UsdOtioUpdate:
         #
         for usd_prim in sequence_prim.GetAllChildren():
             usd_path  = usd_prim.GetPath()
-            prim_type = usd_prim.GetTypeName()
-            if prim_type == omnischema.TRACK:
+            if is_a(usd_prim, omnischema.TRACK):
                 self.current_time = 0.0
                 self.recurse_track(stage, usd_path, usd_prim)
 
@@ -399,10 +397,9 @@ path or an already existing Sequence primitive.
 
 Valid Sequence primitives in stage:''')
             found = False
-            for x in stage.Traverse():
-                usd_type = x.GetTypeName()
-                if usd_type == omnischema.SEQUENCE:
-                    print(f'\t{x} is a Sequence primitive.')
+            for usd_prim in stage.Traverse():
+                if is_a(usd_prim, omnischema.SEQUENCE):
+                    print(f'\t{usd_prim} is a Sequence primitive.')
                     found = True
             if not found:
                 print('\tNone')
@@ -411,7 +408,7 @@ Valid Sequence primitives in stage:''')
         
         if usd_prim: 
             prim_type = usd_prim.GetTypeName()
-            if not prim_type == omnischema.SEQUENCE:
+            if not is_a(usd_prim, omnischema.SEQUENCE):
                 print(f'''USD path "{usd_path}" already has a primitive, 
 of type {prim_type}!
 

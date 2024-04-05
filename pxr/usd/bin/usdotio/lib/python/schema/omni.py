@@ -36,5 +36,6 @@ CAMERA     = 'Camera'
 OMNI_SOUND = 'OmniSound'
 
 
-OTIO_TRACK_ASSET_SCHEMA = 'NVidia.Asset.1'
-OTIO_TRACK_SHOT_SCHEMA  = 'NVidia.Shot.1'
+OTIO_NVIDIA_ASSET_SCHEMA  = 'NVidia.Asset.1'
+OTIO_NVIDIA_CAMERA_SCHEMA = 'NVidia.Camera.1'
+OTIO_NVIDIA_SHOT_SCHEMA   = 'NVidia.Shot.1'

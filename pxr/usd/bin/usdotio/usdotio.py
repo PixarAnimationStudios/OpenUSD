@@ -1,6 +1,6 @@
 #!/usr/bin/python3.10
 #
-# Copyright 2024 Gonzalo Garramuño for Signly, Ltd.
+# Copyright 2024 Gonzalo Garramuño for Signly
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in

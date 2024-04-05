@@ -68,3 +68,10 @@ def get_string(usd_prim, usd_attr):
         print(f'{usd_prim} Invalid string attribute "{usd_attr}"')
         return None
     return attr.Get()
+
+#
+# Temporary comparison function as we don't load the omni libraries.
+#
+def is_a(usd_prim, usd_type):
+    usd_type_name = usd_prim.GetTypeName()
+    return usd_type_name == usd_type
