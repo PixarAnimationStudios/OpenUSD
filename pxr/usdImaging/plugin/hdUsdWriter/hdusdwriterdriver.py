@@ -58,6 +58,8 @@ class HdUsdWriterRendererDriver:
 
         if not serialization_result:
             print('Something went wrong invoking SerializeToUsd')
+        else:
+            print(f"Wrote output to '{output_file}'")
 
     def compare(self, baseline_file, target_file):
         result = fuzzytextdiff.diff_files(baseline_file, target_file)

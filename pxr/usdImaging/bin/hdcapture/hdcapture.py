@@ -32,7 +32,7 @@ parser = argparse.ArgumentParser(
     description="""This tool will record information it receives from Hydra and dump it to a .usda file.
     This allows inspection of what Hydra "sees" after data is fed through SceneDelegate/RenderIndex or DataSource/SceneIndex.""")
 
-parser.add_argument('-b', '--baseline', required=True, help='The .usda file to diff the output with.')
+parser.add_argument('-b', '--baseline', required=False, help='The .usda file to diff the output with.')
 parser.add_argument('-i', '--input', required=True, help='The input USD file to render to text.')
 parser.add_argument('-o', '--output', required=True, help='The filename to write the serialized USD to. Output format with the default delegate is USDA.')
 
@@ -42,4 +42,8 @@ driver = hdusdwriterdriver.HdUsdWriterRendererDriver()
 driver.load_stage(args.input)
 driver.use_usd_imaging_engine()
 driver.use_usda_writer_renderer_plugin()
-driver.render_and_compare(args.baseline, args.output)
+
+if (args.baseline):
+    driver.render_and_compare(args.baseline, args.output)
+else:
+    driver.render(args.output)
