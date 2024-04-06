@@ -55,12 +55,21 @@ pxr_install_test_dir(
     DEST testUsdWriterProtoInstancing
 )
 
+pxr_install_test_dir(
+    SRC testenv/testUsdWriterMaterialAssignToInstanced
+    DEST testUsdWriterMaterialAssignToInstanced
+)
+
 pxr_test_scripts(
     testenv/testUsdWriterBaseline.py
 )
 
 pxr_test_scripts(
     testenv/testUsdWriterProtoInstancing.py
+)
+
+pxr_test_scripts(
+    testenv/testUsdWriterMaterialAssignToInstanced.py
 )
 
 pxr_register_test(testUsdWriterBaseline
@@ -72,5 +81,11 @@ pxr_register_test(testUsdWriterBaseline
 pxr_register_test(testUsdWriterProtoInstancing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdWriterProtoInstancing"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdWriterMaterialAssignToInstanced
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdWriterMaterialAssignToInstanced"
     EXPECTED_RETURN_CODE 0
 )
