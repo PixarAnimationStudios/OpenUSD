@@ -127,6 +127,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (materialRenderContexts)
     (shaderSourceTypes)
     (writeExtent)
+    ((mtlxRenderContext, "mtlx"))
 );
 
 const TfTokenVector HdUsdWriterRenderDelegate::SUPPORTED_RPRIM_TYPES = { HdPrimTypeTokens->mesh, HdPrimTypeTokens->basisCurves,
@@ -188,7 +189,7 @@ void HdUsdWriterRenderDelegate::_Initialize()
         HdRenderSettingDescriptor{
             "Set the material render contexts",
             _tokens->materialRenderContexts,
-            VtValue(TfTokenVector()) },
+            VtValue(TfTokenVector {_tokens->mtlxRenderContext}) },
         HdRenderSettingDescriptor{
             "Set the shader source types",
             _tokens->shaderSourceTypes,
