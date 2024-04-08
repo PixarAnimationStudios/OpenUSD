@@ -66,8 +66,7 @@
 
 - Various fixes and changes to support Boost dependency removal
   - Replaced `boost::intrusive_ptr` with `TfDelegatedCountPtr`.
-    (Issue: [#2529](https://github.com/PixarAnimationStudios/OpenUSD/issues/2529),
-     PR: [#2891](https://github.com/PixarAnimationStudios/OpenUSD/pull/2891),
+    (PR: [#2891](https://github.com/PixarAnimationStudios/OpenUSD/pull/2891),
      [#2892](https://github.com/PixarAnimationStudios/OpenUSD/pull/2892), 
      [#2893](https://github.com/PixarAnimationStudios/OpenUSD/pull/2893),
      [#2894](https://github.com/PixarAnimationStudios/OpenUSD/pull/2894),
