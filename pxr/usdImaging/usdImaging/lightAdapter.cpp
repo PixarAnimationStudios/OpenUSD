@@ -309,11 +309,8 @@ UsdImagingLightAdapter::_AddSprim(
     const UsdImagingInstancerContext* instancerContext)
 {
     SdfPath cachePath = ResolveCachePath(usdPrim.GetPath(), instancerContext);
-
-    // For an instanced light prim, this is the instancer prim.
-    // For a non-instanced light prim, this is just the light prim.
-    UsdPrim proxyPrim = usdPrim.GetStage()->GetPrimAtPath(
-        cachePath.GetAbsoluteRootOrPrimPath());
+    UsdPrim proxyPrim = _GetPrim(ResolveProxyPrimPath(
+        cachePath, instancerContext));
 
     if (instancerContext != nullptr) {
         index->InsertSprim(

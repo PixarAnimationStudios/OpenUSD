@@ -72,4 +72,15 @@ UsdImagingInstanceablePrimAdapter::ResolveCachePath(
     return cachePath;
 }
 
+SdfPath
+UsdImagingInstanceablePrimAdapter::ResolveProxyPrimPath(
+    const SdfPath& cachePath,
+    const UsdImagingInstancerContext* instancerContext) const
+{
+    if (instancerContext && !instancerContext->instancerCachePath.IsEmpty()) {
+        return instancerContext->instancerCachePath.GetAbsoluteRootOrPrimPath();
+    }
+    return cachePath;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

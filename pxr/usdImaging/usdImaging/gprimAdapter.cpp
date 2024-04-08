@@ -103,13 +103,8 @@ UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
 {
     SdfPath cachePath = ResolveCachePath(usdPrim.GetPath(), instancerContext);
 
-    UsdPrim proxyPrim = usdPrim;
-    if (instancerContext && !instancerContext->instancerCachePath.IsEmpty()) {
-        // This is an instanced gprim. Grab the instancer prim instead.
-        proxyPrim = usdPrim.GetStage()->GetPrimAtPath(
-            // We call GetPrimPath() to strip any variant selection path.
-            instancerContext->instancerCachePath.GetPrimPath());
-    }
+    UsdPrim proxyPrim = _GetPrim(ResolveProxyPrimPath(
+        cachePath, instancerContext));
 
     index->InsertRprim(primType, cachePath, proxyPrim,
         instancerContext ? instancerContext->instancerAdapter
