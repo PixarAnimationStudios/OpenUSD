@@ -139,9 +139,9 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     vertexInput.pVertexBindingDescriptions = vertBufs.data();
     vertexInput.vertexBindingDescriptionCount = (uint32_t) vertBufs.size();
 
+    VkPipelineVertexInputDivisorStateCreateInfoEXT vertexInputDivisor =
+        {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT};
     if (!vertBindingDivisors.empty()) {
-        VkPipelineVertexInputDivisorStateCreateInfoEXT vertexInputDivisor =
-            {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT};
         vertexInputDivisor.pVertexBindingDivisors = vertBindingDivisors.data();
         vertexInputDivisor.vertexBindingDivisorCount =
             (uint32_t) vertBindingDivisors.size();
