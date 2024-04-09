@@ -60,6 +60,7 @@ class TestSdfPathExpression(unittest.TestCase):
         self.assertTrue(evl.Match(Sdf.Path("/foo/x/y/z/bar")))
         self.assertFalse(evl.Match(Sdf.Path("/foo/x/y/z/bar/baz")))
         self.assertFalse(evl.Match(Sdf.Path("/foo/x/y/z/bar.baz")))
+        self.assertFalse(evl.Match(Sdf.Path("/foo/x/y/z/bar.baz:buz")))
 
         evl = MatchEval("//foo/bar/baz/qux/quux")
 
@@ -81,12 +82,14 @@ class TestSdfPathExpression(unittest.TestCase):
         self.assertTrue(evl.Match(Sdf.Path("/foo/x/y/z/bar")))
         self.assertFalse(evl.Match(Sdf.Path("/foo/x/y/z/bar/baz")))
         self.assertFalse(evl.Match(Sdf.Path("/foo/x/y/z/bar.baz")))
+        self.assertFalse(evl.Match(Sdf.Path("/foo/x/y/z/bar.baz:buz")))
 
         self.assertTrue(evl.Match(Sdf.Path("/foo1/bar")))
         self.assertTrue(evl.Match(Sdf.Path("/foo12/x/bar")))
         self.assertTrue(evl.Match(Sdf.Path("/fooBar/x/y/z/bar")))
         self.assertFalse(evl.Match(Sdf.Path("/fooX/x/y/z/bar/baz")))
         self.assertFalse(evl.Match(Sdf.Path("/fooY/x/y/z/bar.baz")))
+        self.assertFalse(evl.Match(Sdf.Path("/fooY/x/y/z/bar.baz:buz")))
 
         evl = MatchEval("/foo*//bar{isPrimPath}")
         
@@ -95,12 +98,14 @@ class TestSdfPathExpression(unittest.TestCase):
         self.assertTrue(evl.Match(Sdf.Path("/foo/x/y/z/bar")))
         self.assertFalse(evl.Match(Sdf.Path("/foo/x/y/z/bar/baz")))
         self.assertFalse(evl.Match(Sdf.Path("/foo/x/y/z/bar.baz")))
+        self.assertFalse(evl.Match(Sdf.Path("/foo/x/y/z/bar.baz:buz")))
 
         self.assertTrue(evl.Match(Sdf.Path("/foo1/bar")))
         self.assertTrue(evl.Match(Sdf.Path("/foo12/x/bar")))
         self.assertTrue(evl.Match(Sdf.Path("/fooBar/x/y/z/bar")))
         self.assertFalse(evl.Match(Sdf.Path("/fooX/x/y/z/bar/baz")))
         self.assertFalse(evl.Match(Sdf.Path("/fooY/x/y/z/bar.baz")))
+        self.assertFalse(evl.Match(Sdf.Path("/fooY/x/y/z/bar.baz:buz")))
 
         evl = MatchEval("/foo*//bar//{isPrimPath}")
         
@@ -111,6 +116,7 @@ class TestSdfPathExpression(unittest.TestCase):
         self.assertTrue(evl.Match(Sdf.Path("/foo/x/y/z/bar/baz/qux")))
         self.assertFalse(evl.Match(Sdf.Path("/foo/x/y/z/bar/baz.attr")))
         self.assertFalse(evl.Match(Sdf.Path("/foo/x/y/z/bar/baz/qux.attr")))
+        self.assertFalse(evl.Match(Sdf.Path("/foo/x/y/z/bar/baz/qux.ns:attr")))
 
         self.assertTrue(evl.Match(Sdf.Path("/fooXYZ/bar/a")))
         self.assertTrue(evl.Match(Sdf.Path("/fooABC/x/bar/a/b/c")))
@@ -119,6 +125,8 @@ class TestSdfPathExpression(unittest.TestCase):
         self.assertTrue(evl.Match(Sdf.Path("/foo___/x/y/z/bar/baz/qux")))
         self.assertFalse(evl.Match(Sdf.Path("/foo_bar/x/y/z/bar/baz.attr")))
         self.assertFalse(evl.Match(Sdf.Path("/foo_baz/x/y/z/bar/baz/qux.attr")))
+        self.assertFalse(
+            evl.Match(Sdf.Path("/foo_baz/x/y/z/bar/baz/qux.ns:attr")))
 
         evl = MatchEval("/a /b /c /d/e/f")
 
@@ -147,11 +155,15 @@ class TestSdfPathExpression(unittest.TestCase):
         self.assertTrue(evl.Match(Sdf.Path("/a.b")))
         self.assertFalse(evl.Match(Sdf.Path("/a/b")))
         self.assertFalse(evl.Match(Sdf.Path("/a/b.c")))
+        self.assertTrue(evl.Match(Sdf.Path("/a/b.ns:c")))
         self.assertTrue(evl.Match(Sdf.Path("/a/b.yes")))
+        self.assertTrue(evl.Match(Sdf.Path("/a/b.ns:yes")))
         self.assertFalse(evl.Match(Sdf.Path("/a/b/c")))
         self.assertTrue(evl.Match(Sdf.Path("/a/b/c.d")))
+        self.assertTrue(evl.Match(Sdf.Path("/a/b/c.ns:d")))
         self.assertFalse(evl.Match(Sdf.Path("/a/b/x")))
         self.assertTrue(evl.Match(Sdf.Path("/a/b/x.y")))
+        self.assertTrue(evl.Match(Sdf.Path("/a/b/x.ns:y")))
 
     def test_ComposeOver(self):
         # ComposeOver

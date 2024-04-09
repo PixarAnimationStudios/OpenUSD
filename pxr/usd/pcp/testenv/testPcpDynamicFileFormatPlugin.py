@@ -349,6 +349,40 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         self._ComputeAndVerifyDynamicPayloads(cache, payloads, 
              ["TestPcp_depth", "TestPcp_height", "TestPcp_num", "TestPcp_radius"])
 
+    def test_NestedVariants(self):
+        # Exercise a scenario with nested variants, dynamic payloads and
+        # references to those constructs that don't resolve as expected.
+        print("\ntest_NestedVariants start\n")
+
+        # Create a PcpCache for root.sdf. Has a dynamic root prim /RootCone
+        rootLayerFile = 'root.sdf'
+        rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
+        self.assertTrue(rootLayer)
+        cache = self._CreatePcpCache(rootLayer)
+
+        # Payloads for /ReferenceAndNestedVariants - depth = 2, num = 2 : produces 3 payloads  
+        payloads = self._GeneratePrimIndexPaths("/ReferenceAndNestedVariants", 2, 2, 3)
+        cache.RequestPayloads(payloads,[])
+
+        # Compute prim indices for each of the dynamic payloads and verify
+        # they were generated correctly.
+        self._ComputeAndVerifyDynamicPayloads(cache, payloads, 
+             ["TestPcp_depth", "TestPcp_height", "TestPcp_num", "TestPcp_radius"])
+        
+        # Verify that layers for each dynamic depth were generated and opened.
+        # Height should be set to 120, overriding the height 22 set in the variant
+        dynamicLayerFileName = "cone.testpcpdynamic"
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                dynamicLayerFileName,
+                {"TestPcp_depth":"2", "TestPcp_height":"120", "TestPcp_num":"2", 
+                 "TestPcp_radius":"50"})))
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                dynamicLayerFileName,
+                {"TestPcp_depth":"1", "TestPcp_height":"120", "TestPcp_num":"2", 
+                 "TestPcp_radius":"25"})))
+
+        print("\ntest_NestedVariants success!\n")
+
     def test_AncestralPayloads(self):
         # Test that loading a dynamic payload when composing ancestral
         # opinions picks up the right arguments.

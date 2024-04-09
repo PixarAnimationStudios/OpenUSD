@@ -2264,12 +2264,33 @@ PcpChanges::_DidChangeLayerStackRelocations(
         &changes.newRelocatesPrimPaths,
         &changes.newRelocatesErrors);
 
-    // Compare the old and new relocations to determine which
-    // paths (in this layer stack) are affected.
-    _DeterminePathsAffectedByRelocationChanges(
-        layerStack->GetRelocatesSourceToTarget(),
-        changes.newRelocatesSourceToTarget,
-        &changes.pathsAffectedByRelocationChanges);
+    // In USD mode, if we're transitioning from having no relocates to having 
+    // any relocates, or vice versa, then every path is affected by relocation 
+    // changes. This is because, as a memory optimization in USD mode, we don't
+    // add map expression variables for relocates to node map expressions when
+    // there are no relocates in the parent node's layer stack . When
+    // relocates become present we need to make sure all nodes using the layer
+    // stack rebuild their map expressions to listen to relocates changes (see 
+    // GetExpressionForRelocatesAtPath). On the flip side, if relocates are 
+    // completely removed, then we want to update all nodes to regain the memory
+    // that we wouldn't have used had relocates not been authored in the first
+    // place.
+    //
+    // XXX: This may be too big of a hammer and might be further optimizable,
+    // but this is better than always paying the cost for relocates in map 
+    // expressions when there are no relocates.
+    const bool willHaveRelocates = !changes.newRelocatesSourceToTarget.empty();
+    if (layerStack->IsUsd() &&
+            (layerStack->HasRelocates() != willHaveRelocates)) {
+        changes.pathsAffectedByRelocationChanges = {SdfPath::AbsoluteRootPath()};
+    } else {
+        // Compare the old and new relocations to determine which
+        // paths (in this layer stack) are affected.
+        _DeterminePathsAffectedByRelocationChanges(
+            layerStack->GetRelocatesSourceToTarget(),
+            changes.newRelocatesSourceToTarget,
+            &changes.pathsAffectedByRelocationChanges);
+    }
 
     // Resync affected prims.
     // Use dependencies to find affected caches.

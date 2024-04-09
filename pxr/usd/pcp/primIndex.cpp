@@ -636,11 +636,13 @@ _CreateMapExpressionForArc(const SdfPath &sourcePath,
     PcpMapExpression arcExpr = PcpMapExpression::Constant(
         PcpMapFunction::Create( sourceToTargetMap, offset ) );
 
-    // Apply relocations that affect namespace at and below this site.
-    arcExpr = targetNode.GetLayerStack()
-        ->GetExpressionForRelocatesAtPath(targetPath)
-        .Compose(arcExpr);
-
+    // Apply relocations that affect namespace at and below this site if there
+    // are relocations to map.
+    if (PcpMapExpression reloMapExpr = targetNode.GetLayerStack()
+            ->GetExpressionForRelocatesAtPath(targetPath); 
+            !reloMapExpr.IsNull()) {
+        arcExpr = reloMapExpr.Compose(arcExpr);
+    }
     return arcExpr;
 }
 

@@ -39,6 +39,7 @@
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pragmas.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/gf/matrix3d.h"
@@ -259,7 +260,13 @@ enum _SDF_UNITSLIST_ENUM(elem) {                         \
 #define _SDF_FOR_EACH_UNITS(macro, args)                 \
     _SDF_FOR_EACH_UNITS_IMPL(macro, TF_PP_EAT_PARENS(args))
 
+// On Windows this call to _SDF_FOR_EACH_UNITS generates a C4003 warning.
+// This is harmless, but we disable the warning here so that external
+// projects that include this header don't run into it as well.
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
 _SDF_FOR_EACH_UNITS(_SDF_DECLARE_UNIT_ENUM, _SDF_UNITS)
+ARCH_PRAGMA_POP
 
 /// A map of mapper parameter names to parameter values.
 typedef std::map<std::string, VtValue> SdfMapperParametersMap;

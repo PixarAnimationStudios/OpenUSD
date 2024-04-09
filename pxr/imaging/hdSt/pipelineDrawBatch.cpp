@@ -1330,13 +1330,6 @@ _GetPTCSPipeline(
                                                   firstDrawBatch);
 
         pipeDesc.rasterizationState.rasterizerEnabled = false;
-        pipeDesc.multiSampleState.sampleCount = HgiSampleCount1;
-        pipeDesc.multiSampleState.alphaToCoverageEnable = false;
-        pipeDesc.depthState.depthWriteEnabled = false;
-        pipeDesc.depthState.depthTestEnabled = false;
-        pipeDesc.depthState.stencilTestEnabled = false;
-        pipeDesc.primitiveType = HgiPrimitiveTypePatchList;
-        pipeDesc.multiSampleState.multiSampleEnable = false;
 
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
         pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
