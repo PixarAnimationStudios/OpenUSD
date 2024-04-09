@@ -62,11 +62,12 @@ _DataSourceAuthoredAttributeNew(
     const SdfPath &sceneIndexPath,
     const HdDataSourceLocator &timeVaryingFlagLocator)
 {
-    if (!usdAttr.HasAuthoredValue()) {
+    UsdAttributeQuery query(usdAttr);
+    if (!query.HasAuthoredValue()) {
         return nullptr;
     }
     return UsdImagingDataSourceAttributeNew(
-        usdAttr, stageGlobals, sceneIndexPath, timeVaryingFlagLocator);
+        query, stageGlobals, sceneIndexPath, timeVaryingFlagLocator);
 }
 
 //
