@@ -147,6 +147,8 @@ void wrapEngine()
                  return_value_policy< TfPySequenceToList >())
             .def("GetRendererSetting", &UsdImagingGLEngine::GetRendererSetting)
             .def("SetRendererSetting", &UsdImagingGLEngine::SetRendererSetting)
+            .def("SetActiveRenderPassPrimPath",
+                 &UsdImagingGLEngine::SetActiveRenderPassPrimPath)
             .def("SetActiveRenderSettingsPrimPath",
                  &UsdImagingGLEngine::SetActiveRenderSettingsPrimPath)
             .def("GetAvailableRenderSettingsPrimPaths",
