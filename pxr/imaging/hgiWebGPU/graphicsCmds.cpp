@@ -198,18 +198,20 @@ HgiWebGPUGraphicsCmds::SetConstantValues(
         uint32_t byteSize,
         const void* data)
 {
+    // This is a simplified assumption, since at this point we don't know the structure of the uniform
+    static const size_t alignment = 16;
     wgpu::Device device = _hgi->GetPrimaryDevice();
     wgpu::BufferDescriptor bufferDesc;
     bufferDesc.label = static_cast<std::string>("uniform").c_str();
     bufferDesc.usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst;
-    bufferDesc.size = byteSize;
+    bufferDesc.size = ((byteSize + alignment - 1) / alignment) * alignment;;
     wgpu::Buffer constantBuffer = device.CreateBuffer(&bufferDesc);
     wgpu::Queue queue = device.GetQueue();
     queue.WriteBuffer(constantBuffer, 0, data, byteSize);
 
     _constantBindGroupEntry.binding = bindIndex;
     _constantBindGroupEntry.buffer = constantBuffer;
-    _constantBindGroupEntry.size = byteSize;;
+    _constantBindGroupEntry.size = bufferDesc.size;
     _pushConstantsDirty = true;
 }
 
@@ -312,6 +314,7 @@ HgiWebGPUGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
     wgpuHgi->EnqueueCommandBuffer(_commandBuffer);
     wgpuHgi->QueueSubmit();
 
+    _pendingUpdates.clear();
     _commandBuffer = nullptr;
 
     return _hasWork;

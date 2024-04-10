@@ -154,6 +154,9 @@ HgiWebGPUComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
     wgpuHgi->EnqueueCommandBuffer(_commandBuffer);
     wgpuHgi->QueueSubmit();
 
+    _pendingUpdates.clear();
+    _commandBuffer = nullptr;
+
     return true;
 }
 

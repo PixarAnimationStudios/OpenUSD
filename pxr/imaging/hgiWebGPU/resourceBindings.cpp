@@ -38,12 +38,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// OpenGL has separate bindings for each buffer and image type.
-// UBO, SSBO, sampler2D, etc all start at bindingIndex 0. So we expect
-// Hgi clients might specify OpenGL style bindingIndex for each. This
-// assumes that Hgi codeGen does the same for WGSL.
-const static bool reorder = false;
-
 static wgpu::BindGroup _CreateBindGroup(
         wgpu::Device const &device,
         wgpu::BindGroupLayout const &bindGroupLayout,
@@ -69,7 +63,7 @@ _CreateBindGroupEntries(HgiBufferBindDescVector const &buffers)
         if (!TF_VERIFY(b.buffers.size() == 1)) continue;
         auto *buf = static_cast<HgiWebGPUBuffer *>(b.buffers.front().Get());
         wgpu::BindGroupEntry d;
-        uint32_t bi = reorder ? (uint32_t)bindings.size() : b.bindingIndex;
+        uint32_t bi = b.bindingIndex;
         d.binding = bi;
         d.buffer = buf->GetBufferHandle();
         d.offset = b.offsets.front();
@@ -85,7 +79,7 @@ _CreateTextureBindGroupEntries(HgiTextureBindDescVector const &textures) {
     // Textures
     for (HgiTextureBindDesc const &t : textures)
     {
-        uint32_t bi = reorder ? (uint32_t)textureBindings.size() : t.bindingIndex;
+        uint32_t bi = t.bindingIndex;
         // TODO: What should be done with t.resourceType
         // WebGPU only supports textures in combination with samplers
         TF_VERIFY(t.textures.size() == t.samplers.size());
@@ -104,7 +98,7 @@ _CreateSamplerBindGroupEntries(HgiTextureBindDescVector const &textures) {
     // Samplers
     for (HgiTextureBindDesc const &t : textures)
     {
-        uint32_t bi = reorder ? (uint32_t)samplerBindings.size() : t.bindingIndex;
+        uint32_t bi = t.bindingIndex;
         // TODO: What should be done with t.resourceType
         // WebGPU only supports textures in combination with samplers
         TF_VERIFY(t.textures.size() == t.samplers.size());

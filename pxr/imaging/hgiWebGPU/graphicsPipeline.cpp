@@ -220,6 +220,7 @@ HgiWebGPUGraphicsPipeline::HgiWebGPUGraphicsPipeline(
         colorDesc.format = HgiWebGPUConversions::GetPixelFormat(ct.format);
         colorDesc.writeMask =  HgiWebGPUConversions::GetColorWriteMask(ct.colorMask);
 
+        wgpu::BlendState blendState;
         if (ct.blendEnabled) {
             wgpu::BlendComponent blendAlphaDesc;
             blendAlphaDesc.operation = HgiWebGPUConversions::GetBlendEquation(ct.alphaBlendOp);
@@ -231,7 +232,6 @@ HgiWebGPUGraphicsPipeline::HgiWebGPUGraphicsPipeline(
             blendColorDesc.srcFactor = HgiWebGPUConversions::GetBlendFactor(ct.srcColorBlendFactor);
             blendColorDesc.dstFactor = HgiWebGPUConversions::GetBlendFactor(ct.dstColorBlendFactor);
 
-            wgpu::BlendState blendState;
             blendState.color = blendColorDesc;
             blendState.alpha = blendAlphaDesc;
 
