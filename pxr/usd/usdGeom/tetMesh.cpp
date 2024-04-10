@@ -227,10 +227,8 @@ struct _Vec3iCmp
     }
 };
 
-}
-
 VtVec3iArray
-UsdGeomTetMesh::ComputeSurfaceFaces(const VtVec4iArray &tetVertexIndices)
+_ComputeSurfaceFaces(const VtVec4iArray &tetVertexIndices)
 {
 
     // The surface faces are made of triangles that are not shared between
@@ -298,6 +296,7 @@ UsdGeomTetMesh::ComputeSurfaceFaces(const VtVec4iArray &tetVertexIndices)
     return result;
 }
 
+}
 
 bool UsdGeomTetMesh::ComputeSurfaceFaces(const UsdGeomTetMesh& tetMesh,
                                          VtVec3iArray* surfaceFaceIndices,
@@ -312,7 +311,7 @@ bool UsdGeomTetMesh::ComputeSurfaceFaces(const UsdGeomTetMesh& tetMesh,
     VtVec4iArray tetVertexIndices;
     tetVertexIndicesAttr.Get(&tetVertexIndices, timeCode);
     
-    *surfaceFaceIndices = ComputeSurfaceFaces(tetVertexIndices);
+    *surfaceFaceIndices = _ComputeSurfaceFaces(tetVertexIndices);
     return true;
 }
 

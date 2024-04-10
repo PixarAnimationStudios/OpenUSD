@@ -165,6 +165,7 @@
         SCHEMA_TOKEN = 'topology',
         MEMBERS = [
             ('tetVertexIndices', T_VEC4IARRAY, dict(ADD_LOCATOR = True)),
+            ('surfaceFaceVertexIndices', T_VEC3IARRAY, dict(ADD_LOCATOR = True)),
             ('orientation', T_TOKEN, {}),
         ],
         IMPL_SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/tetMeshSchema'],

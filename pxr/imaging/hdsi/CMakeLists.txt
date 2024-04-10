@@ -14,7 +14,6 @@ pxr_library(hdsi
         hf
         hd
         pxOsd
-        usdGeom
 
     PUBLIC_CLASSES
         coordSysPrimSceneIndex

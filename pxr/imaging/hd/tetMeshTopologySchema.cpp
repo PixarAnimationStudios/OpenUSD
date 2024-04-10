@@ -57,6 +57,13 @@ HdTetMeshTopologySchema::GetTetVertexIndices() const
         HdTetMeshTopologySchemaTokens->tetVertexIndices);
 }
 
+HdVec3iArrayDataSourceHandle
+HdTetMeshTopologySchema::GetSurfaceFaceVertexIndices() const
+{
+    return _GetTypedDataSource<HdVec3iArrayDataSource>(
+        HdTetMeshTopologySchemaTokens->surfaceFaceVertexIndices);
+}
+
 HdTokenDataSourceHandle
 HdTetMeshTopologySchema::GetOrientation() const
 {
@@ -68,17 +75,23 @@ HdTetMeshTopologySchema::GetOrientation() const
 HdContainerDataSourceHandle
 HdTetMeshTopologySchema::BuildRetained(
         const HdVec4iArrayDataSourceHandle &tetVertexIndices,
+        const HdVec3iArrayDataSourceHandle &surfaceFaceVertexIndices,
         const HdTokenDataSourceHandle &orientation
 )
 {
-    TfToken _names[2];
-    HdDataSourceBaseHandle _values[2];
+    TfToken _names[3];
+    HdDataSourceBaseHandle _values[3];
 
     size_t _count = 0;
 
     if (tetVertexIndices) {
         _names[_count] = HdTetMeshTopologySchemaTokens->tetVertexIndices;
         _values[_count++] = tetVertexIndices;
+    }
+
+    if (surfaceFaceVertexIndices) {
+        _names[_count] = HdTetMeshTopologySchemaTokens->surfaceFaceVertexIndices;
+        _values[_count++] = surfaceFaceVertexIndices;
     }
 
     if (orientation) {
@@ -97,6 +110,14 @@ HdTetMeshTopologySchema::Builder::SetTetVertexIndices(
 }
 
 HdTetMeshTopologySchema::Builder &
+HdTetMeshTopologySchema::Builder::SetSurfaceFaceVertexIndices(
+    const HdVec3iArrayDataSourceHandle &surfaceFaceVertexIndices)
+{
+    _surfaceFaceVertexIndices = surfaceFaceVertexIndices;
+    return *this;
+}
+
+HdTetMeshTopologySchema::Builder &
 HdTetMeshTopologySchema::Builder::SetOrientation(
     const HdTokenDataSourceHandle &orientation)
 {
@@ -109,6 +130,7 @@ HdTetMeshTopologySchema::Builder::Build()
 {
     return HdTetMeshTopologySchema::BuildRetained(
         _tetVertexIndices,
+        _surfaceFaceVertexIndices,
         _orientation
     );
 }
@@ -148,6 +170,16 @@ HdTetMeshTopologySchema::GetTetVertexIndicesLocator()
     static const HdDataSourceLocator locator =
         GetDefaultLocator().Append(
             HdTetMeshTopologySchemaTokens->tetVertexIndices);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdTetMeshTopologySchema::GetSurfaceFaceVertexIndicesLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdTetMeshTopologySchemaTokens->surfaceFaceVertexIndices);
     return locator;
 }
 

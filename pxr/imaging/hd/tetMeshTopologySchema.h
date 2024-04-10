@@ -52,6 +52,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_TET_MESH_TOPOLOGY_SCHEMA_TOKENS \
     (topology) \
     (tetVertexIndices) \
+    (surfaceFaceVertexIndices) \
     (orientation) \
     (leftHanded) \
     (rightHanded) \
@@ -92,6 +93,9 @@ public:
     HdVec4iArrayDataSourceHandle GetTetVertexIndices() const;
 
     HD_API
+    HdVec3iArrayDataSourceHandle GetSurfaceFaceVertexIndices() const;
+
+    HD_API
     HdTokenDataSourceHandle GetOrientation() const; 
 
     /// @}
@@ -123,6 +127,10 @@ public:
     /// Prim-level relative data source locator to locate tetVertexIndices.
     HD_API
     static const HdDataSourceLocator &GetTetVertexIndicesLocator();
+
+    /// Prim-level relative data source locator to locate surfaceFaceVertexIndices.
+    HD_API
+    static const HdDataSourceLocator &GetSurfaceFaceVertexIndicesLocator();
     /// @} 
 
     /// \name Schema construction
@@ -139,6 +147,7 @@ public:
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdVec4iArrayDataSourceHandle &tetVertexIndices,
+        const HdVec3iArrayDataSourceHandle &surfaceFaceVertexIndices,
         const HdTokenDataSourceHandle &orientation
     );
 
@@ -155,6 +164,9 @@ public:
         Builder &SetTetVertexIndices(
             const HdVec4iArrayDataSourceHandle &tetVertexIndices);
         HD_API
+        Builder &SetSurfaceFaceVertexIndices(
+            const HdVec3iArrayDataSourceHandle &surfaceFaceVertexIndices);
+        HD_API
         Builder &SetOrientation(
             const HdTokenDataSourceHandle &orientation);
 
@@ -164,6 +176,7 @@ public:
 
     private:
         HdVec4iArrayDataSourceHandle _tetVertexIndices;
+        HdVec3iArrayDataSourceHandle _surfaceFaceVertexIndices;
         HdTokenDataSourceHandle _orientation;
 
     };
