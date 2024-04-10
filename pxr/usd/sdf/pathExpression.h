@@ -85,6 +85,14 @@ public:
         SDF_API
         PathPattern();
 
+        /// Construct a PathPattern with the \p prefix path.
+        SDF_API
+        explicit PathPattern(SdfPath const &prefix);
+        
+        /// Construct a PathPattern with the \p prefix path.
+        SDF_API
+        explicit PathPattern(SdfPath &&prefix);
+            
         /// A component represents a pattern matching component past the initial
         /// SdfPath prefix.  A component's text can contain wildcard characters,
         /// and if the component references a predicate expression, its
@@ -378,6 +386,18 @@ public:
     static SdfPathExpression
     MakeAtom(PathPattern const &pattern) {
         return MakeAtom(PathPattern(pattern));
+    }
+
+    /// Produce a new expression that matches \p path exactly.
+    static SdfPathExpression
+    MakeAtom(SdfPath const &path) {
+        return MakeAtom(PathPattern(path));
+    }
+
+    /// \overload
+    static SdfPathExpression
+    MakeAtom(SdfPath &&path) {
+        return MakeAtom(PathPattern(path));
     }
 
     /// Walk this expression's syntax tree in depth-first order, calling \p

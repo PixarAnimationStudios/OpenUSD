@@ -151,7 +151,10 @@ protected:
 
         bool _stretchBegin;
         bool _stretchEnd;
-        bool _isProperty; // true if this pattern matches only properties.
+        enum : uint8_t {
+            // The kind of objects this pattern is capable of matching.
+            _MatchPrimOrProp, _MatchPrimOnly, _MatchPropOnly
+        } _matchObjType;
     };
 
 

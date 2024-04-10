@@ -130,7 +130,13 @@ SdfPathExpression::MakeComplement(SdfPathExpression &&right)
         ret._ops = std::move(right._ops);
         ret._refs = std::move(right._refs);
         ret._patterns = std::move(right._patterns);
-        ret._ops.push_back(Complement);
+        // Complement of complement annihilates.
+        if (ret._ops.back() == Complement) {
+            ret._ops.pop_back();
+        }
+        else {
+            ret._ops.push_back(Complement);
+        }
     }
     return ret;
 }
@@ -460,6 +466,16 @@ SdfPathExpression::GetText() const
 SdfPathExpression::PathPattern::PathPattern()
     : _prefix(SdfPath::ReflexiveRelativePath())
     , _isProperty(false)
+{
+}
+
+SdfPathExpression::PathPattern::PathPattern(SdfPath &&prefix)
+{
+    SetPrefix(std::move(prefix));
+}
+
+SdfPathExpression::PathPattern::PathPattern(SdfPath const &prefix)
+    : PathPattern(SdfPath(prefix))
 {
 }
 
