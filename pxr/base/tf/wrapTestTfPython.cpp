@@ -314,7 +314,6 @@ struct _TestErrorClass
                 (void(*)(object&))&Self::ClassMethod)
             .def("ClassMethod", 
                 (void(*)(object&, std::string const&))&Self::ClassMethod)
-            .staticmethod("ClassMethod")
             .def(TfPyClassMethod("ClassMethod"))
 
             .def("StaticMethod", 
