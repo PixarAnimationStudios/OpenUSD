@@ -51,6 +51,9 @@ class HdUsdWriterRendererDriver:
 
         self._stage = Usd.Stage.Open(usd_file)
 
+    def set_stage(self, stage):
+        self._stage = stage
+
     def render(self, output_file):
         pseudoRoot = self._stage.GetPseudoRoot()
         self._renderer.Render(pseudoRoot, self._renderParams)
