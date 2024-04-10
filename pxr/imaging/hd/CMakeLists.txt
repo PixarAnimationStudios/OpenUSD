@@ -148,6 +148,7 @@ pxr_library(hd
         rendererPluginRegistry
         renderIndex
         renderPass
+        renderPassSchema
         renderPassState
         renderProductSchema
         renderSettings

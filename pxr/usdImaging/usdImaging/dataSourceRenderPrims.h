@@ -33,6 +33,41 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// \class UsdImagingDataSourceRenderPassPrim
+///
+/// A prim data source representing UsdRenderPass.
+///
+class UsdImagingDataSourceRenderPassPrim : public UsdImagingDataSourcePrim
+{
+public:
+    HD_DECLARE_DATASOURCE(UsdImagingDataSourceRenderPassPrim);
+
+    USDIMAGING_API
+    TfTokenVector GetNames() override;
+
+    USDIMAGING_API
+    HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+    USDIMAGING_API
+    static
+    HdDataSourceLocatorSet
+    Invalidate(
+        UsdPrim const& prim,
+        const TfToken &subprim,
+        const TfTokenVector &properties,
+        UsdImagingPropertyInvalidationType invalidationType);
+
+private:
+    // Private constructor, use static New() instead.
+    UsdImagingDataSourceRenderPassPrim(
+        const SdfPath &sceneIndexPath,
+        UsdPrim usdPrim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals);
+};
+
+HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceRenderPassPrim);
+
+
 /// \class UsdImagingDataSourceRenderSettingsPrim
 ///
 /// A prim data source representing UsdRenderSettings.

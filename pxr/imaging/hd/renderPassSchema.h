@@ -32,18 +32,17 @@
 /* **                                                                      ** */
 /* ************************************************************************** */
 
-#ifndef PXR_IMAGING_HD_SCENE_GLOBALS_SCHEMA_H
-#define PXR_IMAGING_HD_SCENE_GLOBALS_SCHEMA_H
+#ifndef PXR_IMAGING_HD_RENDER_PASS_SCHEMA_H
+#define PXR_IMAGING_HD_RENDER_PASS_SCHEMA_H
 
 /// \file
 
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/schemaTypeDefs.h"
 
 #include "pxr/imaging/hd/schema.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
-#include "pxr/usd/sdf/path.h"
-#include "pxr/imaging/hd/sceneIndex.h"
 // --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -51,86 +50,48 @@ PXR_NAMESPACE_OPEN_SCOPE
 // --(BEGIN CUSTOM CODE: Declares)--
 // --(END CUSTOM CODE: Declares)--
 
-#define HD_SCENE_GLOBALS_SCHEMA_TOKENS \
-    (sceneGlobals) \
-    (activeRenderPassPrim) \
-    (activeRenderSettingsPrim) \
-    (startTimeCode) \
-    (endTimeCode) \
+#define HD_RENDER_PASS_SCHEMA_TOKENS \
+    (renderPass) \
+    (passType) \
+    (renderSource) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdSceneGlobalsSchemaTokens, HD_API,
-    HD_SCENE_GLOBALS_SCHEMA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRenderPassSchemaTokens, HD_API,
+    HD_RENDER_PASS_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
 
-// The HdSceneGlobalsSchema encapsulates "global" state to orchestrate a
-// render. It currently houses the active render settings prim path that
-// describes the information necessary to generate images from a single
-// invocation of a renderer, and the active time sample range that may be
-// relevant to downstream scene indices (e.g. procedural evaluation).
-//
-// We shall use the convention of a container data source at the root prim of
-// the scene index that is populated with this global state. The renderer and
-// downstream scene indices can query it to configure their behavior as
-// necessary.
-//
 
-class HdSceneGlobalsSchema : public HdSchema
+class HdRenderPassSchema : public HdSchema
 {
 public:
     /// \name Schema retrieval
     /// @{
 
-    HdSceneGlobalsSchema(HdContainerDataSourceHandle container)
+    HdRenderPassSchema(HdContainerDataSourceHandle container)
       : HdSchema(container) {}
 
     /// Retrieves a container data source with the schema's default name token
-    /// "sceneGlobals" from the parent container and constructs a
-    /// HdSceneGlobalsSchema instance.
+    /// "renderPass" from the parent container and constructs a
+    /// HdRenderPassSchema instance.
     /// Because the requested container data source may not exist, the result
     /// should be checked with IsDefined() or a bool comparison before use.
     HD_API
-    static HdSceneGlobalsSchema GetFromParent(
+    static HdRenderPassSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
     /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
-
-    /// Constructs and returns a HdSceneGlobalsSchema from the root prim in the
-    /// scene index. Since the root prim might not have a data source for this
-    /// schema, the result should be checked with IsDefined() or a bool 
-    /// conversion before use.
-    ///
-    /// \note This API is preferable to GetFromParent(container).
-    HD_API
-    static HdSceneGlobalsSchema
-    GetFromSceneIndex(
-        const HdSceneIndexBaseRefPtr &si);
-    
-    /// Utility method to concretize the convention of parking the 
-    /// "sceneGlobals" container at the root prim of the scene index.
-    static const SdfPath&
-    GetDefaultPrimPath() {
-        return SdfPath::AbsoluteRootPath();
-    }
-
 // --(END CUSTOM CODE: Schema Methods)--
 
     /// \name Member accessor
     /// @{
 
     HD_API
-    HdPathDataSourceHandle GetActiveRenderPassPrim() const;
+    HdTokenDataSourceHandle GetPassType() const;
 
     HD_API
-    HdPathDataSourceHandle GetActiveRenderSettingsPrim() const;
-
-    HD_API
-    HdDoubleDataSourceHandle GetStartTimeCode() const;
-
-    HD_API
-    HdDoubleDataSourceHandle GetEndTimeCode() const; 
+    HdPathDataSourceHandle GetRenderSource() const; 
 
     /// @}
 
@@ -158,21 +119,13 @@ public:
     /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
     /// @{
 
-    /// Prim-level relative data source locator to locate activeRenderPassPrim.
+    /// Prim-level relative data source locator to locate passType.
     HD_API
-    static const HdDataSourceLocator &GetActiveRenderPassPrimLocator();
+    static const HdDataSourceLocator &GetPassTypeLocator();
 
-    /// Prim-level relative data source locator to locate activeRenderSettingsPrim.
+    /// Prim-level relative data source locator to locate renderSource.
     HD_API
-    static const HdDataSourceLocator &GetActiveRenderSettingsPrimLocator();
-
-    /// Prim-level relative data source locator to locate startTimeCode.
-    HD_API
-    static const HdDataSourceLocator &GetStartTimeCodeLocator();
-
-    /// Prim-level relative data source locator to locate endTimeCode.
-    HD_API
-    static const HdDataSourceLocator &GetEndTimeCodeLocator();
+    static const HdDataSourceLocator &GetRenderSourceLocator();
     /// @} 
 
     /// \name Schema construction
@@ -188,13 +141,11 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdPathDataSourceHandle &activeRenderPassPrim,
-        const HdPathDataSourceHandle &activeRenderSettingsPrim,
-        const HdDoubleDataSourceHandle &startTimeCode,
-        const HdDoubleDataSourceHandle &endTimeCode
+        const HdTokenDataSourceHandle &passType,
+        const HdPathDataSourceHandle &renderSource
     );
 
-    /// \class HdSceneGlobalsSchema::Builder
+    /// \class HdRenderPassSchema::Builder
     /// 
     /// Utility class for setting sparse sets of child data source fields to be
     /// filled as arguments into BuildRetained. Because all setter methods
@@ -204,27 +155,19 @@ public:
     {
     public:
         HD_API
-        Builder &SetActiveRenderPassPrim(
-            const HdPathDataSourceHandle &activeRenderPassPrim);
+        Builder &SetPassType(
+            const HdTokenDataSourceHandle &passType);
         HD_API
-        Builder &SetActiveRenderSettingsPrim(
-            const HdPathDataSourceHandle &activeRenderSettingsPrim);
-        HD_API
-        Builder &SetStartTimeCode(
-            const HdDoubleDataSourceHandle &startTimeCode);
-        HD_API
-        Builder &SetEndTimeCode(
-            const HdDoubleDataSourceHandle &endTimeCode);
+        Builder &SetRenderSource(
+            const HdPathDataSourceHandle &renderSource);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
         HdContainerDataSourceHandle Build();
 
     private:
-        HdPathDataSourceHandle _activeRenderPassPrim;
-        HdPathDataSourceHandle _activeRenderSettingsPrim;
-        HdDoubleDataSourceHandle _startTimeCode;
-        HdDoubleDataSourceHandle _endTimeCode;
+        HdTokenDataSourceHandle _passType;
+        HdPathDataSourceHandle _renderSource;
 
     };
 

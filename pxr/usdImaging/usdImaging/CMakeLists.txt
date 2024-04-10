@@ -124,6 +124,7 @@ pxr_library(usdImaging
         usdRenderSettingsSchema
         usdRenderVarSchema
         rectLightAdapter
+        renderPassAdapter
         renderProductAdapter
         renderSettingsAdapter
         renderSettingsFlatteningSceneIndex

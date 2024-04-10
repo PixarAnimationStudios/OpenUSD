@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/renderSettingsSchema.h"
 #include "pxr/imaging/hd/sceneGlobalsSchema.h"
+#include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -56,7 +57,9 @@ TfTokenVector
 _SceneGlobalsDataSource::GetNames()
 {
     static const TfTokenVector names = {
-        HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim };
+        HdSceneGlobalsSchemaTokens->activeRenderPassPrim,
+        HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim
+    };
 
     return names;
 }
@@ -64,16 +67,23 @@ _SceneGlobalsDataSource::GetNames()
 HdDataSourceBaseHandle
 _SceneGlobalsDataSource::Get(const TfToken &name)
 {
-    if (name == HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim) {
-
+    if (name == HdSceneGlobalsSchemaTokens->activeRenderPassPrim) {
+        SdfPath const &path = _si->_activeRenderPassPrimPath;
+        if (!path.IsEmpty()) {
+            // Validate that a render pass prim exists at the given path.
+            HdSceneIndexPrim prim = _si->GetPrim(path);
+            if (prim.primType == HdPrimTypeTokens->renderPass &&
+                prim.dataSource) {
+                return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
+            }
+        }
+    } else if (name == HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim) {
         SdfPath const &path = _si->_activeRenderSettingsPrimPath;
-
         if (!path.IsEmpty()) {
             // Validate that a render settings prim exists at the given path.
             HdSceneIndexPrim prim = _si->GetPrim(path);
-            if (prim.primType == HdRenderSettingsSchemaTokens->renderSettings &&
+            if (prim.primType == HdPrimTypeTokens->renderSettings &&
                 prim.dataSource) {
-
                 return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
             }
         }
@@ -92,6 +102,23 @@ HdsiSceneGlobalsSceneIndexRefPtr
 HdsiSceneGlobalsSceneIndex::New(const HdSceneIndexBaseRefPtr &inputSceneIndex)
 {
     return TfCreateRefPtr(new HdsiSceneGlobalsSceneIndex(inputSceneIndex));
+}
+
+void
+HdsiSceneGlobalsSceneIndex::SetActiveRenderPassPrimPath(
+    const SdfPath &path)
+{
+    if (_activeRenderPassPrimPath == path) {
+        return;
+    }
+
+    _activeRenderPassPrimPath = path;
+
+    if (_IsObserved()) {
+        _SendPrimsDirtied({{
+            HdSceneGlobalsSchema::GetDefaultPrimPath(),
+            HdSceneGlobalsSchema::GetActiveRenderPassPrimLocator()}});
+    }
 }
 
 void
