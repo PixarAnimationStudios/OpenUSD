@@ -130,7 +130,7 @@ SdfPathExpression::MakeComplement(SdfPathExpression &&right)
         ret._ops = std::move(right._ops);
         ret._refs = std::move(right._refs);
         ret._patterns = std::move(right._patterns);
-        // Complement of complement annihilates.
+        // Complement of complement cancels.
         if (ret._ops.back() == Complement) {
             ret._ops.pop_back();
         }

@@ -42,6 +42,20 @@ class TestSdfPathExpression(unittest.TestCase):
         self.assertEqual(pe, Sdf.PathExpression(''))
         self.assertFalse(pe)
 
+        # Complement of complement should cancel.
+        self.assertEqual(
+            Sdf.PathExpression('~(~a)'), Sdf.PathExpression('a'))
+        self.assertEqual(
+            Sdf.PathExpression('~(~(~a))'), Sdf.PathExpression('~a'))
+        self.assertEqual(
+            Sdf.PathExpression('~(~(~(~a)))'), Sdf.PathExpression('a'))
+        self.assertEqual(
+            Sdf.PathExpression('// - a'), Sdf.PathExpression('~a'))
+        self.assertEqual(
+            Sdf.PathExpression('~(// - a)'), Sdf.PathExpression('a'))
+        self.assertEqual(
+            Sdf.PathExpression('~(// - ~a)'), Sdf.PathExpression('~a'))
+
     def test_Matching(self):
 
         evl = MatchEval('/foo/bar/*') 
