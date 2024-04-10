@@ -57,6 +57,45 @@ class TestUsdCollectionAPI(unittest.TestCase):
         stage.Reload()
         pass
 
+    def checkQuery(self, mquery, stage, verbose=False):
+        # Cross-check the mquery between ComputeIncludedPathsFromCollection(),
+        # IsPathIncluded(), and the expression produced by
+        # ComputePathExpressionFromCollectionMembershipQueryRuleMap().
+
+        # Compute includes from the membership query.
+        includes = set(Usd.ComputeIncludedPathsFromCollection(
+            query=mquery, stage=stage))
+        
+        # Fetch all paths from the stage, then cross-check.
+        allPaths = set()
+        for prim in stage.Traverse():
+            allPaths.add(prim.GetPath())
+            allPaths.update([prop.GetPath() for prop in prim.GetProperties()])
+
+        # Check all paths with query.IsPathIncluded() API.
+        for path in allPaths:
+            if path in includes:
+                self.assertTrue(mquery.IsPathIncluded(path),
+                                msg='query should include {}'.format(path))
+            else:
+                self.assertFalse(mquery.IsPathIncluded(path),
+                                 msg='query should exclude {}'.format(path))
+
+        # Get path expression.
+        pathExpr = \
+            Usd.ComputePathExpressionFromCollectionMembershipQueryRuleMap(
+                mquery.GetAsPathExpansionRuleMap())
+
+        # Check all paths against expression Match() API.
+        matchEval = Sdf._MakeBasicMatchEval(pathExpr.GetText())
+        for path in allPaths:
+            if path in includes:
+                self.assertTrue(matchEval.Match(path),
+                                msg='expr should match {}'.format(path))
+            else:
+                self.assertFalse(matchEval.Match(path),
+                                 msg='expr should not match {}'.format(path))
+
     def test_AuthorCollections(self):
         # ----------------------------------------------------------
         # Test an explicitOnly collection.
@@ -104,6 +143,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         explicitColl.GetIncludesRel().AddTarget(cone.GetPath())
 
         explicitCollMquery = explicitColl.ComputeMembershipQuery()
+        self.checkQuery(explicitCollMquery, stage)
 
         explicitCollIncObjects = Usd.CollectionAPI.ComputeIncludedObjects(
                 explicitCollMquery, stage)
@@ -125,6 +165,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # We have to recompute the membership map if we add or remove 
         # includes/excludes targets.
         explicitCollMquery = explicitColl.ComputeMembershipQuery()
+        self.checkQuery(explicitCollMquery, stage)
 
         # Ensure that the cone is excluded.
         self.assertFalse(explicitCollMquery.IsPathIncluded(cone.GetPath()))
@@ -137,6 +178,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
                 "testExpandPrimsColl")
         expandPrimsColl.CreateIncludesRel().AddTarget(geom.GetPath())
         expandPrimsCollMquery = expandPrimsColl.ComputeMembershipQuery()
+        self.checkQuery(expandPrimsCollMquery, stage)
         
         expandPrimCollIncObjects = Usd.CollectionAPI.ComputeIncludedObjects(
                 expandPrimsCollMquery, stage)
@@ -155,6 +197,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
             Sdf.Path("/Collection/Materials/Plastic"))
 
         expandPrimsCollMquery = expandPrimsColl.ComputeMembershipQuery()
+        self.checkQuery(expandPrimsCollMquery, stage)
         expandPrimCollIncObjects = Usd.CollectionAPI.ComputeIncludedObjects(
                 expandPrimsCollMquery, stage, Usd.TraverseInstanceProxies())
         self.assertEqual(len(expandPrimCollIncObjects), 4)
@@ -171,6 +214,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         expandPrimsAndPropertiesColl.CreateIncludesRel().AddTarget(
                 shapes.GetPath())
         expandPnPCollMquery = expandPrimsAndPropertiesColl.ComputeMembershipQuery()
+        self.checkQuery(expandPnPCollMquery, stage)
         expandPnPCollObjects = Usd.CollectionAPI.ComputeIncludedObjects(
                 expandPnPCollMquery, stage)
 
@@ -192,6 +236,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
             explicitColl.GetCollectionPath())
 
         combinedMquery = combinedColl.ComputeMembershipQuery()
+        self.checkQuery(combinedMquery, stage)
 
         combinedCollIncObjects = Usd.CollectionAPI.ComputeIncludedObjects(
                 combinedMquery, stage)
@@ -205,9 +250,10 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # exludes "Shapes", but is weaker than the "expandPrimsAndProperties" 
         # collection.
         combinedColl.CreateIncludesRel().AddTarget(
-            expandPrimsColl.GetCollectionPath(), position=Usd.ListPositionBackOfAppendList)
+            expandPrimsColl.GetCollectionPath(),
+            position=Usd.ListPositionBackOfAppendList)
         combinedMquery = combinedColl.ComputeMembershipQuery()
-        
+        self.checkQuery(combinedMquery, stage)
         combinedCollIncObjects = Usd.CollectionAPI.ComputeIncludedObjects(
                 combinedMquery, stage)
 
@@ -229,6 +275,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertTrue(geomCollection.ExcludePath(sphere.GetPath()))
 
         query = geomCollection.ComputeMembershipQuery()
+        self.checkQuery(query, stage)
         self.assertTrue(query.IsPathIncluded(cylinder.GetPath()))
         self.assertTrue(query.IsPathIncluded(cube.GetPath()))
         self.assertFalse(query.IsPathIncluded(sphere.GetPath()))
@@ -245,6 +292,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # Every time we call IncludePath() or ExcludePath(), we must recompute 
         # the MembershipQuery object.
         query = geomCollection.ComputeMembershipQuery()
+        self.checkQuery(query, stage)
         self.assertFalse(query.IsPathIncluded(sphere.GetPath()))
         self.assertFalse(query.IsPathIncluded(hemiSphere1.GetPath()))
         self.assertTrue(query.IsPathIncluded(hemiSphere2.GetPath()))
@@ -253,6 +301,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertTrue(geomCollection.IncludePath(sphere.GetPath()))
 
         query = geomCollection.ComputeMembershipQuery()
+        self.checkQuery(query, stage)
         self.assertTrue(query.IsPathIncluded(sphere.GetPath()))
         self.assertTrue(query.IsPathIncluded(hemiSphere1.GetPath()))
         self.assertTrue(query.IsPathIncluded(hemiSphere2.GetPath()))
@@ -268,6 +317,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         includeRootTest.IncludePath('/')
         includeRootTest.ExcludePath(geom.GetPath())
         query = includeRootTest.ComputeMembershipQuery()
+        self.checkQuery(query, stage)
         self.assertTrue(query.IsPathIncluded(testPrim.GetPath()))
         self.assertFalse(query.IsPathIncluded(geom.GetPath()))
         self.assertFalse(query.IsPathIncluded(box.GetPath()))
@@ -276,6 +326,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # a path under the excluded Geom scope.
         includeRootTest.IncludePath(box.GetPath())
         query = includeRootTest.ComputeMembershipQuery()
+        self.checkQuery(query, stage)
         self.assertTrue(query.IsPathIncluded(testPrim.GetPath()))
         self.assertFalse(query.IsPathIncluded(geom.GetPath()))
         self.assertTrue(query.IsPathIncluded(box.GetPath()))
@@ -312,6 +363,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
             leafGeom.GetIncludesRel().GetPath()))
 
         leafGeomMquery = leafGeom.ComputeMembershipQuery()
+        self.checkQuery(leafGeomMquery, stage)
         self.assertEqual(leafGeomMquery.GetIncludedCollections(), [])
         self.assertEqual(
             len(Usd.CollectionAPI.ComputeIncludedObjects(leafGeomMquery,
@@ -330,6 +382,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         allGeom = Usd.CollectionAPI(testPrim, "allGeom")
         (valid, reason) = allGeom.Validate()
         allGeomMquery = allGeom.ComputeMembershipQuery()
+        self.checkQuery(allGeomMquery, stage)
         self.assertEqual(allGeomMquery.GetIncludedCollections(), [])
         self.assertEqual(len(Usd.CollectionAPI.ComputeIncludedObjects(
                 allGeomMquery,stage)), 9)
@@ -342,6 +395,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         allGeomProperties = Usd.CollectionAPI(testPrim, "allGeomProperties")
         (valid, reason) = allGeomProperties.Validate()
         allGeomPropertiesMquery = allGeomProperties.ComputeMembershipQuery()
+        self.checkQuery(allGeomPropertiesMquery, stage)
         self.assertEqual(allGeomPropertiesMquery.GetIncludedCollections(), [])
         self.assertEqual(len(Usd.CollectionAPI.ComputeIncludedObjects(
                 allGeomPropertiesMquery, stage)), 33)
@@ -350,6 +404,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         (valid, reason) = hasRels.Validate()
         self.assertTrue(valid)
         hasRelsMquery = hasRels.ComputeMembershipQuery()
+        self.checkQuery(hasRelsMquery, stage)
         self.assertEqual(hasRelsMquery.GetIncludedCollections(), [])
         incObjects = Usd.CollectionAPI.ComputeIncludedObjects(hasRelsMquery, stage)
         for obj in incObjects: 
@@ -359,6 +414,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         (valid, reason) = hasInstanceProxy.Validate()
         self.assertTrue(valid)
         hasInstanceProxyMquery = hasInstanceProxy.ComputeMembershipQuery()
+        self.checkQuery(hasInstanceProxyMquery, stage)
         self.assertEqual(hasInstanceProxyMquery.GetIncludedCollections(), [])
         incObjects = Usd.CollectionAPI.ComputeIncludedObjects(
                 hasInstanceProxyMquery, stage)
@@ -371,6 +427,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         (valid, reason) = coneProperties.Validate()
         self.assertTrue(valid)
         conePropertiesMquery = coneProperties.ComputeMembershipQuery()
+        self.checkQuery(conePropertiesMquery, stage)
         self.assertEqual(conePropertiesMquery.GetIncludedCollections(), [])
         incObjects = Usd.CollectionAPI.ComputeIncludedObjects(
                 conePropertiesMquery, stage)
@@ -382,6 +439,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         (valid, reason) = includesCollection.Validate()
         self.assertTrue(valid)
         includesCollectionMquery = includesCollection.ComputeMembershipQuery()
+        self.checkQuery(includesCollectionMquery, stage)
         self.assertEqual(
             set(includesCollectionMquery.GetIncludedCollections()),
             set([Sdf.Path("/CollectionTest/Geom/Shapes.collection:allShapes")]))
@@ -396,6 +454,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertTrue(valid)
         includesNestedCollectionMquery = \
             includesNestedCollection.ComputeMembershipQuery()
+        self.checkQuery(includesNestedCollectionMquery, stage)
         self.assertEqual(
             set(includesNestedCollectionMquery.GetIncludedCollections()),
             set([Sdf.Path("/CollectionTest/Geom/Shapes.collection:allShapes"),
@@ -405,6 +464,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         (valid, reason) = excludeInstanceGeom.Validate()
         self.assertTrue(valid)
         excludeInstanceGeomMquery = excludeInstanceGeom.ComputeMembershipQuery()
+        self.checkQuery(excludeInstanceGeomMquery, stage)
         self.assertEqual(excludeInstanceGeomMquery.GetIncludedCollections(), [])
         incObjects = Usd.CollectionAPI.ComputeIncludedObjects(
                 excludeInstanceGeomMquery, stage)
@@ -458,6 +518,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertFalse(valid)
         self.assertTrue('circular' in reason)
         mqueryA = collectionA.ComputeMembershipQuery()
+        self.checkQuery(mqueryA, stage)
         self.assertEqual(len(ComputeIncObjs(mqueryA, stage)), 0)
         self.assertEqual(mqueryA.GetIncludedCollections(),
                          [collectionB.GetCollectionPath(),
@@ -467,6 +528,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertFalse(valid)
         self.assertTrue('circular' in reason)
         mqueryB = collectionB.ComputeMembershipQuery()
+        self.checkQuery(mqueryB, stage)
         self.assertEqual(len(ComputeIncObjs(mqueryB, stage)), 0)
         self.assertEqual(mqueryB.GetIncludedCollections(),
                          [collectionA.GetCollectionPath(),
@@ -476,6 +538,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertFalse(valid)
         self.assertTrue('circular' in reason)
         mqueryC = collectionC.ComputeMembershipQuery()
+        self.checkQuery(mqueryC, stage)
         self.assertEqual(len(ComputeIncObjs(mqueryC, stage)), 0)
         self.assertEqual(mqueryC.GetIncludedCollections(),
                          [collectionA.GetCollectionPath(),
@@ -486,6 +549,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         collectionA.CreateIncludesRel().AddTarget(
             collectionD.GetCollectionPath())
         mqueryA = collectionA.ComputeMembershipQuery()
+        self.checkQuery(mqueryA, stage)
         self.assertEqual(len(ComputeIncObjs(mqueryA, stage)), 9)
         self.assertEqual(mqueryA.GetIncludedCollections(),
                          [collectionB.GetCollectionPath(),
@@ -493,6 +557,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
                           collectionD.GetCollectionPath()])
 
         mqueryB = collectionB.ComputeMembershipQuery()
+        self.checkQuery(mqueryB, stage)
         self.assertEqual(len(ComputeIncObjs(mqueryB, stage)), 9)
         self.assertEqual(mqueryB.GetIncludedCollections(),
                          [collectionA.GetCollectionPath(),
@@ -500,6 +565,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
                           collectionD.GetCollectionPath()])
 
         mqueryC = collectionC.ComputeMembershipQuery()
+        self.checkQuery(mqueryC, stage)
         self.assertEqual(len(ComputeIncObjs(mqueryC, stage)), 9)
         self.assertEqual(mqueryC.GetIncludedCollections(),
                          [collectionA.GetCollectionPath(),
@@ -518,6 +584,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertFalse(valid)
         self.assertTrue('circular' in reason)
         mqueryA = collectionA.ComputeMembershipQuery()
+        self.checkQuery(mqueryA, stage)
         self.assertEqual(len(ComputeIncObjs(mqueryA, stage)), 0)
         self.assertEqual(mqueryA.GetIncludedCollections(),
                          [collectionB.GetCollectionPath(),
@@ -527,6 +594,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertFalse(valid)
         self.assertTrue('circular' in reason)
         mqueryB = collectionB.ComputeMembershipQuery()
+        self.checkQuery(mqueryB, stage)
         self.assertEqual(len(ComputeIncObjs(mqueryB, stage)), 0)
         self.assertEqual(mqueryB.GetIncludedCollections(),
                          [collectionC.GetCollectionPath()])
@@ -535,6 +603,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertFalse(valid)
         self.assertTrue('circular' in reason)
         mqueryC = collectionC.ComputeMembershipQuery()
+        self.checkQuery(mqueryC, stage)
         self.assertEqual(len(ComputeIncObjs(mqueryC, stage)), 0)
         self.assertEqual(mqueryC.GetIncludedCollections(),
                          [collectionB.GetCollectionPath()])
@@ -548,6 +617,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertFalse(valid)
         self.assertTrue('circular' in reason)
         mqueryA = collectionA.ComputeMembershipQuery()
+        self.checkQuery(mqueryA, stage)
         self.assertEqual(len(ComputeIncObjs(mqueryA, stage)), 0)
         self.assertEqual(mqueryA.GetIncludedCollections(),
                          [collectionB.GetCollectionPath()])
@@ -556,6 +626,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertFalse(valid)
         self.assertTrue('circular' in reason)
         mqueryB = collectionB.ComputeMembershipQuery()
+        self.checkQuery(mqueryB, stage)
         self.assertEqual(len(ComputeIncObjs(mqueryB, stage)), 0)
         self.assertEqual(mqueryB.GetIncludedCollections(), 
                          [])
@@ -569,6 +640,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertFalse(valid)
         self.assertTrue('circular' in reason)
         mqueryA = collectionA.ComputeMembershipQuery()
+        self.checkQuery(mqueryA, stage)
         self.assertEqual(len(ComputeIncObjs(mqueryA, stage)), 0)
         self.assertEqual(mqueryA.GetIncludedCollections(),
                          [])
