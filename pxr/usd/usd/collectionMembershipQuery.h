@@ -171,7 +171,7 @@ protected:
 /// Compute an SdfPathExpression that matches the same paths as \p ruleMap.  The
 /// resulting SdfPathExpression is always complete (see
 /// SdfPathExpression::IsComplete()) and never contains predicates.
-SDF_API
+USD_API
 SdfPathExpression
 UsdComputePathExpressionFromCollectionMembershipQueryRuleMap(
     Usd_CollectionMembershipQueryBase::PathExpansionRuleMap const &ruleMap);
