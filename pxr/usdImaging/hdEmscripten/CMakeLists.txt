@@ -49,10 +49,6 @@ add_resources(ndr)
 
 list(APPEND RESOURCE_PARAMETERS "--preload-file ${PROJECT_BINARY_DIR}/plugins_plugInfo.json@/usd/plugInfo.json")
 
-if(PXR_EMSCRIPTEN_NODE)
-    list(TRANSFORM RESOURCE_PARAMETERS REPLACE "-preload" "-embed")
-endif()
-
 set(BUILD_FILES
     ${CMAKE_CURRENT_BINARY_DIR}/${BINDINGS_NAME}.js
     ${CMAKE_CURRENT_BINARY_DIR}/${BINDINGS_NAME}.wasm
@@ -65,8 +61,10 @@ set(BUILD_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/environments/helicopter-landing-pad-vis-4K.hdr
 )
 
-if(NOT PXR_EMSCRIPTEN_NODE)
-  list(APPEND BUILD_FILES "${CMAKE_CURRENT_BINARY_DIR}/${BINDINGS_NAME}.data")
+if(PXR_WASM_NODE)
+    list(TRANSFORM RESOURCE_PARAMETERS REPLACE "-preload" "-embed")
+else()
+    list(APPEND BUILD_FILES "${CMAKE_CURRENT_BINARY_DIR}/${BINDINGS_NAME}.data")
 endif()
 
 pxr_cpp_bin(${BINDINGS_NAME}

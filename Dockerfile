@@ -1,6 +1,6 @@
 FROM ubuntu:23.04
 SHELL ["/bin/bash", "-c"]
-ARG BUILD_TARGET=--emscripten
+ARG BUILD_TARGET="--build-target wasm"
 ARG EMSCRIPTEN_VERSION=3.1.47
 RUN apt-get -y update && apt-get install -y\
         software-properties-common \

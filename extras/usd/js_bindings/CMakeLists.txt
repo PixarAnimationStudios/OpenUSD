@@ -35,7 +35,7 @@ add_resources(ndr)
 
 list(APPEND RESOURCE_PARAMETERS "--preload-file ${PROJECT_BINARY_DIR}/plugins_plugInfo.json@/usd/plugInfo.json")
 
-if(PXR_EMSCRIPTEN_NODE)
+if(PXR_WASM_NODE)
   list(TRANSFORM RESOURCE_PARAMETERS REPLACE "-preload" "-embed")
 endif()
 
@@ -59,7 +59,7 @@ set(BUILD_FILES
     ${CMAKE_SOURCE_DIR}/js/test.html
 )
 
-if(NOT PXR_EMSCRIPTEN_NODE)
+if(NOT PXR_WASM_NODE)
     list(APPEND BUILD_FILES "${CMAKE_CURRENT_BINARY_DIR}/${BINDINGS_NAME}.data")
 endif()
 

@@ -80,6 +80,7 @@ def GetHostArch():
     return macArch
 
 def GetTargetArch(context):
+    macTargets = None
     if context.targetNative:
         macTargets = GetHostArch()
     else:
@@ -99,6 +100,7 @@ def IsTargetArm(context):
 
 def GetTargetArchPair(context):
     secondaryArch = None
+    primaryArch = None
 
     if context.targetNative:
         primaryArch = GetHostArch()

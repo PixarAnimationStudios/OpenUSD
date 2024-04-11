@@ -56,6 +56,8 @@ from shutil import which
 verbosity = 1
 EMSCRIPTEN_CMAKE_EXE_LINKER_FLAGS='-sSTACK_SIZE=5MB -sSTACK_SIZE=5MB -sDEFAULT_PTHREAD_STACK_SIZE=2MB'
 EMSCRIPTEN_CMAKE_CXX_FLAGS='-pthread'
+TARGET_WASM='wasm'
+TARGET_WASM_NODE='node'
 
 def Print(msg):
     if verbosity > 0:
@@ -93,6 +95,19 @@ def MacOS():
 
 if MacOS():
     import apple_utils
+
+def GetBuildTargetDefault():
+    if MacOS():
+        return apple_utils.GetBuildTargetDefault()
+    else:
+        return ''
+
+def GetBuildTargets():
+    # The wasm build has been tested only in MacOS so far
+    if MacOS():
+        return apple_utils.GetBuildTargets() + [TARGET_WASM, TARGET_WASM_NODE]
+    elif Linux():
+        return [TARGET_WASM, TARGET_WASM_NODE]
 
 def GetLocale():
     if Windows():
@@ -404,7 +419,7 @@ def RunCMake(context, force, extraArgs = None, target="install"):
 
     # EMSCRIPTEN doesn't use VS On Windows
     # Note - don't want to add -A (architecture flag) if generator is, ie, Ninja
-    if not context.emscripten and IsVisualStudio2019OrGreater() and "Visual Studio" in generator:
+    if not context.targetWasm and IsVisualStudio2019OrGreater() and "Visual Studio" in generator:
         generator = generator + " -A x64"
 
     toolset = context.cmakeToolset
@@ -413,7 +428,7 @@ def RunCMake(context, force, extraArgs = None, target="install"):
 
     # On MacOS, enable the use of @rpath for relocatable builds.
     osx_rpath = None
-    if MacOS():
+    if MacOS() and not context.targetWasm:
         osx_rpath = "-DCMAKE_MACOSX_RPATH=ON"
 
         # For macOS cross compilation, set the Xcode architecture flags.
@@ -447,7 +462,7 @@ def RunCMake(context, force, extraArgs = None, target="install"):
     AppendCXX11ABIArg("-DCMAKE_CXX_FLAGS", context, extraArgs)
 
     with CurrentWorkingDirectory(buildDir):
-        Run(('{} '.format('emcmake.bat' if Windows() else 'emcmake') if context.emscripten else '') +
+        Run(('{} '.format('emcmake.bat' if Windows() else 'emcmake') if context.targetWasm else '') +
             'cmake '
             '-DCMAKE_INSTALL_PREFIX="{instDir}" '
             '-DCMAKE_PREFIX_PATH="{depsInstDir}" '
@@ -465,7 +480,7 @@ def RunCMake(context, force, extraArgs = None, target="install"):
                     generator=(generator or ""),
                     toolset=(toolset or ""),
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
-        Run(('{} '.format('emmake.bat' if Windows() else 'emmake') if context.emscripten else '') +
+        Run(('{} '.format('emmake.bat' if Windows() else 'emmake') if context.targetWasm else '') +
             "cmake --build . --config {config} --target {target} -- {multiproc}"
             .format(config=config,
                     target=target,
@@ -745,8 +760,7 @@ def InstallBoost_Helper(context, force, buildArgs):
     #   compatibility issues on Big Sur and Monterey.
     pyInfo = GetPythonInfo(context)
     pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
-
-    if context.emscripten:
+    if context.targetWasm:
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip"
     elif context.buildPython and pyVer >= (3, 11):
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip"
@@ -788,7 +802,7 @@ def InstallBoost_Helper(context, force, buildArgs):
 
         macOSArch = ""
 
-        if MacOS():
+        if MacOS() and not context.targetWasm:
             if apple_utils.GetTargetArch(context) == \
                         apple_utils.TARGET_X86:
                 macOSArch = "-arch {0}".format(apple_utils.TARGET_X86)
@@ -975,7 +989,7 @@ else:
 TBB_EMSCRIPTEN_URL = "https://github.com/sdunkel/wasmtbb/archive/refs/heads/master.zip"
 
 def InstallTBB(context, force, buildArgs):
-    if context.emscripten:
+    if context.targetWasm:
         InstallTBB_Emscripten(context, force, buildArgs)
     elif Windows():
         InstallTBB_Windows(context, force, buildArgs)
@@ -1423,7 +1437,7 @@ def InstallOpenSubdiv(context, force, buildArgs):
             '-DNO_GLEW=ON',
             '-DNO_GLFW=ON',
         ]
-        if context.emscripten:
+        if context.targetWasm:
             extraArgs.append('-DBUILD_SHARED_LIB=OFF')
             extraArgs.append('-DCMAKE_CXX_FLAGS="-pthread"')
             extraArgs.append('-DCMAKE_C_FLAGS="-pthread"')
@@ -1600,7 +1614,7 @@ THREE = Dependency("ThreeJs", InstallThreeJs, "src/three.js")
 GLSLANG_RELATIVE_PATH = "third_party/vulkan-deps/glslang/src"
 def InstallGlslang(context, force, buildArgs):
     with CurrentWorkingDirectory(context.srcDir):
-        if context.emscripten:
+        if context.targetWasm:
             srcDir = os.path.join(os.getcwd(), "tint", GLSLANG_RELATIVE_PATH)
         else:
             srcDir = os.path.join(os.getcwd(), "dawn", GLSLANG_RELATIVE_PATH)
@@ -1620,7 +1634,7 @@ def InstallGlslang(context, force, buildArgs):
                 '-DENABLE_HLSL=OFF',
                 '-DENABLE_CTEST=OFF',
             ]
-            if context.emscripten:
+            if context.targetWasm:
                 cmakeOptions += [
                     '-DCMAKE_CXX_FLAGS="' + EMSCRIPTEN_CMAKE_CXX_FLAGS + '"',
                     '-DCMAKE_EXE_LINKER_FLAGS="' + EMSCRIPTEN_CMAKE_EXE_LINKER_FLAGS + '"',
@@ -2034,7 +2048,7 @@ def InstallUSD(context, force, buildArgs):
         else:
             extraArgs.append('-DPXR_BUILD_ANIMX_TESTS=OFF')
 
-        if Windows() and not context.emscripten:
+        if Windows() and not context.targetWasm:
             # Increase the precompiled header buffer limit.
             extraArgs.append('-DCMAKE_CXX_FLAGS="/Zm150"')
 
@@ -2044,9 +2058,7 @@ def InstallUSD(context, force, buildArgs):
         extraArgs.append('-DBoost_NO_SYSTEM_PATHS=True')
         extraArgs += buildArgs
 
-        if context.emscripten:
-            if context.buildUsdImaging:
-                extraArgs.append('-DPXR_ENABLE_WEBGPU_SUPPORT=ON')
+        if context.targetWasm:
 
             if context.buildJsBindings:
                 extraArgs.append('-DPXR_ENABLE_JS_BINDINGS_SUPPORT=ON')
@@ -2067,16 +2079,16 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_ENABLE_GL_SUPPORT=ON')
             extraArgs.append('-DBUILD_SHARED_LIBS=OFF')
 
-            if context.emscripten == 'EMSCRIPTEN_NODE':
-                extraArgs.append('-DPXR_EMSCRIPTEN_NODE=1')
+            if context.targetWasmNode:
+                extraArgs.append('-DPXR_WASM_NODE=ON')
             else:
-                extraArgs.append('-DPXR_EMSCRIPTEN_NODE=0')
+                extraArgs.append('-DPXR_WASM_NODE=OFF')
 
         else:
             # JS binding is only possibly enabled for webassembly build
             extraArgs.append('-DPXR_ENABLE_JS_BINDINGS_SUPPORT=OFF')
 
-        if context.dawn:
+        if context.buildWebGPU:
             extraArgs.append('-DPXR_ENABLE_WEBGPU_SUPPORT=ON')
 
         RunCMake(context, force, extraArgs)
@@ -2180,13 +2192,13 @@ group.add_argument("--build-variant", default=BUILD_RELEASE,
 
 group.add_argument("--ignore-paths", type=str, nargs="*", default=[],
                    help="Paths for CMake to ignore when configuring projects.")
-if MacOS():
+if MacOS() or Linux():
     group.add_argument("--build-target",
-                       default=apple_utils.GetBuildTargetDefault(),
-                       choices=apple_utils.GetBuildTargets(),
-                       help=("Build target for macOS cross compilation. "
+                       default=GetBuildTargetDefault(),
+                       choices=GetBuildTargets(),
+                       help=("Build target for cross compilation. "
                              "(default: {})".format(
-                                apple_utils.GetBuildTargetDefault())))
+                             GetBuildTargetDefault())))
     if apple_utils.IsHostArm():
         # Intel Homebrew stores packages in /usr/local which unfortunately can
         # be where a lot of other things are too. So we only add this flag on arm macs.
@@ -2224,13 +2236,8 @@ if MacOS():
                        help=("Enable code signing for macOS builds "
                              "(defaults to enabled on Apple Silicon)"))
 
-subgroup = group.add_mutually_exclusive_group()
-subgroup.add_argument("--emscripten", dest="emscripten", action="store_const", const='EMSCRIPTEN',
-                    help="Build for emscripten")
-subgroup.add_argument("--emscriptenNode", dest="emscripten", action="store_const", const='EMSCRIPTEN_NODE',
-                    help="Build emscripten for NodeJS (embed data into JS)")
-subgroup.add_argument("--dawn", dest="dawn", action="store_true",
-                    help="Build for dawn")
+group.add_argument("--webgpu", dest="buildWebGPU", action="store_true",
+                    help="Build WebGPU Hgi")
 
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--js-bindings", dest="buildJsBindings", action="store_true",
@@ -2475,13 +2482,6 @@ class InstallContext:
         self.cmakeGenerator = args.generator
         self.cmakeToolset = args.toolset
         self.cmakeBuildArgs = args.cmake_build_args
-        self.emscripten = args.emscripten
-        self.dawn = args.dawn
-        self.buildJsBindings = args.buildJsBindings
-
-        # Emscripten only supports MinGW on Windows
-        if self.emscripten and Windows():
-            self.cmakeGenerator = 'MinGW Makefiles'
 
         # Number of jobs
         self.numJobs = args.jobs
@@ -2521,8 +2521,10 @@ class InstallContext:
 
         self.ignorePaths = args.ignore_paths or []
         # Build target and code signing
+        self.targetWasm = (args.build_target == TARGET_WASM or args.build_target == TARGET_WASM_NODE)
+        self.targetWasmNode = (args.build_target == TARGET_WASM_NODE)
+        self.buildTarget = args.build_target
         if MacOS():
-            self.buildTarget = args.build_target
             apple_utils.SetTarget(self, self.buildTarget)
 
             self.macOSCodesign = \
@@ -2533,6 +2535,13 @@ class InstallContext:
         else:
             self.buildTarget = ""
 
+        # Emscripten only supports MinGW on Windows
+        if self.targetWasm and Windows():
+            self.cmakeGenerator = 'MinGW Makefiles'
+
+        # WebGPU is the default graphics API for wasm
+        self.buildWebGPU = args.buildWebGPU or self.targetWasm
+        self.buildJsBindings = args.buildJsBindings
         self.useCXX11ABI = \
             (args.use_cxx11_abi if hasattr(args, "use_cxx11_abi") else None)
         self.safetyFirst = args.safety_first
@@ -2627,8 +2636,8 @@ if extraPythonPaths:
     paths = os.environ.get('PYTHONPATH', '').split(os.pathsep) + extraPythonPaths
     os.environ['PYTHONPATH'] = os.pathsep.join(paths)
 
-# Disable incompatible options if emscripten is used
-if context.emscripten:
+# Disable incompatible options if target is wasm
+if context.targetWasm:
     disabled = []
     if context.buildPython:
         context.buildPython = False
@@ -2655,15 +2664,15 @@ if context.emscripten:
         disabled.append('materialX')
 
     if len(disabled) > 0:
-        print("The following components were disabled because they are not compatible with emscripten: " + ", ".join(disabled))
+        print("The following components were disabled because they are not compatible with target wasm: " + ", ".join(disabled))
 
 # Determine list of dependencies that are required based on options
 # user has selected.
 requiredDependencies = [BOOST, TBB]
-if not context.emscripten:
+if not context.targetWasm:
     requiredDependencies += [ZLIB]
 
-if context.emscripten and context.buildTests:
+if context.targetWasm and context.buildTests:
     requiredDependencies += [THREE]
 
 if context.buildAlembic:
@@ -2678,14 +2687,14 @@ if context.buildMaterialX:
     requiredDependencies += [MATERIALX]
 
 if context.buildImaging:
-    if context.dawn:
-        # Please keep the dependencies order as glslang is a
-        # dependency of Dawn and, it is downloaded when building it.
-        requiredDependencies += [DAWN, GLSLANG]
-
-    if context.emscripten:
-        # Same as above, please keep the dependencies order.
-        requiredDependencies += [TINT, GLSLANG]
+    if context.buildWebGPU:
+        if context.targetWasm:
+            # Same as above, please keep the dependencies order.
+            requiredDependencies += [TINT, GLSLANG]
+        else:
+            # Please keep the dependencies order as glslang is a
+            # dependency of Dawn and, it is downloaded when building it.
+            requiredDependencies += [DAWN, GLSLANG]
 
     if context.enablePtex:
         requiredDependencies += [PTEX]
@@ -2746,9 +2755,9 @@ for dep in requiredDependencies:
             dependenciesToBuild.append(dep)
 
 # Verify toolchain needed to build required dependencies
-if context.emscripten:
+if context.targetWasm:
     if not which("emcc"):
-        PrintError(" Emscripten compiler emcc not found -- please install a compiler")
+        PrintError(" Wasm compiler emcc not found -- please install a compiler")
         sys.exit(1)
 else:
     if (not which("g++") and
@@ -2873,9 +2882,6 @@ Building with settings:
   Build directory               {buildDir}
   CMake generator               {cmakeGenerator}
   CMake toolset                 {cmakeToolset}
-  Emscripten                    {emscripten}
-  Node                          {emscriptenNode}
-  DAWN                          {dawn}
   Downloader                    {downloader}
 
   Building                      {buildType}
@@ -2906,6 +2912,7 @@ summaryMsg += """\
       AnimX Tests:              {buildAnimXTests}
     Examples                    {buildExamples}
     Tutorials                   {buildTutorials}
+    WebGPU                      {buildWebGPU}
     Tools                       {buildTools}
     Alembic Plugin              {buildAlembic}
       HDF5 support:             {enableHDF5}
@@ -2938,9 +2945,6 @@ summaryMsg = summaryMsg.format(
                     else context.cmakeGenerator),
     cmakeToolset=("Default" if not context.cmakeToolset
                   else context.cmakeToolset),
-    emscripten=("Enabled" if context.emscripten else "Disabled"),
-    emscriptenNode=("Enabled" if context.emscripten == 'EMSCRIPTEN_NODE' else "Disabled"),
-    dawn=("Enabled" if context.dawn else "Disabled"),
     downloader=(context.downloaderName),
     dependencies=("None" if not dependenciesToBuild else 
                   ", ".join([d.name for d in dependenciesToBuild])),
@@ -2953,8 +2957,7 @@ summaryMsg = summaryMsg.format(
                   else "Debug" if context.buildDebug
                   else "Release w/ Debug Info" if context.buildRelWithDebug
                   else ""),
-    buildTarget=(apple_utils.GetTargetName(context) if context.buildTarget
-                 else ""),
+    buildTarget=(context.buildTarget),
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     enableOpenVDB=("On" if context.enableOpenVDB else "Off"),
@@ -2977,7 +2980,8 @@ summaryMsg = summaryMsg.format(
     buildJsBindings=("On" if context.buildJsBindings else "Off"),
     buildMayapyTests=("On" if context.buildMayapyTests else "Off"),
     buildAnimXTests=("On" if context.buildAnimXTests else "Off"),
-    enableHDF5=("On" if context.enableHDF5 else "Off"))
+    enableHDF5=("On" if context.enableHDF5 else "Off"),
+    buildWebGPU=("On" if context.buildWebGPU else "Off"))
 
 Print(summaryMsg)
 

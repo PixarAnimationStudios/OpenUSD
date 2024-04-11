@@ -11,11 +11,11 @@ Build USD with Emscripten for NodeJS (in the root of this repository):
 
 locally
 ```sh
-python build_scripts/build_usd.py --emscriptenNode <build_folder>
+python build_scripts/build_usd.py --build-target node <build_folder>
 ```
 or in a Docker container
 ```sh
-docker build --build-arg BUILD_TARGET=--emscriptenNode -t <CONTAINER_TAG> .
+docker build --build-arg BUILD_TARGET="--build-target node" -t <CONTAINER_TAG> .
 docker run -it -w //src <CONTAINER_TAG>
 ```
 

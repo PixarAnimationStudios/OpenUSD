@@ -42,8 +42,8 @@ git clone --recursive https://git.autodesk.com/autodesk-forks/usd/tree/adsk/feat
 # Go into the root of usd source repo, if the folder name is "usd_repo"
 cd usd_repo
 
-# Build USD with the --emscripten flag, for example "../build_dir" is your local build folder
-python3 ./build_scripts/build_usd.py --emscripten ../build_dir
+# Build USD with --build-target wasm , where "../build_dir" is your local build folder
+python3 ./build_scripts/build_usd.py --build-target wasm ../build_dir
 ```
 
 This also builds the UsdViewWeb application, which you can use to test Hydra Storm with the WebGPU backend.

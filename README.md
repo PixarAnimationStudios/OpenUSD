@@ -31,9 +31,9 @@ export HDX_ENABLE_OIT=0
 export HGI_ENABLE_WEBGPU=1
 ```
 
-- **Emscripten-based**: It is used for rendering and viewing on a web browser.
+- **Wasm-based**: It is used for rendering and viewing on a web browser.
 The WebAssembly content can be tested using [usdviewweb](./pxr/usdImaging/bin/usdviewweb/README.md). For running an example on the browser, please follow the instructions [under usdviewweb folder](./pxr/usdImaging/bin/usdviewweb/README.md).
-Please build USD with `--emscripten` option. 
+Please build USD with `--build-target wasm` option. 
 
 **Limitations**
 
