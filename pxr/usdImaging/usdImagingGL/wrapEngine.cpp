@@ -193,6 +193,8 @@ void wrapEngine()
             .def_readwrite("driver", &Parameters::driver)
             .def_readwrite("rendererPluginId", &Parameters::rendererPluginId)
             .def_readwrite("gpuEnabled", &Parameters::gpuEnabled)
+            .def_readwrite("displayUnloadedPrimsWithBounds", 
+                &Parameters::displayUnloadedPrimsWithBounds)
             .def_readwrite("allowAsynchronousSceneProcessing",
                 &Parameters::allowAsynchronousSceneProcessing)
             

@@ -394,6 +394,7 @@ class AppController(QtCore.QObject):
 
             self._allowViewUpdates = True
             self._allowAsync = parserData.allowAsync
+            self._bboxstandin = parserData.bboxstandin
 
             # When viewer mode is active, the panel sizes are cached so they can
             # be restored later.
@@ -1853,6 +1854,7 @@ class AppController(QtCore.QObject):
                     makeTimer=self._makeTimer)
 
                 self._stageView.allowAsync = self._allowAsync
+                self._stageView.bboxstandin = self._bboxstandin
 
                 self._stageView.fpsHUDInfo = self._fpsHUDInfo
                 self._stageView.fpsHUDKeys = self._fpsHUDKeys

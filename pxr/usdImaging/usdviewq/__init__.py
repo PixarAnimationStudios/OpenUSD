@@ -180,6 +180,10 @@ class Launcher(object):
                             dest='unloaded',
                             help='Do not load payloads')
 
+        parser.add_argument('--bboxStandin', action='store_true',
+                            dest='bboxstandin',
+                            help='Display unloaded prims with bounding boxes')
+
         parser.add_argument('--timing', action='store_true',
                             dest='timing',
                             help='Echo timing stats to console. NOTE: timings will be unreliable when the --memstats option is also in use')
