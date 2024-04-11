@@ -256,7 +256,30 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     if (ATOMIC_LOAD(PickBuffer[0]) == 0)
         return;
 	
-    // prepare some constants
+    // Get some constants from the Pick Buffer
+    // These are initialized in: HdxPickTask::_ClearPickBuffer()
+    //
+    // The first 8 entries in the PickBuffer describe the buffer layout
+    // [0] == The number of sub-buffers (total max hits allowed / sub-buffer size)
+    //        The total max hits allowed is configurable on the pickContext (default = 32,000)
+    // [1] == The max number of hits hashed and stored per sub-buffer (value = 32)
+    // [2] == The TableOffset which is the first entry after this header block.  (value = 8)
+    //        The Table is a collection of fields the length of the number of sub-buffers.
+    //        It holds the number of current hits stored per sub-buffer. 
+    //        These fields are initialized to zero and populated by this shader to track hit storage.
+    // [3] == The StorageOffset which is the starting point where hits are stored.
+    //        Hit results are stored in sub-buffers.
+    //        Each sub-buffer holds up to 32 entries each with 3 entries per hit (primId, instanceId, partId).
+    // [4] == Indicates if faces should be picked (value == 1 or 0)
+    // [5] == Indicates if edges should be picked (value == 1 or 0)
+    // [6] == Indicates if points should be picked (value == 1 or 0)
+    // [7] == Padding
+    // 
+    // [TableOffset -> StorageOffset]
+    //        The table of current entry counts in each sub-buffer (values initialized to 0)
+    // [StorageOffset -> End of Buffer]
+    //        The collection of hits as a (primId, instanceId, partId) tuple. (values initialized to -9)
+
     const int entrySize = 3;
     const int numSubBuffers = ATOMIC_LOAD(PickBuffer[0]);
     const int subBufferCapacity = ATOMIC_LOAD(PickBuffer[1]);
@@ -266,7 +289,7 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
                         ATOMIC_LOAD(PickBuffer[5]) * edgeId +
                         ATOMIC_LOAD(PickBuffer[6]) * pointId;
 
-    // more constants
+    // compute the hash for an instance/element and assign it to a sub-buffer
     const int hashValue = hash3(primId, instanceId, partId);
     const int subBufferNumber = hashValue % numSubBuffers;
     int bufferNumber = subBufferNumber;
