@@ -56,6 +56,10 @@
 - Added PythonGarbageCollectionCallback callback for tracing Python garbage 
   collection, using Trace.Collection.
 
+- Support for URI schemes in Ar URI resolvers that do not conform to RFC2396 is
+  deprecated. This support and the `PXR_AR_DISABLE_STRICT_SCHEME_VALIDATION`
+  environment variable will be removed in a subsequent release.
+	
 - Added ArGetRegisteredURISchemes() function for retrieving the list of URI 
   schemes for which resolvers are registered.
 
