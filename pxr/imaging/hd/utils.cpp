@@ -58,10 +58,16 @@ HasActiveRenderSettingsPrim(
     }
 
     if (auto pathHandle = sgSchema.GetActiveRenderSettingsPrim()) {
-        if (primPath) {
-            *primPath = pathHandle->GetTypedValue(0);
+        const SdfPath rspPath = pathHandle->GetTypedValue(0);
+        // Validate prim.
+        HdSceneIndexPrim prim = si->GetPrim(rspPath);
+        if (prim.primType == HdPrimTypeTokens->renderSettings &&
+            prim.dataSource) {
+            if (primPath) {
+                *primPath = rspPath;
+            }
+            return true;
         }
-        return true;
     }
 
     return false;

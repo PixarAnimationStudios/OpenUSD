@@ -69,27 +69,13 @@ _SceneGlobalsDataSource::Get(const TfToken &name)
 {
     if (name == HdSceneGlobalsSchemaTokens->activeRenderPassPrim) {
         SdfPath const &path = _si->_activeRenderPassPrimPath;
-        if (!path.IsEmpty()) {
-            // Validate that a render pass prim exists at the given path.
-            HdSceneIndexPrim prim = _si->GetPrim(path);
-            if (prim.primType == HdPrimTypeTokens->renderPass &&
-                prim.dataSource) {
-                return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
-            }
-        }
-    } else if (name == HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim) {
+        return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
+    }
+    if (name == HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim) {
         SdfPath const &path = _si->_activeRenderSettingsPrimPath;
-        if (!path.IsEmpty()) {
-            // Validate that a render settings prim exists at the given path.
-            HdSceneIndexPrim prim = _si->GetPrim(path);
-            if (prim.primType == HdPrimTypeTokens->renderSettings &&
-                prim.dataSource) {
-                return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
-            }
-        }
+        return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
     }
 
-    // If a valid render settings prim was never set, return nullptr.
     return nullptr;
 }
 
@@ -112,6 +98,10 @@ HdsiSceneGlobalsSceneIndex::SetActiveRenderPassPrimPath(
         return;
     }
 
+    // A scene index downstream will invalidate and update the
+    // sceneGlobals.activeRenderSettingsPrim locator (if the render pass points
+    // to a valid render settings prim).
+    // We keep things simple in this scene index.
     _activeRenderPassPrimPath = path;
 
     if (_IsObserved()) {
@@ -129,8 +119,6 @@ HdsiSceneGlobalsSceneIndex::SetActiveRenderSettingsPrimPath(
         return;
     }
 
-    // Note: Don't validate here since this could be called before scene indices
-    //       are populated.
     _activeRenderSettingsPrimPath = path;
 
     if (_IsObserved()) {
