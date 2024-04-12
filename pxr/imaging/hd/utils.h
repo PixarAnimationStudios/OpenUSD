@@ -27,6 +27,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/dataSource.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -153,6 +155,22 @@ PrintSceneIndex(
     std::ostream &out,
     const HdSceneIndexBaseRefPtr &si,
     const SdfPath &rootPath = SdfPath::AbsoluteRootPath());
+
+/// Convert the supplied HdMaterialNetworkMap to an HdMaterialNetworkSchema 
+/// container data source.
+/// 
+HD_API
+HdContainerDataSourceHandle
+ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
+    const HdMaterialNetworkMap& hdNetworkMap);
+
+/// Convert the supplied HdMaterialNetworkMap to an HdMaterialSchema 
+/// container data source.
+///
+HD_API
+HdContainerDataSourceHandle
+ConvertHdMaterialNetworkToHdMaterialSchema(
+    const HdMaterialNetworkMap &hdNetworkMap);
 
 }
 
