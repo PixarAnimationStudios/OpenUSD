@@ -25,6 +25,7 @@
 
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hdSt/meshShaderKey.h"
+#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -158,6 +159,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((noScalarOverrideFS,          "Fragment.NoScalarOverride"))
 );
 
+static bool 
+_IsRenderSelectedEdgeFromFaceEnabled()
+{
+    static bool isEnabled =
+        TfGetenvBool("HDST_RENDER_SELECTED_EDGE_FROM_FACE", true);
+    return isEnabled;
+}
+
 HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     HdSt_GeometricShader::PrimitiveType primitiveType,
     TfToken shadingTerminal,
@@ -221,8 +230,9 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                              geomStyle == HdMeshGeomStyleHullEdgeOnSurf;
 
     // Selected edges can be highlighted even if not otherwise displayed
-    const bool renderSelectedEdges = geomStyle == HdMeshGeomStyleSurf ||
-                                     geomStyle == HdMeshGeomStyleHull;
+    const bool renderSelectedEdges = _IsRenderSelectedEdgeFromFaceEnabled() &&
+                                     (geomStyle == HdMeshGeomStyleSurf ||
+                                     geomStyle == HdMeshGeomStyleHull);
 
     /* Normals configurations:
      * Smooth normals:
