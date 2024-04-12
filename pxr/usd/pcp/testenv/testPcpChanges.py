@@ -983,5 +983,194 @@ class TestPcpChanges(unittest.TestCase):
             self.assertEqual(cp.GetPrimChanges(),
                              ['/FSToyCarA/Looks/PaintedWood_PaintedYellow'])
 
+    def test_AddMuteRemoveSublayerWithRelocates(self):
+        """Tests that adding/muting/removing sublayers that only define layer 
+           relocates will invalidate affected cached prim indexes."""
+
+        # Start with simple setup. Root layer has one prim that references 
+        # a simple hierarchy in ref layer
+        refLayer = Sdf.Layer.CreateAnonymous()
+        refLayer.ImportFromString(
+            '''#sdf 1.4.32
+                def "Ref" {
+                    def "A" {
+                        def "B" {
+                            def "C" {
+                            }                         
+                        }
+                    }
+                }''')
+
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootLayer.ImportFromString(
+            '''#sdf 1.4.32
+                def "Root" (
+                    references = @''' + refLayer.identifier + '''@</Ref>
+                ) {}''')
+
+        # Create the PcpCache
+        layerStackId = Pcp.LayerStackIdentifier(rootLayer)
+        cache = Pcp.Cache(layerStackId, usd=True)
+
+        from contextlib import contextmanager
+        @contextmanager
+        def _VerifyChanges(primIndexPaths):
+            # Verify that we have a computed prim index for all expected paths
+            # beforehand
+            for path in primIndexPaths:
+                self.assertTrue(cache.FindPrimIndex(path))
+            try:
+                yield
+            finally:
+                for path in primIndexPaths:
+                    self.assertFalse(cache.FindPrimIndex(path))
+
+        # Verify computed prim indexes for initial setup
+
+        # /Root has child 'A'
+        pi, err = cache.ComputePrimIndex('/Root')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['A'], []))
+
+        # /Root/A has child 'B'
+        pi, err = cache.ComputePrimIndex('/Root/A')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['B'], []))
+
+        # /Root/A/B has child 'C'
+        pi, err = cache.ComputePrimIndex('/Root/A/B')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['C'], []))
+
+        # Create a layer whose only contents is a relocate from /Root/A to
+        # /Root/Foo.
+        subLayer1 = Sdf.Layer.CreateAnonymous()
+        subLayer1.ImportFromString(
+            '''#sdf 1.4.32
+                (
+                    relocates = {
+                        </Root/A> : </Root/Foo>
+                    }
+                )''')
+        self.assertFalse(subLayer1.empty)
+
+        # Add this layer as sublayer of root and verify all our previously
+        # cached prim indices have been invalidated.
+        with _VerifyChanges(['/Root', '/Root/A', '/Root/A/B']):
+            with Pcp._TestChangeProcessor(cache) as cp:
+                rootLayer.subLayerPaths = [subLayer1.identifier]
+                self.assertEqual(cp.GetSignificantChanges(), ['/'])
+
+        # Verify computed prim indexes with new relocates
+
+        # /Root has child 'Foo' and prohibits child 'A'
+        pi, err = cache.ComputePrimIndex('/Root')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['Foo'], ['A']))
+
+        # '/Root/Foo' has child 'B'
+        pi, err = cache.ComputePrimIndex('/Root/Foo')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['B'], []))
+
+        # '/Root/Foo/B' has child 'C'
+        pi, err = cache.ComputePrimIndex('/Root/Foo/B')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['C'], []))
+
+        # Create another new layer whose only contents is a relocate from 
+        # /Root/Foo/B to /Root/Foo/Bar.
+        subLayer2 = Sdf.Layer.CreateAnonymous()
+        subLayer2.ImportFromString(
+            '''#sdf 1.4.32
+                (
+                    relocates = {
+                        </Root/Foo/B> : </Root/Foo/Bar>
+                    }
+                )''')
+        self.assertFalse(subLayer2.empty)
+
+        # Add this layer as an additional sublayer of root and verify all our 
+        # previously cached prim indices have been invalidated.
+        with _VerifyChanges(['/Root', '/Root/Foo', '/Root/Foo/B']):
+            with Pcp._TestChangeProcessor(cache) as cp:
+                rootLayer.subLayerPaths = [
+                    subLayer1.identifier, subLayer2.identifier]
+                self.assertEqual(cp.GetSignificantChanges(), ['/'])
+
+        # Verify computed prim indexes with new relocates
+
+        # /Root has child 'Foo' and prohibits child 'A'
+        pi, err = cache.ComputePrimIndex('/Root')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['Foo'], ['A']))
+
+        # '/Root/Foo' has child 'Bar' and prohibits child 'B'
+        pi, err = cache.ComputePrimIndex('/Root/Foo')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['Bar'], ['B']))
+
+        # '/Root/Foo/Bar' has child 'C'
+        pi, err = cache.ComputePrimIndex('/Root/Foo/Bar')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['C'], []))
+
+        # Request muting of sublayer 2 and verify all our 
+        # previously cached prim indices have been invalidated.
+        with _VerifyChanges(['/Root', '/Root/Foo', '/Root/Foo/Bar']):
+            cache.RequestLayerMuting([subLayer2.identifier], [])
+
+        # Computed prim indexes and children will be back to the same as before
+        # we added sublayer 2
+        pi, err = cache.ComputePrimIndex('/Root')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['Foo'], ['A']))
+
+        pi, err = cache.ComputePrimIndex('/Root/Foo')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['B'], []))
+
+        pi, err = cache.ComputePrimIndex('/Root/Foo/B')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['C'], []))
+
+        # Request unmuting of sublayer 2 and verify all our 
+        # previously cached prim indices have been invalidated.
+        with _VerifyChanges(['/Root', '/Root/Foo', '/Root/Foo/B']):
+            cache.RequestLayerMuting([],[subLayer2.identifier])
+
+        # Computed prim indexes and children will be restored to the same as 
+        # before we muted sublayer 2
+        pi, err = cache.ComputePrimIndex('/Root')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['Foo'], ['A']))
+
+        pi, err = cache.ComputePrimIndex('/Root/Foo')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['Bar'], ['B']))
+
+        pi, err = cache.ComputePrimIndex('/Root/Foo/Bar')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['C'], []))
+
+        # Delete both sublayers from the root prim
+        with _VerifyChanges(['/Root', '/Root/Foo', '/Root/Foo/Bar']):
+            with Pcp._TestChangeProcessor(cache) as cp:
+                rootLayer.subLayerPaths = []
+                self.assertEqual(cp.GetSignificantChanges(), ['/'])
+
+        # Verify computed prim indexes are back to the initial setup
+        pi, err = cache.ComputePrimIndex('/Root')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['A'], []))
+
+        pi, err = cache.ComputePrimIndex('/Root/A')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['B'], []))
+
+        pi, err = cache.ComputePrimIndex('/Root/A/B')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['C'], []))
+
 if __name__ == "__main__":
     unittest.main()

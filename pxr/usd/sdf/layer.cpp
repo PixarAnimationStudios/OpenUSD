@@ -3065,9 +3065,10 @@ SdfLayer::IsEmpty() const
     // XXX: What about documentation/frames?  I don't
     // think these get composed or exposed through composition, so I don't think
     // they matter for the sake of this query.
-    return GetRootPrims().empty()  && 
+    return GetRootPrims().empty() && 
         GetRootPrimOrder().empty() && 
-        GetSubLayerPaths().empty();
+        GetSubLayerPaths().empty() &&
+        GetRelocates().empty();
 }
 
 bool
