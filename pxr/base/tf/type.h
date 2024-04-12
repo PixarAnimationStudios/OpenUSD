@@ -718,6 +718,20 @@ private:
                         bool isPodType,
                         bool isEnumType) const;
 
+    TF_API
+    static TfType const &_DeclareImpl(
+        const std::type_info &thisTypeInfo,
+        const std::type_info **baseTypeInfos,
+        size_t numBaseTypes);
+
+    TF_API
+    static TfType const &_DefineImpl(
+        const std::type_info &thisTypeInfo,
+        const std::type_info **baseTypeInfos,
+        _CastFunction *castFunctions,
+        size_t numBaseTypes,
+        size_t sizeofThisType, bool isPod, bool isEnum);
+
     // Execute the definition callback if one exists.
     void _ExecuteDefinitionCallback() const;
 
