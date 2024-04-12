@@ -2204,30 +2204,29 @@ _DeterminePathsAffectedByRelocationChanges( const SdfRelocatesMap & oldMap,
                                             const SdfRelocatesMap & newMap,
                                             SdfPathSet *affectedPaths )
 {
-    TF_FOR_ALL(path, oldMap) {
-        SdfRelocatesMap::const_iterator i = newMap.find(path->first);
-        if (i == newMap.end() || i->second != path->second) {
-            // This entry in oldMap does not exist in newMap, or
+    // Look through the old map looking for entries with the same source in
+    // the new map.
+    for (const auto &[oldSourcePath, oldTargetPath] : oldMap) {
+        const SdfPath *newTargetPath = TfMapLookupPtr(newMap, oldSourcePath);
+        if (!newTargetPath) {
+            // This source does not exist in newMap
+            affectedPaths->insert(oldSourcePath);
+            affectedPaths->insert(oldTargetPath);
+        } else if (*newTargetPath != oldTargetPath) {
             // newMap relocates this to a different path.
-            // Record the affected paths.
-            affectedPaths->insert(path->first);
-            affectedPaths->insert(path->second);
-            if (i != newMap.end()) {
-                affectedPaths->insert(i->second);
-            }
+            affectedPaths->insert(oldTargetPath);
+            affectedPaths->insert(*newTargetPath);
         }
     }
-    TF_FOR_ALL(path, newMap) {
-        SdfRelocatesMap::const_iterator i = oldMap.find(path->first);
-        if (i == oldMap.end() || i->second != path->second) {
-            // This entry in newMap does not exist in oldMap, or
-            // oldMap relocated this to a different path.
-            // Record the affected paths.
-            affectedPaths->insert(path->first);
-            affectedPaths->insert(path->second);
-            if (i != oldMap.end()) {
-                affectedPaths->insert(i->second);
-            }
+
+    // We only have to look for sources that exist in the new map but do not 
+    // exist in the old map as we have covered sources that exist in both
+    // already.
+    for (const auto &[newSourcePath, newTargetPath] : newMap) {
+        if (oldMap.find(newSourcePath) == oldMap.end()) {
+            // This entry in newMap does not exist in oldMap
+            affectedPaths->insert(newSourcePath);
+            affectedPaths->insert(newTargetPath);
         }
     }
 }
@@ -2287,8 +2286,8 @@ PcpChanges::_DidChangeLayerStackRelocations(
         // Compare the old and new relocations to determine which
         // paths (in this layer stack) are affected.
         _DeterminePathsAffectedByRelocationChanges(
-            layerStack->GetRelocatesSourceToTarget(),
-            changes.newRelocatesSourceToTarget,
+            layerStack->GetIncrementalRelocatesSourceToTarget(),
+            changes.newIncrementalRelocatesSourceToTarget,
             &changes.pathsAffectedByRelocationChanges);
     }
 
