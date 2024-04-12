@@ -6557,7 +6557,7 @@ Sdf_ParseLayer(
                 status = textFileFormatYyparse(&context);
                 *hints = context.layerHints;
             } catch (std::bad_variant_access const &) {
-                TF_CODING_ERROR("Bad boost:get<T>() in layer parser.");
+                TF_CODING_ERROR("Bad variant access in layer parser.");
                 Err(&context, "Internal layer parser error.");
             }
         }
@@ -6607,7 +6607,7 @@ Sdf_ParseLayerFromString(
         status = textFileFormatYyparse(&context);
         *hints = context.layerHints;
     } catch (std::bad_variant_access const &) {
-        TF_CODING_ERROR("Bad boost:get<T>() in layer parser.");
+        TF_CODING_ERROR("Bad variant access in layer parser.");
         Err(&context, "Internal layer parser error.");
     }
 
