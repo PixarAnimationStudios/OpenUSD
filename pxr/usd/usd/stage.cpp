@@ -9501,7 +9501,7 @@ double
 UsdStage::GetEndTimeCode() const
 {
     // Look for 'endTimeCode' first. If it is not available, then look for 
-    // the deprecated field 'startFrame'.
+    // the deprecated field 'endFrame'.
     const SdfLayerConstHandle sessionLayer = GetSessionLayer();
     if (sessionLayer) {
         if (sessionLayer->HasEndTimeCode())
