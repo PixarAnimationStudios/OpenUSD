@@ -31,7 +31,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/vt/value.h"
 
-#include "pxr/base/tf/pxrPEGTL/pegtl.h"
+#include "pxr/base/pegtl/pegtl.hpp"
 
 #include <memory>
 
@@ -162,7 +162,7 @@ private:
 
 namespace {
 
-using namespace tao::TAO_PEGTL_NAMESPACE;
+using namespace PXR_PEGTL_NAMESPACE;
 
 template <class Rule, class Sep>
 using LookaheadList = seq<Rule, star<at<Sep, Rule>, Sep, Rule>>;
@@ -400,15 +400,6 @@ template <> struct PredAction<PredParenCall>
     : PredCallAction<SdfPredicateExpression::FnCall::ParenCall> {};
 template <> struct PredAction<PredColonCall>
     : PredCallAction<SdfPredicateExpression::FnCall::ColonCall> {};
-
-template <class Grammar>
-static void Analyze() {
-    static const size_t numIssues = analyze<Grammar>();
-    if (numIssues) {
-        TF_FATAL_ERROR("%zu issues found in '%s'", numIssues,
-                       TF_FUNC_NAME().c_str());
-    }
-}
 
 }
 

@@ -753,7 +753,7 @@ private:
 
 namespace {
 
-using namespace tao::TAO_PEGTL_NAMESPACE;
+using namespace PXR_PEGTL_NAMESPACE;
 
 ////////////////////////////////////////////////////////////////////////
 // Path patterns with predicates.
@@ -1059,7 +1059,7 @@ ParsePathExpression(std::string const &inputStr,
         std::string errMsg = err.what();
         errMsg += " -- ";
         bool first = true;
-        for (position const &p: err.positions) {
+        for (position const &p: err.positions()) {
             if (!first) {
                 errMsg += ", ";
             }

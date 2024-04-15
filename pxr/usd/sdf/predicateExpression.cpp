@@ -255,9 +255,8 @@ operator<<(std::ostream &out, SdfPredicateExpression const &expr)
 SdfPredicateExpression::SdfPredicateExpression(
     std::string const &input, std::string const &context)
 {
-    using namespace tao::TAO_PEGTL_NAMESPACE;
+    using namespace PXR_PEGTL_NAMESPACE;
 
-    Analyze<PredExpr>();
     try {
         SdfPredicateExprBuilder builder;
         // Uncomment the 'tracer' bit below for debugging.
@@ -272,7 +271,7 @@ SdfPredicateExpression::SdfPredicateExpression(
         std::string errMsg = err.what();
         errMsg += " -- ";
         bool first = true;
-        for (position const &p: err.positions) {
+        for (position const &p: err.positions()) {
             if (!first) {
                 errMsg += ", ";
             }

@@ -29,7 +29,7 @@
 #include "pxr/base/tf/unicodeUtils.h"
 #include "pxr/usd/sdf/path.h"
 
-#include "pxr/base/tf/pxrPEGTL/pegtl.h"
+#include "pxr/base/pegtl/pegtl.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,7 +38,7 @@ Sdf_ParsePath(std::string const &pathStr, SdfPath *path, std::string *errMsg);
 
 namespace Sdf_PathParser {
 
-namespace PEGTL_NS = tao::TAO_PEGTL_NAMESPACE;
+namespace PEGTL_NS = PXR_PEGTL_NAMESPACE;
 
 ////////////////////////////////////////////////////////////////////////
 // Helper rules for parsing UTF8 content
@@ -51,7 +51,7 @@ struct XidStart
         {
             // peek at the next character in the input
             // if the size is not 0, it was a valid code point
-            auto utf8_char = tao::TAO_PEGTL_NAMESPACE::internal::peek_utf8::peek(in);
+            auto utf8_char = PEGTL_NS::internal::peek_utf8::peek(in);
             if (utf8_char.size != 0)
             {
                 // valid utf8_char, data has the code point
@@ -77,7 +77,7 @@ struct XidContinue
         {
             // peek at the next character in the input
             // if the size is not 0, it was a valid code point
-            auto utf8_char = tao::TAO_PEGTL_NAMESPACE::internal::peek_utf8::peek(in);
+            auto utf8_char = PEGTL_NS::internal::peek_utf8::peek(in);
             if (utf8_char.size != 0)
             {
                 // valid utf8_char, data has the code point
@@ -166,7 +166,7 @@ struct BracketPath : PEGTL_NS::if_must<TargetPathOpen, TargPath, TargetPathClose
 
 struct RelationalAttributeName : PropertyName {};
 
-struct MapperKW : TAO_PEGTL_KEYWORD("mapper") {};
+struct MapperKW : PXR_PEGTL_KEYWORD("mapper") {};
 
 struct MapperArg : PEGTL_NS::identifier {};
 
@@ -174,7 +174,7 @@ struct MapperPathSeq : PEGTL_NS::if_must<
     PEGTL_NS::seq<Dot, MapperKW>, BracketPath<MapperPath>,
     PEGTL_NS::opt<Dot, MapperArg>> {};
 
-struct Expression : TAO_PEGTL_KEYWORD("expression") {};
+struct Expression : PXR_PEGTL_KEYWORD("expression") {};
 
 struct RelAttrSeq : PEGTL_NS::if_must<
     PEGTL_NS::one<'.'>, RelationalAttributeName,
