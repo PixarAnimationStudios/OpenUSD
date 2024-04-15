@@ -268,10 +268,8 @@ def main():
     frameRecorder = UsdAppUtils.FrameRecorder(
         rendererPluginId, args.gpuEnabled)
     if args.rpPrimPath:
-        print('setting rp to', args.rpPrimPath)
         frameRecorder.SetActiveRenderPassPrimPath(args.rpPrimPath)
     if args.rsPrimPath:
-        print('setting rs to', args.rsPrimPath)
         frameRecorder.SetActiveRenderSettingsPrimPath(args.rsPrimPath)
     frameRecorder.SetImageWidth(args.imageWidth)
     frameRecorder.SetComplexity(args.complexity.value)
