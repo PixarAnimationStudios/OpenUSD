@@ -732,10 +732,12 @@ HdPrmanRenderDelegate::SetRenderSetting(TfToken const &key,
         _renderParam->GetCameraContext().MarkCameraInvalid(camPath);
         HdRenderIndex *renderIndex = GetRenderIndex();
         if(renderIndex) {
+            // Needed to trigger call to
+            // param->SetRileyShutterIntervalFromCameraContextCameraPath
+            // from HdPrmanCamera::Sync.
+
             renderIndex->GetChangeTracker().MarkSprimDirty(
                 camPath, HdChangeTracker::DirtyParams);
-            renderIndex->GetChangeTracker().MarkAllRprimsDirty(
-                HdChangeTracker::DirtyPoints);
         }
     }
 }
