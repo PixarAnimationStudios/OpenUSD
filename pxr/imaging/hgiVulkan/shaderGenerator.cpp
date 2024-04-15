@@ -431,16 +431,21 @@ HgiVulkanShaderGenerator::_WriteInOuts(
             }
         }
 
-        // If a location has been specified then add it to the attributes.
-        const int32_t locationIndex =
-            param.location >= 0
-            ? param.location
-            : (in_qualifier ? _inLocationIndex++ : _outLocationIndex++);
-
-        const HgiShaderSectionAttributeVector attrs {
-            HgiShaderSectionAttribute{
-                "location", std::to_string(locationIndex) }
-        };
+        // If a location or interstage slot has been specified then add it to 
+        // the attributes.
+        HgiShaderSectionAttributeVector attrs;
+        if (param.location != -1) {
+            // If a location has been specified then add it to the attributes.
+            attrs.push_back({"location", std::to_string(param.location)});
+        } else if (param.interstageSlot != -1) {
+            // For interstage parameters use the interstageSlot for location.
+            attrs.push_back({"location", std::to_string(param.interstageSlot)});
+        } else {
+            // Otherwise use shader generator's counter sytem.
+            const int32_t locationIndex =
+                in_qualifier ? _inLocationIndex++ : _outLocationIndex++;
+            attrs.push_back({"location", std::to_string(locationIndex)});
+        }
 
         CreateShaderSection<HgiVulkanMemberShaderSection>(
             paramName,
@@ -491,10 +496,15 @@ HgiVulkanShaderGenerator::_WriteInOutBlocks(
             }
         }
 
-        const HgiShaderSectionAttributeVector attrs {
-            HgiShaderSectionAttribute{
-                "location", std::to_string(locationIndex) }
-        };
+        // If interstage slot has been specified then add it to the attributes.
+        HgiShaderSectionAttributeVector attrs;
+        if (p.interstageSlot != -1) {
+            // For interstage parameters use the interstageSlot for location.
+            attrs.push_back({"location", std::to_string(p.interstageSlot)});
+        } else {
+            // Otherwise use shader generator's counter sytem.
+            attrs.push_back({"location", std::to_string(locationIndex)});
+        }
 
         CreateShaderSection<HgiVulkanInterstageBlockShaderSection>(
             p.blockName,
