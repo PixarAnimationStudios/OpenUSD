@@ -44,6 +44,9 @@ namespace PEGTL_NS = tao::TAO_PEGTL_NAMESPACE;
 // Helper rules for parsing UTF8 content
 struct XidStart
 {
+    using analyze_t =
+        PEGTL_NS::analysis::generic<PEGTL_NS::analysis::rule_type::any>;
+
     template <typename ParseInput>
     static bool match(ParseInput& in)
     {
@@ -70,6 +73,9 @@ struct XidStart
 
 struct XidContinue
 {
+    using analyze_t =
+        PEGTL_NS::analysis::generic<PEGTL_NS::analysis::rule_type::any>;
+
     template <typename ParseInput>
     static bool match(ParseInput& in)
     {

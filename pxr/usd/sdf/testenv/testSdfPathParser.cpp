@@ -27,6 +27,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/pathParser.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/stringUtils.h"
 
@@ -67,7 +68,7 @@ void testPaths(char const *paths[], bool expectEmpty) {
 
 int main()
 {
-
+    TF_AXIOM(Sdf_PathParser::PEGTL_NS::analyze<Sdf_PathParser::Path>() == 0);
     char const *good[] = {
         ".",
         "/",
