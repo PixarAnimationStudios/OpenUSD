@@ -177,7 +177,7 @@ For example, the following will download, build, and install USD's dependencies,
 then build and install USD into `/path/to/my_usd_install_dir`.
 
 ```
-> python USD/build_scripts/build_usd.py /path/to/my_usd_install_dir
+> python OpenUSD/build_scripts/build_usd.py /path/to/my_usd_install_dir
 ```
 
 ##### MacOS:
@@ -189,7 +189,7 @@ For example, the following will download, build, and install USD's dependencies,
 then build and install USD into `/path/to/my_usd_install_dir`.
 
 ```
-> python USD/build_scripts/build_usd.py /path/to/my_usd_install_dir
+> python OpenUSD/build_scripts/build_usd.py /path/to/my_usd_install_dir
 ```
 
 ##### Windows:
@@ -204,7 +204,7 @@ For example, the following will download, build, and install USD's dependencies,
 then build and install USD into `C:\path\to\my_usd_install_dir`.
 
 ```
-C:\> python USD\build_scripts\build_usd.py "C:\path\to\my_usd_install_dir"
+C:\> python OpenUSD\build_scripts\build_usd.py "C:\path\to\my_usd_install_dir"
 ```
 
 #### 4. Try it out
@@ -213,7 +213,7 @@ Set the environment variables specified by the script when it finishes and
 launch `usdview` with a sample asset.
 
 ```
-> usdview USD/extras/usd/tutorials/convertingLayerFormats/Sphere.usda
+> usdview OpenUSD/extras/usd/tutorials/convertingLayerFormats/Sphere.usda
 ```
 
 Contributing

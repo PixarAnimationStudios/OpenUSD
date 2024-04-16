@@ -28,6 +28,8 @@
 #include "pxr/imaging/hd/sprim.h"
 #include "Riley.h"
 
+#include <mutex>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // For now, the procs in this file are boiler plate for when hdPrman needs to

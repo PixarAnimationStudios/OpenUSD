@@ -1,0 +1,128 @@
+#sdf 1.4.32
+(
+    """
+    These cases all exercise relocates errors that are caused by individual
+    relocations that are invalid and would be invalid in any context. Each
+    invalid relocate will produce an error and will be ignored during 
+    composition.
+    """
+    relocates = {
+        </Model_1/Instance/Test>: </Model_1/Instance/Test>, 
+        </Model_2/Instance/Test>: </Model_2/Instance>, 
+        </Model_3/Instance>: </Model_3/Instance/Test>, 
+        </Model_4/Instance/Test>: </Model_3/Test>, 
+        </Model_5>: </Model_4/Model_5>, 
+        </Model_5/Instance/Test>: </Test>
+    }
+)
+
+# This case exercises a relocation from a path back to that same path.
+# In terms of composition, this should be a no-op, but it is also a 
+# composition error and the relocation is ignored.
+#
+def "Model_1" (
+    add references = @./model.sdf@</Model>
+)
+{
+    over "LocalClass"
+    {
+        def Scope "Test"
+        {
+        }
+    }
+
+    over "Instance" 
+    {
+        over "Test"
+        {
+        }
+    }
+}
+
+# This case exercises a relocation from a path to one of its own ancestors.
+# This is a composition error and the relocation is ignored.
+#
+def "Model_2" (
+    add references = @./model.sdf@</Model>
+)
+{
+    over "LocalClass"
+    {
+        def Scope "Test"
+        {
+        }
+    }
+
+    over "Instance" {
+        over "Test"
+        {
+        }
+    }
+}
+
+# This case exercises a relocation from a path to one of its own descendants.
+# This is a composition error and the relocation is ignored.
+#
+def "Model_3" (
+    add references = @./model.sdf@</Model>
+)
+{
+    over "LocalClass"
+    {
+        def Scope "Test"
+        {
+        }
+    }
+
+    over "Instance" 
+    {
+        over "Test"
+        {
+        }
+    }
+}
+
+# This case exercises a relocation that would move the prim to be a 
+# descendant of a different root prim. 
+# This is a composition error and the relocation is ignored.
+#
+def "Model_4" (
+    add references = @./model.sdf@</Model>
+)
+{
+    over "LocalClass"
+    {
+        def Scope "Test"
+        {
+        }
+    }
+
+    over "Instance" 
+    {
+        over "Test"
+        {
+        }
+    }
+}
+
+# This case exercises a relocations that would move to or from root prims. 
+# These are composition errors and the relocations are ignored.
+#
+def "Model_5" (
+    add references = @./model.sdf@</Model>
+)
+{
+    over "LocalClass"
+    {
+        def Scope "Test"
+        {
+        }
+    }
+
+    over "Instance" 
+    {
+        over "Test"
+        {
+        }
+    }
+}

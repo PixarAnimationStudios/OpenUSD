@@ -959,7 +959,7 @@ testDictionaryInitializerList()
     TF_AXIOM(!dict2.empty());
 
     int i = 0;
-    for (const string& k : {"key_a", "key_b"}) {
+    for (const char* k : {"key_a", "key_b"}) {
         auto it = dict2.find(k);
         TF_AXIOM(it != dict2.end());
         TF_AXIOM(it->first == k);

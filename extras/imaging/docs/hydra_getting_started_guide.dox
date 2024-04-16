@@ -1,0 +1,513 @@
+/*!
+\page Page_Hydra_Getting_Started_Guide Hydra 2.0 Getting Started Guide
+
+\section Hydra_Getting_Started_What_Is_Hydra What is Hydra 2.0
+
+The Hydra imaging system is based on two core abstractions: a scene abstraction 
+and transformation pipeline, and a renderer abstraction and execution pipeline. 
+Its design goal is to decouple scene processing from rendering, and both from 
+the application, enabling each scene, renderer, or application integration to 
+benefit from other integrations in the ecosystem.
+
+Hydra's original scene abstraction API was built around the HdSceneDelegate 
+class. Hydra 2.0 refers to the replacement for that class, called a **scene 
+index**, along with new Hydra features and components built around the scene 
+index API. New features include the scene index implementation of the usdImaging 
+library and new plugin points for proceduralism. Note that Hydra-enabled 
+applications can take advantage of these new plugin points for proceduralism 
+even if their scene graph integration is based off of the HdSceneDelegate API.
+
+Hydra's rendering abstraction API consists of the HdRenderIndex class, which is 
+the application's interface to renderer state, the HdRenderDelegate class, which 
+abstracts rendering functionality, and the **renderSettings** and **task** 
+primitives that configure and launch a render. Applications don't need to change 
+their use of the rendering abstraction API to benefit from Hydra 2.0 features, 
+but the scene index API opens doors to renderers having more control over their 
+update loop, or being able to read unflattened scenes. The extensions to the 
+rendering abstraction API are still evolving, and are mostly out of scope for 
+this document.
+
+\section Hydra_Getting_Started_Scene_Index_API The Scene Index API
+
+A scene in the new API is represented by a subclass of the HdSceneIndexBase 
+interface.
+
+\snippet examples_hydra_getting_started.cpp HdSceneIndexBaseExcerpt
+
+A scene index is responsible for: 
+  1. Sending notifications to the renderer or other listeners on population, 
+     invalidation, depopulation, etc.
+  2. Providing prim data by request.
+  3. Providing scene topology data by request, so callers can walk the scene.
+
+\image html scene_index_1.png
+
+The \ref stageSceneIndex.h "USD scene index", for example, implements a 
+Populate() call by traversing the scene and generating a PrimsAdded 
+notification. It implements change notification in terms of PrimsDirtied. It 
+implements \ref HdSceneIndexBase::GetChildPrimPaths() "GetChildPrimPaths()" by 
+querying the USD prim hierarchy. Finally, it implements \ref HdSceneIndexBase::GetPrim "GetPrim()"
+by returning the appropriate data for the prim in question (transform, geometric 
+data, etc. as appropriate).
+
+Consumers (such as renderers, the Hydra scene browser, etc) that want to receive 
+notifications from a scene index can subclass the HdSceneIndexObserver interface.
+
+\snippet examples_hydra_getting_started.cpp HdSceneIndexObserverExcerpt
+
+Note the semantics around adds (with regard to resync) and removals and renames 
+(with regard to the paths being subtree paths). The old Hydra scene API had no 
+concept of renames, but otherwise PrimsAdded/PrimsRemoved/PrimsDirtied 
+conceptually map to HdRenderIndex's InsertRprim()
+and RemoveRprimSubtree(), and HdChangeTracker's MarkRprimDirty().
+
+\image html scene_index_2.png
+
+\subsection Hydra_Getting_Started_Prim_Data Prim Data
+
+Prim data is represented by subclasses of HdDataSourceBase or its 
+specializations: HdContainerDataSource, HdVectorDataSource, or 
+HdSampledDataSource.
+
+\snippet examples_hydra_getting_started.cpp HdDataSourceBaseSpecializationsExcerpt
+
+The basic value datatype of this API is HdSampledDataSource, whose GetValue API 
+retrieves or computes type-erased (i.e. VtValue) data on demand, as with the 
+scene delegate. For attributes with a known type, the subclass 
+\ref HdTypedSampledDataSource "HdTypedSampledDataSource<T>" can be used. Note 
+that, unlike with the scene delegate, all data access is relative to a shutter 
+offset instead of being part of a separate API.
+
+For a consumer computing the value of a sampled datasource over a time interval 
+(such as a renderer implementing motion blur), 
+\ref HdSampledDataSource::GetContributingSampleTimesForInterval "GetContributingSampleTimesForInterval()" 
+is responsible for providing a set of notable sample times to reconstruct the 
+signal. For cached data, this can return the times where samples are defined, 
+or for analytical motion blur this can return time samples corresponding to a 
+reasonable linearization. If these time samples are used to populate an 
+HdTimeSampleArray, Hydra can linearly re-sample the signal at arbitrary points 
+as required by a renderer. If \ref HdSampledDataSource::GetContributingSampleTimesForInterval "GetContributingSampleTimesForInterval()" returns false, this indicates an 
+attribute that's constant over the shutter window, and the caller should just 
+use \ref HdSampledDataSource::GetValue "GetValue(0)".
+
+The intent of this API is for consumers to call GetValue() on either shutter 
+offsets returned by GetContributingSampleTimesForInterval(), or with 
+shutterOffset equal to 0. Defensive code can interpolate or extrapolate other 
+values of shutterOffset, but behavior might be undefined.
+
+Container datasources and vector datasources are both aggregates, and can be 
+used to build up nested structured data. A mesh prim might be represented by a 
+container with a child named "mesh", containing topology and pipeline state, 
+another named "primvars", and others as well, such as transform, visibility, 
+etc.
+
+\image html nested_datasources.png
+
+Here, the light diamonds represent containers and the dark diamonds represent 
+values. Note that containers can have children that are also containers.
+
+The container datasource API introduces \ref HdContainerDataSource::GetNames "GetNames()" 
+as a way for downstream code to enumerate which attributes are available. The 
+use of container datasources instead of structs allows for flexibility of 
+representation of similar concepts (e.g. a mesh, a mesh topology) between 
+different renderers which might want to overlay different data on top of the 
+standard points/index buffers.
+
+Named children of a container are retrieved with 
+\ref HdContainerDataSource::Get "Get()" calls. It's expected that 
+Get() will return something for all of the names defined by GetNames(), and will 
+return null otherwise (but be safe to call). This is useful, for example, 
+if a consumer only wants to check for certain named primvars on a geometry prim, 
+since primvar enumeration at the USD level can sometimes be expensive but it's 
+also lazily deferred to the GetNames() call.
+
+HdDataSourceLocator is the attribute addressing scheme used in 
+\ref HdSceneIndexObserver::DirtiedPrimEntries "DirtiedPrimEntries". Since 
+container datasources can be nested, the locator needs path semantics, where 
+each path entry represents the next container key to query to ultimately end up 
+at the correct datasource. A locator is relative to a root container, which is 
+usually the top-level container datasource representing prim data.
+
+\snippet examples_hydra_getting_started.cpp HdDataSourceLocatorExcerpt
+
+For example, you might expect mesh orientation at: `HdDataSourceLocator("mesh", "meshTopology", "orientation");`
+
+Locators can identify individual attributes to invalidate, which allows for much 
+more specificity than the HdDirtyBits API. An originating scene can invalidate 
+"primvars/displayColor" and "primvars/displayOpacity" separately. However, to 
+capture some of the conciseness of dirty bits, Hydra will interpret the locators 
+in a DirtiedPrimEntry hierarchically, meaning if "primvars" is dirty on a prim, 
+this implies that "primvars/displayColor" and "primvars/displayOpacity" are also 
+dirty.
+
+\subsection Hydra_Getting_Started_Schemas Hydra Schemas
+
+Datasource aggregations are inherently unstructured, but to transport data from 
+different scenes to different renderers Hydra needs a consensus data format. 
+Rather than encode this format in C++ structs, the scene index API takes a page 
+from USD by separating data storage from schema interpretation. An HdSchema 
+subclass is applied to an HdContainerDataSource and represents what data Hydra 
+expects to find on a container. Any scene index or render delegate that wants 
+to be compatible with the Hydra ecosystem should provide or consume data 
+accordingly. For example, HdMeshTopologySchema corresponds to the HdMeshTopology 
+C++ struct:
+
+\snippet examples_hydra_getting_started.cpp HdMeshTopologySchemaExcerpt
+
+Importantly, since the data storage is a container data source, it can transport 
+data not in the schema. If a renderer wants to extend Hydra schemas for 
+renderer-specific data, it can do so, in the above example by sub-classing 
+HdMeshTopologySchema. The schema is just a facade representing the commonly 
+understood structure of a Hydra scene, and all data access is still done through 
+the input container.
+
+\image html hdschema.png
+
+See \ref Page_Hydra_Prim_Schemas for a list of Hydra prim schemas.
+
+\subsection Hydra_Getting_Started_Filters Scene Index Filters
+
+One last important API concept arises from the architecture above. It's fairly 
+straightforward to implement a scene index by referring to an input scene index 
+for data access, but then selectively overriding the input scene data. This can 
+be thought of as the lazy programming version of running a transformation on 
+the scene at load time. We call this pattern a **scene index filter**, and 
+provide a base class for this behavior in HdSingleInputFilteringSceneIndexBase.
+
+\snippet examples_hydra_getting_started.cpp HdSingleInputFilteringSceneIndexBaseExcerpt
+
+This class will register itself as an observer of `inputSceneIndex` and 
+registers handlers for PrimsAdded(), etc. notices. Note that it's expected to 
+forward these notices appropriately to its own observers. GetPrim() can be 
+implemented with the help of _GetInputSceneIndex()->GetPrim().
+
+\image html scene_index_filter.png
+
+These scene index filters are a very powerful architectural tool for decoupling 
+different kinds of scene transformations in a scene or renderer pipeline. 
+See \ref Hydra_Getting_Started_App_With_Filters for additional illustrative
+examples of scene index filters.
+
+Hydra provides a way to visualize scene data and filters using the 
+\ref Page_Hydra_Scene_Browser, available in tools like usdview. You can also 
+add this to your Hydra-enabled application.
+
+\section Hydra_Getting_Started_Scene_Data Transporting Scene Data with Scene Indexes
+
+As a simple example, let's write a scene index that provides a scene with a 
+single quad.
+
+\snippet examples_hydra_getting_started.cpp QuadSceneIndex_Example 
+
+You can insert this scene (as a unit) from a render index by calling
+\ref HdRenderIndex "HdRenderIndex::InsertSceneIndex()", and remove the scene 
+using \ref HdRenderIndex "HdRenderIndex::RemoveSceneIndex()".
+
+The scenePathPrefix is the same as the scene delegate ID concept: if your 
+app-native scene has an embedded USD scene at `/Path/to/USD`, for example, you 
+can set `scenePathPrefix = "/Path/to/USD"` to re-root the USD data at the new 
+prefix.
+
+Under the hood, \ref HdRenderIndex "InsertSceneIndex()" works 
+by using a filtering scene index to re-root the scene, and passes the re-rooted 
+scene to HdMergingSceneIndex. This last scene index takes multiple input scenes 
+and composes them at a prim and attribute level, meaning a single prim can have 
+attribute data from multiple input scenes. Note also that, unlike with scene 
+delegates, a single scene index can be inserted into multiple render indexes 
+without any issues.
+
+A more sophisticated scene data implementation with the scene index API would be 
+expected to implement \ref HdSceneIndexBase::GetChildPrimPaths() "GetChildPrimPaths()" 
+in terms of native scene traversal, and implement \ref HdSceneIndexBase::GetPrim "GetPrim()" 
+by conforming native scene data to the Hydra prim schemas as necessary. We've 
+found it very helpful to write an originating scene index that's as simple as 
+possible, and represent complicated scene transformations with filters. As an 
+example of this, \ref stageSceneIndex.h "UsdImagingStageSceneIndex" tries to 
+only handle prim traversal, type lookup, and attribute access. Various scene 
+index filters overlay application state or implement complicated features like 
+instancing resolution:
+
+- UsdImagingPiPrototypePropagatingSceneIndex: handles point instancer 
+  population rules and relationship fix-up.
+- UsdImagingNiPrototypePropagatingSceneIndex: handles USD instanceable reference 
+  aggregation.
+- UsdImagingDrawModeSceneIndex: handles model:drawMode substitutions, where a 
+  subtree of the scene is replaced by standin geometry.
+- UsdImagingSelectionSceneIndex: overlays per-prim selection state from the 
+  application onto scene data.
+- UsdImagingRootOverridesSceneIndex: overlays a root transform/visibility 
+  opinion from the application onto scene data.
+
+The flow for \ref stageSceneIndex.h "UsdImagingStageSceneIndex" with these 
+filters looks roughly like this, as of November 2023:
+
+\image html usdimagingstagesceneindex_filters.png
+
+The UsdImaging library provides the method 
+\ref sceneIndices.h "UsdImagingCreateSceneIndices()" to 
+create a \ref stageSceneIndex.h "UsdImagingStageSceneIndex" and all of its 
+associated filters, and this is the recommended way to create a 
+UsdImagingStageSceneIndex with the correct resolution steps across different 
+USD releases.
+
+\section Hydra_Getting_Started_App_With_Filters Working With Scene Index Filters
+
+For a basic syntactical look at how scene index filters work, the following 
+simple but illustrative examples can be used.
+
+A filter that filters out all cubes from the scene:
+
+\snippet examples_hydra_getting_started.cpp UnboxingSceneIndexFilter
+
+A filter that sets the display color for everything to be green:
+
+\snippet examples_hydra_getting_started.cpp GreeningSceneIndexFilter
+
+Note here the use of two utility classes: \ref containerDataSourceEditor.h "HdContainerDataSourceEditor" 
+and HdOverlayContainerDataSource. These are both useful for doing 
+datasource-level composition, and can recursively merge and combine their inputs 
+(lazily!) as needed. Another noteworthy utility class is HdSceneIndexPrimView:
+
+\snippet examples_hydra_getting_started.cpp HdSceneIndexPrimViewExample
+
+For an example of more sophisticated filtering scene indices, there are some 
+core architectural examples in `pxr/imaging/hd`:
+
+- \ref dependencyForwardingSceneIndex.h "HdDependencyForwardingSceneIndex": allows originating scenes, as well as 
+  renderers and other filters, to add data dependencies via the 
+  HdDependenciesSchema. This filter will use those dependencies to propagate 
+  PrimsDirtied calls. This is especially helpful for managing invalidation 
+  across relationships. For an example use case, Storm uses a scene index filter 
+  that adds dependencies to meshes from their bound material, so that when the 
+  material changes the mesh can re-tesselate. We then run the dependency 
+  forwarding scene index to forward those invalidations.
+- HdFlatteningSceneIndex: does top-down attribute flattening. For example, 
+  transform concatenation, inherited attribute resolution, etc.
+- HdMergingSceneIndex: merges multiple input scenes into a single output scene.
+- \ref noticeBatchingSceneIndex.h "HdNoticeBatchingSceneIndex": captures, holds, and merges scene index 
+  notifications on demand.
+- HdPrefixingSceneIndex: re-roots the input scene at a new location.
+
+There are also a number of common feature-based scene index filters in 
+`pxr/imaging/hdsi`:
+
+- HdsiImplicitSurfaceSceneIndex: can be configured to replace spheres, cubes, 
+  cylinders, capsules, and cones with tessellated meshes.
+- HdSiExtComputationPrimvarPruningSceneIndex: runs Hydra external primvar 
+  computations and adds the results to the scene as normal primvars. This 
+  ensures downstream render delegates or scene indices don't need to be 
+  ExtComputation aware.
+- HdsiPinnedCurveExpandingSceneIndex: turns pinned Catmull-Rom curves into 
+  unpinned Catmull-Rom curves, for renderers that don't support the pinned 
+  format.
+
+These filters can be added to the Hydra pipeline in a few different ways:
+
+<b>Scenegraph-specific Scene Index Filters</b>
+
+Filters that are associated with a specific originating scene graph (like 
+UsdImaging filters that implement USD semantics) can be appended to the 
+originating scene index (e.g. \ref stageSceneIndex.h "UsdImagingStageSceneIndex") 
+before they are inserted into the render index with \ref HdRenderIndex "InsertSceneIndex()". 
+As mentioned earlier, \ref sceneIndices.h "UsdImagingCreateSceneIndices()" can 
+be used to create a UsdImagingStageSceneIndex and all of its associated filters.
+
+<b>Renderer-specific Scene Index Filters</b>
+
+A renderer can define a subclass of \ref noticeBatchingSceneIndex.h "HdSceneIndexPlugin", 
+either compiled into the render delegate or in an unrelated library. Upon 
+constructing a render delegate Hydra will instantiate scene index filters linked 
+to that render delegate automatically. The filters use their defined order, and 
+are inserted between the render index's merging scene index and the render 
+delegate.
+
+The following example shows a simple scene index filter plugin:
+
+\snippet examples_hydra_getting_started.cpp RendererSceneIndexFilterPlugin
+
+The following `plugInfo.json` would be used for this example plugin:
+
+\code{.unparsed}
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "MyFilterPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "GL",
+                        "priority": 0,
+                        "displayName": "My awesome filter scene index"
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "myfilter",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}
+\endcode
+
+<b>Application-specific Scene Index Filters</b>
+
+Application-specific transformations can be added at runtime to the same pool 
+used for renderer-specific transformations. This is especially useful for 
+pipeline tools, which might want to segment the scene in ways that aren't 
+appropriate for other applications.
+
+The following example demonstrates how an app might register an 
+application-specific scene index filter at startup:
+
+\snippet examples_hydra_getting_started.cpp AppSceneIndexFilter
+
+It's important to note that the application and renderer-specific scene index 
+filters can be used even if all of the scene data is coming from a scene 
+delegate. Hydra converts internally between the two representations as needed. 
+See \ref Hydra_Getting_Started_Appendix_Scene_Index_Emulation for details.
+
+The following shows renderer-specific and application-specific filters 
+participating in a scene index filtering workflow.
+
+\image html app_renderer_filters.png
+
+The current priority sort algorithm is to run application-specific filters 
+first (in numerical priority order), and then renderer-specific filters 
+(again in numerical priority order).
+
+\section Hydra_Getting_Started_Scene_Index_Bindings USD Scene Index Bindings
+
+\ref stageSceneIndex.h "UsdImagingStageSceneIndex", much like UsdImagingDelegate, 
+will walk a USD stage and dispatch to plugin-based **prim adapters** that know 
+how to turn a certain USD prim type into a Hydra prim. UsdImagingStageSceneIndex 
+uses the same plugin registry as UsdImagingDelegate to accomplish this. There 
+are two major differences: 
+
+1. The API on the C++ PrimAdapter subclass that UsdImagingStageSceneIndex uses 
+   is disjoint.
+2. UsdImagingStageSceneIndex supports adapters for USD API schemas, which can 
+   layer data onto the hydra representation of their base type.
+
+The following is example code for an adapter for a "MyUSDPrim" USD prim and
+"MyUSDAPI" USD schema.
+
+plugInfo.json for MyUSD library:
+
+\code{.unparsed}
+{
+    "Types": {
+        "MyUSDPrimAdapter" : {
+            "bases": ["UsdImagingPrimAdapter"],
+            "primTypeName": "MyUSDPrim"
+        },
+        "MyUSDAPIAdapter" : {
+            "bases": ["UsdImagingAPISchemaAdapter"],
+            "apiSchemaName": "MyUSDAPI"
+        }
+    }
+}
+\endcode
+
+MyUSDPrimAdapter.cpp example:
+
+\snippet examples_hydra_getting_started.cpp MyUSDPrimAdapter
+
+MyUSDAPIAdapter.cpp example:
+
+\snippet examples_hydra_getting_started.cpp MyUSDAPIAdapter
+
+USD has a concept of multiple-apply API schemas, where the same API schema can 
+be applied to a prim multiple times with different instance names. An example of 
+this is coordinate systems, where applying UsdShadeCoordSysAPI with instance 
+name "foo" adds a "coordsys:foo:binding" relationship to the prim. In these 
+cases, \ref stageSceneIndex.h "UsdImagingStageSceneIndex" will call into the API 
+schema adapter multiple times, one per instance name. Some API schemas (which 
+aren't multiple-apply) won't have an instance name -- in these cases, the 
+instance name will be the empty token. Other than the instance name, the API 
+schema adapter API follows the prim API.
+
+Any USD prim will have a base type and an ordered (possibly empty) list of 
+applied API schemas. USD composes attribute definitions on that prim by looking 
+at the base type definition, and then subsequently looking at the API schema 
+definitions in order. This is the process used to determine attribute fallback 
+values, for example. \ref stageSceneIndex.h "UsdImagingStageSceneIndex" matches 
+this by using an HdOverlayContainerDataSource to compose prim data from the base 
+type adapter, and then from each API schema adapter in order. Composition is 
+performed separately for each subprim.
+
+\image html scene_index_adapters.png
+
+Adapters no longer get the wide "Populate" API of UsdImagingDelegate, but a 
+single USD prim can be expanded into multiple Hydra prims by returning a list 
+of subprim names. Each of these can have a unique prim type and a datasource 
+providing prim data.
+
+Adapters should route their value-level scene access through the 
+\ref dataSourceAttribute.h "UsdImagingDataSourceAttribute" and 
+UsdImagingDataSourceRelationship classes, which handle efficiently retrieving 
+attribute data as well as marking time-variability in the `stageGlobals` object.
+
+\section Hydra_Getting_Started_Renderer_Access Renderer Access to Scene Index Data
+
+Renderers and baking tooling can read data directly out of scene indices already 
+by using the scene index API or by registering themselves as scene index 
+observers, but for components using the Hydra plugin ecosystem the render 
+delegate API is still based on Hydra calling Sync() with an instance of 
+HdSceneDelegate. Render delegates that want to bypass the scene delegate API for 
+reading can use the following call for direct datasource access:
+
+\snippet examples_hydra_getting_started.cpp SyncWithSceneIndexAPI
+
+This still limits invalidations to those expressible by dirty bits, and still 
+limits data update to the type-sorted-by-tier, thread-per-prim model of 
+HdRenderIndex::SyncAll(). Our design goal with the Hydra 2.0-native render 
+delegate is to allow the render delegate to customize the update model, by 
+making SyncAll() a parameterizable function that the render delegate can call.
+We expect many render delegates to continue to use the existing update model, 
+but this gives us the flexibility to break out certain prim types (like render 
+settings) into different threading models if needed.
+
+\section Hydra_Getting_Started_Appendix_Scene_Index_Emulation Appendix: Scene Index Emulation Explained
+
+Although there are benefits to using the scene index API from 
+end-to-end (for performance, flexibility, configurability), it's not required if
+you just want to get started with the 
+\ref Page_Hydra_Scene_Browser "Hydra Scene Browser" or the Application or 
+Renderer Scene Index Filters. Internally, Hydra is using the Scene Index 
+API, but to minimize impact we designed adapters to invisibly support existing 
+scene delegate implementations and existing render delegate implementations that 
+read via a scene delegate pointer.
+
+Architecturally, this is accomplished with two primary pieces. 
+HdLegacyPrimSceneIndex represents a scene composed of HdSceneDelegate-backed 
+prims as a scene index. This scene is added to the same merging scene index 
+that's used by InsertSceneIndex(). The render index prim management functions 
+(InsertRprim(), etc.) all operate by adding and removing prims to the legacy 
+prim scene index. HdDataSourceLegacyPrim does the heavy lifting of converting 
+scene delegate data to HdDataSourceBase-based data.
+
+On the other end, HdSceneIndexAdapterSceneDelegate observes the Hydra scene 
+downstream of all of the registered scene index filters. It will dispatch 
+notices (PrimsAdded(), etc.) to the render index to update the internal tables 
+of renderer prims. It's also an implementation of HdSceneDelegate, and answers 
+queries by reference to the input scene index. The scene delegate that the 
+render index reads from will be an instance of this class.
+
+One last component is HdDirtyBitsTranslator, which encodes the mapping between 
+dirty bits (used in the change tracker) and datasource locators (used in 
+PrimsDirtied()).
+
+The following diagram shows the components used to support scene delegates
+in Hydra 2.0.
+
+\image html legacy_scene_delegate_emulation.png
+
+These abstractions allow HdSceneDelegate-based integrations to be integrated 
+into a Hydra 2.0 pipeline and take advantage of many of its features without 
+requiring any porting effort. We're planning to maintain these emulation layers 
+even as we port and deprecate all of our HdSceneDelegate implementations 
+internally.
+
+*/

@@ -207,16 +207,22 @@ vec4 HdGet_color(int localIndex) {
   return vec4(constantPrimvars[index].color);
 }
 vec4 HdGet_color() { return HdGet_color(0); }
+float HdGetScalar_color(int localIndex) { return HdGet_color(localIndex).x; }
+float HdGetScalar_color() { return HdGet_color(0).x; }
 vec4 HdGet_primID(int localIndex) {
   int index = GetDrawingCoord().constantCoord;
   return vec4(constantPrimvars[index].primID);
 }
 vec4 HdGet_primID() { return HdGet_primID(0); }
+float HdGetScalar_primID(int localIndex) { return HdGet_primID(localIndex).x; }
+float HdGetScalar_primID() { return HdGet_primID(0).x; }
 float HdGet_widths(int localIndex) {
   int index = GetDrawingCoord().constantCoord;
   return float(constantPrimvars[index].widths);
 }
 float HdGet_widths() { return HdGet_widths(0); }
+float HdGetScalar_widths(int localIndex) { return HdGet_widths(localIndex); }
+float HdGetScalar_widths() { return HdGet_widths(0); }
 
 // //////// Codegen VS Source //////// 
 #define HD_BINDLESS_BUFFERS_ENABLED
@@ -894,16 +900,22 @@ vec4 HdGet_color(int localIndex) {
   return vec4(constantPrimvars[index].color);
 }
 vec4 HdGet_color() { return HdGet_color(0); }
+float HdGetScalar_color(int localIndex) { return HdGet_color(localIndex).x; }
+float HdGetScalar_color() { return HdGet_color(0).x; }
 vec4 HdGet_primID(int localIndex) {
   int index = GetDrawingCoord().constantCoord;
   return vec4(constantPrimvars[index].primID);
 }
 vec4 HdGet_primID() { return HdGet_primID(0); }
+float HdGetScalar_primID(int localIndex) { return HdGet_primID(localIndex).x; }
+float HdGetScalar_primID() { return HdGet_primID(0).x; }
 float HdGet_widths(int localIndex) {
   int index = GetDrawingCoord().constantCoord;
   return float(constantPrimvars[index].widths);
 }
 float HdGet_widths() { return HdGet_widths(0); }
+float HdGetScalar_widths(int localIndex) { return HdGet_widths(localIndex); }
+float HdGetScalar_widths() { return HdGet_widths(0); }
 
 // //////// Codegen GS Source //////// 
 int GetPrimitiveID() {
@@ -980,11 +992,15 @@ vec3 HdGet_points(int localIndex) {
   return vec3(inPrimvars[index].points);
 }
 vec3 HdGet_points() { return HdGet_points(0); }
+float HdGetScalar_points(int localIndex) { return HdGet_points(localIndex).x; }
+float HdGetScalar_points() { return HdGet_points(0).x; }
 vec3 HdGet_normals(int localIndex) {
   int index = localIndex;
   return vec3(inPrimvars[index].normals);
 }
 vec3 HdGet_normals() { return HdGet_normals(0); }
+float HdGetScalar_normals(int localIndex) { return HdGet_normals(localIndex).x; }
+float HdGetScalar_normals() { return HdGet_normals(0).x; }
 vec2 HdGet_dispTextureCoord_Coarse(int localIndex) {
   int fvarIndex = GetFVarIndex(localIndex);
   return vec2(dispTextureCoord[fvarIndex]);
@@ -2088,16 +2104,22 @@ vec4 HdGet_color(int localIndex) {
   return vec4(constantPrimvars[index].color);
 }
 vec4 HdGet_color() { return HdGet_color(0); }
+float HdGetScalar_color(int localIndex) { return HdGet_color(localIndex).x; }
+float HdGetScalar_color() { return HdGet_color(0).x; }
 vec4 HdGet_primID(int localIndex) {
   int index = GetDrawingCoord().constantCoord;
   return vec4(constantPrimvars[index].primID);
 }
 vec4 HdGet_primID() { return HdGet_primID(0); }
+float HdGetScalar_primID(int localIndex) { return HdGet_primID(localIndex).x; }
+float HdGetScalar_primID() { return HdGet_primID(0).x; }
 float HdGet_widths(int localIndex) {
   int index = GetDrawingCoord().constantCoord;
   return float(constantPrimvars[index].widths);
 }
 float HdGet_widths() { return HdGet_widths(0); }
+float HdGetScalar_widths(int localIndex) { return HdGet_widths(localIndex); }
+float HdGetScalar_widths() { return HdGet_widths(0); }
 
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
@@ -2176,10 +2198,16 @@ float HdGetScalar_faceVisibility(int localIndex) { return HdGet_faceVisibility(l
 float HdGetScalar_faceVisibility() { return HdGet_faceVisibility(0); }
 vec3 HdGet_points(int localIndex) { return vec3(inPrimvars.points);}
 vec3 HdGet_points() { return HdGet_points(0); }
+float HdGetScalar_points(int localIndex) { return HdGet_points(localIndex).x; }
+float HdGetScalar_points() { return HdGet_points(0).x; }
 vec3 HdGet_normals(int localIndex) { return vec3(inPrimvars.normals);}
 vec3 HdGet_normals() { return HdGet_normals(0); }
+float HdGetScalar_normals(int localIndex) { return HdGet_normals(localIndex).x; }
+float HdGetScalar_normals() { return HdGet_normals(0).x; }
 vec2 HdGet_dispTextureCoord(int localIndex) { return vec2(inPrimvars.dispTextureCoord);}
 vec2 HdGet_dispTextureCoord() { return HdGet_dispTextureCoord(0); }
+float HdGetScalar_dispTextureCoord(int localIndex) { return HdGet_dispTextureCoord(localIndex).x; }
+float HdGetScalar_dispTextureCoord() { return HdGet_dispTextureCoord(0).x; }
 FORWARD_DECL(vec4 GetPatchCoord(int index));
 void ProcessSamplingTransforms(MAT4 instanceModelViewInverse) {
 }
@@ -3294,16 +3322,22 @@ vec4 HdGet_color(int localIndex) {
   return vec4(constantPrimvars[index].color);
 }
 vec4 HdGet_color() { return HdGet_color(0); }
+float HdGetScalar_color(int localIndex) { return HdGet_color(localIndex).x; }
+float HdGetScalar_color() { return HdGet_color(0).x; }
 vec4 HdGet_primID(int localIndex) {
   int index = GetDrawingCoord().constantCoord;
   return vec4(constantPrimvars[index].primID);
 }
 vec4 HdGet_primID() { return HdGet_primID(0); }
+float HdGetScalar_primID(int localIndex) { return HdGet_primID(localIndex).x; }
+float HdGetScalar_primID() { return HdGet_primID(0).x; }
 float HdGet_widths(int localIndex) {
   int index = GetDrawingCoord().constantCoord;
   return float(constantPrimvars[index].widths);
 }
 float HdGet_widths() { return HdGet_widths(0); }
+float HdGetScalar_widths(int localIndex) { return HdGet_widths(localIndex); }
+float HdGetScalar_widths() { return HdGet_widths(0); }
 
 // //////// Codegen VS Source //////// 
 #define HD_BINDLESS_BUFFERS_ENABLED
@@ -3981,16 +4015,22 @@ vec4 HdGet_color(int localIndex) {
   return vec4(constantPrimvars[index].color);
 }
 vec4 HdGet_color() { return HdGet_color(0); }
+float HdGetScalar_color(int localIndex) { return HdGet_color(localIndex).x; }
+float HdGetScalar_color() { return HdGet_color(0).x; }
 vec4 HdGet_primID(int localIndex) {
   int index = GetDrawingCoord().constantCoord;
   return vec4(constantPrimvars[index].primID);
 }
 vec4 HdGet_primID() { return HdGet_primID(0); }
+float HdGetScalar_primID(int localIndex) { return HdGet_primID(localIndex).x; }
+float HdGetScalar_primID() { return HdGet_primID(0).x; }
 float HdGet_widths(int localIndex) {
   int index = GetDrawingCoord().constantCoord;
   return float(constantPrimvars[index].widths);
 }
 float HdGet_widths() { return HdGet_widths(0); }
+float HdGetScalar_widths(int localIndex) { return HdGet_widths(localIndex); }
+float HdGetScalar_widths() { return HdGet_widths(0); }
 
 // //////// Codegen GS Source //////// 
 int GetPrimitiveID() {
@@ -4067,11 +4107,15 @@ vec3 HdGet_points(int localIndex) {
   return vec3(inPrimvars[index].points);
 }
 vec3 HdGet_points() { return HdGet_points(0); }
+float HdGetScalar_points(int localIndex) { return HdGet_points(localIndex).x; }
+float HdGetScalar_points() { return HdGet_points(0).x; }
 vec3 HdGet_normals(int localIndex) {
   int index = localIndex;
   return vec3(inPrimvars[index].normals);
 }
 vec3 HdGet_normals() { return HdGet_normals(0); }
+float HdGetScalar_normals(int localIndex) { return HdGet_normals(localIndex).x; }
+float HdGetScalar_normals() { return HdGet_normals(0).x; }
 vec2 HdGet_dispTextureCoord_Coarse(int localIndex) {
   int fvarIndex = GetFVarIndex(localIndex);
   return vec2(dispTextureCoord[fvarIndex]);
@@ -5205,16 +5249,22 @@ vec4 HdGet_color(int localIndex) {
   return vec4(constantPrimvars[index].color);
 }
 vec4 HdGet_color() { return HdGet_color(0); }
+float HdGetScalar_color(int localIndex) { return HdGet_color(localIndex).x; }
+float HdGetScalar_color() { return HdGet_color(0).x; }
 vec4 HdGet_primID(int localIndex) {
   int index = GetDrawingCoord().constantCoord;
   return vec4(constantPrimvars[index].primID);
 }
 vec4 HdGet_primID() { return HdGet_primID(0); }
+float HdGetScalar_primID(int localIndex) { return HdGet_primID(localIndex).x; }
+float HdGetScalar_primID() { return HdGet_primID(0).x; }
 float HdGet_widths(int localIndex) {
   int index = GetDrawingCoord().constantCoord;
   return float(constantPrimvars[index].widths);
 }
 float HdGet_widths() { return HdGet_widths(0); }
+float HdGetScalar_widths(int localIndex) { return HdGet_widths(localIndex); }
+float HdGetScalar_widths() { return HdGet_widths(0); }
 
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
@@ -5293,10 +5343,16 @@ float HdGetScalar_faceVisibility(int localIndex) { return HdGet_faceVisibility(l
 float HdGetScalar_faceVisibility() { return HdGet_faceVisibility(0); }
 vec3 HdGet_points(int localIndex) { return vec3(inPrimvars.points);}
 vec3 HdGet_points() { return HdGet_points(0); }
+float HdGetScalar_points(int localIndex) { return HdGet_points(localIndex).x; }
+float HdGetScalar_points() { return HdGet_points(0).x; }
 vec3 HdGet_normals(int localIndex) { return vec3(inPrimvars.normals);}
 vec3 HdGet_normals() { return HdGet_normals(0); }
+float HdGetScalar_normals(int localIndex) { return HdGet_normals(localIndex).x; }
+float HdGetScalar_normals() { return HdGet_normals(0).x; }
 vec2 HdGet_dispTextureCoord(int localIndex) { return vec2(inPrimvars.dispTextureCoord);}
 vec2 HdGet_dispTextureCoord() { return HdGet_dispTextureCoord(0); }
+float HdGetScalar_dispTextureCoord(int localIndex) { return HdGet_dispTextureCoord(localIndex).x; }
+float HdGetScalar_dispTextureCoord() { return HdGet_dispTextureCoord(0).x; }
 FORWARD_DECL(vec4 GetPatchCoord(int index));
 void ProcessSamplingTransforms(MAT4 instanceModelViewInverse) {
 }

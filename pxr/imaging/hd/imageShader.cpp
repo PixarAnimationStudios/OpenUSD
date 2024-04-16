@@ -25,6 +25,7 @@
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/instancer.h"
+#include "pxr/imaging/hd/materialNetwork2Interface.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -90,6 +91,18 @@ HdImageShader::Sync(
         }
     }
 
+    if (bits & DirtyMaterialNetwork) {
+        const VtValue materialNetworkValue =
+            sceneDelegate->Get(id, HdImageShaderTokens->materialNetwork);
+        if (!materialNetworkValue.IsEmpty()) {
+            _materialNetwork = HdConvertToHdMaterialNetwork2(
+                materialNetworkValue.Get<HdMaterialNetworkMap>());
+            _materialNetworkInterface =
+                std::make_unique<HdMaterialNetwork2Interface>(
+                    GetId(), &_materialNetwork);
+        }
+    }
+
     // Clear all the dirty bits. This ensures that the sprim doesn't
     // remain in the dirty list always.
     *dirtyBits = Clean;
@@ -123,6 +136,12 @@ const VtDictionary&
 HdImageShader::GetConstants() const
 {
     return _constants;
+}
+
+const HdMaterialNetworkInterface*
+HdImageShader::GetMaterialNetwork() const
+{
+    return _materialNetworkInterface.get();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

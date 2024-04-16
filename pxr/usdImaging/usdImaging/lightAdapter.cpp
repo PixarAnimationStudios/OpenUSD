@@ -54,8 +54,6 @@ bool UsdImagingLightAdapter::IsEnabledSceneLights() {
     return _v;
 }
 
-UsdImagingLightAdapter::~UsdImagingLightAdapter() = default;
-
 HdContainerDataSourceHandle
 UsdImagingLightAdapter::GetImagingSubprimData(
         UsdPrim const& prim,
@@ -303,28 +301,6 @@ UsdImagingLightAdapter::GetMaterialResource(UsdPrim const &prim,
     return VtValue(networkMap);
 }
 
-/* static */
-SdfPath
-UsdImagingLightAdapter::_ResolveCachePath(
-    const SdfPath& usdPath,
-    const UsdImagingInstancerContext* instancerContext)
-{
-    SdfPath cachePath = usdPath;
-
-    if (instancerContext != nullptr) {
-        SdfPath const& instancer = instancerContext->instancerCachePath;
-        TfToken const& childName = instancerContext->childName;
-
-        if (!instancer.IsEmpty()) {
-            cachePath = instancer;
-        }
-        if (!childName.IsEmpty()) {
-            cachePath = cachePath.AppendProperty(childName);
-        }
-    }
-    return cachePath;
-}
-
 SdfPath
 UsdImagingLightAdapter::_AddSprim(
     const TfToken& primType,
@@ -332,7 +308,7 @@ UsdImagingLightAdapter::_AddSprim(
     UsdImagingIndexProxy* index,
     const UsdImagingInstancerContext* instancerContext)
 {
-    SdfPath cachePath = _ResolveCachePath(usdPrim.GetPath(), instancerContext);
+    SdfPath cachePath = ResolveCachePath(usdPrim.GetPath(), instancerContext);
 
     // For an instanced light prim, this is the instancer prim.
     // For a non-instanced light prim, this is just the light prim.

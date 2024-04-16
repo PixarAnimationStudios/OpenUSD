@@ -6,14 +6,13 @@
     the target of this relocation was a direct ancestor of itself.
     
     """
-)
-
-def Scope "Rig" (
     relocates = {
-        <Other/A/Instance/A> : <Other/A>,
-        <Other/A/B> : <B>
+        </Rig/Other/A/B>: </Rig/B>, 
+        </Rig/Other/A/Instance/A>: </Rig/Other/A>
     }
 )
+
+def Scope "Rig"
 {
     class Scope "Class"
     {

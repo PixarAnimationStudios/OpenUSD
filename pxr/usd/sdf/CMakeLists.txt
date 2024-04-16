@@ -238,6 +238,7 @@ pxr_test_scripts(
     testenv/testSdfPayload.py
     testenv/testSdfPrim.py
     testenv/testSdfReference.py
+    testenv/testSdfRelocates.py
     testenv/testSdfSpecHash.py
     testenv/testSdfTimeCode.py
     testenv/testSdfTypes.py
@@ -246,7 +247,6 @@ pxr_test_scripts(
 )
 
 pxr_build_test_shared_lib(TestSdfFileFormatCapabilities
-    CREATE_FRAMEWORK
     INSTALL_PREFIX SdfPlugins
     LIBRARIES
         sdf
@@ -257,7 +257,6 @@ pxr_build_test_shared_lib(TestSdfFileFormatCapabilities
 )
 
 pxr_build_test_shared_lib(TestSdfNoAssetFileFormat
-    CREATE_FRAMEWORK
     INSTALL_PREFIX SdfPlugins
     LIBRARIES
         sdf
@@ -268,7 +267,6 @@ pxr_build_test_shared_lib(TestSdfNoAssetFileFormat
 )
 
 pxr_build_test_shared_lib(TestSdfStreamingFileFormat
-    CREATE_FRAMEWORK
     INSTALL_PREFIX SdfPlugins
     LIBRARIES
         sdf
@@ -279,7 +277,6 @@ pxr_build_test_shared_lib(TestSdfStreamingFileFormat
 )
 
 pxr_build_test_shared_lib(TestSdfTargetFileFormat
-    CREATE_FRAMEWORK
     INSTALL_PREFIX SdfPlugins
     LIBRARIES
         sdf
@@ -290,7 +287,6 @@ pxr_build_test_shared_lib(TestSdfTargetFileFormat
 )
 
 pxr_build_test_shared_lib(TestSdfResolver
-    CREATE_FRAMEWORK
     INSTALL_PREFIX SdfPlugins
     LIBRARIES
         ar
@@ -543,6 +539,10 @@ pxr_register_test(testSdfPrim
 pxr_register_test(testSdfReference
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfReference"
+)
+pxr_register_test(testSdfRelocates
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfRelocates"
 )
 pxr_register_test(testSdfSpecHash
     PYTHON

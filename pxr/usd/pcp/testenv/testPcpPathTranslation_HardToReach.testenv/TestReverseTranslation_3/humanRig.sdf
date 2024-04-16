@@ -1,10 +1,11 @@
 #sdf 1.4.32
-
-def Prim "HumanRig" (
+(
     relocates = {
-        <Rig/LArm/Anim>: <Anim/LArm>
+        </HumanRig/Rig/LArm/Anim>: </HumanRig/Anim/LArm>
     }
 )
+
+def Prim "HumanRig"
 {
     def Scope "Anim"
     {

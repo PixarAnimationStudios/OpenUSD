@@ -118,10 +118,15 @@ that depend on Metal, including:
 
 ##### Vulkan
 
+Vulkan support for USD is currently experimental and disabled by default.
+
 Building USD with Vulkan enabled requires the Vulkan SDK and glslang to
-be installed. The VULKAN_SDK environment variable must point to the
-location of the SDK. The glslang compiler headers must be locatable during
-the build process.
+be installed. If you wish to build a debug build on Windows, please make sure 
+you have the optional component "Shader Toolchain Debug Symbols" installed as 
+part of the Vulkan SDK.
+
+The VULKAN_SDK environment variable must point to the location of the SDK. The 
+glslang compiler headers must be locatable during the build process.
 
 Support for Vulkan can optionally be enabled by specifying the cmake flag
 `PXR_ENABLE_VULKAN_SUPPORT=TRUE`.

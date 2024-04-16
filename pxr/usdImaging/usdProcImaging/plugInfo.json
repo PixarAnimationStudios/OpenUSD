@@ -6,7 +6,7 @@
                     
                     "UsdProcImagingGenerativeProceduralAdapter": {
                         "bases": [
-                            "UsdImagingPrimAdapter"
+                            "UsdImagingInstanceablePrimAdapter"
                         ], 
                         "primTypeName": "GenerativeProcedural"
                     }

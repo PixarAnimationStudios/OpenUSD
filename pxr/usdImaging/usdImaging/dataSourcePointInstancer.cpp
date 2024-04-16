@@ -181,32 +181,27 @@ UsdImagingDataSourcePointInstancerTopology::GetNames()
     };
 }
 
-static
-const UsdImagingDataSourceCustomPrimvars::Mappings &
+UsdImagingDataSourceCustomPrimvars::Mappings
 _GetCustomPrimvarMappings(const UsdPrim &usdPrim)
 {
-    static const UsdImagingDataSourceCustomPrimvars::Mappings mappings = {
-        { (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-            ? HdInstancerTokens->translate
-            : HdInstancerTokens->instanceTranslations),
-          UsdGeomTokens->positions,
-          HdPrimvarSchemaTokens->instance
-        },
-        { (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-            ? HdInstancerTokens->rotate
-            : HdInstancerTokens->instanceRotations),
-          UsdGeomTokens->orientations,
-          HdPrimvarSchemaTokens->instance
-        },
-        { (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-            ? HdInstancerTokens->scale
-            : HdInstancerTokens->instanceScales),
-          UsdGeomTokens->scales,
-          HdPrimvarSchemaTokens->instance
-        }
-    };
+    TfToken usdOrientationsToken;
+    UsdGeomPointInstancer instancer(usdPrim);
 
-    return mappings;
+    return {
+        {
+            HdInstancerTokens->instanceTranslations,
+            UsdGeomTokens->positions,
+            HdPrimvarSchemaTokens->instance },
+        {
+            HdInstancerTokens->instanceRotations,
+            instancer.UsesOrientationsf()
+              ? UsdGeomTokens->orientationsf
+              : UsdGeomTokens->orientations,
+            HdPrimvarSchemaTokens->instance },
+        {
+            HdInstancerTokens->instanceScales,
+            UsdGeomTokens->scales,
+            HdPrimvarSchemaTokens->instance } };
 }
 
 HdDataSourceBaseHandle
@@ -335,6 +330,14 @@ UsdImagingDataSourcePointInstancerPrim::Invalidate(
                     HdInstancerTopologySchema::GetDefaultLocator()
                     .Append(HdInstancerTopologySchemaTokens->mask);
                 locators.insert(locator);
+            }
+            // Need to invalidate both orientations tokens. One will be
+            // invalidated via the call to Invalidate() for custom primvars
+            // and the other is explicitly invalidated here.
+            if (propertyName == UsdGeomTokens->orientations ||
+                propertyName == UsdGeomTokens->orientationsf) {
+                locators.insert(HdPrimvarsSchema::GetDefaultLocator().Append(
+                    HdInstancerTokens->instanceRotations));
             }
         }
 

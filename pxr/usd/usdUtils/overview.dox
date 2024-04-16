@@ -175,6 +175,12 @@ def ProcessingFunc(layer, dependencyInfo):
 
 \endcode
 
+It is important to note that a coding error will be issued if a function 
+modifies an asset path that is contained in an existing package. You may use 
+the \ref SdfFileFormat::IsPackage and \ref ArIsPackageRelativePath methods on 
+the layer reference passed into the processing function to determine if you are
+operating on such a layer.
+
 Another useful application of processing functions is to support transient
 dependencies. Using the OBJ file format as an example, a processing function
 which naively includes .mtl files with a corresponding base name to their .obj

@@ -22,10 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 //todo: cleanup: TF_DEFINE_PRIVATE_TOKENS, should use the public versions
-//todo: cleanup: document each macro extensivly
+//todo: cleanup: document each macro extensively
 //todo: cleanup: order macros, so that it is easier to see the structure
-//todo: simply syntax, we should get rid of braces for each array element and
-//      each element
 
 #ifndef PXR_BASE_TF_STATIC_TOKENS_H
 #define PXR_BASE_TF_STATIC_TOKENS_H
@@ -47,10 +45,6 @@
 ///
 ///        // Syntax when string name differs from symbol.
 ///        ((foo, "bar"))
-///
-///        // Syntax when defining an array of tokens. Note that the tokens can 
-///        // be used either with amountTs[i] or directly as tx, ty, tz.
-///        ((amountTs, ( (tx) (ty) (tz) )))   
 ///
 ///    TF_DECLARE_PUBLIC_TOKENS(MfTokens, MF_TOKENS);
 /// \endcode
@@ -81,10 +75,6 @@
 #include "pxr/base/tf/token.h"
 
 #include <vector>
-
-#include <boost/preprocessor/seq/enum.hpp>
-#include <boost/preprocessor/seq/filter.hpp>
-#include <boost/preprocessor/seq/for_each.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -157,17 +147,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define _TF_TOKENS_DECLARE_TOKEN_MEMBERS(seq)                               \
     TF_PP_SEQ_FOR_EACH(_TF_TOKENS_DECLARE_MEMBER, ~, seq)
 
-#define _TF_TOKENS_FORWARD_ARRAY(elem) TF_PP_TUPLE_ELEM(0, elem),
-#define _TF_TOKENS_DECLARE_ARRAY_MEMBER_IMPL(identifier, ...)               \
-    TfToken identifier[TF_PP_VARIADIC_SIZE(__VA_ARGS__)] = {                \
-        TF_PP_FOR_EACH(_TF_TOKENS_FORWARD_ARRAY, __VA_ARGS__)};
-#define _TF_TOKENS_DECLARE_ARRAY_MEMBER(r, data, elem)                      \
-    _TF_TOKENS_DECLARE_ARRAY_MEMBER_IMPL(                                   \
-        TF_PP_TUPLE_ELEM(0, elem),                                          \
-        BOOST_PP_SEQ_ENUM(TF_PP_EAT_PARENS(TF_PP_TUPLE_ELEM(1, elem))))
-#define _TF_TOKENS_DECLARE_ARRAY_MEMBERS(seq)                               \
-    BOOST_PP_SEQ_FOR_EACH(_TF_TOKENS_DECLARE_ARRAY_MEMBER, ~, seq)
-
 #define _TF_TOKENS_FORWARD_TOKEN(unused, elem) TF_PP_TUPLE_ELEM(0, elem),
 #define _TF_TOKENS_DECLARE_ALL_TOKENS(seq)                                  \
     std::vector<TfToken> allTokens =                                        \
@@ -176,24 +155,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Private macro used to declare the list of members as TfTokens
 //
 #define _TF_TOKENS_DECLARE_MEMBERS(seq)                                     \
-    _TF_TOKENS_DECLARE_TOKEN_MEMBERS(                                       \
-        BOOST_PP_SEQ_FILTER(_TF_TOKENS_IS_NOT_ARRAY, ~, seq)                \
-        _TF_TOKENS_EXPAND_ARRAY_ELEMENTS(seq)                               \
-    )                                                                       \
-    _TF_TOKENS_DECLARE_ARRAY_MEMBERS(                                       \
-        BOOST_PP_SEQ_FILTER(_TF_TOKENS_IS_ARRAY, ~, seq))                   \
-    _TF_TOKENS_DECLARE_ALL_TOKENS(                                          \
-        BOOST_PP_SEQ_FILTER(_TF_TOKENS_IS_NOT_ARRAY, ~, seq)                \
-        _TF_TOKENS_EXPAND_ARRAY_ELEMENTS(seq)                               \
-    )
-
-// Private macro that expands all array elements to make them members
-// of the sequence.
-//
-#define _TF_TOKENS_EXPAND_ARRAY_ELEMENTS(seq)                               \
-    BOOST_PP_SEQ_FOR_EACH(_TF_TOKENS_APPEND_ARRAY_ELEMENTS,                 \
-        ~,                                                                  \
-        BOOST_PP_SEQ_FILTER(_TF_TOKENS_IS_ARRAY, ~, seq))                   \
+    _TF_TOKENS_DECLARE_TOKEN_MEMBERS(seq)                               \
+    _TF_TOKENS_DECLARE_ALL_TOKENS(seq)                               \
 
 // Private macro used to generate a struct of TfTokens.
 //
@@ -210,24 +173,6 @@ PXR_NAMESPACE_OPEN_SCOPE
         ~_TF_TOKENS_STRUCT_NAME(key)();                                     \
         _TF_TOKENS_DECLARE_MEMBERS(seq)                                     \
     };
-
-///////////////////////////////////////////////////////////////////////////////
-// Filtering Macros
-
-// Private predicate macros to be used by SEQ_FILTER that determine if an
-// element of a sequence is an array of tokens or not.
-//
-#define _TF_TOKENS_IS_ARRAY(s, data, elem)                                  \
-    _TF_PP_IFF(TF_PP_IS_TUPLE(elem),                                        \
-               TF_PP_IS_TUPLE(TF_PP_TUPLE_ELEM(1, elem)), 0)
-
-#define _TF_TOKENS_IS_NOT_ARRAY(s, data, elem)                              \
-    _TF_PP_IFF(_TF_TOKENS_IS_ARRAY(s, data, elem), 0, 1)
-
-// Private macro to append all array elements to a sequence.
-//
-#define _TF_TOKENS_APPEND_ARRAY_ELEMENTS(r, data, elem)                     \
-    TF_PP_TUPLE_ELEM(0, TF_PP_TUPLE_ELEM(1, elem))
 
 ///////////////////////////////////////////////////////////////////////////////
 // Definition Macros

@@ -30,6 +30,7 @@
 #include "pxr/base/vt/dictionary.h"
 
 #include "pxr/base/gf/math.h"
+#include "pxr/base/gf/numericCast.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/mallocTag.h"
@@ -38,7 +39,6 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/numeric/conversion/cast.hpp>
 #include <tbb/spin_mutex.h>
 #include <tbb/concurrent_unordered_map.h>
 
@@ -66,46 +66,13 @@ TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<VtValue>();
 }
 
-template<typename From, typename To>
-static inline VtValue _BoostNumericCast(const From x)
-{
-    try {
-        return VtValue(boost::numeric_cast<To>(x));
-    } catch (const boost::bad_numeric_cast &) {
-        return VtValue();
-    }
-}
-
-// If the To type has no infinity, simply use boost numeric_cast.
-template <typename From, typename To>
-static
-typename std::enable_if<!std::numeric_limits<To>::has_infinity,VtValue>::type
+template <class From, class To>
+static VtValue
 _NumericCast(VtValue const &val)
 {
-    return _BoostNumericCast<From, To>(val.UncheckedGet<From>());
-}
-
-// If the To type has infinity, we convert values larger than the largest
-// finite value that To can take to infinity.
-template <typename From, typename To>
-static
-typename std::enable_if<std::numeric_limits<To>::has_infinity,VtValue>::type
-_NumericCast(VtValue const &val)
-{
-    const From x = val.UncheckedGet<From>();
-
-    // Use 'x == x' to check that x is not NaN.  NaNs don't compare equal to
-    // themselves.
-    if (x == x) {
-        if (x >  std::numeric_limits<To>::max()) {
-            return VtValue( std::numeric_limits<To>::infinity());
-        }
-        if (x < -std::numeric_limits<To>::max()) {
-            return VtValue(-std::numeric_limits<To>::infinity());
-        }
-    }
-
-    return _BoostNumericCast<From, To>(x);
+    const From from = val.UncheckedGet<From>();
+    std::optional<To> opt = GfNumericCast<To>(from);
+    return opt ? VtValue(opt.value()) : VtValue();
 }
 
 template <class A, class B>

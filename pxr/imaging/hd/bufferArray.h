@@ -44,39 +44,37 @@ using HdBufferArraySharedPtr = std::shared_ptr<class HdBufferArray>;
 using HdBufferArrayRangeSharedPtr = std::shared_ptr<HdBufferArrayRange>;
 using HdBufferArrayRangePtr = std::weak_ptr<HdBufferArrayRange>;
 
-/// \union HdBufferArrayUsageHint
+/// \enum HdBufferArrayUsageHintBits
 ///
-/// The union provides a set of flags that provide hints to the memory
-/// management system about the properties of a Buffer Array Range (BAR),
-/// so it can efficiently organize that memory.  For example,
-/// the memory manager should probably not aggregate BARs with different
-/// usage hints.
-///
-/// The union provides two members:
-///   - value: The combined set of flags
-///   - bits:  Access to individual flag bits
+/// Provides a set of flags that provide hints to the memory management system 
+/// about the properties of a Buffer Array Range (BAR), so it can efficiently 
+/// organize that memory.  For example, the memory manager should probably not 
+/// aggregate BARs with different usage hints.
 ///
 /// The flag bits are:
 ///   - immutable: The BAR will not be modified once created and populated.
 ///   - sizeVarying: The number of elements in the BAR changes with time.
+///   - uniform: The BAR can be used as a uniform buffer.
+///   - storage: The BAR can be used as a shader storage buffer.
+///   - vertex: The BAR can be used as a vertex buffer.
+///   - index: The BAR can be used as an index buffer.
 ///
-/// Some flag bits may not make sense in combination
-/// (i.e. mutually exclusive to each other).  For example, it is logically
-/// impossible to be both immutable (i.e. not changing) and sizeVarying
-/// (changing).  However, these logically impossible combinations are
-/// not enforced and remain valid potential values.
+/// Some flag bits may not make sense in combination (i.e. mutually exclusive 
+/// to each other).  For example, it is logically impossible to be both 
+/// immutable (i.e. not changing) and sizeVarying (changing).  However, these 
+/// logically impossible combinations are not enforced and remain valid 
+/// potential values.
 ///
-union HdBufferArrayUsageHint {
-    struct _Bits {
-        uint32_t immutable   :  1;
-        uint32_t sizeVarying :  1;
-        uint32_t pad         : 30;
-    } bits;
-    uint32_t value;
-
-    HdBufferArrayUsageHint() : value(0) {}
+enum HdBufferArrayUsageHintBits : uint32_t
+{
+    HdBufferArrayUsageHintBitsImmutable   = 1 << 0,
+    HdBufferArrayUsageHintBitsSizeVarying = 1 << 1,
+    HdBufferArrayUsageHintBitsUniform     = 1 << 2,
+    HdBufferArrayUsageHintBitsStorage     = 1 << 3,
+    HdBufferArrayUsageHintBitsVertex      = 1 << 4,
+    HdBufferArrayUsageHintBitsIndex       = 1 << 5,
 };
-
+using HdBufferArrayUsageHint = uint32_t;
 
 /// \class HdBufferArray
 ///
@@ -152,7 +150,7 @@ public:
 
     /// Returns true if this buffer array is marked as immutable.
     bool IsImmutable() const {
-        return _usageHint.bits.immutable;
+        return _usageHint & HdBufferArrayUsageHintBitsImmutable;
     }
 
     /// Returns the usage hints for this buffer array.

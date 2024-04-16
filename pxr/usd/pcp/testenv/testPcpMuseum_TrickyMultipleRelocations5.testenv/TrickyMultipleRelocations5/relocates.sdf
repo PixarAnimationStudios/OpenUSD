@@ -1,10 +1,12 @@
 #sdf 1.4.32
+(
+    relocates = {
+        </Group/CHARACTER>: </Group/Character>
+    }
+)
 
 over "Group" (
     references = @./chargroup.sdf@</CHARGROUP>
-    relocates = {
-        <CHARACTER>: <Character>, 
-    }
 )
 {
     over "Character"

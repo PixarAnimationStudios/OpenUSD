@@ -294,6 +294,7 @@ protected:
         HdStResourceRegistry* const _resourceRegistry;
         int _capacity;
         size_t _maxBytesPerElement;
+        HgiBufferUsage _bufferUsage;
 
         HdStBufferResourceNamedList _resourceList;
 

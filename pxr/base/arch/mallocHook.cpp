@@ -33,11 +33,12 @@
 #endif
 #include <cstring>
 
-#if defined(ARCH_OS_DARWIN)
+#if defined(ARCH_OS_IPHONE)
+#elif defined(ARCH_OS_DARWIN)
 #   include <sys/malloc.h>
 #else
 #   include <malloc.h>
-#endif /* defined(ARCH_OS_DARWIN) */
+#endif /* defined(ARCH_OS_IPHONE) */
 
 PXR_NAMESPACE_OPEN_SCOPE
 

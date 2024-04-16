@@ -130,6 +130,8 @@ pxr_library(usdGeom
         images/USDCurveBasisMatrix.png
         images/USDCurveHydra.png
         images/USDCurvePrimvars.png
+        images/USDTetMeshRightHanded.svg
+        images/USDTetMeshLeftHanded.svg
         examples_usdGeom.cpp
 )
 
@@ -309,7 +311,8 @@ pxr_register_test(testUsdGeomMesh
 pxr_register_test(testUsdGeomTetMesh
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomTetMesh"
-    DIFF_COMPARE tetMesh.usda
+    DIFF_COMPARE tetMeshRH.usda
+    DIFF_COMPARE tetMeshLH.usda
 )
 
 pxr_register_test(testUsdGeomMetrics

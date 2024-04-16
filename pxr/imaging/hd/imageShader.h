@@ -26,13 +26,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/sprim.h"
+#include "pxr/imaging/hd/version.h"
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/vt/dictionary.h"
-
-#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -40,11 +39,15 @@ PXR_NAMESPACE_OPEN_SCOPE
     (enabled)                                               \
     (priority)                                              \
     (filePath)                                              \
-    (constants)
+    (constants)                                             \
+    (materialNetwork)
 
 TF_DECLARE_PUBLIC_TOKENS(HdImageShaderTokens, HD_API, HD_IMAGE_SHADER_TOKENS);
 
 class HdSceneDelegate;
+
+using HdMaterialNetworkInterfaceUniquePtr =
+    std::unique_ptr<class HdMaterialNetworkInterface>;
 
 /// \class HdImageShader
 ///
@@ -65,11 +68,13 @@ public:
         DirtyPriority         = 1 << 1,
         DirtyFilePath         = 1 << 2,
         DirtyConstants        = 1 << 3,
+        DirtyMaterialNetwork  = 1 << 4,
 
         AllDirty              = (DirtyEnabled
                                  |DirtyPriority
                                  |DirtyFilePath
-                                 |DirtyConstants)
+                                 |DirtyConstants
+                                 |DirtyMaterialNetwork)
     };
 
     // ---------------------------------------------------------------------- //
@@ -104,11 +109,16 @@ public:
     HD_API
     const VtDictionary& GetConstants() const;
 
+    HD_API
+    const HdMaterialNetworkInterface* GetMaterialNetwork() const;
+
 private:
     bool _enabled;
     int _priority;
     std::string _filePath;
     VtDictionary _constants;
+    HdMaterialNetwork2 _materialNetwork;
+    HdMaterialNetworkInterfaceUniquePtr _materialNetworkInterface;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

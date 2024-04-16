@@ -25,11 +25,12 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/defaultResolver.h"
 
+#include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/defaultResolverContext.h"
 #include "pxr/usd/ar/defineResolver.h"
 #include "pxr/usd/ar/filesystemAsset.h"
 #include "pxr/usd/ar/filesystemWritableAsset.h"
-#include "pxr/usd/ar/assetInfo.h"
+#include "pxr/usd/ar/notice.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/ar/writableAsset.h"
 
@@ -94,32 +95,34 @@ _ParseSearchPaths(const std::string& pathStr)
     return TfStringTokenize(pathStr, ARCH_PATH_LIST_SEP);
 }
 
-static TfStaticData<std::vector<std::string>> _SearchPath;
-
-ArDefaultResolver::ArDefaultResolver()
-{
-    std::vector<std::string> searchPath = *_SearchPath;
-
-    const std::string envPath = TfGetenv("PXR_AR_DEFAULT_SEARCH_PATH");
-    if (!envPath.empty()) {
-        const std::vector<std::string> envSearchPath = 
-            _ParseSearchPaths(envPath);
-        searchPath.insert(
-            searchPath.end(), envSearchPath.begin(), envSearchPath.end());
+struct _ArDefaultResolverFallbackContext {
+    _ArDefaultResolverFallbackContext() {
+        const std::string envPath = TfGetenv("PXR_AR_DEFAULT_SEARCH_PATH");
+        if (!envPath.empty()) {
+            context = ArDefaultResolverContext(_ParseSearchPaths(envPath));
+        }
     }
 
-    _fallbackContext = ArDefaultResolverContext(searchPath);
-}
+    ArDefaultResolverContext context;
+};
 
-ArDefaultResolver::~ArDefaultResolver()
-{
-}
+static TfStaticData<_ArDefaultResolverFallbackContext> _DefaultPath;
 
 void
 ArDefaultResolver::SetDefaultSearchPath(
     const std::vector<std::string>& searchPath)
 {
-    *_SearchPath = searchPath;
+    ArDefaultResolverContext newFallback = ArDefaultResolverContext(searchPath);
+
+    if (newFallback == _DefaultPath->context) {
+        return;
+    }
+
+    _DefaultPath->context = std::move(newFallback);
+
+    ArNotice::ResolverChanged([](const ArResolverContext& ctx){
+        return ctx.Get<ArDefaultResolverContext>() != nullptr;
+    }).Send();
 }
 
 std::string
@@ -218,7 +221,7 @@ ArDefaultResolver::_Resolve(const std::string& path) const
         // against each directory in the specified search paths.
         if (_IsSearchPath(path)) {
             const ArDefaultResolverContext* contexts[2] =
-                {_GetCurrentContextPtr(), &_fallbackContext};
+                {_GetCurrentContextPtr(), &_DefaultPath->context};
             for (const ArDefaultResolverContext* ctx : contexts) {
                 if (ctx) {
                     for (const auto& searchPath : ctx->GetSearchPath()) {

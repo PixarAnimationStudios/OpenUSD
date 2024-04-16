@@ -78,7 +78,7 @@ SetRprimCollectionTest()
         hdStResourceRegistry->AllocateSingleBufferArrayRange(
             /*role*/TfToken("selection"),
             offsetSpecs,
-            HdBufferArrayUsageHint());
+            HdBufferArrayUsageHintBitsUniform);
 
     HdStRenderPassShader::ID emptyId = renderPassShader->ComputeHash();
     renderPassShader->AddBufferBinding(HdStBindingRequest(HdStBinding::UBO,

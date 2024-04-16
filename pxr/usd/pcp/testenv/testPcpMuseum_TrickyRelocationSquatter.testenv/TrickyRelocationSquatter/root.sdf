@@ -14,15 +14,15 @@
     be respected, and the relocation arc should be treated as
     invalid.
     """
+    relocates = {
+        </X/A>: </X/A2>, 
+        </X/B>: </X/B2>
+    }
 )
 
 def "X" (
     add references = @./rig.sdf@</Y>
     add inherits = </_Class_X>
-    relocates = {
-        <A>: <A2>, 
-        <B>: <B2>, 
-    }
 )
 {
     over "A2"

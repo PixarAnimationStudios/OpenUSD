@@ -309,6 +309,8 @@ public:
     SDF_API 
     static SdfAllowed IsValidRelocatesPath(const SdfPath& path);
     SDF_API 
+    static SdfAllowed IsValidRelocate(const SdfRelocate& relocate);
+    SDF_API 
     static SdfAllowed IsValidSpecializesPath(const SdfPath& path);
     SDF_API 
     static SdfAllowed IsValidSubLayer(const std::string& sublayer);
@@ -612,6 +614,7 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
     ((InheritPaths, "inheritPaths"))                         \
     ((Instanceable, "instanceable"))                         \
     ((Kind, "kind"))                                         \
+    ((LayerRelocates, "layerRelocates"))                     \
     ((PrimOrder, "primOrder"))                               \
     ((NoLoadHint, "noLoadHint"))                             \
     ((Owner, "owner"))                                       \

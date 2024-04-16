@@ -380,6 +380,48 @@ class TestUsdShadeShaders(unittest.TestCase):
             self.assertEqual(whiterPale.GetSourceAssetSubIdentifier(sourceType),
                              subId)
 
+    def testGetSourceTypes(self):
+        stage = self._SetupStage()
+
+        ################################
+        print ('Testing Get Source Types API')
+        ################################
+
+        pale = UsdShade.Shader.Get(stage, palePath)
+        self.assertTrue(pale)
+
+        self.assertEqual(pale.GetImplementationSource(), UsdShade.Tokens.id)
+
+        self.assertTrue(pale.SetShaderId('SharedFloat_1'))
+        self.assertEqual(pale.GetShaderId(), 'SharedFloat_1')
+
+        pale.GetImplementationSourceAttr().Set(UsdShade.Tokens.sourceCode)
+        self.assertTrue(pale.GetShaderId() is None)
+
+        self.assertEqual(pale.GetSourceTypes(), [])
+
+        # Set sourceType for a sourceCode implementation.
+        oslSource = "This is the shader source"
+        self.assertTrue(pale.SetSourceCode(sourceCode=oslSource, 
+                                           sourceType="osl"))
+        self.assertEqual(pale.GetSourceTypes(), ["osl"])
+
+        # Check if we can detect multiple sourceTypes per implementation
+        glslfxSource = "This is the shader source"
+        self.assertTrue(pale.SetSourceCode(sourceCode=glslfxSource,
+                                           sourceType="glslfx"))
+        self.assertEqual(sorted(pale.GetSourceTypes()),
+                         ["glslfx", "osl"])
+
+        # Set sourceType for sourceAsset implmentation.
+        pale.GetImplementationSourceAttr().Set(UsdShade.Tokens.sourceAsset)
+        glslfxAssetPath = Sdf.AssetPath("/source/asset.glslfx")
+        self.assertTrue(pale.SetSourceAsset(
+                sourceAsset=glslfxAssetPath, 
+                sourceType="glslfx"))
+        
+        self.assertEqual(pale.GetSourceTypes(), ["glslfx"])
+
 
 if __name__ == '__main__':
     unittest.main()

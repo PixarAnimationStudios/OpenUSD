@@ -35,7 +35,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdSt_PointsShaderKey : public HdSt_ShaderKey
 {
+    HDST_API
     HdSt_PointsShaderKey();
+    HDST_API
     ~HdSt_PointsShaderKey();
 
     TfToken const &GetGlslfxFilename() const override { return glslfx; }

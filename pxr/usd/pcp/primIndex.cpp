@@ -636,13 +636,13 @@ _CreateMapExpressionForArc(const SdfPath &sourcePath,
     PcpMapExpression arcExpr = PcpMapExpression::Constant(
         PcpMapFunction::Create( sourceToTargetMap, offset ) );
 
-    // Apply relocations that affect namespace at and below this site.
-    if (!inputs.usd) {
-        arcExpr = targetNode.GetLayerStack()
-            ->GetExpressionForRelocatesAtPath(targetPath)
-            .Compose(arcExpr);
+    // Apply relocations that affect namespace at and below this site if there
+    // are relocations to map.
+    if (PcpMapExpression reloMapExpr = targetNode.GetLayerStack()
+            ->GetExpressionForRelocatesAtPath(targetPath); 
+            !reloMapExpr.IsNull()) {
+        arcExpr = reloMapExpr.Compose(arcExpr);
     }
-
     return arcExpr;
 }
 
@@ -652,7 +652,8 @@ enum _ArcFlags {
     _ArcFlagVariants    = 1<<1,
     _ArcFlagReferences  = 1<<2,
     _ArcFlagPayloads    = 1<<3,
-    _ArcFlagSpecializes = 1<<4
+    _ArcFlagSpecializes = 1<<4,
+    _ArcFlagRelocates   = 1<<5
 };
 
 // Scan a node's specs for presence of fields describing composition arcs.
@@ -662,15 +663,22 @@ enum _ArcFlags {
 inline static size_t
 _ScanArcs(PcpNodeRef const& node)
 {
+    size_t arcs = 0;
+    // Relocates mappings are defined for an entire layer stack so if the node's
+    // layer stack has any relocates we have to check for relocates on this 
+    // node.
+    if (node.GetLayerStack()->HasRelocates()) {
+        arcs |= _ArcFlagRelocates;
+    }
+
     // If the node does not have specs or cannot contribute specs,
     // we can avoid even enqueueing certain kinds of tasks that will
     // end up being no-ops.
     const bool contributesSpecs = node.HasSpecs() && node.CanContributeSpecs();
     if (!contributesSpecs) {
-        return 0;
+        return arcs;
     }
 
-    size_t arcs = 0;
     SdfPath const& path = node.GetPath();
     for (SdfLayerRefPtr const& layer: node.GetLayerStack()->GetLayers()) {
         SdfLayer const *layerPtr = get_pointer(layer);
@@ -1060,11 +1068,68 @@ struct Pcp_PrimIndexer
             {node, pathInNode}, node, pathInNode).first->second;
     }
 
-    // Map the given node's path to the root of the final prim index
-    // being computed.
-    SdfPath MapNodePathToRoot(PcpNodeRef const& node) const {
-        // First, map the node's path to the root of the prim index it's in.
-        SdfPath p = node.GetMapToRoot().MapSourceToTarget(
+    // Helper for mapping payload inclusion paths correctly to a node's parent
+    static inline SdfPath _MapPathToNodeParentPayloadInclusionPath(
+        PcpMapExpression const& mapToParentExpr, 
+        PcpArcType arcType,
+        SdfPath const &path)
+    {
+        const PcpMapFunction &mapToParent = mapToParentExpr.Evaluate();
+
+        // Internal references and payloads will have an additional 
+        // identity mapping that we want to ignore when mapping this path.
+        const bool isInternalReferenceOrPayload =
+             mapToParent.HasRootIdentity() && 
+             (arcType == PcpArcTypeReference || arcType == PcpArcTypePayload);
+        if (isInternalReferenceOrPayload) {
+            // Create a copy of the map to parent function with identity map 
+            // removed and map the path using that instead.
+            PcpMapFunction::PathMap sourceToTargetMap = 
+                mapToParent.GetSourceToTargetMap();
+            sourceToTargetMap.erase(SdfPath::AbsoluteRootPath());
+            PcpMapFunction newMapFunction = PcpMapFunction::Create(
+                sourceToTargetMap, mapToParent.GetTimeOffset());
+            
+            return newMapFunction.MapSourceToTarget(path);
+        } 
+
+        return mapToParent.MapSourceToTarget(path);
+    }
+
+    // Helper for mapping payload inclusion paths correctly to a node's current
+    // prim index root.
+    static inline SdfPath _MapPathToNodeRootPayloadInclusionPath(
+        PcpNodeRef const& node, SdfPath const &path) {
+
+        // First, try mapping the node's path to the root of the prim index it's
+        // in using mapToRoot directly.
+        const PcpMapFunction &mapToRoot = node.GetMapToRoot().Evaluate();
+        SdfPath mappedPath = mapToRoot.MapSourceToTarget(path);
+
+        // If the path maps to itself at the root and the map function has an
+        // identity mapping, we may have an unintended mapping for payload 
+        // inclusion purposes. In particular, internal references and payload
+        // nodes will always have an additional identity mapping that we don't
+        // want to factor into payload inclusion so we have to manually map the
+        // path up to the root to make sure we ignore the identity mapping in 
+        // these arcs if they are present.
+        if (mappedPath == path && mapToRoot.HasRootIdentity()) {
+            for (PcpNodeRef curNode = node; 
+                    !mappedPath.IsEmpty() && !curNode.IsRootNode(); 
+                    curNode = curNode.GetParentNode()) {
+                mappedPath = _MapPathToNodeParentPayloadInclusionPath(
+                    curNode.GetMapToParent(), curNode.GetArcType(), mappedPath);
+            }
+        }
+        return mappedPath;
+    }
+
+    // Map the payload inclusion path for the given node's path to the root of 
+    // the final prim index being computed.
+    SdfPath MapNodePathToPayloadInclusionPath(PcpNodeRef const& node) const {
+        // First, map the node's path to the payload inclusion path for the root
+        // of the prim index it's in.
+        SdfPath p = _MapPathToNodeRootPayloadInclusionPath(node,
             node.GetPath().StripAllVariantSelections());
 
         // If we're in a recursive prim indexing call, we need to map the
@@ -1073,13 +1138,18 @@ struct Pcp_PrimIndexer
              !p.IsEmpty() && it.previousFrame; it.NextFrame()) {
 
             // p is initially in the namespace of the root node of the current
-            // stack frame. Map it to the parent node in the previous stack
-            // frame.
-            p = it.previousFrame->arcToParent->mapToParent.MapSourceToTarget(p);
+            // stack frame. Map it to payload inclusion path in the parent node
+            // in the previous stack frame using the same.
+            p = _MapPathToNodeParentPayloadInclusionPath(
+                it.previousFrame->arcToParent->mapToParent,
+                it.previousFrame->arcToParent->type,
+                p);
 
             // Map p from the parent node in the previous stack frame to the
-            // root node of the previous stack frame.
-            p = it.previousFrame->parentNode.GetMapToRoot().MapSourceToTarget(p);
+            // payload inclusion path for the root node of the previous stack 
+            // frame.
+            p = _MapPathToNodeRootPayloadInclusionPath(
+                it.previousFrame->parentNode, p);
         };
         
         return p;
@@ -1198,11 +1268,11 @@ struct Pcp_PrimIndexer
                 if (arcMask & _ArcFlagReferences) {
                     AddTask(Task(Task::Type::EvalNodeReferences, n));
                 }
-                if (!isUsd) {
+                if (arcMask & _ArcFlagRelocates) {
                     AddTask(Task(Task::Type::EvalNodeRelocations, n));
                 }
             }
-            if (!isUsd && n.GetArcType() == PcpArcTypeRelocate) {
+            if (n.GetArcType() == PcpArcTypeRelocate) {
                 AddTask(Task(Task::Type::EvalImpliedRelocations, n));
             }
         }
@@ -1682,7 +1752,8 @@ _AddArc(
     // Optimizations:
     // - We only need to do this for non-root prims because root prims can't
     //   be relocated. This is indicated by the includeAncestralOpinions flag.
-    if (opts.directNodeShouldContributeSpecs && opts.includeAncestralOpinions) {
+    if (opts.directNodeShouldContributeSpecs && opts.includeAncestralOpinions &&
+            site.layerStack->HasRelocates()) {
         const SdfRelocatesMap & layerStackRelocates =
             site.layerStack->GetRelocatesSourceToTarget();
         SdfRelocatesMap::const_iterator
@@ -2323,7 +2394,7 @@ _EvalNodePayloads(
     // to the root namespace. In particular, this handles the case where
     // we're computing ancestral payloads as part of a recursive prim index
     // computation.
-    SdfPath const path = indexer->MapNodePathToRoot(node);
+    SdfPath const path = indexer->MapNodePathToPayloadInclusionPath(node);
 
     if (path.IsEmpty()) {
         // If the path mapping failed, it means there is no path in the
@@ -4815,25 +4886,44 @@ _NodeCanBeCulled(
     return true;
 }
 
+// Cull all nodes in the subtree rooted at the given node whose site
+// is given in culledSites.
+static bool
+_CullMatchingChildrenInSubtree(
+    PcpNodeRef node,
+    const std::unordered_set<PcpLayerStackSite, TfHash>& culledSites)
+{
+    bool allChildrenCulled = true;
+    TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
+        allChildrenCulled &=
+            _CullMatchingChildrenInSubtree(*child, culledSites);
+    }
+
+    if (allChildrenCulled && culledSites.count(node.GetSite())) {
+        node.SetCulled(true);
+    }
+
+    return node.IsCulled();
+}
+
 // Helper that recursively culls subtrees at and under the given node.
 static void
-_CullSubtreesWithNoOpinions(
+_CullSubtreesWithNoOpinionsHelper(
     PcpNodeRef node,
     const PcpLayerStackSite& rootSite,
-    std::vector<PcpCulledDependency>* culledDeps)
+    std::vector<PcpCulledDependency>* culledDeps,
+    std::unordered_set<PcpLayerStackSite, TfHash>* culledSites = nullptr)
 {
     // Recurse and attempt to cull all children first. Order doesn't matter.
     TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
-        // XXX: 
-        // We propagate and maintain duplicate node structure in the graph
-        // for specializes arcs, so when we cull we need to ensure we do so
-        // in both places consistently. For simplicity, we're going to skip
-        // this for now and not cull beneath any specializes arcs.
+        // Skip culling for specializes subtrees here; these will be handled
+        // by _CullSubtreesWithNoOpinions. See comments there for more info.
         if (PcpIsSpecializeArc(child->GetArcType())) {
             continue;
         }
 
-        _CullSubtreesWithNoOpinions(*child, rootSite, culledDeps);
+        _CullSubtreesWithNoOpinionsHelper(
+            *child, rootSite, culledDeps, culledSites);
     }
 
     // Now, mark this node as culled if we can. These nodes will be
@@ -4846,8 +4936,54 @@ _CullSubtreesWithNoOpinions(
         // index when Finalize() is called, so they must be saved separately
         // for later use.
         Pcp_AddCulledDependency(node, culledDeps);
+
+        if (culledSites) {
+            culledSites->insert(node.GetSite());
+        }
     }
 }
+
+static void
+_CullSubtreesWithNoOpinions(
+    PcpPrimIndex* primIndex,
+    const PcpLayerStackSite& rootSite,
+    std::vector<PcpCulledDependency>* culledDeps)
+{
+    // We propagate and maintain duplicate node structure in the graph
+    // for specializes arcs so when we cull we need to ensure we do so
+    // in both places consistently. 
+    //
+    // The origin subtree is marked inert as part of propagation, which
+    // means culling would remove it entirely which is not what we want.
+    // Instead, we cull whatever nodes we can in the propagated subtree
+    // under the root of the prim index, then cull the corresponding
+    // nodes underneath the origin subtree.
+    //
+    // We do a first pass to handle of all these propagated specializes
+    // nodes first to ensure that nodes in the origin subtrees are marked
+    // culled before other subtrees are processed. Otherwise, subtrees
+    // containing those origin subtrees won't be culled. 
+    //
+    // Note that this first pass must be done in weakest-to-strongest order
+    // to handle hierarchies of specializes arcs. See the test case
+    // test_PrimIndexCulling_SpecializesHierarchy in testPcpPrimIndex for
+    // an example.
+    TF_REVERSE_FOR_ALL(child, Pcp_GetChildrenRange(primIndex->GetRootNode())) {
+        if (_IsPropagatedSpecializesNode(*child)) {
+            std::unordered_set<PcpLayerStackSite, TfHash> culledSites;
+            _CullSubtreesWithNoOpinionsHelper(
+                *child, rootSite, culledDeps, &culledSites);
+
+            _CullMatchingChildrenInSubtree(child->GetOriginNode(), culledSites);
+        }
+    }
+
+    TF_FOR_ALL(child, Pcp_GetChildrenRange(primIndex->GetRootNode())) {
+        if (!_IsPropagatedSpecializesNode(*child)) {
+            _CullSubtreesWithNoOpinionsHelper(*child, rootSite, culledDeps);
+        }
+    }
+}    
 
 // Helper that sets any nodes that cannot have overrides on name children
 // as inert.
@@ -5149,7 +5285,7 @@ PcpComputePrimIndex(
     // Mark subtrees in the graph that provide no opinions as culled.
     if (inputs.cull) {
         _CullSubtreesWithNoOpinions(
-            outputs->primIndex.GetRootNode(), site,
+            &outputs->primIndex, site,
             &outputs->culledDependencies);
     }
 
@@ -5196,12 +5332,11 @@ static void
 _ComposePrimChildNamesAtNode(
     const PcpPrimIndex& primIndex,
     const PcpNodeRef& node,
-    bool usd,
     TfTokenVector *nameOrder,
     PcpTokenSet *nameSet,
     PcpTokenSet *prohibitedNameSet)
 {
-    if (!usd) {
+    if (node.GetLayerStack()->HasRelocates()) {
         // Apply relocations from just this layer stack.
         // Classify them into three groups:  names to add, remove, or replace.
         std::set<TfToken> namesToAdd, namesToRemove;
@@ -5337,7 +5472,6 @@ _ComposePrimChildNamesAtNode(
 static void
 _ComposePrimChildNames( const PcpPrimIndex& primIndex,
                         const PcpNodeRef& node,
-                        bool usd,
                         TfTokenVector *nameOrder,
                         PcpTokenSet *nameSet,
                         PcpTokenSet *prohibitedNameSet )
@@ -5348,12 +5482,12 @@ _ComposePrimChildNames( const PcpPrimIndex& primIndex,
 
     // Reverse strength-order traversal (weak-to-strong).
     TF_REVERSE_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
-        _ComposePrimChildNames(primIndex, *child, usd,
+        _ComposePrimChildNames(primIndex, *child,
                                nameOrder, nameSet, prohibitedNameSet);
     }
 
     _ComposePrimChildNamesAtNode(
-        primIndex, node, usd, nameOrder, nameSet, prohibitedNameSet);
+        primIndex, node, nameOrder, nameSet, prohibitedNameSet);
 }
 
 // Helper struct for _ComposePrimChildNamesForInstance, see comments
@@ -5361,12 +5495,10 @@ _ComposePrimChildNames( const PcpPrimIndex& primIndex,
 struct Pcp_PrimChildNameVisitor
 {
     Pcp_PrimChildNameVisitor( const PcpPrimIndex& primIndex,
-                              bool usd,
                               TfTokenVector *nameOrder,
                               PcpTokenSet *nameSet,
                               PcpTokenSet *prohibitedNameSet )
         : _primIndex(primIndex)
-        , _usd(usd)
         , _nameOrder(nameOrder)
         , _nameSet(nameSet)
         , _prohibitedNameSet(prohibitedNameSet)
@@ -5377,14 +5509,13 @@ struct Pcp_PrimChildNameVisitor
     {
         if (nodeIsInstanceable) {
             _ComposePrimChildNamesAtNode(
-                _primIndex, node, _usd,
+                _primIndex, node,
                 _nameOrder, _nameSet, _prohibitedNameSet);
         }
     }
 
 private:
     const PcpPrimIndex& _primIndex;
-    bool _usd;
     TfTokenVector* _nameOrder;
     PcpTokenSet* _nameSet;
     PcpTokenSet* _prohibitedNameSet;
@@ -5392,13 +5523,12 @@ private:
 
 static void
 _ComposePrimChildNamesForInstance( const PcpPrimIndex& primIndex,
-                                   bool usd,
                                    TfTokenVector *nameOrder,
                                    PcpTokenSet *nameSet,
                                    PcpTokenSet *prohibitedNameSet )
 {
     Pcp_PrimChildNameVisitor visitor(
-        primIndex, usd, nameOrder, nameSet, prohibitedNameSet);
+        primIndex, nameOrder, nameSet, prohibitedNameSet);
     Pcp_TraverseInstanceableWeakToStrong(primIndex, &visitor);
 }
 
@@ -5444,13 +5574,11 @@ PcpPrimIndex::ComputePrimChildNames( TfTokenVector *nameOrder,
     // Walk the graph to compose prim child names.
     if (IsInstanceable()) {
         _ComposePrimChildNamesForInstance(
-            *this, IsUsd(),
-            nameOrder, &nameSet, prohibitedNameSet);
+            *this, nameOrder, &nameSet, prohibitedNameSet);
     }
     else {
         _ComposePrimChildNames(
-            *this, GetRootNode(), IsUsd(),
-            nameOrder, &nameSet, prohibitedNameSet);
+            *this, GetRootNode(), nameOrder, &nameSet, prohibitedNameSet);
     }
 
     // Remove prohibited names from the composed prim child names.

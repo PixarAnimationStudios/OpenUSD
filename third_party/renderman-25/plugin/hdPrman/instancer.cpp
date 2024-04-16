@@ -452,8 +452,8 @@ void HdPrmanInstancer::_SyncPrimvars(
     HdSceneDelegate* delegate = GetDelegate();
     SdfPath const& id = GetId();
 
-    // XXX: When removing these in 24.05, eliminate the variables. Replace
-    // their usages with the appropriate HdInstancerTokens.
+    // XXX: When finally removing these, eliminate the variables. Replace
+    // their usages with the appropriate HdInstancerTokens inline.
 #if HD_API_VERSION < 56  // USD_VERSION < 23.05
     TfToken instanceTranslationsToken = HdInstancerTokens->translate;
     TfToken instanceRotationsToken = HdInstancerTokens->rotate;
@@ -464,13 +464,14 @@ void HdPrmanInstancer::_SyncPrimvars(
     TfToken instanceRotationsToken = HdInstancerTokens->instanceRotations;
     TfToken instanceScalesToken = HdInstancerTokens->instanceScales;
     TfToken instanceTransformsToken = HdInstancerTokens->instanceTransforms;
-
+#if HD_API_VERSION < 67  // USD_VERSION < 24.05
     if (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)) {
         instanceTranslationsToken = HdInstancerTokens->translate;
         instanceRotationsToken = HdInstancerTokens->rotate;
         instanceScalesToken = HdInstancerTokens->scale;
         instanceTransformsToken = HdInstancerTokens->instanceTransform;
     }
+#endif
 #endif
 
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
@@ -535,10 +536,10 @@ HdPrmanInstancer::_SyncTransforms(
     HdSceneDelegate* delegate = GetDelegate();
     const SdfPath& id = GetId();
 
-    // XXX: When removing these in 24.05, eliminate the variables. Replace
-    // their usages with the appropriate HdInstancerTokens. Don't forget to
-    // reformat the "not ... expected type" warning messages, too!
-#if HD_API_VERSION < 56 // USD_VERSION < 23.05
+    // XXX: When finally removing these, eliminate the variables. Replace
+    // their usages with the appropriate HdInstancerTokens inline. Don't forget
+    // to reformat the "not ... expected type" warning messages, too!
+#if HD_API_VERSION < 56  // USD_VERSION < 23.05
     TfToken instanceTranslationsToken = HdInstancerTokens->translate;
     TfToken instanceRotationsToken = HdInstancerTokens->rotate;
     TfToken instanceScalesToken = HdInstancerTokens->scale;
@@ -548,13 +549,14 @@ HdPrmanInstancer::_SyncTransforms(
     TfToken instanceRotationsToken = HdInstancerTokens->instanceRotations;
     TfToken instanceScalesToken = HdInstancerTokens->instanceScales;
     TfToken instanceTransformsToken = HdInstancerTokens->instanceTransforms;
-
+#if HD_API_VERSION < 67  // USD_VERSION < 24.05
     if (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)) {
         instanceTranslationsToken = HdInstancerTokens->translate;
         instanceRotationsToken = HdInstancerTokens->rotate;
         instanceScalesToken = HdInstancerTokens->scale;
         instanceTransformsToken = HdInstancerTokens->instanceTransform;
     }
+#endif
 #endif
 
     // Only include this instancer's own transform if it has no parent. When

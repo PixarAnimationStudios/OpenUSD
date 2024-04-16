@@ -43,13 +43,13 @@ Usd.ModelAPI(modelRoot).SetKind(Kind.Tokens.component)
 # A simple card with same proportions as the texture we will map
 billboard = UsdGeom.Mesh.Define(stage, "/TexModel/card")
 billboard.CreatePointsAttr([(-430, -145, 0), (430, -145, 0), (430, 145, 0), (-430, 145, 0)])
-billboard.CreateFaceVertexCountsAttr([3, 3])
-billboard.CreateFaceVertexIndicesAttr([0,1,2,2,3,0])
+billboard.CreateFaceVertexCountsAttr([4])
+billboard.CreateFaceVertexIndicesAttr([0,1,2,3])
 billboard.CreateExtentAttr([(-430, -145, 0), (430, 145, 0)])
 texCoords = UsdGeom.PrimvarsAPI(billboard).CreatePrimvar("st", 
                                     Sdf.ValueTypeNames.TexCoord2fArray, 
-                                    UsdGeom.Tokens.vertex)
-texCoords.Set([(0, 0), (1, 0), (1,1), (0, 1)])
+                                    UsdGeom.Tokens.varying)
+texCoords.Set([(0, 0), (2, 0), (2,2), (0, 2)])
 
 # Now make a Material that contains a PBR preview surface, a texture reader,
 # and a primvar reader to fetch the texture coordinate from the geometry
@@ -73,13 +73,15 @@ stReader.CreateIdAttr('UsdPrimvarReader_float2')
 # Note here we are connecting the shader's input to the material's 
 # "public interface" attribute. This allows users to change the primvar name
 # on the material itself without drilling inside to examine shader nodes.
-stReader.CreateInput('varname',Sdf.ValueTypeNames.Token).ConnectToSource(stInput)
+stReader.CreateInput('varname',Sdf.ValueTypeNames.String).ConnectToSource(stInput)
 
 # diffuse texture
 diffuseTextureSampler = UsdShade.Shader.Define(stage,'/TexModel/boardMat/diffuseTexture')
 diffuseTextureSampler.CreateIdAttr('UsdUVTexture')
 diffuseTextureSampler.CreateInput('file', Sdf.ValueTypeNames.Asset).Set("USDLogoLrg.png")
 diffuseTextureSampler.CreateInput("st", Sdf.ValueTypeNames.Float2).ConnectToSource(stReader.ConnectableAPI(), 'result')
+diffuseTextureSampler.CreateInput("wrapS", Sdf.ValueTypeNames.Token).Set("repeat")
+diffuseTextureSampler.CreateInput("wrapT", Sdf.ValueTypeNames.Token).Set("repeat")
 diffuseTextureSampler.CreateOutput('rgb', Sdf.ValueTypeNames.Float3)
 pbrShader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).ConnectToSource(diffuseTextureSampler.ConnectableAPI(), 'rgb')
 

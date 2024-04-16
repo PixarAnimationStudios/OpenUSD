@@ -26,10 +26,10 @@
 // Note: This shader needs to stay in sync with usdImaging's usdShaders as
 // defined by the shaderDefs.usda file.  Thus, we must work precisely in this
 // part of the shader space to ensure that properties defined here have the
-// same types as their usd definition.  Use of special metadata like 'role' is
-// necessary to make some of the types match.  Please see Sdr overview
-// documentation for more information about different metadata tags that are
-// used to inform property type translation.
+// same types as their usd definition.  Use of special metadata like
+// 'sdrUsdDefinitionType' is necessary to make some of the types match.  Please 
+// see Sdr overview documentation for more information about different metadata 
+// tags that are used to inform property type translation.
 //
 
 shader UsdUVTexture
@@ -50,11 +50,13 @@ shader UsdUVTexture
     // Details : [options] useMetadata, black, clamp, repeat, mirror.
     string wrapS = "useMetadata"
     [[
-        string options = "useMetadata|black|clamp|repeat|mirror"
+        string options = "useMetadata|black|clamp|repeat|mirror",
+        string sdrUsdDefinitionType = "token"
     ]],
     string wrapT = "useMetadata"
     [[
-        string options = "useMetadata|black|clamp|repeat|mirror"
+        string options = "useMetadata|black|clamp|repeat|mirror",
+        string sdrUsdDefinitionType = "token"
     ]],
 
     // Details : Fallback value used when no texture is connected.

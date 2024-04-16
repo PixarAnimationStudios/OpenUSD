@@ -5,6 +5,12 @@
     name are introduced across separate composition arcs, but relocated to
     different names.
     """
+    relocates = {
+        </ChainedRef_2/Child>: </ChainedRef_2/Child_2>, 
+        </ChainedReferences/Child>: </ChainedReferences/Child_1>, 
+        </Ref1/Child>: </Ref1/Child_1>, 
+        </Ref2/Child>: </Ref2/Child_2>
+    }
 )
 
 def "ExternalReferences" (
@@ -27,9 +33,6 @@ def "InternalReferences" (
 
 def "ChainedReferences" (
     references = </ChainedRef_1>
-    relocates = {
-        <Child> : <Child_1>
-    }
 )
 {
 }
@@ -45,18 +48,12 @@ def "ChainedRef_1" (
 
 def "ChainedRef_2" (
     references = @./base.sdf@</Base>
-    relocates = {
-        <Child> : <Child_2>
-    }
 )
 {
 }
 
 def "Ref1" (
     references = @./base.sdf@</Base>
-    relocates = {
-        <Child> : <Child_1>
-    }
 )
 {
     def "Ref1_Child"
@@ -66,9 +63,6 @@ def "Ref1" (
 
 def "Ref2" (
     references = @./base.sdf@</Base>
-    relocates = {
-        <Child> : <Child_2>
-    }
 )
 {
     def "Ref2_Child"

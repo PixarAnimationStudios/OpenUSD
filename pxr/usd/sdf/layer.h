@@ -1218,6 +1218,37 @@ public:
     void SetSubLayerOffset(const SdfLayerOffset& offset, int index);
 
     /// @}
+    /// \name Relocates
+    /// @{
+
+    /// Get the list of relocates specified in this layer's metadata.
+    ///
+    /// Each individual relocate in the list is specified as a pair of 
+    /// \c \SdfPath where the first is the source path of the relocate and the
+    /// second is target path.
+    ///
+    /// Note that is NOT a proxy object and cannot be used to edit the field in
+    /// place. 
+    SDF_API
+    SdfRelocates GetRelocates() const;
+    
+    /// Set the entire list of namespace relocations specified on this layer to
+    /// \p relocates.
+    SDF_API
+    void SetRelocates(const SdfRelocates& relocates);
+
+    /// Returns true if this layer's metadata has any relocates opinion, 
+    /// including that there should be no relocates (i.e. an empty list).  An 
+    /// empty list (no relocates) does not mean the same thing as a missing list
+    /// (no opinion).
+    SDF_API
+    bool HasRelocates() const;
+    
+    /// Clears the layer relocates opinion in the layer's metadata.
+    SDF_API
+    void ClearRelocates();
+
+    /// @}
 
     /// \name Detached Layers
     ///
@@ -1820,9 +1851,8 @@ private:
     // users to export and save to any file name, regardless of extension.
     bool _WriteToFile(const std::string& newFileName, 
                       const std::string& comment, 
-                      SdfFileFormatConstPtr fileFormat = TfNullPtr,
-                      const FileFormatArguments& args = FileFormatArguments())
-                      const;
+                      SdfFileFormatConstPtr fileFormat,
+                      const FileFormatArguments& args) const;
 
     // Swap contents of _data and data. This operation does not register
     // inverses or emit change notification.

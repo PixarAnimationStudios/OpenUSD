@@ -25,11 +25,8 @@ pxr_library(usdRiPxrImaging
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
-        pxrBarnLightFilterAdapter
         pxrDisplayFilterAdapter
         pxrIntegratorAdapter
-        pxrIntMultLightFilterAdapter
-        pxrRodLightFilterAdapter
         pxrSampleFilterAdapter
         tokens
 

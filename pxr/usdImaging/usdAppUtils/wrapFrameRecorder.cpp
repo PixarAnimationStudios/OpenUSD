@@ -49,6 +49,7 @@ wrapFrameRecorder()
         .def("GetCurrentRendererId", &This::GetCurrentRendererId)
         .def("SetRendererPlugin", &This::SetRendererPlugin)
         .def("SetImageWidth", &This::SetImageWidth)
+        .def("SetCameraLightEnabled", &This::SetCameraLightEnabled)
         .def("SetComplexity", &This::SetComplexity)
         .def("SetColorCorrectionMode", &This::SetColorCorrectionMode)
         .def("SetIncludedPurposes", &This::SetIncludedPurposes,

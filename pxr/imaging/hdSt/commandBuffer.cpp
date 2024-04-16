@@ -37,6 +37,7 @@
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/envSetting.h"
 
 #include "pxr/base/work/loops.h"
 
@@ -44,7 +45,7 @@
 
 #include <tbb/enumerable_thread_specific.h>
 
-#include <functional>
+#include <algorithm>
 #include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -60,19 +61,229 @@ HdStCommandBuffer::HdStCommandBuffer()
 
 HdStCommandBuffer::~HdStCommandBuffer() = default;
 
-static
+namespace {
+
 HdSt_DrawBatchSharedPtr
 _NewDrawBatch(HdStDrawItemInstance * drawItemInstance, 
-              Hgi const * hgi)
+              bool const usePipelineDrawBatch,
+              bool const allowTextureResourceRebinding)
 {
-    if (HdSt_PipelineDrawBatch::IsEnabled(hgi)) {
+    if (usePipelineDrawBatch) {
         return std::make_shared<HdSt_PipelineDrawBatch>(drawItemInstance);
     } else {
-        return std::make_shared<HdSt_IndirectDrawBatch>(drawItemInstance);
+        return std::make_shared<HdSt_IndirectDrawBatch>(
+                drawItemInstance, true, allowTextureResourceRebinding);
     }
 }
 
-static
+TF_DEFINE_ENV_SETTING(HDST_DRAW_BATCH_TEXTURE_AGGREGATION_THRESHOLD, 10,
+    "Specifies the draw item instance count threshold "
+    "for aggregating draw items which use distinct textures.");
+
+size_t
+_GetTextureAggregationThreshold()
+{
+    static const size_t threshold =
+        TfGetEnvSetting(HDST_DRAW_BATCH_TEXTURE_AGGREGATION_THRESHOLD);
+    return threshold;
+}
+
+// Sort draw item instances by texture so that the number of texture
+// changes is minimized within a sequence of aggregated draw item instances.
+struct _SortByTexture {
+    bool operator() (HdStDrawItemInstance const *aInstance,
+                     HdStDrawItemInstance const *bInstance) {
+        HdStDrawItem const *a = aInstance->GetDrawItem();
+        HdStDrawItem const *b = bInstance->GetDrawItem();
+
+        size_t const textureA =
+            a->GetMaterialNetworkShader()->ComputeTextureSourceHash();
+        size_t const textureB =
+            b->GetMaterialNetworkShader()->ComputeTextureSourceHash();
+        return textureA < textureB;
+    }
+};
+
+// Use a cheap bucketing strategy to reduce to number of comparison tests
+// required to figure out if a draw item can be batched.
+// Test against the previous draw item's hash and batch prior to looking up
+// the map.
+struct _BatchMap {
+    using Key = size_t;
+
+    _BatchMap() : _prevKey(0), _prevBatchForKey() {}
+
+    // Returns the new draw batch if one is created for the draw item
+    // instance being inserted, otherwise returns nullptr when the
+    // draw item instance has been appended to an existing draw batch.
+    HdSt_DrawBatchSharedPtr InsertOrAppend(
+        Key key,
+        HdStDrawItemInstance *drawItemInstance,
+        bool usePipelineDrawBatch,
+        bool allowTextureResourceRebinding) {
+
+        // Do a quick check to see if the draw item can be batched with the
+        // previous draw item, before looking up in the map.
+        if (key == _prevKey && _prevBatchForKey) {
+            if (_prevBatchForKey->Append(drawItemInstance)) {
+                return {};
+            }
+        }
+
+        HdSt_DrawBatchSharedPtrVector &batchesForKey = _batchesByKey[key];
+        for (HdSt_DrawBatchSharedPtr &batch : batchesForKey) {
+            if (batch->Append(drawItemInstance)) {
+                _SetPreviousBatchForKey(key, batch);
+                return {};
+            }
+        }
+
+        HdSt_DrawBatchSharedPtr newBatch =
+                _NewDrawBatch(drawItemInstance,
+                        usePipelineDrawBatch, allowTextureResourceRebinding);
+
+        batchesForKey.push_back(newBatch);
+        _SetPreviousBatchForKey(key, newBatch);
+
+        return newBatch;
+    }
+
+private:
+    void _SetPreviousBatchForKey(
+        Key key, HdSt_DrawBatchSharedPtr const &batch) {
+        _prevKey = key;
+        _prevBatchForKey = batch;
+    }
+
+    std::unordered_map<Key, HdSt_DrawBatchSharedPtrVector> _batchesByKey;
+
+    Key _prevKey;
+    HdSt_DrawBatchSharedPtr _prevBatchForKey;
+};
+
+void
+_InsertDrawItemInstance(
+    HdSt_DrawBatchSharedPtrVector *drawBatches,
+    HdStDrawItemInstance *drawItemInstance,
+    _BatchMap *batchMap,
+    bool const usePipelineDrawBatch,
+    bool const allowTextureResourceRebinding)
+{
+    HdStDrawItem const *drawItem = drawItemInstance->GetDrawItem();
+
+    // The draw item instances in a batch need to have compatible
+    // pipeline configurations and resource allocations.
+    // Currently, draw items with distinct geometric shader hashes
+    // or buffer array hashes can never be part of the same batch.
+    // We combine these two hashes into a key that can be used to to
+    // reduce the number of batches which need to be considered
+    // as candidate batches.
+    size_t key = TfHash::Combine(
+        drawItem->GetGeometricShader()->ComputeHash(),
+        drawItem->GetBufferArraysHash()
+    );
+
+    // When we're not allowing texture resource rebinding within a
+    // batch, we'll also combine the texture source hash into the key.
+    // (Note the texture source hash will be 0 for bindless textures).
+    if (!allowTextureResourceRebinding) {
+        size_t const textureHash =
+            drawItem->GetMaterialNetworkShader()->ComputeTextureSourceHash();
+        key = TfHash::Combine(key, textureHash);
+    }
+
+    // Keep track of newly created draw batches.
+    if (HdSt_DrawBatchSharedPtr newBatch =
+        batchMap->InsertOrAppend(
+                key, drawItemInstance,
+                    usePipelineDrawBatch, allowTextureResourceRebinding)) {
+        drawBatches->push_back(newBatch);
+    }
+}
+
+void
+_BatchDrawItemInstances(
+    HdSt_DrawBatchSharedPtrVector *drawBatches,
+    std::vector<HdStDrawItemInstance> &instances,
+    bool const usePipelineDrawBatch)
+{
+    _BatchMap batchMap;
+    for (HdStDrawItemInstance &drawItemInstance : instances) {
+        _InsertDrawItemInstance(
+            drawBatches,
+            &drawItemInstance,
+            &batchMap,
+            usePipelineDrawBatch,
+            /*allowTextureResourceRebinding=*/false);
+    }
+}
+
+bool
+_HasTextureResourceBinding(HdStDrawItemInstance const *instance)
+{
+    if (HdSt_MaterialNetworkShaderSharedPtr const &materialNetworkShader =
+            instance->GetDrawItem()->GetMaterialNetworkShader()) {
+        return (materialNetworkShader->ComputeTextureSourceHash() != 0);
+    }
+    return false;
+}
+
+bool
+_ShouldAttemptToAggregate(
+    std::vector<HdStDrawItemInstance const *> const &instances)
+{
+    size_t const threshold = _GetTextureAggregationThreshold();
+    return (instances.size() <= threshold) &&
+           _HasTextureResourceBinding(instances.front());
+}
+
+void
+_AggregateDrawBatches(
+    HdSt_DrawBatchSharedPtrVector *drawBatches,
+    bool const usePipelineDrawBatch)
+{
+    HD_TRACE_FUNCTION();
+
+    HdSt_DrawBatchSharedPtrVector result;
+    result.reserve(drawBatches->size());
+
+    // Collect draw item instances to aggregate
+    std::vector<HdStDrawItemInstance *> toAggregate;
+
+    for (auto const &batch : *drawBatches) {
+        std::vector<HdStDrawItemInstance const *> const &instances =
+                batch->GetDrawItemInstances();
+        if (_ShouldAttemptToAggregate(instances)) {
+            for (auto const *instance : instances) {
+                toAggregate.push_back(
+                    const_cast<HdStDrawItemInstance *>(instance));
+            }
+        } else {
+            result.push_back(batch);
+        }
+    }
+
+    if (toAggregate.empty()) {
+        return;
+    }
+
+    // Sort the draw item instances to improve sequential coherence
+    // within the resulting aggregated draw batches.
+    std::sort(toAggregate.begin(), toAggregate.end(), _SortByTexture());
+
+    _BatchMap batchMap;
+    for (HdStDrawItemInstance *drawItemInstance : toAggregate) {
+        _InsertDrawItemInstance(
+            &result,
+            drawItemInstance,
+            &batchMap,
+            usePipelineDrawBatch,
+            /*allowTextureResourceRebinding=*/true);
+    }
+
+    drawBatches->swap(result);
+}
+
 bool
 _IsEnabledFrustumCullCPU(Hgi const *hgi)
 {
@@ -91,6 +302,8 @@ _IsEnabledFrustumCullCPU(Hgi const *hgi)
 
     // Enable CPU Frustum culling only when GPU frustum culling is not enabled.
     return !(multiDrawIndirectEnabled && gpuFrustumCullingEnabled);
+}
+
 }
 
 void
@@ -274,28 +487,6 @@ HdStCommandBuffer::_RebuildDrawBatches(Hgi const *hgi)
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->rebuildBatches);
 
-    // Use a cheap bucketing strategy to reduce to number of comparison tests
-    // required to figure out if a draw item can be batched.
-    // We use a hash of the geometric shader, BAR version and (optionally)
-    // material params as the key, and test (in the worst case) against each of 
-    // the batches for the key.
-    // Test against the previous draw item's hash and batch prior to looking up
-    // the map.
-    struct _PrevBatchHit {
-        _PrevBatchHit() : key(0) {}
-        void Update(size_t _key, HdSt_DrawBatchSharedPtr &_batch) {
-            key = _key;
-            batch = _batch;
-        }
-        size_t key;
-        HdSt_DrawBatchSharedPtr batch;
-    };
-    _PrevBatchHit prevBatch;
-    
-    using _DrawBatchMap = 
-        std::unordered_map<size_t, HdSt_DrawBatchSharedPtrVector>;
-    _DrawBatchMap batchMap;
-
     // Downcast the HdDrawItem entries to HdStDrawItems:
     std::vector<HdStDrawItem const*>* stDrawItemsPtr =
         reinterpret_cast< std::vector<HdStDrawItem const*>* >(_drawItems.get());
@@ -311,58 +502,22 @@ HdStCommandBuffer::_RebuildDrawBatches(Hgi const *hgi)
             continue;
         }
 
-        _drawItemInstances.push_back(HdStDrawItemInstance(drawItem));
-        HdStDrawItemInstance* drawItemInstance = &_drawItemInstances.back();
+        _drawItemInstances.emplace_back(drawItem);
+    }
 
-        // Geometric, RenderPass and Lighting shaders should never break
-        // batches, however materials can. We consider the textures
-        // used by the material to be part of the batch key for that
-        // reason.
-        // Since textures can be animated and thus materials can be batched
-        // at some times but not other times, we use the texture prim path
-        // for the hash which does not vary over time.
-        size_t key = TfHash::Combine(
-            drawItem->GetGeometricShader()->ComputeHash(),
-            drawItem->GetBufferArraysHash(),
-            drawItem->GetMaterialNetworkShader()->ComputeTextureSourceHash()
-        );
-        
+    bool const usePipelineDrawBatch = HdSt_PipelineDrawBatch::IsEnabled(hgi);
 
-        // Do a quick check to see if the draw item can be batched with the
-        // previous draw item, before checking the batchMap.
-        if (key == prevBatch.key && prevBatch.batch) {
-            if (prevBatch.batch->Append(drawItemInstance)) {
-                continue;
-            }
-        }
+    _drawBatches.clear();
 
-        _DrawBatchMap::iterator const batchIter = batchMap.find(key);
-        bool const foundKey = batchIter != batchMap.end();
-        bool batched = false;
-        if (foundKey) {
-            HdSt_DrawBatchSharedPtrVector &batches = batchIter->second;
-            for (HdSt_DrawBatchSharedPtr &batch : batches) {
-                if (batch->Append(drawItemInstance)) {
-                    batched = true;
-                    prevBatch.Update(key, batch);
-                    break;
-                }
-            }
-        }
+    _BatchDrawItemInstances(
+        &_drawBatches,
+        _drawItemInstances,
+        usePipelineDrawBatch);
 
-        if (!batched) {
-            HdSt_DrawBatchSharedPtr batch =
-                _NewDrawBatch(drawItemInstance, hgi);
-            _drawBatches.emplace_back(batch);
-            prevBatch.Update(key, batch);
-
-            if (foundKey) {
-                HdSt_DrawBatchSharedPtrVector &batches = batchIter->second;
-                batches.emplace_back(batch);
-            } else {
-                batchMap[key] = HdSt_DrawBatchSharedPtrVector({batch});
-            }
-        }
+    if (!usePipelineDrawBatch && (_GetTextureAggregationThreshold() > 0)) {
+        _AggregateDrawBatches(
+            &_drawBatches,
+            usePipelineDrawBatch);
     }
 
     TF_DEBUG(HDST_DRAW_BATCH).Msg(

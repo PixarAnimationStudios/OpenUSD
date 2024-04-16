@@ -1,0 +1,66 @@
+#usda 1.0
+(
+    endTimeCode = 1
+    framesPerSecond = 24
+    startTimeCode = 1
+    timeCodesPerSecond = 24
+)
+
+# Test case: Set /Root/InstanceParent1.xformOp:translate to translate(1,2,3)
+# Expect: /Root/InstanceParent1 has DirtyPrimvar
+
+class "inner"
+{
+    def Cube "cube1"
+    {
+    }
+
+    def Cube "cube2"
+    {
+        double3 xformOp:translate = (0, 1.5, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+class "outer"
+{
+    def Xform "Boxes1" (
+        inherits = </inner>
+        instanceable = true
+    )
+    {
+        double3 xformOp:translate = (-6, 0.5, 4)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "Boxes2" (
+        inherits = </inner>
+        instanceable = true
+    )
+    {
+        double3 xformOp:translate = (-6, 0.5, -4)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def "Root"
+{
+    def Xform "InstanceParent1" (
+        inherits = </outer>
+        instanceable = true
+    )
+    {
+        double3 xformOp:translate = (4, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "InstanceParent2" (
+        inherits = </outer>
+        instanceable = true
+    )
+    {
+        double3 xformOp:translate = (-4, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+

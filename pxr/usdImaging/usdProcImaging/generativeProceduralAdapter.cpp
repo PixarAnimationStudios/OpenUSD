@@ -127,7 +127,7 @@ UsdProcImagingGenerativeProceduralAdapter::Populate(
     UsdImagingIndexProxy* index,
     UsdImagingInstancerContext const *instancerContext)
 {
-    const SdfPath cachePath = UsdImagingGprimAdapter::_ResolveCachePath(
+    const SdfPath cachePath = ResolveCachePath(
         prim.GetPath(), instancerContext);
     UsdPrim proxyPrim
         = prim.GetStage()->GetPrimAtPath(cachePath.GetAbsoluteRootOrPrimPath());

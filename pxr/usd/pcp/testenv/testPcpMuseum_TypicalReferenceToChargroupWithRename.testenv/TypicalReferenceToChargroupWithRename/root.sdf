@@ -7,13 +7,13 @@
     both to be picked up from the model itself, from the group,
     and from the prim referencing the group (across the relocates).
     """
+    relocates = {
+        </Group_1/Model>: </Group_1/Model_1>
+    }
 )
 
 def "Group_1" (
     add references = @./group.sdf@</Group>
-    relocates = {
-        <Model> : <Model_1>
-    }
 )
 {
     over "Model_1"

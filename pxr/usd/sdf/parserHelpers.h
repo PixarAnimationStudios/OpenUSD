@@ -28,9 +28,9 @@
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/base/arch/inttypes.h"
+#include "pxr/base/gf/numericCast.h"
 #include "pxr/base/vt/value.h"
 
-#include <boost/numeric/conversion/cast.hpp>
 #include <boost/variant/get.hpp>
 
 #include <functional>
@@ -99,8 +99,8 @@ private:
     template <class In>
     T _Cast(In in) {
         try {
-            return boost::numeric_cast<T>(in);
-        } catch (const boost::bad_numeric_cast &) {
+            return GfNumericCast<T>(in).value();
+        } catch (const std::bad_optional_access &) {
             throw boost::bad_get();
         }
     }
@@ -149,8 +149,8 @@ private:
     template <class In>
     T _Cast(In in) {
         try {
-            return boost::numeric_cast<T>(in);
-        } catch (const boost::bad_numeric_cast &) {
+            return GfNumericCast<T>(in).value();
+        } catch (const std::bad_optional_access &) {
             throw boost::bad_get();
         }
     }

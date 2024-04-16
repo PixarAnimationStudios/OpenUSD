@@ -28,7 +28,7 @@ def Scope "Scene" (
     {
         def Material "MainMaterial"
         {
-            token inputs:coords = "st"
+            string inputs:coords = "st"
             token outputs:displacement.connect = </Scene/Looks/MainMaterial/PbrPreview.outputs:displacement>
             token outputs:surface.connect = </Scene/Looks/MainMaterial/PbrPreview.outputs:surface>
 
@@ -60,7 +60,7 @@ def Scope "Scene" (
             def Shader "Primvar"
             {
                 uniform token info:id = "UsdPrimvarReader_float2"
-                token inputs:varname.connect = </Scene/Looks/MainMaterial.inputs:coords>
+                string inputs:varname.connect = </Scene/Looks/MainMaterial.inputs:coords>
                 float2 outputs:result
             }
         }

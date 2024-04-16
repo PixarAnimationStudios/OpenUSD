@@ -439,7 +439,7 @@ Hio_StbImage::ReadCropped(int const cropTop,
     // thus we explicitly call stbi__vertical_flip below - assuming
     // that no other client called stbi_set_flip_vertically_on_load(true).
     
-#if defined(ARCH_OS_IOS)
+#if defined(ARCH_OS_IPHONE)
     stbi_convert_iphone_png_to_rgb(true);
 #endif
 

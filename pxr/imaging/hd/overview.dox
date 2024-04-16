@@ -7,4 +7,6 @@
 Hd is a framework that enables the communication between multiple scene graphs 
 and multiple renderers.
 
+See also: \ref Developer_Guides_Hydra
+
 */

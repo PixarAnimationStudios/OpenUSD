@@ -2,16 +2,15 @@
 (
     framesPerSecond = 24
     framePrecision = 3
-)
-
-def Scope "FaceRig" (
     relocates = {
-        <EyeLidRig/LEyeLidRig/Anim/Lids>: <Anim/Face/Eyes/LEye/LLids>,
-        <EyeLidRig/REyeLidRig/Anim/Lids>: <Anim/Face/Eyes/REye/RLids>,
-        <EyeRig/LEyeRig/Anim/Eye>: <Anim/Face/Eyes/LEye>,
-        <EyeRig/REyeRig/Anim/Eye>: <Anim/Face/Eyes/REye>,
+        </FaceRig/EyeLidRig/LEyeLidRig/Anim/Lids>: </FaceRig/Anim/Face/Eyes/LEye/LLids>, 
+        </FaceRig/EyeLidRig/REyeLidRig/Anim/Lids>: </FaceRig/Anim/Face/Eyes/REye/RLids>, 
+        </FaceRig/EyeRig/LEyeRig/Anim/Eye>: </FaceRig/Anim/Face/Eyes/LEye>, 
+        </FaceRig/EyeRig/REyeRig/Anim/Eye>: </FaceRig/Anim/Face/Eyes/REye>
     }
 )
+
+def Scope "FaceRig"
 {
     def Scope "Anim"
     {

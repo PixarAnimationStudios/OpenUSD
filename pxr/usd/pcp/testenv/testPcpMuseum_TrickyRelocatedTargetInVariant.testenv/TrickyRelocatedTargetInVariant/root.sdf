@@ -8,16 +8,16 @@
     the owning prim itself: they should use the post-relocation paths 
     instead of the pre-relocation paths.
     """
+    relocates = {
+        </Root/Child>: </Root/Anim/Child>, 
+        </Root/Child2>: </Root/Anim/Child2>, 
+        </Root/Rig/Child>: </Root/Anim/Child3>, 
+        </Root/Rig/Child2>: </Root/Anim/Child4>
+    }
 )
 
 def "Root" (
     references = @./ref.sdf@</Ref>
-    relocates = {
-        <Child> : <Anim/Child>,
-        <Child2> : <Anim/Child2>,
-        <Rig/Child> : <Anim/Child3>,
-        <Rig/Child2> : <Anim/Child4>
-    }
     variantSets = ["v"]
     variants = {
         string v = "a"

@@ -3,6 +3,11 @@
 (
     framesPerSecond = 24
     framePrecision = 3
+    relocates = {
+        </source> : </target>, 
+        </absolute> : <some/nested/relative/path>,
+        <relative/path> : <some/other/relative/path>
+    }
 )
 
 # Note: This is testing parsing syntax only, not allowable semantics.

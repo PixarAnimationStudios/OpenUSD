@@ -36,6 +36,7 @@
 #include "pxr/imaging/hd/material.h"
 
 #include "Riley.h"
+#include "RixEventCallbacks.h"
 #include <unordered_map>
 #include <mutex>
 
@@ -385,6 +386,11 @@ private:
     void _DestroyRiley();
     void _DestroyStatsSession();
 
+    // Initialize internals of PRMan system
+    void _PRManSystemBegin(const std::vector<std::string>& extraArgs);
+    // Initialize internals of PRMan renderer
+    int _PRManRenderBegin(const std::vector<std::string>& extraArgs);
+
     // Updates clear colors of AOV descriptors of framebuffer.
     // If this is not possible because the set of AOVs changed,
     // returns false.
@@ -400,6 +406,8 @@ private:
         const HdPrmanCamera * cam);
 
     void _RenderThreadCallback();
+    static void _ProgressCallback(RixEventCallbacks::Event,
+                                  RtConstPointer data, RtPointer clientData);
 
     void _CreateRileyDisplay(
         const RtUString& productName, const RtUString& productType,
@@ -425,6 +433,7 @@ private:
 
     // Roz stats session
     stats::Session *_statsSession;
+    int _progressPercent;
 
     // Riley instance.
     riley::Riley *_riley;

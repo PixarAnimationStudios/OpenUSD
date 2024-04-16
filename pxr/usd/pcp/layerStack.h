@@ -77,6 +77,11 @@ public:
     PCP_API
     const PcpLayerStackIdentifier& GetIdentifier() const;
 
+    /// Return true if this layer stack is in USD mode.
+    bool IsUsd() const {
+        return _isUsd;
+    };
+
     /// Returns the layers in this layer stack in strong-to-weak order.
     /// Note that this is only the *local* layer stack -- it does not
     /// include any layers brought in by references inside prims.
@@ -88,10 +93,15 @@ public:
     PCP_API
     SdfLayerHandleVector GetSessionLayers() const;
 
-    /// Returns the layer tree representing the structure of this layer
-    /// stack.
+    /// Returns the layer tree representing the structure of the non-session
+    /// layers in the layer stack.
     PCP_API
     const SdfLayerTreeHandle& GetLayerTree() const;
+
+    /// Returns the layer tree representing the structure of the session
+    /// layers in the layer stack or null if there are no session layers.
+    PCP_API
+    const SdfLayerTreeHandle& GetSessionLayerTree() const;
 
     /// Returns the layer offset for the given layer, or NULL if the layer
     /// can't be found or is the identity.
@@ -207,9 +217,15 @@ public:
     /// Return a PcpMapExpression representing the relocations that affect
     /// namespace at and below the given path.  The value of this
     /// expression will continue to track the effective relocations if
-    /// they are changed later.
+    /// they are changed later. In USD mode only, this will return a null 
+    /// expression if there are no relocations on this layer stack.
     PCP_API
     PcpMapExpression GetExpressionForRelocatesAtPath(const SdfPath &path);
+
+    /// Return true if there are any relocated prim paths in this layer
+    /// stack.
+    PCP_API
+    bool HasRelocates() const;
 
 private:
     // Only a registry can create a layer stack.
@@ -277,6 +293,10 @@ private:
     /// Stored separately because this is needed only occasionally.
     SdfLayerTreeHandle _layerTree;
 
+    /// The tree structure of the session layer stack.
+    /// Stored separately because this is needed only occasionally.
+    SdfLayerTreeHandle _sessionLayerTree;
+
     /// Tracks information used to compute sublayer asset paths.
     struct _SublayerSourceInfo {
         _SublayerSourceInfo() = default;
@@ -340,12 +360,13 @@ std::ostream& operator<<(std::ostream&, const PcpLayerStackRefPtr&);
 /// maps.
 void
 Pcp_ComputeRelocationsForLayerStack(
-    const SdfLayerRefPtrVector & layers,
+    const PcpLayerStack &layerStack,
     SdfRelocatesMap *relocatesSourceToTarget,
     SdfRelocatesMap *relocatesTargetToSource,
     SdfRelocatesMap *incrementalRelocatesSourceToTarget,
     SdfRelocatesMap *incrementalRelocatesTargetToSource,
-    SdfPathVector *relocatesPrimPaths);
+    SdfPathVector *relocatesPrimPaths,
+    PcpErrorVector *errors);
 
 // Returns true if \p layerStack should be recomputed due to changes to
 // any computed asset paths that were used to find or open layers

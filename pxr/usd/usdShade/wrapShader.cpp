@@ -238,6 +238,9 @@ WRAP_CUSTOM {
         .def("ClearSdrMetadataByKey", 
              &UsdShadeShader::ClearSdrMetadataByKey, (arg("key")))
 
+        .def("GetSourceTypes", 
+             &UsdShadeShader::GetSourceTypes)
+
         .def("GetShaderNodeForSourceType", 
              &UsdShadeShader::GetShaderNodeForSourceType,
              (arg("sourceType")),

@@ -112,7 +112,7 @@ _ComparePrimitiveIDMap(std::string const & name,
     source->GetBufferSpecs(&bufferSpecs);
     HdBufferArrayRangeSharedPtr range =
         registry->AllocateNonUniformBufferArrayRange(
-            HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
+            HdTokens->topology, bufferSpecs, HdBufferArrayUsageHintBitsIndex);
     registry->AddSource(range, source);
 
     // execute
@@ -172,7 +172,7 @@ _ComparePtexFaceIndex(std::string const & name,
     source->GetBufferSpecs(&bufferSpecs);
     HdBufferArrayRangeSharedPtr range =
         registry->AllocateNonUniformBufferArrayRange(
-            HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
+            HdTokens->topology, bufferSpecs, HdBufferArrayUsageHintBitsIndex);
     registry->AddSource(range, source);
 
     // execute

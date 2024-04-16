@@ -833,10 +833,12 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 
                 // Set up the usage hints to mark topology as varying if
                 // there is a previously set range
-                HdBufferArrayUsageHint usageHint;
-                usageHint.value = 0;
-                usageHint.bits.sizeVarying = 
-                    drawItem->GetTopologyRange() ? 1 : 0;
+                HdBufferArrayUsageHint usageHint = 
+                    HdBufferArrayUsageHintBitsIndex |
+                    HdBufferArrayUsageHintBitsStorage;
+                if (drawItem->GetTopologyRange()) {
+                    usageHint |= HdBufferArrayUsageHintBitsSizeVarying;
+                }
 
                 // allocate new range
                 HdBufferArrayRangeSharedPtr range =
@@ -1019,9 +1021,11 @@ void HdStMesh::_CreateTopologyRangeForGeomSubset(
 
         // Set up the usage hints to mark topology as varying if there is a 
         // previously set range
-        HdBufferArrayUsageHint usageHint;
-        usageHint.value = 0;
-        usageHint.bits.sizeVarying = drawItem->GetTopologyRange() ? 1 : 0;
+        HdBufferArrayUsageHint usageHint =
+            HdBufferArrayUsageHintBitsIndex | HdBufferArrayUsageHintBitsStorage;
+        if (drawItem->GetTopologyRange()) {
+            usageHint |= HdBufferArrayUsageHintBitsSizeVarying;
+        }
 
         // allocate new range
         HdBufferArrayRangeSharedPtr range =
@@ -1094,7 +1098,8 @@ HdStMesh::_PopulateAdjacency(
 
         HdBufferArrayRangeSharedPtr vertexAdjacencyRange =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
+                HdTokens->topology, bufferSpecs,
+                HdBufferArrayUsageHintBitsStorage);
 
         vertexAdjacencyBuilder->SetVertexAdjacencyRange(vertexAdjacencyRange);
         resourceRegistry->AddSource(vertexAdjacencyRange,
@@ -1669,7 +1674,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 if (transitionToMutableBAR) {
                     // (b1)
                     HdBufferArrayUsageHint newUsageHint = bar->GetUsageHint();
-                    newUsageHint.bits.immutable = 0;
+                    newUsageHint &= ~HdBufferArrayUsageHintBitsImmutable;
                     _vertexPrimvarId = 0;
 
                     range = resourceRegistry->UpdateNonUniformBufferArrayRange(
@@ -1712,17 +1717,24 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
             } else {
                 // (c) Exiting BAR is a mutable one.
+                HdBufferArrayUsageHint usageHint =
+                    HdBufferArrayUsageHintBitsVertex |
+                    HdBufferArrayUsageHintBitsStorage;
                 range = resourceRegistry->UpdateNonUniformBufferArrayRange(
                     HdTokens->primvar, bar, bufferSpecs, removedSpecs,
-                    HdBufferArrayUsageHint());
+                    usageHint);
             }
         }
     } else {
         // When primvar sharing is disabled, a mutable BAR is allocated/updated/
         // migrated as necessary.
+        HdBufferArrayUsageHint usageHint = 
+            HdBufferArrayUsageHintBitsVertex |
+            HdBufferArrayUsageHintBitsStorage;
+
         range = resourceRegistry->UpdateNonUniformBufferArrayRange(
                 HdTokens->primvar, bar, bufferSpecs, removedSpecs,
-                HdBufferArrayUsageHint());
+                usageHint);
     }
 
     HdStUpdateDrawItemBAR(
@@ -1905,7 +1917,7 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferArrayRangeSharedPtr range =
         resourceRegistry->UpdateNonUniformBufferArrayRange(
             HdTokens->primvar, bar, bufferSpecs, removedSpecs,
-            HdBufferArrayUsageHint());
+            HdBufferArrayUsageHintBitsStorage);
     
     HdStUpdateDrawItemBAR(
         range,
@@ -2078,7 +2090,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferArrayRangeSharedPtr range =
         resourceRegistry->UpdateNonUniformBufferArrayRange(
             HdTokens->primvar, bar, bufferSpecs, removedSpecs,
-            HdBufferArrayUsageHint());
+            HdBufferArrayUsageHintBitsStorage);
 
     HdStUpdateDrawItemBAR(
         range,
@@ -2222,12 +2234,16 @@ HdStMesh::_GetSharedPrimvarRange(uint64_t primvarId,
     HdBufferArrayRangeSharedPtr range;
 
     if (barInstance.IsFirstInstance()) {
+        HdBufferArrayUsageHint usageHint =
+            HdBufferArrayUsageHintBitsVertex |
+            HdBufferArrayUsageHintBitsStorage;
+
         range = resourceRegistry->UpdateNonUniformImmutableBufferArrayRange(
                     HdTokens->primvar,
                     curRange,
                     updatedOrAddedSpecs,
                     removedSpecs,
-                    HdBufferArrayUsageHint());
+                    usageHint);
 
         barInstance.SetValue(range);
     } else {

@@ -32,6 +32,7 @@
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/base/tf/pyAnnotatedBoolResult.h"
+#include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/refPtr.h"
 
 #include <boost/noncopyable.hpp>
@@ -122,6 +123,9 @@ wrapResolver()
 
     def("GetResolver", ArGetResolver,
         return_value_policy<reference_existing_object>());
+
+    def("GetRegisteredURISchemes", ArGetRegisteredURISchemes,
+        return_value_policy<TfPySequenceToList>());
 
     def("SetPreferredResolver", ArSetPreferredResolver,
         arg("resolverTypeName"));

@@ -85,11 +85,8 @@ UsdImagingGeomModelAPIAdapter::GetImagingSubprimData(
 
     if (subprim.IsEmpty()) {
         // Reflect UsdGeomModelAPI as UsdImagingGeomModelSchema.
-        HdContainerDataSourceHandle geomModelDs =
-            HdRetainedContainerDataSource::New(
-                UsdImagingGeomModelSchema::GetSchemaToken(),
-                _GeomModelDataSource::New(
-                    prim.GetPath(), UsdGeomModelAPI(prim), stageGlobals));
+        HdContainerDataSourceHandle geomModelDs = _GeomModelDataSource::New(
+            prim.GetPath(), UsdGeomModelAPI(prim), stageGlobals);
 
         // For model components, overlay applyDrawMode=true.
         if (UsdModelAPI(prim).IsKind(KindTokens->component)) {
@@ -102,7 +99,8 @@ UsdImagingGeomModelAPIAdapter::GetImagingSubprimData(
                 OverlayedContainerDataSources(applyDrawModeDs, geomModelDs);
         }
 
-        return geomModelDs;
+        return HdRetainedContainerDataSource::New(
+            UsdImagingGeomModelSchema::GetSchemaToken(), geomModelDs);
     }
 
     return nullptr;

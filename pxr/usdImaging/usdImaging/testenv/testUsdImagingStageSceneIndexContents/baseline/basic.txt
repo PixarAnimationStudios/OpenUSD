@@ -1,0 +1,207 @@
+</> type = 
+	[sceneGlobals]
+		[endTimeCode]
+			0
+		[startTimeCode]
+			0
+	[system]
+		[assetResolution]
+			[resolverContext]
+				<'ArResolverContext' @ XXXXXXXXXXXXXXXX>
+</CoordSys> type = 
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[specifier]
+			def
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(/CoordSys)
+	[primvars]
+</CoordSys/modelSpace> type = 
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[specifier]
+			def
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(/CoordSys/modelSpace)
+	[primvars]
+</CoordSys/worldSpace> type = 
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[specifier]
+			def
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(/CoordSys/worldSpace)
+	[primvars]
+	[xform]
+		[matrix]
+			( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (4, 5, 6, 1) )
+		[resetXformStack]
+			0
+</Geom> type = 
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[specifier]
+			def
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(/Geom)
+	[primvars]
+</Geom/Subdiv> type = mesh
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[specifier]
+			def
+	[coordSysBinding]
+		[modelSpace]
+			/CoordSys/modelSpace
+		[worldSpace]
+			/CoordSys/worldSpace
+	[directMaterialBindings]
+		[preview]
+			[bindingStrength]
+				weakerThanDescendants
+			[materialPath]
+				/Materials/MyMaterial
+	[extent]
+		[max]
+			(2, 2, 2)
+		[min]
+			(-2, -2, -2)
+	[mesh]
+		[doubleSided]
+			0
+		[subdivisionScheme]
+			catmullClark
+		[subdivisionTags]
+			[cornerIndices]
+				[]
+			[cornerSharpnesses]
+				[]
+			[creaseIndices]
+				[]
+			[creaseLengths]
+				[]
+			[creaseSharpnesses]
+				[]
+			[faceVaryingLinearInterpolation]
+				cornersPlus1
+			[interpolateBoundary]
+				edgeAndCorner
+			[triangleSubdivisionRule]
+				catmullClark
+		[topology]
+			[faceVertexCounts]
+				[4]
+			[faceVertexIndices]
+				[0, 1, 3, 2]
+			[holeIndices]
+				[]
+			[orientation]
+				rightHanded
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(/Geom/Subdiv)
+	[primvars]
+		[displayColor]
+			[interpolation]
+				constant
+			[primvarValue]
+				[(0.1, 0.5, 0.8)]
+			[role]
+				color
+		[map1_uv]
+			[interpolation]
+				vertex
+			[primvarValue]
+				[(0, 1), (0.4, 1), (0, 0), (0.4, 0)]
+			[role]
+				
+		[points]
+			[interpolation]
+				vertex
+			[primvarValue]
+				[(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
+			[role]
+				point
+</Materials> type = 
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[specifier]
+			def
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(/Materials)
+	[primvars]
+</Materials/MyMaterial> type = material
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[specifier]
+			def
+	[material]
+		[]
+			[interfaceMappings]
+			[nodes]
+				[MyPrimvar]
+					[inputConnections]
+					[nodeIdentifier]
+						HwPrimvar_1
+					[parameters]
+						[varname]
+							[colorSpace]
+								
+							[value]
+								map1_uv
+				[MySurface]
+					[inputConnections]
+						[diffuseColor]
+							[0]
+								[upstreamNodeOutputName]
+									color
+								[upstreamNodePath]
+									MyTexture
+					[nodeIdentifier]
+						
+					[nodeTypeInfo]
+						[glslfx:sourceAsset]
+							@shader1.glslfx@
+						[implementationSource]
+							sourceAsset
+						[sdrMetadata]
+							{}
+					[parameters]
+				[MyTexture]
+					[inputConnections]
+						[uv]
+							[0]
+								[upstreamNodeOutputName]
+									result
+								[upstreamNodePath]
+									MyPrimvar
+					[nodeIdentifier]
+						HwUvTexture_1
+					[parameters]
+						[file]
+							[colorSpace]
+								
+							[value]
+								@texture1.jpg@
+			[terminals]
+				[surface]
+					[upstreamNodeOutputName]
+						surface
+					[upstreamNodePath]
+						MySurface
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(/Materials/MyMaterial)
+	[primvars]

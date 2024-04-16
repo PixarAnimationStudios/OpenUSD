@@ -1,0 +1,16 @@
+#usda 1.0
+(
+    defaultPrim = "Sphere"
+    endTimeCode = 100
+    startTimeCode = 0
+)
+
+def Sphere "Sphere"
+{
+    float xformOp:rotateZ:spin.timeSamples = {
+        0: 0,
+        100: 200,
+    }
+    uniform token[] xformOpOrder = ["xformOp:rotateZ:spin"]
+}
+

@@ -17,6 +17,9 @@
 
     Next, there's a pair of CoRecursiveParent prims.
     """
+    relocates = {
+        </RelocatedInheritOfChild/Child/Object>: </RelocatedInheritOfChild/Object>
+    }
 )
 
 def "GroupRoot" (
@@ -81,11 +84,7 @@ def "InheritOfChild" (
     }
 }
 
-def "RelocatedInheritOfChild" (
-    relocates = {
-        <Child/Object> : <Object>
-    }
-)
+def "RelocatedInheritOfChild"
 {
     def "Child" (
         inherits = </RelocatedInheritOfChild/Child/Class>

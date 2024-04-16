@@ -14,6 +14,7 @@ pxr_library(hdsi
         hf
         hd
         pxOsd
+        usdGeom
 
     PUBLIC_CLASSES
         coordSysPrimSceneIndex
@@ -29,6 +30,7 @@ pxr_library(hdsi
         primTypePruningSceneIndex
         renderSettingsFilteringSceneIndex
         sceneGlobalsSceneIndex
+        tetMeshConversionSceneIndex
 
     PUBLIC_HEADERS
         api.h

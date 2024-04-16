@@ -30,9 +30,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define HDGPGENERATIVEPROCEDURAL_TOKENS                        \
-    ((generativeProcedural, "hydraGenerativeProcedural"))      \
-    ((proceduralType, "hdGp:proceduralType"))                  \
+#define HDGPGENERATIVEPROCEDURAL_TOKENS                                   \
+    ((generativeProcedural, "hydraGenerativeProcedural"))                 \
+    ((resolvedGenerativeProcedural, "resolvedHydraGenerativeProcedural")) \
+    ((skippedGenerativeProcedural, "skippedHydraGenerativeProcedural"))   \
+    ((proceduralType, "hdGp:proceduralType"))                             \
+    ((anyProceduralType, "*"))
 
 TF_DECLARE_PUBLIC_TOKENS(HdGpGenerativeProceduralTokens,
     HDGPGENERATIVEPROCEDURAL_TOKENS);
