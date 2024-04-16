@@ -415,6 +415,8 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
             
             SdfPath protoPath;
             UsdImagingInstancerContext ctx;
+            UsdPrim populatePrim = *iter;
+            
             if (adapter->IsInstancerAdapter()) {
                 // if the prim is handled by some kind of multiplexing adapter
                 // (e.g. another nested PointInstancer)
@@ -435,10 +437,9 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                 TfToken protoName(
                     TfStringPrintf(
                         "proto%d_%s_id%d", protoIndex,
-                        iter->GetPath().GetName().c_str(), protoID++));
+                        populatePrim.GetPath().GetName().c_str(), protoID++));
 
-                UsdPrim populatePrim = *iter;
-                if (iter->IsPrototype() && 
+                if (populatePrim.IsPrototype() && 
                     TF_VERIFY(instancerChain.size() > 1)) {
                     populatePrim = _GetPrim(instancerChain.at(1));
                 }
@@ -471,7 +472,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                 ctx.childName = protoPath.GetNameToken();
             }
             const SdfPath newProtoPath = adapter->Populate(
-                *iter, index, &ctx);
+                populatePrim, index, &ctx);
             TF_VERIFY(!newProtoPath.IsEmpty());
             if (!TF_VERIFY(protoPath == newProtoPath, "protoPath changed "
                 "from <%s> to <%s>", protoPath.GetText(),
