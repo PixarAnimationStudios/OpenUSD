@@ -392,7 +392,7 @@ _ComputeMaterialNetworkShader(
         const TfToken textureName(
             fieldName.GetString() +
             HdSt_ResourceBindingSuffixTokens->texture.GetString());
-        static const HdTextureType textureType = HdTextureType::Field;
+        static const HdStTextureType textureType = HdStTextureType::Field;
 
         // Produce HdGet_FIELDNAME_texture(vec3 p) to sample
         // the texture.

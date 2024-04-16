@@ -138,6 +138,7 @@ pxr_library(hdSt
     PUBLIC_HEADERS
         api.h
         dynamicUvTextureImplementation.h
+        enums.h
 
     PRIVATE_CLASSES
         assetUvTextureCpuData

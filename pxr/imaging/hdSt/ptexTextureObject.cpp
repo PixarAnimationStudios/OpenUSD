@@ -336,10 +336,10 @@ HdStPtexTextureObject::IsValid() const
     return _format != HgiFormatInvalid;
 }
 
-HdTextureType
+HdStTextureType
 HdStPtexTextureObject::GetTextureType() const
 {
-    return HdTextureType::Ptex;
+    return HdStTextureType::Ptex;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -262,7 +262,7 @@ My_TestGLDrawing::OffscreenTest()
             HdStTextureIdentifier(
                 TfToken(),
                 std::make_unique<My_SubtextureIdentifier>(90)),
-            HdTextureType::Uv,
+            HdStTextureType::Uv,
             HdSamplerParameters(
                 HdWrapRepeat,
                 HdWrapRepeat,
@@ -278,7 +278,7 @@ My_TestGLDrawing::OffscreenTest()
             HdStTextureIdentifier(
                 TfToken(),
                 std::make_unique<My_SubtextureIdentifier>(230)),
-            HdTextureType::Uv,
+            HdStTextureType::Uv,
             HdSamplerParameters(
                 HdWrapRepeat,
                 HdWrapRepeat,

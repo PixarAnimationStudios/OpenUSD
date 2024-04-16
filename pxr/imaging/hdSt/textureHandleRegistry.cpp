@@ -161,7 +161,7 @@ HdSt_TextureHandleRegistry::~HdSt_TextureHandleRegistry() = default;
 HdStTextureHandleSharedPtr
 HdSt_TextureHandleRegistry::AllocateTextureHandle(
         HdStTextureIdentifier const &textureId,
-        HdTextureType textureType,
+        HdStTextureType textureType,
         HdSamplerParameters const &samplerParams,
         size_t memoryRequest,
         HdStShaderCodePtr const &shaderCode)
@@ -424,7 +424,7 @@ HdSt_TextureHandleRegistry::Commit()
 
 void
 HdSt_TextureHandleRegistry::SetMemoryRequestForTextureType(
-    const HdTextureType textureType, const size_t memoryRequest)
+    const HdStTextureType textureType, const size_t memoryRequest)
 {
     size_t &val = _textureTypeToMemoryRequest[textureType];
     if (val != memoryRequest) {

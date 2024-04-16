@@ -41,7 +41,7 @@ HdSt_SamplerObjectRegistry::HdSt_SamplerObjectRegistry(
 
 HdSt_SamplerObjectRegistry::~HdSt_SamplerObjectRegistry() = default;
 
-template<HdTextureType textureType>
+template<HdStTextureType textureType>
 static
 HdStSamplerObjectSharedPtr
 _MakeTypedSamplerObject(
@@ -75,23 +75,23 @@ _MakeSamplerObject(
     HdSt_SamplerObjectRegistry * const samplerObjectRegistry)
 {
     switch(texture->GetTextureType()) {
-    case HdTextureType::Uv:
-        return _MakeTypedSamplerObject<HdTextureType::Uv>(
+    case HdStTextureType::Uv:
+        return _MakeTypedSamplerObject<HdStTextureType::Uv>(
             texture,
             samplerParameters,
             samplerObjectRegistry);
-    case HdTextureType::Field:
-        return _MakeTypedSamplerObject<HdTextureType::Field>(
+    case HdStTextureType::Field:
+        return _MakeTypedSamplerObject<HdStTextureType::Field>(
             texture,
             samplerParameters,
             samplerObjectRegistry);
-    case HdTextureType::Ptex:
-        return _MakeTypedSamplerObject<HdTextureType::Ptex>(
+    case HdStTextureType::Ptex:
+        return _MakeTypedSamplerObject<HdStTextureType::Ptex>(
             texture,
             samplerParameters,
             samplerObjectRegistry);
-    case HdTextureType::Udim:
-        return _MakeTypedSamplerObject<HdTextureType::Udim>(
+    case HdStTextureType::Udim:
+        return _MakeTypedSamplerObject<HdStTextureType::Udim>(
             texture,
             samplerParameters,
             samplerObjectRegistry);

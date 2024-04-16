@@ -228,7 +228,7 @@ HdStSimpleLightingShader::AddBindings(HdStBindingRequestVector *customBindings)
                 _tokens->domeLightIrradiance,
                 VtValue(GfVec4f(0.0)),
                 TfTokenVector(),
-                HdTextureType::Uv));
+                HdStTextureType::Uv));
         // prefilter map
         _lightTextureParams.push_back(
             HdSt_MaterialParam(
@@ -236,7 +236,7 @@ HdStSimpleLightingShader::AddBindings(HdStBindingRequestVector *customBindings)
                 _tokens->domeLightPrefilter,
                 VtValue(GfVec4f(0.0)),
                 TfTokenVector(),
-                HdTextureType::Uv));
+                HdStTextureType::Uv));
         // BRDF texture
         _lightTextureParams.push_back(
             HdSt_MaterialParam(
@@ -244,7 +244,7 @@ HdStSimpleLightingShader::AddBindings(HdStBindingRequestVector *customBindings)
                 _tokens->domeLightBRDF,
                 VtValue(GfVec4f(0.0)),
                 TfTokenVector(),
-                HdTextureType::Uv));
+                HdStTextureType::Uv));
     }
 
     const bool useShadows =
@@ -261,7 +261,7 @@ HdStSimpleLightingShader::AddBindings(HdStBindingRequestVector *customBindings)
                 HdStTokens->shadowCompareTextures,
                 VtValue(GfVec4f(0.0)),
                 TfTokenVector(),
-                HdTextureType::Uv,
+                HdStTextureType::Uv,
                 /*swizzle*/std::string(),
                 /*isPremultiplied*/false,
                 /*arrayOfTexturesSize*/numShadowPasses));
@@ -343,13 +343,13 @@ _MakeNamedTextureHandle(
     HdStTextureHandleSharedPtr const textureHandle =
         resourceRegistry->AllocateTextureHandle(
             textureId,
-            HdTextureType::Uv,
+            HdStTextureType::Uv,
             samplerParameters,
             /* memoryRequest = */ 0,
             shader);
 
     return { name,
-             HdTextureType::Uv,
+             HdStTextureType::Uv,
              textureHandle,
              name.Hash() };
 }
@@ -473,7 +473,7 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdRenderIndex const &renderInde
         _domeLightEnvironmentTextureHandle =
             resourceRegistry->AllocateTextureHandle(
                 textureId,
-                HdTextureType::Uv,
+                HdStTextureType::Uv,
                 envSamplerParameters,
                 /* targetMemory = */ 0,
                 shared_from_this());
@@ -564,7 +564,7 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdRenderIndex const &renderInde
                 HdStTextureHandleSharedPtr const textureHandle =
                     resourceRegistry->AllocateTextureHandle(
                         _shadowAovBuffers[i]->GetTextureIdentifier(false),
-                        HdTextureType::Uv,
+                        HdStTextureType::Uv,
                         shadowSamplerParameters,
                         /* memoryRequest = */ 0,
                         shared_from_this());
@@ -575,7 +575,7 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdRenderIndex const &renderInde
                 _shadowTextureHandles.push_back(
                     NamedTextureHandle{ 
                         shadowTextureName,
-                        HdTextureType::Uv,
+                        HdStTextureType::Uv,
                         textureHandle,
                         shadowTextureName.Hash()});
             }

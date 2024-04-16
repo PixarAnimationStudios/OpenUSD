@@ -199,19 +199,19 @@ HdStTextureObject::_GetPremultiplyAlpha(
         const HdStSubtextureIdentifier * const subId) const
 {
     switch(GetTextureType()) {
-    case HdTextureType::Uv:
+    case HdStTextureType::Uv:
         if (const HdStAssetUvSubtextureIdentifier* const uvSubId =
             dynamic_cast<const HdStAssetUvSubtextureIdentifier *>(subId)) {
             return uvSubId->GetPremultiplyAlpha();
         }
         return false;
-    case HdTextureType::Ptex:
+    case HdStTextureType::Ptex:
         if (const HdStPtexSubtextureIdentifier* const ptexSubId =
             dynamic_cast<const HdStPtexSubtextureIdentifier *>(subId)) {
         return ptexSubId->GetPremultiplyAlpha();
         }
         return false;
-    case HdTextureType::Udim:
+    case HdStTextureType::Udim:
         if (const HdStUdimSubtextureIdentifier* const udimSubId =
                 dynamic_cast<const HdStUdimSubtextureIdentifier *>(subId)) {
             return udimSubId->GetPremultiplyAlpha();
@@ -230,13 +230,13 @@ HdStTextureObject::_GetSourceColorSpace(
 {
     TfToken sourceColorSpace;
     switch(GetTextureType()) {
-    case HdTextureType::Uv:
+    case HdStTextureType::Uv:
         if (const HdStAssetUvSubtextureIdentifier* const uvSubId =
             dynamic_cast<const HdStAssetUvSubtextureIdentifier *>(subId)) {
             sourceColorSpace = uvSubId->GetSourceColorSpace();
         }
         break;
-    case HdTextureType::Udim:
+    case HdStTextureType::Udim:
         if (const HdStUdimSubtextureIdentifier* const udimSubId =
                 dynamic_cast<const HdStUdimSubtextureIdentifier *>(subId)) {
             sourceColorSpace = udimSubId->GetSourceColorSpace();
@@ -267,10 +267,10 @@ HdStUvTextureObject::HdStUvTextureObject(
 }
 
 
-HdTextureType
+HdStTextureType
 HdStUvTextureObject::GetTextureType() const
 {
-    return HdTextureType::Uv;
+    return HdStTextureType::Uv;
 }
 
 HdStUvTextureObject::~HdStUvTextureObject()
@@ -605,10 +605,10 @@ HdStFieldTextureObject::IsValid() const
     return _valid;
 }
 
-HdTextureType
+HdStTextureType
 HdStFieldTextureObject::GetTextureType() const
 {
-    return HdTextureType::Field;
+    return HdStTextureType::Field;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

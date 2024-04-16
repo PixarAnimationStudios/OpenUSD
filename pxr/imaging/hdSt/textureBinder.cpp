@@ -53,7 +53,7 @@ HdSt_TextureBinder::GetBufferSpecs(
 
     for (const NamedTextureHandle & texture : textures) {
         switch (texture.type) {
-        case HdTextureType::Uv:
+        case HdStTextureType::Uv:
             if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
@@ -65,7 +65,7 @@ HdSt_TextureBinder::GetBufferSpecs(
                     HdSt_ResourceBindingSuffixTokens->valid),
                 HdTupleType{HdTypeBool, 1});
             break;
-        case HdTextureType::Field:
+        case HdStTextureType::Field:
             if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
@@ -83,7 +83,7 @@ HdSt_TextureBinder::GetBufferSpecs(
                 HdTupleType{ (doublesSupported ?
                     HdTypeDoubleMat4 : HdTypeFloatMat4), 1});
             break;
-        case HdTextureType::Ptex:
+        case HdStTextureType::Ptex:
             if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
@@ -100,7 +100,7 @@ HdSt_TextureBinder::GetBufferSpecs(
                     HdSt_ResourceBindingSuffixTokens->valid),
                 HdTupleType{HdTypeBool, 1});
             break;
-        case HdTextureType::Udim:
+        case HdStTextureType::Udim:
             if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
@@ -413,7 +413,7 @@ public:
     }
 };
 
-template<HdTextureType textureType, class Functor, typename ...Args>
+template<HdStTextureType textureType, class Functor, typename ...Args>
 void _CastAndCompute(
     HdStShaderCode::NamedTextureHandle const &namedTextureHandle,
     Args&& ...args)
@@ -454,20 +454,20 @@ void _Dispatch(
     Args&& ...args)
 {
     switch (namedTextureHandle.type) {
-    case HdTextureType::Uv:
-        _CastAndCompute<HdTextureType::Uv, Functor>(
+    case HdStTextureType::Uv:
+        _CastAndCompute<HdStTextureType::Uv, Functor>(
             namedTextureHandle, std::forward<Args>(args)...);
         break;
-    case HdTextureType::Field:
-        _CastAndCompute<HdTextureType::Field, Functor>(
+    case HdStTextureType::Field:
+        _CastAndCompute<HdStTextureType::Field, Functor>(
             namedTextureHandle, std::forward<Args>(args)...);
         break;
-    case HdTextureType::Ptex:
-        _CastAndCompute<HdTextureType::Ptex, Functor>(
+    case HdStTextureType::Ptex:
+        _CastAndCompute<HdStTextureType::Ptex, Functor>(
             namedTextureHandle, std::forward<Args>(args)...);
         break;
-    case HdTextureType::Udim:
-        _CastAndCompute<HdTextureType::Udim, Functor>(
+    case HdStTextureType::Udim:
+        _CastAndCompute<HdStTextureType::Udim, Functor>(
             namedTextureHandle, std::forward<Args>(args)...);
         break;
     }
