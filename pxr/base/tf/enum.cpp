@@ -113,11 +113,15 @@ private:
 TF_INSTANTIATE_SINGLETON(Tf_EnumRegistry);
 
 void
-TfEnum::_AddName(TfEnum val, const string &valName, const string &displayName)
+TfEnum::_AddName(TfEnum val,
+                 char const *valNameCstr, char const *displayNameCstr)
 {
     TfAutoMallocTag2 tag("Tf", "TfEnum::_AddName");
     string typeName = ArchGetDemangled(val.GetType());
 
+    const string valName = TfSafeString(valNameCstr);
+    const string displayName = TfSafeString(displayNameCstr);
+    
     /*
      * In case valName looks like "stuff::VALUE", strip off the leading
      * prefix.
