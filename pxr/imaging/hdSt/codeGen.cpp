@@ -54,10 +54,24 @@
 #include <sstream>
 #include <unordered_map>
 
-#if defined(__APPLE__)
-#include <opensubdiv/osd/mtlPatchShaderSource.h>
-#else
+#if defined(PXR_METAL_SUPPORT_ENABLED)
+    #include <opensubdiv/osd/mtlPatchShaderSource.h>
+#elif defined(PXR_GL_SUPPORT_ENABLED)
+    #define PXR_OSD_WITH_GL_SUPPORT_ENABLED
+#endif // PXR_METAL_SUPPORT_ENABLED
+
+#if defined(ARCH_OS_ANDROID) || defined(__EMSCRIPTEN__)
+#define PXR_DISABLE_OSD
+#endif
+
+#if !defined(PXR_DISABLE_OSD)
+#if defined(PXR_OSD_WITH_GL_SUPPORT_ENABLED) || defined(PXR_WEBGPU_SUPPORT_ENABLED)
 #include <opensubdiv/osd/glslPatchShaderSource.h>
+#endif
+#endif
+
+#if defined(PXR_DIRECTX_SUPPORT_ENABLED)
+#include <opensubdiv/osd/hlslPatchShaderSource.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
