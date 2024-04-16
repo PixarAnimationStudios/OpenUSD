@@ -421,6 +421,7 @@ UsdAppUtilsFrameRecorder::Record(
         const GfVec3d &cameraPos = frustum.GetPosition();
         GlfSimpleLight cameraLight(
             GfVec4f(cameraPos[0], cameraPos[1], cameraPos[2], 1.0f));
+        cameraLight.SetTransform(frustum.ComputeViewInverse());
         cameraLight.SetAmbient(SCENE_AMBIENT);
         lights.push_back(cameraLight);
     }
