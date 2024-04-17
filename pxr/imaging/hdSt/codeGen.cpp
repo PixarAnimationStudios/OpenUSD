@@ -1690,6 +1690,7 @@ _GetOSDCommonShaderSource(TfToken const &apiName)
     } else if (HgiTokens->Vulkan == apiName ||
                HgiTokens->OpenGL == apiName ||
                HgiTokens->WebGPU == apiName) {
+#if !defined(PXR_DISABLE_OSD)
 #if defined(PXR_GL_SUPPORT_ENABLED) || defined(PXR_WEBGPU_SUPPORT_ENABLED)
     ss << "FORWARD_DECL(MAT4 GetProjectionMatrix());\n"
        << "FORWARD_DECL(float GetTessLevel());\n"
@@ -1700,6 +1701,7 @@ _GetOSDCommonShaderSource(TfToken const &apiName)
        << "\n";
 
     ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
+#endif
 #endif // PXR_GL_SUPPORT_ENABLED || PXR_WEBGPU_SUPPORT_ENABLED
     } else {
         TF_CODING_ERROR("Unsupported OSD API: %s", apiName.GetText());
@@ -1716,16 +1718,27 @@ _GetOSDPatchBasisShaderSource(const TfToken &apiName)
     std::stringstream ss;
     if (apiName == HgiTokens->Metal) {
 #if defined(PXR_METAL_SUPPORT_ENABLED)
-            ss << "#define OSD_PATCH_BASIS_METAL\n";
-            ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchBasisShaderSource();
+        ss << "#define OSD_PATCH_BASIS_METAL\n";
+        ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchBasisShaderSource();
 #endif
     } else if (HgiTokens->Vulkan == apiName ||
                HgiTokens->OpenGL == apiName ||
-               HgiTokens->WebGPU == apiName) {
-#if defined(PXR_VULKAN_SUPPORT_ENABLED) || defined(PXR_GL_SUPPORT_ENABLED) || defined(PXR_WEBGPU_SUPPORT_ENABLED)
-            ss << "#define OSD_PATCH_BASIS_GLSL\n";
+               HgiTokens->WebGPU == apiName ) {
+#if !defined(PXR_DISABLE_OSD)
+
+#if defined(PXR_DIRECTX_SUPPORT_ENABLED)
+
+        if (dxHgiEnabled)
+            ss << OpenSubdiv::Osd::HLSLPatchShaderSource::GetPatchBasisShaderSource();
+        else
             ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchBasisShaderSource();
+
+#elif (defined(PXR_OSD_WITH_GL_SUPPORT_ENABLED) || defined(PXR_WEBGPU_SUPPORT_ENABLED))
+        ss << "#define OSD_PATCH_BASIS_GLSL\n";
+        ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchBasisShaderSource();
 #endif
+
+#endif // !defined(PXR_DISABLE_OSD)
     } else {
         TF_CODING_ERROR("Unsupported OSD API: %s", apiName.GetText());
     }
