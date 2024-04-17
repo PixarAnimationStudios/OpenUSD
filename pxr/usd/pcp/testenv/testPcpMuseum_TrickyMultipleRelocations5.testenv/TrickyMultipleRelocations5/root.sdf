@@ -5,13 +5,13 @@
     root layer and one in a variant further down a chain of
     references.
     """
+    relocates = {
+        </Group/Character>: </Group/Model>
+    }
 )
 
 def "Group" (
     references = @./variant.sdf@</Group>
-    relocates = {
-        <Character>: <Model>,
-    }
 )
 {
     over "Model"

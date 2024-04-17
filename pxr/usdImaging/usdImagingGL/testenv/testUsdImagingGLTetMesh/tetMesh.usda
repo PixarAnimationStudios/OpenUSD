@@ -5,53 +5,105 @@
     startTimeCode = 0
 )
 
-def TetMesh "tetMesh1"
+def Scope "RightHanded" {
+    def TetMesh "tetMesh1" 
+    {
+        color3f[] primvars:displayColor = [(0, 1, 0)]
+        point3f[] points.timeSamples = {
+            0:  [(0, 0, 0), (2, 0, 0), (0, 2, 0), (0, 0, 2), (0, 0, -2)],
+            10: [(0, 0, 3), (2, 0, 3), (0, 2, 3), (0, 0, 5), (0, 0, -3), (2, 0, -3), (0, 2, -3), (0, 0, -5)],
+        }
+        int4[] tetVertexIndices.timeSamples = {
+            0: [(0, 1, 2, 3), (0, 2, 1, 4)],
+            10: [(0, 1, 2, 3), (4, 6, 5, 7)],
+        }
+
+        double3 xformOp:translate = (-5, 0, 0)
+        double3 xformOp:rotateXYZ = (90, 0, 0) 
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ","xformOp:translate"]
+    }
+
+    def TetMesh "tetMesh2"
+    {
+        color3f[] primvars:displayColor = [(0, 0, 1)]
+        point3f[] points = [(0, 0, 0), (2, 0, 0), (0, 2, 0), (0, 0, 2), (0, 0, -2)]
+        int4[] tetVertexIndices = [(0, 1, 2, 3), (0, 2, 1, 4)]
+        
+        double3 xformOp:translate = (-2.5, 0, 0)
+        double3 xformOp:rotateXYZ = (90, 0, 0) 
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ","xformOp:translate"]
+    }
+
+
+    def Mesh "regMesh" 
+    {
+        color3f[] primvars:displayColor = [(1, 0, 0)]
+        int[] faceVertexCounts.timeSamples = {
+            0:  [3, 3, 3, 3, 3, 3],
+            10: [3, 3, 3, 3, 3, 3, 3, 3],
+        }
+        int[] faceVertexIndices.timeSamples = {
+            0:  [0, 1, 3, 0, 2, 4, 0, 3, 2, 0, 4, 1, 1, 2, 3, 2, 1, 4],
+            10: [0, 1, 3, 0, 2, 1, 0, 3, 2, 1, 2, 3, 4, 5, 6, 4, 6, 7, 4, 7, 5, 6, 5, 7],
+        }
+        point3f[] points.timeSamples = {
+            0:  [(0, 0, 0), (2, 0, 0), (0, 2, 0), (0, 0, 2), (0, 0, -2)],
+            10: [(0, 0, 3), (2, 0, 3), (0, 2, 3), (0, 0, 5), (0, 0, -3), (2, 0, -3), (0, 2, -3), (0, 0, -5)],
+        }
+
+        double3 xformOp:translate = (0, 0, 0)
+        double3 xformOp:rotateXYZ = (90, 0, 0) 
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ","xformOp:translate"]
+    }
+}
+def Scope "LeftHanded"
 {
-    color3f[] primvars:displayColor = [(0, 1, 0)]
-    point3f[] points.timeSamples = {
-        0: [(0, 0, 0), (2, 0, 0), (0, -2, 0), (0, 0, 2), (0, 0, -2)],
-        10: [(0, 0, 3), (2, 0, 3), (0, -2, 3), (0, 0, 5), (0, 0, -3), (2, 0, -3), (0, -2, -3), (0, 0, -5)],
+    def TetMesh "tetMesh"
+    {
+        color3f[] primvars:displayColor = [(0, 1, 1)]
+        uniform token orientation = "leftHanded"
+        point3f[] points.timeSamples = {
+            0: [(0, 0, 0), (-2, 0, 0), (0, 2, 0), (0, 0, 2), (0, 0, -2)],
+            10: [(0, 0, 3), (-2, 0, 3), (0, 2, 3), (0, 0, 5), (0, 0, -3), (-2, 0, -3), (0, 2, -3), (0, 0, -5)],
+        }
+        int4[] tetVertexIndices.timeSamples = {
+            0: [(0, 1, 2, 3), (0, 2, 1, 4)],
+            10: [(0, 1, 2, 3), (4, 6, 5, 7)],
+        }
+
+        double3 xformOp:translate = (4.5, 0, 0)
+        double3 xformOp:rotateXYZ = (90, 0, 0) 
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ","xformOp:translate"]
     }
-    int4[] tetVertexIndices.timeSamples = {
-        0: [(0, 1, 2, 3), (0, 2, 1, 4)],
-        10: [(0, 1, 2, 3), (4, 6, 5, 7)],
+
+    def Mesh "regMesh"
+    {
+        color3f[] primvars:displayColor = [(1, 1, 0)]
+        int[] faceVertexCounts.timeSamples = {
+            0: [3, 3, 3, 3, 3, 3],
+            10: [3, 3, 3, 3, 3, 3, 3, 3],
+        }
+        int[] faceVertexIndices.timeSamples = {
+            0: [0, 1, 3, 0, 2, 4, 0, 3, 2, 0, 4, 1, 1, 2, 3, 2, 1, 4],
+            10: [0, 1, 3, 0, 2, 1, 0, 3, 2, 1, 2, 3, 4, 5, 6, 4, 6, 7, 4, 7, 5, 6, 5, 7],
+        }
+        uniform token orientation = "leftHanded"
+        point3f[] points.timeSamples = {
+            0: [(0, 0, 0), (-2, 0, 0), (0, 2, 0), (0, 0, 2), (0, 0, -2)],
+            10: [(0, 0, 3), (-2, 0, 3), (0, 2, 3), (0, 0, 5), (0, 0, -3), (-2, 0, -3), (0, 2, -3), (0, 0, -5)],
+        }
+
+        double3 xformOp:translate = (7, 0, 0)
+        double3 xformOp:rotateXYZ = (90, 0, 0) 
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ","xformOp:translate"]
     }
-    
-    double3 xformOp:translate = (-2.5, 0, 0)
-    float xformOp:rotateX:Zup = 90 
-    uniform token[] xformOpOrder = ["xformOp:rotateX:Zup","xformOp:translate"]
+
 }
 
-def TetMesh "tetMesh2"
+def DomeLight "DomeLight"
 {
-    color3f[] primvars:displayColor = [(0, 0, 1)]
-    point3f[] points = [(0, 0, 0), (2, 0, 0), (0, -2, 0), (0, 0, 2), (0, 0, -2)]
-    int4[] tetVertexIndices = [(0, 1, 2, 3), (0, 2, 1, 4)]
-    
-    float xformOp:rotateX:Zup = 90 
-    uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
+    asset inputs:texture:file = @./StinsonBeach.hdr@
 }
-
-def Mesh "regMesh"
-{
-    color3f[] primvars:displayColor = [(1, 0, 0)]
-    int[] faceVertexCounts.timeSamples = {
-        0: [3, 3, 3, 3, 3, 3],
-        10: [3, 3, 3, 3, 3, 3, 3, 3],
-    }
-    int[] faceVertexIndices.timeSamples = {
-        0: [0, 1, 3, 0, 2, 4, 0, 3, 2, 0, 4, 1, 1, 2, 3, 2, 1, 4],
-        10: [0, 1, 3, 0, 2, 1, 0, 3, 2, 1, 2, 3, 4, 5, 6, 4, 6, 7, 4, 7, 5, 6, 5, 7],
-    }
-    point3f[] points.timeSamples = {
-        0: [(0, 0, 0), (2, 0, 0), (0, -2, 0), (0, 0, 2), (0, 0, -2)],
-        10: [(0, 0, 3), (2, 0, 3), (0, -2, 3), (0, 0, 5), (0, 0, -3), (2, 0, -3), (0, -2, -3), (0, 0, -5)],
-    }
-    double3 xformOp:translate = (2.5, 0, 0)
-    float xformOp:rotateX:Zup = 90 
-    uniform token[] xformOpOrder = ["xformOp:rotateX:Zup","xformOp:translate"]
-}
-
 
 def Camera "Camera"
 {

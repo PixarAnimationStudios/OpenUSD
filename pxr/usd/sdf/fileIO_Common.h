@@ -101,6 +101,10 @@ public:
 
     static bool WriteRelocates(Sdf_TextOutput &out,
                 size_t indent, bool multiLine,
+                const SdfRelocates &relocates);
+
+    static bool WriteRelocates(Sdf_TextOutput &out,
+                size_t indent, bool multiLine,
                 const SdfRelocatesMap &reloMap);
 
     static void WriteDictionary(Sdf_TextOutput &out,

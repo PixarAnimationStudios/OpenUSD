@@ -292,7 +292,7 @@ _GetAllResolveTargetsForPrim(
     for (const UsdPrimCompositionQueryArc &arc : arcs) {
         const SdfLayerRefPtrVector &layers = 
             arc.GetTargetNode().GetLayerStack()->GetLayers();
-        for (const SdfLayerHandle &layer : layers) {
+        for (const SdfLayerRefPtr &layer : layers) {
 
             upToResolveTargets->push_back(
                 arc.MakeResolveTargetUpTo(layer));

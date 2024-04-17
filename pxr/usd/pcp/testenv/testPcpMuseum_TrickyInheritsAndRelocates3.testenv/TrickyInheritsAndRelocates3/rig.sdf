@@ -1,12 +1,13 @@
 #sdf 1.4.32
-
-def "GuitarRig" (
+(
     relocates = {
-        <Rig/StringsRig/Strings>: <Anim/Strings>,
-        <Rig/StringsRig/String1Rig/String>: <Anim/Strings/String1>, 
-        <Rig/StringsRig/String2Rig/String>: <Anim/Strings/String2>, 
+        </GuitarRig/Rig/StringsRig/String1Rig/String>: </GuitarRig/Anim/Strings/String1>, 
+        </GuitarRig/Rig/StringsRig/String2Rig/String>: </GuitarRig/Anim/Strings/String2>, 
+        </GuitarRig/Rig/StringsRig/Strings>: </GuitarRig/Anim/Strings>
     }
 )
+
+def "GuitarRig"
 {
     def "Anim"
     {

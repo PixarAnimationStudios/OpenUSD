@@ -117,6 +117,7 @@ xx(PayloadListOp,           55, SdfPayloadListOp,            false)
 xx(TimeCode,                56, SdfTimeCode,                 true)
 xx(PathExpression,          57, SdfPathExpression,           true)
 
+xx(Relocates,               58, SdfRelocates,                false)
 
 
 

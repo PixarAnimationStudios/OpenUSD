@@ -726,10 +726,14 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 
             HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
+            HdBufferArrayUsageHint usageHint =
+                HdBufferArrayUsageHintBitsIndex |
+                HdBufferArrayUsageHintBitsStorage;
             // Set up the usage hints to mark topology as varying if
             // there is a previously set range.
-            HdBufferArrayUsageHint usageHint;
-            usageHint.bits.sizeVarying = drawItem->GetTopologyRange()? 1 : 0;
+            if (drawItem->GetTopologyRange()) {
+                usageHint |= HdBufferArrayUsageHintBitsSizeVarying;
+            }
 
             // allocate new range
             HdBufferArrayRangeSharedPtr range
@@ -932,7 +936,7 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferArrayRangeSharedPtr range =
         resourceRegistry->UpdateNonUniformBufferArrayRange(
             HdTokens->primvar, bar, bufferSpecs, removedSpecs,
-            HdBufferArrayUsageHint());
+            HdBufferArrayUsageHintBitsVertex);
 
     HdStUpdateDrawItemBAR(
         range,
@@ -1045,7 +1049,7 @@ HdStBasisCurves::_PopulateVaryingPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferArrayRangeSharedPtr range =
         resourceRegistry->UpdateNonUniformBufferArrayRange(
             HdTokens->primvar, bar, bufferSpecs, removedSpecs,
-            HdBufferArrayUsageHint());
+            HdBufferArrayUsageHintBitsStorage);
 
     HdStUpdateDrawItemBAR(
         range,
@@ -1135,7 +1139,7 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferArrayRangeSharedPtr range =
         resourceRegistry->UpdateNonUniformBufferArrayRange(
             HdTokens->primvar, bar, bufferSpecs, removedSpecs,
-            HdBufferArrayUsageHint());
+            HdBufferArrayUsageHintBitsStorage);
 
     HdStUpdateDrawItemBAR(
         range,

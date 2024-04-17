@@ -468,17 +468,17 @@ HgiGLShaderGenerator::_WriteInOutBlocks(
     const HgiShaderFunctionParamBlockDescVector &parameterBlocks,
     const std::string &qualifier)
 {
-    for(const HgiShaderFunctionParamBlockDesc &p : parameterBlocks) {
+    for (const HgiShaderFunctionParamBlockDesc &p : parameterBlocks) {
 
-        HgiGLShaderSectionPtrVector members;
+        HgiGLMemberShaderSectionPtrVector members;
         for(const HgiShaderFunctionParamBlockDesc::Member &member : p.members) {
 
             HgiGLMemberShaderSection *memberSection =
                 CreateShaderSection<HgiGLMemberShaderSection>(
                     member.name,
                     member.type,
-                    HgiInterpolationDefault,
-                    HgiSamplingDefault,
+                    member.interpolation,
+                    member.sampling,
                     HgiStorageDefault,
                     HgiShaderSectionAttributeVector(),
                     qualifier,

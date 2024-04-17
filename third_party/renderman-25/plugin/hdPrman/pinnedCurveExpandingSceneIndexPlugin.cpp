@@ -47,8 +47,14 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    // Should be chained _after_ the extComputationPrimvarPruningSceneIndex.
-    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 1;
+    // Should be chained *after*:
+    // - extComputationPrimvarPruningSceneIndex (to allow expansion of computed
+    //   primvars on pinned curves) and
+    // - procedural plugin (HdGpSceneIndexPlugin) to allow expansion of
+    //   computed primvars on procedurally generated pinned curves.
+    //
+    const HdSceneIndexPluginRegistry::InsertionPhase
+        insertionPhase = 3; // HdGpSceneIndexPlugin()::GetInsertionPhase() + 1;
 
     // Register the plugins conditionally.
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(

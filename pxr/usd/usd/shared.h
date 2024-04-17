@@ -26,9 +26,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
+#include "pxr/base/tf/delegatedCountPtr.h"
 #include "pxr/base/tf/hash.h"
 
-#include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -42,11 +42,11 @@ struct Usd_Counted {
     explicit Usd_Counted(T &&data) : data(std::move(data)), count(0) {}
     
     friend inline void
-    intrusive_ptr_add_ref(Usd_Counted const *c) {
+    TfDelegatedCountIncrement(Usd_Counted const *c) {
         c->count.fetch_add(1, std::memory_order_relaxed);
     }
     friend inline void
-    intrusive_ptr_release(Usd_Counted const *c) {
+    TfDelegatedCountDecrement(Usd_Counted const *c) noexcept {
         if (c->count.fetch_sub(1, std::memory_order_release) == 1) {
             std::atomic_thread_fence(std::memory_order_acquire);
             delete c;
@@ -66,11 +66,13 @@ template <class T>
 struct Usd_Shared
 {
     // Construct a Usd_Shared with a value-initialized T instance.
-    Usd_Shared() : _held(new Usd_Counted<T>()) {}
+    Usd_Shared() : _held(TfMakeDelegatedCountPtr<Usd_Counted<T>>()) {}
     // Create a copy of \p obj.
-    explicit Usd_Shared(T const &obj) : _held(new Usd_Counted<T>(obj)) {}
+    explicit Usd_Shared(T const &obj) :
+        _held(TfMakeDelegatedCountPtr<Usd_Counted<T>>(obj)) {}
     // Move from \p obj.
-    explicit Usd_Shared(T &&obj) : _held(new Usd_Counted<T>(std::move(obj))) {}
+    explicit Usd_Shared(T &&obj) :
+        _held(TfMakeDelegatedCountPtr<Usd_Counted<T>>(std::move(obj))) {}
 
     // Create an empty shared, which may not be accessed via Get(),
     // GetMutable(), IsUnique(), Clone(), or MakeUnique().  This is useful when
@@ -86,7 +88,7 @@ struct Usd_Shared
     // Return true if no other Usd_Shared instance shares this instance's data.
     bool IsUnique() const { return _held->count == 1; }
     // Make a new copy of the held data and refer to it.
-    void Clone() { _held.reset(new Usd_Counted<T>(Get())); }
+    void Clone() { _held = TfMakeDelegatedCountPtr<Usd_Counted<T>>(Get()); }
     // Ensure this Usd_Shared instance has unique data.  Equivalent to:
     // \code
     // if (not shared.IsUnique()) { shared.Clone(); }
@@ -108,7 +110,7 @@ struct Usd_Shared
         return TfHash()(sh._held->data);
     }
 private:
-    boost::intrusive_ptr<Usd_Counted<T>> _held;
+    TfDelegatedCountPtr<Usd_Counted<T>> _held;
 };
 
 

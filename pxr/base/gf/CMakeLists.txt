@@ -77,6 +77,7 @@ pxr_library(gf
         declare.h
         ilmbase_halfLimits.h
         limits.h
+        numericCast.h
         traits.h
         ${optionalHeaders}
 

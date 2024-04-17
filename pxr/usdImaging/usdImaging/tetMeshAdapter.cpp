@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 #include "pxr/usdImaging/usdImaging/tetMeshAdapter.h"
 
-#include "pxr/usdImaging/usdImaging/dataSourceMesh.h"
+#include "pxr/usdImaging/usdImaging/dataSourceTetMesh.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
@@ -33,6 +33,7 @@
 #include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/base/tf/type.h"
+#include "pxr/usd/usdGeom/tetMesh.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -45,6 +46,49 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 UsdImagingTetMeshAdapter::~UsdImagingTetMeshAdapter() = default;
+
+TfTokenVector
+UsdImagingTetMeshAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingTetMeshAdapter::GetImagingSubprimType(
+    UsdPrim const& prim,
+    TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->tetMesh;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingTetMeshAdapter::GetImagingSubprimData(
+    UsdPrim const& prim,
+    TfToken const& subprim,
+    const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceTetMeshPrim::New(
+            prim.GetPath(),
+            prim,
+            stageGlobals);
+    }
+    return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingTetMeshAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
+{
+    return UsdImagingDataSourceTetMeshPrim::Invalidate(
+        prim, subprim, properties, invalidationType);
+}
 
 SdfPath
 UsdImagingTetMeshAdapter::Populate(UsdPrim const& prim,
@@ -86,6 +130,23 @@ UsdImagingTetMeshAdapter::TrackVariability(UsdPrim const& prim,
             /*isInherited*/false);
 }
 
+HdDirtyBits
+UsdImagingTetMeshAdapter::ProcessPropertyChange(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    TfToken const& propertyName)
+{
+    if(propertyName == UsdGeomTokens->points)
+        return HdChangeTracker::DirtyPoints;
+
+    if (propertyName == UsdGeomTokens->tetVertexIndices ||
+        propertyName == UsdGeomTokens->orientation) {
+        return HdChangeTracker::DirtyTopology;
+    }
+
+    // Allow base class to handle change processing.
+    return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
+}
 /*virtual*/ 
 VtValue
 UsdImagingTetMeshAdapter::GetTopology(UsdPrim const& prim,

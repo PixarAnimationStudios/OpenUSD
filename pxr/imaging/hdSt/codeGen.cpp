@@ -54,10 +54,24 @@
 #include <sstream>
 #include <unordered_map>
 
-#if defined(__APPLE__)
-#include <opensubdiv/osd/mtlPatchShaderSource.h>
-#else
+#if defined(PXR_METAL_SUPPORT_ENABLED)
+    #include <opensubdiv/osd/mtlPatchShaderSource.h>
+#elif defined(PXR_GL_SUPPORT_ENABLED)
+    #define PXR_OSD_WITH_GL_SUPPORT_ENABLED
+#endif // PXR_METAL_SUPPORT_ENABLED
+
+#if defined(ARCH_OS_ANDROID) || defined(__EMSCRIPTEN__)
+#define PXR_DISABLE_OSD
+#endif
+
+#if !defined(PXR_DISABLE_OSD)
+#if defined(PXR_OSD_WITH_GL_SUPPORT_ENABLED) || defined(PXR_WEBGPU_SUPPORT_ENABLED)
 #include <opensubdiv/osd/glslPatchShaderSource.h>
+#endif
+#endif
+
+#if defined(PXR_DIRECTX_SUPPORT_ENABLED)
+#include <opensubdiv/osd/hlslPatchShaderSource.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -306,6 +320,10 @@ static void _EmitAccessor(std::stringstream &str,
                           TfToken const &type,
                           HdStBinding const &binding,
                           const char *index=NULL);
+
+static void _EmitScalarAccessor(std::stringstream &str,
+                                TfToken const &name,
+                                TfToken const &type);
 /*
   1. If the member is a scalar consuming N basic machine units,
   the base alignment is N.
@@ -821,6 +839,8 @@ _ResourceGenerator::_GenerateHgiResources(
                 HgiShaderFunctionParamBlockDesc::Member paramMember;
                 paramMember.name = member.name;
                 paramMember.type = _ConvertBoolType(member.dataType);
+                paramMember.interpolation = _GetInterpolation(member.qualifiers); 
+                paramMember.sampling = _GetSamplingQualifier(member.qualifiers); 
                 paramBlock.members.push_back(paramMember);
             }
             if (element.inOut == InOut::STAGE_IN) {
@@ -1074,8 +1094,20 @@ _ResourceGenerator::_GenerateGLSLResources(
                 }
                 str << element.aggregateName << " {\n";
                 for (auto const & member : element.members) {
-                    str << "    " << member.dataType << " "
-                                        << member.name;
+                    str << "    ";
+                    if (member.qualifiers == _tokens->flat) {
+                        str << "flat ";
+                    }
+                    else if (member.qualifiers == _tokens->noperspective) {
+                        str << "noperspective ";
+                    }
+                    else if (member.qualifiers == _tokens->centroid) {
+                        str << "centroid ";
+                    }
+                    else if (member.qualifiers == _tokens->sample) {
+                        str << "sample ";
+                    }
+                    str << member.dataType << " " << member.name;
                     if (member.arraySize.IsEmpty()) {
                         str << ";\n";
                     } else {
@@ -1658,6 +1690,7 @@ _GetOSDCommonShaderSource(TfToken const &apiName)
     } else if (HgiTokens->Vulkan == apiName ||
                HgiTokens->OpenGL == apiName ||
                HgiTokens->WebGPU == apiName) {
+#if !defined(PXR_DISABLE_OSD)
 #if defined(PXR_GL_SUPPORT_ENABLED) || defined(PXR_WEBGPU_SUPPORT_ENABLED)
     ss << "FORWARD_DECL(MAT4 GetProjectionMatrix());\n"
        << "FORWARD_DECL(float GetTessLevel());\n"
@@ -1668,6 +1701,7 @@ _GetOSDCommonShaderSource(TfToken const &apiName)
        << "\n";
 
     ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
+#endif
 #endif // PXR_GL_SUPPORT_ENABLED || PXR_WEBGPU_SUPPORT_ENABLED
     } else {
         TF_CODING_ERROR("Unsupported OSD API: %s", apiName.GetText());
@@ -1684,16 +1718,27 @@ _GetOSDPatchBasisShaderSource(const TfToken &apiName)
     std::stringstream ss;
     if (apiName == HgiTokens->Metal) {
 #if defined(PXR_METAL_SUPPORT_ENABLED)
-            ss << "#define OSD_PATCH_BASIS_METAL\n";
-            ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchBasisShaderSource();
+        ss << "#define OSD_PATCH_BASIS_METAL\n";
+        ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchBasisShaderSource();
 #endif
     } else if (HgiTokens->Vulkan == apiName ||
                HgiTokens->OpenGL == apiName ||
-               HgiTokens->WebGPU == apiName) {
-#if defined(PXR_VULKAN_SUPPORT_ENABLED) || defined(PXR_GL_SUPPORT_ENABLED) || defined(PXR_WEBGPU_SUPPORT_ENABLED)
-            ss << "#define OSD_PATCH_BASIS_GLSL\n";
+               HgiTokens->WebGPU == apiName ) {
+#if !defined(PXR_DISABLE_OSD)
+
+#if defined(PXR_DIRECTX_SUPPORT_ENABLED)
+
+        if (dxHgiEnabled)
+            ss << OpenSubdiv::Osd::HLSLPatchShaderSource::GetPatchBasisShaderSource();
+        else
             ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchBasisShaderSource();
+
+#elif (defined(PXR_OSD_WITH_GL_SUPPORT_ENABLED) || defined(PXR_WEBGPU_SUPPORT_ENABLED))
+        ss << "#define OSD_PATCH_BASIS_GLSL\n";
+        ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchBasisShaderSource();
 #endif
+
+#endif // !defined(PXR_DISABLE_OSD)
     } else {
         TF_CODING_ERROR("Unsupported OSD API: %s", apiName.GetText());
     }
@@ -3279,6 +3324,8 @@ static void _EmitStageAccessor(std::stringstream &str,
     // default to localIndex=0
     str << _GetUnpackedType(type, false) << " HdGet_" << name << "()"
         << " { return HdGet_" << name << "(0); }\n";
+
+    _EmitScalarAccessor(str, name, type);
 }
 
 static void _EmitStructAccessor(std::stringstream &str,
@@ -3334,6 +3381,7 @@ static void _EmitStructAccessor(std::stringstream &str,
         str << _GetUnpackedType(type, false) << " HdGet_" << accessorName << "()"
             << " { return HdGet_" << accessorName << "(0); }\n";
     }
+    _EmitScalarAccessor(str, accessorName, type);
 }
 
 static void _EmitBufferAccessor(std::stringstream &str,
@@ -6572,11 +6620,6 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                 << "\n}\n"
                 << "#define HD_HAS_" << it->second.name << " 1\n";
             
-            if (it->second.name == it->second.inPrimvars[0]) {
-                accessors
-                    << "#endif\n";
-            }
-
             // Emit scalar accessors to support shading languages like MSL which
             // do not support swizzle operators on scalar values.
             if (_GetNumComponents(it->second.dataType) <= 4) {
@@ -6586,6 +6629,11 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                     << " { return HdGet_" << it->second.name << "()"
                     << _GetFlatTypeSwizzleString(it->second.dataType)
                     << "; }\n";
+            }
+
+            if (it->second.name == it->second.inPrimvars[0]) {
+                accessors
+                    << "#endif\n";
             }
 
         } else if (bindingType == HdStBinding::TRANSFORM_2D) {

@@ -6,7 +6,7 @@ pxr_library(pxOsd
         tf
         gf
         vt
-        ${OPENSUBDIV_LIBRARIES}
+        ${OPENSUBDIV_OSDCPU_LIBRARY}
         ${Boost_PYTHON_LIBRARY}
 
     INCLUDE_DIRS

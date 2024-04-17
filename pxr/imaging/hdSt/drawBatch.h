@@ -63,7 +63,8 @@ class HdSt_DrawBatch
 {
 public:
     HDST_API
-    HdSt_DrawBatch(HdStDrawItemInstance * drawItemInstance);
+    HdSt_DrawBatch(HdStDrawItemInstance * drawItemInstance,
+                   bool const allowTextureResourceRebinding = false);
 
     HDST_API
     virtual ~HdSt_DrawBatch();
@@ -107,6 +108,12 @@ public:
         HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const & resourceRegistry,
         bool firstDrawBatch) = 0;
+
+    /// Returns the draw item instances in this batch.
+    std::vector<HdStDrawItemInstance const*> const &
+    GetDrawItemInstances() const {
+        return _drawItemInstances;
+    }
 
     /// Let the batch know that one of it's draw item instances has changed
     /// NOTE: This callback is called from multiple threads, so needs to be
@@ -241,12 +248,23 @@ protected:
 
 protected:
     HDST_API
-    static bool _IsAggregated(HdStDrawItem const *drawItem0,
-                              HdStDrawItem const *drawItem1);
+    bool _IsAggregated(HdStDrawItem const *drawItem0,
+                       HdStDrawItem const *drawItem1);
 
     std::vector<HdStDrawItemInstance const*> _drawItemInstances;
 
+    bool const _allowTextureResourceRebinding;
+
 private:
+    HDST_API
+    static
+    bool _CanAggregateMaterials(HdStDrawItem const *drawItem0,
+                                HdStDrawItem const *drawItem1);
+
+    HDST_API
+    bool _CanAggregateTextures(HdStDrawItem const *drawItem0,
+                               HdStDrawItem const *drawItem1);
+
     _DrawingProgram _program;
     HdStShaderCode::ID _shaderHash;
 };

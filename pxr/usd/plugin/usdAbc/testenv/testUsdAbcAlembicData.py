@@ -34,6 +34,13 @@ class TestUsdAbcAlembicData(unittest.TestCase):
         self.assertTrue(attr)
         self.assertEqual(attr.Get(Usd.TimeCode.EarliestTime()), 15)
 
+        # Confirm that fps data from alembic files is stored as
+        # usd timeCodesPerSeconds
+        stage = Usd.Stage.Open('testusdtimecode.abc')
+        self.assertTrue(stage)
+        self.assertTrue(stage.GetRootLayer().HasTimeCodesPerSecond())
+        self.assertEqual(stage.GetTimeCodesPerSecond(), 30)
+
     def test_Write(self):
         # Create a usda and abc temporary files.
         # NOTE: This files will automatically be deleted when the test quits,

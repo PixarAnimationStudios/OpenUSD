@@ -105,7 +105,8 @@ HdSt_ImageShaderRenderPass::_SetupVertexPrimvarBAR(
 
     HdBufferArrayRangeSharedPtr vertexPrimvarRange =
         registry->AllocateNonUniformBufferArrayRange(
-            HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
+            HdTokens->primvar, bufferSpecs,
+            HdBufferArrayUsageHintBitsVertex);
 
     registry->AddSources(vertexPrimvarRange, std::move(sources));
 

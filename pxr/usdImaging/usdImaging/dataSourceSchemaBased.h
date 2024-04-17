@@ -25,7 +25,7 @@
 #ifndef PXR_USD_IMAGING_USD_IMAGING_DATA_SOURCE_SCHEMA_BASED_H
 #define PXR_USD_IMAGING_USD_IMAGING_DATA_SOURCE_SCHEMA_BASED_H
 
-#include "pxr/usdImaging/usdImaging/dataSourceGprim.h"
+#include "pxr/usdImaging/usdImaging/dataSourceAttribute.h"
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
 
 #include "pxr/imaging/hd/dataSource.h"

@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/api.h"
+#include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
 #include "pxr/usd/sdf/changeList.h"
 #include "pxr/usd/sdf/declareHandles.h"
@@ -81,6 +82,7 @@ public:
     SdfRelocatesMap newIncrementalRelocatesSourceToTarget;
     SdfRelocatesMap newIncrementalRelocatesTargetToSource;
     SdfPathVector newRelocatesPrimPaths;
+    PcpErrorVector newRelocatesErrors;
 
     /// Paths that are affected by the above relocation changes.
     SdfPathSet pathsAffectedByRelocationChanges;

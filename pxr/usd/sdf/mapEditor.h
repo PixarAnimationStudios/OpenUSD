@@ -48,7 +48,7 @@ public:
     typedef typename MapType::value_type  value_type;
     typedef typename MapType::iterator    iterator;
 
-    virtual ~Sdf_MapEditor();
+    virtual ~Sdf_MapEditor() noexcept;
 
     /// Returns a string describing the location of the map being edited.
     /// This is used for debugging and error messages.

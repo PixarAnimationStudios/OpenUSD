@@ -208,7 +208,8 @@ AddImage(const struct mach_header* mh, intptr_t slide)
 
     // Execute in priority order.
     for (size_t i = 0, n = entries.size(); i != n; ++i) {
-        if (entries[i].function && entries[i].version == 0u) {
+        if (entries[i].function &&
+            entries[i].version == static_cast<unsigned>(PXR_VERSION)) {
             entries[i].function();
         }
     }
@@ -223,7 +224,8 @@ RemoveImage(const struct mach_header* mh, intptr_t slide)
 
     // Execute in reverse priority order.
     for (size_t i = entries.size(); i-- != 0; ) {
-        if (entries[i].function && entries[i].version == 0u) {
+        if (entries[i].function &&
+            entries[i].version == static_cast<unsigned>(PXR_VERSION)) {
             entries[i].function();
         }
     }
@@ -367,7 +369,8 @@ RunConstructors(HMODULE hModule)
         // Execute in priority order.
         const auto entries = GetConstructorEntries(hModule, ".pxrctor");
         for (size_t i = 0, n = entries.size(); i != n; ++i) {
-            if (entries[i].function && entries[i].version == 0u) {
+            if (entries[i].function &&
+                entries[i].version == static_cast<unsigned>(PXR_VERSION)) {
                 entries[i].function();
             }
         }
@@ -386,7 +389,8 @@ RunDestructors(HMODULE hModule)
         // Execute in reverse priority order.
         const auto entries = GetConstructorEntries(hModule, ".pxrdtor");
         for (size_t i = entries.size(); i-- != 0; ) {
-            if (entries[i].function && entries[i].version == 0u) {
+            if (entries[i].function &&
+                entries[i].version == static_cast<unsigned>(PXR_VERSION)) {
                 entries[i].function();
             }
         }

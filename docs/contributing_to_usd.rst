@@ -130,6 +130,9 @@ Here is the workflow we recommend for contributing changes to USD:
     #. Now your remote branch will have your dev_mybugfix branch, which you can
        now pull request (to USD's dev branch) using the github UI.
 
+When your pull request is merged, it will be available in the next dev and full
+release. For USD release schedules, see :ref:`release_schedule`
+
 .. _github_issues:
 
 Github Issues

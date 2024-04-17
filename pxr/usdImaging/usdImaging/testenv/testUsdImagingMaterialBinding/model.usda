@@ -1,0 +1,61 @@
+#usda 1.0
+
+def Xform "Model"  (
+    references = [
+        </Model_stronger>,
+        </Model_weaker>,
+    ]
+)
+{
+}
+
+def "Model_weaker"
+{
+    def Xform "Geom"
+    {
+        def Xform "Parent"
+        {
+            # our direct binding is to a "weaker" material.
+            def Mesh "mesh" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Model_weaker/Looks/Material_weaker>
+            }
+        }
+    }
+
+    def Scope "Looks"
+    {
+        def Material "Material_weaker"
+        {
+        }
+    }
+}
+
+def "Model_stronger"
+{
+    over "Geom"
+    {
+        over "Parent" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            # In our stronger layer, we bind something to the parent scope, and
+            # then delete the direct binding on the child.
+            rel material:binding = </Model_stronger/Looks/Material_stronger>
+
+            over "mesh" 
+            {
+                delete rel material:binding = </Model_stronger/Looks/Material_weaker>
+            }
+        }
+    }
+
+    over "Looks"
+    {
+        def Material "Material_stronger"
+        {
+        }
+    }
+}

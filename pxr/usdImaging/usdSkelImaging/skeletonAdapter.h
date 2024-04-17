@@ -25,7 +25,7 @@
 #define PXR_USD_IMAGING_USD_SKEL_IMAGING_SKELETON_ADAPTER_H
 
 #include "pxr/pxr.h"
-#include "pxr/usdImaging/usdImaging/primAdapter.h"
+#include "pxr/usdImaging/usdImaging/instanceablePrimAdapter.h"
 #include "pxr/usdImaging/usdSkelImaging/api.h"
 
 #include "pxr/imaging/hd/meshTopology.h"
@@ -46,10 +46,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Support for drawing bones of a UsdSkelSkeleton.  
 ///
-class UsdSkelImagingSkeletonAdapter : public UsdImagingPrimAdapter 
+class UsdSkelImagingSkeletonAdapter : public UsdImagingInstanceablePrimAdapter 
 {
 public:
-    using BaseAdapter = UsdImagingPrimAdapter;
+    using BaseAdapter = UsdImagingInstanceablePrimAdapter;
 
     UsdSkelImagingSkeletonAdapter()
         : BaseAdapter()

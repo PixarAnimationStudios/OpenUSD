@@ -1,0 +1,53 @@
+/*!
+\page Page_Hydra_Scene_Browser Hydra Scene Browser
+
+A visual representation of the Hydra scene architecture can be very helpful
+for understanding or debugging your Hydra scene data. Usdview now has a window 
+called the **Hydra Scene Browser** that can be used for this purpose, and
+can also be integrated into your Hydra-enabled application.
+
+\image html hydra_scene_browser_usdview.png
+
+The Hydra Scene Browser is a parallel to usdview's builtin browser, but shows 
+Hydra prims instead of USD prims. This lets users or developers inspect the data 
+Hydra renders from, after all of the load-time scene transforms have been 
+applied (like instancing resolution).
+
+The Hydra Scene Browser is bundled as a stand-alone Qt component and can be 
+integrated into any Hydra-enabled application. See `pxr/imaging/hdui`, or the
+Python implementation in usdview in 
+`pxr/usdImaging/usdviewq/hydraSceneBrowser.py`.
+
+The Hydra Scene Browser view of a given scene index has three columns:
+
+- A prim tree-view, roughly matching the USD prim view, modulo prims added by 
+procedurals or removed by instance aggregation, etc. This is populated by 
+calling GetChildPrimPaths() starting at the root of the scene ("/").
+- A property tree-view for the selected prim, since Hydra properties are 
+hierarchical. This is populated by getting the datasource for the prim with 
+GetPrim(), and then calling GetNames() on containers.
+- A property value display for the selected property.
+
+\image html hydra_scene_browser_columns.png
+
+Everything is computed lazily. Names or values for a datasource are not pulled 
+until you select and expand it in the browser. The Hydra Scene Browser is also 
+a scene index observer, and receives 
+PrimsAdded/PrimsRemoved/PrimsDirtied/PrimsRenamed messages, which are logged 
+and displayable with the **Show Notice Logger** button.
+
+If the Hydra pipeline uses scene index filters to modify the view of the data, 
+the Hydra Scene Browser can look at the data provided by the filter as well as 
+the data provided by the input scene, in order to debug the scene 
+transformation in question. The **Inputs** drop-down displays all of the 
+ancestor scene indexes of the selected scene index. An example scene index 
+filter pipeline might look like this:
+
+\image html hydra_scene_browser_filters.png
+
+The Hydra Scene Browser works for any Hydra release starting with 23.02, 
+regardless of whether scene data is coming from a scene delegate or not. 
+Hydra converts between the representations internally as needed -- see 
+\ref Hydra_Getting_Started_Appendix_Scene_Index_Emulation for details.
+
+*/

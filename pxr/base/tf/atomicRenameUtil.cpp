@@ -102,7 +102,7 @@ Tf_AtomicRenameFileOver(std::string const &srcFileName,
             const mode_t mask = umask(0);
             umask(mask);
         #endif
-        fileMode = DEFFILEMODE - mask;
+        fileMode = DEFFILEMODE & ~mask;
     }
 
     if (chmod(srcFileName.c_str(), fileMode) != 0) {

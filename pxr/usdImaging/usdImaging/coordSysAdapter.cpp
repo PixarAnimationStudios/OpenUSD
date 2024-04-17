@@ -93,7 +93,7 @@ UsdImagingCoordSysAdapter::TrackVariability(UsdPrim const& prim,
 {
     // Discover time-varying transform on the target prim.
     _IsTransformVarying(prim,
-        HdChangeTracker::DirtyTransform,
+        HdCoordSys::DirtyTransform,
         UsdImagingTokens->usdVaryingXform,
         timeVaryingBits);
 }

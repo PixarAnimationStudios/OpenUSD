@@ -37,6 +37,7 @@
 
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/assetPath.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -82,6 +83,9 @@ using HdStringDataSourceHandle = HdStringDataSource::Handle;
 using HdAssetPathDataSource = HdTypedSampledDataSource<SdfAssetPath>;
 using HdAssetPathDataSourceHandle = HdAssetPathDataSource::Handle;
 
+using HdPathExpressionDataSource = HdTypedSampledDataSource<SdfPathExpression>;
+using HdPathExpressionDataSourceHandle = HdPathExpressionDataSource::Handle;
+
 // Linear algebra
 using HdVec2iDataSource = HdTypedSampledDataSource<GfVec2i>;
 using HdVec2iDataSourceHandle = HdVec2iDataSource::Handle;
@@ -107,6 +111,8 @@ using HdVec3dArrayDataSourceHandle = HdVec3dArrayDataSource::Handle;
 
 using HdVec4iDataSource = HdTypedSampledDataSource<GfVec4i>;
 using HdVec4iDataSourceHandle = HdVec4iDataSource::Handle;
+using HdVec4iArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec4i>>;
+using HdVec4iArrayDataSourceHandle = HdVec4iArrayDataSource::Handle;
 using HdVec4fDataSource = HdTypedSampledDataSource<GfVec4f>;
 using HdVec4fDataSourceHandle = HdVec4fDataSource::Handle;
 using HdVec4dArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec4d>>;

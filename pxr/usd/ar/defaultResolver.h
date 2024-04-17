@@ -54,9 +54,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 ///    - The currently-bound ArDefaultResolverContext for the calling thread
 ///    - ArDefaultResolver::SetDefaultSearchPath
-///    - The environment variable PXR_AR_DEFAULT_SEARCH_PATH. This is
-///      expected to be a list of directories delimited by the platform's 
-///      standard path separator.
+///
+/// The environment variable PXR_AR_DEFAULT_SEARCH_PATH may be used to specify
+/// an inital search path value. This is expected to be a list of directories
+/// delimited by the platform's standard path separator.  A search path
+/// specified in this manner is overwritten by any call to
+/// ArDefaultResolver::SetDefaultSearchPath.
 ///
 /// ArDefaultResolver supports creating an ArDefaultResolverContext via
 /// ArResolver::CreateContextFromString by passing a list of directories
@@ -66,16 +69,22 @@ class ArDefaultResolver
 {
 public:
     AR_API 
-    ArDefaultResolver();
+    ArDefaultResolver() = default;
 
     AR_API 
-    virtual ~ArDefaultResolver();
+    virtual ~ArDefaultResolver() = default;
 
     /// Set the default search path that will be used during asset
-    /// resolution. This must be called before the first call
-    /// to \ref ArGetResolver.
-    /// The specified paths will be searched *in addition to, and before*
-    /// paths specified via the environment variable PXR_AR_DEFAULT_SEARCH_PATH
+    /// resolution. Calling this function will trigger a ResolverChanged
+    /// notification to be sent if the search path differs from the
+    /// currently set default value.
+    ///
+    /// The inital search path may be specified using via the environment
+    /// variable PXR_AR_DEFAULT_SEARCH_PATH. Calling this function will
+    /// override any path specified in this manner.
+    ///
+    /// This function is not thread-safe and should not be called concurrently
+    /// with any other ArResolver operations
     AR_API
     static void SetDefaultSearchPath(
         const std::vector<std::string>& searchPath);
@@ -143,7 +152,6 @@ protected:
 private:
     const ArDefaultResolverContext* _GetCurrentContextPtr() const;
 
-    ArDefaultResolverContext _fallbackContext;
     ArResolverContext _defaultContext;
 };
 

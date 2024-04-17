@@ -374,11 +374,12 @@ _RelocatesAdd(const Sdf_ParserHelpers::Value& arg1, const Sdf_ParserHelpers::Val
     // editing, but since we're bypassing that proxy and setting the map
     // directly into the underlying SdfData, we need to explicitly absolutize
     // paths here.
-    const SdfPath srcAbsPath = srcPath.MakeAbsolutePath(context->path);
-    const SdfPath targetAbsPath = targetPath.MakeAbsolutePath(context->path);
+    srcPath = srcPath.MakeAbsolutePath(context->path);
+    targetPath = targetPath.MakeAbsolutePath(context->path);
 
-    context->relocatesParsingMap.insert(std::make_pair(srcAbsPath, 
-                                                        targetAbsPath));
+    context->relocatesParsing.emplace_back(
+        std::move(srcPath), std::move(targetPath));
+
     context->layerHints.mightHaveRelocates = true;
 }
 

@@ -99,6 +99,8 @@ UsdImagingDrawModeSceneIndex::UsdImagingDrawModeSceneIndex(
     const HdContainerDataSourceHandle &inputArgs)
   : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
 {
+    TRACE_FUNCTION();
+
     const SdfPath &rootPath = SdfPath::AbsoluteRootPath();
 
     const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(rootPath);

@@ -1,10 +1,12 @@
 #sdf 1.4.32
+(
+    relocates = {
+        </ModelGroup/Model>: </ModelGroup/Model_1>
+    }
+)
 
 def "ModelGroup" (
     references = @./group.sdf@</ModelGroup>
-    relocates = {
-        <Model> : <Model_1>
-    }
 )
 {
 }

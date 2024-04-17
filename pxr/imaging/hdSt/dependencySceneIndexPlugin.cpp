@@ -52,7 +52,10 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 0;
+    // This scene index should be added *before*
+    // HdSt_DependencyForwardingSceneIndexPlugin (which currently uses 1000).
+    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase
+        = 100;
 
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
         _pluginDisplayName,
@@ -136,8 +139,7 @@ TF_DECLARE_REF_PTRS(_SceneIndex);
 
 /// \class _SceneIndex
 ///
-/// The scene index feeding into HdDependencyForwardingSceneIndex constructed by
-/// by the HdSt_DependencySceneIndexPlugin.
+/// The scene index that adds dependencies for volume prims.
 ///
 class _SceneIndex : public HdSingleInputFilteringSceneIndexBase
 {

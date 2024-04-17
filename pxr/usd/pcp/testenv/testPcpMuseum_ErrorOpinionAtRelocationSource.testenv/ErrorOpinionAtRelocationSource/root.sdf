@@ -4,6 +4,10 @@
     This file has several examples of invalid opinions at
     relocation source locations.
     """
+    relocates = {
+        </CharRig/Rig/PathRig/Path>: </CharRig/Anim/Path>, 
+        </VariantAtRelocateSource/Child/Child2>: </VariantAtRelocateSource/Sibling>
+    }
 )
 
 def "CharRig" (
@@ -13,9 +17,6 @@ def "CharRig" (
     but there is also an illegal override at the old location.
     This should be reported as an error and ignored.
     """
-    relocates = {
-        </CharRig/Rig/PathRig/Path>: </CharRig/Anim/Path>
-    }
 )
 {
     def Scope "Anim"
@@ -50,9 +51,6 @@ def "VariantAtRelocateSource" (
     Sibling.
     """
     references = @./ref.sdf@</Ref>
-    relocates = {
-        <Child/Child2> : <Sibling>
-    }
 )
 {
     over "Child" (

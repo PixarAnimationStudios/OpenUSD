@@ -26,6 +26,8 @@
 
 #include "pxr/usd/usdUtils/assetLocalizationDelegate.h"
 
+#include "pxr/usd/ar/packageUtils.h"
+#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/usd/clipsAPI.h"
 
@@ -100,7 +102,10 @@ UsdUtils_WritableLocalizationDelegate::ProcessSublayers(
 
     if (processedPaths != sublayerPaths) {
         SdfLayerRefPtr writableLayer = _GetOrCreateWritableLayer(layer);
-        writableLayer->SetSubLayerPaths(processedPaths);
+        
+        if (writableLayer) {
+            writableLayer->SetSubLayerPaths(processedPaths);
+        }
     }
 
     return dependencies;
@@ -158,6 +163,11 @@ UsdUtils_WritableLocalizationDelegate::_ProcessReferencesOrPayloads(
     }
 
     SdfLayerRefPtr writableLayer = _GetOrCreateWritableLayer(layer);
+
+    if (!writableLayer) {
+        return dependencies;
+    }
+
     SdfPrimSpecHandle writablePrim = 
         writableLayer->GetPrimAtPath(primSpec->GetPath());
     
@@ -338,11 +348,13 @@ UsdUtils_WritableLocalizationDelegate::EndProcessValue(
 
     SdfLayerRefPtr writableLayer = _GetOrCreateWritableLayer(layer);
 
-    if (updatedValue.IsEmpty()) {
-        writableLayer->EraseField(path, key);
-    }
-    else if (val != updatedValue) {
-        writableLayer->SetField(path, key, updatedValue);
+    if (writableLayer) {
+        if (updatedValue.IsEmpty()) {
+            writableLayer->EraseField(path, key);
+        }
+        else if (val != updatedValue) {
+            writableLayer->SetField(path, key, updatedValue);
+        }
     }
 }
 
@@ -361,10 +373,12 @@ UsdUtils_WritableLocalizationDelegate::EndProcessTimeSampleValue(
     
     SdfLayerRefPtr writableLayer = _GetOrCreateWritableLayer(layer);
 
-    if (updatedValue.IsEmpty()) {
-        writableLayer->EraseTimeSample(path, t);
-    } else {
-        writableLayer->SetTimeSample(path, t, updatedValue);
+    if (writableLayer) {
+        if (updatedValue.IsEmpty()) {
+            writableLayer->EraseTimeSample(path, t);
+        } else {
+            writableLayer->SetTimeSample(path, t, updatedValue);
+        }
     }
 }
 
@@ -385,6 +399,10 @@ UsdUtils_WritableLocalizationDelegate::ProcessClipTemplateAssetPath(
     }
 
     SdfLayerRefPtr writableLayer = _GetOrCreateWritableLayer(layer);
+    if (!writableLayer) {
+        return _AllDependenciesForInfo(info);
+    }
+
     SdfPrimSpecHandle writablePrim = 
         writableLayer->GetPrimAtPath(primSpec->GetPath());
 
@@ -417,7 +435,21 @@ SdfLayerRefPtr
 UsdUtils_WritableLocalizationDelegate::_GetOrCreateWritableLayer(
     const SdfLayerRefPtr& layer)
 {
-    if (_editLayersInPlace || !layer) {
+    if (!layer ) {
+        return nullptr;
+    }
+
+    // We do not allow writing to package layers or layers contained within
+    // existing packages. Doing so would require us to expand and rebuild
+    // the existing package.
+    if (layer->GetFileFormat()->IsPackage() ||
+        ArIsPackageRelativePath(layer->GetIdentifier())) {
+        TF_CODING_ERROR("Unable to edit asset path in package layer: %s",
+            layer->GetIdentifier().c_str());
+        return nullptr;
+    }
+
+    if (_editLayersInPlace) {
         return layer;
     }
 

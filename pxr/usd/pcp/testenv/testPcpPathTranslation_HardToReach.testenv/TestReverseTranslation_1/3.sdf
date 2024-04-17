@@ -1,10 +1,12 @@
 #sdf 1.4.32
+(
+    relocates = {
+        </M_3/A>: </M_3/B>
+    }
+)
 
 def __AnyType__ "M_3" (
     add references = @./4.sdf@</M_4>
-    relocates = {
-        <A> : <B>
-    }
 )
 {
     over "B"

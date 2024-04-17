@@ -53,12 +53,26 @@ _WrapLocalPropertyStack(const PcpPropertyIndex& propIndex)
     return SdfPropertySpecHandleVector(range.first, range.second);
 }
 
+static boost::python::tuple
+_WrapBuildPrimPropertyIndex(
+    const SdfPath &path, const PcpCache &cache, const PcpPrimIndex &primIndex)
+{
+    PcpErrorVector errors;
+    PcpPropertyIndex propIndex;
+    PcpBuildPrimPropertyIndex(path, cache, primIndex, &propIndex, &errors);
+
+    return boost::python::make_tuple(
+        boost::python::object(propIndex), errors);
+}
+
 } // anonymous namespace 
 
 void
 wrapPropertyIndex()
 {
     typedef PcpPropertyIndex This;
+
+    def("BuildPrimPropertyIndex", _WrapBuildPrimPropertyIndex);
 
     class_<This>
         ("PropertyIndex", "", no_init)

@@ -117,7 +117,7 @@ _CompareQuadPoints(std::string const & name,
                       rdTopology->GetQuadIndexBuilderComputation(SdfPath(name));
     quadIndex->GetBufferSpecs(&bufferSpecs);
     indexRange = registry->AllocateNonUniformBufferArrayRange(
-        HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
+        HdTokens->topology, bufferSpecs, HdBufferArrayUsageHintBitsIndex);
 
     registry->AddSource(indexRange, quadIndex);
 
@@ -154,10 +154,12 @@ _CompareQuadPoints(std::string const & name,
     bufferSpecs.clear();
     pointsSource->GetBufferSpecs(&bufferSpecs);
 
+    HdBufferArrayUsageHint usageHint =
+        HdBufferArrayUsageHintBitsVertex | HdBufferArrayUsageHintBitsStorage;
     HdBufferArrayRangeSharedPtr pointsRange =
         registry->AllocateNonUniformBufferArrayRange(HdTokens->points,
                                                      bufferSpecs,
-                                                     HdBufferArrayUsageHint());
+                                                     usageHint);
 
     if (gpu) {
         if (points.size() == expectedPoints.size()) {

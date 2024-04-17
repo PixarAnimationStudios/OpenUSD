@@ -96,30 +96,6 @@ class TestSdfPrim(unittest.TestCase):
                 print("     previous list {0}".format(prevGroundTruthList))
                 self.fail("Prim insertion test failed")
 
-    def test_RelocatesAssignment(self):
-        from collections import OrderedDict
-
-        layer = Sdf.Layer.CreateAnonymous("test")
-        prim = Sdf.PrimSpec(layer, 'Root', Sdf.SpecifierDef, 'Scope')
-
-        someRelocates = { "source1":"target1", "source2":"target2", "source3":"target3"}
-
-        prim.relocates.clear()
-        self.assertEqual(len(prim.relocates), 0)
-        self.assertNotEqual(prim.relocates, someRelocates)
-        prim.relocates = someRelocates
-        self.assertTrue(("/Root/source1", "/Root/target1") in prim.relocates.items())
-        self.assertTrue(("/Root/source2", "/Root/target2") in prim.relocates.items())
-        self.assertTrue(("/Root/source3", "/Root/target3") in prim.relocates.items())
-
-        prim.relocates.clear()
-        someOrderedRelocates = OrderedDict(someRelocates)
-        self.assertNotEqual(prim.relocates, someOrderedRelocates)
-        prim.relocates = someOrderedRelocates
-        self.assertTrue(("/Root/source1", "/Root/target1") in prim.relocates.items())
-        self.assertTrue(("/Root/source2", "/Root/target2") in prim.relocates.items())
-        self.assertTrue(("/Root/source3", "/Root/target3") in prim.relocates.items())
-
     def test_InertSpecRemoval(self):
         layer = Sdf.Layer.CreateAnonymous()
 

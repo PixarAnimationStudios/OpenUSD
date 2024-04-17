@@ -1,0 +1,156 @@
+#usda 1.0
+(
+    defaultPrim = "Sphere"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Z"
+)
+
+def Xform "Sphere" (
+    prepend apiSchemas = ["CollectionAPI:material:lambert2SG", "CollectionAPI:material:lambert3SG", "CollectionAPI:material:blinn3SG", "MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform token collection:material:blinn3SG:expansionRule = "expandPrims"
+    rel collection:material:blinn3SG:includes = [
+        </Sphere/pCube1>,
+        </Sphere/pSphere1/blinn3SG>,
+    ]
+    uniform token collection:material:lambert2SG:expansionRule = "expandPrims"
+    rel collection:material:lambert2SG:includes = </Sphere/pSphere1/lambert2SG>
+    uniform token collection:material:lambert3SG:expansionRule = "expandPrims"
+    rel collection:material:lambert3SG:includes = </Sphere/pSphere1/lambert3SG>
+    rel material:binding:collection:blinn3SG = [
+        </Sphere.collection:material:blinn3SG>,
+        </Sphere/Looks/blinn3SG>,
+    ]
+    rel material:binding:collection:lambert2SG = [
+        </Sphere.collection:material:lambert2SG>,
+        </Sphere/Looks/lambert2SG>,
+    ]
+    rel material:binding:collection:lambert3SG = [
+        </Sphere.collection:material:lambert3SG>,
+        </Sphere/Looks/lambert3SG>,
+    ]
+
+    def Mesh "pSphere1"
+    {
+        float3[] extent = [(-7.108106, -7.108106, -7.108106), (7.108106, 7.108106, 7.108106)]
+        int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3]
+        int[] faceVertexIndices = [0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7, 4, 5, 9, 8, 5, 6, 10, 9, 6, 7, 11, 10, 7, 4, 8, 11, 1, 0, 12, 2, 1, 12, 3, 2, 12, 0, 3, 12, 8, 9, 13, 9, 10, 13, 10, 11, 13, 11, 8, 13]
+        point3f[] points = [(6.591052e-7, 5.02619, -5.02619), (-5.02619, 4.3940346e-7, -5.02619), (-2.1970173e-7, -5.02619, -5.02619), (5.02619, -1.1160383e-15, -5.02619), (9.321155e-7, 7.108106, -1.5783166e-15), (-7.108106, 6.214104e-7, -1.3798082e-22), (-3.107052e-7, -7.108106, 1.5783166e-15), (7.108106, 0, 0), (6.591052e-7, 5.02619, 5.02619), (-5.02619, 4.3940346e-7, 5.02619), (-2.1970173e-7, -5.02619, 5.02619), (5.02619, 1.1160383e-15, 5.02619), (0, -1.5783166e-15, -7.108106), (0, 1.5783166e-15, 7.108106)]
+        uniform token subsetFamily:materialBind:familyType = "partition"
+        double3 xformOp:translate = (0.1912605573427868, 0.041567899893681926, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def GeomSubset "lambert2SG" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "materialBind"
+            int[] indices = [0, 1, 2, 3, 8, 9, 10, 11]
+            rel material:binding = </Sphere/Looks/lambert2SG>
+        }
+
+        def GeomSubset "lambert3SG" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "materialBind"
+            int[] indices = [12, 13, 14, 15]
+            rel material:binding = </Sphere/Looks/lambert3SG>
+        }
+
+        def GeomSubset "blinn3SG" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "materialBind"
+            int[] indices = [4, 5, 6, 7]
+            rel material:binding = </Sphere/Looks/blinn3SG>
+        }
+    }
+
+    def Mesh "pCube1"
+    {
+        float3[] extent = [(-3.5473197, -3.2494247, -4.9616804), (3.5473197, 3.2494247, 4.9616804)]
+        int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+        int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+        point3f[] points = [(-3.5473197, -3.2494247, -4.9616804), (3.5473197, -3.2494247, -4.9616804), (-3.5473197, -3.2494247, 4.9616804), (3.5473197, -3.2494247, 4.9616804), (-3.5473197, 3.2494247, 4.9616804), (3.5473197, 3.2494247, 4.9616804), (-3.5473197, 3.2494247, -4.9616804), (3.5473197, 3.2494247, -4.9616804)]
+        double3 xformOp:translate = (12.872029842171237, -11.588872304034687, 4.961680269596356)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Scope "Looks"
+    {
+        def Material "lambert2SG"
+        {
+            color3f inputs:displayColor = (0.059268333, 0.16710168, 0.7592996)
+            float inputs:displayOpacity
+            color3f inputs:transparency
+            uniform token outputs:ri:bxdf.connect = </Sphere/Looks/lambert2SG/lambert2SG_lambert.outputs:out>
+            token outputs:ri:surface.connect = </Sphere/Looks/lambert2SG/lambert2SG_lambert.outputs:out>
+            token outputs:glslfx:surface.connect = </Sphere/Looks/lambert2SG/displayShader.outputs:out>
+
+            def Shader "lambert2SG_lambert"
+            {
+                uniform token info:id = "PxrDiffuse"
+                color3f inputs:diffuseColor.connect = </Sphere/Looks/lambert2SG.inputs:displayColor>
+                color3f inputs:transmissionColor.connect = </Sphere/Looks/lambert2SG.inputs:transparency>
+                token outputs:out
+            }
+
+            def Shader "displayShader" {
+                token outputs:out
+            }
+        }
+
+        def Material "lambert3SG"
+        {
+            color3f inputs:displayColor = (0.8355278, 0, 0)
+            float inputs:displayOpacity
+            color3f inputs:transparency
+            uniform token outputs:ri:bxdf.connect = </Sphere/Looks/lambert3SG/lambert3SG_lambert.outputs:out>
+            token outputs:ri:surface.connect = </Sphere/Looks/lambert3SG/lambert3SG_lambert.outputs:out>
+            token outputs:glslfx:surface.connect = </Sphere/Looks/lambert3SG/displayShader.outputs:out>
+
+            def Shader "lambert3SG_lambert"
+            {
+                uniform token info:id = "PxrDiffuse"
+                color3f inputs:diffuseColor.connect = </Sphere/Looks/lambert3SG.inputs:displayColor>
+                color3f inputs:transmissionColor.connect = </Sphere/Looks/lambert3SG.inputs:transparency>
+                token outputs:out
+            }
+
+            def Shader "displayShader" {
+                token outputs:out
+            }
+        }
+
+        def Material "blinn3SG"
+        {
+            color3f inputs:displayColor = (0, 1, 0)
+            float inputs:displayOpacity
+            color3f inputs:transparency
+            uniform token outputs:ri:bxdf.connect = </Sphere/Looks/blinn3SG/blinn3SG_lambert.outputs:out>
+            token outputs:ri:surface.connect = </Sphere/Looks/blinn3SG/blinn3SG_lambert.outputs:out>
+            token outputs:glslfx:surface.connect = </Sphere/Looks/blinn3SG/displayShader.outputs:out>
+
+            def Shader "blinn3SG_lambert"
+            {
+                uniform token info:id = "PxrDiffuse"
+                color3f inputs:diffuseColor.connect = </Sphere/Looks/blinn3SG.inputs:displayColor>
+                color3f inputs:transmissionColor.connect = </Sphere/Looks/blinn3SG.inputs:transparency>
+                token outputs:out
+            }
+
+            def Shader "displayShader" {
+                token outputs:out
+            }
+        }
+    }
+}
+

@@ -1,4 +1,10 @@
 #usda 1.0
+(
+    relocates = {
+        </Sphere/ChildFromPayload> : </Sphere/SubReloChildFromPayload>,
+        </Sphere/ChildFromReference> : </Sphere/SubReloChildFromReference>
+    }
+)
 
 def Sphere "Sphere" (
     inherits = </_class_Sphere>

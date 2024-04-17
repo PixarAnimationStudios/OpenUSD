@@ -68,6 +68,9 @@ public:
     /// authored into the layer, the system will instead operate on the updated.
     /// value.  If the updated path can be opened as a layer, it will be 
     /// enqueued and searched for additional dependencies.
+    ///
+    /// Note: A coding error will be issued if a user processing function
+    /// attempts to modify an asset path contained in an existing package.
     USDUTILS_API const std::string& GetAssetPath() const {
         return _assetPath;
     }

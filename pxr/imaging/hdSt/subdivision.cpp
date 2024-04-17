@@ -400,7 +400,8 @@ HdSt_Subdivision::_CreateGpuStencilTable(
     };
     HdBufferArrayRangeSharedPtr perPointRange =
         registry->AllocateSingleBufferArrayRange(
-            _tokens->stencilData, perPointSpecs, HdBufferArrayUsageHint());
+            _tokens->stencilData, perPointSpecs,
+            HdBufferArrayUsageHintBitsStorage);
 
     // Allocate buffer array range for perIndex data
     HdBufferSpecVector perIndexSpecs = {
@@ -409,7 +410,8 @@ HdSt_Subdivision::_CreateGpuStencilTable(
     };
     HdBufferArrayRangeSharedPtr perIndexRange =
         registry->AllocateSingleBufferArrayRange(
-            _tokens->stencilData, perIndexSpecs, HdBufferArrayUsageHint());
+            _tokens->stencilData, perIndexSpecs,
+            HdBufferArrayUsageHintBitsStorage);
 
     HdSt_GpuStencilTableSharedPtr gpuStencilTable =
         std::make_shared<HdSt_GpuStencilTable>(

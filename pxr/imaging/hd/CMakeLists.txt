@@ -36,6 +36,10 @@ pxr_library(hd
         capsuleSchema
         categoriesSchema
         changeTracker
+        collectionExpressionEvaluator
+        collectionPredicateLibrary
+        collectionSchema
+        collectionsSchema
         command
         coneSchema
         containerDataSourceEditor
@@ -179,6 +183,8 @@ pxr_library(hd
         systemMessages
         systemSchema
         task
+        tetMeshSchema
+        tetMeshTopologySchema
         timeSampleArray
         tokens
         topology
@@ -212,10 +218,22 @@ pxr_library(hd
 
     RESOURCE_FILES
         plugInfo.json
+        codegenTemplates/schemaClass.h
+        codegenTemplates/schemaClass.cpp
 
     DOXYGEN_FILES
         overview.dox
 )
+
+if (NOT PXR_ENABLE_PYTHON_SUPPORT)
+    message(STATUS "Skipping building hdGenSchema, Python modules required.")
+elseif (NOT JINJA2_FOUND)
+    message(WARNING "Skipping building hdGenSchema due to missing dependency: Jinja2")
+else()
+    pxr_python_bin(hdGenSchema
+        DEPENDENCIES
+    )
+endif()
 
 if (NOT PXR_ENABLE_JS_SUPPORT)
 pxr_build_test(testHdBufferSourceEmptyVal
@@ -237,15 +255,6 @@ pxr_build_test(testHdBufferSpec
    CPPFILES
        testenv/testHdBufferSpec.cpp
 )
-
-# Removing test from build while we modernize the Hydra architecture.
-# pxr_build_test(testHdChangeTracker
-#    LIBRARIES
-#        hd
-
-#    CPPFILES
-#        testenv/testHdChangeTracker.cpp
-# )
 
 pxr_build_test(testHdCommand
    LIBRARIES
@@ -365,12 +374,14 @@ pxr_build_test(testHdTypes
        testenv/testHdTypes.cpp
 )
 
-pxr_build_test(testHdInstancerDeprecatedPrimvars
+pxr_build_test(testHdCollectionExpressionEvaluator
     LIBRARIES
         hd
-
+        tf
+        sdf
+        
     CPPFILES
-        testenv/testHdInstancerDeprecatedPrimvars.cpp
+        testenv/testHdCollectionExpressionEvaluator.cpp
 )
 
 endif()
@@ -388,10 +399,6 @@ pxr_register_test(testHdBufferSourceEmptyVal
 pxr_register_test(testHdBufferSpec
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdBufferSpec"
 )
-
-# pxr_register_test(testHdChangeTracker
-#     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdChangeTracker"
-# )
 
 pxr_register_test(testHdCommand
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdCommand"
@@ -447,8 +454,6 @@ pxr_register_test(testHdTypes
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTypes"
 )
 
-pxr_register_test(testHdInstancerDeprecatedPrimvars
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdInstancerDeprecatedPrimvars"
-    ENV
-        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
+pxr_register_test(testHdCollectionExpressionEvaluator
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdCollectionExpressionEvaluator"
 )

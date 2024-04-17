@@ -39,6 +39,9 @@ parser.add_argument('--errorFile', dest='errorFileName',
 parser.add_argument('-d', '--dumpPath', dest='dumpPathStr', 
         default=Sdf.Path.emptyPath,
         help = 'Print the internal composition structures for the given path.')
+parser.add_argument('--usd', action='store_true',
+        dest='usd',
+        default=False, help = 'Creates the PcpCache in USD mode.')
 parser.add_argument('--layerStackOnly', action='store_true',
         dest='layerStackOnly',
         default=False, help = 'Dump only the layer stack.')
@@ -129,7 +132,7 @@ for layerPath in args.layer:
     # Dump the layer stack.
     errors = []
     layerStackId = Pcp.LayerStackIdentifier( rootLayer, sessionLayer )
-    pcpCache = Pcp.Cache(layerStackId)
+    pcpCache = Pcp.Cache(layerStackId, usd=args.usd)
     assert pcpCache.GetVariantFallbacks() == {}
     pcpCache.SetVariantFallbacks(variantFallbacks)
     assert pcpCache.GetVariantFallbacks() == variantFallbacks
@@ -177,7 +180,8 @@ for layerPath in args.layer:
         assert pcpCache.FindPrimIndex(primPath) is not None
         errors += primIndexErrors
 
-        if len(primIndex.primStack) == 0:
+        primStack = primIndex.primStack
+        if len(primStack) == 0:
             continue
 
         print('-'*72)
@@ -218,9 +222,18 @@ for layerPath in args.layer:
             propPath, properties = properties[0], properties[1:]
 
             assert pcpCache.FindPropertyIndex(propPath) is None
-            (propIndex, propIndexErrors) = \
-                pcpCache.ComputePropertyIndex(propPath)
-            assert pcpCache.FindPropertyIndex(propPath) is not None
+            if args.usd:
+                # In USD mode, property indexes are not cached so we build it 
+                # here.
+                (propIndex, propIndexErrors) = \
+                    Pcp.BuildPrimPropertyIndex(propPath, pcpCache, primIndex)
+                # Building the index does not cache it.
+                assert pcpCache.FindPropertyIndex(propPath) is None
+            else:
+                (propIndex, propIndexErrors) = \
+                    pcpCache.ComputePropertyIndex(propPath)
+                assert pcpCache.FindPropertyIndex(propPath) is not None
+
             errors += propIndexErrors
 
             if len(propIndex.propertyStack) == 0:
@@ -245,12 +258,11 @@ for layerPath in args.layer:
                 if deletedPaths:
                     deletedTargetPathsMap[propPath] = deletedPaths
 
-        if len(primIndex.primStack) > 0:
-            print('\nPrim Stack:')
-            for primSpec in primIndex.primStack:
-                # Determine a short form of the spec's layer's path.
-                layerLabel = GetLayerLabel(primSpec.layer)
-                print('    %-20s %s' % (layerLabel, primSpec.path))
+        print('\nPrim Stack:')
+        for primSpec in primStack:
+            # Determine a short form of the spec's layer's path.
+            layerLabel = GetLayerLabel(primSpec.layer)
+            print('    %-20s %s' % (layerLabel, primSpec.path))
 
         if len(nodesWithOffsets) > 0:
             print('\nTime Offsets:')

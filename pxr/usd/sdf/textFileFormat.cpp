@@ -302,6 +302,12 @@ _WriteLayer(
 
     } // end for each field
 
+    // Add any layer relocates to the header.
+    if (l->HasRelocates()) {
+        Sdf_FileIOUtility::WriteRelocates(
+            header, 1, true, l->GetRelocates());
+    }
+
     // Write header if not empty.
     string headerStr = header.GetString();
     if (!headerStr.empty()) {

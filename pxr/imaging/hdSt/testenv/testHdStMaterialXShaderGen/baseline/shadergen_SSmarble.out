@@ -139,9 +139,9 @@ LightData u_lightData[MAX_LIGHT_SOURCES];
 // MaterialX's VertexData
 struct mxVertexData
 {
+    vec3 positionObject;
     vec3 normalWorld;
     vec3 tangentWorld;
-    vec3 positionObject;
     vec3 positionWorld;
 };
 mxVertexData vd;
@@ -166,7 +166,7 @@ void mxInit(vec4 Peye, vec3 Neye)
     }
 #endif
 
-    vd = mxVertexData(normalWorld,tangentWorld,HdGet_points(),positionWorld);
+    vd = mxVertexData(HdGet_points(),normalWorld,tangentWorld,positionWorld);
 
     // Initialize Material Parameters
     base = HdGet_base();
@@ -428,48 +428,22 @@ float mx_ggx_NDF(vec3 H, vec2 alpha)
     return 1.0 / (M_PI * alpha.x * alpha.y * mx_square(denom));
 }
 
-// https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
-// Appendix B.1 Equation 3
-float mx_ggx_PDF(vec3 H, float LdotH, vec2 alpha)
-{
-    float NdotH = H.z;
-    return mx_ggx_NDF(H, alpha) * NdotH / (4.0 * LdotH);
-}
-
-// https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
-// Appendix B.2 Equation 15
-vec3 mx_ggx_importance_sample_NDF(vec2 Xi, vec2 alpha)
-{
-    float phi = 2.0 * M_PI * Xi.x;
-    float tanTheta = sqrt(Xi.y / (1.0 - Xi.y));
-    vec3 H = vec3(tanTheta * alpha.x * cos(phi),
-                  tanTheta * alpha.y * sin(phi),
-                  1.0);
-    return normalize(H);
-}
-
-// http://jcgt.org/published/0007/04/01/paper.pdf
-// Appendix A Listing 1
+// https://ggx-research.github.io/publication/2023/06/09/publication-ggx.html
 vec3 mx_ggx_importance_sample_VNDF(vec2 Xi, vec3 V, vec2 alpha)
 {
     // Transform the view direction to the hemisphere configuration.
     V = normalize(vec3(V.xy * alpha, V.z));
 
-    // Construct an orthonormal basis from the view direction.
-    float len = length(V.xy);
-    vec3 T1 = (len > 0.0) ? vec3(-V.y, V.x, 0.0) / len : vec3(1.0, 0.0, 0.0);
-    vec3 T2 = cross(V, T1);
-
-    // Parameterization of the projected area.
-    float r = sqrt(Xi.y);
+    // Sample a spherical cap in (-V.z, 1].
     float phi = 2.0 * M_PI * Xi.x;
-    float t1 = r * cos(phi);
-    float t2 = r * sin(phi);
-    float s = 0.5 * (1.0 + V.z);
-    t2 = (1.0 - s) * sqrt(1.0 - mx_square(t1)) + s * t2;
+    float z = (1.0 - Xi.y) * (1.0 + V.z) - V.z;
+    float sinTheta = sqrt(clamp(1.0 - z * z, 0.0, 1.0));
+    float x = sinTheta * cos(phi);
+    float y = sinTheta * sin(phi);
+    vec3 c = vec3(x, y, z);
 
-    // Reprojection onto hemisphere.
-    vec3 H = t1 * T1 + t2 * T2 + sqrt(max(0.0, 1.0 - mx_square(t1) - mx_square(t2))) * V;
+    // Compute the microfacet normal.
+    vec3 H = c + V;
 
     // Transform the microfacet normal back to the ellipsoid configuration.
     H = normalize(vec3(H.xy * alpha, max(H.z, 0.0)));
@@ -2526,9 +2500,9 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     // Initialize MaterialX Variables
     mxInit(Peye, Neye);
+    vec3 objpos_out = vd.positionObject;
     vec3 geomprop_Nworld_out1 = normalize(vd.normalWorld);
     vec3 geomprop_Tworld_out1 = normalize(vd.tangentWorld);
-    vec3 objpos_out = vd.positionObject;
     float addxyz_out = dot(objpos_out, addxyz_in2);
     vec3 scalepos_out = objpos_out * scalepos_in2;
     float scalexyz_out = addxyz_out * scalexyz_in2;

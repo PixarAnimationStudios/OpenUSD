@@ -64,6 +64,10 @@ if (WIN32)
     return()
 endif()
 
+# This test is not currently supported on static builds as it relies on 
+# testHgiCommand, which is not linked in the static hgiGL library. 
+if (BUILD_SHARED_LIBS)
+
 pxr_install_test_dir(
     SRC testenv/testHgiGLCommand
     DEST testHgiGLCommand
@@ -77,3 +81,5 @@ pxr_register_test(testHgiGLCommand
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
 )
+
+endif() # BUILD_SHARED_LIBS

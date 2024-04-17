@@ -257,6 +257,16 @@ SdfFileFormat::WriteToFile(
 }
 
 bool
+SdfFileFormat::SaveToFile(
+    const SdfLayer& layer,
+    const std::string& filePath,
+    const std::string& comment,
+    const FileFormatArguments& args) const
+{
+    return WriteToFile(layer, filePath, comment, args);
+}
+
+bool
 SdfFileFormat::ReadDetached(
     SdfLayer* layer,
     const std::string& resolvedPath,

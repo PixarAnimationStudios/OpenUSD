@@ -36,6 +36,8 @@
 
 #define USE_PARALLEL_EXPANSION 0
 
+// TODO: This scene index doesn't account for time varying curve topology
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
@@ -46,7 +48,7 @@ namespace
 // vertex primvars and possibly varying primvars of pinned curves.
 // See relevant comments in _ComputeExpandedVaryingValue below.
 template <typename T>
-VtValue
+VtArray<T>
 _ComputeExpandedValue(
     const VtArray<T> &input,
     const VtIntArray &perCurveCounts,
@@ -68,7 +70,7 @@ _ComputeExpandedValue(
         TF_WARN("Data for %s does not match expected size "
                 "(got %zu, expected %zu)", name.GetText(),
                 input.size(), authoredSum);
-        return VtValue(input);
+        return input;
     }
 
     const size_t outputSize = input.size() + 2 * numRepeat * numCurves;
@@ -109,7 +111,7 @@ _ComputeExpandedValue(
     workLambda(0, numCurves);
     #endif
 
-    return VtValue(output);
+    return output;
 }
 
 // Returns the expanded value that is computed by replicating the first and last
@@ -117,7 +119,7 @@ _ComputeExpandedValue(
 // repeating the authored varying values if/as necessary otherwise.
 //
 template <typename T>
-VtValue
+VtArray<T>
 _ComputeExpandedVaryingValue(
     const VtArray<T> &input,
     const VtIntArray &curveVaryingCounts,
@@ -126,7 +128,7 @@ _ComputeExpandedVaryingValue(
     const TfToken &name)
 {
     if (!TF_VERIFY(curveVaryingCounts.size() == curveVertexCounts.size())) {
-        return VtValue(input);
+        return input;
     }
 
     // Build cumulative sum arrays to help index into the authored and expanded
@@ -162,7 +164,7 @@ _ComputeExpandedVaryingValue(
         TF_WARN("Data for %s does not match expected size "
                 "(got %zu, expected %zu)", name.GetText(),
                 input.size(), authoredSum);
-        return VtValue(input);
+        return input;
     }
 
     VtArray<T> output(expandedSum);
@@ -238,72 +240,8 @@ _ComputeExpandedVaryingValue(
     workLambda(0, numCurves);
     #endif
 
-    return VtValue(output);
+    return output;
 }
-
-// Visitor that expands a given value if it holds an array and returns 
-// the value otherwise.
-struct _ExpandedValue {
-    _ExpandedValue(
-        const VtIntArray &perCurveCounts,
-        const size_t numRepeat,
-        const TfToken &name)
-    : _perCurveCounts(perCurveCounts)
-    , _numRepeat(numRepeat)
-    , _name(name) {}
-
-    template <typename T>
-    VtValue operator()(const VtArray<T> &array)
-    {
-        return _ComputeExpandedValue<T>(
-            array, _perCurveCounts, _numRepeat, _name);
-    }
-
-    VtValue operator()(const VtValue &value)
-    {
-        TF_WARN("Unsupported type for expansion %s",
-                value.GetTypeName().c_str());
-        return value;
-    }
-
-private:
-    const VtIntArray &_perCurveCounts;
-    const size_t _numRepeat;
-    const TfToken &_name;
-};
-
-struct _ExpandedVaryingValue {
-    _ExpandedVaryingValue(
-        const VtIntArray &perCurveCounts,
-        const VtIntArray &curveVertexCounts,
-        const size_t numRepeat,
-        const TfToken &name)
-    : _perCurveCounts(perCurveCounts)
-    , _curveVertexCounts(curveVertexCounts)
-    , _numRepeat(numRepeat)
-    , _name(name) {}
-
-    template <typename T>
-    VtValue operator()(const VtArray<T> &array)
-    {
-        return _ComputeExpandedVaryingValue<T>(
-            array, _perCurveCounts, _curveVertexCounts,
-            _numRepeat, _name);
-    }
-
-    VtValue operator()(const VtValue &value)
-    {
-        TF_WARN("Unsupported type for expansion %s",
-                value.GetTypeName().c_str());
-        return value;
-    }
-
-private:
-    const VtIntArray &_perCurveCounts;
-    const VtIntArray &_curveVertexCounts;
-    const size_t _numRepeat;
-    const TfToken &_name;
-};
 
 template <typename T>
 T
@@ -332,6 +270,117 @@ public:
     Get(const TfToken &name) override
     {
         return nullptr;
+    }
+};
+
+
+// Typed sampled data source override that does the actual primvar expansion
+template <typename T>
+class _ExpandedDataSource final : public HdTypedSampledDataSource<VtArray<T>>
+{
+public:
+    using Time = HdSampledDataSource::Time;
+
+    HD_DECLARE_DATASOURCE_ABSTRACT(_ExpandedDataSource<T>);
+
+    /// input: the original data source
+    _ExpandedDataSource(
+        const HdSampledDataSourceHandle& input,
+        const TfToken &primvarName,
+        const VtIntArray& perCurveCounts,
+        const VtIntArray& curveVertexCounts,
+        const size_t numExtraEnds,
+        const bool expandConditionally)
+        : _input(input)
+        , _primvarName(primvarName)
+        , _perCurveCounts(perCurveCounts)
+        , _curveVertexCounts(curveVertexCounts)
+        , _numExtraEnds(numExtraEnds)
+        , _expandConditionally(expandConditionally)
+    {
+    }
+
+    VtValue GetValue(Time shutterOffset) override
+    {
+        return VtValue(GetTypedValue(shutterOffset));
+    }
+
+    bool GetContributingSampleTimesForInterval(
+        Time startTime,
+        Time endTime,
+        std::vector<Time>* outSampleTimes) override
+    {
+        return _input->GetContributingSampleTimesForInterval(
+            startTime, endTime, outSampleTimes);
+    }
+
+    VtArray<T> GetTypedValue(Time shutterOffset) override
+    {
+        const VtValue& v = _input->GetValue(shutterOffset);
+        if (v.IsHolding<VtArray<T>>()) {
+            const VtArray<T> array = v.UncheckedGet<VtArray<T>>();
+            if (array.empty()) {
+                return array;
+            }
+
+            if (_expandConditionally) {
+                return _ComputeExpandedVaryingValue<T>(
+                    array, _perCurveCounts, _curveVertexCounts, _numExtraEnds,
+                    _primvarName);
+            }
+
+            return _ComputeExpandedValue<T>(
+                array, _perCurveCounts, _numExtraEnds, _primvarName);
+        }
+        return VtArray<T>();
+    }
+
+    static typename _ExpandedDataSource<T>::Handle
+    New(const HdSampledDataSourceHandle& input,
+        const TfToken& primvarName,
+        const VtIntArray& perCurveCounts,
+        const VtIntArray& curveVertexCounts,
+        const size_t numExtraEnds,
+        const bool expandConditionally)
+    {
+        return _ExpandedDataSource<T>::Handle(new _ExpandedDataSource<T>(
+            input, primvarName, perCurveCounts, curveVertexCounts, numExtraEnds,
+            expandConditionally));
+    }
+
+private:
+    HdSampledDataSourceHandle _input;
+    const TfToken _primvarName;
+    const VtIntArray _perCurveCounts;
+    const VtIntArray _curveVertexCounts;
+    size_t _numExtraEnds;
+    bool _expandConditionally;
+};
+
+// Visitor that expands a given value if it holds an array and returns
+// the value otherwise.
+struct _Visitor
+{
+    HdSampledDataSourceHandle _input;
+    const TfToken _primvarName;
+    const VtIntArray& _perCurveCounts;
+    const VtIntArray& _curveVertexCounts;
+    size_t _numExtraEnds;
+    bool _expandConditionally;
+
+    template <typename T>
+    HdDataSourceBaseHandle operator()(const VtArray<T>& array)
+    {
+        return _ExpandedDataSource<T>::New(
+            _input, _primvarName, _perCurveCounts, _curveVertexCounts,
+            _numExtraEnds, _expandConditionally);
+    }
+
+    HdDataSourceBaseHandle operator()(const VtValue& value)
+    {
+        TF_WARN(
+            "Unsupported type for expansion %s", value.GetTypeName().c_str());
+        return _input;
     }
 };
 
@@ -380,7 +429,8 @@ public:
             return nullptr;
         }
 
-        if (name == HdPrimvarSchemaTokens->primvarValue) {
+        if (name == HdPrimvarSchemaTokens->primvarValue ||
+            name == HdPrimvarSchemaTokens->indices) {
             HdPrimvarSchema pvs(_input);
             const TfToken interp = 
                 _SafeGetTypedValue<TfToken>(pvs.GetInterpolation());
@@ -392,7 +442,11 @@ public:
                 return result;
             }
 
-            if (_hasCurveIndices && interp == HdPrimvarSchemaTokens->vertex) {
+            // For indexed primvars, only the indices needs to be expanded.
+            // The indexedPrimvarValue doesn't.
+            if (name == HdPrimvarSchemaTokens->primvarValue && 
+                _hasCurveIndices && 
+                interp == HdPrimvarSchemaTokens->vertex) {
                 // Don't need to expand the primvar since the expanded curve
                 // index buffer takes care of it.
                 return result;
@@ -408,41 +462,20 @@ public:
                 _InitCurveVaryingCounts();
             }
 
-            VtValue val = sds->GetValue(0.0f);
-            VtValue vExp = _ComputeExpandedValue(val, interp, _primvarName);
-            return HdRetainedTypedSampledDataSource<VtValue>::New(vExp);
-        }
-        
-        if (name == HdPrimvarSchemaTokens->indices) {
-            // For indexed primvars, only the indices needs to be expanded.
-            // The indexedPrimvarValue doesn't.
-            VtIntArray indices = _SafeGetTypedValue<VtIntArray>(
-                HdIntArrayDataSource::Cast(result));
-            
-            if (!indices.empty()) {
-                HdPrimvarSchema pvs(_input);
-                const TfToken interp = _SafeGetTypedValue<TfToken>(
-                    pvs.GetInterpolation());
+            const VtIntArray& perCurveCounts
+                = (interp == HdPrimvarSchemaTokens->varying)
+                ? _curveVaryingCounts
+                : _curveVertexCounts;
 
-                // Similar to the handling above, only expand indices for
-                // vertex and varying primvars.
-                if (interp != HdPrimvarSchemaTokens->vertex &&
-                    interp != HdPrimvarSchemaTokens->varying) {
-                    // constant and uniform interp don't need expansion.
-                    // faceVarying isn't relevant for curves.
-                    return result;
-                }
+            const bool expandConditionally
+                = interp == HdPrimvarSchemaTokens->varying
+                && _expandVaryingConditionally;
 
-                if (interp == HdPrimvarSchemaTokens->varying &&
-                    _curveVaryingCounts.empty()) {
-                    _InitCurveVaryingCounts();
-                }
-
-                VtValue vExp = _ComputeExpandedValue(
-                    VtValue(indices), interp, HdTokens->indices);
-                return HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                    vExp.UncheckedGet<VtIntArray>());
-            }
+            return VtVisitValue(
+                sds->GetValue(0.0f),
+                _Visitor { sds, _primvarName, perCurveCounts,
+                           _curveVertexCounts, _numExtraEnds,
+                           expandConditionally });
         }
 
         return result;
@@ -477,32 +510,6 @@ private:
             varyingCount = nVarying;
 
         }
-    }
-
-    VtValue
-    _ComputeExpandedValue(
-        VtValue val,
-        const TfToken &interp,
-        const TfToken &name)
-    {
-        bool varying = (interp == HdPrimvarSchemaTokens->varying);
-        const VtIntArray &perCurveCounts = varying?
-            _curveVaryingCounts : _curveVertexCounts;
-
-        const bool expandConditionally = varying && _expandVaryingConditionally;
-
-
-        VtValue vExp;
-        if (!expandConditionally) {
-            vExp = VtVisitValue(val,
-                _ExpandedValue(perCurveCounts, _numExtraEnds, name));
-        } else {
-            vExp = VtVisitValue(val,
-                _ExpandedVaryingValue(perCurveCounts, _curveVertexCounts,
-                _numExtraEnds, name));
-        }
-        
-        return vExp;
     }
 
 private:
@@ -621,15 +628,14 @@ public:
                 // Curve indices can be expanded just like we'd expand a
                 // vertex primvar by replicating the first and last values as
                 // necessary.
-                VtValue vExpanded =
+                VtIntArray vExpanded =
                     _ComputeExpandedValue<int>(
                         curveIndices,
                         _curveVertexCounts,
                         _numExtraEnds,
                         HdBasisCurvesTopologySchemaTokens->curveIndices);
 
-                return HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                    vExpanded.UncheckedGet<VtIntArray>());
+                return HdRetainedTypedSampledDataSource<VtIntArray>::New(vExpanded);
             }
         }
 

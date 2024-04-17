@@ -19,13 +19,13 @@
     The payload itself has some relocations. In all cases, relocations
     internal to the payload should be respected.
     """
+    relocates = {
+        </PayloadedModel/Anim>: </PayloadedModel/Test/Anim>
+    }
 )
 
 def "PayloadedModel" (
     payload = @./model_payload.sdf@</Model>
-    relocates = {
-        <Anim> : <Test/Anim>
-    }
 )
 {
     def Scope "Test"

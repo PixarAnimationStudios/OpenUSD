@@ -257,7 +257,7 @@ TestFilePermissions()
         TF_AXIOM(stat("testTf_NewFilePerm.txt", &st) != -1);
         mode_t perms = st.st_mode & ACCESSPERMS;
         fprintf(stderr, "testTf_NewFilePerm: fileMode = 0%03o\n", perms);
-        TF_AXIOM(perms == (DEFFILEMODE - testUmask));
+        TF_AXIOM(perms == (DEFFILEMODE & ~testUmask));
 #endif
     }
 

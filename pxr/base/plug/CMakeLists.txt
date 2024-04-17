@@ -56,7 +56,6 @@ pxr_test_scripts(
 )
 
 pxr_build_test_shared_lib(TestPlugDso1
-    CREATE_FRAMEWORK
     INSTALL_PREFIX PlugPlugins
     LIBRARIES
         tf

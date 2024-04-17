@@ -55,16 +55,50 @@ _GetChildren(const PcpNodeRef& node)
     return Pcp_GetChildren(node);
 }
 
+// Test function to retrieve an invalid PcpNodeRef in Python
+static PcpNodeRef
+_GetInvalidPcpNode()
+{
+    return {};
+}
+
 } // anonymous namespace 
+
+// We override __getattribute__ for PcpNode to check object validity and raise
+// an exception instead of crashing from Python.
+
+// Store the original __getattribute__ so we can dispatch to it after verifying
+// validity.
+static TfStaticData<TfPyObjWrapper> _object__getattribute__;
+
+// This function gets wrapped as __getattribute__ on PcpNodeRef.
+static object
+__getattribute__(object selfObj, const char *name) {
+    // Allow attribute lookups if the attribute name starts with '__', or if the
+    // node is valid.
+    if ((name[0] == '_' && name[1] == '_') ||
+        bool(extract<PcpNodeRef &>(selfObj)())){
+        // Dispatch to object's __getattribute__.
+        return (*_object__getattribute__)(selfObj, name);
+    } else {
+        // Otherwise raise a runtime error.
+        TfPyThrowRuntimeError(
+            TfStringPrintf("Invalid access to %s", TfPyRepr(selfObj).c_str()));
+    }
+    // Unreachable.
+    return object();
+}
 
 void
 wrapNode()
 {
+
+    def("_GetInvalidPcpNode", &_GetInvalidPcpNode);
+
     typedef PcpNodeRef This;
 
-    scope s = class_<This>
-        ("NodeRef", no_init)
-
+    class_<This> clsObj("NodeRef", no_init);
+    clsObj
         .add_property("site", &This::GetSite)
         .add_property("path", 
                       make_function(&This::GetPath, 
@@ -112,5 +146,10 @@ wrapNode()
 
         .def(self == self)
         .def(self != self)
+        .def(!self)
         ;
+
+    // Save existing __getattribute__ and replace.
+    *_object__getattribute__ = object(clsObj.attr("__getattribute__"));
+    clsObj.def("__getattribute__", __getattribute__);
 }

@@ -359,7 +359,8 @@ HdStRenderPassState::Prepare(
         // allocate interleaved buffer
         _renderPassStateBar = 
             hdStResourceRegistry->AllocateUniformBufferArrayRange(
-                HdTokens->drawingShader, bufferSpecs, HdBufferArrayUsageHint());
+                HdTokens->drawingShader, bufferSpecs,
+                HdBufferArrayUsageHintBitsUniform);
 
         HdStBufferArrayRangeSharedPtr _renderPassStateBar_ =
             std::static_pointer_cast<HdStBufferArrayRange> (_renderPassStateBar);

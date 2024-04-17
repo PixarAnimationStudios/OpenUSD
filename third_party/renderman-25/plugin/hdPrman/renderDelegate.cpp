@@ -46,6 +46,13 @@
 #include "hdPrman/terminalSceneIndexObserver.h"
 #include "hdPrman/tokens.h"
 #include "hdPrman/volume.h"
+#include "hdPrman/sceneIndexObserverApi.h"
+
+#ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
+#include "hdPrman/rileyPrimFactory.h"
+#include "pxr/imaging/hdsi/primManagingSceneIndexObserver.h"
+#include "pxr/imaging/hdsi/primTypeNoticeBatchingSceneIndex.h"
+#endif
 
 #include "pxr/imaging/hd/bprim.h"
 #include "pxr/imaging/hd/camera.h"
@@ -64,6 +71,115 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
+
+TF_DEFINE_ENV_SETTING(HD_PRMAN_EXPERIMENTAL_RILEY_SCENE_INDEX_OBSERVER, false,
+                      "Enable scene index observer calling the Riley API for "
+                      "the prims in the terminal scene index. This is scene "
+                      "index observer is the first step towards a future "
+                      "Hydra 2.0 implementation. "
+                      "See HdPrmanRenderDelegate::_RileySceneIndices for more.");
+
+#endif
+
+// \class HdPrmanRenderDelegate::_RileySceneIndices.
+//
+// Holds the scene indices and scene index observers past the terminal scene
+// index coming from the render index. The Hydra 2.0 implementation also
+// relies on several plugin scene indices inserted by the render index (only if
+// HD_PRMAN_EXPERIMENTAL_RILEY_SCENE_INDEX_OBSERVER is true).
+//
+// Overall, the scene indices are as follows:
+//
+// 1. HdPrman_RileyFallbackMaterialSceneIndexPlugin
+//    Adds a hard-coded riley material at GetFallbackMaterialPath().
+//
+// 2. HdPrman_RileyConversionSceneIndexPlugin
+//
+//    Converts some hydra prims to riley prims (following, e.g.,
+//    HdPrmanRileyGeometryPrototypeSchema).
+//
+//    Note that we can have some hydra prims be handled by converting them to
+//    riley prims in this scene index and others go through emulation and
+//    the Hydra 1.0 path.
+//
+//    For example, the scene index converts a sphere to a
+//    riley:geometryPrototype and riley:geometryInstance. These prims will
+//    be observed (see later) by
+//    HdPrmanRenderDelegate::_RileySceneIndices::_primManagingSceneIndexObserver
+//    which will issue the corresponding riley Create/Modify/Delete calls.
+//    Because the original sphere has been converted to different prim types,
+//    there is no instantiation of HdPrman_Sphere.
+//    Also, note that we do not report riley:geometryPrototype or
+//    riley:geometryInstance by any
+//    HdPrmanRenderDelegate::GetSupported[RSB]primTypes().
+//
+//    Another example is mesh. The scene index does not convert a mesh.
+//    mesh is reported by HdPrmanRenderDelegate::GetSupportedRprimTypes().
+//    Thus, HdSceneIndexAdapterSceneDelegate will call _InsertRprim for
+//    a mesh and thus we instantiate HdPrman_mesh.
+//
+// The conversion scene index is also the terminal scene index in the render
+// index. However, _RileySceneIndices continues the chain of filtering scene
+// indices and observers as follows:
+//
+// 3. HdsiPrimTypeNoticeBatchingSceneIndex _noticeBatchingSceneIndex
+//
+//    This scene index postpones any prim messages until we sync.
+//    During sync (more precisely, in HdPrmanRenderDelegate::Update()), it
+//    sorts and batches the messages to fulfill dependencies between prims.
+//    E.g. the Riley::CreateGeometryInstance call needs the result of
+//    Riley::CreateGeometryPrototype, so this scene index sends out the
+//    messages for riley:geometryInstance first.
+//
+// 4. HdsiPrimManagingSceneIndexObserver _primManagingSceneIndexObserver
+//
+//    This observer calls, e.g., Riley::Create/Modify/DeleteGeometryInstance
+//    in response to add/modify/delete prim messages.
+//
+struct HdPrmanRenderDelegate::_RileySceneIndices
+{
+#ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
+    _RileySceneIndices(
+        HdSceneIndexBaseRefPtr const &terminalSceneIndex,
+        HdPrman_RenderParam * const renderParam)
+      : _noticeBatchingSceneIndex(
+            HdsiPrimTypeNoticeBatchingSceneIndex::New(
+                terminalSceneIndex,
+                HdPrman_RileyPrimFactory::
+                    GetPrimTypeNoticeBatchingSceneIndexInputArgs()))
+      , _primManagingSceneIndexObserver(
+            HdsiPrimManagingSceneIndexObserver::New(
+                _noticeBatchingSceneIndex,
+                _Args(renderParam)))
+    {
+    }
+
+    static
+    HdContainerDataSourceHandle
+    _Args(HdPrman_RenderParam * const renderParam)
+    {
+        using DataSource = 
+            HdRetainedTypedSampledDataSource<
+                HdsiPrimManagingSceneIndexObserver::PrimFactoryBaseHandle>;
+
+        return
+            HdRetainedContainerDataSource::New(
+                HdsiPrimManagingSceneIndexObserverTokens->primFactory,
+                DataSource::New(
+                    std::make_shared<HdPrman_RileyPrimFactory>(renderParam)));
+    }
+
+    void Update()
+    {
+        _noticeBatchingSceneIndex->Flush();
+    }
+
+    HdsiPrimTypeNoticeBatchingSceneIndexRefPtr _noticeBatchingSceneIndex;
+    HdsiPrimManagingSceneIndexObserverRefPtr _primManagingSceneIndexObserver;
+#endif
+};
+
 extern TfEnvSetting<bool> HD_PRMAN_ENABLE_QUICKINTEGRATE;
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -71,7 +187,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (openvdbAsset)
     (field3dAsset)
     (ri)
-    ((outputsRi, "outputs:ri"))
     ((mtlxRenderContext, "mtlx"))
     (renderCameraPath)
 );
@@ -583,7 +698,7 @@ HdPrmanRenderDelegate::GetShaderSourceTypes() const
 TfTokenVector
 HdPrmanRenderDelegate::GetRenderSettingsNamespaces() const
 {
-    return {_tokens->ri, _tokens->outputsRi};
+    return {_tokens->ri};
 }
 #endif
 
@@ -690,11 +805,37 @@ HdPrmanRenderDelegate::SetTerminalSceneIndex(
             std::make_unique<HdPrman_TerminalSceneIndexObserver>(
                 _renderParam, terminalSceneIndex);
     }
+
+#ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
+    if (terminalSceneIndex) {
+        if (TfGetEnvSetting(HD_PRMAN_EXPERIMENTAL_RILEY_SCENE_INDEX_OBSERVER)) {
+            if (!_rileySceneIndices) {
+                _rileySceneIndices =
+                    std::make_unique<_RileySceneIndices>(
+                        terminalSceneIndex, _renderParam.get());
+            }
+        }
+    }
+#endif
 }
 
 void
 HdPrmanRenderDelegate::Update()
 {
+#ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
+    if (_rileySceneIndices) {
+        // We need to set some paths before any riley Create call can
+        // be issued - otherwise, we get a crash.
+        //
+        // TODO: There should be a designated prim in the scene index
+        // to communicate the global riley options.
+        //
+        _renderParam->SetRileyOptions();
+
+        _rileySceneIndices->Update();
+    }
+#endif
+
     if (!_terminalObserver) {
         TF_CODING_ERROR("Invalid terminal scene index observer.");
         return;

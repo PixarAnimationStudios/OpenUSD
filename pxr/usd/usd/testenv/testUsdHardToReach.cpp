@@ -39,7 +39,7 @@ namespace
 // type.
 void TestTargetSpecs()
 {
-    for (const std::string& fmt : {"usda", "usdc"}) {
+    for (const std::string fmt : {"usda", "usdc"}) {
         UsdStageRefPtr stage = 
             UsdStage::CreateInMemory("TestTargetSpecs." + fmt);
         
@@ -67,7 +67,7 @@ void TestTargetSpecs()
 // values are not part of the python API so we test them for the C++ API.
 void TestGetTargetsAndConnections()
 {
-    for (const std::string& fmt : {"usda", "usdc"}) {
+    for (const std::string fmt : {"usda", "usdc"}) {
         UsdStageRefPtr stage = 
             UsdStage::CreateInMemory("TestGetTargets." + fmt);
         

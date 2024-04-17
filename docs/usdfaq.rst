@@ -109,6 +109,27 @@ files which contain references to plain :filename:`.usd` assets, those assets
 can be converted between binary and text without changing the sources which
 refer to them.
 
+When authoring USD, the underlying format or encoding of the :filename:`.usd` 
+extension can be specified using :usdcpp:`FileFormatArguments` as observed 
+in :usdcpp:`SdfLayer::CreateNew` or :usdcpp:`SdfLayer::Export`.
+
+Developers can also use the :envvar:`USD_DEFAULT_FILE_FORMAT` environment 
+variable to control the default underlying format. The environment variable is 
+used when the underlying format is not explicitly specified through 
+:usdcpp:`FileFormatArguments`. Valid values for the 
+:envvar:`USD_DEFAULT_FILE_FORMAT` environment variable and their behaviors are 
+detailed below:
+
+  +--------------------------------+--------------------------------+
+  | USD_DEFAULT_FILE_FORMAT Value  | :filename:`.usd` Encoding Used |
+  +================================+================================+
+  | <unset>                        | Random-access "Crate" binary   |
+  +--------------------------------+--------------------------------+
+  | usdc                           | Random-access "Crate" binary   |
+  +--------------------------------+--------------------------------+
+  | usda                           | Human-readable UTF-8 text      |
+  +--------------------------------+--------------------------------+
+
 What character encoding does :filename:`.usda` support?
 #######################################################
 

@@ -39,27 +39,23 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// TODO: Should wrap token arrays to Python.
-
 /// Macro to wrap static tokens defined with \c TF_DEFINE_PUBLIC_TOKENS to
 /// Python.  It creates a class of name \p name in the current scope
 /// containing just the tokens in \p seq in the static tokens named by \p key.
-/// Arrays are not wrapped but their components are.
 ///
 /// \hideinitializer
 #define TF_PY_WRAP_PUBLIC_TOKENS(name, key, seq)                            \
     boost::python::class_<_TF_TOKENS_STRUCT_NAME(key), boost::noncopyable>( \
             name, boost::python::no_init)                                   \
-        _TF_PY_TOKENS_WRAP_SEQ(key, _TF_PY_TOKENS_EXPAND(seq))
+        _TF_PY_TOKENS_WRAP_SEQ(key, seq)
 
 /// Macro to wrap static tokens defined with \c TF_DEFINE_PUBLIC_TOKENS to
 /// Python. This wraps tokens in \p seq in the static tokens named by \p key
-/// as attributes on the current boost python scope. Arrays are not wrapped
-/// but their components are.
+/// as attributes on the current boost python scope.
 ///
 /// \hideinitializer
 #define TF_PY_WRAP_PUBLIC_TOKENS_IN_CURRENT_SCOPE(key, seq)                 \
-    _TF_PY_TOKENS_WRAP_ATTR_SEQ(key, _TF_PY_TOKENS_EXPAND(seq))
+    _TF_PY_TOKENS_WRAP_ATTR_SEQ(key, seq)
 
 // Helper to return a static token as a string.  We wrap tokens as Python
 // strings and for some reason simply wrapping the token using def_readonly
@@ -89,10 +85,6 @@ private:
             boost::python::return_value_policy<                             \
                 boost::python::return_by_value>(),                          \
             boost::mpl::vector1<std::string>()))
-
-#define _TF_PY_TOKENS_EXPAND(seq)                                           \
-    BOOST_PP_SEQ_FILTER(_TF_TOKENS_IS_NOT_ARRAY, ~, seq)                    \
-    _TF_TOKENS_EXPAND_ARRAY_ELEMENTS(seq)
 
 // Private macros to wrap a single element in a sequence.
 #define _TF_PY_TOKENS_WRAP_ELEMENT(key, elem)                               \

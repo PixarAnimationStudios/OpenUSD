@@ -169,8 +169,10 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
                 params.blendAlphaSrcFactor, params.blendAlphaDstFactor);
         renderPassState->SetBlendConstantColor(params.blendConstantColor);
         
+        // Don't enable alpha to coverage for id renders.
         renderPassState->SetAlphaToCoverageEnabled(
             params.enableAlphaToCoverage &&
+            !params.enableIdRender &&
             !TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE));
 
         if (HdStRenderPassState * const hdStRenderPassState =

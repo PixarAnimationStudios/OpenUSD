@@ -51,37 +51,36 @@ static NdrStringVec computeDefaultSearchPaths()
         NdrStringVec paths = TfStringSplit(shaderpath, ARCH_PATH_LIST_SEP);
         for (std::string const& path : paths)
             searchPaths.push_back(path);
-    } else {
-        // Default RenderMan installation under '$RMANTREE/lib/shaders'
-        std::string rmantree = TfGetenv("RMANTREE");
-        if (!rmantree.empty()) {
-            searchPaths.push_back(TfStringCatPaths(rmantree, "lib/shaders"));
-        }
-        // Default hdPrman installation under 'plugins/usd/resources/shaders'
-        PlugPluginPtr plugin =
-            PlugRegistry::GetInstance().GetPluginWithName("hdPrmanLoader");
-        if (plugin) {
-            std::string path = TfGetPathName(plugin->GetPath());
-            if (!path.empty()) {
-                searchPaths.push_back(
-                    TfStringCatPaths(path, "resources/shaders"));
-            }
+    } 
+    // Default RenderMan installation under '$RMANTREE/lib/shaders'
+    std::string rmantree = TfGetenv("RMANTREE");
+    if (!rmantree.empty()) {
+        searchPaths.push_back(TfStringCatPaths(rmantree, "lib/shaders"));
+    }
+    // Default hdPrman installation under 'plugins/usd/resources/shaders'
+    PlugPluginPtr plugin =
+        PlugRegistry::GetInstance().GetPluginWithName("hdPrmanLoader");
+    if (plugin) {
+        std::string path = TfGetPathName(plugin->GetPath());
+        if (!path.empty()) {
+            searchPaths.push_back(
+                TfStringCatPaths(path, "resources/shaders"));
         }
     }
+
     // RMAN_RIXPLUGINPATH contains Args (.args) metadata
     std::string rixpluginpath = TfGetenv("RMAN_RIXPLUGINPATH");
     if (!rixpluginpath.empty()) {
         // Assume that args files are under an 'Args' directory
         NdrStringVec paths = TfStringSplit(rixpluginpath, ARCH_PATH_LIST_SEP);
-        for (std::string const& path : paths)
+        for (std::string const& path : paths) {
             searchPaths.push_back(TfStringCatPaths(path, "Args"));
-    } else {
-        // Default RenderMan installation under '$RMANTREE/lib/plugins/Args'
-        std::string rmantree = TfGetenv("RMANTREE");
-        if (!rmantree.empty()) {
-            searchPaths.push_back(
-                TfStringCatPaths(rmantree, "lib/plugins/Args"));
         }
+    } 
+    // Default RenderMan installation under '$RMANTREE/lib/plugins/Args'
+    if (!rmantree.empty()) {
+        searchPaths.push_back(
+            TfStringCatPaths(rmantree, "lib/plugins/Args"));
     }
     return searchPaths;
 }

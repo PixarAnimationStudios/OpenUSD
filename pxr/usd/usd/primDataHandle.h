@@ -26,9 +26,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
+#include "pxr/base/tf/delegatedCountPtr.h"
 #include "pxr/base/tf/hash.h"
-
-#include <boost/intrusive_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -37,9 +36,9 @@ class SdfPath;
 // To start we always validate.
 #define USD_CHECK_ALL_PRIM_ACCESSES
 
-// Forward declare boost::intrusive_ptr requirements.  Defined in primData.h.
-void intrusive_ptr_add_ref(const class Usd_PrimData *prim);
-void intrusive_ptr_release(const class Usd_PrimData *prim);
+// Forward declare TfDelegatedCountPtr requirements.  Defined in primData.h.
+void TfDelegatedCountIncrement(const class Usd_PrimData *prim) noexcept;
+void TfDelegatedCountDecrement(const class Usd_PrimData *prim) noexcept;
 
 // Forward declarations for Usd_PrimDataHandle's use.  Defined in primData.h.
 USD_API
@@ -50,9 +49,9 @@ bool Usd_IsDead(Usd_PrimData const *p);
 typedef Usd_PrimData *Usd_PrimDataPtr;
 typedef const Usd_PrimData *Usd_PrimDataConstPtr;
 
-// convenience typedefs for intrusive_ptr.
-typedef boost::intrusive_ptr<Usd_PrimData> Usd_PrimDataIPtr;
-typedef boost::intrusive_ptr<const Usd_PrimData> Usd_PrimDataConstIPtr;
+// convenience typedefs for TfDelegatedCountPtr.
+using Usd_PrimDataIPtr = TfDelegatedCountPtr<Usd_PrimData>;
+using Usd_PrimDataConstIPtr = TfDelegatedCountPtr<const Usd_PrimData>;
 
 // Private helper class that holds a reference to prim data.  UsdObject (and by
 // inheritance its subclasses) hold an instance of this class.  It lets
@@ -65,18 +64,18 @@ public:
 
     // Construct a null handle.
     Usd_PrimDataHandle() {}
-    // Convert/construct a handle from a prim data intrusive ptr.
+    // Convert/construct a handle from a prim data delegated count ptr.
     Usd_PrimDataHandle(const Usd_PrimDataIPtr &primData)
         : _p(primData) {}
-    // Convert/construct a handle from a prim data intrusive ptr.
+    // Convert/construct a handle from a prim data delegated count ptr.
     Usd_PrimDataHandle(const Usd_PrimDataConstIPtr &primData)
         : _p(primData) {}
     // Convert/construct a handle from a prim data raw ptr.
     Usd_PrimDataHandle(Usd_PrimDataPtr primData)
-        : _p(Usd_PrimDataConstIPtr(primData)) {}
+        : _p(TfDelegatedCountIncrementTag, primData) {}
     // Convert/construct a handle from a prim data raw ptr.
     Usd_PrimDataHandle(Usd_PrimDataConstPtr primData)
-        : _p(Usd_PrimDataConstIPtr(primData)) {}
+        : _p(TfDelegatedCountIncrementTag, primData) {}
 
     // Reset this handle to null.
     void reset() { _p.reset(); }

@@ -10,13 +10,13 @@
 
     This is a stripped-down case pulled from bug 81276.
     """
+    relocates = {
+        </Group/Char>: </Group/Char_Named>
+    }
 )
 
 def "Group" (
     add references = @./b.sdf@</Group>
-    relocates = {
-        <Char>: <Char_Named>
-    }
 )
 {
 }
