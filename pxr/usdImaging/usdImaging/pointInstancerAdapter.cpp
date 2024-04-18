@@ -654,17 +654,29 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
                     HdChangeTracker::DirtyPrimvar,
                     HdInstancerTokens->instancer,
                     timeVaryingBits,
+                    false) ||
+            _IsVarying(prim,
+                    UsdGeomTokens->angularVelocities,
+                    HdChangeTracker::DirtyPrimvar,
+                    HdInstancerTokens->instancer,
+                    timeVaryingBits,
                     false);
 
+        // See if any of the inherited primvars are time-dependent.
+        UsdImaging_InheritedPrimvarStrategy::value_type inheritedPrimvarRecord =
+            _GetInheritedPrimvars(prim.GetParent());
+        if (inheritedPrimvarRecord && inheritedPrimvarRecord->variable) {
+            *timeVaryingBits |= HdChangeTracker::DirtyPrimvar;
+            HD_PERF_COUNTER_INCR(UsdImagingTokens->usdVaryingPrimvar);
+        }
+        // See if other local primvars are time-dependent.
         if (!(*timeVaryingBits & HdChangeTracker::DirtyPrimvar)) {
             UsdGeomPrimvarsAPI primvars(prim);
             for (auto const &pv: primvars.GetPrimvarsWithValues()) {
                 TfToken const& interp = pv.GetInterpolation();
-                if (interp != UsdGeomTokens->constant &&
-                    interp != UsdGeomTokens->uniform &&
-                    pv.ValueMightBeTimeVarying()) {
+                if (pv.ValueMightBeTimeVarying()) {
                     *timeVaryingBits |= HdChangeTracker::DirtyPrimvar;
-                    HD_PERF_COUNTER_INCR(HdInstancerTokens->instancer);
+                    HD_PERF_COUNTER_INCR(UsdImagingTokens->usdVaryingPrimvar);
                     break;
                 }
             }
@@ -702,9 +714,8 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                 protoPrim, cachePath, time, requestedBits);
         }
     } else if (_instancerData.find(cachePath) != _instancerData.end()) {
-        // For the instancer itself, we only send translate, rotate, scale,
-        // velocities, and accelerations back as primvars, which all fall into
-        // the DirtyPrimvar bucket currently.
+        // For the instancer itself, we send per-instance transform attributes
+        // back as primvars, which all fall into DirtyPrimvar currently.
         if (requestedBits & HdChangeTracker::DirtyPrimvar) {
             UsdGeomPointInstancer instancer(prim);
 
@@ -766,18 +777,39 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                     HdInterpolationInstance);
             }
 
-            // Convert non-uniform primvars on UsdGeomPointInstancer into
-            // instance-rate primvars. Note: this only gets local primvars.
-            // Inherited primvars don't vary per-instance, so we let the
-            // prototypes pick them up.
-            UsdGeomPrimvarsAPI primvars(instancer);
-            for (auto const &pv: primvars.GetPrimvarsWithValues()) {
-                TfToken const& interp = pv.GetInterpolation();
-                if (interp != UsdGeomTokens->constant &&
-                    interp != UsdGeomTokens->uniform) {
-                    HdInterpolation interp = HdInterpolationInstance;
-                    _ComputeAndMergePrimvar(prim, pv, time, &vPrimvars, &interp);
+            VtVec3fArray angularVelocities;
+            if (instancer.GetAngularVelocitiesAttr()
+                    .Get(&angularVelocities, time)) {
+                _MergePrimvar(
+                    &vPrimvars,
+                    HdTokens->angularVelocities,
+                    HdInterpolationInstance);
+            }
+
+            // Pick up inherited and local constant primvars, and convert
+            // non-constant primvars on UsdGeomPointInstancer into
+            // instance-rate primvars.
+            std::vector<UsdGeomPrimvar> primvars;
+            UsdImaging_InheritedPrimvarStrategy::value_type
+                inheritedPrimvarRecord =
+                    _GetInheritedPrimvars(prim.GetParent());
+            if (inheritedPrimvarRecord) {
+                primvars = inheritedPrimvarRecord->primvars;
+            }
+
+            UsdGeomPrimvarsAPI primvarsApi(instancer);
+            std::vector<UsdGeomPrimvar> local =
+                primvarsApi.GetPrimvarsWithValues();
+            primvars.insert(primvars.end(), local.begin(), local.end());
+
+            for (auto const &pv: primvars) {
+                TfToken const& usdInterp = pv.GetInterpolation();
+                HdInterpolation hdInterp = HdInterpolationInstance;
+                if (usdInterp == UsdGeomTokens->constant || 
+                    usdInterp == UsdGeomTokens->uniform) {
+                    hdInterp = HdInterpolationConstant;
                 }
+                _ComputeAndMergePrimvar(prim, pv, time, &vPrimvars, &hdInterp);
             }
         }
     }
@@ -832,7 +864,8 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
         propertyName == UsdGeomTokens->orientationsf ||
         propertyName == UsdGeomTokens->scales ||
         propertyName == UsdGeomTokens->velocities ||
-        propertyName == UsdGeomTokens->accelerations) {
+        propertyName == UsdGeomTokens->accelerations ||
+        propertyName == UsdGeomTokens->angularVelocities) {
 
         TfToken primvarName = propertyName;
         if (propertyName == UsdGeomTokens->positions) {
@@ -847,6 +880,8 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
             primvarName = HdTokens->velocities;
         } else if (propertyName == UsdGeomTokens->accelerations) {
             primvarName = HdTokens->accelerations;
+        } else if (propertyName == UsdGeomTokens->angularVelocities) {
+            primvarName = HdTokens->angularVelocities;
         }
 
         return _ProcessNonPrefixedPrimvarPropertyChange(
@@ -861,18 +896,8 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
 
     // Is the property a primvar?
     if (UsdGeomPrimvarsAPI::CanContainPropertyName(propertyName)) {
-        // Ignore local constant/uniform primvars.
-        UsdGeomPrimvar pv = UsdGeomPrimvarsAPI(prim).GetPrimvar(propertyName);
-        if (pv && (pv.GetInterpolation() == UsdGeomTokens->constant ||
-                   pv.GetInterpolation() == UsdGeomTokens->uniform)) {
-            return HdChangeTracker::Clean;
-        }
-
-        
         return UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
-            prim, cachePath, propertyName,
-            /*valueChangeDirtyBit*/HdChangeTracker::DirtyPrimvar,
-            /*inherited=*/false);
+            prim, cachePath, propertyName);
     }
 
     // XXX: Treat transform & visibility changes as re-sync, until we untangle
@@ -1857,6 +1882,8 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
             usdKey = UsdGeomTokens->velocities;
         } else if (key == HdTokens->accelerations) {
             usdKey = UsdGeomTokens->accelerations;
+        } else if (key == HdTokens->angularVelocities) {
+            usdKey = UsdGeomTokens->angularVelocities;
         }
         return UsdImagingPrimAdapter::SamplePrimvar(
             usdPrim, cachePath, usdKey, time,
@@ -2165,18 +2192,33 @@ UsdImagingPointInstancerAdapter::Get(UsdPrim const& usdPrim,
                 return VtValue(accelerations);
             }
 
-        } else {
-            UsdGeomPrimvarsAPI primvars(usdPrim);
-            if (UsdGeomPrimvar pv = primvars.GetPrimvar(key)) {
-                VtValue value;
-                if (outIndices) {
-                    if (pv && pv.Get(&value, time)) {
-                        pv.GetIndices(outIndices, time);
-                        return value;
-                    }
-                } else if (pv && pv.ComputeFlattened(&value, time)) {
+        } else if (key == HdTokens->angularVelocities) {
+            UsdGeomPointInstancer instancer(usdPrim);
+            VtVec3fArray angularVelocities;
+            if (instancer.GetAngularVelocitiesAttr()
+                    .Get(&angularVelocities, time)) {
+                return VtValue(angularVelocities);
+            }
+        } else if (UsdGeomPrimvar pv =
+                UsdGeomPrimvarsAPI(usdPrim).GetPrimvar(key)) {
+            VtValue value;
+            if (outIndices) {
+                if (pv && pv.Get(&value, time)) {
+                    pv.GetIndices(outIndices, time);
                     return value;
                 }
+            } else if (pv && pv.ComputeFlattened(&value, time)) {
+                return value;
+            }
+        } else if (UsdGeomPrimvar pv = _GetInheritedPrimvar(usdPrim, key)) {
+            VtValue value;
+            if (outIndices) {
+                if (pv && pv.Get(&value, time)) {
+                    pv.GetIndices(outIndices, time);
+                    return value;
+                }
+            } else if (pv && pv.ComputeFlattened(&value, time)) {
+                return value;
             }
         }
     }
