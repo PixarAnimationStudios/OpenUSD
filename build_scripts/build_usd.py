@@ -108,6 +108,8 @@ def GetBuildTargets():
         return apple_utils.GetBuildTargets() + [TARGET_WASM, TARGET_WASM_NODE]
     elif Linux():
         return [TARGET_WASM, TARGET_WASM_NODE]
+    else:
+        return []
 
 def GetLocale():
     if Windows():
@@ -2168,13 +2170,15 @@ group.add_argument("--build-variant", default=BUILD_RELEASE,
 
 group.add_argument("--ignore-paths", type=str, nargs="*", default=[],
                    help="Paths for CMake to ignore when configuring projects.")
+
+group.add_argument("--build-target",
+                    default=GetBuildTargetDefault(),
+                    choices=GetBuildTargets(),
+                    help=("Build target for cross compilation. "
+                            "(default: {})".format(
+                            GetBuildTargetDefault())))
+
 if MacOS() or Linux():
-    group.add_argument("--build-target",
-                       default=GetBuildTargetDefault(),
-                       choices=GetBuildTargets(),
-                       help=("Build target for cross compilation. "
-                             "(default: {})".format(
-                             GetBuildTargetDefault())))
     if apple_utils.IsHostArm():
         # Intel Homebrew stores packages in /usr/local which unfortunately can
         # be where a lot of other things are too. So we only add this flag on arm macs.
