@@ -123,11 +123,7 @@ private:
     // Stage globals handle.
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
 
-    using _CustomPrimvarsMap =
-        std::map<TfToken,
-                 std::pair<UsdAttributeQuery,
-                           TfToken /* forced interpolation */>>;
-    _CustomPrimvarsMap _customPrimvars;
+    const Mappings _mappings;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceCustomPrimvars);
