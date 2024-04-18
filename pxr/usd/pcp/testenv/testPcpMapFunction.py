@@ -122,8 +122,10 @@ class TestPcpMapFunction(unittest.TestCase):
         self.assertFalse(m3.isIdentity)
         self.assertFalse(m3.isIdentityPathMapping)
         self.assertTrue(m3.MapSourceToTarget('/').isEmpty)
-        self.assertEqual(m3.MapSourceToTarget('/CharRig'), Sdf.Path('/Model_1/Rig'))
-        self.assertEqual(m3.MapSourceToTarget('/CharRig/rig'), Sdf.Path('/Model_1/Rig/rig'))
+        self.assertEqual(m3.MapSourceToTarget('/CharRig'),
+                         Sdf.Path('/Model_1/Rig'))
+        self.assertEqual(m3.MapSourceToTarget('/CharRig/rig'), 
+                         Sdf.Path('/Model_1/Rig/rig'))
         self.assertTrue(m3.MapSourceToTarget('/Model').isEmpty)
         self.assertTrue(m3.MapSourceToTarget('/Model/Rig').isEmpty)
         self.assertTrue(m3.MapSourceToTarget('/Model/Rig/rig').isEmpty)
@@ -137,8 +139,10 @@ class TestPcpMapFunction(unittest.TestCase):
         self.assertTrue(m3.MapTargetToSource('/Model/Rig').isEmpty)
         self.assertTrue(m3.MapTargetToSource('/Model/Rig/rig').isEmpty)
         self.assertTrue(m3.MapTargetToSource('/Model_1').isEmpty)
-        self.assertEqual(m3.MapTargetToSource('/Model_1/Rig'), Sdf.Path('/CharRig'))
-        self.assertEqual(m3.MapTargetToSource('/Model_1/Rig/rig'), Sdf.Path('/CharRig/rig'))
+        self.assertEqual(m3.MapTargetToSource('/Model_1/Rig'),
+                         Sdf.Path('/CharRig'))
+        self.assertEqual(m3.MapTargetToSource('/Model_1/Rig/rig'),
+                         Sdf.Path('/CharRig/rig'))
         # Test composing map functions that should produce identity mappings.
         m1 = Pcp.MapFunction({'/':'/', '/a':'/b'})
         m2 = Pcp.MapFunction({'/':'/', '/b':'/a'})
@@ -267,6 +271,107 @@ class TestPcpMapFunction(unittest.TestCase):
             '/StringsRig':'/GuitarRigX/Rig/StringsRig',
             '/StringsRig/_Class_StringRig/String':
             '/GuitarRigX/Anim/Strings/String1'}))
+
+    # Test for a bug where the composed map function of two map functions does not
+    # produce the same MapSourceToTarget(path) results as passing the path through
+    # the two map functions individually.
+    #
+    # XXX: As of now this bug is not fixed.
+    def test_BugComposedMapFunction(self):
+        # The first map function maps /PathRig to a target path and also maps
+        # a /PathRig/Path (a child of /PathRig) to a path that is not a descendant 
+        # of its parent's mapped target.
+        f1 = Pcp.MapFunction({
+            '/PathRig' : '/CharRig/Rig/PathRig',
+            '/PathRig/Path' : '/Path'
+        })
+
+        # The second map function is maps an ancestor of one entry's target in the
+        # first map function but does not map both.
+        f2 = Pcp.MapFunction({
+            '/CharRig' : '/Model'
+        })
+
+        # Compose the map functions for the equivalent of mapping f2(f1(path))
+        fComposed = f2.Compose(f1)
+
+        # Verify the resulting composed function.
+        #
+        # XXX: This composed function is NOT the equivalent of calling f2(f1(path))
+        # for all paths and is the crux of the bug.
+        self.assertEqual(fComposed, Pcp.MapFunction({
+            '/PathRig' : '/Model/Rig/PathRig'
+        }))
+
+        # Verifies that calling the composed map function on a path produces the
+        # same result as calling its composing map functions in sequence on the 
+        # the same path
+        def _VerifyComposedFunctionMapsSourceToTargetTheSame(sourcePath,targetPath):
+            # The composed functions MapSourceToTarget will produce the same path
+            # as calling f1.MapSourceToTarget followed by f2.MapSourceToTarget
+            self.assertEqual(
+                fComposed.MapSourceToTarget(sourcePath), 
+                targetPath)
+            self.assertEqual(
+                f2.MapSourceToTarget(f1.MapSourceToTarget(sourcePath)), 
+                targetPath)
+
+        def _VerifyComposedFunctionMapsTargetToSourceTheSame(targetPath,sourcePath):
+            # For MapTargetToSource, it's inverted. The composed MapTargetToSource
+            # is the same as calling f2.MapTargetToSource followed by 
+            # f1.MapTargetToSource
+            self.assertEqual(
+                fComposed.MapTargetToSource(targetPath), 
+                sourcePath)
+            self.assertEqual(
+                f1.MapTargetToSource(f2.MapTargetToSource(targetPath)),
+                sourcePath)
+
+        # Verify path that fails to map in f1.
+        _VerifyComposedFunctionMapsSourceToTargetTheSame('/Bogus', '')
+        _VerifyComposedFunctionMapsTargetToSourceTheSame('/Bogus', '')
+
+        # Verify path that is the first direct source in f1. This will map
+        _VerifyComposedFunctionMapsSourceToTargetTheSame(
+            '/PathRig', '/Model/Rig/PathRig')
+        _VerifyComposedFunctionMapsTargetToSourceTheSame(
+            '/Model/Rig/PathRig', '/PathRig')
+
+        # Verify path that is a child of the first direct source 
+        _VerifyComposedFunctionMapsSourceToTargetTheSame(
+            '/PathRig/Rig', '/Model/Rig/PathRig/Rig')
+        _VerifyComposedFunctionMapsTargetToSourceTheSame(
+            '/Model/Rig/PathRig/Rig', '/PathRig/Rig')
+
+        # Verify path that is the second direct source in f1 will fail to map
+        # across f2 and therefore will also fail to map across the composed
+        # function.
+        #
+        # XXX: This currently cannot be verified because the composed function is 
+        # wrong. For now we verify the incorrect behavior until the bug is fixed.
+        #
+        # _VerifyComposedFunctionMapsSourceToTargetTheSame('/PathRig/Path', '')
+        self.assertEqual(
+            f2.MapSourceToTarget(f1.MapSourceToTarget('/PathRig/Path')),
+            Sdf.Path())
+        self.assertEqual(
+            fComposed.MapSourceToTarget('/PathRig/Path'),
+            '/Model/Rig/PathRig/Path')
+
+        # Verify target path that can inverse map across f2 but fails to inverse
+        # map across f1 will also fail to inverse map across the composed function.
+        #
+        # XXX: This currently cannot be verified because the composed function is 
+        # wrong. For now we verify the incorrect behavior until the bug is fixed.
+        #
+        # _VerifyComposedFunctionMapsTargetToSourceTheSame(
+        #     '/Model/Rig/PathRig/Path', '')
+        self.assertEqual(
+            f1.MapTargetToSource(f2.MapTargetToSource('/Model/Rig/PathRig/Path')),
+            Sdf.Path())
+        self.assertEqual(
+            fComposed.MapTargetToSource('/Model/Rig/PathRig/Path'),
+            '/PathRig/Path')
 
 if __name__ == "__main__":
     unittest.main()
