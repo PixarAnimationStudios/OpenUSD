@@ -2662,6 +2662,10 @@ UsdImagingInstanceAdapter::GetScenePrimPaths(
                 }
             }
 
+            // Ensure the result vector is the same size as instanceIndices
+            // even if there are no valid instance indices.
+            result.resize(instanceIndices.size());
+
             // at least one index was valid, get the prim paths
             if (validIndices > 0) {
                 // For each valid requested index provide a mapping into the result vector
@@ -2682,7 +2686,6 @@ UsdImagingInstanceAdapter::GetScenePrimPaths(
                     }
                 }
 
-                result.resize(validIndices);
                 _GetScenePrimPathsFn primPathsFn(
                     this, requestedIndicesMap, minIdx, result, proto.path);
                 _RunForAllInstancesToDraw(instancerPrim, &primPathsFn);
