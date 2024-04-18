@@ -228,7 +228,8 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     multisampleState.sampleShadingEnable = VK_FALSE;
     multisampleState.minSampleShading = 0.5f;
     multisampleState.alphaToCoverageEnable = ms.alphaToCoverageEnable;
-    multisampleState.alphaToOneEnable = ms.alphaToOneEnable;
+    multisampleState.alphaToOneEnable = ms.alphaToOneEnable &&
+        _device->GetDeviceCapabilities().vkDeviceFeatures.alphaToOne;
     pipeCreateInfo.pMultisampleState = &multisampleState;
 
     //
