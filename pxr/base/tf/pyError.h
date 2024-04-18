@@ -102,17 +102,6 @@ struct TfPyRaiseOnError : Base
     }
 };
 
-struct Tf_PyErrorClearer {
-    Tf_PyErrorClearer() : clearOnDestruction(true) {}
-    ~Tf_PyErrorClearer() {
-        if (clearOnDestruction)
-            mark.Clear();
-    }
-    void Dismiss() { clearOnDestruction = false; }
-    TfErrorMark mark;
-    bool clearOnDestruction;
-};
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_BASE_TF_PY_ERROR_H
