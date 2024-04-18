@@ -2118,16 +2118,20 @@ UsdStage::GetPseudoRoot() const
 UsdPrim
 UsdStage::GetDefaultPrim() const
 {
-    TfToken name = GetRootLayer()->GetDefaultPrim();
-    return SdfPath::IsValidIdentifier(name)
-        ? GetPrimAtPath(SdfPath::AbsoluteRootPath().AppendChild(name))
-        : UsdPrim();
+    SdfPath path = GetRootLayer()->GetDefaultPrimAsPath();
+    return path.IsEmpty() 
+        ? UsdPrim()
+        : GetPrimAtPath(path);
 }
 
 void
 UsdStage::SetDefaultPrim(const UsdPrim &prim)
 {
-    GetRootLayer()->SetDefaultPrim(prim.GetName());
+    if (prim){
+        prim.GetParent() == GetPseudoRoot()
+            ? GetRootLayer()->SetDefaultPrim(prim.GetName())
+            : GetRootLayer()->SetDefaultPrim(prim.GetPath().GetAsToken());
+    }
 }
 
 void

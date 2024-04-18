@@ -1597,6 +1597,21 @@ SdfLayer::GetDefaultPrim() const
     return _GetValue<TfToken>(SdfFieldKeys->DefaultPrim);
 }
 
+SdfPath
+SdfLayer::GetDefaultPrimAsPath() const
+{
+    std::string pathString = 
+        _GetValue<TfToken>(SdfFieldKeys->DefaultPrim).GetString();
+    SdfPath path = SdfPath::IsValidPathString(pathString)
+        ? SdfPath(pathString)
+        : SdfPath();
+    return path.IsPrimPath()
+        ? path.IsAbsolutePath()
+            ? path
+            : path.MakeAbsolutePath(SdfPath::AbsoluteRootPath())
+        : SdfPath();
+}
+
 void
 SdfLayer::ClearDefaultPrim()
 {
