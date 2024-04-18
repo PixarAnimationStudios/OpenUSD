@@ -600,6 +600,9 @@ HgiVulkanGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
     // End render pass
     _EndRenderPass();
 
+    _viewportSet = false;
+    _scissorSet = false;
+
     HgiVulkanDevice* device = _commandBuffer->GetDevice();
     HgiVulkanCommandQueue* queue = device->GetCommandQueue();
 
@@ -652,8 +655,8 @@ HgiVulkanGraphicsCmds::_ApplyPendingUpdates()
             &beginInfo,
             contents);
 
-        // Make sure viewport and scissor are set since our HgiVulkanPipeline
-        // hardcodes one dynamic viewport and scissor.
+        // Make sure viewport and scissor are set since our
+        // HgiVulkanGraphicsPipeline hardcodes one dynamic viewport and scissor.
         if (!_viewportSet) {
             SetViewport(GfVec4i(0, 0, size[0], size[1]));
         }
@@ -676,8 +679,6 @@ HgiVulkanGraphicsCmds::_EndRenderPass()
     if (_renderPassStarted) {
         vkCmdEndRenderPass(_commandBuffer->GetVulkanCommandBuffer());
         _renderPassStarted = false;
-        _viewportSet = false;
-        _scissorSet = false;
     }
 }
 
