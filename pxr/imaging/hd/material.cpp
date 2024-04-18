@@ -149,7 +149,7 @@ _ResolveParameter(
     if (sdrNode) {
         if (const SdrShaderPropertyConstPtr input =
                                         sdrNode->GetShaderInput(name)) {
-            const VtValue& value = input->GetDefaultValue();
+            const VtValue& value = input->GetDefaultValueAsSdfType();
             if (value.IsHolding<T>()) {
                 return value.UncheckedGet<T>();
             }
