@@ -800,6 +800,7 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
         }
         if (_FindLocator(HdLightSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdLight::DirtyParams |
+                HdLight::DirtyResource |
                 HdLight::DirtyShadowParams |
                 HdLight::DirtyCollection;
         }

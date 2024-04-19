@@ -1862,8 +1862,8 @@ UsdImagingDelegate::SetSceneLightsEnabled(bool enable)
             const SdfPath &cachePath = pair.first;
             _HdPrimInfo &primInfo = pair.second;
             if (TF_VERIFY(primInfo.adapter, "%s", cachePath.GetText())) {
-                primInfo.adapter->MarkLightParamsDirty(primInfo.usdPrim, 
-                                                       cachePath, &indexProxy);
+                primInfo.adapter->MarkDirty(primInfo.usdPrim, cachePath, 
+                    HdLight::DirtyParams | HdLight::DirtyResource, &indexProxy);
             }
         }
     }

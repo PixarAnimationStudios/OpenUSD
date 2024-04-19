@@ -273,10 +273,6 @@ UsdImagingLightAdapter::GetMaterialResource(UsdPrim const &prim,
                                             SdfPath const& cachePath, 
                                             UsdTimeCode time) const
 {
-    if (!_GetSceneLightsEnabled()) {
-        return VtValue();
-    }
-
     if (!prim.HasAPI<UsdLuxLightAPI>()) {
         TF_RUNTIME_ERROR("Expected light prim at <%s> to have an applied API "
                          "of type 'UsdLuxLightAPI'; ignoring",
@@ -297,6 +293,14 @@ UsdImagingLightAdapter::GetMaterialResource(UsdPrim const &prim,
         _GetMaterialRenderContexts(),
         &networkMap,
         time);
+
+    if (!_GetSceneLightsEnabled()) {
+        // When scene lights are disabeled we need to mark them as disabled
+        // by setting the intensity value to 0. This parameter is found on 
+        // the terminal node, which is the last node in the light network.
+        networkMap.map[HdMaterialTerminalTokens->light].nodes.back().
+            parameters[HdLightTokens->intensity] = 0.0f;
+    }
 
     return VtValue(networkMap);
 }
