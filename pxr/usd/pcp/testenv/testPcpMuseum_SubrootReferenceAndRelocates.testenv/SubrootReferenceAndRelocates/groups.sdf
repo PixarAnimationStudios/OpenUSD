@@ -1,10 +1,11 @@
 #sdf 1.4.32
-
-def "Groups" (
+(
     relocates = {
-        <CharGroup/Char> : <CrowdGroup/Char>
+        </Groups/CharGroup/Char>: </Groups/CrowdGroup/Char>
     }
 )
+
+def "Groups"
 {
     def "CrowdGroup"
     {

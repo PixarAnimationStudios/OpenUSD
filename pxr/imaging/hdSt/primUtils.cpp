@@ -559,7 +559,6 @@ HdStGetRemovedOrReplacedPrimvarBufferSpecs(
     return removedOrReplacedSpecs;
 }
 
-// XXX: Not currently exported; does anyone else need it?
 HdBufferSpecVector
 HdStGetRemovedOrReplacedPrimvarBufferSpecs(
     HdBufferArrayRangeSharedPtr const& curRange,
@@ -916,7 +915,7 @@ HdStPopulateConstantPrimvars(
     HdBufferArrayRangeSharedPtr range =
         hdStResourceRegistry->UpdateShaderStorageBufferArrayRange(
             HdTokens->primvar, bar, bufferSpecs, removedSpecs,
-            HdBufferArrayUsageHint());
+            HdBufferArrayUsageHintBitsStorage);
     
      HdStUpdateDrawItemBAR(
         range,
@@ -1058,11 +1057,15 @@ HdStUpdateInstancerData(
                     HdInstancerTokens->culledInstanceIndices,
                     HdTupleType {HdTypeInt32, 1});
 
+                HdBufferArrayUsageHint usageHint = 
+                    HdBufferArrayUsageHintBitsIndex | 
+                    HdBufferArrayUsageHintBitsStorage;
+
                 HdBufferArrayRangeSharedPtr const range =
                     resourceRegistry->AllocateNonUniformBufferArrayRange(
                         HdTokens->topology,
                         bufferSpecs,
-                        HdBufferArrayUsageHint());
+                        usageHint);
 
                 HdStUpdateDrawItemBAR(
                     range,
@@ -1229,7 +1232,7 @@ void HdStProcessTopologyVisibility(
             resourceRegistry->AllocateShaderStorageBufferArrayRange(
                 HdTokens->topologyVisibility,
                 bufferSpecs,
-                HdBufferArrayUsageHint());
+                HdBufferArrayUsageHintBitsStorage);
         sharedData->barContainer.Set(
             drawItem->GetDrawingCoord()->GetTopologyVisibilityIndex(), range);
 

@@ -89,8 +89,9 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_INSTANCE_FRUSTUM_CULLING, true,
 
 HdSt_IndirectDrawBatch::HdSt_IndirectDrawBatch(
     HdStDrawItemInstance * drawItemInstance,
-    bool const allowGpuFrustumCulling)
-    : HdSt_DrawBatch(drawItemInstance)
+    bool const allowGpuFrustumCulling,
+    bool const allowTextureResourceRebinding)
+    : HdSt_DrawBatch(drawItemInstance, allowTextureResourceRebinding)
     , _drawCommandBufferDirty(false)
     , _bufferArraysHash(0)
     , _barElementOffsetsHash(0)
@@ -109,6 +110,7 @@ HdSt_IndirectDrawBatch::HdSt_IndirectDrawBatch(
     , _allowGpuFrustumCulling(allowGpuFrustumCulling)
     , _instanceCountOffset(0)
     , _cullInstanceCountOffset(0)
+    , _needsTextureResourceRebinding(false)
 {
     _Init(drawItemInstance);
 }
@@ -472,6 +474,18 @@ _GetShaderBar(HdSt_MaterialNetworkShaderSharedPtr const & shader)
     return shader ? shader->GetShaderData() : nullptr;
 }
 
+using TextureResourceID = HdSt_MaterialNetworkShader::ID;
+
+TextureResourceID
+_GetTextureResourceID(HdStDrawItem const * drawItem)
+{
+    if (HdSt_MaterialNetworkShaderSharedPtr const &materialNetworkShader =
+            drawItem->GetMaterialNetworkShader()) {
+        return materialNetworkShader->ComputeTextureSourceHash();
+    }
+    return 0;
+}
+
 // Collection of resources for a drawItem
 struct _DrawItemState
 {
@@ -580,6 +594,13 @@ HdSt_IndirectDrawBatch::_CompileBatch(
     _numTotalElements = 0;
     _numTotalVertices = 0;
 
+    // We'll need to rebind textures while drawing if we have
+    // a draw item instance with a different texture resource id
+    // than the first draw item.
+    TextureResourceID const firstTextureResourceID =
+        _GetTextureResourceID(_drawItemInstances[0]->GetDrawItem());
+    _needsTextureResourceRebinding = false;
+
     TF_DEBUG(HDST_DRAW).Msg(" - Processing Items:\n");
     _barElementOffsetsHash = 0;
     for (size_t item = 0; item < numDrawItemInstances; ++item) {
@@ -591,6 +612,14 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                             drawItem->GetElementOffsetsHash());
 
         _DrawItemState const dc(drawItem);
+
+        if (_allowTextureResourceRebinding && !_needsTextureResourceRebinding) {
+            TextureResourceID const textureResourceID =
+                                            _GetTextureResourceID(drawItem);
+            if (firstTextureResourceID != textureResourceID) {
+                _needsTextureResourceRebinding = true;
+            }
+        }
 
         // drawing coordinates.
         uint32_t const modelDC         = 0; // reserved for future extension
@@ -1074,6 +1103,27 @@ _BindingState::UnbindResourcesForDrawing(
     renderPassState->Unbind(hgiCapabilities);
 }
 
+void
+_BindTextureResources(
+    HdStDrawItem const * drawItem,
+    HdSt_ResourceBinder const & binder,
+    HdStGLSLProgramSharedPtr const & glslProgram,
+    TextureResourceID * currentTextureResourceID)
+{
+    // Bind texture resources via the drawItem's materialNetworkShader
+    // when the currentTextureResourceID changes between draw items.
+    TextureResourceID textureResourceID = _GetTextureResourceID(drawItem);
+    if (*currentTextureResourceID != textureResourceID) {
+        *currentTextureResourceID = textureResourceID;
+        if (HdSt_MaterialNetworkShaderSharedPtr const &materialNetworkShader =
+                drawItem->GetMaterialNetworkShader()) {
+            materialNetworkShader->BindResources(
+                glslProgram->GetProgram()->GetRawResource(),
+                binder);
+        }
+    }
+}
+
 } // annonymous namespace
 
 ////////////////////////////////////////////////////////////
@@ -1122,6 +1172,7 @@ HdSt_IndirectDrawBatch::_ExecuteDraw(
     // the drawing batch and drawing program are prepared to resolve
     // drawing coordinate state indirectly, i.e. from buffer data.
     bool const drawIndirect =
+        !_needsTextureResourceRebinding &&
         capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
     _DrawingProgram & program = _GetDrawingProgram(renderPassState,
                                                    resourceRegistry);
@@ -1161,7 +1212,7 @@ HdSt_IndirectDrawBatch::_ExecuteDraw(
             geometricShader, _dispatchBuffer, state.indexBar);
     } else {
         _ExecuteDrawImmediate(
-            geometricShader, _dispatchBuffer, state.indexBar);
+            geometricShader, _dispatchBuffer, state.indexBar, program);
     }
 
     state.UnbindResourcesForDrawing(renderPassState, *capabilities);
@@ -1219,7 +1270,8 @@ void
 HdSt_IndirectDrawBatch::_ExecuteDrawImmediate(
     HdSt_GeometricShaderSharedPtr const & geometricShader,
     HdStDispatchBufferSharedPtr const & dispatchBuffer,
-    HdStBufferArrayRangeSharedPtr const & indexBar)
+    HdStBufferArrayRangeSharedPtr const & indexBar,
+    _DrawingProgram const & program)
 {
     TRACE_FUNCTION();
 
@@ -1228,6 +1280,17 @@ HdSt_IndirectDrawBatch::_ExecuteDrawImmediate(
     uint32_t const strideUInt32 = dispatchBuffer->GetCommandNumUints();
     uint32_t const stride = strideUInt32 * sizeof(uint32_t);
     uint32_t const drawCount = dispatchBuffer->GetCount();
+
+    // We'll rebind texture resources while drawing only if the drawing
+    // program's material network shader uses texture resources.
+    bool const programUsesTextureResources =
+        program.GetMaterialNetworkShader()->ComputeTextureSourceHash() != 0;
+
+    bool const rebindTextureResources =
+        _needsTextureResourceRebinding && programUsesTextureResources;
+
+    TextureResourceID currentTextureResourceID =
+        _GetTextureResourceID(_drawItemInstances[0]->GetDrawItem());
 
     if (!_useDrawIndexed) {
         TF_DEBUG(HDST_DRAW).Msg("Drawing Arrays:\n"
@@ -1242,6 +1305,14 @@ HdSt_IndirectDrawBatch::_ExecuteDrawImmediate(
             _DrawNonIndexedCommand const * cmd =
                 reinterpret_cast<_DrawNonIndexedCommand*>(
                     &_drawCommandBuffer[i*strideUInt32]);
+
+            if (rebindTextureResources) {
+                _BindTextureResources(
+                    _drawItemInstances[i]->GetDrawItem(),
+                    program.GetBinder(),
+                    program.GetGLSLProgram(),
+                    &currentTextureResourceID);
+            }
 
             glDrawArraysInstancedBaseInstance(
                 primitiveMode,
@@ -1264,6 +1335,14 @@ HdSt_IndirectDrawBatch::_ExecuteDrawImmediate(
             _DrawIndexedCommand const * cmd =
                 reinterpret_cast<_DrawIndexedCommand*>(
                     &_drawCommandBuffer[i*strideUInt32]);
+
+            if (rebindTextureResources) {
+                _BindTextureResources(
+                    _drawItemInstances[i]->GetDrawItem(),
+                    program.GetBinder(),
+                    program.GetGLSLProgram(),
+                    &currentTextureResourceID);
+            }
 
             uint32_t const indexBufferByteOffset =
                 static_cast<uint32_t>(cmd->baseIndex * sizeof(uint32_t));

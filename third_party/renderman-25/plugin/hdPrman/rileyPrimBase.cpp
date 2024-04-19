@@ -42,6 +42,12 @@ HdPrman_RileyPrimBase::_AcquireRiley()
     return _renderParam->AcquireRiley();
 }
 
+const GfVec2f &
+HdPrman_RileyPrimBase::_GetShutterInterval()
+{
+    return _renderParam->GetShutterInterval();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER

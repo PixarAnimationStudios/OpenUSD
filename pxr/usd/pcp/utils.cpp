@@ -195,7 +195,7 @@ Pcp_TranslatePathFromNodeToRootOrClosestNode(
     // First, try translating directly to the root node. If that fails,
     // walk up from the given node to the root node, translating at each
     // step until the translation fails.
-    if (SdfPath pathInRootNode = node.GetMapToRoot().MapSourceToTarget(path); 
+    if (SdfPath pathInRootNode = node.GetMapToRoot().MapSourceToTarget(curPath); 
         !pathInRootNode.IsEmpty()) {
         curNode = node.GetRootNode();
         curPath = std::move(pathInRootNode);

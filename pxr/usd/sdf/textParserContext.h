@@ -106,7 +106,7 @@ public:
     SdfPayloadVector payloadParsingRefs;
 
     // helper for relocates parsing
-    SdfRelocatesMap relocatesParsingMap;
+    SdfRelocates relocatesParsing;
 
     // helpers for generic metadata
     TfToken genericMetadataKey;

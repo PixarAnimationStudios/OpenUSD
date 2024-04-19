@@ -1,0 +1,282 @@
+/*!
+\page Page_MaterialX_In_Hydra_USD MaterialX In Hydra and USD Architecture Guide
+
+\section MaterialX_In_Hydra_USD_Overview Overview
+
+This document provides details on how MaterialX is integrated into USD, Hydra, 
+and Storm. We describe how MaterialX features are used when a USD scene with 
+MaterialX references is loaded by Hydra and rendered by Storm.
+
+The information in this document applies when USD and Hydra/Storm are built 
+with MaterialX support (`PXR_MATERIALX_SUPPORT_ENABLED`), which is the default. 
+Note that this document describes the MaterialX workflow with Hydra 2.0 scene 
+indexes, but Hydra 1.0 also supports MaterialX.
+
+In the diagrams below, any entity in purple uses MaterialX APIs. 
+
+\section MaterialX_In_USD MaterialX in USD
+
+\image html materialx_in_usd.png
+
+When USD composes a scene that contains prims that reference MaterialX nodes, 
+the MaterialX nodes are converted to equivalent USD data. This conversion uses 
+a mapping of MaterialX nodes to USD prims as documented here: \ref usdMtlx_concepts.
+Note that the conversion is not always one-to-one, and not all MaterialX 
+features can be converted. See \ref usdMtlx_unsupported for more details on 
+unsupported MaterialX features in USD.
+
+\note Note that it is possible to author MaterialX Materials and NodeGraphs 
+natively in USD, without referencing MaterialX files (and therefore no 
+conversion is needed). Additionally these USD-based MaterialX Materials can 
+themselves reference (and override) MaterialX files.
+
+As an example, a referenced MaterialX Material node will get converted to a 
+UsdShadeMaterial. The Material's inputs and outputs will get converted into 
+UsdShadeInput and UsdShadeOutput attributes as needed.
+
+Additionally, when the Sdr registry is initialized, the registry uses two 
+plugins defined in \ref usdMtlx_page_front "usdMtlx" (UsdMtlxDiscoveryPlugin and 
+UsdMtlxParserPlugin) that are used to load .mtlx files and register nodes in the 
+Sdr registry. UsdMtlxDiscoveryPlugin looks for .mtlx files in directories 
+defined in the `PXR_MTLX_STDLIB_SEARCH_PATHS` environment variable, the 
+`PXR_MATERIALX_STDLIB_DIR` value set at USD build-time if any, and the 
+`PXR_MTLX_PLUGIN_SEARCH_PATHS` environment variable, searched in that order.
+
+The USD \ref usdMtlx_page_front "usdMtlx" module uses MaterialX in the following 
+ways:
+- XmlIO APIs are used to read & validate referenced MaterialX XML files into a 
+  MaterialX document
+- Document APIs are used to parse the MaterialX Document for converting into 
+  USD data.
+
+In this stage of the workflow, all the reading, parsing, and conversion of 
+MaterialX data is happening only in USD, in the \ref usdMtlx_page_front "usdMtlx" 
+module. The USD scene index in usdImaging is responsible for notifying the rest 
+of the Hydra pipeline when converted MaterialX nodes have been updated. Note 
+that currently, a change in a referenced source MaterialX document (e.g. a 
+change to an external .mtlx file) won't trigger a USD stage refresh and 
+therefore the Hydra pipeline will not get notifications of these changes.
+
+\subsection MaterialX_In_USD_Examples Conversion Examples
+
+Converting from MaterialX to USD does not always have a one-to-one mapping 
+between MaterialX nodes and USD prims. The following example demonstrates some 
+of the complexity when converting MaterialX variants and looks.
+
+The following .mtlx file defines a shader, material, a variant set, and some 
+looks that assign variants from the variant set:
+
+\code{.unparsed}
+<?xml version="1.0"?>
+<materialx version="1.38">
+  <standard_surface name="standard_surface" type="surfaceshader">
+    <input name="base_color" type="color3" value="0.264575,1.0,0.0" />
+  </standard_surface>
+  <surfacematerial name="surfacematerial1" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="standard_surface" />
+  </surfacematerial>
+  <variantset name="testvariants">
+    <variant name="red_variant">
+      <token name="base_color" type="color3" value="1, 0, 0"/>
+    </variant>
+    <variant name="blue_variant">
+      <token name="base_color" type="color3" value="0, 0, 1"/>
+    </variant>
+  </variantset>  
+  <look name="look1">
+    <materialassign name="ma1" material="surfacematerial1">
+      <variantassign name="va1" variantset="testvariants" variant="red_variant"/>
+    </materialassign>
+  </look>  
+  <look name="look2">
+    <materialassign name="ma2" material="surfacematerial1">
+      <variantassign name="va2" variantset="testvariants" variant="blue_variant"/>
+    </materialassign>
+  </look>    
+</materialx>
+\endcode
+
+The resulting conversion to USD produces the following prims:
+
+\code{.unparsed}
+#usda 1.0
+
+def "MaterialX"
+{
+    def "Materials"
+    {
+        def Material "surfacematerial1" (
+            prepend variantSets = "testvariants"
+        )
+        {
+            float inputs:base
+            color3f inputs:base_color = (0.264575, 1, 0)
+
+            #....various inputs omitted....
+
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/surfacematerial1/ND_standard_surface_surfaceshader.outputs:surface>
+
+            def Shader "ND_standard_surface_surfaceshader" (
+                prepend references = </MaterialX/Shaders/ND_standard_surface_surfaceshader>
+            )
+            {
+                float inputs:base.connect = </MaterialX/Materials/surfacematerial1.inputs:base>
+                color3f inputs:base_color.connect = </MaterialX/Materials/surfacematerial1.inputs:base_color>
+
+                #....various connections omitted....
+
+            }
+            variantSet "testvariants" = {
+                "blue_variant" {
+                    color3f inputs:base_color = (0, 0, 1)
+                }
+                "red_variant" {
+                    color3f inputs:base_color = (1, 0, 0)
+                }
+            }
+        }
+    }
+
+    def "Shaders"
+    {
+        def Shader "ND_standard_surface_surfaceshader"
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            token outputs:surface
+        }
+    }
+
+    def "Looks"
+    {
+        def "look1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </MaterialX/Looks/look1/Materials/ma1>
+
+            def "Materials"
+            {
+                def "ma1" (
+                    prepend references = </MaterialX/Materials/surfacematerial1>
+                    variants = {
+                        string testvariants = "red_variant"
+                    }
+                )
+                {
+                }
+            }
+        }
+
+        def "look2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </MaterialX/Looks/look2/Materials/ma2>
+
+            def "Materials"
+            {
+                def "ma2" (
+                    prepend references = </MaterialX/Materials/surfacematerial1>
+                    variants = {
+                        string testvariants = "blue_variant"
+                    }
+                )
+                {
+                }
+            }
+        }
+    }
+}
+
+def "ModelRoot" (
+    prepend variantSets = "LookVariant"
+)
+{
+    variantSet "LookVariant" = {
+        "look1" (
+            prepend references = </MaterialX/Looks/look1>
+        ) 
+        {
+        }
+        "look2" (
+            prepend references = </MaterialX/Looks/look2>
+        ) 
+        {
+        }
+    }
+}
+\endcode
+
+The "testvariants" variant set is defined on the "surfacematerial1" Material 
+prim, as "look1" (and "look2") associate variants from that variant set with 
+that material. The looks are converted into prims with the material assignments 
+added as references to the assigned materials (in this case "surfacematerial1" 
+for both "look1" and "look2") and variant selections for the variant assignments.
+
+Additionally a "LookVariant" prim is created that provides an additional 
+variantset for selecting a specific look. Note that to actually use the 
+LookVariant variant selection, you must reference the LookVariant prim at a 
+namespace location in your USD scene that is ancestral to all of the geometry 
+that may be bound to the materials contained therein. Typically that would be 
+the root prim of an asset.
+
+Looks can make multiple Material binding assignments to different MaterialX 
+materials. We facilitate this by converting MaterialX pattern-based material 
+bindings to Collection-based UsdShade bindings. This technique relies on some 
+heuristics, and is not well-exercised, to our knowledge.
+
+\section MaterialX_In_Hydra MaterialX in Hydra
+
+\image html images/materialx_in_hydra.png
+
+Once the USD scene is composed, and MaterialX nodes are converted to USD prims, 
+Hydra will process the USD scene (via the **usdImaging** USD scene index) and 
+create Hydra prims and prim datasources to populate the Hydra render index. This 
+process is part of Hydra's regular render index population – USD prims created 
+from MaterialX nodes are processed like any other USD prim used to populate the 
+render index.
+
+For example, at this stage, the UsdShadeMaterial we produced from MaterialX data 
+previously will now be used to create an HdMaterial.
+
+No MaterialX library calls are used at this stage in the workflow. Any MaterialX 
+data referenced by the original USD scene by this point has already been 
+captured in the converted USD prims (now used to create the Hydra prims) and 
+the Sdr registry. 
+
+\section MaterialX_In_Storm MaterialX in Storm
+
+\image html images/materialx_in_storm.png
+
+For Storm to render the HdMaterial network, it needs to generate a GLSLFX 
+shader. To generate the GLSLFX shader, Storm uses the GLSL and MSL shader 
+generation features of MaterialX. 
+
+Storm first determines if prims in an HdMaterial network were originally created 
+from MaterialX data by checking whether the terminal node (surface shader) of 
+the network was registered in the Sdr registry as originally being a MaterialX 
+shader node.
+
+If Storm determines the HdMaterial network does represent MaterialX nodes, a 
+temporary MaterialX Document is created from the HdMaterialNetwork. This is done 
+in Hydra's **hdMtlx** module (HdMtlxCreateMtlxDocumentFromHdNetwork). 
+
+While building material shaders, Storm uses a specialized version of MaterialX's 
+ShaderGen to generate the GLSLFX shader. HdStMaterialXShaderGenGlsl in hdSt 
+uses MaterialX's GlslShaderGenerator (with some modifications) to generate the 
+GLSLFX from the MaterialX Document. The terminal node in the HdMaterial network 
+is updated to point to an Sdr node with the GLSLFX shader.
+
+The shaders are compiled (once), and bound for draw batches of objects that can 
+share the same shaders and resources.
+
+Storm uses MaterialX in the following ways:
+- Document APIs are used to create a MaterialX Document from an 
+  HdMaterialNetwork.
+- Node APIs are used to add MaterialX nodes that represent HdMaterialNetwork 
+  nodes to the new Document.
+- ShaderGen APIs, in particular MaterialXGenGlsl's GlslShaderGenerator and 
+  MslShaderGenerator, to generate a GLSLFX shader from the MaterialX Document 
+  that represents a HdMaterialNetwork.
+
+*/

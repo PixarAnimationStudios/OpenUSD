@@ -81,8 +81,6 @@ _GetPrimvarsForMaterial(const VtValue & vtMaterial)
     return primvars;
 }
 
-UsdImagingGprimAdapter::~UsdImagingGprimAdapter() = default;
-
 HdDataSourceLocatorSet
 UsdImagingGprimAdapter::InvalidateImagingSubprim(
         UsdPrim const& prim,
@@ -95,37 +93,6 @@ UsdImagingGprimAdapter::InvalidateImagingSubprim(
             prim, subprim, properties, invalidationType);
 }
 
-/* static */
-SdfPath
-UsdImagingGprimAdapter::_ResolveCachePath(SdfPath const& usdPath,
-                                          UsdImagingInstancerContext const*
-                                              instancerContext)
-{
-    SdfPath cachePath = usdPath;
-
-    // For non-instanced prims, cachePath and usdPath will be the same, however
-    // for instanced prims, cachePath will be something like:
-    //
-    // primPath: /__Prototype_1/cube
-    // cachePath: /Models/cube_0.proto_cube_id0
-    //
-    // The name-mangling is so that multiple instancers/adapters can track the
-    // same underlying UsdPrim.
-
-    if (instancerContext != nullptr) {
-        SdfPath const& instancer = instancerContext->instancerCachePath;
-        TfToken const& childName = instancerContext->childName;
-
-        if (!instancer.IsEmpty()) {
-            cachePath = instancer;
-        }
-        if (!childName.IsEmpty()) {
-            cachePath = cachePath.AppendProperty(childName);
-        }
-    }
-    return cachePath;
-}
-
 SdfPath
 UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
                                   UsdPrim const& usdPrim,
@@ -134,7 +101,7 @@ UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
                                   UsdImagingInstancerContext const*
                                       instancerContext)
 {
-    SdfPath cachePath = _ResolveCachePath(usdPrim.GetPath(), instancerContext);
+    SdfPath cachePath = ResolveCachePath(usdPrim.GetPath(), instancerContext);
 
     // For an instanced gprim, this is the instancer prim.
     // For a non-instanced gprim, this is just the gprim.

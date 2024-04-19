@@ -19,13 +19,14 @@
     scope relocated from a referenced rig. It shouldn't be able to inherit
     from the scope at the rig's original location.
     """
+    relocates = {
+        </Group/Model>: </Group/Model_Renamed>, 
+        </Rig/RigClass>: </Rig/Anim/RigClass>
+    }
 )
 
 def Scope "Group" (
     add references = @./group.sdf@</Group>
-    relocates = {
-        <Model> : <Model_Renamed>
-    }
 )
 {
     over "Model_Renamed"
@@ -57,9 +58,6 @@ def Scope "Group" (
 
 def Scope "Rig" (
     add references = @./rig.sdf@</Rig>
-    relocates = {
-        <RigClass> : <Anim/RigClass>
-    }
 )
 {
     over "RigClass"

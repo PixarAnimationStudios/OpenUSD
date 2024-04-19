@@ -70,28 +70,34 @@ public:
     /// it is removed first.
     /// Returns true for newly created collection or
     /// if the hash of the collection is different from the previous collection
+    USDIMAGING_API
     bool
     UpdateCollection(UsdCollectionAPI const& collection);
  
     /// Returns the hash of the removed collection, or 0 if no collection existed
+    USDIMAGING_API
     size_t
     RemoveCollection(UsdStageWeakPtr const& stage, SdfPath const& path);
 
     /// Return the cached entry for the given collection.
+    USDIMAGING_API
     TfToken
     GetIdForCollection(UsdCollectionAPI const& collection);
 
     /// Return a list of identifiers of all collections that contain
     // the given path.
+    USDIMAGING_API
     VtArray<TfToken>
     ComputeCollectionsContainingPath(SdfPath const& path) const;
 
     /// Returns a set of dirty paths
     /// Should only be used if AreAllPathsDirty returned false
+    USDIMAGING_API
     SdfPathSet const&
     GetDirtyPaths() const;
 
     /// Clears the internal dirty flags
+    USDIMAGING_API
     void
     ClearDirtyPaths();
 

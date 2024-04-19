@@ -11,10 +11,10 @@
     How does this variant get decided?
 
     A simple strength order traversal provides the appropriate
-    variant selection. Since ancestral payloads are stronger than
-    descendant payloads (see BasicNestedPayload museum case),
-    the variant selection in A1's payload wins over B's payload,
-    giving {v=v1}
+    variant selection. Since descendant payloads are stronger than
+    ancestral payloads (see BasicNestedPayload museum case),
+    the variant selection in B's payload wins over A1's payload,
+    giving {v=v2}.
     """
 )
 

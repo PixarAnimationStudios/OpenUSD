@@ -48,7 +48,7 @@ public:
 
     /// Returns the container data source that this schema is interpreting.
     HD_API
-    HdContainerDataSourceHandle GetContainer();
+    HdContainerDataSourceHandle GetContainer() const;
     HD_API
     bool IsDefined() const;
 
@@ -66,7 +66,7 @@ protected:
     /// sampled values, vectors, etc. If the key has the wrong type, this
     /// function returns null.
     template <typename T>
-    typename T::Handle _GetTypedDataSource(TfToken name) {
+    typename T::Handle _GetTypedDataSource(TfToken name) const {
         return _container ? T::Cast(
             _container->Get(name)) : nullptr;
     }

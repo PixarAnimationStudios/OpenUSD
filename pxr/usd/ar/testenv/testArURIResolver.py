@@ -120,6 +120,18 @@ class TestArURIResolver(unittest.TestCase):
             self.assertFalse(resolver.Resolve(invalid_numeric_prefix_path))
             self.assertFalse(resolver.Resolve(invalid_colon_path))
 
+    def testGetRegisteredURISchemes(self):
+        "Tests that all URI schemes for discovered plugins are returned"
+
+        # Note: these are lifted from valid entries in the 
+        # TestArURIResolver_plugInfo.json. In other environments there may be 
+        # additional URI resolvers registered.
+        expectedUriSchemes = ['test', 'test-other']
+        actualUriSchemes = Ar.GetRegisteredURISchemes()
+
+        for expectedUriScheme in expectedUriSchemes:
+            self.assertTrue(expectedUriScheme in actualUriSchemes)
+
     def test_ResolveForNewAsset(self):
         resolver = Ar.GetResolver()
 

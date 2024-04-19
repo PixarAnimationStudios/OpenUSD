@@ -1,10 +1,11 @@
 #sdf 1.4.32
-
-def "C" (
+(
     relocates = {
-        <ArmsRig/LArmRig/ArmRegion/Region>: <CollisionRig/Body/CollBody/SimRegions/LArm>, 
+        </C/ArmsRig/LArmRig/ArmRegion/Region>: </C/CollisionRig/Body/CollBody/SimRegions/LArm>
     }
 )
+
+def "C"
 {
     def MfScope "ArmsRig" (
         references = @./ArmsRig.sdf@</ArmsRig>

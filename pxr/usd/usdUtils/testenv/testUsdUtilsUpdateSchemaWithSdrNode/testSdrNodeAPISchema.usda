@@ -25,17 +25,6 @@ def Shader "TestSchemaAPI" (
                 """
         }
     )
-    int inputs:boolNotInt = 1.0 (
-        sdrMetadata = {
-            token sdrUsdDefinitionType = "bool"
-        }
-    )
-
-    int[] inputs:boolArray (
-        sdrMetadata = {
-            token sdrUsdDefinitionType = "bool[]"
-        }
-    )
 
     int inputs:intNotBool = 0.0 (
     )

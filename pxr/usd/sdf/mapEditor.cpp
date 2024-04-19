@@ -40,14 +40,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 //
 
 template <class T>
-Sdf_MapEditor<T>::Sdf_MapEditor()
-{
-}
+Sdf_MapEditor<T>::Sdf_MapEditor() = default;
 
 template <class T>
-Sdf_MapEditor<T>::~Sdf_MapEditor()
-{
-}
+Sdf_MapEditor<T>::~Sdf_MapEditor() noexcept = default;
 
 //
 // Sdf_LsdMapEditor<T>
@@ -78,6 +74,8 @@ public:
             }
         }
     }
+
+    virtual ~Sdf_LsdMapEditor() noexcept = default;
 
     virtual std::string GetLocation() const
     {

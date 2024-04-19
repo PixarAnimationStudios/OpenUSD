@@ -438,14 +438,26 @@ PcpCache::ComputeRelationshipTargetPaths(const SdfPath & relPath,
         return;
     }
 
-    PcpTargetIndex targetIndex;
-    PcpBuildFilteredTargetIndex( PcpSite(GetLayerStackIdentifier(), relPath),
-                                 ComputePropertyIndex(relPath, allErrors),
-                                 SdfSpecTypeRelationship,
-                                 localOnly, stopProperty, includeStopProperty,
-                                 this, &targetIndex, deletedPaths,
-                                 allErrors );
-    paths->swap(targetIndex.paths);
+    auto computeTargets = [&](const PcpPropertyIndex &propIndex) {
+        PcpTargetIndex targetIndex;
+        PcpBuildFilteredTargetIndex( PcpSite(GetLayerStackIdentifier(), relPath),
+                                    propIndex,
+                                    SdfSpecTypeRelationship,
+                                    localOnly, stopProperty, includeStopProperty,
+                                    this, &targetIndex, deletedPaths,
+                                    allErrors );
+        paths->swap(targetIndex.paths);
+    };
+
+    if (IsUsd()) {
+        // USD does not cache property indexes, but we can still build one
+        // to get the relationship targets.
+        PcpPropertyIndex propIndex;
+        PcpBuildPropertyIndex(relPath, this, &propIndex, allErrors);
+        computeTargets(propIndex);
+    } else {
+        computeTargets(ComputePropertyIndex(relPath, allErrors));
+    }
 }
 
 void
@@ -465,14 +477,26 @@ PcpCache::ComputeAttributeConnectionPaths(const SdfPath & attrPath,
         return;
     }
 
-    PcpTargetIndex targetIndex;
-    PcpBuildFilteredTargetIndex( PcpSite(GetLayerStackIdentifier(), attrPath),
-                                 ComputePropertyIndex(attrPath, allErrors),
-                                 SdfSpecTypeAttribute,
-                                 localOnly, stopProperty, includeStopProperty,
-                                 this, &targetIndex,  deletedPaths,
-                                 allErrors );
-    paths->swap(targetIndex.paths);
+    auto computeTargets = [&](const PcpPropertyIndex &propIndex) {
+        PcpTargetIndex targetIndex;
+        PcpBuildFilteredTargetIndex( PcpSite(GetLayerStackIdentifier(), attrPath),
+                                    propIndex,
+                                    SdfSpecTypeAttribute,
+                                    localOnly, stopProperty, includeStopProperty,
+                                    this, &targetIndex,  deletedPaths,
+                                    allErrors );
+        paths->swap(targetIndex.paths);
+    };
+
+    if (IsUsd()) {
+        // USD does not cache property indexes, but we can still build one
+        // to get the attribute connections.
+        PcpPropertyIndex propIndex;
+        PcpBuildPropertyIndex(attrPath, this, &propIndex, allErrors);
+        computeTargets(propIndex);
+    } else {
+        computeTargets(ComputePropertyIndex(attrPath, allErrors));
+    }
 }
 
 const PcpPropertyIndex *

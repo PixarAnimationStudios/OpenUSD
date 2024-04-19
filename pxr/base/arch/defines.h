@@ -34,7 +34,10 @@
 #include "TargetConditionals.h"
 #define ARCH_OS_DARWIN
 #if TARGET_OS_IPHONE
-#define ARCH_OS_IOS
+// TARGET_OS_IPHONE refers to all iOS derivative platforms
+// TARGET_OS_IOS refers to iPhone/iPad
+// For now, we specialize for the umbrella TARGET_OS_IPHONE group
+#define ARCH_OS_IPHONE
 #else
 #define ARCH_OS_OSX
 #endif

@@ -201,7 +201,7 @@ _ComputeIncludedImpl(
         for (auto iter = range.begin(),
                  end = range.end(); iter != end; ++iter) {
 
-            SdfPredicateFunctionResult r = searcher.Next(*iter);
+            SdfPredicateFunctionResult r = searcher.Next(iter->GetPath());
             bool didProps = false;
             if (r) {
                 // With a positive result that's constant over descendants, we
@@ -234,7 +234,7 @@ _ComputeIncludedImpl(
             // don't search descendants of properties.
             if (searchProperties && !didProps && !(r && !r.IsConstant())) {
                 for (UsdProperty const &prop: iter->GetProperties()) {
-                    if (searcher.Next(prop)) {
+                    if (searcher.Next(prop.GetPath())) {
                         AppendIncludedObject(prop);
                     }
                 }
@@ -266,7 +266,7 @@ UsdObjectCollectionExpressionEvaluator
 {
     if (_stage) {
         if (UsdObject obj = _stage->GetObjectAtPath(path)) {
-            return _evaluator.Match(obj, ObjToPath {}, PathToObj { _stage });
+            return _evaluator.Match(path, PathToObj { _stage });
         }
     }
     return SdfPredicateFunctionResult::MakeConstant(false);
@@ -277,7 +277,7 @@ UsdObjectCollectionExpressionEvaluator
 ::Match(UsdObject const &obj) const
 {
     if (_stage) {
-        return _evaluator.Match(obj, ObjToPath {}, PathToObj { _stage });
+        return _evaluator.Match(obj.GetPath(), PathToObj { _stage });
     }
     return SdfPredicateFunctionResult::MakeConstant(false);
 }
@@ -287,8 +287,7 @@ UsdObjectCollectionExpressionEvaluator
 ::MakeIncrementalSearcher() const
 {
     if (_stage) {
-        return _evaluator
-            .MakeIncrementalSearcher(ObjToPath {}, PathToObj { _stage });
+        return _evaluator.MakeIncrementalSearcher(PathToObj { _stage });
     }
     return {};
 }

@@ -98,7 +98,21 @@ int main()
 
     TestDemangle<unsigned long>("unsigned long");
     TestDemangle<MangledAlso<int> >("MangledAlso<int>");
-    TestDemangle<MangledAlso<MangledAlso<int> > >("MangledAlso<MangledAlso<int> >");
+
+    // Since C++11, the parser specification has been improved to be able
+    // to interpret multiple right angle brackets in nested template
+    // declarations. The implementation of the C++ ABI has been updated
+    // accordingly starting with Clang 14 on macOS 13.3
+#if defined(MAC_OS_VERSION_13_3)
+    const bool improvedAngleBracketDemangling = true;
+#else
+    const bool improvedAngleBracketDemangling = false;
+#endif
+    const char* const nestedTemplateTypeName =
+        improvedAngleBracketDemangling
+            ? "MangledAlso<MangledAlso<int>>"
+            : "MangledAlso<MangledAlso<int> >";
+    TestDemangle<MangledAlso<MangledAlso<int> > >(nestedTemplateTypeName);
 
     const char* const badType = "type_that_doesnt_exist";
 #if defined(ARCH_OS_WINDOWS)

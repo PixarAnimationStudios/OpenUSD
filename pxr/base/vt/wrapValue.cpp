@@ -41,8 +41,6 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 
-#include <boost/numeric/conversion/cast.hpp>
-
 #include <boost/python/class.hpp>
 #include <boost/python/copy_const_reference.hpp>
 #include <boost/python/def.hpp>
@@ -201,12 +199,12 @@ struct Vt_ValueFromPython {
             if (!PyErr_Occurred()) {
                 if (std::numeric_limits<int>::min() <= val && 
                     val <= std::numeric_limits<int>::max()) {
-                    new (storage) VtValue(boost::numeric_cast<int>(val));
+                    new (storage) VtValue(int(val));
                 } else if (std::numeric_limits<long>::min() <= val && 
                            val <= std::numeric_limits<long>::max()) {
-                    new (storage) VtValue(boost::numeric_cast<long>(val));
+                    new (storage) VtValue(long(val));
                 } else {
-                    new (storage) VtValue(boost::numeric_cast<long long>(val));
+                    new (storage) VtValue(val);
                 }
                 data->convertible = storage;
                 return;

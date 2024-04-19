@@ -77,6 +77,66 @@ function(_copy_headers LIBRARY_NAME)
     add_dependencies(${LIBRARY_NAME} ${LIBRARY_NAME}_headerfiles)
 endfunction() # _copy_headers
 
+# Copy doxygen files for documentation builds to the build tree. Doxygen
+# files can be .dox files, C++ source with doxygen comments, or 
+# resource files (images, etc). Files will get copied to a parallel structure 
+# in the build directory. Doxygen will be run on these files during the install 
+# step, see pxr_build_documentation().
+function(_copy_doxygen_files NAME)
+    set(options  "")
+    set(oneValueArgs 
+        IS_LIB 
+        HEADER_INSTALL_PREFIX)
+    set(multiValueArgs DOXYGEN_FILES)
+    cmake_parse_arguments(_args
+        "${options}"
+        "${oneValueArgs}"
+        "${multiValueArgs}"
+        ${ARGN}
+    )
+
+    set(docBuildDir ${PROJECT_BINARY_DIR}/docs/${_args_HEADER_INSTALL_PREFIX})
+    set(doxygenFiles "${_args_DOXYGEN_FILES}")
+
+    set(files_copied "")
+
+    # Add custom commands to copy each doxygen file
+    foreach(doxygenFile ${doxygenFiles})
+        add_custom_command(
+            OUTPUT ${docBuildDir}/${doxygenFile}
+            COMMAND
+                ${CMAKE_COMMAND} -E make_directory ${docBuildDir}
+            COMMAND
+                ${CMAKE_COMMAND} -E copy 
+                ${CMAKE_CURRENT_SOURCE_DIR}/${doxygenFile}
+                ${docBuildDir}/${doxygenFile}
+            MAIN_DEPENDENCY
+                ${CMAKE_CURRENT_SOURCE_DIR}/${doxygenFile}
+            VERBATIM
+        )
+
+        list(APPEND files_copied ${docBuildDir}/${doxygenFile})
+    endforeach()
+
+    # Add custom target and dependency on NAME (if lib)
+    if(_args_IS_LIB)
+        add_custom_target(${NAME}_docfiles
+            DEPENDS ${files_copied}
+        )
+        add_dependencies(${NAME} ${NAME}_docfiles)
+    else()
+        add_custom_target(${NAME}_docfiles
+            ALL
+            DEPENDS ${files_copied}
+        )
+    endif()
+
+    set_target_properties(${NAME}_docfiles
+        PROPERTIES
+            FOLDER "docs"
+    )
+endfunction() # _copy_doxygen_files
+
 # Converts a library name, such as _tf.so to the internal module name given
 # our naming conventions, e.g. Tf
 function(_get_python_module_name LIBRARY_FILENAME MODULE_NAME)
@@ -1348,36 +1408,13 @@ function(_pxr_library NAME)
     # Doxygen will be run on these files during the install step ---
     # see pxr_build_documentation().
     if(PXR_BUILD_DOCUMENTATION)
-        set(docBuildDir ${PROJECT_BINARY_DIR}/docs/${headerInstallPrefix})
-        set(doxygenFiles "${args_PUBLIC_HEADERS};${args_DOXYGEN_FILES}")
-
-        set(files_copied "")
-
-        foreach(doxygenFile ${doxygenFiles})
-            add_custom_command(
-                OUTPUT ${docBuildDir}/${doxygenFile}
-                COMMAND
-                    ${CMAKE_COMMAND} -E make_directory ${docBuildDir}
-                COMMAND
-                    ${CMAKE_COMMAND} -E copy 
-                    ${CMAKE_CURRENT_SOURCE_DIR}/${doxygenFile}
-                    ${docBuildDir}/${doxygenFile}
-                MAIN_DEPENDENCY
-                    ${CMAKE_CURRENT_SOURCE_DIR}/${doxygenFile}
-                VERBATIM
-            )
-
-            list(APPEND files_copied ${docBuildDir}/${doxygenFile})
-        endforeach()
-
-        add_custom_target(${NAME}_docfiles
-            DEPENDS ${files_copied}
-        )
-        add_dependencies(${NAME} ${NAME}_docfiles)
-
-        set_target_properties(${NAME}_docfiles
-            PROPERTIES
-                FOLDER "docs"
+        _copy_doxygen_files(${NAME}
+            IS_LIB
+                TRUE
+            HEADER_INSTALL_PREFIX
+                "${headerInstallPrefix}"
+            DOXYGEN_FILES
+                "${args_PUBLIC_HEADERS};${args_DOXYGEN_FILES}"
         )
     endif()
 

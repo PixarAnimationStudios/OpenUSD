@@ -155,12 +155,23 @@ namespace {
         return object(surfaceFacesArray);      
     }
 
+    static object
+    _FindInvertedElementsHelper(const UsdGeomTetMesh &tetMesh, 
+                                const UsdTimeCode timeCode = UsdTimeCode::Default())
+    {           
+        VtIntArray invertedElements; 
+        UsdGeomTetMesh::FindInvertedElements(tetMesh, &invertedElements, timeCode);  
+        return object(invertedElements);      
+    }
+
 WRAP_CUSTOM {
      scope s = _class
          .def("ComputeSurfaceFaces", _ComputeSurfaceFacesHelper, 
              (arg("tetMesh"), arg("timeCode")=UsdTimeCode::Default()))
          .staticmethod("ComputeSurfaceFaces")
-
+         .def("FindInvertedElements", _FindInvertedElementsHelper, 
+             (arg("tetMesh"), arg("timeCode")=UsdTimeCode::Default()))
+         .staticmethod("FindInvertedElements")
      ;
 }
 

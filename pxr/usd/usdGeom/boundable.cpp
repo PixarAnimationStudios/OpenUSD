@@ -147,7 +147,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 PXR_NAMESPACE_OPEN_SCOPE
 
 bool
-UsdGeomBoundable::ComputeExtent(const UsdTimeCode &time, VtVec3fArray *extent)
+UsdGeomBoundable::ComputeExtent(const UsdTimeCode &time, 
+        VtVec3fArray *extent) const
 {
     UsdAttributeQuery extentAttrQuery = UsdAttributeQuery(GetExtentAttr());
 

@@ -22,6 +22,7 @@
    :caption: User Guides
    :maxdepth: 1
 
+   Namespace Editing <user_guides/namespace_editing>
    Rendering with USD <user_guides/render_user_guide>
    USD Variable Expressions <user_guides/variable_expressions>
 
@@ -46,6 +47,7 @@
    OpenUSD Forum <https://forum.openusd.org>
    Contributing <contributing_to_usd>
    Contributors <contributors>
+   Release Schedule <release_schedule>
 
 .. toctree::
    :hidden:

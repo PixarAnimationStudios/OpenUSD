@@ -611,7 +611,8 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
             HdBufferArrayRangeSharedPtr const range =
                 resourceRegistry->AllocateNonUniformBufferArrayRange(
-                    HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
+                    HdTokens->primvar, bufferSpecs,
+                    HdBufferArrayUsageHintBitsVertex);
             _sharedData.barContainer.Set(
                 drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(), range);
         }
@@ -659,7 +660,7 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                 HdBufferArrayRangeSharedPtr const range =
                     resourceRegistry->AllocateNonUniformBufferArrayRange(
                         HdTokens->primvar, bufferSpecs,
-                        HdBufferArrayUsageHint());
+                        HdBufferArrayUsageHintBitsIndex);
                 _sharedData.barContainer.Set(
                     drawItem->GetDrawingCoord()->GetTopologyIndex(), range);
             }

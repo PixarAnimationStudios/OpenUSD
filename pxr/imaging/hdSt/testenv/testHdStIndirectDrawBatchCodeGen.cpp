@@ -92,7 +92,7 @@ HdIndirectDrawBatchTest()
     HdBufferArrayRangeSharedPtr const vertexBar = registry->
         AllocateNonUniformBufferArrayRange(HdTokens->primvar,
                                            bufferSpecs,
-                                           HdBufferArrayUsageHint());
+                                           HdBufferArrayUsageHintBitsVertex);
     registry->AddSources(vertexBar, std::move(vertexSources));
     registry->Commit();
 

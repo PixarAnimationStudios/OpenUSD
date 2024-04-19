@@ -297,6 +297,12 @@ UsdShadeShader::GetSourceCode(
         .GetSourceCode(sourceCode, sourceType);
 }
 
+std::vector<std::string>
+UsdShadeShader::GetSourceTypes() const {
+    return UsdShadeNodeDefAPI(GetPrim())
+        .GetSourceTypes();
+}
+
 SdrShaderNodeConstPtr 
 UsdShadeShader::GetShaderNodeForSourceType(const TfToken &sourceType) const
 {

@@ -1,0 +1,45 @@
+#usda 1.0
+
+def Xform "Model"
+{
+    float3[] extentsHint = [(-1.5, -0.5, -1.2252175), (1.5, 1.5, 1.2252175)]
+    custom rel coordSys:ModelSpace = </Model>
+    custom rel coordSys:GeomSpace = </Model/Geom>
+    custom rel coordSys:CubeChildSpace = </Model/Geom/Cube/CubeChild>
+
+    def Xform "Geom"
+    {
+        def Mesh "Cube" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+            point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+            color3f[] primvars:displayColor = [(0.13320851, 0.13320851, 0.13320851)]
+            int primvars:ptexFaceCount = 6 (
+                interpolation = "constant"
+            )
+            float[] primvars:ptexFaceIndex = [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5] (
+                interpolation = "faceVarying"
+            )
+            int primvars:ptexFaceOffset = 18 (
+                interpolation = "constant"
+            )
+            float2[] primvars:st = [(0.375, 0), (0.625, 0), (0.625, 0.25), (0.375, 0.25), (0.625, 0.5), (0.375, 0.5), (0.625, 0.75), (0.375, 0.75), (0.625, 1), (0.375, 1), (0.875, 0), (0.875, 0.25), (0.125, 0), (0.125, 0.25)] (
+                interpolation = "vertex"
+            )
+            int[] primvars:st:indices = [0, 1, 2, 3, 3, 2, 4, 5, 5, 4, 6, 7, 7, 6, 8, 9, 1, 10, 11, 2, 12, 0, 3, 13]
+            float3 xformOp:scale = (1, 1, 2.450435)
+            double3 xformOp:translate = (-1, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+
+            # To test correct resyncs of coord sys binding targets that are below prims that
+            # are considered to have pruning "leaf" adapters.
+            def Xform "CubeChild"
+            {                
+            }
+        }
+    }
+}

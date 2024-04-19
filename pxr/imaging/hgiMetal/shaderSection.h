@@ -121,6 +121,7 @@ public:
     HgiMetalMemberShaderSection(
         const std::string &identifier,
         const std::string &type,
+        const std::string &qualifiers,
         const HgiShaderSectionAttributeVector &attributes = {},
         const std::string arraySize = std::string(),
         const std::string &blockInstanceIdentifier = std::string());
@@ -130,12 +131,16 @@ public:
 
     HGIMETAL_API
     void WriteType(std::ostream &ss) const override;
+    
+    HGIMETAL_API
+    void WriteParameter(std::ostream& ss) const override;
 
     HGIMETAL_API
     bool VisitScopeMemberDeclarations(std::ostream &ss) override;
 
 private:
     const std::string _type;
+    const std::string _qualifiers;
 };
 
 /// \class HgiMetalSamplerShaderSection

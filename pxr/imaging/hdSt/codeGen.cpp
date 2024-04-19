@@ -270,6 +270,10 @@ static void _EmitAccessor(std::stringstream &str,
                           TfToken const &type,
                           HdStBinding const &binding,
                           const char *index=NULL);
+
+static void _EmitScalarAccessor(std::stringstream &str,
+                                TfToken const &name,
+                                TfToken const &type);
 /*
   1. If the member is a scalar consuming N basic machine units,
   the base alignment is N.
@@ -777,6 +781,8 @@ _ResourceGenerator::_GenerateHgiResources(
                 HgiShaderFunctionParamBlockDesc::Member paramMember;
                 paramMember.name = member.name;
                 paramMember.type = _ConvertBoolType(member.dataType);
+                paramMember.interpolation = _GetInterpolation(member.qualifiers); 
+                paramMember.sampling = _GetSamplingQualifier(member.qualifiers); 
                 paramBlock.members.push_back(paramMember);
             }
             if (element.inOut == InOut::STAGE_IN) {
@@ -1030,8 +1036,20 @@ _ResourceGenerator::_GenerateGLSLResources(
                 }
                 str << element.aggregateName << " {\n";
                 for (auto const & member : element.members) {
-                    str << "    " << member.dataType << " "
-                                        << member.name;
+                    str << "    ";
+                    if (member.qualifiers == _tokens->flat) {
+                        str << "flat ";
+                    }
+                    else if (member.qualifiers == _tokens->noperspective) {
+                        str << "noperspective ";
+                    }
+                    else if (member.qualifiers == _tokens->centroid) {
+                        str << "centroid ";
+                    }
+                    else if (member.qualifiers == _tokens->sample) {
+                        str << "sample ";
+                    }
+                    str << member.dataType << " " << member.name;
                     if (member.arraySize.IsEmpty()) {
                         str << ";\n";
                     } else {
@@ -3206,6 +3224,8 @@ static void _EmitStageAccessor(std::stringstream &str,
     // default to localIndex=0
     str << _GetUnpackedType(type, false) << " HdGet_" << name << "()"
         << " { return HdGet_" << name << "(0); }\n";
+
+    _EmitScalarAccessor(str, name, type);
 }
 
 static void _EmitStructAccessor(std::stringstream &str,
@@ -3261,6 +3281,7 @@ static void _EmitStructAccessor(std::stringstream &str,
         str << _GetUnpackedType(type, false) << " HdGet_" << accessorName << "()"
             << " { return HdGet_" << accessorName << "(0); }\n";
     }
+    _EmitScalarAccessor(str, accessorName, type);
 }
 
 static void _EmitBufferAccessor(std::stringstream &str,
@@ -6513,11 +6534,6 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                 << "\n}\n"
                 << "#define HD_HAS_" << it->second.name << " 1\n";
             
-            if (it->second.name == it->second.inPrimvars[0]) {
-                accessors
-                    << "#endif\n";
-            }
-
             // Emit scalar accessors to support shading languages like MSL which
             // do not support swizzle operators on scalar values.
             if (_GetNumComponents(it->second.dataType) <= 4) {
@@ -6527,6 +6543,11 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                     << " { return HdGet_" << it->second.name << "()"
                     << _GetFlatTypeSwizzleString(it->second.dataType)
                     << "; }\n";
+            }
+
+            if (it->second.name == it->second.inPrimvars[0]) {
+                accessors
+                    << "#endif\n";
             }
 
         } else if (bindingType == HdStBinding::TRANSFORM_2D) {

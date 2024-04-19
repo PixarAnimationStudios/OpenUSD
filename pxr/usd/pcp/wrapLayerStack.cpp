@@ -79,6 +79,9 @@ void wrapLayerStack()
         .add_property("layerTree", 
                       make_function(&PcpLayerStack::GetLayerTree,
                                     return_value_policy<return_by_value>()))
+        .add_property("sessionLayerTree", 
+                      make_function(&PcpLayerStack::GetSessionLayerTree,
+                                    return_value_policy<return_by_value>()))
         .add_property("mutedLayers",
                       make_function(&PcpLayerStack::GetMutedLayers,
                                     return_value_policy<TfPySequenceToList>()))

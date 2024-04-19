@@ -68,7 +68,6 @@ private:
     HgiGLBuffer(const HgiGLBuffer&) = delete;
 
     uint32_t _bufferId;
-    void* _mapped;
     void* _cpuStaging;
     uint64_t _bindlessGPUAddress;
 };

@@ -482,6 +482,20 @@ public:
         return *_resolver->Get();
     }
 
+    std::vector<std::string> GetURISchemes() const
+    {
+        std::vector<std::string> uriSchemes;
+        uriSchemes.reserve(_uriResolvers.size());
+
+        for (const auto& [scheme, _] : _uriResolvers) {
+            uriSchemes.emplace_back(scheme);
+        }
+
+        std::sort(uriSchemes.begin(), uriSchemes.end());
+
+        return uriSchemes;
+    }
+
     const ArResolverContext* GetInternallyManagedCurrentContext() const
     {
         _ContextStack& contextStack = _threadContextStack.local();
@@ -1796,6 +1810,14 @@ ArResolver&
 ArGetResolver()
 {
     return _GetResolver();
+}
+
+const std::vector<std::string>& 
+ArGetRegisteredURISchemes()
+{
+    static const std::vector<std::string> uriSchemes = 
+        _GetResolver().GetURISchemes();
+    return uriSchemes;
 }
 
 ArResolver&

@@ -91,12 +91,6 @@ def Shader "TestShaderPropertiesNodeUSD" (
         }
     )
 
-    int inputs:intButBool (
-        sdrMetadata = {
-            string sdrUsdDefinitionType = "bool"
-        }
-    )
-
     bool inputs:actualBool (
     )
 

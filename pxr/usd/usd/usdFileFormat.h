@@ -82,6 +82,13 @@ public:
         const FileFormatArguments& args = FileFormatArguments()) const override;
 
     USD_API
+    virtual bool SaveToFile(
+        const SdfLayer& layer,
+        const std::string& filePath,
+        const std::string& comment = std::string(),
+        const FileFormatArguments& args = FileFormatArguments()) const override;
+
+    USD_API
     virtual bool ReadFromString(
         SdfLayer* layer,
         const std::string& str) const override;

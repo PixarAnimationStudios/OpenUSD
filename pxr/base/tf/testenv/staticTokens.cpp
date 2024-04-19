@@ -36,8 +36,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 #define TFTEST_TOKENS \
     (foo) \
-    ((bar, "bar_value")) \
-    ((array, ((array_0) (array_1))))
+    ((bar, "bar_value")) 
 
 // Public tokens.
 // Normally only in .h file:
@@ -52,10 +51,6 @@ TF_DEFINE_PRIVATE_TOKENS( TfTestPrivateTokens, TFTEST_TOKENS );
 #define TEST(holder)                                                \
     TF_AXIOM( holder->foo == TfToken("foo") );                        \
     TF_AXIOM( holder->bar == TfToken("bar_value") );                  \
-    TF_AXIOM( holder->array[0] == TfToken("array_0") );               \
-    TF_AXIOM( holder->array[1] == TfToken("array_1") );               \
-    TF_AXIOM( holder->array_0 == TfToken("array_0") );                \
-    TF_AXIOM( holder->array_1 == TfToken("array_1") );               \
     TF_AXIOM( holder->allTokens == expectedAllTokens );               \
     ;
 
@@ -67,8 +62,6 @@ Test_TfStaticTokens()
     // Expected contents of allTokens
     expectedAllTokens.push_back( TfToken("foo") );
     expectedAllTokens.push_back( TfToken("bar_value") );
-    expectedAllTokens.push_back( TfToken("array_0") );
-    expectedAllTokens.push_back( TfToken("array_1") );
 
     TEST(TfTestPublicTokens);
     TEST(TfTestPrivateTokens);

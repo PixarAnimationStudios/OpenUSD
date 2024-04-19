@@ -10,15 +10,15 @@
 
     This came from bug 54692.
     """
+    relocates = {
+        </Model/UnrelocatedSphere>: </Model/RelocatedSphere>
+    }
 )
 
 
 def Scope "Model" (
     add references = @./model.sdf@</Model>
     add variantSets = "vset"
-    relocates = {
-        <UnrelocatedSphere>: <RelocatedSphere>
-    }
     variants = {
         string vset = "vsel"
     }

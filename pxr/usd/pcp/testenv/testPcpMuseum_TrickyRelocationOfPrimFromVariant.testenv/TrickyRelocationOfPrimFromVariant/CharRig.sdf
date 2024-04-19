@@ -2,13 +2,14 @@
 (
     framesPerSecond = 24
     framePrecision = 3
+    relocates = {
+        </CharRig/TailRig/Tail>: </CharRig/Anim/Tail>, 
+        </CharRig2/TailRig/Tail>: </CharRig2/Anim/Tail>
+    }
 )
 
 def Scope "CharRig" (
     variantSets = ["TailRigVersion"]
-    relocates = {
-        <TailRig/Tail>: <Anim/Tail>
-    }
     variants = {
         string TailRigVersion = "None"    
     }
@@ -37,7 +38,6 @@ def Scope "CharRig2" (
     variants = {
         string TailRigVersion = "Standard"    
     }
-    relocates = { <TailRig/Tail>: <Anim/Tail> }
 )
 {
     def Scope "Anim"
@@ -58,3 +58,4 @@ def Scope "CharRig2" (
         }
     }   
 }
+

@@ -104,13 +104,15 @@ HgiMetalShaderSection::WriteAttributesWithIndex(std::ostream& ss) const
 HgiMetalMemberShaderSection::HgiMetalMemberShaderSection(
     const std::string &identifier,
     const std::string &type,
+    const std::string &qualifiers,
     const HgiShaderSectionAttributeVector &attributes,
     const std::string arraySize,
     const std::string &blockInstanceIdentifier)
   : HgiMetalShaderSection(identifier, attributes,
                           std::string(), arraySize,
                           blockInstanceIdentifier)
-  , _type{type}
+    , _type(type)
+    , _qualifiers(qualifiers)
 {
 }
 
@@ -120,6 +122,18 @@ void
 HgiMetalMemberShaderSection::WriteType(std::ostream &ss) const
 {
     ss << _type;
+}
+
+void
+HgiMetalMemberShaderSection::WriteParameter(std::ostream& ss) const
+{
+    WriteType(ss);
+    ss << " ";
+    WriteIdentifier(ss);
+    // Write the qualifiers, such as "flat" and "center_no_perspective".
+    if (!_qualifiers.empty()) {
+        ss << "[[" << _qualifiers << "]]";
+    }
 }
 
 bool

@@ -102,7 +102,6 @@ pxr_test_scripts(
 )
 
 pxr_build_test_shared_lib(TestUsdUtilsDependenciesCustomResolver
-    CREATE_FRAMEWORK
     INSTALL_PREFIX UsdUtilsPlugins
     LIBRARIES
         ar

@@ -1,0 +1,37 @@
+#usda 1.0
+(
+    endTimeCode = 1
+    framesPerSecond = 24
+    startTimeCode = 1
+    timeCodesPerSecond = 24
+)
+
+# Test case: Set /geo/cube.xformOp:transform to translate(0,4,0)
+# Expect: /geo_1.cube_id0 has DirtyTransform
+
+def Xform "geo"
+{
+    def Cube "cube"
+    {
+        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 2, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+
+def "geo_1" (
+    instanceable = true
+    append references = </geo>
+)
+{
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (2.5, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform:duplicate2"]
+}
+
+def "geo_2" (
+    instanceable = true
+    append references = </geo>
+)
+{
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (5, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform:duplicate2"]
+}

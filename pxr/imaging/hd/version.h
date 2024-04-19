@@ -95,9 +95,16 @@
 //           return Hydra schemas instead of just container data sources.
 //           schemaTypeDefs.h replaces vectorSchemaTypeDefs.h.
 // 63 -> 64: Adding disableDepthOfField to HdRenderSettings::RenderProduct
+// 64 -> 65: Introduce HdCollectionPredicateLibrary and 
+//           HdCollectionExpressionEvaluator for path expression evaluation on
+//           scene index prims.
+// 65 -> 66: Make HdSchema::_GetTypedDataSource and getters in generated
+//           hydra schemas const.
+// 66 -> 67: Removes legacy internal instancer primvar names and the
+//           TfEnvSetting for using them (see 56).
 //
 
-#define HD_API_VERSION 64
+#define HD_API_VERSION 67
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

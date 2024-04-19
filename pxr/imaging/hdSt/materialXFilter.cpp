@@ -94,11 +94,8 @@ _GenMaterialXShader(mx::GenContext & mxContext, mx::ElementPtr const& mxElem)
 
     // MaterialX v1.38.5 added Transmission Refraction method as the default
     // method, this maintains the previous Transmission Opacity behavior.
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 5
     materialContext.getOptions().hwTransmissionRenderMethod =
         mx::HwTransmissionRenderMethod::TRANSMISSION_OPACITY;
-#endif
     
     // Use the domeLightPrefilter texture instead of sampling the Environment Map
     materialContext.getOptions().hwSpecularEnvironmentMethod =
@@ -124,12 +121,9 @@ _CreateHdStMaterialXContext(
     HdSt_MxShaderGenInfo const& mxHdInfo,
     TfToken const& apiName)
 {
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 7
     if (apiName == HgiTokens->Metal) {
         return HdStMaterialXShaderGenMsl::create(mxHdInfo);
     }
-#endif
     if (apiName == HgiTokens->OpenGL) {
         return HdStMaterialXShaderGenGlsl::create(mxHdInfo);
     }
@@ -154,10 +148,6 @@ HdSt_GenMaterialXShader(
     // Initialize the Context for shaderGen. 
     mx::GenContext mxContext = _CreateHdStMaterialXContext(mxHdInfo, apiName);
 
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && \
-    MATERIALX_BUILD_VERSION == 3
-    mxContext.registerSourceCodeSearchPath(searchPaths);
-#else
     // Starting from MaterialX 1.38.4 at PR 877, we must remove the "libraries" part:
     mx::FileSearchPath libSearchPaths;
     for (const mx::FilePath &path : searchPaths) {
@@ -169,7 +159,6 @@ HdSt_GenMaterialXShader(
         }
     }
     mxContext.registerSourceCodeSearchPath(libSearchPaths);
-#endif
 
     // Initialize the color management system
     mx::DefaultColorManagementSystemPtr cms =

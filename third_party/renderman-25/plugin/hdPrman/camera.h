@@ -54,7 +54,7 @@ public:
     {
         float shutterOpenTime;
         float shutterCloseTime;
-        VtArray<float> shutterOpening;
+        VtArray<float> shutteropening;
     };
 
     HDPRMAN_API
@@ -139,6 +139,22 @@ public:
         return _shutterCurve;
     }
 
+    float GetApertureAngle() const {
+        return _apertureAngle;
+    }
+
+    float GetApertureDensity() const {
+        return _apertureAngle;
+    }
+
+    float GetApertureNSides() const {
+        return _apertureNSides;
+    }
+
+    float GetApertureRoundness() const {
+        return _apertureRoundness;
+    }
+
 private:
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> _sampleXforms;
 
@@ -162,6 +178,11 @@ private:
     ///    [t1, y1, t2, y2, t5, y5, t6, y6] is shutteropeningPoints array.
     ///
     ShutterCurve _shutterCurve;
+
+    float _apertureAngle;
+    float _apertureDensity;
+    int _apertureNSides;
+    float _apertureRoundness;
 };
 
 

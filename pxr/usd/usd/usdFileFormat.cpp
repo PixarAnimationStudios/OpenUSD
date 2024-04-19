@@ -33,7 +33,6 @@
 #include "pxr/base/trace/trace.h"
 
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
 
@@ -316,36 +315,35 @@ UsdUsdFileFormat::WriteToFile(
     // arguments, just use that.
     SdfFileFormatConstPtr fileFormat = _GetFileFormatForArguments(args);
 
-    // Otherwise, if we are saving a .usd layer (i.e., calling SdfLayer::Save),
-    // we want to maintain that layer's underlying format. For example,
-    // calling Save() on a text .usd file should produce a text file
-    // and not convert it to binary.
-    // 
-    // If we are exporting to a .usd layer (i.e., calling SdfLayer::Export),
-    // we use the default underlying format for .usd. This ensures consistent
-    // behavior -- creating a new .usd layer always uses the default format
-    // unless otherwise specified.
+    // When exporting to a .usd layer (i.e., calling SdfLayer::Export), we use
+    // the default underlying format for .usd. This ensures consistent behavior
+    // -- creating a new .usd layer always uses the default format unless
+    // otherwise specified.
     if (!fileFormat) {
-        // Note that SdfLayer::GetRealPath is *not* the same as realpath(3); 
-        // it does not follow symlinks. Hence, we use TfRealPath to determine 
-        // if the source and destination files are the same. If so, we know 
-        // we're saving the layer, not exporting it to a new location.
-        auto layerRealPath = 
-            TfRealPath(layer.GetRealPath(), 
-                       /* allowInaccessibleSuffix = */ true);
-        auto destRealPath = 
-            TfRealPath(filePath, /* allowInaccessibleSuffix = */ true);
-        const bool isSavingLayer = (layerRealPath == destRealPath);
-        if (isSavingLayer) {
-            fileFormat = _GetUnderlyingFileFormatForLayer(layer);
-        }
+        fileFormat = _GetDefaultFileFormat();
     }
+
+    return fileFormat->WriteToFile(layer, filePath, comment, args);
+}
+
+bool
+UsdUsdFileFormat::SaveToFile(
+    const SdfLayer& layer,
+    const std::string& filePath,
+    const std::string& comment,
+    const FileFormatArguments& args) const
+{
+    // If we are saving a .usd layer (i.e., calling SdfLayer::Save), we want to
+    // maintain that layer's underlying format. For example, calling Save() on a
+    // text .usd file should produce a text file and not convert it to binary.
+    // 
+    SdfFileFormatConstPtr fileFormat = _GetUnderlyingFileFormatForLayer(layer);
 
     if (!fileFormat) {
         fileFormat = _GetDefaultFileFormat();
     }
 
-    return fileFormat->WriteToFile(layer, filePath, comment);
+    return fileFormat->SaveToFile(layer, filePath, comment, args);
 }
 
 bool 

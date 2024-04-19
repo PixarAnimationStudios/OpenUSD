@@ -115,23 +115,10 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
         transforms[i] = instancerTransform;
     }
 
-    // XXX: Remove the variables in 24.05
-    TfToken instanceTranslationsToken = HdInstancerTokens->instanceTranslations;
-    TfToken instanceRotationsToken = HdInstancerTokens->instanceRotations;
-    TfToken instanceScalesToken = HdInstancerTokens->instanceScales;
-    TfToken instanceTransformsToken = HdInstancerTokens->instanceTransforms;
-
-    if (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)) {
-        instanceTranslationsToken = HdInstancerTokens->translate;
-        instanceRotationsToken = HdInstancerTokens->rotate;
-        instanceScalesToken = HdInstancerTokens->scale;
-        instanceTransformsToken = HdInstancerTokens->instanceTransform;
-    }
-
     // "hydra:instanceTranslations" holds a translation vector for each index.
-    if (_primvarMap.count(instanceTranslationsToken) > 0) {
+    if (_primvarMap.count(HdInstancerTokens->instanceTranslations) > 0) {
         HdEmbreeBufferSampler
-                sampler(*_primvarMap[instanceTranslationsToken]);
+                sampler(*_primvarMap[HdInstancerTokens->instanceTranslations]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
             GfVec3f translate;
             if (sampler.Sample(instanceIndices[i], &translate)) {
@@ -144,8 +131,8 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
 
     // "hydra:instanceRotations" holds a quaternion in <real, i, j, k>
     // format for each index.
-    if (_primvarMap.count(instanceRotationsToken) > 0) {
-        HdEmbreeBufferSampler sampler(*_primvarMap[instanceRotationsToken]);
+    if (_primvarMap.count(HdInstancerTokens->instanceRotations) > 0) {
+        HdEmbreeBufferSampler sampler(*_primvarMap[HdInstancerTokens->instanceRotations]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
             GfVec4f quat;
             if (sampler.Sample(instanceIndices[i], &quat)) {
@@ -158,8 +145,8 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
     }
 
     // "hydra:instanceScales" holds an axis-aligned scale vector for each index.
-    if (_primvarMap.count(instanceScalesToken) > 0) {
-        HdEmbreeBufferSampler sampler(*_primvarMap[instanceScalesToken]);
+    if (_primvarMap.count(HdInstancerTokens->instanceScales) > 0) {
+        HdEmbreeBufferSampler sampler(*_primvarMap[HdInstancerTokens->instanceScales]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
             GfVec3f scale;
             if (sampler.Sample(instanceIndices[i], &scale)) {
@@ -171,9 +158,9 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
     }
 
     // "hydra:instanceTransforms" holds a 4x4 transform matrix for each index.
-    if (_primvarMap.count(instanceTransformsToken) > 0) {
+    if (_primvarMap.count(HdInstancerTokens->instanceTransforms) > 0) {
         HdEmbreeBufferSampler
-                sampler(*_primvarMap[instanceTransformsToken]);
+                sampler(*_primvarMap[HdInstancerTokens->instanceTransforms]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
             GfMatrix4d instanceTransform;
             if (sampler.Sample(instanceIndices[i], &instanceTransform)) {

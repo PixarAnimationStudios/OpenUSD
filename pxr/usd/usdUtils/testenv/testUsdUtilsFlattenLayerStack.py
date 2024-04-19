@@ -70,7 +70,7 @@ class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
             self.assertEqual( a.GetTimeSamples(),  [-9.0, 0.0] )
 
             # Layer offsets get folded into reference arcs
-            p = stage.GetPrimAtPath('/Sphere/ChildFromReference')
+            p = stage.GetPrimAtPath('/Sphere/RootReloChildFromReference')
             a = p.GetAttribute('timeSamplesAcrossRef')
             self.assertEqual( a.GetTimeSamples(),  [-9.0, 0.0] )
 
@@ -85,9 +85,9 @@ class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
 
             # Confirm children from across various kinds of arcs.
             for childPath in [
-                '/Sphere/ChildFromPayload',
-                '/Sphere/ChildFromReference',
-                '/Sphere/ChildFromNestedVariant']:
+                '/Sphere/SubReloChildFromPayload',
+                '/Sphere/RootReloChildFromReference',
+                '/Sphere/RootReloChildFromNestedVariant']:
                 self.assertTrue(stage.GetPrimAtPath(childPath))
 
             # Confirm time samples coming from (offset) clips.

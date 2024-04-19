@@ -258,6 +258,9 @@ protected:
         _terminalObserver;
 #endif
 
+    struct _RileySceneIndices;
+    std::unique_ptr<_RileySceneIndices> _rileySceneIndices;
+
     HdResourceRegistrySharedPtr _resourceRegistry;
     HdRenderPassSharedPtr _renderPass;
     HdRenderSettingDescriptorList _settingDescriptors;

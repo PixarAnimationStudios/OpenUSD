@@ -210,7 +210,7 @@ stages:
         $(PYTHON_INTERPRETER) build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --generator Xcode --build-target universal --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst -v
       displayName: 'Building USD'
     - bash: |
-        $(PYTHON_INTERPRETER) -m pip install delocate wheel
+        $(PYTHON_INTERPRETER) -m pip install delocate~=0.10.2 wheel
       displayName: 'Installing python packages'
     - bash: |
         mkdir ./packaging

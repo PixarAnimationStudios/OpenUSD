@@ -467,15 +467,15 @@ HgiVulkanShaderGenerator::_WriteInOutBlocks(
         const uint32_t locationIndex = in_qualifier ? 
             _inLocationIndex : _outLocationIndex;
 
-        HgiVulkanShaderSectionPtrVector members;
+        HgiVulkanMemberShaderSectionPtrVector members;
         for(const HgiShaderFunctionParamBlockDesc::Member &member : p.members) {
 
             HgiVulkanMemberShaderSection *memberSection =
                 CreateShaderSection<HgiVulkanMemberShaderSection>(
                     member.name,
                     member.type,
-                    HgiInterpolationDefault,
-                    HgiSamplingDefault,
+                    member.interpolation,
+                    member.sampling,
                     HgiStorageDefault,
                     HgiShaderSectionAttributeVector(),
                     qualifier,

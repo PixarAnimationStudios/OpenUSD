@@ -444,7 +444,7 @@ class "PxrCameraAPI"
         displayName = "Shutter Close Time"
         doc = "<help />"
     )
-    float[] ri:shutterOpening = [0, 0, 0, 0, 1, 1, 1, 1] (
+    float[] ri:shutteropening = [0, 0, 0, 0, 1, 1, 1, 1] (
         displayGroup = "Common"
         displayName = "Shutter Opening"
         doc = "<help />"
@@ -919,6 +919,25 @@ class "PxrOptionsAPI"
                 Render mode.
             """
     )
+    bool ri:interactive:displacementupdatedebug = 0 (
+        displayGroup = "Interactivity"
+        displayName = "Debug Displacement Updates"
+        doc = """
+                Enable debug messages related to displacement updates.
+                This option only affects XPU.
+            """
+    )
+    int ri:interactive:displacementupdatemode = 0 (
+        displayGroup = "Interactivity"
+        displayName = "Displacement Update Mode"
+        doc = '''
+                Controls the behavior of displacement updates, useful for interactive
+                workflows. The "Default" setting will run displacement whenever a geometry
+                or shader edit occurs. The "On Tessellate" setting only runs displacement
+                when at least one object in the scene gets retessellated.
+                This option only affects XPU.
+            '''
+    )
     bool ri:lighting:incorrectParticleLightSampling = 0 (
         displayGroup = "Shading"
         displayName = "Use old (incorrect) PxrParticleLight sampling for backward compatibility with R24"
@@ -1357,7 +1376,7 @@ class "PxrPrimvarsAPI"
                 When true the curve width of round curves is taken into account in the computation of the tube curvature, otherwise only the curvature along the curve is. This control does not affect curve ribbons.
             """
     )
-    token primvars:ri:derivatives:extrapolate (
+    bool primvars:ri:derivatives:extrapolate = 1 (
         displayGroup = "Shading"
         displayName = "derivatives:extrapolate"
         doc = """
@@ -1403,14 +1422,14 @@ class "PxrPrimvarsAPI"
                 Dicing method of objects outside the viewing frustum.
             """
     )
-    token primvars:ri:dice:pretessellate (
+    bool primvars:ri:dice:pretessellate = 1 (
         displayGroup = "SubdivisionMesh"
         displayName = "Pretessellate"
         doc = """
                 Pre-tessellate subdivision geometry to polygons.
             """
     )
-    token primvars:ri:dice:rasterorient (
+    bool primvars:ri:dice:rasterorient = 1 (
         displayGroup = "Dicing"
         displayName = "Raster Oriented Dicing"
         doc = """
@@ -1448,7 +1467,7 @@ class "PxrPrimvarsAPI"
                 Dicing method of objects within the viewing frustum.
             """
     )
-    token primvars:ri:dice:watertight (
+    bool primvars:ri:dice:watertight = 0 (
         displayGroup = "SubdivisionMesh"
         displayName = "Watertight"
         doc = """
@@ -1510,14 +1529,14 @@ class "PxrPrimvarsAPI"
                 Object shape name.
             """
     )
-    token primvars:ri:polygon:concave (
+    bool primvars:ri:polygon:concave = 1 (
         displayGroup = "PolygonMesh"
         displayName = "Concave"
         doc = """
                 Allow concave polygons.
             """
     )
-    token primvars:ri:polygon:smoothdisplacement (
+    bool primvars:ri:polygon:smoothdisplacement = 0 (
         displayGroup = "PolygonMesh"
         displayName = "Prevent Polygon Cracking"
         doc = """
@@ -1525,22 +1544,33 @@ class "PxrPrimvarsAPI"
                 polygon:smoothnormals hasn't already inserted smooth normals.
             """
     )
-    token primvars:ri:polygon:smoothnormals (
+    bool primvars:ri:polygon:smoothnormals = 0 (
         displayGroup = "PolygonMesh"
         displayName = "Smooth Normals"
         doc = """
                 Smooth (per-vertex) normals if not provided.
             """
     )
-    token primvars:ri:procedural:immediatesubdivide (
+    int primvars:ri:procedural:immediatesubdivide = 0 (
         displayGroup = "Procedural"
         displayName = "Immediate Subdivide"
-        doc = "<help />"
+        doc = """
+                Used by RiProcedural to compel a procedural to immediately subdivide (behavior 
+                supported via the __immediatesubdivide meta-parameter in RiProcedural2). This 
+                attribute is \"special\" in that it is not inherited into sub-procedural contexts - 
+                meaning parent immediate-subdivide procedurals don't accidentally trigger 
+                immediate-subdivide children. A value of 0 (the default) disables, 1 enables, and 2 
+                forces all child procedurals to crack immediately.
+            """
     )
-    token primvars:ri:procedural:reentrant (
+    bool primvars:ri:procedural:reentrant = 0 (
         displayGroup = "Procedural"
         displayName = "Reentrant"
-        doc = "<help />"
+        doc = """
+                Enabling this attribute will cause any subsequent procedural to not lock the global 
+                mutex. Note that this requires that the procedural be thread safe. This attribute is
+                disabled by default, i.e. all procedurals remain locked.
+            """
     )
     float[] primvars:ri:Ri:Bound = [0, 0, 0, 0, 0, 0] (
         displayGroup = "Volume"
@@ -1566,7 +1596,7 @@ class "PxrPrimvarsAPI"
                 lighting and displacement.
             """
     )
-    token primvars:ri:shade:faceset (
+    int[] primvars:ri:shade:faceset = [] (
         displayGroup = "SubdivisionMesh"
         displayName = "Face Set"
         doc = """
@@ -1590,7 +1620,7 @@ class "PxrPrimvarsAPI"
         displayName = "Stitch Bound Radius"
         doc = "<help />"
     )
-    token primvars:ri:trace:autobias (
+    bool primvars:ri:trace:autobias = 1 (
         displayGroup = "Shading"
         displayName = "Auto Trace Bias"
         doc = """
@@ -1605,14 +1635,14 @@ class "PxrPrimvarsAPI"
                 artifacts such as shadow acne.
             """
     )
-    token primvars:ri:trace:displacements (
+    bool primvars:ri:trace:displacements = 1 (
         displayGroup = "Shading"
         displayName = "Enable Displacement"
         doc = """
                 Enable displacement shading.
             """
     )
-    token primvars:ri:trace:sssautobias (
+    bool primvars:ri:trace:sssautobias = 1 (
         displayGroup = "Shading"
         displayName = "Auto Trace Bias for Subsurface scattering"
         doc = """
@@ -1654,7 +1684,7 @@ class "PxrPrimvarsAPI"
                 will apply.
             """
     )
-    bool primvars:ri:volume:dsominmax (
+    bool primvars:ri:volume:dsominmax = 1 (
         displayGroup = "Volume"
         displayName = "DSO Min/Max"
         doc = """
@@ -1671,7 +1701,7 @@ class "PxrPrimvarsAPI"
                 signal requires setting this parameter to off.
             """
     )
-    bool primvars:ri:volume:dsovelocity (
+    bool primvars:ri:volume:dsovelocity = 0 (
         displayGroup = "Volume"
         displayName = "DSO Velocity"
         doc = """
@@ -1706,8 +1736,7 @@ class "PxrPrimvarsAPI"
                 the previous frame and ends halfway into the next frame.
             """
     )
-    token primvars:ri:volume:temporalmethod (
-        allowedTokens = ["0", "1"]
+    bool primvars:ri:volume:temporalmethod = 0 (
         displayGroup = "Volume"
         displayName = "Temporal Method"
         doc = """
@@ -5660,7 +5689,7 @@ class PxrCamera "PxrCamera" (
     float inputs:ri:assymX = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Lens Distortion"
-        displayName = "Assymetric Distortion X"
+        displayName = "Asymmetric Distortion X"
         doc = """
         Distortion applied only in the X direction.  Horizontal lines will
         remain straight.  Positive values produce pincushion-like
@@ -5671,7 +5700,7 @@ class PxrCamera "PxrCamera" (
     float inputs:ri:assymY = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Lens Distortion"
-        displayName = "Assymetric Distortion Y"
+        displayName = "Asymmetric Distortion Y"
         doc = """
         Distortion applied only in the Y direction.  Vertical lines will
         remain straight.  Positive values produce pincushion-like
@@ -5883,7 +5912,7 @@ class PxrCamera "PxrCamera" (
     float inputs:ri:lensAsymmetryX = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Lens Distortion"
-        displayName = "Assymetric Distortion X"
+        displayName = "Asymmetric Distortion X"
         doc = """
         Distortion applied only in the X direction.  Horizontal lines will
         remain straight.  Positive values produce pincushion-like
@@ -5893,7 +5922,7 @@ class PxrCamera "PxrCamera" (
     float inputs:ri:lensAsymmetryY = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Lens Distortion"
-        displayName = "Assymetric Distortion Y"
+        displayName = "Asymmetric Distortion Y"
         doc = """
         Distortion applied only in the Y direction.  Vertical lines will
         remain straight.  Positive values produce pincushion-like
@@ -10321,7 +10350,21 @@ class "PxrDspyOpenExrAPI" (
 {
     int ri:displayDriver:asrgba = 1 (
         displayName = "As RGBA"
-        doc = "As RGBA"
+        doc = '''
+            If turned on, this flag causes the driver to try to rename a subset of the channels to RGBAZ. Try using this if your image viewer or compositing software swaps around channels (such as red or blue) incorrectly. By default, the driver will rename any input channel named "Ci" to "RGB", any input channel named "a" to "A", and any input channel named "z" to "Z". If no such input channels exist with those names, the first four channels will be renamed to "RGBA". The choice of input channels to be renamed can be set by setting the "asrgbacolorchannel" and "asrgbaalphachannel" parameters.
+        '''
+    )
+    string ri:displayDriver:asrgbaalphachannel = "" (
+        displayName = "Float channel to rename to A"
+        doc = '''
+            If set, this parameter causes the driver to rename the input channel of that name to "A". Setting this value will also cause "asrgba" to be assumed to be on.
+        '''
+    )
+    string ri:displayDriver:asrgbacolorchannel = "" (
+        displayName = "Color channel to rename to RGB"
+        doc = '''
+            If set, this parameter causes the driver to rename the input channel of that name to "RGB". Setting this value will also cause "asrgba" to be assumed to be on.
+        '''
     )
     token ri:displayDriver:autocrop = "false" (
         allowedTokens = ["false", "true"]

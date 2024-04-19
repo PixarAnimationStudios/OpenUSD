@@ -64,6 +64,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (percentDone)
     (PrimvarPass)
     (name)
     (sourceName)
@@ -72,6 +73,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // See PxrDisplayChannelAPI
     ((riDisplayChannelNamespace,    "ri:displayChannel:"))
+    // See PxrDisplayDriverAPI
+    ((riDisplayDriverNamespace,     "ri:displayDriver:"))
 );
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -119,6 +122,7 @@ HdPrman_RenderParam::HdPrman_RenderParam(
     _ri(nullptr),
     _mgr(nullptr),
     _statsSession(nullptr),
+    _progressPercent(0),
     _riley(nullptr),
     _sceneLightCount(0),
     _shutterInterval(HDPRMAN_SHUTTEROPEN_DEFAULT, HDPRMAN_SHUTTERCLOSE_DEFAULT),
@@ -129,8 +133,10 @@ HdPrman_RenderParam::HdPrman_RenderParam(
     _resolution(0),
     _renderDelegate(renderDelegate)
 {
+#if _PRMANAPI_VERSION_MAJOR_ < 26
     // Create the stats session
     _CreateStatsSession();
+#endif
 
     // Setup to use the default GPU
     _xpuGpuConfig.push_back(0);
@@ -1216,9 +1222,11 @@ HdPrman_RenderParam::RegisterIntegratorCallbackForCamera(
 void
 HdPrman_RenderParam::_CreateStatsSession(void)
 {
-    // Set log level for diagnostics relating to initialization. If we succeed in loading a
-    // config file then the log level specified in the config file will take precedence.
-    stats::Logger::LogLevel statsDebugLevel = stats::GlobalLogger()->DefaultLogLevel();
+    // Set log level for diagnostics relating to initialization.
+    // If we succeed in loading a config file then the log level specified
+    // in the config file will take precedence.
+    stats::Logger::LogLevel statsDebugLevel =
+        stats::GlobalLogger()->DefaultLogLevel();
     stats::SetGlobalLogLevel(statsDebugLevel);
     stats::SetGlobalLogLevel(stats::Logger::k_debug);
 
@@ -1262,6 +1270,65 @@ HdPrman_RenderParam::_CreateStatsSession(void)
                                       _statsSession->GetName() + "'.");
 }
 
+void HdPrman_RenderParam::_PRManSystemBegin(
+    const std::vector<std::string>& extraArgs)
+{
+#if _PRMANAPI_VERSION_MAJOR_ >= 26
+    // Must invoke PRManSystemBegin() and PRManRenderBegin()
+    // before we start using Riley.
+    // Turning off unwanted statistics warnings
+    // TODO: Fix incorrect tear-down handling of these statistics in
+    // interactive contexts as described in PRMAN-2353
+
+    std::vector<std::string> sArgs;
+    sArgs.reserve(3+extraArgs.size());
+    sArgs.push_back(""); // Empty argv[0]: hdPrman will do Xcpt/signal handling
+    sArgs.push_back("-woff");
+    sArgs.push_back("R56008,R56009");
+    sArgs.insert(std::end(sArgs), std::begin(extraArgs), std::end(extraArgs));
+
+    // PRManSystemBegin expects array of char* rather than std::string
+    std::vector<const char*> cArgs;
+    cArgs.reserve(sArgs.size());
+    std::transform(sArgs.begin(), sArgs.end(), std::back_inserter(cArgs),
+                   [](const std::string& str) { return str.c_str();} );
+
+    _ri->PRManSystemBegin(cArgs.size(),
+        const_cast<const char **>(cArgs.data()));
+#endif
+}
+
+int HdPrman_RenderParam::_PRManRenderBegin(
+    const std::vector<std::string>& extraArgs)
+{
+    // Must invoke PRManSystemBegin() and PRManRenderBegin()
+    // before we start using Riley.
+    std::vector<std::string> sArgs;
+#if _PRMANAPI_VERSION_MAJOR_ >= 26
+    sArgs.reserve(2+extraArgs.size());
+#else
+    sArgs.reserve(5+extraArgs.size());
+    sArgs.push_back("hdPrman");  // Empty argv[0]: hdPrman will do Xcpt/signal handling
+    sArgs.push_back("-woff");
+    sArgs.push_back("R56008,R56009");
+#endif
+    sArgs.push_back("-statssession");
+    sArgs.push_back(_statsSession->GetName());
+    sArgs.insert(std::end(sArgs), std::begin(extraArgs), std::end(extraArgs));
+
+    // PRManRenderBegin expects array of char* rather than std::string
+    std::vector<const char*> cArgs;
+    cArgs.reserve(sArgs.size());
+    std::transform(sArgs.begin(), sArgs.end(), std::back_inserter(cArgs),
+                   [](const std::string& str) { return str.c_str();} );
+#if _PRMANAPI_VERSION_MAJOR_ >= 26
+    return _ri->PRManRenderBegin(cArgs.size(),
+        const_cast<const char **>(cArgs.data()));
+#else
+    return _ri->PRManBegin(cArgs.size(), const_cast<char **>(cArgs.data()));
+#endif
+}
+
 void
 HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
     const std::string &xpuDevices,
@@ -1278,31 +1345,31 @@ HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
         return;
     }
 
-    // Must invoke PRManBegin() before we start using Riley.
-    // Turning off unwanted statistics warnings
-    // TODO: Fix incorrect tear-down handling of these statistics in 
-    // interactive contexts as described in PRMAN-2353
+#if _PRMANAPI_VERSION_MAJOR_ >= 26
+    // Initialize internals of PRMan system
+    _PRManSystemBegin(extraArgs);
 
-    std::vector<std::string> sArgs;
-    sArgs.push_back("hdPrman");
-    sArgs.push_back("-woff");
-    sArgs.push_back("R56008,R56009");
-    sArgs.push_back("-statssession");
-    sArgs.push_back(_statsSession->GetName());
-    sArgs.insert(std::end(sArgs), std::begin(extraArgs), std::end(extraArgs));
+    // Create the RenderMan stats session
+    _CreateStatsSession();
+#endif
 
-    std::vector<const char*> cArgs;
-
-    // PRManBegin expects array of char* rather than std::string
-    cArgs.reserve(sArgs.size());
-    std::transform(sArgs.cbegin(), sArgs.cend(), std::back_inserter(cArgs),
-                   [](const std::string& str) { return str.c_str();} );
-
-    _ri->PRManBegin(cArgs.size(), const_cast<char **>(cArgs.data()));
+    // Instantiate PRMan renderer ahead of CreateRiley
+    int err = _PRManRenderBegin(extraArgs);
+    if (err)
+    {
+        TF_RUNTIME_ERROR("Could not initialize Renderer.");
+        return;
+    }
 
     // Register an Xcpt handler
     RixXcpt* rix_xcpt = (RixXcpt*)_rix->GetRixInterface(k_RixXcpt);
     rix_xcpt->Register(&_xcpt);
+
+    // Register progress callback
+     RixEventCallbacks* rix_event_callbacks =
+        (RixEventCallbacks*)_rix->GetRixInterface(k_RixEventCallbacks);
+     rix_event_callbacks->RegisterCallback(RixEventCallbacks::k_Progress,
+                                           _ProgressCallback, this);
 
     // Populate RixStr struct
     RixSymbolResolver* sym = (RixSymbolResolver*)_rix->GetRixInterface(
@@ -1377,9 +1444,25 @@ _ToRtParamList(VtDictionary const& dict, TfToken prefix=TfToken())
     RtParamList params;
     for (auto const& entry: dict) {
         std::string key = entry.first;
+
+        // EXR metadata transformation:
+        // Keys of the format "ri:exrheader:A:B:C"
+        // will be changed to "exrheader_A/B/C"
+        // for use with the d_openexr display driver conventions.
+        if (TfStringStartsWith(key, "ri:exrheader:")) {
+            key = TfStringReplace(key, "ri:exrheader:", "exrheader_");
+            for (char &c: key) {
+                if (c == ':') {
+                    c = '/';
+                }
+            }
+        }
+
+        // Remove namespace prefix
         if (TfStringStartsWith(key, prefix.GetString())) {
             key = key.substr(prefix.size());
         }
+
         RtUString riName(key.c_str());
         HdPrman_Utils::SetParamFromVtValue(riName, entry.second,
                                            /* role = */ TfToken(), &params);
@@ -1404,6 +1487,31 @@ _GetOutputDisplayDriverType(const TfToken &name)
     const std::string outputExt = TfGetExtension(name.GetString());
     const TfToken displayFormat = extToDisplayDriver.at(outputExt);
     return RtUString(displayFormat.GetText());
+}
+
+// Temporary workaround for RMAN-21883:
+//
+// The args file for d_openexr says the default for asrgba is 1.
+// The code for d_openexr uses a default of 0.
+//
+// The args default is reflected into the USD Ri schema; consequently,
+// USD app integrations may assume they can skip exporting values that
+// match this value.  The result is that there is no way for users to
+// request that value.
+//
+// Here, we update the default parameters to match the args file.
+// If no value is present, we explicitly set it to 1.
+static void
+_ApplyOpenexrDriverWorkaround(HdPrman_RenderViewDesc::DisplayDesc *display)
+{
+    static const RtUString openexr("openexr");
+    static const RtUString asrgba("asrgba");
+    if (display->driver == openexr) {
+        uint32_t paramId;
+        if (!display->params.GetParamId(asrgba, paramId)) {
+            display->params.SetInteger(asrgba, 1);
+        }
+    }
 }
 
 static
@@ -1438,11 +1546,13 @@ _ComputeRenderViewDesc(
         const std::string &sourceNameStr =
             VtDictionaryGet<std::string>(
                 renderVar,
-                HdPrmanExperimentalRenderSpecTokens->sourceName);
+                HdPrmanExperimentalRenderSpecTokens->sourceName,
+                VtDefault = nameStr);
         const TfToken sourceType =
             VtDictionaryGet<TfToken>(
                 renderVar,
-                HdPrmanExperimentalRenderSpecTokens->sourceType);
+                HdPrmanExperimentalRenderSpecTokens->sourceType,
+                VtDefault = TfToken());
 
         // Map renderVar to RenderMan AOV name and source.
         // For LPE's, we use the name of the prim rather than the LPE,
@@ -1490,12 +1600,15 @@ _ComputeRenderViewDesc(
 
         displayDesc.name = RtUString(name.GetText());
         displayDesc.driver = _GetOutputDisplayDriverType(name);
-
         displayDesc.params = _ToRtParamList(
             VtDictionaryGet<VtDictionary>(
                 renderProduct,
                 HdPrmanExperimentalRenderSpecTokens->params,
-                VtDefault = VtDictionary()));
+                VtDefault = VtDictionary()),
+            _tokens->riDisplayDriverNamespace);
+
+        // XXX Temporary; see RMAN-21883
+        _ApplyOpenexrDriverWorkaround(&displayDesc);
 
         const VtIntArray &renderVarIndices =
             VtDictionaryGet<VtIntArray>(
@@ -1541,8 +1654,12 @@ _ComputeRenderViewDesc(
     // Create a DisplayDesc for this RenderProduct
     HdPrman_RenderViewDesc::DisplayDesc displayDesc;
     displayDesc.name = RtUString(product.name.GetText());
-    displayDesc.params = _ToRtParamList(product.namespacedSettings);
+    displayDesc.params = _ToRtParamList(product.namespacedSettings,
+        _tokens->riDisplayDriverNamespace);
     displayDesc.driver = _GetOutputDisplayDriverType(product.name);
+
+    // XXX Temporary; see RMAN-21883
+    _ApplyOpenexrDriverWorkaround(&displayDesc);
 
     /* RenderVar */
     for (const HdRenderSettings::RenderProduct::RenderVar &renderVar :
@@ -1631,6 +1748,11 @@ HdPrman_RenderParam::CreateRenderViewFromRenderSettingsProduct(
 void
 HdPrman_RenderParam::_DestroyRiley()
 {
+     RixEventCallbacks* rix_event_callbacks =
+        (RixEventCallbacks*)_rix->GetRixInterface(k_RixEventCallbacks);
+     rix_event_callbacks->UnregisterCallback(RixEventCallbacks::k_Progress,
+                                             _ProgressCallback, this);
+
     if (_mgr) {
         if (_riley) {
             // Riley/RIS crashes if SetOptions hasn't been called prior to
@@ -1643,18 +1765,40 @@ HdPrman_RenderParam::_DestroyRiley()
             }
             _mgr->DestroyRiley(_riley);
         }
+        if (_ri) {
+            // Tear down renderer
+#if _PRMANAPI_VERSION_MAJOR_ >= 26
+            _ri->PRManRenderEnd();
+#endif
+        }
         _mgr = nullptr;
     }
 
     _riley = nullptr;
 
     if (_rix) {
+        // Remove our exception handler
         RixXcpt* rix_xcpt = (RixXcpt*)_rix->GetRixInterface(k_RixXcpt);
         rix_xcpt->Unregister(&_xcpt);
     }
 
+#if _PRMANAPI_VERSION_MAJOR_ >= 26
+    if (_statsSession)
+    {
+        // We own the session, it's our responsibility to tell Roz to remove
+        // its reference and free the memory
+        stats::RemoveSession(*_statsSession);
+        _statsSession = nullptr;
+    }
+#endif
+
     if (_ri) {
+        // Final prman shutdown
+#if _PRMANAPI_VERSION_MAJOR_ >= 26
+        _ri->PRManSystemEnd();
+#else
         _ri->PRManEnd();
+#endif
         _ri = nullptr;
     }
 }
@@ -1892,6 +2036,22 @@ HdPrman_RenderParam::_RenderThreadCallback()
     }
 }
 
+void 
+HdPrman_RenderParam::_ProgressCallback(RixEventCallbacks::Event,
+                                       RtConstPointer data, RtPointer clientData)
+{
+    int const* pp = static_cast<int const*>(data);
+    HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(clientData);
+    param->_progressPercent = *pp;
+
+    if (!param->IsInteractive()) {
+        // XXX Placeholder to simulate RenderMan's built-in writeProgress
+        // option, until iether HdPrman can pass that in, and/or it gets
+        // replaced with Roz-based client-side progress reporting
+        printf("R90000  %3i%%\n", param->_progressPercent);
+    }
+}
+
 bool 
 HdPrman_RenderParam::IsValid() const
 {
@@ -2076,6 +2236,10 @@ HdPrman_RenderParam::SetRileyOptions()
 
         RtParamList prunedOptions = HdPrman_Utils::PruneDeprecatedOptions(
                     composedParams);
+
+        if (_renderDelegate->IsInteractive()) {
+            prunedOptions = HdPrman_Utils::PruneBatchOnlyOptions(prunedOptions);
+        }
 
         riley::Riley * const riley = AcquireRiley();
         riley->SetOptions(prunedOptions);

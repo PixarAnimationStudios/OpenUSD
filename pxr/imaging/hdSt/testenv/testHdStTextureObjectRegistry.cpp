@@ -1,5 +1,5 @@
 //
-// Copyrighty 2020 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -123,7 +123,13 @@ My_TestGLDrawing::OffscreenTest()
 
     HgiTextureHandle dstTexture = _driver->GetHgi()->CreateTexture(texDesc);
 
-    HgiSamplerHandle sampler = HgiSamplerHandle();
+    // Make sampler object to use with the various input textures.
+    HgiSamplerDesc samplerDesc;
+    samplerDesc.magFilter = HgiSamplerFilterLinear;
+    samplerDesc.minFilter = HgiSamplerFilterLinear;
+    samplerDesc.mipFilter = HgiMipFilterLinear;
+    HgiSamplerHandle sampler = _driver->GetHgi()->CreateSampler(samplerDesc);
+    
     {
         HdStTextureObjectSharedPtr const texture1 =
             _registry->AllocateTextureObject(
@@ -150,8 +156,8 @@ My_TestGLDrawing::OffscreenTest()
         _CheckEqual(
             _registry->GetTotalTextureMemory(), 349524,
             "Total texture memory wrong after first commit");
-        
-        // Garbage collect should have no aeffect.
+
+        // Garbage collect should have no effect.
         _registry->GarbageCollect();    
 
         // Check that changing target memory will recommit texture and
@@ -281,6 +287,7 @@ My_TestGLDrawing::OffscreenTest()
     }
 
     _driver->GetHgi()->DestroyTexture(&dstTexture);
+    _driver->GetHgi()->DestroySampler(&sampler);
     
     // Clean-up things.
     _registry->GarbageCollect();

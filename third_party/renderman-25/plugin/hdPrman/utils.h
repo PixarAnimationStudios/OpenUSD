@@ -48,11 +48,6 @@ SetParamFromVtValue(
     TfToken const& role,
     RtParamList *params);
 
-/// Creates RtParamList by pulling VtValue's from the container data source.
-RtParamList
-ParamsFromDataSource(
-    HdContainerDataSourceHandle const &containerDs);
-
 /// Similar to the function above, with the addition of \p detail, which 
 /// specifies how array values should be handled across topology.
 bool
@@ -101,6 +96,13 @@ ResolveAssetToRtUString(
 /// copy of the options, to be provided to SetOptions().
 RtParamList
 PruneDeprecatedOptions(
+    const RtParamList &options);
+
+/// Some options, such as exitat, should only apply to a batch-mode render.
+/// This method returns a pruned copy of the options, removing those
+/// that should only be used in batch rendering.
+RtParamList
+PruneBatchOnlyOptions(
     const RtParamList &options);
 
 /// Returns a small set of options for default path tracer configuration.

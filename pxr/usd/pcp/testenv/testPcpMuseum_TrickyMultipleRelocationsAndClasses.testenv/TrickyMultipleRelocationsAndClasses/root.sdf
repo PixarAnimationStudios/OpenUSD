@@ -5,13 +5,12 @@
     class instances are relocated to form a single hierarchy, which itself
     is then relocated. 
     """
-)
-
-def Scope "HumanRig" (
     relocates = {
-        <rig/Face/Anim/Face>: <Face>,
+        </HumanRig/rig/Face/Anim/Face>: </HumanRig/Face>
     }
 )
+
+def Scope "HumanRig"
 {
     def Scope "rig"
     {

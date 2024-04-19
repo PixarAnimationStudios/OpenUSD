@@ -591,6 +591,8 @@ CreateRenderSpecDict(
             VtDictionary renderProduct;
             renderProduct[HdPrmanExperimentalRenderSpecTokens->name] =
                 product.name.GetString();
+            renderProduct[HdPrmanExperimentalRenderSpecTokens->params] =
+                product.namespacedSettings;
             {
                 VtIntArray renderVarIndices;
                 const size_t num = product.renderVarIndices.size();
@@ -1099,13 +1101,13 @@ int main(int argc, char *argv[])
     }
 
     UsdRenderSpec renderSpec;
-    const TfTokenVector prmanNamespaces{TfToken("ri"), TfToken("outputs:ri")};
     if (!UseRenderSettingsPrim()) {
         if (settings) {
             // Create the RenderSpec from the Render Settings Prim 
             fprintf(stdout, "Create a UsdRenderSpec from the Render Settings "
                     "Prim <%s>.\n", settings.GetPath().GetText());
-            renderSpec = UsdRenderComputeSpec(settings, prmanNamespaces);
+            renderSpec =
+                UsdRenderComputeSpec(settings, {_tokens->renderContext});
         } else {
             // Otherwise, provide a built-in render specification.
             fprintf(stdout, "Create the Fallback UsdRenderSpec.\n");

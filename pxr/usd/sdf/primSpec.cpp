@@ -783,8 +783,7 @@ SdfPrimSpec::GetRelocates() const
     if (!_IsPseudoRoot()) {
         return SdfRelocatesMapProxy(
             SdfCreateHandle(this), SdfFieldKeys->Relocates);
-    }
-    else {
+    } else {
         return SdfRelocatesMapProxy();
     }
 }

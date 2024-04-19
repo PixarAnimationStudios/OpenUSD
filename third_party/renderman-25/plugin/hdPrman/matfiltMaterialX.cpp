@@ -489,8 +489,9 @@ _UpdateNetwork(
             
             visitedNodeNames.insert(upstreamNodeName);
             // Collect nodes further removed from the terminal in nodesToRemove
+            std::set<TfToken> tmpVisitedNodeNames;
             _GatherNodeGraphNodes(netInterface, upstreamNodeName, 
-                                  &nodesToRemove, &visitedNodeNames);
+                                  &nodesToRemove, &tmpVisitedNodeNames);
             nodesToKeep.insert(upstreamNodeName);
 
             // Generate the oslSource code for the connected upstream node

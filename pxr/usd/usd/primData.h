@@ -40,8 +40,6 @@
 
 #include "pxr/usd/sdf/path.h"
 
-#include <boost/intrusive_ptr.hpp>
-
 #include <atomic>
 #include <cstdint>
 #include <vector>
@@ -326,10 +324,10 @@ private:
     Usd_PrimFlagBits _flags;
 
     // intrusive_ptr core primitives implementation.
-    friend void intrusive_ptr_add_ref(const Usd_PrimData *prim) {
+    friend void TfDelegatedCountIncrement(const Usd_PrimData *prim) noexcept {
         prim->_refCount.fetch_add(1, std::memory_order_relaxed);
     }
-    friend void intrusive_ptr_release(const Usd_PrimData *prim) {
+    friend void TfDelegatedCountDecrement(const Usd_PrimData *prim) noexcept {
         if (prim->_refCount.fetch_sub(1, std::memory_order_release) == 1)
             delete prim;
     }

@@ -765,11 +765,17 @@ Sdf_PathNode::_WriteText(Buffer &out) const
 }
 
 Sdf_PrimPathNode::~Sdf_PrimPathNode() {
-    _Remove(this, *_primNodes, GetParentNode(), _name);
+    _Remove(this, *_primNodes,
+            Sdf_PathNodeConstRefPtr(
+                TfDelegatedCountIncrementTag, GetParentNode()),
+            _name);
 }
 
 Sdf_PrimPropertyPathNode::~Sdf_PrimPropertyPathNode() {
-    _Remove(this, *_primPropertyNodes, GetParentNode(), _name);
+    _Remove(this, *_primPropertyNodes,
+            Sdf_PathNodeConstRefPtr(
+                TfDelegatedCountIncrementTag, GetParentNode()),
+            _name);
 }
 
 const TfToken &
@@ -790,7 +796,10 @@ Sdf_PrimVariantSelectionNode::_WriteTextImpl(Buffer &out) const
 }
 
 Sdf_PrimVariantSelectionNode::~Sdf_PrimVariantSelectionNode() {
-    _Remove(this, *_primVarSelNodes, GetParentNode(), *_variantSelection);
+    _Remove(this, *_primVarSelNodes,
+            Sdf_PathNodeConstRefPtr(
+                TfDelegatedCountIncrementTag, GetParentNode()),
+            *_variantSelection);
 }
 
 template <class Buffer>
@@ -802,11 +811,17 @@ Sdf_TargetPathNode::_WriteTextImpl(Buffer &out) const {
 }
 
 Sdf_TargetPathNode::~Sdf_TargetPathNode() {
-    _Remove(this, *_targetNodes, GetParentNode(), _targetPath);
+    _Remove(this, *_targetNodes,
+            Sdf_PathNodeConstRefPtr(
+                TfDelegatedCountIncrementTag, GetParentNode()),
+            _targetPath);
 }
 
 Sdf_RelationalAttributePathNode::~Sdf_RelationalAttributePathNode() {
-    _Remove(this, *_relAttrNodes, GetParentNode(), _name);
+    _Remove(this, *_relAttrNodes,
+            Sdf_PathNodeConstRefPtr(
+                TfDelegatedCountIncrementTag, GetParentNode()),
+            _name);
 }
 
 template <class Buffer>
@@ -820,7 +835,10 @@ Sdf_MapperPathNode::_WriteTextImpl(Buffer &out) const {
 }
 
 Sdf_MapperPathNode::~Sdf_MapperPathNode() {
-    _Remove(this, *_mapperNodes, GetParentNode(), _targetPath);
+    _Remove(this, *_mapperNodes,
+            Sdf_PathNodeConstRefPtr(
+                TfDelegatedCountIncrementTag, GetParentNode()),
+            _targetPath);
 }
 
 template <class Buffer>
@@ -830,7 +848,10 @@ Sdf_MapperArgPathNode::_WriteTextImpl(Buffer &out) const {
 }
 
 Sdf_MapperArgPathNode::~Sdf_MapperArgPathNode() {
-    _Remove(this, *_mapperArgNodes, GetParentNode(), _name);
+    _Remove(this, *_mapperArgNodes,
+            Sdf_PathNodeConstRefPtr(
+                TfDelegatedCountIncrementTag, GetParentNode()),
+            _name);
 }
 
 template <class Buffer>
@@ -841,7 +862,9 @@ Sdf_ExpressionPathNode::_WriteTextImpl(Buffer &out) const {
 }
 
 Sdf_ExpressionPathNode::~Sdf_ExpressionPathNode() {
-    _Remove(this, *_expressionNodes, GetParentNode());
+    _Remove(this, *_expressionNodes,
+            Sdf_PathNodeConstRefPtr(
+                TfDelegatedCountIncrementTag, GetParentNode()));
 }
 
 struct Sdf_Stats {
@@ -867,6 +890,7 @@ _GatherChildrenFrom(Sdf_PathNode const *parent,
         TF_FOR_ALL(i, mapAndMutex.map) {
             if (i->first.parent == parent)
                 result->emplace_back(
+                    TfDelegatedCountIncrementTag,
                     reinterpret_cast<Sdf_PathNode const *>(i->second.GetPtr()));
         }
     }

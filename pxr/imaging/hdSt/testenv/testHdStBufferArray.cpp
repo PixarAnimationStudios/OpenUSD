@@ -168,9 +168,10 @@ ResizeTest(HdSt_TestDriver & driver)
 
     // write
     HdBufferArrayRangeSharedPtr range =
-        registry->AllocateNonUniformBufferArrayRange(HdTokens->primvar,
-                                                     bufferSpecs,
-                                                     HdBufferArrayUsageHint());
+        registry->AllocateNonUniformBufferArrayRange(
+            HdTokens->primvar,
+            bufferSpecs,
+            HdBufferArrayUsageHintBitsVertex);
     // 3 points
     VtArray<GfVec3f> points(3);
     for (int i = 0; i < 3; ++i) points[i] = GfVec3f(i);
@@ -252,7 +253,7 @@ MergeTest(HdSt_TestDriver & driver)
     HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
     HdBufferArrayRangeSharedPtr range =
         registry->AllocateNonUniformBufferArrayRange(
-            HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
+            HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHintBitsVertex);
 
     registry->AddSources(range, std::move(sources));
     registry->Commit();
@@ -272,7 +273,7 @@ MergeTest(HdSt_TestDriver & driver)
     // migrate
     range = registry->UpdateNonUniformBufferArrayRange(
         HdTokens->primvar, range, bufferSpecs,
-        /*removedSpecs*/HdBufferSpecVector(), HdBufferArrayUsageHint());
+        /*removedSpecs*/HdBufferSpecVector(), HdBufferArrayUsageHintBitsVertex);
 
     registry->AddSources(range, std::move(sources));
     registry->Commit();
@@ -291,7 +292,7 @@ MergeTest(HdSt_TestDriver & driver)
     // migrate
     range = registry->UpdateNonUniformBufferArrayRange(
         HdTokens->primvar, range, bufferSpecs,
-        /*removedSpecs*/HdBufferSpecVector(), HdBufferArrayUsageHint());
+        /*removedSpecs*/HdBufferSpecVector(), HdBufferArrayUsageHintBitsVertex);
 
     registry->AddSources(range, std::move(sources));
     registry->Commit();
