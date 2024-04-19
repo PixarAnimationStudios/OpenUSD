@@ -75,6 +75,7 @@ void wrapUsdRenderTokens()
     _AddToken(cls, "cropAperture", UsdRenderTokens->cropAperture);
     _AddToken(cls, "dataType", UsdRenderTokens->dataType);
     _AddToken(cls, "dataWindowNDC", UsdRenderTokens->dataWindowNDC);
+    _AddToken(cls, "deepRaster", UsdRenderTokens->deepRaster);
     _AddToken(cls, "denoiseEnable", UsdRenderTokens->denoiseEnable);
     _AddToken(cls, "denoisePass", UsdRenderTokens->denoisePass);
     _AddToken(cls, "disableDepthOfField", UsdRenderTokens->disableDepthOfField);
