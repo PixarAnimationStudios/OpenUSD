@@ -29,7 +29,11 @@
 
 #include "pxr/base/arch/functionLite.h"
 
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+#include <thread>
+#else 
 #include <tbb/tbb_thread.h>
+#endif 
 
 #define FILENAME   "error.cpp"
 
@@ -195,7 +199,11 @@ Test_TfErrorThreadTransport()
     printf("Creating TfErrorMark\n");
     TfErrorMark m;
     printf("Launching thread\n");
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+    std::thread t([&transport]() { _ThreadTask(&transport); });
+#else 
     tbb::tbb_thread t([&transport]() { _ThreadTask(&transport); });
+#endif 
     TF_AXIOM(m.IsClean());
     t.join();
     printf("Thread completed, posting error.\n");

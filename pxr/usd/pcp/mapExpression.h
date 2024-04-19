@@ -30,7 +30,9 @@
 
 #include "pxr/base/tf/delegatedCountPtr.h"
 
+#ifndef PXR_ONETBB_SUPPORT_ENABLED
 #include <tbb/atomic.h>
+#endif 
 #include <tbb/spin_mutex.h>
 
 #include <atomic>
@@ -269,7 +271,11 @@ private: // data
         struct _NodeMap;
         static TfStaticData<_NodeMap> _nodeRegistry;
 
+#ifndef PXR_ONETBB_SUPPORT_ENABLED
         mutable tbb::atomic<int> _refCount;
+#else 
+        mutable std::atomic<int> _refCount;
+#endif 
         mutable Value _cachedValue;
         mutable std::set<_Node*> _dependentExpressions;
         Value _valueForVariable;

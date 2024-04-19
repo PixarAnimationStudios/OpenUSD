@@ -169,7 +169,9 @@
 #include <draco/compression/encode.h>
 #include <draco/mesh/mesh.h>
 #include <draco/mesh/mesh_misc_functions.h>
+#ifndef PXR_ONETBB_SUPPORT_ENABLED
 #include <tbb/atomic.h>
+#endif 
 #include <tbb/cache_aligned_allocator.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_unordered_set.h>

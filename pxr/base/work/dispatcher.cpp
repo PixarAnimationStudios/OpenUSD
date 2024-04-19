@@ -35,24 +35,36 @@ WorkDispatcher::WorkDispatcher()
 {
     _waitCleanupFlag.clear();
     
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+    _taskGroup = new tbb::task_group(_context);
+#else 
     // The concurrent_wait flag used with the task_group_context ensures
     // the ref count will remain at 1 after all predecessor tasks are
     // completed, so we don't need to keep resetting it in Wait().
     _rootTask = new(tbb::task::allocate_root(_context)) tbb::empty_task;
     _rootTask->set_ref_count(1);
+#endif 
 }
 
 WorkDispatcher::~WorkDispatcher()
 {
     Wait();
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+    delete _taskGroup;
+#else 
     tbb::task::destroy(*_rootTask);
+#endif 
 }
 
 void
 WorkDispatcher::Wait()
 {
     // Wait for tasks to complete.
-    _rootTask->wait_for_all();
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
+    _taskGroup->wait();
+#else 
+     _rootTask->wait_for_all();
+#endif 
 
     // If we take the flag from false -> true, we do the cleanup.
     if (_waitCleanupFlag.test_and_set() == false) {
