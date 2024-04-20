@@ -111,7 +111,9 @@ public:
         while (curNode) {
             Node* nodeToDelete = curNode;
             curNode = curNode->next;
+#if TBB_ALLOCATOR_TRAITS_BROKEN
             _alloc.destroy(nodeToDelete);
+#endif // TBB_ALLOCATOR_TRAITS_BROKEN
             _alloc.deallocate(nodeToDelete, 1);
         }
     }
@@ -130,7 +132,9 @@ public:
     /// the newly created item.
     iterator Insert() {
         Node* newNode = _alloc.allocate(1);
+#if TBB_ALLOCATOR_TRAITS_BROKEN
         _alloc.construct(newNode);
+#endif // TBB_ALLOCATOR_TRAITS_BROKEN
 
         // Add the node to the linked list in an atomic manner.
         do {
