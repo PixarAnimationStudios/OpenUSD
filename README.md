@@ -192,15 +192,15 @@ then build and install USD into `/path/to/my_usd_install_dir`.
 > python OpenUSD/build_scripts/build_usd.py /path/to/my_usd_install_dir
 ```
 
-###### iOS
+###### iOS and visionOS
 
 When building from a macOS system, you can cross compile for iOS based platforms.
 
 iOS builds currently do not support Imaging.
 Additionally, they will not support Python bindings or command line tools.
 
-To build for iOS, add the `--build-target iOS` parameter.
-
+* To build for iOS, add the `--build-target iOS` parameter.
+* To build for visionOS, add the `--build-target visionOS` parameter.
 
 ##### Windows:
 

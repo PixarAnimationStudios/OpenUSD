@@ -1047,6 +1047,31 @@ def InstallTBB_MacOS(context, force, buildArgs):
                   "ifeq ($(arch),$(filter $(arch),armv7 armv7s {0}))"
                         .format(apple_utils.GetTargetArmArch()))])
 
+        if context.buildTarget == apple_utils.TARGET_VISIONOS:
+            # Create visionOS config from iOS config
+            shutil.copy(
+                src="build/ios.macos.inc",
+                dst="build/visionos.macos.inc")
+
+            PatchFile("build/visionos.macos.inc",
+                      [("ios","visionos"),
+                       ("iOS", "visionOS"),
+                       ("iPhone", "XR"),
+                       ("IPHONEOS","XROS"),
+                       ("?= 8.0", "?= 1.0")])
+
+            # iOS clang just reuses the macOS one, so it's easier to copy it directly
+            shutil.copy(src="build/macos.clang.inc",
+                        dst="build/visionos.clang.inc")
+
+
+            PatchFile("build/visionos.clang.inc",
+                      [("ios","visionos"),
+                       ("-miphoneos-version-min=", "-target arm64-apple-xros"),
+                       ("iOS", "visionOS"),
+                       ("iPhone", "XR"),
+                       ("IPHONEOS","XROS")])
+
         (primaryArch, secondaryArch) = apple_utils.GetTargetArchPair(context)
 
         # tbb uses different arch names
@@ -2813,6 +2838,10 @@ if which("cmake"):
     elif MacOS():
         # Apple Silicon is not supported prior to 3.19
         cmake_required_version = (3, 19)
+
+        # visionOS support was added in CMake 3.28
+        if context.buildTarget == apple_utils.TARGET_VISIONOS:
+            cmake_required_version = (3, 28)
     else:
         # Linux, and vfx platform CY2020, are verified to work correctly with 3.14
         cmake_required_version = (3, 14)
