@@ -26,15 +26,17 @@ TARGET_X86 = "x86_64"
 TARGET_ARM64 = "arm64"
 TARGET_UNIVERSAL = "universal"
 TARGET_IOS = "iOS"
+TARGET_VISIONOS = "visionOS"
 
-EMBEDDED_PLATFORMS = [TARGET_IOS]
+EMBEDDED_PLATFORMS = [TARGET_IOS, TARGET_VISIONOS]
 
 def GetBuildTargets():
     return [TARGET_NATIVE,
             TARGET_X86,
             TARGET_ARM64,
             TARGET_UNIVERSAL,
-            TARGET_IOS]
+            TARGET_IOS,
+            TARGET_VISIONOS]
 
 def GetBuildTargetDefault():
     return TARGET_NATIVE
@@ -118,6 +120,8 @@ def GetSDKRoot(context) -> Optional[str]:
     sdk = "macosx"
     if context.buildTarget == TARGET_IOS:
         sdk = "iphoneos"
+    elif context.buildTarget == TARGET_VISIONOS:
+        sdk = "xros"
 
     for arg in (context.cmakeBuildArgs or '').split():
         if "CMAKE_OSX_SYSROOT" in arg:
@@ -133,6 +137,7 @@ def SetTarget(context, targetName):
     context.targetARM64 = (targetName == GetTargetArmArch())
     context.targetUniversal = (targetName == TARGET_UNIVERSAL)
     context.targetIos = (targetName == TARGET_IOS)
+    context.targetVisionos = (targetName == TARGET_VISIONOS)
     if context.targetUniversal and not SupportsMacOSUniversalBinaries():
         context.targetUniversal = False
         raise ValueError(
@@ -262,8 +267,8 @@ def CreateUniversalBinaries(context, libNames, x86Dir, armDir):
 
 def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
     system_name = None
-    if context.buildTarget == TARGET_IOS:
-        system_name = "iOS"
+    if context.buildTarget in EMBEDDED_PLATFORMS:
+        system_name = context.buildTarget
 
     if system_name:
         args.append(f"-DCMAKE_SYSTEM_NAME={system_name}")
