@@ -67,7 +67,7 @@ def _generateTemporaryFile(usdcatCmd, usdFileName, readOnly, prefix):
     (usdaFile, usdaFileName) = tempfile.mkstemp(
         prefix=fullPrefix, suffix='.usda', dir=os.getcwd())
 
-    subprocess.call([usdcatCmd, usdFileName], stdout=usdaFile)
+    subprocess.run([usdcatCmd, usdFileName], stdout=usdaFile)
 
     os.close(usdaFile)
 
@@ -86,7 +86,7 @@ def _generateTemporaryFile(usdcatCmd, usdFileName, readOnly, prefix):
 def _editTemporaryFile(editorCmd, usdaFileName):
     # check the timestamp before updating a file's mtime
     initialTimeStamp = os.path.getmtime(usdaFileName)
-    subprocess.call([editorCmd, usdaFileName])
+    subprocess.run([editorCmd, usdaFileName])
     newTimeStamp = os.path.getmtime(usdaFileName)
     
     # indicate whether the file was changed
