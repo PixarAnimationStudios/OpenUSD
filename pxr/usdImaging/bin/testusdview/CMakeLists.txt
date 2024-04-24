@@ -733,15 +733,15 @@ pxr_register_test(testUsdviewSceneLights
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewSceneLights.py test.usda"
     IMAGE_DIFF_COMPARE
-        camera_noScene.png
-        camera_scene.png
-        domeVis_noScene.png
-        domeVis_scene.png
-        domeInvis_noScene.png
-        domeInvis_scene.png
-        sceneLights.png
-        sceneLights_edit.png
-        noLights.png
+        camera_noScene_GL.png
+        camera_scene_GL.png
+        domeVis_noScene_GL.png
+        domeVis_scene_GL.png
+        domeInvis_noScene_GL.png
+        domeInvis_scene_GL.png
+        sceneLights_GL.png
+        sceneLights_edit_GL.png
+        noLights_GL.png
     FAIL 0.05
     FAIL_PERCENT 0.03
     PERCEPTUAL
@@ -754,15 +754,15 @@ pxr_register_test(testUsdviewSceneLights_Delegate
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewSceneLights.py test.usda"
     IMAGE_DIFF_COMPARE
-        camera_noScene.png
-        camera_scene.png
-        domeVis_noScene.png
-        domeVis_scene.png
-        domeInvis_noScene.png
-        domeInvis_scene.png
-        sceneLights.png
-        sceneLights_edit.png
-        noLights.png
+        camera_noScene_GL.png
+        camera_scene_GL.png
+        domeVis_noScene_GL.png
+        domeVis_scene_GL.png
+        domeInvis_noScene_GL.png
+        domeInvis_scene_GL.png
+        sceneLights_GL.png
+        sceneLights_edit_GL.png
+        noLights_GL.png
     FAIL 0.05
     FAIL_PERCENT 0.03
     PERCEPTUAL
