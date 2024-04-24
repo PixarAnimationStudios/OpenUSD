@@ -23,19 +23,22 @@
 #
 #
 # Usage:
-#   shebang shebang-str source.py dest.py
+#   wrappy file output.cmd
 #
-# This substitutes '/pxrpythonsubst' in <source.py> with <shebang-str>
-# and writes the result to <dest.py>.
+# This generates a file named <output.cmd> with the contents
+# '@python "%~dp0<file>"';  this is a Windows command script to execute
+# "python <file>" where <file> is in the same directory as the command script.
 
 import sys
+import platform
+import warnings
 
-if len(sys.argv) != 4:
-    print(f"Usage: {sys.argv[0]} {{shebang-str source.py dest}}",
-          file=sys.stderr)
+if not platform.system() == 'Windows':
+    warnings.warn(f"{sys.argv[0]} should only be run on Windows")
+
+if len(sys.argv) != 3:
+    print(f"Usage: {sys.argv[0]} {{file output.cmd}}", file=sys.stderr)
     sys.exit(1)
 
-with open(sys.argv[2], 'r') as s:
-    with open(sys.argv[3], 'w') as d:
-        for line in s:
-            d.write(line.replace('/pxrpythonsubst', sys.argv[1]))
+with open(sys.argv[2], 'w') as f:
+    print(f'@python "%~dp0{sys.argv[1]}" %*', file=f)

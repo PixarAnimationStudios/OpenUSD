@@ -141,7 +141,7 @@ function(pxr_python_bin BIN_NAME)
             COMMENT "Creating Python cmd wrapper"
             COMMAND
                 ${PYTHON_EXECUTABLE}
-                ${PROJECT_SOURCE_DIR}/cmake/macros/shebang.py
+                ${PROJECT_SOURCE_DIR}/cmake/macros/winpycmd.py
                 ${BIN_NAME}
                 ${outfile}.cmd
         )
