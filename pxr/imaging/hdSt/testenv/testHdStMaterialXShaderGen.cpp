@@ -28,16 +28,73 @@
 
 #include "pxr/base/tf/diagnostic.h"
 
+#include <MaterialXGenShader/Util.h>
+
 #include <iostream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace mx = MaterialX;
 
+bool IsDifferentFrom(mx::InputPtr const& input, float value) {
+    if (!input) {
+        return false;
+    }
+
+    if (input->hasValue()) {
+        auto val = input->getValue();
+        if (val->isA<float>()) {
+            return val->asA<float>() != value;
+        }
+        return true;
+    }
+
+    return input->hasNodeName() || input->hasNodeGraphString() ||
+           input->hasOutputString() || input->hasInterfaceName();
+}
+
+bool IsTranslucentDocument(mx::DocumentPtr const& mxDoc)
+{
+    // Find renderable elements in the Mtlx Document.
+    std::vector<mx::TypedElementPtr> renderableElements;
+    mx::findRenderableElements(mxDoc, renderableElements);
+
+    // Should have exactly one renderable element (material).
+    if (renderableElements.size() != 1) {
+        TF_CODING_ERROR("Generated MaterialX Document does not "
+                        "have 1 material");
+        return false;
+    }
+
+    // Extract out the Surface Shader Node for the Material Node
+    mx::TypedElementPtr renderableElem = renderableElements.at(0);
+    mx::NodePtr node = renderableElem->asA<mx::Node>();
+    if (node && node->getType() == mx::MATERIAL_TYPE_STRING) {
+        // Use auto so can compile against MaterialX 1.38.0 or 1.38.1
+        auto mxShaderNodes = mx::getShaderNodes(node, mx::SURFACE_SHADER_TYPE_STRING);
+        if (!mxShaderNodes.empty()) {
+            renderableElem = *mxShaderNodes.begin();
+        }
+    }
+
+    auto renderableNode = renderableElem->asA<mx::Node>();
+    if (renderableNode && renderableNode->getCategory() == "UsdPreviewSurface")
+    {
+        // The custom code to handle masked mode prevents MaterialX from auto-deducing
+        // transparency correctly:
+        return IsDifferentFrom(renderableNode->getInput("opacity"), 1.0f) ||
+               IsDifferentFrom(renderableNode->getInput("opacityThreshold"), 0.0f);
+
+        // Note that if we start introducing glTf tests, they will also incorrectly
+        // be detected as transparent due to the presence of the alpha_mode input
+        // which allows masking.
+    }
+    return mx::isTransparentSurface(renderableElements.at(0));
+}
 
 void TestShaderGen(
     const mx::FilePath& mtlxFilename, 
-    const HdSt_MxShaderGenInfo& mxHdInfo)
+    HdSt_MxShaderGenInfo& mxHdInfo)
 {
     // Get Standard Libraries and SearchPaths (for mxDoc and mxShaderGen)
     const mx::DocumentPtr& stdLibraries = HdMtlxStdLibraries();
@@ -63,6 +120,10 @@ void TestShaderGen(
                   << mtlxFilename.getBaseName() << " ***" << std::endl;
         std::cerr << message;
     }
+
+    mxHdInfo.materialTag = IsTranslucentDocument(mxDoc) ?
+                           "translucent" :
+                           "defaultMaterialTag";
 
     // Generate the HdSt MaterialX Shader
     mx::ShaderPtr glslfx = HdSt_GenMaterialXShader(
@@ -108,9 +169,6 @@ int main(int argc, char *argv[])
                 std::cerr << "--primvarMap <PrimvarName>:<PrimvarType>\n";
                 return EXIT_FAILURE;
             }
-        }
-        if (arg == "--materialTag") {
-            mxHdInfo.materialTag = argv[++i];
         }
         if (arg == "--bindless") {
             mxHdInfo.bindlessTexturesEnabled = true;

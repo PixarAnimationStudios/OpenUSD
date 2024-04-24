@@ -400,9 +400,9 @@ ParseMetadata(
 {
     const auto& value = element->getAttribute(attribute);
     if (!value.empty()) {
-        // Change the 'texture2d' role for stdlib MaterialX Texture nodes
+        // Change the 'texture2d' and 'texture3d' roles for stdlib MaterialX Texture nodes
         // to 'texture' for Sdr.
-        if (key == SdrNodeMetadata->Role && value == "texture2d") {
+        if (key == SdrNodeMetadata->Role && (value == "texture2d" || value == "texture3d")) {
             builder->metadata[key] = "texture";
         }
         else {

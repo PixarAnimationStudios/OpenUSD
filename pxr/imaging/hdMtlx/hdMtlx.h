@@ -67,13 +67,11 @@ HdMtlxConvertToString(VtValue const& hdParameterValue);
 
 // Storing MaterialX-Hydra texture and primvar information
 struct HdMtlxTexturePrimvarData {
-    HdMtlxTexturePrimvarData() 
-        : mxHdTextureMap(MaterialX::StringMap()), // Mx-Hd texture name mapping
-          hdTextureNodes(std::set<SdfPath>()),    // Paths to HdTexture Nodes
-          hdPrimvarNodes(std::set<SdfPath>()) {}  // Paths to HdPrimvar nodes
-    MaterialX::StringMap mxHdTextureMap;
-    std::set<SdfPath> hdTextureNodes;
-    std::set<SdfPath> hdPrimvarNodes;
+    HdMtlxTexturePrimvarData() = default;
+    using TextureMap = std::map<std::string, std::set<std::string>>;
+    TextureMap mxHdTextureMap; // Mx-Hd texture name mapping
+    std::set<SdfPath> hdTextureNodes; // Paths to HdTexture Nodes
+    std::set<SdfPath> hdPrimvarNodes; // Paths to HdPrimvar nodes
 };
 
 /// Creates and returns a MaterialX Document from the given HdMaterialNetwork2 

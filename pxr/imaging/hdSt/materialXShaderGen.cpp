@@ -508,11 +508,9 @@ HdStMaterialXShaderGen<Base>::_EmitMxVertexDataDeclarations(
     }
 
     for (size_t i = 0; i < block.size(); ++i) {
-        line += _EmitMxVertexDataLine(block[i], separator);
-        // remove the separator from the last data line
-        if (i == block.size() - 1) {
-            line = line.substr(0, line.size() - separator.size());
-        }
+        auto const& lineSeparator =
+            (i == block.size() - 1) ? mx::EMPTY_STRING : separator;
+        line += _EmitMxVertexDataLine(block[i], lineSeparator);
     }
 
     // add ending ) or }
@@ -548,6 +546,10 @@ HdStMaterialXShaderGen<Base>::_EmitMxVertexDataLine(
 
         hdVariableDef  = "HdGet_points()" + separator;
     }
+    else if (mxVariableName.compare(mx::HW::T_NORMAL_OBJECT) == 0) {
+
+        hdVariableDef  = "HdGet_normals()" + separator;
+    }
     else if (mxVariableName.compare(0, mx::HW::T_TEXCOORD.size(), 
                                     mx::HW::T_TEXCOORD) == 0) {
         
@@ -555,12 +557,14 @@ HdStMaterialXShaderGen<Base>::_EmitMxVertexDataLine(
         // the st primvar
         hdVariableDef = TfStringPrintf("\n"
                 "    #ifdef HD_HAS_%s\n"
-                "        HdGet_%s(),\n"
+                "        HdGet_%s()%s\n"
                 "    #else\n"
-                "        %s(0.0),\n"
+                "        %s(0.0)%s\n"
                 "    #endif\n        ", 
                 _defaultTexcoordName.c_str(), _defaultTexcoordName.c_str(),
-                Base::_syntax->getTypeName(variable->getType()).c_str());
+                separator.c_str(),
+                Base::_syntax->getTypeName(variable->getType()).c_str(),
+                separator.c_str());
     }
     else if (mxVariableName.compare(0, mx::HW::T_IN_GEOMPROP.size(), 
                                     mx::HW::T_IN_GEOMPROP) == 0) {
@@ -584,12 +588,14 @@ HdStMaterialXShaderGen<Base>::_EmitMxVertexDataLine(
         }
         hdVariableDef = TfStringPrintf("\n"
                 "    #ifdef HD_HAS_%s\n"
-                "        HdGet_%s(),\n"
+                "        HdGet_%s()%s\n"
                 "    #else\n"
-                "        %s,\n"
+                "        %s%s\n"
                 "    #endif\n        ", 
                 geompropName.c_str(), geompropName.c_str(),
-                defaultValueString.c_str());
+                separator.c_str(),
+                defaultValueString.c_str(),
+                separator.c_str());
     }
     else {
         const std::string valueStr = variable->getValue() 
