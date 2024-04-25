@@ -1160,6 +1160,15 @@ int main(int argc, char *argv[])
         // hydra's first-class support for render settings scene description.
         fprintf(stdout, "Rendering using the experimentalRenderSpec dictionary...\n");
         for (auto product: renderSpec.products) {
+
+            if (product.type != TfToken("raster")) {
+                TF_WARN(
+                    "Skipping product %s because product type %s is not"
+                    "supported in the renderSpec path.",
+                    product.name.GetText(), product.type.GetText());
+                
+                continue;
+            }
             printf("Rendering product %s...\n", product.name.GetText());
 
             HydraSetupCameraInfo camInfo = ApplyCommandLineArgsToProduct(
@@ -1171,9 +1180,6 @@ int main(int argc, char *argv[])
             // Create and save the RenderSpecDict to the HdRenderSettingsMap
             settingsMap[HdPrmanRenderSettingsTokens->experimentalRenderSpec] =
                 CreateRenderSpecDict(renderSpec, product);
-
-            // Only allow "raster" for now.
-            TF_VERIFY(product.type == TfToken("raster"));
 
             AddVisualizerStyle(visualizerStyle, &settingsMap);
             AddNamespacedSettings(product.namespacedSettings, &settingsMap);
