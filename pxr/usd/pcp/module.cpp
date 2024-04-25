@@ -34,6 +34,7 @@ TF_WRAP_MODULE
     TF_WRAP( Cache );
     TF_WRAP( Errors );
     TF_WRAP( InstanceKey );
+    TF_WRAP( LayerRelocatesEditBuilder );
 
     TF_WRAP( ExpressionVariablesSource ); // Required by LayerStackIdentifier
     TF_WRAP( LayerStackIdentifier );

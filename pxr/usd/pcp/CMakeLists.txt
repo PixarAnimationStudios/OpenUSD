@@ -34,6 +34,7 @@ pxr_library(pcp
         expressionVariablesSource
         instanceKey
         iterator
+        layerRelocatesEditBuilder
         layerStack
         layerStackIdentifier
         mapExpression
@@ -79,6 +80,7 @@ pxr_library(pcp
         wrapExpressionVariablesSource.cpp
         wrapInstanceKey.cpp
         wrapPrimIndex.cpp
+        wrapLayerRelocatesEditBuilder.cpp
         wrapLayerStack.cpp
         wrapLayerStackIdentifier.cpp
         wrapMapExpression.cpp
@@ -117,6 +119,7 @@ pxr_test_scripts(
     testenv/testPcpRegressionBugs_bug90706.py
     testenv/testPcpRegressionBugs_bug92955.py
     testenv/testPcpRegressionBugs_bug101300.py
+    testenv/testPcpLayerRelocatesEditBuilder.py
     testenv/testPcpResolvedPathChange.py
     testenv/testPcpStreamingLayerReload.py
     testenv/testPcpCompositionResults.py
@@ -2126,5 +2129,11 @@ pxr_register_test(testPcpStreamingLayerReload
 pxr_register_test(testPcpOwner
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpOwner"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testPcpLayerRelocatesEditBuilder
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpLayerRelocatesEditBuilder"
     EXPECTED_RETURN_CODE 0
 )
