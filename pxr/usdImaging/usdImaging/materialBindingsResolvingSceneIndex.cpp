@@ -451,13 +451,12 @@ UsdImagingMaterialBindingsResolvingSceneIndex::_PrimsDirtied(
         if (entry.dirtyLocators.Intersects(usdMaterialBindingLocators)) {
 
             HdDataSourceLocatorSet newLocators(entry.dirtyLocators);
-            newLocators.ReplacePrefix(
+            newLocators = newLocators.ReplacePrefix(
                 UsdImagingDirectMaterialBindingsSchema::GetDefaultLocator(),
                 HdMaterialBindingsSchema::GetDefaultLocator());
-            newLocators.ReplacePrefix(
+            newLocators = newLocators.ReplacePrefix(
                 UsdImagingCollectionMaterialBindingsSchema::GetDefaultLocator(),
                 HdMaterialBindingsSchema::GetDefaultLocator());
-
             newEntries.push_back({entry.primPath, newLocators});
         } else {
             newEntries.push_back(entry);
