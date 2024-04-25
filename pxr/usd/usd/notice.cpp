@@ -56,13 +56,13 @@ UsdNotice::StageNotice::StageNotice(const UsdStageWeakPtr& stage) :
 {
 }
 
-UsdNotice::StageNotice::~StageNotice() {}
+UsdNotice::StageNotice::~StageNotice() = default;
 
-UsdNotice::StageContentsChanged::~StageContentsChanged() {}
+UsdNotice::StageContentsChanged::~StageContentsChanged() = default;
 
-UsdNotice::StageEditTargetChanged::~StageEditTargetChanged() {}
+UsdNotice::StageEditTargetChanged::~StageEditTargetChanged() = default;
 
-UsdNotice::LayerMutingChanged::~LayerMutingChanged() {}
+UsdNotice::LayerMutingChanged::~LayerMutingChanged() = default;
 
 TfTokenVector 
 UsdNotice::ObjectsChanged::PathRange::const_iterator::GetChangedFields() const
