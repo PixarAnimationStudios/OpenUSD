@@ -2590,7 +2590,9 @@ _GetOutputParamsAndUpdateRmanNames(
                  settingName.GetText(), "driver:parameters:aov:")) {
             RtUString name(TfStringGetSuffix(settingName, ':').c_str());
             if (name == RixStr.k_name) {
-                hdAovName = settingVal.UncheckedGet<TfToken>();
+                hdAovName = settingVal.IsHolding<std::string>() ?
+                    TfToken(settingVal.Get<std::string>().c_str()) :
+                    settingVal.Get<TfToken>();
             } else {
                 HdPrman_Utils::SetParamFromVtValue(name, settingVal,
                     TfToken(), &params);
