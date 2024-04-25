@@ -599,7 +599,7 @@ HdStRenderDelegate::_ApplyTextureSettings()
                      HdStVolume::defaultMaxTextureMemoryPerField));
 
     _resourceRegistry->SetMemoryRequestForTextureType(
-        HdTextureType::Field, 1048576 * memInMb);
+        HdStTextureType::Field, 1048576 * memInMb);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

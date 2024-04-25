@@ -237,7 +237,6 @@ pxr_library(tf
         instantiateType.h
         meta.h
         pxrCLI11/CLI11.h
-        pxrPEGTL/pegtl.h
         pxrTslRobinMap/robin_growth_policy.h
         pxrTslRobinMap/robin_hash.h
         pxrTslRobinMap/robin_map.h

@@ -732,6 +732,8 @@ void wrapLayer()
                       &This::GetDefaultPrim,
                       &This::SetDefaultPrim,
                       "The layer's default reference target token.")
+        .def("GetDefaultPrimAsPath",
+             &This::GetDefaultPrimAsPath)
         .def("HasDefaultPrim",
              &This::HasDefaultPrim)
         .def("ClearDefaultPrim",

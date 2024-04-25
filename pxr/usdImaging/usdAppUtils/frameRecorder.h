@@ -70,8 +70,7 @@ public:
     USDAPPUTILS_API
     UsdAppUtilsFrameRecorder(
         const TfToken& rendererPluginId = TfToken(),
-        bool gpuEnabled = true,
-        const SdfPath& renderSettingsPrimPath = SdfPath());
+        bool gpuEnabled = true);
 
     /// Gets the ID of the Hydra renderer plugin that will be used for
     /// recording.
@@ -91,6 +90,20 @@ public:
 
         return succeeded;
     }
+
+    /// Sets the path to the render pass prim to use.
+    ///
+    /// \note If there is a render settings prim designated by the
+    /// render pass prim via renderSource, it must also be set
+    /// with SetActiveRenderSettingsPrimPath().
+    USDAPPUTILS_API
+    void SetActiveRenderPassPrimPath(SdfPath const& path);
+
+    /// Sets the path to the render settings prim to use.
+    ///
+    /// \see SetActiveRenderPassPrimPath()
+    USDAPPUTILS_API
+    void SetActiveRenderSettingsPrimPath(SdfPath const& path);
 
     /// Sets the width of the recorded image.
     ///
@@ -164,6 +177,7 @@ private:
     float _complexity;
     TfToken _colorCorrectionMode;
     TfTokenVector _purposes;
+    SdfPath _renderPassPrimPath;
     SdfPath _renderSettingsPrimPath;
     bool _cameraLightEnabled;
 };

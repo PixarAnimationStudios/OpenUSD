@@ -33,9 +33,6 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
-#include "pxr/usd/usdGeom/tetMesh.h"
-
-#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -49,19 +46,18 @@ _ComputeMeshTopologyDataSource(
     HdTetMeshTopologySchema meshTopoSchema = 
         HdTetMeshSchema::GetFromParent(primDataSource).GetTopology();
     // Get the TetVertexIndices
-    const HdVec4iArrayDataSourceHandle tetVertexIndicesDS =
-        meshTopoSchema.GetTetVertexIndices();
+    const HdVec3iArrayDataSourceHandle surfaceFaceIndicesDS =
+        meshTopoSchema.GetSurfaceFaceVertexIndices();
 
-    if (!tetVertexIndicesDS) {
+    if (!surfaceFaceIndicesDS) {
         return HdMeshTopologySchema::Builder()
             .SetOrientation(meshTopoSchema.GetOrientation())
             .Build();
     }
 
     // Compute the FaceVertexIndices and FaceVertexIndicesCounts
-    const VtVec3iArray surfaceFaceIndices =
-        UsdGeomTetMesh::ComputeSurfaceFaces(
-            tetVertexIndicesDS->GetTypedValue(0.0f));
+    const VtVec3iArray surfaceFaceIndices = 
+            surfaceFaceIndicesDS->GetTypedValue(0.0f);
 
     const size_t n = surfaceFaceIndices.size();
     VtIntArray faceVertexCounts(n, 3);

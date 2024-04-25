@@ -868,11 +868,6 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
     // When not using storm, initialize the camera light transform based on
     // the SimpleLight position
     else if (_simpleLightTaskId.IsEmpty()) {
-        GfMatrix4d trans(1.0);
-        const GfVec4d& pos = light.GetPosition();
-        trans.SetTranslateOnly(GfVec3d(pos[0], pos[1], pos[2]));
-        _delegate.SetParameter(pathName, HdTokens->transform, VtValue(trans));
-
         // Initialize distant light specific parameters
         _delegate.SetParameter(pathName, HdLightTokens->angle, 
             VtValue(DISTANT_LIGHT_ANGLE));
@@ -1800,20 +1795,6 @@ HdxTaskController::_SetBuiltInLightingState(
             }
             GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
                 _lightIds[i], HdLight::DirtyParams | HdLight::DirtyTransform);
-        }
-
-        // Update the camera light transform if needed
-        if (_simpleLightTaskId.IsEmpty() && !activeLight.IsDomeLight()) {
-            GfMatrix4d const& viewInvMatrix = 
-                _freeCameraSceneDelegate->GetTransform(
-                    _freeCameraSceneDelegate->GetCameraId());
-            VtValue trans = VtValue(viewInvMatrix * activeLight.GetTransform());
-            VtValue prevTrans = _delegate.Get(_lightIds[i], HdTokens->transform);
-            if (viewInvMatrix != GfMatrix4d(1.0) && trans != prevTrans) {
-                _delegate.SetParameter(_lightIds[i], HdTokens->transform, trans);
-                GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
-                    _lightIds[i], HdLight::DirtyTransform);
-            }
         }
     }
 }

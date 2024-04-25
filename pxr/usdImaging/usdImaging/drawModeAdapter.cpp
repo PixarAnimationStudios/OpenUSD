@@ -37,6 +37,7 @@
 #include "pxr/usd/usdGeom/modelAPI.h"
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/usd/sdr/shaderNode.h"
+#include "pxr/usd/usd/prim.h"
 
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/tf/type.h"
@@ -215,7 +216,10 @@ UsdImagingDrawModeAdapter::Populate(UsdPrim const& prim,
                                     UsdImagingInstancerContext const*
                                        instancerContext)
 {
-    SdfPath cachePath = ResolveCachePath(prim.GetPath(), instancerContext);
+    const SdfPath cachePath = ResolveCachePath(
+        prim.GetPath(), instancerContext);
+    const SdfPath proxyPrimPath = ResolveProxyPrimPath(
+        cachePath, instancerContext);
 
     // The draw mode adapter only supports models or unloaded prims.
     // This is enforced in UsdImagingDelegate::_IsDrawModeApplied.
@@ -244,10 +248,10 @@ UsdImagingDrawModeAdapter::Populate(UsdPrim const& prim,
         instancerContext->instancerAdapter :
         shared_from_this();
 
-    // If this prim isn't instanced, cachePrim will be the same as "prim", but
+    // If this prim isn't instanced, proxyPrim will be the same as "prim", but
     // if it is instanced the instancer adapters expect us to pass in this
     // prim, which should point to the instancer.
-    UsdPrim cachePrim = _GetPrim(cachePath.GetAbsoluteRootOrPrimPath());
+    UsdPrim proxyPrim = _GetPrim(proxyPrimPath);
 
     if (drawMode == UsdGeomTokens->origin ||
         drawMode == UsdGeomTokens->bounds) {
@@ -261,7 +265,7 @@ UsdImagingDrawModeAdapter::Populate(UsdPrim const& prim,
         _drawModeMap.insert({ cachePath, drawMode });
 
         index->InsertRprim(HdPrimTypeTokens->basisCurves,
-            cachePath, cachePrim, rprimAdapter);
+            cachePath, proxyPrim, rprimAdapter);
         HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
     } else if (drawMode == UsdGeomTokens->cards) {
         // Cards draw as a mesh
@@ -274,7 +278,7 @@ UsdImagingDrawModeAdapter::Populate(UsdPrim const& prim,
         _drawModeMap.insert({ cachePath, drawMode });
 
         index->InsertRprim(HdPrimTypeTokens->mesh,
-            cachePath, cachePrim, rprimAdapter);
+            cachePath, proxyPrim, rprimAdapter);
         HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
     } else {
         TF_CODING_ERROR("Model <%s> has unsupported drawMode '%s'",
@@ -284,16 +288,12 @@ UsdImagingDrawModeAdapter::Populate(UsdPrim const& prim,
 
     // As long as we're passing cachePrim to InsertRprim, we need to fix up
     // the dependency map ourselves. For USD edit purposes, we depend on the
-    // prototype prim ("prim"), rather than the instancer prim.
+    // prototype prim ("prim"), rather than the instancer prim ("proxyPrim").
     // See similar code in GprimAdapter::_AddRprim.
     if (instancerContext != nullptr) {
         index->RemovePrimInfoDependency(cachePath);
         index->AddDependency(cachePath, prim);
     }
-
-    // When instancing, cachePath may have a proto prop part on the end.
-    // This will strip the prop part, leaving primPath as the instancer's path.
-    SdfPath primPath = cachePath.GetAbsoluteRootOrPrimPath();
 
     // Additionally, insert the material.
     if (drawMode == UsdGeomTokens->cards) {

@@ -29,13 +29,13 @@
 
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/bufferArrayRegistry.h"
+#include "pxr/imaging/hdSt/enums.h"
 
 #include "pxr/imaging/hgi/hgi.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/bufferSpec.h"
-#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 
@@ -161,7 +161,7 @@ public:
         /// file containing several grids, movie file containing frames).
         const HdStTextureIdentifier &textureId,
         /// Texture type, e.g., uv, ptex, ...
-        HdTextureType textureType,
+        HdStTextureType textureType,
         /// Sampling parameters such as wrapS, ...
         /// wrapS, wrapT, wrapR mode, min filer, mag filter
         const HdSamplerParameters &samplerParams,
@@ -188,7 +188,7 @@ public:
         /// file containing several grids, movie file containing frames).
         const HdStTextureIdentifier &textureId,
         /// Texture type, e.g., uv, ptex, ...
-        HdTextureType textureType);
+        HdStTextureType textureType);
 
     /// Sets how much memory a single texture can consume in bytes by
     /// texture type.
@@ -199,7 +199,7 @@ public:
     ///
     HDST_API
     void SetMemoryRequestForTextureType(
-        HdTextureType textureType,
+        HdStTextureType textureType,
         size_t memoryRequest);
 
     /// ------------------------------------------------------------------------

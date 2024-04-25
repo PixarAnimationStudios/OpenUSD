@@ -59,10 +59,10 @@ _IsDynamic(const HdStTextureIdentifier &textureId)
 HdStTextureObjectSharedPtr
 HdSt_TextureObjectRegistry::_MakeTextureObject(
     const HdStTextureIdentifier &textureId,
-    const HdTextureType textureType)
+    const HdStTextureType textureType)
 {
     switch(textureType) {
-    case HdTextureType::Uv:
+    case HdStTextureType::Uv:
         if (_IsDynamic(textureId)) {
             return
                 std::make_shared<HdStDynamicUvTextureObject>(textureId, this);
@@ -70,11 +70,11 @@ HdSt_TextureObjectRegistry::_MakeTextureObject(
             return
                 std::make_shared<HdStAssetUvTextureObject>(textureId, this);
         }
-    case HdTextureType::Field:
+    case HdStTextureType::Field:
         return std::make_shared<HdStFieldTextureObject>(textureId, this);
-    case HdTextureType::Ptex:
+    case HdStTextureType::Ptex:
         return std::make_shared<HdStPtexTextureObject>(textureId, this);
-    case HdTextureType::Udim:
+    case HdStTextureType::Udim:
         return std::make_shared<HdStUdimTextureObject>(textureId, this);
     }
 
@@ -86,7 +86,7 @@ HdSt_TextureObjectRegistry::_MakeTextureObject(
 HdStTextureObjectSharedPtr
 HdSt_TextureObjectRegistry::AllocateTextureObject(
     const HdStTextureIdentifier &textureId,
-    const HdTextureType textureType)
+    const HdStTextureType textureType)
 {
     // Check with instance registry and allocate texture and sampler object
     // if first object.

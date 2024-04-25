@@ -1355,6 +1355,20 @@ UsdImagingGLEngine::SetRendererSetting(TfToken const& id, VtValue const& value)
 }
 
 void
+UsdImagingGLEngine::SetActiveRenderPassPrimPath(SdfPath const &path)
+{
+    if (ARCH_UNLIKELY(!_appSceneIndices)) {
+        return;
+    }
+    auto &sgsi = _appSceneIndices->sceneGlobalsSceneIndex;
+    if (ARCH_UNLIKELY(!sgsi)) {
+        return;
+    }
+
+    sgsi->SetActiveRenderPassPrimPath(path);
+}
+
+void
 UsdImagingGLEngine::SetActiveRenderSettingsPrimPath(SdfPath const &path)
 {
     if (ARCH_UNLIKELY(!_appSceneIndices)) {

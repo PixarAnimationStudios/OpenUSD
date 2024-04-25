@@ -269,7 +269,10 @@ public:
 
     /// Return a C++ RTTI type_info for this type.
     ///
-    /// If this type is unknown or has not yet had a C++ type defined,
+    /// If this type is unknown, this will return a unique \c type_info
+    /// specifically for the unknown type.
+    ///
+    /// If this type has been declared, but not yet had a C++ type defined,
     /// \c typeid(void) will be returned.
     ///
     /// \see Define()
@@ -714,6 +717,20 @@ private:
                         size_t sizeofType,
                         bool isPodType,
                         bool isEnumType) const;
+
+    TF_API
+    static TfType const &_DeclareImpl(
+        const std::type_info &thisTypeInfo,
+        const std::type_info **baseTypeInfos,
+        size_t numBaseTypes);
+
+    TF_API
+    static TfType const &_DefineImpl(
+        const std::type_info &thisTypeInfo,
+        const std::type_info **baseTypeInfos,
+        _CastFunction *castFunctions,
+        size_t numBaseTypes,
+        size_t sizeofThisType, bool isPod, bool isEnum);
 
     // Execute the definition callback if one exists.
     void _ExecuteDefinitionCallback() const;

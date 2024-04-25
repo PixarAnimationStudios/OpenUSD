@@ -1,5 +1,5 @@
 //
-// Copyrighty 2020 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -123,7 +123,7 @@ My_TestGLDrawing::OffscreenTest()
     HdStTextureObjectSharedPtr const texture =
         _textureRegistry->AllocateTextureObject(
             HdStTextureIdentifier(TfToken("texture.png")),
-            HdTextureType::Uv);
+            HdStTextureType::Uv);
 
     // Call Commit on both registries to ensure that the shared HgiBlitCmds
     // is submitted in the resource registry.
@@ -200,7 +200,7 @@ My_TestGLDrawing::OffscreenTest()
     HdStTextureObjectSharedPtr const hiResTexture =
         _textureRegistry->AllocateTextureObject(
             HdStTextureIdentifier(TfToken("hiResTexture.png")),
-            HdTextureType::Uv);
+            HdStTextureType::Uv);
 
     // Call Commit on both registries to ensure that the shared HgiBlitCmds
     // is submitted in the resource registry.

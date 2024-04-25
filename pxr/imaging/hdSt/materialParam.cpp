@@ -34,7 +34,7 @@ HdSt_MaterialParam::HdSt_MaterialParam()
     , name()
     , fallbackValue()
     , samplerCoords()
-    , textureType(HdTextureType::Uv)
+    , textureType(HdStTextureType::Uv)
     , swizzle()
     , isPremultiplied(false)
     , arrayOfTexturesSize(0)
@@ -45,7 +45,7 @@ HdSt_MaterialParam::HdSt_MaterialParam(ParamType paramType,
                                  TfToken const& name, 
                                  VtValue const& fallbackValue,
                                  TfTokenVector const& samplerCoords,
-                                 HdTextureType textureType,
+                                 HdStTextureType textureType,
                                  std::string const& swizzle,
                                  bool const isPremultiplied,
                                  size_t const arrayOfTexturesSize)

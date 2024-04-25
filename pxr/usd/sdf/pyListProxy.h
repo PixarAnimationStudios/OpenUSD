@@ -81,6 +81,7 @@ private:
             .def("ApplyList", &Type::ApplyList)
             .def("ApplyEditsToList", &This::_ApplyEditsToList)
             .add_property("expired", &This::_IsExpired)
+            .add_static_property("invalidIndex", &This::_GetInvalidIndex)
             .def(self == self)
             .def(self != self)
             .def(self <  self)
@@ -234,13 +235,24 @@ private:
         }
     }
 
+    static int _GetInvalidIndex()
+    {
+        // Note that SdfListProxy::Find returns an unsigned value, however the 
+        // wrapped class returns -1 in the event that a value could not be found
+        // in the list of operations.
+        return -1;
+    }
+
     static int _FindIndex(const Type& x, const value_type& value)
     {
         if (x._Validate()) {
-            return static_cast<int>(x.Find(value));
+            const size_t index = x.Find(value);
+            return index == Type::invalidIndex 
+                ? _GetInvalidIndex() 
+                : static_cast<int>(index); 
         }
         else {
-            return -1;
+            return _GetInvalidIndex();
         }
     }
 

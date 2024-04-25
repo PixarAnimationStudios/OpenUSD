@@ -1597,6 +1597,21 @@ SdfLayer::GetDefaultPrim() const
     return _GetValue<TfToken>(SdfFieldKeys->DefaultPrim);
 }
 
+SdfPath
+SdfLayer::GetDefaultPrimAsPath() const
+{
+    std::string pathString = 
+        _GetValue<TfToken>(SdfFieldKeys->DefaultPrim).GetString();
+    SdfPath path = SdfPath::IsValidPathString(pathString)
+        ? SdfPath(pathString)
+        : SdfPath();
+    return path.IsPrimPath()
+        ? path.IsAbsolutePath()
+            ? path
+            : path.MakeAbsolutePath(SdfPath::AbsoluteRootPath())
+        : SdfPath();
+}
+
 void
 SdfLayer::ClearDefaultPrim()
 {
@@ -3065,9 +3080,10 @@ SdfLayer::IsEmpty() const
     // XXX: What about documentation/frames?  I don't
     // think these get composed or exposed through composition, so I don't think
     // they matter for the sake of this query.
-    return GetRootPrims().empty()  && 
+    return GetRootPrims().empty() && 
         GetRootPrimOrder().empty() && 
-        GetSubLayerPaths().empty();
+        GetSubLayerPaths().empty() &&
+        GetRelocates().empty();
 }
 
 bool

@@ -58,6 +58,10 @@ public:
     typedef typename TypePolicy::value_type value_type;
     typedef std::vector<value_type> value_vector_type;
 
+    /// Returned from \ref Find when a value could not be located in the
+    /// list of operations. 
+    static const size_t invalidIndex = -1;
+
 private:
     // Proxies an item in a list editor list.
     class _ItemProxy {
@@ -600,9 +604,11 @@ public:
         return (_Validate() ? _listEditor->Count(_op, value) : 0);
     }
 
+    /// Returns the index of \p value in the list of operations.  If \p value
+    /// is not found, then \ref invalidIndex is returned instead.
     size_t Find(const value_type& value) const
     {
-        return (_Validate() ? _listEditor->Find(_op, value) : size_t(-1));
+        return (_Validate() ? _listEditor->Find(_op, value) : invalidIndex);
     }
 
     void Insert(int index, const value_type& value)
@@ -616,7 +622,7 @@ public:
     void Remove(const value_type& value)
     {
         size_t index = Find(value);
-        if (index != size_t(-1)) {
+        if (index != invalidIndex) {
             Erase(index);
         }
         else {

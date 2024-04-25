@@ -35,6 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_TOKENS                               \
     (accelerations)                             \
     (adjacency)                                 \
+    (angularVelocities)                         \
     (bboxLocalMin)                              \
     (bboxLocalMax)                              \
     (bbox)                                      \
@@ -331,6 +332,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     HD_RPRIMTYPE_TOKENS                         \
     HD_SPRIMTYPE_TOKENS                         \
     HD_BPRIMTYPE_TOKENS                         \
+    /* Scene-index-only prim types */           \
+    (renderPass)
 
 HD_API
 bool HdPrimTypeIsGprim(TfToken const& primType);

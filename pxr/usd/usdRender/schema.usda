@@ -229,20 +229,20 @@ class RenderProduct "RenderProduct" (
     """
     customData = {
          string className = "Product"
-         dictionary schemaTokens = {
-            dictionary raster = {
-                string doc = """RenderProduct productType value that
-                indicates a 2D raster image of pixels."""
-            }
-         }
     }
 ) {
     uniform token productType = "raster" (
-        doc = """The type of output to produce.
-        The default, "raster", indicates a 2D image.
+        allowedTokens = ["raster", "deepRaster"]
+        doc = """The type of output to produce; allowed values are ones most 
+        renderers should be able to support.
+        Renderers that support custom output types are encouraged to supply an 
+        applied API schema that will add an `token myRendererTag:productType`
+        attribute, which will override this attribute's value for that renderer. 
 
-        \\note In the future, UsdRender may define additional product
-        types."""
+        - "raster": This is the default type and indicates a 2D raster image of
+          pixels.
+        - "deepRaster": Indicates a deep image that contains multiple samples
+          per pixel at varying depths."""
     )
     token productName = "" (
         doc = """Specifies the name that the output/display driver

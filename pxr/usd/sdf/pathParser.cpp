@@ -26,7 +26,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using namespace tao::TAO_PEGTL_NAMESPACE;
+using namespace PXR_PEGTL_NAMESPACE;
 
 namespace Sdf_PathParser {
 

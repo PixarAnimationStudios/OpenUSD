@@ -151,13 +151,80 @@ class TestPython(unittest.TestCase):
             Tf._CallThrowTest(lambda : Tf._ThrowTest('py-to-cpp-to-py'))
         print(cm.exception)
 
-    def test_StaticMethodPosting(self):
-        with self.assertRaises(Tf.ErrorException):
-            Tf._TestStaticMethodError.Error()
-
+    def test_DiagnosticsFromPython(self):
         Tf.Warn("expected warning, for coverage")
-
         Tf.Status("expected status message, for coverage")
+
+    def test_InvokeWithErrorHandling(self):
+        """Verify that Tf errors emitted from Python-wrapped C++ functions
+        are converted to Python exceptions."""
+        def testClass(cls):
+            with self.assertRaises(Tf.ErrorException):
+                obj = cls()
+
+            with self.assertRaises(Tf.ErrorException):
+                obj = cls("overload")
+
+            with self.assertRaises(Tf.ErrorException):
+                cls.StaticMethod()
+
+            with self.assertRaises(Tf.ErrorException):
+                cls.StaticMethod("overload")
+
+            with self.assertRaises(Tf.ErrorException):
+                cls.ClassMethod()
+
+            with self.assertRaises(Tf.ErrorException):
+                cls.ClassMethod("overload")
+
+            obj = cls.Create()
+
+            with self.assertRaises(Tf.ErrorException):
+                obj.InstanceMethod()
+
+            with self.assertRaises(Tf.ErrorException):
+                obj.InstanceMethod("overload")
+
+            with self.assertRaises(Tf.ErrorException):
+                value = obj.property
+
+            with self.assertRaises(Tf.ErrorException):
+                obj.property = "Set value"
+
+            with self.assertRaises(Tf.ErrorException):
+                value = obj.property_2
+
+            with self.assertRaises(Tf.ErrorException):
+                obj.property_2 = "Set value"
+
+            # XXX: 
+            # Methods wrapped as static properties currently do not
+            # translate Tf errors to Python exceptions as expected.
+
+            # with self.assertRaises(Tf.ErrorException):
+            #     value = obj.static_property
+
+            # with self.assertRaises(Tf.ErrorException):
+            #     obj.static_property = "Set value"
+
+            # with self.assertRaises(Tf.ErrorException):
+            #     value = obj.static_property_2
+
+            # with self.assertRaises(Tf.ErrorException):
+            #     obj.static_property_2 = "Set value"
+
+        testClass(Tf._TestErrorClass1)
+        testClass(Tf._TestErrorClass1._TestErrorClass2)
+
+        def testFunction(fn):
+            with self.assertRaises(Tf.ErrorException):
+                fn()
+
+            with self.assertRaises(Tf.ErrorException):
+                fn("overload")
+
+        testFunction(Tf._TestErrorFunction)
+        testFunction(Tf._TestErrorClass1._TestErrorFunction)
 
     def test_NoticeListener(self):
         global noticesHandled

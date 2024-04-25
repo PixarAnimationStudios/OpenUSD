@@ -165,6 +165,7 @@
         SCHEMA_TOKEN = 'topology',
         MEMBERS = [
             ('tetVertexIndices', T_VEC4IARRAY, dict(ADD_LOCATOR = True)),
+            ('surfaceFaceVertexIndices', T_VEC3IARRAY, dict(ADD_LOCATOR = True)),
             ('orientation', T_TOKEN, {}),
         ],
         IMPL_SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/tetMeshSchema'],
@@ -732,6 +733,20 @@
     ),
 
     #--------------------------------------------------------------------------
+    # renderPass
+    dict(
+        SCHEMA_NAME = 'RenderPass',
+        SCHEMA_TOKEN = 'renderPass',
+        ADD_DEFAULT_LOCATOR = True,
+        SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/schemaTypeDefs'],
+        MEMBERS = [
+            ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
+            ('passType', T_TOKEN, {}),
+            ('renderSource', T_PATH, {}),
+        ],
+    ),
+
+    #--------------------------------------------------------------------------
     # renderSettings
     dict(
         SCHEMA_NAME = 'RenderSettings',
@@ -873,6 +888,7 @@
         SCHEMA_NAME = 'Camera',
         SCHEMA_TOKEN = 'camera',
         SCHEMA_INCLUDES = [
+            '{{LIBRARY_PATH}}/schemaTypeDefs',
             '{{LIBRARY_PATH}}/splitDiopterSchema',
             '{{LIBRARY_PATH}}/lensDistortionSchema'],
         ADD_DEFAULT_LOCATOR = True,
@@ -894,6 +910,7 @@
             ('dofAspect', T_FLOAT, {}),
             ('splitDiopter', 'HdSplitDiopterSchema', {}),
             ('lensDistortion', 'HdLensDistortionSchema', {}),
+            ('namespacedProperties', 'HdSampledDataSourceContainerContainerSchema', dict(ADD_LOCATOR = True)),
         ],
         STATIC_TOKEN_DATASOURCE_BUILDERS = [ # optional for shared token ds's
             ('projection', ['perspective', 'orthographic']),
@@ -1150,11 +1167,12 @@
     dict(
         SCHEMA_NAME = 'SceneGlobals',
         DOC = '''The {{ SCHEMA_CLASS_NAME }} encapsulates "global" state to orchestrate a
-                 render. It currently houses the active render settings prim path that
-                 describes the information necessary to generate images from a single
-                 invocation of a renderer, and the active time sample range that
-                 may be relevant to downstream scene indices (e.g. procedural
-                 evaluation).
+                 render. It currently houses the active render settings
+                 and pass prim paths that describe the information
+                 necessary to generate images from a single invocation
+                 of a renderer, and the active time sample range that
+                 may be relevant to downstream scene indices (e.g.
+                 procedural evaluation).
 
                  We shall use the convention of a container data source at the root prim
                  of the scene index that is populated with this global state.
@@ -1164,6 +1182,7 @@
         ADD_DEFAULT_LOCATOR = True,
         MEMBERS = [
             ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
+            ('activeRenderPassPrim', T_PATH, {}),
             ('activeRenderSettingsPrim', T_PATH, {}),
             ('startTimeCode', T_DOUBLE, {}),
             ('endTimeCode', T_DOUBLE, {}),

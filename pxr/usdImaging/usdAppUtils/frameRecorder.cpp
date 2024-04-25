@@ -52,14 +52,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
     const TfToken& rendererPluginId,
-    bool gpuEnabled, 
-    const SdfPath& renderSettingsPrimPath) :
+    bool gpuEnabled) :
     _imagingEngine(HdDriver(), rendererPluginId, gpuEnabled),
     _imageWidth(960u),
     _complexity(1.0f),
     _colorCorrectionMode(HdxColorCorrectionTokens->disabled),
     _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy}),
-    _renderSettingsPrimPath(renderSettingsPrimPath),
     _cameraLightEnabled(true)
 {
     // Disable presentation to avoid the need to create an OpenGL context when
@@ -69,10 +67,23 @@ UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
     // Set the interactive to be false on the HdRenderSettingsMap 
     _imagingEngine.SetRendererSetting(
         HdRenderSettingsTokens->enableInteractive, VtValue(false));
+}
 
-    // Set the Active RenderSettings Prim path when not empty.
-    if (!renderSettingsPrimPath.IsEmpty()) {
-        _imagingEngine.SetActiveRenderSettingsPrimPath(renderSettingsPrimPath);
+void
+UsdAppUtilsFrameRecorder::SetActiveRenderSettingsPrimPath(SdfPath const& path)
+{
+    _renderSettingsPrimPath = path;
+    if (!_renderSettingsPrimPath.IsEmpty()) {
+        _imagingEngine.SetActiveRenderSettingsPrimPath(_renderSettingsPrimPath);
+    }
+}
+
+void 
+UsdAppUtilsFrameRecorder::SetActiveRenderPassPrimPath(SdfPath const& path)
+{
+    _renderPassPrimPath = path;
+    if (!_renderPassPrimPath.IsEmpty()) {
+        _imagingEngine.SetActiveRenderPassPrimPath(_renderPassPrimPath);
     }
 }
 
@@ -410,6 +421,7 @@ UsdAppUtilsFrameRecorder::Record(
         const GfVec3d &cameraPos = frustum.GetPosition();
         GlfSimpleLight cameraLight(
             GfVec4f(cameraPos[0], cameraPos[1], cameraPos[2], 1.0f));
+        cameraLight.SetTransform(frustum.ComputeViewInverse());
         cameraLight.SetAmbient(SCENE_AMBIENT);
         lights.push_back(cameraLight);
     }

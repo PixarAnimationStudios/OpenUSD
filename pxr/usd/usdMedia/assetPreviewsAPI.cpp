@@ -210,13 +210,12 @@ UsdMediaAssetPreviewsAPI::GetAssetDefaultPreviews(const SdfLayerHandle &layer)
         return UsdMediaAssetPreviewsAPI();
     }
     
-    TfToken defaultPrimName = layer->GetDefaultPrim();
-    if (defaultPrimName.IsEmpty()) {
+    SdfPath defaultPrimPath = layer->GetDefaultPrimAsPath();
+    if (defaultPrimPath.IsEmpty()) {
         return UsdMediaAssetPreviewsAPI();
     }
     
     static const TfToken noSuchPrim("__No_Such_Prim__");
-    SdfPath defaultPrimPath = SdfPath::AbsoluteRootPath().AppendChild(defaultPrimName);
     // Technique to limit population to a maximum depth
     SdfPath maskPath = defaultPrimPath.AppendChild(noSuchPrim);
     UsdStagePopulationMask   mask({ maskPath });

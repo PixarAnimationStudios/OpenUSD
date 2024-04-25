@@ -429,10 +429,14 @@ public:
     /// @}
 
     // ---------------------------------------------------------------------
-    /// \name Render Settings (Scene description driven)
+    /// \name Scene-defined Render Pass and Render Settings
     /// \note Support is WIP.
     /// @{
     // ---------------------------------------------------------------------
+
+    /// Set active render pass prim to use to drive rendering.
+    USDIMAGINGGL_API
+    void SetActiveRenderPassPrimPath(SdfPath const &);
     
     /// Set active render settings prim to use to drive rendering.
     USDIMAGINGGL_API

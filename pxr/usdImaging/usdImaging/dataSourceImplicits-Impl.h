@@ -27,32 +27,9 @@
 
 #include "pxr/usdImaging/usdImaging/dataSourceGprim.h"
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
-#include "pxr/usdImaging/usdImaging/dataSourceSchemaBased.h"
+#include "pxr/usdImaging/usdImaging/dataSourceMapped.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-template<typename HdSchemaType>
-struct UsdImagingImplicitsSchemaTranslator
-{
-    static
-    TfToken
-    UsdAttributeNameToHdName(const TfToken &name)
-    {
-        // Skip extent since this is already dealt with
-        // in UsdImagingDataSourcePrim::Get. 
-        if (name == UsdGeomTokens->extent) {
-            return TfToken();
-        }
-        return name;
-    }
-
-    static
-    HdDataSourceLocator
-    GetContainerLocator()
-    {
-        return HdSchemaType::GetDefaultLocator();
-    }
-};
 
 /// \class UsdImagingDataSourceImplicitsPrim
 ///
@@ -69,16 +46,17 @@ public:
 
     TfTokenVector GetNames() override {
         TfTokenVector result = UsdImagingDataSourceGprim::GetNames();
-        result.push_back(_GetLocatorToken());
+        result.push_back(HdSchemaType::GetSchemaToken());
         return result;
 
     }
     HdDataSourceBaseHandle Get(const TfToken &name) override {
-        if (name == _GetLocatorToken()) {
+        if (name == HdSchemaType::GetSchemaToken()) {
             return
-                _DataSource::New(
+                UsdImagingDataSourceMapped::New(
+                    _GetUsdPrim(),
                     _GetSceneIndexPath(),
-                    UsdSchemaType(_GetUsdPrim()),
+                    _GetMappings(),
                     _GetStageGlobals());
         }
 
@@ -92,8 +70,8 @@ public:
                const TfTokenVector &properties,
                const UsdImagingPropertyInvalidationType invalidationType) {
         HdDataSourceLocatorSet locators =
-            _DataSource::Invalidate(
-                subprim, properties);
+            UsdImagingDataSourceMapped::Invalidate(
+                properties, _GetMappings());
 
         locators.insert(
             UsdImagingDataSourceGprim::Invalidate(
@@ -103,11 +81,31 @@ public:
     }
 
 private:
-    using _DataSource =
-        UsdImagingDataSourceSchemaBased<
-            UsdSchemaType,
-            /* UsdSchemaBaseTypes = */ std::tuple<>,
-            UsdImagingImplicitsSchemaTranslator<HdSchemaType>>;
+    static
+    std::vector<UsdImagingDataSourceMapped::AttributeMapping>
+    _GetAttributeMappings() {
+        std::vector<UsdImagingDataSourceMapped::AttributeMapping> result;
+
+        for (const TfToken &usdName :
+                 UsdSchemaType::GetSchemaAttributeNames(
+                     /* includeInherited = */ false)) {
+            if (usdName == UsdGeomTokens->extent) {
+                // Skip extent since this is already dealt with
+                // in UsdImagingDataSourcePrim::Get. 
+                continue;
+            }
+            result.push_back({ usdName, HdDataSourceLocator(usdName)});
+        }
+        return result;
+    }
+    
+    static
+    const UsdImagingDataSourceMapped::AttributeMappings &
+    _GetMappings() {
+        static const UsdImagingDataSourceMapped::AttributeMappings result(
+            _GetAttributeMappings(), HdSchemaType::GetDefaultLocator());
+        return result;
+    }
 
     // Private constructor, use static New() instead.
     UsdImagingDataSourceImplicitsPrim(
@@ -116,25 +114,6 @@ private:
         const UsdImagingDataSourceStageGlobals &stageGlobals)
       : UsdImagingDataSourceGprim(sceneIndexPath, usdPrim, stageGlobals)
     {
-    }
-
-    static 
-    TfToken
-    _GetLocatorTokenUncached() {
-        const HdDataSourceLocator locator =
-            HdSchemaType::GetDefaultLocator();
-        if (locator.GetElementCount() != 1) {
-            TF_CODING_ERROR("Expected data source locator with one element.");
-            return TfToken();
-        }
-        return locator.GetFirstElement();
-    }
-
-    static
-    const TfToken &
-    _GetLocatorToken() {
-        static const TfToken result = _GetLocatorTokenUncached();
-        return result;
     }
 };
 

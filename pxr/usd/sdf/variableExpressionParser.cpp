@@ -27,12 +27,13 @@
 #include "pxr/usd/sdf/debugCodes.h"
 #include "pxr/usd/sdf/variableExpressionImpl.h"
 
-#include "pxr/base/tf/pxrPEGTL/pegtl.h"
+#include "pxr/base/pegtl/pegtl.hpp"
+#include "pxr/base/pegtl/pegtl/contrib/trace.hpp"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <tuple>
 
-using namespace tao::TAO_PEGTL_NAMESPACE;
+using namespace PXR_PEGTL_NAMESPACE;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -305,6 +306,7 @@ private:
 // Parser utilities -----------------------------------------------
 
 template <typename Input>
+[[noreturn]]
 void _ThrowParseError(const Input& in, const std::string& msg)
 {
     // XXX: 
@@ -316,8 +318,7 @@ void _ThrowParseError(const Input& in, const std::string& msg)
     // pegtl 3.x adds API to parse_error to decompose the error message,
     // so we could use that later.
 
-    // throw parse_error(errorMsg, in); 
-    throw parse_error(msg, std::vector<position>{ in.position() });
+    throw parse_error(msg, in); 
 }
 
 // Parser grammar -----------------------------------------------
@@ -444,15 +445,15 @@ struct Integer
 // for users working in those languages while writing expressions.
 struct BooleanTrue
     : sor<
-        TAO_PEGTL_KEYWORD("True"),
-        TAO_PEGTL_KEYWORD("true")
+        PXR_PEGTL_KEYWORD("True"),
+        PXR_PEGTL_KEYWORD("true")
     >
 {};
 
 struct BooleanFalse
     : sor<
-        TAO_PEGTL_KEYWORD("False"),
-        TAO_PEGTL_KEYWORD("false")
+        PXR_PEGTL_KEYWORD("False"),
+        PXR_PEGTL_KEYWORD("false")
     >
 {};
 
@@ -467,8 +468,8 @@ struct Boolean
 
 struct None
     : sor<
-        TAO_PEGTL_KEYWORD("None"),
-        TAO_PEGTL_KEYWORD("none")
+        PXR_PEGTL_KEYWORD("None"),
+        PXR_PEGTL_KEYWORD("none")
     >
 {};
 
@@ -761,7 +762,7 @@ struct Errors
     static const std::string errorMsg;
 
     template <typename Input, typename... States>
-    static void raise(const Input& in, States&&...)
+    [[noreturn]] static void raise(const Input& in, States&&...)
     {
         _ThrowParseError(in, errorMsg);
     }
@@ -797,7 +798,7 @@ MATCH_ERROR(SingleQuotedString::End, R"(Missing ending "'")");
 Sdf_VariableExpressionParserResult
 Sdf_ParseVariableExpression(const std::string& expr)
 {
-    namespace pegtl = tao::TAO_PEGTL_NAMESPACE;
+    namespace pegtl = PXR_PEGTL_NAMESPACE;
 
     ParserContext context;
 
@@ -806,8 +807,7 @@ Sdf_ParseVariableExpression(const std::string& expr)
     try {
         const bool parseSuccess =
             TfDebug::IsEnabled(SDF_VARIABLE_EXPRESSION_PARSING) ?
-            pegtl::parse<Expression, Action, 
-                         pegtl::trace<Errors>::control>(in, context) :
+            pegtl::standard_trace<Expression, Action, Errors>(in, context) :
             pegtl::parse<Expression, Action, Errors>(in, context);
         
         if (!parseSuccess) {
@@ -820,10 +820,10 @@ Sdf_ParseVariableExpression(const std::string& expr)
 
             // XXX: "at character" is probably incorrect if the expression
             // contains Unicode strings?
-            { TfStringPrintf("%s at character %zu", 
-                e.what(), 
-                e.positions.empty() ? 
-                    expr.size() : e.positions.front().byte_in_line) }
+            { TfStringPrintf("%s at character %zu",
+                             std::string(e.message()).c_str(),
+                             e.positions().empty()
+                             ? expr.size() : e.positions().front().column-1) }
         };
      }
 

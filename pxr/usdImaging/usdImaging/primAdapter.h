@@ -494,7 +494,7 @@ public:
     void SetDelegate(UsdImagingDelegate* delegate);
 
     USDIMAGING_API
-    bool IsChildPath(SdfPath const& path) const;
+    virtual bool IsChildPath(const SdfPath& path) const;
     
     /// Returns true if the given prim is visible, taking into account inherited
     /// visibility values. Inherited values are strongest, Usd has no notion of

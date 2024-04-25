@@ -33,7 +33,6 @@
 #include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/base/tf/type.h"
-#include "pxr/usd/usdGeom/tetMesh.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -156,10 +155,11 @@ UsdImagingTetMeshAdapter::GetTopology(UsdPrim const& prim,
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // Compute the surfaceFaceIndices for the Tet Mesh
+    // Get the surfaceFaceIndices attribute for the Tet Mesh
+    const UsdAttribute& surfaceFaceVertexIndicesAttr =
+        UsdGeomTetMesh(prim).GetSurfaceFaceVertexIndicesAttr();
     VtVec3iArray surfaceFaceIndices;
-    UsdGeomTetMesh::ComputeSurfaceFaces(
-        UsdGeomTetMesh(prim), &surfaceFaceIndices, time);
+    surfaceFaceVertexIndicesAttr.Get(&surfaceFaceIndices, time);
 
     // Compute faceVertexIndices and faceVertexCounts for the HdMeshTopology
     const size_t numCounts = surfaceFaceIndices.size();

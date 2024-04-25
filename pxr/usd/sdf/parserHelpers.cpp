@@ -66,7 +66,7 @@ using std::vector;
     if (index + count > vars.size()) {                                     \
         TF_CODING_ERROR("Not enough values to parse value of type %s",     \
                         name);                                             \
-        throw boost::bad_get();                                            \
+        throw std::bad_variant_access();                                            \
     }
 
 inline void
@@ -306,7 +306,7 @@ inline void
 MakeScalarValueImpl(
     SdfOpaqueValue *out, vector<Value> const &vars, size_t &index) {
     TF_CODING_ERROR("Found authored opinion for opaque attribute");
-    throw boost::bad_get();
+    throw std::bad_variant_access();
 }
 
 template <typename T>
@@ -318,7 +318,7 @@ MakeScalarValueTemplate(vector<unsigned int> const &,
     size_t origIndex = index;
     try {
         MakeScalarValueImpl(&t, vars, index);
-    } catch (const boost::bad_get &) {
+    } catch (const std::bad_variant_access &) {
         *errStrPtr = TfStringPrintf("Failed to parse value (at sub-part %zd "
                                     "if there are multiple parts)",
                                     (index - origIndex) - 1);
@@ -347,7 +347,7 @@ MakeShapedValueTemplate(vector<unsigned int> const &shape,
             MakeScalarValueImpl(&(*i), vars, index);
             shapeIndex++;
         }
-    } catch (const boost::bad_get &) {
+    } catch (const std::bad_variant_access &) {
         *errStrPtr = TfStringPrintf("Failed to parse at element %zd "
                                     "(at sub-part %zd if there are "
                                     "multiple parts)", shapeIndex,

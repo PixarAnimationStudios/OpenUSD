@@ -23,7 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/geomModelAPIAdapter.h"
 
-#include "pxr/usdImaging/usdImaging/dataSourceSchemaBased.h"
+#include "pxr/usdImaging/usdImaging/dataSourceMapped.h"
 #include "pxr/usdImaging/usdImaging/geomModelSchema.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/imaging/hd/extentSchema.h"
@@ -38,30 +38,34 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-struct _GeomModelTranslator
+std::vector<UsdImagingDataSourceMapped::AttributeMapping>
+_GetAttributeMappings()
 {
-    static
-    TfToken
-    UsdAttributeNameToHdName(const TfToken &name)
-    {
-        const std::vector<std::string> tokens =
-            SdfPath::TokenizeIdentifier(name.GetString());
-        if (tokens.size() == 2 && tokens[0] == "model") {
-            return TfToken(tokens[1]);
+    std::vector<UsdImagingDataSourceMapped::AttributeMapping> result;
+
+    for (const TfToken &usdName :
+             UsdGeomModelAPI::GetSchemaAttributeNames(
+                 /* includeInherited = */ false)) {
+
+        const std::pair<std::string, bool> nameAndMatch =
+            SdfPath::StripPrefixNamespace(
+                usdName.GetString(), "model");
+        if (nameAndMatch.second) {
+            result.push_back(
+                { usdName,
+                  HdDataSourceLocator(TfToken(nameAndMatch.first)) });
         }
-        return TfToken();
     }
 
-    static
-    HdDataSourceLocator
-    GetContainerLocator()
-    {
-        return UsdImagingGeomModelSchema::GetDefaultLocator();
-    }
-};    
+    return result;
+}
 
-using _GeomModelDataSource = UsdImagingDataSourceSchemaBased<
-    UsdGeomModelAPI, std::tuple<>, _GeomModelTranslator>;
+const UsdImagingDataSourceMapped::AttributeMappings &
+_GetMappings() {
+    static const UsdImagingDataSourceMapped::AttributeMappings result(
+        _GetAttributeMappings(), UsdImagingGeomModelSchema::GetDefaultLocator());
+    return result;
+}
 
 }
 
@@ -83,27 +87,24 @@ UsdImagingGeomModelAPIAdapter::GetImagingSubprimData(
         return nullptr;
     }
 
-    if (subprim.IsEmpty()) {
-        // Reflect UsdGeomModelAPI as UsdImagingGeomModelSchema.
-        HdContainerDataSourceHandle geomModelDs = _GeomModelDataSource::New(
-            prim.GetPath(), UsdGeomModelAPI(prim), stageGlobals);
+    // Reflect UsdGeomModelAPI as UsdImagingGeomModelSchema.
+    HdContainerDataSourceHandle geomModelDs =
+        UsdImagingDataSourceMapped::New(
+            prim, prim.GetPath(), _GetMappings(), stageGlobals);
 
-        // For model components, overlay applyDrawMode=true.
-        if (UsdModelAPI(prim).IsKind(KindTokens->component)) {
-            static HdContainerDataSourceHandle const applyDrawModeDs =
-                UsdImagingGeomModelSchema::Builder()
-                    .SetApplyDrawMode(
-                        HdRetainedTypedSampledDataSource<bool>::New(true))
-                    .Build();
-            geomModelDs = HdOverlayContainerDataSource::
-                OverlayedContainerDataSources(applyDrawModeDs, geomModelDs);
-        }
-
-        return HdRetainedContainerDataSource::New(
-            UsdImagingGeomModelSchema::GetSchemaToken(), geomModelDs);
+    // For model components, overlay applyDrawMode=true.
+    if (UsdModelAPI(prim).IsKind(KindTokens->component)) {
+        static HdContainerDataSourceHandle const applyDrawModeDs =
+            UsdImagingGeomModelSchema::Builder()
+                .SetApplyDrawMode(
+                    HdRetainedTypedSampledDataSource<bool>::New(true))
+                .Build();
+        geomModelDs = HdOverlayContainerDataSource::
+            OverlayedContainerDataSources(applyDrawModeDs, geomModelDs);
     }
-
-    return nullptr;
+    
+    return HdRetainedContainerDataSource::New(
+        UsdImagingGeomModelSchema::GetSchemaToken(), geomModelDs);
 }
 
 
@@ -119,7 +120,8 @@ UsdImagingGeomModelAPIAdapter::InvalidateImagingSubprim(
         return HdDataSourceLocatorSet();
     }
 
-    return _GeomModelDataSource::Invalidate(subprim, properties);
+    return UsdImagingDataSourceMapped::Invalidate(
+        properties, _GetMappings());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

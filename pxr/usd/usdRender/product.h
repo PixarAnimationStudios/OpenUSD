@@ -168,11 +168,16 @@ public:
     // --------------------------------------------------------------------- //
     // PRODUCTTYPE 
     // --------------------------------------------------------------------- //
-    /// The type of output to produce.
-    /// The default, "raster", indicates a 2D image.
+    /// The type of output to produce; allowed values are ones most 
+    /// renderers should be able to support.
+    /// Renderers that support custom output types are encouraged to supply an 
+    /// applied API schema that will add an `token myRendererTag:productType`
+    /// attribute, which will override this attribute's value for that renderer. 
     /// 
-    /// \note In the future, UsdRender may define additional product
-    /// types.
+    /// - "raster": This is the default type and indicates a 2D raster image of
+    /// pixels.
+    /// - "deepRaster": Indicates a deep image that contains multiple samples
+    /// per pixel at varying depths.
     ///
     /// | ||
     /// | -- | -- |
@@ -180,6 +185,7 @@ public:
     /// | C++ Type | TfToken |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdRenderTokens "Allowed Values" | raster, deepRaster |
     USDRENDER_API
     UsdAttribute GetProductTypeAttr() const;
 

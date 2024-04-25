@@ -1871,6 +1871,14 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
             if (doRefine) {
                 channel = 
                     _fvarTopologyTracker->GetChannelFromPrimvar(primvar.name);
+
+                // Invalid fvar topologies may have been skipped when
+                // processed by _GatherFaceVaryingTopologies() in which
+                // case a validation warning will have been posted already
+                // and we should skip further refinement here.
+                if (channel < 0) {
+                    continue;
+                }
             }
 
             source = _RefineOrQuadrangulateOrTriangulateFaceVaryingPrimvar(

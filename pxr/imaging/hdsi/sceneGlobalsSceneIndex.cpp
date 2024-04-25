@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/renderSettingsSchema.h"
 #include "pxr/imaging/hd/sceneGlobalsSchema.h"
+#include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -56,7 +57,9 @@ TfTokenVector
 _SceneGlobalsDataSource::GetNames()
 {
     static const TfTokenVector names = {
-        HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim };
+        HdSceneGlobalsSchemaTokens->activeRenderPassPrim,
+        HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim
+    };
 
     return names;
 }
@@ -64,22 +67,15 @@ _SceneGlobalsDataSource::GetNames()
 HdDataSourceBaseHandle
 _SceneGlobalsDataSource::Get(const TfToken &name)
 {
+    if (name == HdSceneGlobalsSchemaTokens->activeRenderPassPrim) {
+        SdfPath const &path = _si->_activeRenderPassPrimPath;
+        return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
+    }
     if (name == HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim) {
-
         SdfPath const &path = _si->_activeRenderSettingsPrimPath;
-
-        if (!path.IsEmpty()) {
-            // Validate that a render settings prim exists at the given path.
-            HdSceneIndexPrim prim = _si->GetPrim(path);
-            if (prim.primType == HdRenderSettingsSchemaTokens->renderSettings &&
-                prim.dataSource) {
-
-                return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
-            }
-        }
+        return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
     }
 
-    // If a valid render settings prim was never set, return nullptr.
     return nullptr;
 }
 
@@ -95,6 +91,27 @@ HdsiSceneGlobalsSceneIndex::New(const HdSceneIndexBaseRefPtr &inputSceneIndex)
 }
 
 void
+HdsiSceneGlobalsSceneIndex::SetActiveRenderPassPrimPath(
+    const SdfPath &path)
+{
+    if (_activeRenderPassPrimPath == path) {
+        return;
+    }
+
+    // A scene index downstream will invalidate and update the
+    // sceneGlobals.activeRenderSettingsPrim locator (if the render pass points
+    // to a valid render settings prim).
+    // We keep things simple in this scene index.
+    _activeRenderPassPrimPath = path;
+
+    if (_IsObserved()) {
+        _SendPrimsDirtied({{
+            HdSceneGlobalsSchema::GetDefaultPrimPath(),
+            HdSceneGlobalsSchema::GetActiveRenderPassPrimLocator()}});
+    }
+}
+
+void
 HdsiSceneGlobalsSceneIndex::SetActiveRenderSettingsPrimPath(
     const SdfPath &path)
 {
@@ -102,8 +119,6 @@ HdsiSceneGlobalsSceneIndex::SetActiveRenderSettingsPrimPath(
         return;
     }
 
-    // Note: Don't validate here since this could be called before scene indices
-    //       are populated.
     _activeRenderSettingsPrimPath = path;
 
     if (_IsObserved()) {

@@ -24,84 +24,57 @@
 #ifndef PXR_BASE_TF_TYPE_IMPL_H
 #define PXR_BASE_TF_TYPE_IMPL_H
 
-#include "pxr/base/tf/mallocTag.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 template <class DERIVED, class BASE>
 inline void*
 Tf_CastToParent(void* addr, bool derivedToBase);
 
-// Declare and register casts for all the C++ bases in the given TypeVector.
 template <typename TypeVector>
-struct Tf_AddBases;
+struct Tf_BaseTypeInfos;
 
 template <typename... Bases>
-struct Tf_AddBases<TfType::Bases<Bases...>>
+struct Tf_BaseTypeInfos<TfType::Bases<Bases...>>
 {
-    // Declare types in Bases as TfTypes and accumulate them into a runtime
-    // vector.
-    static std::vector<TfType>
-    Declare()
-    {
-        return std::vector<TfType> {
-            TfType::Declare(
-                TfType::GetCanonicalTypeName( typeid(Bases) ))...
-        };
-    }
+    static const size_t NumBases = sizeof...(Bases);
+    std::type_info const *baseTypeInfos[NumBases] = { &typeid(Bases)... };
+};
 
-    // Register casts to and from Derived and each base type in Bases.
-    template <typename Derived>
-    static void
-    RegisterCasts(TfType const* type)
-    {
-        (type->_AddCppCastFunc(
-            typeid(Bases), &Tf_CastToParent<Derived, Bases>), ...);
-    }
+template <class Derived, typename TypeVector>
+struct Tf_TypeCastFunctions;
+
+template <class Derived, typename... Bases>
+struct Tf_TypeCastFunctions<Derived, TfType::Bases<Bases...>>
+{
+    using CastFunction = void *(*)(void *, bool);
+    CastFunction castFunctions[sizeof...(Bases)] = {
+        &Tf_CastToParent<Derived, Bases>... };
 };
 
 template <class T, class BaseTypes>
 TfType const &
 TfType::Declare()
 {
-    // Declare each of the base types.
-    std::vector<TfType> baseTfTypes = Tf_AddBases<BaseTypes>::Declare();
-    // Declare our type T.
-    const std::type_info &typeInfo = typeid(T);
-    const std::string typeName = TfType::GetCanonicalTypeName(typeInfo);
-    return TfType::Declare(typeName, baseTfTypes);
+    Tf_BaseTypeInfos<BaseTypes> btis;
+    return _DeclareImpl(typeid(T), btis.baseTypeInfos, btis.NumBases);
 }
 
 template <typename T, typename BaseTypes>
-TfType const&
+TfType const &
 TfType::Define()
 {
-    TfAutoMallocTag2 tag2("Tf", "TfType::Define");
-
-    // Declare each of the base types.
-    std::vector<TfType> baseTfTypes = Tf_AddBases<BaseTypes>::Declare();
-
-    // Declare our type T.
-    const std::type_info &typeInfo = typeid(T);
-    const std::string typeName = TfType::GetCanonicalTypeName(typeInfo);
-    TfType const& newType = TfType::Declare(typeName, baseTfTypes);
-
-    // Record traits information about T.
-    const bool isPodType = std::is_pod<T>::value;
-    const bool isEnumType = std::is_enum<T>::value;
-    const size_t sizeofType = TfSizeofType<T>::value;
-
-    newType._DefineCppType(typeInfo, sizeofType, isPodType, isEnumType);
-    Tf_AddBases<BaseTypes>::template RegisterCasts<T>(&newType);
-
-    return newType;
+    Tf_BaseTypeInfos<BaseTypes> btis;
+    Tf_TypeCastFunctions<T, BaseTypes> tcfs;
+    return _DefineImpl(
+        typeid(T), btis.baseTypeInfos, tcfs.castFunctions, btis.NumBases,
+        TfSizeofType<T>::value, std::is_pod_v<T>, std::is_enum_v<T>);
 }
 
 template <typename T>
 TfType const&
 TfType::Define()
 {
-    return Define<T, Bases<> >();
+    return Define<T, Bases<>>();
 }
 
 // Helper function to implement up/down casts between TfType types.

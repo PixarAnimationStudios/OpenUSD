@@ -5,14 +5,14 @@
 
 def Camera "MainCamera"
 {
-    float focalLength = 18.0
-    float horizontalAperture = 23.0
-    float verticalAperture = 14.0
+    float focalLength = 26
+    float horizontalAperture = 30
+    float verticalAperture = 20
     token projection = "perspective"
-    matrix4d xformOp:transform = (( 0.906308,  0.422618, 0.000000, 0.0 ),
-                                  (-0.254338,  0.545430, 0.798636, 0.0 ),
-                                  ( 0.337518, -0.723810, 0.601815, 0.0 ),
-                                  ( 3.078854, -6.602625, 5.489785, 1.0 ))
+    matrix4d xformOp:transform = (( 0.984808,  0.173648, 0.000000, 0.0 ),
+                                  (-0.102068,  0.578855, 0.809017, 0.0 ),
+                                  ( 0.140484, -0.796726, 0.587785, 0.0 ),
+                                  ( 1.359634, -9.652739, 6.128376, 1.0 ))
     token[] xformOpOrder = ["xformOp:transform"]
 }
 
@@ -72,7 +72,7 @@ def Xform "World" (
     )
     {
 
-        def PointInstancer "Instance" (
+        def PointInstancer "Instancer" (
             prepend apiSchemas = ["GeomModelAPI"]
         )
         {
@@ -81,7 +81,7 @@ def Xform "World" (
             token[] xformOpOrder = ["xformOp:translate"]
             point3f[] positions = [(0, 0, 0)]
             int[] protoIndices = [0]
-            rel prototypes = [ </World/Group2/Instance/Prototypes/Foo> ]
+            rel prototypes = [ </World/Group2/Instancer/Prototypes/Foo> ]
 
             def "Prototypes" (
                 kind = "group"
@@ -92,6 +92,51 @@ def Xform "World" (
                     kind = "component"
                     instanceable = true
                 ) {}
+            }
+        }
+    }
+    
+    # This group tests cards with PI-NI nested instancing, see PIPE-9177
+    def Xform "Group3" (
+        kind = "group"
+    )
+    {
+        def PointInstancer "Instancer" (
+            prepend apiSchemas = ["GeomModelAPI"]
+            kind = "group"
+        )
+        {
+            uniform token model:drawMode = "cards"
+            point3f[] positions = [(0, 0, 0), (0, 0, 0), (0, 0, 0)]
+            int[] protoIndices = [0, 1, 2]
+            rel prototypes = [
+                </World/Group3/Instancer/Prototypes/SphereAsBox>,
+                </World/Group3/Instancer/Prototypes/SphereAsCross>,
+                </World/Group3/Instancer/Prototypes/SphereFromTexture> ]
+            double3 xformOp:translate = (0, -3, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            
+            def "Prototypes" (
+                kind = "group"
+            )
+            {
+                def "SphereAsBox" (
+                    append references = </World/Group1/SphereAsBox>
+                    instanceable = true
+                )
+                { }
+                
+                def "SphereAsCross" (
+                    instanceable = true
+                    append references = </World/Group1/SphereAsCross>
+                )
+                { }
+                
+                def "SphereFromTexture" (
+                    instanceable = true
+                    append references = </World/Group1/SphereFromTexture>
+                )
+                { }
             }
         }
     }

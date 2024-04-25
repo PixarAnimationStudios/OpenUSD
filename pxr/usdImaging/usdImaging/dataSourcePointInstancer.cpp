@@ -181,27 +181,74 @@ UsdImagingDataSourcePointInstancerTopology::GetNames()
     };
 }
 
+static
 UsdImagingDataSourceCustomPrimvars::Mappings
+_Merge(const UsdImagingDataSourceCustomPrimvars::Mappings &a,
+       const UsdImagingDataSourceCustomPrimvars::Mappings &b)
+{
+    UsdImagingDataSourceCustomPrimvars::Mappings result = a;
+    for (const auto &mapping : b) {
+        result.push_back(mapping);
+    }
+    return result;
+}
+
+const UsdImagingDataSourceCustomPrimvars::Mappings &
 _GetCustomPrimvarMappings(const UsdPrim &usdPrim)
 {
-    TfToken usdOrientationsToken;
-    UsdGeomPointInstancer instancer(usdPrim);
-
-    return {
+    static const UsdImagingDataSourceCustomPrimvars::Mappings baseMappings = {
         {
             HdInstancerTokens->instanceTranslations,
             UsdGeomTokens->positions,
-            HdPrimvarSchemaTokens->instance },
-        {
-            HdInstancerTokens->instanceRotations,
-            instancer.UsesOrientationsf()
-              ? UsdGeomTokens->orientationsf
-              : UsdGeomTokens->orientations,
-            HdPrimvarSchemaTokens->instance },
+            HdPrimvarSchemaTokens->instance
+        },
         {
             HdInstancerTokens->instanceScales,
             UsdGeomTokens->scales,
-            HdPrimvarSchemaTokens->instance } };
+            HdPrimvarSchemaTokens->instance
+        },
+        {
+            HdTokens->velocities,
+            UsdGeomTokens->velocities,
+            HdPrimvarSchemaTokens->instance
+        },
+        {
+            HdTokens->accelerations,
+            UsdGeomTokens->accelerations,
+            HdPrimvarSchemaTokens->instance
+        },
+        {
+            HdTokens->angularVelocities,
+            UsdGeomTokens->angularVelocities,
+            HdPrimvarSchemaTokens->instance
+        }
+    };
+
+    TfToken usdOrientationsToken;
+    UsdGeomPointInstancer instancer(usdPrim);
+    if (instancer.UsesOrientationsf(&usdOrientationsToken)) {
+        static const UsdImagingDataSourceCustomPrimvars::Mappings
+            mappingsOrientationsf = _Merge(baseMappings,
+            {
+                {
+                    HdInstancerTokens->instanceRotations,
+                    UsdGeomTokens->orientationsf,
+                    HdPrimvarSchemaTokens->instance
+                }
+            });
+        return mappingsOrientationsf;
+    } else {
+        static const UsdImagingDataSourceCustomPrimvars::Mappings
+            mappingsOrientations = _Merge(baseMappings,
+            {
+                {
+                    HdInstancerTokens->instanceRotations,
+                    UsdGeomTokens->orientations,
+                    HdPrimvarSchemaTokens->instance
+                }
+            });
+        return mappingsOrientations;
+    }
 }
 
 HdDataSourceBaseHandle

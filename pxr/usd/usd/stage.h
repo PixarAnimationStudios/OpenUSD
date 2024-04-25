@@ -727,22 +727,27 @@ public:
     USD_API
     UsdPrim GetPseudoRoot() const;
 
-    /// Return the root UsdPrim on this stage whose name is the root layer's
+    /// Return the UsdPrim on this stage whose path is the root layer's
     /// defaultPrim metadata's value.  Return an invalid prim if there is no
     /// such prim or if the root layer's defaultPrim metadata is unset or is not
-    /// a valid prim name.  Note that this function only examines this stage's
-    /// rootLayer.  It does not consider sublayers of the rootLayer.  See also
-    /// SdfLayer::GetDefaultPrim().
+    /// a valid prim path.  Note that this function will return the prim on the 
+    /// stage whose path is the root layer's GetDefaultPrimAsPath() if that path
+    /// is not empty and a prim at that path exists on the stage. 
+    /// See also SdfLayer::GetDefaultPrimAsPath().
     USD_API
     UsdPrim GetDefaultPrim() const;
 
-    /// Set the default prim layer metadata in this stage's root layer.  This is
-    /// shorthand for:
+    /// Set the default prim layer metadata in this stage's root layer. This
+    /// is shorthand for:
     /// \code
     /// stage->GetRootLayer()->SetDefaultPrim(prim.GetName());
     /// \endcode
-    /// Note that this function always authors to the stage's root layer.  To
-    /// author to a different layer, use the SdfLayer::SetDefaultPrim() API.
+    /// If prim is a root prim, otherwise
+    /// \code
+    /// stage->GetRootLayer()->SetDefaultPrim(prim.GetPath().GetAsToken());
+    /// \endcode
+    /// Note that this function always authors to the stage's root layer.
+    /// To author to a different layer, use the SdfLayer::SetDefaultPrim() API.
     USD_API
     void SetDefaultPrim(const UsdPrim &prim);
     

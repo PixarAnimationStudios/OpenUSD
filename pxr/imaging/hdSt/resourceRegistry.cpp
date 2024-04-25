@@ -1327,7 +1327,7 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
 HdStTextureHandleSharedPtr
 HdStResourceRegistry::AllocateTextureHandle(
         HdStTextureIdentifier const &textureId,
-        const HdTextureType textureType,
+        const HdStTextureType textureType,
         HdSamplerParameters const &samplerParams,
         const size_t memoryRequest,
         HdStShaderCodePtr const &shaderCode)
@@ -1341,7 +1341,7 @@ HdStResourceRegistry::AllocateTextureHandle(
 HdStTextureObjectSharedPtr
 HdStResourceRegistry::AllocateTextureObject(
         HdStTextureIdentifier const &textureId,
-        const HdTextureType textureType)
+        const HdStTextureType textureType)
 {
     HdSt_TextureObjectRegistry * const reg = 
         _textureHandleRegistry->GetTextureObjectRegistry();
@@ -1353,7 +1353,7 @@ HdStResourceRegistry::AllocateTextureObject(
 
 void
 HdStResourceRegistry::SetMemoryRequestForTextureType(
-    const HdTextureType textureType,
+    const HdStTextureType textureType,
     const size_t memoryRequest)
 {
     _textureHandleRegistry->SetMemoryRequestForTextureType(

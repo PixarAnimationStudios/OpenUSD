@@ -168,6 +168,13 @@ HdCameraSchema::GetLensDistortion() const
         HdCameraSchemaTokens->lensDistortion));
 }
 
+HdSampledDataSourceContainerContainerSchema
+HdCameraSchema::GetNamespacedProperties() const
+{
+    return HdSampledDataSourceContainerContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
+        HdCameraSchemaTokens->namespacedProperties));
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdCameraSchema::BuildRetained(
@@ -187,11 +194,12 @@ HdCameraSchema::BuildRetained(
         const HdBoolDataSourceHandle &focusOn,
         const HdFloatDataSourceHandle &dofAspect,
         const HdContainerDataSourceHandle &splitDiopter,
-        const HdContainerDataSourceHandle &lensDistortion
+        const HdContainerDataSourceHandle &lensDistortion,
+        const HdContainerDataSourceHandle &namespacedProperties
 )
 {
-    TfToken _names[17];
-    HdDataSourceBaseHandle _values[17];
+    TfToken _names[18];
+    HdDataSourceBaseHandle _values[18];
 
     size_t _count = 0;
 
@@ -278,6 +286,11 @@ HdCameraSchema::BuildRetained(
     if (lensDistortion) {
         _names[_count] = HdCameraSchemaTokens->lensDistortion;
         _values[_count++] = lensDistortion;
+    }
+
+    if (namespacedProperties) {
+        _names[_count] = HdCameraSchemaTokens->namespacedProperties;
+        _values[_count++] = namespacedProperties;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -418,6 +431,14 @@ HdCameraSchema::Builder::SetLensDistortion(
     return *this;
 }
 
+HdCameraSchema::Builder &
+HdCameraSchema::Builder::SetNamespacedProperties(
+    const HdContainerDataSourceHandle &namespacedProperties)
+{
+    _namespacedProperties = namespacedProperties;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdCameraSchema::Builder::Build()
 {
@@ -438,7 +459,8 @@ HdCameraSchema::Builder::Build()
         _focusOn,
         _dofAspect,
         _splitDiopter,
-        _lensDistortion
+        _lensDistortion,
+        _namespacedProperties
     );
 }
 
@@ -486,6 +508,16 @@ HdCameraSchema::GetShutterCloseLocator()
     static const HdDataSourceLocator locator =
         GetDefaultLocator().Append(
             HdCameraSchemaTokens->shutterClose);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdCameraSchema::GetNamespacedPropertiesLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdCameraSchemaTokens->namespacedProperties);
     return locator;
 }
 

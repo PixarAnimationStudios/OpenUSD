@@ -880,10 +880,13 @@ UsdImagingDelegate::SetTime(UsdTimeCode time)
     // Mark varying attributes as dirty.
     if (_timeVaryingPrimCacheValid) {
         for (SdfPath const& path : _timeVaryingPrimCache) {
-            _HdPrimInfo &primInfo = _hdPrimInfoMap[path];
-            primInfo.adapter->MarkDirty(primInfo.usdPrim,
+            _HdPrimInfoMap::iterator it = _hdPrimInfoMap.find(path);
+            if (it == _hdPrimInfoMap.end()) {
+                continue;
+            }
+            it->second.adapter->MarkDirty(it->second.usdPrim,
                                         path,
-                                        primInfo.timeVaryingBits,
+                                        it->second.timeVaryingBits,
                                         &indexProxy);
         }
     } else {
@@ -1859,8 +1862,8 @@ UsdImagingDelegate::SetSceneLightsEnabled(bool enable)
             const SdfPath &cachePath = pair.first;
             _HdPrimInfo &primInfo = pair.second;
             if (TF_VERIFY(primInfo.adapter, "%s", cachePath.GetText())) {
-                primInfo.adapter->MarkLightParamsDirty(primInfo.usdPrim, 
-                                                       cachePath, &indexProxy);
+                primInfo.adapter->MarkDirty(primInfo.usdPrim, cachePath, 
+                    HdLight::DirtyParams | HdLight::DirtyResource, &indexProxy);
             }
         }
     }
@@ -2787,6 +2790,23 @@ VtArray<TfToken>
 UsdImagingDelegate::GetCategories(SdfPath const &id)
 {
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
+    
+    // XXX: We must not ask the collection cache about instancer prototypes.
+    // When instancer prototypes had property paths, the collection cache
+    // would return an empty list for them. Now that they have prim paths,
+    // the collection cache will return the list of collections inherited by
+    // the prototype from the first instance. If subsequent instances belong to
+    // a conflicting set of collections, we get incorrect results. Since the
+    // collection cache has no way to identify prototype paths, we must do the
+    // check here where we have access to the adapter. Instances will receive
+    // the correct list of collections via GetInstanceCategories().
+    _HdPrimInfo* primInfo = _GetHdPrimInfo(cachePath);
+    if (primInfo &&
+        primInfo->adapter &&
+        primInfo->adapter->IsInstancerAdapter() &&
+        primInfo->adapter->IsChildPath(cachePath)) {
+        return { };
+    }
     return _collectionCache.ComputeCollectionsContainingPath(cachePath);
 }
 

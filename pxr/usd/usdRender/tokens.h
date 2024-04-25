@@ -106,6 +106,10 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderSettingsBase
     const TfToken dataWindowNDC;
+    /// \brief "deepRaster"
+    /// 
+    /// Possible value for UsdRenderProduct::GetProductTypeAttr()
+    const TfToken deepRaster;
     /// \brief "denoise:enable"
     /// 
     /// UsdRenderPass
@@ -192,7 +196,7 @@ struct UsdRenderTokensType {
     const TfToken productType;
     /// \brief "raster"
     /// 
-    /// Fallback value for UsdRenderProduct::GetProductTypeAttr(), RenderProduct productType value that indicates a 2D raster image of pixels.
+    /// Fallback value for UsdRenderProduct::GetProductTypeAttr()
     const TfToken raster;
     /// \brief "raw"
     /// 

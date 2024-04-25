@@ -53,6 +53,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_SCENE_GLOBALS_SCHEMA_TOKENS \
     (sceneGlobals) \
+    (activeRenderPassPrim) \
     (activeRenderSettingsPrim) \
     (startTimeCode) \
     (endTimeCode) \
@@ -120,6 +121,9 @@ public:
     /// @{
 
     HD_API
+    HdPathDataSourceHandle GetActiveRenderPassPrim() const;
+
+    HD_API
     HdPathDataSourceHandle GetActiveRenderSettingsPrim() const;
 
     HD_API
@@ -154,6 +158,10 @@ public:
     /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
     /// @{
 
+    /// Prim-level relative data source locator to locate activeRenderPassPrim.
+    HD_API
+    static const HdDataSourceLocator &GetActiveRenderPassPrimLocator();
+
     /// Prim-level relative data source locator to locate activeRenderSettingsPrim.
     HD_API
     static const HdDataSourceLocator &GetActiveRenderSettingsPrimLocator();
@@ -180,6 +188,7 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
+        const HdPathDataSourceHandle &activeRenderPassPrim,
         const HdPathDataSourceHandle &activeRenderSettingsPrim,
         const HdDoubleDataSourceHandle &startTimeCode,
         const HdDoubleDataSourceHandle &endTimeCode
@@ -195,6 +204,9 @@ public:
     {
     public:
         HD_API
+        Builder &SetActiveRenderPassPrim(
+            const HdPathDataSourceHandle &activeRenderPassPrim);
+        HD_API
         Builder &SetActiveRenderSettingsPrim(
             const HdPathDataSourceHandle &activeRenderSettingsPrim);
         HD_API
@@ -209,6 +221,7 @@ public:
         HdContainerDataSourceHandle Build();
 
     private:
+        HdPathDataSourceHandle _activeRenderPassPrim;
         HdPathDataSourceHandle _activeRenderSettingsPrim;
         HdDoubleDataSourceHandle _startTimeCode;
         HdDoubleDataSourceHandle _endTimeCode;

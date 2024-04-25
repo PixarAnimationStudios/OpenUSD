@@ -1,5 +1,5 @@
 //
-// Copyrighty 2020 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -129,7 +129,7 @@ My_TestGLDrawing::OffscreenTest()
         HdStTextureHandleSharedPtr const textureHandle =
             _textureHandleRegistry->AllocateTextureHandle(
                 HdStTextureIdentifier(TfToken("texture.png")),
-                HdTextureType::Uv,
+                HdStTextureType::Uv,
                 HdSamplerParameters(
                     HdWrapRepeat,
                     HdWrapMirror,
@@ -185,7 +185,7 @@ My_TestGLDrawing::OffscreenTest()
         HdStTextureHandleSharedPtr const textureHandle1 =
             _textureHandleRegistry->AllocateTextureHandle(
                 HdStTextureIdentifier(TfToken("texture.png")),
-                HdTextureType::Uv,
+                HdStTextureType::Uv,
                 HdSamplerParameters(
                     HdWrapRepeat,
                     HdWrapMirror,
@@ -235,7 +235,7 @@ My_TestGLDrawing::OffscreenTest()
             HdStTextureHandleSharedPtr const textureHandle2 =
                 _textureHandleRegistry->AllocateTextureHandle(
                     HdStTextureIdentifier(TfToken("texture.png")),
-                    HdTextureType::Uv,
+                    HdStTextureType::Uv,
                     HdSamplerParameters(
                         HdWrapRepeat,
                         HdWrapRepeat,
@@ -331,7 +331,7 @@ My_TestGLDrawing::OffscreenTest()
         HdStTextureHandleSharedPtr const textureHandle =
             _textureHandleRegistry->AllocateTextureHandle(
                 HdStTextureIdentifier(TfToken("reloadingTexture.png")),
-                HdTextureType::Uv,
+                HdStTextureType::Uv,
                 HdSamplerParameters(
                     HdWrapRepeat,
                     HdWrapMirror,
@@ -438,7 +438,7 @@ My_TestGLDrawing::OffscreenTest()
         HdStTextureHandleSharedPtr const textureHandle =
             _textureHandleRegistry->AllocateTextureHandle(
                 HdStTextureIdentifier(TfToken("texture.png")),
-                HdTextureType::Uv,
+                HdStTextureType::Uv,
                 HdSamplerParameters(
                     HdWrapRepeat,
                     HdWrapMirror,
@@ -449,7 +449,7 @@ My_TestGLDrawing::OffscreenTest()
                 shader);
 
         _textureHandleRegistry->SetMemoryRequestForTextureType(
-            HdTextureType::Uv, 3000);
+            HdStTextureType::Uv, 3000);
 
         _CheckEqual(_textureHandleRegistry->Commit(), {shader},
                     "Exepected shader from commit with low global "
@@ -478,7 +478,7 @@ My_TestGLDrawing::OffscreenTest()
         }
         
         _textureHandleRegistry->SetMemoryRequestForTextureType(
-            HdTextureType::Uv, 15000);
+            HdStTextureType::Uv, 15000);
 
         _CheckEqual(_textureHandleRegistry->Commit(), {shader},
                     "Exepected shader from commit with high global "

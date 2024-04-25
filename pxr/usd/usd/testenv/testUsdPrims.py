@@ -810,12 +810,14 @@ class TestUsdPrim(unittest.TestCase):
             barPrim = s.OverridePrim('/bar')
             assert s.GetDefaultPrim() == barPrim
 
-            # Try error cases.
+            # Set sub-root prims as default, should pick it up
             s.GetRootLayer().defaultPrim = 'foo/bar'
             assert not s.GetDefaultPrim()
-            s.OverridePrim('/foo/bar')
-            assert not s.GetDefaultPrim()
-            s.defaultPrim = ''
+            fooBarPrim = s.OverridePrim('/foo/bar')
+            assert s.GetDefaultPrim() == fooBarPrim
+            
+            # Try error cases
+            s.GetRootLayer().defaultPrim = ''
             assert not s.GetDefaultPrim()
 
             # Try stage-level authoring API.

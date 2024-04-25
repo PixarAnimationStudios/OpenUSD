@@ -99,7 +99,7 @@ UsdImagingRenderVarAdapter::InvalidateImagingSubprim(
 // -------------------------------------------------------------------------- //
 // 1.0 Prim adapter API
 //
-// \note No hydra prims are added/managed for UsdRenderProduct prims.
+// \note No hydra prims are added/managed for UsdRenderVar prims.
 //       UsdImagingRenderSettingsAdapter handles the flattening of
 //       targeted products and vars.
 // -------------------------------------------------------------------------- //
@@ -108,7 +108,10 @@ bool
 UsdImagingRenderVarAdapter::IsSupported(
     UsdImagingIndexProxy const* index) const
 {
-    return false;
+    // Since we flatten products and vars into the targeting settings prim, 1.0
+    // render delegates won't typically support render var prims as such.
+    // Return true to supress warnings that the prim type isn't supported.
+    return true;
 }
 
 SdfPath

@@ -6,6 +6,7 @@ pxr_library(sdf
         arch
         tf
         gf
+        pegtl
         trace
         vt
         work

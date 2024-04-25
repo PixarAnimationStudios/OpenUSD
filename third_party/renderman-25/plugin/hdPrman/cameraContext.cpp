@@ -389,13 +389,21 @@ HdPrman_CameraContext::_ComputeCameraParams(
         dynamic_cast<const HdPrmanCamera * const>(camera);
     const HdPrmanCamera::ShutterCurve &shutterCurve
         = hdPrmanCamera->GetShutterCurve();
-        
-    result.SetFloat(RixStr.k_shutterOpenTime, shutterCurve.shutterOpenTime);
-    result.SetFloat(RixStr.k_shutterCloseTime, shutterCurve.shutterCloseTime);
-    result.SetFloatArray(
-        RixStr.k_shutteropening,
-        shutterCurve.shutteropening.data(),
-        shutterCurve.shutteropening.size());
+
+    if (shutterCurve.shutterOpenTime) {
+        result.SetFloat(
+            RixStr.k_shutterOpenTime, *shutterCurve.shutterOpenTime);
+    }
+    if (shutterCurve.shutterCloseTime) {
+        result.SetFloat(
+            RixStr.k_shutterCloseTime, *shutterCurve.shutterCloseTime);
+    }
+    if (shutterCurve.shutteropening) {
+        result.SetFloatArray(
+            RixStr.k_shutteropening,
+            shutterCurve.shutteropening->data(),
+            shutterCurve.shutteropening->size());
+    }
 
     result.SetFloat(RixStr.k_apertureAngle,
                     hdPrmanCamera->GetApertureAngle());

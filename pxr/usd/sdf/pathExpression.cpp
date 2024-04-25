@@ -130,7 +130,13 @@ SdfPathExpression::MakeComplement(SdfPathExpression &&right)
         ret._ops = std::move(right._ops);
         ret._refs = std::move(right._refs);
         ret._patterns = std::move(right._patterns);
-        ret._ops.push_back(Complement);
+        // Complement of complement cancels.
+        if (ret._ops.back() == Complement) {
+            ret._ops.pop_back();
+        }
+        else {
+            ret._ops.push_back(Complement);
+        }
     }
     return ret;
 }
@@ -463,6 +469,16 @@ SdfPathExpression::PathPattern::PathPattern()
 {
 }
 
+SdfPathExpression::PathPattern::PathPattern(SdfPath &&prefix)
+{
+    SetPrefix(std::move(prefix));
+}
+
+SdfPathExpression::PathPattern::PathPattern(SdfPath const &prefix)
+    : PathPattern(SdfPath(prefix))
+{
+}
+
 static inline bool
 IsLiteralProperty(std::string const &text)
 {
@@ -737,7 +753,7 @@ private:
 
 namespace {
 
-using namespace tao::TAO_PEGTL_NAMESPACE;
+using namespace PXR_PEGTL_NAMESPACE;
 
 ////////////////////////////////////////////////////////////////////////
 // Path patterns with predicates.
@@ -1043,7 +1059,7 @@ ParsePathExpression(std::string const &inputStr,
         std::string errMsg = err.what();
         errMsg += " -- ";
         bool first = true;
-        for (position const &p: err.positions) {
+        for (position const &p: err.positions()) {
             if (!first) {
                 errMsg += ", ";
             }

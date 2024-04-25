@@ -2118,16 +2118,20 @@ UsdStage::GetPseudoRoot() const
 UsdPrim
 UsdStage::GetDefaultPrim() const
 {
-    TfToken name = GetRootLayer()->GetDefaultPrim();
-    return SdfPath::IsValidIdentifier(name)
-        ? GetPrimAtPath(SdfPath::AbsoluteRootPath().AppendChild(name))
-        : UsdPrim();
+    SdfPath path = GetRootLayer()->GetDefaultPrimAsPath();
+    return path.IsEmpty() 
+        ? UsdPrim()
+        : GetPrimAtPath(path);
 }
 
 void
 UsdStage::SetDefaultPrim(const UsdPrim &prim)
 {
-    GetRootLayer()->SetDefaultPrim(prim.GetName());
+    if (prim){
+        prim.GetParent() == GetPseudoRoot()
+            ? GetRootLayer()->SetDefaultPrim(prim.GetName())
+            : GetRootLayer()->SetDefaultPrim(prim.GetPath().GetAsToken());
+    }
 }
 
 void
@@ -9501,7 +9505,7 @@ double
 UsdStage::GetEndTimeCode() const
 {
     // Look for 'endTimeCode' first. If it is not available, then look for 
-    // the deprecated field 'startFrame'.
+    // the deprecated field 'endFrame'.
     const SdfLayerConstHandle sessionLayer = GetSessionLayer();
     if (sessionLayer) {
         if (sessionLayer->HasEndTimeCode())

@@ -190,6 +190,10 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
 
     for (auto it = entries.begin(), e = entries.end(); it != e; ++it) {
         const HdSceneIndexObserver::AddedPrimEntry &entry = *it;
+        if (entry.primPath.IsAbsoluteRootPath()) {
+            continue;
+        }
+
         if (entry.primType == _targetPrimTypeName) {
             if (!entriesCopied) {
                 entriesCopied = true;
@@ -209,9 +213,12 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
             }
         }
 
+        // We've already skipped the case where entry.primPath is the absolute
+        // root, so GetParentPath() makes sense here.
+        const SdfPath entryPrimParentPath = entry.primPath.GetParentPath();
         // NOTE: potentially share code with primsremoved
         _DependencyMap::const_iterator dIt =
-            _dependencies.find(entry.primPath.GetParentPath());
+            _dependencies.find(entryPrimParentPath);
         if (dIt != _dependencies.end()) {
             for (const SdfPath &dependentPath : dIt->second) {
                 // don't bother checking a procedural which already scheduled
@@ -228,7 +235,7 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
 
                 const _ProcEntry &procEntry = procIt->second;
                 const auto dslIt =
-                    procEntry.dependencies.find(entry.primPath.GetParentPath());
+                    procEntry.dependencies.find(entryPrimParentPath);
                 
                 if (dslIt == procEntry.dependencies.end()) {
                     continue;

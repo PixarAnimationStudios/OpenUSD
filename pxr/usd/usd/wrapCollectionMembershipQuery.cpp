@@ -23,6 +23,7 @@
 //
 #include "pxr/usd/usd/collectionMembershipQuery.h"
 
+#include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/usd/usd/object.h"
 
@@ -49,6 +50,50 @@ static bool _WrapIsPathIncluded_2(
     return query.IsPathIncluded(path, parentExpansionRule);
 }
 
+struct _PathExpansionRuleMapFromPython
+{
+    using RuleMap = Usd_CollectionMembershipQueryBase::PathExpansionRuleMap;
+    
+    _PathExpansionRuleMapFromPython() {
+        converter::registry::insert(
+            &convertible, &construct, type_id<RuleMap>());
+    }
+    
+    static PyObject *convert(PyObject *p, RuleMap *result) {
+        if (!PyDict_Check(p)) {
+            return nullptr;
+        }
+        Py_ssize_t pos = 0;
+        PyObject *pyKey = nullptr, *pyVal = nullptr;
+        while (PyDict_Next(p, &pos, &pyKey, &pyVal)) {
+            extract<SdfPath> keyProxy(pyKey);
+            extract<TfToken> valProxy(pyVal);
+            if (!keyProxy.check() || !valProxy.check()) {
+                return nullptr;
+            }
+            object pVal(handle<>(borrowed(pyVal)));
+            if (result) {
+                (*result)[keyProxy()] = valProxy();
+            }
+        }
+        return p;
+    }
+
+    static void *convertible(PyObject *p) {
+        return convert(p, nullptr);
+    }
+
+    static void construct(PyObject *source,
+                          converter::rvalue_from_python_stage1_data *data) {
+        void *storage = (
+            (converter::rvalue_from_python_storage<RuleMap>*)
+            data)->storage.bytes;
+        new (storage) RuleMap;
+        data->convertible = storage;
+        convert(source, (RuleMap *)storage);
+    }
+};
+
 } // anonymous namespace
 
 void
@@ -66,6 +111,10 @@ wrapUsdCollectionMembershipQuery()
          arg("predicate")=UsdPrimDefaultPredicate),
         return_value_policy<TfPySequenceToList>());
 
+    def("ComputePathExpressionFromCollectionMembershipQueryRuleMap",
+        UsdComputePathExpressionFromCollectionMembershipQueryRuleMap,
+        arg("ruleMap"));
+
     class_<UsdCollectionMembershipQuery>("UsdCollectionMembershipQuery")
         .def("IsPathIncluded", _WrapIsPathIncluded_1, arg("path"))
         .def("IsPathIncluded", _WrapIsPathIncluded_2, 
@@ -81,6 +130,12 @@ wrapUsdCollectionMembershipQuery()
         .def(self == self)
         .def(self != self)
         ;
+
+    // from-python conversion from PathExpansionRuleMap.
+    TfPyContainerConversions::from_python_tuple_pair<
+        Usd_CollectionMembershipQueryBase::PathExpansionRuleMap::value_type>();
+
+    _PathExpansionRuleMapFromPython();
 }
 
 

@@ -47,6 +47,7 @@ UsdImagingDataSourceTetMeshTopology::GetNames()
     return {
         HdTetMeshTopologySchemaTokens->orientation,
         HdTetMeshTopologySchemaTokens->tetVertexIndices,
+        HdTetMeshTopologySchemaTokens->surfaceFaceVertexIndices,
     };
 }
 
@@ -59,6 +60,11 @@ UsdImagingDataSourceTetMeshTopology::Get(const TfToken &name)
             _usdTetMesh.GetTetVertexIndicesAttr(),
             _stageGlobals, _sceneIndexPath,
             HdTetMeshTopologySchema::GetTetVertexIndicesLocator());
+    } else if (name == HdTetMeshTopologySchemaTokens->surfaceFaceVertexIndices) {
+        return UsdImagingDataSourceAttribute<VtVec3iArray>::New(
+            _usdTetMesh.GetSurfaceFaceVertexIndicesAttr(),
+            _stageGlobals, _sceneIndexPath,
+            HdTetMeshTopologySchema::GetSurfaceFaceVertexIndicesLocator());
     } else if (name == HdTetMeshTopologySchemaTokens->orientation) {
         return UsdImagingDataSourceAttribute<TfToken>::New(
             _usdTetMesh.GetOrientationAttr(), _stageGlobals);
@@ -146,6 +152,7 @@ UsdImagingDataSourceTetMeshPrim::Invalidate(
 
     for (const TfToken &propertyName : properties) {
         if (propertyName == UsdGeomTokens->tetVertexIndices ||
+            propertyName == UsdGeomTokens->surfaceFaceVertexIndices ||
             propertyName == UsdGeomTokens->orientation) {
             locators.insert(HdTetMeshSchema::GetTopologyLocator());
         }

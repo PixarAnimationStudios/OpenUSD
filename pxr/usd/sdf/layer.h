@@ -836,18 +836,31 @@ public:
     void SetComment(const std::string &comment);
     
     /// Return the defaultPrim metadata for this layer.  This field
-    /// indicates the name of which root prim should be targeted by a reference
-    /// or payload to this layer that doesn't specify a prim path.
+    /// indicates the name or path of which prim should be targeted by a
+    /// reference or payload to this layer that doesn't specify a prim path.
     ///
     /// The default value is the empty token.
     SDF_API
     TfToken GetDefaultPrim() const;
 
-    /// Set the default prim metadata for this layer.  The root prim with this
-    /// name will be targeted by a reference or a payload to this layer that
-    /// doesn't specify a prim path.  Note that this must be a root prim
-    /// <b>name</b> not a path.  E.g. "rootPrim" rather than "/rootPrim".  See
-    /// GetDefaultPrim().
+    /// Return this layer's default prim metadata interpreted as an absolute 
+    /// prim path regardless of whether it was authored as a root prim name or a
+    /// prim path. For example, if the authored default prim value is 
+    /// "rootPrim", return </rootPrim>. If the authored default prim value is 
+    /// "/path/to/non/root/prim", return </path/to/non/root/prim>. If the 
+    /// authored default prim value cannot be interpreted as a prim path, 
+    /// return the empty SdfPath.
+    ///
+    /// The default value is an empty path.
+    SDF_API
+    SdfPath GetDefaultPrimAsPath() const;
+
+    /// Set the default prim metadata for this layer.  The prim at this path
+    /// will be targeted by a reference or a payload to this layer that doesn't 
+    /// specify a prim path.
+    /// Note that this can be a name if it refers to a root prim, or a path to
+    /// any prim in this layer. E.g. "rootPrim", "/path/to/non/root/prim" or
+    /// "/rootPrim".  See GetDefaultPrim().
     SDF_API
     void SetDefaultPrim(const TfToken &name);
 

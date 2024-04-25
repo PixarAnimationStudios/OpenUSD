@@ -2213,7 +2213,7 @@ class InstallContext:
         self.dracoLocation = (os.path.abspath(args.draco_location)
                                 if args.draco_location else None)
 
-        # - MaterialX Plugin
+        # - MaterialX
         self.buildMaterialX = args.build_materialx
 
         # - Spline Tests
@@ -2469,6 +2469,7 @@ summaryMsg += """\
       PRMan support:            {buildPrman}
     UsdImaging                  {buildUsdImaging}
       usdview:                  {buildUsdview}
+    MaterialX support           {buildMaterialX}
     Python support              {buildPython}
       Python Debug:             {debugPython}
       Python docs:              {buildPythonDocs}
@@ -2482,7 +2483,6 @@ summaryMsg += """\
     Alembic Plugin              {buildAlembic}
       HDF5 support:             {enableHDF5}
     Draco Plugin                {buildDraco}
-    MaterialX Plugin            {buildMaterialX}
 
   Dependencies                  {dependencies}"""
 

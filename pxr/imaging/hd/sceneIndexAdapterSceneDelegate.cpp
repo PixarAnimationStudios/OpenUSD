@@ -191,7 +191,13 @@ HdSceneIndexAdapterSceneDelegate::_PrimAdded(
     SdfPath indexPath = primPath;
     _PrimCacheTable::iterator it = _primCache.find(indexPath);
 
-    bool insertIfNeeded = true;
+    // There are 3 possible cases here:
+    // (1) The prim doesn't exist yet and we add the prim.
+    // (2) The prim exists, but has the wrong type; we remove the prim
+    //     and re-insert with the correct type.
+    // (3) The prim exists, and has the right type; in this case, we don't
+    //     remove the prim but we should invalidate all of its properties.
+    bool isResync = false;
 
     if (it != _primCache.end()) {
         _PrimCacheEntry &entry = (*it).second;
@@ -206,66 +212,67 @@ HdSceneIndexAdapterSceneDelegate::_PrimAdded(
             } else if (existingType == HdPrimTypeTokens->instancer) {
                 GetRenderIndex()._RemoveInstancer(indexPath);
             }
-
-            // If the prim type of an existing entry changed, also clear any
-            // cached data associated with it, e.g. computed primvars.
-            entry.primvarDescriptors.clear();
-            entry.primvarDescriptorsState.store(
-                _PrimCacheEntry::ReadStateUnread);
-            entry.extCmpPrimvarDescriptors.clear();
-            entry.extCmpPrimvarDescriptorsState.store(
-                _PrimCacheEntry::ReadStateUnread);
-
         } else {
-            insertIfNeeded = false;
+            isResync = true;
         }
     }
 
-    if (insertIfNeeded) {
-        enum PrimType {
-            PrimType_None = 0, 
-            PrimType_R, 
-            PrimType_S,
-            PrimType_B,
-            PrimType_I,
-        };
-
-        PrimType hydraPrimType = PrimType_None;
+    if (!isResync) {
         if (GetRenderIndex().IsRprimTypeSupported(primType)) {
-            hydraPrimType = PrimType_R;
+            GetRenderIndex()._InsertRprim(primType, this, indexPath);
         } else if (GetRenderIndex().IsSprimTypeSupported(primType)) {
-            hydraPrimType = PrimType_S;
+            GetRenderIndex()._InsertSprim(primType, this, indexPath);
         } else if (GetRenderIndex().IsBprimTypeSupported(primType)) {
-            hydraPrimType = PrimType_B;
+            GetRenderIndex()._InsertBprim(primType, this, indexPath);
         } else if (primType == HdPrimTypeTokens->instancer) {
-            hydraPrimType = PrimType_I;
+            GetRenderIndex()._InsertInstancer(this, indexPath);
         }
+    }
+    
+    if (it != _primCache.end()) {
+        _PrimCacheEntry & entry = (*it).second;
 
-        if (hydraPrimType) {
-            switch (hydraPrimType)
-            {
-            case PrimType_R:
-                GetRenderIndex()._InsertRprim(primType, this, indexPath);
-                break;
-            case PrimType_S:
-                GetRenderIndex()._InsertSprim(primType, this, indexPath);
-                break;
-            case PrimType_B:
-                GetRenderIndex()._InsertBprim(primType, this, indexPath);
-                break;
-            case PrimType_I:
-                GetRenderIndex()._InsertInstancer(this, indexPath);
-                break;
-            default:
-                break;
-            };
-        }
+        // Make sure prim type is up-to-date and clear caches.
+        entry.primType = primType;
+        entry.primvarDescriptors.clear();
+        entry.primvarDescriptorsState.store(
+            _PrimCacheEntry::ReadStateUnread);
+        entry.extCmpPrimvarDescriptors.clear();
+        entry.extCmpPrimvarDescriptorsState.store(
+            _PrimCacheEntry::ReadStateUnread);
+    } else {
+        _primCache[indexPath].primType = primType;
+    }
 
-        if (it != _primCache.end()) {
-            _PrimCacheEntry & entry = (*it).second;
-            entry.primType = primType;
-        } else {
-            _primCache[indexPath].primType = primType;
+    if (isResync) {
+        // For resyncs, we need to invalidate the prim.
+        // Note that since this only runs if we don't insert the prim, we
+        // don't have any duplicate IsRprimTypeSupported/etc calls here.
+        static HdDataSourceLocatorSet allDirty = { HdDataSourceLocator() };
+        if (GetRenderIndex().IsRprimTypeSupported(primType)) {
+            HdDirtyBits allDirtyRprim =
+                HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
+                    primType, allDirty);
+            GetRenderIndex().GetChangeTracker().
+                _MarkRprimDirty(indexPath, allDirtyRprim);
+        } else if (GetRenderIndex().IsSprimTypeSupported(primType)) {
+            HdDirtyBits allDirtySprim =
+                HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
+                    primType, allDirty);
+            GetRenderIndex().GetChangeTracker().
+                _MarkSprimDirty(indexPath, allDirtySprim);
+        } else if (GetRenderIndex().IsBprimTypeSupported(primType)) {
+            HdDirtyBits allDirtyBprim =
+                HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
+                    primType, allDirty);
+            GetRenderIndex().GetChangeTracker().
+                _MarkBprimDirty(indexPath, allDirtyBprim);
+        } else if (primType == HdPrimTypeTokens->instancer) {
+            HdDirtyBits allDirtyInst =
+                HdDirtyBitsTranslator::InstancerLocatorSetToDirtyBits(
+                    primType, allDirty);
+            GetRenderIndex().GetChangeTracker().
+                _MarkInstancerDirty(indexPath, allDirtyInst);
         }
     }
 }
@@ -340,6 +347,7 @@ HdSceneIndexAdapterSceneDelegate::PrimsRemoved(
         }
         _primCache.erase(it);
     }
+
     if (!entries.empty()) {
         _sceneDelegatesBuilt = false;
     }
@@ -1235,10 +1243,10 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
         return VtValue();
     }
 
-    HdContainerDataSourceHandle camera =
-        HdContainerDataSource::Cast(
-            prim.dataSource->Get(HdCameraSchemaTokens->camera));
-    if (!camera) {
+    HdCameraSchema cameraSchema =
+        HdCameraSchema::GetFromParent(prim.dataSource);
+
+    if (!cameraSchema) {
         return VtValue();
     }
 
@@ -1250,9 +1258,20 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
     if (!locator.IsEmpty()) {
         if (HdSampledDataSourceHandle const ds =
                 HdSampledDataSource::Cast(
-                    HdContainerDataSource::Get(camera, locator))) {
+                    HdContainerDataSource::Get(
+                        cameraSchema.GetNamespacedProperties().GetContainer(),
+                        locator))) {
             return ds->GetValue(0.0f);
         }
+
+        if (HdSampledDataSourceHandle const ds =
+                HdSampledDataSource::Cast(
+                    HdContainerDataSource::Get(
+                        cameraSchema.GetContainer(),
+                        locator))) {
+            return ds->GetValue(0.0f);
+        }
+
         // If there was no nested data source for the data source locator
         // we constructed, fall through to query for "foo:bar".
         //
@@ -1272,7 +1291,7 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
 
     HdSampledDataSourceHandle valueDs =
         HdSampledDataSource::Cast(
-            camera->Get(cameraSchemaToken));
+            cameraSchema.GetContainer()->Get(cameraSchemaToken));
     if (!valueDs) {
         return VtValue();
     }

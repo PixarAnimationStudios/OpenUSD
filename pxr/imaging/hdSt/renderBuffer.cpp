@@ -146,7 +146,7 @@ HdStRenderBuffer::Allocate(
             std::dynamic_pointer_cast<HdStDynamicUvTextureObject>(
                 _resourceRegistry->AllocateTextureObject(
                     GetTextureIdentifier(/*multiSampled = */ false),
-                    HdTextureType::Uv));
+                    HdStTextureType::Uv));
         if (!_textureObject) {
             TF_CODING_ERROR("Expected HdStDynamicUvTextureObject");
             return false;
@@ -160,7 +160,7 @@ HdStRenderBuffer::Allocate(
                 std::dynamic_pointer_cast<HdStDynamicUvTextureObject>(
                     _resourceRegistry->AllocateTextureObject(
                         GetTextureIdentifier(/*multiSampled = */ true),
-                        HdTextureType::Uv));
+                        HdStTextureType::Uv));
             if (!_textureMSAAObject) {
                 TF_CODING_ERROR("Expected HdStDynamicUvTextureObject");
                 return false;

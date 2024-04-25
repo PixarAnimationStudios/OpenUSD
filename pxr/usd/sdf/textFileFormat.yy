@@ -53,9 +53,6 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/optional.hpp>
-#include <boost/variant.hpp>
-
 #include <functional>
 #include <sstream>
 #include <string>
@@ -68,7 +65,6 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 using Sdf_ParserHelpers::Value;
-using boost::get;
 
 //--------------------------------------------------------------------
 // Helper macros/functions for handling errors
@@ -3329,8 +3325,8 @@ Sdf_ParseLayer(
                 TRACE_SCOPE("textFileFormatYyParse");
                 status = textFileFormatYyparse(&context);
                 *hints = context.layerHints;
-            } catch (boost::bad_get const &) {
-                TF_CODING_ERROR("Bad boost:get<T>() in layer parser.");
+            } catch (std::bad_variant_access const &) {
+                TF_CODING_ERROR("Bad variant access in layer parser.");
                 Err(&context, "Internal layer parser error.");
             }
         }
@@ -3379,8 +3375,8 @@ Sdf_ParseLayerFromString(
         TRACE_SCOPE("textFileFormatYyParse");
         status = textFileFormatYyparse(&context);
         *hints = context.layerHints;
-    } catch (boost::bad_get const &) {
-        TF_CODING_ERROR("Bad boost:get<T>() in layer parser.");
+    } catch (std::bad_variant_access const &) {
+        TF_CODING_ERROR("Bad variant access in layer parser.");
         Err(&context, "Internal layer parser error.");
     }
 

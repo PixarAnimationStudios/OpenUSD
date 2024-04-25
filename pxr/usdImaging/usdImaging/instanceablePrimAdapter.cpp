@@ -52,7 +52,7 @@ UsdImagingInstanceablePrimAdapter::ResolveCachePath(
     // for instanced prims, cachePath will be something like:
     //
     // primPath: /__Prototype_1/cube
-    // cachePath: /Models/cube_0.proto_cube_id0
+    // cachePath: /Models/cube_0/proto_cube_id0
     //
     // The name-mangling is so that multiple instancers/adapters can track the
     // same underlying UsdPrim.
@@ -66,8 +66,19 @@ UsdImagingInstanceablePrimAdapter::ResolveCachePath(
             cachePath = instancer;
         }
         if (!childName.IsEmpty()) {
-            cachePath = cachePath.AppendProperty(childName);
+            cachePath = cachePath.AppendChild(childName);
         }
+    }
+    return cachePath;
+}
+
+SdfPath
+UsdImagingInstanceablePrimAdapter::ResolveProxyPrimPath(
+    const SdfPath& cachePath,
+    const UsdImagingInstancerContext* instancerContext) const
+{
+    if (instancerContext && !instancerContext->instancerCachePath.IsEmpty()) {
+        return instancerContext->instancerCachePath.GetAbsoluteRootOrPrimPath();
     }
     return cachePath;
 }

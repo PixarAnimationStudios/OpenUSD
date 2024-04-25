@@ -26,6 +26,13 @@
                         "isInternal": true,
                         "primTypeName": "PxrSampleFilterPluginBase",
                         "includeDerivedPrimTypes" : true 
+                    },
+                    "UsdRiPxrImagingCameraAPIAdapter": {
+                        "bases": [
+                            "UsdImagingAPISchemaAdapter"
+                        ],
+                        "isInternal": true,
+                        "apiSchemaName": "PxrCameraAPI"
                     }
                 }
             },

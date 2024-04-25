@@ -59,6 +59,26 @@ pxr_install_test_dir(
     DEST testUsdRecordSmallObject
 )
 
+# Versions of the the above tests using the new stage scene index
+pxr_install_test_dir(
+    SRC testenv/RecordTest
+    DEST testUsdRecordSingleFrame_SceneIndex
+)
+
+pxr_install_test_dir(
+    SRC testenv/RecordTest
+    DEST testUsdRecordMultipleFrames_SceneIndex
+)
+
+pxr_install_test_dir(
+    SRC testenv/RecordTest
+    DEST testUsdRecordSessionLayer_SceneIndex
+)
+
+pxr_install_test_dir(
+    SRC testenv/SmallObjectTest
+    DEST testUsdRecordSmallObject_SceneIndex
+)
 
 pxr_register_test(testUsdRecordSingleFrame
     PYTHON
@@ -147,5 +167,104 @@ pxr_register_test(testUsdRecordSmallObject
     WARN_PERCENT 0.0075
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdRecordSmallObject
+)
+
+
+# Versions of the the above tests using the new stage scene index
+pxr_register_test(testUsdRecordSingleFrame_SceneIndex
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord AnimCube.usda AnimCube.1.png"
+    IMAGE_DIFF_COMPARE
+        AnimCube.1.png
+    FAIL 0.5
+    FAIL_PERCENT 0.005
+    WARN 0.05
+    WARN_PERCENT 0.0075
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdRecordSingleFrame_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdRecordMultipleFrames_SceneIndex
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord AnimCube.usda AnimCube.#.png --frames 1,5,10"
+    IMAGE_DIFF_COMPARE
+        AnimCube.1.png
+        AnimCube.5.png
+        AnimCube.10.png
+    FAIL 0.5
+    FAIL_PERCENT 0.005
+    WARN 0.05
+    WARN_PERCENT 0.0075
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdRecordMultipleFrames_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+    
+if (PXR_BUILD_PRMAN_PLUGIN OR PXR_BUILD_EMBREE_PLUGIN)
+    pxr_register_test(testUsdRecordSingleFrame_SceneIndex_NoGpu
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --disableGpu AnimCube.usda AnimCubeNoGpu.1.png"
+        IMAGE_DIFF_COMPARE
+            AnimCubeNoGpu.1.png
+        FAIL 0.5
+        FAIL_PERCENT 0.005
+        WARN 0.05
+        WARN_PERCENT 0.0075
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdRecordSingleFrame_SceneIndex
+        ENV
+            USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+            RMANTREE=${RENDERMAN_LOCATION}
+    )
+    pxr_register_test(testUsdRecordMultipleFrames_SceneIndex_NoGpu
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord AnimCube.usda --disableGpu AnimCubeNoGpu.#.png --frames 1,5,10"
+        IMAGE_DIFF_COMPARE
+            AnimCubeNoGpu.1.png
+            AnimCubeNoGpu.5.png
+            AnimCubeNoGpu.10.png
+        FAIL 0.5
+        FAIL_PERCENT 0.005
+        WARN 0.05
+        WARN_PERCENT 0.0075
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdRecordMultipleFrames_SceneIndex
+        ENV
+            USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+            RMANTREE=${RENDERMAN_LOCATION}
+    )
+endif()
+
+pxr_register_test(testUsdRecordSessionLayer_SceneIndex
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --sessionLayer overrideDisplayColor.usda AnimCube.usda AnimCube_overrides.1.png"
+    IMAGE_DIFF_COMPARE
+        AnimCube_overrides.1.png
+    FAIL 0.5
+    FAIL_PERCENT 0.005
+    WARN 0.05
+    WARN_PERCENT 0.0075
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdRecordSessionLayer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdRecordSmallObject_SceneIndex
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord test.usda out.png"
+    IMAGE_DIFF_COMPARE
+        out.png
+    FAIL 0.5
+    FAIL_PERCENT 0.005
+    WARN 0.05
+    WARN_PERCENT 0.0075
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdRecordSmallObject_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 

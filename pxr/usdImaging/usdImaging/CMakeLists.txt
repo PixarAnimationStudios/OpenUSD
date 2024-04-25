@@ -39,6 +39,7 @@ pxr_library(usdImaging
         dataSourceBasisCurves
         dataSourceCamera
         dataSourceGprim
+        dataSourceMapped
         dataSourceMaterial
         dataSourceMesh
         dataSourceNurbsCurves
@@ -123,6 +124,7 @@ pxr_library(usdImaging
         usdRenderSettingsSchema
         usdRenderVarSchema
         rectLightAdapter
+        renderPassAdapter
         renderProductAdapter
         renderSettingsAdapter
         renderSettingsFlatteningSceneIndex
@@ -146,7 +148,6 @@ pxr_library(usdImaging
 
     PUBLIC_HEADERS
         api.h
-        dataSourceSchemaBased.h
         types.h
         unitTestHelper.h
         version.h

@@ -56,6 +56,14 @@ protected:
         const SdfPath& usdPath,
         const UsdImagingInstancerContext*
             instancerContext = nullptr) const override;
+    
+    // Given the cachePath and instancerContext, resolve the proxy prim path
+    USDIMAGING_API
+    SdfPath
+    ResolveProxyPrimPath(
+        const SdfPath& cachePath,
+        const UsdImagingInstancerContext*
+            instancerContext = nullptr) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

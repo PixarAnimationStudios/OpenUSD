@@ -1,6 +1,6 @@
 # Change Log
 
-## [24.05] - 2024-04-12
+## [24.05] - 2024-04-19
 
 ### Build
 
@@ -56,6 +56,10 @@
 - Added PythonGarbageCollectionCallback callback for tracing Python garbage 
   collection, using Trace.Collection.
 
+- Support for URI schemes in Ar URI resolvers that do not conform to RFC2396 is
+  deprecated. This support and the `PXR_AR_DISABLE_STRICT_SCHEME_VALIDATION`
+  environment variable will be removed in a subsequent release.
+	
 - Added ArGetRegisteredURISchemes() function for retrieving the list of URI 
   schemes for which resolvers are registered.
 
@@ -66,8 +70,7 @@
 
 - Various fixes and changes to support Boost dependency removal
   - Replaced `boost::intrusive_ptr` with `TfDelegatedCountPtr`.
-    (Issue: [#2529](https://github.com/PixarAnimationStudios/OpenUSD/issues/2529),
-     PR: [#2891](https://github.com/PixarAnimationStudios/OpenUSD/pull/2891),
+    (PR: [#2891](https://github.com/PixarAnimationStudios/OpenUSD/pull/2891),
      [#2892](https://github.com/PixarAnimationStudios/OpenUSD/pull/2892), 
      [#2893](https://github.com/PixarAnimationStudios/OpenUSD/pull/2893),
      [#2894](https://github.com/PixarAnimationStudios/OpenUSD/pull/2894),

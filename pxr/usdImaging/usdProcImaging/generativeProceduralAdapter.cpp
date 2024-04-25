@@ -35,6 +35,8 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/primvarSchema.h"
 
+#include "pxr/usd/usd/prim.h"
+
 #include "pxr/base/tf/type.h"
 
 
@@ -129,8 +131,8 @@ UsdProcImagingGenerativeProceduralAdapter::Populate(
 {
     const SdfPath cachePath = ResolveCachePath(
         prim.GetPath(), instancerContext);
-    UsdPrim proxyPrim
-        = prim.GetStage()->GetPrimAtPath(cachePath.GetAbsoluteRootOrPrimPath());
+    UsdPrim proxyPrim = _GetPrim(ResolveProxyPrimPath(
+        cachePath, instancerContext));
 
     index->InsertRprim(
         _GetHydraPrimType(prim), cachePath, proxyPrim,

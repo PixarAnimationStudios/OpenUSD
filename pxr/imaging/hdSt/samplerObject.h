@@ -26,9 +26,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/enums.h"
 
 #include "pxr/imaging/hgi/handle.h"
-#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/types.h"
 
 #include <memory>
@@ -187,35 +187,35 @@ private:
     HgiSamplerHandle _layoutSampler;
 };
 
-template<HdTextureType textureType>
+template<HdStTextureType textureType>
 struct HdSt_TypedSamplerObjectHelper;
 
 /// \class HdStTypedSamplerObject
 ///
 /// A template alias such that, e.g., HdStUvSamplerObject can be
-/// accessed as HdStTypedSamplerObject<HdTextureType::Uv>.
+/// accessed as HdStTypedSamplerObject<HdStTextureType::Uv>.
 ///
-template<HdTextureType textureType>
+template<HdStTextureType textureType>
 using HdStTypedSamplerObject =
     typename HdSt_TypedSamplerObjectHelper<textureType>::type;
 
 template<>
-struct HdSt_TypedSamplerObjectHelper<HdTextureType::Uv> {
+struct HdSt_TypedSamplerObjectHelper<HdStTextureType::Uv> {
     using type = HdStUvSamplerObject;
 };
 
 template<>
-struct HdSt_TypedSamplerObjectHelper<HdTextureType::Field> {
+struct HdSt_TypedSamplerObjectHelper<HdStTextureType::Field> {
     using type = HdStFieldSamplerObject;
 };
 
 template<>
-struct HdSt_TypedSamplerObjectHelper<HdTextureType::Ptex> {
+struct HdSt_TypedSamplerObjectHelper<HdStTextureType::Ptex> {
     using type = HdStPtexSamplerObject;
 };
 
 template<>
-struct HdSt_TypedSamplerObjectHelper<HdTextureType::Udim> {
+struct HdSt_TypedSamplerObjectHelper<HdStTextureType::Udim> {
     using type = HdStUdimSamplerObject;
 };
 

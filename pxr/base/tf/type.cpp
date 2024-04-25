@@ -1236,7 +1236,50 @@ TfType::GetSizeof() const
     return _info->sizeofType;
 }
 
+TfType const &
+TfType::_DeclareImpl(
+    const std::type_info &thisTypeInfo,
+    const std::type_info **baseTypeInfos,
+    size_t numBaseTypes)
+{
+    TfAutoMallocTag2 tag2("Tf", "TfType::Declare");
 
+    // Declare base types.
+    std::vector<TfType> baseTfTypes;
+    baseTfTypes.reserve(numBaseTypes);
+    for (size_t i = 0; i != numBaseTypes; ++i) {
+        baseTfTypes.push_back(Declare(GetCanonicalTypeName(*baseTypeInfos[i])));
+    }
+    
+    // Declare this type.
+    return Declare(GetCanonicalTypeName(thisTypeInfo), baseTfTypes);
+}
+
+TfType const &
+TfType::_DefineImpl(
+    const std::type_info &thisTypeInfo,
+    const std::type_info **baseTypeInfos,
+    _CastFunction *castFunctions,
+    size_t numBaseTypes,
+    size_t sizeofThisType, bool isPod, bool isEnum)
+{
+    TfAutoMallocTag2 tag2("Tf", "TfType::Define");
+
+    // Declare this type.
+    TfType const &newType =
+        _DeclareImpl(thisTypeInfo, baseTypeInfos, numBaseTypes);
+
+    // Record traits information about T.
+    newType._DefineCppType(thisTypeInfo, sizeofThisType, isPod, isEnum);
+
+    // Register casts.
+    for (size_t i = 0; i != numBaseTypes; ++i) {
+        newType._AddCppCastFunc(*baseTypeInfos[i], castFunctions[i]);
+    }
+
+    return newType;
+}
+    
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<void>();

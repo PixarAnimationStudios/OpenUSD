@@ -273,10 +273,6 @@ UsdImagingLightAdapter::GetMaterialResource(UsdPrim const &prim,
                                             SdfPath const& cachePath, 
                                             UsdTimeCode time) const
 {
-    if (!_GetSceneLightsEnabled()) {
-        return VtValue();
-    }
-
     if (!prim.HasAPI<UsdLuxLightAPI>()) {
         TF_RUNTIME_ERROR("Expected light prim at <%s> to have an applied API "
                          "of type 'UsdLuxLightAPI'; ignoring",
@@ -298,6 +294,14 @@ UsdImagingLightAdapter::GetMaterialResource(UsdPrim const &prim,
         &networkMap,
         time);
 
+    if (!_GetSceneLightsEnabled()) {
+        // When scene lights are disabeled we need to mark them as disabled
+        // by setting the intensity value to 0. This parameter is found on 
+        // the terminal node, which is the last node in the light network.
+        networkMap.map[HdMaterialTerminalTokens->light].nodes.back().
+            parameters[HdLightTokens->intensity] = 0.0f;
+    }
+
     return VtValue(networkMap);
 }
 
@@ -309,11 +313,8 @@ UsdImagingLightAdapter::_AddSprim(
     const UsdImagingInstancerContext* instancerContext)
 {
     SdfPath cachePath = ResolveCachePath(usdPrim.GetPath(), instancerContext);
-
-    // For an instanced light prim, this is the instancer prim.
-    // For a non-instanced light prim, this is just the light prim.
-    UsdPrim proxyPrim = usdPrim.GetStage()->GetPrimAtPath(
-        cachePath.GetAbsoluteRootOrPrimPath());
+    UsdPrim proxyPrim = _GetPrim(ResolveProxyPrimPath(
+        cachePath, instancerContext));
 
     if (instancerContext != nullptr) {
         index->InsertSprim(

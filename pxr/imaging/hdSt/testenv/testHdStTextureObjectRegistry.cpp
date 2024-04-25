@@ -134,7 +134,7 @@ My_TestGLDrawing::OffscreenTest()
         HdStTextureObjectSharedPtr const texture1 =
             _registry->AllocateTextureObject(
                 HdStTextureIdentifier(TfToken("texture1.png")),
-                HdTextureType::Uv);
+                HdStTextureType::Uv);
 
         // Check that texture gets committed
         _CheckEqual(
@@ -188,7 +188,7 @@ My_TestGLDrawing::OffscreenTest()
         _CheckEqual(
             _registry->AllocateTextureObject(
                 HdStTextureIdentifier(TfToken("texture1.png")),
-                HdTextureType::Uv),
+                HdStTextureType::Uv),
             texture1,
             "Texture was not de-duplicated");
 
@@ -213,7 +213,7 @@ My_TestGLDrawing::OffscreenTest()
         HdStTextureObjectSharedPtr const texture1 =
             _registry->AllocateTextureObject(
                 HdStTextureIdentifier(TfToken("texture1.png")),
-                HdTextureType::Uv);
+                HdStTextureType::Uv);
 
         // Texture 1 has to be committed again since it was garbage
         // collected. Target memory should be reset.
@@ -237,7 +237,7 @@ My_TestGLDrawing::OffscreenTest()
         HdStTextureObjectSharedPtr const texture2 =
             _registry->AllocateTextureObject(
                 HdStTextureIdentifier(TfToken("texture2.png")),
-                HdTextureType::Uv);
+                HdStTextureType::Uv);
         
         _CheckEqual(
             _registry->Commit(), { texture2 },
@@ -265,7 +265,7 @@ My_TestGLDrawing::OffscreenTest()
         HdStTextureObjectSharedPtr const texture =
             _registry->AllocateTextureObject(
                 HdStTextureIdentifier(TfToken("grayscaleTexture.png")),
-                HdTextureType::Uv);
+                HdStTextureType::Uv);
         
         _CheckEqual(
             _registry->Commit(), { texture },

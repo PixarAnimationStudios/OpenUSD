@@ -65,6 +65,13 @@ HdSceneGlobalsSchema::GetFromSceneIndex(
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdPathDataSourceHandle
+HdSceneGlobalsSchema::GetActiveRenderPassPrim() const
+{
+    return _GetTypedDataSource<HdPathDataSource>(
+        HdSceneGlobalsSchemaTokens->activeRenderPassPrim);
+}
+
+HdPathDataSourceHandle
 HdSceneGlobalsSchema::GetActiveRenderSettingsPrim() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
@@ -88,15 +95,21 @@ HdSceneGlobalsSchema::GetEndTimeCode() const
 /*static*/
 HdContainerDataSourceHandle
 HdSceneGlobalsSchema::BuildRetained(
+        const HdPathDataSourceHandle &activeRenderPassPrim,
         const HdPathDataSourceHandle &activeRenderSettingsPrim,
         const HdDoubleDataSourceHandle &startTimeCode,
         const HdDoubleDataSourceHandle &endTimeCode
 )
 {
-    TfToken _names[3];
-    HdDataSourceBaseHandle _values[3];
+    TfToken _names[4];
+    HdDataSourceBaseHandle _values[4];
 
     size_t _count = 0;
+
+    if (activeRenderPassPrim) {
+        _names[_count] = HdSceneGlobalsSchemaTokens->activeRenderPassPrim;
+        _values[_count++] = activeRenderPassPrim;
+    }
 
     if (activeRenderSettingsPrim) {
         _names[_count] = HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim;
@@ -113,6 +126,14 @@ HdSceneGlobalsSchema::BuildRetained(
         _values[_count++] = endTimeCode;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
+}
+
+HdSceneGlobalsSchema::Builder &
+HdSceneGlobalsSchema::Builder::SetActiveRenderPassPrim(
+    const HdPathDataSourceHandle &activeRenderPassPrim)
+{
+    _activeRenderPassPrim = activeRenderPassPrim;
+    return *this;
 }
 
 HdSceneGlobalsSchema::Builder &
@@ -143,6 +164,7 @@ HdContainerDataSourceHandle
 HdSceneGlobalsSchema::Builder::Build()
 {
     return HdSceneGlobalsSchema::BuildRetained(
+        _activeRenderPassPrim,
         _activeRenderSettingsPrim,
         _startTimeCode,
         _endTimeCode
@@ -173,6 +195,16 @@ const HdDataSourceLocator &
 HdSceneGlobalsSchema::GetDefaultLocator()
 {
     static const HdDataSourceLocator locator(GetSchemaToken());
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdSceneGlobalsSchema::GetActiveRenderPassPrimLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdSceneGlobalsSchemaTokens->activeRenderPassPrim);
     return locator;
 }
 

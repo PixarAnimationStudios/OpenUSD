@@ -266,7 +266,11 @@ def main():
 
     # Initialize FrameRecorder 
     frameRecorder = UsdAppUtils.FrameRecorder(
-        rendererPluginId, args.gpuEnabled, args.rsPrimPath)
+        rendererPluginId, args.gpuEnabled)
+    if args.rpPrimPath:
+        frameRecorder.SetActiveRenderPassPrimPath(args.rpPrimPath)
+    if args.rsPrimPath:
+        frameRecorder.SetActiveRenderSettingsPrimPath(args.rsPrimPath)
     frameRecorder.SetImageWidth(args.imageWidth)
     frameRecorder.SetComplexity(args.complexity.value)
     frameRecorder.SetCameraLightEnabled(args.cameraLightEnabled)

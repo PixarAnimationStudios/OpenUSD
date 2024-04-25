@@ -26,6 +26,8 @@
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 
+#include <cmath>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 #if HD_API_VERSION < 52
@@ -51,36 +53,23 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((apertureRoundness, "ri:apertureRoundness"))
 );
 
-namespace {
-
-const HdPrmanCamera::ShutterCurve&
-_GetFallbackShutterCurve(
-    bool interactive)
+static
+std::optional<std::array<float, 8>>
+_ToOptionalFloat8(const VtValue &value)
 {
-    if (interactive) {
-        // Open instantaneously, remain fully open for the duration of the
-        // shutter interval (set via the param RixStr.k_Ri_Shutter) and close
-        // instantaneously.
-        static const HdPrmanCamera::ShutterCurve interactiveFallback = {
-            0.0,
-            1.0,
-            { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f }};
-
-        return interactiveFallback;
+    if (!value.IsHolding<VtArray<float>>()) {
+        return std::nullopt;
     }
-
-    // Open instantaneously and start closing immediately, rapidly at first
-    // decelerating until the end of the interval.
-    static const HdPrmanCamera::ShutterCurve batchFallback = {
-        0.0,
-        0.0,
-        { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.3f, 0.0f }};
-    
-    return batchFallback;
+    const VtArray<float> array = value.UncheckedGet<VtArray<float>>();
+    if (array.size() != 8) {
+        return std::nullopt;
+    }
+    std::array<float, 8> result;
+    for (size_t i = 0; i < 8; i++) {
+        result[i] = array[i];
+    }
+    return result;
 }
-
-} // anon
-
 
 HdPrmanCamera::HdPrmanCamera(SdfPath const& id)
   : HdCamera(id)
@@ -92,7 +81,6 @@ HdPrmanCamera::HdPrmanCamera(SdfPath const& id)
   , _lensDistortionAsym(0.0f)
   , _lensDistortionScale(1.0f)
 #endif
-  , _shutterCurve(_GetFallbackShutterCurve(/*isInteractive = */true))
   , _apertureAngle(0.0f)
   , _apertureDensity(0.0f)
   , _apertureNSides(0)
@@ -162,24 +150,23 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
 
         const VtValue vShutterOpenTime =
             sceneDelegate->GetCameraParamValue(id, _tokens->shutterOpenTime);
+        if (vShutterOpenTime.IsHolding<float>()) {
+            _shutterCurve.shutterOpenTime =
+                vShutterOpenTime.UncheckedGet<float>();
+        } else {
+            _shutterCurve.shutterOpenTime = std::nullopt;
+        }
         const VtValue vShutterCloseTime =
             sceneDelegate->GetCameraParamValue(id, _tokens->shutterCloseTime);
+        if (vShutterCloseTime.IsHolding<float>()) {
+            _shutterCurve.shutterCloseTime =
+                vShutterCloseTime.UncheckedGet<float>();
+        } else {
+            _shutterCurve.shutterCloseTime = std::nullopt;
+        }
         const VtValue vShutteropening =
             sceneDelegate->GetCameraParamValue(id, _tokens->shutteropening);
-        
-        if (vShutterOpenTime.IsHolding<float>() &&
-            vShutterCloseTime.IsHolding<float>() &&
-            vShutteropening.IsHolding<VtArray<float>>()) {
-
-            _shutterCurve = {
-                vShutterOpenTime.UncheckedGet<float>(),
-                vShutterCloseTime.UncheckedGet<float>(),
-                vShutteropening.UncheckedGet<VtArray<float>>()
-            };
-
-        } else {
-            _shutterCurve = _GetFallbackShutterCurve(param->IsInteractive());
-        }
+        _shutterCurve.shutteropening = _ToOptionalFloat8(vShutteropening);
 
         _apertureAngle =
             sceneDelegate->GetCameraParamValue(id, _tokens->apertureAngle)

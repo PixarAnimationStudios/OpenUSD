@@ -32,6 +32,8 @@
 
 #include "pxr/base/vt/array.h"
 
+#include <optional>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
@@ -52,9 +54,9 @@ public:
     ///
     struct ShutterCurve
     {
-        float shutterOpenTime;
-        float shutterCloseTime;
-        VtArray<float> shutteropening;
+        std::optional<float> shutterOpenTime;
+        std::optional<float> shutterCloseTime;
+        std::optional<std::array<float, 8>> shutteropening;
     };
 
     HDPRMAN_API

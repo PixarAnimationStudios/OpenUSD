@@ -1966,9 +1966,7 @@ _AddArc(
 static SdfPath
 _GetDefaultPrimPath(SdfLayerHandle const &layer)
 {
-    TfToken target = layer->GetDefaultPrim();
-    return SdfPath::IsValidIdentifier(target) ?
-        SdfPath::AbsoluteRootPath().AppendChild(target) : SdfPath();
+    return layer->GetDefaultPrimAsPath();
 }
 
 // Declare helper function for creating PcpDynamicFileFormatContext, 

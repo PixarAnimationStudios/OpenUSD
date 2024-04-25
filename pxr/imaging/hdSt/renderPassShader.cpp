@@ -313,7 +313,7 @@ HdStRenderPassShader::UpdateAovInputTextures(
         HdStTextureHandleSharedPtr textureHandle =
             resourceRegistry->AllocateTextureHandle(
                 namedTextureIdentifier.id,
-                HdTextureType::Uv,
+                HdStTextureType::Uv,
                 samplerParameters,
                 /* memoryRequest = */ 0,
                 shared_from_this());
@@ -322,7 +322,7 @@ HdStRenderPassShader::UpdateAovInputTextures(
         _namedTextureHandles.push_back(
             HdStShaderCode::NamedTextureHandle{
                 namedTextureIdentifier.name,
-                HdTextureType::Uv,
+                HdStTextureType::Uv,
                 std::move(textureHandle),
                 /* hash = */ 0});
         

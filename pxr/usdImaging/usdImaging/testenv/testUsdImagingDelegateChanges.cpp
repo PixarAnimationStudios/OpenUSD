@@ -1364,7 +1364,7 @@ InstanceTransformTest()
     delegate->Populate(stage->GetPseudoRoot());
     delegate->SetTime(0);
     delegate->SyncAll(true);
-    tracker.MarkRprimClean(SdfPath("/geo_1.proto_cube_id0"));
+    tracker.MarkRprimClean(SdfPath("/geo_1/proto_cube_id0"));
 
     // Set /geo/cube transform to translate(0,4,0)
     UsdGeomXformable xf = UsdGeomXformable(stage->GetPrimAtPath(SdfPath("/geo/cube")));
@@ -1376,7 +1376,7 @@ InstanceTransformTest()
     delegate->SetTime(0);
 
     // Verify that /geo_1.cube_id0 has DirtyTransform
-    HdDirtyBits dirtyBits = tracker.GetRprimDirtyBits(SdfPath("/geo_1.proto_cube_id0"));
+    HdDirtyBits dirtyBits = tracker.GetRprimDirtyBits(SdfPath("/geo_1/proto_cube_id0"));
     TF_AXIOM(dirtyBits & HdChangeTracker::DirtyTransform);
     }
 

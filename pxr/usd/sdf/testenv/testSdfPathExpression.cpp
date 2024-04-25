@@ -77,8 +77,19 @@ TestBasics()
         TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar/baz")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar.baz")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar.baz:buz")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo.bar")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z.bar")));
     }
     
+    {
+        auto eval = MatchEval { SdfPathExpression("/foo/bar/*") };
+        
+        TF_AXIOM(!eval.Match(SdfPath("/foo/bar"))); 
+        TF_AXIOM(eval.Match(SdfPath("/foo/bar/x")));
+        TF_AXIOM(eval.Match(SdfPath("/foo/bar/y")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo/bar/x/y")));
+    }
+
     {
         auto eval = MatchEval { SdfPathExpression("//foo/bar/baz/qux/quux") };
         

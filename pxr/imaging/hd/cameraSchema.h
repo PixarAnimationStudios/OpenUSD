@@ -38,6 +38,7 @@
 /// \file
 
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/schemaTypeDefs.h"
 #include "pxr/imaging/hd/splitDiopterSchema.h"
 #include "pxr/imaging/hd/lensDistortionSchema.h"
 
@@ -70,6 +71,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (dofAspect) \
     (splitDiopter) \
     (lensDistortion) \
+    (namespacedProperties) \
     (perspective) \
     (orthographic) \
 
@@ -154,7 +156,10 @@ public:
     HdSplitDiopterSchema GetSplitDiopter() const;
 
     HD_API
-    HdLensDistortionSchema GetLensDistortion() const; 
+    HdLensDistortionSchema GetLensDistortion() const;
+
+    HD_API
+    HdSampledDataSourceContainerContainerSchema GetNamespacedProperties() const; 
 
     /// @}
 
@@ -189,6 +194,10 @@ public:
     /// Prim-level relative data source locator to locate shutterClose.
     HD_API
     static const HdDataSourceLocator &GetShutterCloseLocator();
+
+    /// Prim-level relative data source locator to locate namespacedProperties.
+    HD_API
+    static const HdDataSourceLocator &GetNamespacedPropertiesLocator();
     /// @} 
 
     /// \name Schema construction
@@ -220,7 +229,8 @@ public:
         const HdBoolDataSourceHandle &focusOn,
         const HdFloatDataSourceHandle &dofAspect,
         const HdContainerDataSourceHandle &splitDiopter,
-        const HdContainerDataSourceHandle &lensDistortion
+        const HdContainerDataSourceHandle &lensDistortion,
+        const HdContainerDataSourceHandle &namespacedProperties
     );
 
     /// \class HdCameraSchema::Builder
@@ -283,6 +293,9 @@ public:
         HD_API
         Builder &SetLensDistortion(
             const HdContainerDataSourceHandle &lensDistortion);
+        HD_API
+        Builder &SetNamespacedProperties(
+            const HdContainerDataSourceHandle &namespacedProperties);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -306,6 +319,7 @@ public:
         HdFloatDataSourceHandle _dofAspect;
         HdContainerDataSourceHandle _splitDiopter;
         HdContainerDataSourceHandle _lensDistortion;
+        HdContainerDataSourceHandle _namespacedProperties;
 
     };
 
