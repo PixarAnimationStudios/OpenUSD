@@ -505,10 +505,19 @@ UsdUtils_LocalizationContext::_ProcessAssetValue(
 
                 const std::vector<std::string> processedDeps = 
                     _delegate->ProcessValuePathArrayElement(
-                            layer, keyPath, rawAssetPath, dependencies);
+                            layer, keyPath, rawAssetPath,
+                            dependencies);
                 
                 _EnqueueDependency(layer, rawAssetPath);
                 _EnqueueDependencies(layer, processedDeps);
+            }
+            else {
+                // We want to preserve empty asset paths in arrays, as they
+                // may be meaningful (e.g. in primvars that need to be a
+                // specific length).
+                _delegate->ProcessValuePathArrayElement(
+                        layer, keyPath, rawAssetPath,
+                        std::vector<std::string>());
             }
         }
 
