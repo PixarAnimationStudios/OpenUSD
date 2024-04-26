@@ -515,6 +515,7 @@ _IsNativeRenderManFormat(std::string const &path)
 /// - RMAN_TEXTUREPATH
 /// - RMAN_RIXPLUGINPATH
 /// - RMAN_PROCEDURALPATH
+/// - RMAN_DISPLAYPATH
 ///
 void
 _UpdateSearchPathsFromEnvironment(RtParamList& options)
@@ -622,6 +623,27 @@ _UpdateSearchPathsFromEnvironment(RtParamList& options)
         proceduralpath = TfStringJoin(paths, ":");
         options.SetString( RixStr.k_searchpath_procedural,
                            RtUString(proceduralpath.c_str()) );
+    }
+
+    {
+        std::string displaypath = TfGetenv("RMAN_DISPLAYPATH");
+        NdrStringVec paths;
+        if (!displaypath.empty()) {
+            // RenderMan expects ':' as path separator, regardless of platform
+            for (std::string const& path : TfStringSplit(displaypath,
+                                                         ARCH_PATH_LIST_SEP))
+            {
+                paths.push_back(path);
+            }
+        }
+
+        // Default RenderMan installation under '$RMANTREE/lib/plugins'
+        if (!rmantree.empty()) {
+            paths.push_back(TfStringCatPaths(rmantree, "lib/plugins"));
+        }
+        displaypath = TfStringJoin(paths, ":");
+        options.SetString( RixStr.k_searchpath_display,
+                           RtUString(displaypath.c_str()) );
     }
 }
 
