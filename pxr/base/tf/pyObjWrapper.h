@@ -60,7 +60,7 @@ public:
 private:
     ARCH_PRAGMA_PUSH
     ARCH_PRAGMA_UNUSED_PRIVATE_FIELD
-    std::aligned_storage<Size, Align>::type _stub;
+    [[maybe_unused]] std::aligned_storage<Size, Align>::type _stub;
     ARCH_PRAGMA_POP
 };
 

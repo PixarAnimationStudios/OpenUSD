@@ -40,4 +40,8 @@ endif()
 # See https://gcc.gnu.org/bugzilla/buglist.cgi?quicksearch=maybe%20uninitialized&list_id=394666
 _disable_warning("maybe-uninitialized")
 
+# MSVC and Clang support a super-set of GCC attributes.
+# Unfortunately, GCC warns when it doesn't use said attributes
+_disable_warning("ignored-attributes)
+
 set(_PXR_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS}")
