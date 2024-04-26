@@ -28,6 +28,7 @@
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/setenv.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -54,6 +55,7 @@ static struct HdPrmanLoader
     CreateDelegateFunc createFunc = nullptr;
     DeleteDelegateFunc deleteFunc = nullptr;
     bool valid = false;
+    std::string errorMsg;
 } _hdPrman;
 
 void 
@@ -67,7 +69,7 @@ HdPrmanLoader::Load()
 
     const std::string rmantree = TfGetenv(k_RMANTREE);
     if (rmantree.empty()) {
-        TF_WARN("The hdPrmanLoader backend requires $RMANTREE to be set.");
+        _hdPrman.errorMsg = "The hdPrmanLoader backend requires $RMANTREE to be set.";
         return;
     }
 
@@ -79,7 +81,8 @@ HdPrmanLoader::Load()
         libprmanPath,
         ARCH_LIBRARY_NOW | ARCH_LIBRARY_GLOBAL);
     if (!_hdPrman.libprman) {
-        TF_WARN("Could not load libprman.");
+        _hdPrman.errorMsg = TfStringPrintf("Could not load libprman: %s",
+            ArchLibraryError().c_str());
         return;
     }
 
@@ -101,14 +104,19 @@ HdPrmanLoader::Load()
         plugin = PlugRegistry::GetInstance().GetPluginWithName("hdxPrman");
     }
 
-    if (plugin) {
-        _hdPrman.hdPrman = ArchLibraryOpen(
-            plugin->GetPath(),
-            ARCH_LIBRARY_NOW | ARCH_LIBRARY_LOCAL);
+    if (!plugin) {
+        _hdPrman.errorMsg =
+            TfStringPrintf("Could not find hdPrman plugin registration.");
+        return;
     }
 
+    _hdPrman.hdPrman = ArchLibraryOpen(
+        plugin->GetPath(),
+        ARCH_LIBRARY_NOW | ARCH_LIBRARY_LOCAL);
+
     if (!_hdPrman.hdPrman) {
-        TF_WARN("Could not load versioned hdPrman backend: %s",
+        _hdPrman.errorMsg =
+            TfStringPrintf("Could not load versioned hdPrman backend: %s",
                 ArchLibraryError().c_str());
         return;
     }
@@ -121,7 +129,8 @@ HdPrmanLoader::Load()
                                     "HdPrmanLoaderDeleteDelegate"));
 
     if (!_hdPrman.createFunc || !_hdPrman.deleteFunc) {
-        TF_WARN("hdPrmanLoader factory methods could not be found.");
+        _hdPrman.errorMsg = "hdPrmanLoader factory methods could not be found "
+            "in hdPrman plugin.";
         return;
     }
 
@@ -164,8 +173,11 @@ HdPrmanLoaderRendererPlugin::CreateRenderDelegate()
     if (_hdPrman.valid) {
         HdRenderSettingsMap settingsMap;
         return _hdPrman.createFunc(settingsMap);
+    } else {
+        TF_WARN("Could not create hdPrman instance: %s",
+                _hdPrman.errorMsg.c_str());
+        return nullptr;
     }
-    return nullptr;
 }
 
 HdRenderDelegate*
@@ -174,8 +186,11 @@ HdPrmanLoaderRendererPlugin::CreateRenderDelegate(
 {
     if (_hdPrman.valid) {
         return _hdPrman.createFunc(settingsMap);
+    } else {
+        TF_WARN("Could not create hdPrman instance: %s",
+                _hdPrman.errorMsg.c_str());
+        return nullptr;
     }
-    return nullptr;
 }
 
 void
