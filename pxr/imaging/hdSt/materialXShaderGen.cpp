@@ -401,8 +401,10 @@ HdStMaterialXShaderGen<Base>::_EmitMxInitFunction(
     Base::emitComment("Convert HdData to MxData", mxStage);
 
     // Initialize the position of the view in worldspace
-    emitLine("u_viewPosition = vec3(HdGet_worldToViewInverseMatrix()"
-             " * vec4(0.0, 0.0, 0.0, 1.0))", mxStage);
+    if (mxStage.getUniformBlock(mx::HW::PRIVATE_UNIFORMS).find(mx::HW::T_VIEW_POSITION)) {
+        emitLine("u_viewPosition = vec3(HdGet_worldToViewInverseMatrix()"
+            " * vec4(0.0, 0.0, 0.0, 1.0))", mxStage);
+    }
     
     // Calculate the worldspace position, normal and tangent vectors
     const std::string texcoordName =
@@ -413,11 +415,13 @@ HdStMaterialXShaderGen<Base>::_EmitMxInitFunction(
         mxStage);
 
     // Add the vd declaration that translates HdVertexData -> MxVertexData
-    std::string mxVertexDataName = "mx" + vertexData.getName();
-    _EmitMxVertexDataDeclarations(vertexData, mxVertexDataName, 
-                                  vertexData.getInstance(), 
-                                  mx::Syntax::COMMA, mxStage);
-    Base::emitLineBreak(mxStage);
+    if (!vertexData.empty()) {
+        std::string mxVertexDataName = "mx" + vertexData.getName();
+        _EmitMxVertexDataDeclarations(vertexData, mxVertexDataName,
+            vertexData.getInstance(),
+            mx::Syntax::COMMA, mxStage);
+        Base::emitLineBreak(mxStage);
+    }
 
     // Initialize MaterialX parameters with HdGet_ equivalents
     Base::emitComment("Initialize Material Parameters", mxStage);
@@ -769,10 +773,10 @@ HdStMaterialXShaderGen<Base>::_EmitDataStructsAndFunctionDefinitions(
         emitLine(mxVertexDataName + " " + vertexData.getInstance(), mxStage);
         Base::emitLineBreak(mxStage);
         Base::emitLineBreak(mxStage);
-
-        // add the mxInit function to convert Hd -> Mx data
-        _EmitMxInitFunction(vertexData, mxStage);
     }
+
+    // add the mxInit function to convert Hd -> Mx data
+    _EmitMxInitFunction(vertexData, mxStage);
 
     // Emit lighting and shadowing code
     if (lighting) {
