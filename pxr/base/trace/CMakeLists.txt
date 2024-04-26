@@ -56,6 +56,7 @@ pxr_library(trace
     PYMODULE_CPPFILES
         module.cpp
         wrapAggregateNode.cpp
+        wrapAggregateTree.cpp
         wrapCollector.cpp
         wrapReporter.cpp
         wrapTestTrace.cpp

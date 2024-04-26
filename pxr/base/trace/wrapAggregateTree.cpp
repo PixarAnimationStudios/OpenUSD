@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -24,16 +24,25 @@
 
 #include "pxr/pxr.h"
 
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/base/trace/aggregateTree.h"
+
+#include "pxr/base/tf/makePyConstructor.h"
+#include "pxr/base/tf/pyPtrHelpers.h"
+
+#include <boost/python/class.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
-{
-    TF_WRAP( Collector );
-    TF_WRAP( AggregateNode );
-    TF_WRAP( AggregateTree );
-    TF_WRAP( Reporter );
+using namespace boost::python;
 
-    TF_WRAP( TestTrace );
+void wrapAggregateTree()
+{
+    using This = TraceAggregateTree;
+    using ThisPtr = TraceAggregateTreePtr;
+
+    class_<This, ThisPtr>("AggregateTree", no_init)
+        .def(TfPyRefAndWeakPtr())
+        .def(TfMakePyConstructor(&This::New))
+        .add_property("root", &This::GetRoot)
+    ;
 }
