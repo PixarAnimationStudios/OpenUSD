@@ -152,6 +152,7 @@ pxr_test_scripts(
     testenv/testTraceRecursion.py
     testenv/testTraceReports.py
     testenv/testTraceReporter.py
+    testenv/testTraceReporterLoadTrace.py
 )
 
 pxr_install_test_dir(
@@ -264,6 +265,11 @@ pxr_register_test(testTraceReports
 pxr_register_test(testTraceReporter
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceReporter"
+)
+
+pxr_register_test(testTraceReporterLoadTrace
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceReporterLoadTrace"
 )
 
 pxr_register_test(testTraceSerialization

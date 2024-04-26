@@ -251,15 +251,47 @@ TraceReporter::LoadReport(
 
     // Regular expression for each trace line in a report.
     static const auto traceRowRE = std::invoke([]() -> std::regex {
-        // Optionally match a ms entry:
-        // - ms entries are always rounded to 1000ths place, so we expect exatly
-        //   3 digits after the
-        const std::string msPattern = R"((?:(\d+.\d{3}) ms|)\s+)";
+        // Note that the expression we build will have exactly 5 capture groups:
+        // 
+        // 1. The inclusive time entry (may be empty)
+        // 
+        // 2. The exclusive time entry (may also be empty)
+        //
+        // 3. The sample count (required)
+        //
+        // 4. The indentation string (e.g., "| | ", may be empty)
+        //
+        // 5. The tag
+
+        // Match time entries:
+        //
+        // - Time entries are in milliseconds and always rounded to 1000ths 
+        //   place, so expect exactly 3 digits after the decimal.
+        //
+        // - Trace Reporter will either output 0, 1, or 2 time entries.
+        //
+        // - The first entry, if present, is always the inclusive time entry.
+        //
+        // Note: This is structured this way to maintain compatibility with 
+        // Windows. For some reason, if we just have two optional time entry 
+        // patterns, and if only one has match, Linux and Windows will disagree
+        // on whether the matched entry belongs to the first or second capture
+        // group. To work around this, we nest the expression to match either:
+        //
+        // - Required time entry followed by an optional time entry
+        //
+        // - or an empty group.
+        //
+        const std::string msEntryPattern = R"((?:(\d+\.\d{3}) ms))";
+        const std::string msPattern = TfStringPrintf(R"(%s\s+%s?\s+)", 
+            msEntryPattern.c_str(), msEntryPattern.c_str());
+        const std::string msPatternOptional = TfStringPrintf(
+            R"((?:%s|(?:)\s+))", msPattern.c_str());
 
         // Match sample entry
         // - Can be either an integer or a floating point number (for traces
         //   with iterations)
-        const std::string samplePattern = R"((\d+|\d+.\d{3}) samples\s+)";
+        const std::string samplePattern = R"((\d+|\d+\.\d{3}) samples\s+)";
 
         // Match indentation string
         const std::string indentPattern = R"(([ |]+))";
@@ -267,7 +299,7 @@ TraceReporter::LoadReport(
         // Match tag
         const std::string tagPattern = R"((.*))";
 
-        return std::regex(R"(\s*)" + msPattern + msPattern + samplePattern 
+        return std::regex(R"(\s*)" + msPatternOptional + samplePattern 
             + indentPattern + tagPattern);
     });
 
