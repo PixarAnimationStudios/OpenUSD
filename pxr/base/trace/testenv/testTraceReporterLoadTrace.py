@@ -135,6 +135,38 @@ class TestTraceReporterLoadTrace(unittest.TestCase):
         for childA, childB in zip(rootA.children, rootB.children):
             self.AssertNodeTreesEqual(childA, childB, delta)
 
+    def AssertRoundTripValid(self, parsed: Trace.Reporter.ParsedTree):
+        """
+        Take an already parsed report, write it to a temporary file, and then 
+        re-parse it.
+
+        This will verify that the re-parsed report is identical to the first 
+        parsed report, which will ensure that saving and loading are consistent.
+        """
+        with TraceTextFile("") as filepath:
+            for index, parsedEntry in enumerate(parsed):
+                tree, iterationCount = \
+                    parsedEntry.tree, parsedEntry.iterationCount
+
+                reporter = Trace.Reporter(f"{self.id()}_{index}")
+                root = reporter.aggregateTreeRoot
+                for child in tree.root.children:
+                    root.Append(child)
+                reporter.Report(filepath, iterationCount, append=True)
+
+            with open(filepath, 'r') as file:
+                print(f"Saved report for {self.id().split('.')[-1]}:")
+                print(file.read())
+
+            newParsed = Trace.Reporter.LoadReport(filepath)
+            self.assertEqual(len(parsed), len(newParsed),
+                msg="Number of trees saved != number of trees loaded")
+            for old, new in zip(parsed, newParsed):
+                self.assertEqual(old.iterationCount, new.iterationCount,
+                    msg="iterationCount saved != iterationCount loaded")
+                self.AssertNodeTreesEqual(
+                    GetNodeDataTree(old.tree), GetNodeDataTree(new.tree))
+
     def test_Basic(self):
         """
         Test that a basic trace text file can be parsed.
@@ -170,8 +202,9 @@ class TestTraceReporterLoadTrace(unittest.TestCase):
             ( 13.181,  13.181,  30, "      UiqApplication::_notify"),
             (  0.000,   0.000,   1, "        AppExecuteQueuedLaterFunctions")
         ])
-
         self.AssertNodeTreesEqual(expected, GetNodeDataTree(parsed[0].tree))
+
+        self.AssertRoundTripValid(parsed)
 
     def test_BlankEntryOnMainThreadExclusiveTime(self):
         """
@@ -199,8 +232,9 @@ class TestTraceReporterLoadTrace(unittest.TestCase):
             (8.992, 5.792,   1, "    SdfLayer::FindOrOpen"),
             (3.200, 3.200,   1, "      SdfLayer::_ComputeInfoToFindOrOpenLayer")
         ])
-
         self.AssertNodeTreesEqual(expected, GetNodeDataTree(parsed[0].tree))
+
+        self.AssertRoundTripValid(parsed)
 
     def test_Iters(self):
         """
@@ -241,8 +275,9 @@ class TestTraceReporterLoadTrace(unittest.TestCase):
             (iters*0.001, iters*0.001, round(iters*0.083), "            CmdRegistry::_HandleNotice"),
             (iters*0.015, iters*0.015, round(iters*0.028), "            UpPlayer::SetPaused")
         ])
-
         self.AssertNodeTreesEqual(expected, GetNodeDataTree(parsed[0].tree))
+
+        self.AssertRoundTripValid(parsed)
 
     def test_MultipleTrees(self):
         """
@@ -288,6 +323,8 @@ class TestTraceReporterLoadTrace(unittest.TestCase):
 
         self.AssertNodeTreesEqual(expected1, GetNodeDataTree(parsed[0].tree))
         self.AssertNodeTreesEqual(expected2, GetNodeDataTree(parsed[1].tree))
+
+        self.AssertRoundTripValid(parsed)
 
 if __name__ == '__main__':
     unittest.main()
