@@ -35,40 +35,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-// SdfPathExpressionEval::Match currently takes in a domain object and two 
-// functors to provide the translation from path-to-object and vice versa.
-// See comment below in HdCollectionExpressionEvaluator::Match.
-// 
-struct _PathToSceneIndexPrim
-{
-    const HdSceneIndexPrim operator() (const SdfPath &path) const
-    {
-        if (sceneIndex) {
-            return sceneIndex->GetPrim(path);
-        }
-        return {};
-    }
-
-    const HdSceneIndexBaseRefPtr &sceneIndex;
-};
-
-// XXX A scene index prim cannot be queried for its path.
-//     We'd need to traverse the scene index and test for equality to get the
-//     path given a prim.
-//     For now, just take the path on construction and return it.
-//     Revisit this when adding support for incremental searcher.
-//
-struct _SceneIndexPrimToPath
-{
-    SdfPath operator() (const HdSceneIndexPrim &prim) const
-    {
-        TF_UNUSED(prim);
-        return path;
-    }
-
-    SdfPath const &path;
-};
-
 // Traverse the subtree at `rootPath` and add descendant prim paths to `result`.
 void
 _AddAllDescendants(
@@ -129,7 +95,13 @@ HdCollectionExpressionEvaluator::Match(
     //     children of room instead of stopping the evaluation at
     //     /world/sets/room.
     //     
-    return _eval.Match(path, _PathToSceneIndexPrim {_sceneIndex});
+
+    // Note that _sceneIndex must be non-null due to the IsEmpty() check above.
+    return _eval.Match(
+        path,
+        [sceneIndex = get_pointer(_sceneIndex)](SdfPath const &path) {
+            return sceneIndex->GetPrim(path);
+        });
 }
 
 void
