@@ -1,7 +1,13 @@
 #usda 1.0
 
 def Xform "Model" (
+    assetInfo = {
+        asset[] payloadAssetDependencies = [@@, @@]
+    }
     customData = {
+        dictionary d = {
+            asset[] bar = [@@, @@]
+        }
         dictionary emptyDict = {
         }
     }
@@ -9,10 +15,17 @@ def Xform "Model" (
     references = None
 )
 {
-    asset[] bar
+    asset[] bar = [@@, @@]
     asset[] emptyArr = []
-    asset foo
-    asset[] varBar
+    asset foo (
+        customData = {
+            asset[] bar = [@@, @@]
+        }
+    )
+    asset[] varBar.timeSamples = {
+        1: [@@, @@],
+        2: [@@, @@],
+    }
     asset varFoo
 }
 
