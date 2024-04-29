@@ -115,9 +115,12 @@ def BuildNodeDataTree(data: List[Tuple[float, float, int, str]]):
 
     return root
 
+# The reporter only reports up to 3 decimal places.
+THRESHOLD = 0.001
+
 class TestTraceReporterLoadTrace(unittest.TestCase):
     def AssertNodeTreesEqual(self, 
-        rootA: NodeData, rootB: NodeData, delta=0.001):
+        rootA: NodeData, rootB: NodeData, delta=THRESHOLD):
         """
         Compare two NodeData trees.
         """
@@ -135,7 +138,8 @@ class TestTraceReporterLoadTrace(unittest.TestCase):
         for childA, childB in zip(rootA.children, rootB.children):
             self.AssertNodeTreesEqual(childA, childB, delta)
 
-    def AssertRoundTripValid(self, parsed: Trace.Reporter.ParsedTree):
+    def AssertRoundTripValid(self, 
+        parsed: Trace.Reporter.ParsedTree, delta=THRESHOLD):
         """
         Take an already parsed report, write it to a temporary file, and then 
         re-parse it.
@@ -165,7 +169,7 @@ class TestTraceReporterLoadTrace(unittest.TestCase):
                 self.assertEqual(old.iterationCount, new.iterationCount,
                     msg="iterationCount saved != iterationCount loaded")
                 self.AssertNodeTreesEqual(
-                    GetNodeDataTree(old.tree), GetNodeDataTree(new.tree))
+                    GetNodeDataTree(old.tree), GetNodeDataTree(new.tree), delta)
 
     def test_Basic(self):
         """
@@ -277,7 +281,14 @@ class TestTraceReporterLoadTrace(unittest.TestCase):
         ])
         self.AssertNodeTreesEqual(expected, GetNodeDataTree(parsed[0].tree))
 
-        self.AssertRoundTripValid(parsed)
+        # The parser and reporter round to the nearest thousandths place, but 
+        # also divide/multiply the iteration count respectively, so some 
+        # precision seems to be lost, and we need to check with a weaker 
+        # threshold.
+        #
+        # XXX: This threshold is only needed for the debug build, and seems 
+        # higher than expected. We should investigate this further.
+        self.AssertRoundTripValid(parsed, THRESHOLD*iters)
 
     def test_MultipleTrees(self):
         """
