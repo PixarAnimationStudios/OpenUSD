@@ -37,7 +37,11 @@
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
 #include "pxr/imaging/hd/cameraSchema.h"
 #include "pxr/imaging/hd/categoriesSchema.h"
+#include "pxr/imaging/hd/collectionSchema.h"
+#include "pxr/imaging/hd/collectionsSchema.h"
 #include "pxr/imaging/hd/coordSysBindingSchema.h"
+#include "pxr/imaging/hd/dependenciesSchema.h"
+#include "pxr/imaging/hd/dependencySchema.h"
 #include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/extComputationInputComputationSchema.h"
 #include "pxr/imaging/hd/extComputationOutputSchema.h"
@@ -92,6 +96,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (binding)
     (coordSys)
+    (lightLinkingCollectionsDependency)
 );
 
 // ----------------------------------------------------------------------------
@@ -1484,6 +1489,124 @@ private:
 
 // ----------------------------------------------------------------------------
 
+HdDataSourceBaseHandle
+_BuildCollectionDataSourceFromLightParam(
+    const SdfPath &id,
+    HdSceneDelegate *sceneDelegate,
+    const TfToken &exprToken)
+{
+    VtValue v = sceneDelegate->GetLightParamValue(id, exprToken);
+    if (v.IsHolding<SdfPathExpression>()) {
+        return
+            HdCollectionSchema::Builder()
+            .SetMembershipExpression(
+                HdRetainedTypedSampledDataSource<SdfPathExpression>::New(
+                    v.UncheckedGet<SdfPathExpression>()))
+            .Build();
+    }
+    return nullptr;
+}
+
+
+class Hd_DataSourceLightCollections : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_DataSourceLightCollections);
+
+    Hd_DataSourceLightCollections(
+        const SdfPath &id,
+        HdSceneDelegate *sceneDelegate)
+    : _id(id), _sceneDelegate(sceneDelegate)
+    {
+        TF_VERIFY(_sceneDelegate);
+    }
+
+    TfTokenVector GetNames() override
+    {
+        return
+            {HdCollectionEmulationTokens->lightLinkCollection,
+             HdCollectionEmulationTokens->shadowLinkCollection};
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        if (name == HdCollectionEmulationTokens->lightLinkCollection) {
+            return _BuildCollectionDataSourceFromLightParam(
+                _id, _sceneDelegate,
+                HdCollectionEmulationTokens->lightLinkCollectionMembershipExpression);
+        }
+
+        if (name == HdCollectionEmulationTokens->shadowLinkCollection) {
+            return _BuildCollectionDataSourceFromLightParam(
+                _id, _sceneDelegate,
+                HdCollectionEmulationTokens->shadowLinkCollectionMembershipExpression);
+        }
+
+        return nullptr;
+    }
+
+private:
+    SdfPath _id;
+    HdSceneDelegate *_sceneDelegate;
+};
+
+class Hd_DataSourceLightFilterCollections : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_DataSourceLightFilterCollections);
+
+    Hd_DataSourceLightFilterCollections(
+        const SdfPath &id,
+        HdSceneDelegate *sceneDelegate)
+    : _id(id), _sceneDelegate(sceneDelegate)
+    {
+        TF_VERIFY(_sceneDelegate);
+    }
+
+    TfTokenVector GetNames() override
+    {
+        return {HdCollectionEmulationTokens->filterLinkCollection};
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        if (name == HdCollectionEmulationTokens->filterLinkCollection) {
+            return _BuildCollectionDataSourceFromLightParam(
+                _id, _sceneDelegate,
+                HdCollectionEmulationTokens->filterLinkCollectionMembershipExpression);
+        }
+
+        return nullptr;
+    }
+
+private:
+    SdfPath _id;
+    HdSceneDelegate *_sceneDelegate;
+};
+
+HdDataSourceBaseHandle
+_BuildDependenciesDataSourceForLightLinking()
+{
+    static const HdDataSourceBaseHandle lightLinkDependencies =
+        HdRetainedContainerDataSource::New(
+            _tokens->lightLinkingCollectionsDependency,
+            HdDependencySchema::Builder()
+            .SetDependedOnPrimPath(
+                HdRetainedTypedSampledDataSource<SdfPath>::New(
+                    SdfPath::EmptyPath())) // self
+            .SetDependedOnDataSourceLocator(
+                HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+                    HdDataSourceLocator(HdLightSchemaTokens->light)))
+            .SetAffectedDataSourceLocator(
+                HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+                    HdCollectionsSchema::GetDefaultLocator()))
+            .Build());
+    
+    return lightLinkDependencies;
+}
+
+// ----------------------------------------------------------------------------
+
 class Hd_DataSourceVolumeField : public HdContainerDataSource
 {
 public:
@@ -2604,6 +2727,8 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdMaterialSchemaTokens->material);
         result.push_back(HdXformSchemaTokens->xform);
         result.push_back(HdLightSchemaTokens->light);
+        result.push_back(HdCollectionsSchemaTokens->collections);
+        result.push_back(HdDependenciesSchemaTokens->__dependencies);
     }
 
     if (_type == HdPrimTypeTokens->material) {
@@ -3107,6 +3232,29 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
         return Hd_DataSourceLegacyExtComputation::New(_id, _sceneDelegate);
     } else if (name == HdImageShaderSchemaTokens->imageShader) {
         return Hd_DataSourceImageShader::New(_id, _sceneDelegate);
+    } else if (name == HdCollectionsSchemaTokens->collections) {
+        // Hydra 1.0 doesn't transport the USD notion of collections.
+        // Instead, behaviors that leverage collections (e.g. light linking)
+        // are implemented on the scene delegate end.
+        //
+        // Below, we "promote" membership expression attributes on the light or
+        // light filter as collections. This bit of glue code helps unify
+        // the light linking scene index handling for emulated and native
+        // scene indices.
+        //
+        if (_IsLight()) {
+            return Hd_DataSourceLightCollections::New(_id, _sceneDelegate);
+        }
+        if (_type == HdPrimTypeTokens->lightFilter) {
+            return Hd_DataSourceLightFilterCollections::New(
+                _id, _sceneDelegate);
+        }
+
+    } else if (name == HdDependenciesSchemaTokens->__dependencies) {
+        // Setup dependencies for the collections manufactured above.
+        if (_IsLight() || _type == HdPrimTypeTokens->lightFilter) {
+            return _BuildDependenciesDataSourceForLightLinking();
+        }
     }
 
     return nullptr;
