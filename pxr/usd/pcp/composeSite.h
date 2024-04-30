@@ -371,6 +371,12 @@ PcpComposeSiteVariantSelections(PcpNodeRef const &node,
         node.GetLayerStack(), node.GetPath(), result);
 }
 
+PCP_API
+bool
+PcpComposeSiteHasVariantSelections(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path);
+
 /// Compose child names.
 /// If the optional \p orderField is provided, its order will be applied.
 PCP_API

@@ -215,6 +215,8 @@ struct HgiShaderFunctionParamBlockDesc
     struct Member {
         std::string name;
         std::string type;
+        HgiInterpolationType interpolation;
+        HgiSamplingType sampling;
     };
     using MemberVector = std::vector<Member>;
 

@@ -1,4 +1,9 @@
 #sdf 1.4.32
+(
+    relocates = {
+        </Ref/PayloadChild>: </Ref/Child>
+    }
+)
 
 def "Payload"
 {
@@ -9,9 +14,6 @@ def "Payload"
 
 def "Ref" (
     payload = </Payload>
-    relocates = {
-        <PayloadChild> : <Child>
-    }
 )
 {
     def "Child"

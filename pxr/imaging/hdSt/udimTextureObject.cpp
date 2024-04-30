@@ -327,10 +327,10 @@ HdStUdimTextureObject::IsValid() const
     return _hgiFormat != HgiFormatInvalid;
 }
 
-HdTextureType
+HdStTextureType
 HdStUdimTextureObject::GetTextureType() const
 {
-    return HdTextureType::Udim;
+    return HdStTextureType::Udim;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

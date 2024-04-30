@@ -836,18 +836,31 @@ public:
     void SetComment(const std::string &comment);
     
     /// Return the defaultPrim metadata for this layer.  This field
-    /// indicates the name of which root prim should be targeted by a reference
-    /// or payload to this layer that doesn't specify a prim path.
+    /// indicates the name or path of which prim should be targeted by a
+    /// reference or payload to this layer that doesn't specify a prim path.
     ///
     /// The default value is the empty token.
     SDF_API
     TfToken GetDefaultPrim() const;
 
-    /// Set the default prim metadata for this layer.  The root prim with this
-    /// name will be targeted by a reference or a payload to this layer that
-    /// doesn't specify a prim path.  Note that this must be a root prim
-    /// <b>name</b> not a path.  E.g. "rootPrim" rather than "/rootPrim".  See
-    /// GetDefaultPrim().
+    /// Return this layer's default prim metadata interpreted as an absolute 
+    /// prim path regardless of whether it was authored as a root prim name or a
+    /// prim path. For example, if the authored default prim value is 
+    /// "rootPrim", return </rootPrim>. If the authored default prim value is 
+    /// "/path/to/non/root/prim", return </path/to/non/root/prim>. If the 
+    /// authored default prim value cannot be interpreted as a prim path, 
+    /// return the empty SdfPath.
+    ///
+    /// The default value is an empty path.
+    SDF_API
+    SdfPath GetDefaultPrimAsPath() const;
+
+    /// Set the default prim metadata for this layer.  The prim at this path
+    /// will be targeted by a reference or a payload to this layer that doesn't 
+    /// specify a prim path.
+    /// Note that this can be a name if it refers to a root prim, or a path to
+    /// any prim in this layer. E.g. "rootPrim", "/path/to/non/root/prim" or
+    /// "/rootPrim".  See GetDefaultPrim().
     SDF_API
     void SetDefaultPrim(const TfToken &name);
 
@@ -1216,6 +1229,37 @@ public:
     /// Sets the layer offset for the subLayer path at the given index.
     SDF_API
     void SetSubLayerOffset(const SdfLayerOffset& offset, int index);
+
+    /// @}
+    /// \name Relocates
+    /// @{
+
+    /// Get the list of relocates specified in this layer's metadata.
+    ///
+    /// Each individual relocate in the list is specified as a pair of 
+    /// \c \SdfPath where the first is the source path of the relocate and the
+    /// second is target path.
+    ///
+    /// Note that is NOT a proxy object and cannot be used to edit the field in
+    /// place. 
+    SDF_API
+    SdfRelocates GetRelocates() const;
+    
+    /// Set the entire list of namespace relocations specified on this layer to
+    /// \p relocates.
+    SDF_API
+    void SetRelocates(const SdfRelocates& relocates);
+
+    /// Returns true if this layer's metadata has any relocates opinion, 
+    /// including that there should be no relocates (i.e. an empty list).  An 
+    /// empty list (no relocates) does not mean the same thing as a missing list
+    /// (no opinion).
+    SDF_API
+    bool HasRelocates() const;
+    
+    /// Clears the layer relocates opinion in the layer's metadata.
+    SDF_API
+    void ClearRelocates();
 
     /// @}
 
@@ -1820,9 +1864,8 @@ private:
     // users to export and save to any file name, regardless of extension.
     bool _WriteToFile(const std::string& newFileName, 
                       const std::string& comment, 
-                      SdfFileFormatConstPtr fileFormat = TfNullPtr,
-                      const FileFormatArguments& args = FileFormatArguments())
-                      const;
+                      SdfFileFormatConstPtr fileFormat,
+                      const FileFormatArguments& args) const;
 
     // Swap contents of _data and data. This operation does not register
     // inverses or emit change notification.

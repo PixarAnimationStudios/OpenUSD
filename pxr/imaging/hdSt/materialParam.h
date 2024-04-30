@@ -26,8 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
-
-#include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hdSt/enums.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/value.h"
@@ -78,7 +77,7 @@ public:
                     TfToken const& name, 
                     VtValue const& fallbackValue,
                     TfTokenVector const& samplerCoords=TfTokenVector(),
-                    HdTextureType textureType=HdTextureType::Uv,
+                    HdStTextureType textureType=HdStTextureType::Uv,
                     std::string const& swizzle=std::string(),
                     bool const isPremultiplied=false,
                     size_t const arrayOfTexturesSize=0);
@@ -120,7 +119,7 @@ public:
     TfToken name;
     VtValue fallbackValue;
     TfTokenVector samplerCoords;
-    HdTextureType textureType;
+    HdStTextureType textureType;
     std::string swizzle;
     bool isPremultiplied;
 

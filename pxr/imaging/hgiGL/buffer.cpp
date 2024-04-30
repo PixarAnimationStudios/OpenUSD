@@ -32,7 +32,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
     : HgiBuffer(desc)
     , _bufferId(0)
-    , _mapped(nullptr)
     , _cpuStaging(nullptr)
     , _bindlessGPUAddress(0)
 {
@@ -47,31 +46,11 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
         HgiGLObjectLabel(GL_BUFFER, _bufferId,  _descriptor.debugName);
     }
 
-    if ((_descriptor.usage & HgiBufferUsageVertex)  ||
-        (_descriptor.usage & HgiBufferUsageIndex32) ||
-        (_descriptor.usage & HgiBufferUsageUniform)) {
-        glNamedBufferData(
-            _bufferId,
-            _descriptor.byteSize,
-            _descriptor.initialData,
-            GL_STATIC_DRAW);
-    } else if (_descriptor.usage & HgiBufferUsageStorage) {
-        GLbitfield flags =
-            GL_MAP_READ_BIT       |
-            GL_MAP_WRITE_BIT      |
-            GL_MAP_PERSISTENT_BIT |
-            GL_MAP_COHERENT_BIT;
-
-        glNamedBufferStorage(
-            _bufferId,
-            _descriptor.byteSize,
-            _descriptor.initialData,
-            flags | GL_DYNAMIC_STORAGE_BIT);
-
-        _mapped = glMapNamedBufferRange(_bufferId, 0, desc.byteSize, flags);
-    } else {
-        TF_CODING_ERROR("Unknown HgiBufferUsage bit");
-    }
+    glNamedBufferData(
+        _bufferId,
+        _descriptor.byteSize,
+        _descriptor.initialData,
+        GL_STATIC_DRAW);
 
     // glBindVertexBuffer (graphics cmds) needs to know the stride of each
     // vertex buffer. Make sure user provides it.
@@ -87,10 +66,6 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
 HgiGLBuffer::~HgiGLBuffer()
 {
     if (_bufferId > 0) {
-        if (_descriptor.usage & HgiBufferUsageStorage) {
-            glUnmapNamedBuffer(_bufferId);
-        }
-        
         glDeleteBuffers(1, &_bufferId);
         _bufferId = 0;
     }

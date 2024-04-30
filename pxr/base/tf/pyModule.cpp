@@ -276,12 +276,14 @@ public:
         } else if (IsProperty(obj)) {
             // Replace owner's name attribute with a new property, decorating the
             // get, set, and del functions.
-            if (owner.attr(name) != obj) {
-                // XXX If accessing the attribute by normal lookup does not produce
-                // the same object, descriptors are likely at play (even on the
-                // class) which at least for now means that this is likely a static
-                // property.  For now, just not wrapping static properties with
-                // error handling.
+
+            // XXX: In Python 3.9+ this is equivalent to
+            // if (!Py_IS_TYPE(obj.ptr(), &PyProperty_Type)) {
+            if (Py_TYPE(obj.ptr()) != &PyProperty_Type) {
+                // XXX If the type of this object is not Python's built-in
+                // property descriptor, this at least for now means that this 
+                // is likely a static property. For now, we just don't wrap
+                // static properties with error handling.
             } else {
                 object propType(handle<>(borrowed(&PyProperty_Type)));
                 object newfget =

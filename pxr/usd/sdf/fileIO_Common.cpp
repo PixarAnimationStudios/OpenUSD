@@ -560,32 +560,49 @@ Sdf_FileIOUtility::WriteTimeSamples(
     return true;
 }
 
+template <class RelocatesContainer> 
+bool 
+_WriteRelocates(
+    Sdf_TextOutput &out, size_t indent, bool multiLine,
+    const RelocatesContainer &relocates) 
+{
+    Sdf_FileIOUtility::Write(out, indent, "relocates = %s", multiLine ? "{\n" : "{ ");
+    size_t itemCount = relocates.size();
+    TF_FOR_ALL(it, relocates) {
+        Sdf_FileIOUtility::WriteSdfPath(out, indent+1, it->first);
+        Sdf_FileIOUtility::Puts(out, 0, ": ");
+        Sdf_FileIOUtility::WriteSdfPath(out, 0, it->second);
+        if (--itemCount > 0) {
+            Sdf_FileIOUtility::Puts(out, 0, ", ");
+        }
+        if (multiLine) {
+            Sdf_FileIOUtility::Puts(out, 0, "\n");
+        }
+    }
+    if (multiLine) {
+        Sdf_FileIOUtility::Puts(out, indent, "}\n");
+    }
+    else {
+        Sdf_FileIOUtility::Puts(out, 0, " }");
+    }
+    
+    return true;
+}
+
+bool 
+Sdf_FileIOUtility::WriteRelocates(
+    Sdf_TextOutput &out, size_t indent, bool multiLine,
+    const SdfRelocates &relocates)
+{
+    return _WriteRelocates(out, indent, multiLine, relocates);
+}
+
 bool 
 Sdf_FileIOUtility::WriteRelocates(
     Sdf_TextOutput &out, size_t indent, bool multiLine,
     const SdfRelocatesMap &reloMap)
 {
-    Write(out, indent, "relocates = %s", multiLine ? "{\n" : "{ ");
-    size_t itemCount = reloMap.size();
-    TF_FOR_ALL(it, reloMap) {
-        WriteSdfPath(out, indent+1, it->first);
-        Puts(out, 0, ": ");
-        WriteSdfPath(out, 0, it->second);
-        if (--itemCount > 0) {
-            Puts(out, 0, ", ");
-        }
-        if (multiLine) {
-            Puts(out, 0, "\n");
-        }
-    }
-    if (multiLine) {
-        Puts(out, indent, "}\n");
-    }
-    else {
-        Puts(out, 0, " }");
-    }
-    
-    return true;
+    return _WriteRelocates(out, indent, multiLine, reloMap);
 }
 
 void

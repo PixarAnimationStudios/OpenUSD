@@ -29,6 +29,8 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/dataSource.h"
 
+#include "pxr/usd/sdf/pathExpression.h"
+
 #include "pxr/base/tf/smallVector.h"
 #include "pxr/base/tf/denseHashMap.h"
 

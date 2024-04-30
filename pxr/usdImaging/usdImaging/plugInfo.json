@@ -91,9 +91,14 @@
                         "primTypeName": "Cylinder"
                     },
                     "UsdImagingDrawModeAdapter" : {
-                        "bases": ["UsdImagingPrimAdapter"],
+                        "bases": ["UsdImagingInstanceablePrimAdapter"],
                         "isInternal": true,
                         "primTypeName": "__drawModeAdapter"
+                    },
+                    "UsdImagingGeomSubsetAdapter" : {
+                        "bases": ["UsdImagingPrimAdapter"],
+                        "isInternal": true,
+                        "primTypeName": "GeomSubset"
                     },
                     "UsdImagingHermiteCurvesAdapter": {
                         "bases": [
@@ -132,6 +137,13 @@
                         "isInternal": true,
                         "primTypeName": "Mesh"
                     },
+                    "UsdImagingTetMeshAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "TetMesh"
+                    },
                     "UsdImagingNurbsCurvesAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"
@@ -162,7 +174,7 @@
                     },
                     "UsdImagingPointInstancerAdapter": {
                         "bases": [
-                            "UsdImagingPrimAdapter"
+                            "UsdImagingInstanceablePrimAdapter"
                         ],
                         "isInternal": true,
                         "primTypeName": "PointInstancer"
@@ -173,6 +185,13 @@
                         ],
                         "isInternal": true,
                         "primTypeName": "Sphere"
+                    },
+                    "UsdImagingRenderPassAdapter": {
+                        "bases": [
+                            "UsdImagingPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "RenderPass"
                     },
                     "UsdImagingRenderSettingsAdapter": {
                         "bases": [
@@ -204,7 +223,7 @@
                     },
                     "UsdImagingLightAdapter": {
                         "bases": [
-                            "UsdImagingPrimAdapter"
+                            "UsdImagingInstanceablePrimAdapter"
                         ],
                         "isInternal": true,
                         "primTypeName": "LightAPI",

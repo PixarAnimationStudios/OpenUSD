@@ -1,0 +1,178 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Scope "World"
+{
+    float xyz = 123
+
+    def Cube "GroundPlane" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        float3 xformOp:scale = (5, 0.05, 5)
+        double xformOp:rotateY = -90
+        token[] xformOpOrder = ["xformOp:scale", "xformOp:rotateY"]
+        rel material:binding = </Material/Grid>
+    }
+
+    def Cube "Cube1" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double size = 1.2
+        double3 xformOp:translate = (3.85, 0.65, 3.85)
+        token[] xformOpOrder = ["xformOp:translate"]
+        color3f[] primvars:displayColor = [(0.8763, 0.2168, 0.2168)]
+        rel material:binding = </Material/Red>
+    }
+
+    def Cube "Cube2" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double size = 1.2
+        double3 xformOp:translate = (-3.85, 0.65, 3.85)
+        token[] xformOpOrder = ["xformOp:translate"]
+        token axis = "Y"
+        color3f[] primvars:displayColor = [(0.0436, 0.1311, 0.3634)]
+        rel material:binding = </Material/Blue>
+    }
+
+    def Cube "LargeCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double size = 2.5
+        double3 xformOp:translate = (0, 1.25, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+        rel material:binding = </Material/White>
+    }
+
+    def Scope "Lights" {
+
+        def RectLight "Light"
+        {
+            float inputs:intensity = 1
+            float inputs:exposure = 3
+            float inputs:width = 9.0
+            float inputs:height = 2.0
+            float inputs:focus = 1
+            double3 xformOp:translate = (3.6, 11.4, 6.0)
+            double3 xformOp:rotateXYZ = (-60, 31.5, 0)
+            token[] xformOpOrder = [
+                "xformOp:translate",
+                "xformOp:rotateXYZ",
+            ]
+        }
+    }
+}
+
+def Camera "main_cam"
+{
+    double3 xformOp:translate = (-1, 0, 20)
+    double3 xformOp:rotateXYZ = (-18, 45, 0.0)
+    token[] xformOpOrder = [
+        "xformOp:rotateXYZ",
+        "xformOp:translate",
+    ]
+    float2 clippingRange = (0.1, 10000)
+    float fStop = 1.5
+    float focalLength = 25.0
+    float focusDistance = 15
+}
+
+
+def Scope "Material"
+{
+    def Material "Grid"
+    {
+        token outputs:surface.connect = </Material/Grid/Surface.outputs:out>
+        def Shader "Surface"
+        {
+            config token info:id = "PxrSurface"
+            color3f inputs:diffuseColor.connect = </Material/Grid/Texture.outputs:resultRGB>
+            token outputs:out
+        }
+
+        def Shader "Texture"
+        {
+            config token info:id = "PxrTexture"
+            token inputs:filename = "grid_t"
+            color3f outputs:resultRGB
+        }
+    }
+
+    def Material "White"
+    {
+        token outputs:surface.connect = </Material/White/Surface.outputs:out>
+        def Shader "Surface"
+        {
+            config token info:id = "PxrSurface"
+            color3f inputs:diffuseColor = (1.0, 1.0, 1.0)
+            float inputs:diffuseGain = 0.5
+            token outputs:out
+        }
+    }
+    def Material "Red"
+    {
+        token outputs:surface.connect = </Material/Red/Surface.outputs:out>
+        def Shader "Surface"
+        {
+            config token info:id = "PxrSurface"
+            color3f inputs:diffuseColor = (0.8763, 0.2168, 0.2168)
+            token outputs:out
+        }
+    }
+    def Material "Blue"
+    {
+        token outputs:surface.connect = </Material/Blue/Surface.outputs:out>
+        def Shader "Surface"
+        {
+            config token info:id = "PxrSurface"
+            color3f inputs:diffuseColor = (0.0436, 0.1311, 0.3634)
+            token outputs:out
+        }
+    }
+}
+
+def Scope "Render"
+{
+    def RenderSettings "Settings"
+    {
+        rel camera = </main_cam>
+        rel products = [
+            </Render/Product>,
+        ]
+        int2 resolution = (512, 512)
+        int ri:hider:maxsamples = 4
+        int ri:hider:minsamples = 4
+        float ri:Ri:PixelVariance = 0.01
+        int ri:trace:maxdepth = 1
+    }
+
+    def RenderProduct "Product"
+    {
+        rel orderedVars = [
+            </Render/Vars/Ci>,
+            </Render/Vars/a>,
+        ]
+        token productName = "primary.exr"
+        bool disableDepthOfField = false
+    }
+    def Scope "Vars"
+    {
+        def RenderVar "Ci"
+        {
+            string sourceName = "Ci"
+        }
+
+        def RenderVar "a"
+        {
+            token dataType = "float"
+            string sourceName = "a"
+        }
+    }
+}
+

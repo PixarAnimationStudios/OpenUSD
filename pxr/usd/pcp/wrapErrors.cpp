@@ -65,6 +65,11 @@ wrapErrors()
         ("ErrorTargetPathBase", "", no_init)
         ;
 
+    class_<PcpErrorRelocationBase, boost::noncopyable,
+        bases<PcpErrorBase>, PcpErrorRelocationBasePtr >
+        ("ErrorRelocationBase", "", no_init)
+        ;
+
     class_<PcpErrorArcCycle, bases<PcpErrorBase>, PcpErrorArcCyclePtr >
         ("ErrorArcCycle", "", no_init)
         ;
@@ -147,6 +152,21 @@ wrapErrors()
     class_<PcpErrorInvalidSublayerPath, bases<PcpErrorBase>,
            PcpErrorInvalidSublayerPathPtr>
         ("ErrorInvalidSublayerPath", "", no_init)
+        ;
+
+    class_<PcpErrorInvalidAuthoredRelocation, bases<PcpErrorRelocationBase>,
+        PcpErrorInvalidAuthoredRelocationPtr>
+        ("ErrorInvalidAuthoredRelocation", "", no_init)
+        ;
+
+    class_<PcpErrorInvalidConflictingRelocation, bases<PcpErrorRelocationBase>,
+        PcpErrorInvalidConflictingRelocationPtr>
+        ("ErrorInvalidConflictingRelocation", "", no_init)
+        ;
+
+    class_<PcpErrorInvalidSameTargetRelocations, bases<PcpErrorRelocationBase>,
+        PcpErrorInvalidSameTargetRelocationsPtr>
+        ("ErrorInvalidSameTargetRelocations", "", no_init)
         ;
 
     class_<PcpErrorOpinionAtRelocationSource, bases<PcpErrorBase>, 

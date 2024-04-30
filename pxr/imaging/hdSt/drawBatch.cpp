@@ -112,8 +112,11 @@ _LogShaderCacheLookup()
 }
 
 
-HdSt_DrawBatch::HdSt_DrawBatch(HdStDrawItemInstance * drawItemInstance)
-    : _shaderHash(0)
+HdSt_DrawBatch::HdSt_DrawBatch(
+    HdStDrawItemInstance * drawItemInstance,
+    bool const allowTextureResourceRebinding)
+    : _allowTextureResourceRebinding(allowTextureResourceRebinding)
+    , _shaderHash(0)
 {
 }
 
@@ -188,17 +191,57 @@ HdSt_DrawBatch::Append(HdStDrawItemInstance * drawItemInstance)
 
 /*static*/
 bool
-HdSt_DrawBatch::_IsAggregated(HdStDrawItem const *drawItem0,
-                              HdStDrawItem const *drawItem1)
+HdSt_DrawBatch::_CanAggregateMaterials(HdStDrawItem const *drawItem0,
+                                       HdStDrawItem const *drawItem1)
 {
-    if (!HdSt_MaterialNetworkShader::CanAggregate(
-            drawItem0->GetMaterialNetworkShader(),
-            drawItem1->GetMaterialNetworkShader())) {
+    if (drawItem0->GetMaterialIsFinal() !=
+        drawItem1->GetMaterialIsFinal()) {
         return false;
     }
 
-    if (drawItem0->GetMaterialIsFinal() != 
-        drawItem1->GetMaterialIsFinal()) {
+    HdStShaderCodeSharedPtr const &
+        shaderA = drawItem0->GetMaterialNetworkShader();
+    HdStShaderCodeSharedPtr const &
+        shaderB = drawItem1->GetMaterialNetworkShader();
+
+    // Can aggregate if the shaders are identical.
+    if (shaderA == shaderB) {
+        return true;
+    }
+
+    HdBufferArrayRangeSharedPtr dataA = shaderA->GetShaderData();
+    HdBufferArrayRangeSharedPtr dataB = shaderB->GetShaderData();
+
+    bool dataIsAggregated = (dataA == dataB) ||
+                            (dataA && dataA->IsAggregatedWith(dataB));
+
+    // We can't aggregate if the shaders have data buffers that aren't
+    // aggregated or if the shaders don't match.
+    if (!dataIsAggregated || shaderA->ComputeHash() != shaderB->ComputeHash()) {
+        return false;
+    }
+
+    return true;
+}
+
+bool
+HdSt_DrawBatch::_CanAggregateTextures(HdStDrawItem const *drawItem0,
+                                      HdStDrawItem const *drawItem1)
+{
+    return _allowTextureResourceRebinding ||
+           (drawItem0->GetMaterialNetworkShader()->ComputeTextureSourceHash() ==
+            drawItem1->GetMaterialNetworkShader()->ComputeTextureSourceHash());
+}
+
+bool
+HdSt_DrawBatch::_IsAggregated(HdStDrawItem const *drawItem0,
+                              HdStDrawItem const *drawItem1)
+{
+    if (!_CanAggregateMaterials(drawItem0, drawItem1)) {
+        return false;
+    }
+
+    if (!_CanAggregateTextures(drawItem0, drawItem1)) {
         return false;
     }
 

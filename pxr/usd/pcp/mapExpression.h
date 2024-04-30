@@ -28,9 +28,8 @@
 #include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/mapFunction.h"
 
-#include <boost/intrusive_ptr.hpp>
+#include "pxr/base/tf/delegatedCountPtr.h"
 
-#include <tbb/atomic.h>
 #include <tbb/spin_mutex.h>
 
 #include <atomic>
@@ -68,6 +67,8 @@ public:
 
     /// Default-construct a NULL expression.
     PcpMapExpression() noexcept = default;
+
+    ~PcpMapExpression() noexcept = default;
 
     /// Swap this expression with the other.
     void Swap(PcpMapExpression &other) noexcept {
@@ -185,7 +186,7 @@ private:
     friend struct Pcp_VariableImpl;
 
     class _Node;
-    typedef boost::intrusive_ptr<_Node> _NodeRefPtr;
+    using _NodeRefPtr = TfDelegatedCountPtr<_Node>;
 
     explicit PcpMapExpression(const _NodeRefPtr & node) : _node(node) {}
 
@@ -201,6 +202,11 @@ private: // data
     class _Node {
         _Node(const _Node&) = delete;
         _Node& operator=(const _Node&) = delete;
+
+        // Ref-counting ops manage _refCount.
+        // Need to friend them here to have access to _refCount.
+        friend PCP_API void TfDelegatedCountIncrement(_Node*);
+        friend PCP_API void TfDelegatedCountDecrement(_Node*) noexcept;
     public:
         // The Key holds all the state needed to uniquely identify
         // this (sub-)expression.
@@ -257,17 +263,12 @@ private: // data
         // will always contains the root identity.
         static bool _ExpressionTreeAlwaysHasIdentity(const Key& key);
 
-        // Ref-counting ops manage _refCount.
-        // Need to friend them here to have access to _refCount.
-        friend PCP_API void intrusive_ptr_add_ref(_Node*);
-        friend PCP_API void intrusive_ptr_release(_Node*);
-
         // Registry of node instances, identified by Key.
         // Note: variable nodes are not tracked by the registry.
         struct _NodeMap;
         static TfStaticData<_NodeMap> _nodeRegistry;
 
-        mutable tbb::atomic<int> _refCount;
+        mutable std::atomic<int> _refCount;
         mutable Value _cachedValue;
         mutable std::set<_Node*> _dependentExpressions;
         Value _valueForVariable;
@@ -276,8 +277,8 @@ private: // data
     };
 
     // Need to friend them here to have visibility to private class _Node.
-    friend PCP_API void intrusive_ptr_add_ref(_Node*);
-    friend PCP_API void intrusive_ptr_release(_Node*);
+    friend PCP_API void TfDelegatedCountIncrement(_Node*);
+    friend PCP_API void TfDelegatedCountDecrement(_Node*) noexcept;
 
     _NodeRefPtr _node;
 };

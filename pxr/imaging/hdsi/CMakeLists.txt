@@ -29,6 +29,7 @@ pxr_library(hdsi
         primTypePruningSceneIndex
         renderSettingsFilteringSceneIndex
         sceneGlobalsSceneIndex
+        tetMeshConversionSceneIndex
 
     PUBLIC_HEADERS
         api.h

@@ -188,24 +188,16 @@ class TestUsdShadeShaderDef(unittest.TestCase):
         self.assertEqual(node.GetInput("testAllowedTokenAndMetdataOptions"). \
                 GetOptions(), expectedOptionsList)
 
-        # Test sdrUsdDefinitionType sdrMetadata and GetTypeAsSdfType
+        # UsdShadeShaderDef already have the types in SdfValueTypeNames
+        # conformance, so we do not need any sdrUsdDefinitionType mapping. A
+        # bool type gets mapped to int in UsdShadeShaderDef appropriately.
         actualBoolInput = node.GetInput('actualBool')
         attr = shaderDef.GetPrim(). \
                 GetAttribute('inputs:actualBool')
         self.assertEqual(attr.GetTypeName(), Sdf.ValueTypeNames.Bool)
-        # Bool types are registered as Int via sdr, if no sdrUsdDefinitionType
-        # provided
         self.assertEqual(actualBoolInput.GetTypeAsSdfType()[0], 
                 Sdf.ValueTypeNames.Bool) 
         self.assertEqual(actualBoolInput.GetType(), Sdf.ValueTypeNames.Int)
-
-        intButBoolInput = node.GetInput('intButBool')
-        attr = shaderDef.GetPrim(). \
-                GetAttribute('inputs:intButBool')
-        self.assertEqual(attr.GetTypeName(), Sdf.ValueTypeNames.Int)
-        self.assertEqual(intButBoolInput.GetTypeAsSdfType()[0], 
-                Sdf.ValueTypeNames.Bool)
-        self.assertEqual(intButBoolInput.GetType(), Sdf.ValueTypeNames.Int)
 
         utils.TestShaderPropertiesNode(node)
 

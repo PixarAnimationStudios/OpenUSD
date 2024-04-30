@@ -113,10 +113,10 @@ public:
 
     /// Returns a set of paths for all collections that were included in the
     /// collection from which this Usd_CollectionMembershipQueryBase object was
-    /// computed. This set is recursive, so collections that were included
-    /// by other collections will be part of this set. The collection from
-    /// which this Usd_CollectionMembershipQueryBase object was computed is *not*
-    /// part of this set.
+    /// computed. This set is recursive, so collections that were included by
+    /// other collections will be part of this set. The collection from which
+    /// this Usd_CollectionMembershipQueryBase object was computed is *not* part
+    /// of this set.
     const SdfPathSet& GetIncludedCollections() const {
         return _includedCollections;
     }
@@ -168,6 +168,13 @@ protected:
     bool _hasExcludes=false;
 };
 
+/// Compute an SdfPathExpression that matches the same paths as \p ruleMap.  The
+/// resulting SdfPathExpression is always complete (see
+/// SdfPathExpression::IsComplete()) and never contains predicates.
+USD_API
+SdfPathExpression
+UsdComputePathExpressionFromCollectionMembershipQueryRuleMap(
+    Usd_CollectionMembershipQueryBase::PathExpansionRuleMap const &ruleMap);
 
 // -------------------------------------------------------------------------- //
 // UsdCollectionMembershipQuery                                               //
@@ -310,10 +317,10 @@ public:
         // compare equal to each other.  This is because the evaluator objects
         // run code, and there's no good way to determine equivalence.
         return _topExpansionRule == rhs._topExpansionRule &&
-        _hasExcludes == rhs._hasExcludes &&
-        _pathExpansionRuleMap == rhs._pathExpansionRuleMap &&
-        _includedCollections == rhs._includedCollections &&
-        _exprEval.IsEmpty() == rhs._exprEval.IsEmpty();
+            _hasExcludes == rhs._hasExcludes &&
+            _pathExpansionRuleMap == rhs._pathExpansionRuleMap &&
+            _includedCollections == rhs._includedCollections &&
+            _exprEval.IsEmpty() == rhs._exprEval.IsEmpty();
         ;
     }
 
@@ -343,12 +350,6 @@ private:
 ///
 /// \brief Evaluates SdfPathExpressions with objects from a given UsdStage.
 class UsdObjectCollectionExpressionEvaluator {
-    struct ObjToPath {
-        SdfPath operator()(UsdObject const &obj) const {
-            return obj.GetPath();
-        }
-    };
-    
     struct PathToObj {
         UsdObject operator()(SdfPath const &path) const {
             return stage->GetObjectAtPath(path);
@@ -359,7 +360,7 @@ class UsdObjectCollectionExpressionEvaluator {
 public:
     using PathExprEval = SdfPathExpressionEval<UsdObject>;
     using IncrementalSearcher =
-        typename PathExprEval::IncrementalSearcher<ObjToPath, PathToObj>;
+        typename PathExprEval::IncrementalSearcher<PathToObj>;
     
     /// Construct an empty evaluator.
     UsdObjectCollectionExpressionEvaluator() = default;

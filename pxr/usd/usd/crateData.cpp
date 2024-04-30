@@ -121,10 +121,6 @@ public:
 
     string const &GetAssetPath() const { return _crateFile->GetAssetPath(); }
 
-    bool CanIncrementalSave(string const &fileName) {
-        return _crateFile->CanPackTo(fileName);
-    }
-
     bool Save(string const &fileName) {
         TfAutoMallocTag tag("Usd_CrateDataImpl::Save");
 
@@ -1115,20 +1111,26 @@ Usd_CrateData::Save(string const &fileName)
         return false;
     }
 
-    if (_impl->CanIncrementalSave(fileName)) {
-        return _impl->Save(fileName);
+    return _impl->Save(fileName);
+}
+
+bool
+Usd_CrateData::Export(string const &fileName)
+{
+    if (fileName.empty()) {
+        TF_CODING_ERROR("Tried to save to empty fileName");
+        return false;
     }
-    else {
-        // We copy to a temporary data and save that.
-        //
-        // Usd_CrateData currently reloads the underlying asset to reinitialize
-        // its internal members after a save. We use a non-detached
-        // Usd_CrateData here to avoid any expense associated with detaching
-        // from the asset.
-        Usd_CrateData tmp(/* detached = */ false);
-        tmp.CopyFrom(SdfAbstractDataConstPtr(this));
-        return tmp.Save(fileName);
-    }
+
+    // To Export, we copy to a temporary data and save that, since we need this
+    // CrateData object to stay associated with its existing backing store.
+    //
+    // Usd_CrateData currently reloads the underlying asset to reinitialize its
+    // internal members after a save. We use a non-detached Usd_CrateData here
+    // to avoid any expense associated with detaching from the asset.
+    Usd_CrateData tmp(/* detached = */ false);
+    tmp.CopyFrom(SdfAbstractDataConstPtr(this));
+    return tmp.Save(fileName);
 }
 
 bool

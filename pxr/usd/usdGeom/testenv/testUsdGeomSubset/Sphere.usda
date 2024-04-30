@@ -9,6 +9,676 @@ def Xform "Sphere" (
     kind = "component"
 )
 {
+    def Mesh "SimpleEdges"
+    {
+        int[] faceVertexCounts = [4, 4]
+        int[] faceVertexIndices = [0, 1, 5, 4, 0, 1, 2, 3]
+        PointFloat[] points = [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619), (9.32115e-07, 7.10811, -1.57832e-15), (-7.10811, 6.2141e-07, -1.37981e-22)]
+    }
+
+    def TetMesh "TetMesh"
+    {
+        # Tetrahedron subsets
+
+        uniform token subsetFamily:tetrahedron_materialBind:familyType = "partition"
+        uniform token subsetFamily:tetrahedron_validPartition:familyType = "partition"
+
+        uniform token subsetFamily:tetrahedron_badPartition1:familyType = "partition"
+        uniform token subsetFamily:tetrahedron_badPartition2:familyType = "partition"
+        uniform token subsetFamily:tetrahedron_badPartition3:familyType = "partition"
+
+        uniform token subsetFamily:tetrahedron_validNonOverlapping:familyType = "nonOverlapping"
+        uniform token subsetFamily:tetrahedron_invalidNonOverlapping:familyType = "nonOverlapping"
+
+        uniform token subsetFamily:tetrahedron_validUnrestricted:familyType = "unrestricted"
+        uniform token subsetFamily:tetrahedron_invalidUnrestricted:familyType = "unrestricted"
+
+        # Face subsets
+
+        uniform token subsetFamily:face_materialBind:familyType = "partition"
+        uniform token subsetFamily:face_validPartition:familyType = "partition"
+
+        uniform token subsetFamily:face_badPartition1:familyType = "partition"
+        uniform token subsetFamily:face_badPartition2:familyType = "partition"
+        uniform token subsetFamily:face_badPartition3:familyType = "partition"
+
+        uniform token subsetFamily:face_validNonOverlapping:familyType = "nonOverlapping"
+        uniform token subsetFamily:face_invalidNonOverlapping:familyType = "nonOverlapping"
+
+        uniform token subsetFamily:face_validUnrestricted:familyType = "unrestricted"
+        uniform token subsetFamily:face_invalidUnrestricted:familyType = "unrestricted"
+        
+        int4[] tetVertexIndices = [(0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7), (4, 5, 9, 8), (5, 6, 10, 9), (6, 7, 11, 10), (7, 4, 8, 11), (1, 0, 12, 2), (1, 12, 3, 2), (12, 0, 3, 13), (8, 9, 13, 10), (10, 13, 12, 11), (13, 11, 8, 10)]
+        int3[] surfaceFaceVertexIndices = [(0, 4, 5), (7, 4, 11), (2, 3, 6), (3, 4, 0), (2, 7, 3), (8, 10, 13), (13, 12, 11), (4, 8, 11), (10, 12, 13), (0, 1, 4), (3, 7, 4), (10, 13, 11), (0, 5, 1), (1, 2, 12)]
+        PointFloat[] points = [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619), (9.32115e-07, 7.10811, -1.57832e-15), (-7.10811, 6.2141e-07, -1.37981e-22), (-3.10705e-07, -7.10811, 1.57832e-15), (7.10811, 0, 0), (6.59105e-07, 5.02619, 5.02619), (-5.02619, 4.39403e-07, 5.02619), (-2.19702e-07, -5.02619, 5.02619), (5.02619, 1.11604e-15, 5.02619), (0, -1.57832e-15, -7.10811), (0, 1.57832e-15, 7.10811)]
+
+        def GeomSubset "tetrahedron_green" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_materialBind"
+            int[] indices = [12, 13]
+            int[] indices.timeSamples = {
+                1: [0, 1, 2, 3],
+                2: [12, 13],
+                3: [0, 1, 2, 3]
+            }
+            rel material:binding =  </Sphere/Looks/initialShadingGroup>
+        }
+
+
+        def GeomSubset "tetrahedron_blue" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_materialBind"
+            int[] indices = [0, 1, 2, 3, 8, 9, 10, 11]
+            rel material:binding =  </Sphere/Looks/lambert2SG>
+            int[] indices.timeSamples = {
+                1: [4, 5, 6, 7, 8, 9, 10, 11],
+                2: [0, 1, 2, 3, 8, 9, 10, 11],
+                3: [4, 5, 6, 7, 8, 9, 10, 11]
+            }
+        }
+
+
+        def GeomSubset "tetrahedron_red" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_materialBind"
+            int[] indices = [4, 5, 6, 7]
+            rel material:binding =  </Sphere/Looks/lambert3SG>
+            int[] indices.timeSamples = {
+                1: [12, 13],
+                2: [4, 5, 6, 7],
+                3: [12, 13]
+            }
+        }
+
+
+        def GeomSubset "tetrahedron_invalidIndices" 
+        # Indices 16 at frame 2 and -1 at frame 3 are invalid.
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_invalidIndices"
+            int[] indices = [4, 5, 6, 7]
+            int[] indices.timeSamples = {
+                1: [12, 13],
+                2: [4, 5, 6, 7, 16],
+                3: [-1, 12, 13]
+            }
+        }
+
+        def GeomSubset "tetrahedron_validNonOverlapping_1"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_validNonOverlapping"
+            int[] indices = [0, 2, 4, 6, 8, 10, 12]            
+            int[] indices.timeSamples = {
+                1: [1, 3, 5, 7, 9, 11, 13]
+            }
+        }
+
+        def GeomSubset "tetrahedron_validNonOverlapping_2"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_validNonOverlapping"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13]
+            int[] indices.timeSamples = {
+                2: [0, 2, 4, 6, 8, 10, 12]
+            }
+        }
+
+        def GeomSubset "tetrahedron_invalidNonOverlapping_1"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_invalidNonOverlapping"
+            int[] indices = [0, 2, 4, 6, 8, 10, 12]            
+            int[] indices.timeSamples = {
+                1: [1, 3, 5, 7, 9, 11, 13]
+            }
+        }
+
+        def GeomSubset "tetrahedron_invalidNonOverlapping_2"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_invalidNonOverlapping"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13]
+            int[] indices.timeSamples = {
+                2: [0, 1, 2, 4, 6, 8, 10, 12]
+            }
+        }
+
+        def GeomSubset "tetrahedron_validUnrestricted_1"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_validUnrestricted"
+            # index 0 is overlapping
+            int[] indices = [0, 2, 4, 6, 8, 10, 12]
+            int[] indices.timeSamples = {
+                # index 13 is not included in timeSamples.
+                1: [0, 1, 3, 5, 7, 9, 11]
+            }
+        }
+
+        def GeomSubset "tetrahedron_validUnrestricted_2"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_validUnrestricted"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13]
+            int[] indices.timeSamples = {
+                2: [0, 2, 4, 6, 8, 10, 12]
+            }
+        }
+
+        def GeomSubset "tetrahedron_invalidUnrestricted_1"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_invalidUnrestricted"
+            # out of bound index - 14
+            int[] indices = [0, 2, 4, 6, 8, 10, 12, 14]            
+            int[] indices.timeSamples = {
+                # negative index
+                1: [-1, 1, 3, 5, 7, 9, 11, 13]
+            }
+        }
+
+        def GeomSubset "tetrahedron_invalidUnrestricted_2"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_invalidUnrestricted"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13]
+            int[] indices.timeSamples = {
+                2: [0, 1, 2, 4, 6, 8, 10, 12]
+            }
+        }
+
+        def GeomSubset "tetrahedron_badPartition1_1"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_badPartition1"
+            int[] indices = [4, 5, 6, 7]            
+            int[] indices.timeSamples = {
+                1: [12, 13]
+            }
+        }
+
+        def GeomSubset "tetrahedron_badPartition1_2"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_badPartition1"
+            int[] indices = [0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14]
+            int[] indices.timeSamples = {
+                2: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+            }
+        }
+
+        def GeomSubset "tetrahedron_badPartition2_1"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_badPartition2"
+            # mising indices 8-13
+            int[] indices = [0, 1, 2, 3, 4, 5, 6, 7]
+        }
+
+        def GeomSubset "tetrahedron_badPartition3_1"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_badPartition3"
+            # duplicate indices 0 and 5
+            int[] indices = [0, 1, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 5]
+        }
+
+
+        def GeomSubset "tetrahedron_validPartition_1"
+        {       
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_validPartition"
+            int[] indices = [0, 1, 2, 3, 4, 5]
+            int[] indices.timeSamples = {
+                1: [11, 12, 13],
+                3: [0, 1, 2, 3, 4, 5]
+            }
+        }
+
+        def GeomSubset "tetrahedron_validPartition_2"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_validPartition"
+            int[] indices = [6, 7, 8, 9, 10]
+            int[] indices.timeSamples = {
+                1: [6, 7, 8, 9, 10],
+                2: [0, 1, 2, 3, 4, 5],
+                3: [11, 12, 13]
+            }
+        }
+
+        def GeomSubset "tetrahedron_validPartition_3"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_validPartition"
+            int[] indices = [11, 12, 13]
+            int[] indices.timeSamples = {
+                1: [0, 1, 2, 3, 4, 5],
+                2: [6, 7, 8, 9, 10]
+            }
+        }
+
+        def GeomSubset "tetrahedron_onlyNegativeIndices"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_onlyNegativeIndices"
+            int[] indices = [-1, -2, -3, -4, -5]
+        }
+
+        def GeomSubset "tetrahedron_emptyIndicesSomeTimes"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_emptyIndicesSomeTimes"
+            int[] indices.timeSamples = {
+                0: [],
+                1: [0, 1, 2, 3],
+                2: []
+            }
+        }
+
+        def GeomSubset "tetrahedron_emptyIndicesAtAllTimes"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_emptyIndicesAtAllTimes"
+        }
+
+        def GeomSubset "face_green" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_materialBind"
+            int[] indices = [12, 13]
+            int[] indices.timeSamples = {
+                1: [0, 1, 2, 3],
+                2: [12, 13],
+                3: [0, 1, 2, 3]
+            }
+            rel material:binding =  </Sphere/Looks/initialShadingGroup>
+        }
+
+
+        def GeomSubset "face_blue" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_materialBind"
+            int[] indices = [0, 1, 2, 3, 8, 9, 10, 11]
+            rel material:binding =  </Sphere/Looks/lambert2SG>
+            int[] indices.timeSamples = {
+                1: [4, 5, 6, 7, 8, 9, 10, 11],
+                2: [0, 1, 2, 3, 8, 9, 10, 11],
+                3: [4, 5, 6, 7, 8, 9, 10, 11]
+            }
+        }
+
+
+        def GeomSubset "face_red" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_materialBind"
+            int[] indices = [4, 5, 6, 7]
+            rel material:binding =  </Sphere/Looks/lambert3SG>
+            int[] indices.timeSamples = {
+                1: [12, 13],
+                2: [4, 5, 6, 7],
+                3: [12, 13]
+            }
+        }
+
+
+        def GeomSubset "face_invalidIndices" 
+        # Indices 16 at frame 2 and -1 at frame 3 are invalid.
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_invalidIndices"
+            int[] indices = [4, 5, 6, 7]
+            int[] indices.timeSamples = {
+                1: [12, 13],
+                2: [4, 5, 6, 7, 16],
+                3: [-1, 12, 13]
+            }
+        }
+
+        def GeomSubset "face_validNonOverlapping_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_validNonOverlapping"
+            int[] indices = [0, 2, 4, 6, 8, 10, 12]            
+            int[] indices.timeSamples = {
+                1: [1, 3, 5, 7, 9, 11, 13]
+            }
+        }
+
+        def GeomSubset "face_validNonOverlapping_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_validNonOverlapping"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13]
+            int[] indices.timeSamples = {
+                2: [0, 2, 4, 6, 8, 10, 12]
+            }
+        }
+
+        def GeomSubset "face_invalidNonOverlapping_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_invalidNonOverlapping"
+            int[] indices = [0, 2, 4, 6, 8, 10, 12]            
+            int[] indices.timeSamples = {
+                1: [1, 3, 5, 7, 9, 11, 13]
+            }
+        }
+
+        def GeomSubset "face_invalidNonOverlapping_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_invalidNonOverlapping"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13]
+            int[] indices.timeSamples = {
+                2: [0, 1, 2, 4, 6, 8, 10, 12]
+            }
+        }
+
+        def GeomSubset "face_validUnrestricted_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_validUnrestricted"
+            # index 0 is overlapping
+            int[] indices = [0, 2, 4, 6, 8, 10, 12]
+            int[] indices.timeSamples = {
+                # index 13 is not included in timeSamples.
+                1: [0, 1, 3, 5, 7, 9, 11]
+            }
+        }
+
+        def GeomSubset "face_validUnrestricted_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_validUnrestricted"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13]
+            int[] indices.timeSamples = {
+                2: [0, 2, 4, 6, 8, 10, 12]
+            }
+        }
+
+        def GeomSubset "face_invalidUnrestricted_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_invalidUnrestricted"
+            # out of bound index - 14
+            int[] indices = [0, 2, 4, 6, 8, 10, 12, 14]            
+            int[] indices.timeSamples = {
+                # negative index
+                1: [-1, 1, 3, 5, 7, 9, 11, 13]
+            }
+        }
+
+        def GeomSubset "face_invalidUnrestricted_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_invalidUnrestricted"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13]
+            int[] indices.timeSamples = {
+                2: [0, 1, 2, 4, 6, 8, 10, 12]
+            }
+        }
+
+        def GeomSubset "face_badPartition1_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_badPartition1"
+            int[] indices = [4, 5, 6, 7]            
+            int[] indices.timeSamples = {
+                1: [12, 13]
+            }
+        }
+
+        def GeomSubset "face_badPartition1_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_badPartition1"
+            int[] indices = [0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14]
+            int[] indices.timeSamples = {
+                2: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+            }
+        }
+
+        def GeomSubset "face_badPartition2_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_badPartition2"
+            # mising indices 8-13
+            int[] indices = [0, 1, 2, 3, 4, 5, 6, 7]
+        }
+
+        def GeomSubset "face_badPartition3_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_badPartition3"
+            # duplicate indices 0 and 5
+            int[] indices = [0, 1, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 5]
+        }
+
+
+        def GeomSubset "face_validPartition_1"
+        {       
+            uniform token elementType = "face"
+            uniform token familyName = "face_validPartition"
+            int[] indices = [0, 1, 2, 3, 4, 5]
+            int[] indices.timeSamples = {
+                1: [11, 12, 13],
+                3: [0, 1, 2, 3, 4, 5]
+            }
+        }
+
+        def GeomSubset "face_validPartition_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_validPartition"
+            int[] indices = [6, 7, 8, 9, 10]
+            int[] indices.timeSamples = {
+                1: [6, 7, 8, 9, 10],
+                2: [0, 1, 2, 3, 4, 5],
+                3: [11, 12, 13]
+            }
+        }
+
+        def GeomSubset "face_validPartition_3"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_validPartition"
+            int[] indices = [11, 12, 13]
+            int[] indices.timeSamples = {
+                1: [0, 1, 2, 3, 4, 5],
+                2: [6, 7, 8, 9, 10]
+            }
+        }
+
+        def GeomSubset "face_onlyNegativeIndices"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_onlyNegativeIndices"
+            int[] indices = [-1, -2, -3, -4, -5]
+        }
+
+        def GeomSubset "face_emptyIndicesSomeTimes"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_emptyIndicesSomeTimes"
+            int[] indices.timeSamples = {
+                0: [],
+                1: [0, 1, 2, 3],
+                2: []
+            }
+        }
+
+        def GeomSubset "face_emptyIndicesAtAllTimes"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_emptyIndicesAtAllTimes"
+        }
+    }
+
+    def TetMesh "VaryingTetMesh"
+    {
+        uniform token subsetFamily:tetrahedron_validPartition:familyType = "partition"
+        uniform token subsetFamily:face_validPartition:familyType = "partition"
+
+        int4[] tetVertexIndices.timeSamples = {
+            1: [(0, 1, 2, 3)],
+            2: [(0, 1, 2, 3), (4, 5, 6, 7)],
+            3: [(0, 1, 2, 3), (4, 5, 6, 7), (8, 9, 10, 11)]
+        }
+
+        int3[] surfaceFaceVertexIndices.timeSamples = {
+            1: [(1, 2, 3), (0, 3, 2), (0, 1, 3), (0, 2, 1)],
+            2: [(1, 2, 3), (0, 3, 2), (0, 1, 3), (0, 2, 1), (5, 6, 7), (4, 7, 6), (4, 5, 7), (4, 6, 5)],
+            3: [(1, 2, 3), (0, 3, 2), (0, 1, 3), (0, 2, 1), (5, 6, 7), (4, 7, 6), (4, 5, 7), (4, 6, 5), (9, 10, 11), (8, 11, 10), (8, 9, 11), (8, 10, 9)]
+        }
+
+        PointFloat[] points.timeSamples = {
+            1: [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619)],
+            2: [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619), (9.32115e-07, 7.10811, -1.57832e-15), (-7.10811, 6.2141e-07, -1.37981e-22), (-3.10705e-07, -7.10811, 1.57832e-15), (7.10811, 0, 0)],
+            3: [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619), (9.32115e-07, 7.10811, -1.57832e-15), (-7.10811, 6.2141e-07, -1.37981e-22), (-3.10705e-07, -7.10811, 1.57832e-15), (7.10811, 0, 0), (6.59105e-07, 5.02619, 5.02619), (-5.02619, 4.39403e-07, 5.02619), (-2.19702e-07, -5.02619, 5.02619), (5.02619, 1.11604e-15, 5.02619)]
+        }
+
+        def GeomSubset "tetrahedron_validPartition_1"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_validPartition"
+            int[] indices.timeSamples = {
+                1: [0],
+                2: [],
+                3: [0]
+            }
+        }
+
+        def GeomSubset "tetrahedron_validPartition_2"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_validPartition"
+            int[] indices.timeSamples = {
+                1: [],
+                2: [0, 1],
+                3: [1]
+            }
+        }
+
+        def GeomSubset "tetrahedron_validPartition_3"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_validPartition"
+            int[] indices.timeSamples = {
+                1: [],
+                2: [],
+                3: [2]
+            }
+        }
+
+        def GeomSubset "tetrahedron_invalidNoDefaultTimeElements"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_invalidNoDefaultTimeElements"
+            int[] indices = [0]
+            int[] indices.timeSamples = {
+                1: [0],
+                2: [1],
+                3: [2]
+            }
+        }
+
+        def GeomSubset "face_validPartition_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_validPartition"
+            int[] indices.timeSamples = {
+                1: [0, 1, 2, 3],
+                2: [],
+                3: [0, 1, 2, 3]
+            }
+        }
+
+        def GeomSubset "face_validPartition_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_validPartition"
+            int[] indices.timeSamples = {
+                1: [],
+                2: [0, 1, 2, 3, 4, 5, 6, 7],
+                3: [4, 5, 6, 7]
+            }
+        }
+
+        def GeomSubset "face_validPartition_3"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_validPartition"
+            int[] indices.timeSamples = {
+                1: [],
+                2: [],
+                3: [8, 9, 10, 11]
+            }
+        }
+
+        def GeomSubset "face_invalidNoDefaultTimeElements"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_invalidNoDefaultTimeElements"
+            int[] indices = [0, 1, 2, 3]
+            int[] indices.timeSamples = {
+                1: [0, 1, 2, 3],
+                2: [4, 5, 6, 7],
+                3: [8, 9, 10, 11]
+            }
+        }
+    }
+
+    def TetMesh "NullTetMesh"
+    {
+        uniform token subsetFamily:tetrahedron_invalidPartition:familyType = "partition"
+        uniform token subsetFamily:face_invalidPartition:familyType = "partition"
+
+        def GeomSubset "tetrahedron_emptyIndicesAtAllTimes"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_emptyIndicesAtAllTimes"
+        }
+
+        def GeomSubset "tetrahedron_invalidPartition_1"
+        {
+            uniform token elementType = "tetrahedron"
+            uniform token familyName = "tetrahedron_invalidPartition"
+            int[] indices = [0, 1, 2, 3]
+        }
+
+        def GeomSubset "face_emptyIndicesAtAllTimes"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_emptyIndicesAtAllTimes"
+        }
+
+        def GeomSubset "face_invalidPartition_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "face_invalidPartition"
+            int[] indices = [0, 1, 2, 3]
+        }
+    }
+    
     def Mesh "pSphere1" 
     {
         Vec3f[] extent = [(-7.10811, -7.10811, -7.10811), (7.10811, 7.10811, 7.10811)]

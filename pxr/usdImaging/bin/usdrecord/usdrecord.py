@@ -24,6 +24,8 @@
 #
 
 from pxr import Usd
+from pxr import UsdRender
+from pxr import Sdf
 from pxr import UsdAppUtils
 from pxr import Tf
 
@@ -126,6 +128,11 @@ def main():
             'more than one extra purpose, either use commas with no spaces or '
             'quote the argument and separate purposes by commas and/or spaces.'))
 
+    parser.add_argument('--sessionLayer', action='store', type=str,
+        dest='sessionLayerPath', metavar='SESSIONLAYER',
+        help=("If specified, the stage will be opened with the "
+              "'sessionLayer' in place of the default anonymous layer."))
+
     # Note: The argument passed via the command line (disableGpu) is inverted
     # from the variable in which it is stored (gpuEnabled).
     parser.add_argument('--disableGpu', action='store_false',
@@ -135,6 +142,14 @@ def main():
             'this not only restricts renderers to those which only run on '
             'the CPU, but additionally it will prevent any tasks that require '
             'the GPU from being invoked.'))
+
+    # Note: The argument passed via the command line (disableCameraLight)
+    # is inverted from the variable in which it is stored (cameraLightEnabled)
+    parser.add_argument('--disableCameraLight', action='store_false',
+        dest='cameraLightEnabled',
+        help=(
+            'Indicates if the default camera lights should not be used '
+            'for rendering.'))
 
     UsdAppUtils.cameraArgs.AddCmdlineArgs(parser)
     UsdAppUtils.framesArgs.AddCmdlineArgs(parser)
@@ -147,6 +162,16 @@ def main():
         help=(
             'Width of the output image. The height will be computed from this '
             'value and the camera\'s aspect ratio (default=%(default)s)'))
+
+    parser.add_argument('--renderPassPrimPath', '-rp', action='store', 
+        type=str, dest='rpPrimPath', 
+        help=(
+            'Specify the Render Pass Prim to use to render the given '
+            'usdFile. '
+            'Note that if a renderSettingsPrimPath has been specified in the '
+            'stage metadata, using this argument will override that opinion. '
+            'Furthermore any properties authored on the RenderSettings will '
+            'override other arguments (imageWidth, camera, outputImagePath)'))
 
     parser.add_argument('--renderSettingsPrimPath', '-rs', action='store', 
         type=str, dest='rsPrimPath', 
@@ -167,6 +192,21 @@ def main():
 
     purposes = args.purposes.replace(',', ' ').split()
 
+    # Load the root layer.
+    rootLayer = Sdf.Layer.FindOrOpen(args.usdFilePath)
+    if not rootLayer:
+        _Err('Could not open layer: %s' % args.usdFilePath)
+        return 1
+
+    # Load the session layer.
+    if args.sessionLayerPath:
+        sessionLayer = Sdf.Layer.FindOrOpen(args.sessionLayerPath)
+        if not sessionLayer:
+            _Err('Could not open layer: %s' % args.sessionLayerPath)
+            return 1
+    else:
+        sessionLayer = Sdf.Layer.CreateAnonymous()
+
     # Open the USD stage, using a population mask if paths were given.
     if args.populationMask:
         populationMaskPaths = args.populationMask.replace(',', ' ').split()
@@ -175,9 +215,9 @@ def main():
         for maskPath in populationMaskPaths:
             populationMask.Add(maskPath)
 
-        usdStage = Usd.Stage.OpenMasked(args.usdFilePath, populationMask)
+        usdStage = Usd.Stage.OpenMasked(rootLayer, sessionLayer, populationMask)
     else:
-        usdStage = Usd.Stage.Open(args.usdFilePath)
+        usdStage = Usd.Stage.Open(rootLayer, sessionLayer)
 
     if not usdStage:
         _Err('Could not open USD stage: %s' % args.usdFilePath)
@@ -186,8 +226,30 @@ def main():
     # Get the camera at the given path (or with the given name).
     usdCamera = UsdAppUtils.GetCameraAtPath(usdStage, args.camera)
 
-    # Get the RenderSettings Prim Path from the stage metadata if not specified.
+    # Get the RenderSettings Prim Path.
+    # It may be specified directly (--renderSettingsPrimPath),
+    # via a render pass (--renderPassPrimPath),
+    # or by stage metadata (renderSettingsPrimPath).
+    if args.rsPrimPath and args.rpPrimPath:
+        _Err('Cannot specify both --renderSettingsPrimPath and '
+             '--renderPassPrimPath')
+        return 1
+    if args.rpPrimPath:
+        # A pass was specified, so next we get the associated settings prim.
+        renderPass = UsdRender.Pass(usdStage.GetPrimAtPath(args.rpPrimPath))
+        if not renderPass:
+            _Err('Unknown render pass <{}>'.format(args.rpPrimPath))
+            return 1
+        sourceRelTargets = renderPass.GetRenderSourceRel().GetTargets()
+        if not sourceRelTargets:
+            _Err('Render source not authored on {}'.format(args.rpPrimPath))
+            return 1
+        args.rsPrimPath = sourceRelTargets[0]
+        if len(sourceRelTargets) > 1:
+            Tf.Warn('Render pass <{}> has multiple targets; using <{}>'.
+                format(args.rpPrimPath, args.rsPrimPath))
     if not args.rsPrimPath:
+        # Fall back to stage metadata.
         args.rsPrimPath = usdStage.GetMetadata('renderSettingsPrimPath')
 
     if args.gpuEnabled:
@@ -204,9 +266,14 @@ def main():
 
     # Initialize FrameRecorder 
     frameRecorder = UsdAppUtils.FrameRecorder(
-        rendererPluginId, args.gpuEnabled, args.rsPrimPath)
+        rendererPluginId, args.gpuEnabled)
+    if args.rpPrimPath:
+        frameRecorder.SetActiveRenderPassPrimPath(args.rpPrimPath)
+    if args.rsPrimPath:
+        frameRecorder.SetActiveRenderSettingsPrimPath(args.rsPrimPath)
     frameRecorder.SetImageWidth(args.imageWidth)
     frameRecorder.SetComplexity(args.complexity.value)
+    frameRecorder.SetCameraLightEnabled(args.cameraLightEnabled)
     frameRecorder.SetColorCorrectionMode(args.colorCorrectionMode)
     frameRecorder.SetIncludedPurposes(purposes)
 

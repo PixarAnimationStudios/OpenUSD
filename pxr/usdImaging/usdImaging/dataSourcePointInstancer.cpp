@@ -182,31 +182,73 @@ UsdImagingDataSourcePointInstancerTopology::GetNames()
 }
 
 static
+UsdImagingDataSourceCustomPrimvars::Mappings
+_Merge(const UsdImagingDataSourceCustomPrimvars::Mappings &a,
+       const UsdImagingDataSourceCustomPrimvars::Mappings &b)
+{
+    UsdImagingDataSourceCustomPrimvars::Mappings result = a;
+    for (const auto &mapping : b) {
+        result.push_back(mapping);
+    }
+    return result;
+}
+
 const UsdImagingDataSourceCustomPrimvars::Mappings &
 _GetCustomPrimvarMappings(const UsdPrim &usdPrim)
 {
-    static const UsdImagingDataSourceCustomPrimvars::Mappings mappings = {
-        { (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-            ? HdInstancerTokens->translate
-            : HdInstancerTokens->instanceTranslations),
-          UsdGeomTokens->positions,
-          HdPrimvarSchemaTokens->instance
+    static const UsdImagingDataSourceCustomPrimvars::Mappings baseMappings = {
+        {
+            HdInstancerTokens->instanceTranslations,
+            UsdGeomTokens->positions,
+            HdPrimvarSchemaTokens->instance
         },
-        { (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-            ? HdInstancerTokens->rotate
-            : HdInstancerTokens->instanceRotations),
-          UsdGeomTokens->orientations,
-          HdPrimvarSchemaTokens->instance
+        {
+            HdInstancerTokens->instanceScales,
+            UsdGeomTokens->scales,
+            HdPrimvarSchemaTokens->instance
         },
-        { (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-            ? HdInstancerTokens->scale
-            : HdInstancerTokens->instanceScales),
-          UsdGeomTokens->scales,
-          HdPrimvarSchemaTokens->instance
+        {
+            HdTokens->velocities,
+            UsdGeomTokens->velocities,
+            HdPrimvarSchemaTokens->instance
+        },
+        {
+            HdTokens->accelerations,
+            UsdGeomTokens->accelerations,
+            HdPrimvarSchemaTokens->instance
+        },
+        {
+            HdTokens->angularVelocities,
+            UsdGeomTokens->angularVelocities,
+            HdPrimvarSchemaTokens->instance
         }
     };
 
-    return mappings;
+    TfToken usdOrientationsToken;
+    UsdGeomPointInstancer instancer(usdPrim);
+    if (instancer.UsesOrientationsf(&usdOrientationsToken)) {
+        static const UsdImagingDataSourceCustomPrimvars::Mappings
+            mappingsOrientationsf = _Merge(baseMappings,
+            {
+                {
+                    HdInstancerTokens->instanceRotations,
+                    UsdGeomTokens->orientationsf,
+                    HdPrimvarSchemaTokens->instance
+                }
+            });
+        return mappingsOrientationsf;
+    } else {
+        static const UsdImagingDataSourceCustomPrimvars::Mappings
+            mappingsOrientations = _Merge(baseMappings,
+            {
+                {
+                    HdInstancerTokens->instanceRotations,
+                    UsdGeomTokens->orientations,
+                    HdPrimvarSchemaTokens->instance
+                }
+            });
+        return mappingsOrientations;
+    }
 }
 
 HdDataSourceBaseHandle
@@ -335,6 +377,14 @@ UsdImagingDataSourcePointInstancerPrim::Invalidate(
                     HdInstancerTopologySchema::GetDefaultLocator()
                     .Append(HdInstancerTopologySchemaTokens->mask);
                 locators.insert(locator);
+            }
+            // Need to invalidate both orientations tokens. One will be
+            // invalidated via the call to Invalidate() for custom primvars
+            // and the other is explicitly invalidated here.
+            if (propertyName == UsdGeomTokens->orientations ||
+                propertyName == UsdGeomTokens->orientationsf) {
+                locators.insert(HdPrimvarsSchema::GetDefaultLocator().Append(
+                    HdInstancerTokens->instanceRotations));
             }
         }
 

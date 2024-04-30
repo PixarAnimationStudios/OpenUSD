@@ -238,20 +238,20 @@ PcpMapExpression::_Node::New( _Op op_,
         // Check for existing instance to re-use
         _NodeMap::accessor accessor;
         if (_nodeRegistry->map.insert(accessor, key) ||
-            accessor->second->_refCount.fetch_and_increment() == 0) {
+            accessor->second->_refCount.fetch_add(1) == 0) {
             // Either there was no node in the table, or there was but it had
             // begun dying (another client dropped its refcount to 0).  We have
             // to create a new node in the table.  When the client that is
             // killing the other node it looks for itself in the table, it will
             // either not find itself or will find a different node and so won't
             // remove it.
-            _NodeRefPtr newNode(new _Node(key));
+            _NodeRefPtr newNode{TfDelegatedCountIncrementTag, new _Node(key)};
             accessor->second = newNode.get();
             return newNode;
         }
-        return _NodeRefPtr(accessor->second, /*add_ref =*/ false);
+        return {TfDelegatedCountDoNotIncrementTag, accessor->second};
     }
-    return _NodeRefPtr(new _Node(key));
+    return {TfDelegatedCountIncrementTag, new _Node(key)};
 }
 
 PcpMapExpression::_Node::_Node( const Key & key_ )
@@ -364,8 +364,8 @@ PcpMapExpression::_Node::Key::GetHash() const
 {
     return TfHash::Combine(
         op,
-        get_pointer(arg1),
-        get_pointer(arg2),
+        arg1.get(),
+        arg2.get(),
         valueForConstant
     );
 }
@@ -380,15 +380,15 @@ PcpMapExpression::_Node::Key::operator==(const Key &key) const
 }
 
 void
-intrusive_ptr_add_ref(PcpMapExpression::_Node* p)
+TfDelegatedCountIncrement(PcpMapExpression::_Node* p)
 {
     ++p->_refCount;
 }
 
 void
-intrusive_ptr_release(PcpMapExpression::_Node* p)
+TfDelegatedCountDecrement(PcpMapExpression::_Node* p) noexcept
 {
-    if (p->_refCount.fetch_and_decrement() == 1)
+    if (p->_refCount.fetch_sub(1) == 1)
         delete p;
 }
 

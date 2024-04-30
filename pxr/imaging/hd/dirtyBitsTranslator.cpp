@@ -360,6 +360,9 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdImageShader::DirtyConstants) {
             set->append(HdImageShaderSchema::GetConstantsLocator());
         }
+        if (bits & HdImageShader::DirtyMaterialNetwork) {
+            set->append(HdImageShaderSchema::GetMaterialNetworkLocator());
+        }
     } else {
         const auto fncIt = Hd_SPrimBToSFncs->find(primType);
         if (fncIt == Hd_SPrimBToSFncs->end()) {
@@ -797,6 +800,7 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
         }
         if (_FindLocator(HdLightSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdLight::DirtyParams |
+                HdLight::DirtyResource |
                 HdLight::DirtyShadowParams |
                 HdLight::DirtyCollection;
         }
@@ -898,6 +902,10 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
                     if (it->HasPrefix(
                         HdImageShaderSchema::GetConstantsLocator())) {
                         bits |= HdImageShader::DirtyConstants;
+                    }
+                    if (it->HasPrefix(
+                        HdImageShaderSchema::GetMaterialNetworkLocator())) {
+                        bits |= HdImageShader::DirtyMaterialNetwork;
                     }
                     ++it;
                 } while(it != end && it->Intersects(

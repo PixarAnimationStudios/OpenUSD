@@ -26,18 +26,13 @@
 #include "pxr/base/tf/stringUtils.h"
 
 #include <MaterialXCore/Value.h>
-#include <MaterialXGenGlsl/Nodes/SurfaceNodeGlsl.h>
 #include <MaterialXGenShader/Shader.h>
 #include <MaterialXGenShader/ShaderGenerator.h>
 #include <MaterialXGenShader/Syntax.h>
-
-// Metal support added in MaterialX v1.38.7
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 7
-#include <MaterialXGenMsl/MslShaderGenerator.h>
+#include <MaterialXGenGlsl/Nodes/SurfaceNodeGlsl.h>
 #include <MaterialXGenMsl/Nodes/SurfaceNodeMsl.h>
 #include <MaterialXGenMsl/MslResourceBindingContext.h>
-#endif
+#include <MaterialXGenMsl/MslShaderGenerator.h>
 
 namespace mx = MaterialX;
 
@@ -318,14 +313,11 @@ HdStMaterialXShaderGen<Base>::_EmitMxSurfaceShader(
                             + ".transparency, vec3(0.3333)), 0.0, 1.0)", mxStage);
                     emitLine(finalOutputReturn + "vec4(" 
                             + finalOutput + ".color, outAlpha)", mxStage);
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 5
                     emitLine("if (outAlpha < " + mx::HW::T_ALPHA_THRESHOLD + ")",
                              mxStage, false);
                     Base::emitScopeBegin(mxStage);
                     emitLine("discard", mxStage);
                     Base::emitScopeEnd(mxStage);
-#endif
                 }
                 else {
                     emitLine(finalOutputReturn + 
@@ -409,8 +401,10 @@ HdStMaterialXShaderGen<Base>::_EmitMxInitFunction(
     Base::emitComment("Convert HdData to MxData", mxStage);
 
     // Initialize the position of the view in worldspace
-    emitLine("u_viewPosition = vec3(HdGet_worldToViewInverseMatrix()"
-             " * vec4(0.0, 0.0, 0.0, 1.0))", mxStage);
+    if (mxStage.getUniformBlock(mx::HW::PRIVATE_UNIFORMS).find(mx::HW::T_VIEW_POSITION)) {
+        emitLine("u_viewPosition = vec3(HdGet_worldToViewInverseMatrix()"
+            " * vec4(0.0, 0.0, 0.0, 1.0))", mxStage);
+    }
     
     // Calculate the worldspace position, normal and tangent vectors
     const std::string texcoordName =
@@ -421,11 +415,13 @@ HdStMaterialXShaderGen<Base>::_EmitMxInitFunction(
         mxStage);
 
     // Add the vd declaration that translates HdVertexData -> MxVertexData
-    std::string mxVertexDataName = "mx" + vertexData.getName();
-    _EmitMxVertexDataDeclarations(vertexData, mxVertexDataName, 
-                                  vertexData.getInstance(), 
-                                  mx::Syntax::COMMA, mxStage);
-    Base::emitLineBreak(mxStage);
+    if (!vertexData.empty()) {
+        std::string mxVertexDataName = "mx" + vertexData.getName();
+        _EmitMxVertexDataDeclarations(vertexData, mxVertexDataName,
+            vertexData.getInstance(),
+            mx::Syntax::COMMA, mxStage);
+        Base::emitLineBreak(mxStage);
+    }
 
     // Initialize MaterialX parameters with HdGet_ equivalents
     Base::emitComment("Initialize Material Parameters", mxStage);
@@ -503,12 +499,9 @@ HdStMaterialXShaderGen<Base>::_EmitMxVertexDataDeclarations(
     if (targetShadingLanguage == mx::GlslShaderGenerator::TARGET) {
         line += "(";
     }
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 7
     else if (targetShadingLanguage == mx::MslShaderGenerator::TARGET) {
         line += "{";
     }
-#endif
     else {
         TF_CODING_ERROR("MaterialX Shader Generator doesn't support %s",
                         targetShadingLanguage.c_str());
@@ -526,12 +519,9 @@ HdStMaterialXShaderGen<Base>::_EmitMxVertexDataDeclarations(
     if (targetShadingLanguage == mx::GlslShaderGenerator::TARGET) {
         line += ")";
     }
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 7
     else if (targetShadingLanguage == mx::MslShaderGenerator::TARGET) {
         line += "}";
     }
-#endif
 
     emitLine(line, mxStage);
 }
@@ -611,28 +601,6 @@ HdStMaterialXShaderGen<Base>::_EmitMxVertexDataLine(
     }
 
     return hdVariableDef.empty() ? mx::EMPTY_STRING : hdVariableDef;
-}
-
-template <typename Base>
-void
-HdStMaterialXShaderGen<Base>::emitLibraryInclude(
-    const mx::FilePath& filename,
-    mx::GenContext& context,
-    mx::ShaderStage& stage) const
-{
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && \
-    MATERIALX_BUILD_VERSION == 3
-    mx::ShaderGenerator::emitInclude(filename, context, stage);
-#elif MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && \
-    MATERIALX_BUILD_VERSION == 4 
-    // Starting from MaterialX 1.38.4 at PR 877, we must add the "libraries" part:
-    mx::ShaderGenerator::emitInclude(
-        mx::FilePath("libraries") / filename, context, stage);
-#else 
-    // emitLibraryInclude was introduced in MaterialX 1.38.5 and replaced
-    // the emitInclude method. 
-    mx::ShaderGenerator::emitLibraryInclude(filename, context, stage);
-#endif 
 }
 
 template<typename Base>
@@ -805,30 +773,29 @@ HdStMaterialXShaderGen<Base>::_EmitDataStructsAndFunctionDefinitions(
         emitLine(mxVertexDataName + " " + vertexData.getInstance(), mxStage);
         Base::emitLineBreak(mxStage);
         Base::emitLineBreak(mxStage);
-
-        // add the mxInit function to convert Hd -> Mx data
-        _EmitMxInitFunction(vertexData, mxStage);
     }
+
+    // add the mxInit function to convert Hd -> Mx data
+    _EmitMxInitFunction(vertexData, mxStage);
 
     // Emit lighting and shadowing code
     if (lighting) {
         Base::emitSpecularEnvironment(mxContext, mxStage);
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 5
         Base::emitTransmissionRender(mxContext, mxStage);
-#endif
     }
     if (shadowing) {
-        emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
-                                 + "/lib/mx_shadow.glsl", mxContext, mxStage);
+        mx::ShaderGenerator::emitLibraryInclude(
+            "pbrlib/" + mx::GlslShaderGenerator::TARGET
+            + "/lib/mx_shadow.glsl", mxContext, mxStage);
     }
 
     // Emit directional albedo table code.
     if (mxContext.getOptions().hwDirectionalAlbedoMethod ==
             mx::HwDirectionalAlbedoMethod::DIRECTIONAL_ALBEDO_TABLE ||
         mxContext.getOptions().hwWriteAlbedoTable) {
-        emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
-                                 + "/lib/mx_table.glsl", mxContext, mxStage);
+        mx::ShaderGenerator::emitLibraryInclude(
+            "pbrlib/" + mx::GlslShaderGenerator::TARGET
+            + "/lib/mx_table.glsl", mxContext, mxStage);
         Base::emitLineBreak(mxStage);
     }
 
@@ -845,7 +812,7 @@ HdStMaterialXShaderGen<Base>::_EmitDataStructsAndFunctionDefinitions(
 
     // Emit uv transform code globally if needed.
     if (mxContext.getOptions().hwAmbientOcclusion) {
-        emitLibraryInclude(
+        mx::ShaderGenerator::emitLibraryInclude(
             "stdlib/" + Base::TARGET + "/lib/" +
                 (*tokenSubstitutions)[mx::ShaderGenerator::T_FILE_TRANSFORM_UV],
             mxContext, mxStage);
@@ -975,8 +942,9 @@ HdStMaterialXShaderGenGlsl::_EmitMxFunctions(
     mx::GenContext& mxContext,
     mx::ShaderStage& mxStage) const
 {
-    emitLibraryInclude("stdlib/" + mx::GlslShaderGenerator::TARGET
-                       + "/lib/mx_math.glsl", mxContext, mxStage);
+    mx::ShaderGenerator::emitLibraryInclude(
+        "stdlib/" + mx::GlslShaderGenerator::TARGET
+        + "/lib/mx_math.glsl", mxContext, mxStage);
     _EmitConstantsUniformsAndTypeDefs(
         mxContext, mxStage, _syntax->getConstantQualifier());
 
@@ -1024,10 +992,6 @@ HdStMaterialXShaderGenGlsl::_EmitMxFunctions(
 // ----------------------------------------------------------------------------
 //                          HdSt MaterialX ShaderGen Metal
 // ----------------------------------------------------------------------------
-
-// Metal support added in MaterialX v1.38.7
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 7
 
 namespace {
     // Create a customized version of the class mx::SurfaceNodeMsl
@@ -1182,10 +1146,12 @@ HdStMaterialXShaderGenMsl::_EmitMxFunctions(
     mx::GenContext& mxContext,
     mx::ShaderStage& mxStage) const
 {
-    emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
-                       + "/lib/mx_microfacet.glsl", mxContext, mxStage);
-    emitLibraryInclude("stdlib/" + mx::MslShaderGenerator::TARGET
-                       + "/lib/mx_math.metal", mxContext, mxStage);
+    mx::ShaderGenerator::emitLibraryInclude(
+        "pbrlib/" + mx::GlslShaderGenerator::TARGET
+        + "/lib/mx_microfacet.glsl", mxContext, mxStage);
+    mx::ShaderGenerator::emitLibraryInclude(
+        "stdlib/" + mx::MslShaderGenerator::TARGET
+        + "/lib/mx_math.metal", mxContext, mxStage);
     _EmitConstantsUniformsAndTypeDefs(
         mxContext, mxStage,_syntax->getConstantQualifier());
 
@@ -1233,7 +1199,6 @@ HdStMaterialXShaderGenMsl::_EmitMxFunctions(
     _EmitDataStructsAndFunctionDefinitions(
         mxGraph, mxContext, mxStage, &_tokenSubstitutions);
 }
-#endif
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

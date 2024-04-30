@@ -413,7 +413,7 @@ HdSt_VolumeShader::UpdateTextureHandles(
         const HdStTextureIdentifier &textureId =
             TF_VERIFY(fieldPrim) ?
             fieldPrim->GetTextureIdentifier() : HdStTextureIdentifier();
-        const HdTextureType textureType = textureHandles[i].type;
+        const HdStTextureType textureType = textureHandles[i].type;
         const size_t textureMemory =
             TF_VERIFY(fieldPrim) ?
             fieldPrim->GetTextureMemory() : 0;

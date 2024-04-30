@@ -575,21 +575,21 @@ _ResolveParameter(
 static
 std::unique_ptr<HdStSubtextureIdentifier>
 _GetSubtextureIdentifier(
-    const HdTextureType textureType,
+    const HdStTextureType textureType,
     const TfToken &nodeType,
     const bool premultiplyAlpha,
     const TfToken &sourceColorSpace)
 {
-    if (textureType == HdTextureType::Uv) {
+    if (textureType == HdStTextureType::Uv) {
         const bool flipVertically = (nodeType == _tokens->HwUvTexture_1);
         return std::make_unique<HdStAssetUvSubtextureIdentifier>(flipVertically, 
             premultiplyAlpha, sourceColorSpace);
     } 
-    if (textureType == HdTextureType::Udim) {
+    if (textureType == HdStTextureType::Udim) {
         return std::make_unique<HdStUdimSubtextureIdentifier>(premultiplyAlpha, 
             sourceColorSpace);
     }
-    if (textureType == HdTextureType::Ptex) {
+    if (textureType == HdStTextureType::Ptex) {
         return std::make_unique<HdStPtexSubtextureIdentifier>(premultiplyAlpha);
     }
     return nullptr;
@@ -629,9 +629,9 @@ _MakeMaterialParamsForTexture(
     }
 
     // Determine the texture type
-    texParam.textureType = HdTextureType::Uv;
+    texParam.textureType = HdStTextureType::Uv;
     if (sdrNode && sdrNode->GetMetadata().count(_tokens->isPtex)) {
-        texParam.textureType = HdTextureType::Ptex;
+        texParam.textureType = HdStTextureType::Ptex;
     }
 
     // Determine if texture should be pre-multiplied on CPU
@@ -711,7 +711,7 @@ _MakeMaterialParamsForTexture(
                 const std::string filePath = _ResolveAssetPath(v);
 
                 if (HdStIsSupportedUdimTexture(filePath)) {
-                    texParam.textureType = HdTextureType::Udim;
+                    texParam.textureType = HdStTextureType::Udim;
                 }
                 
                 useTexturePrimToFindTexture = false;

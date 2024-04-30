@@ -98,6 +98,14 @@ TF_API std::ostream& operator<<(std::ostream&, const TfUtf8CodePoint);
 constexpr TfUtf8CodePoint TfUtf8InvalidCodePoint{
     TfUtf8CodePoint::ReplacementValue};
 
+/// Constructs a TfUtf8CodePoint from an ASCII charcter (0-127).
+constexpr TfUtf8CodePoint TfUtf8CodePointFromAscii(const char value)
+{
+    return static_cast<unsigned char>(value) < 128 ?
+           TfUtf8CodePoint(static_cast<unsigned char>(value)) :
+           TfUtf8InvalidCodePoint;
+}
+
 /// Defines an iterator over a UTF-8 encoded string that extracts unicode
 /// code point values.
 ///
@@ -108,10 +116,10 @@ constexpr TfUtf8CodePoint TfUtf8InvalidCodePoint{
 class TfUtf8CodePointIterator final {
 public:
     using iterator_category = std::forward_iterator_tag;
-    using value_type = uint32_t;
+    using value_type = TfUtf8CodePoint;
     using difference_type = std::ptrdiff_t;
     using pointer = void;
-    using reference = uint32_t;
+    using reference = TfUtf8CodePoint;
 
     /// Model iteration ending when the underlying iterator's end condition
     /// has been met.
@@ -131,14 +139,14 @@ public:
         }
 
     /// Retrieves the current UTF-8 character in the sequence as its Unicode
-    /// code point value. Returns `TfUtf8InvalidCodePoint.AsUInt32()` when the
+    /// code point value. Returns `TfUtf8InvalidCodePoint` when the
     /// byte sequence pointed to by the iterator cannot be decoded.
     ///
     /// A code point might be invalid because it's incorrectly encoded, exceeds
     /// the maximum allowed value, or is in the disallowed surrogate range.
-    uint32_t operator* () const
+    value_type operator* () const
     {
-        return _GetCodePoint();
+        return TfUtf8CodePoint{_GetCodePoint()};
     }
 
     /// Retrieves the wrapped string iterator.
@@ -306,8 +314,8 @@ private:
 ///
 /// \code{.cpp}
 /// std::string value{"∫dx"};
-/// for (const uint32_t codePoint : TfUtf8CodePointView{value}) {
-///     if (codePoint == TfUtf8InvalidCodePoint.AsUInt32()) {
+/// for (const auto codePoint : TfUtf8CodePointView{value}) {
+///     if (codePoint == TfUtf8InvalidCodePoint) {
 ///         TF_WARN("String cannot be decoded.");
 ///         break;
 ///     }
@@ -322,7 +330,7 @@ private:
 ///
 /// \code{.cpp}
 /// if (std::any_of(std::cbegin(codePointView), codePointView.EndAsIterator(),
-///     [](const auto c) { return c == TfUtf8InvalidCodePoint.AsUInt32(); }))
+///     [](const auto c) { return c == TfUtf8InvalidCodePoint; }))
 /// {
 ///     TF_WARN("String cannot be decoded");
 /// }
@@ -395,6 +403,15 @@ private:
 TF_API
 bool TfIsUtf8CodePointXidStart(uint32_t codePoint);
 
+/// Determines whether the given Unicode \a codePoint is in the XID_Start
+/// character class.
+/// \overload
+///
+inline bool TfIsUtf8CodePointXidStart(const TfUtf8CodePoint codePoint)
+{
+    return TfIsUtf8CodePointXidStart(codePoint.AsUInt32());
+}
+
 /// Determines whether the given Unicode \a codePoint is in the XID_Continue
 /// character class.
 ///
@@ -406,6 +423,15 @@ bool TfIsUtf8CodePointXidStart(uint32_t codePoint);
 ///
 TF_API
 bool TfIsUtf8CodePointXidContinue(uint32_t codePoint);
+
+/// Determines whether the given Unicode \a codePoint is in the XID_Continue
+/// character class.
+/// \overload
+///
+inline bool TfIsUtf8CodePointXidContinue(const TfUtf8CodePoint codePoint)
+{
+    return TfIsUtf8CodePointXidContinue(codePoint.AsUInt32());
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

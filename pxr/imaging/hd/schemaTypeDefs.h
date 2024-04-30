@@ -63,6 +63,8 @@ using HdMaterialNetworkContainerSchema =
     HdSchemaBasedContainerSchema<class HdMaterialNetworkSchema>;
 using HdMaterialConnectionContainerSchema =
     HdSchemaBasedContainerSchema<HdMaterialConnectionSchema>;
+using HdSampledDataSourceContainerContainerSchema =
+    HdSchemaBasedContainerSchema<HdSampledDataSourceContainerSchema>;
 
 // Containers of vectors of schemas
 using HdMaterialConnectionVectorContainerSchema =

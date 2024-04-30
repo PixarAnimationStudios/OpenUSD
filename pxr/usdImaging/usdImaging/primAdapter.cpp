@@ -90,10 +90,6 @@ static bool _IsEnabledPointInstancerIndicesCache() {
     return _v;
 }
 
-UsdImagingPrimAdapter::~UsdImagingPrimAdapter() 
-{
-}
-
 TfTokenVector
 UsdImagingPrimAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
@@ -1154,6 +1150,14 @@ bool
 UsdImagingPrimAdapter::_DoesDelegateSupportCoordSys() const
 {
     return _delegate->_coordSysEnabled;
+}
+
+SdfPath
+UsdImagingPrimAdapter::ResolveCachePath(
+    const SdfPath& usdPath,
+    const UsdImagingInstancerContext* /* unused */) const
+{
+    return usdPath;
 }
 
 bool 

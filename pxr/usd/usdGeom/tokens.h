@@ -590,6 +590,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomHermiteCurves
     const TfToken tangents;
+    /// \brief "tetrahedron"
+    /// 
+    /// Possible value for UsdGeomSubset::GetElementTypeAttr()
+    const TfToken tetrahedron;
     /// \brief "tetVertexIndices"
     /// 
     /// UsdGeomTetMesh

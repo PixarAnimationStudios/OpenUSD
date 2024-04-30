@@ -626,7 +626,7 @@ _AppendNameToSceneIndexPrimsAndInstanceIndices(
 //     }
 // }
 //
-// The NI and PI prototype progating scene indices turn this into:
+// The NI and PI prototype propagating scene indices turn this into:
 //
 // /MyInstancer
 //     primType: instancer
@@ -709,7 +709,7 @@ _AppendNameToSceneIndexPrimsAndInstanceIndices(
 //    uniform token[] xformOpOrder = ["xformOp:translate"]
 // }
 //
-// The NI and PI prototype progating scene indices turn this into:
+// The NI and PI prototype propagating scene indices turn this into:
 //
 // /Instance1
 //     primType: ""
@@ -746,7 +746,7 @@ _AppendNameToSceneIndexPrimsAndInstanceIndices(
 //     nestedInstanceIndices: [
 //         instancer: /UsdNiPropagatedPrototypes/NoPrimvars_NoMaterialBindings/__Prototype_1/UsdNiInstancer
 //         prototypeIndex: 0
-//         instanceIndices: [ 0, 1 ]
+//         instanceIndices: [ 0 ]
 //
 // Next, we process Cube from /Instance1/Cube. Since
 // /UsdNiPropagatedPrototypes/NoPrimvars_NoMaterialBindings/__Prototype_1/UsdNiInstancer/UsdNiPrototype/cube
@@ -756,7 +756,7 @@ _AppendNameToSceneIndexPrimsAndInstanceIndices(
 //     nestedInstanceIndices: [
 //         instancer: /UsdNiPropagatedPrototypes/NoPrimvars_NoMaterialBindings/__Prototype_1/UsdNiInstancer
 //         prototypeIndex: 0
-//         instanceIndices: [ 0, 1 ]
+//         instanceIndices: [ 0 ]
 //
 std::vector<_PrimAndNestedInstanceIndices>
 _ComputeSceneIndexPrimsAndInstanceIndices(
@@ -787,9 +787,9 @@ _ComputeSceneIndexPrimsAndInstanceIndices(
     }
 
     TF_DEBUG(USDIMAGING_SELECTION).Msg(
-        "    Traversing ancestors of usdPath\n");
+        "    Traversing descendants of usdPath %s\n", usdPath.GetText());
 
-    // Now add all namespace ancestors of the paths we determined.
+    // Now add all namespace descendants of the paths we determined.
     size_t i = 0;
     while (i < result.size()) {
         TF_DEBUG(USDIMAGING_SELECTION).Msg(

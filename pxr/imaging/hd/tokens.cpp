@@ -25,12 +25,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// XXX: Remove this in 24.05. Until then, external users may
-// set this to true to maintain compatability with hydra backends that have
-// not yet been updated to use the new hydra-namespaced names.
-TF_DEFINE_ENV_SETTING(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES, false,
-    "enable to use pre-23.11 internal instancer primvar names");
-
 TF_DEFINE_PUBLIC_TOKENS(HdTokens, HD_TOKENS);
 
 TF_DEFINE_PUBLIC_TOKENS(HdInstancerTokens, HD_INSTANCER_TOKENS);

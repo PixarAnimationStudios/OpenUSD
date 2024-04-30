@@ -309,6 +309,23 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- glsl Mesh.TessControl.PatchCommon
+
+void
+ClampTessLevels(inout vec4 tessOuterLo, inout vec4 tessOuterHi)
+{
+    // Clamp outer tess levels to a minimum of 2 so that we always
+    // sample along each edge and in the middle of transition patches.
+    const vec4 minOuterTessLevel = vec4(2.0);
+
+    // Values in the tessOuterHi segments which are zero should remain zero.
+    const bvec4 maskOuterHi = notEqual(tessOuterHi, vec4(0.0));
+
+    tessOuterLo = max(minOuterTessLevel, tessOuterLo);
+    tessOuterHi = max(minOuterTessLevel * vec4(maskOuterHi), tessOuterHi);
+}
+
+--- --------------------------------------------------------------------------
 -- layout Mesh.TessControl.BSplineQuad
 
 [
@@ -352,8 +369,11 @@ void main(void)
             cpBezier[i] = outpt[i].v;
         }
         OsdEvalPatchBezierTessLevels(cpBezier, patchParam,
-                                     tessLevelOuter, tessLevelInner,
                                      tessOuterLo, tessOuterHi);
+        ClampTessLevels(tessOuterLo, tessOuterHi);
+
+        OsdComputeTessLevels(tessOuterLo, tessOuterHi,
+                             tessLevelOuter, tessLevelInner);
 
         gl_TessLevelOuter[0] = tessLevelOuter[0];
         gl_TessLevelOuter[1] = tessLevelOuter[1];
@@ -464,8 +484,11 @@ void main(void)
             cpBezier[i] = outpt[i].v.P;
         }
         OsdEvalPatchBezierTriangleTessLevels(cpBezier, patchParam,
-                                            tessLevelOuter, tessLevelInner,
                                             tessOuterLo, tessOuterHi);
+        ClampTessLevels(tessOuterLo, tessOuterHi);
+
+        OsdComputeTessLevelsTriangle(tessOuterLo, tessOuterHi,
+                                     tessLevelOuter, tessLevelInner);
 
         gl_TessLevelOuter[0] = tessLevelOuter[0];
         gl_TessLevelOuter[1] = tessLevelOuter[1];
@@ -527,6 +550,23 @@ void main(void)
         (1.0f-UV.x-UV.y), UV.x, UV.y, 0.0f);
 
     ProcessPrimvarsOut(basis, 4, 5, 8, 0, UV);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.PostTessControl.PatchCommon
+
+void
+ClampTessLevels(thread vec4 &tessOuterLo, thread vec4 &tessOuterHi)
+{
+    // Clamp outer tess levels to a minimum of 2 so that we always
+    // sample along each edge and in the middle of transition patches.
+    const vec4 minOuterTessLevel = vec4(2.0);
+
+    // Values in the tessOuterHi segments which are zero should remain zero.
+    const bvec4 maskOuterHi = notEqual(tessOuterHi, vec4(0.0));
+
+    tessOuterLo = max(minOuterTessLevel, tessOuterLo);
+    tessOuterHi = max(minOuterTessLevel * vec4(maskOuterHi), tessOuterHi);
 }
 
 --- --------------------------------------------------------------------------
@@ -606,6 +646,7 @@ void main(void)
     Osd_GetTessLevelsFromPatchBoundaries4(
         GetTessLevel(), GetProjectionMatrix(), transform,
         corners, midPoints, patchParam, tessOuterLo, tessOuterHi);
+    ClampTessLevels(tessOuterLo, tessOuterHi);
 
     OsdComputeTessLevels(tessOuterLo, tessOuterHi,
                          tessLevelOuter, tessLevelInner);
@@ -790,6 +831,7 @@ void main(void)
     Osd_GetTessLevelsFromPatchBoundaries3(
         GetTessLevel(), GetProjectionMatrix(), transform,
         corners, midPoints, patchParam, tessOuterLo, tessOuterHi);
+    ClampTessLevels(tessOuterLo, tessOuterHi);
 
     OsdComputeTessLevelsTriangle(tessOuterLo, tessOuterHi,
                          tessLevelOuter, tessLevelInner);

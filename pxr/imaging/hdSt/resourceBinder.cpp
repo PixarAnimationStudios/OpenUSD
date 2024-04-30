@@ -715,7 +715,7 @@ HdSt_ResourceBinder::ResolveBindings(
                     = MetaData::ShaderParameterAccessor(glName, 
                                                         /*type=*/glType);
             } else if (param.IsTexture()) {
-                if (param.textureType == HdTextureType::Ptex) {
+                if (param.textureType == HdStTextureType::Ptex) {
                     // ptex texture
                     HdStBinding texelBinding = bindless
                         ? HdStBinding(HdStBinding::BINDLESS_TEXTURE_PTEX_TEXEL,
@@ -752,7 +752,7 @@ HdSt_ResourceBinder::ResolveBindings(
                     const TfToken layoutName(_ConcatLayout(name));
                     // used for non-bindless
                     _bindingMap[layoutName] = layoutBinding; 
-                } else if (param.textureType == HdTextureType::Udim) {
+                } else if (param.textureType == HdStTextureType::Udim) {
                     // Texture Array for UDIM
                     HdStBinding textureBinding = bindless
                         ? HdStBinding(HdStBinding::BINDLESS_TEXTURE_UDIM_ARRAY,
@@ -790,7 +790,7 @@ HdSt_ResourceBinder::ResolveBindings(
 
                     // used for non-bindless
                     _bindingMap[layoutName] = layoutBinding;
-                } else if (param.textureType == HdTextureType::Uv) {
+                } else if (param.textureType == HdStTextureType::Uv) {
                     if (param.IsArrayOfTextures()) {
                         size_t const numTextures = param.arrayOfTexturesSize;
                         
@@ -844,7 +844,7 @@ HdSt_ResourceBinder::ResolveBindings(
                         // used for non-bindless
                         _bindingMap[name] = textureBinding;
                     }
-                } else if (param.textureType == HdTextureType::Field) {
+                } else if (param.textureType == HdStTextureType::Field) {
                     // 3d texture
                     HdStBinding textureBinding = bindless
                         ? HdStBinding(HdStBinding::BINDLESS_TEXTURE_FIELD,

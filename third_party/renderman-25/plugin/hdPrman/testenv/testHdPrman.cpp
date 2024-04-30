@@ -566,15 +566,13 @@ CreateRenderSpecDict(
         for (size_t index: product.renderVarIndices) {
             auto const& renderVar = renderSpec.renderVars[index];
 
-            // Map source to Ri name.
-            std::string name = renderVar.sourceName;
-            if (renderVar.sourceType == UsdRenderTokens->lpe) {
-                name = "lpe:" + name;
-            }
-
             VtDictionary renderVarDict;
             renderVarDict[HdPrmanExperimentalRenderSpecTokens->name] =
-                name;
+                renderVar.renderVarPath.GetName();
+            renderVarDict[HdPrmanExperimentalRenderSpecTokens->sourceName] =
+                renderVar.sourceName;
+            renderVarDict[HdPrmanExperimentalRenderSpecTokens->sourceType] =
+                renderVar.sourceType;
             renderVarDict[HdPrmanExperimentalRenderSpecTokens->type] =
                 renderVar.dataType.GetString();
             renderVarDict[HdPrmanExperimentalRenderSpecTokens->params] =
@@ -593,6 +591,8 @@ CreateRenderSpecDict(
             VtDictionary renderProduct;
             renderProduct[HdPrmanExperimentalRenderSpecTokens->name] =
                 product.name.GetString();
+            renderProduct[HdPrmanExperimentalRenderSpecTokens->params] =
+                product.namespacedSettings;
             {
                 VtIntArray renderVarIndices;
                 const size_t num = product.renderVarIndices.size();
@@ -1101,13 +1101,13 @@ int main(int argc, char *argv[])
     }
 
     UsdRenderSpec renderSpec;
-    const TfTokenVector prmanNamespaces{TfToken("ri"), TfToken("outputs:ri")};
     if (!UseRenderSettingsPrim()) {
         if (settings) {
             // Create the RenderSpec from the Render Settings Prim 
             fprintf(stdout, "Create a UsdRenderSpec from the Render Settings "
                     "Prim <%s>.\n", settings.GetPath().GetText());
-            renderSpec = UsdRenderComputeSpec(settings, prmanNamespaces);
+            renderSpec =
+                UsdRenderComputeSpec(settings, {_tokens->renderContext});
         } else {
             // Otherwise, provide a built-in render specification.
             fprintf(stdout, "Create the Fallback UsdRenderSpec.\n");
@@ -1160,6 +1160,15 @@ int main(int argc, char *argv[])
         // hydra's first-class support for render settings scene description.
         fprintf(stdout, "Rendering using the experimentalRenderSpec dictionary...\n");
         for (auto product: renderSpec.products) {
+
+            if (product.type != TfToken("raster")) {
+                TF_WARN(
+                    "Skipping product %s because product type %s is not"
+                    "supported in the renderSpec path.",
+                    product.name.GetText(), product.type.GetText());
+                
+                continue;
+            }
             printf("Rendering product %s...\n", product.name.GetText());
 
             HydraSetupCameraInfo camInfo = ApplyCommandLineArgsToProduct(
@@ -1171,9 +1180,6 @@ int main(int argc, char *argv[])
             // Create and save the RenderSpecDict to the HdRenderSettingsMap
             settingsMap[HdPrmanRenderSettingsTokens->experimentalRenderSpec] =
                 CreateRenderSpecDict(renderSpec, product);
-
-            // Only allow "raster" for now.
-            TF_VERIFY(product.type == TfToken("raster"));
 
             AddVisualizerStyle(visualizerStyle, &settingsMap);
             AddNamespacedSettings(product.namespacedSettings, &settingsMap);

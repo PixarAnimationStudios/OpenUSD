@@ -83,7 +83,7 @@ public:
     bool IsValid() const override;
 
     HDST_API
-    HdTextureType GetTextureType() const override;
+    HdStTextureType GetTextureType() const override;
 
 protected:
     HDST_API
@@ -110,7 +110,7 @@ private:
 };
 
 template<>
-struct HdSt_TypedTextureObjectHelper<HdTextureType::Ptex> {
+struct HdSt_TypedTextureObjectHelper<HdStTextureType::Ptex> {
     using type = HdStPtexTextureObject;
 };
 

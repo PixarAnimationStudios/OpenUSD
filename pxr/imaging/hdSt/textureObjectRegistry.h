@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
-#include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hdSt/enums.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
 
 #include <tbb/concurrent_vector.h>
@@ -63,7 +63,7 @@ public:
     HDST_API
     HdStTextureObjectSharedPtr AllocateTextureObject(
         const HdStTextureIdentifier &textureId,
-        HdTextureType textureType);
+        HdStTextureType textureType);
 
     /// Create GPU texture objects, load textures from files and
     /// upload to GPU.
@@ -116,7 +116,7 @@ public:
 private:
     HdStTextureObjectSharedPtr _MakeTextureObject(
         const HdStTextureIdentifier &textureId,
-        HdTextureType textureType);
+        HdStTextureType textureType);
 
     std::atomic<int64_t> _totalTextureMemory;
 

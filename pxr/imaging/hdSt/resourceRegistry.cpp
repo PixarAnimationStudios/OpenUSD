@@ -258,7 +258,7 @@ HdStResourceRegistry::AllocateNonUniformImmutableBufferArrayRange(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
 {
-    usageHint.bits.immutable = 1;
+    usageHint |= HdBufferArrayUsageHintBitsImmutable;
 
     return _AllocateBufferArrayRange(
                 _nonUniformImmutableAggregationStrategy.get(),
@@ -337,7 +337,7 @@ HdStResourceRegistry::UpdateNonUniformImmutableBufferArrayRange(
         HdBufferSpecVector const& removedSpecs,
         HdBufferArrayUsageHint usageHint)
 {
-    usageHint.bits.immutable = 1;
+    usageHint |= HdBufferArrayUsageHintBitsImmutable;
 
     return _UpdateBufferArrayRange(
         _nonUniformImmutableAggregationStrategy.get(),
@@ -692,6 +692,19 @@ HdStResourceRegistry::RegisterComputePipeline(
     return _computePipelineRegistry.GetInstance(id);
 }
 
+HdResourceRegistry*
+HdStResourceRegistry::FindOrCreateSubResourceRegistry(
+    const std::string& identifier,
+    const std::function<std::unique_ptr<HdResourceRegistry>()>& factory)
+{
+    auto it = _subResourceRegistries.find(identifier);
+    if (it == _subResourceRegistries.end()) {
+        it = _subResourceRegistries.insert({ identifier, factory() }).first;
+    }
+
+    return it->second.get();
+}
+
 std::ostream &operator <<(
     std::ostream &out,
     const HdStResourceRegistry& self)
@@ -785,7 +798,14 @@ HdStResourceRegistry::_CommitTextures()
 void
 HdStResourceRegistry::_Commit()
 {
-    // Process textures first before resolving buffer sources since
+    // Process sub resource registries before other resources in
+    // case they depend on any resources in this resource registry
+    // being committed.
+    for (auto& subResourceRegistry : _subResourceRegistries) {
+        subResourceRegistry.second->Commit();
+    }
+
+    // Process textures before resolving buffer sources since
     // some computation buffer sources need meta-data from textures
     // (such as the grid transform for an OpenVDB file) or texture
     // handles (for bindless textures).
@@ -1042,6 +1062,10 @@ HdStResourceRegistry::_GarbageCollect()
     // We want to clean objects first which might be holding references
     // to other objects which will be subsequently cleaned up.
 
+    for (auto& subResourceRegistry : _subResourceRegistries) {
+        subResourceRegistry.second->GarbageCollect();
+    }
+
     GarbageCollectDispatchBuffers();
     GarbageCollectBufferResources();
 
@@ -1160,8 +1184,7 @@ HdStResourceRegistry::_UpdateBufferArrayRange(
         bool haveBuffersToUpdate = !updatedOrAddedSpecs.empty();
         bool dataUpdateForImmutableBar = curRange->IsImmutable() &&
                                         haveBuffersToUpdate;
-        bool usageHintChanged = curRange->GetUsageHint().value !=
-                                usageHint.value;
+        bool usageHintChanged = curRange->GetUsageHint() != usageHint;
         
         bool needsMigration =
             dataUpdateForImmutableBar ||
@@ -1304,7 +1327,7 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
 HdStTextureHandleSharedPtr
 HdStResourceRegistry::AllocateTextureHandle(
         HdStTextureIdentifier const &textureId,
-        const HdTextureType textureType,
+        const HdStTextureType textureType,
         HdSamplerParameters const &samplerParams,
         const size_t memoryRequest,
         HdStShaderCodePtr const &shaderCode)
@@ -1318,7 +1341,7 @@ HdStResourceRegistry::AllocateTextureHandle(
 HdStTextureObjectSharedPtr
 HdStResourceRegistry::AllocateTextureObject(
         HdStTextureIdentifier const &textureId,
-        const HdTextureType textureType)
+        const HdStTextureType textureType)
 {
     HdSt_TextureObjectRegistry * const reg = 
         _textureHandleRegistry->GetTextureObjectRegistry();
@@ -1330,7 +1353,7 @@ HdStResourceRegistry::AllocateTextureObject(
 
 void
 HdStResourceRegistry::SetMemoryRequestForTextureType(
-    const HdTextureType textureType,
+    const HdStTextureType textureType,
     const size_t memoryRequest)
 {
     _textureHandleRegistry->SetMemoryRequestForTextureType(

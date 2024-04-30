@@ -1,0 +1,129 @@
+#usda 1.0
+(
+    upAxis = "Y"
+    startTimeCode = 1
+    endTimeCode = 10
+)
+
+def Scope "World"
+{
+    def Cube "GroundPlane" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double size = 1
+        double xformOp:rotateY = -90
+        float3 xformOp:scale = (5, 0.05, 5)
+        token[] xformOpOrder = ["xformOp:scale", "xformOp:rotateY"]
+    }
+
+    def Sphere "Moving_GlowSphere" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Material/Glow>
+        double radius = 0.5
+        double3 xformOp:translate.timeSamples = {
+            -1: (5, 2, 0),
+            10: (-5, 2, 0)
+        }
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "Moving_DiffuseSphere" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        color3f[] primvars:displayColor = [(0.8763, 0.2168, 0.2168)]
+        double radius = 0.5
+        double3 xformOp:translate.timeSamples = {
+            -1: (-5, 0.525, 2),
+            10: (5, 0.525, 2)
+        }
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "ReflSphere" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Material/Chrome>
+        double radius = 0.5
+        double3 xformOp:translate = (0, 0.525, 0.0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+
+    def Scope "Lights"
+    {
+        def DistantLight "Light"
+        {
+            color3f inputs:color = (1,1,1)
+        }
+    }
+}
+
+def Scope "Material"
+{
+    def Material "Glow"
+    {
+        token outputs:ri:surface.connect = </Material/Glow/Surface.outputs:out>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "PxrSurface"
+            color3f inputs:glowColor = (0.9896, 0.5945, 0.2092)
+            float inputs:glowGain = 6
+            token outputs:out
+        }
+    }
+
+    def Material "Chrome"
+    {
+        token outputs:ri:surface.connect = </Material/Chrome/Surface.outputs:out>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "PxrSurface"
+            color3f inputs:specularEdgeColor = (1, 1, 1)
+            color3f inputs:specularFaceColor = (1, 1, 1)
+            float inputs:specularRoughness = 0.1
+            token outputs:out
+        }
+    }
+}
+
+def Camera "first_cam"
+{
+    float focalLength = 25
+    double3 xformOp:rotateXYZ = (-18.9, -17.76, 0)
+    double3 xformOp:translate = (-1, 0, 15)
+    token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+    double shutter:open = 0
+    double shutter:close = 1 # The default value is 0.5 
+}
+
+def Scope "Render"
+{
+    def RenderSettings "Settings"
+    {
+        rel camera = </first_cam>
+        rel products = </Render/Product>
+    }
+    
+    def RenderProduct "Product"
+    {
+        rel orderedVars = [
+            </Render/Vars/Ci>,
+        ]
+        token productType = "raster"
+        token productName = "test.exr"
+    }
+    def Scope "Vars"
+    {
+        def RenderVar "Ci"
+        {
+            string sourceName = "Ci"
+        }
+    }
+}

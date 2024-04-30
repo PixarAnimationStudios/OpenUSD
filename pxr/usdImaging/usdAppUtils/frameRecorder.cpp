@@ -52,14 +52,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
     const TfToken& rendererPluginId,
-    bool gpuEnabled, 
-    const SdfPath& renderSettingsPrimPath) :
+    bool gpuEnabled) :
     _imagingEngine(HdDriver(), rendererPluginId, gpuEnabled),
     _imageWidth(960u),
     _complexity(1.0f),
     _colorCorrectionMode(HdxColorCorrectionTokens->disabled),
     _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy}),
-    _renderSettingsPrimPath(renderSettingsPrimPath)
+    _cameraLightEnabled(true)
 {
     // Disable presentation to avoid the need to create an OpenGL context when
     // using other graphics APIs such as Metal and Vulkan.
@@ -68,10 +67,23 @@ UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
     // Set the interactive to be false on the HdRenderSettingsMap 
     _imagingEngine.SetRendererSetting(
         HdRenderSettingsTokens->enableInteractive, VtValue(false));
+}
 
-    // Set the Active RenderSettings Prim path when not empty.
-    if (!renderSettingsPrimPath.IsEmpty()) {
-        _imagingEngine.SetActiveRenderSettingsPrimPath(renderSettingsPrimPath);
+void
+UsdAppUtilsFrameRecorder::SetActiveRenderSettingsPrimPath(SdfPath const& path)
+{
+    _renderSettingsPrimPath = path;
+    if (!_renderSettingsPrimPath.IsEmpty()) {
+        _imagingEngine.SetActiveRenderSettingsPrimPath(_renderSettingsPrimPath);
+    }
+}
+
+void 
+UsdAppUtilsFrameRecorder::SetActiveRenderPassPrimPath(SdfPath const& path)
+{
+    _renderPassPrimPath = path;
+    if (!_renderPassPrimPath.IsEmpty()) {
+        _imagingEngine.SetActiveRenderPassPrimPath(_renderPassPrimPath);
     }
 }
 
@@ -94,6 +106,12 @@ UsdAppUtilsFrameRecorder::SetColorCorrectionMode(
         }
         _colorCorrectionMode = HdxColorCorrectionTokens->disabled;
     }
+}
+
+void
+UsdAppUtilsFrameRecorder::SetCameraLightEnabled(bool cameraLightEnabled)
+{
+    _cameraLightEnabled = cameraLightEnabled;
 }
 
 void
@@ -317,7 +335,7 @@ _RenderProductsGenerated(
     SdfPathVector renderProductTargets;
     settings.GetProductsRel().GetForwardedTargets(&renderProductTargets);
 
-    for (const auto productPath : renderProductTargets) {
+    for (const auto& productPath : renderProductTargets) {
         UsdRenderProduct product =
             UsdRenderProduct(stage->GetPrimAtPath(productPath));
         TfToken productName;
@@ -365,46 +383,52 @@ UsdAppUtilsFrameRecorder::Record(
     const GfVec4f AMBIENT_DEFAULT(0.2f, 0.2f, 0.2f, 1.0f);
     const float   SHININESS_DEFAULT(32.0);
     
-    // XXX: If the camera's aspect ratio is animated, then a range of calls to
-    // this function may generate a sequence of images with different sizes.
     GfCamera gfCamera;
     if (usdCamera) {
         gfCamera = usdCamera.GetCamera(timeCode);
     } else {
         gfCamera = _ComputeCameraToFrameStage(stage, timeCode, _purposes);
     }
+
+    // Calculate the imageHeight based on the aspect ratio
+    // XXX: If the camera's aspect ratio is animated, then a range of calls to
+    // this function may generate a sequence of images with different sizes.
     float aspectRatio = gfCamera.GetAspectRatio();
     if (GfIsClose(aspectRatio, 0.0f, 1e-4)) {
         aspectRatio = 1.0f;
     }
-
     const size_t imageHeight = std::max<size_t>(
         static_cast<size_t>(static_cast<float>(_imageWidth) / aspectRatio),
         1u);
 
-    const GfFrustum frustum = gfCamera.GetFrustum();
-    const GfVec3d cameraPos = frustum.GetPosition();
-
     _imagingEngine.SetRendererAov(HdAovTokens->color);
 
-    _imagingEngine.SetCameraState(
-        frustum.ComputeViewMatrix(),
-        frustum.ComputeProjectionMatrix());
-    _imagingEngine.SetRenderViewport(
-        GfVec4d(
-            0.0,
-            0.0,
-            static_cast<double>(_imageWidth),
-            static_cast<double>(imageHeight)));
+    const GfFrustum frustum = gfCamera.GetFrustum();
+    if (usdCamera) {
+        _imagingEngine.SetCameraPath(usdCamera.GetPath());
+    }
+    else {
+        _imagingEngine.SetCameraState(
+            frustum.ComputeViewMatrix(),
+            frustum.ComputeProjectionMatrix());
+    }
+    const GfRect2i dataWindow(GfVec2i(0.0), _imageWidth, imageHeight); 
+    _imagingEngine.SetFraming(CameraUtilFraming(dataWindow));
+    _imagingEngine.SetRenderBufferSize(GfVec2i(_imageWidth, imageHeight));
 
-    GlfSimpleLight cameraLight(
-        GfVec4f(cameraPos[0], cameraPos[1], cameraPos[2], 1.0f));
-    cameraLight.SetAmbient(SCENE_AMBIENT);
+    GlfSimpleLightVector lights;
+    if (_cameraLightEnabled) {
+        const GfVec3d &cameraPos = frustum.GetPosition();
+        GlfSimpleLight cameraLight(
+            GfVec4f(cameraPos[0], cameraPos[1], cameraPos[2], 1.0f));
+        cameraLight.SetTransform(frustum.ComputeViewInverse());
+        cameraLight.SetAmbient(SCENE_AMBIENT);
+        lights.push_back(cameraLight);
+    }
 
-    const GlfSimpleLightVector lights({cameraLight});
-
-    // Make default material and lighting match usdview's defaults... we expect 
-    // GlfSimpleMaterial to go away soon, so not worth refactoring for sharing
+    // Make default material and lighting match usdview's
+    // defaults... we expect GlfSimpleMaterial to go away soon, so
+    // not worth refactoring for sharing
     GlfSimpleMaterial material;
     material.SetAmbient(AMBIENT_DEFAULT);
     material.SetSpecular(SPECULAR_DEFAULT);

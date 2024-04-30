@@ -54,6 +54,8 @@ protected:
     // calls to, e.g., Riley::Create are safe.
     riley::Riley * _AcquireRiley();
 
+    const GfVec2f &_GetShutterInterval();
+
 private:
     HdPrman_RenderParam * const _renderParam;
 };

@@ -341,6 +341,7 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
+// 0.11.0: Added support for relocates in layer metadata.
 // 0.10.0: Added support for the pathExpression value type.
 //  0.9.0: Added support for the timecode and timecode[] value types.
 //  0.8.0: Added support for SdfPayloadListOp values and SdfPayload values with
@@ -356,7 +357,7 @@ using std::vector;
 //         See _PathItemHeader_0_0_1.
 //  0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 10;
+constexpr uint8_t USDC_MINOR = 11;
 constexpr uint8_t USDC_PATCH = 0;
 
 CrateFile::Version
@@ -488,7 +489,7 @@ CrateFile::_FileMapping::_Impl
     // If we take the source's count from 0 -> 1, add a reference to the
     // mapping.
     if (iresult.first->NewRef()) {
-        intrusive_ptr_add_ref(this);
+        TfDelegatedCountIncrement(this);
     }
     return &(*iresult.first);
 }
@@ -562,7 +563,7 @@ bool CrateFile::_FileMapping::_Impl::ZeroCopySource::operator==(
 void CrateFile::_FileMapping::_Impl::ZeroCopySource::_Detached(
     Vt_ArrayForeignDataSource *selfBase) {
     auto *self = static_cast<ZeroCopySource *>(selfBase);
-    intrusive_ptr_release(self->_mapping);
+    TfDelegatedCountDecrement(self->_mapping);
 }
 
 template <class FileMappingPtr>
@@ -1173,6 +1174,14 @@ public:
         else if constexpr (std::is_same_v<T, SdfPath>) {
             return crate->GetPath(Read<PathIndex>());
         }
+        else if constexpr (std::is_same_v<T, SdfRelocate>) {
+            // Do not combine the following into one statement.  They must be
+            // separate because the two modifications to the 'src' member must
+            // be correctly sequenced.
+            auto sourcePath = Read<SdfPath>();
+            auto targetPath = Read<SdfPath>();
+            return SdfRelocate(std::move(sourcePath), std::move(targetPath));
+        }
         else if constexpr (std::is_same_v<T, VtDictionary> ||
                            std::is_same_v<T, SdfVariantSelectionMap>) {
             return ReadMap<T>();
@@ -1484,6 +1493,14 @@ public:
             "A SdfPayloadListOp value was detected which requires crate "
             "version 0.8.0.");
         Write<SdfPayload>(listOp);
+    }
+    void Write(SdfRelocate const &relocate) {
+        crate->_packCtx->RequestWriteVersionUpgrade(
+            Version(0, 11, 0),
+            "A SdfRelocatesMap value was detected which requires crate "
+            "version 0.11.0.");
+         Write(relocate.first);
+         Write(relocate.second);
     }
     void Write(VtValue const &val) {
         ValueRep rep;
@@ -2243,7 +2260,6 @@ CrateFile::CrateFile(string const &assetPath, string const &fileName,
     : _mmapSrc(std::move(mapping))
     , _detached(false)
     , _assetPath(assetPath)
-    , _fileReadFrom(fileName)
     , _useMmap(true)
 {
     // Note that we intentionally do not store the asset -- we want to close the
@@ -2296,7 +2312,6 @@ CrateFile::_InitMMap() {
         }
     } else {
         _assetPath.clear();
-        _fileReadFrom.clear();
     }
 }
 
@@ -2306,7 +2321,6 @@ CrateFile::CrateFile(string const &assetPath, string const &fileName,
     , _assetSrc(asset)
     , _detached(false)
     , _assetPath(assetPath)
-    , _fileReadFrom(fileName)
     , _useMmap(false)
 {
     // Note that we *do* store the asset here, since we need to keep the FILE*
@@ -2328,7 +2342,6 @@ CrateFile::_InitPread()
     _ReadStructuralSections(reader, rangeLength);
     if (!m.IsClean()) {
         _assetPath.clear();
-        _fileReadFrom.clear();
     }
     // Restore default prefetch behavior.
     ArchFileAdvise(_preadSrc.file, _preadSrc.startOffset,
@@ -2437,23 +2450,6 @@ CrateFile::~CrateFile()
     _DeleteValueHandlers();
 }
 
-bool
-CrateFile::CanPackTo(string const &fileName) const
-{
-    if (_assetPath.empty()) {
-        return true;
-    }
-    // Try to open \p fileName and get its filename.
-    bool result = false;
-    if (FILE *f = ArchOpenFile(fileName.c_str(), "rb")) {
-        if (ArchGetFileName(f) == _fileReadFrom) {
-            result = true;
-        }
-        fclose(f);
-    }
-    return result;
-}
-
 CrateFile::Packer
 CrateFile::StartPacking(string const &fileName)
 {
@@ -2496,6 +2492,15 @@ CrateFile::Packer::Close()
 
     // Write contents. Always close the output asset even if writing failed.
     bool writeResult = _crate->_Write();
+
+    if (writeResult) {
+        // Abandon the asset here to release resources that the subsequent call
+        // to CloseOutputAsset() might need.  E.g. on Windows,
+        // CloseOutputAsset() may try to overwrite the file that _assetSrc has
+        // open for read.
+        _crate->_assetSrc.reset();
+    }
+    
     writeResult &= _crate->_packCtx->CloseOutputAsset();
     
     // If we wrote successfully, store the fileName.
@@ -2523,9 +2528,6 @@ CrateFile::Packer::Close()
         FILE *file; size_t offset;
         std::tie(file, offset) = asset->GetFileUnsafe();
         if (file) {
-            // Reset the filename we've read content from.
-            _crate->_fileReadFrom = ArchGetFileName(file);
-
             if (_crate->_useMmap) {
                 // Must remap the file.
                 _crate->_mmapSrc = _MmapFile(_crate->_assetPath.c_str(), file);

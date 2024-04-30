@@ -367,6 +367,7 @@ _MotionBlurHelper::_HasAccelerations() const
 bool
 _MotionBlurHelper::_IsRotations() const
 {
+#if HD_API_VERSION < 67
     static const TfTokenSet rotateKeys =
     {
         HdInstancerTokens->rotate
@@ -375,6 +376,9 @@ _MotionBlurHelper::_IsRotations() const
 #endif
     };
     return rotateKeys.find(_key) != rotateKeys.end();
+#else
+    return _key == HdInstancerTokens->instanceRotations;
+#endif
 }
 
 bool
@@ -387,11 +391,13 @@ bool
 _MotionBlurHelper::_IsBlurablePrimvar() const
 {
     static const TfTokenSet blurables = {
-        HdPrimvarsSchemaTokens->points,
-        HdInstancerTokens->translate,
-        HdInstancerTokens->rotate,
-        HdInstancerTokens->scale,
-        HdInstancerTokens->instanceTransform
+        HdPrimvarsSchemaTokens->points
+#if HD_API_VERSION < 67
+        , HdInstancerTokens->translate,
+        , HdInstancerTokens->rotate,
+        , HdInstancerTokens->scale,
+        , HdInstancerTokens->instanceTransform
+#endif
 #if HD_API_VERSION >= 56
         , HdInstancerTokens->instanceTranslations
         , HdInstancerTokens->instanceRotations
@@ -406,9 +412,11 @@ bool
 _MotionBlurHelper::_IsVelocityBlurablePrimvar() const
 {
     static const TfTokenSet blurables = {
-        HdPrimvarsSchemaTokens->points,
-        HdInstancerTokens->translate,
-        HdInstancerTokens->rotate
+        HdPrimvarsSchemaTokens->points
+#if HD_API_VERSION < 67
+        , HdInstancerTokens->translate
+        , HdInstancerTokens->rotate
+#endif
 #if HD_API_VERSION >= 56
         , HdInstancerTokens->instanceTranslations
         , HdInstancerTokens->instanceRotations

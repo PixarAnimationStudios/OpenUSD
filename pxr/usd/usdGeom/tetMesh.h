@@ -162,18 +162,29 @@ public:
     // --------------------------------------------------------------------- //
     // TETVERTEXINDICES 
     // --------------------------------------------------------------------- //
-    /// Flat list of the index (into the <b>points<> attribute) of 
+    /// Flat list of the index (into the <b>points</b> attribute) of 
     /// each vertex of each tetrahedron in the mesh. Each int4 corresponds to the
-    /// indices of a single tetrahedron. Users should set the <b>orientation<>
-    /// attribute of UsdGeomPrim accordingly. That is if the <b>orientation<> 
+    /// indices of a single tetrahedron. Users should set the <b>orientation</b>
+    /// attribute of UsdGeomPrim accordingly. That is if the <b>orientation</b> 
     /// is "rightHanded", the CCW face ordering of a tetrahedron is
     /// [123],[032],[013],[021] with respect to the int4. This results in the
-    /// normals facing outward from the center of the tetrahedron. If the
-    /// <b>orientation<> attribute is set to "leftHanded" the face ordering of 
-    /// the tetrahedron is [321],[230],[310],[120] and the leftHanded CW face 
-    /// normals point outward from the center of the tetrahedron. Setting the 
-    /// <b>orientation<> attribute to align with the ordering of the int4 for  
-    /// the tetrahedrons is the responsibility of the user.
+    /// normals facing outward from the center of the tetrahedron. The following
+    /// diagram shows the face ordering of an unwrapped tetrahedron with 
+    /// "rightHanded" orientation.
+    /// 
+    /// \image html USDTetMeshRightHanded.svg
+    /// 
+    /// If the <b>orientation</b> attribute is set to "leftHanded" the face 
+    /// ordering of the tetrahedron is [321],[230],[310],[120] and the 
+    /// leftHanded CW face normals point outward from the center of the 
+    /// tetrahedron. The following diagram shows the face ordering of an 
+    /// unwrapped tetrahedron with "leftHanded" orientation.
+    /// 
+    /// \image html USDTetMeshLeftHanded.svg
+    /// 
+    /// Setting the <b>orientation</b> attribute to align with the 
+    /// ordering of the int4 for the tetrahedrons is the responsibility of the 
+    /// user.
     ///
     /// | ||
     /// | -- | -- |
@@ -195,10 +206,10 @@ public:
     // --------------------------------------------------------------------- //
     // SURFACEFACEVERTEXINDICES 
     // --------------------------------------------------------------------- //
-    /// <b>surfaceFaceVertexIndices<> defines the triangle
-    /// surface faces indices wrt. <b>points<> of the tetmesh surface. Again 
-    /// the <b>orientation<> attribute inherited from UsdGeomPrim should be 
-    /// set accordingly. The <b>orientation<> for faces of tetrahedra and  
+    /// <b>surfaceFaceVertexIndices</b> defines the triangle
+    /// surface faces indices wrt. <b>points</b> of the tetmesh surface. Again 
+    /// the <b>orientation</b> attribute inherited from UsdGeomPrim should be 
+    /// set accordingly. The <b>orientation</b> for faces of tetrahedra and  
     /// surface faces must match.
     ///
     /// | ||
@@ -228,7 +239,7 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
-    
+
     /// ComputeSurfaceFaces determines the vertex indices of the surface faces 
     /// from tetVertexIndices. The surface faces are the set of faces that occur 
     /// only once when traversing the faces of all the tetrahedra. The algorithm 
@@ -240,107 +251,18 @@ public:
     USDGEOM_API    
     static bool ComputeSurfaceFaces(const UsdGeomTetMesh& tetMesh,
                                     VtVec3iArray* surfaceFaceIndices,
-                                    const UsdTimeCode timeCode = UsdTimeCode::Default());     
+                                    const UsdTimeCode timeCode = UsdTimeCode::Default()); 
 
-private:
-    // IndexTri is a helper class used by ComputeSurfaceFaces
-    class _IndexTri
-    {
-    public:
-        _IndexTri(int fv0, int fv1, int fv2):_unsortedIndices(fv0, fv1, fv2),
-                                             _sortedIdx0(fv0),
-                                             _sortedIdx1(fv1),
-                                             _sortedIdx2(fv2)  
-        {
-            // _sortedIdx0, _sortedIdx1 and _sortedIdx2 are 
-            // sorted indices because order is important when determining
-            // face equality.          
-            _SortFVIndices(_sortedIdx0,_sortedIdx1,_sortedIdx2);
-            // .. and this is a perfect hash for a face, provided
-            // there are fewer than 2097152 (2**21) points. But we
-            // keep the sorted indices around to resolve collisions
-            //
-            _hash = _sortedIdx0 << 42 ^ _sortedIdx1 << 21 ^ _sortedIdx2;
-        }      
-
-        size_t GetHash() const {
-            return _hash;
-        }           
-
-        bool operator == (const _IndexTri& other) const {
-          // A face is the same as another if the
-          // three sorted indices are identical.
-          // In practice, this function will only
-          // get called for extremely large meshes.
-          return (_sortedIdx0 == other._sortedIdx0) &&
-                 (_sortedIdx1 == other._sortedIdx1) &&
-                 (_sortedIdx2 == other._sortedIdx2);            
-        }
-
-        const GfVec3i& GetUnsortedIndices() const {
-            return _unsortedIndices;
-        }
-     
-    private:         
-
-        static void _SortFVIndices(size_t& a, size_t& b, size_t& c) {
-            if (a > b) {
-                std::swap(a, b);
-            }
-  
-            if (a > c) {
-                std::swap(a, c);
-            }
- 
-            if (b > c) {
-                std::swap(b, c);
-            }
-        }
-        
-        // Original unsorted indices
-        const GfVec3i _unsortedIndices;
-
-        // Sorted Indices
-        size_t _sortedIdx0;
-        size_t _sortedIdx1;
-        size_t _sortedIdx2;
-
-        // Precomputed hash
-        size_t _hash;                                 
-    };
-
-    struct _IndexTriHash {
-        size_t operator()(const _IndexTri& tri) const
-        {
-            return tri.GetHash();
-        }
-    };
-
-    struct _IndexTriEquals {
-        bool operator()(const _IndexTri& a, const _IndexTri& b) const
-        {
-            return a == b;
-        }
-    };   
-
-    class FaceVertexIndicesCompare {
-    public:
-        // Comparator function
-        inline bool operator()(const GfVec3i& f1, const GfVec3i f2)
-        {
-              if (f1[0] == f2[0])
-              {
-                  if (f1[1] == f2[1])
-                  {
-                      return f1[2] < f2[2];
-                  }
-      
-                  return f1[1] < f2[1];
-              }
-      
-              return f1[0] < f2[0];
-        }
-    };    
+    /// FindInvertedElements is used to determine if the tetMesh has inverted 
+    /// tetrahedral elements at the given time code. Inverted elements are 
+    /// determined wrt. the "orientation" attribute of the UsdGeomTetMesh and
+    /// are stored in the invertedElements arg. Method returns true if it 
+    /// succeeds and if invertedElements is empty then all the tetrahedra have  
+    /// the correct orientation.
+    USDGEOM_API    
+    static bool FindInvertedElements(const UsdGeomTetMesh& tetMesh,
+                                     VtIntArray* invertedElements,
+                                     const UsdTimeCode timeCode = UsdTimeCode::Default());
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

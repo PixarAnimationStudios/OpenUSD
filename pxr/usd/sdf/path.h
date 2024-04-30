@@ -29,11 +29,10 @@
 #include "pxr/usd/sdf/pool.h"
 #include "pxr/usd/sdf/tokens.h"
 #include "pxr/base/arch/defines.h"
+#include "pxr/base/tf/delegatedCountPtr.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/traits.h"
-
-#include <boost/intrusive_ptr.hpp>
 
 #include <algorithm>
 #include <iterator>
@@ -49,14 +48,14 @@ class Sdf_PathNode;
 class SdfPathAncestorsRange;
 
 // Ref-counting pointer to a path node.
-// Intrusive ref-counts are used to keep the size of SdfPath
+// Delegated ref-counts are used to keep the size of SdfPath
 // the same as a raw pointer.  (shared_ptr, by comparison,
 // is the size of two pointers.)
 
-typedef boost::intrusive_ptr<const Sdf_PathNode> Sdf_PathNodeConstRefPtr;
+using Sdf_PathNodeConstRefPtr = TfDelegatedCountPtr<const Sdf_PathNode>;
 
-void intrusive_ptr_add_ref(Sdf_PathNode const *);
-void intrusive_ptr_release(Sdf_PathNode const *);
+void TfDelegatedCountIncrement(Sdf_PathNode const *) noexcept;
+void TfDelegatedCountDecrement(Sdf_PathNode const *) noexcept;
 
 // Tags used for the pools of path nodes.
 struct Sdf_PathPrimTag;
@@ -181,7 +180,7 @@ private:
 
     inline void _AddRef(Sdf_PathNode const *p) const {
         if (Counted) {
-            intrusive_ptr_add_ref(p);
+            TfDelegatedCountIncrement(p);
         }
     }
 
@@ -191,7 +190,7 @@ private:
 
     inline void _DecRef() const {
         if (Counted) {
-            intrusive_ptr_release(get());
+            TfDelegatedCountDecrement(get());
         }
     }
 

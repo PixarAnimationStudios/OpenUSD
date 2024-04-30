@@ -23,7 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/dataSourceNurbsPatch.h"
 
-#include "pxr/usdImaging/usdImaging/dataSourceSchemaBased.h"
+#include "pxr/usdImaging/usdImaging/dataSourceMapped.h"
 
 #include "pxr/usd/usdGeom/nurbsPatch.h"
 
@@ -36,78 +36,48 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-// _NurbsPatchDataSource is a container data source for locator
-// nurbsPatch.
-//
-// It contains all non-space USD attributes of the UsdGeomNurbsPatch schema
-// (that is, the name contains no ":"). This means it skips the
-// trimCurve prefixed attributes from UsdGeomNurbsPatch as well as the
-// pointWeights (which is a primvar) and the primvars from UsdGeomGprim.
-//
-struct _NurbsPatchTranslator
+HdDataSourceLocator
+_ToLocator(const TfToken &name)
 {
-    static
-    TfToken
-    UsdAttributeNameToHdName(const TfToken &name)
-    {
-        if (SdfPath::TokenizeIdentifier(name.GetString()).size() != 1) {
-            return TfToken();
-        }
-        if (name == UsdGeomTokens->pointWeights) {
-            return TfToken();
-        }
-
-        return name;
-    }
-
-    static
-    HdDataSourceLocator
-    GetContainerLocator()
-    {
-        return HdNurbsPatchSchema::GetDefaultLocator();
-    }
-};
-
-using _NurbsPatchDataSource = UsdImagingDataSourceSchemaBased<
-    UsdGeomNurbsPatch,
-    /* UsdSchemaBaseTypes = */ std::tuple<UsdGeomGprim>,
-    _NurbsPatchTranslator>;
-
-// _TrimCurveTranslator is a container data source for locator
-// nurbsPatch/trimCurve.
-//
-// It contains all USD attributes in the trimCurve namespace
-// of the UsdGeomNurbsPatch schema (prefixed by trimCurve:).
-//
-struct _TrimCurveTranslator
+    const TfTokenVector tokens = SdfPath::TokenizeIdentifierAsTokens(name);
+    return HdDataSourceLocator(tokens.size(), tokens.data());
+}
+    
+std::vector<UsdImagingDataSourceMapped::AttributeMapping>
+_GetAttributeMappings()
 {
-    static
-    TfToken
-    UsdAttributeNameToHdName(const TfToken &name)
-    {
-        static const TfToken prefix("trimCurve");
+    std::vector<UsdImagingDataSourceMapped::AttributeMapping> result;
 
-        const std::pair<std::string, bool> strippedName =
-            SdfPath::StripPrefixNamespace(name, prefix);
-        if (strippedName.second) {
-            return TfToken(strippedName.first);
+    // Pick up from UsdGeomGprim
+    result.push_back(
+        {UsdGeomTokens->doubleSided,
+         HdDataSourceLocator(HdNurbsPatchSchemaTokens->doubleSided)});
+    result.push_back(
+        {UsdGeomTokens->orientation,
+         HdDataSourceLocator(HdNurbsPatchSchemaTokens->orientation)});
+    
+    for (const TfToken &usdName :
+             UsdGeomNurbsPatch::GetSchemaAttributeNames(
+                 /* includeInherited = */ false)) {
+        if (usdName == UsdGeomTokens->pointWeights) {
+            // Suppress pointWeights from UsdGeomNurbsCurves (which is a custom
+            // primvar we process in the prim source below).
+            continue;
         }
-        return TfToken();
+
+        result.push_back({ usdName, _ToLocator(usdName)});
     }
 
-    static
-    HdDataSourceLocator
-    GetContainerLocator()
-    {
-        return HdNurbsPatchTrimCurveSchema::GetDefaultLocator();
-    }
-};
+    return result;
+}
 
-using _TrimCurveDataSource = UsdImagingDataSourceSchemaBased<
-    UsdGeomNurbsPatch,
-    /* UsdSchemaBaseTypes = */ std::tuple<>,
-    _TrimCurveTranslator>;
-
+const UsdImagingDataSourceMapped::AttributeMappings &
+_GetMappings() {
+    static const UsdImagingDataSourceMapped::AttributeMappings result(
+        _GetAttributeMappings(), HdNurbsPatchSchema::GetDefaultLocator());
+    return result;
+}
+    
 const UsdImagingDataSourceCustomPrimvars::Mappings &
 _GetCustomPrimvarMappings(const UsdPrim &usdPrim)
 {
@@ -145,19 +115,11 @@ UsdImagingDataSourceNurbsPatchPrim::Get(const TfToken & name)
 {
     if (name == HdNurbsPatchSchema::GetSchemaToken()) {
         return
-            HdOverlayContainerDataSource::New(
-                // Container for locator nurbsPatch
-                _NurbsPatchDataSource::New(
-                    _GetSceneIndexPath(),
-                    UsdGeomNurbsPatch(_GetUsdPrim()),
-                    _GetStageGlobals()),
-                HdRetainedContainerDataSource::New(
-                    HdNurbsPatchTrimCurveSchemaTokens->trimCurve,
-                    // Container for locator nurbsPatch/trimCurve
-                    _TrimCurveDataSource::New(
-                        _GetSceneIndexPath(),
-                        UsdGeomNurbsPatch(_GetUsdPrim()),
-                        _GetStageGlobals())));
+            UsdImagingDataSourceMapped::New(
+                _GetUsdPrim(),
+                _GetSceneIndexPath(),
+                _GetMappings(),
+                _GetStageGlobals());
     } 
     if (name == HdPrimvarsSchema::GetSchemaToken()) {
         return
@@ -184,12 +146,8 @@ UsdImagingDataSourceNurbsPatchPrim::Invalidate(
     TRACE_FUNCTION();
 
     HdDataSourceLocatorSet locators =
-        _NurbsPatchDataSource::Invalidate(
-            subprim, properties);
-
-    locators.insert(
-        _TrimCurveDataSource::Invalidate(
-            subprim, properties));
+        UsdImagingDataSourceMapped::Invalidate(
+            properties, _GetMappings());
 
     locators.insert(
         UsdImagingDataSourceGprim::Invalidate(

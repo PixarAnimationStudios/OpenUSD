@@ -567,7 +567,9 @@ public:
         m_height(0),
         m_surface(nullptr),
         m_alphaOffset(k_invalidOffset),
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
         m_weightsOffset(k_invalidOffset),
+#endif
         m_buf(nullptr)
     {
         int bufferID = 0;
@@ -578,25 +580,31 @@ public:
     ~DisplayHydra() override = default;
 
     // Display interface
-    bool Rebind(const uint32_t width, const uint32_t height,
-                const char* /*srfaddrhandle*/, const void* srfaddr,
-                const size_t /*srfsizebytes*/, const size_t weightsoffset,
-                const size_t* offsets, const display::RenderOutput* outputs,
+    bool Rebind(const uint32_t width, const uint32_t height, const char* /*srfaddrhandle*/,
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
+                const void* srfaddr, const size_t /*srfsizebytes*/, const size_t weightsoffset,
+                const size_t* srfoffsets, const display::RenderOutput* outputs,
+#else
+                const void* srfaddr, const size_t /*srfsizebytes*/, const size_t* srfoffsets,
+                const size_t* /*sampleoffsets*/, const display::RenderOutput* outputs,
+#endif
                 const size_t noutputs) override
     {
         m_surface = static_cast<const uint8_t*>(srfaddr);
         m_width = width;
         m_height = height;
 
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
         m_weightsOffset = weightsoffset;
+#endif
         m_offsets.clear();
         m_offsets.reserve(noutputs);
         for (size_t i = 0; i < noutputs; i++)
         {
-            m_offsets.push_back(offsets[i]);
+            m_offsets.push_back(srfoffsets[i]);
             if(outputs[i].name == RixStr.k_a)
             {
-                m_alphaOffset = offsets[i];
+                m_alphaOffset = srfoffsets[i];
             }
         }
 
@@ -642,10 +650,11 @@ public:
             const HdPrmanFramebuffer::AovDesc &aovDesc =
                 aovBuffer.desc;
 
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
             const float* const srcWeights = m_weightsOffset != k_invalidOffset ? 
                 reinterpret_cast<const float*>(m_surface+m_weightsOffset) : nullptr;
+#endif
             const bool shouldNormalize = aovDesc.ShouldNormalizeBySampleCount();
-
             const int cc = HdGetComponentCount(aovDesc.format);
             const size_t srcOffset = m_offsets[offsetIdx];
             if (aovDesc.format == HdFormatInt32) {
@@ -779,12 +788,17 @@ public:
                 }
                 else if( cc == 4 ) {
                     WorkParallelForN(m_height,
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
                                      [this, &aovBuffer, &srcWeights, &srcOffset, shouldNormalize]
+#else
+                                     [this, &aovBuffer, &srcOffset, shouldNormalize]
+#endif
                                      (size_t begin, size_t end) {
 
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
                         const float* weights = srcWeights ?
                             srcWeights + begin * m_width : nullptr;
- 
+#endif
                         const float* srcColorR =
                             reinterpret_cast<const float*>(
                                 m_surface + srcOffset)
@@ -806,9 +820,10 @@ public:
 
                             for (uint32_t x = 0; x < m_width; x++) {
                                 float isc = 1.f;
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
                                 if(weights && shouldNormalize && *weights > 0.f)
                                     isc = 1.f / *weights;
-
+#endif
                                 const float* const srcColorG =
                                     srcColorR + (m_height * m_width);
                                 const float* const srcColorB =
@@ -828,7 +843,9 @@ public:
                                 aovData += 4;
                                 srcColorR++;
                                 srcColorA++;
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
                                 if (weights) weights++;
+#endif
                             }
                         }
                     });
@@ -840,12 +857,17 @@ public:
                 }
                 else if (cc == 1) {
                     WorkParallelForN(m_height,
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
                                      [this, &aovBuffer, &srcWeights, &srcOffset, shouldNormalize]
+#else
+                                     [this, &aovBuffer, &srcOffset, shouldNormalize]
+#endif
                                      (size_t begin, size_t end) {
 
-
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
                         const float* weights = srcWeights ?
                             srcWeights + begin * m_width : nullptr;
+#endif
                         const float* srcColorR =
                             reinterpret_cast<const float*>(
                                 m_surface + srcOffset)
@@ -861,14 +883,18 @@ public:
                             for (uint32_t x = 0; x < m_width; x++)
                             {
                                 float isc = 1.f;
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
                                 if(weights && shouldNormalize && *weights > 0.f)
                                     isc = 1.f / *weights;
+#endif
 
                                 *aovData = *srcColorR * isc;
 
                                 aovData++;
                                 srcColorR++;
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
                                 if (weights) weights++;
+#endif
                             }
                         }
                     });
@@ -876,11 +902,17 @@ public:
                 else {
                     assert(cc == 3);
                     WorkParallelForN(m_height,
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
                                      [this, &aovBuffer, &srcWeights, &srcOffset, shouldNormalize]
+#else
+                                     [this, &aovBuffer, &srcOffset, shouldNormalize]
+#endif
                                      (size_t begin, size_t end) {
 
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
                         const float* weights = srcWeights ?
                             srcWeights + begin * m_width : nullptr;
+#endif
                         const float* srcColorR =
                             reinterpret_cast<const float*>(
                                 m_surface + srcOffset)
@@ -894,8 +926,10 @@ public:
 
                             for (uint32_t x = 0; x < m_width; x++) {
                                 float isc = 1.f;
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
                                 if(weights && shouldNormalize && *weights > 0.f)
                                     isc = 1.f / *weights;
+#endif
 
                                 const float* const srcColorG =
                                     srcColorR + (m_height * m_width);
@@ -908,7 +942,9 @@ public:
 
                                 aovData += 3;
                                 srcColorR++;
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
                                 if (weights) weights++;
+#endif
                             }
                         }
                     });
@@ -917,18 +953,32 @@ public:
         }
     }
 
+#if DISPLAY_INTERFACE_VERSION >= 2
+    uint64_t GetRequirements() const override
+    {
+        return display::Display::k_reqFrameBuffer;
+    }
+#endif
 private:
     uint32_t m_width;
     uint32_t m_height;
     const uint8_t* m_surface;
     size_t m_alphaOffset;
     std::vector<size_t> m_offsets;
+#if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 2
     size_t m_weightsOffset;
+#endif
 
     HdPrmanFramebuffer* m_buf;
 };
 
 }
+
+// Export the current version of the Display API, necessary for binary compatibility with the
+// renderer
+#if DISPLAY_INTERFACE_VERSION >= 1
+DISPLAYEXPORTVERSION
+#endif
 
 extern "C" DISPLAYEXPORT
 display::Display* CreateDisplay(const pxrcore::UString& name,

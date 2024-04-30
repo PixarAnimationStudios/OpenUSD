@@ -95,7 +95,7 @@ _GetTextureIdentifier(
                 sceneDelegate->GetRenderIndex().GetBprim(
                     HdPrimTypeTokens->renderBuffer, desc.texturePrim))) {
 
-        if (desc.type == HdTextureType::Uv) {
+        if (desc.type == HdStTextureType::Uv) {
             return renderBuffer->GetTextureIdentifier(
                 /* multiSampled = */ false);
         }
@@ -326,7 +326,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         } else if (param.IsTexture()) {
             HdSt_MaterialNetworkShader::AddFallbackValueToSpecsAndSources(
                 param, &specs, &sources);
-            if (param.textureType == HdTextureType::Ptex) {
+            if (param.textureType == HdStTextureType::Ptex) {
                 hasPtex = true;
             }
         }

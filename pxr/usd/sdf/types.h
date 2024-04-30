@@ -39,6 +39,7 @@
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pragmas.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/gf/matrix3d.h"
@@ -259,7 +260,13 @@ enum _SDF_UNITSLIST_ENUM(elem) {                         \
 #define _SDF_FOR_EACH_UNITS(macro, args)                 \
     _SDF_FOR_EACH_UNITS_IMPL(macro, TF_PP_EAT_PARENS(args))
 
+// On Windows this call to _SDF_FOR_EACH_UNITS generates a C4003 warning.
+// This is harmless, but we disable the warning here so that external
+// projects that include this header don't run into it as well.
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
 _SDF_FOR_EACH_UNITS(_SDF_DECLARE_UNIT_ENUM, _SDF_UNITS)
+ARCH_PRAGMA_POP
 
 /// A map of mapper parameter names to parameter values.
 typedef std::map<std::string, VtValue> SdfMapperParametersMap;
@@ -275,6 +282,13 @@ typedef std::map<std::string, std::vector<std::string> > SdfVariantsMap;
 //        clients, so SdfPath::FastLessThan is explicitly omitted as
 //        the Compare template parameter.
 typedef std::map<SdfPath, SdfPath> SdfRelocatesMap;
+
+/// A single relocate specifying a source SdfPath and a target SdfPath for a 
+/// relocation.
+typedef std::pair<SdfPath, SdfPath> SdfRelocate;
+
+/// A vector of relocation source path to target path pairs.
+typedef std::vector<SdfRelocate> SdfRelocates;
 
 /// A map from sample times to sample values.
 typedef std::map<double, VtValue> SdfTimeSampleMap;
@@ -453,6 +467,11 @@ std::ostream & operator<<( std::ostream &out, const SdfSpecifier &spec );
 SDF_API 
 std::ostream & operator<<( std::ostream &out,
                            const SdfRelocatesMap &reloMap );
+
+/// Writes the string representation of \c SdfRelocates to \a out.
+SDF_API 
+std::ostream & operator<<( std::ostream &out,
+                           const SdfRelocates &relocates );
 
 /// Writes the string representation of \c SdfTimeSampleMap to \a out.
 SDF_API 

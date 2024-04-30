@@ -1,0 +1,23 @@
+#usda 1.0
+
+def Scope "World"
+{
+    def Sphere "Sphere" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.5)]
+        double radius = 0.5
+    }
+}
+
+def Scope "Lights" 
+{
+    def SphereLight "light1"
+    {
+        color3f inputs:color = (1, 1, 1)
+        float inputs:intensity = 20
+        double3 xformOp:translate = (3, -3, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

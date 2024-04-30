@@ -26,6 +26,7 @@
 
 #include "pxr/base/trace/aggregateNode.h"
 
+#include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -58,6 +59,25 @@ GetCount(TraceAggregateNodePtr &self) {
     return self->GetCount(false /* recursive */);
 }
 
+static void
+_Append(
+    TraceAggregateNodePtr &self, 
+    const TraceAggregateNodePtr &other)
+{
+    self->Append(other);
+}
+
+static TraceAggregateNodeRefPtr
+_New(const TfToken &key,
+    const double timeMS,
+    const int count,
+    const int exclusiveCount)
+{
+    return TraceAggregateNode::New(
+        TraceAggregateNode::Id(), 
+        key, ArchSecondsToTicks(timeMS / 1e3), count, exclusiveCount);
+}
+
 void wrapAggregateNode()
 {
     using This = TraceAggregateNode;
@@ -65,6 +85,12 @@ void wrapAggregateNode()
 
     class_<This, ThisPtr>("AggregateNode", no_init)
         .def(TfPyWeakPtr())
+        .def("__init__", 
+            TfMakePyConstructor(_New),
+            (arg("key") = TfToken("root"),
+             arg("timeMS") = 0,
+             arg("count") = 1,
+             arg("exclusiveCount") = 1))
         .add_property("key", &This::GetKey )
         .add_property("id", 
             make_function(&This::GetId, 
@@ -77,7 +103,7 @@ void wrapAggregateNode()
             make_function(&This::GetChildren,
                           return_value_policy<TfPySequenceToList>()) )
         .add_property("expanded", &This::IsExpanded, &This::SetExpanded)
-        
+        .def("Append", _Append)
         ;
 
 };

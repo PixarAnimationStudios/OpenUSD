@@ -10,7 +10,8 @@
                 "Types": {
                     "CustomResolver": {
                         "bases": ["ArResolver"],
-                        "uriSchemes": ["test", "testresolved"]
+                        "uriSchemes": ["test", "testresolved"],
+                        "implementsContexts": true
                     }
                 }
             }

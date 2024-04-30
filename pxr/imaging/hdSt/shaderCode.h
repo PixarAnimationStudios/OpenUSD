@@ -27,8 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/enums.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/enums.h"
 
 #include "pxr/usd/sdf/path.h"
 
@@ -105,6 +105,7 @@ public:
     /// avoid re-computing the draw batches over time, we use the this
     /// hash when grouping the draw batches.
     ///
+    HDST_API
     virtual ID ComputeTextureSourceHash() const;
 
     /// Returns the shader source provided by this shader
@@ -149,7 +150,7 @@ public:
         /// completely determine the creation of the texture accesor
         /// HdGet_name(...)).
         ///
-        HdTextureType type;
+        HdStTextureType type;
         /// The texture.
         HdStTextureHandleSharedPtr handle;
 

@@ -40,10 +40,6 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "USD clip details");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USD_COMPOSITION, 
         "USD composition details");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_DATA_BD, 
-        "USD BD file format traces");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_DATA_BD_TRY, 
-        "USD BD call traces. Prints names, errors and results.");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USD_INSTANCING, 
         "USD instancing diagnostics");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USD_PATH_RESOLUTION, 

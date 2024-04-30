@@ -63,6 +63,12 @@
                         "priority": 0,
                         "displayName": "Prman ExtComputation Primvar Pruning Scene Index"
                     },
+                    "HdPrman_RenderPassSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman Render Pass Scene Index"
+                    },
                     "HdPrman_RenderSettingsFilteringSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": "Prman",
@@ -80,6 +86,24 @@
                         "loadWithRenderer": "Prman",
                         "priority": 0,
                         "displayName": "Prman Update Object Settings Prim Scene Index"
+                    },
+                    "HdPrman_TetMeshConversionSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "Prman",
+                        "priority": 0,
+                        "displayName": "Scene Index to convert tet meshes into standard triangle based meshes."
+                    },
+                    "HdPrman_RileyFallbackMaterialSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "Prman",
+                        "priority": 0,
+                        "displayName": "Adds fallback material to scene index."
+                    },
+                    "HdPrman_RileyConversionSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "Prman",
+                        "priority": 0,
+                        "displayName": "Converts Hydra prims to Riley prims."
                     }
                 }
             },

@@ -27,6 +27,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/error.h"
+#include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/pyCall.h"
@@ -227,14 +228,132 @@ static void doErrors() {
     TF_STATUS("status message %d", 4);
 };
 
-
-struct _TestStaticMethodError {
-    static void Error() {
-        TF_ERROR(TF_TEST_ERROR_1, "Test error 1!");
+template <int I>
+struct _TestErrorClass
+{
+    _TestErrorClass()
+    {
+        TF_ERROR(TF_TEST_ERROR_1, "Error from default constructor");
     }
+
+    _TestErrorClass(std::string const&)
+    {
+        TF_ERROR(TF_TEST_ERROR_1, "Error from constructor");
+    }
+    
+    static _TestErrorClass Create()
+    {
+        TfErrorMark m;
+        auto obj = _TestErrorClass();
+        m.Clear();
+        return obj;
+    }
+
+    static void ClassMethod(object& pyClassObj)
+    {
+        TF_ERROR(TF_TEST_ERROR_1, "Error from class method");
+    }
+
+    static void ClassMethod(object& pyClassObj, std::string const&)
+    {
+        TF_ERROR(TF_TEST_ERROR_1, "Error from class method overload");
+    }
+
+    static void StaticMethod()
+    {
+        TF_ERROR(TF_TEST_ERROR_1, "Error from static method");
+    }
+
+    static void StaticMethod(std::string const&)
+    {
+        TF_ERROR(TF_TEST_ERROR_1, "Error from static method overload");
+    }
+
+    static std::string StaticGetter()
+    {
+        TF_ERROR(TF_TEST_ERROR_1, "Error from static property getter");
+        return "StaticGetter";
+    }
+
+    static void StaticSetter(std::string const&)
+    {
+        TF_ERROR(TF_TEST_ERROR_1, "Error from static property setter");
+    }
+
+    void InstanceMethod() const
+    {
+        TF_ERROR(TF_TEST_ERROR_1, "Error from instance method");
+    }
+
+    void InstanceMethod(std::string const&) const
+    {
+        TF_ERROR(TF_TEST_ERROR_1, "Error from instance method overload");
+    }
+
+    std::string Getter() const
+    {
+        TF_ERROR(TF_TEST_ERROR_1, "Error from property getter");
+        return "Getter";
+    }
+
+    void Setter(std::string const&)
+    {
+        TF_ERROR(TF_TEST_ERROR_1, "Error from property setter");
+    }
+
+    using Self = _TestErrorClass<I>;
+    static class_<Self> Wrap(char const* name)
+    {
+        return class_<Self>(name)
+            .def(init<std::string const&>())
+
+            .def("Create", &Self::Create)
+            .staticmethod("Create")
+
+            .def("ClassMethod", 
+                (void(*)(object&))&Self::ClassMethod)
+            .def("ClassMethod", 
+                (void(*)(object&, std::string const&))&Self::ClassMethod)
+            .def(TfPyClassMethod("ClassMethod"))
+
+            .def("StaticMethod", 
+                (void(*)())&Self::StaticMethod)
+            .def("StaticMethod", 
+                (void(*)(std::string const&))&Self::StaticMethod)
+            .staticmethod("StaticMethod")
+
+            .def("InstanceMethod", 
+                (void(Self::*)() const)&Self::InstanceMethod)
+            .def("InstanceMethod", 
+                (void(Self::*)(std::string const&) const)&Self::InstanceMethod)
+
+            .add_property("property", &Self::Getter, &Self::Setter)
+            .add_property("property_2",
+                +[](Self const& s) { return s.Getter(); },
+                +[](Self& s, std::string const& v) { s.Setter(v); })
+            
+            .add_static_property("static_property", 
+                &Self::StaticGetter, &Self::StaticSetter)
+            .add_static_property("static_property_2",
+                +[]() { return Self::StaticGetter(); },
+                +[](std::string const& v) { Self::StaticSetter(v); })
+            ;
+    }
+
 };
 
+using _TestErrorClass1 = _TestErrorClass<1>;
+using _TestErrorClass2 = _TestErrorClass<2>;
 
+static void TestErrorFunction()
+{
+    TF_ERROR(TF_TEST_ERROR_1, "Error from function");
+}
+
+static void TestErrorFunction(std::string const&)
+{
+    TF_ERROR(TF_TEST_ERROR_1, "Error from function overload");
+}
 
 ////////////////////////////////
 // Enums
@@ -542,11 +661,18 @@ void wrapTf_TestTfPython()
     def("_ThrowCppException", _ThrowCppException);
 
     def("_TakesVecVecString", TakesVecVecString);
-    
-    class_<_TestStaticMethodError>("_TestStaticMethodError", no_init)
-        .def("Error", &_TestStaticMethodError::Error)
-        .staticmethod("Error")
-        ;
+
+    {
+        def("_TestErrorFunction", (void(*)())&TestErrorFunction);
+        def("_TestErrorFunction", 
+            (void(*)(std::string const&))&TestErrorFunction);
+        scope s = _TestErrorClass1::Wrap("_TestErrorClass1");
+
+        def("_TestErrorFunction", (void(*)())&TestErrorFunction);
+        def("_TestErrorFunction", 
+            (void(*)(std::string const&))&TestErrorFunction);
+        _TestErrorClass2::Wrap("_TestErrorClass2");        
+    }
 
     def("_TakesReference", TakesReference);
     def("_TakesConstBase", TakesConstBase);

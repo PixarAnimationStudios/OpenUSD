@@ -755,6 +755,9 @@ WARN_LOGFILE           =
 # to be ordered by "package" and low-to-high-level module order.
 
 INPUT                  = docs/doxygen/externalOverview.dox \
+                         docs/doxygen/developer_guides.dox \
+                         docs/doxygen/architecture-guides \
+                         docs/include/pxr/extras/imaging \
                          docs/include/pxr/base \
                          docs/include/pxr/usd \
                          docs/include/pxr/imaging \
@@ -2352,6 +2355,7 @@ FULL_SIDEBAR = NO
 HTML_EXTRA_STYLESHEET  = docs/doxygen/doxygen-awesome-css/doxygen-awesome.css \
                          docs/doxygen/usd_style.css
 HTML_EXTRA_FILES  = docs/doxygen/doxygen-awesome-css/doxygen-awesome-darkmode-toggle.js \
-                    docs/doxygen/doxygen-awesome-css/doxygen-awesome-fragment-copy-button.js
+                    docs/doxygen/doxygen-awesome-css/doxygen-awesome-fragment-copy-button.js \ 
+                    docs/doxygen/doxygen-awesome-css/doxygen-awesome-paragraph-link.js
 # HTML_COLORSTYLE is a Doxygen 1.9.x config required for Doxygen Awesome
 HTML_COLORSTYLE = LIGHT

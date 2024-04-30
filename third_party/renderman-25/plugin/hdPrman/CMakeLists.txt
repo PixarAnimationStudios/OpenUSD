@@ -105,11 +105,33 @@ pxr_plugin(${PXR_PACKAGE}
         points
         renderDelegate
         renderSettings
+        rileyCameraSchema
+        rileyClippingPlaneSchema
+        rileyConversionSceneIndexPlugin
+        rileyCoordinateSystemSchema
+        rileyDisplacementSchema
+        rileyDisplayFilterSchema
+        rileyDisplaySchema
+        rileyFallbackMaterialSceneIndexPlugin
+        rileyGeometryInstanceSchema
+        rileyGeometryPrototypeSchema
+        rileyIntegratorSchema
+        rileyLightInstanceSchema
+        rileyLightShaderSchema
+        rileyMaterialSchema
+        rileyParamSchema
+        rileyParamListSchema
+        rileyPrimvarSchema
+        rileyPrimvarListSchema
         rileyRenderOutputSchema
         rileyRenderTargetSchema
+        rileyRenderViewSchema
+        rileySampleFilterSchema
+        rileyShadingNodeSchema
         rixStrings
         sampleFilter
         sphere
+        tetMeshConversionSceneIndexPlugin
         tokens
         volume
         xcpt
@@ -128,13 +150,30 @@ pxr_plugin(${PXR_PACKAGE}
         renderBuffer
         renderParam
         renderPass
+        renderPassSceneIndex
+        renderPassSceneIndexPlugin
         renderSettingsFilteringSceneIndexPlugin
         renderViewContext
         resourceRegistry
+        rileyCameraPrim
+        rileyCoordinateSystemPrim
+        rileyClippingPlanePrim
+        rileyDisplacementPrim
+        rileyDisplayFilterPrim
+        rileyDisplayPrim
+        rileyGeometryInstancePrim
+        rileyGeometryPrototypePrim
+        rileyIntegratorPrim
+        rileyLightInstancePrim
+        rileyLightShaderPrim
+        rileyMaterialPrim
         rileyPrimBase
         rileyPrimFactory
         rileyRenderOutputPrim
         rileyRenderTargetPrim
+        rileyRenderViewPrim
+        rileySampleFilterPrim
+        rileyTypes
         terminalSceneIndexObserver
         updateObjectSettingsSceneIndex
         updateObjectSettingsSceneIndexPlugin
@@ -143,12 +182,13 @@ pxr_plugin(${PXR_PACKAGE}
 
     PUBLIC_HEADERS
         api.h
+        rileySchemaTypeDefs.h
 
     PRIVATE_HEADERS
         prmanArchDefs.h
         pxr/base/vt/typeHeaders.h # polyfill until USD 22.08
         pxr/base/vt/visitValue.h  # polyfill until USD 22.11
-        rileyPrimUtil.h
+        rileyIds.h
         sceneIndexObserverApi.h
         virtualStructConditionalGrammar.tab.h
 

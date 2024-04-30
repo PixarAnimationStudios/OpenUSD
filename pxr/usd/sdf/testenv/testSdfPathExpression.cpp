@@ -58,7 +58,7 @@ struct MatchEval {
         MatchEval(SdfPathExpression(exprStr)) {}
     SdfPredicateFunctionResult
     Match(SdfPath const &p) {
-        return _eval.Match(p, PathIdentity {}, PathIdentity {});
+        return _eval.Match(p, PathIdentity {});
     }
     SdfPathExpressionEval<SdfPath const &> _eval;
 };
@@ -76,8 +76,20 @@ TestBasics()
         TF_AXIOM(eval.Match(SdfPath("/foo/x/y/z/bar")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar/baz")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar.baz")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar.baz:buz")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo.bar")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z.bar")));
     }
     
+    {
+        auto eval = MatchEval { SdfPathExpression("/foo/bar/*") };
+        
+        TF_AXIOM(!eval.Match(SdfPath("/foo/bar"))); 
+        TF_AXIOM(eval.Match(SdfPath("/foo/bar/x")));
+        TF_AXIOM(eval.Match(SdfPath("/foo/bar/y")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo/bar/x/y")));
+    }
+
     {
         auto eval = MatchEval { SdfPathExpression("//foo/bar/baz/qux/quux") };
         
@@ -107,6 +119,7 @@ TestBasics()
         TF_AXIOM(eval.Match(SdfPath("/fooBar/x/y/z/bar")));
         TF_AXIOM(!eval.Match(SdfPath("/fooX/x/y/z/bar/baz")));
         TF_AXIOM(!eval.Match(SdfPath("/fooY/x/y/z/bar.baz")));
+        TF_AXIOM(!eval.Match(SdfPath("/fooY/x/y/z/bar.baz:buz")));
     }
 
     {
@@ -117,12 +130,14 @@ TestBasics()
         TF_AXIOM(eval.Match(SdfPath("/foo/x/y/z/bar")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar/baz")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar.baz")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar.baz:buz")));
 
         TF_AXIOM(eval.Match(SdfPath("/foo1/bar")));
         TF_AXIOM(eval.Match(SdfPath("/foo12/x/bar")));
         TF_AXIOM(eval.Match(SdfPath("/fooBar/x/y/z/bar")));
         TF_AXIOM(!eval.Match(SdfPath("/fooX/x/y/z/bar/baz")));
         TF_AXIOM(!eval.Match(SdfPath("/fooY/x/y/z/bar.baz")));
+        TF_AXIOM(!eval.Match(SdfPath("/fooY/x/y/z/bar.baz:buz")));
     }
 
     {
@@ -136,6 +151,7 @@ TestBasics()
         TF_AXIOM(eval.Match(SdfPath("/foo/x/y/z/bar/baz/qux")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar/baz.attr")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar/baz/qux.attr")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar/baz/qux.ns:attr")));
 
         TF_AXIOM(eval.Match(SdfPath("/fooXYZ/bar/a")));
         TF_AXIOM(eval.Match(SdfPath("/fooABC/x/bar/a/b/c")));
@@ -144,6 +160,7 @@ TestBasics()
         TF_AXIOM(eval.Match(SdfPath("/foo___/x/y/z/bar/baz/qux")));
         TF_AXIOM(!eval.Match(SdfPath("/foo_bar/x/y/z/bar/baz.attr")));
         TF_AXIOM(!eval.Match(SdfPath("/foo_baz/x/y/z/bar/baz/qux.attr")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo_baz/x/y/z/bar/baz/qux.ns:attr")));
     }
     
     {
@@ -181,11 +198,15 @@ TestBasics()
         TF_AXIOM(eval.Match(SdfPath("/a.b")));
         TF_AXIOM(!eval.Match(SdfPath("/a/b")));
         TF_AXIOM(!eval.Match(SdfPath("/a/b.c")));
+        TF_AXIOM(eval.Match(SdfPath("/a/b.ns:c")));
         TF_AXIOM(eval.Match(SdfPath("/a/b.yes")));
+        TF_AXIOM(eval.Match(SdfPath("/a/b.ns:yes")));
         TF_AXIOM(!eval.Match(SdfPath("/a/b/c")));
         TF_AXIOM(eval.Match(SdfPath("/a/b/c.d")));
+        TF_AXIOM(eval.Match(SdfPath("/a/b/c.ns:d")));
         TF_AXIOM(!eval.Match(SdfPath("/a/b/x")));
         TF_AXIOM(eval.Match(SdfPath("/a/b/x.y")));
+        TF_AXIOM(eval.Match(SdfPath("/a/b/x.ns:y")));
     }
 
     {
@@ -356,8 +377,7 @@ TestSearch()
 
         auto eval = SdfMakePathExpressionEval(
             SdfPathExpression(exprStr), predLib);
-        auto search = eval.MakeIncrementalSearcher(
-            PathIdentity {}, PathIdentity {});
+        auto search = eval.MakeIncrementalSearcher(PathIdentity {});
 
         std::vector<std::string> matches;
         for (SdfPath const &p: paths) {

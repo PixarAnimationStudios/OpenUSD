@@ -1597,6 +1597,21 @@ SdfLayer::GetDefaultPrim() const
     return _GetValue<TfToken>(SdfFieldKeys->DefaultPrim);
 }
 
+SdfPath
+SdfLayer::GetDefaultPrimAsPath() const
+{
+    std::string pathString = 
+        _GetValue<TfToken>(SdfFieldKeys->DefaultPrim).GetString();
+    SdfPath path = SdfPath::IsValidPathString(pathString)
+        ? SdfPath(pathString)
+        : SdfPath();
+    return path.IsPrimPath()
+        ? path.IsAbsolutePath()
+            ? path
+            : path.MakeAbsolutePath(SdfPath::AbsoluteRootPath())
+        : SdfPath();
+}
+
 void
 SdfLayer::ClearDefaultPrim()
 {
@@ -2010,6 +2025,31 @@ SdfLayer::SetSubLayerOffset(const SdfLayerOffset& offset, int index)
     
     SetField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->SubLayerOffsets,
         VtValue(offsets));
+}
+
+SdfRelocates
+SdfLayer::GetRelocates() const
+{
+    return GetFieldAs<SdfRelocates>(
+        SdfPath::AbsoluteRootPath(), SdfFieldKeys->LayerRelocates);
+}
+
+void
+SdfLayer::SetRelocates(const SdfRelocates& relocates)
+{
+    SetField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->LayerRelocates, relocates);
+}
+
+bool
+SdfLayer::HasRelocates() const
+{
+    return HasField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->LayerRelocates);
+}
+
+void
+SdfLayer::ClearRelocates()
+{
+    EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->LayerRelocates);
 }
 
 bool 
@@ -3040,9 +3080,10 @@ SdfLayer::IsEmpty() const
     // XXX: What about documentation/frames?  I don't
     // think these get composed or exposed through composition, so I don't think
     // they matter for the sake of this query.
-    return GetRootPrims().empty()  && 
+    return GetRootPrims().empty() && 
         GetRootPrimOrder().empty() && 
-        GetSubLayerPaths().empty();
+        GetSubLayerPaths().empty() &&
+        GetRelocates().empty();
 }
 
 bool
@@ -4701,21 +4742,26 @@ SdfLayer::ExportToString( std::string *result ) const
 }
 
 bool 
-SdfLayer::_WriteToFile(const string & newFileName, 
+SdfLayer::_WriteToFile(const string &newFileName, 
                        const string &comment, 
                        SdfFileFormatConstPtr fileFormat,
                        const FileFormatArguments& args) const
 {
     TRACE_FUNCTION();
 
-    TF_DESCRIBE_SCOPE("Writing layer @%s@", GetIdentifier().c_str());
-
     if (newFileName.empty())
         return false;
-        
-    if ((newFileName == GetRealPath()) && !PermissionToSave()) {
+
+    // Save vs Export -- we consider it a Save when newFileName == this layer's
+    // resolved path (aka "GetRealPath()").
+    const bool isSave = newFileName == GetRealPath();
+    
+    TF_DESCRIBE_SCOPE("%s layer @%s@", isSave ? "Saving" : "Exporting",
+                      GetIdentifier().c_str());
+
+    if (isSave && !PermissionToSave()) {
         TF_RUNTIME_ERROR("Cannot save layer @%s@, saving not allowed", 
-                    newFileName.c_str());
+                         newFileName.c_str());
         return false;
     }
 
@@ -4723,8 +4769,9 @@ SdfLayer::_WriteToFile(const string & newFileName,
     // file extension, else discover the file format from the file extension.
     if (!fileFormat) {
         const string ext = Sdf_GetExtension(newFileName);
-        if (!ext.empty()) 
+        if (!ext.empty()) {
             fileFormat = SdfFileFormat::FindByExtension(ext);
+        }
 
         if (!fileFormat) {
             // Some parts of the system generate temp files
@@ -4737,8 +4784,9 @@ SdfLayer::_WriteToFile(const string & newFileName,
 
     // Disallow saving or exporting package layers via the Sdf API.
     if (Sdf_IsPackageOrPackagedLayer(fileFormat, newFileName)) {
-        TF_CODING_ERROR("Cannot save layer @%s@: writing %s %s layer "
+        TF_CODING_ERROR("Cannot %s layer @%s@: writing %s %s layer "
                         "is not allowed through this API.",
+                        isSave ? "save" : "export",
                         newFileName.c_str(), 
                         fileFormat->IsPackage() ? "package" : "packaged",
                         fileFormat->GetFormatId().GetText());
@@ -4747,13 +4795,14 @@ SdfLayer::_WriteToFile(const string & newFileName,
 
     if (!TF_VERIFY(fileFormat)) {
         TF_RUNTIME_ERROR("Unknown file format when attempting to write '%s'",
-            newFileName.c_str());
+                         newFileName.c_str());
         return false;
     }
 
     if (!fileFormat->SupportsWriting()) {
-        TF_CODING_ERROR("Cannot save layer @%s@: %s file format does not"
+        TF_CODING_ERROR("Cannot %s layer @%s@: %s file format does not"
                         "support writing",
+                        isSave ? "save" : "export",
                         newFileName.c_str(),
                         fileFormat->GetFormatId().GetText());
         return false;
@@ -4779,10 +4828,12 @@ SdfLayer::_WriteToFile(const string & newFileName,
         }
     }    
 
-    bool ok = fileFormat->WriteToFile(*this, newFileName, comment, args);
+    bool ok = isSave
+        ? fileFormat->SaveToFile(*this, newFileName, comment, args)
+        : fileFormat->WriteToFile(*this, newFileName, comment, args);
 
     // If we wrote to the backing file then we're now clean.
-    if (ok && newFileName == GetRealPath()) {
+    if (ok && isSave) {
        _MarkCurrentStateAsClean();
     }
 

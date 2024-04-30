@@ -75,12 +75,8 @@ UsdUtils_LocalizationContext::Process(
             continue;
         }
 
-        // Process the next layer in the queue.
-        // If the layer is a package then we halt traversal because the entire
-        // package should be included as dependency if any file contained inside 
-        // it is encountered.
         SdfLayerRefPtr layer = SdfLayer::FindOrOpen(anchoredPath);
-        if (layer && !layer->GetFileFormat()->IsPackage() ) {
+        if (layer) {
             _ProcessLayer(layer);
         }
     }
@@ -600,16 +596,15 @@ struct UsdUtils_ExtractExternalReferencesClient {
     UsdUtilsDependencyInfo 
     Process (
         const SdfLayerRefPtr &, 
-        const std::string &assetPath,
-        const std::vector<std::string> &dependencies,
+        const UsdUtilsDependencyInfo &depInfo,
         UsdUtils_DependencyType dependencyType
     )
     {
-        if (dependencies.empty()) {
-            PlaceAsset(assetPath, dependencyType);
+        if (depInfo.GetDependencies().empty()) {
+            PlaceAsset(depInfo.GetAssetPath(), dependencyType);
         }
         else {
-            for (const auto& dependency : dependencies) {
+            for (const auto& dependency : depInfo.GetDependencies()) {
                 PlaceAsset(dependency, dependencyType);
             }
         }
@@ -665,7 +660,7 @@ void UsdUtils_ExtractExternalReferences(
     UsdUtils_ReadOnlyLocalizationDelegate delegate(
         std::bind(&UsdUtils_ExtractExternalReferencesClient::Process, &client,
         std::placeholders::_1, std::placeholders::_2, 
-        std::placeholders::_3, std::placeholders::_4));
+        std::placeholders::_3));
     UsdUtils_LocalizationContext context(&delegate);
     context.SetRefTypesToInclude(refTypesToInclude);
     context.SetRecurseLayerDependencies(false);

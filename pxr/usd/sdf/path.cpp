@@ -1789,6 +1789,15 @@ SdfPath::MakeRelativePath(const SdfPath & anchor) const
     return result;
 }
 
+// Valid identifiers require the first character to be an `_` or in the
+// XidStart class.
+static bool
+_IsValidIdentifierStart(const TfUtf8CodePoint codePoint)
+{
+    return codePoint == TfUtf8CodePointFromAscii('_') ||
+           TfIsUtf8CodePointXidStart(codePoint);
+}
+
 static
 inline bool 
 _IsValidIdentifier(const std::string_view& name)
@@ -1799,23 +1808,20 @@ _IsValidIdentifier(const std::string_view& name)
         return false;
     }
 
-    TfUtf8CodePointView view {name};
-    bool first = true;
-    for (const uint32_t codePoint : view)
+    auto it = TfUtf8CodePointIterator{std::cbegin(name), std::cend(name)};
+    if (!_IsValidIdentifierStart(*it))
     {
-        bool result = first ? 
-            ((codePoint == SDF_UNDERSCORE_CODE_POINT) ||
-                TfIsUtf8CodePointXidStart(codePoint))
-            : TfIsUtf8CodePointXidContinue(codePoint);
-
-        if (!result)
+        return false;
+    }
+    // In C++20, this can be replaced with the `std::ranges` version of
+    // `std::all_of`
+    for (++it; it != TfUtf8CodePointIterator::PastTheEndSentinel{}; ++it)
+    {
+        if (!TfIsUtf8CodePointXidContinue(*it))
         {
             return false;
         }
-
-        first = false;
     }
-
     return true;
 }
 
@@ -1846,7 +1852,7 @@ SdfPath::IsValidNamespacedIdentifier(const std::string &name)
     // identifiers.
     std::string_view remainder {name};
     while (!remainder.empty()) {
-        const auto index = remainder.find(':');
+        const auto index = remainder.find(SDF_PATH_NS_DELIMITER_CHAR);
         
         // can't start with ':'
         if (index == 0) {
@@ -1895,8 +1901,7 @@ SdfPath::TokenizeIdentifier(const std::string &name)
     TfUtf8CodePointIterator anchor = iterator;
     
     // Check first character is in XidStart or '_'
-    if(!TfIsUtf8CodePointXidStart(*iterator) &&
-        *iterator != SDF_UNDERSCORE_CODE_POINT)
+    if(!_IsValidIdentifierStart(*iterator))
     {
         return result;
     }
@@ -1908,7 +1913,7 @@ SdfPath::TokenizeIdentifier(const std::string &name)
     for (++iterator; iterator != view.end(); ++iterator)
     {
         // Allow a namespace delimiter.
-        if (*iterator == SDF_NAMESPACE_DELIMITER_CODE_POINT)
+        if (*iterator == TfUtf8CodePointFromAscii(SDF_PATH_NS_DELIMITER_CHAR))
         {
             // Record token.
             result.push_back(std::string(anchor.GetBase(), iterator.GetBase()));
@@ -1919,8 +1924,7 @@ SdfPath::TokenizeIdentifier(const std::string &name)
             anchor = ++iterator;
 
             // First character.
-            if (!TfIsUtf8CodePointXidStart(*iterator) && 
-                *iterator != SDF_UNDERSCORE_CODE_POINT)
+            if (!_IsValidIdentifierStart(*iterator))
             {
                 TfReset(result);
                 return result;

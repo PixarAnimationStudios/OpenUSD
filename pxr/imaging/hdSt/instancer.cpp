@@ -83,8 +83,7 @@ HdStInstancer::_SyncPrimvars(HdSceneDelegate *sceneDelegate,
         VtValue value = sceneDelegate->Get(instancerId, primvar.name);
         if (!value.IsEmpty()) {
             HdBufferSourceSharedPtr source;
-            if ((primvar.name == HdInstancerTokens->instanceTransform ||
-                 primvar.name == HdInstancerTokens->instanceTransforms)) {
+            if (primvar.name == HdInstancerTokens->instanceTransforms) {
                 if (value.IsHolding<VtArray<GfMatrix4d>>()) {
                     // Explicitly invoke the c'tor taking a
                     // VtArray<GfMatrix4d> to ensure we properly convert to
@@ -151,22 +150,22 @@ HdStInstancer::_SyncPrimvars(HdSceneDelegate *sceneDelegate,
          sources, _instancePrimvarRange, *dirtyBits)) {
         // XXX: This should be based off the DirtyPrimvarDesc bit.
         bool hasDirtyPrimvarDesc = (*dirtyBits & HdChangeTracker::DirtyPrimvar);
-        HdBufferSpecVector removedSpecs;
-        if (hasDirtyPrimvarDesc) {
-            TfTokenVector internallyGeneratedPrimvars; // none
-            removedSpecs = HdStGetRemovedPrimvarBufferSpecs(
-                _instancePrimvarRange, primvars,
-                internallyGeneratedPrimvars, instancerId);
-        }
-        
         HdBufferSpecVector bufferSpecs;
         HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
+        HdBufferSpecVector removedSpecs;
+        if (hasDirtyPrimvarDesc) {
+            TfTokenVector internallyGeneratedPrimvars; // none
+            removedSpecs = HdStGetRemovedOrReplacedPrimvarBufferSpecs(
+                _instancePrimvarRange, primvars,
+                internallyGeneratedPrimvars, bufferSpecs, instancerId);
+        }
+        
         // Update local primvar range.
         _instancePrimvarRange =
             resourceRegistry->UpdateNonUniformBufferArrayRange(
                 HdTokens->primvar, _instancePrimvarRange, bufferSpecs,
-                removedSpecs, HdBufferArrayUsageHint());
+                removedSpecs, HdBufferArrayUsageHintBitsStorage);
 
         TF_VERIFY(_instancePrimvarRange->IsValid());
 

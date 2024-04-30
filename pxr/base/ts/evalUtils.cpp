@@ -29,6 +29,7 @@
 
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/interval.h"
+#include "pxr/base/tf/diagnostic.h"
 
 #include <limits>
 
@@ -41,12 +42,6 @@ Ts_GetEffectiveExtrapolationType(
         bool kfIsOnlyKeyFrame,
         TsSide side)
 {
-    // Check for held extrapolation
-    if ((side == TsLeft  && extrapolation.first  == TsExtrapolationHeld) ||
-        (side == TsRight && extrapolation.second == TsExtrapolationHeld)) {
-        return TsExtrapolationHeld;
-    }
-
     // Extrapolation is held if key frame is Held
     if (kf.GetKnotType() == TsKnotHeld) {
         return TsExtrapolationHeld;
@@ -83,8 +78,7 @@ Ts_GetEffectiveExtrapolationType(
 ////////////////////////////////////////////////////////////////////////
 
 static VtValue
-_GetSlope(
-        TsTime time,
+_GetExtrapolationSlope(
         TsSpline::const_iterator i,
         const TsSpline & val,
         TsSide side)
@@ -103,6 +97,10 @@ _GetSlope(
                     kf.GetRightTangentSlope();
             }
             else {
+                // Linear extrapolation without explicit outward-facing tangent.
+                // Compute the extrapolation slope as the line passing through
+                // the last two knots at the end we're extrapolating from.
+
                 // Set i and j to the left and right key frames of the segment
                 // with the slope we want to extrapolate.
                 TsSpline::const_iterator j = i;
@@ -129,7 +127,7 @@ _Extrapolate(
         const TsSpline &val,
         TsSide side)
 {
-    VtValue slope = _GetSlope(time, i, val, side);
+    VtValue slope = _GetExtrapolationSlope(i, val, side);
     const TsKeyFrame& kf = *i;
     VtValue value = (side == TsLeft) ? kf.GetLeftValue() : kf.GetValue();
     TsTime dt   = time - kf.GetTime();
@@ -138,13 +136,24 @@ _Extrapolate(
 }
 
 static VtValue
-_ExtrapolateDerivative(
-        TsTime time,
-        TsSpline::const_iterator i,
-        const TsSpline &val,
-        TsSide side)
+_GetSlopeToAdjacentKnot(
+    TsSpline::const_iterator i,
+    TsSide side)
 {
-    return _GetSlope(time, i, val, side);
+    // Set i and j to the left and right key frames of the segment
+    // with the slope we want to measure.  Caller has already verified that
+    // there is an additional keyframe in that direction.
+    TsSpline::const_iterator j = i;
+    if (side == TsRight) {
+        // Want from i to next.  Increment j.
+        ++j;
+    }
+    else {
+        // Want from previous to i.  Decrement i.
+        --i;
+    }
+
+    return Ts_GetKeyFrameData(*i)->GetSlope(*Ts_GetKeyFrameData(*j));
 }
 
 VtValue
@@ -168,76 +177,122 @@ Ts_Eval(
     //if (fabs(rounded-time) < ARCH_MIN_FLOAT_EPS_SQR)
     //    time = rounded;
 
-    // Get the keyframe after time
-    TsSpline::const_iterator iAfterTime = val.upper_bound(time);
-    TsSpline::const_iterator i = iAfterTime;
+    // Figure out where we are in the series.  Find the bracketing knots, the
+    // knot we're at, if any, and what type of position (before start, after
+    // end, at first knot, at last knot, at another knot, between knots).
+    const auto lbIt = val.lower_bound(time);
+    const auto prevIt = (lbIt != val.begin() ? lbIt - 1 : val.end());
+    const bool atKnot = (lbIt != val.end() && lbIt->GetTime() == time);
+    const auto knotIt = (atKnot ? lbIt : val.end());
+    const auto nextIt = (atKnot ? lbIt + 1 : lbIt);
+    const bool beforeStart = (nextIt == val.begin());
+    const bool afterEnd = (prevIt == val.end() - 1);
+    const bool atFirst = (knotIt == val.begin());
+    const bool atLast = (knotIt == val.end() - 1);
 
-    // Check boundary cases
-    if (i == val.begin()) {
-        // Before first keyframe.  Extrapolate to the left.
-        return (evalType == Ts_EvalValue) ?
-            _Extrapolate(time, i, val, TsLeft) :
-            _ExtrapolateDerivative(time, i, val, TsLeft);
-    }
-    // Note if at or after last keyframe.
-    bool last = (i == val.end());
-
-    // Get the keyframe at or before time
-    --i;
-
-    if (i->GetTime() == time && side == TsLeft) {
-        // Evaluate at a keyframe on the left.  If the previous
-        // keyframe is held then use the right side of the previous
-        // keyframe.
-        if (i != val.begin()) {
-            TsSpline::const_iterator j = i;
-            --j;
-            if (j->GetKnotType() == TsKnotHeld) {
-                return (evalType == Ts_EvalValue) ?
-                    j->GetValue() :
-                    j->GetValueDerivative();
+    if (atKnot) {
+        // At a knot.
+        if (evalType == Ts_EvalValue) {
+            // Handle values.
+            if (side == TsLeft
+                    && !atFirst && prevIt->GetKnotType() == TsKnotHeld) {
+                // Left value after held knot = previous knot value.
+                return prevIt->GetValue();
+            }
+            else {
+                // Not a special case.  Return what's stored in the knot.
+                return (side == TsLeft) ?
+                    knotIt->GetLeftValue() : knotIt->GetValue();
             }
         }
-        // handle derivatives of linear knots at keyframes differently
-        if (i->GetKnotType() == TsKnotLinear && 
-            evalType == Ts_EvalDerivative) {
-            // if we are next to last, eval from the right, 
-            // otherwise use the specified direction
-            return _GetSlope(time, i, val, last && (side == TsLeft) ?
-                             TsRight :
-                             side);
+        else {
+            // Handle derivatives.
+            if (!knotIt->IsExtrapolatable()) {
+                // Not extrapolatable -> derivative always zero.
+                return knotIt->GetZero();
+            }
+            else if (side == TsLeft) {
+                if (atFirst) {
+                    // Left derivative at first knot = extrapolation slope.
+                    return _GetExtrapolationSlope(knotIt, val, TsLeft);
+                }
+                else if (prevIt->GetKnotType() == TsKnotHeld) {
+                    // Left derivative after held knot = zero.
+                    return knotIt->GetZero();
+                }
+                else if (knotIt->GetKnotType() == TsKnotHeld
+                        && prevIt->GetKnotType() == TsKnotBezier) {
+                    // Left derivative of held knot after Bezier = zero.
+                    return knotIt->GetZero();
+                }
+                else if (knotIt->GetKnotType() == TsKnotHeld
+                        && prevIt->GetKnotType() == TsKnotLinear) {
+                    // Left derivative of held after linear = slope to adjacent.
+                    return _GetSlopeToAdjacentKnot(knotIt, TsLeft);
+                }
+                else if (knotIt->GetKnotType() == TsKnotLinear) {
+                    // Derivative at linear knot = slope to adjacent knot.
+                    return _GetSlopeToAdjacentKnot(knotIt, TsLeft);
+                }
+                else {
+                    // Not a special case.  Return what's stored in the knot.
+                    return knotIt->GetLeftValueDerivative();
+                }
+            }
+            else {
+                if (atLast) {
+                    // Right derivative at last knot = extrapolation slope.
+                    return _GetExtrapolationSlope(knotIt, val, TsRight);
+                }
+                else if (knotIt->GetKnotType() == TsKnotHeld) {
+                    // Right derivative at held knot = zero.
+                    return knotIt->GetZero();
+                }
+                else if (knotIt->GetKnotType() == TsKnotLinear) {
+                    // Derivative at linear knot = slope to adjacent knot.
+                    return _GetSlopeToAdjacentKnot(knotIt, TsRight);
+                }
+                else {
+                    // Not a special case.  Return what's stored in the knot.
+                    return knotIt->GetValueDerivative();
+                }
+            }
         }
-        return (evalType == Ts_EvalValue) ?
-            i->GetLeftValue() :
-            i->GetLeftValueDerivative();
     }
-    else if (last) {
-        // After last key frame.  Extrapolate to the right.
+    else if (beforeStart) {
+        // Before first knot.  Extrapolate to the left.
         return (evalType == Ts_EvalValue) ?
-            _Extrapolate(time, i, val, TsRight) :
-            _ExtrapolateDerivative(time, i, val, TsRight);
+            _Extrapolate(time, nextIt, val, TsLeft) :
+            _GetExtrapolationSlope(nextIt, val, TsLeft);
     }
-    else if (i->GetTime() == time) {
-        // Evaluate at a keyframe on the right
-        // handle derivatives of linear knots at keyframes differently
-        if (i->GetKnotType() == TsKnotLinear 
-            && evalType == Ts_EvalDerivative)
-        {
-            return _GetSlope(time, i, val, 
-                             (i == val.begin() && side == TsRight) ?
-                             TsLeft : side);
-        }
+    else if (afterEnd) {
+        // After last knot.  Extrapolate to the right.
         return (evalType == Ts_EvalValue) ?
-            i->GetValue() :
-            i->GetValueDerivative();
+            _Extrapolate(time, prevIt, val, TsRight) :
+            _GetExtrapolationSlope(prevIt, val, TsRight);
     }
     else {
-        // Evaluate at a keyframe on the right or between keyframes
-        return (evalType == Ts_EvalValue) ?
-            Ts_UntypedEvalCache::EvalUncached(*i, *iAfterTime, time) :
-            Ts_UntypedEvalCache::EvalDerivativeUncached(
-                *i, *iAfterTime, time);
+        // Between knots.  Interpolate.
+        if (evalType == Ts_EvalDerivative
+                && prevIt->IsExtrapolatable() && !prevIt->SupportsTangents()
+                && prevIt->GetKnotType() == TsKnotLinear) {
+            // Slope-capable but not tangent-capable linear derivative.
+            // The interpolation math doesn't want to handle this case.
+            return _GetSlopeToAdjacentKnot(prevIt, TsRight);
+        }
+        else {
+            // Not a special case.  Do the interpolation math.
+            return (evalType == Ts_EvalValue) ?
+                Ts_UntypedEvalCache::EvalUncached(
+                    *prevIt, *nextIt, time) :
+                Ts_UntypedEvalCache::EvalDerivativeUncached(
+                    *prevIt, *nextIt, time);
+        }
     }
+
+    // Unreachable; make compiler happy
+    TF_CODING_ERROR("We have reached the unreachable");
+    return VtValue();
 }
 
 // For the routine below, define loose comparisons to account for precision

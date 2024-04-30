@@ -824,6 +824,13 @@ class StageView(QGLWidget):
     def rendererAovName(self):
         return self._rendererAovName
 
+    @property
+    def bboxstandin(self):
+        return self._bboxstandin
+
+    @bboxstandin.setter
+    def bboxstandin(self, value):
+        self._bboxstandin = bool(value)
     
     @property
     def allowAsync(self):
@@ -943,6 +950,7 @@ class StageView(QGLWidget):
         self._vao = 0
 
         self._allowAsync = False
+        self._bboxstandin = False
 
         # Update all properties for the current stage.
         self._stageReplaced()
@@ -956,6 +964,7 @@ class StageView(QGLWidget):
                 if self.isContextInitialised():
                   params = UsdImagingGL.Engine.Parameters()
                   params.allowAsynchronousSceneProcessing = self._allowAsync
+                  params.displayUnloadedPrimsWithBounds = self._bboxstandin
                   self._renderer = UsdImagingGL.Engine(params)
                   self._handleRendererChanged(self.GetCurrentRendererId())
             elif not self._reportedContextError:
@@ -1732,6 +1741,7 @@ class StageView(QGLWidget):
                         l = Glf.SimpleLight()
                         l.ambient = (0, 0, 0, 0)
                         l.position = (cam_pos[0], cam_pos[1], cam_pos[2], 1)
+                        l.transform = frustum.ComputeViewInverse()
                         lights.append(l)
 
                     # Default Dome Light

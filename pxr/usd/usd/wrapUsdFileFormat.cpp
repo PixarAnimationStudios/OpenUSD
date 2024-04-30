@@ -25,9 +25,11 @@
 
 #include "pxr/usd/usd/usdFileFormat.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/base/tf/pyStaticTokens.h"
 
 #include <boost/python/bases.hpp>
 #include <boost/python/class.hpp>
+#include <boost/python/scope.hpp>
 
 using namespace boost::python;
 
@@ -37,11 +39,17 @@ void
 wrapUsdFileFormat()
 {
     using This = UsdUsdFileFormat;
-    class_<This, bases<SdfFileFormat>, boost::noncopyable>
+
+    scope s = class_<This, bases<SdfFileFormat>, boost::noncopyable>
         ("UsdFileFormat", no_init)
 
         .def("GetUnderlyingFormatForLayer", 
             &This::GetUnderlyingFormatForLayer)
         .staticmethod("GetUnderlyingFormatForLayer")
         ;
+
+    TF_PY_WRAP_PUBLIC_TOKENS(
+        "Tokens",
+        UsdUsdFileFormatTokens,
+        USD_USD_FILE_FORMAT_TOKENS);
 }

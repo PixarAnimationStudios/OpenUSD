@@ -25,20 +25,14 @@
 #include "pxr/usdImaging/usdImaging/dataSourceAttribute.h"
 
 #include "pxr/usd/usd/collectionAPI.h"
+#include "pxr/usd/usd/collectionMembershipQuery.h"
+
+#include "pxr/imaging/hd/collectionsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/base/tf/stringUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (usdCollections)
-    (includes)
-    (excludes)
-    (expansionRule)
-    (includeRoot)
-);
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -57,77 +51,47 @@ class _CollectionContainerDataSource : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(_CollectionContainerDataSource);
 
-    _CollectionContainerDataSource(const UsdCollectionAPI &api,
-        const UsdImagingDataSourceStageGlobals &stageGlobals)
+    _CollectionContainerDataSource(const UsdCollectionAPI &api)
     : _api(api)
-    , _stageGlobals(stageGlobals){
-    }
+    {}
 
     TfTokenVector GetNames() override {
-        TfTokenVector result;
-        result.reserve(4);
-
-        if (_api.GetExpansionRuleAttr()) {
-            result.push_back(_tokens->expansionRule);
-        }
-
-        if (_api.GetIncludeRootAttr()) {
-            result.push_back(_tokens->includeRoot);
-        }
-
-        if (_api.GetIncludesRel()) {
-            result.push_back(_tokens->includes);
-        }
-
-        if (_api.GetExcludesRel()) {
-            result.push_back(_tokens->excludes);
-        }
-
-        return result;
+        static TfTokenVector names =
+            { HdCollectionSchemaTokens->membershipExpression };
+        return names;
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
-        if (name == _tokens->expansionRule) {
-            if (UsdAttribute attr = _api.GetExpansionRuleAttr()) {
-                return UsdImagingDataSourceAttributeNew(attr, _stageGlobals);
-            }
-        } else if (name == _tokens->includeRoot) {
-             if (UsdAttribute attr = _api.GetIncludeRootAttr()) {
-                // not intended to be time-varying so not providing a 
-                // path/locator.
-                return UsdImagingDataSourceAttributeNew(attr, _stageGlobals);
-            }
-        } else if (name == _tokens->includes) {
-            if (UsdRelationship rel = _api.GetIncludesRel()) {
-                return _BuildRelationshipDataSource(rel);
-            }
-        } else if (name == _tokens->excludes) {
-            if (UsdRelationship rel = _api.GetExcludesRel()) {
-                return _BuildRelationshipDataSource(rel);
-            }
+        if (name == HdCollectionSchemaTokens->membershipExpression) {
+            return
+                HdRetainedTypedSampledDataSource<SdfPathExpression>::New(
+                    _ComputePathExpressionFromCollection(_api));
         }
 
         return nullptr;
     }
 
 private:
+    static SdfPathExpression
+    _ComputePathExpressionFromCollection(
+        const UsdCollectionAPI &api)
+    {
+        // A collection can be either rule-based (includes, excludes, ..)
+        // or path-expression-based.
+        // Construct a query object to determine the flavor.
+        const UsdCollectionMembershipQuery query = api.ComputeMembershipQuery();
 
-    HdDataSourceBaseHandle _BuildRelationshipDataSource(
-            const UsdRelationship &rel) {
-
-        SdfPathVector targets;
-        rel.GetForwardedTargets(&targets);
-        if (targets.empty()) {
-            return nullptr;
+        if (query.UsesPathExpansionRuleMap()) {
+            const auto &ruleMap = query.GetAsPathExpansionRuleMap();
+            return
+                UsdComputePathExpressionFromCollectionMembershipQueryRuleMap(
+                    ruleMap);
         }
-        VtArray<SdfPath> targetArray(targets.begin(), targets.end());
-        return HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
-            targetArray);
+        
+        return api.ResolveCompleteMembershipExpression();
     }
 
-
     UsdCollectionAPI _api;
-    const UsdImagingDataSourceStageGlobals &_stageGlobals;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(_CollectionContainerDataSource);
@@ -141,11 +105,9 @@ public:
 
     _CollectionsContainerDataSource(
         const UsdPrim &prim,
-        const TfToken &name,
-        const UsdImagingDataSourceStageGlobals &stageGlobals
-    ) : _api(prim, name)
-    , _stageGlobals(stageGlobals) {
-    }
+        const TfToken &name)
+    : _api(prim, name)
+    {}
 
     TfTokenVector GetNames() override {
         return {_api.GetName()};
@@ -153,14 +115,13 @@ public:
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
         if (name == _api.GetName()) {
-            return _CollectionContainerDataSource::New(_api, _stageGlobals);
+            return _CollectionContainerDataSource::New(_api);
         }
         return nullptr;
     }
 
 private:
     UsdCollectionAPI _api;
-    const UsdImagingDataSourceStageGlobals &_stageGlobals;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(_CollectionsContainerDataSource);
@@ -180,10 +141,11 @@ UsdImagingCollectionAPIAdapter::GetImagingSubprimData(
         return nullptr;
     }
 
+    // Note: When multiple collections are present, we'll overlay the containers
+    //       and thus aggregate the individual collection's.
     return HdRetainedContainerDataSource::New(
-        _tokens->usdCollections,
-        _CollectionsContainerDataSource::New(
-            prim, appliedInstanceName, stageGlobals)
+        HdCollectionsSchemaTokens->collections,
+        _CollectionsContainerDataSource::New(prim, appliedInstanceName)
     );
 }
 
@@ -205,7 +167,7 @@ UsdImagingCollectionAPIAdapter::InvalidateImagingSubprim(
     for (const TfToken &propertyName : properties) {
         if (TfStringStartsWith(propertyName.GetString(), prefix)) {
             return HdDataSourceLocator(
-                _tokens->usdCollections, appliedInstanceName);
+                HdCollectionsSchemaTokens->collections, appliedInstanceName);
         }
     }
 

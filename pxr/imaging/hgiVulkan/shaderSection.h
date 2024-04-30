@@ -139,6 +139,15 @@ public:
 
     HGIVULKAN_API
     void WriteType(std::ostream& ss) const override;
+    
+    HGIVULKAN_API
+    void WriteInterpolation(std::ostream& ss) const;
+    
+    HGIVULKAN_API
+    void WriteSampling(std::ostream& ss) const;
+    
+    HGIVULKAN_API
+    void WriteStorage(std::ostream& ss) const;
 
 private:
     HgiVulkanMemberShaderSection() = delete;
@@ -151,6 +160,9 @@ private:
     HgiSamplingType _sampling;
     HgiStorageType _storage;
 };
+
+using HgiVulkanMemberShaderSectionPtrVector = 
+    std::vector<HgiVulkanMemberShaderSection*>;
 
 /// \class HgiVulkanBlockShaderSection
 ///
@@ -305,7 +317,7 @@ public:
         const HgiShaderSectionAttributeVector &attributes,
         const std::string &qualifier,
         const std::string &arraySize,
-        const HgiVulkanShaderSectionPtrVector &members);
+        const HgiVulkanMemberShaderSectionPtrVector &members);
 
     HGIVULKAN_API
     bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
@@ -318,7 +330,7 @@ private:
         const HgiVulkanInterstageBlockShaderSection&) = delete;
 
     const std::string _qualifier;
-    const HgiVulkanShaderSectionPtrVector _members;
+    const HgiVulkanMemberShaderSectionPtrVector _members;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

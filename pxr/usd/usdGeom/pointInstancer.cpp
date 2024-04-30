@@ -388,15 +388,33 @@ _CanonicalizeListOp(const SdfListOp<T> &op) {
 }
 
 bool
-UsdGeomPointInstancer::UsesOrientationsf(UsdAttribute &rotationAttr) const
+UsdGeomPointInstancer::UsesOrientationsf(UsdAttribute *rotationAttr) const
 {
-    rotationAttr = GetOrientationsfAttr();
+    *rotationAttr = GetOrientationsfAttr();
     VtQuatfArray orientationsfTimeSamples;
-    rotationAttr.Get(&orientationsfTimeSamples, UsdTimeCode::EarliestTime());
+    rotationAttr->Get(&orientationsfTimeSamples, UsdTimeCode::EarliestTime());
     if (!orientationsfTimeSamples.empty()){
         return true;
     } 
-    rotationAttr = GetOrientationsAttr();
+    *rotationAttr = GetOrientationsAttr();
+    return false;
+}
+
+bool
+UsdGeomPointInstancer::UsesOrientationsf(TfToken *rotationToken) const
+{
+    VtQuatfArray orientationsfTimeSamples;
+    GetOrientationsfAttr().Get(&orientationsfTimeSamples, 
+                                UsdTimeCode::EarliestTime());
+    if (!orientationsfTimeSamples.empty()){
+        if (rotationToken) {
+            *rotationToken = UsdGeomTokens->orientationsf;
+        }
+        return true;
+    }
+    if (rotationToken) {
+        *rotationToken = UsdGeomTokens->orientations;
+    }
     return false;
 }
 
@@ -924,7 +942,7 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTimes(
     const MaskApplication applyMask) const
 {
     UsdAttribute orientationsAttr;
-    if (UsesOrientationsf(orientationsAttr)){
+    if (UsesOrientationsf(&orientationsAttr)){
         return _DoComputeInstanceTransformsAtTimes<GfQuatf>(
             xformsArray, times, baseTime, doProtoXforms, applyMask, orientationsAttr);        
     } else {

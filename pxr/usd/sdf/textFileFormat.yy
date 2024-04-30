@@ -53,9 +53,6 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/optional.hpp>
-#include <boost/variant.hpp>
-
 #include <functional>
 #include <sstream>
 #include <string>
@@ -68,7 +65,6 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 using Sdf_ParserHelpers::Value;
-using boost::get;
 
 //--------------------------------------------------------------------
 // Helper macros/functions for handling errors
@@ -614,11 +610,12 @@ _RelocatesAdd(const Value& arg1, const Value& arg2,
     // editing, but since we're bypassing that proxy and setting the map
     // directly into the underlying SdfData, we need to explicitly absolutize
     // paths here.
-    const SdfPath srcAbsPath = srcPath.MakeAbsolutePath(context->path);
-    const SdfPath targetAbsPath = targetPath.MakeAbsolutePath(context->path);
+    srcPath = srcPath.MakeAbsolutePath(context->path);
+    targetPath = targetPath.MakeAbsolutePath(context->path);
 
-    context->relocatesParsingMap.insert(std::make_pair(srcAbsPath, 
-                                                        targetAbsPath));
+    context->relocatesParsing.emplace_back(
+        std::move(srcPath), std::move(targetPath));
+
     context->layerHints.mightHaveRelocates = true;
 }
 
@@ -1479,6 +1476,14 @@ layer_metadata:
                 context->path, SdfFieldKeys->Documentation, 
                 $3.Get<std::string>(), context);
         }
+    // Not parsed with generic metadata because: uses special Python-like
+    // dictionary syntax with paths
+    | TOK_RELOCATES '=' relocates_map {
+            _SetField(
+                context->path, SdfFieldKeys->LayerRelocates,
+                context->relocatesParsing, context);
+            context->relocatesParsing.clear();
+        }      
     // Not parsed with generic metadata because: actually maps to two values
     // instead of one
     | TOK_SUBLAYERS '=' sublayer_list
@@ -1891,10 +1896,13 @@ prim_metadata:
     // Not parsed with generic metadata because: uses special Python-like
     // dictionary syntax with paths
     | TOK_RELOCATES '=' relocates_map {
+            SdfRelocatesMap relocatesParsingMap(
+                std::make_move_iterator(context->relocatesParsing.begin()),
+                std::make_move_iterator(context->relocatesParsing.end()));
+            context->relocatesParsing.clear();
             _SetField(
                 context->path, SdfFieldKeys->Relocates, 
-                context->relocatesParsingMap, context);
-            context->relocatesParsingMap.clear();
+                relocatesParsingMap, context);
         }
     // Not parsed with generic metadata because: multiple definitions are
     // merged into one dictionary instead of overwriting previous definitions
@@ -3317,8 +3325,8 @@ Sdf_ParseLayer(
                 TRACE_SCOPE("textFileFormatYyParse");
                 status = textFileFormatYyparse(&context);
                 *hints = context.layerHints;
-            } catch (boost::bad_get const &) {
-                TF_CODING_ERROR("Bad boost:get<T>() in layer parser.");
+            } catch (std::bad_variant_access const &) {
+                TF_CODING_ERROR("Bad variant access in layer parser.");
                 Err(&context, "Internal layer parser error.");
             }
         }
@@ -3367,8 +3375,8 @@ Sdf_ParseLayerFromString(
         TRACE_SCOPE("textFileFormatYyParse");
         status = textFileFormatYyparse(&context);
         *hints = context.layerHints;
-    } catch (boost::bad_get const &) {
-        TF_CODING_ERROR("Bad boost:get<T>() in layer parser.");
+    } catch (std::bad_variant_access const &) {
+        TF_CODING_ERROR("Bad variant access in layer parser.");
         Err(&context, "Internal layer parser error.");
     }
 

@@ -108,6 +108,11 @@ pxr_library(ts
         tsTest.dox
 )
 
+if (${PXR_BUILD_ANIMX_TESTS})
+    target_compile_definitions(ts PRIVATE PXR_BUILD_ANIMX_TESTS)
+    target_compile_definitions(_ts PRIVATE PXR_BUILD_ANIMX_TESTS)
+endif()
+
 pxr_build_test(
     testTs_HardToReach
     CPPFILES
@@ -133,6 +138,7 @@ pxr_test_scripts(
     testenv/testTsSplineAPI.py
     testenv/testTsKeyFrame.py
     testenv/testTsSimplify.py
+    testenv/testTsDerivatives.py
     testenv/tsTest_TsFramework.py
 )
 
@@ -163,6 +169,12 @@ pxr_register_test(
     testTsSimplify
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTsSimplify"
+)
+
+pxr_register_test(
+    testTsDerivatives
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTsDerivatives"
 )
 
 pxr_register_test(

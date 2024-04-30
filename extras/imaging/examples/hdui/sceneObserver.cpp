@@ -92,7 +92,7 @@ HduiSceneObserver::FlushBatchedUpdates()
     DirtiedPrimEntries dirtyEntries;
     dirtyEntries.reserve(_batchedDirtiedPrims.size());
 
-    for (const auto it : _batchedDirtiedPrims) {
+    for (const auto& it : _batchedDirtiedPrims) {
         const SdfPath& primPath = it.first;
         const HdDataSourceLocatorSet& dirtyLocators = it.second;
         dirtyEntries.push_back({ primPath, dirtyLocators });

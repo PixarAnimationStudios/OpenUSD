@@ -476,16 +476,12 @@ public:
             result = _GetConstantPrimvarNames(
                 _inputSceneIndex, *(_instances->begin()));
         }
-        result.push_back(
-            (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-                ? HdInstancerTokens->instanceTransform
-                : HdInstancerTokens->instanceTransforms));
+        result.push_back(HdInstancerTokens->instanceTransforms);
         return result;
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
-        if (name == HdInstancerTokens->instanceTransforms ||
-            name == HdInstancerTokens->instanceTransform) {
+        if (name == HdInstancerTokens->instanceTransforms) {
             return _InstanceTransformPrimvarDataSource::New(
                 _inputSceneIndex, _instances);
         }
@@ -1128,10 +1124,7 @@ _InstanceObserver::PrimsDirtied(const HdSceneIndexBase &sender,
             if (locators.Intersects(xformLocators)) {
                 static const HdDataSourceLocatorSet instanceTransformLocators{
                     HdPrimvarsSchema::GetDefaultLocator()
-                        .Append((TfGetEnvSetting(
-                                HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
-                            ? HdInstancerTokens->instanceTransform
-                            : HdInstancerTokens->instanceTransforms))
+                        .Append(HdInstancerTokens->instanceTransforms)
                         .Append(HdPrimvarSchemaTokens->primvarValue)};
                 _DirtyInstancerForInstance(path, instanceTransformLocators);
             }

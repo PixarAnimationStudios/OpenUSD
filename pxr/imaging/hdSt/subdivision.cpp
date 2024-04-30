@@ -400,7 +400,8 @@ HdSt_Subdivision::_CreateGpuStencilTable(
     };
     HdBufferArrayRangeSharedPtr perPointRange =
         registry->AllocateSingleBufferArrayRange(
-            _tokens->stencilData, perPointSpecs, HdBufferArrayUsageHint());
+            _tokens->stencilData, perPointSpecs,
+            HdBufferArrayUsageHintBitsStorage);
 
     // Allocate buffer array range for perIndex data
     HdBufferSpecVector perIndexSpecs = {
@@ -409,7 +410,8 @@ HdSt_Subdivision::_CreateGpuStencilTable(
     };
     HdBufferArrayRangeSharedPtr perIndexRange =
         registry->AllocateSingleBufferArrayRange(
-            _tokens->stencilData, perIndexSpecs, HdBufferArrayUsageHint());
+            _tokens->stencilData, perIndexSpecs,
+            HdBufferArrayUsageHintBitsStorage);
 
     HdSt_GpuStencilTableSharedPtr gpuStencilTable =
         std::make_shared<HdSt_GpuStencilTable>(
@@ -1201,7 +1203,7 @@ HdSt_OsdIndexComputation::Resolve()
         _topology->RefinesToBoxSplineTrianglePatches()) {
 
         // Bundle groups of 12 or 16 patch control vertices.
-        int const arraySize = patchTable
+        int const arraySize = (ptableSize > 0)
             ? patchTable->GetPatchArrayDescriptor(0).GetNumControlVertices()
             : 0;
 
@@ -1451,15 +1453,12 @@ HdSt_OsdFvarIndexComputation::Resolve()
         return true;
     }
 
-    VtIntArray fvarIndices = subdivision->GetRefinedFvarIndices(_channel);
-    if (!TF_VERIFY(!fvarIndices.empty())) {
-        _SetResolved();
-        return true;
-    }
-
-    Far::Index const * firstIndex = fvarIndices.cdata();
     Far::PatchTable const * patchTable = subdivision->GetPatchTable();
-    size_t numPatches = patchTable ? patchTable->GetNumPatchesTotal() : 0;
+    size_t const numPatches = patchTable ? patchTable->GetNumPatchesTotal() : 0;
+
+    VtIntArray fvarIndices = subdivision->GetRefinedFvarIndices(_channel);
+    Far::Index const * firstIndex =
+        !fvarIndices.empty() ? fvarIndices.cdata() : nullptr;
 
     TfToken const & scheme = _topology->GetScheme();
 
@@ -1467,7 +1466,7 @@ HdSt_OsdFvarIndexComputation::Resolve()
         _topology->RefinesToBoxSplineTrianglePatches()) {
 
         // Bundle groups of 12 or 16 patch control vertices
-        int const arraySize = patchTable ?
+        int const arraySize = (numPatches > 0) ?
             patchTable->GetFVarPatchDescriptor(_channel).GetNumControlVertices()
             : 0;
 

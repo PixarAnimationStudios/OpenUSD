@@ -50,6 +50,11 @@ class TestPcpPrimIndex(unittest.TestCase):
 
     def AssertPrimIndex(self, pcpCache, path, expected):
         pi, err = pcpCache.ComputePrimIndex(path)
+
+        # Uncomment to generate dot graphs for prim index
+        # being tested.
+        # pi.DumpToDotGraph('{}.dot'.format(Sdf.Path(path).name))
+
         self.assertFalse(err, "Unexpected composition errors: {}".format(
             ",".join(str(e) for e in err)))
 
@@ -792,6 +797,9 @@ class TestPcpPrimIndex(unittest.TestCase):
                 specializes = </Ref/SpecB>
             )
             {
+                def "Child"
+                {
+                }
             }
 
             def "SpecB"
@@ -802,8 +810,14 @@ class TestPcpPrimIndex(unittest.TestCase):
             }
         }
 
-        def "Root" (
+        def "RefA" (
             references = </Ref>
+        )
+        {
+        }
+
+        def "Root" (
+            references = </RefA>
         )
         {
         }        
@@ -817,12 +831,21 @@ class TestPcpPrimIndex(unittest.TestCase):
             pcp, "/Root/Instance",
             [
                 (Pcp.ArcTypeRoot, rootLayer, "/Root/Instance"), [
-                    # Reference from /Root -> /Ref
-                    (Pcp.ArcTypeReference, rootLayer, "/Ref/Instance"), [
-                        # Specializes from /Ref/Instance -> /Ref/SpecA
-                        (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecA"), [
-                            # Specializes from /Ref/SpecA -> /Ref/SpecB
-                            (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecB"), []
+                    # Reference from /Root -> /RefA
+                    (Pcp.ArcTypeReference, rootLayer, "/RefA/Instance"), [
+                        # Reference from /RefA -> /Ref
+                        (Pcp.ArcTypeReference, rootLayer, "/Ref/Instance"), [
+                            # Specializes from /Ref/Instance -> /Ref/SpecA
+                            (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecA"), [
+                                # Specializes from /Ref/SpecA -> /Ref/SpecB
+                                (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecB"), []
+                            ]
+                        ],
+
+                        # Implied specializes due to /Ref/Instance -> /Ref/SpecA
+                        (Pcp.ArcTypeSpecialize, rootLayer, "/RefA/SpecA"), [
+                            (Pcp.ArcTypeSpecialize, rootLayer, "/RefA/SpecB"), [
+                            ]
                         ]
                     ],
 
@@ -831,11 +854,17 @@ class TestPcpPrimIndex(unittest.TestCase):
                         (Pcp.ArcTypeSpecialize, rootLayer, "/Root/SpecB"), []
                     ],
 
+                    # Propagated specializes due to implied /RefA/SpecA
+                    (Pcp.ArcTypeSpecialize, rootLayer, "/RefA/SpecA"), [],
+
                     # Propagated specializes due to /Ref/Instance -> /Ref/SpecA
                     (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecA"), [],
 
                     # Propagated specializes due to implied /Root/SpecB
                     (Pcp.ArcTypeSpecialize, rootLayer, "/Root/SpecB"), [],
+
+                    # Propagated specializes due to implied /RefA/SpecB
+                    (Pcp.ArcTypeSpecialize, rootLayer, "/RefA/SpecB"), [],
 
                     # Propagated specializes due to /Ref/SpecA -> /Ref/SpecB.
                     (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecB"), []
@@ -849,16 +878,22 @@ class TestPcpPrimIndex(unittest.TestCase):
             pcp, "/Root/Instance/Child",
             [
                 (Pcp.ArcTypeRoot, rootLayer, "/Root/Instance/Child"), [
-                    # Reference from /Root -> /Ref
-                    (Pcp.ArcTypeReference, rootLayer, "/Ref/Instance/Child"), [
-                        # The propagated specializes subtree for 
-                        # /Ref/SpecA/Child is culled, but the propagated subtree
-                        # for /Ref/SpecB/Child is not. That prevents the origin
-                        # subtree for /Ref/SpecA/Child from being culled.
-                        (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecA/Child"), [
-                            (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecB/Child"), []
-                        ]
+                    # Reference from /Root -> /RefA
+                    (Pcp.ArcTypeReference, rootLayer, "/RefA/Instance/Child"), [
+                        # Reference from /RefA -> /Ref
+                        (Pcp.ArcTypeReference, rootLayer, "/Ref/Instance/Child"), [
+                            # The propagated specializes subtree for
+                            # /Ref/SpecA/Child is culled, but the propagated subtree
+                            # for /Ref/SpecB/Child is not. That prevents the origin
+                            # subtree for /Ref/SpecA/Child from being culled.
+                            (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecA/Child"), [
+                                (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecB/Child"), []
+                            ]
+                        ],
                     ],
+
+                    # Propagated specializes due to /Ref/SpecA -> /Ref/SpecB.
+                    (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecA/Child"), [],
 
                     # Propagated specializes due to /Ref/SpecA -> /Ref/SpecB.
                     (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecB/Child"), []
@@ -929,6 +964,13 @@ class TestPcpPrimIndex(unittest.TestCase):
                     (Pcp.ArcTypeSpecialize, rootLayer, "/RefB/Spec/Child")
                 ]
             ])
+
+    def test_TestInvalidPcpNodeRef(self):
+        """Test to ensure that a invalid PcpNodeRef will return false
+            when cast to a bool"""
+
+        nullPcpNodeRef =  Pcp._GetInvalidPcpNode()
+        self.assertFalse(bool(nullPcpNodeRef))
 
 
 if __name__ == "__main__":

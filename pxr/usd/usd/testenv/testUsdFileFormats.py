@@ -253,5 +253,10 @@ class TestUsdFileFormats(unittest.TestCase):
             Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer), 
             'usdc')
 
+    def test_Tokens(self):
+        '''Test basic token wrapping'''
+        self.assertEqual(Usd.UsdFileFormat.Tokens.Target, 'usd')
+        self.assertEqual(Usd.UsdFileFormat.Tokens.FormatArg, 'format')
+
 if __name__ == "__main__":
     unittest.main()

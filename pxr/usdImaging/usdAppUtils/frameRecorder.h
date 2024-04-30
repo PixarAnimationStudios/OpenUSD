@@ -64,11 +64,13 @@ public:
     /// instance will allow Hydra to use the GPU to produce images.
     /// The \p renderSettingsPrimPath argument is used to set the active 
     /// render settings prim path in Hydra.
+    /// The \p defaultLights argument determines if the
+    /// UsdAppUtilsFrameRecorder will add a default set of lights,
+    /// in addition to any present in the scene.
     USDAPPUTILS_API
     UsdAppUtilsFrameRecorder(
         const TfToken& rendererPluginId = TfToken(),
-        bool gpuEnabled = true,
-        const SdfPath& renderSettingsPrimPath = SdfPath());
+        bool gpuEnabled = true);
 
     /// Gets the ID of the Hydra renderer plugin that will be used for
     /// recording.
@@ -88,6 +90,20 @@ public:
 
         return succeeded;
     }
+
+    /// Sets the path to the render pass prim to use.
+    ///
+    /// \note If there is a render settings prim designated by the
+    /// render pass prim via renderSource, it must also be set
+    /// with SetActiveRenderSettingsPrimPath().
+    USDAPPUTILS_API
+    void SetActiveRenderPassPrimPath(SdfPath const& path);
+
+    /// Sets the path to the render settings prim to use.
+    ///
+    /// \see SetActiveRenderPassPrimPath()
+    USDAPPUTILS_API
+    void SetActiveRenderSettingsPrimPath(SdfPath const& path);
 
     /// Sets the width of the recorded image.
     ///
@@ -115,6 +131,13 @@ public:
     /// By default, color correction is disabled.
     USDAPPUTILS_API
     void SetColorCorrectionMode(const TfToken& colorCorrectionMode);
+
+    /// Turns the built-in camera light on or off.
+    ///
+    /// When on, this will add a light at the camera's origin.
+    /// This is sometimes called a "headlight".
+    USDAPPUTILS_API
+    void SetCameraLightEnabled(bool cameraLightEnabled);
 
     /// Sets the UsdGeomImageable purposes to be used for rendering
     ///
@@ -154,7 +177,9 @@ private:
     float _complexity;
     TfToken _colorCorrectionMode;
     TfTokenVector _purposes;
+    SdfPath _renderPassPrimPath;
     SdfPath _renderSettingsPrimPath;
+    bool _cameraLightEnabled;
 };
 
 

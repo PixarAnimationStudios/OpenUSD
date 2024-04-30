@@ -3,13 +3,6 @@
         {
             "Info": {
                 "Types": {
-                    "UsdRiPxrImagingBarnLightFilterAdapter": {
-                        "bases": [
-                            "UsdImagingLightFilterAdapter"
-                        ],
-                        "isInternal": true,
-                        "primTypeName": "PxrBarnLightFilter"
-                    },
                     "UsdRiPxrImagingDisplayFilterAdapter": {
                         "bases": [
                             "UsdImagingPrimAdapter"
@@ -26,20 +19,6 @@
                         "primTypeName": "PxrIntegratorPluginBase",
                         "includeDerivedPrimTypes" : true 
                     },
-                    "UsdRiPxrImagingIntMultLightFilterAdapter": {
-                        "bases": [
-                            "UsdImagingLightFilterAdapter"
-                        ],
-                        "isInternal": true,
-                        "primTypeName": "PxrIntMultLightFilter"
-                    },
-                    "UsdRiPxrImagingRodLightFilterAdapter": {
-                        "bases": [
-                            "UsdImagingLightFilterAdapter"
-                        ],
-                        "isInternal": true,
-                        "primTypeName": "PxrRodLightFilter"
-                    },
                     "UsdRiPxrImagingSampleFilterAdapter": {
                         "bases": [
                             "UsdImagingPrimAdapter"
@@ -47,6 +26,13 @@
                         "isInternal": true,
                         "primTypeName": "PxrSampleFilterPluginBase",
                         "includeDerivedPrimTypes" : true 
+                    },
+                    "UsdRiPxrImagingCameraAPIAdapter": {
+                        "bases": [
+                            "UsdImagingAPISchemaAdapter"
+                        ],
+                        "isInternal": true,
+                        "apiSchemaName": "PxrCameraAPI"
                     }
                 }
             },

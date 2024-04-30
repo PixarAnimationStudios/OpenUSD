@@ -135,11 +135,11 @@ def GetVisualStudioCompilerAndVersion():
 
     msvcCompiler = which('cl')
     if msvcCompiler:
-        # VisualStudioVersion environment variable should be set by the
+        # VCToolsVersion environment variable should be set by the
         # Visual Studio Command Prompt.
         match = re.search(
             r"(\d+)\.(\d+)",
-            os.environ.get("VisualStudioVersion", ""))
+            os.environ.get("VCToolsVersion", ""))
         if match:
             return (msvcCompiler, tuple(int(v) for v in match.groups()))
     return None
@@ -154,16 +154,17 @@ def IsVisualStudioVersionOrGreater(desiredVersion):
         return version >= desiredVersion
     return False
 
+# Helpers to determine the version of "Visual Studio" (also support the Build Tools) based
+# on the version of the MSVC compiler.
+# See MSVC++ versions table on https://en.wikipedia.org/wiki/Microsoft_Visual_C%2B%2B
 def IsVisualStudio2022OrGreater():
-    VISUAL_STUDIO_2022_VERSION = (17, 0)
+    VISUAL_STUDIO_2022_VERSION = (14, 30)
     return IsVisualStudioVersionOrGreater(VISUAL_STUDIO_2022_VERSION)
-
 def IsVisualStudio2019OrGreater():
-    VISUAL_STUDIO_2019_VERSION = (16, 0)
+    VISUAL_STUDIO_2019_VERSION = (14, 20)
     return IsVisualStudioVersionOrGreater(VISUAL_STUDIO_2019_VERSION)
-
 def IsVisualStudio2017OrGreater():
-    VISUAL_STUDIO_2017_VERSION = (15, 0)
+    VISUAL_STUDIO_2017_VERSION = (14, 1)
     return IsVisualStudioVersionOrGreater(VISUAL_STUDIO_2017_VERSION)
 
 def GetPythonInfo(context):
@@ -283,8 +284,8 @@ def Run(cmd, logCommandOutput = True):
         if verbosity < 3:
             with open("log.txt", "r") as logfile:
                 Print(logfile.read())
-        raise RuntimeError("Failed to run '{cmd}'\nSee {log} for more details."
-                           .format(cmd=cmd, log=os.path.abspath("log.txt")))
+        raise RuntimeError("Failed to run '{cmd}' in {path}.\nSee {log} for more details."
+                           .format(cmd=cmd, path=os.getcwd(), log=os.path.abspath("log.txt")))
 
 @contextlib.contextmanager
 def CurrentWorkingDirectory(dir):
@@ -420,6 +421,11 @@ def RunCMake(context, force, extraArgs = None):
             extraArgs.append('-DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO')
 
         extraArgs.append('-DCMAKE_OSX_ARCHITECTURES={0}'.format(targetArch))
+
+    if context.ignorePaths:
+        ignoredPaths = ";".join(context.ignorePaths)
+        extraArgs.append("-DCMAKE_IGNORE_PATH={0}".format(ignoredPaths))
+        extraArgs.append("-DCMAKE_IGNORE_PREFIX_PATH={0}".format(ignoredPaths))
 
     # We use -DCMAKE_BUILD_TYPE for single-configuration generators 
     # (Ninja, make), and --config for multi-configuration generators 
@@ -718,6 +724,9 @@ def InstallBoost_Helper(context, force, buildArgs):
     # However, there are some cases where a newer version is required.
     # - Building with Python 3.11 requires boost 1.82.0 or newer
     #   (https://github.com/boostorg/python/commit/a218ba)
+    # - Building on MacOS requires v1.82.0 or later for C++17 support starting 
+    #   with Xcode 15. We choose to use this version for all MacOS builds for 
+    #   simplicity."
     # - Building with Python 3.10 requires boost 1.76.0 or newer
     #   (https://github.com/boostorg/python/commit/cbd2d9)
     #   XXX: Due to a typo we've been using 1.78.0 in this case for a while.
@@ -728,13 +737,11 @@ def InstallBoost_Helper(context, force, buildArgs):
     #   compatibility issues on Big Sur and Monterey.
     pyInfo = GetPythonInfo(context)
     pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
-    if context.buildPython and pyVer >= (3, 11):
+    if MacOS() or (context.buildPython and pyVer >= (3,11)):
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip"
     elif context.buildPython and pyVer >= (3, 10):
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
     elif IsVisualStudio2022OrGreater():
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
-    elif MacOS():
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
     else:
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.zip"
@@ -783,7 +790,7 @@ def InstallBoost_Helper(context, force, buildArgs):
                         primaryArch, secondaryArch)
 
             if macOSArch:
-                bootstrapCmd += " cxxflags=\"{0}\" " \
+                bootstrapCmd += " cxxflags=\"{0} -std=c++17 -stdlib=libc++\" " \
                                 " cflags=\"{0}\" " \
                                 " linkflags=\"{0}\"".format(macOSArch)
             bootstrapCmd += " --with-toolset=clang"
@@ -890,9 +897,16 @@ def InstallBoost_Helper(context, force, buildArgs):
             # Must specify toolset=clang to ensure install_name for boost
             # libraries includes @rpath
             b2_settings.append("toolset=clang")
-
+            #
+            # Xcode 15.3 (and hence Apple Clang 15) removed the global
+            # declaration of std::piecewise_construct which causes boost build
+            # to fail.
+            # https://developer.apple.com/documentation/xcode-release-notes/xcode-15_3-release-notes.
+            # A fix for the same is also available in boost 1.84:
+            # https://github.com/boostorg/container/commit/79a75f470e75f35f5f2a91e10fcc67d03b0a2160
+            b2_settings.append(f"define=BOOST_UNORDERED_HAVE_PIECEWISE_CONSTRUCT=0")
             if macOSArch:
-                b2_settings.append("cxxflags=\"{0}\"".format(macOSArch))
+                b2_settings.append("cxxflags=\"{0} -std=c++17 -stdlib=libc++\"".format(macOSArch))
                 b2_settings.append("cflags=\"{0}\"".format(macOSArch))
                 b2_settings.append("linkflags=\"{0}\"".format(macOSArch))
 
@@ -940,7 +954,8 @@ elif MacOS():
     TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2020.3.zip"
     TBB_INTEL_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2018_U1.zip"
 else:
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2020.3.zip"
+    # Use point release with fix https://github.com/oneapi-src/oneTBB/pull/833
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2020.3.1.zip"
 
 TBB_2021_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.9.0.zip"
 
@@ -1351,36 +1366,18 @@ def InstallOpenSubdiv(context, force, buildArgs):
             '-DNO_TESTS=ON',
             '-DNO_GLEW=ON',
             '-DNO_GLFW=ON',
+            '-DNO_PTEX=ON',
+            '-DNO_TBB=ON',
         ]
 
-        # If Ptex support is disabled in USD, disable support in OpenSubdiv
-        # as well. This ensures OSD doesn't accidentally pick up a Ptex
-        # library outside of our build.
-        if not context.enablePtex:
-            extraArgs.append('-DNO_PTEX=ON')
-
-        # NOTE: For now, we disable TBB in our OpenSubdiv build.
-        # This avoids an issue where OpenSubdiv will link against
-        # all TBB libraries it finds, including libtbbmalloc and
-        # libtbbmalloc_proxy. On Linux and MacOS, this has the
-        # unwanted effect of replacing the system allocator with
-        # tbbmalloc.
-        extraArgs.append('-DNO_TBB=ON')
+        # Use Metal for macOS and all Apple embedded systems.
+        if MacOS():
+            extraArgs.append('-DNO_OPENGL=ON')
 
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
 
-        # OpenSubdiv seems to error when building on windows w/ Ninja...
-        # ...so just use the default generator (ie, Visual Studio on Windows)
-        # until someone can sort it out
-        oldGenerator = context.cmakeGenerator
-        if oldGenerator == "Ninja" and Windows():
-            context.cmakeGenerator = None
-
-        try:
-            RunCMake(context, force, extraArgs)
-        finally:
-            context.cmakeGenerator = oldGenerator
+        RunCMake(context, force, extraArgs)
 
 OPENSUBDIV = Dependency("OpenSubdiv", InstallOpenSubdiv, 
                         "include/opensubdiv/version.h")
@@ -1488,19 +1485,10 @@ DRACO = Dependency("Draco", InstallDraco, "include/draco/compression/decode.h")
 ############################################################
 # MaterialX
 
-MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.7.zip"
+MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.8.zip"
 
 def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
-        # MaterialX 1.38.7 fails to build on windows using VS2017 because of a
-        # missing header include, following patch fixes the same. This patch
-        # should be removed when underlying issue is resolved.
-        # https://github.com/AcademySoftwareFoundation/MaterialX/issues/1401
-        if IsVisualStudio2017OrGreater() and not IsVisualStudio2019OrGreater():
-            PatchFile("source\\MaterialXGenMsl\\MslShaderGenerator.cpp",
-                    [("#include <MaterialXGenMsl/MslShaderGenerator.h>",
-                     "#include <cctype>\n" + 
-                     "#include <MaterialXGenMsl/MslShaderGenerator.h>")])
         cmakeOptions = ['-DMATERIALX_BUILD_SHARED_LIBS=ON',
                         '-DMATERIALX_BUILD_TESTS=OFF'
         ]
@@ -1540,9 +1528,9 @@ EMBREE = Dependency("Embree", InstallEmbree, "include/embree3/rtcore.h")
 ############################################################
 # AnimX
 
-# This GitHub project has no releases, so we take the latest.
-# As of 2023, there have been no commits since 2018.
-ANIMX_URL = "https://github.com/Autodesk/animx/archive/refs/heads/master.zip"
+# This GitHub project has no releases, so we fixed on the latest commit as of
+# 2024-02-06 - 5db8ee4, which was committed on 2018-11-05
+ANIMX_URL = "https://github.com/Autodesk/animx/archive/5db8ee416d5fa7050357f498d4dcfaa6ff3f7738.zip"
 
 def InstallAnimX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ANIMX_URL, context, force)):
@@ -1849,6 +1837,8 @@ group.add_argument("--build-variant", default=BUILD_RELEASE,
                    help=("Build variant for USD and 3rd-party dependencies. "
                          "(default: {})".format(BUILD_RELEASE)))
 
+group.add_argument("--ignore-paths", type=str, nargs="*", default=[],
+                   help="Paths for CMake to ignore when configuring projects.")
 if MacOS():
     group.add_argument("--build-target",
                        default=apple_utils.GetBuildTargetDefault(),
@@ -1856,6 +1846,11 @@ if MacOS():
                        help=("Build target for macOS cross compilation. "
                              "(default: {})".format(
                                 apple_utils.GetBuildTargetDefault())))
+    if apple_utils.IsHostArm():
+        # Intel Homebrew stores packages in /usr/local which unfortunately can
+        # be where a lot of other things are too. So we only add this flag on arm macs.
+        group.add_argument("--ignore-homebrew", action="store_true",
+                           help="Specify that CMake should ignore Homebrew packages.")
 
 group.add_argument("--build-args", type=str, nargs="*", default=[],
                    help=("Custom arguments to pass to build system when "
@@ -2168,6 +2163,7 @@ class InstallContext:
         self.buildShared = (args.build_type == SHARED_LIBS)
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
 
+        self.ignorePaths = args.ignore_paths or []
         # Build target and code signing
         if MacOS():
             self.buildTarget = args.build_target
@@ -2176,6 +2172,8 @@ class InstallContext:
             self.macOSCodesign = \
                 (args.macos_codesign if hasattr(args, "macos_codesign")
                  else False)
+            if apple_utils.IsHostArm() and args.ignore_homebrew:
+                self.ignorePaths.append("/opt/homebrew")
         else:
             self.buildTarget = ""
 
@@ -2231,7 +2229,7 @@ class InstallContext:
         self.dracoLocation = (os.path.abspath(args.draco_location)
                                 if args.draco_location else None)
 
-        # - MaterialX Plugin
+        # - MaterialX
         self.buildMaterialX = args.build_materialx
 
         # - Spline Tests
@@ -2490,6 +2488,7 @@ summaryMsg += """\
       PRMan support:            {buildPrman}
     UsdImaging                  {buildUsdImaging}
       usdview:                  {buildUsdview}
+    MaterialX support           {buildMaterialX}
     Python support              {buildPython}
       Python Debug:             {debugPython}
       Python docs:              {buildPythonDocs}
@@ -2503,7 +2502,6 @@ summaryMsg += """\
     Alembic Plugin              {buildAlembic}
       HDF5 support:             {enableHDF5}
     Draco Plugin                {buildDraco}
-    MaterialX Plugin            {buildMaterialX}
     TBB version                 {tbbVersion}
 
   Dependencies                  {dependencies}"""

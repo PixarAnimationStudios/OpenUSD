@@ -83,7 +83,7 @@ public:
     // have data like relational attributes.
     bool relParsingAllowTargetData;
     // relationship target paths that will be saved in a list op
-    // (use a boost::optional to track whether we have seen an opinion at all.)
+    // (use a std::optional to track whether we have seen an opinion at all.)
     std::optional<SdfPathVector> relParsingTargetPaths;
     // relationship target paths that will be appended to the relationship's
     // list of target children.
@@ -106,7 +106,7 @@ public:
     SdfPayloadVector payloadParsingRefs;
 
     // helper for relocates parsing
-    SdfRelocatesMap relocatesParsingMap;
+    SdfRelocates relocatesParsing;
 
     // helpers for generic metadata
     TfToken genericMetadataKey;

@@ -109,10 +109,45 @@ files which contain references to plain :filename:`.usd` assets, those assets
 can be converted between binary and text without changing the sources which
 refer to them.
 
+When authoring USD, the underlying format or encoding of the :filename:`.usd` 
+extension can be specified using :usdcpp:`FileFormatArguments` as observed 
+in :usdcpp:`SdfLayer::CreateNew` or :usdcpp:`SdfLayer::Export`.
+
+Developers can also use the :envvar:`USD_DEFAULT_FILE_FORMAT` environment 
+variable to control the default underlying format. The environment variable is 
+used when the underlying format is not explicitly specified through 
+:usdcpp:`FileFormatArguments`. Valid values for the 
+:envvar:`USD_DEFAULT_FILE_FORMAT` environment variable and their behaviors are 
+detailed below:
+
+  +--------------------------------+--------------------------------+
+  | USD_DEFAULT_FILE_FORMAT Value  | :filename:`.usd` Encoding Used |
+  +================================+================================+
+  | <unset>                        | Random-access "Crate" binary   |
+  +--------------------------------+--------------------------------+
+  | usdc                           | Random-access "Crate" binary   |
+  +--------------------------------+--------------------------------+
+  | usda                           | Human-readable UTF-8 text      |
+  +--------------------------------+--------------------------------+
+
 What character encoding does :filename:`.usda` support?
 #######################################################
 
 The :filename:`.usda` file format encodes text as UTF-8.
+
+As of the 24.03 release, USD extends UTF-8 support to path and metadata 
+identifiers.
+
+USD does not enforce or apply Unicode normalization. As an example, the 
+second letter in München can be represented in UTF-8 by a single code point 
+(the code point for ü) or two code points (u with an umlaut modifier) -- to USD, 
+these two representations of München are distinct. While USD does not enforce a 
+normalization form, Unicode "Normalization Form C" (NFC) is preferred when 
+creating new tokens and paths.
+
+See `Unicode in USD 
+<api/_usd__page__u_t_f_8.html>`__ for more details on best practices when working
+with UTF-8 encoded content in `.usda` files.
 
 How can I convert USD files between binary and text?
 ####################################################

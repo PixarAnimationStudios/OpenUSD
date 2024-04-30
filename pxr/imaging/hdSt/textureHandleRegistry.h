@@ -85,7 +85,7 @@ public:
     HDST_API
     HdStTextureHandleSharedPtr AllocateTextureHandle(
         const HdStTextureIdentifier &textureId,
-        HdTextureType textureType,
+        HdStTextureType textureType,
         const HdSamplerParameters &samplerParams,
         /// memoryRequest in bytes.
         size_t memoryRequest,
@@ -144,7 +144,7 @@ public:
     /// request.
     ///
     HDST_API
-    void SetMemoryRequestForTextureType(HdTextureType textureType, size_t memoryRequest);
+    void SetMemoryRequestForTextureType(HdStTextureType textureType, size_t memoryRequest);
 
     HDST_API
     size_t GetNumberOfTextureHandles() const;
@@ -164,7 +164,7 @@ private:
     // (in bytes).
     // Will be taken into account when computing the maximum of all the
     // memory requests of the texture handles.
-    std::map<HdTextureType, size_t> _textureTypeToMemoryRequest;
+    std::map<HdStTextureType, size_t> _textureTypeToMemoryRequest;
     // Has _textureTypeToMemoryRequest changed since the last commit.
     bool _textureTypeToMemoryRequestChanged;
 

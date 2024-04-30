@@ -130,7 +130,13 @@ SdfPathExpression::MakeComplement(SdfPathExpression &&right)
         ret._ops = std::move(right._ops);
         ret._refs = std::move(right._refs);
         ret._patterns = std::move(right._patterns);
-        ret._ops.push_back(Complement);
+        // Complement of complement cancels.
+        if (ret._ops.back() == Complement) {
+            ret._ops.pop_back();
+        }
+        else {
+            ret._ops.push_back(Complement);
+        }
     }
     return ret;
 }
@@ -463,6 +469,16 @@ SdfPathExpression::PathPattern::PathPattern()
 {
 }
 
+SdfPathExpression::PathPattern::PathPattern(SdfPath &&prefix)
+{
+    SetPrefix(std::move(prefix));
+}
+
+SdfPathExpression::PathPattern::PathPattern(SdfPath const &prefix)
+    : PathPattern(SdfPath(prefix))
+{
+}
+
 static inline bool
 IsLiteralProperty(std::string const &text)
 {
@@ -737,7 +753,7 @@ private:
 
 namespace {
 
-using namespace tao::TAO_PEGTL_NAMESPACE;
+using namespace PXR_PEGTL_NAMESPACE;
 
 ////////////////////////////////////////////////////////////////////////
 // Path patterns with predicates.
@@ -749,19 +765,28 @@ struct EmbeddedPredExpr : disable<PredExpr> {};
 struct BracedPredExpr
     : if_must<one<'{'>, OptSpaced<EmbeddedPredExpr>, one<'}'>> {};
 
-struct PathWildCard :
+struct PrimPathWildCard :
     seq<
     plus<sor<identifier_other, one<'?','*'>>>,
     opt<one<'['>,plus<sor<identifier_other, one<'[',']','!','-','?','*'>>>>
     > {};
 
-struct PathPatternElemText : PathWildCard {};
+struct PropPathWildCard :
+    seq<
+    plus<sor<identifier_other, one<':','?','*'>>>,
+    opt<one<'['>,plus<sor<identifier_other, one<':','[',']','!','-','?','*'>>>>
+    > {};
 
-struct PathPatternElem
-    : if_then_else<PathPatternElemText, opt<BracedPredExpr>, BracedPredExpr> {};
+struct PrimPathPatternElemText : PrimPathWildCard {};
+struct PropPathPatternElemText : PropPathWildCard {};
 
-struct PrimPathPatternElem : PathPatternElem {};
-struct PropPathPatternElem : PathPatternElem {};
+struct PrimPathPatternElem
+    : if_then_else<PrimPathPatternElemText, opt<BracedPredExpr>,
+                   BracedPredExpr> {};
+
+struct PropPathPatternElem
+    : if_then_else<PropPathPatternElemText, opt<BracedPredExpr>,
+                   BracedPredExpr> {};
 
 struct PathPatternElems
     : seq<LookaheadList<PrimPathPatternElem, PathPatSep>,
@@ -822,7 +847,16 @@ struct PathExprAction<EmbeddedPredExpr>
 };
 
 template <>
-struct PathExprAction<PathPatternElemText>
+struct PathExprAction<PrimPathPatternElemText>
+{
+    template <class Input>
+    static void apply(Input const &in, Sdf_PathExprBuilder &builder) {
+        builder.GetPatternBuilder().curElemText = in.string();
+    }
+};
+
+template <>
+struct PathExprAction<PropPathPatternElemText>
 {
     template <class Input>
     static void apply(Input const &in, Sdf_PathExprBuilder &builder) {
@@ -1025,7 +1059,7 @@ ParsePathExpression(std::string const &inputStr,
         std::string errMsg = err.what();
         errMsg += " -- ";
         bool first = true;
-        for (position const &p: err.positions) {
+        for (position const &p: err.positions()) {
             if (!first) {
                 errMsg += ", ";
             }

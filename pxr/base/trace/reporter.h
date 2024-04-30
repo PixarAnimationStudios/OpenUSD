@@ -115,6 +115,28 @@ public:
 
     /// @}
 
+    /// \name Report Loading.
+    /// @{
+
+    /// Aggregate tree and its iteration count, parsed from a report.
+    struct ParsedTree {
+        TraceAggregateTreeRefPtr tree;
+        int iterationCount;  
+    };
+
+    /// Load an aggregate tree report from the \p stream, as written by 
+    /// Report().
+    ///
+    /// Since multiple reports may be appended to a given trace file, this will
+    /// return a vector of each tree and their iteration count. 
+    ///
+    /// This will multiply the parsed values for each aggregate tree by their 
+    /// iteration count.
+    TRACE_API static std::vector<ParsedTree> LoadReport(
+        std::istream &stream);
+
+    /// @}
+
     /// Returns the root node of the aggregated call tree.
     TRACE_API TraceAggregateNodePtr GetAggregateTreeRoot();
 

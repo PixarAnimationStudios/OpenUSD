@@ -1,0 +1,48 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Z"
+)
+
+def Scope "World"
+{
+    def Sphere "Sphere" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        rel material:binding = </World/Material>
+    }
+
+    def Material "Material"
+    {
+        token outputs:surface.connect = </World/Material/PbrPreview.outputs:surface>
+
+        def Shader "PbrPreview"
+        (
+            variants = {
+                string color = "red"
+            }
+            prepend variantSets = "color"
+        )
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor
+            token outputs:surface
+
+            variantSet "color" = {
+                "red" {
+                    color3f inputs:diffuseColor = (1.0, 0.0, 0.0)
+                }
+                "green" {
+                    color3f inputs:diffuseColor = (0.0, 1.0, 0.0)
+                }
+                "blue" {
+                    color3f inputs:diffuseColor = (0.0, 0.0, 1.0)
+                }
+            }
+        }
+    }
+}

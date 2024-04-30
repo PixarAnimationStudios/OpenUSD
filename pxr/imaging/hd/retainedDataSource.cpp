@@ -132,7 +132,7 @@ public:
         TfTokenVector result;
         result.reserve(_values.size());
 
-        for (const auto I : _values) {
+        for (const auto &I : _values) {
             result.push_back(I.first);
         }
         return result;
@@ -387,6 +387,9 @@ struct Hd_CreateTypedRetainedDataSourceVisitor
         } else if (v.IsHolding<SdfPathVector>()) {
             return HdRetainedTypedSampledDataSource<SdfPathVector>::New(
                 v.UncheckedGet<SdfPathVector>());
+        } else if (v.IsHolding<SdfPathExpression>()) {
+            return HdRetainedTypedSampledDataSource<SdfPathExpression>::New(
+                v.UncheckedGet<SdfPathExpression>());
         } else if (v.IsEmpty()) {
             return HdSampledDataSourceHandle(nullptr);
         } else {

@@ -153,6 +153,7 @@ HdsiPrimTypePruningSceneIndex::SetEnabled(const bool enabled)
     _enabled = enabled;
 
     HdSceneIndexObserver::DirtiedPrimEntries dirtiedEntries;
+    HdSceneIndexObserver::AddedPrimEntries addedEntries;
 
     // Invalidate all data source locators.  Even though the prim
     // data source we use here will double-check whether the scene index
@@ -177,11 +178,14 @@ HdsiPrimTypePruningSceneIndex::SetEnabled(const bool enabled)
                 // Prune this primType.
                 _pruneMap[primPath] = true;
                 dirtiedEntries.emplace_back(primPath, locators);
+                // Add prim with an empty prim type to trigger the 
+                // prim to be removed.
+                addedEntries.emplace_back(primPath, TfToken());
             } else {
                 const _PruneMap::iterator i = _pruneMap.find(primPath);
                 if (i != _pruneMap.end() && i->second) {
                     // Add back this previously-pruned prim.
-                    //addedEntries.emplace_back(primPath, prim.primType);
+                    addedEntries.emplace_back(primPath, prim.primType);
                     // Don't bother erasing the _pruneMap entry;
                     // will clear below.
                     dirtiedEntries.emplace_back(primPath, locators);
@@ -203,6 +207,9 @@ HdsiPrimTypePruningSceneIndex::SetEnabled(const bool enabled)
     // Notify observers
     if (!dirtiedEntries.empty()) {
         _SendPrimsDirtied(dirtiedEntries);
+    }
+    if (!addedEntries.empty()) {
+        _SendPrimsAdded(addedEntries);
     }
 }
 

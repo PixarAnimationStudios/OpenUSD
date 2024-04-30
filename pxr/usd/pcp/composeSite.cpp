@@ -474,6 +474,19 @@ PcpComposeSiteVariantSelections(
     }
 }
 
+bool
+PcpComposeSiteHasVariantSelections(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path)
+{
+    for (auto const& layer : layerStack->GetLayers()) {
+        if (layer->HasField(path, SdfFieldKeys->VariantSelection)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void
 PcpComposeSiteChildNames(SdfLayerRefPtrVector const &layers,
                          SdfPath const &path,

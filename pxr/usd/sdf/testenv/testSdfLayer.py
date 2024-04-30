@@ -930,6 +930,37 @@ over "test"
                 completed = sum(1 if f.result() else 0 for f in
                                 concurrent.futures.as_completed(futures))
             self.assertEqual(completed, OPENS)
+    
+    def test_DefaultPrim(self):
+        layer = Sdf.Layer.CreateAnonymous()
+        
+        # Set defaultPrim
+        layer.defaultPrim = '/foo'
+        self.assertEqual(layer.GetDefaultPrimAsPath(), '/foo')
+
+        # Set the defaultPrim by name, should return path
+        layer.defaultPrim = 'bar'
+        Sdf.CreatePrimInLayer(layer, '/bar')
+        self.assertEqual(layer.GetDefaultPrimAsPath(), '/bar')
+
+        # Set sub-root prims as default, should return path
+        layer.defaultPrim = 'foo/bar'
+        Sdf.CreatePrimInLayer(layer, '/foo/bar')
+        self.assertEqual(layer.GetDefaultPrimAsPath(), '/foo/bar')
+
+        # Set invalid prim path as default, should return empty path
+        layer.defaultPrim = 'foo.bar'
+        self.assertEqual(layer.GetDefaultPrimAsPath(), '')
+        # Set invalid path as default, should return empty path
+        layer.defaultPrim = '//'
+        self.assertEqual(layer.GetDefaultPrimAsPath(), '')
+        layer.defaultPrim = ''
+        self.assertEqual(layer.GetDefaultPrimAsPath(), '')
+
+        # Try layer-level authoring API.
+        self.assertTrue(layer.HasDefaultPrim())
+        layer.ClearDefaultPrim()
+        self.assertFalse(layer.HasDefaultPrim())
 
 if __name__ == "__main__":
     unittest.main()

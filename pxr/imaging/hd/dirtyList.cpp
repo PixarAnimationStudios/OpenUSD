@@ -56,6 +56,10 @@ _DirtyRprimIdsFilterPredicate(
     const HdDirtyBits bits = tracker.GetRprimDirtyBits(rprimID);
     
     if (mask == HdChangeTracker::Clean || bits & mask) {
+        // Update the render tag if needed.
+        const TfToken& primRenderTag =
+            renderIndex->UpdateRenderTag(rprimID, bits);
+
         // XXX An empty render tag set means everything passes the filter
         //     We should use an explicit token to indicate all render tags.
         //     When aggregating render tags from the tasks, an empty render
@@ -68,8 +72,6 @@ _DirtyRprimIdsFilterPredicate(
 
         // As the number of tags is expected to be low (<10)
         // use a simple linear search.
-        const TfToken& primRenderTag =
-            renderIndex->UpdateRenderTag(rprimID, bits);
         const size_t numRenderTags = filterParam->renderTags.size();
         for (size_t tagNum = 0u; tagNum < numRenderTags; ++tagNum) {
             if (filterParam->renderTags[tagNum] == primRenderTag) {

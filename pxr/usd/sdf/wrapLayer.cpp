@@ -732,6 +732,8 @@ void wrapLayer()
                       &This::GetDefaultPrim,
                       &This::SetDefaultPrim,
                       "The layer's default reference target token.")
+        .def("GetDefaultPrimAsPath",
+             &This::GetDefaultPrimAsPath)
         .def("HasDefaultPrim",
              &This::HasDefaultPrim)
         .def("ClearDefaultPrim",
@@ -864,6 +866,12 @@ void wrapLayer()
             "property is claimed to be read only, you can modify the contents "
             "of this list by assigning new layer offsets to specific indices.")
 
+        .add_property("relocates", 
+            &This::GetRelocates,
+            &This::SetRelocates)
+        .def("HasRelocates", &This::HasRelocates)
+        .def("ClearRelocates", &This::ClearRelocates)
+
         .def("GetLoadedLayers",
             make_function(&This::GetLoadedLayers, 
                           return_value_policy<TfPySequenceToList>()), 
@@ -935,6 +943,7 @@ void wrapLayer()
         .setattr("FramesPerSecondKey", SdfFieldKeys->FramesPerSecond)
         .setattr("FramePrecisionKey", SdfFieldKeys->FramePrecision)
         .setattr("OwnerKey", SdfFieldKeys->Owner)
+        .setattr("LayerRelocatesKey", SdfFieldKeys->LayerRelocates)
         .setattr("SessionOwnerKey", SdfFieldKeys->SessionOwner)
         .setattr("TimeCodesPerSecondKey", SdfFieldKeys->TimeCodesPerSecond)
 

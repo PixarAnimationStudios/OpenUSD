@@ -97,11 +97,22 @@ HgiVulkanBlitCmds::CopyTextureGpuToCpu(
     size.depth = texDesc.dimensions[2] - depthOffset;
 
     VkImageSubresourceLayers imageSub;
-    imageSub.aspectMask =
-        HgiVulkanConversions::GetImageAspectFlag(texDesc.usage);
     imageSub.baseArrayLayer = isTexArray ? copyOp.sourceTexelOffset[2] : 0;
     imageSub.layerCount = 1;
     imageSub.mipLevel = copyOp.mipLevel;
+
+    // XXX: Vulkan validation demands that only one flag at a time be used 
+    // during the copy operation. Both depth and stencil flags cannot be 
+    // simultaneously passed as aspects to copy.
+    // So, we assume that the user wants to copy depth when the texture is a 
+    // depthStencil texture. If need arises, this part of the implementation 
+    // needs to be re-written such that an aspect flag is passed to this copy 
+    // operation to resolve the discrepancy.
+    imageSub.aspectMask =
+        HgiVulkanConversions::GetImageAspectFlag(texDesc.usage);
+    if (imageSub.aspectMask & VK_IMAGE_ASPECT_DEPTH_BIT) {
+        imageSub.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    }
 
     // See vulkan docs: Copying Data Between Buffers and Images
     VkBufferImageCopy region;
@@ -493,7 +504,23 @@ HgiVulkanBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 void
 HgiVulkanBlitCmds::FillBuffer(HgiBufferHandle const& buffer, uint8_t value)
 {
-    TF_CODING_ERROR("Missing Implementation");
+    _CreateCommandBuffer();
+
+    HgiVulkanBuffer* buf = static_cast<HgiVulkanBuffer*>(buffer.Get());
+
+    // Convert 8-bit value to 32-bit value e.g. if given 0xff, we want to pass
+    // 0xffffffff to vkCmdFillBuffer.
+    const uint32_t value32Bit = static_cast<uint32_t>(value) | 
+                                static_cast<uint32_t>(value) << 8 | 
+                                static_cast<uint32_t>(value) << 16 |
+                                static_cast<uint32_t>(value) << 24;
+
+    vkCmdFillBuffer(
+        _commandBuffer->GetVulkanCommandBuffer(),
+        buf->GetVulkanBuffer(),
+        0,
+        VK_WHOLE_SIZE,
+        value32Bit);
 }
 
 void

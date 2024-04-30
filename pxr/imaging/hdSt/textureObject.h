@@ -28,7 +28,7 @@
 #include "pxr/imaging/hdSt/api.h"
 
 #include "pxr/imaging/hdSt/textureIdentifier.h"
-#include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hdSt/enums.h"
 #include "pxr/imaging/hd/types.h"
 
 #include "pxr/imaging/hgi/handle.h"
@@ -87,7 +87,7 @@ public:
     /// Get texture type
     ///
     HDST_API
-    virtual HdTextureType GetTextureType() const = 0;
+    virtual HdStTextureType GetTextureType() const = 0;
 
     HDST_API
     virtual ~HdStTextureObject();
@@ -173,7 +173,7 @@ public:
     }
 
     HDST_API
-    HdTextureType GetTextureType() const override final;
+    HdStTextureType GetTextureType() const override final;
 
 protected:
     HdStUvTextureObject(
@@ -266,7 +266,7 @@ public:
     bool IsValid() const override;
 
     HDST_API
-    HdTextureType GetTextureType() const override;
+    HdStTextureType GetTextureType() const override;
 
 protected:
     HDST_API
@@ -283,25 +283,25 @@ private:
     bool _valid;
 };
 
-template<HdTextureType textureType>
+template<HdStTextureType textureType>
 struct HdSt_TypedTextureObjectHelper;
 
 /// \class HdStTypedTextureObject
 ///
 /// A template alias such that, e.g., HdStUvTextureObject can be
-/// accessed as HdStTypedTextureObject<HdTextureType::Uv>.
+/// accessed as HdStTypedTextureObject<HdStTextureType::Uv>.
 ///
-template<HdTextureType textureType>
+template<HdStTextureType textureType>
 using HdStTypedTextureObject =
     typename HdSt_TypedTextureObjectHelper<textureType>::type;
 
 template<>
-struct HdSt_TypedTextureObjectHelper<HdTextureType::Uv> {
+struct HdSt_TypedTextureObjectHelper<HdStTextureType::Uv> {
     using type = HdStUvTextureObject;
 };
 
 template<>
-struct HdSt_TypedTextureObjectHelper<HdTextureType::Field> {
+struct HdSt_TypedTextureObjectHelper<HdStTextureType::Field> {
     using type = HdStFieldTextureObject;
 };
 

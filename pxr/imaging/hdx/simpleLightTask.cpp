@@ -424,7 +424,7 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
         _lightingBar = hdStResourceRegistry->AllocateUniformBufferArrayRange(
             HdxSimpleLightTaskTokens->lighting, 
             bufferSpecs, 
-            HdBufferArrayUsageHint());
+            HdBufferArrayUsageHintBitsUniform);
 
         _lightingShader->AddBufferBinding(
             HdStBindingRequest(HdStBinding::UBO, 
@@ -499,7 +499,7 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
         _lightSourcesBar = hdStResourceRegistry->AllocateUniformBufferArrayRange(
             HdxSimpleLightTaskTokens->lighting,
             bufferSpecs,
-            HdBufferArrayUsageHint());
+            HdBufferArrayUsageHintBitsUniform);
     }
 
     _lightingShader->RemoveBufferBinding(HdxSimpleLightTaskTokens->lightSource);
@@ -534,7 +534,7 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
         _shadowsBar = 
             hdStResourceRegistry->AllocateUniformBufferArrayRange(
                 HdxSimpleLightTaskTokens->lighting, bufferSpecs, 
-                HdBufferArrayUsageHint());
+                HdBufferArrayUsageHintBitsUniform);
     }
     
     _lightingShader->RemoveBufferBinding(HdxSimpleLightTaskTokens->shadow);
@@ -696,7 +696,7 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
         _materialBar = hdStResourceRegistry->AllocateUniformBufferArrayRange(
             HdxSimpleLightTaskTokens->lighting, 
             bufferSpecs, 
-            HdBufferArrayUsageHint());
+            HdBufferArrayUsageHintBitsUniform);
 
         // Add buffer binding request
         _lightingShader->AddBufferBinding(

@@ -942,6 +942,10 @@ PcpChanges::DidChange(const PcpCache* cache,
                 if (entry.HasInfoChange(SdfFieldKeys->ExpressionVariables)) {
                     layerStackChangeMask |= LayerStackExpressionVarsChange;
                 }
+
+                if (entry.HasInfoChange(SdfFieldKeys->LayerRelocates)) {
+                    layerStackChangeMask |= LayerStackRelocatesChange;
+                }
             }
 
             // Handle changes that require a prim graph change.
@@ -1200,7 +1204,7 @@ PcpChanges::DidChange(const PcpCache* cache,
         // check if it or any of its descendant prim specs contains relocates.
         // If so, all dependent layer stacks need to recompute its cached
         // relocates. We can skip this if the cache is in USD mode, since 
-        // relocates are disabled for those caches.
+        // relocates can only be authored in layer metadata in those caches.
         if (!cacheInUsdMode) {
             for (const auto& value : pathsWithSpecChangesTypes) {
                 const SdfPath& path = value.first;
@@ -1216,37 +1220,36 @@ PcpChanges::DidChange(const PcpCache* cache,
                     }
                 }
             }
-        }
 
-        // For every path we've found that has a significant change,
-        // check layer stacks that have discovered relocations that
-        // could be affected by that change. We can skip this if the cache
-        // is in USD mode, since relocates are disabled for those caches.
-        if (!pathsWithSignificantChanges.empty() && !cacheInUsdMode) {
-            // If this scope turns out to be expensive, we should look
-            // at switching PcpLayerStack's _relocatesPrimPaths from
-            // a std::vector to a path set.  _AddRelocateEditsForLayerStack
-            // also does a traversal and might see a similar benefit.
-            TRACE_SCOPE("PcpChanges::DidChange -- Checking layer stack "
-                        "relocations against significant prim resyncs");
+            // For every path we've found that has a significant change,
+            // check layer stacks that have discovered relocations that
+            // could be affected by that change.
+            if (!pathsWithSignificantChanges.empty()) {
+                // If this scope turns out to be expensive, we should look
+                // at switching PcpLayerStack's _relocatesPrimPaths from
+                // a std::vector to a path set.  _AddRelocateEditsForLayerStack
+                // also does a traversal and might see a similar benefit.
+                TRACE_SCOPE("PcpChanges::DidChange -- Checking layer stack "
+                            "relocations against significant prim resyncs");
 
-            for (const PcpLayerStackPtr &layerStack: layerStacks) {
-                const SdfPathVector& reloPaths =
-                    layerStack->GetPathsToPrimsWithRelocates();
-                if (reloPaths.empty()) {
-                    continue;
-                }
-                for (const SdfPath &changedPath : pathsWithSignificantChanges) {
-                    for (const SdfPath &reloPath: reloPaths) {
-                        if (reloPath.HasPrefix(changedPath)) {
-                            layerStackChangesMap[layerStack]
-                                |= LayerStackRelocatesChange;
-                            goto doneWithLayerStack;
+                for (const PcpLayerStackPtr &layerStack: layerStacks) {
+                    const SdfPathVector& reloPaths =
+                        layerStack->GetPathsToPrimsWithRelocates();
+                    if (reloPaths.empty()) {
+                        continue;
+                    }
+                    for (const SdfPath &changedPath : pathsWithSignificantChanges) {
+                        for (const SdfPath &reloPath: reloPaths) {
+                            if (reloPath.HasPrefix(changedPath)) {
+                                layerStackChangesMap[layerStack]
+                                    |= LayerStackRelocatesChange;
+                                goto doneWithLayerStack;
+                            }
                         }
                     }
+                    doneWithLayerStack:
+                    ;
                 }
-                doneWithLayerStack:
-                ;
             }
         }
 
@@ -2131,6 +2134,10 @@ PcpChanges::_DidChangeSublayer(
     // us because some changes introduce new dependencies that wouldn't
     // have been registered yet using the normal means -- such as unmuting
     // a sublayer.
+    //
+    // When flagging "significant" changes, we don't need to recurseOnIndex
+    // because adding a prim to the didChangeSignificantly set implies that
+    // all descendants have also changed significantly.
 
     bool anyFound = false;
     TF_FOR_ALL(layerStack, layerStacks) {
@@ -2139,7 +2146,7 @@ PcpChanges::_DidChangeSublayer(
             SdfPath::AbsoluteRootPath(), 
             PcpDependencyTypeAnyIncludingVirtual,
             /* recurseOnSite */ true,
-            /* recurseOnIndex */ true,
+            /* recurseOnIndex */ !(*significant),
             /* filter */ true);
         for (const auto &dep: deps) {
             if (!dep.indexPath.IsAbsoluteRootOrPrimPath()) {
@@ -2197,30 +2204,29 @@ _DeterminePathsAffectedByRelocationChanges( const SdfRelocatesMap & oldMap,
                                             const SdfRelocatesMap & newMap,
                                             SdfPathSet *affectedPaths )
 {
-    TF_FOR_ALL(path, oldMap) {
-        SdfRelocatesMap::const_iterator i = newMap.find(path->first);
-        if (i == newMap.end() || i->second != path->second) {
-            // This entry in oldMap does not exist in newMap, or
+    // Look through the old map looking for entries with the same source in
+    // the new map.
+    for (const auto &[oldSourcePath, oldTargetPath] : oldMap) {
+        const SdfPath *newTargetPath = TfMapLookupPtr(newMap, oldSourcePath);
+        if (!newTargetPath) {
+            // This source does not exist in newMap
+            affectedPaths->insert(oldSourcePath);
+            affectedPaths->insert(oldTargetPath);
+        } else if (*newTargetPath != oldTargetPath) {
             // newMap relocates this to a different path.
-            // Record the affected paths.
-            affectedPaths->insert(path->first);
-            affectedPaths->insert(path->second);
-            if (i != newMap.end()) {
-                affectedPaths->insert(i->second);
-            }
+            affectedPaths->insert(oldTargetPath);
+            affectedPaths->insert(*newTargetPath);
         }
     }
-    TF_FOR_ALL(path, newMap) {
-        SdfRelocatesMap::const_iterator i = oldMap.find(path->first);
-        if (i == oldMap.end() || i->second != path->second) {
-            // This entry in newMap does not exist in oldMap, or
-            // oldMap relocated this to a different path.
-            // Record the affected paths.
-            affectedPaths->insert(path->first);
-            affectedPaths->insert(path->second);
-            if (i != oldMap.end()) {
-                affectedPaths->insert(i->second);
-            }
+
+    // We only have to look for sources that exist in the new map but do not 
+    // exist in the old map as we have covered sources that exist in both
+    // already.
+    for (const auto &[newSourcePath, newTargetPath] : newMap) {
+        if (oldMap.find(newSourcePath) == oldMap.end()) {
+            // This entry in newMap does not exist in oldMap
+            affectedPaths->insert(newSourcePath);
+            affectedPaths->insert(newTargetPath);
         }
     }
 }
@@ -2249,19 +2255,41 @@ PcpChanges::_DidChangeLayerStackRelocations(
     // Store the result in the PcpLayerStackChanges so they can
     // be committed when the changes are applied.
     Pcp_ComputeRelocationsForLayerStack(
-        layerStack->GetLayers(),
+        *layerStack,
         &changes.newRelocatesSourceToTarget,
         &changes.newRelocatesTargetToSource,
         &changes.newIncrementalRelocatesSourceToTarget,
         &changes.newIncrementalRelocatesTargetToSource,
-        &changes.newRelocatesPrimPaths);
+        &changes.newRelocatesPrimPaths,
+        &changes.newRelocatesErrors);
 
-    // Compare the old and new relocations to determine which
-    // paths (in this layer stack) are affected.
-    _DeterminePathsAffectedByRelocationChanges(
-        layerStack->GetRelocatesSourceToTarget(),
-        changes.newRelocatesSourceToTarget,
-        &changes.pathsAffectedByRelocationChanges);
+    // In USD mode, if we're transitioning from having no relocates to having 
+    // any relocates, or vice versa, then every path is affected by relocation 
+    // changes. This is because, as a memory optimization in USD mode, we don't
+    // add map expression variables for relocates to node map expressions when
+    // there are no relocates in the parent node's layer stack . When
+    // relocates become present we need to make sure all nodes using the layer
+    // stack rebuild their map expressions to listen to relocates changes (see 
+    // GetExpressionForRelocatesAtPath). On the flip side, if relocates are 
+    // completely removed, then we want to update all nodes to regain the memory
+    // that we wouldn't have used had relocates not been authored in the first
+    // place.
+    //
+    // XXX: This may be too big of a hammer and might be further optimizable,
+    // but this is better than always paying the cost for relocates in map 
+    // expressions when there are no relocates.
+    const bool willHaveRelocates = !changes.newRelocatesSourceToTarget.empty();
+    if (layerStack->IsUsd() &&
+            (layerStack->HasRelocates() != willHaveRelocates)) {
+        changes.pathsAffectedByRelocationChanges = {SdfPath::AbsoluteRootPath()};
+    } else {
+        // Compare the old and new relocations to determine which
+        // paths (in this layer stack) are affected.
+        _DeterminePathsAffectedByRelocationChanges(
+            layerStack->GetIncrementalRelocatesSourceToTarget(),
+            changes.newIncrementalRelocatesSourceToTarget,
+            &changes.pathsAffectedByRelocationChanges);
+    }
 
     // Resync affected prims.
     // Use dependencies to find affected caches.

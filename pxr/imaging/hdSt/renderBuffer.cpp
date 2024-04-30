@@ -44,7 +44,10 @@ HgiTextureUsage _GetTextureUsage(HdFormat format, TfToken const &name)
                HgiTextureUsageBitsStencilTarget;
     }
 
-    return HgiTextureUsageBitsColorTarget;
+    // We are assuming at some point in a render buffer's lifetime it could be
+    // used to read from, so provide that ability to the render buffer. This is 
+    // especially useful when for the HgiVulkan back-end.
+    return HgiTextureUsageBitsColorTarget | HgiTextureUsageBitsShaderRead;
 }
 
 HdStRenderBuffer::HdStRenderBuffer(
@@ -143,7 +146,7 @@ HdStRenderBuffer::Allocate(
             std::dynamic_pointer_cast<HdStDynamicUvTextureObject>(
                 _resourceRegistry->AllocateTextureObject(
                     GetTextureIdentifier(/*multiSampled = */ false),
-                    HdTextureType::Uv));
+                    HdStTextureType::Uv));
         if (!_textureObject) {
             TF_CODING_ERROR("Expected HdStDynamicUvTextureObject");
             return false;
@@ -157,7 +160,7 @@ HdStRenderBuffer::Allocate(
                 std::dynamic_pointer_cast<HdStDynamicUvTextureObject>(
                     _resourceRegistry->AllocateTextureObject(
                         GetTextureIdentifier(/*multiSampled = */ true),
-                        HdTextureType::Uv));
+                        HdStTextureType::Uv));
             if (!_textureMSAAObject) {
                 TF_CODING_ERROR("Expected HdStDynamicUvTextureObject");
                 return false;

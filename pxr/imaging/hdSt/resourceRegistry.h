@@ -29,13 +29,13 @@
 
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/bufferArrayRegistry.h"
+#include "pxr/imaging/hdSt/enums.h"
 
 #include "pxr/imaging/hgi/hgi.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/bufferSpec.h"
-#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 
@@ -161,7 +161,7 @@ public:
         /// file containing several grids, movie file containing frames).
         const HdStTextureIdentifier &textureId,
         /// Texture type, e.g., uv, ptex, ...
-        HdTextureType textureType,
+        HdStTextureType textureType,
         /// Sampling parameters such as wrapS, ...
         /// wrapS, wrapT, wrapR mode, min filer, mag filter
         const HdSamplerParameters &samplerParams,
@@ -188,7 +188,7 @@ public:
         /// file containing several grids, movie file containing frames).
         const HdStTextureIdentifier &textureId,
         /// Texture type, e.g., uv, ptex, ...
-        HdTextureType textureType);
+        HdStTextureType textureType);
 
     /// Sets how much memory a single texture can consume in bytes by
     /// texture type.
@@ -199,7 +199,7 @@ public:
     ///
     HDST_API
     void SetMemoryRequestForTextureType(
-        HdTextureType textureType,
+        HdStTextureType textureType,
         size_t memoryRequest);
 
     /// ------------------------------------------------------------------------
@@ -443,6 +443,22 @@ public:
     HDST_API
     HdInstance<HgiComputePipelineSharedPtr>
     RegisterComputePipeline(HdInstance<HgiComputePipelineSharedPtr>::ID id);
+
+    /// Finds a sub resource registry for the given identifier if it already
+    /// exists or creates one by invoking the provided factory function.
+    ///
+    /// A sub resource registry is simply another resource registry defined
+    /// externally but whose lifetime is tied to this HdStResourceRegistry and
+    /// can be retrieved via this function.
+    ///
+    /// Any sub resource registries will have their Commit functions invoked
+    /// when Commit is invoked on this instance, and their GarbageCollect
+    /// functions invoked when GarbageCollect is invoked on this instance.
+    HDST_API
+    HdResourceRegistry*
+    FindOrCreateSubResourceRegistry(
+        const std::string& identifier,
+        const std::function<std::unique_ptr<HdResourceRegistry>()>& factory);
 
     /// Returns the global hgi blit command queue for recording blitting work.
     /// When using this global cmd instead of creating a new HgiBlitCmds we
@@ -689,6 +705,11 @@ private:
     // Hgi compute pipeline registry
     HdInstanceRegistry<HgiComputePipelineSharedPtr>
         _computePipelineRegistry;
+
+    using _SubResourceRegistryMap =
+        tbb::concurrent_unordered_map<std::string,
+                                    std::unique_ptr<HdResourceRegistry>>;
+    _SubResourceRegistryMap _subResourceRegistries;
 
     HgiBlitCmdsUniquePtr _blitCmds;
     HgiComputeCmdsUniquePtr _computeCmds;

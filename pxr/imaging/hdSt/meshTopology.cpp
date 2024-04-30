@@ -212,7 +212,8 @@ HdSt_MeshTopology::GetQuadInfoBuilderComputation(
 
         _quadrangulateTableRange =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
+                HdTokens->topology, bufferSpecs,
+                HdBufferArrayUsageHintBitsStorage);
 
         resourceRegistry->AddSource(_quadrangulateTableRange, quadrangulateTable);
     }

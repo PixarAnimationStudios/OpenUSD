@@ -12,13 +12,12 @@
 
     This came from bug 33377.
     """
-)
-
-def Scope "HumanRig" (
     relocates = {
-        <rig/Face/Anim>: <Anim/Face>
+        </HumanRig/rig/Face/Anim>: </HumanRig/Anim/Face>
     }
 )
+
+def Scope "HumanRig"
 {
     def Scope "Anim"
     {

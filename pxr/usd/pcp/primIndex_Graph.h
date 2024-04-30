@@ -234,6 +234,8 @@ private:
     friend class PcpNodeRef_ChildrenReverseIterator;
     friend class PcpNodeRef_PrivateChildrenConstIterator;
     friend class PcpNodeRef_PrivateChildrenConstReverseIterator;
+    friend class PcpNodeRef_PrivateSubtreeConstIterator;
+    template <class T> friend class Pcp_TraversalCache;
 
     // NOTE: These accessors assume the consumer will be changing the node
     //       and may cause shared node data to be copied locally.

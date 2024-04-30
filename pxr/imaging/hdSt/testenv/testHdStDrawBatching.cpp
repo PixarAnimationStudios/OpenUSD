@@ -124,7 +124,7 @@ _RegisterDrawItem(
 
     HdBufferArrayRangeSharedPtr const topologyRange =
         registry->AllocateNonUniformBufferArrayRange(
-            HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
+            HdTokens->topology, bufferSpecs, HdBufferArrayUsageHintBitsIndex);
 
     registry->AddSources(topologyRange, std::move(sources));
     sources.clear();
@@ -166,10 +166,10 @@ _RegisterDrawItem(
         bufferSpecs.emplace_back(HdTokens->displayColor,
                              HdTupleType {HdTypeFloatVec3, 1});
     }
-
+    
     HdBufferArrayRangeSharedPtr const constantPrimvarRange =
         registry->AllocateShaderStorageBufferArrayRange(
-            HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
+            HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHintBitsStorage);
 
     registry->AddSources(constantPrimvarRange, std::move(sources));
     sources.clear();
@@ -201,7 +201,7 @@ _RegisterDrawItem(
 
     HdBufferArrayRangeSharedPtr const vertexPrimvarRange =
         registry->AllocateNonUniformBufferArrayRange(
-            HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
+            HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHintBitsVertex);
 
     registry->AddSources(vertexPrimvarRange, std::move(sources));
     sources.clear();
@@ -657,7 +657,7 @@ EmptyDrawBatchTest()
     widthsSource->GetBufferSpecs(&bufferSpecs);
     HdBufferArrayRangeSharedPtr const vertexPrimvarRange =
         registry->AllocateNonUniformBufferArrayRange(
-            HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
+            HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHintBitsVertex);
 
     registry->AddSources(vertexPrimvarRange, std::move(sources));
     sources.clear();
@@ -680,7 +680,7 @@ EmptyDrawBatchTest()
     culledInstanceIndices->GetBufferSpecs(&bufferSpecs);
     HdBufferArrayRangeSharedPtr const instanceIndexRange =
         registry->AllocateNonUniformBufferArrayRange(
-            HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
+            HdTokens->topology, bufferSpecs, HdBufferArrayUsageHintBitsIndex);
 
     registry->AddSources(instanceIndexRange, std::move(sources));
     sources.clear();
@@ -718,7 +718,7 @@ EmptyDrawBatchTest()
 
     HdBufferArrayRangeSharedPtr const constantPrimvarRange =
         registry->AllocateShaderStorageBufferArrayRange(
-            HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
+            HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHintBitsStorage);
 
     registry->AddSources(constantPrimvarRange, std::move(sources));
     sources.clear();

@@ -226,6 +226,7 @@ pxr_library(tf
         callContext.h
         cxxCast.h
         declarePtrs.h
+        delegatedCountPtr.h
         diagnosticLite.h
         functionTraits.h
         functionRef.h
@@ -236,12 +237,10 @@ pxr_library(tf
         instantiateType.h
         meta.h
         pxrCLI11/CLI11.h
-        pxrPEGTL/pegtl.h
         pxrTslRobinMap/robin_growth_policy.h
         pxrTslRobinMap/robin_hash.h
         pxrTslRobinMap/robin_map.h
         pxrTslRobinMap/robin_set.h
-        preprocessorUtils.h
         preprocessorUtilsLite.h
         safeTypeCompare.h
         span.h
@@ -284,7 +283,6 @@ pxr_library(tf
 
     CPPFILES
         initConfig.cpp
-        preprocessorUtils.cpp
         pxrDoubleConversion/bignum-dtoa.cc
         pxrDoubleConversion/bignum.cc
         pxrDoubleConversion/cached-powers.cc
@@ -469,7 +467,6 @@ pxr_build_test(testTf
         testenv/pathUtils.cpp
         testenv/patternMatcher.cpp
         testenv/pointerAndBits.cpp
-        testenv/preprocessorUtils.cpp
         testenv/preprocessorUtilsLite.cpp
         testenv/probe.cpp
         testenv/refPtr.cpp
@@ -489,6 +486,7 @@ pxr_build_test(testTf
         testenv/staticTokens.cpp
         testenv/templateString.cpp
         testenv/token.cpp
+        testenv/delegatedCountPtr.cpp
         testenv/type.cpp
         testenv/typeMultipleInheritance.cpp
         testenv/typeInfoMap.cpp
@@ -674,9 +672,6 @@ pxr_register_test(TfPatternMatcher
 pxr_register_test(TfPointerAndBits
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPointerAndBits"
 )
-pxr_register_test(TfPreprocessorUtils
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPreprocessorUtils"
-)
 pxr_register_test(TfPreprocessorUtilsLite
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPreprocessorUtilsLite"
 )
@@ -750,6 +745,9 @@ pxr_register_test(testTfTemplateString
 )
 pxr_register_test(TfToken
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfToken"
+)
+pxr_register_test(TfDelegatedCountPtr
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDelegatedCountPtr"
 )
 pxr_register_test(TfType
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfType"

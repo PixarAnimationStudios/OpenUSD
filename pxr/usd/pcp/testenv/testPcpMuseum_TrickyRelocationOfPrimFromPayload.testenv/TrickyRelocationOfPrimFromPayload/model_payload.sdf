@@ -1,10 +1,11 @@
 #sdf 1.4.32
-
-def Model "Model" (
+(
     relocates = {
-        <Rig/LRig/Anim> : <Anim/LRig>
+        </Model/Rig/LRig/Anim>: </Model/Anim/LRig>
     }
 )
+
+def Model "Model"
 {
     custom string doc = "Model payload"
 

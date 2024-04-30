@@ -56,6 +56,8 @@ public:
 
     bool Save(const std::string &fileName);
 
+    bool Export(const std::string &fileName);
+
     bool Open(const std::string &assetPath,
               bool detached);
     bool Open(const std::string &assetPath, 

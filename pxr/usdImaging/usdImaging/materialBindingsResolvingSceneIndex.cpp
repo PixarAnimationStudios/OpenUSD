@@ -370,12 +370,12 @@ UsdImagingMaterialBindingsResolvingSceneIndex::GetPrim(
     // the "materialBindings" locator.
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
     if (prim.dataSource) {
-        return {prim.primType,
-                _PrimDataSource::New(
-                    prim.dataSource, _GetInputSceneIndex(), primPath)};
+        prim.dataSource =
+            _PrimDataSource::New(
+                prim.dataSource, _GetInputSceneIndex(), primPath);
     }
 
-    return _GetInputSceneIndex()->GetPrim(primPath);
+    return prim;
 }
 
 SdfPathVector
@@ -451,13 +451,12 @@ UsdImagingMaterialBindingsResolvingSceneIndex::_PrimsDirtied(
         if (entry.dirtyLocators.Intersects(usdMaterialBindingLocators)) {
 
             HdDataSourceLocatorSet newLocators(entry.dirtyLocators);
-            newLocators.ReplacePrefix(
+            newLocators = newLocators.ReplacePrefix(
                 UsdImagingDirectMaterialBindingsSchema::GetDefaultLocator(),
                 HdMaterialBindingsSchema::GetDefaultLocator());
-            newLocators.ReplacePrefix(
+            newLocators = newLocators.ReplacePrefix(
                 UsdImagingCollectionMaterialBindingsSchema::GetDefaultLocator(),
                 HdMaterialBindingsSchema::GetDefaultLocator());
-
             newEntries.push_back({entry.primPath, newLocators});
         } else {
             newEntries.push_back(entry);

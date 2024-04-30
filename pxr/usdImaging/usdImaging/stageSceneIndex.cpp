@@ -337,11 +337,13 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
 
 // ---------------------------------------------------------------------------
 
-void UsdImagingStageSceneIndex::SetTime(UsdTimeCode time)
+void UsdImagingStageSceneIndex::SetTime(
+    UsdTimeCode time,
+    const bool forceDirtyingTimeDeps)
 {
     TRACE_FUNCTION();
 
-    if (_stageGlobals.GetTime() == time) {
+    if (_stageGlobals.GetTime() == time && !forceDirtyingTimeDeps) {
         return;
     }
 
@@ -516,7 +518,7 @@ UsdImagingStageSceneIndex::_OnUsdObjectsChanged(
             _usdPropertiesToResync[it->GetPrimPath()]
                 .push_back(it->GetNameToken());
             TF_DEBUG(USDIMAGING_CHANGES).Msg(
-                    " - Property update due to property resync queued: %s\n",
+                    " - Property resync queued: %s\n",
                     it->GetText());
         }
 

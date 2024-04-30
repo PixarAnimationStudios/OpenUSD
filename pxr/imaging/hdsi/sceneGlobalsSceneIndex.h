@@ -53,6 +53,12 @@ public:
     // ------------------------------------------------------------------------
     
     /// Caches the provided path and notifies any observers when the active 
+    /// render pass prim path is modified.
+    ///
+    HDSI_API
+    void SetActiveRenderPassPrimPath(const SdfPath &);
+    
+    /// Caches the provided path and notifies any observers when the active 
     /// render settings prim path is modified.
     ///
     HDSI_API
@@ -94,6 +100,7 @@ protected:
 private:
     friend class _SceneGlobalsDataSource;
 
+    SdfPath _activeRenderPassPrimPath;
     SdfPath _activeRenderSettingsPrimPath;
 };
 

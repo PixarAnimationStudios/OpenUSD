@@ -35,6 +35,8 @@
 
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usdGeom/imageable.h"
+#include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/tetMesh.h"
 
 
 #include "pxr/base/vt/value.h"
@@ -57,16 +59,15 @@ class SdfAssetPath;
 /// \class UsdGeomSubset
 ///
 /// Encodes a subset of a piece of geometry (i.e. a UsdGeomImageable) 
-/// as a set of indices. Currently only supports encoding of face-subsets and
-/// point-subsets, but could be extended in the future to support subsets 
-/// representing edges, segments, tetrahedrons, etc.
+/// as a set of indices. Currently supports encoding subsets of faces, 
+/// points, edges, and tetrahedrons.
 /// 
 /// To apply to a geometric prim, a GeomSubset prim must be the prim's direct 
 /// child in namespace, and possess a concrete defining specifier (i.e. def). 
 /// This restriction makes it easy and efficient to discover subsets of a prim. 
 /// We might want to relax this restriction if it's common to have multiple 
 /// <b>families</b> of subsets on a gprim and if it's useful to be able to 
-/// organize subsets belonging to a </b>family</b> under a common scope. See 
+/// organize subsets belonging to a <b>family</b> under a common scope. See 
 /// 'familyName' attribute for more info on defining a family of subsets.
 /// 
 /// Note that a GeomSubset isn't an imageable (i.e. doesn't derive from
@@ -182,17 +183,24 @@ public:
     // --------------------------------------------------------------------- //
     /// The type of element that the indices target. "elementType" can
     /// have one of the following values:
-    /// <ul><li><b>face</b>: for a UsdGeomMesh, each element of the indices 
-    /// attribute would refer to an element of the Mesh's faceCounts 
-    /// attribute</li>
+    /// <ul><li><b>face</b>: Identifies faces on a Gprim's surface. For a 
+    /// UsdGeomMesh, each element of the _indices_ attribute would refer to 
+    /// an element of the Mesh's _faceCounts_ attribute. For a UsdGeomTetMesh,
+    /// each element of the _indices_ attribute would refer to an element of
+    /// the Mesh's _surfaceFaceVertexIndices_ attribute.</li>
     /// <li><b>point</b>: for any UsdGeomPointBased, each 
-    /// element of the indices attribute would refer to an element of the 
-    /// Mesh's points attribute</li>
+    /// element of the _indices_ attribute would refer to an element of the 
+    /// Mesh's _points_ attribute</li>
     /// <li><b>edge</b>: for any UsdGeomMesh, each pair of elements
-    /// in the indices attribute would refer to a pair of points of the 
-    /// Mesh's points attribute that are connected as an implicit edge on the 
-    /// Mesh. These edges are derived from the Mesh's faceVertexIndices 
-    /// attribute.
+    /// in the _indices_ attribute would refer to a pair of points of the 
+    /// Mesh's _points_ attribute that are connected as an implicit edge on the 
+    /// Mesh. These edges are derived from the Mesh's _faceVertexIndices_ 
+    /// attribute. Edges are not currently defined for a UsdGeomTetMesh, but
+    /// could be derived from all tetrahedron edges or surface face edges only 
+    /// if a specific use-case arises.</li>
+    /// <li><b>tetrahedron</b>: for any UsdGeomTetMesh, each element of the 
+    /// _indices_ attribute would refer to an element of the TetMesh's 
+    /// _tetVertexIndices_ attribute.
     /// </li></ul>
     ///
     /// | ||
@@ -201,7 +209,7 @@ public:
     /// | C++ Type | TfToken |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    /// | \ref UsdGeomTokens "Allowed Values" | face, point, edge |
+    /// | \ref UsdGeomTokens "Allowed Values" | face, point, edge, tetrahedron |
     USDGEOM_API
     UsdAttribute GetElementTypeAttr() const;
 
@@ -393,7 +401,15 @@ public:
     /// Utility for getting the list of indices that are not assigned to any of 
     /// the GeomSubsets in the \p familyName family on the given \p geom at the 
     /// timeCode, \p time, given the element count (total number of indices in 
-    /// the array being subdivided), \p elementCount.
+    /// the array being subdivided).
+    ///
+    /// For \p elementType UsdGeomTokens->edge, the output array of indices 
+    /// should be interpreted in pairs, as each sequential pair of indices
+    /// corresponds to an edge between the two points. Each edge will be in
+    /// the order (lowIndex, highIndex).
+    ///
+    /// If the \p elementType is not applicable to the given \p geom, an empty
+    /// array is returned and a coding error is issued.
     USDGEOM_API
     static VtIntArray GetUnassignedIndices(
         const UsdGeomImageable &geom, 
@@ -456,6 +472,13 @@ public:
         const TfToken &elementType,
         const TfToken &familyName,
         std::string * const reason);
+
+private:
+    /// Utility to get edges at time \p t from the indices attribute 
+    /// where every sequential pair of indices is interpreted as an edge.
+    /// Returned edges are stored in the order (lowIndex, highIndex).
+    /// Assumes the elementType is edge.
+    VtVec2iArray _GetEdges(const UsdTimeCode t) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

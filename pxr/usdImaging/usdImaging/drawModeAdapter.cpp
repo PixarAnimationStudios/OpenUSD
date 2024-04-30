@@ -37,6 +37,7 @@
 #include "pxr/usd/usdGeom/modelAPI.h"
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/usd/sdr/shaderNode.h"
+#include "pxr/usd/usd/prim.h"
 
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/tf/type.h"
@@ -177,7 +178,7 @@ _GetAxesMask(UsdPrim const& prim, UsdTimeCode time) {
 }
 
 UsdImagingDrawModeAdapter::UsdImagingDrawModeAdapter()
-    : UsdImagingPrimAdapter()
+    : BaseAdapter()
     , _schemaColor(0)
 {
     // Look up the default color in the schema registry.
@@ -188,10 +189,6 @@ UsdImagingDrawModeAdapter::UsdImagingDrawModeAdapter()
         primDef->GetAttributeFallbackValue(
             UsdGeomTokens->modelDrawModeColor, &_schemaColor);
     }
-}
-
-UsdImagingDrawModeAdapter::~UsdImagingDrawModeAdapter()
-{
 }
 
 bool
@@ -219,8 +216,10 @@ UsdImagingDrawModeAdapter::Populate(UsdPrim const& prim,
                                     UsdImagingInstancerContext const*
                                        instancerContext)
 {
-    SdfPath cachePath = UsdImagingGprimAdapter::_ResolveCachePath(
+    const SdfPath cachePath = ResolveCachePath(
         prim.GetPath(), instancerContext);
+    const SdfPath proxyPrimPath = ResolveProxyPrimPath(
+        cachePath, instancerContext);
 
     // The draw mode adapter only supports models or unloaded prims.
     // This is enforced in UsdImagingDelegate::_IsDrawModeApplied.
@@ -249,10 +248,10 @@ UsdImagingDrawModeAdapter::Populate(UsdPrim const& prim,
         instancerContext->instancerAdapter :
         shared_from_this();
 
-    // If this prim isn't instanced, cachePrim will be the same as "prim", but
+    // If this prim isn't instanced, proxyPrim will be the same as "prim", but
     // if it is instanced the instancer adapters expect us to pass in this
     // prim, which should point to the instancer.
-    UsdPrim cachePrim = _GetPrim(cachePath.GetAbsoluteRootOrPrimPath());
+    UsdPrim proxyPrim = _GetPrim(proxyPrimPath);
 
     if (drawMode == UsdGeomTokens->origin ||
         drawMode == UsdGeomTokens->bounds) {
@@ -262,8 +261,11 @@ UsdImagingDrawModeAdapter::Populate(UsdPrim const& prim,
                     "%s, basis curves not supported", cachePath.GetText());
             return SdfPath();
         }
+        // cache the draw mode before inserting the prim
+        _drawModeMap.insert({ cachePath, drawMode });
+
         index->InsertRprim(HdPrimTypeTokens->basisCurves,
-            cachePath, cachePrim, rprimAdapter);
+            cachePath, proxyPrim, rprimAdapter);
         HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
     } else if (drawMode == UsdGeomTokens->cards) {
         // Cards draw as a mesh
@@ -272,8 +274,11 @@ UsdImagingDrawModeAdapter::Populate(UsdPrim const& prim,
                     "meshes not supported", cachePath.GetText());
             return SdfPath();
         }
+        // cache the draw mode before inserting the prim
+        _drawModeMap.insert({ cachePath, drawMode });
+
         index->InsertRprim(HdPrimTypeTokens->mesh,
-            cachePath, cachePrim, rprimAdapter);
+            cachePath, proxyPrim, rprimAdapter);
         HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
     } else {
         TF_CODING_ERROR("Model <%s> has unsupported drawMode '%s'",
@@ -283,16 +288,12 @@ UsdImagingDrawModeAdapter::Populate(UsdPrim const& prim,
 
     // As long as we're passing cachePrim to InsertRprim, we need to fix up
     // the dependency map ourselves. For USD edit purposes, we depend on the
-    // prototype prim ("prim"), rather than the instancer prim.
+    // prototype prim ("prim"), rather than the instancer prim ("proxyPrim").
     // See similar code in GprimAdapter::_AddRprim.
     if (instancerContext != nullptr) {
         index->RemovePrimInfoDependency(cachePath);
         index->AddDependency(cachePath, prim);
     }
-
-    // When instancing, cachePath may have a proto prop part on the end.
-    // This will strip the prop part, leaving primPath as the instancer's path.
-    SdfPath primPath = cachePath.GetAbsoluteRootOrPrimPath();
 
     // Additionally, insert the material.
     if (drawMode == UsdGeomTokens->cards) {
@@ -340,9 +341,6 @@ UsdImagingDrawModeAdapter::Populate(UsdPrim const& prim,
             }
         }
     }
-
-    // Record the drawmode for use in UpdateForTime().
-    _drawModeMap.insert(std::make_pair(cachePath, drawMode));
 
     return cachePath;
 }
@@ -1265,22 +1263,22 @@ UsdImagingDrawModeAdapter::_GenerateCardsFromTextureGeometry(
     GfMatrix4d mat;
     if (_GetMatrixFromImageMetadata(
             model.GetModelCardTextureXPosAttr(), &mat))
-        faces.push_back(std::make_pair(mat, xPos));
+        faces.push_back({ mat, xPos });
     if (_GetMatrixFromImageMetadata(
             model.GetModelCardTextureYPosAttr(), &mat))
-        faces.push_back(std::make_pair(mat, yPos));
+        faces.push_back({ mat, yPos });
     if (_GetMatrixFromImageMetadata(
             model.GetModelCardTextureZPosAttr(), &mat))
-        faces.push_back(std::make_pair(mat, zPos));
+        faces.push_back({ mat, zPos });
     if (_GetMatrixFromImageMetadata(
             model.GetModelCardTextureXNegAttr(), &mat))
-        faces.push_back(std::make_pair(mat, xNeg));
+        faces.push_back({ mat, xNeg });
     if (_GetMatrixFromImageMetadata(
             model.GetModelCardTextureYNegAttr(), &mat))
-        faces.push_back(std::make_pair(mat, yNeg));
+        faces.push_back({ mat, yNeg });
     if (_GetMatrixFromImageMetadata(
             model.GetModelCardTextureZNegAttr(), &mat))
-        faces.push_back(std::make_pair(mat, zNeg));
+        faces.push_back({ mat, zNeg });
 
     // Generate points, UV, and assignment primvars, plus index data.
     VtVec3fArray arr_pt = VtVec3fArray(faces.size() * 4);

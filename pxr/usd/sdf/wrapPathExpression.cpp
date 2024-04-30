@@ -102,7 +102,7 @@ struct _BasicMatchEval
         : _BasicMatchEval(SdfPathExpression(expr)) {}
     SdfPredicateFunctionResult
     Match(SdfPath const &p) {
-        return _eval.Match(p, _PathIdentity {}, _PathIdentity {});
+        return _eval.Match(p, _PathIdentity {});
     }
     SdfPathExpressionEval<SdfPath const &> _eval;
 };
@@ -164,6 +164,10 @@ void wrapPathExpression()
              }, (arg("op"), arg("left"), arg("right")))
         .staticmethod("MakeOp")
 
+        .def("MakeAtom",
+             +[](SdfPath const &path) {
+                 return PathExpr::MakeAtom(path);
+             }, arg("path"))
         .def("MakeAtom",
              +[](PathExpr::ExpressionReference const &ref) {
                  return PathExpr::MakeAtom(ref);
@@ -230,6 +234,7 @@ void wrapPathExpression()
     TfPyWrapEnum<PathExpr::Op>();
 
     class_<PathPattern>("PathPattern")
+        .def(init<SdfPath>(arg("prefix")))
         .def("AppendChild",
              +[](PathPattern &self, std::string text,
                  SdfPredicateExpression const &predExpr) {

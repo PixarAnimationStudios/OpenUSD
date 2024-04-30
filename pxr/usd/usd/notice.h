@@ -49,7 +49,7 @@ public:
         USD_API
         StageNotice(const UsdStageWeakPtr &stage);
         USD_API
-        virtual ~StageNotice();
+        ~StageNotice() override;
 
         /// Return the stage associated with this notice.
         const UsdStageWeakPtr &GetStage() const { return _stage; }
@@ -74,7 +74,7 @@ public:
     public:
         explicit StageContentsChanged(const UsdStageWeakPtr& stage)
             : StageNotice(stage) {}
-        USD_API virtual ~StageContentsChanged();
+        USD_API ~StageContentsChanged() override;
     };
 
     /// \class ObjectsChanged
@@ -145,7 +145,7 @@ public:
                        const _PathsToChangesMap *resyncChanges);
 
     public:
-        USD_API virtual ~ObjectsChanged();
+        USD_API ~ObjectsChanged() override;
 
         /// Return true if \p obj was possibly affected by the layer changes
         /// that generated this notice.  This is the case if either the object
@@ -394,7 +394,7 @@ public:
     public:
         explicit StageEditTargetChanged(const UsdStageWeakPtr &stage)
             : StageNotice(stage) {}
-        USD_API virtual ~StageEditTargetChanged();
+        USD_API ~StageEditTargetChanged() override;
     };
 
     /// \class LayerMutingChanged
@@ -420,7 +420,7 @@ public:
              _mutedLayers(mutedLayers),
              _unMutedLayers(unmutedLayers) {}
 
-        USD_API virtual ~LayerMutingChanged();
+        USD_API ~LayerMutingChanged() override;
 
         /// Returns the identifier of the layers that were muted.
         ///

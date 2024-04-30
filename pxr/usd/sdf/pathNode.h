@@ -26,11 +26,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
+#include "pxr/base/tf/delegatedCountPtr.h"
 #include "pxr/base/tf/functionRef.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/mallocTag.h"
-
-#include <boost/intrusive_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -245,7 +244,7 @@ public:
 
 protected:
     Sdf_PathNode(Sdf_PathNode const *parent, NodeType nodeType)
-        : _parent(parent)
+        : _parent(TfDelegatedCountIncrementTag, parent)
         , _refCount(1)
         , _elementCount(parent ? parent->_elementCount + 1 : 1)
         , _nodeType(nodeType)
@@ -299,8 +298,8 @@ protected:
     friend struct Sdf_PathNodePrivateAccess;
 
     // Ref-counting ops manage _refCount.
-    friend void intrusive_ptr_add_ref(const Sdf_PathNode*);
-    friend void intrusive_ptr_release(const Sdf_PathNode*);
+    friend void TfDelegatedCountIncrement(const Sdf_PathNode*) noexcept;
+    friend void TfDelegatedCountDecrement(const Sdf_PathNode*) noexcept;
 
 private:
     static constexpr uint8_t _NodeTypeToFlags(NodeType nt) {
@@ -756,10 +755,10 @@ Sdf_PathNode::GetElement() const
 /// Diagnostic output.
 SDF_API void Sdf_DumpPathStats();
 
-inline void intrusive_ptr_add_ref(const PXR_NS::Sdf_PathNode* p) {
+inline void TfDelegatedCountIncrement(const PXR_NS::Sdf_PathNode* p) noexcept {
     p->_refCount.fetch_add(1, std::memory_order_relaxed);
 }
-inline void intrusive_ptr_release(const PXR_NS::Sdf_PathNode* p) {
+inline void TfDelegatedCountDecrement(const PXR_NS::Sdf_PathNode* p) noexcept {
     if ((p->_refCount.fetch_sub(1) & PXR_NS::Sdf_PathNode::RefCountMask) == 1) {
         p->_Destroy();
     }

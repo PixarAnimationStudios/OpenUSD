@@ -68,6 +68,10 @@ if (WIN32)
     return()
 endif()
 
+# This test is not currently supported on static builds as it relies on 
+# testHgiCommand, which is not linked in the static hgiVulkan library. 
+if (BUILD_SHARED_LIBS)
+
 pxr_install_test_dir(
     SRC testenv/testHgiVulkanCommand
     DEST testHgiVulkanCommand
@@ -85,3 +89,5 @@ pxr_register_test(testHgiVulkanCommand
         HGIVULKAN_DEBUG=1
         HGIVULKAN_DEBUG_VERBOSE=1
 )
+
+endif() # BUILD_SHARED_LIBS

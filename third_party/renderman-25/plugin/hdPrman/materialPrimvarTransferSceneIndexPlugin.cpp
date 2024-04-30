@@ -24,6 +24,7 @@
 #include "hdPrman/materialPrimvarTransferSceneIndexPlugin.h"
 
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+#include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hdsi/materialPrimvarTransferSceneIndex.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -47,9 +48,12 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    // Should be chained _after_ the extComputationPrimvarPruningSceneIndex.
-    // XXX when should this run?!?  dunno
-    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 1;
+    // Should be chained *after* the extComputationPrimvarPruningSceneIndex and
+    // procedural expansion.
+    // Avoiding an additional dependency on hdGp in hdPrman and hardcoding it
+    // for now.
+    const HdSceneIndexPluginRegistry::InsertionPhase
+        insertionPhase = 3; // HdGpSceneIndexPlugin()::GetInsertionPhase() + 1;
 
     // Register the plugins conditionally.
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(

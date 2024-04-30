@@ -217,12 +217,16 @@ HduiSceneIndexDebuggerWidget::_FillGoToInputMenu()
     QMenu *menu = _goToInputButtonMenu;
     menu->clear();
 
+    QSizePolicy policy = menu->sizePolicy();
+    policy.setHorizontalPolicy(QSizePolicy::Expanding);
+    menu->setSizePolicy(policy);
+
     QTreeWidget *menuTreeWidget = new QTreeWidget;
     menuTreeWidget->setHeaderHidden(true);
     menuTreeWidget->setAllColumnsShowFocus(true);
     menuTreeWidget->setMouseTracking(true);
     menuTreeWidget->setSizeAdjustPolicy(
-            QAbstractScrollArea::AdjustToContentsOnFirstShow);
+            QAbstractScrollArea::AdjustToContents);
 
     QObject::connect(menuTreeWidget, &QTreeWidget::itemEntered,
         [menuTreeWidget](QTreeWidgetItem *item, int column) {
@@ -264,7 +268,7 @@ HduiSceneIndexDebuggerWidget::_AddSceneIndexToTreeMenu(
             sceneIndex->GetDisplayName().c_str());
 
         item->sceneIndex = sceneIndex;
-        
+        item->treeWidget()->resizeColumnToContents(0);
         parentItem = item;
     }
 

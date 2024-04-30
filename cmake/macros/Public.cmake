@@ -1305,3 +1305,29 @@ function(pxr_build_python_documentation)
     ")
 
 endfunction() # pxr_build_python_documentation
+
+# Adding support for a "docs-only" directory, needed when adding doxygen docs
+# not associated with a specific library/etc. 
+function(pxr_docs_only_dir NAME)
+    # Get list of doxygen files, which could include image files and/or 
+    # snippets example cpp files 
+    set(multiValueArgs
+        DOXYGEN_FILES
+    )
+    cmake_parse_arguments(args
+        ""
+        ""
+        "${multiValueArgs}"
+        ${ARGN}
+    )
+    if(PXR_BUILD_DOCUMENTATION)
+        _copy_doxygen_files(${NAME}
+            IS_LIB
+                FALSE
+            HEADER_INSTALL_PREFIX
+                "include/${PXR_PREFIX}"
+            DOXYGEN_FILES
+                ${args_DOXYGEN_FILES}
+        )
+    endif()
+endfunction() # pxr_docs_only_dir

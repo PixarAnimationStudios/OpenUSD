@@ -49,7 +49,8 @@ class HdSt_IndirectDrawBatch : public HdSt_DrawBatch
 public:
     HDST_API
     HdSt_IndirectDrawBatch(HdStDrawItemInstance * drawItemInstance,
-                           bool const allowGpuFrustumCulling = true);
+                           bool const allowGpuFrustumCulling = true,
+                           bool const allowTextureResourceRebinding = false);
     HDST_API
     ~HdSt_IndirectDrawBatch() override;
 
@@ -157,7 +158,8 @@ private:
     void _ExecuteDrawImmediate(
                 HdSt_GeometricShaderSharedPtr const & geometricShader,
                 HdStDispatchBufferSharedPtr const & dispatchBuffer,
-                HdStBufferArrayRangeSharedPtr const & indexBar);
+                HdStBufferArrayRangeSharedPtr const & indexBar,
+                _DrawingProgram const & program);
 
     void _ExecuteFrustumCull(
                 bool updateDispatchBuffer,
@@ -197,6 +199,8 @@ private:
 
     int _instanceCountOffset;
     int _cullInstanceCountOffset;
+
+    bool _needsTextureResourceRebinding;
 };
 
 
