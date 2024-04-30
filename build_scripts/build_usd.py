@@ -539,8 +539,15 @@ def DownloadURL(url, context, force, extractDir = None,
     Returns the absolute path to the directory where files have 
     been extracted."""
     with CurrentWorkingDirectory(context.srcDir):
-        # Extract filename from URL and see if file already exists. 
-        filename = url.split("/")[-1]       
+        # Extract filename from URL.
+        filename = url.split("/")[-1]
+
+        # Change filename for a file form a github/gitlab repository. 
+        # Filename becomes projectName-version to avoid file collision.
+        if ("github" or "gitlab") in url:
+            filename = url.split("/")[4] + "-" + filename
+
+        # See if file already exists. 
         if force and os.path.exists(filename):
             os.remove(filename)
 
