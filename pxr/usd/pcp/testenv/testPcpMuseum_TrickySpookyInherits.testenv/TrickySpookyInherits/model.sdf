@@ -1,10 +1,12 @@
 #sdf 1.4.32
+(
+    relocates = {
+        </Model/Rig/LRig>: </Model/Anim/LAnim>
+    }
+)
 
 def Scope "Model" (
     inherits = </_class_Model>
-    relocates = {
-        <Rig/LRig> : <Anim/LAnim>
-    }
 )
 {
     def Scope "Rig" (

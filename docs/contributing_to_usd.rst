@@ -12,15 +12,15 @@ Contributor License Agreement
 
 Before contributing code to USD, we ask that you sign a Contributor License
 Agreement (CLA). At the root of the `repository
-<https://github.com/PixarAnimationStudios/USD>`_ you can find the two possible
+<https://github.com/PixarAnimationStudios/OpenUSD>`_ you can find the two possible
 CLAs:
 
     #. `USD_CLA_Corporate.pdf
-       <https://github.com/PixarAnimationStudios/USD/blob/release/USD_CLA_Corporate.pdf>`_
+       <https://github.com/PixarAnimationStudios/OpenUSD/blob/release/USD_CLA_Corporate.pdf>`_
        : please sign this one for corporate use
 
     #. `USD_CLA_Individual.pdf
-       <https://github.com/PixarAnimationStudios/USD/blob/release/USD_CLA_Individual.pdf>`_
+       <https://github.com/PixarAnimationStudios/OpenUSD/blob/release/USD_CLA_Individual.pdf>`_
        : please sign this one if you're an individual contributor
 
 Once your CLA is signed, send it to `usd-cla@pixar.com
@@ -82,7 +82,7 @@ Here is the workflow we recommend for contributing changes to USD:
        .. code-block:: sh
 
           cd USD
-          git remote add upstream https://github.com/PixarAnimationStudios/USD.git
+          git remote add upstream https://github.com/PixarAnimationStudios/OpenUSD.git
 
        
 
@@ -130,6 +130,9 @@ Here is the workflow we recommend for contributing changes to USD:
     #. Now your remote branch will have your dev_mybugfix branch, which you can
        now pull request (to USD's dev branch) using the github UI.
 
+When your pull request is merged, it will be available in the next dev and full
+release. For USD release schedules, see :ref:`release_schedule`
+
 .. _github_issues:
 
 Github Issues
@@ -144,6 +147,6 @@ requests, a single issue can be created and referenced from those PRs to
 organize them.
 
 Before sending your change in for consideration, search through the list of
-`open issues on github <https://github.com/PixarAnimationStudios/USD/issues>`_ 
+`open issues on github <https://github.com/PixarAnimationStudios/OpenUSD/issues>`_ 
 and check if your change addresses any issue. If so, associate your pull
 request with that issue.

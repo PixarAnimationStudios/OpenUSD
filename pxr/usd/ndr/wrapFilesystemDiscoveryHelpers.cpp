@@ -45,7 +45,7 @@ _WrapFsHelpersDiscoverNodes(
     return NdrFsHelpersDiscoverNodes(searchPaths,
                                      allowedExtensions,
                                      followSymlinks,
-                                     boost::get_pointer(context));
+                                     get_pointer(context));
 }
 
 static object

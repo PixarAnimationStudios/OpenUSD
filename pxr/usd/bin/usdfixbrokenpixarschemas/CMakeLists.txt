@@ -8,6 +8,11 @@ pxr_python_bin(usdfixbrokenpixarschemas
 )
 
 pxr_install_test_dir(
+    SRC testenv/testInvocationErrors
+    DEST testInvocationErrorInvalidExtension
+)
+
+pxr_install_test_dir(
     SRC testenv/testMultipleFixer
     DEST testMultipleFixer
 )
@@ -34,6 +39,18 @@ pxr_register_test(testUsdzMaterialBindingAPI
     CLEAN_OUTPUT
 )
 endif()
+
+pxr_register_test(testInvocationErrorInvalidFile
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdfixbrokenpixarschemas invalid.usda"
+    EXPECTED_RETURN_CODE 1
+)
+
+pxr_register_test(testInvocationErrorInvalidExtension
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdfixbrokenpixarschemas file.txt"
+    EXPECTED_RETURN_CODE 1
+)
 
 pxr_register_test(testMultipleFixer
     PYTHON

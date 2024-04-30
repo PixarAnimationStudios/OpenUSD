@@ -29,7 +29,6 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/operators.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/operators.hpp>
 #include <boost/python/return_by_value.hpp>
@@ -39,8 +38,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 template <class Annotation>
-struct TfPyAnnotatedBoolResult :
-    boost::equality_comparable<TfPyAnnotatedBoolResult<Annotation>, bool>
+struct TfPyAnnotatedBoolResult
 {
     TfPyAnnotatedBoolResult() {}
     
@@ -63,6 +61,18 @@ struct TfPyAnnotatedBoolResult :
     /// Returns \c true if the result is the same as \p rhs.
     bool operator==(bool rhs) const {
         return _val == rhs;
+    }
+
+    friend bool operator==(bool lhs, const TfPyAnnotatedBoolResult& rhs) {
+        return rhs == lhs;
+    }
+
+    friend bool operator!=(const TfPyAnnotatedBoolResult& lhs, bool rhs) {
+        return !(lhs == rhs);
+    }
+
+    friend bool operator!=(bool lhs, const TfPyAnnotatedBoolResult& rhs) {
+        return !(lhs == rhs);
     }
 
     template <class Derived>

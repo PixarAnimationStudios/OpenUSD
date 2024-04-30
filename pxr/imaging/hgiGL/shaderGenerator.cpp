@@ -388,8 +388,6 @@ HgiGLShaderGenerator::_WriteInOuts(
         "gl_FragColor",
         "gl_FragDepth",
         "gl_PointSize",
-        "gl_ClipDistance",
-        "gl_CullDistance",
     };
 
     const static std::unordered_map<std::string, std::string> takenInParams {
@@ -409,7 +407,7 @@ HgiGLShaderGenerator::_WriteInOuts(
         { HgiShaderKeywordTokens->hdLayer, "gl_Layer"},
         { HgiShaderKeywordTokens->hdViewportIndex, "gl_ViewportIndex"},
         { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"},
-        { HgiShaderKeywordTokens->hdBaryCoordNoPerspNV, "gl_BaryCoordNoPerspNV"},
+        { HgiShaderKeywordTokens->hdBaryCoordNoPersp, "gl_BaryCoordNoPerspNV"},
     };
 
     const bool in_qualifier = qualifier == "in";
@@ -425,22 +423,11 @@ HgiGLShaderGenerator::_WriteInOuts(
             const std::string &role = param.role;
             auto const& keyword = takenInParams.find(role);
             if (keyword != takenInParams.end()) {
-                if (role == HgiShaderKeywordTokens->hdGlobalInvocationID) {
-                    CreateShaderSection<HgiGLKeywordShaderSection>(
-                        paramName,
-                        param.type,
-                        keyword->second);
-                } else if (role == HgiShaderKeywordTokens->hdVertexID) {
-                    CreateShaderSection<HgiGLKeywordShaderSection>(
-                        paramName,
-                        param.type,
-                        keyword->second);
-                } else if (role == HgiShaderKeywordTokens->hdInstanceID) {
-                    CreateShaderSection<HgiGLKeywordShaderSection>(
-                        paramName,
-                        param.type,
-                        keyword->second);
-                } else if (role == HgiShaderKeywordTokens->hdBaseInstance) {
+                if (role == HgiShaderKeywordTokens->hdGlobalInvocationID ||
+                    role == HgiShaderKeywordTokens->hdVertexID ||
+                    role == HgiShaderKeywordTokens->hdInstanceID ||
+                    role == HgiShaderKeywordTokens->hdBaseInstance ||
+                    role == HgiShaderKeywordTokens->hdBaryCoordNoPersp) {
                     CreateShaderSection<HgiGLKeywordShaderSection>(
                         paramName,
                         param.type,
@@ -481,17 +468,17 @@ HgiGLShaderGenerator::_WriteInOutBlocks(
     const HgiShaderFunctionParamBlockDescVector &parameterBlocks,
     const std::string &qualifier)
 {
-    for(const HgiShaderFunctionParamBlockDesc &p : parameterBlocks) {
+    for (const HgiShaderFunctionParamBlockDesc &p : parameterBlocks) {
 
-        HgiGLShaderSectionPtrVector members;
+        HgiGLMemberShaderSectionPtrVector members;
         for(const HgiShaderFunctionParamBlockDesc::Member &member : p.members) {
 
             HgiGLMemberShaderSection *memberSection =
                 CreateShaderSection<HgiGLMemberShaderSection>(
                     member.name,
                     member.type,
-                    HgiInterpolationDefault,
-                    HgiSamplingDefault,
+                    member.interpolation,
+                    member.sampling,
                     HgiStorageDefault,
                     HgiShaderSectionAttributeVector(),
                     qualifier,

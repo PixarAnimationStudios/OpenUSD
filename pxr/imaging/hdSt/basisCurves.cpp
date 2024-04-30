@@ -726,10 +726,14 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 
             HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
+            HdBufferArrayUsageHint usageHint =
+                HdBufferArrayUsageHintBitsIndex |
+                HdBufferArrayUsageHintBitsStorage;
             // Set up the usage hints to mark topology as varying if
             // there is a previously set range.
-            HdBufferArrayUsageHint usageHint;
-            usageHint.bits.sizeVarying = drawItem->GetTopologyRange()? 1 : 0;
+            if (drawItem->GetTopologyRange()) {
+                usageHint |= HdBufferArrayUsageHintBitsSizeVarying;
+            }
 
             // allocate new range
             HdBufferArrayRangeSharedPtr range
@@ -932,7 +936,7 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferArrayRangeSharedPtr range =
         resourceRegistry->UpdateNonUniformBufferArrayRange(
             HdTokens->primvar, bar, bufferSpecs, removedSpecs,
-            HdBufferArrayUsageHint());
+            HdBufferArrayUsageHintBitsVertex);
 
     HdStUpdateDrawItemBAR(
         range,
@@ -995,10 +999,6 @@ HdStBasisCurves::_PopulateVaryingPrimvars(HdSceneDelegate *sceneDelegate,
     // until we get can do a better pass on curve normals.)
     _basisNormalInterpolation = true;
 
-    if (primvars.empty()) {
-        return;
-    }
-    
     HdBufferSourceSharedPtrVector sources;
     sources.reserve(primvars.size());
 
@@ -1049,7 +1049,7 @@ HdStBasisCurves::_PopulateVaryingPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferArrayRangeSharedPtr range =
         resourceRegistry->UpdateNonUniformBufferArrayRange(
             HdTokens->primvar, bar, bufferSpecs, removedSpecs,
-            HdBufferArrayUsageHint());
+            HdBufferArrayUsageHintBitsStorage);
 
     HdStUpdateDrawItemBAR(
         range,
@@ -1139,7 +1139,7 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferArrayRangeSharedPtr range =
         resourceRegistry->UpdateNonUniformBufferArrayRange(
             HdTokens->primvar, bar, bufferSpecs, removedSpecs,
-            HdBufferArrayUsageHint());
+            HdBufferArrayUsageHintBitsStorage);
 
     HdStUpdateDrawItemBAR(
         range,
@@ -1164,7 +1164,7 @@ static bool
 HdSt_HasResource(HdStDrawItem* drawItem, const TfToken& resourceToken){
     // Check for authored resource, we could leverage dirtyBits here as an
     // optimization, however the BAR is the ground truth, so until there is a
-    // known peformance issue, we just check them explicitly.
+    // known performance issue, we just check them explicitly.
     bool hasAuthoredResouce = false;
 
     typedef HdBufferArrayRangeSharedPtr HdBarPtr;

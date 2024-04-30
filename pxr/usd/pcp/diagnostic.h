@@ -191,6 +191,13 @@ std::string Pcp_FormatSite(const PcpSite& site);
 PCP_API
 std::string Pcp_FormatSite(const PcpLayerStackSite& site);
 
+inline 
+std::string Pcp_FormatSite(const PcpLayerStackRefPtr& layerStack,
+                           const SdfPath& sitePath)
+{
+    return Pcp_FormatSite(PcpLayerStackSite(layerStack, sitePath));
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_PCP_DIAGNOSTIC_H

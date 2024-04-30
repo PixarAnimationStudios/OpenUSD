@@ -1,0 +1,20 @@
+#sdf 1.4.32
+(
+    """
+    This museum test uses multiple relocations, one here in the
+    root layer and one in a variant further down a chain of
+    references.
+    """
+    relocates = {
+        </Group/Character>: </Group/Model>
+    }
+)
+
+def "Group" (
+    references = @./variant.sdf@</Group>
+)
+{
+    over "Model"
+    {
+    }
+}

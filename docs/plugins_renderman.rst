@@ -14,7 +14,7 @@ Building hdPrman
 ****************
 
 The RenderMan USD Imaging plugin is not built by default with USD. Building
-hdPrman requires that you have RenderMan 24.0 or newer installed. The easiest
+hdPrman requires that you have RenderMan 25.0 or newer installed. The easiest
 way to build hdPrman is to use the :filename:`build_usd.py` script which can be
 configured with the following build options:
 
@@ -52,7 +52,7 @@ RenderMan installation and will be built when :makevar:`PXR_ENABLE_OSL_SUPPORT` 
 OFF. Users should only build one of these plugins.
 
 For more information see our page on `Advanced Build Configuration
-<https://github.com/PixarAnimationStudios/USD/blob/release/BUILDING.md>`_.
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md>`_.
 
 Running hdPrman
 ***************

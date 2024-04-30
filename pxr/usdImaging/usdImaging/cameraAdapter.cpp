@@ -145,7 +145,7 @@ UsdImagingCameraAdapter::TrackVariability(UsdPrim const& prim,
         // Don't double-count clipping-plane or transform attrs.
         if (attr.GetBaseName() == UsdGeomTokens->clippingPlanes) { continue; }
         if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(
-                attr.GetBaseName())) {
+                attr.GetName())) {
             continue;
         }
         if (_IsVarying(prim,

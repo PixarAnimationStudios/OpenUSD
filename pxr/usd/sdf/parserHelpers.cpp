@@ -297,6 +297,13 @@ MakeScalarValueImpl(
 
 inline void
 MakeScalarValueImpl(
+    SdfPathExpression *out, vector<Value> const &vars, size_t &index) {
+    CHECK_BOUNDS(1, "pathExpression");
+    *out = SdfPathExpression(vars[index++].Get<std::string>());
+}
+
+inline void
+MakeScalarValueImpl(
     SdfOpaqueValue *out, vector<Value> const &vars, size_t &index) {
     TF_CODING_ERROR("Found authored opinion for opaque attribute");
     throw boost::bad_get();
@@ -413,6 +420,7 @@ TF_MAKE_STATIC_DATA(_ValueFactoryMap, _valueFactories) {
     builder.add<SdfAssetPath>(SdfValueTypeNames->Asset);
     builder.add<SdfOpaqueValue>(SdfValueTypeNames->Opaque);
     builder.add<SdfOpaqueValue>(SdfValueTypeNames->Group);
+    builder.add<SdfPathExpression>(SdfValueTypeNames->PathExpression);
 
     builder.add<GfVec2i>(SdfValueTypeNames->Int2);
     builder.add<GfVec2h>(SdfValueTypeNames->Half2);

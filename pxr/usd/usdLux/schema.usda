@@ -874,9 +874,12 @@ class GeometryLight "GeometryLight" (
 class DomeLight "DomeLight" (
     inherits = </NonboundableLightBase>
     doc = """Light emitted inward from a distant external environment,
-    such as a sky or IBL light probe.  The orientation of a dome light with a
-    latlong texture is expected to match the OpenEXR specification for latlong 
-    environment maps.  From the OpenEXR documentation:
+    such as a sky or IBL light probe.
+    
+    In this version of the dome light, the dome's default orientation is such
+    that its top pole is aligned with the world's +Y axis. This adheres to the
+    OpenEXR specification for latlong environment maps.  From the OpenEXR
+    documentation:
     
     -------------------------------------------------------------------------
     Latitude-Longitude Map:
@@ -944,7 +947,113 @@ class DomeLight "DomeLight" (
     )
 }
 
+class DomeLight_1 "DomeLight_1" (
+    inherits = </NonboundableLightBase>
+    doc = """Light emitted inward from a distant external environment,
+    such as a sky or IBL light probe.
+    
+    In this version of the dome light, the dome's default orientation is
+    determined by its *poleAxis* property. The fallback value, "scene", means
+    that the dome starts with its top pole aligned with the stage's up axis.
+    
+    Note that the rotation necessary to align the dome light with its *poleAxis*
+    is intended to be applied by a renderer to only the dome itself, and *not*
+    to inherit down to any USD namespace children of the dome light prim.
+    
+    If *poleAxis* is set to "Y" or "scene" and the stage's up axis is "Y", the
+    dome's default orientation will adhere to the OpenEXR specification for
+    latlong environment maps.  From the OpenEXR documentation:
+    
+    -------------------------------------------------------------------------
+    Latitude-Longitude Map:
+    
+    The environment is projected onto the image using polar coordinates
+    (latitude and longitude).  A pixel's x coordinate corresponds to
+    its longitude, and the y coordinate corresponds to its latitude.
+    Pixel (dataWindow.min.x, dataWindow.min.y) has latitude +pi/2 and
+    longitude +pi; pixel (dataWindow.max.x, dataWindow.max.y) has
+    latitude -pi/2 and longitude -pi.
+    
+    In 3D space, latitudes -pi/2 and +pi/2 correspond to the negative and
+    positive y direction.  Latitude 0, longitude 0 points into positive
+    z direction; and latitude 0, longitude pi/2 points into positive x
+    direction.
+    
+    The size of the data window should be 2*N by N pixels (width by height),
+    where N can be any integer greater than 0.
+    -------------------------------------------------------------------------
+    
+    If *poleAxis* is set to "Z" or "scene" and the stage's up axis is "Z",
+    latitudes -pi/2 and +pi/2 will instead correspond to the negative and
+    positive Z direction, and latitude 0, longitude 0 will instead point into
+    the negative Y direction in 3D space.
+"""
+) {
+    uniform token light:shaderId = "DomeLight"  (
+        customData = {
+            bool apiSchemaOverride = true
+        }
+    )
+    asset inputs:texture:file (
+        displayGroup = "Basic"
+        displayName = "Color Map"
+        doc = """A color texture to use on the dome, such as an HDR (high
+        dynamic range) texture intended for IBL (image based lighting)."""
+        customData = {
+            token apiName = "textureFile"
+        }
+    )
+    token inputs:texture:format = "automatic" (
+        displayGroup = "Basic"
+        displayName = "Color Map Format"
+        allowedTokens = ["automatic", "latlong", "mirroredBall", "angular", "cubeMapVerticalCross"]
+        doc = """Specifies the parameterization of the color map file.
+        Valid values are:
+        - automatic: Tries to determine the layout from the file itself.
+          For example, Renderman texture files embed an explicit
+          parameterization.
+        - latlong: Latitude as X, longitude as Y.
+        - mirroredBall: An image of the environment reflected in a
+          sphere, using an implicitly orthogonal projection.
+        - angular: Similar to mirroredBall but the radial dimension
+          is mapped linearly to the angle, providing better sampling
+          at the edges.
+        - cubeMapVerticalCross: A cube map with faces laid out as a
+          vertical cross.
+        """
+        customData = {
+            token apiName = "textureFormat"
+        }
+    )
+    rel portals (
+        doc = """Optional portals to guide light sampling."""
+    )
+    float guideRadius = 1.0e5 (
+        displayGroup = "Guides"
+        displayName = "Radius"
+        doc = """The radius of guide geometry to use to visualize the dome light.  The default is 1 km for scenes whose metersPerUnit is the USD default of 0.01 (i.e., 1 world unit is 1 cm)."""
+    )
+    uniform token poleAxis = "scene" (
+        displayGroup = "Advanced"
+        displayName = "Pole Axis"
+        allowedTokens = ["scene", "Y", "Z"]
+        doc = """A token which indicates the starting alignment of the dome
+        light's top pole. This alignment is for the dome itself and is *not*
+        inherited by the namespace children of the dome.
+        Valid values are:
+        - scene: The dome light's top pole is aligned with the stage's up axis.
+        - Y: The dome light's top pole is aligned with the +Y axis.
+        - Z: The dome light's top pole is aligned with the +Z axis.
+        """
+    )
+}
+
 class PortalLight "PortalLight" (
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = 1
+        }
+    }
     inherits = </BoundableLightBase>
     doc = """A rectangular portal in the local XY plane that guides sampling
     of a dome light.  Transmits light in the -Z direction.
@@ -955,11 +1064,21 @@ class PortalLight "PortalLight" (
             bool apiSchemaOverride = true
         }
     )
-    float3[] extent = [(-0.5, -0.5, 0.0), (0.5, 0.5, 0.0)] (
-        doc = """Boundary extent of the unit rectangle in the XY plane that 
-        defines the portal."""
+    float inputs:width = 1 (
+        displayGroup = "Geometry"
+        displayName = "Width"
+        doc = "Width of the portal rectangle in the local X axis."
         customData = {
-            token apiName = ""
+            token apiName = "width"
+        }
+
+    )
+    float inputs:height = 1 (
+        displayGroup = "Geometry"
+        displayName = "Height"
+        doc = "Height of the portal rectangle in the local Y axis."
+        customData = {
+            token apiName = "height"
         }
     )
 }

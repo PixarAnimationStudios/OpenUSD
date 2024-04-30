@@ -59,8 +59,8 @@ public:
     
 private:
     // Ref-counting ops manage _refCount.
-    friend void intrusive_ptr_add_ref(Sdf_Identity*);
-    friend void intrusive_ptr_release(Sdf_Identity*);
+    friend void TfDelegatedCountIncrement(Sdf_Identity*);
+    friend void TfDelegatedCountDecrement(Sdf_Identity*) noexcept;
 
     friend class Sdf_IdentityRegistry;
     friend class Sdf_IdRegistryImpl;
@@ -69,7 +69,8 @@ private:
         : _refCount(0), _path(path), _regImpl(regImpl) {}
     
     SDF_API
-    static void _UnregisterOrDelete(Sdf_IdRegistryImpl *reg, Sdf_Identity *id);
+    static void _UnregisterOrDelete(Sdf_IdRegistryImpl *reg, Sdf_Identity *id)
+    noexcept;
     void _Forget();
 
     mutable std::atomic_int _refCount;
@@ -77,11 +78,11 @@ private:
     Sdf_IdRegistryImpl *_regImpl;
 };
 
-// Specialize boost::intrusive_ptr operations.
-inline void intrusive_ptr_add_ref(PXR_NS::Sdf_Identity* p) {
+// Specialize TfDelegatedCountPtr operations.
+inline void TfDelegatedCountIncrement(PXR_NS::Sdf_Identity* p) {
     ++p->_refCount;
 }
-inline void intrusive_ptr_release(PXR_NS::Sdf_Identity* p) {
+inline void TfDelegatedCountDecrement(PXR_NS::Sdf_Identity* p) noexcept {
     // Once the count hits zero, p is liable to be destroyed at any point,
     // concurrently, by its owning registry if it happens to be doing a cleanup
     // pass.  Cache 'this' and the impl ptr in local variables so we have them

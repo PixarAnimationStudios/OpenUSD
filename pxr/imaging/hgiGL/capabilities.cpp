@@ -40,7 +40,7 @@ TF_DEFINE_ENV_SETTING(HGIGL_ENABLE_BINDLESS_BUFFER, false,
 TF_DEFINE_ENV_SETTING(HGIGL_ENABLE_MULTI_DRAW_INDIRECT, true,
                       "Use GL multi draw indirect extension");
 TF_DEFINE_ENV_SETTING(HGIGL_ENABLE_BUILTIN_BARYCENTRICS, false,
-                      "Use built in barycentric coordinates");
+                      "Use GL built in barycentric coordinates");
 TF_DEFINE_ENV_SETTING(HGIGL_ENABLE_SHADER_DRAW_PARAMETERS, true,
                       "Use GL shader draw params if available (OpenGL 4.5+)");
 TF_DEFINE_ENV_SETTING(HGIGL_ENABLE_BINDLESS_TEXTURE, false,

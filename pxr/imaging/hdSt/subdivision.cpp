@@ -400,7 +400,8 @@ HdSt_Subdivision::_CreateGpuStencilTable(
     };
     HdBufferArrayRangeSharedPtr perPointRange =
         registry->AllocateSingleBufferArrayRange(
-            _tokens->stencilData, perPointSpecs, HdBufferArrayUsageHint());
+            _tokens->stencilData, perPointSpecs,
+            HdBufferArrayUsageHintBitsStorage);
 
     // Allocate buffer array range for perIndex data
     HdBufferSpecVector perIndexSpecs = {
@@ -409,7 +410,8 @@ HdSt_Subdivision::_CreateGpuStencilTable(
     };
     HdBufferArrayRangeSharedPtr perIndexRange =
         registry->AllocateSingleBufferArrayRange(
-            _tokens->stencilData, perIndexSpecs, HdBufferArrayUsageHint());
+            _tokens->stencilData, perIndexSpecs,
+            HdBufferArrayUsageHintBitsStorage);
 
     HdSt_GpuStencilTableSharedPtr gpuStencilTable =
         std::make_shared<HdSt_GpuStencilTable>(
@@ -1218,7 +1220,8 @@ HdSt_OsdIndexComputation::Resolve()
     } else if (HdSt_Subdivision::RefinesToTriangles(scheme)) {
         // populate refined triangle indices.
         VtArray<GfVec3i> indices(ptableSize/3);
-        memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
+        memcpy(reinterpret_cast<Far::Index*>(indices.data()),
+                firstIndex, ptableSize * sizeof(int));
 
         HdBufferSourceSharedPtr triIndices =
             std::make_shared<HdVtBufferSource>(
@@ -1483,7 +1486,8 @@ HdSt_OsdFvarIndexComputation::Resolve()
     } else if (HdSt_Subdivision::RefinesToTriangles(scheme)) {
         // populate refined triangle indices.
         VtArray<GfVec3i> indices(numPatches);
-        memcpy(indices.data(), firstIndex, 3 * numPatches * sizeof(int));
+        memcpy(reinterpret_cast<Far::Index*>(indices.data()),
+                firstIndex, 3 * numPatches * sizeof(int));
 
         HdBufferSourceSharedPtr triIndices =
             std::make_shared<HdVtBufferSource>(_indicesName, VtValue(indices));
@@ -1491,7 +1495,8 @@ HdSt_OsdFvarIndexComputation::Resolve()
     } else {
         // populate refined quad indices.
         VtArray<GfVec4i> indices(numPatches);
-        memcpy(indices.data(), firstIndex, 4 * numPatches * sizeof(int));
+        memcpy(reinterpret_cast<Far::Index*>(indices.data()),
+                firstIndex, 4 * numPatches * sizeof(int));
 
         HdBufferSourceSharedPtr quadIndices =
             std::make_shared<HdVtBufferSource>(_indicesName, VtValue(indices));

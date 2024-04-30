@@ -29,12 +29,11 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/hash.h"
 
-#include <boost/optional/optional_fwd.hpp>
-
 #include <functional>
 #include <iosfwd>
 #include <list>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -188,7 +187,7 @@ public:
 
     /// Callback type for ApplyOperations.
     typedef std::function<
-        boost::optional<ItemType>(SdfListOpType, const ItemType&)
+        std::optional<ItemType>(SdfListOpType, const ItemType&)
     > ApplyCallback;
 
     /// Applies edit operations to the given ItemVector.
@@ -211,12 +210,12 @@ public:
     /// the explicit, prepended, appended, and deleted portions of
     /// SdfListOp are closed under composition with ApplyOperations().
     SDF_API 
-    boost::optional<SdfListOp<T>>
+    std::optional<SdfListOp<T>>
     ApplyOperations(const SdfListOp<T> &inner) const;
 
     /// Callback type for ModifyOperations.
     typedef std::function<
-        boost::optional<ItemType>(const ItemType&)
+        std::optional<ItemType>(const ItemType&)
     > ModifyCallback;
 
     /// Modifies operations specified in this object.

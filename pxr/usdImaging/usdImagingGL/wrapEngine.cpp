@@ -94,9 +94,9 @@ void _SetOverrideWindowPolicy(UsdImagingGLEngine & self,
 {
     extract<CameraUtilConformWindowPolicy> extractor(pyObj);
     if (extractor.check()) {
-        self.SetOverrideWindowPolicy({true, extractor()});
+        self.SetOverrideWindowPolicy(extractor());
     } else {
-        self.SetOverrideWindowPolicy({false, CameraUtilFit});
+        self.SetOverrideWindowPolicy(std::nullopt);
     }
 }
     
@@ -176,6 +176,9 @@ void wrapEngine()
             .def("SetRenderBufferSize", &UsdImagingGLEngine::SetRenderBufferSize)
             .def("SetFraming", &UsdImagingGLEngine::SetFraming)
             .def("SetOverrideWindowPolicy", _SetOverrideWindowPolicy)
+            .def("PollForAsynchronousUpdates",
+                &UsdImagingGLEngine::PollForAsynchronousUpdates)
+            
         ;
 
 
@@ -188,6 +191,9 @@ void wrapEngine()
             .def_readwrite("driver", &Parameters::driver)
             .def_readwrite("rendererPluginId", &Parameters::rendererPluginId)
             .def_readwrite("gpuEnabled", &Parameters::gpuEnabled)
+            .def_readwrite("allowAsynchronousSceneProcessing",
+                &Parameters::allowAsynchronousSceneProcessing)
+            
         ;
     }
 

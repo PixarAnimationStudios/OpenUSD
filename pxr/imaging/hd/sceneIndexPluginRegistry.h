@@ -128,6 +128,10 @@ public:
     /// earlier instantiation (possibly given render plugin-specific meaning
     /// via enum values). Insertion order indicates whether this entry
     /// should go at the start or end of the specified phase.
+    ///
+    /// \note This method should be invoked *before* render index construction
+    ///       when Hydra scene index emulation is enabled.
+    ///
     HD_API
     void RegisterSceneIndexForRenderer(
         const std::string &rendererDisplayName,

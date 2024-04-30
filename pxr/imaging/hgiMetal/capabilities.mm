@@ -50,7 +50,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     if (@available(macOS 100.100, ios 12.0, *)) {
         unifiedMemory = true;
     } else if (@available(macOS 10.15, ios 13.0, *)) {
-#if defined(ARCH_OS_IOS) || (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15)
+#if defined(ARCH_OS_IPHONE) || (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15)
         unifiedMemory = [device hasUnifiedMemory];
 #else
         unifiedMemory = [device isLowPower];
@@ -139,6 +139,19 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
         else
         {
             requiresIndirectDrawFix = true;
+        }
+    }
+
+    // Return immediately from the fragment shader main function after
+    // executing discard_fragment() in order to avoid side effects
+    // from buffer writes. We disable this behavior for MTLGPUFamilyApple9
+    // (Apple M3) devices until macOS 14.4.
+    requiresReturnAfterDiscard = true;
+    if ([[device name] rangeOfString: @"Apple M3"].location != NSNotFound) {
+        if (@available(macOS 14.4, *)) {}
+        else
+        {
+            requiresReturnAfterDiscard = false;
         }
     }
 

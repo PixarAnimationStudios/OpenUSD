@@ -1,17 +1,22 @@
 #sdf 1.4.32
 (
     """
-    This file has a CharRig with a reference to a nested PathRig.
+    This file has several examples of invalid opinions at
+    relocation source locations.
+    """
+    relocates = {
+        </CharRig/Rig/PathRig/Path>: </CharRig/Anim/Path>, 
+        </VariantAtRelocateSource/Child/Child2>: </VariantAtRelocateSource/Sibling>
+    }
+)
+
+def "CharRig" (
+    """
+    CharRig has a reference to a nested PathRig.
     The Path prim under the PathRig is relocated to the anim scope,
     but there is also an illegal override at the old location.
     This should be reported as an error and ignored.
     """
-)
-
-def "CharRig" (
-    relocates = {
-        </CharRig/Rig/PathRig/Path>: </CharRig/Anim/Path>
-    }
 )
 {
     def Scope "Anim"
@@ -31,5 +36,68 @@ def "CharRig" (
             {
             }
         }
+    }
+}
+
+def "VariantAtRelocateSource" (
+    """
+    The child prim Inherit inherits from the prim Sibling/Class,
+    and the prim Sibling was relocated from Child/Child2.
+
+    During composition, the ancestral variant set and selection authored on
+    Child should contribute opinions, but the variant on Child/Child2 should
+    not. This is because composition prohibits opinions over the source of a
+    relocated prim, and Child/Child2 is the source for the relocated prim
+    Sibling.
+    """
+    references = @./ref.sdf@</Ref>
+)
+{
+    over "Child" (
+        variantSets = "child"
+        variants = {
+            string child = "a"
+        }
+    )
+    {
+        variantSet "child" = {
+            "a" {
+                over "Child2"
+                {
+                    over "Class"
+                    {
+                    }
+                }
+            }
+        }
+
+        over "Child2" (
+            variantSets = "child2"
+            variants = {
+                string child2 = "a"
+            }
+        )
+        {
+            variantSet "child2" = {
+                "a" {
+                    over "Class"
+                    {
+                    }
+                }
+            }
+        }
+    }
+
+    over "Sibling"
+    {
+        over "Class"
+        {
+        }
+    }
+    
+    def "Inherit" (
+        inherits = </VariantAtRelocateSource/Sibling/Class>
+    )
+    {
     }
 }

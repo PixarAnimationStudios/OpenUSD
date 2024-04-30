@@ -295,13 +295,15 @@ UsdGeom_GetPositionsVelocitiesAndAccelerations(
     return true;
 }
 
+/// Helper implementations for UsdGeom_GetOrientationsAndAngularVelocities
+template <class QuatType>
 bool
-UsdGeom_GetOrientationsAndAngularVelocities(
+_UsdGeom_GetOrientationsAndAngularVelocities(
     const UsdAttribute& orientationsAttr,
     const UsdAttribute& angularVelocitiesAttr,
     UsdTimeCode baseTime,
     size_t expectedNumOrientations,
-    VtQuathArray* orientations,
+    VtArray<QuatType>* orientations,
     VtVec3fArray* angularVelocities,
     UsdTimeCode* angularVelocitiesSampleTime,
     UsdPrim const &prim)
@@ -313,7 +315,7 @@ UsdGeom_GetOrientationsAndAngularVelocities(
     double orientationsUpperTimeValue = 0.0;
     bool orientationsHasSamples = true;
 
-    if (!_GetAttrForTransforms<VtQuathArray>(
+    if (!_GetAttrForTransforms<VtArray<QuatType>>(
             orientationsAttr,
             baseTime,
             &orientationsSampleTime,
@@ -383,6 +385,50 @@ UsdGeom_GetOrientationsAndAngularVelocities(
     }
 
     return true;
+}
+
+bool 
+UsdGeom_GetOrientationsAndAngularVelocities(
+    const UsdAttribute& orientationsAttr,
+    const UsdAttribute& angularVelocitiesAttr,
+    UsdTimeCode baseTime,
+    size_t expectedNumOrientations,
+    VtQuatfArray* orientations,
+    VtVec3fArray* angularVelocities,
+    UsdTimeCode* angularVelocitiesSampleTime,
+    UsdPrim const &prim)
+{
+    return _UsdGeom_GetOrientationsAndAngularVelocities<GfQuatf>(
+        orientationsAttr,
+        angularVelocitiesAttr,
+        baseTime,
+        expectedNumOrientations,
+        orientations,
+        angularVelocities,
+        angularVelocitiesSampleTime,
+        prim);
+}
+
+bool 
+UsdGeom_GetOrientationsAndAngularVelocities(
+    const UsdAttribute& orientationsAttr,
+    const UsdAttribute& angularVelocitiesAttr,
+    UsdTimeCode baseTime,
+    size_t expectedNumOrientations,
+    VtQuathArray* orientations,
+    VtVec3fArray* angularVelocities,
+    UsdTimeCode* angularVelocitiesSampleTime,
+    UsdPrim const &prim)
+{
+    return _UsdGeom_GetOrientationsAndAngularVelocities<GfQuath>(
+        orientationsAttr, 
+        angularVelocitiesAttr,
+        baseTime,
+        expectedNumOrientations,
+        orientations,
+        angularVelocities,
+        angularVelocitiesSampleTime,
+        prim);
 }
 
 

@@ -56,7 +56,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// Converter from vector<string> to python list.
+// Converts any iterable C++ container to a Python list.
 template <typename ContainerType>
 struct TfPySequenceToPython
 {
@@ -67,6 +67,20 @@ struct TfPySequenceToPython
             result.append(*i);
         }
         return boost::python::incref(result.ptr());
+    }
+};
+
+// Converts any iterable C++ container to a Python set.
+template <typename ContainerType>
+struct TfPySequenceToPythonSet
+{
+    static PyObject* convert(ContainerType const &c)
+    {
+        PyObject* result = PySet_New(nullptr);
+        for (const auto &elem : c) {
+            PySet_Add(result, boost::python::object(elem).ptr());
+        }
+        return result;
     }
 };
 

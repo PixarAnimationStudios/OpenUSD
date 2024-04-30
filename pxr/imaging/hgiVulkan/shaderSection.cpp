@@ -162,6 +162,22 @@ HgiVulkanMemberShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
         return true;
     }
 
+    WriteInterpolation(ss);
+    WriteSampling(ss);
+    WriteStorage(ss);
+    WriteDeclaration(ss);
+    return true;
+}
+
+void
+HgiVulkanMemberShaderSection::WriteType(std::ostream& ss) const
+{
+    ss << _typeName;
+}
+
+void
+HgiVulkanMemberShaderSection::WriteInterpolation(std::ostream& ss) const
+{
     switch (_interpolation) {
     case HgiInterpolationDefault:
         break;
@@ -172,6 +188,11 @@ HgiVulkanMemberShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
         ss << "noperspective ";
         break;
     }
+}
+
+void
+HgiVulkanMemberShaderSection::WriteSampling(std::ostream& ss) const
+{
     switch (_sampling) {
     case HgiSamplingDefault:
         break;
@@ -182,6 +203,11 @@ HgiVulkanMemberShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
         ss << "sample ";
         break;
     }
+}
+
+void
+HgiVulkanMemberShaderSection::WriteStorage(std::ostream& ss) const
+{
     switch (_storage) {
     case HgiStorageDefault:
         break;
@@ -189,14 +215,6 @@ HgiVulkanMemberShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
         ss << "patch ";
         break;
     }
-    WriteDeclaration(ss);
-    return true;
-}
-
-void
-HgiVulkanMemberShaderSection::WriteType(std::ostream& ss) const
-{
-    ss << _typeName;
 }
 
 HgiVulkanBlockShaderSection::HgiVulkanBlockShaderSection(
@@ -216,7 +234,7 @@ HgiVulkanBlockShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
     WriteIdentifier(ss);
     ss << "\n";
     ss << "{\n";
-    for(const HgiShaderFunctionParamDesc &param : _parameters) {
+    for (const HgiShaderFunctionParamDesc &param : _parameters) {
         ss << "    " << param.type << " " << param.nameInShader << ";\n";
     }
     ss << "\n};\n";
@@ -239,9 +257,7 @@ HgiVulkanTextureShaderSection::HgiVulkanTextureShaderSection(
                         attributes,
                         _storageQualifier,
                         defaultValue,
-                        arraySize > 0 ? 
-                        "[" + std::to_string(arraySize) + "]" :
-                        "")
+                        arraySize > 0 ? std::to_string(arraySize) : "")
   , _dimensions(dimensions)
   , _format(format)
   , _textureType(textureType)
@@ -337,13 +353,11 @@ HgiVulkanTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
         "vec" + std::to_string(coordDim);
 
     if (_arraySize > 0) {
-        WriteType(ss);
-        ss << " HgiGetSampler_";
+        ss << "#define HgiGetSampler_";
         WriteIdentifier(ss);
-        ss << "(uint index) {\n";
-        ss << "    return ";
+        ss << "(index) ";
         WriteIdentifier(ss);
-        ss << "[index];\n}\n";
+        ss << "[index]\n";
     } else {
         ss << "#define HgiGetSampler_";
         WriteIdentifier(ss);
@@ -544,7 +558,7 @@ HgiVulkanInterstageBlockShaderSection::HgiVulkanInterstageBlockShaderSection(
     const HgiShaderSectionAttributeVector &attributes,
     const std::string &qualifier,
     const std::string &arraySize,
-    const HgiVulkanShaderSectionPtrVector &members)
+    const HgiVulkanMemberShaderSectionPtrVector &members)
     : HgiVulkanShaderSection(blockIdentifier,
                              attributes,
                              qualifier,
@@ -582,8 +596,11 @@ HgiVulkanInterstageBlockShaderSection::VisitGlobalMemberDeclarations(
     ss << _qualifier << " ";
     WriteIdentifier(ss);
     ss << " {\n";
-    for (const HgiVulkanShaderSection* member : _members) {
+    for (const HgiVulkanMemberShaderSection* member : _members) {
         ss << "  ";
+        member->WriteInterpolation(ss);
+        member->WriteSampling(ss);
+        member->WriteStorage(ss);
         member->WriteType(ss);
         ss << " ";
         member->WriteIdentifier(ss);

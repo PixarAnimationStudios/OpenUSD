@@ -109,10 +109,45 @@ files which contain references to plain :filename:`.usd` assets, those assets
 can be converted between binary and text without changing the sources which
 refer to them.
 
+When authoring USD, the underlying format or encoding of the :filename:`.usd` 
+extension can be specified using :usdcpp:`FileFormatArguments` as observed 
+in :usdcpp:`SdfLayer::CreateNew` or :usdcpp:`SdfLayer::Export`.
+
+Developers can also use the :envvar:`USD_DEFAULT_FILE_FORMAT` environment 
+variable to control the default underlying format. The environment variable is 
+used when the underlying format is not explicitly specified through 
+:usdcpp:`FileFormatArguments`. Valid values for the 
+:envvar:`USD_DEFAULT_FILE_FORMAT` environment variable and their behaviors are 
+detailed below:
+
+  +--------------------------------+--------------------------------+
+  | USD_DEFAULT_FILE_FORMAT Value  | :filename:`.usd` Encoding Used |
+  +================================+================================+
+  | <unset>                        | Random-access "Crate" binary   |
+  +--------------------------------+--------------------------------+
+  | usdc                           | Random-access "Crate" binary   |
+  +--------------------------------+--------------------------------+
+  | usda                           | Human-readable UTF-8 text      |
+  +--------------------------------+--------------------------------+
+
 What character encoding does :filename:`.usda` support?
 #######################################################
 
 The :filename:`.usda` file format encodes text as UTF-8.
+
+As of the 24.03 release, USD extends UTF-8 support to path and metadata 
+identifiers.
+
+USD does not enforce or apply Unicode normalization. As an example, the 
+second letter in München can be represented in UTF-8 by a single code point 
+(the code point for ü) or two code points (u with an umlaut modifier) -- to USD, 
+these two representations of München are distinct. While USD does not enforce a 
+normalization form, Unicode "Normalization Form C" (NFC) is preferred when 
+creating new tokens and paths.
+
+See `Unicode in USD 
+<api/_usd__page__u_t_f_8.html>`__ for more details on best practices when working
+with UTF-8 encoded content in `.usda` files.
 
 How can I convert USD files between binary and text?
 ####################################################
@@ -678,7 +713,7 @@ the directory containing the USD Python modules:
 
 Where :file:`<inst>` represents the :makevar:`CMAKE_INSTALL_PREFIX` set in your
 build configuration. See `Advanced Build Configuration
-<https://github.com/PixarAnimationStudios/USD/blob/release/BUILDING.md>`_ for
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md>`_ for
 more information.
 
 Why Isn't This Plugin Being Built?
@@ -686,7 +721,7 @@ Why Isn't This Plugin Being Built?
 
 The plugins included in the USD distribution are disabled by default.
 See `Advanced Build Configuration
-<https://github.com/PixarAnimationStudios/USD/blob/release/BUILDING.md>`_ for
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md>`_ for
 instructions on how to enable these plugins.
 
 Why Isn't My App Finding USD DLLs and Plugins on Windows?
@@ -721,6 +756,6 @@ for more details on how Windows searches for DLLs at runtime.
 If you prefer not to have to install a large number of DLLs, you can build a 
 single monolithic USD DLL using the :code:`PXR_BUILD_MONOLITHIC` cmake flag. See 
 `Advanced Build Configuration 
-<https://github.com/PixarAnimationStudios/USD/blob/release/BUILDING.md>`_ for
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md>`_ for
 more information. Note that you will still need to install the USD plugins 
 directory along with the monolithic USD DLL.

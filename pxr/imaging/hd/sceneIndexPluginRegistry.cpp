@@ -173,33 +173,36 @@ HdSceneIndexPluginRegistry::AppendSceneIndicesForRenderer(
         }
     }
 
-    HdSceneIndexBaseRefPtr result = inputScene;
-
     HdContainerDataSourceHandle underlayArgs =
         HdRetainedContainerDataSource::New(
             HdSceneIndexPluginRegistryTokens->rendererDisplayName,
             HdRetainedTypedSampledDataSource<std::string>::New(
                 rendererDisplayName));
 
+    _PhasesMap mergedPhasesMap;
+
     // append scene indices registered to run for all renderers first
     _RenderersMap::const_iterator it = _sceneIndicesForRenderers.find("");
     if (it != _sceneIndicesForRenderers.end()) {
-        result = _AppendForPhases(result, it->second, underlayArgs,
-            renderInstanceId);
+        mergedPhasesMap = it->second;
+    }
+    // append scene indices registered to run for specified renderer
+    if (!rendererDisplayName.empty()) {
+        it = _sceneIndicesForRenderers.find(rendererDisplayName);
+        if (it != _sceneIndicesForRenderers.end()) {
+            for (auto const &phaseEntry: it->second) {
+                InsertionPhase phase = phaseEntry.first;
+                _EntryList &mergedEntries = mergedPhasesMap[phase];
+                mergedEntries.insert(
+                    mergedEntries.end(),
+                    phaseEntry.second.begin(),
+                    phaseEntry.second.end());
+            }
+        }
     }
 
-    // then check for the specific renderer
-    if (rendererDisplayName.empty()) {
-        return result;
-    }
-
-    it = _sceneIndicesForRenderers.find(rendererDisplayName);
-    if (it != _sceneIndicesForRenderers.end()) {
-        result = _AppendForPhases(result, it->second, underlayArgs,
-            renderInstanceId);
-    }
-
-    return result;
+    return _AppendForPhases(inputScene, mergedPhasesMap,
+                            underlayArgs, renderInstanceId);
 }
 
 void

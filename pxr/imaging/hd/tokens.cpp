@@ -64,6 +64,9 @@ TF_DEFINE_PUBLIC_TOKENS(HdRenderSettingsTokens, HD_RENDER_SETTINGS_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(HdRenderSettingsPrimTokens,
                         HD_RENDER_SETTINGS_PRIM_TOKENS);
 
+TF_DEFINE_PUBLIC_TOKENS(HdAspectRatioConformPolicyTokens, 
+                        HD_ASPECT_RATIO_CONFORM_POLICY);
+
 TF_DEFINE_PUBLIC_TOKENS(HdResourceTypeTokens, HD_RESOURCE_TYPE_TOKENS);
 
 TF_DEFINE_PUBLIC_TOKENS(HdSceneIndexEmulationTokens, 
@@ -77,18 +80,32 @@ bool HdPrimTypeIsGprim(TfToken const& primType)
             primType == HdPrimTypeTokens->volume);
 }
 
+const TfTokenVector &HdLightPrimTypeTokens()
+{
+    static const TfTokenVector vec = {
+        HdPrimTypeTokens->simpleLight,
+        HdPrimTypeTokens->cylinderLight,
+        HdPrimTypeTokens->diskLight,
+        HdPrimTypeTokens->distantLight,
+        HdPrimTypeTokens->domeLight,
+        HdPrimTypeTokens->light,
+        HdPrimTypeTokens->pluginLight,
+        HdPrimTypeTokens->rectLight,
+        HdPrimTypeTokens->sphereLight,
+        HdPrimTypeTokens->meshLight
+    };
+    return vec;
+}
+
+
 bool HdPrimTypeIsLight(TfToken const& primType)
 {
-    return (primType == HdPrimTypeTokens->simpleLight ||
-            primType == HdPrimTypeTokens->cylinderLight ||
-            primType == HdPrimTypeTokens->diskLight ||
-            primType == HdPrimTypeTokens->distantLight ||
-            primType == HdPrimTypeTokens->domeLight ||
-            primType == HdPrimTypeTokens->light ||
-            primType == HdPrimTypeTokens->pluginLight ||
-            primType == HdPrimTypeTokens->rectLight ||
-            primType == HdPrimTypeTokens->sphereLight ||
-            primType == HdPrimTypeTokens->meshLight);
+    for (const TfToken &lightPrimType : HdLightPrimTypeTokens()) {
+        if (primType == lightPrimType) {
+            return true;
+        }
+    }
+    return false;
 }
 
 TfToken HdAovTokensMakePrimvar(TfToken const& primvar)

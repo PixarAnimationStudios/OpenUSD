@@ -24,6 +24,8 @@
 #ifndef PXR_USD_IMAGING_USD_IMAGING_DATA_SOURCE_STAGE_GLOBALS_H
 #define PXR_USD_IMAGING_USD_IMAGING_DATA_SOURCE_STAGE_GLOBALS_H
 
+#include "pxr/usdImaging/usdImaging/api.h"
+
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
 
@@ -45,6 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdImagingDataSourceStageGlobals
 {
 public:
+    USDIMAGING_API
     virtual ~UsdImagingDataSourceStageGlobals();
 
     // Datasource API
@@ -52,10 +55,17 @@ public:
     /// Returns the current time represented in this instance.
     virtual UsdTimeCode GetTime() const = 0;
 
-    /// Flags the given \p primPath as time varying at the given locator.
+    /// Flags the given \p hydraPath as time varying at the given locator.
     virtual void FlagAsTimeVarying(
-        const SdfPath &primPath, 
-        const HdDataSourceLocator & locator) const = 0;
+        const SdfPath &hydraPath, 
+        const HdDataSourceLocator &locator) const = 0;
+
+    /// Flags the object at \p usdPath as dependent on an asset path.
+    /// \p usdPath may point to a prim (e.g., if the prim has asset path
+    /// metadata) or an attribute (e.g., if the attribute has an
+    /// asset path value).
+    virtual void FlagAsAssetPathDependent(
+        const SdfPath &usdPath) const = 0;
 };
 
 

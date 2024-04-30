@@ -1,0 +1,22 @@
+#sdf 1.4.32
+(
+    relocates = {
+        </Ref/PayloadChild>: </Ref/Child>
+    }
+)
+
+def "Payload"
+{
+    def "PayloadChild"
+    {
+    }
+}
+
+def "Ref" (
+    payload = </Payload>
+)
+{
+    def "Child"
+    {
+    }
+}

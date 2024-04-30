@@ -1,0 +1,32 @@
+Loading @SubrootReferenceAndVariants2/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Inherit>
+
+Prim Stack:
+    root.sdf             /Inherit
+
+Child names:
+     ['CHARACTER']
+
+------------------------------------------------------------------------
+Results for composing </Inherit/CHARACTER>
+
+Prim Stack:
+    root.sdf             /Inherit/CHARACTER
+
+------------------------------------------------------------------------
+Results for composing </Character>
+
+Prim Stack:
+    root.sdf             /Character
+    root.sdf             /Inherit/CHARACTER
+    CharGroup.sdf        /CHARGROUP/CHARACTER
+    CharGroup.sdf        /CHARGROUP{v=x}CHARACTER
+    CharGroup.sdf        /Ref/CHARACTER
+    CharGroup.sdf        /Inherit/CHARACTER
+

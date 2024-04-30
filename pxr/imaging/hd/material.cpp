@@ -25,7 +25,36 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/perfLog.h"
 
+#include "pxr/usd/sdr/shaderNode.h"
+#include "pxr/usd/sdr/shaderProperty.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (wrapS)
+    (wrapT)
+    (wrapR)
+
+    (repeat)
+    (mirror)
+    (clamp)
+    (black)
+    (useMetadata)
+
+    (HwUvTexture_1)
+
+    (minFilter)
+    (magFilter)
+
+    (nearest)
+    (linear)
+    (nearestMipmapNearest)
+    (nearestMipmapLinear)
+    (linearMipmapNearest)
+    (linearMipmapLinear)
+);
 
 HdMaterial::HdMaterial(SdfPath const& id)
  : HdSprim(id)
@@ -94,6 +123,164 @@ HdConvertToHdMaterialNetwork2(
         result.primvars = hdNetwork.primvars;
     }
     return result;
+}
+
+// Look up value from material node parameters and fallback to
+// corresponding value on given SdrNode.
+template<typename T>
+static
+auto
+_ResolveParameter(
+    const HdMaterialNode2& node,
+    const SdrShaderNodeConstPtr& sdrNode,
+    const TfToken& name,
+    const T& defaultValue) -> T
+{
+    // First consult node parameters...
+    const auto it = node.parameters.find(name);
+    if (it != node.parameters.end()) {
+        const VtValue& value = it->second;
+        if (value.IsHolding<T>()) {
+            return value.UncheckedGet<T>();
+        }
+    }
+
+    // Then fallback to SdrNode.
+    if (sdrNode) {
+        if (const SdrShaderPropertyConstPtr input =
+                                        sdrNode->GetShaderInput(name)) {
+            const VtValue& value = input->GetDefaultValue();
+            if (value.IsHolding<T>()) {
+                return value.UncheckedGet<T>();
+            }
+        }
+    }
+
+    return defaultValue;
+}
+
+static
+HdWrap
+_ResolveWrapSamplerParameter(
+    const SdfPath& nodePath,
+    const HdMaterialNode2& node,
+    const SdrShaderNodeConstPtr& sdrNode,
+    const TfToken& name)
+{
+    const TfToken value = _ResolveParameter(
+        node, sdrNode, name, _tokens->useMetadata);
+
+    if (value == _tokens->repeat) {
+        return HdWrapRepeat;
+    }
+
+    if (value == _tokens->mirror) {
+        return HdWrapMirror;
+    }
+
+    if (value == _tokens->clamp) {
+        return HdWrapClamp;
+    }
+
+    if (value == _tokens->black) {
+        return HdWrapBlack;
+    }
+
+    if (value == _tokens->useMetadata) {
+        if (node.nodeTypeId == _tokens->HwUvTexture_1) {
+            return HdWrapLegacy;
+        }
+        return HdWrapUseMetadata;
+    }
+
+    TF_WARN("Unknown wrap mode on prim %s: %s",
+            nodePath.GetText(), value.GetText());
+
+    return HdWrapUseMetadata;
+}
+
+static
+HdMinFilter
+_ResolveMinSamplerParameter(
+    const SdfPath& nodePath,
+    const HdMaterialNode2& node,
+    const SdrShaderNodeConstPtr& sdrNode)
+{
+    // Using linearMipmapLinear as fallback value.
+
+    // Note that it is ambiguous whether the fallback value in the old
+    // texture system (usdImagingGL/textureUtils.cpp) was linear or
+    // linearMipmapLinear: when nothing was authored in USD for the
+    // min filter, linearMipmapLinear was used, but when an empty
+    // token was authored, linear was used.
+
+    const TfToken value = _ResolveParameter(
+        node, sdrNode, _tokens->minFilter,
+        _tokens->linearMipmapLinear);
+
+    if (value == _tokens->nearest) {
+        return HdMinFilterNearest;
+    }
+
+    if (value == _tokens->linear) {
+        return HdMinFilterLinear;
+    }
+
+    if (value == _tokens->nearestMipmapNearest) {
+        return HdMinFilterNearestMipmapNearest;
+    }
+
+    if (value == _tokens->nearestMipmapLinear) {
+        return HdMinFilterNearestMipmapLinear;
+    }
+
+    if (value == _tokens->linearMipmapNearest) {
+        return HdMinFilterLinearMipmapNearest;
+    }
+
+    if (value == _tokens->linearMipmapLinear) {
+        return HdMinFilterLinearMipmapLinear;
+    }
+
+    return HdMinFilterLinearMipmapLinear;
+}
+
+static
+HdMagFilter
+_ResolveMagSamplerParameter(
+    const SdfPath& nodePath,
+    const HdMaterialNode2& node,
+    const SdrShaderNodeConstPtr& sdrNode)
+{
+    const TfToken value = _ResolveParameter(
+        node, sdrNode, _tokens->magFilter, _tokens->linear);
+
+    if (value == _tokens->nearest) {
+        return HdMagFilterNearest;
+    }
+
+    return HdMagFilterLinear;
+}
+
+HdSamplerParameters
+HdGetSamplerParameters(
+    const SdfPath& nodePath,
+    const HdMaterialNode2& node,
+    const SdrShaderNodeConstPtr& sdrNode)
+{
+    return { _ResolveWrapSamplerParameter(
+                 nodePath, node, sdrNode, _tokens->wrapS),
+             _ResolveWrapSamplerParameter(
+                 nodePath, node, sdrNode, _tokens->wrapT),
+             _ResolveWrapSamplerParameter(
+                 nodePath, node, sdrNode, _tokens->wrapR),
+             _ResolveMinSamplerParameter(
+                 nodePath, node, sdrNode),
+             _ResolveMagSamplerParameter(
+                 nodePath, node, sdrNode),
+             HdBorderColorTransparentBlack, 
+             /*enableCompare*/false, 
+             HdCmpFuncNever };
 }
 
 

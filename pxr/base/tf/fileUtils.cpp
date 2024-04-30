@@ -34,7 +34,6 @@
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/errno.h"
 
-#include <boost/assign.hpp>
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashset.h"
 
@@ -676,7 +675,7 @@ TfTouchFile(string const &fileName, bool create)
             GENERIC_WRITE,          // open for write
             0,                      // not for sharing
             NULL,                   // default security
-            CREATE_ALWAYS,          // overwrite existing
+            OPEN_ALWAYS,            // opens existing
             FILE_ATTRIBUTE_NORMAL,  //normal file
             NULL);                  // no template
 

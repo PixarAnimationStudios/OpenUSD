@@ -2186,6 +2186,6 @@ def Shader "Primvar"
 {
     uniform token info:id = "UsdPrimvarReader_float3"
 
-    token inputs:varname = "displayColor"
+    string inputs:varname = "displayColor"
     float3 outputs:result
 }

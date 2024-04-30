@@ -24,7 +24,7 @@
 /// \file glPlatformContext.cpp
 
 #include "pxr/imaging/garch/glPlatformContext.h"
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -61,11 +61,11 @@ GarchGLXContextState::operator==(const GarchGLXContextState& rhs) const
 size_t
 GarchGLXContextState::GetHash() const
 {
-    size_t result = 0;
-    boost::hash_combine(result, display);
-    boost::hash_combine(result, drawable);
-    boost::hash_combine(result, context);
-    return result;
+    return TfHash::Combine(        
+        display,
+        drawable,
+        context
+    );
 }
 
 bool

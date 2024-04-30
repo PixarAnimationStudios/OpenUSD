@@ -1,0 +1,62 @@
+#sdf 1.4.32
+(
+    """
+    This museum case tests that ancestral payloads in a prim
+    are only loaded if that prim's payloads are loaded. This
+    should not be affected by loading payloads on the ancestor
+    prim where the payload was authored.
+    """
+    relocates = {
+        </PayloadedModel/Anim>: </PayloadedModel/Test/Anim>
+    }
+)
+
+def "Model" (
+    """
+    This prim contains an empty payload, but happens to match
+    the name of the prim containing the payload in model_payload.sdf.
+    """
+    payload = @./empty_payload.sdf@</Empty>
+)
+{
+}
+
+def "ReferencePayloadedModel" (
+    """
+    Test case that references model.sdf which contains a
+    payload arc to @model_payload.sdf@</Model>. The payload path
+    happens to match the path of the /Model prim in the root
+    layer stack.
+
+    The load state of /Model should not affect whether the
+    contents of the payload arc are composed into this prim.
+    """
+    references = @./model.sdf@</Model>
+)
+{
+}
+
+def "PayloadedModel" (
+    """
+    Test prim that contains the same payload as model.sdf.
+    """
+    payload = @./model_payload.sdf@</Model>
+)
+{
+    def Scope "Test"
+    {
+    }
+}
+
+def "InternalReferencePayloadedModel" (
+    """
+    Test case that internally-references /PayloadedModel.
+
+    The load state of /PayloadedModel should not affect
+    whether the contents of its payload are composed into
+    this prim.
+    """
+    references = </PayloadedModel>
+)
+{
+}

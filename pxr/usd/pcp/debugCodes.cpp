@@ -44,6 +44,11 @@ TF_REGISTRY_FUNCTION(TfDebug)
         PCP_PRIM_INDEX_GRAPHS, 
         "Write graphviz 'dot' files during prim indexing "
         "(requires PCP_PRIM_INDEX)");
+    
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        PCP_PRIM_INDEX_GRAPHS_MAPPINGS,
+        "Include namespace mappings in graphviz files generated "
+        "during prim indexing (requires PCP_PRIM_INDEX_GRAPHS)");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(PCP_NAMESPACE_EDIT, "Pcp namespace edits");
 }

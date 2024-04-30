@@ -2,10 +2,19 @@
 (
     startTimeCode = 1 
     endTimeCode = 10 
-    upAxis = "Z"
 )
 
-def Sphere "SphereWithFloatRadius" 
-{ 
-    double radius = 10 
+def Sphere "Sphere"
+{
+    double radius = 10
+    double radius.timeSamples = {
+         1: 0.5,
+        11: 1.5
+    }
+}
+
+def Camera "main_cam"
+{
+    custom double3 xformOp:translate = (0, 0, 10)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
 }

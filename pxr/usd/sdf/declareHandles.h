@@ -30,6 +30,7 @@
 #include "pxr/usd/sdf/api.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/hints.h"
+#include "pxr/base/tf/delegatedCountPtr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/weakPtrFacade.h"
 #include "pxr/base/tf/declarePtrs.h"
@@ -38,8 +39,6 @@
 #include <typeinfo>
 #include <type_traits>
 #include <vector>
-#include <boost/intrusive_ptr.hpp>
-#include <boost/operators.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -48,10 +47,10 @@ class SdfSpec;
 template <class T> class TfRefPtr;
 class Sdf_Identity;
 
-// Sdf_Identities are held via intrusive_ptr so that we can carefully
+// Sdf_Identities are held via TfDelegatedCountPtr so that we can carefully
 // manage the ref-count to avoid race conditions -- see
 // Sdf_IdentityRegistry::Identify().
-typedef boost::intrusive_ptr<Sdf_Identity> Sdf_IdentityRefPtr;
+using Sdf_IdentityRefPtr = TfDelegatedCountPtr<Sdf_Identity>;
 
 /// \class SdfHandle
 ///
@@ -60,7 +59,7 @@ typedef boost::intrusive_ptr<Sdf_Identity> Sdf_IdentityRefPtr;
 /// be expired.
 ///
 template <class T>
-class SdfHandle : private boost::totally_ordered<SdfHandle<T> > {
+class SdfHandle {
 public:
     typedef SdfHandle<T> This;
     typedef T SpecType;
@@ -135,12 +134,36 @@ public:
         return _spec == other._spec;
     }
 
+    /// \sa SdfHandle::operator==
+    friend bool operator!=(const SdfHandle& lhs, const SdfHandle& rhs)
+    {
+        return !(lhs == rhs);
+    }
+
     /// Arranges handles in an arbitrary strict weak ordering.  Note that
     /// this ordering is stable across path changes.
     template <class U>
     bool operator<(const SdfHandle<U>& other) const
     {
         return _spec < other._spec;
+    }
+
+    /// \sa SdfHandle::operator<
+    friend bool operator>(const SdfHandle& lhs, const SdfHandle& rhs)
+    {
+        return rhs < lhs;
+    }
+
+    /// \sa SdfHandle::operator<
+    friend bool operator<=(const SdfHandle& lhs, const SdfHandle& rhs)
+    {
+        return !(rhs < lhs);
+    }
+
+    /// \sa SdfHandle::operator<
+    friend bool operator>=(const SdfHandle& lhs, const SdfHandle& rhs)
+    {
+        return !(lhs < rhs);
     }
 
     /// Hash.

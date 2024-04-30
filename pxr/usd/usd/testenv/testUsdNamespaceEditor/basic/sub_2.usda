@@ -1,0 +1,12 @@
+#usda 1.0
+
+def PrimTypeC "C" (
+    doc = "Sub2"
+    prepend apiSchemas = ["C_Sub2_API"]
+) {
+    custom double C_Sub2_Attr
+    
+    def "C_Sub2_Prim" {
+    }
+}
+

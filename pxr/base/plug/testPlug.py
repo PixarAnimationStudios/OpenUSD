@@ -108,7 +108,7 @@ class TestPlug(unittest.TestCase):
                         'TestPlugModuleDepBadDep2', 'TestPlugModuleDepBadLoad',
                         'TestPlugModuleDepCycle', 
                         'TestPlugModuleLoaded', 'TestPlugModuleLoadedBadBase',
-                        'TestPlugModuleUnloadable']))
+                        'TestPlugModuleUnloadable', 'TestPlugModuleUnicode']))
 
         # Check available subclasses of TestPlugBase<1>
         base1Subclasses = Tf.Type.FindByName('_TestPlugBase<1>').GetAllDerivedTypes()
@@ -117,7 +117,8 @@ class TestPlug(unittest.TestCase):
             'TestPlugModule1.TestPlugPythonDerived1',
             'TestPlugModuleLoaded.TestPlugPythonLoaded',
             'TestPlugModuleLoadedBadBase.TestPlugPythonLoadedBadBase',
-            'TestPlugUnloadable', 'TestPlugPythonUnloadable')
+            'TestPlugUnloadable', 'TestPlugPythonUnloadable',
+            'TestPlugModuleUnicode.TestPlugPythonUnicode')
         for sc in base1SubclassesExpected:
             self.assertIn(sc, base1Subclasses)
         self.assertEqual(len(base1Subclasses), len(base1SubclassesExpected))

@@ -41,7 +41,6 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/arch/fileSystem.h"
 
-#include <boost/assign.hpp>
 #include <ostream>
 
 using std::string;
@@ -302,6 +301,12 @@ _WriteLayer(
         }
 
     } // end for each field
+
+    // Add any layer relocates to the header.
+    if (l->HasRelocates()) {
+        Sdf_FileIOUtility::WriteRelocates(
+            header, 1, true, l->GetRelocates());
+    }
 
     // Write header if not empty.
     string headerStr = header.GetString();

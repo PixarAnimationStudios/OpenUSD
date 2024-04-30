@@ -87,7 +87,7 @@ public:
             UsdPrim const& descendentPrim,
             TfToken const& subprim,
             TfTokenVector const& properties,
-            UsdImagingPropertyInvalidationType invalidationType);
+            UsdImagingPropertyInvalidationType invalidationType) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Initialization
@@ -174,6 +174,19 @@ public:
     using BaseAdapter = UsdImagingRepresentedByAncestorPrimAdapter;
 
     UsdImagingShaderAdapter()
+        : UsdImagingRepresentedByAncestorPrimAdapter() {}
+};
+
+/// \class UsdImagingNodeGraphAdapter
+/// \brief Delegates invalidation responsibility of a Noge Graph prim to an
+/// ancestor Material prim
+class UsdImagingNodeGraphAdapter :
+        public UsdImagingRepresentedByAncestorPrimAdapter
+{
+public:
+    using BaseAdapter = UsdImagingRepresentedByAncestorPrimAdapter;
+
+    UsdImagingNodeGraphAdapter()
         : UsdImagingRepresentedByAncestorPrimAdapter() {}
 };
 

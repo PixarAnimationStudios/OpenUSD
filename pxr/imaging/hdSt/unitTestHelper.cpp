@@ -267,7 +267,7 @@ HdSt_TestLightingShader::Prepare()
         hdStResourceRegistry->AllocateUniformBufferArrayRange(
             _tokens->lighting,
             bufferSpecs,
-            HdBufferArrayUsageHint());
+            HdBufferArrayUsageHintBitsUniform);
 
     HdBufferSourceSharedPtrVector sources = {
         std::make_shared<HdVtBufferSource>(
@@ -619,6 +619,7 @@ HdSt_TextureTestDriver::_CreateTextureBindings(
         if (desc == resourceDesc) {
             return true;
         }
+        _hgi->DestroyResourceBindings(&_resourceBindings);
     }
 
     _resourceBindings = _hgi->CreateResourceBindings(resourceDesc);

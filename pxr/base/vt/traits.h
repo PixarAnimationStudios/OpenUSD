@@ -28,9 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/vt/api.h"
-#include "pxr/base/tf/preprocessorUtils.h"
-
-#include <boost/type_traits/has_trivial_assign.hpp>
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 
 #include <type_traits>
 
@@ -47,7 +45,7 @@ struct VtIsArray : public std::false_type {};
 // containers.  Clients can specialize this template for their own types that
 // aren't trivially assignable but are cheap to copy to enable local storage.
 template <class T>
-struct VtValueTypeHasCheapCopy : boost::has_trivial_assign<T> {};
+struct VtValueTypeHasCheapCopy : std::is_trivially_copy_assignable<T> {};
 
 #define VT_TYPE_IS_CHEAP_TO_COPY(T)                                            \
     template <> struct VtValueTypeHasCheapCopy<TF_PP_EAT_PARENS(T)>            \

@@ -35,17 +35,6 @@ public:
     using BaseAdapter = UsdImagingAPISchemaAdapter;
 
     USDIMAGING_API
-    TfTokenVector GetImagingSubprims(
-            UsdPrim const &prim,
-            TfToken const &appliedInstanceName) override;
-
-    USDIMAGING_API
-    TfToken GetImagingSubprimType(
-            UsdPrim const &prim,
-            TfToken const &subprim,
-            TfToken const &appliedInstanceName) override;
-
-    USDIMAGING_API
     HdContainerDataSourceHandle GetImagingSubprimData(
             UsdPrim const& prim,
             TfToken const& subprim,

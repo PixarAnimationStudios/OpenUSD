@@ -99,7 +99,8 @@ public:
         // array value of VtArray<T>.
         template <class T>
         Type(char const *name, const T& defaultValue)
-            : Type(TfToken(name), VtValue(defaultValue), VtValue(VtArray<T>()))
+            : Type(TfToken(name, TfToken::Immortal),
+                   VtValue(defaultValue), VtValue(VtArray<T>()))
         { }
 
         // Specify a type with the given name and underlying C++ type.

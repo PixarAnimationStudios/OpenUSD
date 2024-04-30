@@ -32,6 +32,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 int main()
 {
+    ARCH_AXIOM(ArchGetNanosecondsPerTick() > 0.0);
+    // If you're not even doing 1 tick a second, it's probably a bogus value
+    ARCH_AXIOM(ArchGetNanosecondsPerTick() < 1e9);
     // Verify conversions for many tick counts.
     for (size_t ticks = 0ul; ticks != 1ul << 24u; ++ticks) {
         ARCH_AXIOM( (uint64_t) ArchTicksToNanoseconds(ticks) == 

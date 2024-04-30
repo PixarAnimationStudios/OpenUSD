@@ -258,7 +258,7 @@ HdStResourceRegistry::AllocateNonUniformImmutableBufferArrayRange(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
 {
-    usageHint.bits.immutable = 1;
+    usageHint |= HdBufferArrayUsageHintBitsImmutable;
 
     return _AllocateBufferArrayRange(
                 _nonUniformImmutableAggregationStrategy.get(),
@@ -337,7 +337,7 @@ HdStResourceRegistry::UpdateNonUniformImmutableBufferArrayRange(
         HdBufferSpecVector const& removedSpecs,
         HdBufferArrayUsageHint usageHint)
 {
-    usageHint.bits.immutable = 1;
+    usageHint |= HdBufferArrayUsageHintBitsImmutable;
 
     return _UpdateBufferArrayRange(
         _nonUniformImmutableAggregationStrategy.get(),
@@ -535,7 +535,8 @@ HdStResourceRegistry::RegisterDispatchBuffer(
 HdStBufferResourceSharedPtr
 HdStResourceRegistry::RegisterBufferResource(
     TfToken const &role, 
-    HdTupleType tupleType)
+    HdTupleType tupleType,
+    HgiBufferUsage bufferUsage)
 {
     HdStBufferResourceSharedPtr const result =
         std::make_shared<HdStBufferResource>(
@@ -544,8 +545,8 @@ HdStResourceRegistry::RegisterBufferResource(
     size_t byteSize = HdDataSizeOfTupleType(tupleType);
 
     HgiBufferDesc bufDesc;
-    bufDesc.usage= HgiBufferUsageUniform;
-    bufDesc.byteSize= byteSize;
+    bufDesc.usage = bufferUsage;
+    bufDesc.byteSize = byteSize;
     HgiBufferHandle buffer = _hgi->CreateBuffer(bufDesc);
 
     result->SetAllocation(buffer, byteSize);
@@ -691,6 +692,19 @@ HdStResourceRegistry::RegisterComputePipeline(
     return _computePipelineRegistry.GetInstance(id);
 }
 
+HdResourceRegistry*
+HdStResourceRegistry::FindOrCreateSubResourceRegistry(
+    const std::string& identifier,
+    const std::function<std::unique_ptr<HdResourceRegistry>()>& factory)
+{
+    auto it = _subResourceRegistries.find(identifier);
+    if (it == _subResourceRegistries.end()) {
+        it = _subResourceRegistries.insert({ identifier, factory() }).first;
+    }
+
+    return it->second.get();
+}
+
 std::ostream &operator <<(
     std::ostream &out,
     const HdStResourceRegistry& self)
@@ -784,7 +798,14 @@ HdStResourceRegistry::_CommitTextures()
 void
 HdStResourceRegistry::_Commit()
 {
-    // Process textures first before resolving buffer sources since
+    // Process sub resource registries before other resources in
+    // case they depend on any resources in this resource registry
+    // being committed.
+    for (auto& subResourceRegistry : _subResourceRegistries) {
+        subResourceRegistry.second->Commit();
+    }
+
+    // Process textures before resolving buffer sources since
     // some computation buffer sources need meta-data from textures
     // (such as the grid transform for an OpenVDB file) or texture
     // handles (for bindless textures).
@@ -801,19 +822,15 @@ HdStResourceRegistry::_Commit()
         // for each pending source, resolve and check if it needs buffer
         // reallocation or not.
 
-        size_t numBufferSourcesResolved = 0;
-        int numThreads = 1; //omp_get_max_threads();
+        std::atomic_size_t numBufferSourcesResolved { 0 };
         int numIterations = 0;
 
         // iterate until all buffer sources have been resolved.
         while (numBufferSourcesResolved < _numBufferSourcesToResolve) {
-            // XXX: Parallel for is currently much slower than a single
-            // thread in all tested scenarios, disabling until we can
-            // figure out what's going on here.
-//#pragma omp parallel for
-            for (int i = 0; i < numThreads; ++i) {
-                // iterate over all pending sources
-                for (_PendingSource const& req: _pendingSources) {
+            // iterate over all pending sources
+            WorkParallelForEach(_pendingSources.begin(), _pendingSources.end(),
+                [&numBufferSourcesResolved, &stagingBufferSize](
+                        _PendingSource &req) {
                     for (HdBufferSourceSharedPtr const& source: req.sources) {
                         // execute computation.
                         // call IsResolved first since Resolve is virtual and
@@ -824,13 +841,6 @@ HdStResourceRegistry::_Commit()
                                 "Name = %s", source->GetName().GetText());
 
                                 ++numBufferSourcesResolved;
-
-                                // call resize if it's the first in sources.
-                                if (req.range &&
-                                    source == *req.sources.begin()) {
-                                    req.range->Resize(
-                                        source->GetNumElements());
-                                }
 
                                 // Calculate the size of the staging buffer.
                                 if (req.range && req.range->RequiresStaging()) {
@@ -849,12 +859,19 @@ HdStResourceRegistry::_Commit()
                             }
                         }
                     }
-                }
-            }
+                });
             if (++numIterations > 100) {
                 TF_WARN("Too many iterations in resolving buffer source. "
                         "It's likely due to inconsistent dependency.");
                 break;
+            }
+        }
+
+        for (_PendingSource &req: _pendingSources) {
+            // We resize using the size of the first source in the request
+            // since all sources for the request will have the same size.
+            if (req.range && TF_VERIFY(!req.sources.empty())) {
+                req.range->Resize(req.sources[0]->GetNumElements());
             }
         }
 
@@ -1045,6 +1062,10 @@ HdStResourceRegistry::_GarbageCollect()
     // We want to clean objects first which might be holding references
     // to other objects which will be subsequently cleaned up.
 
+    for (auto& subResourceRegistry : _subResourceRegistries) {
+        subResourceRegistry.second->GarbageCollect();
+    }
+
     GarbageCollectDispatchBuffers();
     GarbageCollectBufferResources();
 
@@ -1163,8 +1184,7 @@ HdStResourceRegistry::_UpdateBufferArrayRange(
         bool haveBuffersToUpdate = !updatedOrAddedSpecs.empty();
         bool dataUpdateForImmutableBar = curRange->IsImmutable() &&
                                         haveBuffersToUpdate;
-        bool usageHintChanged = curRange->GetUsageHint().value !=
-                                usageHint.value;
+        bool usageHintChanged = curRange->GetUsageHint() != usageHint;
         
         bool needsMigration =
             dataUpdateForImmutableBar ||

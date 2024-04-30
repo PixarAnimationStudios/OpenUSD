@@ -107,7 +107,7 @@ _FindUdimTiles(const std::string &filePath)
 
     ArResolver& resolver = ArGetResolver();
 
-    for (int i = UDIM_START_TILE; i < UDIM_END_TILE; i++) {
+    for (int i = UDIM_START_TILE; i <= UDIM_END_TILE; i++) {
         // Add integer between prefix and suffix and see whether
         // the tile exists by consulting the resolver.
         const std::string resolvedPath =

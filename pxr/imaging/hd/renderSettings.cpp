@@ -63,6 +63,7 @@ void TfHashAppend(
             rp.apertureSize,
             rp.dataWindowNDC,
             rp.disableMotionBlur,
+            rp.disableDepthOfField,
             rp.namespacedSettings);
 }
 
@@ -82,6 +83,14 @@ bool
 HdRenderSettings::IsActive() const
 {
     return _active;
+}
+
+bool
+HdRenderSettings::IsValid() const
+{
+    // The RenderSettings prim is considered valid if there is at least one 
+    // RenderProduct, and we have a camera path specified.
+    return !_products.empty() && !_products[0].cameraPath.IsEmpty();
 }
 
 const HdRenderSettings::NamespacedSettings&
@@ -112,6 +121,12 @@ const TfToken&
 HdRenderSettings::GetRenderingColorSpace() const
 {
     return _renderingColorSpace;
+}
+
+const VtValue&
+HdRenderSettings::GetShutterInterval() const
+{
+    return _vShutterInterval;
 }
 
 void
@@ -175,6 +190,11 @@ HdRenderSettings::Sync(
         }
     }
 
+    if (*dirtyBits & HdRenderSettings::DirtyShutterInterval) {
+        _vShutterInterval = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->shutterInterval);
+    }
+
     // Allow subclasses to do any additional processing if necessary.
     _Sync(sceneDelegate, renderParam, dirtyBits);
 
@@ -236,6 +256,7 @@ bool operator==(const HdRenderSettings::RenderProduct& lhs,
         && lhs.apertureSize == rhs.apertureSize
         && lhs.dataWindowNDC == rhs.dataWindowNDC
         && lhs.disableMotionBlur == rhs.disableMotionBlur
+        && lhs.disableDepthOfField == rhs.disableDepthOfField
         && lhs.namespacedSettings == rhs.namespacedSettings;
 }
 

@@ -567,130 +567,6 @@ _ResolveParameter(
     return defaultValue;
 }
 
-static HdWrap
-_ResolveWrapSamplerParameter(
-    SdfPath const &nodePath,
-    HdMaterialNode2 const& node,
-    SdrShaderNodeConstPtr const &sdrNode,
-    TfToken const &name)
-{
-    const TfToken value = _ResolveParameter(
-        node, sdrNode, name, HdStTextureTokens->useMetadata);
-
-    if (value == HdStTextureTokens->repeat) {
-        return HdWrapRepeat;
-    }
-
-    if (value == HdStTextureTokens->mirror) {
-        return HdWrapMirror;
-    }
-
-    if (value == HdStTextureTokens->clamp) {
-        return HdWrapClamp;
-    }
-
-    if (value == HdStTextureTokens->black) {
-        return HdWrapBlack;
-    }
-
-    if (value == HdStTextureTokens->useMetadata) {
-        if (node.nodeTypeId == _tokens->HwUvTexture_1) {
-            return HdWrapLegacy;
-        }
-        return HdWrapUseMetadata;
-    }
-
-    TF_WARN("Unknown wrap mode on prim %s: %s",
-            nodePath.GetText(), value.GetText());
-
-    return HdWrapUseMetadata;
-}
-
-static HdMinFilter
-_ResolveMinSamplerParameter(
-    SdfPath const &nodePath,
-    HdMaterialNode2 const& node,
-    SdrShaderNodeConstPtr const &sdrNode)
-{
-    // Using linearMipmapLinear as fallback value.
-
-    // Note that it is ambiguous whether the fallback value in the old
-    // texture system (usdImagingGL/textureUtils.cpp) was linear or
-    // linearMipmapLinear: when nothing was authored in USD for the
-    // min filter, linearMipmapLinear was used, but when an empty
-    // token was authored, linear was used.
-
-    const TfToken value = _ResolveParameter(
-        node, sdrNode, HdStTextureTokens->minFilter,
-        HdStTextureTokens->linearMipmapLinear);
-
-    if (value == HdStTextureTokens->nearest) {
-        return HdMinFilterNearest;
-    }
-
-    if (value == HdStTextureTokens->linear) {
-        return HdMinFilterLinear;
-    }
-
-    if (value == HdStTextureTokens->nearestMipmapNearest) {
-        return HdMinFilterNearestMipmapNearest;
-    }
-
-    if (value == HdStTextureTokens->nearestMipmapLinear) {
-        return HdMinFilterNearestMipmapLinear;
-    }
-
-    if (value == HdStTextureTokens->linearMipmapNearest) {
-        return HdMinFilterLinearMipmapNearest;
-    }
-
-    if (value == HdStTextureTokens->linearMipmapLinear) {
-        return HdMinFilterLinearMipmapLinear;
-    }
-
-    return HdMinFilterLinearMipmapLinear;
-}
-
-static HdMagFilter
-_ResolveMagSamplerParameter(
-    SdfPath const &nodePath,
-    HdMaterialNode2 const& node,
-    SdrShaderNodeConstPtr const &sdrNode)
-{
-    const TfToken value = _ResolveParameter(
-        node, sdrNode, HdStTextureTokens->magFilter, HdStTextureTokens->linear);
-
-    if (value == HdStTextureTokens->nearest) {
-        return HdMagFilterNearest;
-    }
-
-    return HdMagFilterLinear;
-}
-
-// Resolve sampling parameters for texture node by
-// looking at material node parameters and falling back to
-// fallback values from Sdr.
-static HdSamplerParameters
-_GetSamplerParameters(
-    SdfPath const &nodePath,
-    HdMaterialNode2 const& node,
-    SdrShaderNodeConstPtr const &sdrNode)
-{
-    return { _ResolveWrapSamplerParameter(
-                 nodePath, node, sdrNode, HdStTextureTokens->wrapS),
-             _ResolveWrapSamplerParameter(
-                 nodePath, node, sdrNode, HdStTextureTokens->wrapT),
-             _ResolveWrapSamplerParameter(
-                 nodePath, node, sdrNode, HdStTextureTokens->wrapR),
-             _ResolveMinSamplerParameter(
-                 nodePath, node, sdrNode),
-             _ResolveMagSamplerParameter(
-                 nodePath, node, sdrNode),
-             HdBorderColorTransparentBlack, 
-             /*enableCompare*/false, 
-             HdCmpFuncNever };
-}
-
 //
 // We need to flip the image for the legacy HwUvTexture_1 shader node, 
 // pre-multiply textures by their alpha if applicable, and provide a hint for
@@ -954,7 +830,8 @@ _MakeMaterialParamsForTexture(
     // Handle texture scale and bias
     HdSt_MaterialParam texScaleParam;
     texScaleParam.paramType = HdSt_MaterialParam::ParamTypeFallback;
-    texScaleParam.name = TfToken(paramName.GetString() + "_" + 
+    texScaleParam.name = TfToken(paramName.GetString() + "_" +
+                                 HdStTokens->storm.GetString() + "_" +
                                  HdStTokens->scale.GetString());
     texScaleParam.fallbackValue = VtValue(_ResolveParameter(node, 
                                                             sdrNode, 
@@ -964,7 +841,8 @@ _MakeMaterialParamsForTexture(
 
     HdSt_MaterialParam texBiasParam;
     texBiasParam.paramType = HdSt_MaterialParam::ParamTypeFallback;
-    texBiasParam.name = TfToken(paramName.GetString() + "_" + 
+    texBiasParam.name = TfToken(paramName.GetString() + "_" +
+                                HdStTokens->storm.GetString() + "_" +
                                 HdStTokens->bias.GetString());
     texBiasParam.fallbackValue = VtValue(_ResolveParameter(node, 
                                                            sdrNode, 
@@ -981,7 +859,7 @@ _MakeMaterialParamsForTexture(
         { paramName,
           textureId,
           texParam.textureType,
-          _GetSamplerParameters(nodePath, node, sdrNode),
+          HdGetSamplerParameters(nodePath, node, sdrNode),
           memoryRequest,
           useTexturePrimToFindTexture,
           texturePrimPathForSceneDelegate });

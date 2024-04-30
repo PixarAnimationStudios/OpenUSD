@@ -30,6 +30,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_REGISTRY_FUNCTION(TfEnum)
+{
+    // SdfPredicateFunctionResult::Constancy
+    TF_ADD_ENUM_NAME(SdfPredicateFunctionResult::ConstantOverDescendants);
+    TF_ADD_ENUM_NAME(SdfPredicateFunctionResult::MayVaryOverDescendants);
+}
+
+size_t
+SdfPredicateParamNamesAndDefaults::_CountDefaults() const
+{
+    size_t count = 0;
+    for (Param const &p: _params) {
+        if (!p.val.IsEmpty()) {
+            ++count;
+        }
+    }
+    return count;
+}
 
 bool
 SdfPredicateParamNamesAndDefaults::CheckValidity() const

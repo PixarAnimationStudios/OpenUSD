@@ -44,7 +44,7 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <vector>
 
@@ -141,14 +141,12 @@ HdStInterleavedUBOMemoryManager::ComputeAggregationId(
     HdBufferArrayUsageHint usageHint) const
 {
     static size_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
-    size_t result = salt;
-    for (HdBufferSpec const &spec : bufferSpecs) {
-        boost::hash_combine(result, spec.Hash());
-    }
-    boost::hash_combine(result, usageHint.value);
 
-    // promote to size_t
-    return (AggregationId)result;
+    return static_cast<AggregationId>(
+        TfHash::Combine(
+            salt, bufferSpecs, usageHint
+        )
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -182,13 +180,12 @@ HdStInterleavedSSBOMemoryManager::ComputeAggregationId(
     HdBufferArrayUsageHint usageHint) const
 {
     static size_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
-    size_t result = salt;
-    for (HdBufferSpec const &spec : bufferSpecs) {
-        boost::hash_combine(result, spec.Hash());
-    }
-    boost::hash_combine(result, usageHint.value);
 
-    return result;
+    return static_cast<AggregationId>(
+        TfHash::Combine(
+            salt, bufferSpecs, usageHint
+        )
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -247,8 +244,8 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
       _needsCompaction(false),
       _stride(0),
       _bufferOffsetAlignment(bufferOffsetAlignment),
-      _maxSize(maxSize)
-
+      _maxSize(maxSize),
+      _bufferUsage(0)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -345,6 +342,19 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
     _SetMaxNumRanges(_maxSize / _stride);
 
     TF_VERIFY(_stride + offset);
+
+    if (usageHint & HdBufferArrayUsageHintBitsUniform) {
+        _bufferUsage |= HgiBufferUsageUniform;
+    }
+    if (usageHint & HdBufferArrayUsageHintBitsStorage) {
+        _bufferUsage |= HgiBufferUsageStorage;
+    }
+    if (usageHint & HdBufferArrayUsageHintBitsVertex) {
+        _bufferUsage |= HgiBufferUsageVertex;
+    }
+    if (_bufferUsage == 0) {
+        TF_CODING_ERROR("Buffer usage was not specified!");
+    }
 }
 
 HdStBufferResourceSharedPtr
@@ -466,7 +476,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     if (totalSize > 0) {
         HgiBufferDesc bufDesc;
         bufDesc.byteSize = totalSize;
-        bufDesc.usage = HgiBufferUsageUniform;
+        bufDesc.usage = _bufferUsage;
         newBuf = hgi->CreateBuffer(bufDesc);
     }
 
@@ -735,7 +745,9 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
 
     int vboStride = VBO->GetStride();
     size_t vboOffset = VBO->GetOffset() + vboStride * _index;
-    int dataSize = HdDataSizeOfTupleType(VBO->GetTupleType());
+    size_t const vboDataSize = HdDataSizeOfTupleType(VBO->GetTupleType());
+    size_t const sourceDataSize =
+        HdDataSizeOfTupleType(bufferSource->GetTupleType());
     size_t const elementStride = _stripedBuffer->GetElementStride();
 
     const unsigned char *data =
@@ -744,7 +756,14 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     HgiBufferCpuToGpuOp blitOp;
     blitOp.gpuDestinationBuffer = VBO->GetHandle();
     blitOp.sourceByteOffset = 0;
-    blitOp.byteSize = dataSize;
+    if (sourceDataSize <= vboDataSize) {
+        blitOp.byteSize = sourceDataSize;
+    } else {
+        TF_WARN("Source data size (%zu bytes) is larger than buffer resource "
+                "(%zu bytes). Clamping copy op to the latter.\n",
+                sourceDataSize, vboDataSize);
+        blitOp.byteSize = vboDataSize;
+    }
     
     HdStStagingBuffer *stagingBuffer =
         GetResourceRegistry()->GetStagingBuffer();
@@ -756,7 +775,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
         stagingBuffer->StageCopy(blitOp);
         
         vboOffset += elementStride;
-        data += dataSize;
+        data += vboDataSize;
     }
 
     HD_PERF_COUNTER_ADD(HdStPerfTokens->copyBufferCpuToGpu,

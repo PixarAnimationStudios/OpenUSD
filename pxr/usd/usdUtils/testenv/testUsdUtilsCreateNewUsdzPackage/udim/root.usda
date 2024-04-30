@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    defaultPrim = "Test"
+    metersPerUnit = 1.0
+    upAxis = "Y"
+)
+
+def "Test"
+{
+    asset relative_attr = @./relative.tile.<UDIM>.txt@
+    asset subfolder_attr = @dir/subfolder.tile.<UDIM>.txt@
+}

@@ -29,10 +29,12 @@ pxr_library(usdGeom
         boundableComputeExtent
         camera
         capsule
+        capsule_1
         cone
         cube
         curves
         cylinder
+        cylinder_1
         hermiteCurves
         imageable
         gprim
@@ -51,6 +53,7 @@ pxr_library(usdGeom
         scope
         sphere
         subset
+        tetMesh
         visibilityAPI
         xform
         xformable
@@ -74,10 +77,12 @@ pxr_library(usdGeom
         wrapCamera.cpp
         wrapConstraintTarget.cpp
         wrapCapsule.cpp
+        wrapCapsule_1.cpp
         wrapCone.cpp
         wrapCube.cpp
         wrapCurves.cpp
         wrapCylinder.cpp
+        wrapCylinder_1.cpp
         wrapGprim.cpp
         wrapHermiteCurves.cpp
         wrapImageable.cpp
@@ -96,6 +101,7 @@ pxr_library(usdGeom
         wrapScope.cpp
         wrapSphere.cpp
         wrapSubset.cpp
+        wrapTetMesh.cpp
         wrapTokens.cpp
         wrapVisibilityAPI.cpp
         wrapXform.cpp
@@ -118,6 +124,9 @@ pxr_library(usdGeom
         images/USDCurveBasisMatrix.png
         images/USDCurveHydra.png
         images/USDCurvePrimvars.png
+        images/USDTetMeshRightHanded.svg
+        images/USDTetMeshLeftHanded.svg
+        examples_usdGeom.cpp
 )
 
 pxr_test_scripts(
@@ -141,6 +150,7 @@ pxr_test_scripts(
     testenv/testUsdGeomPurposeVisibility.py
     testenv/testUsdGeomSchemata.py
     testenv/testUsdGeomSubset.py
+    testenv/testUsdGeomTetMesh.py
     testenv/testUsdGeomXformable.py
     testenv/testUsdGeomXformCommonAPI.py
 )
@@ -229,11 +239,18 @@ pxr_install_test_dir(
 
 pxr_install_test_dir(
     SRC testenv/testUsdGeomImageable
-    DEST testUsdGeomImageable)
+    DEST testUsdGeomImageable
+)
 
 pxr_install_test_dir(
     SRC testenv/testUsdGeomMesh
-    DEST testUsdGeomMesh)
+    DEST testUsdGeomMesh
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomTetMesh
+    DEST testUsdGeomTetMesh
+)
 
 pxr_register_test(testUsdGeomBasisCurves
     PYTHON
@@ -285,12 +302,18 @@ pxr_register_test(testUsdGeomMesh
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdGeomTetMesh
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomTetMesh"
+    DIFF_COMPARE tetMeshRH.usda
+    DIFF_COMPARE tetMeshLH.usda
+)
+
 pxr_register_test(testUsdGeomMetrics
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomMetrics"
     EXPECTED_RETURN_CODE 0
 )
-
 
 pxr_register_test(testUsdGeomSubset
     PYTHON

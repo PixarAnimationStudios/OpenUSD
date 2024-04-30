@@ -1,0 +1,59 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def "Sphere1" (
+    references = @texturedSphere.usda@
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/Brass_linRec709>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-18, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def "Sphere2" (
+    references = @texturedSphere.usda@
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/Brass_srgb1>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+}
+
+def "Sphere3" (
+    references = @texturedSphere.usda@
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/Brass_srgb2>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (18, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Scope "Materials" {
+    def "MaterialX" (
+        references = [
+            @./mtlxFiles/colorspaces.mtlx@</MaterialX>,
+        ]
+    )
+    {
+    }
+}
+
+def Xform "lights" 
+{
+    def DomeLight "DomeLight"
+    {
+        asset inputs:texture:file = @./lightGray.png@
+        float xformOp:rotateX:Zup = 90
+        uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
+    }
+    def DistantLight "DistantLight"
+    {
+        float inputs:angle = 75
+        float inputs:intensity = 10
+        float3 xformOp:rotateXYZ = (90, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+    }
+}

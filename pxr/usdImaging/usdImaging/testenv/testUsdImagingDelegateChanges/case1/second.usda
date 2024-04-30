@@ -1,0 +1,11 @@
+#usda 1.0
+(
+    endTimeCode = 14
+    framesPerSecond = 24
+    startTimeCode = 14
+    subLayers = [
+        @./second_instance.usda@
+    ]
+    timeCodesPerSecond = 24
+)
+

@@ -113,7 +113,8 @@ PcpCache::PcpCache(
     _layerStackIdentifier(layerStackIdentifier),
     _usd(usd),
     _fileFormatTarget(fileFormatTarget),
-    _layerStackCache(Pcp_LayerStackRegistry::New(_fileFormatTarget, _usd)),
+    _layerStackCache(Pcp_LayerStackRegistry::New(
+        _layerStackIdentifier, _fileFormatTarget, _usd)),
     _primDependencies(new Pcp_Dependencies())
 {
     // Do nothing
@@ -277,6 +278,8 @@ PcpCache::RequestLayerMuting(const std::vector<std::string>& layersToMute,
                              std::vector<std::string>* newLayersMuted,
                              std::vector<std::string>* newLayersUnmuted)
 {
+    TRACE_FUNCTION();
+
     ArResolverContextBinder binder(_layerStackIdentifier.pathResolverContext);
 
     std::vector<std::string> finalLayersToMute;
@@ -435,14 +438,26 @@ PcpCache::ComputeRelationshipTargetPaths(const SdfPath & relPath,
         return;
     }
 
-    PcpTargetIndex targetIndex;
-    PcpBuildFilteredTargetIndex( PcpSite(GetLayerStackIdentifier(), relPath),
-                                 ComputePropertyIndex(relPath, allErrors),
-                                 SdfSpecTypeRelationship,
-                                 localOnly, stopProperty, includeStopProperty,
-                                 this, &targetIndex, deletedPaths,
-                                 allErrors );
-    paths->swap(targetIndex.paths);
+    auto computeTargets = [&](const PcpPropertyIndex &propIndex) {
+        PcpTargetIndex targetIndex;
+        PcpBuildFilteredTargetIndex( PcpSite(GetLayerStackIdentifier(), relPath),
+                                    propIndex,
+                                    SdfSpecTypeRelationship,
+                                    localOnly, stopProperty, includeStopProperty,
+                                    this, &targetIndex, deletedPaths,
+                                    allErrors );
+        paths->swap(targetIndex.paths);
+    };
+
+    if (IsUsd()) {
+        // USD does not cache property indexes, but we can still build one
+        // to get the relationship targets.
+        PcpPropertyIndex propIndex;
+        PcpBuildPropertyIndex(relPath, this, &propIndex, allErrors);
+        computeTargets(propIndex);
+    } else {
+        computeTargets(ComputePropertyIndex(relPath, allErrors));
+    }
 }
 
 void
@@ -462,14 +477,26 @@ PcpCache::ComputeAttributeConnectionPaths(const SdfPath & attrPath,
         return;
     }
 
-    PcpTargetIndex targetIndex;
-    PcpBuildFilteredTargetIndex( PcpSite(GetLayerStackIdentifier(), attrPath),
-                                 ComputePropertyIndex(attrPath, allErrors),
-                                 SdfSpecTypeAttribute,
-                                 localOnly, stopProperty, includeStopProperty,
-                                 this, &targetIndex,  deletedPaths,
-                                 allErrors );
-    paths->swap(targetIndex.paths);
+    auto computeTargets = [&](const PcpPropertyIndex &propIndex) {
+        PcpTargetIndex targetIndex;
+        PcpBuildFilteredTargetIndex( PcpSite(GetLayerStackIdentifier(), attrPath),
+                                    propIndex,
+                                    SdfSpecTypeAttribute,
+                                    localOnly, stopProperty, includeStopProperty,
+                                    this, &targetIndex,  deletedPaths,
+                                    allErrors );
+        paths->swap(targetIndex.paths);
+    };
+
+    if (IsUsd()) {
+        // USD does not cache property indexes, but we can still build one
+        // to get the attribute connections.
+        PcpPropertyIndex propIndex;
+        PcpBuildPropertyIndex(attrPath, this, &propIndex, allErrors);
+        computeTargets(propIndex);
+    } else {
+        computeTargets(ComputePropertyIndex(attrPath, allErrors));
+    }
 }
 
 const PcpPropertyIndex *
@@ -968,6 +995,23 @@ PcpCache::GetDynamicFileFormatArgumentDependencyData(
         primIndexPath);
 }
 
+const SdfPathVector&
+PcpCache::GetPrimsUsingExpressionVariablesFromLayerStack(
+    const PcpLayerStackPtr &layerStack) const
+{
+    return _primDependencies->GetPrimsUsingExpressionVariablesFromLayerStack(
+        layerStack);
+}
+
+const std::unordered_set<std::string>& 
+PcpCache::GetExpressionVariablesFromLayerStackUsedByPrim(
+    const SdfPath &primIndexPath,
+    const PcpLayerStackPtr &layerStack) const
+{
+    return _primDependencies->GetExpressionVariablesFromLayerStackUsedByPrim(
+        primIndexPath, layerStack);
+}
+
 void
 PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
 {
@@ -1211,7 +1255,7 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
     // local layers.
     SdfLayerHandleSet layersToReload;
     for (const PcpLayerStackPtr& layerStack: layerStacksAtOrUnderPrim) {
-        for (const SdfLayerHandle& layer: layerStack->GetLayers()) {
+        for (const auto& layer: layerStack->GetLayers()) {
             if (!_layerStack->HasLayer(layer)) {
                 layersToReload.insert(layer);
             }
@@ -1551,7 +1595,8 @@ struct PcpCache::_ParallelIndexer
         _cache->_primDependencies->Add(
             *mutableIndex, 
             std::move(outputItem.second.culledDependencies),
-            std::move(outputItem.second.dynamicFileFormatDependency));
+            std::move(outputItem.second.dynamicFileFormatDependency),
+            std::move(outputItem.second.expressionVariablesDependency));
         return mutableIndex;
     }
                      
@@ -1688,7 +1733,8 @@ PcpCache::_ComputePrimIndexWithCompatibleInputs(
     _primDependencies->Add(
         outputs.primIndex, 
         std::move(outputs.culledDependencies),
-        std::move(outputs.dynamicFileFormatDependency));
+        std::move(outputs.dynamicFileFormatDependency),
+        std::move(outputs.expressionVariablesDependency));
 
     // Update _includedPayloads if we included a discovered payload.
     if (outputs.payloadState == PcpPrimIndexOutputs::IncludedByPredicate) {

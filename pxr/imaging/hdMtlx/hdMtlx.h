@@ -54,6 +54,12 @@ HDMTLX_API
 const MaterialX::FileSearchPath&
 HdMtlxSearchPaths();
 
+/// Return a MaterialX document with the stdlibraries loaded using the above 
+/// search paths.
+HDMTLX_API
+const MaterialX::DocumentPtr&
+HdMtlxStdLibraries();
+
 /// Converts the HdParameterValue to a string MaterialX can understand
 HDMTLX_API
 std::string

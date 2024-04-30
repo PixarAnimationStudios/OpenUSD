@@ -207,8 +207,35 @@ public:
     /// content is successfully written, this method returns true. Otherwise,
     /// false is returned and errors are posted. The default implementation
     /// returns false.
+    ///
+    /// This member function makes no distinction between a "Save" operation
+    /// that updates the backing store for the \p layer itself and an "Export"
+    /// operation that writes the \p layer data to a distinct asset.  For file
+    /// formats that retain all data in memory this is typically fine.  But for
+    /// file formats that handle data requests by reading from the backing
+    /// store, this distinction can be important.  In that case, additionally
+    /// override the member function SaveToFile() to take different action.
     SDF_API
     virtual bool WriteToFile(
+        const SdfLayer& layer,
+        const std::string& filePath,
+        const std::string& comment = std::string(),
+        const FileFormatArguments& args = FileFormatArguments()) const;
+
+    /// Write the content in \p layer to the file at \p filePath, which is the
+    /// backing store for \p layer itself.  If the content is successfully
+    /// written, this method returns true. Otherwise, false is returned and
+    /// errors are posted. The default implementation just calls WriteToFile()
+    /// passing all the same arguments.
+    ///
+    /// The purpose of this member function is to provide a distinction between
+    /// a "Save" operation that updates the backing store for the \p layer
+    /// itself and an "Export" operation that writes the \p layer data to a
+    /// distinct asset.  File formats that retain all data in memory can
+    /// typically override only WriteToFile(), but formats that do not may need
+    /// to take different action on "Save" vs "Export".
+    SDF_API
+    virtual bool SaveToFile(
         const SdfLayer& layer,
         const std::string& filePath,
         const std::string& comment = std::string(),

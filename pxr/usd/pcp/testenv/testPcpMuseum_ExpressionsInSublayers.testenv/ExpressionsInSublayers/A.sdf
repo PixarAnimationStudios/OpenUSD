@@ -1,0 +1,17 @@
+#sdf 1.4.32
+(
+    expressionVariables = {
+        string C = "D"
+    }
+    subLayers = [
+        # This expression uses the value of C authored in the
+        # root layer. Note that the value authored above is ignored,
+        # since expression variables are only composed from the
+        # root and session layers.
+        @`"${C}.sdf"`@
+    ]
+)
+
+over "Root"
+{
+}

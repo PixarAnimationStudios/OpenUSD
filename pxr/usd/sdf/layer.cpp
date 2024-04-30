@@ -76,6 +76,7 @@
 #include <functional>
 #include <iostream>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <thread>
 #include <vector>
@@ -243,7 +244,7 @@ SdfLayer::~SdfLayer()
     // Note that FindOrOpen may have already removed this layer from
     // the registry, so we count on this API not emitting errors in that
     // case.
-    _layerRegistry->Erase(_self);
+    _layerRegistry->Erase(_self, *(_self->_assetInfo));
 }
 
 const SdfFileFormatConstPtr&
@@ -307,7 +308,7 @@ SdfLayer::_WaitForInitializationAndCheckIfSuccessful()
     // The callers of this method are responsible for checking the result
     // and dropping any references they hold.  As a convenience to them,
     // we return the value here.
-    return _initializationWasSuccessful.get();
+    return _initializationWasSuccessful.value();
 }
 
 static bool
@@ -779,7 +780,7 @@ SdfLayer::_TryToFindLayer(const string &identifier,
         if (layer) {
             // Layer is expiring and we have the write lock: erase it from the
             // registry.
-            _layerRegistry->Erase(layer);  
+            _layerRegistry->Erase(layer, *layer->_assetInfo);
         }
     } else if (!hasWriteLock && retryAsWriter && !lock.upgrade_to_writer()) {
         // Retry the find since we released the lock in upgrade_to_writer().
@@ -1480,13 +1481,15 @@ SdfLayer::_InitializeFromIdentifier(
         _stateDelegate->_SetLayer(_self);
     }
 
-    // Update the layer registry before sending notices.
-    _layerRegistry->InsertOrUpdate(_self);
-
     // Only send a notice if the identifier has changed (this notice causes
     // mass invalidation. See http://bug/33217). If the old identifier was
     // empty, this is a newly constructed layer, so don't send the notice.
-    if (!oldIdentifier.empty()) {
+    if (oldIdentifier.empty()) {
+        _layerRegistry->Insert(_self, *_assetInfo);
+    }
+    else {
+        // NOTE: After the swap, newInfo actually stores the original info.
+        _layerRegistry->Update(_self, *newInfo, *_assetInfo);
         SdfChangeBlock block;
         if (oldIdentifier != GetIdentifier()) {
             Sdf_ChangeManager::Get().DidChangeLayerIdentifier(
@@ -1847,6 +1850,30 @@ SdfLayer::ClearCustomLayerData()
     EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->CustomLayerData);
 }
 
+VtDictionary
+SdfLayer::GetExpressionVariables() const
+{
+    return _GetValue<VtDictionary>(SdfFieldKeys->ExpressionVariables);
+}
+
+void
+SdfLayer::SetExpressionVariables(const VtDictionary& dict)
+{
+    _SetValue(SdfFieldKeys->ExpressionVariables, dict);
+}
+
+bool 
+SdfLayer::HasExpressionVariables() const
+{
+    return HasField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->ExpressionVariables);
+}
+
+void 
+SdfLayer::ClearExpressionVariables()
+{
+    EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->ExpressionVariables);
+}
+
 SdfPrimSpecHandle
 SdfLayer::GetPseudoRoot() const
 {
@@ -1983,6 +2010,31 @@ SdfLayer::SetSubLayerOffset(const SdfLayerOffset& offset, int index)
     
     SetField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->SubLayerOffsets,
         VtValue(offsets));
+}
+
+SdfRelocates
+SdfLayer::GetRelocates() const
+{
+    return GetFieldAs<SdfRelocates>(
+        SdfPath::AbsoluteRootPath(), SdfFieldKeys->LayerRelocates);
+}
+
+void
+SdfLayer::SetRelocates(const SdfRelocates& relocates)
+{
+    SetField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->LayerRelocates, relocates);
+}
+
+bool
+SdfLayer::HasRelocates() const
+{
+    return HasField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->LayerRelocates);
+}
+
+void
+SdfLayer::ClearRelocates()
+{
+    EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->LayerRelocates);
 }
 
 bool 
@@ -2539,7 +2591,8 @@ void
 SdfLayer::UpdateAssetInfo()
 {
     TRACE_FUNCTION();
-    TF_DEBUG(SDF_LAYER).Msg("SdfLayer::UpdateAssetInfo()\n");
+    TF_DEBUG(SDF_LAYER).Msg("SdfLayer::UpdateAssetInfo('%s')\n",
+                            GetIdentifier().c_str());
 
     // Hold open a change block to defer identifier-did-change
     // notification until the mutex is unlocked.
@@ -2927,7 +2980,7 @@ SdfLayer::_ShouldNotify() const
 {
     // Only notify if this layer has been successfully initialized.
     // (If initialization is not yet complete, do not notify.)
-    return _initializationWasSuccessful.get_value_or(false);
+    return _initializationWasSuccessful.value_or(false);
 }
 
 void
@@ -3177,7 +3230,7 @@ SdfLayer::GetExternalAssetDependencies() const
 // ModifyItemEdits() callback that updates a reference's or payload's
 // asset path for SdfReferenceListEditor and SdfPayloadListEditor.
 template <class RefOrPayloadType>
-static boost::optional<RefOrPayloadType>
+static std::optional<RefOrPayloadType>
 _UpdateRefOrPayloadPath(
     const string &oldLayerPath,
     const string &newLayerPath,
@@ -3186,7 +3239,7 @@ _UpdateRefOrPayloadPath(
     if (refOrPayload.GetAssetPath() == oldLayerPath) {
         // Delete if new layer path is empty, otherwise rename.
         if (newLayerPath.empty()) {
-            return boost::optional<RefOrPayloadType>();
+            return std::optional<RefOrPayloadType>();
         } else {
             RefOrPayloadType updatedRefOrPayload = refOrPayload;
             updatedRefOrPayload.SetAssetPath(newLayerPath);
@@ -3304,8 +3357,8 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
     // initialization.  But now that the layer is in the registry, we release
     // the registry lock to avoid blocking progress of threads working with
     // other layers.
-    TF_VERIFY(_layerRegistry->
-              FindByIdentifier(layer->GetIdentifier()) == layer,
+    TF_VERIFY(_layerRegistry->Find(layer->GetIdentifier(),
+                                   layer->GetResolvedPath()) == layer,
               "Could not find %s", layer->GetIdentifier().c_str());
 
     lock.release();
@@ -3947,7 +4000,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
             std::set<SdfPath> paths;
         };
 
-        _SpecsToCreate specsToCreate(*boost::get_pointer(_data));
+        _SpecsToCreate specsToCreate(*get_pointer(_data));
         newData->VisitSpecs(&specsToCreate);
 
         SdfPath unrecognizedSpecTypePaths[SdfNumSpecTypes];
@@ -4096,8 +4149,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
         if (!updater.unrecognizedFields.empty()) {
             vector<string> fieldDescrs;
             fieldDescrs.reserve(updater.unrecognizedFields.size());
-            for (std::pair<TfToken, SdfPath> const &tokenPath:
-                     updater.unrecognizedFields) {
+            for (auto const &tokenPath: updater.unrecognizedFields) {
                 fieldDescrs.push_back(
                     TfStringPrintf("'%s' first seen at <%s>",
                                    tokenPath.first.GetText(),
@@ -4497,7 +4549,7 @@ SdfLayer::_PrimDeleteSpec(const SdfPath &path, bool inert, bool useDelegate)
     Sdf_ChangeManager::Get().DidRemoveSpec(_self, path, inert);
 
     TraversalFunction eraseFunc = 
-        std::bind(&_EraseSpecAtPath, boost::get_pointer(_data), ph::_1);
+        std::bind(&_EraseSpecAtPath, get_pointer(_data), ph::_1);
     Traverse(path, eraseFunc);
 }
 
@@ -4674,21 +4726,26 @@ SdfLayer::ExportToString( std::string *result ) const
 }
 
 bool 
-SdfLayer::_WriteToFile(const string & newFileName, 
+SdfLayer::_WriteToFile(const string &newFileName, 
                        const string &comment, 
                        SdfFileFormatConstPtr fileFormat,
                        const FileFormatArguments& args) const
 {
     TRACE_FUNCTION();
 
-    TF_DESCRIBE_SCOPE("Writing layer @%s@", GetIdentifier().c_str());
-
     if (newFileName.empty())
         return false;
-        
-    if ((newFileName == GetRealPath()) && !PermissionToSave()) {
+
+    // Save vs Export -- we consider it a Save when newFileName == this layer's
+    // resolved path (aka "GetRealPath()").
+    const bool isSave = newFileName == GetRealPath();
+    
+    TF_DESCRIBE_SCOPE("%s layer @%s@", isSave ? "Saving" : "Exporting",
+                      GetIdentifier().c_str());
+
+    if (isSave && !PermissionToSave()) {
         TF_RUNTIME_ERROR("Cannot save layer @%s@, saving not allowed", 
-                    newFileName.c_str());
+                         newFileName.c_str());
         return false;
     }
 
@@ -4696,8 +4753,9 @@ SdfLayer::_WriteToFile(const string & newFileName,
     // file extension, else discover the file format from the file extension.
     if (!fileFormat) {
         const string ext = Sdf_GetExtension(newFileName);
-        if (!ext.empty()) 
+        if (!ext.empty()) {
             fileFormat = SdfFileFormat::FindByExtension(ext);
+        }
 
         if (!fileFormat) {
             // Some parts of the system generate temp files
@@ -4710,8 +4768,9 @@ SdfLayer::_WriteToFile(const string & newFileName,
 
     // Disallow saving or exporting package layers via the Sdf API.
     if (Sdf_IsPackageOrPackagedLayer(fileFormat, newFileName)) {
-        TF_CODING_ERROR("Cannot save layer @%s@: writing %s %s layer "
+        TF_CODING_ERROR("Cannot %s layer @%s@: writing %s %s layer "
                         "is not allowed through this API.",
+                        isSave ? "save" : "export",
                         newFileName.c_str(), 
                         fileFormat->IsPackage() ? "package" : "packaged",
                         fileFormat->GetFormatId().GetText());
@@ -4720,13 +4779,14 @@ SdfLayer::_WriteToFile(const string & newFileName,
 
     if (!TF_VERIFY(fileFormat)) {
         TF_RUNTIME_ERROR("Unknown file format when attempting to write '%s'",
-            newFileName.c_str());
+                         newFileName.c_str());
         return false;
     }
 
     if (!fileFormat->SupportsWriting()) {
-        TF_CODING_ERROR("Cannot save layer @%s@: %s file format does not"
+        TF_CODING_ERROR("Cannot %s layer @%s@: %s file format does not"
                         "support writing",
+                        isSave ? "save" : "export",
                         newFileName.c_str(),
                         fileFormat->GetFormatId().GetText());
         return false;
@@ -4752,10 +4812,12 @@ SdfLayer::_WriteToFile(const string & newFileName,
         }
     }    
 
-    bool ok = fileFormat->WriteToFile(*this, newFileName, comment, args);
+    bool ok = isSave
+        ? fileFormat->SaveToFile(*this, newFileName, comment, args)
+        : fileFormat->WriteToFile(*this, newFileName, comment, args);
 
     // If we wrote to the backing file then we're now clean.
-    if (ok && newFileName == GetRealPath()) {
+    if (ok && isSave) {
        _MarkCurrentStateAsClean();
     }
 

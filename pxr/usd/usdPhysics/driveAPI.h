@@ -334,7 +334,7 @@ public:
     // --------------------------------------------------------------------- //
     /// Damping of the drive. Units: 
     /// if linear drive: mass/second
-    /// If angular drive: mass*DIST_UNITS*DIST_UNITS/second/second/degrees.
+    /// If angular drive: mass*DIST_UNITS*DIST_UNITS/second/degrees.
     ///
     /// | ||
     /// | -- | -- |
@@ -358,7 +358,7 @@ public:
     // --------------------------------------------------------------------- //
     /// Stiffness of the drive. Units:
     /// if linear drive: mass/second/second
-    /// if angular drive: mass*DIST_UNITS*DIST_UNITS/degree/second/second.
+    /// if angular drive: mass*DIST_UNITS*DIST_UNITS/degrees/second/second.
     ///
     /// | ||
     /// | -- | -- |

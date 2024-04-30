@@ -77,6 +77,7 @@ TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndex);
 TF_DECLARE_REF_PTRS(UsdImagingRootOverridesSceneIndex);
 TF_DECLARE_REF_PTRS(UsdImagingSelectionSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiLegacyDisplayStyleOverrideSceneIndex);
+TF_DECLARE_REF_PTRS(HdsiPrimTypePruningSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiSceneGlobalsSceneIndex);
 TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 
@@ -115,6 +116,10 @@ public:
         /// \p displayUnloadedPrimsWithBounds draws bounding boxes for unloaded
         /// prims if they have extents/extentsHint authored.
         bool displayUnloadedPrimsWithBounds = false;
+        /// \p allowAsynchronousSceneProcessing indicates to constructed hydra
+        /// scene indices that asynchronous processing is allowow. Applications
+        /// should perodically call PollForAsynchronousUpdates on the engine.
+        bool allowAsynchronousSceneProcessing = false;
     };
 
     // ---------------------------------------------------------------------
@@ -147,7 +152,8 @@ public:
                        const HdDriver& driver = HdDriver(),
                        const TfToken& rendererPluginId = TfToken(),
                        bool gpuEnabled = true,
-                       bool displayUnloadedPrimsWithBounds = false);
+                       bool displayUnloadedPrimsWithBounds = false,
+                       bool allowAsynchronousSceneProcessing = false);
 
     // Disallow copies
     UsdImagingGLEngine(const UsdImagingGLEngine&) = delete;
@@ -225,7 +231,7 @@ public:
     /// because the latter is only available in C++17 or later.
     USDIMAGINGGL_API
     void SetOverrideWindowPolicy(
-        const std::pair<bool, CameraUtilConformWindowPolicy> &policy);
+        const std::optional<CameraUtilConformWindowPolicy> &policy);
 
     /// Set the size of the render buffers baking the AOVs.
     /// GUI applications should set this to the size of the window.
@@ -579,7 +585,23 @@ public:
     Hgi* GetHgi();
 
     /// @}
+
+    // ---------------------------------------------------------------------
+    /// \name Asynchronous
+    /// @{
+    // ---------------------------------------------------------------------
     
+    /// If \p allowAsynchronousSceneProcessing is true within the Parameters
+    /// provided to the UsdImagingGLEngine constructor, an application can
+    /// periodically call this from the main thread.
+    ///
+    /// A return value of true indicates that the scene has changed and the
+    /// render should be updated.
+    USDIMAGINGGL_API
+    bool PollForAsynchronousUpdates() const;
+
+    /// @}
+
 protected:
 
     /// Open some protected methods for whitebox testing.
@@ -715,6 +737,10 @@ private:
         const std::string &renderInstanceId,
         const HdSceneIndexBaseRefPtr &inputScene,
         const HdContainerDataSourceHandle &inputArgs);
+
+    HdSceneIndexBaseRefPtr
+    _AppendOverridesSceneIndices(
+        const HdSceneIndexBaseRefPtr &inputScene);
     
     UsdImagingGLEngine_Impl::_AppSceneIndicesSharedPtr _appSceneIndices;
 
@@ -726,11 +752,15 @@ private:
     UsdImagingSelectionSceneIndexRefPtr _selectionSceneIndex;
     UsdImagingRootOverridesSceneIndexRefPtr _rootOverridesSceneIndex;
     HdsiLegacyDisplayStyleOverrideSceneIndexRefPtr _displayStyleSceneIndex;
+    HdsiPrimTypePruningSceneIndexRefPtr _materialPruningSceneIndex;
+    HdsiPrimTypePruningSceneIndexRefPtr _lightPruningSceneIndex;
     HdSceneIndexBaseRefPtr _sceneIndex;
     
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
 
     std::unique_ptr<HdEngine> _engine;
+
+    bool _allowAsynchronousSceneProcessing = false;
 };
 
 

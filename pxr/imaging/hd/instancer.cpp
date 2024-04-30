@@ -65,10 +65,10 @@ TfTokenVector const &
 HdInstancer::GetBuiltinPrimvarNames()
 {
     static const TfTokenVector primvarNames = {
-        HdInstancerTokens->instanceTransform,
-        HdInstancerTokens->rotate,
-        HdInstancerTokens->scale,
-        HdInstancerTokens->translate
+        HdInstancerTokens->instanceTransforms,
+        HdInstancerTokens->instanceRotations,
+        HdInstancerTokens->instanceScales,
+        HdInstancerTokens->instanceTranslations
     };
     return primvarNames;
 }

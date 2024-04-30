@@ -49,7 +49,8 @@ class HdSt_IndirectDrawBatch : public HdSt_DrawBatch
 public:
     HDST_API
     HdSt_IndirectDrawBatch(HdStDrawItemInstance * drawItemInstance,
-                           bool const allowGpuFrustumCulling = true);
+                           bool const allowGpuFrustumCulling = true,
+                           bool const allowTextureResourceRebinding = false);
     HDST_API
     ~HdSt_IndirectDrawBatch() override;
 
@@ -69,14 +70,16 @@ public:
     HDST_API
     void EncodeDraw(
         HdStRenderPassStateSharedPtr const & renderPassState,
-        HdStResourceRegistrySharedPtr const & resourceRegistry) override;
+        HdStResourceRegistrySharedPtr const & resourceRegistry,
+        bool firstDrawBatch) override;
 
     /// Executes the drawing commands for this batch.
     HDST_API
     void ExecuteDraw(
         HgiGraphicsCmds *gfxCmds,
         HdStRenderPassStateSharedPtr const &renderPassState,
-        HdStResourceRegistrySharedPtr const &resourceRegistry) override;
+        HdStResourceRegistrySharedPtr const &resourceRegistry,
+        bool firstDrawBatch) override;
 
     HDST_API
     void DrawItemInstanceChanged(
@@ -155,7 +158,8 @@ private:
     void _ExecuteDrawImmediate(
                 HdSt_GeometricShaderSharedPtr const & geometricShader,
                 HdStDispatchBufferSharedPtr const & dispatchBuffer,
-                HdStBufferArrayRangeSharedPtr const & indexBar);
+                HdStBufferArrayRangeSharedPtr const & indexBar,
+                _DrawingProgram const & program);
 
     void _ExecuteFrustumCull(
                 bool updateDispatchBuffer,
@@ -195,6 +199,8 @@ private:
 
     int _instanceCountOffset;
     int _cullInstanceCountOffset;
+
+    bool _needsTextureResourceRebinding;
 
     uint32_t _vao;
 };

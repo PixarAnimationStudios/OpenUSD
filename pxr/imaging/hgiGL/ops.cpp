@@ -34,6 +34,7 @@
 #include "pxr/imaging/hgiGL/shaderProgram.h"
 #include "pxr/imaging/hgiGL/texture.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/tf/scopeDescription.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -831,7 +832,7 @@ HgiGLOps::BindFramebufferOp(
                     GL_DEPTH_STENCIL,
                     0,
                     depthAttachment.clearValue[0],
-                    depthAttachment.clearValue[1]);
+                    static_cast<uint32_t>(depthAttachment.clearValue[1]));
             } else {
                 glClearBufferfv(
                     GL_DEPTH,
@@ -877,6 +878,13 @@ HgiGLOps::GenerateMipMaps(HgiTextureHandle const& texture)
 
         HgiGLTexture* glTex = static_cast<HgiGLTexture*>(texture.Get());
         if (glTex && glTex->GetTextureId()) {
+            // Note: the texture ID doesn't mean much to the end user, but
+            // making these descriptions unique helps make it clear how much
+            // time is spent on each one.
+            TF_DESCRIBE_SCOPE("Generating mipmaps (id %zu: %s)",
+                              glTex->GetTextureId(),
+                              glTex->GetDescriptor().debugName.c_str());
+
             glGenerateTextureMipmap(glTex->GetTextureId());
             HGIGL_POST_PENDING_GL_ERRORS();
         }

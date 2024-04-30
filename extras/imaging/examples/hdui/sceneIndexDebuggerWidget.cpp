@@ -30,7 +30,9 @@
 #include "sceneIndexObserverLoggingTreeView.h"
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
+#include "pxr/imaging/hd/utils.h"
 
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <QHBoxLayout>
@@ -38,6 +40,7 @@
 #include <QSplitter>
 #include <QWidgetAction>
 
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <typeinfo>
@@ -66,6 +69,9 @@ HduiSceneIndexDebuggerWidget::HduiSceneIndexDebuggerWidget(QWidget *parent)
 
     QPushButton * loggerButton = new QPushButton("Show Notice Logger");
     toolbarLayout->addWidget(loggerButton);
+
+    QPushButton * writeToFileButton = new QPushButton("Write to file");
+    toolbarLayout->addWidget(writeToFileButton);
 
     toolbarLayout->addStretch();
 
@@ -124,6 +130,33 @@ HduiSceneIndexDebuggerWidget::HduiSceneIndexDebuggerWidget(QWidget *parent)
             if (this->_currentSceneIndex) {
                 loggingWidget->GetTreeView()->SetSceneIndex(
                     this->_currentSceneIndex);
+            }
+    });
+
+    QObject::connect(writeToFileButton, &QPushButton::clicked,
+        [this](){
+            const HdSceneIndexBaseRefPtr si = this->_currentSceneIndex;
+            if (si) {
+                const std::string fileNamePrefix =
+                    "si_" + si->GetDisplayName() + "_";
+                
+                std::string filePath;
+                if (ArchMakeTmpFile(fileNamePrefix, &filePath) == -1) {
+                    TF_RUNTIME_ERROR(
+                        "Could not create file to write out scene index.");
+                    return;
+                }
+
+                // XXX May be useful to allow a subtree to be dumped.
+                //     For now, use the absolute root.
+                const SdfPath &rootPath = SdfPath::AbsoluteRootPath();
+
+                std::fstream output(filePath, std::ios::out);
+                HdUtils::PrintSceneIndex(output, si, rootPath);
+                output.close();
+
+                std::cerr << "Wrote scene index contents to "
+                          << filePath << std::endl;
             }
     });
 }

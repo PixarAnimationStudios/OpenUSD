@@ -56,7 +56,6 @@ pxr_test_scripts(
 )
 
 pxr_build_test_shared_lib(TestPlugDso1
-    CREATE_FRAMEWORK
     INSTALL_PREFIX PlugPlugins
     LIBRARIES
         tf
@@ -165,6 +164,21 @@ pxr_create_test_module(TestPlugModuleDepCycle
 pxr_create_test_module(TestPlugModuleIncomplete
     INSTALL_PREFIX PlugPlugins
 )
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    # Create a test module that has a unicode character in it's path
+    # for Windows
+    pxr_create_test_module(TestPlugModuleUnicode
+        INSTALL_PREFIX PlugPlugins
+        DEST_DIR TestPlugMödüleÜnicöde
+    )
+else()
+    # Create a test module without a unicode character in the path
+    # to make this test consistent on other OSes
+    pxr_create_test_module(TestPlugModuleUnicode
+        INSTALL_PREFIX PlugPlugins
+    )
+endif()
 
 pxr_register_test(testPlug
     PYTHON

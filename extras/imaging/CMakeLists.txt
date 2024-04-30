@@ -1,2 +1,6 @@
-add_subdirectory(examples)
-
+if (PXR_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
+if (PXR_BUILD_DOCUMENTATION)
+    add_subdirectory(docs)
+endif()

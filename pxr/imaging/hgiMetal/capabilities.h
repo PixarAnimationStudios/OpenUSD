@@ -52,6 +52,7 @@ public:
     bool hasVertexMemoryBarrier;
     bool useParallelEncoder;
     bool requiresIndirectDrawFix;
+    bool requiresReturnAfterDiscard;
 
 protected:
     friend class HgiMetal;

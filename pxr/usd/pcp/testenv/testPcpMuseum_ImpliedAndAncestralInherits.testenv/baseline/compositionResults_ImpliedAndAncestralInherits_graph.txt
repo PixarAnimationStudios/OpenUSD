@@ -24,6 +24,7 @@ Node 0:
     Is restricted:            FALSE
     Is inert:                 FALSE
     Contribute specs:         TRUE
+        Restricted at depth:  0
     Has specs:                FALSE
     Has symmetry:             FALSE
 Node 1:
@@ -31,7 +32,7 @@ Node 1:
     Type:                     reference
     DependencyType:           ancestral, non-virtual
     Source path:              </CharGroup/Sim/includes/Hand/Geom>
-    Source layer stack:       @Group.sdf@
+    Source layer stack:       @ImpliedAndAncestralInherits/Group.sdf@
     Target path:              </World/CharGroup/Sim/includes/Hand/Geom>
     Target layer stack:       @ImpliedAndAncestralInherits/root.sdf@
     Map to parent:
@@ -44,6 +45,7 @@ Node 1:
     Is restricted:            FALSE
     Is inert:                 FALSE
     Contribute specs:         TRUE
+        Restricted at depth:  0
     Has specs:                FALSE
     Has symmetry:             FALSE
 Node 2:
@@ -51,9 +53,9 @@ Node 2:
     Type:                     reference
     DependencyType:           ancestral, non-virtual
     Source path:              </CHARGROUP/Sim/includes/Hand/Geom>
-    Source layer stack:       @CharGroupRig.sdf@
+    Source layer stack:       @ImpliedAndAncestralInherits/CharGroupRig.sdf@
     Target path:              </CharGroup/Sim/includes/Hand/Geom>
-    Target layer stack:       @Group.sdf@
+    Target layer stack:       @ImpliedAndAncestralInherits/Group.sdf@
     Map to parent:
         /CHARGROUP -> /CharGroup
     Map to root:
@@ -64,6 +66,7 @@ Node 2:
     Is restricted:            FALSE
     Is inert:                 FALSE
     Contribute specs:         TRUE
+        Restricted at depth:  0
     Has specs:                FALSE
     Has symmetry:             FALSE
 Node 3:
@@ -71,9 +74,9 @@ Node 3:
     Type:                     inherit
     DependencyType:           ancestral, non-virtual
     Source path:              </_class_SimHand/Geom>
-    Source layer stack:       @CharGroupRig.sdf@
+    Source layer stack:       @ImpliedAndAncestralInherits/CharGroupRig.sdf@
     Target path:              </CHARGROUP/Sim/includes/Hand/Geom>
-    Target layer stack:       @CharGroupRig.sdf@
+    Target layer stack:       @ImpliedAndAncestralInherits/CharGroupRig.sdf@
     Map to parent:
         / -> /
         /_class_SimHand -> /CHARGROUP/Sim/includes/Hand
@@ -86,10 +89,11 @@ Node 3:
     Is restricted:            FALSE
     Is inert:                 FALSE
     Contribute specs:         TRUE
+        Restricted at depth:  0
     Has specs:                TRUE
     Has symmetry:             FALSE
     Prim stack:
-      </_class_SimHand/Geom> CharGroupRig.sdf - @CharGroupRig.sdf@
+      </_class_SimHand/Geom> CharGroupRig.sdf - @ImpliedAndAncestralInherits/CharGroupRig.sdf@
 
 
 

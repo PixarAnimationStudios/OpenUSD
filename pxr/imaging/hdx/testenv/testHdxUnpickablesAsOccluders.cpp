@@ -100,7 +100,7 @@ Hdx_TestDriver::_Init(HdReprSelector const &reprSelector)
         VtValue(HdRprimCollection(HdTokens->geometry, reprSelector)));
         
     HdxSelectionTaskParams selParam;
-    selParam.enableSelection = true;
+    selParam.enableSelectionHighlight = true;
     selParam.selectionColor = GfVec4f(1, 1, 0, 1);
     selParam.locateColor = GfVec4f(1, 0, 1, 1);
     delegate.SetTaskParam(selectionTask, HdTokens->params, VtValue(selParam));
@@ -293,7 +293,7 @@ My_TestGLDrawing::OffscreenTest()
     _selTracker->SetSelection(selection);
     DrawScene();
     _driver->WriteToFile("color", "color3_cube0_unpickable.png");
-    //TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 0);
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 0);
 }
 
 void

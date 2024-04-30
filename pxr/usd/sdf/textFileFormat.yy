@@ -230,6 +230,36 @@ _AppendVectorItem(const TfToken& key, const T& item,
     context->data->Set(context->path, key, VtValue(vec));
 }
 
+inline static void
+_SetDefault(const SdfPath& path, VtValue val,
+            Sdf_TextParserContext *context)
+{
+    // If is holding SdfPathExpression (or array of same), make absolute with
+    // path.GetPrimPath() as anchor.
+    if (val.IsHolding<SdfPathExpression>()) {
+        val.UncheckedMutate<SdfPathExpression>([&](SdfPathExpression &pe) {
+            pe = pe.MakeAbsolute(path.GetPrimPath());
+        });
+    }
+    else if (val.IsHolding<VtArray<SdfPathExpression>>()) {
+        val.UncheckedMutate<VtArray<SdfPathExpression>>(
+            [&](VtArray<SdfPathExpression> &peArr) {
+                for (SdfPathExpression &pe: peArr) {
+                    pe = pe.MakeAbsolute(path.GetPrimPath());
+                }
+            });
+    }
+    /*
+    else if (val.IsHolding<SdfPath>()) {
+        SdfPath valPath;
+        val.UncheckedSwap(valPath);
+        expr.MakeAbsolutePath(path.GetPrimPath());
+        val.UncheckedSwap(valPath);
+    }
+    */
+    context->data->Set(path, SdfFieldKeys->Default, val);
+}        
+
 template <class T>
 inline static void
 _SetField(const SdfPath& path, const TfToken& key, const T& item,
@@ -548,7 +578,7 @@ _PrimSetVariantSelection(Sdf_TextParserContext *context)
             const std::string variantName = it->second.Get<std::string>();
             ERROR_AND_RETURN_IF_NOT_ALLOWED(
                 context, 
-                SdfSchema::IsValidVariantIdentifier(variantName));
+                SdfSchema::IsValidVariantSelection(variantName));
 
             refVars[it->first] = variantName;
         }
@@ -584,11 +614,12 @@ _RelocatesAdd(const Value& arg1, const Value& arg2,
     // editing, but since we're bypassing that proxy and setting the map
     // directly into the underlying SdfData, we need to explicitly absolutize
     // paths here.
-    const SdfPath srcAbsPath = srcPath.MakeAbsolutePath(context->path);
-    const SdfPath targetAbsPath = targetPath.MakeAbsolutePath(context->path);
+    srcPath = srcPath.MakeAbsolutePath(context->path);
+    targetPath = targetPath.MakeAbsolutePath(context->path);
 
-    context->relocatesParsingMap.insert(std::make_pair(srcAbsPath, 
-                                                        targetAbsPath));
+    context->relocatesParsing.emplace_back(
+        std::move(srcPath), std::move(targetPath));
+
     context->layerHints.mightHaveRelocates = true;
 }
 
@@ -1449,6 +1480,14 @@ layer_metadata:
                 context->path, SdfFieldKeys->Documentation, 
                 $3.Get<std::string>(), context);
         }
+    // Not parsed with generic metadata because: uses special Python-like
+    // dictionary syntax with paths
+    | TOK_RELOCATES '=' relocates_map {
+            _SetField(
+                context->path, SdfFieldKeys->LayerRelocates,
+                context->relocatesParsing, context);
+            context->relocatesParsing.clear();
+        }      
     // Not parsed with generic metadata because: actually maps to two values
     // instead of one
     | TOK_SUBLAYERS '=' sublayer_list
@@ -1861,10 +1900,13 @@ prim_metadata:
     // Not parsed with generic metadata because: uses special Python-like
     // dictionary syntax with paths
     | TOK_RELOCATES '=' relocates_map {
+            SdfRelocatesMap relocatesParsingMap(
+                std::make_move_iterator(context->relocatesParsing.begin()),
+                std::make_move_iterator(context->relocatesParsing.end()));
+            context->relocatesParsing.clear();
             _SetField(
                 context->path, SdfFieldKeys->Relocates, 
-                context->relocatesParsingMap, context);
-            context->relocatesParsingMap.clear();
+                relocatesParsingMap, context);
         }
     // Not parsed with generic metadata because: multiple definitions are
     // merged into one dictionary instead of overwriting previous definitions
@@ -2571,14 +2613,10 @@ attribute_assignment_opt:
 
 attribute_value:
     typed_value {
-        _SetField(
-            context->path, SdfFieldKeys->Default,
-            context->currentValue, context);
+        _SetDefault(context->path, context->currentValue, context);
     }
     | TOK_NONE {
-        _SetField(
-            context->path, SdfFieldKeys->Default,
-            SdfValueBlock(), context);
+        _SetDefault(context->path, VtValue(SdfValueBlock()), context);
     }
     ;
 
@@ -2852,7 +2890,7 @@ prim_relationship_default:
             std::string pathString = $6.Get<std::string>();
             SdfPath path = pathString.empty() ? SdfPath() : SdfPath(pathString);
 
-            _SetField(context->path, SdfFieldKeys->Default, path, context);
+            _SetDefault(context->path, VtValue(path), context);
             _PrimEndRelationship(context);
         }
     ;

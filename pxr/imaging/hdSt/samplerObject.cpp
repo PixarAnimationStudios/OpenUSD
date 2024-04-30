@@ -224,8 +224,8 @@ HdSamplerParameters LAYOUT_SAMPLER_PARAMETERS(
     HdWrapRepeat,
     HdWrapRepeat,
     HdWrapRepeat,
-    HdMinFilterLinear,
-    HdMagFilterLinear,
+    HdMinFilterNearest,
+    HdMagFilterNearest,
     HdBorderColorTransparentBlack, 
     /*enableCompare*/false, 
     HdCmpFuncNever);

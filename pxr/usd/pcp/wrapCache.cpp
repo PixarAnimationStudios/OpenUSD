@@ -318,6 +318,15 @@ wrapCache()
              &PcpCache::GetDynamicFileFormatArgumentDependencyData,
              return_value_policy<reference_existing_object>())
 
+        .def("GetPrimsUsingExpressionVariablesFromLayerStack",
+             &PcpCache::GetPrimsUsingExpressionVariablesFromLayerStack,
+             (args("layerStack")),
+             return_value_policy<TfPySequenceToList>())
+        .def("GetExpressionVariablesFromLayerStackUsedByPrim",
+             &PcpCache::GetExpressionVariablesFromLayerStackUsedByPrim,
+             (args("layerStack"), args("primIndexPath")),
+             return_value_policy<TfPySequenceToList>())
+
         .def("PrintStatistics", &PcpCache::PrintStatistics)
         .def("Reload", &_Reload)
         ;

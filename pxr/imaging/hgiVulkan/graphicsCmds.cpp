@@ -50,6 +50,29 @@ HgiVulkanGraphicsCmds::HgiVulkanGraphicsCmds(
     // have been created on the main thread, but used on a secondary thread.
     // We need to acquire a command buffer for the thread that is doing the
     // recording so we postpone acquiring cmd buffer until first use of Cmds.
+
+    // Process attachments to get clear values.
+    for (HgiAttachmentDesc const& attachmentDesc :
+        _descriptor.colorAttachmentDescs) {
+        VkClearValue vkClearValue;
+        vkClearValue.color.float32[0] = attachmentDesc.clearValue[0];
+        vkClearValue.color.float32[1] = attachmentDesc.clearValue[1];
+        vkClearValue.color.float32[2] = attachmentDesc.clearValue[2];
+        vkClearValue.color.float32[3] = attachmentDesc.clearValue[3];
+        _vkClearValues.push_back(vkClearValue);
+    }
+
+    bool const hasDepth =
+        _descriptor.depthAttachmentDesc.format != HgiFormatInvalid;
+    if (hasDepth) {
+        HgiAttachmentDesc const& attachmentDesc =
+            _descriptor.depthAttachmentDesc;
+        VkClearValue vkClearValue;
+        vkClearValue.depthStencil.depth = attachmentDesc.clearValue[0];
+        vkClearValue.depthStencil.stencil =
+            static_cast<uint32_t>(attachmentDesc.clearValue[1]);
+        _vkClearValues.push_back(vkClearValue);
+    }
 }
 
 HgiVulkanGraphicsCmds::~HgiVulkanGraphicsCmds()
@@ -292,7 +315,7 @@ HgiVulkanGraphicsCmds::DrawIndexed(
     vkCmdBindIndexBuffer(
         _commandBuffer->GetVulkanCommandBuffer(),
         ibo->GetVulkanBuffer(),
-        indexBufferByteOffset,
+        0,
         VK_INDEX_TYPE_UINT32);
 
     vkCmdDrawIndexed(
@@ -322,7 +345,7 @@ HgiVulkanGraphicsCmds::DrawIndexedIndirect(
     vkCmdBindIndexBuffer(
         _commandBuffer->GetVulkanCommandBuffer(),
         ibo->GetVulkanBuffer(),
-        0, // indexBufferByteOffset
+        0,
         VK_INDEX_TYPE_UINT32);
 
     HgiVulkanBuffer* drawBuf =
@@ -350,11 +373,228 @@ HgiVulkanGraphicsCmds::GetCommandBuffer()
     return _commandBuffer;
 }
 
+void
+HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
+{
+    _CreateCommandBuffer();
+
+    for (size_t i = 0; i < _descriptor.colorAttachmentDescs.size(); i++) {
+        HgiAttachmentDesc const colorAttachmentDesc =
+            _descriptor.colorAttachmentDescs[i];
+        if (colorAttachmentDesc.loadOp == HgiAttachmentLoadOpClear) {
+            VkClearColorValue vkClearColor; 
+            vkClearColor.float32[0] = colorAttachmentDesc.clearValue[0];
+            vkClearColor.float32[1] = colorAttachmentDesc.clearValue[1];
+            vkClearColor.float32[2] = colorAttachmentDesc.clearValue[2];
+            vkClearColor.float32[3] = colorAttachmentDesc.clearValue[3];
+                
+            if (_descriptor.colorTextures[i]) {
+                HgiVulkanTexture* texture = static_cast<HgiVulkanTexture*>(
+                    _descriptor.colorTextures[i].Get());
+                VkImage vkImage = texture->GetImage();
+                VkImageLayout oldVkLayout = texture->GetImageLayout();
+                
+                VkImageSubresourceRange vkImageSubRange;
+                vkImageSubRange.aspectMask =
+                    HgiVulkanConversions::GetImageAspectFlag(
+                        texture->GetDescriptor().usage);
+                vkImageSubRange.baseMipLevel = 0;
+                vkImageSubRange.levelCount =
+                    texture->GetDescriptor().mipLevels;
+                vkImageSubRange.baseArrayLayer = 0;
+                vkImageSubRange.layerCount =
+                    texture->GetDescriptor().layerCount;
+                
+                HgiVulkanTexture::TransitionImageBarrier(
+                    _commandBuffer,
+                    texture,
+                    /*oldLayout*/oldVkLayout,
+                    /*newLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    /*producerAccess*/0,
+                    /*consumerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
+                    /*producerStage*/VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                    /*consumerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT);
+                
+                vkCmdClearColorImage(
+                    _commandBuffer->GetVulkanCommandBuffer(),
+                    vkImage,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    &vkClearColor,
+                    1,
+                    &vkImageSubRange);
+
+                HgiVulkanTexture::TransitionImageBarrier(
+                    _commandBuffer,
+                    texture,
+                    /*oldLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    /*newLayout*/oldVkLayout,
+                    /*producerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
+                    /*consumerAccess*/VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+                    /*producerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    /*consumerStage*/VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+            }
+
+            if (_descriptor.colorResolveTextures.size() > i &&
+                _descriptor.colorResolveTextures[i]) {
+                HgiVulkanTexture* texture = static_cast<HgiVulkanTexture*>(
+                    _descriptor.colorResolveTextures[i].Get());
+                VkImage vkImage = texture->GetImage();
+                VkImageLayout oldVkLayout = texture->GetImageLayout();
+                    
+                VkImageSubresourceRange vkImageSubRange;
+                vkImageSubRange.aspectMask =
+                    HgiVulkanConversions::GetImageAspectFlag(
+                        texture->GetDescriptor().usage);
+                vkImageSubRange.baseMipLevel = 0;
+                vkImageSubRange.levelCount =
+                    texture->GetDescriptor().mipLevels;
+                vkImageSubRange.baseArrayLayer = 0;
+                vkImageSubRange.layerCount =
+                    texture->GetDescriptor().layerCount;
+                    
+                HgiVulkanTexture::TransitionImageBarrier(
+                    _commandBuffer,
+                    texture,
+                    /*oldLayout*/oldVkLayout,
+                    /*newLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    /*producerAccess*/0,
+                    /*consumerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
+                    /*producerStage*/VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                    /*consumerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT);
+                
+                vkCmdClearColorImage(
+                    _commandBuffer->GetVulkanCommandBuffer(),
+                    vkImage,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    &vkClearColor,
+                    1,
+                    &vkImageSubRange);
+                
+                HgiVulkanTexture::TransitionImageBarrier(
+                    _commandBuffer,
+                    texture,
+                    /*oldLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    /*newLayout*/oldVkLayout,
+                    /*producerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
+                    /*consumerAccess*/VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+                    /*producerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    /*consumerStage*/VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+            }
+        }
+    }
+        
+    if (_descriptor.depthAttachmentDesc.loadOp == HgiAttachmentLoadOpClear) {
+        VkClearDepthStencilValue vkClearDepthStencil; 
+        vkClearDepthStencil.depth =
+            _descriptor.depthAttachmentDesc.clearValue[0];
+        vkClearDepthStencil.stencil = static_cast<uint32_t>(
+            _descriptor.depthAttachmentDesc.clearValue[1]);
+        
+        if (_descriptor.depthTexture) {
+            HgiVulkanTexture* texture = static_cast<HgiVulkanTexture*>(
+                _descriptor.depthTexture.Get());
+            VkImage vkImage = texture->GetImage();
+            VkImageLayout oldVkLayout = texture->GetImageLayout();
+            
+            VkImageSubresourceRange vkImageSubRange;
+            vkImageSubRange.aspectMask =
+                HgiVulkanConversions::GetImageAspectFlag(
+                    texture->GetDescriptor().usage);
+            vkImageSubRange.baseMipLevel = 0;
+            vkImageSubRange.levelCount =
+                texture->GetDescriptor().mipLevels;
+            vkImageSubRange.baseArrayLayer = 0;
+            vkImageSubRange.layerCount =
+                texture->GetDescriptor().layerCount;
+                
+            HgiVulkanTexture::TransitionImageBarrier(
+                _commandBuffer,
+                texture,
+                /*oldLayout*/oldVkLayout,
+                /*newLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                /*producerAccess*/0,
+                /*consumerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
+                /*producerStage*/VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                /*consumerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT);
+            
+            vkCmdClearDepthStencilImage(
+                _commandBuffer->GetVulkanCommandBuffer(),
+                vkImage,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                &vkClearDepthStencil,
+                1,
+                &vkImageSubRange);
+                
+            HgiVulkanTexture::TransitionImageBarrier(
+                _commandBuffer,
+                texture,
+                /*oldLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                /*newLayout*/oldVkLayout,
+                /*producerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
+                /*consumerAccess*/VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+                /*producerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT,
+                /*consumerStage*/VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+        }
+
+        if (_descriptor.depthResolveTexture) {
+            HgiVulkanTexture* texture = static_cast<HgiVulkanTexture*>(
+                _descriptor.depthResolveTexture.Get());
+            VkImage vkImage = texture->GetImage();
+            VkImageLayout oldVkLayout = texture->GetImageLayout();
+                
+            VkImageSubresourceRange vkImageSubRange;
+            vkImageSubRange.aspectMask =
+                HgiVulkanConversions::GetImageAspectFlag(
+                    texture->GetDescriptor().usage);
+            vkImageSubRange.baseMipLevel = 0;
+            vkImageSubRange.levelCount = texture->GetDescriptor().mipLevels;
+            vkImageSubRange.baseArrayLayer = 0;
+            vkImageSubRange.layerCount =
+                texture->GetDescriptor().layerCount;
+            
+            HgiVulkanTexture::TransitionImageBarrier(
+                _commandBuffer,
+                texture,
+                /*oldLayout*/oldVkLayout,
+                /*newLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                /*producerAccess*/0,
+                /*consumerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
+                /*producerStage*/VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                /*consumerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT);
+            
+            vkCmdClearDepthStencilImage(
+                _commandBuffer->GetVulkanCommandBuffer(),
+                vkImage,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                &vkClearDepthStencil,
+                1,
+                &vkImageSubRange);
+            
+            HgiVulkanTexture::TransitionImageBarrier(
+                _commandBuffer,
+                texture,
+                /*oldLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                /*newLayout*/oldVkLayout,
+                /*producerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
+                /*consumerAccess*/VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+                /*producerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT,
+                /*consumerStage*/VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+        }
+    }
+}
+
 bool
 HgiVulkanGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {
-    if (!_commandBuffer) {
-        return false;
+    // Any drawing should go inside a Vulkan render pass. However, there are
+    // situations in which we create and submit graphics cmds but do not 
+    // actually draw anything or bind a pipeline, meaning we don't begin a 
+    // render pass. We may still want to clear the attachments in such a
+    // situation, so we do that here.
+    // We assume that if we are submiting the graphics cmds without having
+    // started a render pass, we'll want to clear the attachments manually.
+    if (!_renderPassStarted) {
+        _ClearAttachmentsIfNeeded();
     }
 
     // End render pass
@@ -388,16 +628,22 @@ HgiVulkanGraphicsCmds::_ApplyPendingUpdates()
             static_cast<HgiVulkanGraphicsPipeline*>(_pipeline.Get());
 
         GfVec2i size(0);
-        VkClearValueVector const& clearValues = pso->GetClearValues();
 
         VkRenderPassBeginInfo beginInfo =
             {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         beginInfo.renderPass = pso->GetVulkanRenderPass();
-        beginInfo.framebuffer= pso->AcquireVulkanFramebuffer(_descriptor,&size);
+        beginInfo.framebuffer= pso->AcquireVulkanFramebuffer(
+            _descriptor, &size);
         beginInfo.renderArea.extent.width = size[0];
         beginInfo.renderArea.extent.height = size[1];
-        beginInfo.clearValueCount = (uint32_t) clearValues.size();
-        beginInfo.pClearValues = clearValues.data();
+
+        // Only pass clear values to VkRenderPassBeginInfo if the pipeline has
+        // attachments that specify a clear op.
+        if (pso->GetClearNeeded()) {
+            beginInfo.clearValueCount =
+                static_cast<uint32_t>(_vkClearValues.size());
+            beginInfo.pClearValues = _vkClearValues.data();
+        }
 
         VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE;
 

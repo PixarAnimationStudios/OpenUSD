@@ -29,5 +29,4 @@ from .complianceChecker import ComplianceChecker
 from .updateSchemaWithSdrNode import UpdateSchemaWithSdrNode, \
         SchemaDefiningKeys, SchemaDefiningMiscConstants, PropertyDefiningKeys
 from .fixBrokenPixarSchemas import FixBrokenPixarSchemas
-from .usdzUtils import CheckUsdzCompliance, CreateUsdzPackage, \
-        ExtractUsdzPackage, UsdzAssetIterator 
+from .usdzUtils import ExtractUsdzPackage, UsdzAssetIterator 

@@ -1,0 +1,26 @@
+#usda 1.0
+(
+    defaultPrim = "Test"
+    subLayers = [
+        @./test_sublayer.usda@
+    ]
+)
+
+def "Test" (
+    references = [@./test_reference.usda@]
+    payload = [@./test_payload.usda@]
+    customData = {
+        asset[] metadataProp= [@./test_metadata.usda@]
+    }
+)
+{
+    asset propertyAsset = @./test_prop.usda@ (
+        customData = {
+            asset[] propMetadata = [@./test_prop_metadata.usda@]
+        }
+    )
+
+    asset timeSampleAsset.timeSamples = {
+        1: @./test_timesample.usda@
+    }
+}

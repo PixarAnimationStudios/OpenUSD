@@ -745,6 +745,14 @@ void wrapLayer()
         .def("HasCustomLayerData", &This::HasCustomLayerData)
         .def("ClearCustomLayerData", &This::ClearCustomLayerData)
 
+        .add_property("expressionVariables",
+           &This::GetExpressionVariables,
+           &This::SetExpressionVariables,
+           "The expressionVariables dictionary associated with this layer.")
+
+        .def("HasExpressionVariables", &This::HasExpressionVariables)
+        .def("ClearExpressionVariables", &This::ClearExpressionVariables)
+
         .add_property("startTimeCode",
             &This::GetStartTimeCode,
             &This::SetStartTimeCode,
@@ -856,6 +864,12 @@ void wrapLayer()
             "property is claimed to be read only, you can modify the contents "
             "of this list by assigning new layer offsets to specific indices.")
 
+        .add_property("relocates", 
+            &This::GetRelocates,
+            &This::SetRelocates)
+        .def("HasRelocates", &This::HasRelocates)
+        .def("ClearRelocates", &This::ClearRelocates)
+
         .def("GetLoadedLayers",
             make_function(&This::GetLoadedLayers, 
                           return_value_policy<TfPySequenceToList>()), 
@@ -927,6 +941,7 @@ void wrapLayer()
         .setattr("FramesPerSecondKey", SdfFieldKeys->FramesPerSecond)
         .setattr("FramePrecisionKey", SdfFieldKeys->FramePrecision)
         .setattr("OwnerKey", SdfFieldKeys->Owner)
+        .setattr("LayerRelocatesKey", SdfFieldKeys->LayerRelocates)
         .setattr("SessionOwnerKey", SdfFieldKeys->SessionOwner)
         .setattr("TimeCodesPerSecondKey", SdfFieldKeys->TimeCodesPerSecond)
 
@@ -977,5 +992,3 @@ void wrapLayer()
         TfPyContainerConversions::variable_capacity_policy>();
 
 }
-
-TF_REFPTR_CONST_VOLATILE_GET(SdfLayer)

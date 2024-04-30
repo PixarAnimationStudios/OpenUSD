@@ -11,15 +11,15 @@
        @./sub1.sdf@,
        @./sub2.sdf@
    ]
+   relocates = {
+       </Root/Rig/Scope>: </Root/Anim/Scope>
+   }
 )
 
 def "Root" (
     """Exercise simple case where relationships and attributes target
     a scope within a rig that has been relocated out to a different scope."""
     references = @ref.sdf@</Ref>
-    relocates = {
-        <Rig/Scope> : <Anim/Scope>
-    }
 )
 {
     custom rel badRelA = </Root/Rig/Scope>

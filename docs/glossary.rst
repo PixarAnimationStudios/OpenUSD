@@ -1091,6 +1091,10 @@ as their own renderers. Pixar uses Hydra for asset preview in many of its
 tools, including :program:`usdview` and the `Presto Animation System
 <http://www.cartoonbrew.com/tech/watch-a-rare-demo-of-pixars-animation-system-presto-98099.html>`_.
 
+If you're interested in developing with Hydra components, see the 
+`Hydra Getting Started Guide <api/_page__hydra__getting__started__guide.html>`__
+and other Hydra developer documentation in our `Developer Guides <api/_developer__guides.html>`__.
+
 .. _usdglossary-index:
 
 Index

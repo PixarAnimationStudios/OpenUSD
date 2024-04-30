@@ -38,6 +38,7 @@
 #include <iosfwd>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -49,6 +50,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(Pcp_LayerStackRegistry);
 class ArResolverContext;
 class Pcp_LayerStackRegistry;
 class Pcp_MutedLayers;
+class PcpExpressionVariables;
 class PcpLayerStackChanges;
 class PcpLifeboat;
 
@@ -75,6 +77,11 @@ public:
     PCP_API
     const PcpLayerStackIdentifier& GetIdentifier() const;
 
+    /// Return true if this layer stack is in USD mode.
+    bool IsUsd() const {
+        return _isUsd;
+    };
+
     /// Returns the layers in this layer stack in strong-to-weak order.
     /// Note that this is only the *local* layer stack -- it does not
     /// include any layers brought in by references inside prims.
@@ -86,10 +93,15 @@ public:
     PCP_API
     SdfLayerHandleVector GetSessionLayers() const;
 
-    /// Returns the layer tree representing the structure of this layer
-    /// stack.
+    /// Returns the layer tree representing the structure of the non-session
+    /// layers in the layer stack.
     PCP_API
     const SdfLayerTreeHandle& GetLayerTree() const;
+
+    /// Returns the layer tree representing the structure of the session
+    /// layers in the layer stack or null if there are no session layers.
+    PCP_API
+    const SdfLayerTreeHandle& GetSessionLayerTree() const;
 
     /// Returns the layer offset for the given layer, or NULL if the layer
     /// can't be found or is the identity.
@@ -122,6 +134,17 @@ public:
     bool HasLayer(const SdfLayerHandle& layer) const;
     PCP_API
     bool HasLayer(const SdfLayerRefPtr& layer) const;
+
+    /// Return the composed expression variables for this layer stack.
+    const PcpExpressionVariables& GetExpressionVariables() const
+    { return *_expressionVariables; }
+
+    /// Return the set of expression variables used during the computation
+    /// of this layer stack. For example, this may include the variables
+    /// used in expression variable expressions in sublayer asset paths.
+    const std::unordered_set<std::string>&
+    GetExpressionVariableDependencies() const 
+    { return _expressionVariableDependencies; }
 
     /// Return the time codes per second value of the layer stack. This is 
     /// usually the same as the computed time codes per second of the root layer
@@ -194,9 +217,15 @@ public:
     /// Return a PcpMapExpression representing the relocations that affect
     /// namespace at and below the given path.  The value of this
     /// expression will continue to track the effective relocations if
-    /// they are changed later.
+    /// they are changed later. In USD mode only, this will return a null 
+    /// expression if there are no relocations on this layer stack.
     PCP_API
     PcpMapExpression GetExpressionForRelocatesAtPath(const SdfPath &path);
+
+    /// Return true if there are any relocated prim paths in this layer
+    /// stack.
+    PCP_API
+    bool HasRelocates() const;
 
 private:
     // Only a registry can create a layer stack.
@@ -264,6 +293,10 @@ private:
     /// Stored separately because this is needed only occasionally.
     SdfLayerTreeHandle _layerTree;
 
+    /// The tree structure of the session layer stack.
+    /// Stored separately because this is needed only occasionally.
+    SdfLayerTreeHandle _sessionLayerTree;
+
     /// Tracks information used to compute sublayer asset paths.
     struct _SublayerSourceInfo {
         _SublayerSourceInfo() = default;
@@ -308,6 +341,12 @@ private:
     /// List of all prim spec paths where relocations were found.
     SdfPathVector _relocatesPrimPaths;
 
+    /// Composed expression variables.
+    std::shared_ptr<PcpExpressionVariables> _expressionVariables;
+
+    /// Set of expression variables this layer stack depends on.
+    std::unordered_set<std::string> _expressionVariableDependencies;
+
     bool _isUsd;
 };
 
@@ -321,12 +360,13 @@ std::ostream& operator<<(std::ostream&, const PcpLayerStackRefPtr&);
 /// maps.
 void
 Pcp_ComputeRelocationsForLayerStack(
-    const SdfLayerRefPtrVector & layers,
+    const PcpLayerStack &layerStack,
     SdfRelocatesMap *relocatesSourceToTarget,
     SdfRelocatesMap *relocatesTargetToSource,
     SdfRelocatesMap *incrementalRelocatesSourceToTarget,
     SdfRelocatesMap *incrementalRelocatesTargetToSource,
-    SdfPathVector *relocatesPrimPaths);
+    SdfPathVector *relocatesPrimPaths,
+    PcpErrorVector *errors);
 
 // Returns true if \p layerStack should be recomputed due to changes to
 // any computed asset paths that were used to find or open layers

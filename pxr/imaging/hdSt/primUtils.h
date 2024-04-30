@@ -182,6 +182,21 @@ HdStGetRemovedPrimvarBufferSpecs(
     TfTokenVector const& internallyGeneratedPrimvarNames,
     SdfPath const& rprimId);
 
+// Returns the buffer specs that have been removed from curRange based on the
+// new primvar descriptors, updated specs and internally generated primvar names. Buffer
+// specs with updated types will be replaced.
+// This overload handles primvar type changes and should be preferred over 
+// HdStGetRemovedPrimvarBufferSpecs.
+//
+HDST_API
+HdBufferSpecVector
+HdStGetRemovedOrReplacedPrimvarBufferSpecs(
+    HdBufferArrayRangeSharedPtr const& curRange,
+    HdPrimvarDescriptorVector const& newPrimvarDescs,
+    TfTokenVector const& internallyGeneratedPrimvarNames,
+    HdBufferSpecVector const& updatedSpecs,
+    SdfPath const& rprimId);
+
 // Updates the existing range at drawCoordIndex with newRange and flags garbage
 // collection (for the existing range) and rebuild of all draw batches when
 // necessary.

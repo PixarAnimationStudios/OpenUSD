@@ -26,7 +26,7 @@
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -57,10 +57,7 @@ HdStExtCompGpuPrimvarBufferSource::ComputeHash() const
     // Simply return a hash based on the computation and primvar names, 
     // instead of hashing the contents of the inputs to the computation.
     // This effectively disables primvar sharing when using computed primvars.
-    size_t hash = 0;
-    boost::hash_combine(hash, _compId);
-    boost::hash_combine(hash, _name);
-    return hash;
+    return TfHash::Combine(_compId, _name);
 }
 
 /* virtual */

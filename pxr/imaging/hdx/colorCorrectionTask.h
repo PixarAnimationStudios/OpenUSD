@@ -36,7 +36,6 @@
 #include "pxr/imaging/hgi/resourceBindings.h"
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/texture.h"
-#include "pxr/base/work/dispatcher.h"
 
 #include <string>
 
@@ -143,9 +142,15 @@ private:
 
     // Utility to query OCIO for required resources
     static void
-    _CreateOpenColorIOResources(Hgi *hgi,
-                                HdxColorCorrectionTaskParams const& params,
-                                _OCIOResources *result);
+    _CreateOpenColorIOResources(
+        Hgi *hgi,
+        HdxColorCorrectionTaskParams const& params,
+        _OCIOResources *result);
+    static void
+    _CreateOpenColorIOResourcesImpl(
+        Hgi *hgi,
+        HdxColorCorrectionTaskParams const& params,
+        _OCIOResources *result);
 
     // Utility to check if OCIO should be used
     bool _GetUseOcio() const;
@@ -218,7 +223,7 @@ private: // data
     HgiGraphicsPipelineHandle _pipeline;
     float _screenSize[2];
 
-    WorkDispatcher _workDispatcher;
+    std::unique_ptr<class WorkDispatcher> _workDispatcher;
 };
 
 // VtValue requirements

@@ -206,9 +206,151 @@ class TestUsdGeomComputeAtTimeBase(object):
             for time, delta in tr]
         self.assertAllMatrixListsEqual(xformsArray, compares)
 
+    def test_PrefOrientationsf(self):
+        stage = Usd.Stage.Open("test.usda")
+        pi = UsdGeom.PointInstancer(stage.GetPrimAtPath("/PrefOrientationsf"))
+
+        # Test directly on sample.
+        baseTime = 0
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime)
+        compares = [[Gf.Matrix4d(
+                Gf.Rotation(Gf.Vec3d(0, 0, 1), time * 36),
+                Gf.Vec3d(time * 5, time * 10, time * 20))]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+
+        # Test in-between samples.
+        baseTime = 2
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime)
+        compares = [[Gf.Matrix4d(
+                Gf.Rotation(Gf.Vec3d(0, 0, 1), time * 36),
+                Gf.Vec3d(time * 5, time * 10, time * 20))]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+
+        # Test with basetime before natural sample.
+        baseTime = 5
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime - 1)
+        compares = [[Gf.Matrix4d(
+                Gf.Rotation(Gf.Vec3d(0, 0, 1), time * 36),
+                Gf.Vec3d(time * 5, time * 10, time * 20))]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+
+        # Test with basetime on natural sample.
+        baseTime = 5
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime)
+        compares = [[Gf.Matrix4d(
+                Gf.Rotation(Gf.Vec3d(0, 0, 1), 180 - delta * 36),
+                Gf.Vec3d(25 - delta * 5, 50 - delta * 10, 100 - delta * 20))]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+    
+    def test_PrefHalvesOverFloatsTimeSamples(self):
+        stage = Usd.Stage.Open("test.usda")
+        pi = UsdGeom.PointInstancer(stage.GetPrimAtPath("/PrefHalvesOverFloatsTimeSamples"))
+
+        # Test directly on sample.
+        baseTime = 0
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime)
+        compares = [[Gf.Matrix4d(
+                Gf.Rotation(Gf.Vec3d(0, 0, 1), time * 36),
+                Gf.Vec3d(time * 5, time * 10, time * 20))]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+
+        # Test in-between samples.
+        baseTime = 2
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime)
+        compares = [[Gf.Matrix4d(
+                Gf.Rotation(Gf.Vec3d(0, 0, 1), time * 36),
+                Gf.Vec3d(time * 5, time * 10, time * 20))]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+
+        # Test with basetime before natural sample.
+        baseTime = 5
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime - 1)
+        compares = [[Gf.Matrix4d(
+                Gf.Rotation(Gf.Vec3d(0, 0, 1), time * 36),
+                Gf.Vec3d(time * 5, time * 10, time * 20))]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+
+        # Test with basetime on natural sample.
+        baseTime = 5
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime)
+        compares = [[Gf.Matrix4d(
+                Gf.Rotation(Gf.Vec3d(0, 0, 1), 180 - delta * 36),
+                Gf.Vec3d(25 - delta * 5, 50 - delta * 10, 100 - delta * 20))]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+
+    def test_PrefHalvesOverFloatsNoSamples(self):
+        stage = Usd.Stage.Open("test.usda")
+        pi = UsdGeom.PointInstancer(stage.GetPrimAtPath("/PrefHalvesOverFloatsNoSamples"))
+
+        baseTime = 1
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime)
+        compares = [[Gf.Matrix4d(1)] for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+    
     def test_OneInstanceAcceleration(self):
         stage = Usd.Stage.Open("test.usda")
         pi = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceAcceleration"))
+
+        # Test directly on sample.
+        baseTime = 0
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime)
+        compares = [[Gf.Matrix4d(
+                Gf.Rotation(Gf.Vec3d(0, 0, 1), time * 36),
+                Gf.Vec3d((time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5))))]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+
+        # Test in-between samples.
+        baseTime = 2
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime)
+        compares = [[Gf.Matrix4d(
+                Gf.Rotation(Gf.Vec3d(0, 0, 1), time * 36),
+                Gf.Vec3d((time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5))))]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+
+        # Test with basetime before natural sample.
+        baseTime = 5
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime - 1)
+        compares = [[Gf.Matrix4d(
+                Gf.Rotation(Gf.Vec3d(0, 0, 1), time * 36),
+                Gf.Vec3d((time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5))))]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+
+        # Test with basetime on natural sample.
+        baseTime = 5
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime)
+        compares = [[Gf.Matrix4d(
+                Gf.Rotation(Gf.Vec3d(0, 0, 1), 180 - delta * 36),
+                Gf.Vec3d(25 + (delta / 24.0) * (120 + (delta * 1 * 0.5)), 50 + (delta / 24.0) * (240 + (delta * 2 * 0.5)), 100 + (delta / 24.0) * (480 + (delta * 3 * 0.5))))]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+    
+    def test_OneInstanceAccelerationf(self):
+        stage = Usd.Stage.Open("test.usda")
+        pi = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceAccelerationf"))
 
         # Test directly on sample.
         baseTime = 0

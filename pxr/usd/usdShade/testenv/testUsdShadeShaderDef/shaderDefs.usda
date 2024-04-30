@@ -17,7 +17,10 @@ def Shader "TestShaderPropertiesNodeUSD" (
     vector3f inputs:inputVector = (0.0, 0.0, 0.0)
     matrix4d inputs:inputMatrix = (
         (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0) )
-    int[] inputs:inputIntArray = [1, 2, 3]
+    int[] inputs:inputInt2 = [1, 2]
+    int[] inputs:inputInt3 = [1, 2, 3]
+    int[] inputs:inputInt4 = [1, 2, 3, 5]
+    int[] inputs:inputIntArray = [1, 2, 3, 4, 5]
     string[] inputs:inputStringArray = [ "foo", "bar", "baz", "moo" ]
     float[] inputs:inputFloatArray = [ 1.0, 2.0, 3.0, 4.0, 5.0 ]
     color3f[] inputs:inputColorArray = [ (1.0, 1.0, 1.0), (1.0, 1.0, 1.0) ]
@@ -85,12 +88,6 @@ def Shader "TestShaderPropertiesNodeUSD" (
         allowedTokens = ["token1", "token2"]
         sdrMetadata = {
             token options = "token3|token4"
-        }
-    )
-
-    int inputs:intButBool (
-        sdrMetadata = {
-            string sdrUsdDefinitionType = "bool"
         }
     )
 

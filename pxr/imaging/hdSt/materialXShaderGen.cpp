@@ -26,32 +26,35 @@
 #include "pxr/base/tf/stringUtils.h"
 
 #include <MaterialXCore/Value.h>
-#include <MaterialXGenGlsl/Nodes/SurfaceNodeGlsl.h>
 #include <MaterialXGenShader/Shader.h>
 #include <MaterialXGenShader/ShaderGenerator.h>
 #include <MaterialXGenShader/Syntax.h>
-
-// Metal support added in MaterialX v1.38.7
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 7
-#include <MaterialXGenMsl/MslShaderGenerator.h>
+#include <MaterialXGenGlsl/Nodes/SurfaceNodeGlsl.h>
 #include <MaterialXGenMsl/Nodes/SurfaceNodeMsl.h>
 #include <MaterialXGenMsl/MslResourceBindingContext.h>
-#endif
+#include <MaterialXGenMsl/MslShaderGenerator.h>
 
 namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-static const std::string MxHdTangentString = 
+static const std::string MxHdWorldSpaceVectors = 
 R"(
-    // Calculate a worldspace tangent vector
+    // Calculate the worldspace position and normal vectors
+    vec3 positionWorld = vec3(HdGet_worldToViewInverseMatrix() * Peye);
     vec3 normalWorld = vec3(HdGet_worldToViewInverseMatrix() * vec4(Neye, 0.0));
+
+    // Calculate the worldspace tangent vector 
+#ifdef HD_HAS_%s
+    vec3 tangentWorld = ComputeTangentVector(positionWorld, normalWorld, HdGet_%s());
+#else 
     vec3 tangentWorld = cross(normalWorld, vec3(0, 1, 0));
     if (length(tangentWorld) < M_FLOAT_EPS) {
         tangentWorld = cross(normalWorld, vec3(1, 0, 0));
     }
+#endif
+
 )";
 
 static const std::string MxHdLightString = 
@@ -147,6 +150,8 @@ HdStMaterialXShaderGen<Base>::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
     Base::emitLineBreak(mxStage);
     Base::emitComment("File Generated with HdStMaterialXShaderGen.", mxStage);
     Base::emitLineBreak(mxStage);
+    Base::emitString("#import $TOOLS/hdSt/shaders/surfaceHelpers.glslfx\n", mxStage);
+    Base::emitLineBreak(mxStage);
     Base::emitString(
         R"(-- configuration)" "\n"
         R"({)" "\n", mxStage);
@@ -198,7 +203,8 @@ HdStMaterialXShaderGen<Base>::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
         R"(    "techniques": {)" "\n"
         R"(        "default": {)" "\n"
         R"(            "surfaceShader": { )""\n"
-        R"(                "source": [ "MaterialX.Surface" ])""\n"
+        R"(                "source": [ "SurfaceHelpers.TangentSpace",)""\n"
+        R"(                            "MaterialX.Surface" ])""\n"
         R"(            })""\n"
         R"(        })""\n"
         R"(    })""\n"
@@ -307,14 +313,11 @@ HdStMaterialXShaderGen<Base>::_EmitMxSurfaceShader(
                             + ".transparency, vec3(0.3333)), 0.0, 1.0)", mxStage);
                     emitLine(finalOutputReturn + "vec4(" 
                             + finalOutput + ".color, outAlpha)", mxStage);
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 5
                     emitLine("if (outAlpha < " + mx::HW::T_ALPHA_THRESHOLD + ")",
                              mxStage, false);
                     Base::emitScopeBegin(mxStage);
                     emitLine("discard", mxStage);
                     Base::emitScopeEnd(mxStage);
-#endif
                 }
                 else {
                     emitLine(finalOutputReturn + 
@@ -356,6 +359,35 @@ HdStMaterialXShaderGen<Base>::_EmitMxSurfaceShader(
     Base::emitLineBreak(mxStage);
 }
 
+static std::string
+_GetTexcoordName(
+    mx::VariableBlock const& vertexDataBlock,
+    std::string const& defaultTexcoordName)
+{
+    // Texcoords could come from either a texcoord or a geomprop value node.
+    // We prioritize using the texcoord name over the geomprop. 
+
+    // Cycle through the vertexDataBlock to find the texcoord name.
+    std::string texcoordName = defaultTexcoordName;
+    for (size_t i = 0; i < vertexDataBlock.size(); ++i) {
+        const mx::ShaderPort* variable = vertexDataBlock[i];
+        const std::string mxVariableName = variable->getVariable();
+
+        // If we have a texcoord node, use the default texcoord name.
+        if (mxVariableName.compare(
+                0, mx::HW::T_TEXCOORD.size(), mx::HW::T_TEXCOORD) == 0) {
+            return defaultTexcoordName;
+        }
+        // Use the geomprop name if this is a vec2 geomprop value node 
+        if (mxVariableName.compare(
+                0, mx::HW::T_IN_GEOMPROP.size(), mx::HW::T_IN_GEOMPROP) == 0 &&
+            variable->getType() == mx::Type::VECTOR2) {
+            texcoordName = mxVariableName.substr(mx::HW::T_IN_GEOMPROP.size()+1);
+        }
+    }
+    return texcoordName;
+}
+
 template<typename Base>
 void 
 HdStMaterialXShaderGen<Base>::_EmitMxInitFunction(
@@ -372,8 +404,13 @@ HdStMaterialXShaderGen<Base>::_EmitMxInitFunction(
     emitLine("u_viewPosition = vec3(HdGet_worldToViewInverseMatrix()"
              " * vec4(0.0, 0.0, 0.0, 1.0))", mxStage);
     
-    // Calculate the worldspace tangent vector
-    Base::emitString(MxHdTangentString, mxStage);
+    // Calculate the worldspace position, normal and tangent vectors
+    const std::string texcoordName =
+        _GetTexcoordName(vertexData, _defaultTexcoordName);
+    Base::emitString(
+        TfStringPrintf(MxHdWorldSpaceVectors.c_str(), 
+            texcoordName.c_str(), texcoordName.c_str()), 
+        mxStage);
 
     // Add the vd declaration that translates HdVertexData -> MxVertexData
     std::string mxVertexDataName = "mx" + vertexData.getName();
@@ -458,12 +495,9 @@ HdStMaterialXShaderGen<Base>::_EmitMxVertexDataDeclarations(
     if (targetShadingLanguage == mx::GlslShaderGenerator::TARGET) {
         line += "(";
     }
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 7
     else if (targetShadingLanguage == mx::MslShaderGenerator::TARGET) {
         line += "{";
     }
-#endif
     else {
         TF_CODING_ERROR("MaterialX Shader Generator doesn't support %s",
                         targetShadingLanguage.c_str());
@@ -481,12 +515,9 @@ HdStMaterialXShaderGen<Base>::_EmitMxVertexDataDeclarations(
     if (targetShadingLanguage == mx::GlslShaderGenerator::TARGET) {
         line += ")";
     }
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 7
     else if (targetShadingLanguage == mx::MslShaderGenerator::TARGET) {
         line += "}";
     }
-#endif
 
     emitLine(line, mxStage);
 }
@@ -501,21 +532,13 @@ HdStMaterialXShaderGen<Base>::_EmitMxVertexDataLine(
     // making sure to convert the Hd data (viewSpace) to Mx data (worldSpace)
     std::string hdVariableDef;
     const std::string mxVariableName = variable->getVariable();
-    if (mxVariableName.compare(mx::HW::T_POSITION_WORLD) == 0) {
 
-        // Convert to WorldSpace position
-        hdVariableDef = "vec3(HdGet_worldToViewInverseMatrix() * Peye)"
-                        + separator;
-    }
-    else if (mxVariableName.compare(mx::HW::T_NORMAL_WORLD) == 0) {
+    if (mxVariableName.compare(mx::HW::T_POSITION_WORLD) == 0 ||
+        mxVariableName.compare(mx::HW::T_NORMAL_WORLD) == 0 ||
+        mxVariableName.compare(mx::HW::T_TANGENT_WORLD) == 0) {
 
-        // Convert to WorldSpace normal (calculated in MxHdTangentString)
-        hdVariableDef = "normalWorld" + separator;
-    }
-    else if (mxVariableName.compare(mx::HW::T_TANGENT_WORLD) == 0) {
-
-        // Calculated in MxHdTangentString
-        hdVariableDef = "tangentWorld" + separator;
+        // Calculated in MxHdWorldSpaceVectors
+        hdVariableDef = mxVariableName.substr(1) + separator;
     }
     else if (mxVariableName.compare(mx::HW::T_POSITION_OBJECT) == 0) {
 
@@ -576,28 +599,6 @@ HdStMaterialXShaderGen<Base>::_EmitMxVertexDataLine(
     return hdVariableDef.empty() ? mx::EMPTY_STRING : hdVariableDef;
 }
 
-template <typename Base>
-void
-HdStMaterialXShaderGen<Base>::emitLibraryInclude(
-    const mx::FilePath& filename,
-    mx::GenContext& context,
-    mx::ShaderStage& stage) const
-{
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && \
-    MATERIALX_BUILD_VERSION == 3
-    mx::ShaderGenerator::emitInclude(filename, context, stage);
-#elif MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && \
-    MATERIALX_BUILD_VERSION == 4 
-    // Starting from MaterialX 1.38.4 at PR 877, we must add the "libraries" part:
-    mx::ShaderGenerator::emitInclude(
-        mx::FilePath("libraries") / filename, context, stage);
-#else 
-    // emitLibraryInclude was introduced in MaterialX 1.38.5 and replaced
-    // the emitInclude method. 
-    mx::ShaderGenerator::emitLibraryInclude(filename, context, stage);
-#endif 
-}
-
 template<typename Base>
 void
 HdStMaterialXShaderGen<Base>::emitVariableDeclarations(
@@ -637,7 +638,7 @@ HdStMaterialXShaderGen<Base>::emitVariableDeclarations(
         if ( (isPublicUniform && !_IsHardcodedPublicUniform(*varType))
             || MxHdVariables.count(variable->getName()) ) {
             Base::emitVariableDeclaration(variable, mx::EMPTY_STRING,
-                                    context, stage, false);
+                                    context, stage, false /* assignValue */);
         }
         // Otherwise assign the value from MaterialX
         else {
@@ -689,12 +690,12 @@ HdStMaterialXShaderGen<Base>::_EmitConstantsUniformsAndTypeDefs(
     Base::emitLineBreak(mxStage);
     Base::emitTypeDefinitions(mxContext, mxStage);
 
-    // Add all constants
+    // Add all constants and ensure that values are initialized
     const mx::VariableBlock& constants = mxStage.getConstantBlock();
     if (!constants.empty()) {
         emitVariableDeclarations(constants, constQualifier,
                                  mx::Syntax::SEMICOLON,
-                                 mxContext, mxStage, false);
+                                 mxContext, mxStage, true /* assignValue */);
         Base::emitLineBreak(mxStage);
     }
 
@@ -706,7 +707,8 @@ HdStMaterialXShaderGen<Base>::_EmitConstantsUniformsAndTypeDefs(
         if (!uniforms.empty() && uniforms.getName() != mx::HW::LIGHT_DATA) {
             Base::emitComment("Uniform block: " + uniforms.getName(), mxStage);
             emitVariableDeclarations(uniforms, mx::EMPTY_STRING,
-                                     mx::Syntax::SEMICOLON, mxContext, mxStage);
+                                     mx::Syntax::SEMICOLON, mxContext, 
+                                     mxStage, true /* assignValue */);
             Base::emitLineBreak(mxStage);
         }
     }
@@ -736,7 +738,7 @@ HdStMaterialXShaderGen<Base>::_EmitDataStructsAndFunctionDefinitions(
         Base::emitScopeBegin(mxStage);
         emitVariableDeclarations(lightData, mx::EMPTY_STRING,
                                  mx::Syntax::SEMICOLON,
-                                 mxContext, mxStage, false);
+                                 mxContext, mxStage, false /* assignValue */);
         Base::emitScopeEnd(mxStage, true);
         Base::emitLineBreak(mxStage);
         emitLine(lightData.getName() + " "
@@ -758,7 +760,7 @@ HdStMaterialXShaderGen<Base>::_EmitDataStructsAndFunctionDefinitions(
         Base::emitScopeBegin(mxStage);
         emitVariableDeclarations(vertexData, mx::EMPTY_STRING,
                                  mx::Syntax::SEMICOLON,
-                                 mxContext, mxStage, false);
+                                 mxContext, mxStage, false /* assignValue */);
         Base::emitScopeEnd(mxStage, false, false);
         Base::emitString(mx::Syntax::SEMICOLON, mxStage);
         Base::emitLineBreak(mxStage);
@@ -775,22 +777,21 @@ HdStMaterialXShaderGen<Base>::_EmitDataStructsAndFunctionDefinitions(
     // Emit lighting and shadowing code
     if (lighting) {
         Base::emitSpecularEnvironment(mxContext, mxStage);
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 5
         Base::emitTransmissionRender(mxContext, mxStage);
-#endif
     }
     if (shadowing) {
-        emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
-                                 + "/lib/mx_shadow.glsl", mxContext, mxStage);
+        mx::ShaderGenerator::emitLibraryInclude(
+            "pbrlib/" + mx::GlslShaderGenerator::TARGET
+            + "/lib/mx_shadow.glsl", mxContext, mxStage);
     }
 
     // Emit directional albedo table code.
     if (mxContext.getOptions().hwDirectionalAlbedoMethod ==
             mx::HwDirectionalAlbedoMethod::DIRECTIONAL_ALBEDO_TABLE ||
         mxContext.getOptions().hwWriteAlbedoTable) {
-        emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
-                                 + "/lib/mx_table.glsl", mxContext, mxStage);
+        mx::ShaderGenerator::emitLibraryInclude(
+            "pbrlib/" + mx::GlslShaderGenerator::TARGET
+            + "/lib/mx_table.glsl", mxContext, mxStage);
         Base::emitLineBreak(mxStage);
     }
 
@@ -807,7 +808,7 @@ HdStMaterialXShaderGen<Base>::_EmitDataStructsAndFunctionDefinitions(
 
     // Emit uv transform code globally if needed.
     if (mxContext.getOptions().hwAmbientOcclusion) {
-        emitLibraryInclude(
+        mx::ShaderGenerator::emitLibraryInclude(
             "stdlib/" + Base::TARGET + "/lib/" +
                 (*tokenSubstitutions)[mx::ShaderGenerator::T_FILE_TRANSFORM_UV],
             mxContext, mxStage);
@@ -937,8 +938,9 @@ HdStMaterialXShaderGenGlsl::_EmitMxFunctions(
     mx::GenContext& mxContext,
     mx::ShaderStage& mxStage) const
 {
-    emitLibraryInclude("stdlib/" + mx::GlslShaderGenerator::TARGET
-                       + "/lib/mx_math.glsl", mxContext, mxStage);
+    mx::ShaderGenerator::emitLibraryInclude(
+        "stdlib/" + mx::GlslShaderGenerator::TARGET
+        + "/lib/mx_math.glsl", mxContext, mxStage);
     _EmitConstantsUniformsAndTypeDefs(
         mxContext, mxStage, _syntax->getConstantQualifier());
 
@@ -986,10 +988,6 @@ HdStMaterialXShaderGenGlsl::_EmitMxFunctions(
 // ----------------------------------------------------------------------------
 //                          HdSt MaterialX ShaderGen Metal
 // ----------------------------------------------------------------------------
-
-// Metal support added in MaterialX v1.38.7
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 7
 
 namespace {
     // Create a customized version of the class mx::SurfaceNodeMsl
@@ -1105,7 +1103,6 @@ HdStMaterialXShaderGenMsl::_EmitGlslfxMetalShader(
         "shadowOcclusion", mxStage);
 
     // Add type definitions
-    emitTypeDefinitions(mxContext, mxStage);
     emitConstantBufferDeclarations(mxContext, resourceBindingCtx, mxStage);
 
     // Add all constants
@@ -1145,10 +1142,12 @@ HdStMaterialXShaderGenMsl::_EmitMxFunctions(
     mx::GenContext& mxContext,
     mx::ShaderStage& mxStage) const
 {
-    emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
-                       + "/lib/mx_microfacet.glsl", mxContext, mxStage);
-    emitLibraryInclude("stdlib/" + mx::MslShaderGenerator::TARGET
-                       + "/lib/mx_math.metal", mxContext, mxStage);
+    mx::ShaderGenerator::emitLibraryInclude(
+        "pbrlib/" + mx::GlslShaderGenerator::TARGET
+        + "/lib/mx_microfacet.glsl", mxContext, mxStage);
+    mx::ShaderGenerator::emitLibraryInclude(
+        "stdlib/" + mx::MslShaderGenerator::TARGET
+        + "/lib/mx_math.metal", mxContext, mxStage);
     _EmitConstantsUniformsAndTypeDefs(
         mxContext, mxStage,_syntax->getConstantQualifier());
 
@@ -1196,7 +1195,6 @@ HdStMaterialXShaderGenMsl::_EmitMxFunctions(
     _EmitDataStructsAndFunctionDefinitions(
         mxGraph, mxContext, mxStage, &_tokenSubstitutions);
 }
-#endif
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

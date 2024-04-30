@@ -435,8 +435,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
              'collection:__INSTANCE_NAME__:excludes',
              'collection:__INSTANCE_NAME__:expansionRule', 
              'collection:__INSTANCE_NAME__:includeRoot', 
-             'collection:__INSTANCE_NAME__:includes'])
-
+             'collection:__INSTANCE_NAME__:includes',
+             'collection:__INSTANCE_NAME__:membershipExpression'])
+        
         # Prim def has relationship/property spec for 'excludes'
         self.assertTrue(primDef.GetPropertyDefinition(
             'collection:__INSTANCE_NAME__:excludes'))
@@ -452,6 +453,14 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             'collection:__INSTANCE_NAME__:expansionRule'))
         self.assertFalse(primDef.GetRelationshipDefinition(
             'collection:__INSTANCE_NAME__:expansionRule'))
+
+        # Prim def has attribute/property spec for 'membershipExpression'.
+        self.assertTrue(primDef.GetPropertyDefinition(
+            'collection:__INSTANCE_NAME__:membershipExpression'))
+        self.assertTrue(primDef.GetAttributeDefinition(
+            'collection:__INSTANCE_NAME__:membershipExpression'))
+        self.assertFalse(primDef.GetRelationshipDefinition(
+            'collection:__INSTANCE_NAME__:membershipExpression'))
 
         # API schema but not an applied schema. No prim definition
         self.assertFalse(Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
@@ -662,6 +671,14 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                 "custom" : False,
                 "documentation" : apiPrimDef.GetPropertyDocumentation(
                     "collection:__INSTANCE_NAME__:excludes"),
+                "variability" : Sdf.VariabilityUniform
+            },
+            "collection:__INSTANCE_NAME__:membershipExpression" : {
+                "custom" : False,
+                "default" : None,
+                "typeName" : Sdf.ValueTypeNames.PathExpression,
+                "documentation" : apiPrimDef.GetPropertyDocumentation(
+                    "collection:__INSTANCE_NAME__:membershipExpression"),
                 "variability" : Sdf.VariabilityUniform
             }
         }

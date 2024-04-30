@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<materialx version="1.36">
+  <nodegraph name="test_nodegraph" fileprefix="outer_scope/textures/">
+    <image name="image_base" type="color3" nodedef="ND_image_color3">
+      <input name="file" type="filename" value="base.tif"/>
+    </image>
+    <image name="image_spec" type="float" nodedef="ND_image_float">
+      <input name="file" type="filename"  fileprefix="inner_scope/textures/" value="spec.tif"/>
+    </image>
+    <output name="base_out" type="color3" nodename="image_base" />
+    <output name="spec_out" type="float" nodename="image_spec" />
+  </nodegraph>
+  <standard_surface name="Surface" type="surfaceshader">
+    <input name="base_color" type="color3" output="base_out" nodegraph="test_nodegraph" />
+    <input name="specular" type="float" output="spec_out" nodegraph="test_nodegraph" />
+  </standard_surface>
+  <surfacematerial name="test_material" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="Surface" />
+  </surfacematerial>
+</materialx>

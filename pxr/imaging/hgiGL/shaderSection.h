@@ -139,6 +139,15 @@ public:
     HGIGL_API
     void WriteType(std::ostream& ss) const override;
 
+    HGIGL_API
+    void WriteInterpolation(std::ostream& ss) const;
+    
+    HGIGL_API
+    void WriteSampling(std::ostream& ss) const;
+    
+    HGIGL_API
+    void WriteStorage(std::ostream& ss) const;
+
 private:
     HgiGLMemberShaderSection() = delete;
     HgiGLMemberShaderSection & operator=(
@@ -150,6 +159,9 @@ private:
     HgiSamplingType _sampling;
     HgiStorageType _storage;
 };
+
+using HgiGLMemberShaderSectionPtrVector = 
+    std::vector<HgiGLMemberShaderSection*>;
 
 /// \class HgiGLBlockShaderSection
 ///
@@ -303,7 +315,7 @@ public:
         const std::string &blockInstanceIdentifier,
         const std::string &qualifier,
         const std::string &arraySize,
-        const HgiGLShaderSectionPtrVector &members);
+        const HgiGLMemberShaderSectionPtrVector &members);
 
     HGIGL_API
     bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
@@ -315,7 +327,7 @@ private:
     HgiGLInterstageBlockShaderSection(const HgiGLInterstageBlockShaderSection&) = delete;
 
     const std::string _qualifier;
-    const HgiGLShaderSectionPtrVector _members;
+    const HgiGLMemberShaderSectionPtrVector _members;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

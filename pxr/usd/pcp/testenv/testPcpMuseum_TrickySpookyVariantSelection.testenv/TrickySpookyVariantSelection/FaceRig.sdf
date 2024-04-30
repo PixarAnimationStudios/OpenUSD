@@ -1,10 +1,11 @@
 #sdf 1.4.32
-
-def Scope "FaceRig" (
+(
     relocates = {
-        <Rig/LipRig/Anim>: <Anim/Lip>
+        </FaceRig/Rig/LipRig/Anim>: </FaceRig/Anim/Lip>
     }
 )
+
+def Scope "FaceRig"
 {
     def Scope "Anim" {
         over "Lip" {

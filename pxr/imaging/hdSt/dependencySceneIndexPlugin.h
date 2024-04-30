@@ -32,11 +32,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdSt_DependencySceneIndexPlugin
 ///
-/// Plugin adds a chain of its own scene index generating dependencies
-/// and a dependency forwarding scene index to the Storm render delegate.
+/// Plugin adds a scene index that declares Storm-specific dependencies to
+/// trigger the necessary invalidation.
 ///
-/// Together, this chain will dirty the volumeFieldBinding data source
-/// locator of a volume prim if any of the targeted volume fields changes.
+/// Currently, the lone usage is for volume prims.
+///
+/// Specfically, the declaration allows the volumeFieldBinding data source
+/// locator of a volume prim to be invalidated if any of the targeted volume 
+/// fields changes.
 /// That is, if, e.g., the filePath of a volume field changes, then the volume
 /// using that volume field will be dirtied so that HdStVolume will update
 /// which 3d textures it will use.

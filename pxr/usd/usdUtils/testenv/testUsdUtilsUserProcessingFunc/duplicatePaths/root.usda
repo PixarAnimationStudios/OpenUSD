@@ -1,0 +1,16 @@
+#usda 1.0
+(
+    defaultPrim = "main"
+    subLayers = [
+        @./default.usda@,
+        @./modify.usda@,
+        @./remove.usda@
+    ]
+)
+
+def "main"
+{
+    asset shouldBeDefault = @./default.usda@
+    asset shouldBeModified = @./modify.usda@
+    asset shouldBeRemoved = @./remove.usda@
+}

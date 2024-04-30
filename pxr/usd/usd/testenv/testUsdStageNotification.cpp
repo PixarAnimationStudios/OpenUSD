@@ -33,6 +33,7 @@
 #include "pxr/usd/usd/specializes.h"
 #include "pxr/usd/usd/stage.h"
 
+#include "pxr/base/tf/denseHashSet.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/ostreamMethods.h"
@@ -282,25 +283,14 @@ TestObjectsChanged()
             });
         tester.AddTest([target1, target2, foo, bar](Notice const &n) {
                 return
-                    TF_AXIOM(!n.HasChangedFields(target2)) &&
-                    TF_AXIOM(n.GetChangedFields(target2).empty()) &&
-                    TF_AXIOM(!n.HasChangedFields(target1)) &&
-                    TF_AXIOM(n.GetChangedFields(target1).empty()) &&
-                    TF_AXIOM(!n.HasChangedFields(foo)) &&
-                    TF_AXIOM(n.GetChangedFields(foo).empty()) &&
+                    TF_AXIOM(n.HasChangedFields(target1)) &&
+                    TF_AXIOM(n.GetChangedFields(target1) == 
+                             TfTokenVector{SdfFieldKeys->References}) &&
+                    TF_AXIOM(n.HasChangedFields(foo)) &&
+                    TF_AXIOM(n.GetChangedFields(foo) == 
+                             TfTokenVector{SdfFieldKeys->References}) &&
 
-                    // XXX: Sdf currently does not report affected fields for
-                    // certain types of changes. Once that's fixed, these test
-                    // cases can replace the ones above.
-                    //
-                    // TF_AXIOM(n.HasChangedFields(target1)) &&
-                    // TF_AXIOM(n.GetChangedFields(target1) == 
-                    //          TfTokenVector{SdfFieldKeys->References}) &&
-                    // TF_AXIOM(n.HasChangedFields(foo)) &&
-                    // TF_AXIOM(n.GetChangedFields(foo) == 
-                    //          TfTokenVector{SdfFieldKeys->References}) &&
-
-                    TF_AXIOM(!n.HasChangedFields(bar));
+                    TF_AXIOM(!n.HasChangedFields(bar)) &&
                     TF_AXIOM(n.GetChangedFields(bar).empty());
             });
         // Now add the reference.
@@ -436,10 +426,20 @@ TestObjectsChanged()
                     TF_AXIOM(n.GetChangedInfoOnlyPaths().empty());
             });
         tester.AddTest([](Notice const &n) {
+                const TfTokenVector changedFields =
+                    n.GetChangedFields(SdfPath("/foo.attr"));
+
+                const TfDenseHashSet<TfToken, TfHash> changedFieldsSet(
+                    changedFields.begin(), changedFields.end());
+
+                const TfDenseHashSet<TfToken, TfHash> changedFieldsBaseline = {
+                    SdfFieldKeys->Custom,
+                    SdfFieldKeys->TypeName,
+                };
+
                 return
                     TF_AXIOM(n.HasChangedFields(SdfPath("/foo.attr"))) &&
-                    TF_AXIOM(n.GetChangedFields(SdfPath("/foo.attr")) == 
-                             TfTokenVector{SdfFieldKeys->Custom});
+                    TF_AXIOM(changedFieldsSet == changedFieldsBaseline);
             });
         attr = foo.CreateAttribute(TfToken("attr"), SdfValueTypeNames->Int);
     }
@@ -502,15 +502,9 @@ TestObjectsChanged()
             });
         tester.AddTest([rel](Notice const &n) {
                 return
-                    TF_AXIOM(!n.HasChangedFields(rel)) &&
-                    TF_AXIOM(n.GetChangedFields(rel).empty());
-                    // XXX: Sdf currently does not report affected fields for
-                    // certain types of changes. Once that's fixed, these test
-                    // cases can replace the ones above.
-                    //
-                    // TF_AXIOM(n.HasChangedFields(rel)) &&
-                    // TF_AXIOM(n.GetChangedFields(rel) == 
-                    //          TfTokenVector{SdfFieldKeys->TargetPaths});
+                    TF_AXIOM(n.HasChangedFields(rel)) &&
+                    TF_AXIOM(n.GetChangedFields(rel) == 
+                             TfTokenVector{SdfFieldKeys->TargetPaths});
                     
             });
         rel.AddTarget(SdfPath("/bar"));

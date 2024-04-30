@@ -156,7 +156,7 @@ UsdImagingRenderSettingsAdapter::Populate(
                     &renderVarPaths);
                 for (SdfPath const& renderVarPath: renderVarPaths ) {
                     UsdPrim rv = prim.GetStage()->GetPrimAtPath(renderVarPath);
-                    if (rv.IsA<UsdRenderVar>()) {
+                    if (rv && rv.IsA<UsdRenderVar>()) {
                         index->AddDependency(/* to   */rsPrimPath,
                                              /* from */rv);
                     }
@@ -176,7 +176,7 @@ UsdImagingRenderSettingsAdapter::Populate(
             _tokens->outputsRiDisplayFilters
         };
 
-        for (const auto token : outputTokens) {
+        for (const auto &token : outputTokens) {
             SdfPathVector connections;
             prim.GetAttribute(token).GetConnections(&connections);
             for (auto const& connPath : connections) {
@@ -304,6 +304,7 @@ _ToHdRenderProducts(UsdRenderSpec const &renderSpec)
         hdProduct.dataWindowNDC = product.dataWindowNDC;
 
         hdProduct.disableMotionBlur = product.disableMotionBlur;
+        hdProduct.disableDepthOfField = product.disableDepthOfField;
         hdProduct.namespacedSettings = product.namespacedSettings;
 
         hdProducts.push_back(std::move(hdProduct));

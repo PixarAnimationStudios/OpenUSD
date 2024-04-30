@@ -51,8 +51,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// particular UsdTimeCode. The images generated will be effectively the same
 /// as what you would see in the viewer in usdview.
 ///
-/// Note that it is assumed that an OpenGL context has already been setup if
-/// the UsdAppUtilsFrameRecorder instance is created with the GPU enabled.
+/// Note that it is assumed that an OpenGL context has already been setup for
+/// the UsdAppUtilsFrameRecorder if OpenGL is being used as the underlying HGI
+/// device. This is not required for Metal or Vulkan.
 class UsdAppUtilsFrameRecorder
 {
 public:
@@ -61,10 +62,16 @@ public:
     /// plugin will be chosen depending on the value of \p gpuEnabled.
     /// The \p gpuEnabled argument determines if the UsdAppUtilsFrameRecorder
     /// instance will allow Hydra to use the GPU to produce images.
+    /// The \p renderSettingsPrimPath argument is used to set the active 
+    /// render settings prim path in Hydra.
+    /// The \p defaultLights argument determines if the
+    /// UsdAppUtilsFrameRecorder will add a default set of lights,
+    /// in addition to any present in the scene.
     USDAPPUTILS_API
     UsdAppUtilsFrameRecorder(
         const TfToken& rendererPluginId = TfToken(),
-        bool gpuEnabled = true);
+        bool gpuEnabled = true,
+        const SdfPath& renderSettingsPrimPath = SdfPath());
 
     /// Gets the ID of the Hydra renderer plugin that will be used for
     /// recording.
@@ -73,11 +80,16 @@ public:
     }
 
     /// Sets the Hydra renderer plugin to be used for recording.
+    /// This also resets the presentation flag on the HdxPresentTask to false,
+    /// to avoid the need for an OpenGL context.
     ///
     /// Note that the renderer plugins that may be set will be restricted if
     /// this UsdAppUtilsFrameRecorder instance has disabled the GPU.
     bool SetRendererPlugin(const TfToken& id) {
-        return _imagingEngine.SetRendererPlugin(id);
+        const bool succeeded = _imagingEngine.SetRendererPlugin(id);
+        _imagingEngine.SetEnablePresentation(false);
+
+        return succeeded;
     }
 
     /// Sets the width of the recorded image.
@@ -107,6 +119,13 @@ public:
     USDAPPUTILS_API
     void SetColorCorrectionMode(const TfToken& colorCorrectionMode);
 
+    /// Turns the built-in camera light on or off.
+    ///
+    /// When on, this will add a light at the camera's origin.
+    /// This is sometimes called a "headlight".
+    USDAPPUTILS_API
+    void SetCameraLightEnabled(bool cameraLightEnabled);
+
     /// Sets the UsdGeomImageable purposes to be used for rendering
     ///
     /// We will __always__ include "default" purpose, and by default,
@@ -124,6 +143,12 @@ public:
     /// If \p usdCamera is not a valid camera, a camera will be computed
     /// to automatically frame the stage geometry.
     ///
+    /// When we are using a RenderSettings prim, the generated image will be 
+    /// written to the file indicated on the connected RenderProducts, 
+    /// instead of the given \p outputImagePath. Note that in this case the
+    /// given \p usdCamera will later be overridden by the one authored on the 
+    /// RenderSettings Prim. 
+    ///
     /// Returns true if the image was generated and written successfully, or
     /// false otherwise.
     USDAPPUTILS_API
@@ -139,6 +164,8 @@ private:
     float _complexity;
     TfToken _colorCorrectionMode;
     TfTokenVector _purposes;
+    SdfPath _renderSettingsPrimPath;
+    bool _cameraLightEnabled;
 };
 
 

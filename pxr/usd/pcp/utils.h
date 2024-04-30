@@ -27,13 +27,50 @@
 /// \file pcp/utils.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/sdf/layer.h"
 
 #include <string>
+#include <unordered_set>
 #include <utility>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class PcpExpressionVariables;
+class VtDictionary;
+
+// Returns the result of evaluating the variable expression \p expression using
+// the variables \p expressionVars. Variables that are used during evaluation
+// will be inserted in \p usedVariables. Any errors that occur during evaluation
+// will be appended to \p errors. \p context (a string like "sublayer" or
+// "reference"), \p sourceLayer, and \p sourcePath are used to describe the
+// source of the expression for use in error messages.
+// 
+// The result of \p expression is assumed to be string-valued; if it is not, an
+// error will be generated and the empty string will be returned.
+std::string
+Pcp_EvaluateVariableExpression(
+    const std::string& expression,
+    const PcpExpressionVariables& expressionVars,
+    const std::string& context,
+    const SdfLayerHandle& sourceLayer,
+    const SdfPath& sourcePath,
+    std::unordered_set<std::string>* usedVariables,
+    PcpErrorVector* errors);
+
+// Convenience overload of above that does not populate \p usedVariables or 
+// \p errors.
+std::string
+Pcp_EvaluateVariableExpression(
+    const std::string& expression,
+    const PcpExpressionVariables& expressionVars);
+
+// Returns true if \p str is a variable expression, false otherwise.
+bool
+Pcp_IsVariableExpression(
+    const std::string& str);
 
 // Returns an SdfLayer::FileFormatArguments object with the "target" argument
 // set to \p target if \p target is not empty.
@@ -67,6 +104,13 @@ Pcp_GetArgumentsForFileFormatTarget(
     const std::string& identifier,
     const SdfLayer::FileFormatArguments* defaultArgs,
     SdfLayer::FileFormatArguments* localArgs);
+
+// Removes the "target" argument from \p args if it exists and its value
+// is the same as \p target.
+void
+Pcp_StripFileFormatTarget(
+    const std::string& target,
+    SdfLayer::FileFormatArguments* args);
 
 // Find the starting node of the class hierarchy of which node n is a part.
 // This is the prim that starts the class chain, aka the 'instance' of the
@@ -155,6 +199,17 @@ Pcp_GetArgumentsForFileFormatTarget(
 // incorrectly excluded.
 std::pair<PcpNodeRef, PcpNodeRef>
 Pcp_FindStartingNodeOfClassHierarchy(const PcpNodeRef& n);
+
+// Translate the given path (which must be a prim or prim variant selection
+// path) from the namespace of the given node to the namespace of the root node
+// of the prim index that node belongs to. If that translation succeeds, returns
+// the translated path and the root node. If that translation fails, translate
+// the path to the ancestor node closest to the root node where the mapping is
+// successful and return the translated path and the ancestor node.
+std::pair<SdfPath, PcpNodeRef>
+Pcp_TranslatePathFromNodeToRootOrClosestNode(
+    const PcpNodeRef& node,
+    const SdfPath& path);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

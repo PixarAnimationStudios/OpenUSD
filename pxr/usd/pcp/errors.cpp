@@ -52,12 +52,17 @@ TF_REGISTRY_FUNCTION(TfEnum) {
     TF_ADD_ENUM_NAME(PcpErrorType_InvalidSublayerOwnership);
     TF_ADD_ENUM_NAME(PcpErrorType_InvalidSublayerPath);
     TF_ADD_ENUM_NAME(PcpErrorType_InvalidVariantSelection);
+    TF_ADD_ENUM_NAME(PcpErrorType_MutedAssetPath);
+    TF_ADD_ENUM_NAME(PcpErrorType_InvalidAuthoredRelocation);
+    TF_ADD_ENUM_NAME(PcpErrorType_InvalidConflictingRelocation);
+    TF_ADD_ENUM_NAME(PcpErrorType_InvalidSameTargetRelocations);
     TF_ADD_ENUM_NAME(PcpErrorType_OpinionAtRelocationSource);
     TF_ADD_ENUM_NAME(PcpErrorType_PrimPermissionDenied);
     TF_ADD_ENUM_NAME(PcpErrorType_PropertyPermissionDenied);
     TF_ADD_ENUM_NAME(PcpErrorType_SublayerCycle);
     TF_ADD_ENUM_NAME(PcpErrorType_TargetPermissionDenied);
     TF_ADD_ENUM_NAME(PcpErrorType_UnresolvedPrimPath);
+    TF_ADD_ENUM_NAME(PcpErrorType_VariableExpressionError);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -693,6 +698,151 @@ PcpErrorInvalidSublayerPath::ToString() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
+PcpErrorRelocationBase::PcpErrorRelocationBase(PcpErrorType errorType)
+    : PcpErrorBase(errorType)
+{
+}
+
+PcpErrorRelocationBase::~PcpErrorRelocationBase()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PcpErrorInvalidAuthoredRelocationPtr
+PcpErrorInvalidAuthoredRelocation::New()
+{
+    return PcpErrorInvalidAuthoredRelocationPtr(
+        new PcpErrorInvalidAuthoredRelocation);
+}
+
+PcpErrorInvalidAuthoredRelocation::PcpErrorInvalidAuthoredRelocation() :
+    PcpErrorRelocationBase(PcpErrorType_InvalidAuthoredRelocation)
+{
+}
+
+PcpErrorInvalidAuthoredRelocation::~PcpErrorInvalidAuthoredRelocation()
+{
+}
+
+// virtual
+std::string
+PcpErrorInvalidAuthoredRelocation::ToString() const
+{
+    return TfStringPrintf("Relocation from <%s> to <%s> authored at @%s@<%s> is "
+                          "invalid and will be ignored: %s",
+                          sourcePath.GetText(),
+                          targetPath.GetText(),
+                          layer->GetIdentifier().c_str(), 
+                          owningPath.GetText(),
+                          messages.c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PcpErrorInvalidConflictingRelocationPtr
+PcpErrorInvalidConflictingRelocation::New()
+{
+    return PcpErrorInvalidConflictingRelocationPtr(
+        new PcpErrorInvalidConflictingRelocation);
+}
+
+PcpErrorInvalidConflictingRelocation::PcpErrorInvalidConflictingRelocation() :
+    PcpErrorRelocationBase(PcpErrorType_InvalidConflictingRelocation)
+{
+}
+
+PcpErrorInvalidConflictingRelocation::~PcpErrorInvalidConflictingRelocation()
+{
+}
+
+// virtual
+std::string
+PcpErrorInvalidConflictingRelocation::ToString() const
+{
+    auto conflictReasonCstr = [](ConflictReason reason) {
+        switch (reason) {
+            case ConflictReason::TargetIsConflictSource:
+                return "The target of a relocate cannot be the source of "
+                    "another relocate in the same layer stack.";
+            case ConflictReason::SourceIsConflictTarget:
+                return "The source of a relocate cannot be the target of "
+                    "another relocate in the same layer stack.";
+            case ConflictReason::TargetIsConflictSourceDescendant:
+                return "The target of a relocate cannot be a descendant of "
+                    "the source of another relocate.";
+            case ConflictReason::SourceIsConflictSourceDescendant:
+                return "The source of a relocate cannot be a descendant of "
+                    "the source of another relocate.";
+        };
+        return "Invalid conflict reason.";
+    };
+
+    return TfStringPrintf("Relocation from <%s> to <%s> authored at @%s@<%s> "
+                          "conflicts with another relocation from <%s> to <%s> "
+                          "authored at @%s@<%s> and will be ignored: %s",
+                          sourcePath.GetText(),
+                          targetPath.GetText(),
+                          layer->GetIdentifier().c_str(), 
+                          owningPath.GetText(),
+                          conflictSourcePath.GetText(),
+                          conflictTargetPath.GetText(),
+                          conflictLayer->GetIdentifier().c_str(), 
+                          conflictOwningPath.GetText(),
+                          conflictReasonCstr(conflictReason));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PcpErrorInvalidSameTargetRelocationsPtr
+PcpErrorInvalidSameTargetRelocations::New()
+{
+    return PcpErrorInvalidSameTargetRelocationsPtr(
+        new PcpErrorInvalidSameTargetRelocations);
+}
+
+PcpErrorInvalidSameTargetRelocations::PcpErrorInvalidSameTargetRelocations() :
+    PcpErrorRelocationBase(PcpErrorType_InvalidSameTargetRelocations)
+{
+}
+
+PcpErrorInvalidSameTargetRelocations::~PcpErrorInvalidSameTargetRelocations()
+{
+}
+
+// virtual
+std::string
+PcpErrorInvalidSameTargetRelocations::ToString() const
+{
+    auto sourceToString = [](const RelocationSource &source) {
+        return TfStringPrintf("relocation from <%s> authored at @%s@<%s>",
+            source.sourcePath.GetText(),
+            source.layer->GetIdentifier().c_str(),
+            source.owningPath.GetText());
+    };
+
+    auto sourceIt = sources.begin();
+    if (sourceIt == sources.end()) {
+        TF_CODING_ERROR(
+            "PcpErrorInvalidSameTargetRelocations must have sources");
+        return std::string();
+    }
+
+    std::string sourcesString = sourceToString(*sourceIt);
+    while (++sourceIt != sources.end()) {
+        sourcesString.append("; ");
+        sourcesString.append(sourceToString(*sourceIt));
+    }
+
+    return TfStringPrintf("The path <%s> is the target of multiple relocations "
+                          "from different sources. The following relocates to "
+                          "this target are invalid and will be ignored: %s.",
+                          targetPath.GetText(),
+                          sourcesString.c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 PcpErrorOpinionAtRelocationSourcePtr
 PcpErrorOpinionAtRelocationSource::New()
 {
@@ -871,6 +1021,53 @@ PcpErrorUnresolvedPrimPath::ToString() const
         TfEnum::GetDisplayName(arcType).c_str(), 
         TfStringify(PcpSite(targetLayer, unresolvedPath)).c_str(),
         TfStringify(PcpSite(sourceLayer, site.path)).c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PcpErrorVariableExpressionErrorPtr
+PcpErrorVariableExpressionError::New()
+{
+    return PcpErrorVariableExpressionErrorPtr(
+        new PcpErrorVariableExpressionError);
+}
+
+PcpErrorVariableExpressionError::PcpErrorVariableExpressionError()
+    : PcpErrorBase(PcpErrorType_VariableExpressionError)
+{
+}
+
+PcpErrorVariableExpressionError::~PcpErrorVariableExpressionError()
+{
+}
+
+std::string
+PcpErrorVariableExpressionError::ToString() const
+{
+    // Example error messages:
+    // Error evaluating expression "`if(${FOO}, ..."
+    // for sublayer in @foo.sdf@: invalid syntax
+    //
+    // Error evaluating expression "`if(${FOO}, ..."
+    // for reference at </Foo> in @bar.sdf@: invalid syntax
+    auto makeSourceStr = [this]() {
+        std::string result;
+        if (!sourcePath.IsAbsoluteRootPath()) {
+            result += TfStringPrintf(
+                "at %s ", sourcePath.GetAsString().c_str());
+        }
+        result += TfStringPrintf(
+            "in @%s@", 
+            sourceLayer ? sourceLayer->GetIdentifier().c_str() : "<expired>");
+        return result;
+
+    };
+
+    return TfStringPrintf(
+        R"(Error evaluating expression %s for %s %s: %s)",
+        expression.substr(0, 32).c_str(), 
+        context.c_str(), makeSourceStr().c_str(),
+        expressionError.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

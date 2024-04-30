@@ -51,8 +51,6 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/dispatcher.h"
 
-#include <boost/optional.hpp>
-
 #include <tbb/concurrent_vector.h>
 #include <tbb/concurrent_unordered_set.h>
 #include <tbb/concurrent_hash_map.h>
@@ -61,22 +59,23 @@
 #include <functional>
 #include <string>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 class ArResolverContext;
 class GfInterval;
 class SdfAbstractDataValue;
+class Usd_AssetPathContext;
 class Usd_ClipCache;
 class Usd_InstanceCache;
 class Usd_InstanceChanges;
 class Usd_InterpolatorBase;
+class Usd_Resolver;
 class UsdResolveInfo;
 class UsdResolveTarget;
-class Usd_Resolver;
 class UsdPrim;
 class UsdPrimRange;
 
@@ -678,8 +677,10 @@ public:
 
     /// Expand this stage's population mask to include the targets of all
     /// relationships that pass \p relPred and connections to all attributes
-    /// that pass \p attrPred recursively.  If \p relPred is null, include all
-    /// relationship targets; if \p attrPred is null, include all connections.
+    /// that pass \p attrPred recursively.  The attributes and relationships are
+    /// those on all the prims found by traversing the stage according to \p
+    /// traversalPredicate.  If \p relPred is null, include all relationship
+    /// targets; if \p attrPred is null, include all connections.
     ///
     /// This function can be used, for example, to expand a population mask for
     /// a given prim to include bound materials, if those bound materials are
@@ -689,9 +690,18 @@ public:
     /// UsdPrim::FindAllAttributeConnectionPaths().
     USD_API
     void ExpandPopulationMask(
+        Usd_PrimFlagsPredicate const &traversalPredicate,
         std::function<bool (UsdRelationship const &)> const &relPred = nullptr,
         std::function<bool (UsdAttribute const &)> const &attrPred = nullptr);
-    
+
+    /// \overload
+    /// This convenience overload invokes ExpandPopulationMask() with the
+    /// UsdPrimDefaultPredicate traversal predicate.
+    USD_API
+    void ExpandPopulationMask(
+        std::function<bool (UsdRelationship const &)> const &relPred = nullptr,
+        std::function<bool (UsdAttribute const &)> const &attrPred = nullptr);
+
     /// @}
 
     // --------------------------------------------------------------------- //
@@ -858,6 +868,10 @@ public:
     ///
     /// If either a pre-and-post-order traversal or a traversal rooted at a
     /// particular prim is desired, construct a UsdPrimRange directly.
+    ///
+    /// You'll need to use the returned UsdPrimRange's iterator to perform 
+    /// actions such as pruning subtrees. See the "Using Usd.PrimRange in 
+    /// python" section in UsdPrimRange for more details and examples. 
     ///
     /// This is equivalent to UsdPrimRange::Stage() . 
     USD_API
@@ -1721,6 +1735,8 @@ private:
         static const bool value =
             std::is_same<T, SdfTimeCode>::value ||
             std::is_same<T, VtArray<SdfTimeCode>>::value ||
+            std::is_same<T, SdfPathExpression>::value ||
+            std::is_same<T, VtArray<SdfPathExpression>>::value ||
             std::is_same<T, SdfTimeSampleMap>::value ||
             std::is_same<T, VtDictionary>::value;
     };
@@ -1922,7 +1938,8 @@ private:
     // Helper for _Recompose to find the subtrees that need to be
     // fully recomposed and to recompose the name children of the
     // parents of these subtrees. Note that [start, finish) must be a
-    // sorted range of paths with no descendent paths.
+    // sorted range of map iterators whose keys are paths with no descendent
+    // paths. In C++20, consider using the ranges API to improve this.
     template <class Iter>
     void _ComputeSubtreesToRecompose(Iter start, Iter finish,
                                      std::vector<Usd_PrimDataPtr>* recompose);
@@ -1979,6 +1996,11 @@ private:
                                 SdfTimeCode *timeCodes,
                                 size_t numTimeCodes) const;
 
+    void _MakeResolvedPathExpressions(
+        UsdTimeCode time, const UsdAttribute &attr,
+        SdfPathExpression *pathExprs,
+        size_t numPathExprs) const;
+
     void _MakeResolvedAttributeValue(UsdTimeCode time, const UsdAttribute &attr,
                                      VtValue *value) const;
 
@@ -1998,6 +2020,8 @@ public:
             std::is_same<T, VtArray<SdfAssetPath>>::value ||
             std::is_same<T, SdfTimeCode>::value ||
             std::is_same<T, VtArray<SdfTimeCode>>::value ||
+            std::is_same<T, SdfPathExpression>::value ||
+            std::is_same<T, VtArray<SdfPathExpression>>::value ||
             std::is_same<T, SdfTimeSampleMap>::value ||
             std::is_same<T, VtDictionary>::value;
     };
@@ -2181,12 +2205,6 @@ private:
                        Usd_InterpolatorBase* interpolator,
                        T* value) const;
 
-    SdfLayerRefPtr
-    _GetLayerWithStrongestValue(
-        UsdTimeCode time, const UsdAttribute &attr) const;
-
-
-
     USD_API
     bool _GetValueFromResolveInfo(const UsdResolveInfo &info,
                                   UsdTimeCode time, const UsdAttribute &attr,
@@ -2208,6 +2226,9 @@ private:
     bool _GetDefaultValueFromResolveInfoImpl(const UsdResolveInfo &info,
                                              const UsdAttribute &attr,
                                              T* value) const;
+
+    Usd_AssetPathContext
+    _GetAssetPathContext(UsdTimeCode time, const UsdAttribute &attr) const;
 
     // --------------------------------------------------------------------- //
     // Specialized Time Sample I/O
@@ -2314,7 +2335,7 @@ private:
     class _PendingChanges;
     _PendingChanges* _pendingChanges;
 
-    boost::optional<WorkDispatcher> _dispatcher;
+    std::optional<WorkDispatcher> _dispatcher;
 
     // To provide useful aggregation of malloc stats, we bill everything
     // for this stage - from all access points - to this tag.
@@ -2344,6 +2365,7 @@ private:
     friend class UsdSpecializes;
     friend class UsdVariantSet;
     friend class UsdVariantSets;
+    friend class Usd_AssetPathContext;
     friend class Usd_FlattenAccess;
     friend class Usd_PcpCacheAccess;
     friend class Usd_PrimData;
@@ -2484,7 +2506,6 @@ UsdStage::_SetMetadata(const UsdObject &object, const TfToken& key,
 {
     return _SetEditTargetMappedMetadata(object, key, keyPath, value);
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

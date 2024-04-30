@@ -24,10 +24,6 @@
 #ifndef PXR_BASE_ARCH_DEFINES_H
 #define PXR_BASE_ARCH_DEFINES_H
 
-#include "pxr/pxr.h"
-
-PXR_NAMESPACE_OPEN_SCOPE
-
 //
 // OS
 //
@@ -38,7 +34,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 #include "TargetConditionals.h"
 #define ARCH_OS_DARWIN
 #if TARGET_OS_IPHONE
-#define ARCH_OS_IOS
+// TARGET_OS_IPHONE refers to all iOS derivative platforms
+// TARGET_OS_IOS refers to iPhone/iPad
+// For now, we specialize for the umbrella TARGET_OS_IPHONE group
+#define ARCH_OS_IPHONE
 #else
 #define ARCH_OS_OSX
 #endif
@@ -107,7 +106,5 @@ PXR_NAMESPACE_OPEN_SCOPE
 #if defined(ARCH_OS_LINUX)
 #define ARCH_HAS_MMAP_MAP_POPULATE
 #endif
-
-PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_BASE_ARCH_DEFINES_H 

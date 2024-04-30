@@ -121,10 +121,6 @@ public:
 
     string const &GetAssetPath() const { return _crateFile->GetAssetPath(); }
 
-    bool CanIncrementalSave(string const &fileName) {
-        return _crateFile->CanPackTo(fileName);
-    }
-
     bool Save(string const &fileName) {
         TfAutoMallocTag tag("Usd_CrateDataImpl::Save");
 
@@ -744,6 +740,8 @@ private:
         // Ensure we start from a clean slate.
         _ClearSpecData();
 
+        TfErrorMark m;
+
         WorkDispatcher dispatcher;
 
         // Pull all the data out of the crate file structure that we'll
@@ -804,21 +802,34 @@ private:
                     
             dispatcher.Run(
                 [this, fsBegin, fsEnd, &fields, &fieldValuePairs]() mutable {
-                    // XXX Won't need first two tags when bug #132031 is
-                    // addressed
-                    TfAutoMallocTag tag(
-                        "Usd", "Usd_CrateDataImpl::Open", "field data");
-                    auto &pairs = fieldValuePairs.GetMutable();
-                    pairs.resize(fsEnd-fsBegin);
-                    for (size_t i = 0; fsBegin != fsEnd; ++fsBegin, ++i) {
-                        auto const &field = fields[fsBegin->value];
-                        pairs[i].first = _crateFile->GetToken(field.tokenIndex);
-                        pairs[i].second = _UnpackForField(field.valueRep);
+                    try{
+                        // XXX Won't need first two tags when bug #132031 is
+                        // addressed
+                        TfAutoMallocTag tag(
+                            "Usd", "Usd_CrateDataImpl::Open", "field data");
+                        auto &pairs = fieldValuePairs.GetMutable();
+                        pairs.resize(fsEnd-fsBegin);
+                        for (size_t i = 0; fsBegin != fsEnd; ++fsBegin, ++i) {
+                            auto const &field = fields[fsBegin->value];
+                            pairs[i].first = 
+                                _crateFile->GetToken(field.tokenIndex);
+                            pairs[i].second = _UnpackForField(field.valueRep);
+                        } 
+                    } catch (const std::exception &e){
+                        TF_RUNTIME_ERROR("Encountered exception: %s %s", 
+                            e.what(), _crateFile->GetAssetPath().c_str());
+
+                    } catch (...) {
+                        TF_RUNTIME_ERROR("Encountered unknown exception");
                     }
                 });
         }
                 
         dispatcher.Wait();
+
+        if (!m.IsClean()) {
+            return false;
+        }
 
         // Create all the specData entries and store pointers to them.
         tbb::parallel_for(
@@ -1100,20 +1111,26 @@ Usd_CrateData::Save(string const &fileName)
         return false;
     }
 
-    if (_impl->CanIncrementalSave(fileName)) {
-        return _impl->Save(fileName);
+    return _impl->Save(fileName);
+}
+
+bool
+Usd_CrateData::Export(string const &fileName)
+{
+    if (fileName.empty()) {
+        TF_CODING_ERROR("Tried to save to empty fileName");
+        return false;
     }
-    else {
-        // We copy to a temporary data and save that.
-        //
-        // Usd_CrateData currently reloads the underlying asset to reinitialize
-        // its internal members after a save. We use a non-detached
-        // Usd_CrateData here to avoid any expense associated with detaching
-        // from the asset.
-        Usd_CrateData tmp(/* detached = */ false);
-        tmp.CopyFrom(SdfAbstractDataConstPtr(this));
-        return tmp.Save(fileName);
-    }
+
+    // To Export, we copy to a temporary data and save that, since we need this
+    // CrateData object to stay associated with its existing backing store.
+    //
+    // Usd_CrateData currently reloads the underlying asset to reinitialize its
+    // internal members after a save. We use a non-detached Usd_CrateData here
+    // to avoid any expense associated with detaching from the asset.
+    Usd_CrateData tmp(/* detached = */ false);
+    tmp.CopyFrom(SdfAbstractDataConstPtr(this));
+    return tmp.Save(fileName);
 }
 
 bool

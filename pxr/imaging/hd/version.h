@@ -67,7 +67,44 @@
 // 48 -> 49: Moved HdExtCompCpuComputation, Hd_ExtCompInputSource,
 //           Hd_CompExtCompInputSource, and Hd_SceneExtCompInputSource to hdSt.
 // 49 -> 50: Added HdModelDrawMode struct and getter API to HdSceneDelegate.
-#define HD_API_VERSION 50
+// 50 -> 51: HdMaterialBindingSchema became HdMaterialBindingsSchema which uses
+//           the new HdMaterialBindingSchema.
+// 51 -> 52: Added lens distortion, focus, and split diopter parameters to
+//           HdCamera.
+// 52 -> 53: Changing dirty bits of HdCoordSys.
+// 53 -> 54: Introducing HdFlattenedDataSourceProvider to make
+//           HdFlatteningSceneIndex modular.
+// 54 -> 55: Introduce API in HdRenderDelegate to aid in transitioning
+//           render delegates to a Hydra 2.0 world.
+// 55 -> 56: Adds hydra-namespaced internal instancer primvars
+// 56 -> 57: Changing SetOverrideWindowPolicy to std::optional on
+//           HdRenderPassState, HdxPickFromRenderBufferTaskParams,
+//           HdxTaskController and UsdImagingGLEngine.
+// 57 -> 58: Introducing hdsi/version.h
+// 58 -> 59: HdGeomSubsetsSchema::GetIds() renamed to
+//           HdGeomSubsetsSchema::GetGeomSubsetNames().
+// 59 -> 60: Introduced HdRenderDelegate::GetCapabilities().
+// 60 -> 61: Adding HdPrimvarSchema::GetFlattenedPrimvarValue().
+//           Note that in an upcoming change,
+//           HdPrimvarSchema::GetPrimvarValue() might change and
+//           simply return the data source source at primvarValue.
+// 61 -> 62: Remove 'bindingStrength' from HdMaterialBindingSchema.
+// 62 -> 63: HdMaterialSchema::GetMaterialNetwork,
+//           HdMaterialNetwork::GetNodes, GetTerminals,
+//           HdMaterialNode::GetParameters, GetInputConnections
+//           return Hydra schemas instead of just container data sources.
+//           schemaTypeDefs.h replaces vectorSchemaTypeDefs.h.
+// 63 -> 64: Adding disableDepthOfField to HdRenderSettings::RenderProduct
+// 64 -> 65: Introduce HdCollectionPredicateLibrary and 
+//           HdCollectionExpressionEvaluator for path expression evaluation on
+//           scene index prims.
+// 65 -> 66: Make HdSchema::_GetTypedDataSource and getters in generated
+//           hydra schemas const.
+// 66 -> 67: Removes legacy internal instancer primvar names and the
+//           TfEnvSetting for using them (see 56).
+//
+
+#define HD_API_VERSION 67
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

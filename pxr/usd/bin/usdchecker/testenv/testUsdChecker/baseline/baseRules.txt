@@ -6,6 +6,9 @@ Checking rules:
 [CompressionChecker]:
  Files within a usdz package should not be compressed or encrypted.
 ------------------------------
+[ShaderPropertyTypeConformanceChecker]:
+ Shader prim's input types must be conforming to their appropriate Sdf types in the respective sdr shader.
+------------------------------
 [MissingReferenceChecker]:
  The composed USD stage should not contain any unresolvable asset dependencies (in every possible variation of the asset), when using the default asset resolver. 
 ------------------------------

@@ -13,31 +13,25 @@
     spec is correctly ignored, both when composing the relocation
     target and when composing child names of the parent.
     """
+    relocates = {
+        </Char/Anim>: </Char/Anim2>, 
+        </Char/Rig>: </Char/Rig2>, 
+        </Char/Rig2/SubRig>: </Char/Rig2/SubRig2>, 
+        </Char/Rig2/SubRig2/Rig>: </Char/Rig2/SubRig2/Rig2>
+    }
 )
 
 def "Char" (
     add references = @./rig.sdf@</CharRig>
-    relocates = {
-        <Anim>: <Anim2>, 
-        <Rig>: <Rig2>
-    }
 )
 {
     over "Anim2"
     {
     }
 
-    over "Rig2" (
-        relocates = {
-            <SubRig>: <SubRig2>
-        }
-    )
+    over "Rig2"
     {
-        over "SubRig2" (
-            relocates = {
-                <Rig>: <Rig2>
-            }
-        )
+        over "SubRig2"
         {
         }
     }

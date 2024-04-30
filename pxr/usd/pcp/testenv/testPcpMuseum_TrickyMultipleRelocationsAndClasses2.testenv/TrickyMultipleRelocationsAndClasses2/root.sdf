@@ -18,13 +18,12 @@
     from implied spooky inherit authored in this layer at 
     /CharRig/Rig/LegsRig/SymLegRig/TentacleRig/Tentacle/Seg2.
     """
-)
-
-def Scope "CharRig" (
     relocates = {
-        <Rig/LegsRig/Legs> : <Anim/Legs>
+        </CharRig/Rig/LegsRig/Legs>: </CharRig/Anim/Legs>
     }
 )
+
+def Scope "CharRig"
 {
     def Scope "Rig"
     {

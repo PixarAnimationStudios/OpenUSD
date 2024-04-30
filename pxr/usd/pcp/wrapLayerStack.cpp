@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/layerStack.h"
+#include "pxr/usd/pcp/expressionVariables.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
@@ -78,9 +79,19 @@ void wrapLayerStack()
         .add_property("layerTree", 
                       make_function(&PcpLayerStack::GetLayerTree,
                                     return_value_policy<return_by_value>()))
+        .add_property("sessionLayerTree", 
+                      make_function(&PcpLayerStack::GetSessionLayerTree,
+                                    return_value_policy<return_by_value>()))
         .add_property("mutedLayers",
                       make_function(&PcpLayerStack::GetMutedLayers,
                                     return_value_policy<TfPySequenceToList>()))
+        .add_property("expressionVariables",
+                      make_function(&PcpLayerStack::GetExpressionVariables,
+                                    return_value_policy<return_by_value>()))
+        .add_property("expressionVariableDependencies",
+                      make_function(
+                          &PcpLayerStack::GetExpressionVariableDependencies,
+                          return_value_policy<TfPySequenceToList>()))
         .add_property("relocatesSourceToTarget",
                       make_function(&PcpLayerStack::GetRelocatesSourceToTarget,
                                     return_value_policy<return_by_value>()))
@@ -104,5 +115,3 @@ void wrapLayerStack()
         // TODO: repr, eq, etc.
         ;
 }
-
-TF_REFPTR_CONST_VOLATILE_GET(PcpLayerStack)

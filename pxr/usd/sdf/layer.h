@@ -45,11 +45,10 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/dispatcher.h"
 
-#include <boost/optional.hpp>
-
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <vector>
@@ -82,6 +81,10 @@ struct Sdf_AssetInfo;
 /// back out to the original asset.  You can use the Export() method to write
 /// the layer to a different location. You can use the GetIdentifier() method
 /// to get the layer's Id or GetRealPath() to get the resolved, full URI.
+///
+/// Layer identifiers are UTF-8 encoded strings. A layer's file format is
+/// determined via the identifier's extension (as resolved by Ar) with [A-Z]
+/// (and no other characters) explicitly case folded.
 ///
 /// Layers can have a timeCode range (startTimeCode and endTimeCode). This range
 /// represents the suggested playback range, but has no impact on the extent of 
@@ -1042,6 +1045,23 @@ public:
     SDF_API
     void ClearCustomLayerData();
 
+    /// Returns the expression variables dictionary authored on this layer.
+    /// See \ref Sdf_Page_VariableExpressions for more details.
+    SDF_API
+    VtDictionary GetExpressionVariables() const;
+    
+    /// Sets the expression variables dictionary for this layer.
+    SDF_API
+    void SetExpressionVariables(const VtDictionary& expressionVars);
+
+    /// Returns true if expression variables are authored on this layer.
+    SDF_API
+    bool HasExpressionVariables() const;
+
+    /// Clears the expression variables dictionary authored on this layer.
+    SDF_API
+    void ClearExpressionVariables();
+
     /// @}
     /// \name Prims
     /// @{
@@ -1196,6 +1216,37 @@ public:
     /// Sets the layer offset for the subLayer path at the given index.
     SDF_API
     void SetSubLayerOffset(const SdfLayerOffset& offset, int index);
+
+    /// @}
+    /// \name Relocates
+    /// @{
+
+    /// Get the list of relocates specified in this layer's metadata.
+    ///
+    /// Each individual relocate in the list is specified as a pair of 
+    /// \c \SdfPath where the first is the source path of the relocate and the
+    /// second is target path.
+    ///
+    /// Note that is NOT a proxy object and cannot be used to edit the field in
+    /// place. 
+    SDF_API
+    SdfRelocates GetRelocates() const;
+    
+    /// Set the entire list of namespace relocations specified on this layer to
+    /// \p relocates.
+    SDF_API
+    void SetRelocates(const SdfRelocates& relocates);
+
+    /// Returns true if this layer's metadata has any relocates opinion, 
+    /// including that there should be no relocates (i.e. an empty list).  An 
+    /// empty list (no relocates) does not mean the same thing as a missing list
+    /// (no opinion).
+    SDF_API
+    bool HasRelocates() const;
+    
+    /// Clears the layer relocates opinion in the layer's metadata.
+    SDF_API
+    void ClearRelocates();
 
     /// @}
 
@@ -1613,7 +1664,7 @@ private:
     // reference itself internally without being susceptible to a race.)
     bool _WaitForInitializationAndCheckIfSuccessful();
 
-    // Returns whether or not this menv layer should post change 
+    // Returns whether or not this layer should post change 
     // notification.  This simply returns (!_GetIsLoading())
     bool _ShouldNotify() const;
 
@@ -1800,9 +1851,8 @@ private:
     // users to export and save to any file name, regardless of extension.
     bool _WriteToFile(const std::string& newFileName, 
                       const std::string& comment, 
-                      SdfFileFormatConstPtr fileFormat = TfNullPtr,
-                      const FileFormatArguments& args = FileFormatArguments())
-                      const;
+                      SdfFileFormatConstPtr fileFormat,
+                      const FileFormatArguments& args) const;
 
     // Swap contents of _data and data. This operation does not register
     // inverses or emit change notification.
@@ -1935,7 +1985,7 @@ private:
 
     // This is an optional<bool> that is only set once initialization
     // is complete, before _initializationComplete is set.
-    boost::optional<bool> _initializationWasSuccessful;
+    std::optional<bool> _initializationWasSuccessful;
 
     // remembers the last 'IsDirty' state.
     mutable bool _lastDirtyState;

@@ -73,7 +73,8 @@ public:
     /// - Parent indices will be added before children
     void Add(const PcpPrimIndex &primIndex,
         PcpCulledDependencyVector &&culledDependencies,
-        PcpDynamicFileFormatDependencyData &&fileFormatDependencyData);
+        PcpDynamicFileFormatDependencyData &&fileFormatDependencyData,
+        PcpExpressionVariablesDependencyData &&exprVarDependencyData);
 
     /// Remove dependency information for the given PcpPrimIndex.
     /// Any layer stacks in use by any site are added to \p lifeboat,
@@ -228,6 +229,19 @@ public:
     GetDynamicFileFormatArgumentDependencyData(
         const SdfPath &primIndexPath) const;
 
+    /// Returns the list of prim index paths that depend on one or more
+    /// expression variables from \p layerStack.
+    const SdfPathVector&
+    GetPrimsUsingExpressionVariablesFromLayerStack(
+        const PcpLayerStackPtr &layerStack) const;
+
+    /// Returns the set of expression variables in \p layerStack that are
+    /// used by the prim index at \p primIndexPath.
+    const std::unordered_set<std::string>&
+    GetExpressionVariablesFromLayerStackUsedByPrim(
+        const SdfPath &primIndexPath,
+        const PcpLayerStackPtr &layerStack) const;
+
     /// @}
 
 private:
@@ -270,25 +284,40 @@ private:
     _FileFormatArgumentFieldDepMap _possibleDynamicFileFormatArgumentFields; 
     _FileFormatArgumentFieldDepMap _possibleDynamicFileFormatArgumentAttributes; 
 
+    using _ExprVariablesDependencyMap = std::unordered_map<
+        SdfPath, PcpExpressionVariablesDependencyData, SdfPath::Hash>;
+    _ExprVariablesDependencyMap _exprVarsDependencyMap;
+
+    using _LayerStackToExprVarDepMap = std::unordered_map<
+        PcpLayerStackPtr, SdfPathVector, TfHash>;
+    _LayerStackToExprVarDepMap _layerStackExprVarsMap;
+
     ConcurrentPopulationContext *_concurrentPopulationContext;
 };
 
-static inline bool
+inline bool
 Pcp_NodeUsesLayerOrLayerStack( const PcpNodeRef& node,
                                const SdfLayerHandle& layer )
 {
     return node.GetLayerStack()->HasLayer(layer);
 }
 
-static inline bool
+inline bool
 Pcp_NodeUsesLayerOrLayerStack( const PcpNodeRef& node,
                                const PcpLayerStackRefPtr& layerStack )
 {
     return node.GetLayerStack() == layerStack;
 }
 
+inline bool
+Pcp_NodeUsesLayerOrLayerStack( const PcpNodeRef& node,
+                               const PcpLayerStackPtr& layerStack )
+{
+    return node.GetLayerStack() == layerStack;
+}
+
 template <class FN, class LayerOrLayerStack>
-static bool
+bool
 Pcp_ForEachDependentNodeImpl( const SdfPath &sitePath,
                               const LayerOrLayerStack &layerOrLayerStack,
                               const SdfPath &depIndexPath,
@@ -332,7 +361,7 @@ Pcp_ForEachDependentNodeImpl( const SdfPath &sitePath,
 /// The \p nodeFn callback will be called with \p depIndexPath and the
 /// PcpNodeRef for each dependent node in the prim index.
 template <class FN, class LayerOrLayerStack>
-static void
+void
 Pcp_ForEachDependentNode( const SdfPath &sitePath,
                           const LayerOrLayerStack &layerOrLayerStack,
                           const SdfPath &depIndexPath,
@@ -363,7 +392,7 @@ Pcp_ForEachDependentNode( const SdfPath &sitePath,
 /// The \p culledDepFn will be called with \p depIndexPath and the
 /// PcpCulledDependency for each culled dependent node in the prim index.
 template <class NodeFn, class CulledDepFn>
-static void
+void
 Pcp_ForEachDependentNode( const SdfPath &sitePath,
                           const PcpLayerStackRefPtr &layerStack,
                           const SdfPath &depIndexPath,

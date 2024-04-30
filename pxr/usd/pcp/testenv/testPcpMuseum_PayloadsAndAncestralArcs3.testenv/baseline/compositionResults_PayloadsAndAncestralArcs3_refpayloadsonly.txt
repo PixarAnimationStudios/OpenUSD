@@ -1,0 +1,91 @@
+Loading @PayloadsAndAncestralArcs3/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.sdf             /Model
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel>
+
+Prim Stack:
+    root.sdf             /ReferencePayloadedModel
+    model.sdf            /Model
+    model_payload.sdf    /Model
+
+Child names:
+     ['Test']
+
+Prohibited child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Test>
+
+Prim Stack:
+    model.sdf            /Model/Test
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Test/Anim>
+
+Prim Stack:
+    model_payload.sdf    /Model/Anim
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel>
+
+Prim Stack:
+    root.sdf             /PayloadedModel
+
+Child names:
+     ['Test']
+
+Prohibited child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Test>
+
+Prim Stack:
+    root.sdf             /PayloadedModel/Test
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </InternalReferencePayloadedModel>
+
+Prim Stack:
+    root.sdf             /InternalReferencePayloadedModel
+    root.sdf             /PayloadedModel
+    model_payload.sdf    /Model
+
+Child names:
+     ['Test']
+
+Prohibited child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </InternalReferencePayloadedModel/Test>
+
+Prim Stack:
+    root.sdf             /PayloadedModel/Test
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </InternalReferencePayloadedModel/Test/Anim>
+
+Prim Stack:
+    model_payload.sdf    /Model/Anim
+

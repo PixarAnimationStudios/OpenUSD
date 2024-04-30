@@ -334,7 +334,8 @@ public:
     HDST_API
     HdStBufferResourceSharedPtr RegisterBufferResource(
         TfToken const &role, 
-        HdTupleType tupleType);
+        HdTupleType tupleType,
+        HgiBufferUsage bufferUsage);
 
     /// Remove any entries associated with expired dispatch buffers.
     HDST_API
@@ -442,6 +443,22 @@ public:
     HDST_API
     HdInstance<HgiComputePipelineSharedPtr>
     RegisterComputePipeline(HdInstance<HgiComputePipelineSharedPtr>::ID id);
+
+    /// Finds a sub resource registry for the given identifier if it already
+    /// exists or creates one by invoking the provided factory function.
+    ///
+    /// A sub resource registry is simply another resource registry defined
+    /// externally but whose lifetime is tied to this HdStResourceRegistry and
+    /// can be retrieved via this function.
+    ///
+    /// Any sub resource registries will have their Commit functions invoked
+    /// when Commit is invoked on this instance, and their GarbageCollect
+    /// functions invoked when GarbageCollect is invoked on this instance.
+    HDST_API
+    HdResourceRegistry*
+    FindOrCreateSubResourceRegistry(
+        const std::string& identifier,
+        const std::function<std::unique_ptr<HdResourceRegistry>()>& factory);
 
     /// Returns the global hgi blit command queue for recording blitting work.
     /// When using this global cmd instead of creating a new HgiBlitCmds we
@@ -688,6 +705,11 @@ private:
     // Hgi compute pipeline registry
     HdInstanceRegistry<HgiComputePipelineSharedPtr>
         _computePipelineRegistry;
+
+    using _SubResourceRegistryMap =
+        tbb::concurrent_unordered_map<std::string,
+                                    std::unique_ptr<HdResourceRegistry>>;
+    _SubResourceRegistryMap _subResourceRegistries;
 
     HgiBlitCmdsUniquePtr _blitCmds;
     HgiComputeCmdsUniquePtr _computeCmds;

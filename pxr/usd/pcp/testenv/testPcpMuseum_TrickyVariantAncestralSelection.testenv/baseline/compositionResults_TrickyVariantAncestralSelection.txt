@@ -60,13 +60,13 @@ Prim Stack:
     root.sdf             /_class_A1/B/C
     ref.sdf              /A1/B/C
     ref2.sdf             /C
-    ref2.sdf             /C{v1=B}
+    ref2.sdf             /C{v1=C}
     ref2.sdf             /C{v2=Z}
     ref2.sdf             /B/C
-    ref2.sdf             /B/C{v1=B}
+    ref2.sdf             /B/C{v1=C}
     ref2.sdf             /B/C{v2=Z}
     ref2.sdf             /A/B/C
-    ref2.sdf             /A/B/C{v1=A}
+    ref2.sdf             /A/B/C{v1=C}
     ref2.sdf             /A/B/C{v2=Z}
 
 Variant Selections:
@@ -74,7 +74,7 @@ Variant Selections:
     {v2 = Z}
 
 Child names:
-     ['v2_Z', 'v1_B']
+     ['v2_Z', 'v1_C']
 
 ------------------------------------------------------------------------
 Results for composing </Root/B/C/v2_Z>
@@ -83,8 +83,8 @@ Prim Stack:
     ref2.sdf             /C{v2=Z}v2_Z
 
 ------------------------------------------------------------------------
-Results for composing </Root/B/C/v1_B>
+Results for composing </Root/B/C/v1_C>
 
 Prim Stack:
-    ref2.sdf             /C{v1=B}v1_B
+    ref2.sdf             /C{v1=C}v1_C
 

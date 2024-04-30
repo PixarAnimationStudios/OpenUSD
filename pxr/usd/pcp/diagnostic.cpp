@@ -59,12 +59,12 @@ _GetString(bool b)
 }
 
 typedef std::map<PcpNodeRef, int> _NodeToStrengthOrderMap;
-typedef std::map<PcpNodeRef, SdfPrimSpecHandleVector> _NodeToPrimSpecsMap;
+typedef std::map<PcpNodeRef, SdfSiteVector> _NodeToPrimSpecSitesMap;
 
 std::string Pcp_Dump(
     const PcpNodeRef& node,
     const _NodeToStrengthOrderMap& nodeToStrengthOrder,
-    const _NodeToPrimSpecsMap& nodeToPrimSpecs,
+    const _NodeToPrimSpecSitesMap &nodeToPrimSpecSites,
     bool includeInheritOriginInfo,
     bool includeMaps)
 {
@@ -132,32 +132,32 @@ std::string Pcp_Dump(
         _GetString(node.IsInert()));
     s += TfStringPrintf("    Contribute specs:         %s\n",
         _GetString(node.CanContributeSpecs()));
+    s += TfStringPrintf("        Restricted at depth:  %zu\n",
+        node.GetSpecContributionRestrictedDepth());
     s += TfStringPrintf("    Has specs:                %s\n",
         _GetString(node.HasSpecs()));
     s += TfStringPrintf("    Has symmetry:             %s\n",
         _GetString(node.HasSymmetry()));
 
-    const SdfPrimSpecHandleVector* specs =
-        TfMapLookupPtr(nodeToPrimSpecs, node);
-    if (specs) {
+    const SdfSiteVector* sites =
+        TfMapLookupPtr(nodeToPrimSpecSites, node);
+    if (sites) {
         s += "    Prim stack:\n";
-        TF_FOR_ALL(primIt, *specs) {
-            const SdfPrimSpecHandle& primSpec = *primIt;
+        for(const SdfSite& site : *sites) {
             std::string layerPath;
             SdfLayer::FileFormatArguments args;
-            SdfLayer::SplitIdentifier( primSpec->GetLayer()->GetIdentifier(),
+            SdfLayer::SplitIdentifier( site.layer->GetIdentifier(),
                                        &layerPath, &args );
             std::string basename = TfGetBaseName(layerPath);
             s += TfStringPrintf("      <%s> %s - @%s@\n",
-                                primSpec->GetPath().GetText(),
+                                site.path.GetText(),
                                 basename.c_str(),
-                                primSpec->GetLayer()->GetIdentifier().c_str());
+                                site.layer->GetIdentifier().c_str());
         }
     }
-
     TF_FOR_ALL(childIt, Pcp_GetChildrenRange(node)) {
         s += Pcp_Dump(
-            *childIt, nodeToStrengthOrder, nodeToPrimSpecs,
+            *childIt, nodeToStrengthOrder, nodeToPrimSpecSites,
             includeInheritOriginInfo, includeMaps);
     }
     s += "\n";
@@ -193,7 +193,7 @@ std::string PcpDump(
 
     _Collector c(rootNode);
     return Pcp_Dump(
-        rootNode, c.nodeToStrengthMap, _NodeToPrimSpecsMap(), 
+        rootNode, c.nodeToStrengthMap, _NodeToPrimSpecSitesMap(), 
         includeInheritOriginInfo, includeMaps);
 }
 
@@ -207,21 +207,43 @@ std::string PcpDump(
     }
 
     _NodeToStrengthOrderMap nodeToIndexMap;
-    _NodeToPrimSpecsMap nodeToSpecsMap;
+    _NodeToPrimSpecSitesMap nodeToSpecSitesMap;
     {
         int nodeIdx = 0;
         for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
             nodeToIndexMap[node] = nodeIdx++;
         }
 
-        TF_FOR_ALL(it, primIndex.GetPrimRange()) {
-            const SdfPrimSpecHandle prim = SdfGetPrimAtPath(*it);
-            nodeToSpecsMap[it.base().GetNode()].push_back(prim);
+        if (primIndex.IsUsd()) {
+            // USD mode doesn't cache a prim stack and prim ranges so
+            // we have to iterate through all nodes again to gather
+            // prim spec sites.
+            for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
+                if (!node.HasSpecs() || !node.CanContributeSpecs()) {
+                    continue;
+                }
+
+                const SdfLayerRefPtrVector &layers = 
+                    node.GetLayerStack()->GetLayers();
+                for (const SdfLayerRefPtr &layer : layers) {
+                    if (!layer->HasSpec(node.GetPath())) {
+                        continue;
+                    }
+                    nodeToSpecSitesMap[node].emplace_back(
+                        layer, node.GetPath());
+                }
+            }
+        } else {
+            TF_FOR_ALL(it, primIndex.GetPrimRange()) {
+                const SdfPrimSpecHandle prim = SdfGetPrimAtPath(*it);
+                nodeToSpecSitesMap[it.base().GetNode()].emplace_back(
+                    it->layer, it->path);
+            }
         }
     }
 
     return Pcp_Dump(
-        primIndex.GetRootNode(), nodeToIndexMap, nodeToSpecsMap,
+        primIndex.GetRootNode(), nodeToIndexMap, nodeToSpecSitesMap,
         includeInheritOriginInfo, includeMaps);
 }
 
@@ -272,17 +294,26 @@ _WriteGraph(
     if (!node.CanContributeSpecs()) {
         nodeDesc += "\\nCANNOT contribute specs";
     }
-    nodeDesc += TfStringPrintf("\\ndepth: %i", node.GetNamespaceDepth());
+    nodeDesc += TfStringPrintf(
+        "\\ndepth (below intro): %i (%i)", 
+        node.GetNamespaceDepth(), node.GetDepthBelowIntroduction());
 
     std::string nodeStyle = (hasSpecs ? "solid" : "dotted");
     if (nodesToHighlight.count(node) != 0) {
         nodeStyle += ", filled";
     }
-    
+
+    std::string nodeSite = [&]() {
+        std::ostringstream stream;
+        stream << PcpIdentifierFormatBaseName << node.GetLayerStack()
+               << "\\n" << "<" << node.GetPath() << ">";
+        return stream.str();
+    }();
+        
     out << TfStringPrintf(
         "\t%zu [label=\"%s (%i)\\n%s\", shape=\"box\", style=\"%s\"];\n",
         size_t(node.GetUniqueIdentifier()),
-        Pcp_FormatSite(node.GetSite()).c_str(),
+        nodeSite.c_str(),
         count,
         nodeDesc.c_str(),
         nodeStyle.c_str());
@@ -627,11 +658,15 @@ private:
 
             std::stringstream ss;
 
+            const bool includeInheritOriginInfo = true;
+            const bool includeMaps = 
+                TfDebug::IsEnabled(PCP_PRIM_INDEX_GRAPHS_MAPPINGS);
+
             _WriteGraph(
                 ss, 
                 currentIndex.index->GetRootNode(),
-                /* includeInheritOriginInfo = */ true,
-                /* includeMaps = */ false, 
+                includeInheritOriginInfo,
+                includeMaps,
                 currentPhase.nodesToHighlight);
     
             currentIndex.dotGraph = ss.str();

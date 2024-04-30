@@ -11,13 +11,12 @@
     authored locally, in the pre-relocated namespace.
 
     """
-)        
-
-def "FergusCloak" (
     relocates = {
-        <rig/LArmRig/Anim/Curve>: <Anim/LArm>
+        </FergusCloak/rig/LArmRig/Anim/Curve>: </FergusCloak/Anim/LArm>
     }
 )
+
+def "FergusCloak"
 {
     def "rig"
     {
