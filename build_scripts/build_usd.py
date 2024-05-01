@@ -49,6 +49,7 @@ import sys
 import sysconfig
 import zipfile
 
+from urllib.parse import urlparse
 from urllib.request import urlopen
 from shutil import which
 
@@ -539,13 +540,16 @@ def DownloadURL(url, context, force, extractDir = None,
     Returns the absolute path to the directory where files have 
     been extracted."""
     with CurrentWorkingDirectory(context.srcDir):
-        # Extract filename from URL.
-        filename = url.split("/")[-1]
+        # Parse the information of the url
+        pURL = urlparse(url)
 
-        # Change filename for a file form a github/gitlab repository. 
+        # Extract filename from URL path.
+        filename = pURL.path.split("/")[-1]
+
+        # Change filename for a file form a github repository. 
         # Filename becomes projectName-version to avoid file collision.
-        if ("github" or "gitlab") in url:
-            filename = url.split("/")[4] + "-" + filename
+        if pURL.netloc == "github.com":
+            filename = pURL.path.split("/")[2] + "-" + filename
 
         # See if file already exists. 
         if force and os.path.exists(filename):
