@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -20,34 +20,32 @@
 // distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
-//
+
+#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PASS_SCENE_INDEX_PLUGIN_H
+#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PASS_SCENE_INDEX_PLUGIN_H
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/imaging/hd/sceneIndexPlugin.h"
+#include "hdPrman/api.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
+PXR_NAMESPACE_OPEN_SCOPE
 
-TF_WRAP_MODULE
+/// \class HdPrman_RenderPassSceneIndexPlugin
+///
+/// Applies the active scene index in HdSceneGlobalsSchema
+/// to the scene contents.
+///
+class HdPrman_RenderPassSceneIndexPlugin : public HdSceneIndexPlugin
 {
-    TF_WRAP( Dependency );
-    TF_WRAP( DynamicFileFormatDependencyData );
-    TF_WRAP( Cache );
-    TF_WRAP( Errors );
-    TF_WRAP( InstanceKey );
-    TF_WRAP( LayerRelocatesEditBuilder );
+public:
+    HdPrman_RenderPassSceneIndexPlugin();
 
-    TF_WRAP( ExpressionVariablesSource ); // Required by LayerStackIdentifier
-    TF_WRAP( LayerStackIdentifier );
+protected:
+    HdSceneIndexBaseRefPtr _AppendSceneIndex(
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const HdContainerDataSourceHandle &inputArgs) override;
+};
 
-    TF_WRAP( LayerStack );
-    TF_WRAP( MapExpression );
-    TF_WRAP( MapFunction );
-    TF_WRAP( Node );
-    TF_WRAP( PathTranslation );
-    TF_WRAP( PrimIndex );
-    TF_WRAP( PropertyIndex );
-    TF_WRAP( Site );
-    TF_WRAP( ExpressionVariables );
-    TF_WRAP( TestChangeProcessor );
-    TF_WRAP( Types );
-}
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif

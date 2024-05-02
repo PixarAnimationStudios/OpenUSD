@@ -355,6 +355,20 @@ std::ostream& operator<<(std::ostream&, const PcpLayerStackPtr&);
 PCP_API
 std::ostream& operator<<(std::ostream&, const PcpLayerStackRefPtr&);
 
+/// Checks if the source and target paths constitute a valid relocates. This
+/// validation is not context specific, i.e. if this returns false, the 
+/// combination of sourse and target paths is always invalid in any layer.
+bool
+Pcp_IsValidRelocatesEntry(
+    const SdfPath &source, const SdfPath &target, std::string *errorMessage);
+
+/// Builds a relocates map from a list of layer and SdfRelocates value pairs.
+void
+Pcp_BuildRelocateMap(
+    const std::vector<std::pair<SdfLayerHandle, SdfRelocates>> &layerRelocates,
+    SdfRelocatesMap *relocatesMap,
+    PcpErrorVector *errors);
+
 /// Compose the relocation arcs in the given stack of layers,
 /// putting the results into the given sourceToTarget and targetToSource
 /// maps.

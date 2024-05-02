@@ -150,6 +150,8 @@ pxr_plugin(${PXR_PACKAGE}
         renderBuffer
         renderParam
         renderPass
+        renderPassSceneIndex
+        renderPassSceneIndexPlugin
         renderSettingsFilteringSceneIndexPlugin
         renderViewContext
         resourceRegistry

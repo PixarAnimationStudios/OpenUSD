@@ -32,6 +32,7 @@ TF_WRAP_MODULE
 {
     TF_WRAP( Collector );
     TF_WRAP( AggregateNode );
+    TF_WRAP( AggregateTree );
     TF_WRAP( Reporter );
 
     TF_WRAP( TestTrace );

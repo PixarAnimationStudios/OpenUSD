@@ -184,19 +184,19 @@ _ApplyOwnedSublayerOrder(
     }
 }
 
-namespace {
-
-// Checks if the source and target paths constitute a valid relocates. This
-// validation is not context specific, i.e. if this returns false, the 
-// combination of sourse and target paths is always invalid in any layer.
-static bool
-_IsValidRelocatesEntry(
+bool
+Pcp_IsValidRelocatesEntry(
     const SdfPath &source, const SdfPath &target, std::string *errorMessage) 
 {
     auto isValidPathFn = [&](SdfPath const& path) {
         // The SdfSchema should already enforce that these are valid paths for 
         // relocates, however we still double-check here to avoid problematic 
         // results under composition.
+        if (!path.IsAbsolutePath()) {
+            *errorMessage = "Relocates must use absolute paths.";
+            return false;
+        }
+
         if (!path.IsPrimPath()) {
             // Prim variant selection paths are not prim paths, but it's more
             // important to report the that the variant selection is the issue
@@ -257,16 +257,16 @@ _IsValidRelocatesEntry(
     return true;
 }
 
+namespace {
+
 // Helper class for Pcp_ComputeRelocationsForLayerStack for gathering and 
 // validating relocates for a layer stack.
 class Pcp_ComputeRelocationsForLayerStackWorkspace {
     
 public:
 
-    Pcp_ComputeRelocationsForLayerStackWorkspace(
-        const PcpLayerStack *layerStack) :
-        _layerStack(layerStack) {};
-
+    Pcp_ComputeRelocationsForLayerStackWorkspace() = default;
+    
     // Public members; running Compute on the workspace populates these
     
     // Value type for the map of processed relocates, which will map authored
@@ -310,15 +310,41 @@ public:
     // Computes all the relocates populating the public members of this 
     // workspace.
     void 
-    Compute() 
+    Compute(const PcpLayerStack &layerStack) 
     {
         TRACE_FUNCTION();
 
-        const SdfLayerRefPtrVector & layers = _layerStack->GetLayers();
+        _layerStack = &layerStack;
+        _isUsd = layerStack.IsUsd();
+
+        const SdfLayerRefPtrVector & layers = layerStack.GetLayers();
 
         // Compose the authored relocations from each layer.
         for (const SdfLayerRefPtr &layer : layers) {
             _CollectRelocatesForLayer(layer);
+        }
+
+        _ValidateAndRemoveConflictingRelocates();
+
+        // Compute the source origin for each valid relocate. This function may
+        // recurse for ancestral opinions so this will only compute each if 
+        // necessary.
+        for (auto &mapEntry : processedRelocates) {
+            _ComputeSourceOriginForTargetIfNeeded(&mapEntry);
+        }
+    }
+
+    void 
+    Compute(const std::vector<std::pair<SdfLayerHandle, SdfRelocates>> &layerRelocates) 
+    {
+        TRACE_FUNCTION();
+
+        _layerStack = nullptr;
+        _isUsd = true;
+
+        // Compose the authored relocations from each layer.
+        for (const auto &[layer, relocates] : layerRelocates) {
+            _CollectRelocates(layer, SdfPath::AbsoluteRootPath(), relocates);
         }
 
         _ValidateAndRemoveConflictingRelocates();
@@ -349,7 +375,7 @@ private:
         // layer metadata relocates usurp any relocates otherwise authored on
         // prims so we skip the full traversal of namespace for relocates if 
         // we found layer metadata or are in USD mode.
-        if (_CollectLayerRelocates(layer) || _layerStack->IsUsd()) {
+        if (_CollectLayerRelocates(layer) || _isUsd) {
             return;
         }
 
@@ -399,7 +425,7 @@ private:
             // Validate the relocate in context of just itself and add to
             // the processed relocates or log an error.
             std::string errorMessage;
-            if (_IsValidRelocatesEntry(source, target, &errorMessage)) {
+            if (Pcp_IsValidRelocatesEntry(source, target, &errorMessage)) {
                 // It's not an error for this to fail to be added; it just 
                 // means a stronger relocate for the source path as been 
                 // added already.
@@ -409,10 +435,7 @@ private:
             } else {
                 PcpErrorInvalidAuthoredRelocationPtr err = 
                     PcpErrorInvalidAuthoredRelocation::New();
-                err->rootSite = PcpSite(
-                    _layerStack->GetIdentifier(), 
-                    SdfPath::AbsoluteRootPath());
-
+                err->rootSite = _GetErrorRootSite();
                 err->layer = layer;
                 err->owningPath = primPath;
                 err->sourcePath = std::move(source);
@@ -470,8 +493,7 @@ private:
         // will update these cases to conform in the future, but the work to
         // do so is non-trivial, so for now we need to allow these cases to 
         // still work.
-        if (!_layerStack->IsUsd() && 
-                TfGetEnvSetting(PCP_ENABLE_LEGACY_RELOCATES_BEHAVIOR)) {
+        if (!_isUsd &&  TfGetEnvSetting(PCP_ENABLE_LEGACY_RELOCATES_BEHAVIOR)) {
             // Even though we're not further validating relocates here, we 
             // need to populate the target path to relocates map.
             for (auto &authoredRelocatesEntry : processedRelocates) {
@@ -687,8 +709,7 @@ private:
         // Add the error for this relocate
         PcpErrorInvalidConflictingRelocationPtr err = 
             PcpErrorInvalidConflictingRelocation::New();
-        err->rootSite = PcpSite(
-            _layerStack->GetIdentifier(), SdfPath::AbsoluteRootPath());
+        err->rootSite = _GetErrorRootSite();
 
         err->layer = entry.second.owningSite.layer;
         err->owningPath = entry.second.owningSite.path;
@@ -737,7 +758,16 @@ private:
         return createNewError;
     }
 
-    const PcpLayerStack *_layerStack;
+    PcpSite _GetErrorRootSite() const
+    {
+        return PcpSite(
+            _layerStack ? _layerStack->GetIdentifier() : PcpLayerStackIdentifier(), 
+            SdfPath::AbsoluteRootPath());
+    }
+
+    const PcpLayerStack *_layerStack = nullptr;
+    bool _isUsd = true;
+
     std::vector<PcpErrorInvalidConflictingRelocationPtr>
         _invalidConflictingRelocates;
     std::map<SdfPath, PcpErrorInvalidSameTargetRelocationsPtr> 
@@ -745,6 +775,25 @@ private:
 };
 
 }; // end anonymous namespace
+
+void
+Pcp_BuildRelocateMap(
+    const std::vector<std::pair<SdfLayerHandle, SdfRelocates>> &layerRelocates,
+    SdfRelocatesMap *relocatesMap,
+    PcpErrorVector *errors)
+{
+    Pcp_ComputeRelocationsForLayerStackWorkspace ws;
+    ws.Compute(layerRelocates);
+
+    relocatesMap->clear();
+    for (const auto &[source, reloInfo] : ws.processedRelocates) {
+        (*relocatesMap)[source] = reloInfo.targetPath;
+    }
+
+    if (errors) {
+        *errors = std::move(ws.errors);
+    }
+}
 
 void
 Pcp_ComputeRelocationsForLayerStack(
@@ -760,8 +809,24 @@ Pcp_ComputeRelocationsForLayerStack(
 
     // Use the workspace helper to compute and validate the full set of 
     // relocates on the layer stack.
-    Pcp_ComputeRelocationsForLayerStackWorkspace ws(&layerStack);
-    ws.Compute();
+    Pcp_ComputeRelocationsForLayerStackWorkspace ws;
+    ws.Compute(layerStack);
+
+    // Take any encountered errors.
+    if (errors && !ws.errors.empty()) {
+        if (errors->empty()) {
+            *errors = std::move(ws.errors);
+        } else {
+            errors->insert(
+                errors->end(),
+                std::make_move_iterator(ws.errors.begin()),
+                std::make_move_iterator(ws.errors.end()));
+        }
+    }
+
+    if (ws.processedRelocates.empty()) {
+        return;
+    }
 
     // Use the processed relocates to populate the bi-directional mapping of all
     // the relocates maps.
@@ -796,18 +861,6 @@ Pcp_ComputeRelocationsForLayerStack(
             relocatesSourceToTarget->emplace(
                 reloInfo.computedSourceOrigin, reloInfo.targetPath);
         }       
-    }
-
-    // Take any encountered errors.
-    if (errors) {
-        if (errors->empty()) {
-            *errors = std::move(ws.errors);
-        } else {
-            errors->insert(
-                errors->end(),
-                std::make_move_iterator(ws.errors.begin()),
-                std::make_move_iterator(ws.errors.end()));
-        }
     }
 
     // Take the list of prim paths with relocates.

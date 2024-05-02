@@ -379,8 +379,9 @@ class RenderProduct "RenderProduct" (
         doc = """The type of output to produce; allowed values are ones most 
         renderers should be able to support.
         Renderers that support custom output types are encouraged to supply an 
-        applied API schema that will add an `token myRendererTag:productType`
-        attribute, which will override this attribute's value for that renderer. 
+        applied API schema that will add an `token myRenderContext:productType`
+        attribute (e.g. `token ri:productType`), which will override this
+        attribute's value for that renderer. 
 
         - \"raster\": This is the default type and indicates a 2D raster image of
           pixels.

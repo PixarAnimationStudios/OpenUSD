@@ -71,6 +71,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     (sourceType)
     (lpe)
 
+    // Product/driver tokens
+    (deepRaster)
+    (deepexr)
+    (openexr)
+    ((riProductType, "ri:productType"))
+
     // See PxrDisplayChannelAPI
     ((riDisplayChannelNamespace,    "ri:displayChannel:"))
     // See PxrDisplayDriverAPI
@@ -1470,13 +1476,10 @@ _ToRtParamList(VtDictionary const& dict, TfToken prefix=TfToken())
     return params;
 }
 
-// TODO this is not a robust solution
 static
 RtUString
-_GetOutputDisplayDriverType(const TfToken &name)
+_GetOutputDisplayDriverType(const std::string &extension)
 {
-    // get output display driver type
-    // TODO this is not a robust solution
     static const std::map<std::string,TfToken> extToDisplayDriver{
         { std::string("exr"),  TfToken("openexr") },
         { std::string("tif"),  TfToken("tiff") },
@@ -1484,9 +1487,57 @@ _GetOutputDisplayDriverType(const TfToken &name)
         { std::string("png"),  TfToken("png") }
     };
     
+    const auto it = extToDisplayDriver.find(extension);
+    if (it != extToDisplayDriver.end()) {
+        return RtUString(it->second.GetText());
+    }
+
+    TF_WARN(
+        "Could not determine display driver for product filename extension %s."
+        "Falling back to openexr.", extension.c_str());
+
+    return RtUString(_tokens->openexr.GetText());
+}
+
+// Overload used when creating the render view from a renderSpec dict.
+static
+RtUString
+_GetOutputDisplayDriverType(const TfToken &name)
+{
     const std::string outputExt = TfGetExtension(name.GetString());
-    const TfToken displayFormat = extToDisplayDriver.at(outputExt);
-    return RtUString(displayFormat.GetText());
+    return _GetOutputDisplayDriverType(outputExt);
+}
+
+// Overload used when creating the render view from a render settings' product.
+static
+RtUString
+_GetOutputDisplayDriverType(
+    const VtDictionary &productSettings,
+    const TfToken &productName,
+    const TfToken &productType)
+{
+    // Use "ri:productType" from the product's namespaced settings if
+    // available.
+    const TfToken driverName =
+        VtDictionaryGet<TfToken>(
+            productSettings,
+            _tokens->riProductType.GetText(),
+            VtDefault = TfToken());
+
+    if (!driverName.IsEmpty()) {
+        return RtUString(driverName.GetText());
+    }
+
+    // Otherwise, use the extension from the product name and product type
+    // to determine the driver.
+    //
+    const std::string outputExt = TfGetExtension(productName.GetString());
+
+    if (productType == _tokens->deepRaster && outputExt == std::string("exr")) {
+        return RtUString(_tokens->deepexr.GetText());
+    }
+
+    return _GetOutputDisplayDriverType(outputExt);
 }
 
 // Temporary workaround for RMAN-21883:
@@ -1656,7 +1707,8 @@ _ComputeRenderViewDesc(
     displayDesc.name = RtUString(product.name.GetText());
     displayDesc.params = _ToRtParamList(product.namespacedSettings,
         _tokens->riDisplayDriverNamespace);
-    displayDesc.driver = _GetOutputDisplayDriverType(product.name);
+    displayDesc.driver = _GetOutputDisplayDriverType(
+        product.namespacedSettings, product.name, product.type);
 
     // XXX Temporary; see RMAN-21883
     _ApplyOpenexrDriverWorkaround(&displayDesc);
@@ -2538,7 +2590,9 @@ _GetOutputParamsAndUpdateRmanNames(
                  settingName.GetText(), "driver:parameters:aov:")) {
             RtUString name(TfStringGetSuffix(settingName, ':').c_str());
             if (name == RixStr.k_name) {
-                hdAovName = settingVal.UncheckedGet<TfToken>();
+                hdAovName = settingVal.IsHolding<std::string>() ?
+                    TfToken(settingVal.Get<std::string>().c_str()) :
+                    settingVal.Get<TfToken>();
             } else {
                 HdPrman_Utils::SetParamFromVtValue(name, settingVal,
                     TfToken(), &params);

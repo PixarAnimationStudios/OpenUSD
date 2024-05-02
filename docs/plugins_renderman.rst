@@ -83,6 +83,12 @@ variables. We'll refer to the install location of your USD build with
    * - :envvar:`RMAN_TEXTUREPATH`
      - Search path for textures and RenderMan Rtx plugins
      - :filename:`$RMANTREE/lib/textures:$RMANTREE/lib/plugins:<inst>/plugin/usd`
+   * - :envvar:`RMAN_DISPLAYPATH`
+     - Search path for Renderman display plugins
+     - :filename:`$RMANTREE/lib/plugins`
+   * - :envvar:`RMAN_PROCEDURALPATH`
+     - Search path for Renderman procedural plugins
+     - :filename:`$RMANTREE/lib/plugins`
 
 Developer
 #########

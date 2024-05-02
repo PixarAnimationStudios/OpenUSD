@@ -427,7 +427,7 @@ char* asitoa(char* s, long x)
     // Write the minus sign.
     if (x < 0) {
         x = -x;
-        *s = '-';
+        *s++ = '-';
     }
 
     // Skip to the end and write the terminating NUL.

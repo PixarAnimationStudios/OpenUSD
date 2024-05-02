@@ -387,6 +387,9 @@ struct Hd_CreateTypedRetainedDataSourceVisitor
         } else if (v.IsHolding<SdfPathVector>()) {
             return HdRetainedTypedSampledDataSource<SdfPathVector>::New(
                 v.UncheckedGet<SdfPathVector>());
+        } else if (v.IsHolding<SdfPathExpression>()) {
+            return HdRetainedTypedSampledDataSource<SdfPathExpression>::New(
+                v.UncheckedGet<SdfPathExpression>());
         } else if (v.IsEmpty()) {
             return HdSampledDataSourceHandle(nullptr);
         } else {

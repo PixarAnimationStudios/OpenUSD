@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -23,31 +23,26 @@
 //
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+
+#include "pxr/base/trace/aggregateTree.h"
+
+#include "pxr/base/tf/makePyConstructor.h"
+#include "pxr/base/tf/pyPtrHelpers.h"
+
+#include <boost/python/class.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+using namespace boost::python;
+
+void wrapAggregateTree()
 {
-    TF_WRAP( Dependency );
-    TF_WRAP( DynamicFileFormatDependencyData );
-    TF_WRAP( Cache );
-    TF_WRAP( Errors );
-    TF_WRAP( InstanceKey );
-    TF_WRAP( LayerRelocatesEditBuilder );
+    using This = TraceAggregateTree;
+    using ThisPtr = TraceAggregateTreePtr;
 
-    TF_WRAP( ExpressionVariablesSource ); // Required by LayerStackIdentifier
-    TF_WRAP( LayerStackIdentifier );
-
-    TF_WRAP( LayerStack );
-    TF_WRAP( MapExpression );
-    TF_WRAP( MapFunction );
-    TF_WRAP( Node );
-    TF_WRAP( PathTranslation );
-    TF_WRAP( PrimIndex );
-    TF_WRAP( PropertyIndex );
-    TF_WRAP( Site );
-    TF_WRAP( ExpressionVariables );
-    TF_WRAP( TestChangeProcessor );
-    TF_WRAP( Types );
+    class_<This, ThisPtr>("AggregateTree", no_init)
+        .def(TfPyRefAndWeakPtr())
+        .def(TfMakePyConstructor(&This::New))
+        .add_property("root", &This::GetRoot)
+    ;
 }
