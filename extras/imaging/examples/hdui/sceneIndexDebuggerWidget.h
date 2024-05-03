@@ -40,7 +40,7 @@ class HduiDataSourceTreeWidget;
 class HduiDataSourceValueTreeView;
 class HduiRegisteredSceneIndexChooser;
 
-class HDUI_API HduiSceneIndexDebuggerWidget : public QWidget, public TfWeakBase
+class HDUI_API_CLASS HduiSceneIndexDebuggerWidget : public QWidget, public TfWeakBase
 {
     Q_OBJECT;
 public:

@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HDUI_API HduiDataSourceTreeWidget : public QTreeWidget
+class HDUI_API_CLASS HduiDataSourceTreeWidget : public QTreeWidget
 {
     Q_OBJECT;
 

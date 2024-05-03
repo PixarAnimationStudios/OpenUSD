@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HduiSceneIndexObserverLoggingTreeView;
 
-class HDUI_API HduiSceneIndexObserverLoggingWidget : public QWidget
+class HDUI_API_CLASS HduiSceneIndexObserverLoggingWidget : public QWidget
 {
     Q_OBJECT;
 public:

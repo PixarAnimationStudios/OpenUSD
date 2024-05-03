@@ -37,7 +37,7 @@ class Hdui_SceneIndexPrimTreeWidgetItem;
 
 //-----------------------------------------------------------------------------
 
-class HDUI_API HduiSceneIndexTreeWidget : public QTreeWidget, public HdSceneIndexObserver
+class HDUI_API_CLASS HduiSceneIndexTreeWidget : public QTreeWidget, public HdSceneIndexObserver
 {
     Q_OBJECT;
 public:
