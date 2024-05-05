@@ -61,6 +61,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((defaultInput, "default"))
 
     // Opacity Parameters
+    (alpha)
+    (alpha_mode)
+    (alpha_cutoff)
     (opacity)
     (opacityThreshold)
     (transmission)
@@ -705,6 +708,51 @@ _UpdatePrimvarNodes(
 static std::string const&
 _GetMaterialTag(HdMaterialNode2 const& terminal)
 {
+    // The glTF PBR uses an explicit alpha_mode parameter unlike UsdPreviewSurface
+    // and StandardSurface. We detect it separately before handling the other BXDFs.
+    // The glTF PBR also has a transmission extension which's parameter behaves the
+    // same as the StandardSurface's. We do not return for alpha_mode OPAQUE to
+    // process it later.
+    auto const& alphaModeParamIt = terminal.parameters.find(_tokens->alpha_mode);
+    if (alphaModeParamIt != terminal.parameters.end() &&
+        alphaModeParamIt->second.IsHolding<int>()) {
+
+        int alphaMode = alphaModeParamIt->second.UncheckedGet<int>();
+        auto const& alphaConnIt = terminal.inputConnections.find(_tokens->alpha);
+        auto const& alphaParamIt = terminal.parameters.find(_tokens->alpha);
+
+        float alphaValue = 1.0f;
+        if (alphaParamIt != terminal.parameters.end() &&
+            alphaParamIt->second.IsHolding<float>()) {
+            alphaValue = alphaParamIt->second.UncheckedGet<float>();
+        }
+
+        if (alphaMode == 1/*MASK*/) {
+            auto const& alphaCutoffConnIt =
+                terminal.inputConnections.find(_tokens->alpha_cutoff);
+            auto const& alphaCutoffParamIt =
+                terminal.parameters.find(_tokens->alpha_cutoff);
+
+            float alphaCutoffValue = 0.5f;
+            if (alphaCutoffParamIt != terminal.parameters.end() &&
+                alphaCutoffParamIt->second.IsHolding<float>()) {
+                alphaCutoffValue = alphaCutoffParamIt->second.UncheckedGet<float>();
+            }
+
+            if (alphaConnIt != terminal.inputConnections.end() ||
+                alphaCutoffConnIt != terminal.inputConnections.end() ||
+                alphaValue > alphaCutoffValue) {
+                return HdStMaterialTagTokens->masked.GetString();
+            }
+        }
+        else if (alphaMode == 2/*BLEND*/) {
+            if (alphaConnIt != terminal.inputConnections.end() ||
+                alphaValue > 0.0f) {
+                return HdStMaterialTagTokens->translucent.GetString();
+            }
+        }
+    }
+
     // Masked MaterialTag:
     // UsdPreviewSurface: terminal.opacityThreshold value > 0
     // StandardSurface materials do not have an opacityThreshold parameter
@@ -757,6 +805,7 @@ _GetMaterialTag(HdMaterialNode2 const& terminal)
                                 || opacityColor[1] < 1.0f
                                 || opacityColor[2] < 1.0f );
             }
+            // StandardSurface and glTF PBR
             if (currParam.first == _tokens->transmission && 
                 currParam.second.IsHolding<float>()) {
                 isTranslucent |= currParam.second.Get<float>() > 0.0f;
