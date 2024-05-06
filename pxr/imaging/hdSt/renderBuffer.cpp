@@ -61,7 +61,9 @@ HdStRenderBuffer::HdStRenderBuffer(
 {
 }
 
-HdStRenderBuffer::~HdStRenderBuffer() = default;
+HdStRenderBuffer::~HdStRenderBuffer() {
+    _resourceRegistry->GarbageCollect();
+}
 
 void
 HdStRenderBuffer::Sync(HdSceneDelegate *sceneDelegate,

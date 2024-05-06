@@ -1135,6 +1135,8 @@ HdStResourceRegistry::_GarbageCollect()
     _uniformSsboBufferArrayRegistry.GarbageCollect();
     _singleBufferArrayRegistry.GarbageCollect();
 
+    _textureHandleRegistry->GetTextureObjectRegistry()->GarbageCollect();
+
     // Garbage collection may reallocate buffers, so we must submit blit work.
     SubmitBlitWork();
 }
