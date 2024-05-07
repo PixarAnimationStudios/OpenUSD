@@ -1090,7 +1090,7 @@ TBB = Dependency("TBB", InstallTBB, "include/tbb/tbb.h")
 ############################################################
 # JPEG
 
-JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/2.0.1.zip"
+JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/3.0.2.zip"
 
 def InstallJPEG(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(JPEG_URL, context, force)):
