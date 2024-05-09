@@ -104,7 +104,9 @@ def _parseArgs():
                   'directory; if <PXR_CTEST_RUN_ID>" is in the value, it is '
                   'replaced with a timestamp identifying a given ctest '
                   'invocation'))
-
+    parser.add_argument('--tempdirprefix', metavar='PREFIX', type=str,
+            help='temp directory names will begin with PREFIX',
+            default=None)
     parser.add_argument('--expected-return-code', type=int, default=0,
             help='Expected return code of this test.')
     parser.add_argument('--env-var', dest='envVars', default=[], type=str, 
@@ -346,7 +348,7 @@ if __name__ == '__main__':
                          "--clean-output-paths.")
         sys.exit(1)
 
-    testDir = tempfile.mkdtemp()
+    testDir = tempfile.mkdtemp(prefix=args.tempdirprefix)
     os.chdir(testDir)
     if args.verbose:
         print("chdir: {0}".format(testDir))

@@ -471,6 +471,18 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
 #define HD_SCENE_INDEX_EMULATION_TOKENS               \
     (sceneDelegate)                                   \
 
+/* Tokens used to emulate collections for light linking. The collection names
+   match the UsdLuxLightAPI. Hydra 1.0 uses lightFilterLink instead of
+   filterLink.
+*/
+#define HD_COLLECTION_EMULATION_TOKENS                \
+    ((lightLinkCollection, "lightLink"))              \
+    ((shadowLinkCollection, "shadowLink"))            \
+    ((filterLinkCollection, "filterLink"))            \
+    (lightLinkCollectionMembershipExpression)         \
+    (shadowLinkCollectionMembershipExpression)        \
+    (filterLinkCollectionMembershipExpression)
+
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdInstancerTokens, HD_API, HD_INSTANCER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdReprTokens, HD_API, HD_REPR_TOKENS);
@@ -499,6 +511,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdAspectRatioConformPolicyTokens, HD_API,
 TF_DECLARE_PUBLIC_TOKENS(HdResourceTypeTokens, HD_API, HD_RESOURCE_TYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdSceneIndexEmulationTokens, HD_API, 
                          HD_SCENE_INDEX_EMULATION_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdCollectionEmulationTokens, HD_API, 
+                         HD_COLLECTION_EMULATION_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

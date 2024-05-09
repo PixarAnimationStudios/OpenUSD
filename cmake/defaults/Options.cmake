@@ -111,6 +111,14 @@ set(PXR_OVERRIDE_PLUGINPATH_NAME ""
     "Name of the environment variable that will be used to get plugin paths."
 )
 
+set(PXR_TEST_RUN_TEMP_DIR_PREFIX ""
+    CACHE
+    STRING
+    "Prefix for test run temporary directory names. \
+    Setting this option to \"foo-\" will create directories like \
+    \"<temp dir>/foo-<test dir>\"."
+)
+
 set(PXR_ALL_LIBS ""
     CACHE
     INTERNAL
