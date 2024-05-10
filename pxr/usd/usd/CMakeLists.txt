@@ -461,6 +461,14 @@ pxr_build_test(testUsdUsdzResolver
         testenv/testUsdUsdzResolver.cpp
 )
 
+pxr_build_test(testUsdValidator
+    LIBRARIES
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdValidator.cpp
+)
+
 pxr_build_test(testUsdZipFile_CPP
     LIBRARIES
         ar
@@ -968,6 +976,11 @@ pxr_register_test(testUsdFileFormats_pread
 
 pxr_register_test(testUsdMetadataCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMetadataCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdValidator
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValidator"
     EXPECTED_RETURN_CODE 0
 )
 
