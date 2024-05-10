@@ -76,17 +76,20 @@ public:
     /// \name Initialization
     // ---------------------------------------------------------------------- //
 
+    USDIMAGING_API
     virtual SdfPath Populate(UsdPrim const& prim,
                      UsdImagingIndexProxy* index,
                      UsdImagingInstancerContext const*
                      instancerContext = NULL) override;
 
+    USDIMAGING_API
     virtual bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //
     /// Thread Safe.
+    USDIMAGING_API
     virtual void TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
@@ -94,6 +97,7 @@ public:
                                       instancerContext = NULL) const override;
 
     /// Thread Safe.
+    USDIMAGING_API
     virtual void UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath,
                                UsdTimeCode time,
@@ -101,6 +105,7 @@ public:
                                UsdImagingInstancerContext const*
                                    instancerContext = NULL) const override;
 
+    USDIMAGING_API
     virtual HdVolumeFieldDescriptorVector
     GetVolumeFieldDescriptors(UsdPrim const& usdPrim, SdfPath const &id,
                               UsdTimeCode time) const override;
