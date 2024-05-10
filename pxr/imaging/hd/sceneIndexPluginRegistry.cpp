@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/sceneIndexPlugin.h"
+#include "pxr/imaging/hd/sceneIndexUtil.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 
@@ -201,8 +202,15 @@ HdSceneIndexPluginRegistry::AppendSceneIndicesForRenderer(
         }
     }
 
-    return _AppendForPhases(inputScene, mergedPhasesMap,
-                            underlayArgs, renderInstanceId);
+    HdSceneIndexBaseRefPtr scene =
+        _AppendForPhases(inputScene, mergedPhasesMap,
+                         underlayArgs, renderInstanceId);
+    if (TfGetEnvSetting<bool>(HD_USE_ENCAPSULATING_SCENE_INDICES)) {
+        scene = HdMakeEncapsulatingSceneIndex(
+            { inputScene }, scene);
+        scene->SetDisplayName("Scene index plugins");
+    }
+    return scene;
 }
 
 void
