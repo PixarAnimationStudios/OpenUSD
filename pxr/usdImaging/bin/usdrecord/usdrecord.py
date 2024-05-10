@@ -95,7 +95,7 @@ def _SetupOpenGLContext(width=100, height=100):
 
     return glWidget
 
-def main():
+def main() -> int:
     programName = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(prog=programName,
         description='Generates images from a USD file')
@@ -185,9 +185,6 @@ def main():
 
     args = parser.parse_args()
 
-    UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args,
-        frameFormatArgName='outputImagePath')
-
     args.imageWidth = max(args.imageWidth, 1)
 
     purposes = args.purposes.replace(',', ' ').split()
@@ -222,6 +219,9 @@ def main():
     if not usdStage:
         _Err('Could not open USD stage: %s' % args.usdFilePath)
         return 1
+
+    UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args, usdStage,
+        frameFormatArgName='outputImagePath')
 
     # Get the camera at the given path (or with the given name).
     usdCamera = UsdAppUtils.GetCameraAtPath(usdStage, args.camera)
@@ -281,19 +281,20 @@ def main():
     _Msg('Renderer plugin: %s' % frameRecorder.GetCurrentRendererId())
 
     for timeCode in args.frames:
-        _Msg('Recording time code: %s' % timeCode)
-        outputImagePath = args.outputImagePath.format(frame=timeCode.GetValue())
+        _Msg('Recording time code: %f' % timeCode)
+        outputImagePath = args.outputImagePath.format(frame=timeCode)
         try:
             frameRecorder.Record(usdStage, usdCamera, timeCode, outputImagePath)
         except Tf.ErrorException as e:
 
             _Err("Recording aborted due to the following failure at time code "
                  "{0}: {1}".format(timeCode, str(e)))
-            break
+            return 1
 
     # Release our reference to the frame recorder so it can be deleted before
     # the Qt stuff.
     frameRecorder = None
+    return 0
 
 
 if __name__ == '__main__':
