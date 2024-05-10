@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/mallocTag.h"
 
+#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/pyResultConversions.h"
@@ -154,6 +155,21 @@ _ReportToFile(
     self.Report(os, rootName);
 }
 
+static bool
+_LoadReport(
+    TfMallocTag::CallTree  &self,
+    std::string const &fileName)
+{
+    std::ifstream in(fileName.c_str());
+    if (!in.good()) {
+        TF_RUNTIME_ERROR(
+            "Failed to open file '%s'.", fileName.c_str());
+        return false;
+    }
+
+    return self.LoadReport(in);
+}
+
 static std::string
 _LogReport(
     TfMallocTag::CallTree const &self,
@@ -202,6 +218,8 @@ void wrapMallocTag()
             (arg("rootName")=std::string()))
         .def("Report", _ReportToFile,
              (arg("fileName"), arg("rootName")=std::string()))
+        .def("LoadReport", _LoadReport,
+             (arg("fileName")))
         .def("LogReport", _LogReport,
              (arg("rootName")=std::string()))
         ;

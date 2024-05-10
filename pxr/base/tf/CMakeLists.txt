@@ -497,6 +497,7 @@ pxr_build_test(testTf
 pxr_test_scripts(
     testenv/testTfCrashHandler.py
     testenv/testTfFileUtils.py
+    testenv/testTfMallocTagReport.py
     testenv/testTfNamedTemporaryFile.py
     testenv/testTfPathUtils.py
     testenv/testTfPython.py
@@ -649,6 +650,10 @@ pxr_register_test(TfEnum
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfEnum"
     STDOUT_REDIRECT enum.out
     DIFF_COMPARE enum.out
+)
+pxr_register_test(TfMallocTagReport
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfMallocTagReport"
 )
 pxr_register_test(TfNotice
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfNotice"

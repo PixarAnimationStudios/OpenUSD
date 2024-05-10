@@ -99,14 +99,16 @@ public:
             size_t nBytes;          ///< Allocated bytes.
         };
 
-        // Note: enum below must be kept in sync with tfmodule/mallocCallTree.h
-
         /// Specify which parts of the report to print.
         enum PrintSetting {
             TREE = 0,                   ///< Print the full call tree
             CALLSITES,                  ///< Print just the call sites > 0.1%
             BOTH                        ///< Print both tree and call sites
         };
+
+
+        /// \name Input/Output
+        /// @{
 
         /// Return the malloc report string.
         ///
@@ -134,18 +136,27 @@ public:
 
         /// Generates a report to the ostream \p out.
         ///
-        /// This report is printed in a way that is intended to be used by
-        /// xxtracediff.  If \p rootName is non-empty it will replace the name
-        /// of the tree root in the report.
+        /// If \p rootName is non-empty it will replace the name of the tree
+        /// root in the report.
         TF_API
         void Report(
             std::ostream &out,
             const std::string &rootName) const;
 
-        /// \overload
+        /// Generates a report to the ostream \p out.
         TF_API
         void Report(
             std::ostream &out) const;
+
+        /// Load the contents of \p in into the root of the call tree.
+        ///
+        /// Returns true if the report loaded successfully, false otherwise.
+        TF_API
+        bool LoadReport(
+            std::istream &in);
+
+        /// @}
+
 
         /// All call sites.
         std::vector<CallSite> callSites;
