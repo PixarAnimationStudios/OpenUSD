@@ -1,0 +1,626 @@
+
+==== usdedit start ====
+usage: usdedit [-h] [-n] [-f] [-p PREFIX] usdFileName
+
+Convert a usd-readable file to the .usda text format in a temporary location
+and invoke an editor on it. After saving and quitting the editor, the edited
+file will be converted back to the original format and OVERWRITE the original
+file, unless you supply the "-n" (--noeffect) flag, in which case no changes
+will be saved back to the original file. The editor to use will be looked up
+as follows: - USD_EDITOR environment variable - EDITOR environment variable -
+emacs in PATH - vim in PATH - notepad in PATH
+
+positional arguments:
+  usdFileName           The usd file to edit.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -n, --noeffect        Do not edit the file.
+  -f, --forcewrite      Override file permissions to allow writing.
+  -p PREFIX, --prefix PREFIX
+                        Provide a prefix for the temporary file name.
+
+==== usdedit end ====
+
+==== usdcat start ====
+Write usd file(s) either as text to stdout or to a specified output file.
+Usage: usdcat [OPTIONS] inputFiles...
+
+Positionals:
+  inputFiles ...              A list of input files
+
+Options:
+  -h,--help                   Print this help message and exit
+  -o,--out file               Write a single input file to this output file instead of stdout.
+  --usdFormat usda|usdc       Use this underlying file format for output files
+                              with the extension 'usd'. For example, passing
+                              '-o output.usd --usdformat usda' will create
+                              output.usd as a text file. The USD_DEFAULT_FILE_FORMAT
+                              environment variable is another way to achieve this.
+  -l,--loadOnly               Attempt to load the specified input files and report 'OK'
+                              or 'ERR' for each one. After all files are processed, this
+                              script will exit with a non-zero exit code if any files
+                              failed to load.
+  -f,--flatten                Compose stages with the input files as root layers
+                              and write their flattened content.
+  --flattenLayerStack         Flatten the layer stack with the given root layer, and
+                              write out the results. Unlike --flatten, this does not flatten
+                              composition arcs (such as references).
+  --skipSourceFileComment     If --flatten is specified, skip adding a comment regarding the
+                              source of the flattened layer in the documentation field of the
+                              output layer.
+  --mask PRIMPATH[,PRIMPATH...]
+                              Limit stage population to these prims, their descendants and
+                              ancestors. To specify multiple paths, either use commas with no
+                              spaces, or quote the argument and separate paths by commas
+                              and/or spaces. Requires --flatten.
+  --layerMetadata             Load only layer metadata in the USD file.
+                              This option cannot be combined with either --flatten or
+                              --flattenLayerStack.
+
+==== usdcat end ====
+
+==== usddiff start ====
+usage: usddiff [-h] [-n] [-f] [-q] files [files ...]
+
+Compares two usd-readable files using a selected diff program. This is chosen
+by looking at the $USD_DIFF environment variable. If this is unset, it will
+consult the $DIFF environment variable. Lastly, if neither of these is set, it
+will try to use the canonical unix program, diff. This will relay the exit
+code of the selected diff program.When comparing two usdz files, each file
+contained in the package will be examined individually. The $USD_IMAGE_DIFF
+environment variable specifies a specific diff program for comparing image
+files. The $USD_IMAGE_DIFF_FORMATS environment variable specifies supported
+image formats using a "," separated list of file extensions.
+
+positional arguments:
+  files           The files to compare. These must be of the form DIR DIR,
+                  FILE... DIR, DIR FILE... or FILE FILE.
+
+optional arguments:
+  -h, --help      show this help message and exit
+  -n, --noeffect  Do not edit either file.
+  -f, --flatten   Fully compose both layers as Usd Stages and flatten into
+                  single layers.
+  -q, --brief     Do not return full results of diffs. Passes --brief to the
+                  diff command.
+
+==== usddiff end ====
+
+==== usdview start ====
+usage: usdview [-h] [--renderer {GL}]
+                                                      [--select PRIMPATH]
+                                                      [--camera CAMERA]
+                                                      [--mask PRIMPATH[,PRIMPATH...]]
+                                                      [--clearsettings]
+                                                      [--config {}]
+                                                      [--defaultsettings]
+                                                      [--norender]
+                                                      [--noplugins]
+                                                      [--unloaded] [--timing]
+                                                      [--allow-async]
+                                                      [--traceToFile TRACETOFILE]
+                                                      [--traceFormat {chrome,trace}]
+                                                      [--tracePython]
+                                                      [--memstats {none,stage,stageAndImaging}]
+                                                      [--numThreads NUMTHREADS]
+                                                      [--ff FIRSTFRAME]
+                                                      [--lf LASTFRAME]
+                                                      [--cf CURRENTFRAME]
+                                                      [--complexity {low,medium,high,veryhigh}]
+                                                      [--quitAfterStartup]
+                                                      [--sessionLayer SESSIONLAYER]
+                                                      [--mute MUTELAYERSRE]
+                                                      [--detachLayers]
+                                                      [--detachLayersInclude PATTERN[,PATTERN...]]
+                                                      [--detachLayersExclude PATTERN[,PATTERN,...]]
+                                                      usdFile
+
+View a usd file
+
+positional arguments:
+  usdFile               The file to view
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --renderer {GL}, -r {GL}
+                        Which render backend to use (named as it appears in
+                        the menu).
+  --select PRIMPATH     A prim path to initially select and frame
+  --camera CAMERA, -cam CAMERA
+                        Which camera to set the view to on open - may be given
+                        as either just the camera's prim name (ie, just the
+                        last element in the prim path), or as a full prim
+                        path. Note that if only the prim name is used, and
+                        more than one camera exists with the name, which is
+                        used will be effectively random (default=main_cam)
+  --mask PRIMPATH[,PRIMPATH...]
+                        Limit stage population to these prims, their
+                        descendants and ancestors. To specify multiple paths,
+                        either use commas with no spaces or quote the argument
+                        and separate paths by commas and/or spaces.
+  --clearsettings       Restores usdview settings to default
+  --config {}           Load usdview with the state settings found in the
+                        specified config. If not provided will use the
+                        previously saved application state and automatically
+                        persist state on close
+  --defaultsettings     Launch usdview with default settings
+  --norender            Display only hierarchy browser
+  --noplugins           Do not load plugins
+  --unloaded            Do not load payloads
+  --timing              Echo timing stats to console. NOTE: timings will be
+                        unreliable when the --memstats option is also in use
+  --allow-async         Enable asynchronous hydra scene processing
+  --traceToFile TRACETOFILE
+                        Start tracing at application startup and write
+                        --traceFormat specified format output to the specified
+                        trace file when the application quits
+  --traceFormat {chrome,trace}
+                        Output format for trace file specified by
+                        --traceToFile. 'chrome' files can be read in chrome,
+                        'trace' files are simple text reports.
+                        (default=chrome)
+  --tracePython         Enable python trace collection, requires --traceToFile
+                        to be set.
+  --memstats {none,stage,stageAndImaging}
+                        Use the Pxr MallocTags memory accounting system to
+                        profile USD, saving results to a tmp file, with a
+                        summary to the console. Will have no effect if
+                        MallocTags are not supported in the USD installation.
+  --numThreads NUMTHREADS
+                        Number of threads used for processing(0 is max,
+                        negative numbers imply max - N)
+  --ff FIRSTFRAME       Set the first frame of the viewer
+  --lf LASTFRAME        Set the last frame of the viewer
+  --cf CURRENTFRAME     Set the current frame of the viewer
+  --complexity {low,medium,high,veryhigh}, -c {low,medium,high,veryhigh}
+                        Set the initial mesh refinement complexity (low).
+  --quitAfterStartup    quit immediately after start up
+  --sessionLayer SESSIONLAYER
+                        If specified, the stage will be opened with the
+                        'sessionLayer' in place of the default anonymous
+                        layer. As this changes the session layer from
+                        anonymous to persistent, be aware that layers saved
+                        from Export Overrides will include the opinions in the
+                        persistent session layer.
+  --mute MUTELAYERSRE   Layer identifiers searched against this regular
+                        expression will be muted on the stage prior to, and
+                        after loading. Multiple expressions can be supplied
+                        using the | regex separator operator. Alternatively
+                        the argument may be used multiple times.
+
+Detached Layers:
+  Specify layers to be detached from their serialized data source when
+  loaded. This may increase time to load and memory usage but will avoid
+  issues like open file handles preventing other processes from safely
+  overwriting a loaded layer.
+
+  --detachLayers        Detach all layers
+  --detachLayersInclude PATTERN[,PATTERN...]
+                        Detach layers with identifiers containing any of the
+                        given patterns.
+  --detachLayersExclude PATTERN[,PATTERN,...]
+                        Exclude layers with identifiers containing any of the
+                        given patterns from the set of detached layers
+                        specified by the --detachLayers or
+                        --detachLayerIncludes arguments.
+
+==== usdview end ====
+
+==== usdrecord start ====
+usage: usdrecord [-h] [--mask PRIMPATH[,PRIMPATH...]]
+                 [--purposes PURPOSE[,PURPOSE...]]
+                 [--sessionLayer SESSIONLAYER] [--disableGpu]
+                 [--disableCameraLight] [--camera CAMERA]
+                 [--defaultTime | --frames FRAMESPEC[,FRAMESPEC...]]
+                 [--complexity {low,medium,high,veryhigh}]
+                 [--colorCorrectionMode {disabled,sRGB,openColorIO}]
+                 [--renderer {GL}] [--imageWidth IMAGEWIDTH]
+                 [--renderPassPrimPath RPPRIMPATH]
+                 [--renderSettingsPrimPath RSPRIMPATH]
+                 usdFilePath outputImagePath
+
+Generates images from a USD file
+
+positional arguments:
+  usdFilePath           USD file to record
+  outputImagePath       Output image path. For frame ranges, the path must
+                        contain exactly one frame number placeholder of the
+                        form "###" or "###.###". Note that the number of hash
+                        marks is variable in each group.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --mask PRIMPATH[,PRIMPATH...]
+                        Limit stage population to these prims, their
+                        descendants and ancestors. To specify multiple paths,
+                        either use commas with no spaces or quote the argument
+                        and separate paths by commas and/or spaces.
+  --purposes PURPOSE[,PURPOSE...]
+                        Specify which UsdGeomImageable purposes should be
+                        included in the renders. The "default" purpose is
+                        automatically included, so you need specify only the
+                        *additional* purposes. If you want more than one extra
+                        purpose, either use commas with no spaces or quote the
+                        argument and separate purposes by commas and/or
+                        spaces.
+  --sessionLayer SESSIONLAYER
+                        If specified, the stage will be opened with the
+                        'sessionLayer' in place of the default anonymous
+                        layer.
+  --disableGpu          Indicates if the GPU should not be used for rendering.
+                        If set this not only restricts renderers to those
+                        which only run on the CPU, but additionally it will
+                        prevent any tasks that require the GPU from being
+                        invoked.
+  --disableCameraLight  Indicates if the default camera lights should not be
+                        used for rendering.
+  --camera CAMERA, -cam CAMERA
+                        Which camera to use - may be given as either just the
+                        camera's prim name (i.e. just the last element in the
+                        prim path), or as a full prim path. Note that if only
+                        the prim name is used and more than one camera exists
+                        with that name, which one is used will effectively be
+                        random (default=main_cam)
+  --defaultTime, -d     explicitly operate at the Default time code (the
+                        default behavior is to operate at the Earliest time
+                        code)
+  --frames FRAMESPEC[,FRAMESPEC...], -f FRAMESPEC[,FRAMESPEC...]
+                        specify FrameSpec(s) of the time codes to operate on -
+                        A FrameSpec consists of up to three floating point
+                        values for the start time code, end time code, and
+                        stride of a time code range. A single time code can be
+                        specified, or a start and end time code can be
+                        specified separated by a colon (:). When a start and
+                        end time code are specified, the stride may optionally
+                        be specified as well, separating it from the start and
+                        end time codes with (x). Multiple FrameSpecs can be
+                        combined as a comma-separated list. The following are
+                        examples of valid FrameSpecs: 123 - 101:105 - 105:101
+                        - 101:109x2 - 101:110x2 - 101:104x0.5
+  --complexity {low,medium,high,veryhigh}, -c {low,medium,high,veryhigh}
+                        level of refinement to use (default=low)
+  --colorCorrectionMode {disabled,sRGB,openColorIO}, -color {disabled,sRGB,openColorIO}
+                        the color correction mode to use (default=sRGB)
+  --renderer {GL}, -r {GL}
+                        Hydra renderer plugin to use when generating images
+  --imageWidth IMAGEWIDTH, -w IMAGEWIDTH
+                        Width of the output image. The height will be computed
+                        from this value and the camera's aspect ratio
+                        (default=960)
+  --renderPassPrimPath RPPRIMPATH, -rp RPPRIMPATH
+                        Specify the Render Pass Prim to use to render the
+                        given usdFile. Note that if a renderSettingsPrimPath
+                        has been specified in the stage metadata, using this
+                        argument will override that opinion. Furthermore any
+                        properties authored on the RenderSettings will
+                        override other arguments (imageWidth, camera,
+                        outputImagePath)
+  --renderSettingsPrimPath RSPRIMPATH, -rs RSPRIMPATH
+                        Specify the Render Settings Prim to use to render the
+                        given usdFile. Note that if a renderSettingsPrimPath
+                        has been specified in the stage metadata, using this
+                        argument will override that opinion. Furthermore any
+                        properties authored on the RenderSettings will
+                        override other arguments (imageWidth, camera,
+                        outputImagePath)
+
+==== usdrecord end ====
+
+==== usdresolve start ====
+usage: usdresolve [-h]
+                  [--createContextForAsset CREATECONTEXTFORASSET | --createContextFromString CREATECONTEXTFROMSTRING]
+                  [--anchorPath ANCHORPATH]
+                  inputPath
+
+Resolves an asset path using a fully configured USD Asset Resolver.
+
+positional arguments:
+  inputPath             An asset path to be resolved by the USD Asset
+                        Resolver.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --createContextForAsset CREATECONTEXTFORASSET
+                        Run CreateDefaultContextForAsset with the given asset
+                        path to create the context used for resolution.
+  --createContextFromString CREATECONTEXTFROMSTRING
+                        Run CreateContextFromString with the given string to
+                        create the context used for resolution. This accepts
+                        strings like [<URI Scheme>:]<Configuration String> and
+                        may be specified multiple times. ex: usdresolve
+                        --createContextFromString 'config_primary'
+                        --createContextFromString 'my_uri_scheme:config_uri'
+  --anchorPath ANCHORPATH
+                        Run CreateIdentifier with the input path and this
+                        anchor asset path and resolve the result. ex:
+                        usdresolve --anchorPath /asset/asset.usd sublayer.usd
+
+==== usdresolve end ====
+
+==== usdtree start ====
+usdtree : Writes the tree structure of a USD file. The default is to
+inspect a single USD file. Use the --flatten argument to see the
+flattened (or composed) Stage tree. Special metadata 'kind' and
+'active' are always shown if authored unless --simple is provided.
+
+Usage: usdtree [OPTIONS] inputPath
+
+Positionals:
+  inputPath TEXT REQUIRED     The input file to process
+
+Options:
+  -h,--help                   Print this help message and exit
+  --unloaded                  Do not load payloads.
+  -a,--attributes             Display authored attributes.
+  -m,--metadata               Display authored metadata (active and kind are part of the label and not shown as individual items
+  -s,--simple                 Only display prim names: no specifier, kind or active state.
+  -f,--flatten                Compose the stage with the input file as the root layer and write the flattened content.
+  --flattenLayerStack         Flatten the layer stack with the given root layer. Unlike --flatten, this does not flatten composition arcs (such as references).
+  --mask PRIMPATH[,PRIMPATH...]
+                              Limit stage population to these prims, their descendants and ancestors. To specify multiple paths, either use commas with no spaces, or quote the argument and separate paths by commas and/or spaces. Requires --flatten.
+
+==== usdtree end ====
+
+==== usdzip start ====
+usage: usdzip [-h] [-r] [-a ASSET] [--arkitAsset ARKITASSET] [-c]
+              [-l [LISTTARGET]] [-d [DUMPTARGET]] [-v]
+              [usdzFile] [inputFiles ...]
+
+Utility for creating a .usdz file containing USD assets and for inspecting
+existing .usdz files.
+
+positional arguments:
+  usdzFile              Name of the .usdz file to create or to inspect the
+                        contents of.
+  inputFiles            Files to include in the .usdz file.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -r, --recurse         If specified, files in sub-directories are recursively
+                        added to the package.
+  -a ASSET, --asset ASSET
+                        Resolvable asset path pointing to the root layer of
+                        the asset to be isolated and copied into the package.
+  --arkitAsset ARKITASSET
+                        Similar to the --asset option, the --arkitAsset option
+                        packages all of the dependencies of the named scene
+                        file. Assets targeted at the initial usdz
+                        implementation in ARKit operate under greater
+                        constraints than usdz files for more general 'in
+                        house' uses, and this option attempts to ensure that
+                        these constraints are honored; this may involve more
+                        transformations to the data, which may cause loss of
+                        features such as VariantSets.
+  -c, --checkCompliance
+                        Perform compliance checking of the input files. If the
+                        input asset or "root" layer fails any of the
+                        compliance checks, the package is not created and the
+                        program fails.
+  -l [LISTTARGET], --list [LISTTARGET]
+                        List contents of the specified usdz file. If a file-
+                        path argument is provided, the list is output to a
+                        file at the given path. If no argument is provided or
+                        if '-' is specified as the argument, the list is
+                        output to stdout.
+  -d [DUMPTARGET], --dump [DUMPTARGET]
+                        Dump contents of the specified usdz file. If a file-
+                        path argument is provided, the contents are output to
+                        a file at the given path. If no argument is provided
+                        or if '-' is specified as the argument, the contents
+                        are output to stdout.
+  -v, --verbose         Enable verbose mode, which causes messages regarding
+                        files being added to the package to be output to
+                        stdout.
+
+==== usdzip end ====
+
+==== usdchecker start ====
+usage: usdchecker [-h] [-s] [-p] [-o [OUTFILE]] [--noAssetChecks] [--arkit]
+                  [-d] [-v] [-t]
+                  [inputFile]
+
+Utility for checking the compliance of a given USD stage or a USDZ package.
+Only the first sample of any relevant time-sampled attribute is checked,
+currently. General USD checks are always performed, and more restrictive
+checks targeted at distributable consumer content are also applied when the "
+--arkit" option is specified.
+
+positional arguments:
+  inputFile             Name of the input file to inspect.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s, --skipVariants    If specified, only the prims that are present in the
+                        default (i.e. selected) variants are checked. When
+                        this option is not specified, prims in all possible
+                        combinations of variant selections are checked.
+  -p, --rootPackageOnly
+                        Check only the specifiedpackage. Nested packages,
+                        dependencies and their contents are not validated.
+  -o [OUTFILE], --out [OUTFILE]
+                        The file to which all the failed checks are output. If
+                        unspecified, the failed checks are output to stdout;
+                        if "stderr", terminal coloring will be surpressed.
+  --noAssetChecks       If specified, do NOT perform extra checks to help
+                        ensure the stage or package can be easily and safely
+                        referenced into aggregate stages.
+  --arkit               Check if the given USD stage is compatible with
+                        RealityKit's implementation of USDZ as of 2023. These
+                        assets operate under greater constraints that usdz
+                        files for more general in-house uses, and this option
+                        attempts to ensure that these constraints are met.
+  -d, --dumpRules       Dump the enumerated set of rules being checked for the
+                        given set of options.
+  -v, --verbose         Enable verbose output mode.
+  -t, --strict          Return failure code even if only warnings are issued,
+                        for stricter compliance.
+
+==== usdchecker end ====
+
+==== usdfixbrokenpixarschemas start ====
+usage: usdfixbrokenpixarschemas [-h] [--backup BACKUPFILE] [-v] [inputFile]
+
+Fixes usd / usdz layer by applying appropriate fixes defined in the
+UsdUtils.FixBrokenPixarSchemas. If the given usd file has any fixes to be
+saved, a backup is created for that file. If a usdz package is provided, it is
+extracted recursively at a temp location, and fixes are applied on each layer
+individually, which are then packaged into a new usdz package, while creating
+a backup of the original.
+
+positional arguments:
+  inputFile            Name of the input file to inspect and fix.
+
+optional arguments:
+  -h, --help           show this help message and exit
+  --backup BACKUPFILE  optional backup file path, if none provided creates a
+                       <inputFile>.bck.<usda|usdc|usdz> at the inputFile
+                       location
+  -v, --verbose        Enable verbose mode.
+
+==== usdfixbrokenpixarschemas end ====
+
+==== usdstitch start ====
+usage: usdstitch [-h] [-o OUT]
+                                                        usdFiles
+                                                        [usdFiles ...]
+
+Stitch multiple usd file(s) together into one. Opinion strength is determined
+by the order in which the file is given, with the first file getting the
+highest strength. The exception to this general behavior is in time samples,
+which are merged together as a union across the input layers. It is consistent
+in that, if two time sample keys conflict, the strong layer takes precedence.
+
+positional arguments:
+  usdFiles
+
+optional arguments:
+  -h, --help         show this help message and exit
+  -o OUT, --out OUT  specify a file to write out to
+
+==== usdstitch end ====
+
+==== usdstitchclips start ====
+usage: usdstitchclips [-h] [-o OUT] [-c CLIPPATH] [-s STARTTIMECODE]
+                      [-r STRIDE] [-e ENDTIMECODE] [-t] [-p TEMPLATEPATH]
+                      [--clipSet CLIPSET] [--activeOffset ACTIVEOFFSET]
+                      [--interpolateMissingClipValues] [-n]
+                      usdFiles [usdFiles ...]
+
+Stitch multiple usd file(s) together into one using value clips.
+An example command is:
+
+usdstitchclips --out result.usd --clipPath /World/fx/Particles_Splash clip1.usd clip2.usd 
+
+This will produce two files, a result.topology.usd and a result.usd.
+
+positional arguments:
+  usdFiles
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o OUT, --out OUT     specify the filename for the top-level result file,
+                        which also serves as base-name for the topology and
+                        manifest files.
+  -c CLIPPATH, --clipPath CLIPPATH
+                        specify a prim path at which to begin stitching clip
+                        data.
+  -s STARTTIMECODE, --startTimeCode STARTTIMECODE
+                        specify the time at which the clips will become active
+  -r STRIDE, --stride STRIDE
+                        specify a stride for the numeric component of
+                        filenames for template metadata
+  -e ENDTIMECODE, --endTimeCode ENDTIMECODE
+                        specify the time at which the clips will cease being
+                        active
+  -t, --templateMetadata
+                        author template clip metadata in the root layer.
+  -p TEMPLATEPATH, --templatePath TEMPLATEPATH
+                        specify a template asset path to author
+  --clipSet CLIPSET     specify a named clipSet in which to author clip
+                        metadata, so that multiple sets of clips can be
+                        applied on the same prim.
+  --activeOffset ACTIVEOFFSET
+                        specify an offset for template-based clips, offsetting
+                        the frame number of each clip file.
+  --interpolateMissingClipValues
+                        specify whether values for clips without authored
+                        samples are interpolated from surrounding clips if no
+                        default value is authored in any clip.
+  -n, --noComment       do not write a comment specifying how the usd file was
+                        generated
+
+==== usdstitchclips end ====
+
+==== usddumpcrate start ====
+usage: usddumpcrate [-h] [-s] inputFiles [inputFiles ...]
+
+Write information about a usd crate (usdc) file to stdout
+
+positional arguments:
+  inputFiles
+
+optional arguments:
+  -h, --help     show this help message and exit
+  -s, --summary  report only a short summary
+
+==== usddumpcrate end ====
+
+==== sdfdump start ====
+Filter and display raw layer data
+Usage: sdfdump [OPTIONS] inputFiles...
+
+Positionals:
+  inputFiles ...              The input files to dump.
+
+Options:
+  -h,--help                   Print this help message and exit
+  -s,--summary                Report a high-level summary.
+  --validate                  Check validity by trying to read all data values.
+  -p,--path regex             Report only paths matching this regex.
+  -f,--field regex            Report only fields matching this regex.
+  -t,--time n or ff..lf       Report only these times (n) or time ranges (ff..lf) for 'timeSamples' fields
+  --timeTolerance tol         Report times that are close to those requested within this relative tolerance. Default: 0.000125
+  --sortBy path|field         Group output by either path or field. Default: path
+  --noValues                  Do not report field values.
+  --fullArrays                Report full array contents rather than number of elements
+
+==== sdfdump end ====
+
+==== sdffilter start ====
+Provides information in a variety of formats (including usda-like) about
+Sdf Layers or specified (filtered) parts of a layer.
+Usage: sdffilter [OPTIONS] inputFiles...
+
+Positionals:
+  inputFiles ...              The input files to process
+
+Options:
+  -h,--help                   Print this help message and exit
+  -p,--path regex             Report only paths matching this regex.
+  -f,--field regex            Report only fields matching this regex.
+  -t,--time n or ff..lf       Report only these times (n) or time ranges (ff..lf) for
+                              'timeSamples' fields
+  --timeTolerance tol         Report times that are close to those requested within this relative tolerance. Default: 0.000125
+  --arraySizeLimit INT        Truncate arrays with more than this many elements.  If -1, do not
+                              truncate arrays.  Default: 0 for 'outline' output, 8 for
+                              'pseudoLayer' output, and -1 for 'layer' output.
+  --timeSamplesSizeLimit INT  Truncate timeSamples with more than this many values.  If -1, do not
+                              truncate timeSamples.  Default: 0 for 'outline' output, 8 for
+                              'pseudoLayer' output, and -1 for 'layer' output.  Truncation
+                              performed after initial filtering by --time arguments.
+  -o,--out TEXT               Direct output to this file.  Use the 'outputFormat' for finer
+                              control over the underlying format for output formats that are
+                              not uniquely determined by file extension.
+  --outputType validity|summary|outline|pseudoLayer|layer
+                              Specify output format; 'summary' reports overall statistics,
+                              'outline' is a flat text report of paths and fields,
+                              'pseudoLayer' is similar to the sdf file format but with truncated
+                              array values and timeSamples for human readability, and 'layer' is
+                              true layer output, with the format controlled by the 'outputFile'
+                              and 'outputFormat' arguments. Default: outline
+  --sortBy path|field         Group 'outline' output by either path or field.  Ignored for other
+                              output types. Default: path
+  --noValues                  Do not report field values.
+
+==== sdffilter end ====
