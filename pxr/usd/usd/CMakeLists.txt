@@ -67,6 +67,7 @@ pxr_library(usd
         timeCode
         tokens
         typed
+        validator
         usdFileFormat
         usdaFileFormat
         usdcFileFormat
