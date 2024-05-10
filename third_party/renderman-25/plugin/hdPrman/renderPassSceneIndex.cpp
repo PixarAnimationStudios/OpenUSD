@@ -21,6 +21,7 @@
 // language governing permissions and limitations under the Apache License.
 
 #include "hdPrman/renderPassSceneIndex.h"
+#include "hdPrman/tokens.h"
 
 #include "pxr/imaging/hd/version.h"
 
@@ -40,6 +41,7 @@
 #include "pxr/imaging/hd/schema.h" 
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
+#include "pxr/imaging/hdsi/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -68,6 +70,26 @@ HdPrman_RenderPassSceneIndex::HdPrman_RenderPassSceneIndex(
 {
 }
 
+
+bool _IsGeometryType(const TfToken &primType)
+{
+    // TODO: It would be good to centralize this.  Note that it is similar to
+    // SUPPORTED_RPRIM_TYPES (currently private to HdPrmanRenderDelegate).
+    static const TfTokenVector geomTypes = {
+        HdPrimTypeTokens->cone,
+        HdPrimTypeTokens->cylinder,
+        HdPrimTypeTokens->sphere,
+        HdPrimTypeTokens->mesh,
+        HdPrimTypeTokens->basisCurves,
+        HdPrimTypeTokens->points,
+        HdPrimTypeTokens->volume,
+        HdPrmanTokens->meshLightSourceMesh,
+        HdPrmanTokens->meshLightSourceVolume
+    };
+    return std::find(geomTypes.begin(), geomTypes.end(), primType)
+        != geomTypes.end();
+}
+
 HdSceneIndexPrim 
 HdPrman_RenderPassSceneIndex::GetPrim(
     const SdfPath &primPath) const
@@ -89,14 +111,15 @@ HdPrman_RenderPassSceneIndex::GetPrim(
     //
     TfSmallVector<TfToken, 2> primvarNames;
     TfSmallVector<HdDataSourceBaseHandle, 2> primvarVals;
-    // ri:Matte
-    if (state.matteEval) {
-        const bool matte = state.matteEval->Match(primPath);
+    // If the matte pattern matches this prim, set ri:Matte=1.
+    // Matte only applies to geometry types.
+    if (state.matteEval && _IsGeometryType(prim.primType) &&
+        state.matteEval->Match(primPath)) {
         primvarNames.push_back(_tokens->riAttributesRiMatte);
         primvarVals.push_back(
             HdPrimvarSchema::Builder()
                 .SetPrimvarValue(
-                    HdRetainedTypedSampledDataSource<int>::New(matte))
+                    HdRetainedTypedSampledDataSource<int>::New(1))
                 .SetInterpolation(HdPrimvarSchema::
                     BuildInterpolationDataSource(
                         HdPrimvarSchemaTokens->constant))
@@ -154,13 +177,8 @@ HdPrman_RenderPassSceneIndex::GetChildPrimPaths(
 
     if (state.pruneEval) {
         SdfPathVector childPathVec;
-        for (SdfPath const& childPath:
-            _GetInputSceneIndex()->GetChildPrimPaths(primPath)) {
-            const bool pruned = state.pruneEval->Match(childPath);
-            if (!pruned) {
-                childPathVec.push_back(childPath);
-            }
-        }
+        HdsiUtilsRemovePrunedChildren(primPath, *state.pruneEval,
+                                      &childPathVec);
         return childPathVec;
     } else {
         return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
