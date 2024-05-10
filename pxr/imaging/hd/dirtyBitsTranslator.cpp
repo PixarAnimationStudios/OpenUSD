@@ -41,6 +41,7 @@
 #include "pxr/imaging/hd/cameraSchema.h"
 #include "pxr/imaging/hd/categoriesSchema.h"
 #include "pxr/imaging/hd/capsuleSchema.h"
+#include "pxr/imaging/hd/collectionsSchema.h"
 #include "pxr/imaging/hd/coneSchema.h"
 #include "pxr/imaging/hd/coordSysSchema.h"
 #include "pxr/imaging/hd/coordSysBindingSchema.h"
@@ -273,6 +274,8 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
             set->append(HdXformSchema::GetDefaultLocator());
         }
     } else if (HdPrimTypeIsLight(primType)
+            // Lights and light filters are handled similarly in emulation.
+            || primType == HdPrimTypeTokens->lightFilter
             // special case for mesh lights coming from emulated scene
             // for which the type will be mesh even though we are receiving
             // sprim-specific dirty bits.
@@ -295,6 +298,10 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
                 set->append(HdPrimvarsSchema::GetDefaultLocator());
             }
             set->append(HdVisibilitySchema::GetDefaultLocator());
+
+            // Invalidate collections manufactured for light linking in
+            // emulation.
+            set->append(HdCollectionsSchema::GetDefaultLocator());
         }
         if (bits & HdLight::DirtyTransform) {
             set->append(HdXformSchema::GetDefaultLocator());

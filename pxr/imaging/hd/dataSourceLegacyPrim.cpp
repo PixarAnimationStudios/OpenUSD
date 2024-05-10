@@ -1401,27 +1401,6 @@ private:
     HdSceneDelegate *_sceneDelegate;
 };
 
-HdDataSourceBaseHandle
-_BuildDependenciesDataSourceForLightLinking()
-{
-    static const HdDataSourceBaseHandle lightLinkDependencies =
-        HdRetainedContainerDataSource::New(
-            _tokens->lightLinkingCollectionsDependency,
-            HdDependencySchema::Builder()
-            .SetDependedOnPrimPath(
-                HdRetainedTypedSampledDataSource<SdfPath>::New(
-                    SdfPath::EmptyPath())) // self
-            .SetDependedOnDataSourceLocator(
-                HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
-                    HdDataSourceLocator(HdLightSchemaTokens->light)))
-            .SetAffectedDataSourceLocator(
-                HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
-                    HdCollectionsSchema::GetDefaultLocator()))
-            .Build());
-    
-    return lightLinkDependencies;
-}
-
 // ----------------------------------------------------------------------------
 
 class Hd_DataSourceVolumeField : public HdContainerDataSource
@@ -3065,12 +3044,6 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
         if (_type == HdPrimTypeTokens->lightFilter) {
             return Hd_DataSourceLightFilterCollections::New(
                 _id, _sceneDelegate);
-        }
-
-    } else if (name == HdDependenciesSchemaTokens->__dependencies) {
-        // Setup dependencies for the collections manufactured above.
-        if (_IsLight() || _type == HdPrimTypeTokens->lightFilter) {
-            return _BuildDependenciesDataSourceForLightLinking();
         }
     }
 
