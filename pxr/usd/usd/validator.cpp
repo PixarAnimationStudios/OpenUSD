@@ -68,34 +68,34 @@ UsdValidator::_GetValidatePrimTask() const
     return std::get_if<UsdValidatePrimTaskFn>(&_validateTaskFn);
 }
 
-const UsdValidationError
+const UsdValidationErrorVector
 UsdValidator::Validate(const SdfLayerHandle &layer) const
 {
     const UsdValidateLayerTaskFn *layerTaskFn = _GetValidateLayerTask();
     if (layerTaskFn) {
         return (*layerTaskFn)(layer);
     }
-    return UsdValidationError();
+    return {};
 }
 
-const UsdValidationError
+const UsdValidationErrorVector
 UsdValidator::Validate(const UsdStagePtr &usdStage) const
 {
     const UsdValidateStageTaskFn *stageTaskFn = _GetValidateStageTask();
     if (stageTaskFn) {
         return (*stageTaskFn)(usdStage);
     }
-    return UsdValidationError();
+    return {};
 }
 
-const UsdValidationError
+const UsdValidationErrorVector
 UsdValidator::Validate(const UsdPrim &usdPrim) const
 {
     const UsdValidatePrimTaskFn *primTaskFn = _GetValidatePrimTask();
     if (primTaskFn) {
         return (*primTaskFn)(usdPrim);
     }
-    return UsdValidationError();
+    return {};
 }
 
 UsdValidatorSuite::UsdValidatorSuite(const UsdValidatorMetadata& metadata,

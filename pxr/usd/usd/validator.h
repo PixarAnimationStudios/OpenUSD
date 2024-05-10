@@ -38,6 +38,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdValidationError;
+using UsdValidationErrorVector = std::vector<UsdValidationError>;
 class UsdPrim;
 
 /// \class UsdValidatorMetadata
@@ -91,13 +92,13 @@ struct UsdValidatorMetadata
 /// @{
 
 /// UsdValidateLayerTaskFn: Validation logic operating on a given SdfLayerHandle
-using UsdValidateLayerTaskFn = std::function<UsdValidationError(
+using UsdValidateLayerTaskFn = std::function<UsdValidationErrorVector(
     const SdfLayerHandle&)>;
 /// UsdValidateStageTaskFn: Validation logic operating on a given UsdStage
-using UsdValidateStageTaskFn = std::function<UsdValidationError(
+using UsdValidateStageTaskFn = std::function<UsdValidationErrorVector(
     const UsdStagePtr&)>;
 /// UsdValidatePrimTaskFn: Validation logic operating on a given UsdPrim
-using UsdValidatePrimTaskFn = std::function<UsdValidationError(
+using UsdValidatePrimTaskFn = std::function<UsdValidationErrorVector(
     const UsdPrim&)>;
 
 /// @}
@@ -158,28 +159,28 @@ public:
     }
 
     /// Run validation on the given \p layer by executing the contained
-    /// validateTaskFn and returns UsdValidationError.
+    /// validateTaskFn and returns UsdValidationErrorVector.
     ///
     /// If this Validator doesn't provide a UsdValidateLayerTaskFn, then an
-    /// default UsdValidationError is returned, which signifies no error.
+    /// empty vector is returned, which signifies no error.
     USD_API
-    const UsdValidationError Validate(const SdfLayerHandle &layer) const;
+    const UsdValidationErrorVector Validate(const SdfLayerHandle &layer) const;
 
     /// Run validation on the given \p usdStage by executing the contained
-    /// validateTaskFn and returns UsdValidationError.
+    /// validateTaskFn and returns UsdValidationErrorVector.
     ///
     /// If this Validator doesn't provide a UsdValidateStageTaskFn, then an
-    /// default UsdValidationError is returned, which signifies no error.
+    /// empty vector is returned, which signifies no error.
     USD_API
-    const UsdValidationError Validate(const UsdStagePtr &usdStage) const;
+    const UsdValidationErrorVector Validate(const UsdStagePtr &usdStage) const;
 
     /// Run validation on the given \p usdPrim by executing the contained
-    /// validateTaskFn and returns UsdValidationError.
+    /// validateTaskFn and returns UsdValidationErrorVector.
     ///
     /// If this Validator doesn't provide a UsdValidatePrimTaskFn, then an
-    /// default UsdValidationError is returned, which signifies no error.
+    /// empty vector is returned, which signifies no error.
     USD_API
-    const UsdValidationError Validate(const UsdPrim& usdPrim) const;
+    const UsdValidationErrorVector Validate(const UsdPrim& usdPrim) const;
 
   private:
     UsdValidatorMetadata _metadata;

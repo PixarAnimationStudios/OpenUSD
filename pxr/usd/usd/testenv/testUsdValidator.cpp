@@ -41,7 +41,7 @@ void TestSimpleValidator()
     // Simple LayerValidator
     UsdValidateLayerTaskFn validateLayerTaskFn = 
         [](const SdfLayerHandle& layer) {
-        return UsdValidationError();
+        return UsdValidationErrorVector{UsdValidationError()};
     };
     UsdValidatorMetadata metadata;
     metadata.name = TfToken("TestSimpleLayerValidator");
@@ -49,38 +49,38 @@ void TestSimpleValidator()
     UsdValidator layerValidator = UsdValidator(metadata, validateLayerTaskFn);
     SdfLayerRefPtr testLayer = SdfLayer::CreateAnonymous();
     {
-        UsdValidationError error = layerValidator.Validate(testLayer);
-        TF_AXIOM(error.HasNoError());
-        TF_AXIOM(error.GetSites().empty());
+        UsdValidationErrorVector errors = layerValidator.Validate(testLayer);
+        TF_AXIOM(errors.size() == 1);
+        TF_AXIOM(errors[0].HasNoError());
+        TF_AXIOM(errors[0].GetSites().empty());
     }
     // Use the LayerValidator to validate a prim!!
     // Note that this validator has no UsdValidatePrimTaskFn!
     UsdStageRefPtr usdStage2 = UsdStage::CreateInMemory();
     const UsdPrim prim = usdStage2->GetPseudoRoot();
     {
-        UsdValidationError error = layerValidator.Validate(prim);
-        TF_AXIOM(error == UsdValidationError());
-        TF_AXIOM(error.HasNoError());
-        TF_AXIOM(error.GetSites().empty());
+        TF_AXIOM(layerValidator.Validate(prim).empty());
     }
 
     // Simple StageValidator
     UsdValidateStageTaskFn validateStageTaskFn = 
         [](const UsdStageRefPtr &usdStage) {
-            return UsdValidationError(UsdValidationErrorType::Error, 
-                                      {UsdValidationErrorSite(usdStage, 
-                                                             SdfPath("/"))},
-                                      "This is an error on the stage");
+            return UsdValidationErrorVector{
+                UsdValidationError(UsdValidationErrorType::Error, 
+                                   {UsdValidationErrorSite(usdStage, 
+                                                           SdfPath("/"))},
+                                   "This is an error on the stage")};
     };
     metadata.name = TfToken("TestSimpleStageValidator");
     metadata.docs = "This is a test.";
     UsdValidator stageValidator = UsdValidator(metadata, validateStageTaskFn);
     UsdStageRefPtr usdStage = UsdStage::CreateInMemory();
     {
-        UsdValidationError error = stageValidator.Validate(usdStage);
-        TF_AXIOM(!error.HasNoError());
-        TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
-        const UsdValidationErrorSites &errorSites = error.GetSites();
+        UsdValidationErrorVector errors = stageValidator.Validate(usdStage);
+        TF_AXIOM(errors.size() == 1);
+        TF_AXIOM(!errors[0].HasNoError());
+        TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+        const UsdValidationErrorSites &errorSites = errors[0].GetSites();
         TF_AXIOM(errorSites.size() == 1);
         TF_AXIOM(!errorSites[0].IsValidSpecInLayer());
         TF_AXIOM(errorSites[0].IsPrim());
@@ -89,18 +89,17 @@ void TestSimpleValidator()
     // Use the StageValidator to validate a layer
     // Note that this validator has no UsdValidateLayerTaskFn
     {
-        UsdValidationError error = stageValidator.Validate(testLayer);
-        TF_AXIOM(error == UsdValidationError());
-        TF_AXIOM(error.HasNoError());
-        TF_AXIOM(error.GetSites().empty());
+        TF_AXIOM(stageValidator.Validate(testLayer).empty());
     }
     // Create a stage using the layer and validate the stage now!
     UsdStageRefPtr usdStageFromLayer = UsdStage::Open(testLayer);
     {
-        UsdValidationError error = stageValidator.Validate(usdStageFromLayer);
-        TF_AXIOM(!error.HasNoError());
-        TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
-        const UsdValidationErrorSites &errorSites = error.GetSites();
+        UsdValidationErrorVector errors = 
+            stageValidator.Validate(usdStageFromLayer);
+        TF_AXIOM(errors.size() == 1);
+        TF_AXIOM(!errors[0].HasNoError());
+        TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+        const UsdValidationErrorSites &errorSites = errors[0].GetSites();
         TF_AXIOM(errorSites.size() == 1);
         TF_AXIOM(!errorSites[0].IsValidSpecInLayer());
         TF_AXIOM(errorSites[0].IsPrim());
@@ -109,10 +108,11 @@ void TestSimpleValidator()
 
     // Simple SchemaTypeValidator
     UsdValidatePrimTaskFn validatePrimTaskFn = [](const UsdPrim &usdPrim) {
-        return UsdValidationError(UsdValidationErrorType::Error, 
-                                  {UsdValidationErrorSite(usdPrim.GetStage(), 
-                                                         usdPrim.GetPath())},
-                                  "This is an error on the stage");
+        return UsdValidationErrorVector{
+            UsdValidationError(UsdValidationErrorType::Error, 
+                               {UsdValidationErrorSite(usdPrim.GetStage(), 
+                                                       usdPrim.GetPath())},
+                               "This is an error on the stage")};
     };
     metadata.name = TfToken("TestSimplePrimValidator");
     metadata.schemaTypes = {TfToken("MadeUpPrimType")};
@@ -120,10 +120,11 @@ void TestSimpleValidator()
     UsdValidator schemaTypeValidator = UsdValidator(metadata, 
                                                     validatePrimTaskFn);
     {
-        UsdValidationError error = schemaTypeValidator.Validate(prim);
-        TF_AXIOM(!error.HasNoError());
-        TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
-        const UsdValidationErrorSites &errorSites = error.GetSites();
+        UsdValidationErrorVector errors = schemaTypeValidator.Validate(prim);
+        TF_AXIOM(errors.size() == 1);
+        TF_AXIOM(!errors[0].HasNoError());
+        TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+        const UsdValidationErrorSites &errorSites = errors[0].GetSites();
         TF_AXIOM(errorSites.size() == 1);
         TF_AXIOM(!errorSites[0].IsValidSpecInLayer());
         TF_AXIOM(errorSites[0].IsPrim());
