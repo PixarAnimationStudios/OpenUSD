@@ -29,6 +29,7 @@
 #include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyFunction.h"
+#include "pxr/base/tf/pyUtils.h"
 
 #include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/pathExpressionEval.h"
@@ -219,6 +220,8 @@ void wrapPathExpression()
 
     TfPyWrapEnum<PathExpr::Op>();
 
+    s.attr("PathPattern") = TfPyGetClassObject<SdfPathPattern>();
+    
     class_<ExpressionReference>("ExpressionReference")
         .def_readwrite("path", &ExpressionReference::path)
         .def_readwrite("name", &ExpressionReference::name)

@@ -322,6 +322,8 @@ class TestSdfPathExpression(unittest.TestCase):
         self.assertEqual(attr.default, Sdf.PathExpression("/prim/child"))
 
     def test_PathPattern(self):
+        self.assertIs(Sdf.PathPattern, Sdf.PathExpression.PathPattern)
+        
         pat = Sdf.PathPattern()
         self.assertFalse(pat)
         self.assertFalse(pat.HasTrailingStretch())
