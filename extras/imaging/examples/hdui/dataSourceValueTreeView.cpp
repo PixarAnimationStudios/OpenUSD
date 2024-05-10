@@ -55,7 +55,20 @@ public:
         if (index.row() == 0) {
             if (index.column() == 0) {
                 std::ostringstream buffer;
-                buffer << _value;
+                if (_value.IsHolding<SdfPathVector>()) {
+                    // Special case for SdfPathVector.
+                    //
+                    // Arguably, this would be even more useful defined as
+                    // SdfPath::operator<<(); however, it is unclear what
+                    // formatting would make the most sense there, whereas
+                    // in hdui a newline separator is best for readability.
+                    SdfPathVector paths = _value.Get<SdfPathVector>();
+                    for (SdfPath const& path: paths) {
+                        buffer << path << "\n";
+                    }
+                } else {
+                    buffer << _value;
+                }
                 return QVariant(buffer.str().data());
             }
         }
