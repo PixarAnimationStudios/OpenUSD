@@ -373,5 +373,12 @@ class TestPcpMapFunction(unittest.TestCase):
             fComposed.MapTargetToSource('/Model/Rig/PathRig/Path'),
             '/PathRig/Path')
 
+    def test_PathExpression(self):
+        # Test mapping path expressions.
+        m = Pcp.MapFunction({'/Model': '/Model_1'})
+        pe = Sdf.PathExpression('//{shiny} /Model/Tee /Outside/the/model')
+        mappedPe = m.MapSourceToTarget(pe)
+        self.assertEqual(mappedPe, Sdf.PathExpression('//{shiny} /Model_1/Tee'))
+
 if __name__ == "__main__":
     unittest.main()
