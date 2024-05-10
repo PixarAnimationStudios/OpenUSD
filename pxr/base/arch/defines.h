@@ -94,8 +94,8 @@
 // Features
 //
 
-// Only use the GNU STL extensions on Linux when using gcc.
-#if defined(ARCH_OS_LINUX) && defined(ARCH_COMPILER_GCC)
+// Only use the GNU STL extensions on Linux when using gcc and non C++11 std.
+#if defined(ARCH_OS_LINUX) && defined(ARCH_COMPILER_GCC) && (__cplusplus < 201103L)
 #define ARCH_HAS_GNU_STL_EXTENSIONS
 #endif
 
