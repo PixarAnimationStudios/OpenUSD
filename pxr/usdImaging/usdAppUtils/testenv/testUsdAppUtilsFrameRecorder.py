@@ -96,7 +96,7 @@ class TestUsdAppUtilsFrameRecorder(unittest.TestCase):
         outputImagePath = os.path.abspath('AnimCube.png')
         self.assertTrue(
             self._frameRecorder.Record(self._stage, self._usdCamera,
-                Usd.TimeCode.EarliestTime(), outputImagePath))
+                self._stage.GetStartTimeCode(), outputImagePath))
 
     def testRecordMultipleFrames(self):
         """
@@ -110,7 +110,7 @@ class TestUsdAppUtilsFrameRecorder(unittest.TestCase):
         for timeCode in frameSpecIter:
             self.assertTrue(
                 self._frameRecorder.Record(self._stage, self._usdCamera,
-                    timeCode, outputImagePath.format(frame=timeCode.GetValue())))
+                    timeCode, outputImagePath.format(frame=timeCode)))
 
 
 if __name__ == "__main__":

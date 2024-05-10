@@ -102,7 +102,7 @@ def AddCmdlineArgs(argsParser, altDefaultTimeHelpText='', altFramesHelpText=''):
     Usd.TimeCode.Default(). Otherwise, '--frames' must be given a FrameSpec (or 
     a comma-separated list of multiple FrameSpecs), and 'frames' will be a 
     FrameSpecIterator which when iterated will yield the time codes specified 
-    by the FrameSpec(s).
+    by the FrameSpec(s) as floats.
     """
     timeGroup = argsParser.add_mutually_exclusive_group()
 
