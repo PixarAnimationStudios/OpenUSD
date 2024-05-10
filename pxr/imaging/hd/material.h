@@ -197,10 +197,20 @@ HdMaterialNetwork2 HdConvertToHdMaterialNetwork2(
 /// present.  Otherwise extracts the sampler parameters from the SdrNode.
 HD_API
 HdSamplerParameters HdGetSamplerParameters(
-    const SdfPath& nodePath,
     const HdMaterialNode2& node,
-    const SdrShaderNodeConstPtr& sdrNode);
+    const SdrShaderNodeConstPtr& sdrNode,
+    const SdfPath& nodePath = SdfPath::EmptyPath());
 
+/// Extract HdSamplerParameters from the given parameter map for the given node
+/// type id.  Functionally this works essentially the same as the other
+/// HdGetSamplerParameters that operates on an HdMaterialNode2, but this allows
+/// extracting sampler parameters from the map without requiring an
+/// HdMaterialNode2.
+HD_API
+HdSamplerParameters HdGetSamplerParameters(
+    const TfToken& nodeTypeId,
+    const std::map<TfToken, VtValue>& parameters,
+    const SdfPath& nodePath = SdfPath::EmptyPath());
 
 // VtValue requirements
 HD_API
