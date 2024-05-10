@@ -295,7 +295,7 @@ HdLegacyGeomSubsetSceneIndex::GetPrim(const SdfPath& primPath) const
 {
     const HdSceneIndexPrim& prim = _GetInputSceneIndex()->GetPrim(primPath);
     // If primPath is for a legacy subset, the input scene index will
-    // not know anything about it.
+    // not know anything about it. We can bail early if dataSorce is null.
     if (!prim.dataSource) {
         const SdfPath& parentPath = primPath.GetParentPath();
         if (_parentPrims.find(parentPath) != _parentPrims.end()) {
@@ -342,7 +342,11 @@ HdLegacyGeomSubsetSceneIndex::_PrimsAdded(
         const HdSceneIndexPrim& prim =
             _GetInputSceneIndex()->GetPrim(entry.primPath);
         const SdfPathVector& paths = _ListDelegateSubsets(entry.primPath, prim);
-        _parentPrims.insert({ entry.primPath, paths });
+        if (paths.empty()) {
+            continue;
+        }
+        // Only add prims with subsets to _parentPrims to save on memory.
+        _parentPrims.insert({ entry.primPath, paths });        
         for (const SdfPath& path : paths) {
             newEntries.push_back({ path, HdPrimTypeTokens->geomSubset });
         }
@@ -400,15 +404,28 @@ HdLegacyGeomSubsetSceneIndex::_PrimsDirtied(
     HdSceneIndexObserver::DirtiedPrimEntries dirtiedEntries;
     
     for (const HdSceneIndexObserver::DirtiedPrimEntry& entry : entries) {
-        auto it = _parentPrims.find(entry.primPath);
-        if ((it == _parentPrims.end()) ||
-            (!entry.dirtyLocators.Intersects(topologyLocators))) {
+        if (!entry.dirtyLocators.Intersects(topologyLocators)) {
+            // If the change didn't affect topology, we can continue. This is
+            // either not a mesh/basisCurves or the subsets didn't change.
             continue;
         }
         const HdSceneIndexPrim& prim =
             _GetInputSceneIndex()->GetPrim(entry.primPath);
-        SdfPathVector before = it->second; // a copy!
+        // Immediately fetch the new list of subsets
         SdfPathVector after  = _ListDelegateSubsets(entry.primPath, prim);
+        auto it = _parentPrims.find(entry.primPath);
+        if (it == _parentPrims.end()) {
+            // This mesh/basisCurves did not previously have subsets
+            // but some may have been added. If none have been added,
+            // we can continue.
+            if (after.empty()) {
+                continue;
+            }
+            // There are new subsets for this mesh/basisCurves;
+            // add an entry to _parentPrims.
+            it = _parentPrims.insert({entry.primPath, {}}).first;
+        }
+        SdfPathVector before = it->second; // a copy!
         SdfPathVector added, removed, dirtied;
         // update cached child paths
         it->second.clear();
