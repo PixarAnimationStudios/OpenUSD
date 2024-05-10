@@ -107,7 +107,7 @@ struct HdxPickHit
     int elementIndex;
     int edgeIndex;
     int pointIndex;
-    GfVec3f worldSpaceHitPoint;
+    GfVec3d worldSpaceHitPoint;
     GfVec3f worldSpaceHitNormal;
     /// normalizedDepth is in the range [0,1].  Nb: the pick depth buffer won't
     /// contain items drawn with renderTag "widget" for simplicity.

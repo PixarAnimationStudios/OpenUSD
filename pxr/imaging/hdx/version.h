@@ -35,6 +35,8 @@
 // 9  -> 10 : replaced enableSelection with enableSelectionHighlight and 
 //            enableLocateHighlight on HdxSelectionTask and HdxColorizeSelectionTask params.
 // 10 -> 11 : New signature for HdxFullscreenShader::BindTextures.
-#define HDX_API_VERSION 11
+// 11 -> 12 : change HdxPickHit::worldSpaceHitPoint from GfVec3f to GfVec3d.
+//
+#define HDX_API_VERSION 12
 
 #endif // PXR_IMAGING_HDX_VERSION_H
