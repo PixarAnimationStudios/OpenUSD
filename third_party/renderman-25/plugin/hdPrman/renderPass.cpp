@@ -21,31 +21,28 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdPrman/renderPass.h"
+#include "hdPrman/renderPass.h" 
+
 #include "hdPrman/camera.h"
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/debugUtil.h"
-#include "hdPrman/gprimbase.h"
 #include "hdPrman/framebuffer.h"
-#include "hdPrman/renderParam.h"
 #include "hdPrman/renderBuffer.h"
 #include "hdPrman/renderDelegate.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/renderSettings.h"
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/utils.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderPassState.h"
+#include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/utils.h"
 
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/rotation.h"
-#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/token.h"
 
-#include "Riley.h"
-#include "RixShadingUtils.h"
-#include "RixPredefinedStrings.hpp"
+#include <Riley.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -245,40 +242,6 @@ _HasLegacyRenderSpec(
     return false;
 }
 
-// Update visibility settings of riley instances for the active render tags.
-//
-// The render pass's _Execute method takes a list of renderTags,
-// and only rprims with those tags should be visible,
-// so we need to figure out the corresponding riley instance ids
-// and update the visibility settings in riley.
-// It might seem like the rprims would receive a Sync call
-// to deal with this, but they only do when they first become visible.
-// After that tag based visibility is a per-pass problem.
-
-void
-_UpdateRprimVisibilityForPass(
-    TfTokenVector const & renderTags,
-    HdRenderIndex *index,
-    riley::Riley *riley )
-{
-    for (auto id : index->GetRprimIds()) {
-        HdRprim const *rprim = index->GetRprim(id);
-        const TfToken tag = rprim->GetRenderTag();
-
-        // If the rprim's render tag is not in the pass's list of tags it's
-        // definitely not visible, but if it is, look at the rprim's visibility.
-        const bool vis =
-            std::count(renderTags.begin(), renderTags.end(), tag) &&
-            rprim->IsVisible();
-
-        HdPrman_GprimBase const * hdprman_rprim =
-                dynamic_cast<HdPrman_GprimBase const *>(rprim);
-        if (hdprman_rprim) {
-            hdprman_rprim->UpdateInstanceVisibility( vis, riley);
-        }
-    }
-}
-
 } // end anonymous namespace
 
 
@@ -374,8 +337,8 @@ HdPrman_RenderPass::_Execute(
                 currentLegacySettingsVersion);
         }
     }
-
-    _UpdateRprimVisibilityFromTaskRenderTags(renderTags);
+    
+    _UpdateActiveRenderTagsIfChanged(renderTags);
 
     // ------------------------------------------------------------------------
     // Determine if we can drive the render pass using the render settings
@@ -696,30 +659,18 @@ HdPrman_RenderPass::_RenderInMainThread()
 // XXX Data flow for purpose is currently using the task's render tags.
 //     Update to factor render settings prim's opinion.
 void
-HdPrman_RenderPass::_UpdateRprimVisibilityFromTaskRenderTags(
-    TfTokenVector const &renderTags)
+HdPrman_RenderPass::_UpdateActiveRenderTagsIfChanged(
+    const TfTokenVector& taskRenderTags)
 {
     const int taskRenderTagsVersion =
         GetRenderIndex()->GetChangeTracker().GetTaskRenderTagsVersion();
     const int rprimRenderTagVersion =
             GetRenderIndex()->GetChangeTracker().GetRenderTagVersion();
- 
-    {
-        // Update visibility settings of riley instances for active render tags.
-        if (!_lastTaskRenderTagsVersion && !_lastRprimRenderTagVersion) {
-            // No need to update the first time, only when the tags change.
-            _lastTaskRenderTagsVersion = taskRenderTagsVersion;
-            _lastRprimRenderTagVersion = rprimRenderTagVersion;
-
-        } else if((taskRenderTagsVersion != _lastTaskRenderTagsVersion) ||
-                (rprimRenderTagVersion != _lastRprimRenderTagVersion)) {
-            // AcquireRiley will stop rendering and increase sceneVersion
-            // so that the render will be re-started below.
-            riley::Riley * const riley = _renderParam->AcquireRiley();
-            _UpdateRprimVisibilityForPass( renderTags, GetRenderIndex(), riley);
-            _lastTaskRenderTagsVersion = taskRenderTagsVersion;
-            _lastRprimRenderTagVersion = rprimRenderTagVersion;
-        }
+    if ((taskRenderTagsVersion != _lastTaskRenderTagsVersion) ||
+        (rprimRenderTagVersion != _lastRprimRenderTagVersion)) {
+        _renderParam->SetActiveRenderTags(taskRenderTags, GetRenderIndex());
+        _lastTaskRenderTagsVersion = taskRenderTagsVersion;
+        _lastRprimRenderTagVersion = rprimRenderTagVersion;
     }
 }
 

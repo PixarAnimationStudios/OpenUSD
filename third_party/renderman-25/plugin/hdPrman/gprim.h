@@ -338,10 +338,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     //
     
     // Resolve attributes.
-    bool sceneVisibility = true;
-    RtParamList attrs = param->ConvertAttributes(sceneDelegate, id, true,
-                                                 &sceneVisibility);
-    _sceneVisibility = sceneVisibility;
+    RtParamList attrs = param->ConvertAttributes(sceneDelegate, id, true);
 
     // Add "identifier:id" with the prim id.
     attrs.SetInteger(RixStr.k_identifier_id, primId);
@@ -400,6 +397,10 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                 TF_VERIFY(j < subsetMaterialIds.size());
                 instanceMaterialId = subsetMaterialIds[j];
             }
+            
+            // Very last thing: prepend renderTag to grouping:membership
+            param->AddRenderTagToGroupingMembership(
+                sceneDelegate->GetRenderTag(id), finalAttrs);
 
             if (instanceId == riley::GeometryInstanceId::InvalidId()) {
                 TRACE_SCOPE("riley::CreateGeometryInstance");

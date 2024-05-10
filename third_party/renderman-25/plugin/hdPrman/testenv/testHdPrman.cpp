@@ -21,57 +21,58 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
+#include "hdPrman/renderDelegate.h"
 
-#include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/engine.h"
-#include "pxr/imaging/hd/flatteningSceneIndex.h"
-#include "pxr/imaging/hd/rprimCollection.h"
-#include "pxr/imaging/hd/task.h"
-#include "pxr/imaging/hd/renderPass.h"
-#include "pxr/imaging/hd/renderPassState.h"
-#include "pxr/imaging/hd/rendererPluginRegistry.h"
-#include "pxr/imaging/hd/pluginRenderDelegateUniqueHandle.h"
-#include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/camera.h"
-#include "pxr/imaging/hd/utils.h"
-#include "pxr/imaging/hd/overlayContainerDataSource.h"
-#include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/dataSourceMaterialNetworkInterface.h"
+#include "pxr/imaging/hd/engine.h"
+#include "pxr/imaging/hd/lightSchema.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
-#include "pxr/imaging/hd/lightSchema.h"
-#include "pxr/imaging/hd/dataSourceMaterialNetworkInterface.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/pluginRenderDelegateUniqueHandle.h"
+#include "pxr/imaging/hd/rendererPluginRegistry.h"
+#include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/renderPass.h"
+#include "pxr/imaging/hd/renderPassState.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/rprimCollection.h"
+#include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+#include "pxr/imaging/hd/task.h"
+#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/utils.h"
 #include "pxr/imaging/hd/version.h"
 
-#include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
 #include "pxr/imaging/hdsi/sceneGlobalsSceneIndex.h"
-
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/prim.h"
-
-#include "pxr/usd/usdGeom/camera.h"
-#include "pxr/usd/usdRender/product.h"
-#include "pxr/usd/usdRender/settings.h"
-#include "pxr/usd/usdRender/spec.h"
-#include "pxr/usd/usdRender/var.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/sceneIndices.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 
-#include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/pathUtils.h"
-#include "pxr/base/tf/stopwatch.h"
+#include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/stage.h"
+
+#include "pxr/usd/usdGeom/camera.h"
+#include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/usdRender/product.h"
+#include "pxr/usd/usdRender/settings.h"
+#include "pxr/usd/usdRender/spec.h"
+#include "pxr/usd/usdRender/var.h"
+
 #include "pxr/base/arch/env.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/stopwatch.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/base/trace/reporter.h"
+#include "pxr/base/vt/types.h"
 #include "pxr/base/work/threadLimits.h"
 
-#include "hdPrman/renderDelegate.h"
+#include "pxr/pxr.h"
 
+#include <cstdio>
 #include <fstream>
-#include <functional>
 #include <memory>
-#include <stdio.h>
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -909,12 +910,9 @@ HydraSetupAndRender(
     // XXX
     // The data flow below needs to be updated to be scene description driven.
     // Specifically:
-    // - "render tags" should be replaced with "includedPurposes" on the
-    //   RenderSettings prim.
     // - "rprim collection" should be replaced with the Usd Collection opinion
     //   on the driving RenderPass prim.
 
-    const TfTokenVector renderTags{HdRenderTagTokens->geometry};
     // The collection of scene contents to render
     HdRprimCollection hdCollection(
         _tokens->testCollection,
@@ -950,12 +948,34 @@ HydraSetupAndRender(
                                     cameraInfo->aspectRatioConformPolicy) });
 #endif
     }
-
-    auto sgsi = appSceneIndices->sceneGlobalsSceneIndex;
-    TF_VERIFY(sgsi);
-    fprintf(stdout, "Setting the active render settings prim path to <%s>.\n",
-            renderSettingsPrimPath.GetText());
-    sgsi->SetActiveRenderSettingsPrimPath(renderSettingsPrimPath);
+    
+    TfTokenVector renderTags;
+    if (!renderSettingsPrimPath.IsEmpty()) {
+        const UsdRenderSettings& settings = UsdRenderSettings(
+            stage->GetPrimAtPath(renderSettingsPrimPath));
+        VtTokenArray purposes;
+        settings.GetIncludedPurposesAttr().Get(&purposes);
+        for (const TfToken& purpose : purposes) {
+            if (purpose == UsdGeomTokens->default_) {
+                renderTags.push_back(HdRenderTagTokens->geometry);
+            } else if (purpose == UsdGeomTokens->guide) {
+                renderTags.push_back(HdRenderTagTokens->guide);
+            } else if (purpose == UsdGeomTokens->render) {
+                renderTags.push_back(HdRenderTagTokens->render);
+            } else if (purpose == UsdGeomTokens->proxy) {
+                renderTags.push_back(HdRenderTagTokens->proxy);
+            } else {
+                TF_CODING_ERROR("Unrecognized purpose: %s", purpose.GetText());
+            }
+        }
+        auto sgsi = appSceneIndices->sceneGlobalsSceneIndex;
+        TF_VERIFY(sgsi);
+        fprintf(stdout, "Setting the active render settings prim path to <%s>.\n",
+                renderSettingsPrimPath.GetText());
+        sgsi->SetActiveRenderSettingsPrimPath(renderSettingsPrimPath);
+    } else {
+        renderTags.push_back(HdRenderTagTokens->geometry);
+    }
 
     // The task execution graph and engine configuration is also simple.
     HdTaskSharedPtrVector tasks = {

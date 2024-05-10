@@ -1055,6 +1055,7 @@ HdPrmanInstancer::_PopulateInstances(
         // Finalize the prototype-derived params & flats
         std::vector<RtParamList> protoParams;
         std::vector<_FlattenData> protoFlats;
+        std::vector<TfToken> protoRenderTags;
 
         _ComposePrototypeData(
             prototypePrimPath,
@@ -1064,8 +1065,9 @@ HdPrmanInstancer::_PopulateInstances(
             prototypePaths,
             prototypeFlats,
             protoParams,
-            protoFlats);
-
+            protoFlats,
+            protoRenderTags);
+        
         // Prepare each instance to be sent to riley
         _ParallelFor(instances.size(), [&](size_t i) {
             const _InstanceData& instance = instances[i];
@@ -1225,6 +1227,9 @@ HdPrmanInstancer::_PopulateInstances(
                             &params);
                     }
                 } else {
+                    // Very last thing: prepend renderTag to grouping:membership
+                    param->AddRenderTagToGroupingMembership(
+                        protoRenderTags[j], params);
                     if (instId.geoInstanceId == riley::GeometryInstanceId::InvalidId()) {
                         TRACE_SCOPE("riley::CreateGeometryInstance");
                         instId.geoInstanceId = riley->CreateGeometryInstance(
@@ -1450,7 +1455,8 @@ HdPrmanInstancer::_ComposePrototypeData(
     const SdfPathVector& subProtoPaths,
     const std::vector<_FlattenData>& subProtoFlats,
     std::vector<RtParamList>& protoParams,
-    std::vector<_FlattenData>& protoFlats)
+    std::vector<_FlattenData>& protoFlats,
+    std::vector<TfToken>& protoRenderTags)
 {
     HD_TRACE_FUNCTION();
     HdSceneDelegate* delegate = GetDelegate();
@@ -1494,15 +1500,21 @@ HdPrmanInstancer::_ComposePrototypeData(
 
     protoParams.resize(count);
     protoFlats.resize(count);
+    protoRenderTags.resize(count);
 
     for (size_t i = 0; i < count; ++i) {
         SetProtoParams(protoPath, protoParams[i], protoFlats[i]);
+        if (!isLight) {
+            protoRenderTags[i] = delegate->GetRenderTag(protoPath);
+        }
 
         // If prototype is a subset, also get the subset params. While geom
         // subsets should not have USD primvars on them, they may be the targets
         // of light linking and thus have categories to deal with. They may also
         // receive visibility params as part of Hydra's handling of invisible
         // faces, even though visibility cannot be authored on them in USD.
+        // XXX: All that is changing in hydra 2, where subsets will be able to
+        // have primvars, visibility, and purpose!
         if (i < subProtoPaths.size() && subProtoPaths[i] != protoPath) {
             RtParamList subsetParams;
             _FlattenData subsetFlats;
