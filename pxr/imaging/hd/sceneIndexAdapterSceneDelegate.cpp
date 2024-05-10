@@ -119,6 +119,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+//
+// If the input prim is a datasource prim, we need some sensible default
+// here...  For now, we pass [0,0] to turn off multisampling.
+constexpr float _fallbackStartTime = 0.0f;
+constexpr float _fallbackEndTime   = 0.0f;
+
 /* static */
 HdSceneIndexBaseRefPtr
 HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(
@@ -2080,7 +2086,22 @@ HdSceneIndexAdapterSceneDelegate::SamplePrimvar(
         size_t maxSampleCount, float *sampleTimes, 
         VtValue *sampleValues)
 {
-    return _SamplePrimvar(id, key, maxSampleCount, sampleTimes, sampleValues,
+    return _SamplePrimvar(
+        id, key, _fallbackStartTime, _fallbackEndTime,
+        maxSampleCount, sampleTimes, sampleValues,
+        nullptr);
+}
+
+size_t
+HdSceneIndexAdapterSceneDelegate::SamplePrimvar(
+        SdfPath const &id, TfToken const &key,
+        float startTime, float endTime,
+        size_t maxSampleCount, float *sampleTimes, 
+        VtValue *sampleValues)
+{
+    return _SamplePrimvar(
+        id, key, startTime, endTime,
+        maxSampleCount, sampleTimes, sampleValues,
         nullptr);
 }
 
@@ -2090,13 +2111,29 @@ HdSceneIndexAdapterSceneDelegate::SampleIndexedPrimvar(
         size_t maxSampleCount, float *sampleTimes, 
         VtValue *sampleValues, VtIntArray *sampleIndices)
 {
-    return _SamplePrimvar(id, key, maxSampleCount, sampleTimes, sampleValues,
+    return _SamplePrimvar(
+        id, key, _fallbackStartTime, _fallbackEndTime,
+        maxSampleCount, sampleTimes, sampleValues,
+        sampleIndices);
+}
+
+size_t
+HdSceneIndexAdapterSceneDelegate::SampleIndexedPrimvar(
+        SdfPath const &id, TfToken const &key,
+        float startTime, float endTime,
+        size_t maxSampleCount, float *sampleTimes, 
+        VtValue *sampleValues, VtIntArray *sampleIndices)
+{
+    return _SamplePrimvar(
+        id, key, startTime, endTime,
+        maxSampleCount, sampleTimes, sampleValues,
         sampleIndices);
 }
 
 size_t
 HdSceneIndexAdapterSceneDelegate::_SamplePrimvar(
         SdfPath const &id, TfToken const &key,
+        float startTime, float endTime,
         size_t maxSampleCount, float *sampleTimes, 
         VtValue *sampleValues, VtIntArray *sampleIndices)
 {
@@ -2152,9 +2189,6 @@ HdSceneIndexAdapterSceneDelegate::_SamplePrimvar(
     // responsible for setting the shutter window.  We can't query it, but
     // we pass the infinite window to accept all time samples from the
     // scene delegate.
-    //
-    // If the input prim is a datasource prim, we need some sensible default
-    // here...  For now, we pass [0,0] to turn off multisampling.
     if (prim.dataSource->Get(HdSceneIndexEmulationTokens->sceneDelegate)) {
         valueSource->GetContributingSampleTimesForInterval(
                 std::numeric_limits<float>::lowest(),
@@ -2167,7 +2201,7 @@ HdSceneIndexAdapterSceneDelegate::_SamplePrimvar(
     } else {
         const bool isVarying =
             valueSource->GetContributingSampleTimesForInterval(
-                0, 0, &times);
+                startTime, endTime, &times);
         if (isVarying) {
             if (times.empty()) {
                 TF_CODING_ERROR("No contributing sample times returned for "
@@ -2238,6 +2272,17 @@ HdSceneIndexAdapterSceneDelegate::SampleTransform(
         SdfPath const &id, size_t maxSampleCount,
         float *sampleTimes, GfMatrix4d *sampleValues)
 {
+    return SampleTransform(
+        id, _fallbackStartTime, _fallbackEndTime,
+        maxSampleCount, sampleTimes, sampleValues);
+}
+
+size_t
+HdSceneIndexAdapterSceneDelegate::SampleTransform(
+        SdfPath const &id, float startTime, float endTime,
+        size_t maxSampleCount,
+        float *sampleTimes, GfMatrix4d *sampleValues)
+{
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
@@ -2258,16 +2303,13 @@ HdSceneIndexAdapterSceneDelegate::SampleTransform(
     // responsible for setting the shutter window.  We can't query it, but
     // we pass the infinite window to accept all time samples from the
     // scene delegate.
-    //
-    // If the input prim is a datasource prim, we need some sensible default
-    // here...  For now, we pass [0,0] to turn off multisampling.
     if (prim.dataSource->Get(HdSceneIndexEmulationTokens->sceneDelegate)) {
         matrixSource->GetContributingSampleTimesForInterval(
                 std::numeric_limits<float>::lowest(),
                 std::numeric_limits<float>::max(), &times);
     } else {
         matrixSource->GetContributingSampleTimesForInterval(
-                0, 0, &times);
+            startTime, endTime, &times);
     }
 
     // XXX fallback to include a single sample
@@ -2296,6 +2338,15 @@ HdSceneIndexAdapterSceneDelegate::SampleInstancerTransform(
     return SampleTransform(id, maxSampleCount, sampleTimes, sampleValues);
 }
 
+size_t
+HdSceneIndexAdapterSceneDelegate::SampleInstancerTransform(
+        SdfPath const &id, float startTime, float endTime,
+        size_t maxSampleCount,
+        float *sampleTimes, GfMatrix4d *sampleValues)
+{
+    return SampleTransform(
+        id, startTime, endTime, maxSampleCount, sampleTimes, sampleValues);
+}
 
 std::vector<VtArray<TfToken>>
 HdSceneIndexAdapterSceneDelegate::GetInstanceCategories(
@@ -2464,8 +2515,22 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationInput(
 
 size_t
 HdSceneIndexAdapterSceneDelegate::SampleExtComputationInput(
-        SdfPath const &computationId,
-        TfToken const &input, size_t maxSampleCount,
+        SdfPath const &computationId, TfToken const &input,
+        size_t maxSampleCount,
+        float *sampleTimes, VtValue *sampleValues)
+{
+    return
+        SampleExtComputationInput(
+            computationId, input,
+            _fallbackStartTime, _fallbackEndTime,
+            maxSampleCount, sampleTimes, sampleValues);
+}
+
+size_t
+HdSceneIndexAdapterSceneDelegate::SampleExtComputationInput(
+        SdfPath const &computationId, TfToken const &input,
+        float startTime, float endTime,
+        size_t maxSampleCount,
         float *sampleTimes, VtValue *sampleValues)
 {
     TRACE_FUNCTION();
@@ -2492,16 +2557,13 @@ HdSceneIndexAdapterSceneDelegate::SampleExtComputationInput(
     // responsible for setting the shutter window.  We can't query it, but
     // we pass the infinite window to accept all time samples from the
     // scene delegate.
-    //
-    // If the input prim is a datasource prim, we need some sensible default
-    // here...  For now, we pass [0,0] to turn off multisampling.
     if (prim.dataSource->Get(HdSceneIndexEmulationTokens->sceneDelegate)) {
         valueDs->GetContributingSampleTimesForInterval(
                 std::numeric_limits<float>::lowest(),
                 std::numeric_limits<float>::max(), &times);
     } else {
         valueDs->GetContributingSampleTimesForInterval(
-                0, 0, &times);
+                startTime, endTime, &times);
     }
 
     size_t authoredSamples = times.size();

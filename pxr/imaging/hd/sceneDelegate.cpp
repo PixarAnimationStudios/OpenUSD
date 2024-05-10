@@ -46,9 +46,7 @@ HdSceneDelegate::HdSceneDelegate(HdRenderIndex *parentIndex,
     }
 }
 
-HdSceneDelegate::~HdSceneDelegate()
-{
-}
+HdSceneDelegate::~HdSceneDelegate() = default;
 
 /*virtual*/
 void
@@ -135,6 +133,18 @@ HdSceneDelegate::SampleTransform(SdfPath const & id,
 }
 
 /*virtual*/
+size_t
+HdSceneDelegate::SampleTransform(SdfPath const & id,
+                                 float startTime,
+                                 float endTime,
+                                 size_t maxSampleCount,
+                                 float *sampleTimes,
+                                 GfMatrix4d *sampleValues)
+{
+    return SampleTransform(id, maxSampleCount, sampleTimes, sampleValues);
+}
+
+/*virtual*/
 bool
 HdSceneDelegate::GetVisible(SdfPath const & id)
 {
@@ -206,7 +216,20 @@ HdSceneDelegate::SamplePrimvar(SdfPath const& id,
 
 /*virtual*/
 size_t
-HdSceneDelegate::SampleIndexedPrimvar(SdfPath const& id, 
+HdSceneDelegate::SamplePrimvar(SdfPath const& id, 
+                               TfToken const& key,
+                               float startTime,
+                               float endTime,
+                               size_t maxSampleCount,
+                               float *sampleTimes,
+                               VtValue *sampleValues)
+{
+    return SamplePrimvar(id, key, maxSampleCount, sampleTimes, sampleValues);
+}
+
+/*virtual*/
+size_t
+HdSceneDelegate::SampleIndexedPrimvar(SdfPath const& id,
                                TfToken const& key,
                                size_t maxSampleCount,
                                float *sampleTimes,
@@ -219,6 +242,23 @@ HdSceneDelegate::SampleIndexedPrimvar(SdfPath const& id,
         return 1;
     }
     return 0;
+}
+
+/*virtual*/
+size_t
+HdSceneDelegate::SampleIndexedPrimvar(SdfPath const& id, 
+                               TfToken const& key,
+                               float startTime,
+                               float endTime,
+                               size_t maxSampleCount,
+                               float *sampleTimes,
+                               VtValue *sampleValues,
+                               VtIntArray *sampleIndices)
+{
+    return
+        SampleIndexedPrimvar(
+            id, key, maxSampleCount,
+            sampleTimes, sampleValues, sampleIndices);
 }
 
 /*virtual*/
@@ -299,6 +339,19 @@ HdSceneDelegate::SampleInstancerTransform(SdfPath const &instancerId,
         return 1;
     }
     return 0;
+}
+
+/*virtual*/
+size_t
+HdSceneDelegate::SampleInstancerTransform(SdfPath const &instancerId,
+                                          float startTime,
+                                          float endTime,
+                                          size_t maxSampleCount,
+                                          float *sampleTimes,
+                                          GfMatrix4d *sampleValues)
+{
+    return SampleInstancerTransform(
+        instancerId, maxSampleCount, sampleTimes, sampleValues);
 }
 
 /*virtual*/
@@ -463,6 +516,21 @@ HdSceneDelegate::SampleExtComputationInput(SdfPath const& computationId,
         return 1;
     }
     return 0;
+}
+
+/*virtual*/
+size_t
+HdSceneDelegate::SampleExtComputationInput(SdfPath const& computationId,
+                                           TfToken const& input,
+                                           float startTime,
+                                           float endTime,
+                                           size_t maxSampleCount,
+                                           float *sampleTimes,
+                                           VtValue *sampleValues)
+{
+    return
+        SampleExtComputationInput(
+            computationId, input, maxSampleCount, sampleTimes, sampleValues);
 }
 
 /*virtual*/
