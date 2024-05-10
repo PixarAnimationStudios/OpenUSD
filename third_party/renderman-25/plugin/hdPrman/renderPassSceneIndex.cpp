@@ -46,8 +46,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (renderVisibility)
-    (geomRenderVisibility)
-    (lightsRenderVisibility)
     (cameraVisibility)
     (matte)
     ((riAttributesRiMatte, "ri:attributes:Ri:Matte"))
