@@ -46,6 +46,7 @@ TF_WRAP_MODULE
     TF_WRAP( Path );
     TF_WRAP( PredicateExpression );
     TF_WRAP( PathExpression ); // needs PredicateExpression for default args.
+    TF_WRAP( PathPattern );
     TF_WRAP( Payload );
     TF_WRAP( PredicateFunctionResult );
     TF_WRAP( Reference );

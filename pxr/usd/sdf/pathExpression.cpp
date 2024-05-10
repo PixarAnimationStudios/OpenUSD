@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/predicateExpression.h"
 #include "pxr/usd/sdf/pathExpression.h"
+#include "pxr/usd/sdf/pathPatternParser.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/type.h"
@@ -460,172 +461,6 @@ SdfPathExpression::GetText() const
     return result;
 }
 
-////////////////////////////////////////////////////////////////////////
-// PathPattern
-
-SdfPathExpression::PathPattern::PathPattern()
-    : _prefix(SdfPath::ReflexiveRelativePath())
-    , _isProperty(false)
-{
-}
-
-SdfPathExpression::PathPattern::PathPattern(SdfPath &&prefix)
-{
-    SetPrefix(std::move(prefix));
-}
-
-SdfPathExpression::PathPattern::PathPattern(SdfPath const &prefix)
-    : PathPattern(SdfPath(prefix))
-{
-}
-
-static inline bool
-IsLiteralProperty(std::string const &text)
-{
-    return SdfPath::IsValidNamespacedIdentifier(text);
-}
-
-static inline bool
-IsLiteralPrim(std::string const &text)
-{
-    return SdfPath::IsValidIdentifier(text);
-}
-
-void
-SdfPathExpression::PathPattern::AppendChild(std::string const &text)
-{
-    return AppendChild(text, {});
-}
-
-void
-SdfPathExpression::PathPattern
-::AppendChild(std::string const &text,
-              SdfPredicateExpression const &predExpr)
-{
-    return AppendChild(text, SdfPredicateExpression(predExpr));
-}
-
-void
-SdfPathExpression::PathPattern::AppendChild(std::string const &text,
-                                            SdfPredicateExpression &&predExpr)
-{
-    if (_isProperty) {
-        TF_WARN("Cannot append child '%s' to property path expression '%s'",
-                text.c_str(), GetText().c_str());
-        return;
-    }
-                
-    bool isLiteral = IsLiteralPrim(text);
-    if ((isLiteral || text == "..") && !predExpr && _components.empty()) {
-        _prefix = _prefix.AppendChild(TfToken(text));
-    }
-    else {
-        int predIndex = -1;
-        if (predExpr) {
-            predIndex = static_cast<int>(_predExprs.size());
-            _predExprs.push_back(std::move(predExpr));
-        }
-        _components.push_back({ text, predIndex, isLiteral });
-    }
-}
-
-void
-SdfPathExpression::PathPattern::AppendProperty(std::string const &text)
-{
-    return AppendProperty(text, {});
-}
-
-void
-SdfPathExpression::PathPattern::AppendProperty(std::string const &text,
-                                SdfPredicateExpression const &predExpr)
-{
-    return AppendProperty(text, SdfPredicateExpression(predExpr));
-}
-
-void
-SdfPathExpression::PathPattern::AppendProperty(std::string const &text,
-                                SdfPredicateExpression &&predExpr)
-{
-    bool isLiteral = IsLiteralProperty(text);
-    if (isLiteral && !predExpr && _components.empty()) {
-        _prefix = _prefix.AppendProperty(TfToken(text));
-    }
-    else {
-        int predIndex = -1;
-        if (predExpr) {
-            predIndex = static_cast<int>(_predExprs.size());
-            _predExprs.push_back(std::move(predExpr));
-        }
-        _components.push_back({ text, predIndex, isLiteral });
-    }
-    _isProperty = true;
-}
-
-void
-SdfPathExpression::PathPattern::SetPrefix(SdfPath &&p)
-{
-    // If we have any components at all, then p must be a prim path or the
-    // absolute root path.  Otherwise it can be a prim or prim property path.
-    if (!_components.empty()) {
-        if (!p.IsAbsoluteRootOrPrimPath()) {
-            TF_WARN("Path patterns with match components require "
-                    "prim paths or the absolute root path ('/') as a prefix: "
-                    "<%s> -- ignoring.", p.GetAsString().c_str());
-            return;
-        }
-    }
-    else {
-        if (!(p.IsAbsoluteRootOrPrimPath() || p.IsPrimPropertyPath())) { 
-            TF_WARN("Path pattern prefixes must be prim paths or prim-property "
-                    "paths: <%s> -- ignoring.", p.GetAsString().c_str());
-            return;
-        }
-    }
-    _prefix = std::move(p);
-    if (_components.empty()) {
-        _isProperty = _prefix.IsPrimPropertyPath();
-    }
-}
-
-std::string
-SdfPathExpression::PathPattern::GetText() const
-{
-    std::string result;
-
-    if (_prefix == SdfPath::ReflexiveRelativePath()) {
-        if (_components.empty() || _components.front().IsStretch()) {
-            // If components is empty, or first component is a stretch, then we
-            // emit a leading '.', otherwise nothing.
-            result = ".";
-        }
-    }
-    else {
-        result = _prefix.GetAsString();
-    }
-
-    const bool prefixIsAbsRoot = _prefix == SdfPath::AbsoluteRootPath();
-    for (size_t i = 0, end = _components.size(); i != end; ++i) {
-        if (_components[i].text.empty() &&
-            _components[i].predicateIndex == -1) {
-            result += (i == 0 && prefixIsAbsRoot) ? "/" : "//";
-            continue;
-        }
-        if (!result.empty() && result.back() != '/') {
-            if ((i + 1 == end) && _isProperty) {
-                result.push_back('.');
-            } else {
-                result.push_back('/');
-            }
-        }
-        result += _components[i].text;
-        if (_components[i].predicateIndex != -1) {
-            result += "{" + _predExprs[
-                _components[i].predicateIndex].GetText() + "}";
-        }
-    }
-    return result;
-}
-
 std::ostream &
 operator<<(std::ostream &out, SdfPathExpression const &expr)
 {
@@ -634,16 +469,6 @@ operator<<(std::ostream &out, SdfPathExpression const &expr)
 
 ////////////////////////////////////////////////////////////////////////
 // Parsing code.
-
-class Sdf_PathPatternBuilder
-{
-public:
-    SdfPathExpression::PathPattern pattern;
-
-    std::string curElemText;
-    SdfPredicateExpression curPredExpr;
-};
-
 struct Sdf_PathExprBuilder
 {
     Sdf_PathExprBuilder() { OpenGroup(); }
@@ -654,9 +479,8 @@ struct Sdf_PathExprBuilder
         _stacks.back().PushExpressionRef(std::move(path), std::move(name));
     }
 
-    void PushPattern() {
-        _stacks.back().PushPattern(std::move(_patternBuilder.pattern));
-        _patternBuilder = Sdf_PathPatternBuilder();
+    void PushPattern(SdfPathPattern &&pattern) {
+        _stacks.back().PushPattern(std::move(pattern));
     }
 
     void OpenGroup() { _stacks.emplace_back(); }
@@ -671,10 +495,6 @@ struct Sdf_PathExprBuilder
         SdfPathExpression result = _stacks.back().Finish();
         _stacks.clear();
         return result;
-    }
-
-    Sdf_PathPatternBuilder &GetPatternBuilder() {
-        return _patternBuilder;
     }
 
 private:
@@ -695,7 +515,7 @@ private:
                     
         }
 
-        void PushPattern(SdfPathExpression::PathPattern &&pattern) {
+        void PushPattern(SdfPathPattern &&pattern) {
             exprStack.push_back(
                 SdfPathExpression::MakeAtom(std::move(pattern)));
         }
@@ -742,11 +562,7 @@ private:
     };
 
     std::vector<_Stack> _stacks;
-
-    Sdf_PathPatternBuilder _patternBuilder;
 };
-
-
 
 ////////////////////////////////////////////////////////////////////////
 // Path expression grammar
@@ -755,169 +571,16 @@ namespace {
 
 using namespace PXR_PEGTL_NAMESPACE;
 
-////////////////////////////////////////////////////////////////////////
-// Path patterns with predicates.
-struct PathPatStretch : two<'/'> {};
-struct PathPatSep : sor<PathPatStretch, one<'/'>> {};
+template <class Rule, class Sep>
+using LookaheadList = seq<Rule, star<at<Sep, Rule>, Sep, Rule>>;
 
-struct EmbeddedPredExpr : disable<PredExpr> {};
-
-struct BracedPredExpr
-    : if_must<one<'{'>, OptSpaced<EmbeddedPredExpr>, one<'}'>> {};
-
-struct PrimPathWildCard :
-    seq<
-    plus<sor<identifier_other, one<'?','*'>>>,
-    opt<one<'['>,plus<sor<identifier_other, one<'[',']','!','-','?','*'>>>>
-    > {};
-
-struct PropPathWildCard :
-    seq<
-    plus<sor<identifier_other, one<':','?','*'>>>,
-    opt<one<'['>,plus<sor<identifier_other, one<':','[',']','!','-','?','*'>>>>
-    > {};
-
-struct PrimPathPatternElemText : PrimPathWildCard {};
-struct PropPathPatternElemText : PropPathWildCard {};
-
-struct PrimPathPatternElem
-    : if_then_else<PrimPathPatternElemText, opt<BracedPredExpr>,
-                   BracedPredExpr> {};
-
-struct PropPathPatternElem
-    : if_then_else<PropPathPatternElemText, opt<BracedPredExpr>,
-                   BracedPredExpr> {};
-
-struct PathPatternElems
-    : seq<LookaheadList<PrimPathPatternElem, PathPatSep>,
-          opt<PathPatStretch>,
-          opt_must<one<'.'>, PropPathPatternElem>> {};
-
-struct AbsPathPattern : seq<PathPatSep, opt<PathPatternElems>> {};
-
-struct DotDot : two<'.'> {};
-struct DotDots : list<DotDot, one<'/'>> {};
-
-struct ReflexiveRelative : one<'.'> {};
-
-struct AbsoluteStart : at<one<'/'>> {};
-
-struct PathPattern :
-    sor<
-    if_must<AbsoluteStart, AbsPathPattern>,
-    seq<DotDots, if_then_else<PathPatSep, opt<PathPatternElems>, success>>,
-    PathPatternElems,
-    seq<ReflexiveRelative, opt<PathPatStretch, opt<PathPatternElems>>>
-    >
-{};
-
-// Actions /////////////////////////////////////////////////////////////
-
-template <class Rule>
-struct PathExprAction : nothing<Rule> {};
-
-template <>
-struct PathExprAction<AbsoluteStart>
-{
-    template <class Input>
-    static void apply(Input const &in, Sdf_PathExprBuilder &builder) {
-        builder.GetPatternBuilder().pattern.SetPrefix(
-            SdfPath::AbsoluteRootPath());
-    }
-};
-
-template <>
-struct PathExprAction<PathPatStretch>
-{
-    template <class Input>
-    static void apply(Input const &in, Sdf_PathExprBuilder &builder) {
-        // '//' appends a component representing arbitrary elements.
-        builder.GetPatternBuilder().pattern.AppendChild(std::string());
-    }
-};
-
-template <>
-struct PathExprAction<EmbeddedPredExpr>
-{
-    template <class Input>
-    static void apply(Input const &in, Sdf_PathExprBuilder &builder) {
-        builder.GetPatternBuilder().curPredExpr =
-            SdfPredicateExpression(in.string());
-    }
-};
-
-template <>
-struct PathExprAction<PrimPathPatternElemText>
-{
-    template <class Input>
-    static void apply(Input const &in, Sdf_PathExprBuilder &builder) {
-        builder.GetPatternBuilder().curElemText = in.string();
-    }
-};
-
-template <>
-struct PathExprAction<PropPathPatternElemText>
-{
-    template <class Input>
-    static void apply(Input const &in, Sdf_PathExprBuilder &builder) {
-        builder.GetPatternBuilder().curElemText = in.string();
-    }
-};
-
-template <>
-struct PathExprAction<PrimPathPatternElem>
-{
-    template <class Input>
-    static void apply(Input const &in, Sdf_PathExprBuilder &builder) {
-        auto &pb = builder.GetPatternBuilder();
-        pb.pattern.AppendChild(pb.curElemText, pb.curPredExpr);
-        pb.curElemText.clear();
-        pb.curPredExpr = SdfPredicateExpression();
-    }
-};
-
-template <>
-struct PathExprAction<PropPathPatternElem>
-{
-    template <class Input>
-    static void apply(Input const &in, Sdf_PathExprBuilder &builder) {
-        auto &pb = builder.GetPatternBuilder();
-        pb.pattern.AppendProperty(pb.curElemText, pb.curPredExpr);
-        pb.curElemText.clear();
-        pb.curPredExpr = SdfPredicateExpression();
-    }
-};
-
-template <>
-struct PathExprAction<ReflexiveRelative>
-{
-    template <class Input>
-    static void apply(Input const &in, Sdf_PathExprBuilder &builder) {
-        builder.GetPatternBuilder().pattern.SetPrefix(
-            SdfPath::ReflexiveRelativePath());
-    }
-};
-
-template <>
-struct PathExprAction<DotDot>
-{
-    template <class Input>
-    static void apply(Input const &in, Sdf_PathExprBuilder &builder) {
-        builder.GetPatternBuilder().pattern.AppendChild("..");
-    }
-};
-
-template <>
-struct PathExprAction<PathPattern>
-{
-    template <class Input>
-    static void apply(Input const &in, Sdf_PathExprBuilder &builder) {
-        builder.PushPattern();
-    }
-};
+template <class Rule> using OptSpaced = pad<Rule, blank>;
 
 ////////////////////////////////////////////////////////////////////////
 // Expression references.
+struct DotDot : two<'.'> {};
+struct DotDots : list<DotDot, one<'/'>> {};
+
 struct ExpressionRefName : seq<one<':'>, identifier> {};
 
 struct ExpressionRefPathAndName :
@@ -940,7 +603,43 @@ struct ExpressionReference : sor<
     seq<one<'%'>, ExpressionRefPath>
     > {};
 
+
+////////////////////////////////////////////////////////////////////////
+// Path exprs.
+
+struct PathExpr;
+
+struct PathExprOpenGroup : one<'('> {};
+struct PathExprCloseGroup : one<')'> {};
+
+struct PathExprAtom
+    : sor<
+    ExpressionReference,
+    SdfPathPatternParser::PathPattern,
+    if_must<PathExprOpenGroup, OptSpaced<PathExpr>, PathExprCloseGroup>
+    >
+{};
+
+struct PathSetComplement : one<'~'> {};
+struct PathSetImpliedUnion : plus<blank> {};
+struct PathSetUnion : one<'+'> {};
+struct PathSetIntersection : one<'&'> {};
+struct PathSetDifference : one<'-'> {};
+
+struct PathFactor : seq<opt<OptSpaced<PathSetComplement>>, PathExprAtom> {};
+
+struct PathOperator : sor<OptSpaced<PathSetUnion>,
+                          OptSpaced<PathSetIntersection>,
+                          OptSpaced<PathSetDifference>,
+                          PathSetImpliedUnion> {};
+
+struct PathExpr : LookaheadList<PathFactor, PathOperator> {};
+
+////////////////////////////////////////////////////////////////////////
 // Actions /////////////////////////////////////////////////////////////
+
+template <class Rule>
+struct PathExprAction : nothing<Rule> {};
 
 template <>
 struct PathExprAction<WeakerRef>
@@ -962,39 +661,6 @@ struct PathExprAction<ExpressionRefPath>
             TfStringGetSuffix(in.string(), ':'));
     }
 };
-
-////////////////////////////////////////////////////////////////////////
-// Path exprs.
-
-struct PathExpr;
-
-struct PathExprOpenGroup : one<'('> {};
-struct PathExprCloseGroup : one<')'> {};
-
-struct PathExprAtom
-    : sor<
-    ExpressionReference,
-    PathPattern,
-    if_must<PathExprOpenGroup, OptSpaced<PathExpr>, PathExprCloseGroup>
-    >
-{};
-
-struct PathSetComplement : one<'~'> {};
-struct PathSetImpliedUnion : plus<blank> {};
-struct PathSetUnion : one<'+'> {};
-struct PathSetIntersection : one<'&'> {};
-struct PathSetDifference : one<'-'> {};
-
-struct PathFactor : seq<opt<OptSpaced<PathSetComplement>>, PathExprAtom> {};
-
-struct PathOperator : sor<OptSpaced<PathSetUnion>,
-                          OptSpaced<PathSetIntersection>,
-                          OptSpaced<PathSetDifference>,
-                          PathSetImpliedUnion> {};
-
-struct PathExpr : LookaheadList<PathFactor, PathOperator> {};
-
-////////////////////////////////////////////////////////////////////////
 
 template <SdfPathExpression::Op op>
 struct PathExprOpAction
@@ -1031,6 +697,22 @@ struct PathExprAction<PathExprCloseGroup>
     template <class Input>
     static void apply(Input const &in, Sdf_PathExprBuilder &builder) {
         builder.CloseGroup();
+    }
+};
+
+// This rule dispatches to the PathPatternAction to build the pattern, then we
+// can consume it in the 'success' member function.
+template <>
+struct PathExprAction<SdfPathPatternParser::PathPattern>
+    : change_action_and_states<
+    SdfPathPatternActions::PathPatternAction,
+    SdfPathPatternActions::PatternBuilder>
+{
+    template <class Input>
+    static void success(Input const &,
+                        SdfPathPatternActions::PatternBuilder &patternBuilder,
+                        Sdf_PathExprBuilder &builder) {
+        builder.PushPattern(std::move(patternBuilder.pattern));
     }
 };
 

@@ -27,6 +27,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/pathExpressionEval.h"
+#include "pxr/usd/sdf/pathPattern.h"
 #include "pxr/usd/sdf/predicateLibrary.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -458,6 +459,65 @@ TestSearch()
 
 }
 
+static void
+TestPathPattern()
+{
+    SdfPathPattern pat;
+
+    TF_AXIOM(!pat);
+    TF_AXIOM(!pat.HasTrailingStretch());
+    TF_AXIOM(pat.GetPrefix().IsEmpty());
+    TF_AXIOM(pat.CanAppendChild({})); // Can append stretch.
+    TF_AXIOM(pat.AppendChild({}));
+    TF_AXIOM(pat == SdfPathPattern::EveryDescendant());
+    TF_AXIOM(pat.HasTrailingStretch());
+    TF_AXIOM(pat.GetPrefix() == SdfPath::ReflexiveRelativePath());
+    TF_AXIOM(!pat.HasLeadingStretch());
+
+    // Set prefix to '/', should become Everything().
+    pat.SetPrefix(SdfPath::AbsoluteRootPath());
+    TF_AXIOM(pat == SdfPathPattern::Everything());
+    TF_AXIOM(pat.HasLeadingStretch());
+    TF_AXIOM(pat.HasTrailingStretch());
+
+    // Remove trailing stretch, should become just '/'
+    pat.RemoveTrailingStretch();
+    TF_AXIOM(!pat.HasLeadingStretch());
+    TF_AXIOM(!pat.HasTrailingStretch());
+    TF_AXIOM(pat.GetPrefix() == SdfPath::AbsoluteRootPath());
+    TF_AXIOM(pat.GetComponents().empty());
+
+    // Add some components.
+    pat.AppendChild("foo").AppendChild("bar").AppendChild("baz");
+    // This should have modified the prefix path, rather than appending matching
+    // components.
+    TF_AXIOM(pat.GetPrefix() == SdfPath("/foo/bar/baz"));
+
+    pat.AppendStretchIfPossible().AppendProperty("prop");
+
+    // Appending a property to a pattern with trailing stretch has to append a
+    // prim wildcard '*'.
+    TF_AXIOM(pat.IsProperty());
+    TF_AXIOM(pat.GetComponents().size() == 3);
+    TF_AXIOM(pat.GetComponents()[0].text.empty());
+    TF_AXIOM(pat.GetComponents()[1].text == "*");
+    TF_AXIOM(pat.GetComponents()[2].text == "prop");
+
+    TF_AXIOM(pat.GetText() == "/foo/bar/baz//*.prop");
+
+    // Can't append children or properties to property patterns.
+    TF_AXIOM(!pat.CanAppendChild("foo"));
+    TF_AXIOM(!pat.CanAppendProperty("foo"));
+
+    pat.RemoveTrailingComponent();
+    TF_AXIOM(pat.GetText() == "/foo/bar/baz//*");
+    pat.RemoveTrailingComponent();
+    TF_AXIOM(pat.GetText() == "/foo/bar/baz//");
+    pat.RemoveTrailingComponent();
+    TF_AXIOM(pat.GetText() == "/foo/bar/baz");
+    pat.RemoveTrailingComponent(); // No more trailing components, only prefix.
+    TF_AXIOM(pat.GetText() == "/foo/bar/baz");
+}
 
 static void
 TestErrors()
@@ -493,6 +553,7 @@ main(int argc, char **argv)
 {
     TestBasics();
     TestSearch();
+    TestPathPattern();
     TestErrors();
     
     printf(">>> Test SUCCEEDED\n");
