@@ -33,7 +33,6 @@
 
 #include "pxr/usd/sdf/predicateExpression.h"
 #include "pxr/usd/sdf/predicateLibrary.h"
-#include "pxr/usd/sdf/invoke.hpp"
 
 #include <initializer_list>
 #include <memory>

@@ -33,7 +33,6 @@
 #include "pxr/base/vt/value.h"
 
 #include "pxr/usd/sdf/predicateExpression.h"
-#include "pxr/usd/sdf/invoke.hpp"
 
 #include <initializer_list>
 #include <memory>
@@ -653,10 +652,9 @@ private:
                 std::integral_constant<bool, TakesArbitraryArgs> {},
                 args, boundArgs, typedArgs);
             return [typedArgs, fn](DomainType const &obj) {
-                // invoke fn with obj & typedArgs. (std::apply in '17).
                 return SdfPredicateFunctionResult {
-                    invoke_hpp::apply(fn, std::tuple_cat(
-                                          std::make_tuple(obj), typedArgs))
+                    std::apply(fn, 
+                        std::tuple_cat(std::make_tuple(obj), typedArgs))
                 };
             };
         }
