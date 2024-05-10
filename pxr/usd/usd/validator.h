@@ -162,6 +162,7 @@ public:
     ///
     /// If this Validator doesn't provide a UsdValidateLayerTaskFn, then an
     /// default UsdValidationError is returned, which signifies no error.
+    USD_API
     const UsdValidationError Validate(const SdfLayerHandle &layer) const;
 
     /// Run validation on the given \p usdStage by executing the contained
@@ -169,6 +170,7 @@ public:
     ///
     /// If this Validator doesn't provide a UsdValidateStageTaskFn, then an
     /// default UsdValidationError is returned, which signifies no error.
+    USD_API
     const UsdValidationError Validate(const UsdStagePtr &usdStage) const;
 
     /// Run validation on the given \p usdPrim by executing the contained
@@ -176,6 +178,7 @@ public:
     ///
     /// If this Validator doesn't provide a UsdValidatePrimTaskFn, then an
     /// default UsdValidationError is returned, which signifies no error.
+    USD_API
     const UsdValidationError Validate(const UsdPrim& usdPrim) const;
 
   private:

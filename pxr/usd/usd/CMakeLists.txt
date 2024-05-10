@@ -68,6 +68,7 @@ pxr_library(usd
         tokens
         typed
         validator
+        validationError
         usdFileFormat
         usdaFileFormat
         usdcFileFormat

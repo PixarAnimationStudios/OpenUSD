@@ -23,6 +23,7 @@
 //
 
 #include "pxr/usd/usd/validator.h"
+#include "pxr/usd/usd/validationError.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -65,6 +66,36 @@ const UsdValidatePrimTaskFn*
 UsdValidator::_GetValidatePrimTask() const
 {
     return std::get_if<UsdValidatePrimTaskFn>(&_validateTaskFn);
+}
+
+const UsdValidationError
+UsdValidator::Validate(const SdfLayerHandle &layer) const
+{
+    const UsdValidateLayerTaskFn *layerTaskFn = _GetValidateLayerTask();
+    if (layerTaskFn) {
+        return (*layerTaskFn)(layer);
+    }
+    return UsdValidationError();
+}
+
+const UsdValidationError
+UsdValidator::Validate(const UsdStagePtr &usdStage) const
+{
+    const UsdValidateStageTaskFn *stageTaskFn = _GetValidateStageTask();
+    if (stageTaskFn) {
+        return (*stageTaskFn)(usdStage);
+    }
+    return UsdValidationError();
+}
+
+const UsdValidationError
+UsdValidator::Validate(const UsdPrim &usdPrim) const
+{
+    const UsdValidatePrimTaskFn *primTaskFn = _GetValidatePrimTask();
+    if (primTaskFn) {
+        return (*primTaskFn)(usdPrim);
+    }
+    return UsdValidationError();
 }
 
 UsdValidatorSuite::UsdValidatorSuite(const UsdValidatorMetadata& metadata,
