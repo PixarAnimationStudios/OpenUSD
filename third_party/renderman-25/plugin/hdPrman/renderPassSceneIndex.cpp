@@ -48,6 +48,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (renderVisibility)
     (cameraVisibility)
     (matte)
+    (prune)
     ((riAttributesRiMatte, "ri:attributes:Ri:Matte"))
     ((riAttributesVisibilityCamera, "ri:attributes:visibility:camera"))
 );
@@ -71,10 +72,17 @@ HdSceneIndexPrim
 HdPrman_RenderPassSceneIndex::GetPrim(
     const SdfPath &primPath) const
 {
-    HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
-
     // Apply active render pass state to upstream prim.
     _RenderPassState const& state = _PullActiveRenderPasssState();
+
+    if (state.pruneEval) {
+        const bool pruned = state.pruneEval->Match(primPath);
+        if (pruned) {
+            return HdSceneIndexPrim();
+        }
+    }
+
+    HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
 
     //
     // Override primvars
@@ -141,7 +149,22 @@ SdfPathVector
 HdPrman_RenderPassSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
-    return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+    // Apply active render pass state to upstream prim.
+    _RenderPassState const& state = _PullActiveRenderPasssState();
+
+    if (state.pruneEval) {
+        SdfPathVector childPathVec;
+        for (SdfPath const& childPath:
+            _GetInputSceneIndex()->GetChildPrimPaths(primPath)) {
+            const bool pruned = state.pruneEval->Match(childPath);
+            if (!pruned) {
+                childPathVec.push_back(childPath);
+            }
+        }
+        return childPathVec;
+    } else {
+        return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+    }
 }
 
 void
@@ -235,6 +258,8 @@ HdPrman_RenderPassSceneIndex::_PullActiveRenderPasssState() const
                            inputSceneIndex, &state.renderVisEval);
         _CompileCollection(collections, _tokens->cameraVisibility,
                            inputSceneIndex, &state.cameraVisEval);
+        _CompileCollection(collections, _tokens->prune,
+                           inputSceneIndex, &state.pruneEval);
     }
     return state;
 }

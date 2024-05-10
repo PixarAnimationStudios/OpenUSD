@@ -293,7 +293,7 @@ class RenderPass "RenderPass" (
          string extraIncludes = """
 #include "pxr/usd/usd/collectionAPI.h" """
     }
-    prepend apiSchemas = ["CollectionAPI:renderVisibility"]
+    prepend apiSchemas = ["CollectionAPI:renderVisibility", "CollectionAPI:prune"]
 ) {
     uniform token passType (
         doc = """A string used to categorize differently structured 
