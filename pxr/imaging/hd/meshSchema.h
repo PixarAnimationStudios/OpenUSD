@@ -40,7 +40,6 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/meshTopologySchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
-#include "pxr/imaging/hd/geomSubsetsSchema.h"
 
 #include "pxr/imaging/hd/schema.h"
 
@@ -57,7 +56,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (topology) \
     (subdivisionScheme) \
     (subdivisionTags) \
-    (geomSubsets) \
     (doubleSided) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdMeshSchemaTokens, HD_API,
@@ -102,9 +100,6 @@ public:
     HdSubdivisionTagsSchema GetSubdivisionTags() const;
 
     HD_API
-    HdGeomSubsetsSchema GetGeomSubsets() const;
-
-    HD_API
     HdBoolDataSourceHandle GetDoubleSided() const; 
 
     /// @}
@@ -145,10 +140,6 @@ public:
     HD_API
     static const HdDataSourceLocator &GetSubdivisionTagsLocator();
 
-    /// Prim-level relative data source locator to locate geomSubsets.
-    HD_API
-    static const HdDataSourceLocator &GetGeomSubsetsLocator();
-
     /// Prim-level relative data source locator to locate doubleSided.
     HD_API
     static const HdDataSourceLocator &GetDoubleSidedLocator();
@@ -170,7 +161,6 @@ public:
         const HdContainerDataSourceHandle &topology,
         const HdTokenDataSourceHandle &subdivisionScheme,
         const HdContainerDataSourceHandle &subdivisionTags,
-        const HdContainerDataSourceHandle &geomSubsets,
         const HdBoolDataSourceHandle &doubleSided
     );
 
@@ -193,9 +183,6 @@ public:
         Builder &SetSubdivisionTags(
             const HdContainerDataSourceHandle &subdivisionTags);
         HD_API
-        Builder &SetGeomSubsets(
-            const HdContainerDataSourceHandle &geomSubsets);
-        HD_API
         Builder &SetDoubleSided(
             const HdBoolDataSourceHandle &doubleSided);
 
@@ -207,7 +194,6 @@ public:
         HdContainerDataSourceHandle _topology;
         HdTokenDataSourceHandle _subdivisionScheme;
         HdContainerDataSourceHandle _subdivisionTags;
-        HdContainerDataSourceHandle _geomSubsets;
         HdBoolDataSourceHandle _doubleSided;
 
     };

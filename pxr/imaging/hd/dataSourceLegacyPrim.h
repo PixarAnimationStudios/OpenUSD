@@ -24,9 +24,18 @@
 #ifndef PXR_IMAGING_HD_DATA_SOURCE_LEGACY_PRIM_H
 #define PXR_IMAGING_HD_DATA_SOURCE_LEGACY_PRIM_H
 
-#include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/dataSource.h"
+#include "pxr/imaging/hd/dataSourceLocator.h"
+
+#include "pxr/usd/sdf/path.h"
+
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/token.h"
+
+#include "pxr/pxr.h"
+
+#include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -88,12 +97,13 @@ public:
     /// Return which locators PrimDirtied will respond to...
     static const HdDataSourceLocatorSet &GetCachedLocators();
 
-private:
+protected:
     HdDataSourceLegacyPrim(
-        SdfPath id, 
-        TfToken type, 
+        const SdfPath& id, 
+        const TfToken& type, 
         HdSceneDelegate *sceneDelegate);
 
+private:
     HdDataSourceBaseHandle _GetPrimvarsDataSource();
     HdDataSourceBaseHandle _GetExtComputationPrimvarsDataSource();
     HdDataSourceBaseHandle _GetMaterialBindingsDataSource();
@@ -116,11 +126,12 @@ private:
     bool _IsLight();
     bool _IsInstanceable();
 
-private:
+protected:
     SdfPath _id;
     TfToken _type;
     HdSceneDelegate *_sceneDelegate;
 
+private:
     std::atomic_bool _primvarsBuilt;
     bool _extComputationPrimvarsBuilt : 1;
 

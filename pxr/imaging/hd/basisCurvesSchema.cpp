@@ -56,33 +56,20 @@ HdBasisCurvesSchema::GetTopology() const
         HdBasisCurvesSchemaTokens->topology));
 }
 
-HdGeomSubsetsSchema
-HdBasisCurvesSchema::GetGeomSubsets() const
-{
-    return HdGeomSubsetsSchema(_GetTypedDataSource<HdContainerDataSource>(
-        HdBasisCurvesSchemaTokens->geomSubsets));
-}
-
 /*static*/
 HdContainerDataSourceHandle
 HdBasisCurvesSchema::BuildRetained(
-        const HdContainerDataSourceHandle &topology,
-        const HdContainerDataSourceHandle &geomSubsets
+        const HdContainerDataSourceHandle &topology
 )
 {
-    TfToken _names[2];
-    HdDataSourceBaseHandle _values[2];
+    TfToken _names[1];
+    HdDataSourceBaseHandle _values[1];
 
     size_t _count = 0;
 
     if (topology) {
         _names[_count] = HdBasisCurvesSchemaTokens->topology;
         _values[_count++] = topology;
-    }
-
-    if (geomSubsets) {
-        _names[_count] = HdBasisCurvesSchemaTokens->geomSubsets;
-        _values[_count++] = geomSubsets;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -95,20 +82,11 @@ HdBasisCurvesSchema::Builder::SetTopology(
     return *this;
 }
 
-HdBasisCurvesSchema::Builder &
-HdBasisCurvesSchema::Builder::SetGeomSubsets(
-    const HdContainerDataSourceHandle &geomSubsets)
-{
-    _geomSubsets = geomSubsets;
-    return *this;
-}
-
 HdContainerDataSourceHandle
 HdBasisCurvesSchema::Builder::Build()
 {
     return HdBasisCurvesSchema::BuildRetained(
-        _topology,
-        _geomSubsets
+        _topology
     );
 }
 
@@ -146,16 +124,6 @@ HdBasisCurvesSchema::GetTopologyLocator()
     static const HdDataSourceLocator locator =
         GetDefaultLocator().Append(
             HdBasisCurvesSchemaTokens->topology);
-    return locator;
-}
-
-/* static */
-const HdDataSourceLocator &
-HdBasisCurvesSchema::GetGeomSubsetsLocator()
-{
-    static const HdDataSourceLocator locator =
-        GetDefaultLocator().Append(
-            HdBasisCurvesSchemaTokens->geomSubsets);
     return locator;
 } 
 

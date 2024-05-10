@@ -25,14 +25,24 @@
 
 #include "pxr/imaging/hd/basisCurvesSchema.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
+#include "pxr/imaging/hd/dataSource.h"
+#include "pxr/imaging/hd/dataSourceTypeDefs.h"
+#include "pxr/imaging/hd/geomSubsetSchema.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/typeHeaders.h"
+#include "pxr/base/vt/types.h"
+#include "pxr/base/vt/value.h"
 #include "pxr/base/vt/visitValue.h"
-#include "pxr/base/work/loops.h"
+
+#include <vector>
 
 #define USE_PARALLEL_EXPANSION 0
 
@@ -694,11 +704,6 @@ public:
                     tc, _curveVertexCounts, _numExtraEnds);
             }
         }
-
-        if (name == HdBasisCurvesSchemaTokens->geomSubsets) {
-            // XXX Remap geomsubset indices accounting for the additional curve
-            //     points.
-        }
         return result;
     }
 
@@ -719,7 +724,6 @@ private:
 //             curveIndices
 //             wrap
 //             ...
-//         geomsubsets
 //     primvarsSchema
 //         primvarSchema[]
 //             primvarValue
@@ -763,6 +767,7 @@ public:
                 return result;
             }
 
+            // TODO: Avoid sampling sampled sources here!
             const TfToken wrap =
                 _SafeGetTypedValue<TfToken>(ts.GetWrap());
             const TfToken basis =
@@ -816,6 +821,66 @@ private:
     HdContainerDataSourceHandle _input;
 };
 
+class _SubsetIndicesDataSource : public HdIntArrayDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_SubsetIndicesDataSource);
+    
+    VtValue
+    GetValue(Time shutterOffset) override
+    {
+        return VtValue(GetTypedValue(shutterOffset));
+    }
+    
+    VtIntArray
+    GetTypedValue(Time shutterOffset) override
+    {
+        if (_typeSource->GetTypedValue(shutterOffset) ==
+            HdGeomSubsetSchemaTokens->typePointSet) {
+            // TODO: Remap geomsubset indices accounting for the additional
+            //       curve points.
+        }
+        return _dataSource->GetTypedValue(shutterOffset);
+    }
+    
+    bool
+    GetContributingSampleTimesForInterval(
+        Time startTime, Time endTime,
+        std::vector<HdSampledDataSource::Time> *outSampleTimes) override
+    {
+        std::vector<HdSampledDataSourceHandle> sources { 
+            _dataSource, _typeSource };
+        const auto& topoSchema = HdBasisCurvesTopologySchema::GetFromParent(
+            _parentSource);
+        if (topoSchema) {
+            sources.push_back(topoSchema.GetWrap());
+            sources.push_back(topoSchema.GetBasis());
+            sources.push_back(topoSchema.GetCurveVertexCounts());
+        }
+        return HdGetMergedContributingSampleTimesForInterval(
+            sources.size(), sources.data(), startTime, endTime, outSampleTimes);
+    }
+
+private:
+    _SubsetIndicesDataSource(
+        const HdIntArrayDataSourceHandle& dataSource,
+        const HdTokenDataSourceHandle& typeSource,
+        const HdContainerDataSourceHandle& parentSource)
+      : _dataSource(dataSource)
+      , _typeSource(typeSource)
+      , _parentSource(parentSource)
+    {
+        TF_VERIFY(dataSource);
+        TF_VERIFY(typeSource);
+        TF_VERIFY(parentSource);
+    }
+    
+    HdIntArrayDataSourceHandle _dataSource;
+    HdTokenDataSourceHandle _typeSource;
+    HdContainerDataSourceHandle _parentSource;
+};
+
+HD_DECLARE_DATASOURCE_HANDLES(_SubsetIndicesDataSource);
 
 } // namespace anonymous
 
@@ -841,10 +906,36 @@ HdSceneIndexPrim
 HdsiPinnedCurveExpandingSceneIndex::GetPrim(const SdfPath &primPath) const
 {
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
+    if (!prim.dataSource) {
+        return prim;
+    }
 
     // Override the prim data source for basis curves.
-    if (prim.primType == HdPrimTypeTokens->basisCurves && prim.dataSource) {
+    if (prim.primType == HdPrimTypeTokens->basisCurves) {
         prim.dataSource = _PrimDataSource::New(prim.dataSource);
+    }
+    
+    // Override the prim data source for geom subsets if parent is basis curves
+    if (prim.primType == HdPrimTypeTokens->geomSubset) {
+        const HdSceneIndexPrim parentPrim = _GetInputSceneIndex()->GetPrim(
+            primPath.GetParentPath());
+        if (parentPrim.primType == HdPrimTypeTokens->basisCurves &&
+            parentPrim.dataSource) {
+                
+            // overlay indices
+            // XXX: When basis curves support visible subsets,
+            //      add support for subset primvars.
+            prim.dataSource = HdOverlayContainerDataSource::New(
+                HdRetainedContainerDataSource::New(
+                    HdGeomSubsetSchemaTokens->indices,
+                    _SubsetIndicesDataSource::New(
+                        HdIntArrayDataSource::Cast(prim.dataSource->Get(
+                            HdGeomSubsetSchemaTokens->indices)),
+                        HdTokenDataSource::Cast(prim.dataSource->Get(
+                            HdGeomSubsetSchemaTokens->type)),
+                        parentPrim.dataSource)),
+                prim.dataSource);
+        }
     }
 
     return prim;

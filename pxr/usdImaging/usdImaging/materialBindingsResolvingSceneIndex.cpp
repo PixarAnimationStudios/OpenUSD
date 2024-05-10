@@ -28,8 +28,6 @@
 #include "pxr/usdImaging/usdImaging/directMaterialBindingSchema.h"
 #include "pxr/usdImaging/usdImaging/directMaterialBindingsSchema.h"
 
-#include "pxr/imaging/hd/geomSubsetSchema.h"
-#include "pxr/imaging/hd/geomSubsetsSchema.h"
 #include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
 #include "pxr/imaging/hd/meshSchema.h"
@@ -134,95 +132,6 @@ private:
     const SdfPath _primPath;
 };
 
-// Overide that provides the resolved material bindings for a geom subset.
-//
-class _GeomSubsetDataSource final : public HdContainerDataSource
-{
-public:
-    HD_DECLARE_DATASOURCE(_GeomSubsetDataSource);
-
-    _GeomSubsetDataSource(
-        const HdContainerDataSourceHandle &geomSubsetContainer,
-        const HdSceneIndexBaseRefPtr &si,
-        const SdfPath &geomSubsetPath)
-    : _geomSubsetContainer(geomSubsetContainer)
-    , _si(si)
-    , _geomSubsetPath(geomSubsetPath)
-    {}
-
-    TfTokenVector
-    GetNames() override
-    {
-        TfTokenVector names = _geomSubsetContainer->GetNames();
-        names.push_back(HdMaterialBindingsSchema::GetSchemaToken());
-        return names;
-    }
-
-    HdDataSourceBaseHandle
-    Get(const TfToken &name) override
-    {
-        HdDataSourceBaseHandle result = _geomSubsetContainer->Get(name);
-
-        if (name == HdMaterialBindingsSchema::GetSchemaToken()) {
-            // Check if we have direct or collection material bindings to
-            // avoid returning an empty non-null container.
-            if (_HasDirectOrCollectionMaterialBindings(_geomSubsetContainer)) {
-
-                // We don't expect to have hydra material bindings on the
-                // prim container. Use an overlay just in case such that the
-                // existing opinion wins.
-                return
-                    HdOverlayContainerDataSource::New(
-                        HdContainerDataSource::Cast(result),
-                        _HdMaterialBindingsDataSource::New(
-                            _geomSubsetContainer, _si, _geomSubsetPath));
-            }
-        }
-
-        return result;
-    }
-
-private:
-    HdContainerDataSourceHandle _geomSubsetContainer;
-    const HdSceneIndexBaseRefPtr _si;
-    const SdfPath _geomSubsetPath;
-};
-
-class _GeomSubsetsDataSource final : public HdContainerDataSource
-{
-public:
-    HD_DECLARE_DATASOURCE(_GeomSubsetsDataSource);
-
-    _GeomSubsetsDataSource(
-        const HdContainerDataSourceHandle &geomSubsetsContainer,
-        const HdSceneIndexBaseRefPtr &si,
-        const SdfPath &primPath)
-    : _geomSubsetsContainer(geomSubsetsContainer)
-    , _si(si)
-    , _primPath(primPath)
-    {}
-
-    TfTokenVector
-    GetNames() override
-    {
-        return _geomSubsetsContainer->GetNames();
-    }
-
-    HdDataSourceBaseHandle
-    Get(const TfToken &name) override
-    {
-        HdDataSourceBaseHandle result = _geomSubsetsContainer->Get(name);
-        const SdfPath geomSubsetPath = _primPath.AppendChild(name);
-        return _GeomSubsetDataSource::New(
-            HdContainerDataSource::Cast(result), _si, geomSubsetPath);
-    }
-
-private:
-    HdContainerDataSourceHandle _geomSubsetsContainer;
-    const HdSceneIndexBaseRefPtr _si;
-    const SdfPath _primPath;
-};
-
 class _MeshDataSource final : public HdContainerDataSource
 {
 public:
@@ -248,11 +157,6 @@ public:
     {
         HdDataSourceBaseHandle result = _meshContainer->Get(name);
 
-        if (name == HdGeomSubsetsSchema::GetSchemaToken()) {
-            return _GeomSubsetsDataSource::New(
-                HdContainerDataSource::Cast(result), _si, _primPath);
-        }
-
         return result;
     }
 
@@ -263,8 +167,7 @@ private:
 };
 
 // Prim container override that provides the resolved hydra material bindings
-// if direct or collection USD material bindings are present. This is done for
-// material bindings on both the prim and any geom subsets.
+// if direct or collection USD material bindings are present.
 // 
 class _PrimDataSource final : public HdContainerDataSource
 {
@@ -293,7 +196,7 @@ public:
     {
         HdDataSourceBaseHandle result = _primContainer->Get(name);
 
-        // Material bindings on the prim. Geom subsets are handled below.
+        // Material bindings on the prim.
         if (name == HdMaterialBindingsSchema::GetSchemaToken()) {
 
             // Check if we have direct or collection material bindings to
@@ -307,20 +210,6 @@ public:
                         HdContainerDataSource::Cast(result),
                         _HdMaterialBindingsDataSource::New(
                             _primContainer, _si, _primPath));
-            }
-        }
-
-
-        // XXX Current geom subsets support is limited to meshes. When that
-        //     changes, this needs to be updated.
-        if (name == HdMeshSchema::GetSchemaToken()) {
-            // Wrap the data source only if we have geom subsets.
-            if (HdContainerDataSourceHandle c =
-                    HdContainerDataSource::Cast(result)) {
-                
-                if (HdGeomSubsetsSchema gs = HdMeshSchema(c).GetGeomSubsets()) {
-                    return _MeshDataSource::New(c, _si, _primPath);
-                }
             }
         }
 

@@ -88,7 +88,6 @@ pxr_library(hd
         flatNormals
         geomSubset
         geomSubsetSchema
-        geomSubsetsSchema
         imageShader
         imageShaderSchema
         instanceCategoriesSchema
@@ -101,6 +100,7 @@ pxr_library(hd
         integratorSchema
         lazyContainerDataSource
         legacyDisplayStyleSchema
+        legacyGeomSubsetSceneIndex
         legacyPrimSceneIndex
         lensDistortionSchema
         light

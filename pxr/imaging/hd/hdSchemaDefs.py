@@ -78,6 +78,7 @@
     # geomSubset
     dict(
         SCHEMA_NAME = 'GeomSubset',
+        SCHEMA_TOKEN = 'geomSubset',
         MEMBERS = [
             ('type', T_TOKEN, {}),
             ('indices', T_INTARRAY, {}),
@@ -86,15 +87,8 @@
         STATIC_TOKEN_DATASOURCE_BUILDERS = [ # optional for shared token ds's
             ('type', ['typeFaceSet', 'typePointSet', 'typeCurveSet']),
         ],
-    ),
-
-    #--------------------------------------------------------------------------
-    # geomSubsets
-    dict(
-        SCHEMA_NAME = 'GeomSubsets',
-        SCHEMA_TOKEN = 'geomSubsets',
-        GENERIC_MEMBER = ('geomSubset', 'HdGeomSubsetSchema', {}),
-        SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/geomSubsetSchema'],
+        
+        ADD_DEFAULT_LOCATOR = True,
     ),
 
     #--------------------------------------------------------------------------
@@ -104,15 +98,13 @@
         SCHEMA_TOKEN = 'mesh',
         SCHEMA_INCLUDES =
             ['{{LIBRARY_PATH}}/meshTopologySchema',
-             '{{LIBRARY_PATH}}/subdivisionTagsSchema',
-             '{{LIBRARY_PATH}}/geomSubsetsSchema'],
+             '{{LIBRARY_PATH}}/subdivisionTagsSchema'],
         
         MEMBERS = [
             ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
             ('topology', 'HdMeshTopologySchema', {}),
             ('subdivisionScheme', T_TOKEN, {}),
             ('subdivisionTags', 'HdSubdivisionTagsSchema', {}),
-            ('geomSubsets', 'HdGeomSubsetsSchema', {}),
             ('doubleSided', T_BOOL, {}),
         ],
 
@@ -232,13 +224,11 @@
         SCHEMA_NAME = 'BasisCurves',
         SCHEMA_TOKEN = 'basisCurves',
         SCHEMA_INCLUDES =
-            ['{{LIBRARY_PATH}}/basisCurvesTopologySchema',
-             '{{LIBRARY_PATH}}/geomSubsetsSchema'],
+            ['{{LIBRARY_PATH}}/basisCurvesTopologySchema'],
 
         MEMBERS = [
             ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
             ('topology', 'HdBasisCurvesTopologySchema', {}),
-            ('geomSubsets', 'HdGeomSubsetsSchema', {}),
         ],
 
         ADD_DEFAULT_LOCATOR = True,

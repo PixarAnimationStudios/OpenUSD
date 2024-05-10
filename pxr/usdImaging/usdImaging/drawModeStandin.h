@@ -24,10 +24,15 @@
 #ifndef PXR_USD_IMAGING_USD_IMAGING_DRAW_MODE_STANDIN_H
 #define PXR_USD_IMAGING_USD_IMAGING_DRAW_MODE_STANDIN_H
 
-#include "pxr/pxr.h"
-
+#include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/sceneIndexObserver.h"
+
+#include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/tf/token.h"
+
+#include "pxr/pxr.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -44,16 +49,22 @@ public:
 
     /// Get prim replacing the original prim.
     ///
-    /// For now, this is just a typeless prim without data source.
+    /// For now, this is just a typeless container prim without data source.
     const HdSceneIndexPrim &GetPrim() const;
 
-    /// Get immediate children of the prim replacing the original prim.
-    SdfPathVector GetChildPrimPaths() const;
-    HdSceneIndexPrim GetChildPrim(const TfToken &name) const;
+    /// Get paths of all descendants of the typeless container.
+    SdfPathVector GetDescendantPrimPaths() const;
+    
+    /// GetDescendant prim by absolute or relative path.
+    HdSceneIndexPrim GetDescendantPrim(const SdfPath& path) const;
 
-    // Compute added entries for the stand-in geometry
+    /// Compute added entries for the stand-in geometry
     void ComputePrimAddedEntries(
         HdSceneIndexObserver::AddedPrimEntries * entries) const;
+    
+    /// Compute removed entries for the stand-in geometry
+    void ComputePrimRemovedEntries(
+        HdSceneIndexObserver::RemovedPrimEntries* entries) const;
 
     /// Given dirty data source locators for the original prim, invalidate
     /// cached data and emit dirty entries for the stand-in geometry.
@@ -63,9 +74,13 @@ public:
         bool * needsRefresh) = 0;
 
 protected:
-    virtual const TfTokenVector _GetChildNames() const = 0;
-    virtual TfToken _GetChildPrimType(const TfToken &name) const = 0;
-    virtual HdContainerDataSourceHandle _GetChildPrimSource(const TfToken &name) const = 0;
+    /// returns paths relative to the typeless container.
+    virtual const SdfPathVector _GetDescendantPaths() const = 0;
+    /// accepts paths relative to the typeless container.
+    virtual TfToken _GetDescendantPrimType(const SdfPath& path) const = 0;
+    /// accepts paths relative to the typeless container.
+    virtual HdContainerDataSourceHandle _GetDescendantPrimSource(
+        const SdfPath& path) const = 0;
 
     UsdImaging_DrawModeStandin(
         const SdfPath &path,

@@ -32,6 +32,7 @@
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/instancer.h"
+#include "pxr/imaging/hd/legacyGeomSubsetSceneIndex.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/points.h"
@@ -125,6 +126,9 @@ HdRenderIndex::HdRenderIndex(
             _emulationNoticeBatchingSceneIndex, SdfPath::AbsoluteRootPath());
 
         _terminalSceneIndex = _mergingSceneIndex;
+        
+        _terminalSceneIndex = HdLegacyGeomSubsetSceneIndex::New(
+            _terminalSceneIndex);
 
         _terminalSceneIndex =
             HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(

@@ -23,6 +23,10 @@
 //
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/base/tf/token.h"
+
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdTokens, HD_TOKENS);
@@ -109,6 +113,15 @@ bool HdPrimTypeIsLight(TfToken const& primType)
         }
     }
     return false;
+}
+
+bool HdPrimTypeSupportsGeomSubsets(const TfToken& primType) {
+    static const TfTokenVector types = {
+        HdPrimTypeTokens->mesh,
+        HdPrimTypeTokens->basisCurves,
+        // XXX: tetMesh not yet supported
+    };
+    return std::find(types.begin(), types.end(), primType) != types.end();
 }
 
 TfToken HdAovTokensMakePrimvar(TfToken const& primvar)
