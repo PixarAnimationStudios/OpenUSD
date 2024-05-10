@@ -476,43 +476,50 @@ HdPrman_Volume::_ConvertGeometry(HdPrman_RenderParam *renderParam,
                                  RtUString *primType,
                                  std::vector<HdGeomSubset> *geomSubsets)
 {
-    HdVolumeFieldDescriptorVector fields =
-        sceneDelegate->GetVolumeFieldDescriptors(id);
+    *primType = RixStr.k_Ri_Volume;
 
-    if (fields.empty()) {
-        return RtPrimVarList();
-    }
-
-    TfToken fieldPrimType = _DetermineConsistentFieldPrimType(fields);
-    if (fieldPrimType.IsEmpty()) {
-        TF_WARN("The fields on volume %s have inconsistent types and can't be "
-                "emitted as a single volume", id.GetText());
-        return RtPrimVarList();
-    }
-
-    // Based on the field type we determine the function to emit the volume to
-    // Prman
-    _VolumeEmitterMap const& volumeEmitters = _GetVolumeEmitterMap();
-    auto const iter = volumeEmitters.find(fieldPrimType);
-    if (iter == volumeEmitters.end()) {
-        TF_WARN("No volume emitter registered for field type '%s' "
-                "on prim %s", fieldPrimType.GetText(), id.GetText());
-        return RtPrimVarList();
-    }
-
+    // Dimensions
     int32_t const dims[] = { 0, 0, 0 };
     uint64_t const dim = dims[0] * dims[1] * dims[2];
-
     RtPrimVarList primvars(1, dim, dim, dim);
     primvars.SetIntegerArray(RixStr.k_Ri_dimensions, dims, 3);
 
-    *primType = RixStr.k_Ri_Volume;
+    HdPrman_ConvertPrimvars(
+        sceneDelegate, id, primvars,
+        /* numUniform = */ 1,
+        /* numVertex = */ 0,
+        /* numVarying = */ 0,
+        /* numFaceVarying = */ 0);
 
     // Setup the volume for Prman with the appropriate DSO and its parameters
-    HdPrman_VolumeTypeEmitter emitterFunc = iter->second;
-    emitterFunc(sceneDelegate, id, fields, &primvars);
+    HdVolumeFieldDescriptorVector fields =
+        sceneDelegate->GetVolumeFieldDescriptors(id);
+    if (!fields.empty()) {
+        TfToken fieldPrimType = _DetermineConsistentFieldPrimType(fields);
+        if (fieldPrimType.IsEmpty()) {
+            TF_WARN("The fields on volume %s have inconsistent types and "
+                    "cannot be emitted as a single volume", id.GetText());
+            return RtPrimVarList();
+        }
 
-    HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, 1, dim, dim, dim);
+        // Based on the field type we determine the function to emit the
+        // volume to Prman
+        _VolumeEmitterMap const& volumeEmitters = _GetVolumeEmitterMap();
+        auto const iter = volumeEmitters.find(fieldPrimType);
+        if (iter == volumeEmitters.end()) {
+            TF_WARN("No volume emitter registered for field type '%s' "
+                    "on prim %s", fieldPrimType.GetText(), id.GetText());
+            return RtPrimVarList();
+        }
+
+        HdPrman_VolumeTypeEmitter emitterFunc = iter->second;
+        emitterFunc(sceneDelegate, id, fields, &primvars);
+    } else {
+        // If no fields are found, the volume will be required to
+        // specify Ri:type (ex: "box") and Ri:Bounds.  We do not
+        // check this here because RenderMan will already issue
+        // an appropriate warning.
+    }
 
     return primvars;
 }

@@ -650,7 +650,10 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
             continue;
         }
 
-        if (val.IsArrayValued() && 
+        // For non-constant primvars, check array size to make sure it
+        // matches the expected topology size.
+        if (hdInterp != HdInterpolationConstant &&
+            val.IsArrayValued() && 
             val.GetArraySize() != static_cast<size_t>(expectedSize)) {
             TF_WARN("<%s> %s '%s' size (%zu) did not match "
                     "expected (%d)", id.GetText(), label.c_str(),
