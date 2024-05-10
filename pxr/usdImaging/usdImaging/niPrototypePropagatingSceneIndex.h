@@ -302,6 +302,7 @@ TF_DECLARE_REF_PTRS(UsdImagingNiPrototypePropagatingSceneIndex);
 ///
 class UsdImagingNiPrototypePropagatingSceneIndex final
                                 : public HdFilteringSceneIndexBase
+                                , public HdEncapsulatingSceneIndexBase
 {
 public:
     using SceneIndexAppendCallback =
@@ -336,6 +337,9 @@ public:
 
     USDIMAGING_API
     std::vector<HdSceneIndexBaseRefPtr> GetInputScenes() const override;
+
+    USDIMAGING_API
+    std::vector<HdSceneIndexBaseRefPtr> GetEncapsulatedScenes() const override;
 
 private:
     class _SceneIndexCache;

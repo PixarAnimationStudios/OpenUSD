@@ -27,6 +27,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+HdEncapsulatingSceneIndexBase *
+HdEncapsulatingSceneIndexBase::Cast(const HdSceneIndexBaseRefPtr &scene)
+{
+    return
+        dynamic_cast<HdEncapsulatingSceneIndexBase *>(
+            boost::get_pointer(scene));
+}
+
 // This is a fallback scene index that we use in case an invalid sceneIndex is
 // passed in to the filtering scene index c'tor.
 class _NoOpSceneIndex final : public HdSceneIndexBase
