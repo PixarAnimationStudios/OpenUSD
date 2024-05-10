@@ -84,13 +84,15 @@ private:
     /// ComposeValueStack are called on for dependency tracking.
     PcpDynamicFileFormatContext(
         const PcpNodeRef &parentNode, 
+        const SdfPath &pathInNode,
+        int arcNum,
         PcpPrimIndex_StackFrame *previousFrame,
         TfToken::Set *composedFieldNames,
         TfToken::Set *composedAttributeNames);
 
     /// Access to private constructor. Should only be called by prim indexing.
     friend PcpDynamicFileFormatContext Pcp_CreateDynamicFileFormatContext(
-        const PcpNodeRef &, PcpPrimIndex_StackFrame *, 
+        const PcpNodeRef &, const SdfPath&, int, PcpPrimIndex_StackFrame *, 
         TfToken::Set *, TfToken::Set *);
 
     /// Returns whether the given \p field is allowed to be used to generate
@@ -101,6 +103,8 @@ private:
 
 private:
     PcpNodeRef _parentNode;
+    SdfPath _pathInNode;
+    int _arcNum;
     PcpPrimIndex_StackFrame *_previousStackFrame;
 
     // Cached names of fields that had values composed by this context.

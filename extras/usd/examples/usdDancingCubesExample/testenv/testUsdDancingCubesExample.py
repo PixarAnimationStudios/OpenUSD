@@ -51,12 +51,14 @@ dynamicLayers[0].Export("dynamicContents.usda")
 p = stage.GetPrimAtPath('/Root')
 md = p.GetMetadata("Usd_DCE_Params")
 p.SetMetadata("Usd_DCE_Params",
-              {'geomType': 'Cone', 
-               'distance': 4.0, 
+              { 'distance': 4.0, 
                'numFrames': 20, 
                'perSide': 3, 
                'framesPerCycle': 12, 
                'moveScale': 4.5 })
+
+# Confirm that variants affect dynamic payload arguments
+p.GetVariantSets().GetVariantSet("geomTypeVariant").SetVariantSelection("sphere")
 
 # Find the dynamic layer again. Note that this layer has a different identity
 # as the file format arguments have changed.

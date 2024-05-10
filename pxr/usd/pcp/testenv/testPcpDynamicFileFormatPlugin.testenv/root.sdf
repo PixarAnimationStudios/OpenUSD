@@ -1,4 +1,7 @@
 #sdf 1.4.32
+(
+    relocates = {</World/Sets/MySet/Group1/Model>: </World/Sets/MySet/Group1/Subgroup/Relocated>}
+)
 
 def "RootCone" (
 references = [@./params.sdf@</Params>, @./payload.sdf@</PayloadCone>]
@@ -77,4 +80,89 @@ def "ReferenceAndNestedVariants" (
 )
 {
     double TestPcp_height = 120.0
+}
+
+def "SiblingPayloads" (
+    references = [@./payload.sdf@</PayloadSiblings>]){}
+
+def "VariantWithParams" (
+    TestPcp_radius = 20
+    references = [@./params.sdf@</Params3>]
+    payload = @cone.testpcpdynamic@
+)
+{
+    double TestPcp_radius = 20
+}
+
+def "ParamRef" (
+    references = @./params.sdf@</Params1>
+){}
+
+def "Specializes" (
+    specializes = </ParamRef>
+    references = [@./params.sdf@</Params2>, @./payload.sdf@</PayloadCone>]
+){}
+
+def "Inherits" (
+    inherits = </ParamRef>
+    references = [@./params.sdf@</Params2>, @./payload.sdf@</PayloadCone>]
+){}
+
+def "WeakerParentSibling" (
+    references = [@./params.sdf@</Params1>,
+                  @./payload.sdf@</PayloadCone>,
+                  @./params.sdf@</Params2>]
+){}
+
+def "World" (
+)
+{
+    def "Sets"(
+    )
+    {
+        def "MySet"
+        (
+            references = </Set>
+            variants = {string x = "a"}
+        )
+        {
+            over "Group1" (
+            ) 
+            {
+                def "Subgroup"()
+                {
+
+                }
+            }
+
+        }
+    }
+}
+
+def "Set"
+(
+    variantSets = "x"
+)
+{
+    variantSet "x" = {
+       "a" (
+           TestPcp_num = 4
+           references = [@./params.sdf@</Params>, @./payload.sdf@</PayloadCone>]
+       )
+       {
+           int TestPcp_num = 4
+       }
+    }
+
+    def "Group1"
+    (
+        
+    )
+    {
+        def "Model"
+        () {
+
+        }
+
+    }
 }

@@ -303,7 +303,7 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
         self.assertTrue(rootLayer)
         cache = self._CreatePcpCache(rootLayer)
-                                        
+
         # Payloads for /RootCone - depth = 4, num = 3 : produces 40 payloads                                        
         payloads = self._GeneratePrimIndexPaths("/RootCone", 4, 3, 40)
         cache.RequestPayloads(payloads,[])
@@ -333,8 +333,10 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
 
         print("test_BasicRead Success!\n")
 
-    def test_Variants(self):
+    def test_PayloadsInVariants(self):
         # Test dynamic payloads and arguments authored in variants.
+
+        print("\ntest_PayloadsInVariants start\n")
 
         rootLayerFile = 'root.sdf'
         rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
@@ -348,6 +350,8 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
 
         self._ComputeAndVerifyDynamicPayloads(cache, payloads, 
              ["TestPcp_depth", "TestPcp_height", "TestPcp_num", "TestPcp_radius"])
+
+        print("\ntest_PayloadsInVariants Success!\n")
 
     def test_NestedVariants(self):
         # Exercise a scenario with nested variants, dynamic payloads and
@@ -383,7 +387,142 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
 
         print("\ntest_NestedVariants success!\n")
 
+    def test_InheritsAndVariants(self):
+        # Test that all inherits and variants can contribute
+        # opinions to parameters for dynamic payloads
+
+        print("\ntest_InheritsAndVariants start\n")
+
+        rootLayerFile = 'root.sdf'
+        rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
+        self.assertTrue(rootLayer)
+        cache = self._CreatePcpCache(rootLayer)
+
+        # Inherits
+
+        payloads = self._GeneratePrimIndexPaths("/Inherits", 2, 3, 4)
+        cache.RequestPayloads(payloads, [])
+
+        self._ComputeAndVerifyDynamicPayloads(cache, payloads, 
+             ["TestPcp_depth", "TestPcp_height", "TestPcp_num", "TestPcp_radius"])
+        
+        # Verify that layers for each dynamic depth were generated and opened.
+        dynamicLayerFileName = "cone.testpcpdynamic"
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                dynamicLayerFileName,
+                {"TestPcp_depth":"2", "TestPcp_num":"3", "TestPcp_radius":"50"})))
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                dynamicLayerFileName,
+                {"TestPcp_depth":"1", "TestPcp_height":"3", "TestPcp_num":"3", "TestPcp_radius":"25"
+                 })))
+
+        # Variants
+
+        payloads = self._GeneratePrimIndexPaths("/VariantWithParams", 2, 3, 4)
+        cache.RequestPayloads(payloads, [])
+
+        self._ComputeAndVerifyDynamicPayloads(cache, payloads, 
+             ["TestPcp_depth", "TestPcp_height", "TestPcp_num", "TestPcp_radius"])
+        
+        # Verify that layers for each dynamic depth were generated and opened.
+        dynamicLayerFileName = "cone.testpcpdynamic"
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                dynamicLayerFileName,
+                {"TestPcp_depth":"2", "TestPcp_num":"3", "TestPcp_radius":"20"})))
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                dynamicLayerFileName,
+                {"TestPcp_depth":"1", "TestPcp_height":"3", "TestPcp_num":"3", "TestPcp_radius":"10"
+                 })))
+  
+        print("\ntest_InheritsAndVariants Success!\n")
+        
+    def test_WeakerOpinions(self):
+        # Test that opinions from weaker nodes do not
+        # affect parameters for stronger dynamic payloads
+    
+        print("\ntest_WeakerOpinions start\n")
+
+        rootLayerFile = 'root.sdf'
+        rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
+        self.assertTrue(rootLayer)
+        cache = self._CreatePcpCache(rootLayer)
+
+        # Specializes arcs are weaker than payloads, and should not
+        # affect parameters for dynamic payloads
+        payloads = self._GeneratePrimIndexPaths("/Specializes", 3, 1, 3)
+        cache.RequestPayloads(payloads, [])
+
+        self._ComputeAndVerifyDynamicPayloads(cache, payloads, 
+             ["TestPcp_depth", "TestPcp_height", "TestPcp_num", "TestPcp_radius"])
+        
+        # Verify that layers for each dynamic depth were generated and opened.
+        dynamicLayerFileName = "cone.testpcpdynamic"
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                dynamicLayerFileName,
+                {"TestPcp_depth":"3", "TestPcp_radius":"50"})))
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                dynamicLayerFileName,
+                {"TestPcp_depth":"2", "TestPcp_height":"3", "TestPcp_num":"1", "TestPcp_radius":"25"
+                 })))
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                dynamicLayerFileName,
+                {"TestPcp_depth":"1", "TestPcp_height":"3", "TestPcp_num":"1", "TestPcp_radius":"12.5"
+                 })))
+
+        # Weaker siblings of the parent node should not
+        # affect parameters either
+        payloads = self._GeneratePrimIndexPaths("/WeakerParentSibling", 2, 3, 4)
+        cache.RequestPayloads(payloads, [])
+
+        self._ComputeAndVerifyDynamicPayloads(cache, payloads, 
+             ["TestPcp_depth", "TestPcp_height", "TestPcp_num", "TestPcp_radius"])
+        
+        dynamicLayerFileName = "cone.testpcpdynamic"
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                dynamicLayerFileName,
+                {"TestPcp_depth":"2", "TestPcp_num":"3"})))
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                dynamicLayerFileName,
+                {"TestPcp_depth":"1", "TestPcp_height":"3", "TestPcp_num":"3", "TestPcp_radius":"1.5"
+                 })))
+
+        print("\ntest_WeakerOpinions Success!\n")
+
+    def test_SiblingPayloads(self):
+        # Test that weaker regular sibling payloads do not affect
+        # parameters for stronger dynamic payloads and that
+        # stronger sibling payloads do
+
+        print("\ntest_SiblingPayloads start\n")
+        
+        rootLayerFile = 'root.sdf'
+        rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
+        self.assertTrue(rootLayer)
+        cache = self._CreatePcpCache(rootLayer)
+
+        # /SiblingPayloads overrides the TestPcp_depth and TestPcp_num values that are
+        # originally defined in params.sdf.
+        payloads = self._GeneratePrimIndexPaths("/SiblingPayloads", 2, 3, 4)
+        cache.RequestPayloads(payloads, [])
+
+        self._ComputeAndVerifyDynamicPayloads(cache, payloads, 
+             ["TestPcp_depth", "TestPcp_height", "TestPcp_num", "TestPcp_radius"])
+        
+        # Verify that layers for each dynamic depth were generated and opened.
+        dynamicLayerFileName = "sphere.testpcpdynamic"
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                dynamicLayerFileName,
+                {"TestPcp_depth":"2", "TestPcp_num":"3"})))
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                dynamicLayerFileName,
+                {"TestPcp_depth":"1", "TestPcp_height":"3", "TestPcp_num":"3", "TestPcp_radius":"1.5"
+                 })))
+
+        print("\ntest_SiblingPayloads Success!\n")
+
     def test_AncestralPayloads(self):
+        print("\ntest_AncestralPayloads start\n")
+        
         # Test that loading a dynamic payload when composing ancestral
         # opinions picks up the right arguments.
 
@@ -408,11 +547,15 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
                                    "TestPcp_radius" : "50" })
              .GetPrimAtPath("/Root/Xform__3_2"))
             in pi.primStack)
+        
+        print("\ntest_AncestralPayloads Success!\n")
 
     def test_AncestralPayloads2(self):
         # Similar to test_AncestralPayloads but adds a non-internal reference
         # arc to further exercise path translation logic during argument
         # composition.
+
+        print("\ntest_AncestralPayloads2 start\n")
 
         rootLayer = Sdf.Layer.CreateAnonymous()
         rootLayer.ImportFromString("""
@@ -446,10 +589,45 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
                                    "TestPcp_radius" : "50" })
              .GetPrimAtPath("/Root/Xform__3_2"))
             in pi.primStack)
+        
+        print("\ntest_AncestralPayloads2 Success!\n")
+
+    def test_AncestralPayloads3(self):
+        # Test that evaluating ancestral payloads at the end works
+
+        print("\ntest_AncestralPayloads3 start\n")
+
+        # Create a PcpCache for root.sdf. Has a dynamic root prim /RootCone
+        rootLayerFile = 'root.sdf'
+        rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
+        self.assertTrue(rootLayer)
+        cache = self._CreatePcpCache(rootLayer)
+
+        cache.RequestPayloads(["/World/Sets/MySet"],[])
+
+        pi, err = cache.ComputePrimIndex("/World/Sets/MySet/Group1/Subgroup/Relocated")
+        self.assertFalse(err)
+
+        dynamicLayerFileName = "cone.testpcpdynamic"
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                dynamicLayerFileName,
+                {"TestPcp_depth": "4",  "TestPcp_num":"4", 
+                 "TestPcp_radius":"50"})))
+                                        
+        self.assertTrue(
+            Sdf.Layer.Find("cone.testpcpdynamic", 
+                            args={ "TestPcp_depth" : "4",
+                                   "TestPcp_num" : "4",
+                                   "TestPcp_radius" : "50" })
+             .GetPrimAtPath("/Root/Xform__3_3"))
+        
+        print("\ntest_AncestralPayloads3 Success!\n")
 
     def test_AncestralPayloadsAndVariants(self):
         # Test that loading a dynamic payload when composing ancestral
         # opinions within variants picks up the right arguments.
+
+        print("\ntest_AncestralPayloadsAndVariants start\n")
 
         rootLayerFile = 'root.sdf'
         rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
@@ -472,6 +650,8 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
                                    "TestPcp_radius" : "50" })
              .GetPrimAtPath("/Root/Xform__4_3"))
             in pi.primStack)
+        
+        print("\ntest_AncestralPayloadsAndVariants Success!\n")
 
     def test_Changes(self):
         # Change processing behavior can be different for Pcp caches in USD mode

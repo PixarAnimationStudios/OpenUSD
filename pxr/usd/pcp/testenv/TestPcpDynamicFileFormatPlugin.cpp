@@ -578,6 +578,8 @@ Test_PcpDynamicFileFormatPlugin_FileFormat::ComposeFieldsForFileFormatArguments(
         if (depth < 1) {
             return;
         }
+        (*args)[Test_PcpDynamicFileFormatPlugin_FileFormatTokens->Depth] = 
+        TfStringify(depth);
     }
     int num = 0;
     if (_ExtractArg(Test_PcpDynamicFileFormatPlugin_FileFormatTokens->Num, 
@@ -585,11 +587,9 @@ Test_PcpDynamicFileFormatPlugin_FileFormat::ComposeFieldsForFileFormatArguments(
         if (num < 1) {
             return;
         }
-    }
-    (*args)[Test_PcpDynamicFileFormatPlugin_FileFormatTokens->Depth] = 
-        TfStringify(depth);
-    (*args)[Test_PcpDynamicFileFormatPlugin_FileFormatTokens->Num] = 
+        (*args)[Test_PcpDynamicFileFormatPlugin_FileFormatTokens->Num] = 
         TfStringify(num);
+    }
 
     // Compose the radius and height metadata and add them as well.
     double radius = 10.0;
