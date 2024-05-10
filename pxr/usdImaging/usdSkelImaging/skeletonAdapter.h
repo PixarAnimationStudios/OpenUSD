@@ -209,12 +209,14 @@ public:
                             const UsdImagingInstancerContext *instancerContext) 
                                         const override;
 
+    USDSKELIMAGING_API
     HdExtComputationOutputDescriptorVector
     GetExtComputationOutputs(UsdPrim const& prim,
                              SdfPath const& cachePath,
                              const UsdImagingInstancerContext* instancerContext)
                                     const override;
 
+    USDSKELIMAGING_API
     HdExtComputationPrimvarDescriptorVector
     GetExtComputationPrimvars(
             UsdPrim const& prim,
@@ -222,7 +224,7 @@ public:
             HdInterpolation interpolation,
             const UsdImagingInstancerContext* instancerContext) const override;
 
-    USDIMAGING_API
+    USDSKELIMAGING_API
     VtValue 
     GetExtComputationInput(
             UsdPrim const& prim,
@@ -231,7 +233,7 @@ public:
             UsdTimeCode time,
             const UsdImagingInstancerContext* instancerContext) const override;
 
-    USDIMAGING_API
+    USDSKELIMAGING_API
     size_t
     SampleExtComputationInput(
             UsdPrim const& prim,
@@ -243,7 +245,7 @@ public:
             float *sampleTimes,
             VtValue *sampleValues) override;
 
-    USDIMAGING_API
+    USDSKELIMAGING_API
     std::string 
     GetExtComputationKernel(
             UsdPrim const& prim,
