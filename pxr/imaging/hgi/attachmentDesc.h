@@ -80,6 +80,7 @@ struct HgiAttachmentDesc
     , dstAlphaBlendFactor(HgiBlendFactorZero)
     , alphaBlendOp(HgiBlendOpAdd)
     , blendConstantColor(0.0f, 0.0f, 0.0f, 0.0f)
+    , resolveFilter(HgiAttachmentResolveFilterDefault)
     {}
 
     HgiFormat format;
@@ -96,6 +97,7 @@ struct HgiAttachmentDesc
     HgiBlendFactor dstAlphaBlendFactor;
     HgiBlendOp alphaBlendOp;
     GfVec4f blendConstantColor;
+    HgiAttachmentResolveFilter resolveFilter;
 };
 
 using HgiAttachmentDescVector = std::vector<HgiAttachmentDesc>;
