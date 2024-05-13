@@ -71,6 +71,7 @@ pxr_library(sdf
         textFileFormat
         timeCode
         tokens
+        transcodeUtils
         types
         valueTypeName
         variableExpression
@@ -163,6 +164,7 @@ pxr_library(sdf
         wrapSpec.cpp
         wrapVariableExpression.cpp
         wrapTimeCode.cpp
+        wrapTranscodeUtils.cpp
         wrapTypes.cpp
         wrapValueTypeName.cpp
         wrapVariantSpec.cpp
@@ -227,6 +229,7 @@ pxr_test_scripts(
     testenv/testSdfRelocates.py
     testenv/testSdfSpecHash.py
     testenv/testSdfTimeCode.py
+    testenv/testSdfTranscodeUtils.py
     testenv/testSdfTypes.py
     testenv/testSdfVariableExpression.py
     testenv/testSdfVariants.py
@@ -270,6 +273,14 @@ pxr_build_test_shared_lib(TestSdfTargetFileFormat
 
     CPPFILES
         testenv/TestSdfTargetFileFormat.cpp
+)
+
+pxr_build_test(testSdfTranscodeUtils_Cpp
+    LIBRARIES
+        sdf
+
+    CPPFILES
+        testenv/testSdfTranscodeUtils.cpp
 )
 
 pxr_build_test_shared_lib(TestSdfResolver
@@ -537,6 +548,13 @@ pxr_register_test(testSdfSpecHash
 pxr_register_test(testSdfTimeCode
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTimeCode"
+)
+pxr_register_test(testSdfTranscodeUtils
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTranscodeUtils"
+)
+pxr_register_test(testSdfTranscodeUtils_Cpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTranscodeUtils_Cpp"
 )
 pxr_register_test(testSdfTypes
     PYTHON

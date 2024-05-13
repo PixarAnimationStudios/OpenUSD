@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,48 +21,50 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/usd/sdf/transcodeUtils.h"
+
+#include <boost/python.hpp>
+
+#include <memory>
+
+using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+namespace {
+
+// This is expected to be dropped when using pybind11
+std::optional<std::string>
+Py_SdfEncodeIdentifier(const std::string& inputString, const SdfTranscodeFormat format)
 {
-    TF_WRAP( ArrayAssetPath );
-    TF_WRAP( ArrayPath );
-    TF_WRAP( ArrayTimeCode );
-    TF_WRAP( AssetPath );
-    TF_WRAP( ChangeBlock );
-    TF_WRAP( CleanupEnabler );
-    TF_WRAP( CopyUtils );
-    TF_WRAP( FileFormat );
-    TF_WRAP( Layer );
-    TF_WRAP( LayerOffset );
-    TF_WRAP( LayerTree );
-    TF_WRAP( NamespaceEdit );
-    TF_WRAP( Notice );
-    TF_WRAP( OpaqueValue );
-    TF_WRAP( Path );
-    TF_WRAP( PredicateExpression );
-    TF_WRAP( PathExpression ); // needs PredicateExpression for default args.
-    TF_WRAP( Payload );
-    TF_WRAP( PredicateFunctionResult );
-    TF_WRAP( Reference );
-    TF_WRAP( TimeCode );
-    TF_WRAP( TranscodeUtils );
-    TF_WRAP( Types );
-    TF_WRAP( ValueType );
-    TF_WRAP( VariableExpression );
+    return SdfEncodeIdentifier(inputString, format);
+}
 
-    TF_WRAP( Spec );
-    TF_WRAP( VariantSpec );
-    TF_WRAP( VariantSetSpec );
+// This is expected to be dropped when using pybind11
+std::optional<std::string>
+Py_SdfDecodeIdentifier(const std::string& inputString)
+{
+    return SdfDecodeIdentifier(inputString);
+}
 
-    TF_WRAP( PropertySpec );
-    TF_WRAP( AttributeSpec );
-    TF_WRAP( RelationshipSpec );
+} // anonymous
 
-    TF_WRAP( PrimSpec );
-    TF_WRAP( PseudoRootSpec );
+void
+wrapTranscodeUtils()
+{
+    enum_<SdfTranscodeFormat>("TranscodeFormat")
+        .value("ASCII", SdfTranscodeFormat::ASCII)
+        .value("UNICODE_XID", SdfTranscodeFormat::UNICODE_XID)
+    ;
+
+    def("EncodeIdentifier", 
+        &Py_SdfEncodeIdentifier,
+        (arg("inputString"), arg("format")))
+    ;
+
+    def("DecodeIdentifier", 
+        &Py_SdfDecodeIdentifier,
+        (arg("inputString")))
+    ;
 }
