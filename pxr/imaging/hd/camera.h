@@ -74,6 +74,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     (shutterOpen)                                                 \
     (shutterClose)                                                \
     (exposure)                                                    \
+    (exposureTime)                                                \
+    (exposureIso)                                                 \
+    (exposureFNumber)                                             \
+    (exposureResponsivity)                                        \
+    (exposureCompensation)                                        \
                                                                   \
     /* how to match window with different aspect */               \
     (windowPolicy)                                                \
@@ -330,10 +335,17 @@ protected:
     float                   _splitDiopterWidth2;
     float                   _splitDiopterFocusDistance2;
 
-    // shutter/lighting
+    // shutter
     double                  _shutterOpen;
     double                  _shutterClose;
+
+    // exposure
     float                   _exposure;
+    float                   _exposureCompensation;
+    float                   _exposureTime;
+    float                   _exposureIso;
+    float                   _exposureFNumber;
+    float                   _exposureResponsivity;
 
     // lens distortion
     TfToken                 _lensDistortionType;

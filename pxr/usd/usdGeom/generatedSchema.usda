@@ -4216,17 +4216,21 @@ class Camera "Camera" (
                  -1.0 will halve them."""
     )
     float exposure:fNumber = 1 (
-        doc = "f-number of the aperture"
+        doc = """f-number of the aperture when calculating exposure. Smaller numbers
+                 create a brighter image, larger numbers darker."""
     )
     float exposure:iso = 100 (
-        doc = "The speed rating of the sensor or film"
+        doc = """The speed rating of the sensor or film when calculating exposure.
+                 Higher numbers give a brighter image, lower numbers darker."""
     )
     float exposure:responsivity = 1 (
         doc = """Scalar multiplier representing overall responsivity of the 
-                 sensor system to light"""
+                 sensor system to light when calculating exposure. Intended to be
+                 used as a per camera/lens system measured scaling value."""
     )
     float exposure:time = 1 (
-        doc = "Time in seconds that the sensor is exposed to light"
+        doc = """Time in seconds that the sensor is exposed to light when calculating exposure.
+                 Longer exposure times create a brighter image, shorter times darker."""
     )
     float focalLength = 50 (
         doc = """Perspective focal length in tenths of a scene unit; see 
@@ -4237,7 +4241,7 @@ class Camera "Camera" (
                  ."""
     )
     float fStop = 0 (
-        doc = "Lens aperture. Defaults to 0.0, which turns off focusing."
+        doc = "Lens aperture. Defaults to 0.0, which turns off depth of field effects."
     )
     float horizontalAperture = 20.955 (
         doc = """Horizontal aperture in tenths of a scene unit; see 
@@ -4286,7 +4290,7 @@ class Camera "Camera" (
         doc = """Frame relative shutter close time, analogous comments from
                  shutter:open apply. A value greater or equal to shutter:open
                  should be authored, otherwise there is no exposure and a
-                 renderer should produce a black image."""
+                 renderer should produce a black image. Used for motion blur."""
     )
     double shutter:open = 0 (
         doc = """Frame relative shutter open time in UsdTimeCode units (negative

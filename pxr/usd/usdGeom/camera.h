@@ -394,7 +394,7 @@ public:
     // --------------------------------------------------------------------- //
     // FSTOP 
     // --------------------------------------------------------------------- //
-    /// Lens aperture. Defaults to 0.0, which turns off focusing.
+    /// Lens aperture. Defaults to 0.0, which turns off depth of field effects.
     ///
     /// | ||
     /// | -- | -- |
@@ -491,7 +491,7 @@ public:
     /// Frame relative shutter close time, analogous comments from
     /// shutter:open apply. A value greater or equal to shutter:open
     /// should be authored, otherwise there is no exposure and a
-    /// renderer should produce a black image.
+    /// renderer should produce a black image. Used for motion blur.
     ///
     /// | ||
     /// | -- | -- |
@@ -538,7 +538,8 @@ public:
     // --------------------------------------------------------------------- //
     // EXPOSUREISO 
     // --------------------------------------------------------------------- //
-    /// The speed rating of the sensor or film
+    /// The speed rating of the sensor or film when calculating exposure.
+    /// Higher numbers give a brighter image, lower numbers darker.
     ///
     /// | ||
     /// | -- | -- |
@@ -560,7 +561,8 @@ public:
     // --------------------------------------------------------------------- //
     // EXPOSURETIME 
     // --------------------------------------------------------------------- //
-    /// Time in seconds that the sensor is exposed to light
+    /// Time in seconds that the sensor is exposed to light when calculating exposure.
+    /// Longer exposure times create a brighter image, shorter times darker.
     ///
     /// | ||
     /// | -- | -- |
@@ -582,7 +584,8 @@ public:
     // --------------------------------------------------------------------- //
     // EXPOSUREFNUMBER 
     // --------------------------------------------------------------------- //
-    /// f-number of the aperture
+    /// f-number of the aperture when calculating exposure. Smaller numbers
+    /// create a brighter image, larger numbers darker.
     ///
     /// | ||
     /// | -- | -- |
@@ -605,7 +608,8 @@ public:
     // EXPOSURERESPONSIVITY 
     // --------------------------------------------------------------------- //
     /// Scalar multiplier representing overall responsivity of the 
-    /// sensor system to light
+    /// sensor system to light when calculating exposure. Intended to be
+    /// used as a per camera/lens system measured scaling value.
     ///
     /// | ||
     /// | -- | -- |

@@ -255,6 +255,41 @@ HdCamera::Sync(HdSceneDelegate * sceneDelegate,
             _exposure = vExposure.Get<float>();
         }
 
+        const VtValue vExposureCompensation =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->exposureCompensation);
+        if (!vExposureCompensation.IsEmpty()) {
+            _exposureCompensation = vExposureCompensation.Get<float>();
+        }
+
+        const VtValue vExposureTime =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->exposureTime);
+        if (!vExposureTime.IsEmpty()) {
+            _exposureTime = vExposureTime.Get<float>();
+        }
+
+        const VtValue vExposureIso =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->exposureIso);
+        if (!vExposureIso.IsEmpty()) {
+            _exposureIso = vExposureIso.Get<float>();
+        }
+
+        const VtValue vExposureFNumber =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->exposureFNumber);
+        if (!vExposureFNumber.IsEmpty()) {
+            _exposureFNumber = vExposureFNumber.Get<float>();
+        }
+
+        const VtValue vExposureResponsivity =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->exposureResponsivity);
+        if (!vExposureResponsivity.IsEmpty()) {
+            _exposureResponsivity = vExposureResponsivity.Get<float>();
+        }
+
         const VtValue vLensDistortionType =
             sceneDelegate->GetCameraParamValue(
                 id, HdCameraTokens->lensDistortionType);

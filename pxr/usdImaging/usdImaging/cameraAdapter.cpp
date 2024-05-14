@@ -259,9 +259,31 @@ UsdImagingCameraAdapter::Get(UsdPrim const& prim,
         cam.GetShutterCloseAttr().Get(&vShutterClose, time); // conversion n/a
         return vShutterClose;
     } else if (key == HdCameraTokens->exposure) {
-        VtValue v;
-        cam.GetExposureAttr().Get(&v, time); // conversion n/a
-        return v;
+        // we hijack the "exposure" token here in order to pass through the calculated
+        // exposure and make it backwards-compatible
+        // To get the original exposure attribute value, see "exposureCompensation"
+        // below
+        return VtValue(cam.GetExposureScale(time));
+    } else if (key == HdCameraTokens->exposureTime) {
+        VtValue vExposureTime;
+        cam.GetExposureAttr().Get(&vExposureTime, time); // conversion n/a
+        return vExposureTime;
+    } else if (key == HdCameraTokens->exposureIso) {
+        VtValue vExposureIso;
+        cam.GetExposureIsoAttr().Get(&vExposureIso, time); // conversion n/a
+        return vExposureIso;
+    } else if (key == HdCameraTokens->exposureFNumber) {
+        VtValue vExposureFNumber;
+        cam.GetExposureFNumberAttr().Get(&vExposureFNumber, time); // conversion n/a
+        return vExposureFNumber;
+    } else if (key == HdCameraTokens->exposureResponsivity) {
+        VtValue vExposureResponsivity;
+        cam.GetExposureResponsivityAttr().Get(&vExposureResponsivity, time); // conversion n/a
+        return vExposureResponsivity;
+    } else if (key == HdCameraTokens->exposureCompensation) {
+        VtValue vExposureCompensation;
+        cam.GetExposureAttr().Get(&vExposureCompensation, time); // conversion n/a
+        return vExposureCompensation;
     }
 
     VtValue v;
