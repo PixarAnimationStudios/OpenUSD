@@ -210,6 +210,22 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomCamera
     const TfToken exposure;
+    /// \brief "exposure:fNumber"
+    /// 
+    /// UsdGeomCamera
+    const TfToken exposureFNumber;
+    /// \brief "exposure:iso"
+    /// 
+    /// UsdGeomCamera
+    const TfToken exposureIso;
+    /// \brief "exposure:responsivity"
+    /// 
+    /// UsdGeomCamera
+    const TfToken exposureResponsivity;
+    /// \brief "exposure:time"
+    /// 
+    /// UsdGeomCamera
+    const TfToken exposureTime;
     /// \brief "extent"
     /// 
     /// UsdGeomBoundable, UsdGeomCube, UsdGeomSphere, UsdGeomCylinder, UsdGeomCapsule, UsdGeomCone, UsdGeomCylinder_1, UsdGeomCapsule_1, UsdGeomPlane

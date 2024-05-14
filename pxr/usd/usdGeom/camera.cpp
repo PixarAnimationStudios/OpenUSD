@@ -341,6 +341,74 @@ UsdGeomCamera::CreateExposureAttr(VtValue const &defaultValue, bool writeSparsel
                        writeSparsely);
 }
 
+UsdAttribute
+UsdGeomCamera::GetExposureIsoAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->exposureIso);
+}
+
+UsdAttribute
+UsdGeomCamera::CreateExposureIsoAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->exposureIso,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomCamera::GetExposureTimeAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->exposureTime);
+}
+
+UsdAttribute
+UsdGeomCamera::CreateExposureTimeAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->exposureTime,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomCamera::GetExposureFNumberAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->exposureFNumber);
+}
+
+UsdAttribute
+UsdGeomCamera::CreateExposureFNumberAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->exposureFNumber,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomCamera::GetExposureResponsivityAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->exposureResponsivity);
+}
+
+UsdAttribute
+UsdGeomCamera::CreateExposureResponsivityAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->exposureResponsivity,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -372,6 +440,10 @@ UsdGeomCamera::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->shutterOpen,
         UsdGeomTokens->shutterClose,
         UsdGeomTokens->exposure,
+        UsdGeomTokens->exposureIso,
+        UsdGeomTokens->exposureTime,
+        UsdGeomTokens->exposureFNumber,
+        UsdGeomTokens->exposureResponsivity,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -579,6 +651,25 @@ UsdGeomCamera::SetFromCamera(const GfCamera &camera, const UsdTimeCode &time)
 
     GetFStopAttr().Set(camera.GetFStop(), time);
     GetFocusDistanceAttr().Set(camera.GetFocusDistance(), time);
+}
+
+float
+UsdGeomCamera::GetExposureScale(UsdTimeCode time) const 
+{   
+    float exposureTime = 1.0f;
+    float exposureIso = 100.0f;
+    float exposureFNumber = 1.0f;
+    float exposureResponsivity = 1.0f;
+    float exposureCompensation = 0.0f;
+
+    GetExposureTimeAttr().Get(&exposureTime, time);
+    GetExposureIsoAttr().Get(&exposureIso, time);
+    GetExposureFNumberAttr().Get(&exposureFNumber, time);
+    GetExposureResponsivityAttr().Get(&exposureResponsivity, time);
+    GetExposureAttr().Get(&exposureCompensation, time);
+
+    return (exposureTime * exposureIso * powf(2.0f, exposureCompensation) * 
+            exposureResponsivity) / (100.0f * exposureFNumber * exposureFNumber);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

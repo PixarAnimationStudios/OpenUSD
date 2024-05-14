@@ -2358,10 +2358,28 @@ class Camera "Camera" (
     
     # exposure adjustment
     float exposure = 0.0 (
-        doc = """Exposure adjustment, as a log base-2 value.  The default
+        doc = """Exposure compensation, as a log base-2 value.  The default
                  of 0.0 has no effect.  A value of 1.0 will double the
                  image-plane intensities in a rendered image; a value of
                  -1.0 will halve them."""
+    )
+
+    # exposure controls
+    float exposure:iso = 100.0 (
+        doc = """The speed rating of the sensor or film"""
+    )
+
+    float exposure:time = 1.0 (
+        doc = """Time in seconds that the sensor is exposed to light"""
+    )
+
+    float exposure:fNumber = 1.0 (
+        doc = """f-number of the aperture"""
+    )
+
+    float exposure:responsivity = 1.0 (
+        doc = """Scalar multiplier representing overall responsivity of the 
+                 sensor system to light"""
     )
 }
 

@@ -101,6 +101,10 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "elementSize", UsdGeomTokens->elementSize);
     _AddToken(cls, "elementType", UsdGeomTokens->elementType);
     _AddToken(cls, "exposure", UsdGeomTokens->exposure);
+    _AddToken(cls, "exposureFNumber", UsdGeomTokens->exposureFNumber);
+    _AddToken(cls, "exposureIso", UsdGeomTokens->exposureIso);
+    _AddToken(cls, "exposureResponsivity", UsdGeomTokens->exposureResponsivity);
+    _AddToken(cls, "exposureTime", UsdGeomTokens->exposureTime);
     _AddToken(cls, "extent", UsdGeomTokens->extent);
     _AddToken(cls, "extentsHint", UsdGeomTokens->extentsHint);
     _AddToken(cls, "face", UsdGeomTokens->face);

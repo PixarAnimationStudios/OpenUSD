@@ -513,7 +513,7 @@ public:
     // --------------------------------------------------------------------- //
     // EXPOSURE 
     // --------------------------------------------------------------------- //
-    /// Exposure adjustment, as a log base-2 value.  The default
+    /// Exposure compensation, as a log base-2 value.  The default
     /// of 0.0 has no effect.  A value of 1.0 will double the
     /// image-plane intensities in a rendered image; a value of
     /// -1.0 will halve them.
@@ -533,6 +533,95 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
     UsdAttribute CreateExposureAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // EXPOSUREISO 
+    // --------------------------------------------------------------------- //
+    /// The speed rating of the sensor or film
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float exposure:iso = 100` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
+    USDGEOM_API
+    UsdAttribute GetExposureIsoAttr() const;
+
+    /// See GetExposureIsoAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateExposureIsoAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // EXPOSURETIME 
+    // --------------------------------------------------------------------- //
+    /// Time in seconds that the sensor is exposed to light
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float exposure:time = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
+    USDGEOM_API
+    UsdAttribute GetExposureTimeAttr() const;
+
+    /// See GetExposureTimeAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateExposureTimeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // EXPOSUREFNUMBER 
+    // --------------------------------------------------------------------- //
+    /// f-number of the aperture
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float exposure:fNumber = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
+    USDGEOM_API
+    UsdAttribute GetExposureFNumberAttr() const;
+
+    /// See GetExposureFNumberAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateExposureFNumberAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // EXPOSURERESPONSIVITY 
+    // --------------------------------------------------------------------- //
+    /// Scalar multiplier representing overall responsivity of the 
+    /// sensor system to light
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float exposure:responsivity = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
+    USDGEOM_API
+    UsdAttribute GetExposureResponsivityAttr() const;
+
+    /// See GetExposureResponsivityAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateExposureResponsivityAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //
@@ -574,6 +663,18 @@ public:
     ///
     USDGEOM_API
     void SetFromCamera(const GfCamera &camera, const UsdTimeCode &time);
+
+    /// Computes the imaging ratio, i.e. the ratio between incident luminance and
+    /// photometric exposure (in lux-seconds), given the exposure, exposure:iso,
+    /// exposure:fnumber, exposure:time and exposure:responsivity attributes.
+    ///
+    /// This is expected to be applied as a multiplier to the brightness of the 
+    /// image generated by the renderer, and given physically meaningful lighting
+    /// values in the scene, allows the exposure controls on UsdGeomCamera to behave
+    /// like those of a real camera.
+    ///
+    USDGEOM_API
+    float GetExposureScale(UsdTimeCode time=UsdTimeCode::Default()) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
