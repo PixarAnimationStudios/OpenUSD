@@ -258,6 +258,11 @@ public:
         return _shutterClose;
     }
 
+    /// Get the computed exposure scale from the underlying camera.
+    ///
+    /// Scaling the image brightness by this value will cause the various exposure
+    /// controls on \ref UsdGeomCamera to behave like those of a real camera to 
+    /// control the exposure of the image.
     float GetExposure() const {
         return _exposure;
     }

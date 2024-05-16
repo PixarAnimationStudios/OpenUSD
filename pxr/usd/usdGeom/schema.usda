@@ -2292,6 +2292,35 @@ class Camera "Camera" (
     However, it follows that if even one property is authored in the correct
     scene units, then they all must be.
 
+    \\section UsdGeom_CameraExposure Camera Exposure Model
+
+    UsdGeomCamera models exposure by a camera in terms of exposure time, ISO,
+    f-number, and exposure compensation, mirroring the controls on a real camera.
+    These parameters are provided by \\ref UsdGeomCamera::GetExposureTimeAttr(),
+    \\ref UsdGeomCamera::GetExposureIsoAttr(), \\ref UsdGeomCamera::GetExposureFNumberAttr(), 
+    and \\ref UsdGeomCamera::GetExposureAttr(), respectively. 
+    \\ref UsdGeomCamera::GetExposureResponsivityAttr() provides an additional scaling
+    factor to model the overall responsivity of the system, including response of 
+    the sensor and loss by the lens.
+
+    The combination of these parameters gives an exposure scaling factor (also 
+    referred to as the __imaging ratio__) that converts from incident luminance at
+    the sensor in __nits__, to an output signal based on photometric exposure in 
+    __lux-seconds__. 
+    
+    The calculated scaling factor can be obtained from 
+    \\ref UsdGeomCamera::GetExposureScale(), which is also the value provided by 
+    \\ref HdCamera::GetExposure(). It is computed as:
+    \\code
+        exposureScale = 
+            (exposureTime * exposureIso * pow(2, exposure) * exposureResponsivity) 
+            / (100 * exposureFNumber * exposureFNumber)
+    \\endcode
+
+    Renderers should simply multiply the brightness of the image by the exposure 
+    scale. The default values for the exposure-related attributes combine to give
+    a multiplier of 1.0.
+
     
     \\sa \\ref UsdGeom_LinAlgBasics
      """
