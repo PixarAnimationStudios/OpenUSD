@@ -29,7 +29,6 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/pyUtils.h"
-#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/python/converter/from_python.hpp>
 #include <boost/python/extract.hpp>
@@ -65,8 +64,10 @@ struct register_python_conversion
 };
 
 template <typename T>
-struct python_optional : public boost::noncopyable
+struct python_optional
 {
+    python_optional(const python_optional&) = delete;
+    python_optional& operator=(const python_optional&) = delete;
     template <typename Optional>
     struct optional_to_python
     {
