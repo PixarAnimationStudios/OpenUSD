@@ -15,6 +15,7 @@ set(DIRS
     usdRender
     usdHydra
     usdRi
+    usdSemantics
     usdSkel
     usdUI
     usdUtils
