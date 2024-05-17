@@ -116,14 +116,16 @@ HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
             _shaderLayoutAttributes.emplace_back(
                 "layout (fractional_odd_spacing) in;\n");
         }
+        // We flip the winding order in HgiVulkan. See
+        // HgiVulkanGraphicsCmds::SetViewport for details.
         if (descriptor.tessellationDescriptor.ordering ==
                 HgiShaderFunctionTessellationDesc::Ordering::CW) {
             _shaderLayoutAttributes.emplace_back(
-                "layout (cw) in;\n");
+                "layout (ccw) in;\n");
         } else if (descriptor.tessellationDescriptor.ordering ==
                 HgiShaderFunctionTessellationDesc::Ordering::CCW) {
             _shaderLayoutAttributes.emplace_back(
-                "layout (ccw) in;\n");
+                "layout (cw) in;\n");
         }
     } else if (descriptor.shaderStage == HgiShaderStageGeometry) {
         if (descriptor.geometryDescriptor.inPrimitiveType ==

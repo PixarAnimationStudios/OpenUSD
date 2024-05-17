@@ -187,8 +187,10 @@ static_assert(HgiPolygonModeCount==3, "");
 static const uint32_t
 _WindingTable[HgiWindingCount][2] =
 {
-    {HgiWindingClockwise,        VK_FRONT_FACE_CLOCKWISE},
-    {HgiWindingCounterClockwise, VK_FRONT_FACE_COUNTER_CLOCKWISE}
+    // We flip the winding order in HgiVulkan. See
+    // HgiVulkanGraphicsCmds::SetViewport for details.
+    {HgiWindingClockwise,        VK_FRONT_FACE_COUNTER_CLOCKWISE},
+    {HgiWindingCounterClockwise, VK_FRONT_FACE_CLOCKWISE}
 };
 static_assert(HgiWindingCount==2, "");
 
