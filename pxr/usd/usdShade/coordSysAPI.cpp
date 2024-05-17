@@ -28,8 +28,6 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
-#include "pxr/base/tf/staticTokens.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Register the schema with the TfType system.
@@ -39,11 +37,6 @@ TF_REGISTRY_FUNCTION(TfType)
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _schemaTokens,
-    (coordSys)
-);
 
 /* virtual */
 UsdShadeCoordSysAPI::~UsdShadeCoordSysAPI()
@@ -121,9 +114,9 @@ UsdShadeCoordSysAPI::IsCoordSysAPIPath(
     }
 
     if (tokens.size() >= 2
-        && tokens[0] == _schemaTokens->coordSys) {
+        && tokens[0] == UsdShadeTokens->coordSys) {
         *name = TfToken(propertyName.substr(
-            _schemaTokens->coordSys.GetString().size() + 1));
+           UsdShadeTokens->coordSys.GetString().size() + 1));
         return true;
     }
 
@@ -332,7 +325,7 @@ UsdShadeCoordSysAPI::GetLocalBindings() const
     }
 
     for (const UsdProperty &prop:
-         GetPrim().GetAuthoredPropertiesInNamespace(_schemaTokens->coordSys)) {
+         GetPrim().GetAuthoredPropertiesInNamespace(UsdShadeTokens->coordSys)) {
         if (UsdRelationship rel = prop.As<UsdRelationship>()) {
             targets.clear();
             if (rel.GetForwardedTargets(&targets) && !targets.empty()) {
@@ -449,7 +442,7 @@ UsdShadeCoordSysAPI::FindBindingsWithInheritance() const
     for (UsdPrim prim = GetPrim(); prim; prim = prim.GetParent()) {
         SdfPathVector targets;
         for (UsdProperty prop : prim.GetAuthoredPropertiesInNamespace(
-                    _schemaTokens->coordSys)) {
+                    UsdShadeTokens->coordSys)) {
             if (UsdRelationship rel = prop.As<UsdRelationship>()) {
                 // Check if name is already bound; skip if bound.
                 bool nameIsAlreadyBound = false;
@@ -542,7 +535,7 @@ UsdShadeCoordSysAPI::HasLocalBindings() const
     }
 
     for (const UsdProperty &prop:
-         GetPrim().GetAuthoredPropertiesInNamespace(_schemaTokens->coordSys)) {
+         GetPrim().GetAuthoredPropertiesInNamespace(UsdShadeTokens->coordSys)) {
         if (UsdRelationship rel = prop.As<UsdRelationship>()) {
             if (rel) {
                 if (checker == 2) {
@@ -711,7 +704,7 @@ UsdShadeCoordSysAPI::BlockBinding() const
 TfToken
 UsdShadeCoordSysAPI::GetCoordSysRelationshipName(const std::string &name)
 {
-    return TfToken(_schemaTokens->coordSys.GetString() + ":" + name);
+    return TfToken(UsdShadeTokens->coordSys.GetString() + ":" + name);
 }
 
 /* static */

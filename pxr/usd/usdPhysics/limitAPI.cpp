@@ -28,8 +28,6 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
-#include "pxr/base/tf/staticTokens.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Register the schema with the TfType system.
@@ -39,11 +37,6 @@ TF_REGISTRY_FUNCTION(TfType)
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _schemaTokens,
-    (limit)
-);
 
 /* virtual */
 UsdPhysicsLimitAPI::~UsdPhysicsLimitAPI()
@@ -123,9 +116,9 @@ UsdPhysicsLimitAPI::IsPhysicsLimitAPIPath(
     }
 
     if (tokens.size() >= 2
-        && tokens[0] == _schemaTokens->limit) {
+        && tokens[0] == UsdPhysicsTokens->limit) {
         *name = TfToken(propertyName.substr(
-            _schemaTokens->limit.GetString().size() + 1));
+           UsdPhysicsTokens->limit.GetString().size() + 1));
         return true;
     }
 

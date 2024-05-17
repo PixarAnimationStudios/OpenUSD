@@ -28,8 +28,6 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
-#include "pxr/base/tf/staticTokens.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Register the schema with the TfType system.
@@ -39,11 +37,6 @@ TF_REGISTRY_FUNCTION(TfType)
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _schemaTokens,
-    (collection)
-);
 
 /* virtual */
 UsdCollectionAPI::~UsdCollectionAPI()
@@ -131,9 +124,9 @@ UsdCollectionAPI::IsCollectionAPIPath(
     }
 
     if (tokens.size() >= 2
-        && tokens[0] == _schemaTokens->collection) {
+        && tokens[0] == UsdTokens->collection) {
         *name = TfToken(propertyName.substr(
-            _schemaTokens->collection.GetString().size() + 1));
+           UsdTokens->collection.GetString().size() + 1));
         return true;
     }
 
