@@ -2546,42 +2546,6 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         }
         shaderCompiled = true;
     }
-    if (_hasFS) {
-        HgiShaderFunctionDesc desc;
-        std::stringstream resDecl;
-        resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->fragmentShader, _resCommon, _GetMetaData());
-        resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->fragmentShader, _resFS, _GetMetaData());
-
-        // material in FS
-        resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->fragmentShader, _resMaterial, _GetMetaData());
-        resourceGen._GenerateGLSLTextureResources(resDecl,
-            HdShaderTokens->fragmentShader, _resTextures, _GetMetaData());
-
-        std::string const source =
-            _genDefines.str() + _genDecl.str() + resDecl.str() + _osd.str() +
-            _genAccessors.str() + _genFS.str();
-
-        desc.shaderStage = HgiShaderStageFragment;
-        desc.shaderCode = source.c_str();
-        desc.generatedShaderCodeOut = &_fsSource;
-
-        const bool builtinBarycentricsEnabled =
-            registry->GetHgi()->GetCapabilities()->IsSet(
-                HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
-        if (builtinBarycentricsEnabled) {
-            HgiShaderFunctionAddStageInput(
-                &desc, "hd_BaryCoordNoPersp", "vec3",
-                HgiShaderKeywordTokens->hdBaryCoordNoPersp);
-        }
-
-        if (!glslProgram->CompileShader(desc)) {
-            return nullptr;
-        }
-        shaderCompiled = true;
-    }
     if (_hasTCS) {
         HgiShaderFunctionDesc desc;
         std::stringstream resDecl;
@@ -2665,6 +2629,42 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
             HgiShaderFunctionAddStageOutput(
                 &desc, "gl_ClipDistance", "float",
                 "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
+        }
+
+        if (!glslProgram->CompileShader(desc)) {
+            return nullptr;
+        }
+        shaderCompiled = true;
+    }
+    if (_hasFS) {
+        HgiShaderFunctionDesc desc;
+        std::stringstream resDecl;
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->fragmentShader, _resCommon, _GetMetaData());
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->fragmentShader, _resFS, _GetMetaData());
+
+        // material in FS
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->fragmentShader, _resMaterial, _GetMetaData());
+        resourceGen._GenerateGLSLTextureResources(resDecl,
+            HdShaderTokens->fragmentShader, _resTextures, _GetMetaData());
+
+        std::string const source =
+            _genDefines.str() + _genDecl.str() + resDecl.str() + _osd.str() +
+            _genAccessors.str() + _genFS.str();
+
+        desc.shaderStage = HgiShaderStageFragment;
+        desc.shaderCode = source.c_str();
+        desc.generatedShaderCodeOut = &_fsSource;
+
+        const bool builtinBarycentricsEnabled =
+            registry->GetHgi()->GetCapabilities()->IsSet(
+                HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+        if (builtinBarycentricsEnabled) {
+            HgiShaderFunctionAddStageInput(
+                &desc, "hd_BaryCoordNoPersp", "vec3",
+                HgiShaderKeywordTokens->hdBaryCoordNoPersp);
         }
 
         if (!glslProgram->CompileShader(desc)) {
