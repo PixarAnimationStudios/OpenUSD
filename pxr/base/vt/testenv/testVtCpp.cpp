@@ -28,7 +28,6 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/vt/streamOut.h"
 #include "pxr/base/vt/types.h"
-#include "pxr/base/vt/functions.h"
 #include "pxr/base/vt/visitValue.h"
 
 #include "pxr/base/gf/matrix2f.h"
@@ -548,34 +547,6 @@ static void testArray() {
         catch (std::bad_alloc const &) {
             // pass
         }
-    }
-}
-
-static void testArrayOperators() {
-
-    {
-        VtDoubleArray a(3), b(3);
-        a[0] = 1;
-        a[1] = 2;
-        a[2] = 3;
-        b[0] = 4;
-        b[1] = 5;
-        b[2] = 6;
-
-        VtDoubleArray c = VtCat(a,b);
-        VtDoubleArray d = c * 2.0;
-        TF_AXIOM(d[3] == 8);
-        VtDoubleArray e = a * b / 2.0;
-        TF_AXIOM(e[2] == 9);
-        TF_AXIOM(VtAnyTrue(VtEqual(a,VtZero<double>())) == false);
-        TF_AXIOM(VtAllTrue(VtEqual(a-a,VtZero<double>())) == true);
-        std::string empty = VtZero<std::string>();
-        VtStringArray s(4);
-        s[0] = empty;
-        s[1] = "a";
-        s[2] = "test";
-        s[3] = "array";
-        TF_AXIOM(VtAllTrue(VtNotEqual(s,VtZero<std::string>())) == false);
     }
 }
 
@@ -1877,7 +1848,6 @@ static void testVtCheapToCopy() {
 int main(int argc, char *argv[])
 {
     testArray();
-    testArrayOperators();
 
     testDictionary();
     testDictionaryKeyPathAPI();
