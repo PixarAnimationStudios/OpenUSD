@@ -952,7 +952,7 @@ _GenerateMaterialXShader(
         mtlxDoc, stdLibraries, searchPaths, mxHdInfo, apiName);
 }
 
-void
+mx::ShaderPtr
 HdSt_ApplyMaterialXFilter(
     HdMaterialNetwork2* hdNetwork,
     SdfPath const& materialPath,
@@ -1055,7 +1055,10 @@ HdSt_ApplyMaterialXFilter(
             // Replace the original terminalNode with this newTerminalNode
             hdNetwork->nodes[terminalNodePath] = newTerminalNode;
         }
+
+        return glslfxShader;
     }
+    return nullptr;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1107,7 +1107,7 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
         if (!isVolume) {
-            HdSt_ApplyMaterialXFilter(&surfaceNetwork, materialId,
+            _materialXGfx = HdSt_ApplyMaterialXFilter(&surfaceNetwork, materialId,
                                       *surfTerminal, surfTerminalPath,
                                       &_materialParams, resourceRegistry);
         }

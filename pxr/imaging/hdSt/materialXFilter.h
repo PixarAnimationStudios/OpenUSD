@@ -54,7 +54,7 @@ struct HdSt_MxShaderGenInfo {
 
 /// MaterialX Filter
 /// Converting a MaterialX node to one with a generated MaterialX glslfx file
-void HdSt_ApplyMaterialXFilter(
+MaterialX::ShaderPtr HdSt_ApplyMaterialXFilter(
     HdMaterialNetwork2* hdNetwork,
     SdfPath const& materialPath,
     HdMaterialNode2 const& terminalNode,
