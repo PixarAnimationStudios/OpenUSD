@@ -1870,26 +1870,14 @@ _IsBindless(HdStBinding const & binding)
 }
 
 static
-GLenum
-_GetTextureTarget(HdStBinding const & binding)
+void
+_BindGLTextureAndSampler(
+    int const textureUnit,
+    GLuint const textureId,
+    GLuint const samplerId)
 {
-    switch (binding.GetType()) {
-        case HdStBinding::TEXTURE_2D:
-        case HdStBinding::ARRAY_OF_TEXTURE_2D:
-            return GL_TEXTURE_2D;
-        case HdStBinding::TEXTURE_FIELD:
-            return GL_TEXTURE_3D;
-        case HdStBinding::TEXTURE_UDIM_ARRAY:
-        case HdStBinding::TEXTURE_PTEX_TEXEL:
-            return GL_TEXTURE_2D_ARRAY;
-        case HdStBinding::TEXTURE_UDIM_LAYOUT:
-            return GL_TEXTURE_1D;
-        case HdStBinding::TEXTURE_PTEX_LAYOUT:
-            return GL_TEXTURE_1D_ARRAY;
-        default:
-            TF_CODING_ERROR("Unknown texture binding type");
-            return GL_NONE;
-    }
+    glBindTextureUnit(textureUnit, textureId);
+    glBindSampler(textureUnit, samplerId);
 }
 
 void
@@ -1899,40 +1887,15 @@ HdSt_ResourceBinder::BindTexture(
         HgiTextureHandle const &textureHandle,
         const bool bind) const
 {
-    const HdStBinding binding = GetBinding(name);
+    HdStBinding const binding = GetBinding(name);
     if (_IsBindless(binding)) {
         return;
     }
 
-    const int samplerUnit = binding.GetTextureUnit();
-
-    glActiveTexture(GL_TEXTURE0 + samplerUnit);
-
-    const HgiTexture * const tex = textureHandle.Get();
-    const HgiGLTexture * const glTex =
-        dynamic_cast<const HgiGLTexture*>(tex);
-
-    if (tex && !glTex) {
-        TF_CODING_ERROR("Resource binder only supports OpenGL");
-    }
-
-    const GLuint texName =
-        (bind && glTex) ? glTex->GetTextureId() : 0;
-    glBindTexture(_GetTextureTarget(binding), texName);
-
-    const HgiSampler * const sampler = samplerHandle.Get();
-    const HgiGLSampler * const glSampler =
-        dynamic_cast<const HgiGLSampler*>(sampler);
-
-    if (sampler && !glSampler) {
-        TF_CODING_ERROR("Resource binder only supports OpenGL");
-    }
-
-    const GLuint samplerName =
-        (bind && glSampler) ? glSampler->GetSamplerId() : 0;
-    glBindSampler(samplerUnit, samplerName);
-
-    glActiveTexture(GL_TEXTURE0);
+    _BindGLTextureAndSampler(
+        binding.GetTextureUnit(),
+        (bind && textureHandle) ? textureHandle->GetRawResource() : 0,
+        (bind && samplerHandle) ? samplerHandle->GetRawResource() : 0);
 }
 
 void
@@ -1940,36 +1903,26 @@ HdSt_ResourceBinder::BindTextureWithLayout(
         TfToken const &name,
         HgiSamplerHandle const &texelSampler,
         HgiTextureHandle const &texelTexture,
+        HgiSamplerHandle const &layoutSampler,
         HgiTextureHandle const &layoutTexture,
         const bool bind) const
 {
-    const HdStBinding texelBinding = GetBinding(name);
+    HdStBinding const texelBinding = GetBinding(name);
     if (_IsBindless(texelBinding)) {
         return;
     }
 
-    const int texelSamplerUnit = texelBinding.GetTextureUnit();
+    _BindGLTextureAndSampler(
+        texelBinding.GetTextureUnit(),
+        (bind && texelTexture) ? texelTexture->GetRawResource() : 0,
+        (bind && texelSampler) ? texelSampler->GetRawResource() : 0);
 
-    glActiveTexture(GL_TEXTURE0 + texelSamplerUnit);
-    glBindTexture(_GetTextureTarget(texelBinding),
-              (bind && texelTexture) ? texelTexture->GetRawResource() : 0);
+    HdStBinding const layoutBinding = GetBinding(_ConcatLayout(name));
 
-    const HgiGLSampler * const glSampler =
-        bind ? dynamic_cast<HgiGLSampler*>(texelSampler.Get()) : nullptr;
-
-    if (glSampler) {
-        glBindSampler(texelSamplerUnit, (GLuint)glSampler->GetSamplerId());
-    } else {
-        glBindSampler(texelSamplerUnit, 0);
-    }
-
-    const HdStBinding layoutBinding = GetBinding(_ConcatLayout(name));
-    const int layoutSamplerUnit = layoutBinding.GetTextureUnit();
-
-    glActiveTexture(GL_TEXTURE0 + layoutSamplerUnit);
-    glBindTexture(_GetTextureTarget(layoutBinding),
-              (bind && layoutTexture) ? layoutTexture->GetRawResource() : 0);
-    glActiveTexture(GL_TEXTURE0);
+    _BindGLTextureAndSampler(
+        layoutBinding.GetTextureUnit(),
+        (bind && layoutTexture) ? layoutTexture->GetRawResource() : 0,
+        (bind && layoutSampler) ? layoutSampler->GetRawResource() : 0);
 }
 
 

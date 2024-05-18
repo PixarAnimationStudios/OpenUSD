@@ -1247,6 +1247,26 @@ _ResourceGenerator::_GenerateGLSLResources(
     }
 }
 
+static
+std::string
+_GetGLSLSamplerTypePrefix(HioFormat hioFormat)
+{
+    GLenum const hioType = HioGetHioType(hioFormat);
+    switch (hioType) {
+        case HioTypeUnsignedByte:
+        case HioTypeUnsignedByteSRGB:
+        case HioTypeUnsignedShort:
+        case HioTypeUnsignedInt:
+            return "u";
+        case HioTypeSignedByte:
+        case HioTypeSignedShort:
+        case HioTypeInt:
+            return "i";
+        default:
+            return "";
+    }
+}
+
 void
 _ResourceGenerator::_GenerateGLSLTextureResources(
     std::stringstream &str,
@@ -1263,13 +1283,18 @@ _ResourceGenerator::_GenerateGLSLTextureResources(
 
         bool const isArrayOfTexture = (texture.arraySize > 0);
 
+        const std::string typePrefix =
+            _GetGLSLSamplerTypePrefix(texture.format);
+
         std::string const samplerType =
+            typePrefix +
             (isShadowTexture
                 ? "sampler" + std::to_string(texture.dim) + "DShadow"
                 : "sampler" + std::to_string(texture.dim) + "D") +
             (isArrayTexture ? "Array" : "");
 
         std::string const resultType =
+            typePrefix +
             (isShadowTexture ? "float" : "vec4");
 
         std::string const resourceName =

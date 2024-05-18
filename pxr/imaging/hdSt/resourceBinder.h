@@ -529,6 +529,7 @@ public:
     void BindTextureWithLayout(TfToken const &name,
                                HgiSamplerHandle const &texelSampler,
                                HgiTextureHandle const &texelTexture,
+                               HgiSamplerHandle const &layoutSampler,
                                HgiTextureHandle const &layoutTexture,
                                const bool bind) const;
 
