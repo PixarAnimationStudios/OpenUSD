@@ -176,7 +176,8 @@ HdPrman_RenderPassSceneIndex::GetChildPrimPaths(
     _RenderPassState const& state = _PullActiveRenderPasssState();
 
     if (state.pruneEval) {
-        SdfPathVector childPathVec;
+        SdfPathVector childPathVec =
+            _GetInputSceneIndex()->GetChildPrimPaths(primPath);
         HdsiUtilsRemovePrunedChildren(primPath, *state.pruneEval,
                                       &childPathVec);
         return childPathVec;
