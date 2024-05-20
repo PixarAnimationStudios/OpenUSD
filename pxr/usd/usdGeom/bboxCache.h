@@ -470,7 +470,7 @@ private:
     //
     // \p inverseComponentCtm is used to combine all the child bboxes in
     // component-relative space.
-    void _ResolvePrim(_BBoxTask* task,
+    void _ResolvePrim(const _BBoxTask* task,
                       const _PrimContext& prim,
                       const GfMatrix4d &inverseComponentCtm);
 

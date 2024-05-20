@@ -100,11 +100,11 @@ public:
     explicit operator bool() const {
         return _owner;
     }
-    void operator()() {
+    void operator()() const {
         // Do not save state here; all state should be accumulated externally.
-        _owner->_ResolvePrim(this, _primContext, _inverseComponentCtm);
+        _owner->_ResolvePrim(const_cast<_BBoxTask const *>(this), _primContext, _inverseComponentCtm);
     }
-    _ThreadXformCache* GetXformCaches() { return _xfCaches; }
+    _ThreadXformCache* GetXformCaches() const { return _xfCaches; }
 };
 
 // -------------------------------------------------------------------------- //
@@ -125,7 +125,7 @@ private:
 
     struct _PrototypeTask
     {
-        _PrototypeTask() noexcept
+        _PrototypeTask()
             : numDependencies(0) { }
 
         _PrototypeTask(const _PrototypeTask &other)
@@ -1183,7 +1183,7 @@ UsdGeomBBoxCache::_GetBBoxFromExtentsHint(
 }
 
 void
-UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
+UsdGeomBBoxCache::_ResolvePrim(const _BBoxTask* task,
                                const _PrimContext &primContext,
                                const GfMatrix4d &inverseComponentCtm)
 {
@@ -1539,4 +1539,3 @@ UsdGeomBBoxCache::_PrimContext::ToString() const {
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
