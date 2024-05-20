@@ -36,6 +36,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HGI_DEBUG_DEVICE_CAPABILITIES,
         "Hgi report when device capabilities are initialized and dump "
         "contents");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HGI_DEBUG_INSTANCE_CREATION,
+        "Hgi report when attempting to create an Hgi instance");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

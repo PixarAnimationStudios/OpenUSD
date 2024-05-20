@@ -141,16 +141,38 @@ public:
     HGI_API
     static HgiUniquePtr CreatePlatformDefaultHgi();
 
+    /// Helper function to return a Hgi object of choice supported by current 
+    /// platform and build configuration.
+    /// For example, on macOS, this may allow HgiMetal only.
+    /// If the Hgi device specified is not available on the current platform,
+    /// this function will fail and return nullptr. 
+    /// If an empty token is provided, the default Hgi type (see
+    /// CreatePlatformDefaultHgi) will be created.
+    /// Supported TfToken values are OpenGL, Metal, Vulkan, or an empty token;
+    /// if not using an empty token, the caller is expected to use a token from 
+    /// HgiTokens.
+    /// Caller, usually the application, owns the lifetime of the Hgi object and
+    /// the object is destroyed when the caller drops the unique ptr.
+    /// Thread safety: Not thread safe.
+    HGI_API
+    static HgiUniquePtr CreateNamedHgi(const TfToken& hgiToken);
+
     /// Determine if Hgi instance can run on current hardware.
     /// Thread safety: This call is thread safe.
     HGI_API
     virtual bool IsBackendSupported() const = 0;
 
-    /// Constructs a temporary Hgi object for the current platform and calls
-    /// the object's IsBackendSupported() function.
+    /// Constructs a temporary Hgi object and calls the object's 
+    /// IsBackendSupported() function.
+    /// A token can optionally be provided to specify a specific Hgi backend to 
+    /// create. Supported TfToken values are OpenGL, Metal, Vulkan, or an empty 
+    /// token; if not using an empty token, the caller is expected to use a 
+    /// token from HgiTokens. 
+    /// An empty token will check support for creating the platform default Hgi.
+    /// An invalid token will result in this function returning false.
     /// Thread safety: Not thread safe.
     HGI_API
-    static bool IsSupported();
+    static bool IsSupported(const TfToken& hgiToken = TfToken());
 
     /// Returns a GraphicsCmds object (for temporary use) that is ready to
     /// record draw commands. GraphicsCmds is a lightweight object that
