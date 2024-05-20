@@ -103,7 +103,7 @@ private:
     USDIMAGING_API
     UsdImagingStageSceneIndex(HdContainerDataSourceHandle const &inputArgs);
 
-    Usd_PrimFlagsConjunction _GetTraversalPredicate() const;
+    Usd_PrimFlagsPredicate _GetPrimPredicate() const;
 
     void _ApplyPendingResyncs();
     void _ComputeDirtiedEntries(
