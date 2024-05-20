@@ -79,10 +79,13 @@ public:
     /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
-
+    HD_API
     VtArray<TfToken> GetIncludedCategoryNames();
+
+    HD_API
     bool IsIncludedInCategory(const TfToken &categoryName);
 
+    HD_API
     static HdContainerDataSourceHandle BuildRetained(
         size_t includedNameCount,
         const TfToken *includedNames,
