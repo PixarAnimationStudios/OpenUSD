@@ -46,9 +46,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 // *all* of TfSmallVector's template parameters.
 class TfSmallVectorBase
 {
+protected:
+    // We present the public size_type and difference_type as std::size_t and
+    // std::ptrdiff_t to match std::vector, but internally we store size &
+    // capacity as uint32_t.
+    using _SizeMemberType = std::uint32_t;
 public:
-    using size_type = std::uint32_t;
-    using difference_type = std::int32_t;
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
 
     // Returns the local capacity that may be used without increasing the size
     // of the TfSmallVector.  TfSmallVector<T, N> will never use more local
@@ -633,7 +638,7 @@ public:
     /// Returns the maximum size of this vector.
     ///
     static constexpr size_type max_size() {
-        return std::numeric_limits<size_type>::max();
+        return std::numeric_limits<_SizeMemberType>::max();
     }
 
     /// Returns \c true if this vector is empty.
@@ -837,7 +842,7 @@ private:
     }
 
     // Grow the storage to be able to accommodate newCapacity entries. This
-    // always allocates remotes storage.
+    // always allocates remote storage.
     void _GrowStorage(const size_type newCapacity) {
         value_type *newStorage = _Allocate(newCapacity);
         _UninitializedMove(begin(), end(), iterator(newStorage));
@@ -917,11 +922,11 @@ private:
     _Data<value_type, N> _data;
 
     // The current size of the vector, i.e. how many entries it contains.
-    size_type _size;
+    _SizeMemberType _size;
 
     // The current capacity of the vector, i.e. how big the currently allocated
     // storage space is.
-    size_type _capacity;
+    _SizeMemberType _capacity;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

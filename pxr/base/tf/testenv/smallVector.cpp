@@ -997,7 +997,7 @@ testInsertionTrivial()
             if (a.capacity() > 4*numInsertedElems*(i+1)) {
                 TF_FATAL_ERROR(
                     "Capacity too large; after %d insertions of %zu elements, "
-                    "vector has size %u and capacity %u",
+                    "vector has size %zu and capacity %zu",
                     i+1, numInsertedElems, a.size(), a.capacity());
             }
         }
