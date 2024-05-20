@@ -25,6 +25,7 @@
    Namespace Editing <user_guides/namespace_editing>
    Rendering with USD <user_guides/render_user_guide>
    USD Variable Expressions <user_guides/variable_expressions>
+   Schema Domains <user_guides/schemas/index>
 
 .. toctree::
    :hidden:
@@ -48,6 +49,7 @@
    Contributing <contributing_to_usd>
    Contributors <contributors>
    Release Schedule <release_schedule>
+   License <license>
 
 .. toctree::
    :hidden:
