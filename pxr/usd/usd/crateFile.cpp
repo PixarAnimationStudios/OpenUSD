@@ -3647,13 +3647,14 @@ CrateFile::_ReadPathsImpl(Reader reader,
                 auto siblingOffset = reader.template Read<int64_t>();
                 dispatcher.Run(
                     [this, reader,
-                     siblingOffset, &dispatcher, parentPath]() mutable {
+                     siblingOffset, &dispatcher, parentPath]() {
                         // XXX Remove these tags when bug #132031 is addressed
                         TfAutoMallocTag tag(
                             "Usd", "Usd_CrateDataImpl::Open",
                             "Usd_CrateFile::CrateFile::Open", "_ReadPaths");
-                        reader.Seek(siblingOffset);
-                        _ReadPathsImpl<Header>(reader, dispatcher, parentPath);
+                        auto readerCopy = reader;
+                        readerCopy.Seek(siblingOffset);
+                        _ReadPathsImpl<Header>(readerCopy, dispatcher, parentPath);
                     });
             }
             // Have a child (may have also had a sibling). Reset parent path.
@@ -3783,7 +3784,7 @@ CrateFile::_BuildDecompressedPathsImpl(
 #endif
                 dispatcher.Run(
                     [this, &pathIndexes, &elementTokenIndexes, &jumps,
-                     siblingIndex, &dispatcher, parentPath]() mutable {
+                     siblingIndex, &dispatcher, parentPath]()  {
                         // XXX Remove these tags when bug #132031 is addressed
                         TfAutoMallocTag tag(
                             "Usd", "Usd_CrateDataImpl::Open",
