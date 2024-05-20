@@ -3893,6 +3893,27 @@ UsdStage::GetPathResolverContext() const
     return _GetPcpCache()->GetLayerStackIdentifier().pathResolverContext;
 }
 
+PcpErrorVector 
+UsdStage::GetCompositionErrors() const
+{
+    PcpErrorVector errors;
+
+    auto _ExtractErrorsFromPrimIndices = [&errors](
+        const PcpPrimIndex &primIndex) {
+            const PcpErrorVector &localErrors = primIndex.GetLocalErrors();
+            errors.insert(errors.end(), localErrors.begin(), localErrors.end());
+    };
+    _GetPcpCache()->ForEachPrimIndex(_ExtractErrorsFromPrimIndices);
+
+    auto _ExtractErrorsFromPcpLayerStack = [&errors](
+        const PcpLayerStackPtr layerStackPtr) {
+            const PcpErrorVector &localErrors = layerStackPtr->GetLocalErrors();
+            errors.insert(errors.end(), localErrors.begin(), localErrors.end());
+    };
+    _GetPcpCache()->ForEachLayerStack(_ExtractErrorsFromPcpLayerStack);
+    return errors;
+}
+
 SdfLayerHandleVector
 UsdStage::GetLayerStack(bool includeSessionLayers) const
 {

@@ -483,6 +483,8 @@ void wrapUsdStage()
         .def("GetPathResolverContext", &UsdStage::GetPathResolverContext)
         .def("ResolveIdentifierToEditTarget",
              &UsdStage::ResolveIdentifierToEditTarget, arg("identifier"))
+        .def("GetCompositionErrors", &UsdStage::GetCompositionErrors,
+             return_value_policy<TfPySequenceToList>())
         .def("GetLayerStack", &UsdStage::GetLayerStack,
              arg("includeSessionLayers")=true,
              return_value_policy<TfPySequenceToList>())
