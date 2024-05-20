@@ -112,6 +112,19 @@ public:
         _graph = graph;
     }
 
+    /// Add the nodes in \p childPrimIndex to this prim index; \p arcToParent
+    /// specifies the node in this prim index where the root node of \p
+    /// childPrimIndex will be added, along with other information about the
+    /// composition arc connecting the two prim indexes.
+    ///
+    /// Return the node in this prim index corresponding to the root node
+    /// of \p childPrimIndex.
+    ///
+    PcpNodeRef AddChildPrimIndex(
+        const PcpArc &arcToParent, 
+        PcpPrimIndex &&childPrimIndex,
+        PcpErrorBasePtr *error);
+
     const PcpPrimIndex_GraphRefPtr &GetGraph() const {
         return _graph;
     }

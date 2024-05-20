@@ -965,6 +965,35 @@ class TestPcpPrimIndex(unittest.TestCase):
                 ]
             ])
 
+    def test_RecursivePrimIndexComputationLocalErrors(self):
+        """Test to make sure recursive primIndex computation correctly stores 
+        composition errors"""
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootLayer.ImportFromString('''
+        #sdf 1.4.32
+
+        def "Main" (
+        )
+        {
+            def "First" (
+                prepend references = </Main/Second>
+            )
+            {
+            }
+
+            def "Second" (
+                prepend references = </Main/First>
+            )
+            {
+            }
+        }
+        '''.strip())
+        pcp = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
+        pi, errs = pcp.ComputePrimIndex('/Main/First')
+        self.assertEqual(len(errs), 1)
+        self.assertEqual(len(errs), len(pi.localErrors))
+        self.assertEqual(str(errs[0]), str(pi.localErrors[0]))
+
     def test_TestInvalidPcpNodeRef(self):
         """Test to ensure that a invalid PcpNodeRef will return false
             when cast to a bool"""
