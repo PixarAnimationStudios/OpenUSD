@@ -349,9 +349,9 @@ HdxColorCorrectionTask::_CreateOpenColorIOResourcesImpl(
     shaderDesc->setFunctionName("OCIODisplay");
     const float *lutValues = nullptr;
     shaderDesc->setLanguage(
-        hgi->GetAPIName() == HgiTokens->OpenGL ?
-                    OCIO::GPU_LANGUAGE_GLSL_4_0 :
-                    OCIO::GPU_LANGUAGE_MSL_2_0);
+        hgi->GetAPIName() == HgiTokens->Metal ?
+                    OCIO::GPU_LANGUAGE_MSL_2_0 :
+                    OCIO::GPU_LANGUAGE_GLSL_4_0);
     gpuProcessor->extractGpuShaderInfo(shaderDesc);
 
     //
@@ -570,7 +570,7 @@ HdxColorCorrectionTask::_CreateOpenColorIOShaderCode(
         }
         else
         {
-            // For OpenGL case:
+            // For OpenGL and Vulkan case:
             // Since OCIO textures don't have a binding index, we use
             // the declaration provided by Hgi that has a proper
             // binding and layout. Therefore we subsitute sampler
@@ -584,10 +584,23 @@ HdxColorCorrectionTask::_CreateOpenColorIOShaderCode(
                 size_t offset = ocioGpuShaderText.find(texInfo.samplerName);
                 if (offset != std::string::npos)
                 {
-                    offset += samplerNameLength;
-                        // ignore first occurance that is variable definition
-                    offset = ocioGpuShaderText.find(
-                                    texInfo.samplerName, offset);
+                    // Remove entire line containing first occurrence
+                    // (the variable declaration).
+                    size_t prevNewLineOffset = ocioGpuShaderText.rfind(
+                        "\n", offset);
+                    size_t nextNewLineOffset = ocioGpuShaderText.find(
+                        "\n", offset);
+                    if (prevNewLineOffset == std::string::npos) {
+                        prevNewLineOffset = 0;
+                    }
+                    if (nextNewLineOffset == std::string::npos) {
+                        nextNewLineOffset = ocioGpuShaderText.length();
+                    }
+                    ocioGpuShaderText.erase(prevNewLineOffset,
+                        nextNewLineOffset - prevNewLineOffset);
+
+                    // Now find and replace second occurrence.
+                    offset = ocioGpuShaderText.find(texInfo.samplerName);
                     while (offset != std::string::npos)
                     {
                         ocioGpuShaderText.replace(
