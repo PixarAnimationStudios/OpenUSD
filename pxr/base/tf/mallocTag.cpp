@@ -1683,7 +1683,10 @@ TfMallocTag::CallTree::LoadReport(
     // allocations, mainly so we have a non-zero value at the root, so that we
     // don't produce an empty report by pruning at the root.
     if (root.children.size() == 1) {
-        root = root.children[0];
+        // Here, we copy the root's child before overwriting the root. While we
+        // squeaked by here on linux, on windows we didn't get so (un)lucky.
+        const PathNode newRoot = root.children[0];
+        root = newRoot;
     } else {
         for (const PathNode& child : root.children) {
             root.nBytes += child.nBytes;
