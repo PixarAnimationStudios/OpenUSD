@@ -104,6 +104,12 @@
                         "loadWithRenderer" : "Prman",
                         "priority": 0,
                         "displayName": "Converts Hydra prims to Riley prims."
+                    },
+                    "HdPrman_LightLinkingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "Prman",
+                        "priority": 0,
+                        "displayName": "Scene index that implements light linking."
                     }
                 }
             },
