@@ -33,6 +33,16 @@ public:
         return _power;
     }
 
+    // returns true if the IES files was successfully loaded and processed and
+    // is ready to evaluate
+    bool valid() const
+    {
+        return !intensity.empty();
+    }
+
+    // evaluate the IES file for the given spherical coordinates
+    float eval(float theta, float phi, float angleScale) const;
+
 protected:
     // Extra processing we do on-top of the "standard" process() from IESFile
     void pxr_extra_process();
