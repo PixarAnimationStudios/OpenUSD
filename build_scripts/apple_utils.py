@@ -297,4 +297,11 @@ def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
         args.append(f"-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH")
         args.append(f"-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH")
         args.append(f"-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH")
+
+
+    # Signing needs to happen on all systems
+    if context.macOSCodesign:
+        args.append(f"-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY={GetCodeSignID()}")
+        args.append(f"-DCMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM={GetDevelopmentTeamID()}")
+
     return args
