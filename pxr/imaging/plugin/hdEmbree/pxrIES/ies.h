@@ -2,13 +2,21 @@
  *
  * SPDX-License-Identifier: Apache-2.0 */
 
-#ifndef __UTIL_IES_H__
-#define __UTIL_IES_H__
+#ifndef PXR_IMAGING_PLUGIN_HD_EMBREE_PXRIES_IES_H
+#define PXR_IMAGING_PLUGIN_HD_EMBREE_PXRIES_IES_H
 
-#include "util/string.h"
-#include "util/vector.h"
 
-CCL_NAMESPACE_BEGIN
+#include <string>
+#include <vector>
+
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+namespace pxr_ccl {
+
+using std::string;
+using std::vector;
 
 class IESFile {
  public:
@@ -24,6 +32,7 @@ class IESFile {
  protected:
   bool parse(const string &ies);
   bool process();
+
   void process_type_a();
   void process_type_b();
   void process_type_c();
@@ -41,6 +50,8 @@ class IESFile {
   enum IESType { TYPE_A = 3, TYPE_B = 2, TYPE_C = 1 } type;
 };
 
-CCL_NAMESPACE_END
+} /* namespace pxr_ccl */
 
-#endif /* __UTIL_IES_H__ */
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif /* PXR_IMAGING_PLUGIN_HD_EMBREE_PXRIES_IES_H */
