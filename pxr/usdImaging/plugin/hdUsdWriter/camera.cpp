@@ -147,8 +147,7 @@ void HdUsdWriterCamera::SerializeToUsd(const UsdStagePtr &stage)
         {
             // For being able to roundtrip UsdGeomCamera.
             // Serialized as Float4[] 'clippingPlanes'.
-            const auto& attr = prim.CreateAttribute(UsdGeomTokens->clippingPlanes, SdfValueTypeNames->Float4Array,
-                    false /*custom*/, SdfVariabilityVarying);
+            const auto& attr = camera.CreateClippingPlanesAttr();
             HdUsdWriterSetOrWarn(attr, _VectorVec4dToVtArrayVec4f(*_clipPlanes));
         });
     HdUsdWriterPopOptional(_focalLength, [&](const auto& focalLength)

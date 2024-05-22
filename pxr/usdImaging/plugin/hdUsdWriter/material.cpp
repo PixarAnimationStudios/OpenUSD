@@ -188,15 +188,15 @@ void _WriteMaterial(UsdShadeMaterial& material,
                 //  incorrect, std::string instead of TfToken.
                 // TfToken parameters might come through as std::string, so we need to do some extra
                 // conversions.
-                if (inputType == SdfValueTypeNames->Token && !parameter.second.template IsHolding<TfToken>())
+                if (inputType == SdfValueTypeNames->Token && !parameter.second.IsHolding<TfToken>())
                 {
-                    if (parameter.second.template IsHolding<std::string>())
+                    if (parameter.second.IsHolding<std::string>())
                     {
-                        input.Set(TfToken{ parameter.second.template UncheckedGet<std::string>() });
+                        input.Set(TfToken{ parameter.second.UncheckedGet<std::string>() });
                     }
-                    else if (parameter.second.template IsHolding<SdfAssetPath>())
+                    else if (parameter.second.IsHolding<SdfAssetPath>())
                     {
-                        const auto& asset = parameter.second.template UncheckedGet<SdfAssetPath>();
+                        const auto& asset = parameter.second.UncheckedGet<SdfAssetPath>();
                         if (asset.GetResolvedPath().empty())
                         {
                             input.Set(TfToken{ asset.GetAssetPath() });
@@ -207,15 +207,15 @@ void _WriteMaterial(UsdShadeMaterial& material,
                         }
                     }
                 }
-                else if (inputType == SdfValueTypeNames->String && !parameter.second.template IsHolding<std::string>())
+                else if (inputType == SdfValueTypeNames->String && !parameter.second.IsHolding<std::string>())
                 {
-                    if (parameter.second.template IsHolding<TfToken>())
+                    if (parameter.second.IsHolding<TfToken>())
                     {
-                        input.Set(parameter.second.template UncheckedGet<TfToken>().GetString());
+                        input.Set(parameter.second.UncheckedGet<TfToken>().GetString());
                     }
-                    else if (parameter.second.template IsHolding<SdfAssetPath>())
+                    else if (parameter.second.IsHolding<SdfAssetPath>())
                     {
-                        const auto& asset = parameter.second.template UncheckedGet<SdfAssetPath>();
+                        const auto& asset = parameter.second.UncheckedGet<SdfAssetPath>();
                         if (asset.GetResolvedPath().empty())
                         {
                             input.Set(asset.GetAssetPath());
@@ -226,16 +226,16 @@ void _WriteMaterial(UsdShadeMaterial& material,
                         }
                     }
                 }
-                else if (inputType == SdfValueTypeNames->Asset && !parameter.second.template IsHolding<SdfAssetPath>())
+                else if (inputType == SdfValueTypeNames->Asset && !parameter.second.IsHolding<SdfAssetPath>())
                 {
-                    if (parameter.second.template IsHolding<TfToken>())
+                    if (parameter.second.IsHolding<TfToken>())
                     {
-                        const auto& token = parameter.second.template UncheckedGet<TfToken>();
+                        const auto& token = parameter.second.UncheckedGet<TfToken>();
                         input.Set(SdfAssetPath{ token.GetString(), token.GetString() });
                     }
-                    else if (parameter.second.template IsHolding<std::string>())
+                    else if (parameter.second.IsHolding<std::string>())
                     {
-                        const auto& string = parameter.second.template UncheckedGet<std::string>();
+                        const auto& string = parameter.second.UncheckedGet<std::string>();
                         input.Set(SdfAssetPath{ string, string });
                     }
                 }

@@ -117,7 +117,7 @@ private:
         PrimvarMap::accessor pvAccessor;
         if (_primvars.find(pvAccessor, name) && pvAccessor->second.value.IsHolding<T>())
         {
-            f(pvAccessor->second.value.template UncheckedGet<T>());
+            f(pvAccessor->second.value.UncheckedGet<T>());
         }
     }
 };
