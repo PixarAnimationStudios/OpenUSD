@@ -42,9 +42,8 @@ wrapUsdWriterDriver()
 
     scope s = class_<This, boost::noncopyable>("UsdWriterDriver")
         .def(init<>())
-        .def(init<const TfToken&, bool>(
-            (arg("rendererPluginId") = TfToken("HdUsdWriterRendererPlugin"), 
-             arg("gpuEnabled") = false)))
+        .def(init<const TfToken&>(
+            (arg("rendererPluginId") = TfToken())))
         .def(
             "Render",
             &This::Render,

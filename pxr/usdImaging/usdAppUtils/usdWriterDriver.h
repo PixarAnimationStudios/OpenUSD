@@ -42,19 +42,7 @@ class UsdAppUtilsUsdWriterDriver
 public:
     USDAPPUTILS_API
     UsdAppUtilsUsdWriterDriver(
-        const TfToken& rendererPluginId = TfToken("HdUsdWriterRendererPlugin"),
-        bool gpuEnabled = false);
-
-    /// Sets the Hydra renderer plugin to be used for recording.
-    /// This also resets the presentation flag on the HdxPresentTask to false,
-    /// to avoid the need for an OpenGL context.
-    USDAPPUTILS_API
-    bool SetRendererPlugin(const TfToken& id) {
-        const bool succeeded = _imagingEngine.SetRendererPlugin(id);
-        _imagingEngine.SetEnablePresentation(false);
-
-        return succeeded;
-    }
+        const TfToken& rendererPluginId = TfToken());
 
     USDAPPUTILS_API
     bool Render(

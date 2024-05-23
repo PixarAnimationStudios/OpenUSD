@@ -29,9 +29,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdAppUtilsUsdWriterDriver::UsdAppUtilsUsdWriterDriver(
-    const TfToken& rendererPluginId,
-    bool gpuEnabled) :
-    _imagingEngine(HdDriver(), rendererPluginId, gpuEnabled)
+    const TfToken& rendererPluginId) :
+    _imagingEngine(HdDriver(), TfToken("HdUsdWriterRendererPlugin"), false)
 {
     // Disable presentation to avoid the need to create an OpenGL context when
     // using other graphics APIs such as Metal and Vulkan.
