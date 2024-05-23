@@ -52,6 +52,7 @@ pxr_library(sdf
         pathExpression
         pathExpressionEval
         pathNode
+        pathPattern
         pathTable
         payload
         pool
@@ -95,8 +96,8 @@ pxr_library(sdf
         api.h
         accessorHelpers.h
         declareSpec.h
-        invoke.hpp
         layerHints.h
+        pathPatternParser.h
         predicateExpressionParser.h
         predicateProgram.h
         schemaTypeRegistration.h
@@ -153,6 +154,7 @@ pxr_library(sdf
         wrapOpaqueValue.cpp
         wrapPath.cpp
         wrapPathExpression.cpp
+        wrapPathPattern.cpp
         wrapPayload.cpp
         wrapPredicateExpression.cpp
         wrapPredicateFunctionResult.cpp

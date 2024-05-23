@@ -23,36 +23,33 @@
 //
 #include "pxr/imaging/hd/sceneIndexAdapterSceneDelegate.h"
 
+#include "pxr/imaging/hd/aov.h"
+#include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/camera.h"
-#include "pxr/imaging/hd/coordSys.h"
+#include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/dataSource.h"
-#include "pxr/imaging/hd/dataSourceTypeDefs.h"
-#include "pxr/imaging/hd/extComputation.h"
-#include "pxr/imaging/hd/field.h"
-#include "pxr/imaging/hd/geomSubset.h"
-#include "pxr/imaging/hd/material.h"
-#include "pxr/imaging/hd/light.h"
-#include "pxr/imaging/hd/meshTopology.h"
-#include "pxr/imaging/hd/renderBuffer.h"
-#include "pxr/imaging/hd/renderDelegate.h"
-#include "pxr/imaging/hd/renderSettings.h"
-#include "pxr/imaging/hd/sceneIndex.h"
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/topology.h"
-#include "pxr/imaging/pxOsd/tokens.h"
-#include "pxr/base/trace/trace.h"
-
-#include "pxr/base/arch/vsnprintf.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/types.h"
-
 #include "pxr/imaging/hd/dataSourceLegacyPrim.h"
 #include "pxr/imaging/hd/dataSourceLocator.h"
+#include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/dirtyBitsTranslator.h"
-
-#include "pxr/imaging/hd/flatteningSceneIndex.h"
+#include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/field.h"
+#include "pxr/imaging/hd/geomSubset.h"
+#include "pxr/imaging/hd/light.h"
+#include "pxr/imaging/hd/material.h"
+#include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/prefixingSceneIndex.h"
+#include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/renderSettings.h"
+#include "pxr/imaging/hd/repr.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/sceneIndexObserver.h"
+#include "pxr/imaging/hd/schemaTypeDefs.h"
+#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/topology.h"
+#include "pxr/imaging/hd/types.h"
+
 
 #include "pxr/imaging/hd/basisCurvesSchema.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
@@ -60,12 +57,11 @@
 #include "pxr/imaging/hd/capsuleSchema.h"
 #include "pxr/imaging/hd/categoriesSchema.h"
 #include "pxr/imaging/hd/coneSchema.h"
-#include "pxr/imaging/hd/coordSysSchema.h"
 #include "pxr/imaging/hd/coordSysBindingSchema.h"
+#include "pxr/imaging/hd/coordSysSchema.h"
 #include "pxr/imaging/hd/cubeSchema.h"
 #include "pxr/imaging/hd/cylinderSchema.h"
-#include "pxr/imaging/hd/dependenciesSchema.h"
-#include "pxr/imaging/hd/dependencySchema.h"
+#include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/extComputationInputComputationSchema.h"
 #include "pxr/imaging/hd/extComputationOutputSchema.h"
 #include "pxr/imaging/hd/extComputationPrimvarSchema.h"
@@ -73,21 +69,19 @@
 #include "pxr/imaging/hd/extComputationSchema.h"
 #include "pxr/imaging/hd/extentSchema.h"
 #include "pxr/imaging/hd/geomSubsetSchema.h"
-#include "pxr/imaging/hd/geomSubsetsSchema.h"
 #include "pxr/imaging/hd/imageShaderSchema.h"
 #include "pxr/imaging/hd/instanceCategoriesSchema.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
-#include "pxr/imaging/hd/instanceSchema.h"
 #include "pxr/imaging/hd/integratorSchema.h"
 #include "pxr/imaging/hd/legacyDisplayStyleSchema.h"
 #include "pxr/imaging/hd/lightSchema.h"
-#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/materialConnectionSchema.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
-#include "pxr/imaging/hd/materialNodeSchema.h"
 #include "pxr/imaging/hd/materialNodeParameterSchema.h"
+#include "pxr/imaging/hd/materialNodeSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/meshSchema.h"
 #include "pxr/imaging/hd/meshTopologySchema.h"
@@ -99,7 +93,6 @@
 #include "pxr/imaging/hd/renderSettingsSchema.h"
 #include "pxr/imaging/hd/renderVarSchema.h"
 #include "pxr/imaging/hd/sampleFilterSchema.h"
-#include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/sphereSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
@@ -107,17 +100,51 @@
 #include "pxr/imaging/hd/volumeFieldSchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+#include "pxr/imaging/pxOsd/subdivTags.h"
+#include "pxr/imaging/pxOsd/tokens.h"
+
+#include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/arch/vsnprintf.h"
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/range1f.h"
+#include "pxr/base/gf/range2f.h"
+#include "pxr/base/gf/range3d.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec4d.h"
+#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/stl.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/trace/trace.h"
+#include "pxr/base/vt/dictionary.h"
+#include "pxr/base/vt/types.h"
+#include "pxr/base/vt/value.h"
+
+#include "pxr/pxr.h"
+
 #include "tbb/concurrent_unordered_set.h"
 
-#include "pxr/imaging/hf/perfLog.h"
-
 #include <algorithm>
-#include <iterator>
+#include <cstddef>
+#include <limits>
+#include <map>
+#include <string>
+#include <thread>
 #include <unordered_set>
 #include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+//
+// If the input prim is a datasource prim, we need some sensible default
+// here...  For now, we pass [0,0] to turn off multisampling.
+constexpr float _fallbackStartTime = 0.0f;
+constexpr float _fallbackEndTime   = 0.0f;
 
 /* static */
 HdSceneIndexBaseRefPtr
@@ -211,6 +238,9 @@ HdSceneIndexAdapterSceneDelegate::_PrimAdded(
                 GetRenderIndex()._RemoveBprim(existingType, indexPath);
             } else if (existingType == HdPrimTypeTokens->instancer) {
                 GetRenderIndex()._RemoveInstancer(indexPath);
+            } else if (existingType == HdPrimTypeTokens->geomSubset) {
+                GetRenderIndex().GetChangeTracker()._MarkRprimDirty(
+                    indexPath.GetParentPath(), HdChangeTracker::DirtyTopology);
             }
         } else {
             isResync = true;
@@ -226,6 +256,9 @@ HdSceneIndexAdapterSceneDelegate::_PrimAdded(
             GetRenderIndex()._InsertBprim(primType, this, indexPath);
         } else if (primType == HdPrimTypeTokens->instancer) {
             GetRenderIndex()._InsertInstancer(this, indexPath);
+        } else if (primType == HdPrimTypeTokens->geomSubset) {
+            GetRenderIndex().GetChangeTracker()._MarkRprimDirty(
+                indexPath.GetParentPath(), HdChangeTracker::DirtyTopology);
         }
     }
     
@@ -273,6 +306,9 @@ HdSceneIndexAdapterSceneDelegate::_PrimAdded(
                     primType, allDirty);
             GetRenderIndex().GetChangeTracker().
                 _MarkInstancerDirty(indexPath, allDirtyInst);
+        } else if (primType == HdPrimTypeTokens->geomSubset) {
+            GetRenderIndex().GetChangeTracker()._MarkRprimDirty(
+                indexPath.GetParentPath(), HdChangeTracker::DirtyTopology);
         }
     }
 }
@@ -340,6 +376,10 @@ HdSceneIndexAdapterSceneDelegate::PrimsRemoved(
                 GetRenderIndex()._RemoveBprim(primType, entry.primPath);
             } else if (primType == HdPrimTypeTokens->instancer) {
                 GetRenderIndex()._RemoveInstancer(entry.primPath);
+            } else if (primType == HdPrimTypeTokens->geomSubset) {
+                GetRenderIndex().GetChangeTracker()._MarkRprimDirty(
+                    entry.primPath.GetParentPath(),
+                    HdChangeTracker::DirtyTopology);
             }
         } else {
             // Otherwise, there's a subtree and we need to call _RemoveSubtree.
@@ -414,6 +454,9 @@ HdSceneIndexAdapterSceneDelegate::PrimsDirtied(
                 GetRenderIndex().GetChangeTracker()._MarkInstancerDirty(
                     indexPath, dirtyBits);
             }
+        } else if (primType == HdPrimTypeTokens->geomSubset) {
+            GetRenderIndex().GetChangeTracker()._MarkRprimDirty(
+                indexPath.GetParentPath(), HdChangeTracker::DirtyTopology);
         }
 
         if (entry.dirtyLocators.Intersects(
@@ -491,51 +534,36 @@ static void
 _GatherGeomSubsets(
     const SdfPath& parentPath,
     const HdSceneIndexBaseRefPtr& sceneIndex,
-    const HdGeomSubsetsSchema& subsetsSchema,
     HdTopology* topology)
 {
     TF_VERIFY(topology);
-    std::vector<std::pair<const TfToken, const HdGeomSubsetSchema>> schemas;
-    
-    // Child prims (modern)
+    HdGeomSubsets subsets;
+    // Not all direct children are subsets, but all subsets are direct children.
+    // XXX: Both UsdImagingStageSceneIndex and HdLegacyGeomSubsetSceneIndex
+    // should report child prim paths in authored order.
     for (const SdfPath& childPath : sceneIndex->GetChildPrimPaths(parentPath)) {
-        const HdSceneIndexPrim child = sceneIndex->GetPrim(childPath);
+        const HdSceneIndexPrim& child = sceneIndex->GetPrim(childPath);
         if (child.primType != HdPrimTypeTokens->geomSubset ||
             child.dataSource == nullptr) {
             continue;
         }
-        schemas.push_back(
-            { childPath.GetNameToken(), HdGeomSubsetSchema(child.dataSource) });
-    }
-    
-    // HdGeomSubsetsSchema (legacy)
-    if (subsetsSchema.IsDefined()) {
-        for (const TfToken& name : subsetsSchema.GetGeomSubsetNames()) {
-            schemas.push_back({ name, subsetsSchema.GetGeomSubset(name) });
-        }
-    }
-    
-    // common
-    const HdSceneIndexPrim parent = sceneIndex->GetPrim(parentPath);
-    HdGeomSubsets subsets;
-    for (auto& pair : schemas) {
-        if (!pair.second.IsDefined()) {
+        const auto& schema =
+            HdGeomSubsetSchema::GetFromParent(child.dataSource);
+        if (!schema.IsDefined()) {
             continue;
         }
-        const HdGeomSubsetSchema& schema = pair.second;
         const HdTokenDataSourceHandle typeDs = schema.GetType();
         if (!typeDs) {
             continue;
         }
         const TfToken type = typeDs->GetTypedValue(0.0f);
         const HdIntArrayDataSourceHandle indicesDs = schema.GetIndices();
+        static const VtIntArray emptyIndices;
         const VtIntArray indices = indicesDs
           ? indicesDs->GetTypedValue(0.0f)
-          : VtIntArray(0);
-        // XXX: topology comes to _GatherGeomSubsets() with empty invisible
-        // components, so no need to clear them before starting this loop.
-        if (!_IsVisible(schema.GetContainer())) {
-            if (auto topo = dynamic_cast<HdMeshTopology*>(topology)) {
+          : emptyIndices;
+        if (!_IsVisible(child.dataSource)) {
+            if (auto* topo = dynamic_cast<HdMeshTopology*>(topology)) {
                 if (type == HdGeomSubsetSchemaTokens->typeFaceSet) {
                     topo->SetInvisibleFaces(
                         _Union(topo->GetInvisibleFaces(), indices));
@@ -543,7 +571,7 @@ _GatherGeomSubsets(
                     topo->SetInvisiblePoints(
                         _Union(topo->GetInvisiblePoints(), indices));
                 }
-            } else if (auto topo =
+            } else if (auto* topo =
                 dynamic_cast<HdBasisCurvesTopology*>(topology)) {
                 if (type == HdGeomSubsetSchemaTokens->typeCurveSet) {
                     topo->SetInvisibleCurves(
@@ -555,7 +583,7 @@ _GatherGeomSubsets(
             }
             continue;
         }
-        const SdfPath materialId = _GetBoundMaterialPath(schema.GetContainer());
+        const SdfPath materialId = _GetBoundMaterialPath(child.dataSource);
         if (materialId.IsEmpty()) {
             continue;
         }
@@ -563,15 +591,12 @@ _GatherGeomSubsets(
             
             // XXX: Hard-coded face type since it is the only one supported.
             HdGeomSubset::Type::TypeFaceSet,
-            
-            // XXX: This is just the name token, but HdGeomSubset takes a path.
-            // The lack of a full path here does not appear to break anything.
-            SdfPath(pair.first),
+            childPath,
             materialId,
             indices });
     }
     
-    if (auto topo = dynamic_cast<HdMeshTopology*>(topology)) {
+    if (auto* topo = dynamic_cast<HdMeshTopology*>(topology)) {
         topo->SetGeomSubsets(subsets);
     }
 }
@@ -627,8 +652,7 @@ HdSceneIndexAdapterSceneDelegate::GetMeshTopology(SdfPath const &id)
         faceVertexIndicesDataSource->GetTypedValue(0.0f),
         holeIndices);
     
-    _GatherGeomSubsets(
-        id, _inputSceneIndex, meshSchema.GetGeomSubsets(), &meshTopology);
+    _GatherGeomSubsets(id, _inputSceneIndex, &meshTopology);
 
     return meshTopology;
 }
@@ -837,8 +861,7 @@ HdSceneIndexAdapterSceneDelegate::GetBasisCurvesTopology(SdfPath const &id)
         curveVertexCountsDataSource->GetTypedValue(0.0f),
         curveIndices);
 
-    _GatherGeomSubsets(
-        id, _inputSceneIndex, basisCurvesSchema.GetGeomSubsets(), &result);
+    _GatherGeomSubsets(id, _inputSceneIndex, &result);
 
     return result;
 }
@@ -2080,7 +2103,22 @@ HdSceneIndexAdapterSceneDelegate::SamplePrimvar(
         size_t maxSampleCount, float *sampleTimes, 
         VtValue *sampleValues)
 {
-    return _SamplePrimvar(id, key, maxSampleCount, sampleTimes, sampleValues,
+    return _SamplePrimvar(
+        id, key, _fallbackStartTime, _fallbackEndTime,
+        maxSampleCount, sampleTimes, sampleValues,
+        nullptr);
+}
+
+size_t
+HdSceneIndexAdapterSceneDelegate::SamplePrimvar(
+        SdfPath const &id, TfToken const &key,
+        float startTime, float endTime,
+        size_t maxSampleCount, float *sampleTimes, 
+        VtValue *sampleValues)
+{
+    return _SamplePrimvar(
+        id, key, startTime, endTime,
+        maxSampleCount, sampleTimes, sampleValues,
         nullptr);
 }
 
@@ -2090,13 +2128,29 @@ HdSceneIndexAdapterSceneDelegate::SampleIndexedPrimvar(
         size_t maxSampleCount, float *sampleTimes, 
         VtValue *sampleValues, VtIntArray *sampleIndices)
 {
-    return _SamplePrimvar(id, key, maxSampleCount, sampleTimes, sampleValues,
+    return _SamplePrimvar(
+        id, key, _fallbackStartTime, _fallbackEndTime,
+        maxSampleCount, sampleTimes, sampleValues,
+        sampleIndices);
+}
+
+size_t
+HdSceneIndexAdapterSceneDelegate::SampleIndexedPrimvar(
+        SdfPath const &id, TfToken const &key,
+        float startTime, float endTime,
+        size_t maxSampleCount, float *sampleTimes, 
+        VtValue *sampleValues, VtIntArray *sampleIndices)
+{
+    return _SamplePrimvar(
+        id, key, startTime, endTime,
+        maxSampleCount, sampleTimes, sampleValues,
         sampleIndices);
 }
 
 size_t
 HdSceneIndexAdapterSceneDelegate::_SamplePrimvar(
         SdfPath const &id, TfToken const &key,
+        float startTime, float endTime,
         size_t maxSampleCount, float *sampleTimes, 
         VtValue *sampleValues, VtIntArray *sampleIndices)
 {
@@ -2152,9 +2206,6 @@ HdSceneIndexAdapterSceneDelegate::_SamplePrimvar(
     // responsible for setting the shutter window.  We can't query it, but
     // we pass the infinite window to accept all time samples from the
     // scene delegate.
-    //
-    // If the input prim is a datasource prim, we need some sensible default
-    // here...  For now, we pass [0,0] to turn off multisampling.
     if (prim.dataSource->Get(HdSceneIndexEmulationTokens->sceneDelegate)) {
         valueSource->GetContributingSampleTimesForInterval(
                 std::numeric_limits<float>::lowest(),
@@ -2167,7 +2218,7 @@ HdSceneIndexAdapterSceneDelegate::_SamplePrimvar(
     } else {
         const bool isVarying =
             valueSource->GetContributingSampleTimesForInterval(
-                0, 0, &times);
+                startTime, endTime, &times);
         if (isVarying) {
             if (times.empty()) {
                 TF_CODING_ERROR("No contributing sample times returned for "
@@ -2238,6 +2289,17 @@ HdSceneIndexAdapterSceneDelegate::SampleTransform(
         SdfPath const &id, size_t maxSampleCount,
         float *sampleTimes, GfMatrix4d *sampleValues)
 {
+    return SampleTransform(
+        id, _fallbackStartTime, _fallbackEndTime,
+        maxSampleCount, sampleTimes, sampleValues);
+}
+
+size_t
+HdSceneIndexAdapterSceneDelegate::SampleTransform(
+        SdfPath const &id, float startTime, float endTime,
+        size_t maxSampleCount,
+        float *sampleTimes, GfMatrix4d *sampleValues)
+{
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
@@ -2258,16 +2320,13 @@ HdSceneIndexAdapterSceneDelegate::SampleTransform(
     // responsible for setting the shutter window.  We can't query it, but
     // we pass the infinite window to accept all time samples from the
     // scene delegate.
-    //
-    // If the input prim is a datasource prim, we need some sensible default
-    // here...  For now, we pass [0,0] to turn off multisampling.
     if (prim.dataSource->Get(HdSceneIndexEmulationTokens->sceneDelegate)) {
         matrixSource->GetContributingSampleTimesForInterval(
                 std::numeric_limits<float>::lowest(),
                 std::numeric_limits<float>::max(), &times);
     } else {
         matrixSource->GetContributingSampleTimesForInterval(
-                0, 0, &times);
+            startTime, endTime, &times);
     }
 
     // XXX fallback to include a single sample
@@ -2296,6 +2355,15 @@ HdSceneIndexAdapterSceneDelegate::SampleInstancerTransform(
     return SampleTransform(id, maxSampleCount, sampleTimes, sampleValues);
 }
 
+size_t
+HdSceneIndexAdapterSceneDelegate::SampleInstancerTransform(
+        SdfPath const &id, float startTime, float endTime,
+        size_t maxSampleCount,
+        float *sampleTimes, GfMatrix4d *sampleValues)
+{
+    return SampleTransform(
+        id, startTime, endTime, maxSampleCount, sampleTimes, sampleValues);
+}
 
 std::vector<VtArray<TfToken>>
 HdSceneIndexAdapterSceneDelegate::GetInstanceCategories(
@@ -2464,8 +2532,22 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationInput(
 
 size_t
 HdSceneIndexAdapterSceneDelegate::SampleExtComputationInput(
-        SdfPath const &computationId,
-        TfToken const &input, size_t maxSampleCount,
+        SdfPath const &computationId, TfToken const &input,
+        size_t maxSampleCount,
+        float *sampleTimes, VtValue *sampleValues)
+{
+    return
+        SampleExtComputationInput(
+            computationId, input,
+            _fallbackStartTime, _fallbackEndTime,
+            maxSampleCount, sampleTimes, sampleValues);
+}
+
+size_t
+HdSceneIndexAdapterSceneDelegate::SampleExtComputationInput(
+        SdfPath const &computationId, TfToken const &input,
+        float startTime, float endTime,
+        size_t maxSampleCount,
         float *sampleTimes, VtValue *sampleValues)
 {
     TRACE_FUNCTION();
@@ -2492,16 +2574,13 @@ HdSceneIndexAdapterSceneDelegate::SampleExtComputationInput(
     // responsible for setting the shutter window.  We can't query it, but
     // we pass the infinite window to accept all time samples from the
     // scene delegate.
-    //
-    // If the input prim is a datasource prim, we need some sensible default
-    // here...  For now, we pass [0,0] to turn off multisampling.
     if (prim.dataSource->Get(HdSceneIndexEmulationTokens->sceneDelegate)) {
         valueDs->GetContributingSampleTimesForInterval(
                 std::numeric_limits<float>::lowest(),
                 std::numeric_limits<float>::max(), &times);
     } else {
         valueDs->GetContributingSampleTimesForInterval(
-                0, 0, &times);
+                startTime, endTime, &times);
     }
 
     size_t authoredSamples = times.size();

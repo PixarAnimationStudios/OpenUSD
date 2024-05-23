@@ -9,15 +9,29 @@
     relocates = {
         </Model_1/Instance/ClassChild>: </Model_1/Instance/Test>, 
         </Model_1/Instance/InstanceChild>: </Model_1/Instance/Test>, 
+
         </Model_2/Instance/InstanceChild>: </Model_2/Test>, 
         </Model_2/Test>: </Model_2/Instance/Test>, 
+
         </Model_3/Instance/ClassChild>: </Model_3/Instance/Test>, 
         </Model_3/Instance/InstanceChild>: </Model_3/Test>, 
         </Model_3/Test>: </Model_3/Instance/Test>, 
+
         </Model_4/Instance/InstanceChild>: </Model_4/Test>, 
         </Model_4/Instance/InstanceChild/InstanceGrandChild>: </Model_4/Test/Child>, 
+
         </Model_5/Instance/ClassChild>: </Model_5/Instance/InstanceChild/ClassChild>, 
-        </Model_5/Instance/InstanceChild>: </Model_5/Test>
+        </Model_5/Instance/InstanceChild>: </Model_5/Test>,
+
+        </OtherModel_1/A> : </OtherModel_1/W>,
+        </OtherModel_1/W/B> : </OtherModel_1/W/X>,
+        </OtherModel_1/A/B/C> : </OtherModel_1/W/X/Y>,
+        </OtherModel_1/W/X/Y/D> : </OtherModel_1/W/X/Y/Z>,
+        </OtherModel_1/A/B/C/D/E> : </OtherModel_1/W/X/Y/Z/Foo>,
+
+        </OtherModel_2/A> : </OtherModel_2/W>,
+        </OtherModel_2/W/B> : </OtherModel_2/J>,
+        </OtherModel_2/A/B> : </OtherModel_2/K>,
     }
 )
 
@@ -26,7 +40,7 @@
 # and both are ignored.
 #
 def "Model_1" (
-    add references = @./model.sdf@</Model>
+    references = @./model.sdf@</Model>
 )
 {
     over "LocalClass"
@@ -49,7 +63,7 @@ def "Model_1" (
 # for both relocates and both are ignored.
 #
 def "Model_2" (
-    add references = @./model.sdf@</Model>
+    references = @./model.sdf@</Model>
 )
 {
     over "LocalClass"
@@ -74,7 +88,7 @@ def "Model_2" (
 # found and reported.
 #
 def "Model_3" (
-    add references = @./model.sdf@</Model>
+    references = @./model.sdf@</Model>
 )
 {
     over "LocalClass"
@@ -96,7 +110,7 @@ def "Model_3" (
 # former relocate will report an error and be ignored.
 #
 def "Model_4" (
-    add references = @./model.sdf@</Model>
+    references = @./model.sdf@</Model>
 )
 {
     over "LocalClass"
@@ -118,7 +132,7 @@ def "Model_4" (
 # former relocate will report an error and be ignored.
 #
 def "Model_5" (
-    add references = @./model.sdf@</Model>
+    references = @./model.sdf@</Model>
 )
 {
     over "LocalClass"
@@ -133,4 +147,30 @@ def "Model_5" (
         {
         }
     }
+}
+
+# This case exercises relocates on individual prims down a namespace 
+# hierarchy using alternating "most relocated" source paths and 
+# "original source" source paths. Relocates using original source paths
+# are rejected when a "more relocated" path exists. But legacy relocates
+# allow this to work. This case is to demonstrate these behavior 
+# differences.
+def "OtherModel_1" (
+    references = @./model.sdf@</OtherModel>
+)
+{
+}
+
+# This case exercises two different relocates on where their source paths
+# are an ancestrally relocated and that path's "original source" path.
+# The relocate with the original source path is an error and is rejected.
+# But legacy relocates don't automatically reject original source paths and
+# ends up processing two different relocates from the same effective source
+# path (just represented differently) This case is to demonstrate that legacy
+# relocates still chooses a single relocate for shared source though it 
+# doesn't log an official error.
+def "OtherModel_2" (
+    references = @./model.sdf@</OtherModel>
+)
+{
 }

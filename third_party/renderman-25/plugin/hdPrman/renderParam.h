@@ -92,7 +92,7 @@ public:
     HDPRMAN_API
     RtParamList
     ConvertAttributes(HdSceneDelegate *sceneDelegate,
-        SdfPath const& id, bool isGeometry, bool *visible=nullptr);
+        SdfPath const& id, bool isGeometry);
 
     // A vector of Riley coordinate system id's.
     using RileyCoordSysIdVec = std::vector<riley::CoordinateSystemId>;
@@ -115,6 +115,12 @@ public:
         SdfPath const& id,
         VtArray<TfToken> const& categories,
         RtParamList& attrs);
+    
+    /// Prepends the given \p renderTag to grouping:membership in \p params.
+    HDPRMAN_API
+    static void AddRenderTagToGroupingMembership(
+        const TfToken& renderTag,
+        RtParamList& params);
 
     /// Release any coordinate system bindings cached for the given
     /// rprim id.
@@ -215,6 +221,15 @@ public:
 
     // Invalidate texture at path.
     void InvalidateTexture(const std::string &path);
+    
+    /// Call this from RenderPass to set which render tags should be enabled.
+    /// Calling will always trigger a render index traversal, and may trigger an
+    /// intergrator update, so only call it if you strongly suspect that either
+    /// the set of active render tags or the set of rprim render tags in the
+    /// scene has changed.
+    void SetActiveRenderTags(
+        const TfTokenVector& activeRenderTags,
+        HdRenderIndex* renderIndex);
 
     void UpdateIntegrator(const HdRenderIndex * renderIndex);
 
@@ -416,6 +431,11 @@ private:
         RtParamList& displayParams, bool isXpu);
     
     void _UpdateShutterInterval(const RtParamList &composedParams);
+    
+    static
+    void _SetExcludeSubset(
+        const TfToken::Set& excludedTags,
+        RtParamList& params);
 
 private:
     // Top-level entrypoint to PRMan.
@@ -470,6 +490,8 @@ private:
 
     // Fallback material for volumes that don't have materials.
     riley::MaterialId _fallbackVolumeMaterialId;
+    
+    TfToken::Set _lastExcludedRenderTags;
 
     riley::IntegratorId _quickIntegratorId;
     RtParamList _quickIntegratorParams;

@@ -24,6 +24,8 @@
 #include "pxr/imaging/hd/sortedIds.h"
 #include "pxr/imaging/hd/perfLog.h"
 
+#include <algorithm>
+
 static const ptrdiff_t INVALID_DELETE_POINT = -1;
 
 PXR_NAMESPACE_OPEN_SCOPE

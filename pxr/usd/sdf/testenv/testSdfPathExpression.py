@@ -321,5 +321,56 @@ class TestSdfPathExpression(unittest.TestCase):
         # Should have been made absolute:
         self.assertEqual(attr.default, Sdf.PathExpression("/prim/child"))
 
+    def test_PathPattern(self):
+        self.assertIs(Sdf.PathPattern, Sdf.PathExpression.PathPattern)
+        
+        pat = Sdf.PathPattern()
+        self.assertFalse(pat)
+        self.assertFalse(pat.HasTrailingStretch())
+        self.assertTrue(pat.GetPrefix().isEmpty)
+        self.assertTrue(pat.CanAppendChild(''))
+        self.assertTrue(pat.AppendChild(''))
+        self.assertEqual(pat, Sdf.PathPattern.EveryDescendant())
+        self.assertTrue(pat.HasTrailingStretch())
+        self.assertEqual(pat.GetPrefix(), Sdf.Path.reflexiveRelativePath)
+        self.assertFalse(pat.HasLeadingStretch())
+
+        # Set prefix to '/', should become Everything().
+        pat.SetPrefix(Sdf.Path.absoluteRootPath)
+        self.assertEqual(pat, Sdf.PathPattern.Everything())
+        self.assertTrue(pat.HasLeadingStretch())
+        self.assertTrue(pat.HasTrailingStretch())
+
+        # Remove trailing stretch, should become just '/'
+        pat.RemoveTrailingStretch()
+        self.assertFalse(pat.HasLeadingStretch())
+        self.assertFalse(pat.HasTrailingStretch())
+        self.assertEqual(pat.GetPrefix(), Sdf.Path.absoluteRootPath)
+
+        # Add some components.
+        pat.AppendChild("foo").AppendChild("bar").AppendChild("baz")
+        # This should have modified the prefix path, rather than appending
+        # matching components.
+        self.assertEqual(pat.GetPrefix(), Sdf.Path("/foo/bar/baz"))
+
+        # Appending a property to a pattern with trailing stretch has to append
+        # a prim wildcard '*'.
+        pat.AppendStretchIfPossible().AppendProperty("prop")
+        self.assertTrue(pat.IsProperty())
+        self.assertEqual(pat.GetText(), "/foo/bar/baz//*.prop")
+
+        # Can't append children or properties to property patterns.
+        self.assertFalse(pat.CanAppendChild("foo"))
+        self.assertFalse(pat.CanAppendProperty("foo"))
+
+        pat.RemoveTrailingComponent()
+        self.assertEqual(pat.GetText(), "/foo/bar/baz//*")
+        pat.RemoveTrailingComponent()
+        self.assertEqual(pat.GetText(), "/foo/bar/baz//")
+        pat.RemoveTrailingComponent()
+        self.assertEqual(pat.GetText(), "/foo/bar/baz")
+        pat.RemoveTrailingComponent() # No more components, only prefix.
+        self.assertEqual(pat.GetText(), "/foo/bar/baz")
+
 if __name__ == '__main__':
     unittest.main()

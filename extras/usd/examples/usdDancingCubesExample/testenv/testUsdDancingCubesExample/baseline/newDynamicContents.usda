@@ -11,7 +11,7 @@ def "Root"
     {
         def "prim_0"
         {
-            def Cone "prim_0"
+            def Sphere "prim_0"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -85,7 +85,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_1"
+            def Sphere "prim_1"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -159,7 +159,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_2"
+            def Sphere "prim_2"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -236,7 +236,7 @@ def "Root"
 
         def "prim_1"
         {
-            def Cone "prim_0"
+            def Sphere "prim_0"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -310,7 +310,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_1"
+            def Sphere "prim_1"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -384,7 +384,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_2"
+            def Sphere "prim_2"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -461,7 +461,7 @@ def "Root"
 
         def "prim_2"
         {
-            def Cone "prim_0"
+            def Sphere "prim_0"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -535,7 +535,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_1"
+            def Sphere "prim_1"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -609,7 +609,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_2"
+            def Sphere "prim_2"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -689,7 +689,7 @@ def "Root"
     {
         def "prim_0"
         {
-            def Cone "prim_0"
+            def Sphere "prim_0"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -763,7 +763,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_1"
+            def Sphere "prim_1"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -837,7 +837,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_2"
+            def Sphere "prim_2"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -914,7 +914,7 @@ def "Root"
 
         def "prim_1"
         {
-            def Cone "prim_0"
+            def Sphere "prim_0"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -988,7 +988,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_1"
+            def Sphere "prim_1"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -1062,7 +1062,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_2"
+            def Sphere "prim_2"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -1139,7 +1139,7 @@ def "Root"
 
         def "prim_2"
         {
-            def Cone "prim_0"
+            def Sphere "prim_0"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -1213,7 +1213,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_1"
+            def Sphere "prim_1"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -1287,7 +1287,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_2"
+            def Sphere "prim_2"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -1367,7 +1367,7 @@ def "Root"
     {
         def "prim_0"
         {
-            def Cone "prim_0"
+            def Sphere "prim_0"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -1441,7 +1441,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_1"
+            def Sphere "prim_1"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -1515,7 +1515,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_2"
+            def Sphere "prim_2"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -1592,7 +1592,7 @@ def "Root"
 
         def "prim_1"
         {
-            def Cone "prim_0"
+            def Sphere "prim_0"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -1666,7 +1666,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_1"
+            def Sphere "prim_1"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -1740,7 +1740,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_2"
+            def Sphere "prim_2"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -1817,7 +1817,7 @@ def "Root"
 
         def "prim_2"
         {
-            def Cone "prim_0"
+            def Sphere "prim_0"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -1891,7 +1891,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_1"
+            def Sphere "prim_1"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {
@@ -1965,7 +1965,7 @@ def "Root"
                 token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
             }
 
-            def Cone "prim_2"
+            def Sphere "prim_2"
             {
                 float3[] primvars:displayColor = [(1, 1, 1)]
                 float3[] primvars:displayColor.timeSamples = {

@@ -58,7 +58,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     (renderBufferDescriptor)
-);    
+);
+
 
 static void
 _CreateGrid(int nx, int ny, VtVec3fArray *points,

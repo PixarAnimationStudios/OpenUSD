@@ -67,6 +67,8 @@ pxr_library(usd
         timeCode
         tokens
         typed
+        validator
+        validationError
         usdFileFormat
         usdaFileFormat
         usdcFileFormat
@@ -457,6 +459,14 @@ pxr_build_test(testUsdUsdzResolver
         usd
     CPPFILES
         testenv/testUsdUsdzResolver.cpp
+)
+
+pxr_build_test(testUsdValidator
+    LIBRARIES
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdValidator.cpp
 )
 
 pxr_build_test(testUsdZipFile_CPP
@@ -966,6 +976,11 @@ pxr_register_test(testUsdFileFormats_pread
 
 pxr_register_test(testUsdMetadataCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMetadataCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdValidator
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValidator"
     EXPECTED_RETURN_CODE 0
 )
 

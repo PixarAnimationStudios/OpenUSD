@@ -160,7 +160,7 @@ private:
 ////////////////////////////////////////////////////////////////////////
 // Grammar.
 
-namespace {
+namespace SdfPredicateExpressionParser {
 
 using namespace PXR_PEGTL_NAMESPACE;
 

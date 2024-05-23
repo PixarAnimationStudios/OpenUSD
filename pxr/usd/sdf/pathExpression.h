@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/path.h"
-#include "pxr/usd/sdf/predicateExpression.h"
+#include "pxr/usd/sdf/pathPattern.h"
 #include "pxr/base/tf/hash.h"
 
 #include <iosfwd>
@@ -41,8 +41,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \class SdfPathExpression
 ///
 /// Objects of this class represent a logical expression syntax tree consisting
-/// of SdfPath matching patterns (with optionally embedded predicate
-/// expressions) joined by the set-algebraic operators `+` (union), `&`
+/// of SdfPathPattern s, (with optionally embedded predicate expressions), and
+/// Expression References joined by the set-algebraic operators `+` (union), `&`
 /// (intersection), `-` (difference), `~` (complement) and an implied-union
 /// operator represented by two subexpressions joined by whitespace.
 ///
@@ -71,186 +71,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfPathExpression
 {
 public:
-    /// \class PathPattern
-    ///
-    /// Objects of this class represent SdfPath matching patterns, consisting of
-    /// an SdfPath prefix followed by a sequence of components, which may
-    /// contain wildcards and optional embedded predicate expressions (see
-    /// SdfPredicateExpression).
-    class PathPattern
-    {
-    public:
-        /// Construct the empty pattern whose bool-conversion operator returns
-        /// false.
-        SDF_API
-        PathPattern();
-
-        /// Construct a PathPattern with the \p prefix path.
-        SDF_API
-        explicit PathPattern(SdfPath const &prefix);
-        
-        /// Construct a PathPattern with the \p prefix path.
-        SDF_API
-        explicit PathPattern(SdfPath &&prefix);
-            
-        /// A component represents a pattern matching component past the initial
-        /// SdfPath prefix.  A component's text can contain wildcard characters,
-        /// and if the component references a predicate expression, its
-        /// predicateIndex indicates which one in the owning PathPattern's list
-        /// of expressions.  A component whose text is empty represents an
-        /// "arbitrary levels of hierarchy" element (the //) in a path pattern.
-        struct Component {
-            bool IsStretch() const {
-                return predicateIndex == -1 && text.empty();
-            }
-
-            std::string text;
-            int predicateIndex = -1;
-            bool isLiteral = false;
-
-            friend bool operator==(Component const &l, Component const &r) {
-                return std::tie(l.text, l.predicateIndex, l.isLiteral) ==
-                    std::tie(r.text, r.predicateIndex, r.isLiteral);
-            }
-            
-            friend bool operator!=(Component const &l, Component const &r) {
-                return !(l == r);
-            }
-
-            template <class HashState>
-            friend void TfHashAppend(HashState &h, Component const &c) {
-                h.Append(c.text, c.predicateIndex, c.isLiteral);
-            }
-
-            friend void swap(Component &l, Component &r) {
-                auto lt = std::tie(l.text, l.predicateIndex, l.isLiteral);
-                auto rt = std::tie(r.text, r.predicateIndex, r.isLiteral);
-                swap(lt, rt);
-            }
-        };
-
-        /// Append a prim child component to this pattern, with optional
-        /// predicate expression \p predExpr.  If this pattern does not yet
-        /// contain any wildcards or components with predicate expressions, and
-        /// the input text does not contain wildcards, and \p predExpr is empty,
-        /// then append a child component to this pattern's prefix path (see
-        /// GetPrefix()).  Otherwise append this component to the sequence of
-        /// components.
-        SDF_API
-        void AppendChild(std::string const &text,
-                         SdfPredicateExpression &&predExpr);
-        /// \overload
-        SDF_API
-        void AppendChild(std::string const &text,
-                         SdfPredicateExpression const &predExpr);
-        /// \overload
-        SDF_API
-        void AppendChild(std::string const &text);
-
-        /// Append a prim property component to this pattern, with optional
-        /// predicate expression \p predExpr.  If this pattern does not yet
-        /// contain any wildcards or components with predicate expressions, and
-        /// the input text does not contain wildcards, and \p predExpr is empty,
-        /// then append a property component to this pattern's prefix path (see
-        /// GetPrefix()). Otherwise append this component to the sequence of
-        /// components.
-        SDF_API
-        void AppendProperty(std::string const &text,
-                            SdfPredicateExpression &&predExpr);
-        /// \overload
-        SDF_API
-        void AppendProperty(std::string const &text,
-                            SdfPredicateExpression const &predExpr);
-        /// \overload
-        SDF_API
-        void AppendProperty(std::string const &text);
-
-        /// Return this pattern's non-speculative prefix (leading path
-        /// components with no wildcards and no predicates).
-        SdfPath const &GetPrefix() const & {
-            return _prefix;
-        }
-
-        /// \overload
-        SdfPath GetPrefix() && {
-            return std::move(_prefix);
-        }
-
-        /// Set this pattern's non-speculative prefix (leading path
-        /// components with no wildcards and no predicates).
-        SDF_API
-        void SetPrefix(SdfPath &&p);
-
-        /// \overload
-        void SetPrefix(SdfPath const &p) {
-            SetPrefix(SdfPath(p));
-        }
-
-        /// Return the string representation of this pattern.
-        SDF_API
-        std::string GetText() const;
-
-        std::vector<Component> const &GetComponents() const & {
-            return _components;
-        }
-        
-        std::vector<Component> GetComponents() && {
-            return _components;
-        }
-
-        std::vector<SdfPredicateExpression> const &
-        GetPredicateExprs() const & {
-            return _predExprs;
-        }
-        
-        std::vector<SdfPredicateExpression>
-        GetPredicateExprs() && {
-            return _predExprs;
-        }
-
-        bool IsProperty() const {
-            return _isProperty;
-        }
-
-        /// Return true if this pattern is not empty, false if it is.
-        explicit operator bool() const {
-            return !_prefix.IsEmpty();
-        }
-
-    private:
-        template <class HashState>
-        friend void TfHashAppend(HashState &h, PathPattern const &pat) {
-            h.Append(pat._prefix, pat._components,
-                     pat._predExprs, pat._isProperty);
-        }
-
-        friend bool
-        operator==(PathPattern const &l, PathPattern const &r) {
-            return std::tie(l._prefix, l._components,
-                            l._predExprs, l._isProperty) ==
-                   std::tie(r._prefix, r._components,
-                            r._predExprs, r._isProperty);
-        }
-
-        friend bool
-        operator!=(PathPattern const &l, PathPattern const &r) {
-            return !(l == r);
-        }
-
-        friend void swap(PathPattern &l, PathPattern &r) {
-            auto lt = std::tie(
-                l._prefix, l._components, l._predExprs, l._isProperty);
-            auto rt = std::tie(
-                r._prefix, r._components, r._predExprs, r._isProperty);
-            swap(lt, rt);
-        }
-        
-        SdfPath _prefix;
-        std::vector<Component> _components;
-        std::vector<SdfPredicateExpression> _predExprs;
-        bool _isProperty;
-    };
-
+    using PathPattern = SdfPathPattern;
+    
     /// \class ExpressionReference
     ///
     /// Objects of this class represent references to other path expressions,

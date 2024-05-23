@@ -859,7 +859,7 @@ _MakeMaterialParamsForTexture(
         { paramName,
           textureId,
           texParam.textureType,
-          HdGetSamplerParameters(nodePath, node, sdrNode),
+          HdGetSamplerParameters(node, sdrNode, nodePath),
           memoryRequest,
           useTexturePrimToFindTexture,
           texturePrimPathForSceneDelegate });

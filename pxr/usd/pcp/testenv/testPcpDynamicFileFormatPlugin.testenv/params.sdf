@@ -24,3 +24,40 @@ def "Params" (
 
     double Pl2:TestPcp_height = 5
 }
+
+def "Params1" (
+    TestPcp_depth = 2
+    TestPcp_num = 3
+    )
+{
+    int TestPcp_depth = 2
+    int TestPcp_num = 3
+}
+
+def "Params2" (
+    TestPcp_depth = 3
+    TestPcp_radius = 50
+    )
+{
+    int TestPcp_depth = 3
+    double TestPcp_radius = 50
+}
+
+def "Params3" (
+    TestPcp_num = 3
+    variants = {
+        string dynamicVariant = "even"
+    }
+    prepend variantSets = "dynamicVariant"
+)
+{
+    int TestPcp_num = 3
+    variantSet "dynamicVariant" = {
+    "odd" (TestPcp_depth = 3) {
+      int TestPcp_depth = 3
+    }
+    "even" (TestPcp_depth = 2) {
+      int TestPcp_depth = 2
+    }
+  }
+}

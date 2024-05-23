@@ -76,6 +76,9 @@ public:
         const HdContainerDataSourceHandle &_inputPrimDataSource;
     };
 
+    HD_API
+    virtual ~HdFlattenedDataSourceProvider();
+
     /// Returns flattened data source.
     virtual HdContainerDataSourceHandle GetFlattenedDataSource(
         const Context &ctx) const = 0;

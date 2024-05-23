@@ -103,10 +103,18 @@ public:
     GfMatrix4d GetTransform(SdfPath const &id) override;
     size_t SampleTransform(SdfPath const &id, size_t maxSampleCount,
         float *sampleTimes, GfMatrix4d *sampleValues) override;
+    size_t SampleTransform(SdfPath const &id,
+        float startTime, float endTime,
+        size_t maxSampleCount,
+        float *sampleTimes, GfMatrix4d *sampleValues) override;
 
     GfMatrix4d GetInstancerTransform(
         SdfPath const &instancerId) override;
     size_t SampleInstancerTransform(SdfPath const &instancerId,
+        size_t maxSampleCount, float *sampleTimes,
+        GfMatrix4d *sampleValues) override;
+    size_t SampleInstancerTransform(SdfPath const &instancerId,
+        float startTime, float endTime,
         size_t maxSampleCount, float *sampleTimes,
         GfMatrix4d *sampleValues) override;
 
@@ -124,10 +132,17 @@ public:
     size_t SamplePrimvar(SdfPath const &id, TfToken const &key,
             size_t maxSampleCount, float *sampleTimes, 
             VtValue *sampleValues) override;
+    size_t SamplePrimvar(SdfPath const &id, TfToken const &key,
+            float startTime, float endTime,
+            size_t maxSampleCount, float *sampleTimes, 
+            VtValue *sampleValues) override;
     size_t SampleIndexedPrimvar(SdfPath const &id, TfToken const &key,
             size_t maxNumSamples, float *times, VtValue *samples, 
             VtIntArray *sampleIndices) override;
-
+    size_t SampleIndexedPrimvar(SdfPath const &id, TfToken const &key,
+            float startTime, float endTime,                                
+            size_t maxNumSamples, float *times, VtValue *samples, 
+            VtIntArray *sampleIndices) override;
     
     // ------------------------------------------------------------------------
     // Instancer API
@@ -183,6 +198,14 @@ public:
         size_t maxSampleCount,
         float *sampleTimes,
         VtValue *sampleValues) override;
+    size_t SampleExtComputationInput(
+        SdfPath const &computationId,
+        TfToken const &input,
+        float startTime,
+        float endTime,
+        size_t maxSampleCount,
+        float *sampleTimes,
+        VtValue *sampleValues) override;
 
     HdExtComputationInputDescriptorVector GetExtComputationInputDescriptors(
         SdfPath const &computationId) override;
@@ -233,6 +256,7 @@ private:
         const TfToken& key);
 
     size_t _SamplePrimvar(SdfPath const &id, TfToken const &key,
+        float startTime, float endTime,
         size_t maxNumSamples, float *times, VtValue *samples, 
         VtIntArray *sampleIndices);
 

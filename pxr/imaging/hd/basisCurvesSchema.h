@@ -39,7 +39,6 @@
 
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
-#include "pxr/imaging/hd/geomSubsetsSchema.h"
 
 #include "pxr/imaging/hd/schema.h"
 
@@ -54,7 +53,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_BASIS_CURVES_SCHEMA_TOKENS \
     (basisCurves) \
     (topology) \
-    (geomSubsets) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdBasisCurvesSchemaTokens, HD_API,
     HD_BASIS_CURVES_SCHEMA_TOKENS);
@@ -89,10 +87,7 @@ public:
     /// @{
 
     HD_API
-    HdBasisCurvesTopologySchema GetTopology() const;
-
-    HD_API
-    HdGeomSubsetsSchema GetGeomSubsets() const; 
+    HdBasisCurvesTopologySchema GetTopology() const; 
 
     /// @}
 
@@ -123,10 +118,6 @@ public:
     /// Prim-level relative data source locator to locate topology.
     HD_API
     static const HdDataSourceLocator &GetTopologyLocator();
-
-    /// Prim-level relative data source locator to locate geomSubsets.
-    HD_API
-    static const HdDataSourceLocator &GetGeomSubsetsLocator();
     /// @} 
 
     /// \name Schema construction
@@ -142,8 +133,7 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdContainerDataSourceHandle &topology,
-        const HdContainerDataSourceHandle &geomSubsets
+        const HdContainerDataSourceHandle &topology
     );
 
     /// \class HdBasisCurvesSchema::Builder
@@ -158,9 +148,6 @@ public:
         HD_API
         Builder &SetTopology(
             const HdContainerDataSourceHandle &topology);
-        HD_API
-        Builder &SetGeomSubsets(
-            const HdContainerDataSourceHandle &geomSubsets);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -168,7 +155,6 @@ public:
 
     private:
         HdContainerDataSourceHandle _topology;
-        HdContainerDataSourceHandle _geomSubsets;
 
     };
 

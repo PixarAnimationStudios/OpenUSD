@@ -41,6 +41,7 @@
 #include "pxr/imaging/hd/cameraSchema.h"
 #include "pxr/imaging/hd/categoriesSchema.h"
 #include "pxr/imaging/hd/capsuleSchema.h"
+#include "pxr/imaging/hd/collectionsSchema.h"
 #include "pxr/imaging/hd/coneSchema.h"
 #include "pxr/imaging/hd/coordSysSchema.h"
 #include "pxr/imaging/hd/coordSysBindingSchema.h"
@@ -53,7 +54,6 @@
 #include "pxr/imaging/hd/extComputationSchema.h"
 #include "pxr/imaging/hd/extentSchema.h"
 #include "pxr/imaging/hd/geomSubsetSchema.h"
-#include "pxr/imaging/hd/geomSubsetsSchema.h"
 #include "pxr/imaging/hd/imageShaderSchema.h"
 #include "pxr/imaging/hd/instanceCategoriesSchema.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
@@ -118,8 +118,7 @@ HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(TfToken const& primType,
 
     if (primType == HdPrimTypeTokens->basisCurves) {
         if (bits & HdChangeTracker::DirtyTopology) {
-            // could either be topology or geomsubsets
-            set->append(HdBasisCurvesSchema::GetDefaultLocator());
+            set->append(HdBasisCurvesTopologySchema::GetDefaultLocator());
         }
     }
 
@@ -188,7 +187,6 @@ HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(TfToken const& primType,
         }
 
         if (bits & HdChangeTracker::DirtyTopology) {
-            set->append(HdMeshSchema::GetGeomSubsetsLocator());
             set->append(HdMeshSchema::GetSubdivisionSchemeLocator());
         }
 
@@ -276,6 +274,8 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
             set->append(HdXformSchema::GetDefaultLocator());
         }
     } else if (HdPrimTypeIsLight(primType)
+            // Lights and light filters are handled similarly in emulation.
+            || primType == HdPrimTypeTokens->lightFilter
             // special case for mesh lights coming from emulated scene
             // for which the type will be mesh even though we are receiving
             // sprim-specific dirty bits.
@@ -298,6 +298,10 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
                 set->append(HdPrimvarsSchema::GetDefaultLocator());
             }
             set->append(HdVisibilitySchema::GetDefaultLocator());
+
+            // Invalidate collections manufactured for light linking in
+            // emulation.
+            set->append(HdCollectionsSchema::GetDefaultLocator());
         }
         if (bits & HdLight::DirtyTransform) {
             set->append(HdXformSchema::GetDefaultLocator());
@@ -532,15 +536,7 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
     // "basisCurvesTopology", setting us up to check for displayStyle.
     if (primType == HdPrimTypeTokens->basisCurves) {
 
-        // Locator (*): basisCurves > geomSubsets
-
-        if (_FindLocator(HdBasisCurvesSchema::GetGeomSubsetsLocator(),
-                         end, &it)) {
-            bits |= HdChangeTracker::DirtyTopology;
-        }
-
-        // Locator (*): basisCurves > geomSubsets
-
+        // Locator (*): basisCurves > topology
         if (_FindLocator(HdBasisCurvesTopologySchema::GetDefaultLocator(),
                          end, &it)) {
             bits |= HdChangeTracker::DirtyTopology;
@@ -658,12 +654,6 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
 
         if (_FindLocator(HdMeshSchema::GetDoubleSidedLocator(), end, &it)) {
             bits |= HdChangeTracker::DirtyDoubleSided;
-        }
-
-        // Locator (*): mesh > geomSubsets
-
-        if (_FindLocator(HdMeshSchema::GetGeomSubsetsLocator(), end, &it)) {
-            bits |= HdChangeTracker::DirtyTopology;
         }
 
         // Locator (*): mesh > subdivisionScheme

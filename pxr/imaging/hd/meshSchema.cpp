@@ -70,13 +70,6 @@ HdMeshSchema::GetSubdivisionTags() const
         HdMeshSchemaTokens->subdivisionTags));
 }
 
-HdGeomSubsetsSchema
-HdMeshSchema::GetGeomSubsets() const
-{
-    return HdGeomSubsetsSchema(_GetTypedDataSource<HdContainerDataSource>(
-        HdMeshSchemaTokens->geomSubsets));
-}
-
 HdBoolDataSourceHandle
 HdMeshSchema::GetDoubleSided() const
 {
@@ -90,12 +83,11 @@ HdMeshSchema::BuildRetained(
         const HdContainerDataSourceHandle &topology,
         const HdTokenDataSourceHandle &subdivisionScheme,
         const HdContainerDataSourceHandle &subdivisionTags,
-        const HdContainerDataSourceHandle &geomSubsets,
         const HdBoolDataSourceHandle &doubleSided
 )
 {
-    TfToken _names[5];
-    HdDataSourceBaseHandle _values[5];
+    TfToken _names[4];
+    HdDataSourceBaseHandle _values[4];
 
     size_t _count = 0;
 
@@ -112,11 +104,6 @@ HdMeshSchema::BuildRetained(
     if (subdivisionTags) {
         _names[_count] = HdMeshSchemaTokens->subdivisionTags;
         _values[_count++] = subdivisionTags;
-    }
-
-    if (geomSubsets) {
-        _names[_count] = HdMeshSchemaTokens->geomSubsets;
-        _values[_count++] = geomSubsets;
     }
 
     if (doubleSided) {
@@ -151,14 +138,6 @@ HdMeshSchema::Builder::SetSubdivisionTags(
 }
 
 HdMeshSchema::Builder &
-HdMeshSchema::Builder::SetGeomSubsets(
-    const HdContainerDataSourceHandle &geomSubsets)
-{
-    _geomSubsets = geomSubsets;
-    return *this;
-}
-
-HdMeshSchema::Builder &
 HdMeshSchema::Builder::SetDoubleSided(
     const HdBoolDataSourceHandle &doubleSided)
 {
@@ -173,7 +152,6 @@ HdMeshSchema::Builder::Build()
         _topology,
         _subdivisionScheme,
         _subdivisionTags,
-        _geomSubsets,
         _doubleSided
     );
 }
@@ -232,16 +210,6 @@ HdMeshSchema::GetSubdivisionTagsLocator()
     static const HdDataSourceLocator locator =
         GetDefaultLocator().Append(
             HdMeshSchemaTokens->subdivisionTags);
-    return locator;
-}
-
-/* static */
-const HdDataSourceLocator &
-HdMeshSchema::GetGeomSubsetsLocator()
-{
-    static const HdDataSourceLocator locator =
-        GetDefaultLocator().Append(
-            HdMeshSchemaTokens->geomSubsets);
     return locator;
 }
 

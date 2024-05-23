@@ -30,6 +30,7 @@
 #include <QPushButton>
 #include <QMenu>
 #include <QTreeWidgetItem>
+#include <QSplitter>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -42,11 +43,33 @@ class HduiSceneIndexDebuggerWidget : public QWidget, public TfWeakBase
 {
     Q_OBJECT;
 public:
+    struct Options
+    {
+        Options() {};
+        bool showInputsButton = true;
+    };
 
-    HduiSceneIndexDebuggerWidget(QWidget *parent = Q_NULLPTR);
+    // customSceneIndexGraphWidget: clients can pass their own custom
+    // widget. It will be added as first column in the debugger and is
+    // in charge of selecting the scene index to be inspected.
+    // Thus, we suppress the "Inputs" button to select a scene index if
+    // such a custom widget is given.
+    //
+    HduiSceneIndexDebuggerWidget(
+        QWidget *parent = Q_NULLPTR,
+        const Options &options = Options());
 
+    // Called when we select a registered (terminal) scene index.
+    virtual void SetRegisteredSceneIndex(
+        const std::string &registeredName,
+        HdSceneIndexBaseRefPtr sceneIndex);
+
+    // Sets which scene index we are inspecting.
     void SetSceneIndex(const std::string &displayName,
-        HdSceneIndexBaseRefPtr sceneIndex, bool pullRoot);
+                       HdSceneIndexBaseRefPtr sceneIndex, bool pullRoot);
+
+protected:
+    QSplitter *_splitter;
 
 private Q_SLOTS:
     void _FillGoToInputMenu();

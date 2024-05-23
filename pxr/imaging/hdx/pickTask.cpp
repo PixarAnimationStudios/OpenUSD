@@ -808,7 +808,7 @@ HdxPickResult::_ResolveHit(
         ((double)x / _bufferSize[0]) * 2.0 - 1.0,
         ((double)y / _bufferSize[1]) * 2.0 - 1.0,
         ((z - _depthRange[0]) / (_depthRange[1] - _depthRange[0])) * 2.0 - 1.0);
-    hit->worldSpaceHitPoint = GfVec3f(_ndcToWorld.Transform(ndcHit));
+    hit->worldSpaceHitPoint = _ndcToWorld.Transform(ndcHit);
     hit->worldSpaceHitNormal = _GetNormal(index);
     hit->normalizedDepth =
         (z - _depthRange[0]) / (_depthRange[1] - _depthRange[0]);

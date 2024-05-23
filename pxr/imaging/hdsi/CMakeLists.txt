@@ -30,6 +30,7 @@ pxr_library(hdsi
         renderSettingsFilteringSceneIndex
         sceneGlobalsSceneIndex
         tetMeshConversionSceneIndex
+        utils
 
     PUBLIC_HEADERS
         api.h

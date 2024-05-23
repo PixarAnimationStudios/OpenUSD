@@ -29,6 +29,7 @@
 #include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyFunction.h"
+#include "pxr/base/tf/pyUtils.h"
 
 #include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/pathExpressionEval.h"
@@ -42,9 +43,6 @@
 #include <string>
 
 using namespace boost::python;
-using std::pair;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -59,17 +57,6 @@ _Repr(SdfPathExpression const &self) {
     }
     else {
         return std::string(TF_PY_REPR_PREFIX + "PathExpression(")
-            + TfPyRepr(self.GetText()) + ")";
-    }
-}
-
-static std::string
-_PatternRepr(SdfPathExpression::PathPattern const &self) {
-    if (!self) {
-        return TF_PY_REPR_PREFIX + "PathExpression.PathPattern()";
-    }
-    else {
-        return std::string(TF_PY_REPR_PREFIX + "PathExpression.PathPattern(")
             + TfPyRepr(self.GetText()) + ")";
     }
 }
@@ -233,35 +220,8 @@ void wrapPathExpression()
 
     TfPyWrapEnum<PathExpr::Op>();
 
-    class_<PathPattern>("PathPattern")
-        .def(init<SdfPath>(arg("prefix")))
-        .def("AppendChild",
-             +[](PathPattern &self, std::string text,
-                 SdfPredicateExpression const &predExpr) {
-                 self.AppendChild(text, predExpr);
-             }, (arg("text"), arg("predExpr")=SdfPredicateExpression()))
-        .def("AppendProperty",
-             +[](PathPattern &self, std::string text,
-                 SdfPredicateExpression const &predExpr) {
-                 self.AppendProperty(text, predExpr);
-             }, (arg("text"), arg("predExpr")=SdfPredicateExpression()))
-        .def("GetPrefix",
-             +[](PathPattern const &self) {
-                 return self.GetPrefix();
-             }, return_value_policy<return_by_value>())
-        .def("SetPrefix",
-             +[](PathPattern &self, SdfPath const &prefix) {
-                 self.SetPrefix(prefix);
-             }, (arg("prefix")))
-        .def("GetText", &PathPattern::GetText)
-        .def("__bool__", &PathPattern::operator bool)
-        .def("__repr__", &_PatternRepr)
-        .def("__hash__", +[](PathPattern const &p) { return TfHash{}(p); })
-        .def(self == self)
-        .def(self != self)
-        ;
-    VtValueFromPython<PathPattern>();
-
+    s.attr("PathPattern") = TfPyGetClassObject<SdfPathPattern>();
+    
     class_<ExpressionReference>("ExpressionReference")
         .def_readwrite("path", &ExpressionReference::path)
         .def_readwrite("name", &ExpressionReference::name)

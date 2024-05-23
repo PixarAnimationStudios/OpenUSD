@@ -21,6 +21,7 @@
 // language governing permissions and limitations under the Apache License.
 
 #include "hdPrman/renderPassSceneIndex.h"
+#include "hdPrman/tokens.h"
 
 #include "pxr/imaging/hd/version.h"
 
@@ -40,16 +41,16 @@
 #include "pxr/imaging/hd/schema.h" 
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
+#include "pxr/imaging/hdsi/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (renderVisibility)
-    (geomRenderVisibility)
-    (lightsRenderVisibility)
     (cameraVisibility)
     (matte)
+    (prune)
     ((riAttributesRiMatte, "ri:attributes:Ri:Matte"))
     ((riAttributesVisibilityCamera, "ri:attributes:visibility:camera"))
 );
@@ -69,28 +70,56 @@ HdPrman_RenderPassSceneIndex::HdPrman_RenderPassSceneIndex(
 {
 }
 
+
+bool _IsGeometryType(const TfToken &primType)
+{
+    // TODO: It would be good to centralize this.  Note that it is similar to
+    // SUPPORTED_RPRIM_TYPES (currently private to HdPrmanRenderDelegate).
+    static const TfTokenVector geomTypes = {
+        HdPrimTypeTokens->cone,
+        HdPrimTypeTokens->cylinder,
+        HdPrimTypeTokens->sphere,
+        HdPrimTypeTokens->mesh,
+        HdPrimTypeTokens->basisCurves,
+        HdPrimTypeTokens->points,
+        HdPrimTypeTokens->volume,
+        HdPrmanTokens->meshLightSourceMesh,
+        HdPrmanTokens->meshLightSourceVolume
+    };
+    return std::find(geomTypes.begin(), geomTypes.end(), primType)
+        != geomTypes.end();
+}
+
 HdSceneIndexPrim 
 HdPrman_RenderPassSceneIndex::GetPrim(
     const SdfPath &primPath) const
 {
-    HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
-
     // Apply active render pass state to upstream prim.
     _RenderPassState const& state = _PullActiveRenderPasssState();
+
+    if (state.pruneEval) {
+        const bool pruned = state.pruneEval->Match(primPath);
+        if (pruned) {
+            return HdSceneIndexPrim();
+        }
+    }
+
+    HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
 
     //
     // Override primvars
     //
     TfSmallVector<TfToken, 2> primvarNames;
     TfSmallVector<HdDataSourceBaseHandle, 2> primvarVals;
-    // ri:Matte
-    if (state.matteEval) {
-        const bool matte = state.matteEval->Match(primPath);
+    // If the matte pattern matches this prim, set ri:Matte=1.
+    // Matte only applies to geometry types.
+    if (state.matteEval && _IsGeometryType(prim.primType) &&
+        state.matteEval->Match(primPath)) {
         primvarNames.push_back(_tokens->riAttributesRiMatte);
         primvarVals.push_back(
             HdPrimvarSchema::Builder()
                 .SetPrimvarValue(
-                    HdRetainedTypedSampledDataSource<int>::New(matte))
+                    HdRetainedTypedSampledDataSource<int>::New(1))
                 .SetInterpolation(HdPrimvarSchema::
                     BuildInterpolationDataSource(
                         HdPrimvarSchemaTokens->constant))
@@ -143,7 +172,17 @@ SdfPathVector
 HdPrman_RenderPassSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
-    return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+    // Apply active render pass state to upstream prim.
+    _RenderPassState const& state = _PullActiveRenderPasssState();
+
+    if (state.pruneEval) {
+        SdfPathVector childPathVec;
+        HdsiUtilsRemovePrunedChildren(primPath, *state.pruneEval,
+                                      &childPathVec);
+        return childPathVec;
+    } else {
+        return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+    }
 }
 
 void
@@ -237,6 +276,8 @@ HdPrman_RenderPassSceneIndex::_PullActiveRenderPasssState() const
                            inputSceneIndex, &state.renderVisEval);
         _CompileCollection(collections, _tokens->cameraVisibility,
                            inputSceneIndex, &state.cameraVisEval);
+        _CompileCollection(collections, _tokens->prune,
+                           inputSceneIndex, &state.pruneEval);
     }
     return state;
 }

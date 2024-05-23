@@ -260,7 +260,8 @@ SdfPredicateExpression::SdfPredicateExpression(
     try {
         SdfPredicateExprBuilder builder;
         // Uncomment the 'tracer' bit below for debugging.
-        parse<must<seq<PredExpr, eolf>>, PredAction/*, tracer*/>(
+        parse<must<seq<SdfPredicateExpressionParser::PredExpr, eolf>>,
+              SdfPredicateExpressionParser::PredAction/*, tracer*/>(
             string_input<> {
                 input, context.empty() ? "<input>" : context.c_str()
             }, builder);

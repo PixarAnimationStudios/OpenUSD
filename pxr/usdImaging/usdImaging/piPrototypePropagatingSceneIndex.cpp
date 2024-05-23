@@ -659,10 +659,16 @@ std::vector<HdSceneIndexBaseRefPtr>
 UsdImagingPiPrototypePropagatingSceneIndex::GetInputScenes() const
 {
     if (TfGetEnvSetting(USDIMAGING_SHOW_POINT_PROTOTYPE_SCENE_INDICES)) {
-        return { _context->mergingSceneIndex->GetInputScenes() };
+        return _context->mergingSceneIndex->GetInputScenes();
     } else {
         return { _context->inputSceneIndex };
     }
+}
+
+std::vector<HdSceneIndexBaseRefPtr>
+UsdImagingPiPrototypePropagatingSceneIndex::GetEncapsulatedScenes() const
+{
+    return { _context->mergingSceneIndex };
 }
 
 HdSceneIndexPrim

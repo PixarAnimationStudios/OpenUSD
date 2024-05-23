@@ -524,7 +524,8 @@ private:
         const SdfPathVector& subProtoPaths,
         const std::vector<_FlattenData>& subProtoFlats,
         std::vector<RtParamList>& protoParams,
-        std::vector<_FlattenData>& protoFlats);
+        std::vector<_FlattenData>& protoFlats,
+        std::vector<TfToken>& protoRenderTags);
 
     // Deletes riley instances owned by this instancer that are of riley
     // geometry prototypes that are no longer associated with the given

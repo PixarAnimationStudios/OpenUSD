@@ -332,6 +332,8 @@ public:
         for (auto &mapEntry : processedRelocates) {
             _ComputeSourceOriginForTargetIfNeeded(&mapEntry);
         }
+
+        _ConformLegacyRelocates();
     }
 
     void 
@@ -476,6 +478,114 @@ private:
         return true;
     }
 
+    // XXX: There are non-USD use cases that rely on the fact that we 
+    // allowed the source of relocates statement to be expressed as either
+    // a fully unrelocated path or a partially or fully relocated path (due
+    // to ancestral relocates). For example if a relocate from 
+    // /Prim/Foo -> /Prim/Bar exists, a rename of Foo's child prim A could
+    // expressed as either 
+    //      /Prim/Foo/A -> /Prim/Bar/B
+    //   or /Prim/Bar/A -> /Prim/Bar/B
+    //
+    // In USD relocates, this would only be expressable using the latter 
+    // /Prim/Bar/A -> /Prim/Bar/B. Furthermore, an upcoming change will 
+    // actually cause /Prim/Foo/A -> /Prim/Bar/B to have a completely 
+    // different meaning and composition result than relocating from 
+    // /Prim/Bar/A. So in order to maintain legacy behavior when these 
+    // changes come online, we need to to convert unrelocated source paths
+    // to be instead the "most ancestrally relocated" source path here.
+    //
+    // This behavior is not meant to be long-term; this a placeholder 
+    // solution until we can update existing assets to conform to USD
+    // relocates requirements. At that point we'll remove this legacy 
+    // behavior.
+    void
+    _ConformLegacyRelocates()
+    {
+        if (_isUsd || !TfGetEnvSetting(PCP_ENABLE_LEGACY_RELOCATES_BEHAVIOR)) {
+            return;
+        }
+
+        TRACE_FUNCTION();
+
+        // We're building a list of relocation source path that need be updated
+        // which means they will moved in the map.
+        std::vector<std::pair<SdfPath, SdfPath>> relocateSourcesToMove;
+
+        for (const auto &[source, reloInfo] : processedRelocates) {
+
+            // We're looking at the computed source origin of each relocate as 
+            // that will be consistent regardless of the how the authored 
+            // relocate is represented. And we start with the parent path of
+            // the origin source as we want closest relocate that moves our 
+            // origin source path that isn't this relocate itself.
+            const SdfPath sourceOriginParent = 
+                reloInfo.computedSourceOrigin.GetParentPath();
+
+            // Find the best match relocate by looking for another relocate with 
+            // the longest computed origin source path that is a prefix of this
+            // relocate's computed origin source path
+            auto bestMatchIt = processedRelocates.end();
+            size_t bestMatchElementCount = 0;
+            for (auto otherRelocateIt = processedRelocates.begin();
+                    otherRelocateIt != processedRelocates.end();
+                    ++otherRelocateIt) {
+                const SdfPath &anotherSourceOriginPath = 
+                    otherRelocateIt->second.computedSourceOrigin;
+                const size_t elementCount = 
+                    anotherSourceOriginPath.GetPathElementCount();
+                if (elementCount > bestMatchElementCount &&
+                        sourceOriginParent.HasPrefix(anotherSourceOriginPath)) {
+                    bestMatchIt = otherRelocateIt;
+                    bestMatchElementCount = elementCount;
+                }
+            }
+            if (bestMatchIt == processedRelocates.end()) {
+                continue;
+            }
+
+            // Apply the best match relocate to the computed origin source path
+            // to get the most relocated source path. If this doesn't match
+            // the actual source path then this relocate needs to be updated.
+            SdfPath mostRelocatedSource = 
+                reloInfo.computedSourceOrigin.ReplacePrefix(
+                    bestMatchIt->second.computedSourceOrigin, 
+                    bestMatchIt->second.targetPath);
+            if (mostRelocatedSource != source) {
+                relocateSourcesToMove.emplace_back(
+                    source, std::move(mostRelocatedSource));
+            }
+        }
+
+        // With all relocates processed we can update the necessary source paths
+        // to conform to "most relocated".
+        for (auto &[oldSource, newSource] : relocateSourcesToMove) {
+            auto oldIt = processedRelocates.find(oldSource);
+            if (auto [it, success] = processedRelocates.emplace(
+                    newSource, std::move(oldIt->second));
+                    !success && it->second.targetPath != oldIt->second.targetPath) {
+                // It's possible that this could fail since different authored 
+                // relocate sources can represent the same "most relocated" 
+                // source path. Legacy relocates didn't use to correct for this
+                // at all meaning it was possible to relocate a prim to multiple
+                // locations if authored incorrectly. This was never intended 
+                // and is impossible in the updated layer relocates. So while 
+                // we're still supporting legacy relocates, we'll just warn when
+                // this occurs (instead of a proper error) and use the first
+                // relocate to have claimed this source path.
+                TF_WARN("Could confrom relocate from %s to %s to use the "
+                    "correct source path %s because a relocate from %s to %s "
+                    "already exists. This relocate will be ignored.",
+                    oldIt->first.GetText(),
+                    oldIt->second.targetPath.GetText(),
+                    newSource.GetText(),
+                    it->first.GetText(),
+                    it->second.targetPath.GetText());
+            }
+            processedRelocates.erase(oldIt);
+        }       
+    }
+
     // Run after all authored relocates are collected from all layers; validates
     // that relocates are valid in the context of all other relocates in the
     // layer stack and removes any that are not. This also populates the target
@@ -487,30 +597,6 @@ private:
             PcpErrorInvalidConflictingRelocation::ConflictReason;
 
         TRACE_FUNCTION();
-
-        // XXX: There are some non-USD use cases that rely on the fact that
-        // we validate and reject these conflicting relocates in Pcp. We 
-        // will update these cases to conform in the future, but the work to
-        // do so is non-trivial, so for now we need to allow these cases to 
-        // still work.
-        if (!_isUsd &&  TfGetEnvSetting(PCP_ENABLE_LEGACY_RELOCATES_BEHAVIOR)) {
-            // Even though we're not further validating relocates here, we 
-            // need to populate the target path to relocates map.
-            for (auto &authoredRelocatesEntry : processedRelocates) {
-                const SdfPath &targetPath = 
-                    authoredRelocatesEntry.second.targetPath;                        
-                auto [it, inserted] = targetPathToProcessedRelocateMap.emplace(
-                    targetPath, &authoredRelocatesEntry);
-                // With the legacy behavior you can end up with the erroneous behavior
-                // of more than one source mapping to the same target. We need to at 
-                // least make this consistent by making sure we choose the 
-                // lexicographically greater source when we have a target conflict.
-                if (!inserted && authoredRelocatesEntry.first > it->second->first) {
-                    it->second = &authoredRelocatesEntry;
-                }
-            }
-            return;
-        }
 
         for (auto &relocatesEntry : processedRelocates) {
             const SdfPath &sourcePath = relocatesEntry.first;                        
@@ -531,6 +617,15 @@ private:
                     _LogInvalidSameTargetRelocates(
                         *existingAuthoredRelocatesEntry);
                 }
+            }
+
+            // XXX: There are some non-USD use cases that rely on the fact that
+            // we validate and reject these conflicting relocates in Pcp. We 
+            // will update these cases to conform in the future, but the work to
+            // do so is non-trivial, so for now we need to allow these cases to 
+            // still work.
+            if (!_isUsd && TfGetEnvSetting(PCP_ENABLE_LEGACY_RELOCATES_BEHAVIOR)) {
+                continue;
             }
 
             // If the target can be found as a source path of any of our 

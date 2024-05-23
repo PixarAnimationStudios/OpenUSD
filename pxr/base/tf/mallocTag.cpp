@@ -48,12 +48,15 @@
 
 #include <algorithm>
 #include <atomic>
+#include <istream>
+#include <ostream>
+#include <regex>
+#include <stack>
 #include <string>
 #include <stdlib.h>
 #include <thread>
 #include <type_traits>
 #include <vector>
-#include <ostream>
 
 using std::map;
 using std::make_pair;
@@ -1584,6 +1587,70 @@ TfMallocTag::CallTree::Report(
     if (!this->capturedCallStacks.empty()) {
         _ReportCapturedMallocStacks(out, this->capturedCallStacks);
     }
+}
+
+bool
+TfMallocTag::CallTree::LoadReport(
+    std::istream &in)
+{
+    // The matches here are:
+    // 1. Exclusive memory (in bytes)
+    // 2. Inclusive memory (in bytes)
+    // 3. The number of allocations recorded
+    // 4. The indentation string, which we match exactly (excluding leading
+    //    whitespace) so that we can use the length to compute the depth, below.
+    // 5. The name of the callsite.
+    static const std::regex re(
+        R"( *([\d].*) B *([\d].*) B *([\d].*) samples    ([ |]*)(.*))");
+    
+    std::stack<PathNode *> nodes;
+
+    // Parse the file contents
+    for (std::string line; std::getline(in, line);) {
+        std::cmatch match;
+        if (!std::regex_match(line.c_str(), match, re)) {
+            continue;
+        }
+
+        const size_t nBytes =
+            TfStringToULong(TfStringReplace(match[1].str(), ",", ""));
+        const size_t nBytesDirect =
+            TfStringToULong(TfStringReplace(match[2].str(), ",", ""));
+        const size_t nAllocations = TfStringToULong(match[3].str());
+        const size_t depth = match[4].length() / 2;
+        const std::string& siteName = match[5].str();
+
+        // The first node is the root node.
+        if (nodes.empty()) {
+            root = {nBytes, nBytesDirect, nAllocations, siteName, {}};
+            nodes.push(&root);
+            continue;
+        }
+
+        if (depth == 0) {
+            TF_RUNTIME_ERROR(
+                "Found more than one root scope in malloc tag report.");
+            return false;
+        }
+
+        // Pop nodes off the stack until the top is the parent of the node we
+        // just parsed.
+        while (nodes.size() > depth) {
+            nodes.pop();
+        }
+
+        PathNode *const parent = nodes.top();
+
+        // Add the current node as a child.
+        parent->children.push_back(
+            {nBytes, nBytesDirect, nAllocations, siteName, {}});
+
+        // Push the child onto the stack.
+        PathNode *const child = &(parent->children.back());
+        nodes.push(child);
+    }
+
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -83,7 +83,7 @@ class FrameSpecIterator(object):
     def __iter__(self):
         for timeCodeRange in self._timeCodeRanges:
             for timeCode in timeCodeRange:
-                yield timeCode
+                yield timeCode.GetValue()
 
     @property
     def minFloatPrecision(self):
@@ -97,11 +97,12 @@ def AddCmdlineArgs(argsParser, altDefaultTimeHelpText='', altFramesHelpText=''):
     The resulting 'frames' argument will be an iterable of UsdTimeCodes.
 
     If no command-line arguments are given, 'frames' will be a list containing
-    only Usd.TimeCode.EarliestTime(). If '--defaultTime' is given, 'frames'
-    will be a list containing only Usd.TimeCode.Default(). Otherwise,
-    '--frames' must be given a FrameSpec (or a comma-separated list of
-    multiple FrameSpecs), and 'frames' will be a FrameSpecIterator which when
-    iterated will yield the time codes specified by the FrameSpec(s).
+    the startTimeCode from the usdStage, using UsdStage::GetStartTimeCode(). 
+    If '--defaultTime' is given, 'frames' will be a list containing only 
+    Usd.TimeCode.Default(). Otherwise, '--frames' must be given a FrameSpec (or 
+    a comma-separated list of multiple FrameSpecs), and 'frames' will be a 
+    FrameSpecIterator which when iterated will yield the time codes specified 
+    by the FrameSpec(s) as floats.
     """
     timeGroup = argsParser.add_mutually_exclusive_group()
 
@@ -109,7 +110,8 @@ def AddCmdlineArgs(argsParser, altDefaultTimeHelpText='', altFramesHelpText=''):
     if not helpText:
         helpText = (
             'explicitly operate at the Default time code (the default '
-            'behavior is to operate at the Earliest time code)')
+            'behavior is to operate at the startTimeCode authored on the '
+            'UsdStage which defaults to 0.0)')
     timeGroup.add_argument('--defaultTime', '-d', action='store_true',
         dest='defaultTime', help=helpText)
 
@@ -205,7 +207,7 @@ def ConvertFramePlaceholderToFloatSpec(frameFormat):
 
     return frameFormat.replace(placeholder, floatSpec)
 
-def ValidateCmdlineArgs(argsParser, args, frameFormatArgName=None):
+def ValidateCmdlineArgs(argsParser, args, usdStage, frameFormatArgName=None):
     """
     Validates the frame-related arguments in args parsed by argsParser.
 
@@ -262,8 +264,8 @@ def ValidateCmdlineArgs(argsParser, args, frameFormatArgName=None):
                 'when not operating on a frame range.' % frameFormatArgName)
 
         if args.defaultTime:
-            args.frames = [Usd.TimeCode.Default()]
+            args.frames = [Usd.TimeCode.Default().GetValue()]
         else:
-            args.frames = [Usd.TimeCode.EarliestTime()]
+            args.frames = [usdStage.GetStartTimeCode()]
 
     return args

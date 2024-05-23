@@ -39,6 +39,15 @@
 #include "hdPrman/tokens.h"
 #include "hdPrman/utils.h"
 
+#include "pxr/imaging/hd/extComputationUtils.h"
+#include "pxr/imaging/hd/renderBuffer.h"
+#include "pxr/imaging/hd/renderThread.h"
+#include "pxr/imaging/hd/rprim.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+
+#include "pxr/usd/sdf/path.h"
+
 #include "pxr/base/arch/library.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
@@ -46,18 +55,14 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/pathUtils.h"  // Extract extension from tf token
 #include "pxr/base/tf/scopeDescription.h"
-#include "pxr/imaging/hd/extComputationUtils.h"
-#include "pxr/imaging/hd/renderBuffer.h"
-#include "pxr/imaging/hd/renderThread.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
-#include "pxr/usd/sdf/path.h"
+#include "pxr/base/tf/stringUtils.h"
 
-#include "Riley.h"
-#include "RiTypesHelper.h"
-#include "RixRiCtl.h"
-#include "stats/Session.h"
+#include <Riley.h>
+#include <RiTypesHelper.h>
+#include <RixRiCtl.h>
+#include <stats/Session.h>
 
+#include <string>
 #include <thread>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -81,6 +86,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((riDisplayChannelNamespace,    "ri:displayChannel:"))
     // See PxrDisplayDriverAPI
     ((riDisplayDriverNamespace,     "ri:displayDriver:"))
+    
+    ((renderTagPrefix, "rendertag_"))
 );
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -650,7 +657,10 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
             continue;
         }
 
-        if (val.IsArrayValued() && 
+        // For non-constant primvars, check array size to make sure it
+        // matches the expected topology size.
+        if (hdInterp != HdInterpolationConstant &&
+            val.IsArrayValued() && 
             val.GetArraySize() != static_cast<size_t>(expectedSize)) {
             TF_WARN("<%s> %s '%s' size (%zu) did not match "
                     "expected (%d)", id.GetText(), label.c_str(),
@@ -738,8 +748,7 @@ HdPrman_TransferMaterialPrimvarOpinions(HdSceneDelegate *sceneDelegate,
 
 RtParamList
 HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
-                                   SdfPath const& id, bool isGeometry,
-                                   bool *visible)
+                                   SdfPath const& id, bool isGeometry)
 {
     RtParamList attrs;
 
@@ -756,11 +765,7 @@ HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
     attrs.SetString(RixStr.k_identifier_name, RtUString(id.GetText()));
 
     // Hydra visibility -> Riley Rix::k_visibility
-    bool vis = sceneDelegate->GetVisible(id);
-    if (visible) {
-        *visible = vis;
-    }
-    if (!vis) {
+    if (!sceneDelegate->GetVisible(id)) {
         attrs.SetInteger(RixStr.k_visibility_camera, 0);
         attrs.SetInteger(RixStr.k_visibility_indirect, 0);
         attrs.SetInteger(RixStr.k_visibility_transmission, 0);
@@ -1972,6 +1977,12 @@ HdPrman_RenderParam::_ComputeIntegratorNode(
                 integratorNodeType.GetString(),
                 rileyIntegratorNode.params);
         }
+        
+        // TODO: Adjust when PxrPathTracer adds support for excludeSubset
+        if (integratorNodeType == HdPrmanIntegratorTokens->PbsPathTracer) {
+            _SetExcludeSubset(_lastExcludedRenderTags,
+                rileyIntegratorNode.params);
+        }
         return rileyIntegratorNode;
     }
 
@@ -2001,6 +2012,12 @@ HdPrman_RenderParam::_ComputeIntegratorNode(
             integratorName,
             _integratorParams);
     }
+    
+    // TODO: Adjust when PxrPathTracer adds support for excludeSubset
+    if (integratorName == HdPrmanIntegratorTokens->PbsPathTracer.GetString()) {
+        _SetExcludeSubset(_lastExcludedRenderTags,
+            _integratorParams);
+    }
 
     return riley::ShadingNode{
         riley::ShadingNode::Type::k_Integrator,
@@ -2027,6 +2044,84 @@ HdPrman_RenderParam::_CreateIntegrator(HdRenderDelegate * const renderDelegate)
     TF_VERIFY(_integratorId != riley::IntegratorId::InvalidId());
 
     _activeIntegratorId = _integratorId;
+}
+
+void
+HdPrman_RenderParam::SetActiveRenderTags(
+    const TfTokenVector& activeRenderTags,
+    HdRenderIndex* renderIndex)
+{
+    // sort the active tags for set_difference
+    TfTokenVector sortedTags(activeRenderTags);
+    std::sort(sortedTags.begin(), sortedTags.end());
+    
+    // set for uniqueness, ordered for set_difference
+    std::set<TfToken> rprimTags; 
+    for (const SdfPath& id : renderIndex->GetRprimIds()) {
+        const HdRprim* rprim = renderIndex->GetRprim(id);
+        rprimTags.insert(rprim->GetRenderTag());
+    }
+    
+    // fast set for comparison with cached
+    TfToken::Set excludedTags;
+    
+    // All rprim tags not in activeTags should be excluded (rprim - active)
+    std::set_difference(
+        rprimTags.begin(), rprimTags.end(),
+        sortedTags.begin(), sortedTags.end(),
+        std::inserter(excludedTags, excludedTags.begin()));
+    if (excludedTags != _lastExcludedRenderTags) {
+        _lastExcludedRenderTags = excludedTags;
+        UpdateIntegrator(renderIndex);
+    }
+}
+
+void
+HdPrman_RenderParam::AddRenderTagToGroupingMembership(
+    const TfToken& renderTag,
+    RtParamList& params)
+{
+    // XXX: UStrings cannot be concatenated, and the only way to initialize a
+    // UString is with a char*. So things can get a little baroque here. The
+    // temporary variables hopefully help make it readable.
+    if (!renderTag.IsEmpty()) {
+        const std::string renderTagString = TfStringPrintf("%s%s",
+            _tokens->renderTagPrefix.GetText(), renderTag.GetText());
+            
+        RtUString membership;
+        params.GetString(RixStr.k_grouping_membership, membership);
+        
+        if (membership.Empty()) {
+            membership = RtUString(renderTagString.c_str());
+        } else {
+            const std::string membershipString = TfStringPrintf("%s %s",
+                renderTagString.c_str(), membership.CStr());
+            membership = RtUString(membershipString.c_str());
+        }
+        params.SetString(RixStr.k_grouping_membership, membership);
+    }
+}
+
+/* static */
+void
+HdPrman_RenderParam::_SetExcludeSubset(
+    const TfToken::Set& excludedTags,
+    RtParamList& params) {
+    // XXX: excludeSubset is not in RixStr.
+    // (excludesubset is, but we need a capital S.)
+    static const RtUString k_excludeSubset("excludeSubset");
+    std::string exclude;
+    for (const TfToken& tag : excludedTags) {
+        if (tag.IsEmpty()) {
+            continue;
+        }
+        if (!exclude.empty()) {
+            exclude += " ";
+        }
+        exclude += _tokens->renderTagPrefix.GetString() + tag.GetString();
+    }
+    // XXX: This should be the only place anyone sets excludeSubset
+    params.SetString(k_excludeSubset, RtUString(exclude.c_str()));
 }
 
 void

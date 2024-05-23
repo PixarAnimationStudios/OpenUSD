@@ -50,6 +50,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // --(END CUSTOM CODE: Declares)--
 
 #define HD_GEOM_SUBSET_SCHEMA_TOKENS \
+    (geomSubset) \
     (type) \
     (indices) \
     (typeFaceSet) \
@@ -71,6 +72,15 @@ public:
     HdGeomSubsetSchema(HdContainerDataSourceHandle container)
       : HdSchema(container) {}
 
+    /// Retrieves a container data source with the schema's default name token
+    /// "geomSubset" from the parent container and constructs a
+    /// HdGeomSubsetSchema instance.
+    /// Because the requested container data source may not exist, the result
+    /// should be checked with IsDefined() or a bool comparison before use.
+    HD_API
+    static HdGeomSubsetSchema GetFromParent(
+        const HdContainerDataSourceHandle &fromParentContainer);
+
     /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
@@ -84,6 +94,21 @@ public:
 
     HD_API
     HdIntArrayDataSourceHandle GetIndices() const; 
+
+    /// @}
+
+    /// \name Schema location
+    /// @{
+
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    HD_API
+    static const TfToken &GetSchemaToken();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the container representing this schema is found by default.
+    HD_API
+    static const HdDataSourceLocator &GetDefaultLocator();
 
     /// @} 
 

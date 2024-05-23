@@ -32,6 +32,7 @@
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/instancer.h"
+#include "pxr/imaging/hd/legacyGeomSubsetSceneIndex.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/points.h"
@@ -125,6 +126,9 @@ HdRenderIndex::HdRenderIndex(
             _emulationNoticeBatchingSceneIndex, SdfPath::AbsoluteRootPath());
 
         _terminalSceneIndex = _mergingSceneIndex;
+        
+        _terminalSceneIndex = HdLegacyGeomSubsetSceneIndex::New(
+            _terminalSceneIndex);
 
         _terminalSceneIndex =
             HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(
@@ -540,12 +544,17 @@ HdRenderIndex::_Clear()
 
 void
 HdRenderIndex::_TrackDelegateTask(HdSceneDelegate* delegate,
-                                    SdfPath const& taskId,
-                                    HdTaskSharedPtr const& task)
+                                  SdfPath const& taskId,
+                                  HdTaskCreateFnc taskCreateFnc)
 {
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
     if (taskId == SdfPath()) {
         return;
     }
+
+    HdTaskSharedPtr task = taskCreateFnc(delegate, taskId);
     _tracker.TaskInserted(taskId, task->GetInitialDirtyBitsMask());
     _taskMap.emplace(taskId, _TaskInfo{delegate, task});
 }

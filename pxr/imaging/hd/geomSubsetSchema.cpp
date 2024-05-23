@@ -113,6 +113,33 @@ HdGeomSubsetSchema::Builder::Build()
 }
 
 /*static*/
+HdGeomSubsetSchema
+HdGeomSubsetSchema::GetFromParent(
+        const HdContainerDataSourceHandle &fromParentContainer)
+{
+    return HdGeomSubsetSchema(
+        fromParentContainer
+        ? HdContainerDataSource::Cast(fromParentContainer->Get(
+                HdGeomSubsetSchemaTokens->geomSubset))
+        : nullptr);
+}
+
+/*static*/
+const TfToken &
+HdGeomSubsetSchema::GetSchemaToken()
+{
+    return HdGeomSubsetSchemaTokens->geomSubset;
+}
+
+/*static*/
+const HdDataSourceLocator &
+HdGeomSubsetSchema::GetDefaultLocator()
+{
+    static const HdDataSourceLocator locator(GetSchemaToken());
+    return locator;
+}
+
+/*static*/
 HdTokenDataSourceHandle
 HdGeomSubsetSchema::BuildTypeDataSource(
     const TfToken &type)

@@ -57,4 +57,6 @@ GetFlattenedDataSourceFromParentPrim() const
         _name);
 }
 
+HdFlattenedDataSourceProvider::~HdFlattenedDataSourceProvider() = default;
+
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -71,6 +71,168 @@ PcpMapFunction::PcpMapFunction(PathPair const *begin,
 {
 }
 
+// Finds the map entry whose source best matches the given path, i.e. the entry
+// with the longest source path that is a prefix of the path. If invert is true,
+// the target path of the entry is used as the "source". minElementCount is used
+// to only look for entries where the source path has at least that many 
+// elements.
+template <class PairIter>
+static PairIter
+_GetBestSourceMatch(
+    const SdfPath &path, const PairIter &begin, const PairIter &end, 
+    bool invert = false, size_t minElementCount = 0)
+{
+    PairIter bestIter = end;
+    size_t bestElementCount = minElementCount;
+    for (PairIter i=begin; i != end; ++i) {
+        const SdfPath &source = invert? i->second : i->first;
+        const size_t count = source.GetPathElementCount();
+        if (count >= bestElementCount && path.HasPrefix(source)) {
+            bestElementCount = count;
+            bestIter = i;
+        }
+    }
+    return bestIter;
+}
+
+// Returns true if there's a map entry that matches the given target path better
+// than the given bestSourceMatch which has already been determined to be the best
+// entry for mapping a certain source path to that target path. If invert is 
+// true, we swap the meaning of source and target paths.
+template <class PairIter>
+static bool
+_HasBetterTargetMatch(
+    const SdfPath &targetPath, const PairIter &begin, const PairIter &end, 
+    const PairIter &bestSourceMatch, bool invert = false)
+{
+    // For a target match to be "better" than the "best source match" the 
+    // matching entry's target would have to be longer than the target of the
+    // current best match.
+    const size_t minElementCount = bestSourceMatch == end ? 0 :
+        (invert ? bestSourceMatch->first : bestSourceMatch->second)
+            .GetPathElementCount();
+    PairIter bestTargetMatch = _GetBestSourceMatch(targetPath, begin, end, 
+        !invert, 
+        minElementCount);
+    return bestTargetMatch != end && bestTargetMatch != bestSourceMatch;
+}
+
+template <class PairIter>
+static bool
+_IsRedundant(const PairIter &entry, const PairIter &begin, const PairIter &end)
+{
+    const SdfPath &entrySource = entry->first;
+    const SdfPath &entryTarget = entry->second;
+
+    const bool isBlock = entryTarget.IsEmpty();
+
+    // Check for trivial dupes before doing further work.
+    for (PairIter j = begin; j != entry; ++j) {
+        if (entry->first == j->first) {
+            TF_CODING_ERROR("Map function has two entries with the "
+                "same source");
+            return true;
+        }
+
+        if (!isBlock && entry->second == j->second) {
+            TF_CODING_ERROR("Map function has two entries with the "
+                "same target");
+            return true;
+        }
+    }
+
+    // A map block is redundant if the source path already wouldn't map without
+    // the block.
+    if (isBlock) {
+        // Find the best matching map entry that affects this source path,
+        // ignoring the effect of this block. Note that we find this using the
+        // entry source's parent path as the mapping that affects its parent is
+        // what this block is blocking from affecting the source.
+        PairIter bestSourceMatch = 
+            _GetBestSourceMatch(entrySource.GetParentPath(), begin, end);
+
+        // If there is no other mapping that affects the source path or the
+        // other mapping is a block itself, then this block is redundant.
+        if (bestSourceMatch == end || bestSourceMatch->second.IsEmpty()) {
+            return true;
+        }
+
+        // Even though we found a relevant mapping for the source path, the
+        // path may still not map without the block if the one-to-one 
+        // bidirectional mapping requirement isn't met (see _Map)
+        //
+        // Map the block's source path to the what its target path would be if
+        // not blocked
+        const SdfPath targetPath = entrySource.ReplacePrefix(
+            bestSourceMatch->first, bestSourceMatch->second);
+
+        // If we find a better mapping inverse than the source to target mapping
+        // then the source will fail to map without block and the block is 
+        // redundant.
+        return _HasBetterTargetMatch(targetPath, begin, end, bestSourceMatch);
+    }
+
+    // Otherwise we have a normal path mapping entry. This will be redundant
+    // in the best matching ancestor mapping would cause the source path to 
+    // map to the entry target path
+
+    // Early out, the entry can't be redundant if it renames the source when it
+    // is mapped.
+    if (entrySource.GetNameToken() != entryTarget.GetNameToken()) {
+        return false;
+    }
+
+    // Find the best matching map entry that affects this source path,
+    // ignoring the effect of this entry. Note that we find this using the
+    // entry source's parent path as the mapping that affects its parent is
+    // what would affect this source without this entry.
+    PairIter bestSourceMatch = 
+        _GetBestSourceMatch(entrySource.GetParentPath(), begin, end);
+
+    // If there is no other mapping that affects the source path or the
+    // other mapping is a block, then this entry cannot be redundant.
+    if (bestSourceMatch == end || bestSourceMatch->second.IsEmpty()) {
+        return false;
+    }
+
+    // We still need to check that this entry doesn't map the source differently
+    // than the other mapping. 
+    
+    // Early out; if the best match would map the source path to a different 
+    // namespace depth than the entry does, then entry cannot be redundant.
+    if ((entryTarget.GetPathElementCount() - 
+            bestSourceMatch->second.GetPathElementCount()) !=
+        (entrySource.GetPathElementCount() - 
+            bestSourceMatch->first.GetPathElementCount())) {
+        return false;
+    }
+
+    // This loop here is the equivalent of checking whether 
+    // entrySource.ReplacePrefix(bestSourceMatch->first, bestSourceMatch->second)
+    // results in the same path as entryTarget and returning false if it does
+    // not.
+    SdfPath sourceAncestorPath = entrySource.GetParentPath();
+    SdfPath targetAncestorPath = entryTarget.GetParentPath();
+    while(sourceAncestorPath != bestSourceMatch->first) {
+        if (sourceAncestorPath.GetNameToken() != 
+                targetAncestorPath.GetNameToken()) {
+            return false;
+        }
+        sourceAncestorPath = sourceAncestorPath.GetParentPath();
+        targetAncestorPath = targetAncestorPath.GetParentPath();
+    }
+    if (bestSourceMatch->second != targetAncestorPath) {
+        return false;
+    }
+
+    // It's still possible that map entry we matched does not actually map our 
+    // path if there's a better inverse mapping for our target (see _Map). 
+    // In this case, this entry will not be redundant. Note again that we use
+    // the parent path to exclude this entry itself.
+    return !_HasBetterTargetMatch(
+        entryTarget.GetParentPath(), begin, end, bestSourceMatch);
+}
+
 // Canonicalize pairs in-place by removing all redundant entries.  Redundant
 // entries are those which can be removed without changing the semantics of the
 // correspondence.  Note that this function modifies both the content of `begin`
@@ -84,50 +246,8 @@ _Canonicalize(PairIter &begin, PairIter &end)
     TRACE_FUNCTION();
 
     for (PairIter i = begin; i != end; /* increment below */) {
-        bool redundant = false;
 
-        // Check for trivial dupes before doing further work.
-        for (PairIter j = begin; j != i; ++j) {
-            if (*i == *j) {
-                redundant = true;
-                break;
-            }
-        }
-
-        // Find the closest enclosing mapping.  If the trailing name
-        // components do not match, this pair cannot be redundant.
-        if (!redundant && i->first.GetNameToken() == i->second.GetNameToken()) {
-            // The tail component matches.  Walk up the prefixes.
-            for (SdfPath source = i->first, target = i->second;
-                 !source.IsEmpty() && !target.IsEmpty()
-                 && !redundant;
-                 source = source.GetParentPath(),
-                 target = target.GetParentPath())
-            {
-                // Check for a redundant mapping.
-                for (PairIter j = begin; j != end; ++j)
-                {
-                    // *j makes *i redundant if *j maps source to target.
-                    if (i != j && j->first == source && j->second == target) {
-                        // Found the closest enclosing mapping, *j.
-                        // It means *i is the same as *j plus the addition
-                        // of an identical series of path components on both
-                        // the source and target sides -- which we verified
-                        // as we peeled off trailing path components to get
-                        // here.
-                        redundant = true;
-                        break;
-                    }
-                }
-                if (source.GetNameToken() != target.GetNameToken()) {
-                    // The trailing name components do not match,
-                    // so this pair cannot be redundant.
-                    break;
-                }
-            }
-        }
-
-        if (redundant) {
+        if (_IsRedundant(i, begin, end)) {
             // Entries are not sorted yet so swap to back for O(1) erase.
             std::swap(*i, *(end-1));
             --end;
@@ -178,25 +298,25 @@ PcpMapFunction::Create(const PathMap &sourceToTarget,
             return PcpMapFunction();
         }
     }
-    TF_FOR_ALL(i, sourceToTarget) {
+    for (const auto &[source, target] : sourceToTarget) {
         // Source and target paths must be prim paths, because mappings
         // are used on arcs and arcs are only expressed between prims.
         //
-        // They also must not contain variant selections.  Variant
-        // selections are purely an aspect of addressing layer opinion
-        // storage.  They are *not* an aspect of composed scene namespace.
-        //
         // This is a coding error, because a PcpError should have been
         // emitted about these conditions before getting to this point.
+        //
+        // Additionally, the target path may be empty which is used to indicate
+        // that a source path cannot be mapped. This is used to "block" the 
+        // mapping of paths that would otherwise translate across a mapping
+        // of one of its ancestor paths.
+        auto isValidMapPath = [](const SdfPath &path) {
+            return path.IsAbsolutePath() && 
+                (path.IsAbsoluteRootOrPrimPath() ||
+                 path.IsPrimVariantSelectionPath());
+        };
 
-        const SdfPath & source = i->first;
-        const SdfPath & target = i->second;
-        if (!source.IsAbsolutePath() ||
-            !(source.IsAbsoluteRootOrPrimPath() ||
-              source.IsPrimVariantSelectionPath()) ||
-            !target.IsAbsolutePath() ||
-            !(target.IsAbsoluteRootOrPrimPath() ||
-              target.IsPrimVariantSelectionPath())) {
+        if (!isValidMapPath(source) ||
+            !(target.IsEmpty() || isValidMapPath(target))) {
             TF_CODING_ERROR("The mapping of '%s' to '%s' is invalid.",
                             source.GetText(), target.GetText());
             return PcpMapFunction();
@@ -291,39 +411,33 @@ _Map(const SdfPath& path,
     //      of doing that, but some path translation issues make that
     //      infeasible for now.
 
+    const PcpMapFunction::PathPair *begin = pairs;
+    const PcpMapFunction::PathPair *end = begin + numPairs;
+ 
     // Find longest prefix that has a mapping;
     // this represents the most-specific mapping to apply.
-    int bestIndex = -1;
-    size_t bestElemCount = 0;
-    for (int i=0; i < numPairs; ++i) {
-        const SdfPath &source = invert? pairs[i].second : pairs[i].first;
-        const size_t count = source.GetPathElementCount();
-        if (count >= bestElemCount && path.HasPrefix(source)) {
-            bestElemCount = count;
-            bestIndex = i;
-        }
-    }
-    if (bestIndex == -1 && !hasRootIdentity) {
-        // No mapping found.
-        return SdfPath();
-    }
+    const PcpMapFunction::PathPair *bestMatch =
+        _GetBestSourceMatch(path, begin, end, invert);
 
     SdfPath result;
-    const SdfPath &target = bestIndex == -1 ? SdfPath::AbsoluteRootPath() :
-        invert? pairs[bestIndex].first : pairs[bestIndex].second;
-    if (bestIndex != -1) {
-        const SdfPath &source =
-            invert? pairs[bestIndex].second : pairs[bestIndex].first;
-        result =
-            path.ReplacePrefix(source, target, /* fixTargetPaths = */ false);
-        if (result.IsEmpty()) {
-            return result;
+    // size_t minTargetElementCount = 0;
+    if (bestMatch == end) {
+        if (hasRootIdentity) {
+            // Use the root identity.
+            result = path;
         }
+    } else if (invert) {
+        result = path.ReplacePrefix(bestMatch->second, bestMatch->first, 
+            /* fixTargetPaths = */ false);
+    } else {
+        result = path.ReplacePrefix(bestMatch->first, bestMatch->second, 
+            /* fixTargetPaths = */ false);
     }
-    else {
-        // Use the root identity.
-        result = path;
-    }        
+
+    if (result.IsEmpty()) {
+        // No mapping or a blocked mapping found.
+        return result;
+    }
 
     // To maintain the bijection, we need to check if the mapped path
     // would translate back to the original path. For instance, given
@@ -359,21 +473,13 @@ _Map(const SdfPath& path,
     //      expensive though, possibly O(n^2) where n is the number of
     //      paths in the mapping.
     //
-
-    // Optimistically assume the same mapping will be the best;
-    // we can skip even considering any mapping that is shorter.
-    bestElemCount = target.GetPathElementCount();
-    for (int i=0; i < numPairs; ++i) {
-        if (i == bestIndex) {
-            continue;
-        }
-        const SdfPath &target = invert? pairs[i].first : pairs[i].second;
-        const size_t count = target.GetPathElementCount();
-        if (count > bestElemCount && result.HasPrefix(target)) {
-            // There is a more-specific reverse mapping for this path.
-            return SdfPath();
-        }
+    // We know that the best match will match for the inverse mapping fo the 
+    // target, but there may be a better (closer) inverse match. If there is,
+    // then we can't map this path one-to-one bidirectionally.
+    if (_HasBetterTargetMatch(result, begin, end, bestMatch, invert)) {
+        return SdfPath();
     }
+
     return result;
 }
 
@@ -474,26 +580,35 @@ PcpMapFunction::_MapPathExpressionImpl(
         }
     };
     
-    auto mapPattern =
-        [&stack, &map, &unmappedPatterns](PathPattern const &pattern) {
-        SdfPath mapped = map(pattern.GetPrefix());
-        // If the prefix path is outside the domain, push the Nothing()
-        // subexpression.
-        if (mapped.IsEmpty()) {
-            if (unmappedPatterns) {
-                unmappedPatterns->push_back(pattern);
-            }
-            stack.push_back(SdfPathExpression::Nothing());
+    auto mapPattern = [&stack, &map,
+                       &unmappedPatterns](PathPattern const &pattern) {
+        // If the pattern starts with '//' we persist it unchanged, as we deem
+        // the intent to be "search everything" regardless of context.  This is
+        // as opposed to any kind of non-speculative prefix, which refers to a
+        // specific prim or property in the originating context.
+        if (pattern.HasLeadingStretch()) {
+            stack.push_back(PathExpr::MakeAtom(pattern));
         }
-        // Otherwise push the mapped pattern.
         else {
-            PathPattern mappedPattern(pattern);
-            mappedPattern.SetPrefix(mapped);
-            stack.push_back(PathExpr::MakeAtom(mappedPattern));
+            SdfPath mapped = map(pattern.GetPrefix());
+            // If the prefix path is outside the domain, push the Nothing()
+            // subexpression.
+            if (mapped.IsEmpty()) {
+                if (unmappedPatterns) {
+                    unmappedPatterns->push_back(pattern);
+                }
+                stack.push_back(SdfPathExpression::Nothing());
+            }
+            // Otherwise push the mapped pattern.
+            else {
+                PathPattern mappedPattern(pattern);
+                mappedPattern.SetPrefix(mapped);
+                stack.push_back(PathExpr::MakeAtom(mappedPattern));
+            }
         }
     };
 
-    // Walk the expression to map.
+    // Walk the expression and map it.
     pathExpr.Walk(logic, mapRef, mapPattern);
     return stack.empty() ? SdfPathExpression {} : stack.back();
 }
@@ -536,10 +651,8 @@ PcpMapFunction::Compose(const PcpMapFunction &inner) const
     const _Data& data_inner = inner._data;
     for (PathPair pair: data_inner) {
         pair.second = MapSourceToTarget(pair.second);
-        if (!pair.second.IsEmpty()) {
-            if (std::find(scratchBegin, scratch, pair) == scratch) {
-                *scratch++ = std::move(pair);
-            }
+        if (std::find(scratchBegin, scratch, pair) == scratch) {
+            *scratch++ = std::move(pair);
         }
     }
     // If inner has a root identity, map that too.
@@ -547,13 +660,10 @@ PcpMapFunction::Compose(const PcpMapFunction &inner) const
         PathPair pair;
         pair.first = SdfPath::AbsoluteRootPath();
         pair.second = MapSourceToTarget(SdfPath::AbsoluteRootPath());
-        if (!pair.second.IsEmpty()) {
-            if (std::find(scratchBegin, scratch, pair) == scratch) {
-                *scratch++ = std::move(pair);
-            }
+        if (std::find(scratchBegin, scratch, pair) == scratch) {
+            *scratch++ = std::move(pair);
         }
     }
-                                               
 
     // Apply the inverse of inner to the domain of this function.
     const _Data& data_outer = _data;

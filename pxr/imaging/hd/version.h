@@ -102,9 +102,12 @@
 //           hydra schemas const.
 // 66 -> 67: Removes legacy internal instancer primvar names and the
 //           TfEnvSetting for using them (see 56).
+// 67 -> 68: Adds HdSceneDelegate::SampleFOO with startTime and endTime.
+// 68 -> 69: Removes HdGeomSubsetsSchema. Geom subsets are now represented
+//           in Hydra as child prims of their parent geometry.
 //
 
-#define HD_API_VERSION 67
+#define HD_API_VERSION 69
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

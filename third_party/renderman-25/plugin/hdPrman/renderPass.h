@@ -24,10 +24,11 @@
 #ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PASS_H
 #define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PASS_H
 
-#include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderPass.h"
 
-#include "Riley.h"
+#include "pxr/base/tf/token.h"
+
+#include "pxr/pxr.h"
 
 #include <chrono>
 
@@ -65,8 +66,8 @@ private:
         const HdRenderPassStateSharedPtr &renderPassState,
         HdPrman_CameraContext *cameraContext);
 
-    void _UpdateRprimVisibilityFromTaskRenderTags(
-        TfTokenVector const &renderTags);
+    void _UpdateActiveRenderTagsIfChanged(
+        const TfTokenVector& taskRenderTags);
 
     HdPrman_RenderSettings* _GetDrivingRenderSettingsPrim() const;
 

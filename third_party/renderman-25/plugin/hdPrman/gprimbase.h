@@ -25,9 +25,9 @@
 #define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_GPRIMBASE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/rprim.h"
 
-#include "Riley.h"
+#include <Riley.h>
+#include <RileyIds.h>
 
 #include <vector>
 
@@ -40,20 +40,11 @@ public:
     HdPrman_GprimBase() = default;
     virtual ~HdPrman_GprimBase() = 0;
 
-    /// Update the visibilty of this prim for a render pass.
-    void UpdateInstanceVisibility(bool renderPassVisibility,
-                                  riley::Riley *riley ) const;
-
     std::vector<riley::GeometryPrototypeId> GetPrototypeIds() const;
 
 protected:
     std::vector<riley::GeometryPrototypeId> _prototypeIds;
     std::vector<riley::GeometryInstanceId> _instanceIds;
-    
-    // Visibility state defined by the scene delegate.
-    bool _sceneVisibility:1;
-    // Visibility state defined by the render pass.
-    mutable bool _renderPassVisibility:1;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

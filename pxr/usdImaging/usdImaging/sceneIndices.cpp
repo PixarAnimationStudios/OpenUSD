@@ -43,6 +43,7 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/purposeSchema.h"
+#include "pxr/imaging/hd/sceneIndexUtil.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -76,6 +77,20 @@ _ExtentResolvingSceneIndexInputArgs()
             HdRetainedSmallVectorDataSource::New(
                 TfArraySize(purposeDataSources),
                 purposeDataSources));
+}
+
+static
+std::string
+_GetStageName(UsdStageRefPtr const &stage)
+{
+    if (!stage) {
+        return {};
+    }
+    SdfLayerHandle const rootLayer = stage->GetRootLayer();
+    if (!rootLayer) {
+        return {};
+    }
+    return rootLayer->GetIdentifier();
 }
 
 UsdImagingSceneIndices
@@ -175,6 +190,12 @@ UsdImagingCreateSceneIndices(
     
     sceneIndex =
         UsdImagingRenderSettingsFlatteningSceneIndex::New(sceneIndex);
+
+    if (TfGetEnvSetting<bool>(HD_USE_ENCAPSULATING_SCENE_INDICES)) {
+        sceneIndex = HdMakeEncapsulatingSceneIndex({}, sceneIndex);
+        sceneIndex->SetDisplayName(
+            "UsdImaging " + _GetStageName(createInfo.stage));
+    }
 
     result.finalSceneIndex = sceneIndex;
 

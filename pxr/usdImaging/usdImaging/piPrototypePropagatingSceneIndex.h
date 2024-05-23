@@ -365,6 +365,7 @@ using _InstancerObserverUniquePtr = std::unique_ptr<class _InstancerObserver>;
 ///
 class UsdImagingPiPrototypePropagatingSceneIndex final
                                 : public HdFilteringSceneIndexBase
+                                , public HdEncapsulatingSceneIndexBase
 {
 public:
     USDIMAGING_API
@@ -379,6 +380,9 @@ public:
 
     USDIMAGING_API
     std::vector<HdSceneIndexBaseRefPtr> GetInputScenes() const override;
+
+    USDIMAGING_API
+    std::vector<HdSceneIndexBaseRefPtr> GetEncapsulatedScenes() const override;
 
 private:
     UsdImagingPiPrototypePropagatingSceneIndex(

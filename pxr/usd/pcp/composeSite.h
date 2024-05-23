@@ -72,20 +72,21 @@ TF_DECLARE_WEAK_AND_REF_PTRS(PcpLayerStack);
 
 class PcpLayerStackSite;
 
-/// \struct PcpSourceArcInfo
+/// \struct PcpArcInfo
 ///
-/// Information about the source of the target of an arc.
-/// All arcs have a layer that the arc comes from. References and payloads 
+/// Helper information about an arc. All arcs have a 
+/// layer that the arc comes from. References and payloads 
 /// supply an authored asset path as well.
 ///
-struct PcpSourceArcInfo {
-    SdfLayerHandle layer;
-    SdfLayerOffset layerStackOffset;
+struct PcpArcInfo {
+    SdfLayerHandle sourceLayer;
+    SdfLayerOffset sourceLayerStackOffset;
     std::string authoredAssetPath;
+    int arcNum;
 };
 
 /// A vector of reference or payload arc information.
-typedef std::vector<PcpSourceArcInfo> PcpSourceArcInfoVector;
+typedef std::vector<PcpArcInfo> PcpArcInfoVector;
 
 /// References
 PCP_API
@@ -94,7 +95,7 @@ PcpComposeSiteReferences(
     PcpLayerStackRefPtr const &layerStack,
     SdfPath const &path,
     SdfReferenceVector *result,
-    PcpSourceArcInfoVector *info,
+    PcpArcInfoVector *info,
     std::unordered_set<std::string> *exprVarDependencies,
     PcpErrorVector *errors);
 
@@ -103,7 +104,7 @@ PcpComposeSiteReferences(
     PcpLayerStackRefPtr const &layerStack,
     SdfPath const &path,
     SdfReferenceVector *result,
-    PcpSourceArcInfoVector *info)
+    PcpArcInfoVector *info)
 {
     return PcpComposeSiteReferences(
         layerStack, path, result, info, nullptr , nullptr);
@@ -113,7 +114,7 @@ inline void
 PcpComposeSiteReferences(
     PcpNodeRef const &node,
     SdfReferenceVector *result,
-    PcpSourceArcInfoVector *info,
+    PcpArcInfoVector *info,
     std::unordered_set<std::string> *exprVarDependencies,
     PcpErrorVector *errors)
 {
@@ -126,7 +127,7 @@ inline void
 PcpComposeSiteReferences(
     PcpNodeRef const &node,
     SdfReferenceVector *result,
-    PcpSourceArcInfoVector *info)
+    PcpArcInfoVector *info)
 {
     return PcpComposeSiteReferences(
         node.GetLayerStack(), node.GetPath(), result, info, nullptr, nullptr);
@@ -139,7 +140,7 @@ PcpComposeSitePayloads(
     PcpLayerStackRefPtr const &layerStack,
     SdfPath const &path,
     SdfPayloadVector *result,
-    PcpSourceArcInfoVector *info,
+    PcpArcInfoVector *info,
     std::unordered_set<std::string> *exprVarDependencies,
     PcpErrorVector *errors);
 
@@ -148,7 +149,7 @@ PcpComposeSitePayloads(
     PcpLayerStackRefPtr const &layerStack,
     SdfPath const &path,
     SdfPayloadVector *result,
-    PcpSourceArcInfoVector *info)
+    PcpArcInfoVector *info)
 {
     return PcpComposeSitePayloads(
         layerStack, path, result, info, nullptr, nullptr);
@@ -158,7 +159,7 @@ inline void
 PcpComposeSitePayloads(
     PcpNodeRef const &node,
     SdfPayloadVector *result,
-    PcpSourceArcInfoVector *info,
+    PcpArcInfoVector *info,
     std::unordered_set<std::string> *exprVarDependencies,
     PcpErrorVector *errors)
 {
@@ -171,7 +172,7 @@ inline void
 PcpComposeSitePayloads(
     PcpNodeRef const &node,
     SdfPayloadVector *result,
-    PcpSourceArcInfoVector *info)
+    PcpArcInfoVector *info)
 {
     return PcpComposeSitePayloads(
         node.GetLayerStack(), node.GetPath(), result, info, nullptr, nullptr);
@@ -244,7 +245,7 @@ PCP_API
 void
 PcpComposeSiteInherits(PcpLayerStackRefPtr const &layerStack,
                        SdfPath const &path, SdfPathVector *result,
-                       PcpSourceArcInfoVector *info);
+                       PcpArcInfoVector *info);
 
 PCP_API
 void
@@ -262,7 +263,7 @@ PCP_API
 void
 PcpComposeSiteSpecializes(PcpLayerStackRefPtr const &layerStack,
                           SdfPath const &path, SdfPathVector *result,
-                          PcpSourceArcInfoVector *info);
+                          PcpArcInfoVector *info);
 
 PCP_API
 void
@@ -282,7 +283,7 @@ void
 PcpComposeSiteVariantSets(PcpLayerStackRefPtr const &layerStack,
                           SdfPath const &path,
                           std::vector<std::string> *result,
-                          PcpSourceArcInfoVector *info);
+                          PcpArcInfoVector *info);
 
 PCP_API
 void

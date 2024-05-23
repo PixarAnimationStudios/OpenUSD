@@ -393,4 +393,36 @@ PcpCompareNodeStrength(
     return _CompareNodeStrength(a, aNodes, b, bNodes);
 }
 
+int
+PcpCompareSiblingPayloadNodeStrength(const PcpNodeRef& payloadParent, 
+    int payloadArcNum, const PcpNodeRef& siblingNode) {
+    if (payloadParent != siblingNode.GetParentNode()) {
+        TF_CODING_ERROR("Nodes are not siblings");
+        return 0;
+    }
+
+    // ArcType.
+    // We rely on the enum values being in strength order.
+    if (PcpArcTypePayload < siblingNode.GetArcType())
+        return -1;
+    if (PcpArcTypePayload > siblingNode.GetArcType())
+        return 1;
+
+    // Origin namespace depth.
+    // Higher values (deeper opinions) are stronger.
+    if (payloadParent.GetNamespaceDepth() > siblingNode.GetNamespaceDepth())
+        return -1;
+    if (payloadParent.GetNamespaceDepth() < siblingNode.GetNamespaceDepth())
+        return 1;
+
+    // Origin sibling arc number.
+    // Lower numbers are stronger.
+    if (payloadArcNum < siblingNode.GetSiblingNumAtOrigin())
+        return -1;
+    if (payloadArcNum > siblingNode.GetSiblingNumAtOrigin())
+        return 1;
+
+    return 0;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -52,6 +52,18 @@ PCP_API
 int
 PcpCompareNodeStrength(const PcpNodeRef& a, const PcpNodeRef& b);
 
+/// Compares the strength of a payload node with arcSiblingNum \p payloadArcNum
+/// to a sibling node \p siblingNode. These nodes must be siblings:  
+/// it is a coding error if \p siblingNode 's parent node is not \p payloadParent.
+///
+/// Returns -1 if the payload node is stronger than siblingNode,
+///          0 if the payload node is equivalent to siblingNode,
+///          1 if the payload node is weaker than siblingNode
+PCP_API
+int
+PcpCompareSiblingPayloadNodeStrength(const PcpNodeRef& payloadParent, 
+    int payloadArcNum, const PcpNodeRef& siblingNode);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_PCP_STRENGTH_ORDERING_H

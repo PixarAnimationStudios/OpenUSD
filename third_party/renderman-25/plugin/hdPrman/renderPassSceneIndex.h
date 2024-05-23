@@ -71,6 +71,7 @@ private:
         std::optional<HdCollectionExpressionEvaluator> matteEval;
         std::optional<HdCollectionExpressionEvaluator> renderVisEval;
         std::optional<HdCollectionExpressionEvaluator> cameraVisEval;
+        std::optional<HdCollectionExpressionEvaluator> pruneEval;
     };
 
     // Pull on the scene globals schema for the active render pass,

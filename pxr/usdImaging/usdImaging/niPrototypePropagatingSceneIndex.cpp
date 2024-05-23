@@ -474,6 +474,12 @@ UsdImagingNiPrototypePropagatingSceneIndex::GetInputScenes() const
     }
 }
 
+std::vector<HdSceneIndexBaseRefPtr>
+UsdImagingNiPrototypePropagatingSceneIndex::GetEncapsulatedScenes() const
+{
+    return { _mergingSceneIndex };
+}
+
 HdSceneIndexPrim
 UsdImagingNiPrototypePropagatingSceneIndex::GetPrim(
     const SdfPath &primPath) const

@@ -45,6 +45,8 @@ class TestUsdAppUtilsCmdlineArgs(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._progName = os.path.basename(sys.argv[0])
+        cls._noTimeCodeStage = Usd.Stage.Open(os.path.abspath('noTimeCode.usda'))
+        cls._startTimeCodeStage = Usd.Stage.Open(os.path.abspath('startTimeCode.usda'))
 
     def setUp(self):
         self._parser = argparse.ArgumentParser(prog=self._progName)
@@ -151,19 +153,28 @@ class TestUsdAppUtilsCmdlineArgs(unittest.TestCase):
         UsdAppUtils.framesArgs.AddCmdlineArgs(self._parser)
 
         args = self._parser.parse_args([])
-        UsdAppUtils.framesArgs.ValidateCmdlineArgs(self._parser, args)
-        self.assertEqual(args.frames, [Usd.TimeCode.EarliestTime()])
+        UsdAppUtils.framesArgs.ValidateCmdlineArgs(
+            self._parser, args, self._noTimeCodeStage)
+        self.assertEqual(args.frames, [0.0])
+
+        args = self._parser.parse_args([])
+        UsdAppUtils.framesArgs.ValidateCmdlineArgs(
+            self._parser, args, self._startTimeCodeStage)
+        self.assertEqual(args.frames, [5.0])
 
         args = self._parser.parse_args(['--defaultTime'])
-        UsdAppUtils.framesArgs.ValidateCmdlineArgs(self._parser, args)
+        UsdAppUtils.framesArgs.ValidateCmdlineArgs(
+            self._parser, args, self._noTimeCodeStage)
         self.assertEqual(args.frames, [Usd.TimeCode.Default()])
 
         args = self._parser.parse_args(['--d'])
-        UsdAppUtils.framesArgs.ValidateCmdlineArgs(self._parser, args)
+        UsdAppUtils.framesArgs.ValidateCmdlineArgs(
+            self._parser, args, self._noTimeCodeStage)
         self.assertEqual(args.frames, [Usd.TimeCode.Default()])
 
         args = self._parser.parse_args(['--frames', '1:4'])
-        UsdAppUtils.framesArgs.ValidateCmdlineArgs(self._parser, args)
+        UsdAppUtils.framesArgs.ValidateCmdlineArgs(
+            self._parser, args, self._noTimeCodeStage)
         self.assertEqual(type(args.frames),
             UsdAppUtils.framesArgs.FrameSpecIterator)
         self.assertEqual(list(args.frames),
@@ -173,7 +184,8 @@ class TestUsdAppUtilsCmdlineArgs(unittest.TestCase):
              Usd.TimeCode(4.0)])
 
         args = self._parser.parse_args(['-f', '11,13:15x2,17'])
-        UsdAppUtils.framesArgs.ValidateCmdlineArgs(self._parser, args)
+        UsdAppUtils.framesArgs.ValidateCmdlineArgs(
+            self._parser, args, self._noTimeCodeStage)
         self.assertEqual(type(args.frames),
             UsdAppUtils.framesArgs.FrameSpecIterator)
         self.assertEqual(list(args.frames),
@@ -189,13 +201,13 @@ class TestUsdAppUtilsCmdlineArgs(unittest.TestCase):
         parser.add_argument('outputImagePath', action='store', type=str,
             help='output image path')
         args = parser.parse_args(['test_image.#.png', '--frames', '1:4'])
-        UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args,
-            frameFormatArgName='outputImagePath')
+        UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args, 
+            self._noTimeCodeStage, frameFormatArgName='outputImagePath')
         self.assertEqual(args.outputImagePath, 'test_image.{frame:01.0f}.png')
 
         args = parser.parse_args(['test_image.###.#.png', '--frames', '1:4'])
-        UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args,
-            frameFormatArgName='outputImagePath')
+        UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args, 
+            self._noTimeCodeStage, frameFormatArgName='outputImagePath')
         self.assertEqual(args.outputImagePath, 'test_image.{frame:05.1f}.png')
 
         # Test that an error is raised if the frame format arg does not contain
@@ -207,7 +219,7 @@ class TestUsdAppUtilsCmdlineArgs(unittest.TestCase):
         args = parser.parse_args(['test_image.png', '--frames', '1:4'])
         with self.assertRaises(ValueError):
             UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args,
-                frameFormatArgName='outputImagePath')
+                self._noTimeCodeStage, frameFormatArgName='outputImagePath')
 
         # Test that an error is raised if the frame format arg does contain
         # a frame placeholder but no frames are given.
@@ -218,12 +230,12 @@ class TestUsdAppUtilsCmdlineArgs(unittest.TestCase):
         args = parser.parse_args(['test_image.#.png'])
         with self.assertRaises(ValueError):
             UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args,
-                frameFormatArgName='outputImagePath')
+                self._noTimeCodeStage, frameFormatArgName='outputImagePath')
 
         args = parser.parse_args(['test_image.#.png', '--defaultTime'])
         with self.assertRaises(ValueError):
             UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args,
-                frameFormatArgName='outputImagePath')
+                self._noTimeCodeStage, frameFormatArgName='outputImagePath')
 
         # Tests that an error is raised if the floating point precision
         # specified in the frame format arg is less than the minimum floating
@@ -235,12 +247,12 @@ class TestUsdAppUtilsCmdlineArgs(unittest.TestCase):
         args = parser.parse_args(['test_image.#.png', '--frames', '1:4x0.1'])
         with self.assertRaises(ValueError):
             UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args,
-                frameFormatArgName='outputImagePath')
+                self._noTimeCodeStage, frameFormatArgName='outputImagePath')
         args = parser.parse_args(['test_image.#.##.png', '--frames',
             '101:105x0.1,106:109x0.125,110:114x0.25'])
         with self.assertRaises(ValueError):
             UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args,
-                frameFormatArgName='outputImagePath')
+                self._noTimeCodeStage, frameFormatArgName='outputImagePath')
 
     def testRendererCmdlineArgs(self):
         """

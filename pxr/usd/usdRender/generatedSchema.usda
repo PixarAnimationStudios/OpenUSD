@@ -395,7 +395,7 @@ class RenderProduct "RenderProduct" (
 }
 
 class RenderPass "RenderPass" (
-    apiSchemas = ["CollectionAPI:renderVisibility"]
+    apiSchemas = ["CollectionAPI:renderVisibility", "CollectionAPI:prune"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["collection:renderVisibility:includeRoot"]
     }
