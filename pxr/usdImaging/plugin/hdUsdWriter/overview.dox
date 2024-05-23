@@ -8,12 +8,13 @@ and is intended for use as a debug and testing tool. The results can be diffed
 to implement automated tests, or compared to see if the output from two different
 scene delegates is equivalent.
 
-It's based on the HdTiny delegate that ships with USD.
-
 \subsection hdUsdWriter_usage Using The Render Delegate
 
 HdUsdWriter is a render delegate that is registered as a plugin.
 A Python script that creates the engine, delegate, renders and compares the output is in pxr/usdImaging/bin/hdcapture.
 The delegate can also be used with C++, but the setup is a little more verbose.
+
+hdcapture can be invoked from the bin like this to render a file: hdcapture -i path\to\input_file.usd -o path\to\output_file.usda
+If the optional -b argument for the baseline file is provided, it will compare the baseline and output and print the result.
 
 */

@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright (c) 2022-2024, NVIDIA CORPORATION.
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -22,15 +22,34 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/usdImaging/usdAppUtils/usdWriterDriver.h"
+
+#include <boost/python.hpp>
+#include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
+#include <boost/python/scope.hpp>
+
+using namespace boost::python;
 
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
-TF_WRAP_MODULE
+void
+wrapUsdWriterDriver()
 {
-    TF_WRAP(Camera);
-    TF_WRAP(FrameRecorder);
-    TF_WRAP(UsdWriterDriver);
+    using This = UsdAppUtilsUsdWriterDriver;
+
+    scope s = class_<This, boost::noncopyable>("UsdWriterDriver")
+        .def(init<>())
+        .def(init<const TfToken&, bool>(
+            (arg("rendererPluginId") = TfToken("HdUsdWriterRendererPlugin"), 
+             arg("gpuEnabled") = false)))
+        .def(
+            "Render",
+            &This::Render,
+            (arg("stage"),
+             arg("timeCode"),
+             arg("outputPath")))
+    ;
 }

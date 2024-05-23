@@ -32,60 +32,11 @@ pxr_plugin(HdUsdWriter
         api.h        
         pointBased.h
         rprim.h
-        utils.h
-
-    PYMODULE_FILES
-        fuzzytextdiff.py
-        hdusdwriterdriver.py        
+        utils.h   
 
     RESOURCE_FILES
         plugInfo.json
 
     DOXYGEN_FILES
         overview.dox
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdWriterBaseline
-    DEST testUsdWriterBaseline
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdWriterProtoInstancing
-    DEST testUsdWriterProtoInstancing
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdWriterMaterialAssignToInstanced
-    DEST testUsdWriterMaterialAssignToInstanced
-)
-
-pxr_test_scripts(
-    testenv/testUsdWriterBaseline.py
-)
-
-pxr_test_scripts(
-    testenv/testUsdWriterProtoInstancing.py
-)
-
-pxr_test_scripts(
-    testenv/testUsdWriterMaterialAssignToInstanced.py
-)
-
-pxr_register_test(testUsdWriterBaseline
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdWriterBaseline"
-    EXPECTED_RETURN_CODE 0
-)
-
-pxr_register_test(testUsdWriterProtoInstancing
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdWriterProtoInstancing"
-    EXPECTED_RETURN_CODE 0
-)
-
-pxr_register_test(testUsdWriterMaterialAssignToInstanced
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdWriterMaterialAssignToInstanced"
-    EXPECTED_RETURN_CODE 0
 )

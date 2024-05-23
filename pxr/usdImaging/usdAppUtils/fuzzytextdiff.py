@@ -22,15 +22,11 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-import argparse
 import difflib
 import math
-import os
 import re
-import shutil
 import sys
 
-# Allowable relative tolerance for comparing floating-point values
 RELATIVE_TOLERANCE = 1e-6
 
 # Allowable absolute tolerance for comparing floating-point values
@@ -41,7 +37,9 @@ FLOAT_PATTERN = re.compile("([+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+
 
 
 def diff_files(file_one, file_two):
-
+    """
+    Performs fuzzy text diffing of two files
+    """
     with open(file_one) as fo:
         file_one_contents = fo.readlines()
     with open(file_two) as ft:
@@ -155,12 +153,3 @@ def is_diff_within_tolerance(diff):
             pass
 
     return is_hunk_within_tolerance()
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("file_one")
-    parser.add_argument("file_two")
-    options = parser.parse_args()
-
-    sys.exit(diff_files(options.file_one, options.file_two))

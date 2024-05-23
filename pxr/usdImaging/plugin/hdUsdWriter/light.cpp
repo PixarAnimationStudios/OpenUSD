@@ -239,7 +239,7 @@ void HdUsdWriterLight::SerializeToUsd(const UsdStagePtr &stage)
                 continue;
             }
             const auto& attributeDef = schemaDefinition->GetAttributeDefinition(param);
-            auto attr = prim.CreateAttribute(param, attributeDef->GetTypeName(), false, attributeDef->GetVariability());
+            auto attr = prim.CreateAttribute(param, attributeDef.GetTypeName(), false, attributeDef.GetVariability());
             attr.Set(paramIt->second);
             wroteSchema = true;
         }

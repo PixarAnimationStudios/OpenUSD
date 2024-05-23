@@ -22,15 +22,23 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr import Usd
-from pxr.HdUsdWriter import hdusdwriterdriver
+from pxr import Ar, Usd, UsdAppUtils
 
 if __name__ == '__main__':
+    resolver = Ar.GetResolver()
+    resolver.CreateDefaultContextForAsset('testUsdWriterProtoInstancing.usda')
+    stage = Usd.Stage.Open('testUsdWriterProtoInstancing.usda')
 
-    driver = hdusdwriterdriver.HdUsdWriterRendererDriver()
-    driver.load_stage('testUsdWriterProtoInstancing.usda')
-    driver.use_usd_imaging_engine()
-    driver.use_usda_writer_renderer_plugin()
-    result = driver.render_and_compare('testUsdWriterProtoInstancingBaseline.usda', 'testUsdWriterProtoInstancingOut.usda')
-    driver.stop()
+    driver = UsdAppUtils.UsdWriterDriver('HdUsdWriterRendererPlugin')
+    serialization_result = driver.render(stage, 0, 'testUsdWriterProtoInstancingOut.usda')
+
+    def compare(baseline_file, target_file):
+        result = UsdAppUtils.fuzzytextdiff.diff_files(baseline_file, target_file)
+        if result != 0:
+            print(f'Target \'{target_file}\' did not match the baseline \'{baseline_file}\'.')
+        else:
+            print('Target and baseline within tolerance.')
+        return result
+    
+    result = compare('testUsdWriterProtoInstancingBaseline.usda', 'testUsdWriterProtoInstancingOut.usda')
     assert result == 0

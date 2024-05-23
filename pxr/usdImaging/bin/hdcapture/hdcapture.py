@@ -25,7 +25,9 @@
 
 import argparse
 
-from pxr.HdUsdWriter import hdusdwriterdriver
+from pxr import Ar
+from pxr import Usd
+from pxr import UsdAppUtils
 
 parser = argparse.ArgumentParser(
     prog='HdUsdWriterRendererDriver',
@@ -38,12 +40,24 @@ parser.add_argument('-o', '--output', required=True, help='The filename to write
 
 args = parser.parse_args()
 
-driver = hdusdwriterdriver.HdUsdWriterRendererDriver()
-driver.load_stage(args.input)
-driver.use_usd_imaging_engine()
-driver.use_usda_writer_renderer_plugin()
+resolver = Ar.GetResolver()
+resolver.CreateDefaultContextForAsset(args.input)
+stage = Usd.Stage.Open(args.input)
+
+driver = UsdAppUtils.UsdWriterDriver('HdUsdWriterRendererPlugin')
+serialization_result = driver.Render(stage, 0, args.output)
+if not serialization_result:
+    print('Something went wrong invoking SerializeToUsd')
+else:
+    print(f"Wrote output to '{args.output}'")
+
+def compare(baseline_file, target_file):
+    result = UsdAppUtils.fuzzytextdiff.diff_files(baseline_file, target_file)
+    if result != 0:
+        print(f'Target \'{target_file}\' did not match the baseline \'{baseline_file}\'.')
+    else:
+        print('Target and baseline within tolerance.')
+    return result
 
 if (args.baseline):
-    driver.render_and_compare(args.baseline, args.output)
-else:
-    driver.render(args.output)
+    compare(args.baseline, args.output)
