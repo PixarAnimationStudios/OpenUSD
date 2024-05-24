@@ -291,9 +291,12 @@ public:
         template <class Str, class... Strs>
         explicit Auto(Str &&name1, Strs &&... nameN)
             : _threadData(TfMallocTag::_Push(_CStr(std::forward<Str>(name1))))
-            , _nTags(_threadData
-                     ? 1 + _PushImpl(std::forward<Strs>(nameN)...)
-                     : 0) {}
+            , _nTags(_threadData ? 1 + sizeof...(Strs) : 0) {
+            if (_threadData) {
+                (..., TfMallocTag::_Begin(
+                    _CStr(std::forward<Strs>(nameN)), _threadData));
+            }
+        }
 
         /// Pop the tag from the stack before it is destructed.
         ///
@@ -306,10 +309,10 @@ public:
         /// TfMallocTag::Pop() because it isn't vulnerable to early returns or
         /// exceptions.
         inline void Release() {
-            while (_nTags--) {
-                TfMallocTag::_End(_threadData);
+            if (_threadData) {
+                TfMallocTag::_End(_nTags, _threadData);
+                _threadData = nullptr;
             }
-            _threadData = nullptr;
         }
 
         /// Pop a memory tag from the local-call stack.
@@ -325,18 +328,7 @@ public:
 
         char const *_CStr(char const *cstr) const { return cstr; }
         char const *_CStr(std::string const &str) const { return str.c_str(); }
-        
-        template <class Str, class... Strs>
-        int _PushImpl(Str &&tag, Strs &&... rest) {
-            TfMallocTag::_Begin(_CStr(std::forward<Str>(tag)), _threadData);
-            return 1 + _PushImpl(std::forward<Strs>(rest)...);
-        }
 
-        int _PushImpl() {
-            // Recursion termination base-case.
-            return 0;
-        }
-        
         _ThreadData* _threadData;
         int _nTags;
 
@@ -442,7 +434,7 @@ private:
 
     TF_API static _ThreadData *_Begin(char const *name,
                                       _ThreadData *threadData = nullptr);
-    TF_API static void _End(_ThreadData *threadData = nullptr);
+    TF_API static void _End(int nTags = 1, _ThreadData *threadData = nullptr);
 
     static void* _MallocWrapper(size_t, const void*);
     static void* _ReallocWrapper(void*, size_t, const void*);

@@ -1217,13 +1217,15 @@ TfMallocTag::_Begin(const char* name, _ThreadData *threadData)
 }
 
 void
-TfMallocTag::_End(TfMallocTag::_ThreadData *tls)
+TfMallocTag::_End(int nTags, TfMallocTag::_ThreadData *tls)
 {
     if (!tls) {
         tls = &TfMallocTag::Tls::Find();
     }
 
-    tls->Pop();
+    while (nTags--) {
+        tls->Pop();
+    }
 }
 
 // Returns the given number as a string with commas used as thousands
