@@ -99,7 +99,10 @@ using UsdUtilsModifyAssetPathFn = std::function<std::string(
 
 /// Helper function that visits every asset path in \c layer, calls \c modifyFn
 /// and replaces the value with the return value of \c modifyFn.  This modifies
-/// \c layer in place.
+/// \c layer in place. If the \c keepEmptyPathsInArrays parameter is true, empty 
+/// asset paths will be written in into arrays even if \c modifyFn returns an 
+/// empty string.  This functionality is useful in cases where arrays are 
+/// expected to have a specific length or such values may be meaningful.
 ///
 /// This can be useful in preparing a layer for consumption in contexts that do
 /// not have access to the ArResolver for which the layer's asset paths were
@@ -108,7 +111,8 @@ using UsdUtilsModifyAssetPathFn = std::function<std::string(
 USDUTILS_API
 void UsdUtilsModifyAssetPaths(
     const SdfLayerHandle& layer,
-    const UsdUtilsModifyAssetPathFn& modifyFn);
+    const UsdUtilsModifyAssetPathFn& modifyFn,
+    bool keepEmptyPathsInArrays = false);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

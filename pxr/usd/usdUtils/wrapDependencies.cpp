@@ -104,6 +104,8 @@ void wrapDependencies()
     using Py_UsdUtilsModifyAssetPathFn = std::string(const std::string&);
     TfPyFunctionFromPython<Py_UsdUtilsModifyAssetPathFn>();
     bp::def("ModifyAssetPaths", &UsdUtilsModifyAssetPaths,
-        (bp::arg("layer"), bp::arg("modifyFn")));
+            (bp::arg("layer"), 
+             bp::arg("modifyFn"), 
+             bp::arg("keepEmptyPathsInArrays") = false));
 
 }

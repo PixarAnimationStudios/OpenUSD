@@ -204,7 +204,8 @@ UsdUtilsComputeAllDependencies(
 void 
 UsdUtilsModifyAssetPaths(
     const SdfLayerHandle& layer,
-    const UsdUtilsModifyAssetPathFn& modifyFn)
+    const UsdUtilsModifyAssetPathFn& modifyFn,
+    bool keepEmptyPathsInArrays)
 {
     auto processingFunc = 
         [&modifyFn](const SdfLayerRefPtr&, 
@@ -219,6 +220,9 @@ UsdUtilsModifyAssetPaths(
     UsdUtils_LocalizationContext context(&delegate);
     delegate.SetEditLayersInPlace(true);
     context.SetRecurseLayerDependencies(false);
+
+    delegate.SetKeepEmptyPathsInArrays(keepEmptyPathsInArrays);
+
     context.Process(layer);
 }
 

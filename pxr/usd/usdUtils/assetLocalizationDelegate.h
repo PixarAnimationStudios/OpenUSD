@@ -214,6 +214,16 @@ public:
         _editLayersInPlace = editLayersInPlace;
     }
 
+    // Controls whether empty asset paths are kept in arrays.
+    // If the value is false, paths that are empty after processing are
+    // removed from the layer.  Setting this to true will write empty asset
+    // paths into the array so that it's length remains unchanged after
+    // processing.
+    inline void SetKeepEmptyPathsInArrays(bool keep)
+    {
+        _keepEmptyPathsInArrays = keep;
+    }
+
     // Returns the layer that was used for writing the passed in layer.
     // Note that if _editLayersInPlace is true, or there were no edits to
     // the particular layer, the passed in value will be returned.
@@ -259,6 +269,8 @@ private:
     VtArray<SdfAssetPath> _currentPathArray;
 
     bool _editLayersInPlace = false;
+
+    bool _keepEmptyPathsInArrays = false;
 
     // Maps source layer identifiers to their anonymous writable copies.
     std::map<SdfLayerRefPtr, SdfLayerRefPtr> _layerCopyMap;

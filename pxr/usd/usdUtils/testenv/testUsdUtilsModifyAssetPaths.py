@@ -24,9 +24,9 @@
 from pxr import UsdUtils
 from pxr import Sdf
 
-def Test(usdFile, outFile, fn):
+def Test(usdFile, outFile, fn, keepEmptyPathsInArrays = False):
     layer = Sdf.Layer.FindOrOpen(usdFile)
-    UsdUtils.ModifyAssetPaths(layer, fn)
+    UsdUtils.ModifyAssetPaths(layer, fn, keepEmptyPathsInArrays)
     layer.Export(outFile)
 
 def TestBasic():
@@ -57,6 +57,17 @@ def TestRemoval():
     Test('layer.usda', 'removal.usda', fn)
 
 TestRemoval()
+
+def TestRemovalPreserveLength():
+    # Tests behavior when modify callback returns empty asset
+    # paths and preserve array length is enabled.
+    def fn(s):
+        return ''
+        
+    Test('layer.usda', 'removal_preserve_length.usda', fn, 
+         keepEmptyPathsInArrays=True)
+
+TestRemovalPreserveLength()
 
 def TestDoesNotRecurseDeps():
     # Tests reference paths are not traversed during asset path modification
