@@ -494,12 +494,18 @@ class TestUsdStage(unittest.TestCase):
         errors = sorted(errors, key=lambda error: error.rootSite.path)
         self.assertEqual(len(errors), 5)
         
+        # Find out whats the source path for the instances, for which errors
+        # will be reported.
+        srcPrimPath = s.GetPrototypes()[0]._GetSourcePrimIndex().rootNode.path
+        
         from pxr import Pcp
         expectedErrors = [ (Pcp.ErrorType_InvalidSublayerPath, "/"),
                                (Pcp.ErrorType_ArcCycle, "/Main/First"),
                                (Pcp.ErrorType_ArcCycle, "/Main/Second"),
-                               (Pcp.ErrorType_ArcCycle, "/World/Inst2/First"),
-                               (Pcp.ErrorType_ArcCycle, "/World/Inst2/Second") ]
+                               (Pcp.ErrorType_ArcCycle, 
+                                srcPrimPath.AppendChild("First").pathString),
+                               (Pcp.ErrorType_ArcCycle, 
+                                srcPrimPath.AppendChild("Second").pathString) ]
         for i in range(5):
             self.assertEqual(expectedErrors[i][0], errors[i].errorType)
             self.assertEqual(expectedErrors[i][1], errors[i].rootSite.path)
