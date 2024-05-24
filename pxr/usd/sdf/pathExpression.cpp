@@ -721,7 +721,7 @@ struct PathExprAction<SdfPathPatternParser::PathPattern>
 ////////////////////////////////////////////////////////////////////////
 // Parsing drivers.
 
-bool
+static bool
 ParsePathExpression(std::string const &inputStr,
                     std::string const &parseContext,
                     SdfPathExpression *expr,
@@ -729,7 +729,7 @@ ParsePathExpression(std::string const &inputStr,
 {
     Sdf_PathExprBuilder builder;
     try {
-        parse<must<PathExpr, eolf>, PathExprAction/*, tracer*/>(
+        parse<must<pad<PathExpr, blank>, eolf>, PathExprAction>(
             string_input<> { inputStr,
                 parseContext.empty() ? "<input>" : parseContext.c_str()
             }, builder);
