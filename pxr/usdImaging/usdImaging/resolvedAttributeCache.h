@@ -297,9 +297,23 @@ private:
             , version(version_)
         { }
 
+        _Entry(const _Entry &other)
+            : query(other.query)
+            , value(other.value)
+        {
+            version.store(other.version.load());
+        }
+
+        _Entry(_Entry &&other)
+            : query(std::move(other.query))
+            , value(std::move(other.value))
+        {
+            version.store(other.version.load());
+        }
+
         query_type query;
         value_type value;
-        tbb::atomic<unsigned> version;
+        std::atomic<unsigned> version;
     };
 
     // Returns the version number for a valid cache entry
@@ -339,7 +353,7 @@ private:
 
     // A serial number indicating the valid state of entries in the cache. When
     // an entry has an equal or greater value, the entry is valid.
-    tbb::atomic<unsigned> _cacheVersion;
+    std::atomic<unsigned> _cacheVersion;
 
     // Value overrides for a set of descendents.
     ValueOverridesMap _valueOverrides;
@@ -358,7 +372,7 @@ UsdImaging_ResolvedAttributeCache<Strategy,ImplData>::_SetCacheEntryForPrim(
     // Note: _cacheVersion is not allowed to change during cache access.
     unsigned v = entry->version;
     if (v < _cacheVersion 
-        && entry->version.compare_and_swap(_cacheVersion, v) == v)
+        && entry->version.compare_exchange_strong(v,_cacheVersion.load()))
     {
         entry->value = value;
         entry->version = _GetValidVersion();
@@ -378,7 +392,7 @@ typename UsdImaging_ResolvedAttributeCache<Strategy, ImplData>::_Entry*
 UsdImaging_ResolvedAttributeCache<Strategy, ImplData>::_GetCacheEntryForPrim(
     const UsdPrim &prim) const
 {
-    typename _CacheMap::const_iterator it = _cache.find(prim);
+    typename _CacheMap::iterator it = _cache.find(prim);
     if (it != _cache.end()) {
         return &it->second;
     }
