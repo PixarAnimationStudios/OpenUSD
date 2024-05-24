@@ -1925,11 +1925,11 @@ _EvalStencilsGPU(
     // Generate hash for resource bindings and pipeline.
     // XXX Needs fingerprint hash to avoid collisions
     uint64_t const rbHash = (uint64_t) TfHash::Combine(
-        sizes->GetHandle().Get(),
-        offsets->GetHandle().Get(),
-        indices->GetHandle().Get(),
-        weights->GetHandle().Get(),
-        primvar->GetHandle().Get());
+        sizes->GetHandle().GetId(),
+        offsets->GetHandle().GetId(),
+        indices->GetHandle().GetId(),
+        weights->GetHandle().GetId(),
+        primvar->GetHandle().GetId());
 
     uint64_t const pHash = (uint64_t) TfHash::Combine(
         computeProgram->GetProgram().Get(),

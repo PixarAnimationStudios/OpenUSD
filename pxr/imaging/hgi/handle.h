@@ -57,6 +57,10 @@ public:
         return _ptr;
     }
 
+    uint64_t GetId() const {
+        return _id;
+    }
+
     // Note this only checks if a ptr is set, it does not offer weak_ptr safety.
     explicit operator bool() const {return _ptr!=nullptr;}
 

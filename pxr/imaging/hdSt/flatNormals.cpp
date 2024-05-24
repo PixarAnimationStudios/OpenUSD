@@ -441,10 +441,10 @@ HdSt_FlatNormalsComputationGPU::Execute(
     // Generate hash for resource bindings and pipeline.
     // XXX Needs fingerprint hash to avoid collisions
     uint64_t rbHash = (uint64_t) TfHash::Combine(
-        points->GetHandle().Get(),
-        normals->GetHandle().Get(),
-        indices->GetHandle().Get(),
-        primitiveParam->GetHandle().Get());
+        points->GetHandle().GetId(),
+        normals->GetHandle().GetId(),
+        indices->GetHandle().GetId(),
+        primitiveParam->GetHandle().GetId());
 
     uint64_t pHash = (uint64_t) TfHash::Combine(
         computeProgram->GetProgram().Get(),
