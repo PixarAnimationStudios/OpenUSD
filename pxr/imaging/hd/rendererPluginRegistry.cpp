@@ -69,12 +69,19 @@ HdRendererPluginRegistry::GetDefaultPluginId(bool gpuEnabled)
         // expensive.
         if (plugin && plugin->IsSupported(gpuEnabled)) {
             HdRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
+
+            TF_DEBUG(HD_RENDERER_PLUGIN).Msg(
+                "Default renderer plugin (gpu: %s): %s\n",
+                gpuEnabled ? "y" : "n", desc.id.GetText());
             return desc.id;
         }
 
         HdRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
     }
 
+    TF_DEBUG(HD_RENDERER_PLUGIN).Msg(
+        "Default renderer plugin (gpu: %s): none\n",
+        gpuEnabled ? "y" : "n");
     return TfToken();
 }
 
@@ -87,7 +94,8 @@ HdRendererPluginRegistry::GetRendererPlugin(const TfToken &pluginId)
 HdRendererPluginHandle
 HdRendererPluginRegistry::GetOrCreateRendererPlugin(const TfToken &pluginId)
 {
-    return HdRendererPluginHandle(GetRendererPlugin(pluginId));
+    return HdRendererPluginHandle(
+            static_cast<HdRendererPlugin*>(GetPlugin(pluginId)));
 }
 
 HdPluginRenderDelegateUniqueHandle
@@ -104,16 +112,16 @@ HdRendererPluginRegistry::CreateRenderDelegate(
     HdPluginRenderDelegateUniqueHandle result =
         plugin->CreateDelegate(settingsMap);
 
-    if (result) {
-        HfPluginDesc desc;
-        if (GetPluginDesc(pluginId, &desc)) {
-            // provide render delegate instance with display name to facilitate
-            // association of this renderer to other code and resources
-            result->_SetRendererDisplayName(desc.displayName);
-        }
-    }
-
     return result;
+}
+
+void
+HdRendererPluginRegistry::_CollectAdditionalMetadata(
+    const PlugRegistry &plugRegistry, const TfType &pluginType)
+{
+    TF_DEBUG(HD_RENDERER_PLUGIN).Msg(
+        "Renderer plugin discovery: %s\n",
+        pluginType.GetTypeName().c_str());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

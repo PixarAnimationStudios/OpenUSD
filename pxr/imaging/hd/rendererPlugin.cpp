@@ -66,15 +66,53 @@ HdRendererPlugin::CreateDelegate(HdRenderSettingsMap const& settingsMap)
 
     HdRendererPluginRegistry::GetInstance().AddPluginReference(this);
 
-    return HdPluginRenderDelegateUniqueHandle(
-        HdRendererPluginHandle(this),
-        CreateRenderDelegate(settingsMap));
+    HdPluginRenderDelegateUniqueHandle result =
+        HdPluginRenderDelegateUniqueHandle(
+            HdRendererPluginHandle(this),
+            CreateRenderDelegate(settingsMap));
+
+    if (TfDebug::IsEnabled(HD_RENDERER_PLUGIN)) {
+        std::stringstream ss;
+        for (const auto& pair : settingsMap) {
+            ss << "\t" << pair.first << ": " << pair.second << "\n";
+        }
+        TF_DEBUG(HD_RENDERER_PLUGIN).Msg(
+            "%s instance of renderer plugin '%s' with settings map:\n%s",
+            result ? "Created" : "Failed to create",
+            GetPluginId().GetText(), ss.str().c_str());
+    }
+
+    // provide render delegate instance with display name to facilitate
+    // association of this renderer to other code and resources
+    if (result) {
+        result->_SetRendererDisplayName(GetDisplayName());
+    }
+
+    return result;
 }
 
 TfToken
 HdRendererPlugin::GetPluginId() const
 {
     return HdRendererPluginRegistry::GetInstance().GetPluginId(this);
+}
+
+std::string
+HdRendererPlugin::GetDisplayName() const
+{
+    TfToken pluginId =
+        HdRendererPluginRegistry::GetInstance().GetPluginId(this);
+    HfPluginDesc desc;
+    if (!HdRendererPluginRegistry::GetInstance()
+            .GetPluginDesc(pluginId, &desc)) {
+        // Note, this is unlikely since if pluginId were illegal, this class
+        // would not have been instantiated...
+        TF_CODING_ERROR("Unable to get display name for '%s'",
+                pluginId.GetText());
+        return std::string();
+    }
+
+    return desc.displayName;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

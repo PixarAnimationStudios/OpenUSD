@@ -65,6 +65,12 @@ public:
     TfToken GetPluginId() const;
 
     ///
+    /// Look-up display name in plugin registry.
+    ///
+    HD_API
+    std::string GetDisplayName() const;
+
+    ///
     /// Clients should use CreateDelegate since this method
     /// will eventually become protected, use CreateRenderDelegateHandle
     /// instead.

@@ -95,6 +95,9 @@ private:
     // Friend required by TfSingleton to access constructor (as it is private).
     friend class TfSingleton<HdRendererPluginRegistry>;
 
+    void _CollectAdditionalMetadata(
+        const PlugRegistry &plugRegistry, const TfType &pluginType) override;
+
     // Singleton gets private constructed
     HdRendererPluginRegistry();
     ~HdRendererPluginRegistry() override;

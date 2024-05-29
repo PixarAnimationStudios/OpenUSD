@@ -57,7 +57,13 @@ HdStormRendererPlugin::DeleteRenderDelegate(HdRenderDelegate *renderDelegate)
 bool
 HdStormRendererPlugin::IsSupported(bool gpuEnabled) const
 {
-    return gpuEnabled ? HdStRenderDelegate::IsSupported() : false;
+    const bool support = gpuEnabled && HdStRenderDelegate::IsSupported();
+    if (!support) {
+        TF_DEBUG(HD_RENDERER_PLUGIN).Msg(
+            "hdStorm renderer plugin unsupported: %s",
+            gpuEnabled ? "hgi unsupported" : "no gpu");
+    }
+    return support;
 }
 
 

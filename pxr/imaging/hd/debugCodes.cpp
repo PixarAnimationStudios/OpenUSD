@@ -85,6 +85,9 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_RENDER_SETTINGS,
         "Report render settings changes");
 
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_RENDERER_PLUGIN,
+        "Report debug info on renderer plugins");
+
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_RPRIM_ADDED,
         "Report when rprims are added");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_RPRIM_CLEANED,

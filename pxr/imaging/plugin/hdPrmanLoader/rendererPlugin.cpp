@@ -98,12 +98,6 @@ HdPrmanLoader::Load()
     PlugPluginPtr plugin =
         PlugRegistry::GetInstance().GetPluginWithName("hdPrman");
 
-    // Backwards compatibility for hdxPrman.
-    // hdxPrman is deprecated, since it's been merged into hdPrman now.
-    if (!plugin) {
-        plugin = PlugRegistry::GetInstance().GetPluginWithName("hdxPrman");
-    }
-
     if (!plugin) {
         _hdPrman.errorMsg =
             TfStringPrintf("Could not find hdPrman plugin registration.");
@@ -205,6 +199,12 @@ HdPrmanLoaderRendererPlugin::DeleteRenderDelegate(
 bool
 HdPrmanLoaderRendererPlugin::IsSupported(bool /* gpuEnabled */) const
 {
+    if (!_hdPrman.valid) {
+        TF_DEBUG(HD_RENDERER_PLUGIN).Msg(
+            "hdPrman renderer plugin unsupported: %s\n",
+            _hdPrman.errorMsg.c_str());
+    }
+
     // Eventually will need to make this deal with whether RIS or XPU is used.
     return _hdPrman.valid;
 }

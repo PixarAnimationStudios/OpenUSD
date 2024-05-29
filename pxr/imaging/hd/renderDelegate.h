@@ -549,7 +549,7 @@ protected:
 
 private:
 
-    friend class HdRendererPluginRegistry;
+    friend class HdRendererPlugin;
     ///
     /// Populated when instantiated via the HdRendererPluginRegistry and
     /// currently used to associate a renderer delegate instance with related
