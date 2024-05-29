@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,42 +21,29 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HDUI_DATA_SOURCE_TREE_WIDGET_H
-#define PXR_IMAGING_HDUI_DATA_SOURCE_TREE_WIDGET_H
+#ifndef EXTRAS_IMAGING_EXAMPLES_HDUI_API_H
+#define EXTRAS_IMAGING_EXAMPLES_HDUI_API_H
 
-#include "pxr/pxr.h"
+#include "pxr/base/arch/export.h"
 
-#include "api.h"
-
-#include "pxr/imaging/hd/sceneIndex.h"
-
-#include <QTreeWidget>
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-class HDUI_API_CLASS HduiDataSourceTreeWidget : public QTreeWidget
-{
-    Q_OBJECT;
-
-public:
-    HduiDataSourceTreeWidget(QWidget *parent = Q_NULLPTR);
-
-    void SetPrimDataSource(const SdfPath &primPath,
-                           HdContainerDataSourceHandle const & dataSource);
-
-protected:
-    void contextMenuEvent(QContextMenuEvent *event) override;
-
-public Q_SLOTS:
-    void PrimDirtied(
-        const SdfPath &primPath,
-        const HdContainerDataSourceHandle &primDataSource,
-        const HdDataSourceLocatorSet &locators);
-
-Q_SIGNALS:
-    void DataSourceSelected(HdDataSourceBaseHandle dataSource);
-};
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
+#if defined(PXR_STATIC)
+#   define HDUI_API
+#   define HDUI_API_TEMPLATE_CLASS(...)
+#   define HDUI_API_TEMPLATE_STRUCT(...)
+#   define HDUI_LOCAL
+#else
+#   if defined(HDUI_EXPORTS)
+#       define HDUI_API ARCH_EXPORT
+#       define HDUI_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define HDUI_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   else
+#       define HDUI_API ARCH_IMPORT
+#       define HDUI_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define HDUI_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#   endif
+#   define HDUI_LOCAL ARCH_HIDDEN
 #endif
+
+#define HDUI_API_CLASS HDUI_API
+
+#endif // EXTRAS_IMAGING_EXAMPLES_HDUI_API_H

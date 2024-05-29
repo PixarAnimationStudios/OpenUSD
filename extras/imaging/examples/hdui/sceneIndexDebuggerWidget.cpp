@@ -252,7 +252,7 @@ HduiSceneIndexDebuggerWidget::_FillGoToInputMenu()
     });
 
     QObject::connect(menuTreeWidget, &QTreeWidget::itemClicked,
-        [this, menu, menuTreeWidget](QTreeWidgetItem *item, int column) {
+        [this, menu](QTreeWidgetItem *item, int column) {
 
             if (_InputSelectionItem *selectionItem =
                     dynamic_cast<_InputSelectionItem*>(item)) {

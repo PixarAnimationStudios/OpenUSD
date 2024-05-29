@@ -26,13 +26,15 @@
 
 #include "pxr/pxr.h"
 
+#include "api.h"
+
 #include "pxr/imaging/hd/sceneIndex.h"
 
 #include <QTreeView>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HduiSceneIndexObserverLoggingTreeView : public QTreeView
+class HDUI_API_CLASS HduiSceneIndexObserverLoggingTreeView : public QTreeView
 {
     Q_OBJECT;
 public:
@@ -52,7 +54,7 @@ public Q_SLOTS:
 
 private:
 
-    class _ObserverModel :
+    class HDUI_API_CLASS _ObserverModel :
         public HdSceneIndexObserver, public QAbstractItemModel
     {
     public:

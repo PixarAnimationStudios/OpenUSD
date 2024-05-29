@@ -26,6 +26,8 @@
 
 #include "pxr/pxr.h"
 
+#include "api.h"
+
 #include "pxr/imaging/hd/sceneIndex.h"
 
 #include <QTreeWidget>
@@ -37,7 +39,8 @@ class Hdui_SceneIndexPrimTreeWidgetItem;
 
 //-----------------------------------------------------------------------------
 
-class HduiSceneIndexTreeWidget : public QTreeWidget, public HdSceneIndexObserver
+class HDUI_API_CLASS HduiSceneIndexTreeWidget
+    : public QTreeWidget, public HdSceneIndexObserver
 {
     Q_OBJECT;
 public:

@@ -26,13 +26,15 @@
 
 #include "pxr/pxr.h"
 
+#include "api.h"
+
 #include "pxr/imaging/hd/dataSource.h"
 
 #include <QTreeView>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HduiDataSourceValueTreeView : public QTreeView
+class HDUI_API_CLASS HduiDataSourceValueTreeView : public QTreeView
 {
     Q_OBJECT;
 public:

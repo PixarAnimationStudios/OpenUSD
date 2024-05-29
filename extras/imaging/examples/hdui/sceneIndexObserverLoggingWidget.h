@@ -26,6 +26,8 @@
 
 #include "pxr/pxr.h"
 
+#include "api.h"
+
 #include <QPushButton>
 #include <QLabel>
 
@@ -33,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HduiSceneIndexObserverLoggingTreeView;
 
-class HduiSceneIndexObserverLoggingWidget : public QWidget
+class HDUI_API_CLASS HduiSceneIndexObserverLoggingWidget : public QWidget
 {
     Q_OBJECT;
 public:
