@@ -47,6 +47,21 @@ TF_DEFINE_PUBLIC_TOKENS(HdRenderSettingsSchemaTokens,
     HD_RENDER_SETTINGS_SCHEMA_TOKENS);
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (frame)
+);
+
+/* static */
+const HdDataSourceLocator &
+HdRenderSettingsSchema::GetFrameLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(_tokens->frame);
+    return locator;
+}
+
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdContainerDataSourceHandle

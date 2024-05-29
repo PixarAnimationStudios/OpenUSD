@@ -301,6 +301,7 @@ UsdImagingGLEngine::PrepareBatch(
             _sceneDelegate->SetTime(params.frame);
         }
 
+        _SetSceneGlobalsCurrentFrame(params.frame);
         _PostSetTime(params);
     }
 }
@@ -1384,6 +1385,19 @@ UsdImagingGLEngine::SetActiveRenderSettingsPrimPath(SdfPath const &path)
     }
 
     sgsi->SetActiveRenderSettingsPrimPath(path);
+}
+
+void UsdImagingGLEngine::_SetSceneGlobalsCurrentFrame(UsdTimeCode const &time)
+{
+    if (ARCH_UNLIKELY(!_appSceneIndices)) {
+        return;
+    }
+    auto &sgsi = _appSceneIndices->sceneGlobalsSceneIndex;
+    if (ARCH_UNLIKELY(!sgsi)) {
+        return;
+    }
+
+    sgsi->SetCurrentFrame(time.GetValue());
 }
 
 /* static */

@@ -192,6 +192,22 @@ _UpdateRileyCamera(
     }
 }
 
+// Update the Frame number from the Stage Global Scene Index
+void
+_UpdateFrame(
+    const HdSceneIndexBaseRefPtr &terminalSi,
+    RtParamList *options)
+{
+    // Get the Frame from the Terminal Scene Index 
+    double frame;
+    HdUtils::GetCurrentFrame(terminalSi, &frame);
+
+    // Store on the options list to be used in a later Riley.SetOptions() call 
+    HdPrman_Utils::SetParamFromVtValue(
+        RixStr.k_Ri_Frame, VtValue(frame),
+        /* role */ TfToken(), options);
+}
+
 // Create/update the render view and associated resources based on the
 // render product.
 void
@@ -371,7 +387,7 @@ HdPrman_RenderSettings::UpdateAndRender(
             renderIndex,
             product.cameraPath,
             &cameraContext);
-        
+
         const GfVec2f shutter =
             _ResolveShutterInterval(product, cameraContext, renderIndex);
 
@@ -476,6 +492,11 @@ void HdPrman_RenderSettings::_Sync(
         }
     }
 
+    if (*dirtyBits & HdRenderSettings::DirtyFrameNumber ||
+        *dirtyBits & HdRenderSettings::DirtyNamespacedSettings) {
+        _UpdateFrame(terminalSi, &_settingsOptions);
+    }
+
     // XXX Preserve existing data flow for clients that don't populate the
     //     sceneGlobals.activeRenderSettingsPrim locator at the root prim of the
     //     scene index. In this scenario, scene options and render terminals
@@ -495,7 +516,8 @@ void HdPrman_RenderSettings::_Sync(
 
         if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings ||
             *dirtyBits & HdRenderSettings::DirtyActive ||
-            *dirtyBits & HdRenderSettings::DirtyShutterInterval) {
+            *dirtyBits & HdRenderSettings::DirtyShutterInterval || 
+            *dirtyBits & HdRenderSettings::DirtyFrameNumber) {
             
             // Handle attributes ...
             param->SetRenderSettingsPrimOptions(_settingsOptions);

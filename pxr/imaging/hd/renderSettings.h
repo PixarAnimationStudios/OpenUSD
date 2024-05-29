@@ -77,6 +77,7 @@ public:
         DirtyMaterialBindingPurposes = 1 << 5,
         DirtyRenderingColorSpace     = 1 << 6,
         DirtyShutterInterval         = 1 << 7,
+        DirtyFrameNumber             = 1 << 8,
         AllDirty                     =    DirtyActive
                                         | DirtyNamespacedSettings
                                         | DirtyRenderProducts
@@ -84,6 +85,7 @@ public:
                                         | DirtyMaterialBindingPurposes
                                         | DirtyRenderingColorSpace
                                         | DirtyShutterInterval
+                                        | DirtyFrameNumber
     };
 
     // Parameters that may be queried and invalidated.

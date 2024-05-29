@@ -73,6 +73,27 @@ HasActiveRenderSettingsPrim(
     return false;
 }
 
+/* static */
+bool
+GetCurrentFrame(const HdSceneIndexBaseRefPtr &si, double *frame)
+{
+    if (!si) {
+        return false;
+    }
+
+    HdSceneGlobalsSchema sgSchema = HdSceneGlobalsSchema::GetFromSceneIndex(si);
+    if (!sgSchema) {
+        return false;
+    }
+
+    if (auto frameHandle = sgSchema.GetCurrentFrame()) {
+        *frame = frameHandle->GetTypedValue(0);
+        return true;
+    }
+
+    return false;
+}
+
 CameraUtilConformWindowPolicy
 ToConformWindowPolicy(const TfToken &token)
 {

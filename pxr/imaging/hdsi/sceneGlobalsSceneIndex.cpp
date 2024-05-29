@@ -58,7 +58,8 @@ _SceneGlobalsDataSource::GetNames()
 {
     static const TfTokenVector names = {
         HdSceneGlobalsSchemaTokens->activeRenderPassPrim,
-        HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim
+        HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim,
+        HdSceneGlobalsSchemaTokens->currentFrame
     };
 
     return names;
@@ -74,6 +75,10 @@ _SceneGlobalsDataSource::Get(const TfToken &name)
     if (name == HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim) {
         SdfPath const &path = _si->_activeRenderSettingsPrimPath;
         return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
+    }
+    if (name == HdSceneGlobalsSchemaTokens->currentFrame) {
+        const double timeCode = _si->_time;
+        return HdRetainedTypedSampledDataSource<double>::New(timeCode);
     }
 
     return nullptr;
@@ -125,6 +130,24 @@ HdsiSceneGlobalsSceneIndex::SetActiveRenderSettingsPrimPath(
         _SendPrimsDirtied({{
             HdSceneGlobalsSchema::GetDefaultPrimPath(),
             HdSceneGlobalsSchema::GetActiveRenderSettingsPrimLocator()}});
+    }
+}
+
+void
+HdsiSceneGlobalsSceneIndex::SetCurrentFrame(const double &time)
+{
+    // XXX We might need to add a flag to force dirtying of the Frame locator 
+    // even if the time has not changed 
+    if (_time == time) {
+        return;
+    }
+
+    _time = time;
+
+    if (_IsObserved()) {
+        _SendPrimsDirtied({{
+            HdSceneGlobalsSchema::GetDefaultPrimPath(),
+            HdSceneGlobalsSchema::GetCurrentFrameLocator()}});
     }
 }
 

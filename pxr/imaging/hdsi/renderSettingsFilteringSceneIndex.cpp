@@ -41,6 +41,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdsiRenderSettingsFilteringSceneIndexTokens,
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (active_depOn_sceneGlobals_arsp)
+    (active_depOn_sceneGlobals_frame)
 );
 
 namespace
@@ -75,9 +76,33 @@ _BuildDependencyForActiveLocator()
     return renderSettingsDepDS;
 }
 
+// Builds and returns a data source to invalidate the renderSettings.frame
+// locator when the sceneGlobals.currentFrame locator is dirtied.
+//
+HdContainerDataSourceHandle
+_BuildDependencyForFrameLocator()
+{
+    static const HdRetainedContainerDataSourceHandle rsFrameDepDS =
+        HdRetainedContainerDataSource::New(
+            _tokens->active_depOn_sceneGlobals_frame,
+            HdDependencySchema::Builder()
+            .SetDependedOnPrimPath(
+                HdRetainedTypedSampledDataSource<SdfPath>::New(
+                    HdSceneGlobalsSchema::GetDefaultPrimPath()))
+            .SetDependedOnDataSourceLocator(
+                HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+                    HdSceneGlobalsSchema::GetCurrentFrameLocator()))
+            .SetAffectedDataSourceLocator(
+                HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+                    HdRenderSettingsSchema::GetFrameLocator()))
+            .Build()
+        );
+    return rsFrameDepDS;
+}
+
 // Builds and returns a data source to:
 // (a) invalidate the renderSettings.shutterInterval locator when a targeted 
-// camera's shutterOpen or shutterClose locator is dirtied.
+//     camera's shutterOpen or shutterClose locator is dirtied.
 // (b) invalidate the renderSettings.shutterInterval locator when the
 //     renderProducts locator is dirtied. Due to flattening, we can't limit
 //     this to just the cameraPrim
@@ -350,17 +375,20 @@ HdContainerDataSourceHandle
 _BuildOverlayContainerDataSource(
     const HdContainerDataSourceHandle &src1,
     const HdContainerDataSourceHandle &src2,
-    const HdContainerDataSourceHandle &src3)
+    const HdContainerDataSourceHandle &src3,
+    const HdContainerDataSourceHandle &src4)
 {
     return
         HdOverlayContainerDataSource::OverlayedContainerDataSources(
             src1,
             HdOverlayContainerDataSource::OverlayedContainerDataSources(
-                src2, src3));
+                src2, 
+                HdOverlayContainerDataSource::OverlayedContainerDataSources(
+                    src3, src4)));
 }
 
 // Data source override for the 'renderSettings' locator.
-// Adds support for the 'active' and 'shutterInterval' fields and filters
+// Adds support for the 'active' and 'shutterInterval' fields and filtered
 // entries in the 'namespacedSettings' container.
 //
 class _RenderSettingsDataSource final : public HdContainerDataSource
@@ -395,8 +423,7 @@ public:
         if (name == HdRenderSettingsSchemaTokens->active) {
             bool isActive = false;
             SdfPath activePath;
-            if (HdUtils::HasActiveRenderSettingsPrim(
-                    _si, &activePath)) {
+            if (HdUtils::HasActiveRenderSettingsPrim(_si, &activePath)) {
                 isActive = (activePath == _primPath);
             }
             return HdRetainedTypedSampledDataSource<bool>::New(isActive);
@@ -480,6 +507,7 @@ public:
                 _BuildOverlayContainerDataSource(
                     _BuildDependencyForActiveLocator(),
                     _BuildDependenciesForShutterInterval(cameraPaths),
+                    _BuildDependencyForFrameLocator(),
                     HdContainerDataSource::Cast(result));
         }
 

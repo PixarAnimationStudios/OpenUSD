@@ -92,17 +92,25 @@ HdSceneGlobalsSchema::GetEndTimeCode() const
         HdSceneGlobalsSchemaTokens->endTimeCode);
 }
 
+HdDoubleDataSourceHandle
+HdSceneGlobalsSchema::GetCurrentFrame() const
+{
+    return _GetTypedDataSource<HdDoubleDataSource>(
+        HdSceneGlobalsSchemaTokens->currentFrame);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdSceneGlobalsSchema::BuildRetained(
         const HdPathDataSourceHandle &activeRenderPassPrim,
         const HdPathDataSourceHandle &activeRenderSettingsPrim,
         const HdDoubleDataSourceHandle &startTimeCode,
-        const HdDoubleDataSourceHandle &endTimeCode
+        const HdDoubleDataSourceHandle &endTimeCode,
+        const HdDoubleDataSourceHandle &currentFrame
 )
 {
-    TfToken _names[4];
-    HdDataSourceBaseHandle _values[4];
+    TfToken _names[5];
+    HdDataSourceBaseHandle _values[5];
 
     size_t _count = 0;
 
@@ -124,6 +132,11 @@ HdSceneGlobalsSchema::BuildRetained(
     if (endTimeCode) {
         _names[_count] = HdSceneGlobalsSchemaTokens->endTimeCode;
         _values[_count++] = endTimeCode;
+    }
+
+    if (currentFrame) {
+        _names[_count] = HdSceneGlobalsSchemaTokens->currentFrame;
+        _values[_count++] = currentFrame;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -160,6 +173,14 @@ HdSceneGlobalsSchema::Builder::SetEndTimeCode(
     return *this;
 }
 
+HdSceneGlobalsSchema::Builder &
+HdSceneGlobalsSchema::Builder::SetCurrentFrame(
+    const HdDoubleDataSourceHandle &currentFrame)
+{
+    _currentFrame = currentFrame;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdSceneGlobalsSchema::Builder::Build()
 {
@@ -167,7 +188,8 @@ HdSceneGlobalsSchema::Builder::Build()
         _activeRenderPassPrim,
         _activeRenderSettingsPrim,
         _startTimeCode,
-        _endTimeCode
+        _endTimeCode,
+        _currentFrame
     );
 }
 
@@ -235,6 +257,16 @@ HdSceneGlobalsSchema::GetEndTimeCodeLocator()
     static const HdDataSourceLocator locator =
         GetDefaultLocator().Append(
             HdSceneGlobalsSchemaTokens->endTimeCode);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdSceneGlobalsSchema::GetCurrentFrameLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdSceneGlobalsSchemaTokens->currentFrame);
     return locator;
 } 
 

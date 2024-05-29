@@ -90,6 +90,12 @@ public:
     /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
+
+    /// This locator is to pass along dirtying of the currentFrame locator 
+    /// on the Scene Globals Scene Index through the render Settings prim. 
+    HD_API
+    static const HdDataSourceLocator &GetFrameLocator();
+
 // --(END CUSTOM CODE: Schema Methods)--
 
     /// \name Member accessor

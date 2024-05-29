@@ -634,6 +634,9 @@ protected:
     void _SetActiveRenderSettingsPrimFromStageMetadata(UsdStageWeakPtr stage);
 
     USDIMAGINGGL_API
+    void _SetSceneGlobalsCurrentFrame(UsdTimeCode const &time);
+
+    USDIMAGINGGL_API
     void _UpdateDomeLightCameraVisibility();
 
     using BBoxVector = std::vector<GfBBox3d>;

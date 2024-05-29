@@ -64,6 +64,10 @@ public:
     HDSI_API
     void SetActiveRenderSettingsPrimPath(const SdfPath &);
 
+    ///
+    HDSI_API
+    void SetCurrentFrame(const double &);
+
     // ------------------------------------------------------------------------
     // Satisfying HdSceneIndexBase
     // ------------------------------------------------------------------------
@@ -102,6 +106,7 @@ private:
 
     SdfPath _activeRenderPassPrimPath;
     SdfPath _activeRenderSettingsPrimPath;
+    double _time;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

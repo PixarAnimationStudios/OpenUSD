@@ -139,6 +139,14 @@ HasActiveRenderSettingsPrim(
     const HdSceneIndexBaseRefPtr &si,
     SdfPath *primPath = nullptr);
 
+/// Retreives the current frame number from the input scene index \p si. 
+/// Returns true if a data source for the associated locator was found
+/// with the result in \p frame, and false otherwise.
+///
+HD_API
+bool
+GetCurrentFrame(const HdSceneIndexBaseRefPtr &si, double *frame);
+
 /// Translate the given aspect ratio conform policy \p token into an equivalent 
 /// CameraUtilConformWindowPolicy enum. 
 ///

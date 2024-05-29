@@ -1160,9 +1160,9 @@
                  render. It currently houses the active render settings
                  and pass prim paths that describe the information
                  necessary to generate images from a single invocation
-                 of a renderer, and the active time sample range that
-                 may be relevant to downstream scene indices (e.g.
-                 procedural evaluation).
+                 of a renderer, and the active time sample range and current  
+                 frame number that may be relevant to downstream scene indices 
+                 (e.g. procedural evaluation).
 
                  We shall use the convention of a container data source at the root prim
                  of the scene index that is populated with this global state.
@@ -1176,6 +1176,7 @@
             ('activeRenderSettingsPrim', T_PATH, {}),
             ('startTimeCode', T_DOUBLE, {}),
             ('endTimeCode', T_DOUBLE, {}),
+            ('currentFrame', T_DOUBLE, {}),
         ],
     ),
 

@@ -232,8 +232,7 @@ UsdImagingRenderSettingsAdapter::UpdateForTime(
     SdfPath const& cachePath, 
     UsdTimeCode time,
     HdDirtyBits requestedBits,
-    UsdImagingInstancerContext const* 
-    instancerContext) const
+    UsdImagingInstancerContext const* instancerContext) const
 {
 }
 
