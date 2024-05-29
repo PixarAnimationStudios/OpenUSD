@@ -404,6 +404,51 @@ class TestUsdInstanceProxy(unittest.TestCase):
         _ValidateAttributeValue(
             attrPath = '/World/sets/Set_2/Prop_2/geom.x', expectedValue = 1.0)
 
+        _ValidateAttributeValue(
+            attrPath = '/World/sets/Set_1/Prop_1/geom.pathExpr',
+            expectedValue = Sdf.PathExpression(
+                '//foo /World/sets/Set_1/Prop_1/anim//*bar'))
+        _ValidateAttributeValue(
+            attrPath = '/World/sets/Set_1/Prop_2/geom.pathExpr',
+            expectedValue = Sdf.PathExpression(
+                '//foo /World/sets/Set_1/Prop_2/anim//*bar'))
+        _ValidateAttributeValue(
+            attrPath = '/World/sets/Set_2/Prop_1/geom.pathExpr',
+            expectedValue = Sdf.PathExpression(
+                '//foo /World/sets/Set_2/Prop_1/anim//*bar'))
+        _ValidateAttributeValue(
+            attrPath = '/World/sets/Set_2/Prop_2/geom.pathExpr',
+            expectedValue = Sdf.PathExpression(
+                '//foo /World/sets/Set_2/Prop_2/anim//*bar'))
+
+        # Check that the pathExpr attribute values in prototypes also map.
+        def _ValidatePathExprAttrInPrototype(attrPath, expectedPattern):
+            import re
+            attrPath = Sdf.Path(attrPath)
+            proxyPrim = s.GetPrimAtPath(attrPath.GetPrimPath())
+            self._ValidateInstanceProxy(attrPath.GetPrimPath(), proxyPrim)
+
+            protoPrim = proxyPrim.GetPrimInPrototype()
+            attr = protoPrim.GetAttribute(attrPath.name)
+            self.assertTrue(attr)
+            self.assertTrue(re.match(expectedPattern, attr.Get().GetText()),
+                            msg=attr.Get().GetText() + ' did not match ' +
+                            expectedPattern)
+
+        pattern = r'//foo /__Prototype_\d+/anim//\*bar'
+        _ValidatePathExprAttrInPrototype(
+            attrPath = '/World/sets/Set_1/Prop_1/geom.pathExpr',
+            expectedPattern = pattern)
+        _ValidatePathExprAttrInPrototype(
+            attrPath = '/World/sets/Set_1/Prop_2/geom.pathExpr',
+            expectedPattern = pattern)
+        _ValidatePathExprAttrInPrototype(
+            attrPath = '/World/sets/Set_2/Prop_1/geom.pathExpr',
+            expectedPattern = pattern)
+        _ValidatePathExprAttrInPrototype(
+            attrPath = '/World/sets/Set_2/Prop_2/geom.pathExpr',
+            expectedPattern = pattern)
+
     def test_GetRelationshipTargets(self):
         s = Usd.Stage.Open('rels/root.usda')
 
