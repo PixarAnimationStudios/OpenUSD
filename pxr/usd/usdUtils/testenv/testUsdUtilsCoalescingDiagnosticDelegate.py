@@ -12,7 +12,7 @@ from pxr import Tf, Sdf, UsdUtils
 def _genWarning():
     Tf.Warn('.')
 
-EXPECTED_LINE_NO   = 30 
+EXPECTED_LINE_NO   = 14
 EXPECTED_FUNC_NAME = '__main__._genWarning'
 
 delegate = UsdUtils.CoalescingDiagnosticDelegate()
