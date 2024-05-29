@@ -968,26 +968,27 @@ HdxPrimOriginInfo::FromPickHit(HdRenderIndex * const renderIndex,
 // Consults given prim source for origin path to either replace
 // the given path (if origin path is absolute) or append to given
 // path (if origin path is relative). If no prim origin data source,
-// leave path unchanged.
+// leave path unchanged. Return whether the path was appended-to.
 static
-void
+bool
 _AppendPrimOriginToPath(HdContainerDataSourceHandle const &primOriginDs,
                         const TfToken &nameInPrimOrigin,
                         SdfPath * const path)
 {
     HdPrimOriginSchema schema = HdPrimOriginSchema(primOriginDs);
     if (!schema) {
-        return;
+        return false;
     }
     const SdfPath scenePath = schema.GetOriginPath(nameInPrimOrigin);
     if (scenePath.IsEmpty()) {
-        return;
+        return false;
     }
     if (scenePath.IsAbsolutePath()) {
         *path = scenePath;
     } else {
         *path = path->AppendPath(scenePath);
     }
+    return true;
 }
 
 SdfPath
@@ -1010,6 +1011,38 @@ HdxPrimOriginInfo::GetFullPath(const TfToken &nameInPrimOrigin) const
     _AppendPrimOriginToPath(
         primOrigin, nameInPrimOrigin, &path);
     return path;
+}
+
+HdInstancerContext
+HdxPrimOriginInfo::ComputeInstancerContext(
+        const TfToken &nameInPrimOrigin) const
+{
+    HdInstancerContext outCtx;
+
+    // Loop through the instancer contexts from outermost to innermost, building
+    // up a path.
+
+    SdfPath prefix;
+    for (const HdxInstancerContext &ctx : instancerContexts) {
+        // First, check if instancerPrimOrigin has anything (via _Append
+        // return value); if so, this instancer is in the scene and needs to be
+        // added to outCtx.  We prepend the current prefix, since if the prefix
+        // is non-empty it indicates this instancer participated in instance
+        // aggregation.
+        SdfPath instancer = prefix;
+        if (_AppendPrimOriginToPath(ctx.instancerPrimOrigin,
+                nameInPrimOrigin, &instancer)) {
+            outCtx.push_back(std::make_pair(instancer, ctx.instanceId));
+        }
+
+        // If instancePrimOrigin has anything in it, that indicates this
+        // instancer participated in instance aggregation, and its contribution
+        // to the path of any later instancers needs to be added to the prefix.
+        _AppendPrimOriginToPath(
+            ctx.instancePrimOrigin, nameInPrimOrigin, &prefix);
+    }
+
+    return outCtx;
 }
 
 size_t

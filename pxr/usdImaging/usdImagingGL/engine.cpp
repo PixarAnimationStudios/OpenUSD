@@ -817,9 +817,13 @@ UsdImagingGLEngine::TestIntersection(
     } else {
         const HdxPrimOriginInfo info = HdxPrimOriginInfo::FromPickHit(
             _renderIndex.get(), hit);
-        const SdfPath usdPath = info.GetFullPath();
-        if (!usdPath.IsEmpty()) {
-            hit.objectId = usdPath;
+        hit.objectId = info.GetFullPath();
+        HdInstancerContext ctx = info.ComputeInstancerContext();
+        if (!ctx.empty()) {
+            hit.instancerId = ctx.back().first;
+            if (outInstancerContext) {
+                *outInstancerContext = std::move(ctx);
+            }
         }
     }
 

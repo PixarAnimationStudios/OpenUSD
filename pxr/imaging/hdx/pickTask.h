@@ -195,6 +195,17 @@ struct HdxPrimOriginInfo
         const TfToken &nameInPrimOrigin =
                     HdPrimOriginSchemaTokens->scenePath) const;
 
+    /// Computes an HdInstancerContext object (equivalent to the one computed
+    /// by GetScenePrimPath) from the vector of HdxInstancerContext objects.
+    /// Note that while HdxInstancerContext has a wealth of data about both
+    /// scene instancers and hydra-created instancers, HdInstancerContext
+    /// is meant to be just a list of (scene instancer, local instance id)
+    /// tuples, used by some clients (e.g. usdview) for selection processing.
+    HDX_API
+    HdInstancerContext ComputeInstancerContext(
+        const TfToken &nameInPrimOrigin =
+                    HdPrimOriginSchemaTokens->scenePath) const;
+
     /// Information about the instancers instancing the picked object.
     /// The outer most instancer will be first.
     std::vector<HdxInstancerContext> instancerContexts;
