@@ -192,35 +192,41 @@ UsdValidationRegistry::_PopulateMetadataFromPlugInfo()
     }
 }
 
-bool
+void 
 UsdValidationRegistry::RegisterPluginValidator(
     const TfToken &validatorName, const UsdValidateLayerTaskFn &layerTaskFn)
 {
-    return _RegisterPluginValidator<UsdValidateLayerTaskFn>(
+    _RegisterPluginValidator<UsdValidateLayerTaskFn>(
             validatorName, layerTaskFn);
 }
 
-bool
+void
 UsdValidationRegistry::RegisterPluginValidator(
     const TfToken &validatorName, const UsdValidateStageTaskFn &stageTaskFn)
 {
-    return _RegisterPluginValidator<UsdValidateStageTaskFn>(
+    _RegisterPluginValidator<UsdValidateStageTaskFn>(
             validatorName, stageTaskFn);
 }
 
-bool
+void
 UsdValidationRegistry::RegisterPluginValidator(
     const TfToken &validatorName, const UsdValidatePrimTaskFn &primTaskFn)
 {
-    return _RegisterPluginValidator<UsdValidatePrimTaskFn>(
+    _RegisterPluginValidator<UsdValidatePrimTaskFn>(
             validatorName, primTaskFn);
 }
 
 template<typename ValidateTaskFn>
-bool
+void
 UsdValidationRegistry::_RegisterPluginValidator(const TfToken &validatorName, 
                                                 const ValidateTaskFn &taskFn)
 {
+    static_assert(std::is_same_v<ValidateTaskFn, UsdValidateLayerTaskFn> ||
+                  std::is_same_v<ValidateTaskFn, UsdValidateStageTaskFn> ||
+                  std::is_same_v<ValidateTaskFn, UsdValidatePrimTaskFn>,
+                  "template parameter must be UsdValidateLayerTaskFn," 
+                  "UsdValidateStageTaskFn, or UsdValidatePrimTaskFn");
+
     UsdValidatorMetadata metadata;
     if (!GetValidatorMetadata(validatorName, &metadata)) {
         // if this validatorName is from a plugin, which it should be since
@@ -232,67 +238,51 @@ UsdValidationRegistry::_RegisterPluginValidator(const TfToken &validatorName,
             "Validator metadata missing for '%s', validator registered "
             "using this API must be defined in the plugInfo.json",
             validatorName.GetText());
-        return false;
+        return;
     }
 
-    return _RegisterValidator(metadata, taskFn, /* addMetadata */ false);
+    _RegisterValidator(metadata, taskFn, /* addMetadata */ false);
 }
 
-// Explicit instantiation for the 3 types we need.
-template
-bool
-UsdValidationRegistry::_RegisterPluginValidator<UsdValidateLayerTaskFn>(
-    const TfToken &validatorName, const UsdValidateLayerTaskFn &taskFn);
-
-template
-bool
-UsdValidationRegistry::_RegisterPluginValidator<UsdValidateStageTaskFn>(
-    const TfToken &validatorName, const UsdValidateStageTaskFn &taskFn);
-
-template
-bool
-UsdValidationRegistry::_RegisterPluginValidator<UsdValidatePrimTaskFn>(
-    const TfToken &validatorName, const UsdValidatePrimTaskFn &taskFn);
-
-bool
+void
 UsdValidationRegistry::RegisterValidator(
     const UsdValidatorMetadata &metadata, 
     const UsdValidateLayerTaskFn &layerTaskFn)
 {
-    return _RegisterValidator(metadata, layerTaskFn);
+    _RegisterValidator(metadata, layerTaskFn);
 }
 
-bool
+void
 UsdValidationRegistry::RegisterValidator(
     const UsdValidatorMetadata &metadata, 
     const UsdValidateStageTaskFn &stageTaskFn)
 {
-    return _RegisterValidator(metadata, stageTaskFn);
+    _RegisterValidator(metadata, stageTaskFn);
 }
 
-bool
+void
 UsdValidationRegistry::RegisterValidator(
     const UsdValidatorMetadata &metadata, 
     const UsdValidatePrimTaskFn &primTaskFn)
 {
-    return _RegisterValidator(metadata, primTaskFn);
+    _RegisterValidator(metadata, primTaskFn);
 }
 
 template<typename ValidateTaskFn>
-bool
+void
 UsdValidationRegistry::_RegisterValidator(const UsdValidatorMetadata &metadata, 
     const ValidateTaskFn &taskFn, bool addMetadata)
 {
-    static_assert(std::is_same<ValidateTaskFn, UsdValidateLayerTaskFn>::value ||
-                  std::is_same<ValidateTaskFn, UsdValidateStageTaskFn>::value ||
-                  std::is_same<ValidateTaskFn, UsdValidatePrimTaskFn>::value,
+    static_assert(std::is_same_v<ValidateTaskFn, UsdValidateLayerTaskFn> ||
+                  std::is_same_v<ValidateTaskFn, UsdValidateStageTaskFn> ||
+                  std::is_same_v<ValidateTaskFn, UsdValidatePrimTaskFn>,
                   "template parameter must be UsdValidateLayerTaskFn," 
                   "UsdValidateStageTaskFn, or UsdValidatePrimTaskFn");
 
     static constexpr bool isPrimTaskFn = 
         std::is_same<ValidateTaskFn, UsdValidatePrimTaskFn>::value;
     if (!_CheckMetadata(metadata, isPrimTaskFn)) {
-        return false;
+        return;
     }
 
     {
@@ -302,7 +292,7 @@ UsdValidationRegistry::_RegisterValidator(const UsdValidatorMetadata &metadata,
             TF_CODING_ERROR(
                 "Validator '%s' already registered with the "
                 "UsdValidationRegistry", metadata.name.GetText());
-            return false;
+            return;
         }
 
         // Note in case validator metadata needs to be added and there is
@@ -313,14 +303,17 @@ UsdValidationRegistry::_RegisterValidator(const UsdValidatorMetadata &metadata,
                 TF_CODING_ERROR(
                     "Metadata already added for a UsdValidatorSuite with the "
                     "same name '%s'.", metadata.name.GetText());
-                return false;
+                return;
             }
         }
 
         std::unique_ptr<UsdValidator> validator =
             std::make_unique<UsdValidator>(metadata, taskFn);
-        return _validators.emplace(metadata.name, 
-                                       std::move(validator)).second;
+        if (!_validators.emplace(metadata.name, std::move(validator)).second) {
+            TF_CODING_ERROR(
+                "Validator with name '%s' already exists, failed to register "
+                "it again.", metadata.name.GetText());
+        }
     }
 }
 
@@ -402,7 +395,7 @@ UsdValidationRegistry::GetOrLoadValidatorsByName(
     return validators;
 }
 
-bool
+void
 UsdValidationRegistry::RegisterPluginValidatorSuite(
     const TfToken &suiteName, 
     const std::vector<const UsdValidator*> &containedValidators)
@@ -418,21 +411,21 @@ UsdValidationRegistry::RegisterPluginValidatorSuite(
             "Validator Suite metadata missing for '%s', validator registered "
             "using this API must be defined in the plugInfo.json",
             suiteName.GetText());
-        return false;
+        return;
     }
-    return _RegisterValidatorSuite(metadata, containedValidators, 
+    _RegisterValidatorSuite(metadata, containedValidators, 
                                    /* addMetadata */ false);
 }
 
-bool
+void
 UsdValidationRegistry::RegisterValidatorSuite(
     const UsdValidatorMetadata &metadata, 
     const std::vector<const UsdValidator*> &containedValidators)
 {
-    return _RegisterValidatorSuite(metadata, containedValidators);
+    _RegisterValidatorSuite(metadata, containedValidators);
 }
 
-bool
+void
 UsdValidationRegistry::_RegisterValidatorSuite(
     const UsdValidatorMetadata &metadata,
     const std::vector<const UsdValidator*> &containedValidators,
@@ -440,7 +433,7 @@ UsdValidationRegistry::_RegisterValidatorSuite(
 {
     if (!_CheckMetadata(metadata, /* checkForPrimTask */ false, 
                         /* expectSuite */ true)) {
-        return false;
+        return;
     }
 
     // Make sure containedValidators are conforming if suite has schemaTypes.
@@ -456,7 +449,7 @@ UsdValidationRegistry::_RegisterValidatorSuite(
                     "Validator Suite '%s' not registered, one of the contained "
                     "validator is invalid.",
                     metadata.name.GetText());
-                return false;
+                return;
             }
             if (!validator->_GetValidatePrimTask()) {
                 TF_CODING_ERROR(
@@ -465,7 +458,7 @@ UsdValidationRegistry::_RegisterValidatorSuite(
                     "'%s' does not provide a UsdValidatePrimTaskFn", 
                     metadata.name.GetText(), 
                     validator->GetMetadata().name.GetText());
-                return false;
+                return;
             }
             // We also need to make sure the contained validator's schemaTypes 
             // is a subset of validatorSuite's schemaTypes
@@ -481,7 +474,7 @@ UsdValidationRegistry::_RegisterValidatorSuite(
                         schemaType.GetText(), 
                         validator->GetMetadata().name.GetText(),
                         metadata.name.GetText());
-                    return false;
+                    return;
                 }
             }
         }
@@ -495,7 +488,7 @@ UsdValidationRegistry::_RegisterValidatorSuite(
             TF_CODING_ERROR(
                 "ValidatorSuite '%s' already registered with the "
                 "UsdValidationRegistry", metadata.name.GetText());
-            return false;
+            return;
         }
 
         // Note in case validator metadata needs to be added and there is
@@ -506,14 +499,18 @@ UsdValidationRegistry::_RegisterValidatorSuite(
                 TF_CODING_ERROR(
                     "Metadata already added for a UsdValidator with the same "
                     "name '%s'.", metadata.name.GetText());
-                return false;
+                return;
             }
         }
 
         std::unique_ptr<UsdValidatorSuite> validatorSuite =
             std::make_unique<UsdValidatorSuite>(metadata, containedValidators);
-        return _validatorSuites.emplace(metadata.name, 
-                                            std::move(validatorSuite)).second;
+        if (!_validatorSuites.emplace(metadata.name, 
+                                            std::move(validatorSuite)).second) {
+            TF_CODING_ERROR(
+                "Suite with name '%s' already exists, failed to register it "
+                "again.", metadata.name.GetText());
+        }
     }
 }
 

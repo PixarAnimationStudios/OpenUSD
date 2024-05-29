@@ -28,6 +28,7 @@
 #include "pxr/usd/usd/validator.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/plug/registry.h"
+#include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/token.h"
 
@@ -50,9 +51,9 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
         };
 
         // Register the validator
-        if (!registry.RegisterPluginValidator(validatorName, stageTaskFn)) {
-            TF_CODING_ERROR("Failed to register TestValidator1.\n");
-        }
+        TfErrorMark m;
+        registry.RegisterPluginValidator(validatorName, stageTaskFn);
+        TF_AXIOM(m.IsClean());
     }
     {
         const TfToken validatorName("testValidationPlugin:TestValidator2");
@@ -62,9 +63,9 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
         };
 
         // Register the validator
-        if (!registry.RegisterPluginValidator(validatorName, primTaskFn)) {
-            TF_CODING_ERROR("Failed to register TestValidator2.\n");
-        }
+        TfErrorMark m;
+        registry.RegisterPluginValidator(validatorName, primTaskFn);
+        TF_AXIOM(m.IsClean());
     }
     {
         const TfToken validatorName("testValidationPlugin:TestValidator3");
@@ -74,9 +75,9 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
             };
 
         // Register the validator
-        if (!registry.RegisterPluginValidator(validatorName, primTaskFn)) {
-            TF_CODING_ERROR("Failed to register TestValidator3.\n");
-        }
+        TfErrorMark m;
+        registry.RegisterPluginValidator(validatorName, primTaskFn);
+        TF_AXIOM(m.IsClean());
     }
     {
         const TfToken suiteName("testValidationPlugin:TestValidatorSuite");
@@ -84,10 +85,9 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
             registry.GetOrLoadValidatorsByName(
                 {TfToken("testValidationPlugin:TestValidator1"),
                  TfToken("testValidationPlugin:TestValidator2")});
-        if (!registry.RegisterPluginValidatorSuite(suiteName, containedValidators)) {
-            TF_CODING_ERROR("Failed to register TestValidatorSuite "
-                            "validatorSuite.");
-        }
+        TfErrorMark m;
+        registry.RegisterPluginValidatorSuite(suiteName, containedValidators);
+        TF_AXIOM(m.IsClean());
     }
     {
         const TfToken validatorName("testValidationPlugin:FailedValidator");
@@ -98,9 +98,9 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
         };
 
         // Register the validator
-        if (!registry.RegisterPluginValidator(validatorName, stageTaskFn)) {
-            TF_CODING_ERROR("Failed to register FailedValidator.\n");
-        }
+        TfErrorMark m;
+        registry.RegisterPluginValidator(validatorName, stageTaskFn);
+        TF_AXIOM(!m.IsClean());
     }
     {
         const TfToken suiteName("testValidationPlugin:FailedValidatorSuite");
@@ -108,24 +108,18 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
             registry.GetOrLoadValidatorsByName(
                 {TfToken("testValidationPlugin:TestValidator2"),
                  TfToken("testValidationPlugin:TestValidator1")});
-        if (registry.RegisterPluginValidatorSuite(suiteName, containedValidators)) {
-            TF_CODING_ERROR("As expected, failed to register "
-                            "FailedValidatorSuite, as contained validators do "
-                            "not comply with the suite providing schemaTypes "
-                            "metadata.");
-        }
+        TfErrorMark m;
+        registry.RegisterPluginValidatorSuite(suiteName, containedValidators);
+        TF_AXIOM(!m.IsClean());
     }
     {
         const TfToken suiteName("testValidationPlugin:FailedValidatorSuite2");
         const std::vector<const UsdValidator*> containedValidators =
             registry.GetOrLoadValidatorsByName(
                 {TfToken("testValidationPlugin:TestValidator2")});
-        if (registry.RegisterPluginValidatorSuite(suiteName, containedValidators)) {
-            TF_CODING_ERROR("As expected, failed to register "
-                            "FailedValidatorSuite2, as contained validators do "
-                            "not comply with the suite providing schemaTypes "
-                            "metadata.");
-        }
+        TfErrorMark m;
+        registry.RegisterPluginValidatorSuite(suiteName, containedValidators);
+        TF_AXIOM(!m.IsClean());
     }
 }
 

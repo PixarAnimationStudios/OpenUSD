@@ -117,10 +117,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///             }
 ///             return errors;
 ///         };
-///     if (!registry.RegisterValidator(validatorName, stageTaskFn) {
-///         TF_CODING_ERROR("Failed to register validator %s.", 
-///             validatorName.GetText());
-///     }
+///     registry.RegisterValidator(validatorName, stageTaskFn);
 /// }
 /// ```
 ///
@@ -137,9 +134,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
 ///     const UsdValidatorMetadata &metadata = GetMetadataToBeRegistered();
 ///     const UsdValidateLayerTaskFn &layerTask = GetLayerTaskForValidator();
-///     if (registry.RegisterValidator(metadata, layerTask)) {
-///         // successfully registered.
-///     }
+///     registry.RegisterValidator(metadata, layerTask);
 /// }
 /// ```
 ///
@@ -177,16 +172,17 @@ public:
     /// Here \p validatorName should include the name of the plugin the
     /// validator belongs to, delimited by ":".
     ///
-    /// Returns true if validator is successfully registered, false otherwise.
-    ///
     /// Note calling RegisterPluginValidator with a validatorName which is
     /// already registered will result in a coding error. HasValidator can be
     /// used to determine if a validator is already registered and associated
     /// with validatorName.
     ///
+    /// Also note any other failure to register a validator results in a coding 
+    /// error.
+    ///
     /// \sa HasValidator
     USD_API
-    bool RegisterPluginValidator(const TfToken &validatorName,
+    void RegisterPluginValidator(const TfToken &validatorName,
                            const UsdValidateLayerTaskFn &layerTaskFn);
 
     /// Register UsdValidator defined in a plugin using \p validatorName and 
@@ -195,16 +191,17 @@ public:
     /// Here \p validatorName should include the name of the plugin the
     /// validator belongs to, delimited by ":".
     ///
-    /// Returns true if validator is successfully registered, false otherwise.
-    ///
     /// Note calling RegisterPluginValidator with a validatorName which is
     /// already registered will result in a coding error. HasValidator can be
     /// used to determine if a validator is already registered and associated
     /// with validatorName.
     ///
+    /// Also note any other failure to register a validator results in a coding 
+    /// error.
+    ///
     /// \sa HasValidator
     USD_API
-    bool RegisterPluginValidator(const TfToken &validatorName,
+    void RegisterPluginValidator(const TfToken &validatorName,
                            const UsdValidateStageTaskFn &stageTaskFn);
 
     /// Register UsdValidator defined in a plugin using \p validatorName and 
@@ -213,16 +210,17 @@ public:
     /// Here \p validatorName should include the name of the plugin the
     /// validator belongs to, delimited by ":".
     ///
-    /// Returns true if validator is successfully registered, false otherwise.
-    ///
     /// Note calling RegisterPluginValidator with a validatorName which is
     /// already registered will result in a coding error. HasValidator can be
     /// used to determine if a validator is already registered and associated
     /// with validatorName.
     ///
+    /// Also note any other failure to register a validator results in a coding 
+    /// error.
+    ///
     /// \sa HasValidator
     USD_API
-    bool RegisterPluginValidator(const TfToken &validatorName,
+    void RegisterPluginValidator(const TfToken &validatorName,
                            const UsdValidatePrimTaskFn &primTaskFn);
 
     /// Register UsdValidator using \p metadata and \p layerTaskFn
@@ -232,16 +230,17 @@ public:
     /// register a validator and associate it with name metadata. The metadata
     /// here is not specified in a plugInfo.
     ///
-    /// Returns true if validator is successfully registered, false otherwise.
-    ///
     /// Note calling RegisterValidator with a validator name which is already
     /// registered will result in a coding error. HasValidator can be used to
     /// determine if a validator is already registered and associated with
     /// validatorName.
     ///
+    /// Also note any other failure to register a validator results in a coding 
+    /// error.
+    ///
     /// \sa HasValidator
     USD_API
-    bool RegisterValidator(const UsdValidatorMetadata &metadata,
+    void RegisterValidator(const UsdValidatorMetadata &metadata,
                            const UsdValidateLayerTaskFn &layerTaskFn);
 
     /// Register UsdValidator using \p metadata and \p stageTaskFn
@@ -251,16 +250,17 @@ public:
     /// register a validator and associate it with name metadata. The metadata
     /// here is not specified in a plugInfo.
     ///
-    /// Returns true if validator is successfully registered, false otherwise.
-    ///
     /// Note calling RegisterValidator with a validator name which is already
     /// registered will result in a coding error. HasValidator can be used to
     /// determine if a validator is already registered and associated with
     /// validatorName.
     ///
+    /// Also note any other failure to register a validator results in a coding 
+    /// error.
+    ///
     /// \sa HasValidator
     USD_API
-    bool RegisterValidator(const UsdValidatorMetadata &metadata,
+    void RegisterValidator(const UsdValidatorMetadata &metadata,
                            const UsdValidateStageTaskFn &stageTaskFn);
 
     /// Register UsdValidator using \p metadata and \p primTaskFn
@@ -270,16 +270,17 @@ public:
     /// register a validator and associate it with name metadata. The metadata
     /// here is not specified in a plugInfo.
     ///
-    /// Returns true if validator is successfully registered, false otherwise.
-    ///
     /// Note calling RegisterValidator with a validator name which is already
     /// registered will result in a coding error. HasValidator can be used to
     /// determine if a validator is already registered and associated with
     /// validatorName.
     ///
+    /// Also note any other failure to register a validator results in a coding 
+    /// error.
+    ///
     /// \sa HasValidator
     USD_API
-    bool RegisterValidator(const UsdValidatorMetadata &metadata,
+    void RegisterValidator(const UsdValidatorMetadata &metadata,
                            const UsdValidatePrimTaskFn &primTaskFn);
 
     /// Register UsdValidatorSuite defined in a plugin using
@@ -292,17 +293,17 @@ public:
     /// Note UsdValidatorMetadata::isSuite must be set to true in the plugInfo,
     /// else the validatorSuite will not be registered.
     ///
-    /// Returns true if validatorSuite is successfully registered, false
-    /// otherwise.
-    ///
     /// Note calling RegisterPluginValidatorSuite with a validatorSuiteName
     /// which is already registered will result in a coding error.
     /// HasValidatorSuite can be used to determine if a validator is already
     /// registered and associated with validatorName.
     ///
+    /// Also note any other failure to register a validator results in a coding 
+    /// error.
+    ///
     /// \sa HasValidatorSuite
     USD_API
-    bool RegisterPluginValidatorSuite(const TfToken &validatorSuiteName, 
+    void RegisterPluginValidatorSuite(const TfToken &validatorSuiteName, 
                                       const std::vector<const UsdValidator*>& 
                                           containedValidators);
 
@@ -316,17 +317,17 @@ public:
     /// Note UsdValidatorMetadata::isSuite must be set to true in the plugInfo,
     /// else the validatorSuite will not be registered.
     ///
-    /// Returns true if validatorSuite is successfully registered, false
-    /// otherwise.
-    ///
     /// Note calling RegisterPluginValidatorSuite with a validatorSuiteName
     /// which is already registered will result in a coding error.
     /// HasValidatorSuite can be used to determine if a validator is already
     /// registered and associated with validatorName.
     ///
+    /// Also note any other failure to register a validator results in a coding 
+    /// error.
+    ///
     /// \sa HasValidatorSuite
     USD_API
-    bool RegisterValidatorSuite(const UsdValidatorMetadata &metadata,
+    void RegisterValidatorSuite(const UsdValidatorMetadata &metadata,
                                 const std::vector<const UsdValidator*>&
                                     containedValidators);
 
@@ -510,16 +511,16 @@ private:
     // RegisterValidator methods, providing UsdValidateLayerTaskFn,
     // UsdValidateStageTaskFn or UsdValidatePrimTaskFn.
     template<typename ValidateTaskFn>
-    bool _RegisterPluginValidator(const TfToken &validatorName, 
+    void _RegisterPluginValidator(const TfToken &validatorName, 
         const ValidateTaskFn &taskFn);
 
     // Overloaded templated _RegisterValidator, where metadata is explicitly
     // provided. 
     template<typename ValidateTaskFn>
-    bool _RegisterValidator(const UsdValidatorMetadata &metadata, 
+    void _RegisterValidator(const UsdValidatorMetadata &metadata, 
         const ValidateTaskFn &taskFn, bool addMetadata = true);
 
-    bool _RegisterValidatorSuite(const UsdValidatorMetadata &metadata,
+    void _RegisterValidatorSuite(const UsdValidatorMetadata &metadata,
         const std::vector<const UsdValidator*>& containedValidators, 
         bool addMetadata = true);
 
