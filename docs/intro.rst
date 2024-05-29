@@ -33,7 +33,7 @@ In addition, because USD's core scenegraph and :ref:`composition engine
 extended in a maintainable way to encode and compose data in other domains.
 
 Concretely, USD is an `open source project
-<https://github.com/PixarAnimationStudios/OpenUSD>`_ released under a 
+<https://github.com/PixarAnimationStudios/OpenUSD>`_ released under the 
 `TOST license <https://openusd.org/license>`_.
 
 Why use USD?
