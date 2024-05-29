@@ -169,7 +169,7 @@ public:
     }
 
     /// Return metadata associated with this validator by-value.
-    UsdValidatorMetadata GetMetadata() const &&
+    UsdValidatorMetadata GetMetadata() &&
     {
         return std::move(_metadata);
     }
@@ -258,9 +258,9 @@ public:
     /// UsdValidatorSuite. Note that the validators are guaranteed to be valid,
     /// since their lifetime is managed by the UsdValidationRegistry, which has
     /// a higher scope than individual validators. 
-    std::vector<const UsdValidator*> GetContainedValidators() const &&
+    std::vector<const UsdValidator*> GetContainedValidators() &&
     {
-        return _containedValidators;
+        return std::move(_containedValidators);
     }
 
     /// Return metadata associated with this validator.
@@ -270,7 +270,7 @@ public:
     }
 
     /// Return metadata associated with this validator.
-    UsdValidatorMetadata GetMetadata() const &&
+    UsdValidatorMetadata GetMetadata() &&
     {
         return std::move(_metadata);
     }
