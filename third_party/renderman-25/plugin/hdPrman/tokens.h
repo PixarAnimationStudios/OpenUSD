@@ -50,6 +50,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanTokens, HDPRMAN_API, HD_PRMAN_TOKENS);
     ((displayFilter,      "riley:displayFilter"))      \
     ((geometryInstance,   "riley:geometryInstance"))   \
     ((geometryPrototype,  "riley:geometryPrototype"))  \
+    ((globals,            "riley:globals"))            \
     ((integrator,         "riley:integrator"))         \
     ((lightInstance,      "riley:lightInstance"))      \
     ((lightShader,        "riley:lightShader"))        \

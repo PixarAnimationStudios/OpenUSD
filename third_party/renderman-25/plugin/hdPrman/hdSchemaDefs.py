@@ -161,6 +161,25 @@
     #--------------------------------------------------------------------------
     #
     #
+    # Schema's corresponding to riley globals.
+    #
+    #
+    # hdPrman/rileyGlobals
+    dict(
+        SCHEMA_NAME = 'RileyGlobals',
+        SCHEMA_TOKEN = 'rileyGlobals',
+        ADD_DEFAULT_LOCATOR = True,
+        SCHEMA_INCLUDES = ['hdPrman/rileyParamListSchema'],
+
+        MEMBERS = [
+            ('ALL_MEMBERS', '', dict(ADD_LOCATOR=True)),
+            ('options', 'HdPrmanRileyParamListSchema', {})
+        ],
+    ),
+
+    #--------------------------------------------------------------------------
+    #
+    #
     # Schema's corresponding to riley prims.
     #
     #

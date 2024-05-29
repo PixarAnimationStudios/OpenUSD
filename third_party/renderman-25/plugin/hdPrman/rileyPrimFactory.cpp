@@ -34,6 +34,7 @@
 #include "hdPrman/rileyDisplayFilterPrim.h"
 #include "hdPrman/rileyGeometryInstancePrim.h"
 #include "hdPrman/rileyGeometryPrototypePrim.h"
+#include "hdPrman/rileyGlobalsPrim.h"
 #include "hdPrman/rileyIntegratorPrim.h"
 #include "hdPrman/rileyLightInstancePrim.h"
 #include "hdPrman/rileyLightShaderPrim.h"
@@ -71,6 +72,8 @@ class _RileyPrimTypePriorityFunctor
     {
         /// Dependencies are as follows:
         ///
+        /// Riley::SetOptions needs to be before anything else!
+        ///
         /// lightShader     <----------------------------< lightInstance
         ///                                               /
         /// material      <------------------------------*---< geometryInstance
@@ -92,6 +95,10 @@ class _RileyPrimTypePriorityFunctor
         /// sampleFilter <---------------------*
         ///                                   /
         /// camera  <------------------------*
+        if (primType == HdPrmanRileyPrimTypeTokens->globals) {
+            return 0;
+        }
+
         if (primType == HdPrmanRileyPrimTypeTokens->lightShader ||
             primType == HdPrmanRileyPrimTypeTokens->material ||
             primType == HdPrmanRileyPrimTypeTokens->coordinateSystem ||
@@ -102,27 +109,27 @@ class _RileyPrimTypePriorityFunctor
             primType == HdPrmanRileyPrimTypeTokens->displayFilter||
             primType == HdPrmanRileyPrimTypeTokens->sampleFilter||
             primType == HdPrmanRileyPrimTypeTokens->camera) {
-            return 0;
+            return 1;
         }
 
         if (primType == HdPrmanRileyPrimTypeTokens->geometryPrototype ||
             primType == HdPrmanRileyPrimTypeTokens->renderTarget) {
-            return 1;
+            return 2;
         }
 
         if (primType == HdPrmanRileyPrimTypeTokens->lightInstance ||
             primType == HdPrmanRileyPrimTypeTokens->geometryInstance ||
             primType == HdPrmanRileyPrimTypeTokens->display ||
             primType == HdPrmanRileyPrimTypeTokens->renderView) {
-            return 2;
+            return 3;
         }
 
-        return 3;
+        return 4;
     }
 
     size_t GetNumPriorities() const override
     {
-        return 4;
+        return 5;
     }
 };
 
@@ -190,6 +197,13 @@ HdPrman_RileyPrimFactory::CreatePrim(
 
     if (entry.primType == HdPrmanRileyPrimTypeTokens->geometryPrototype) {
         return std::make_shared<HdPrman_RileyGeometryPrototypePrim>(
+            _GetPrimSource(observer, entry.primPath),
+            observer,
+            _renderParam);
+    }
+
+    if (entry.primType == HdPrmanRileyPrimTypeTokens->globals) {
+        return std::make_shared<HdPrman_RileyGlobalsPrim>(
             _GetPrimSource(observer, entry.primPath),
             observer,
             _renderParam);
