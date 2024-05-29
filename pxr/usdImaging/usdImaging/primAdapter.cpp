@@ -939,12 +939,16 @@ UsdImagingPrimAdapter::_MergePrimvar(
     bool indexed) const
 {
     HdPrimvarDescriptor primvar(name, interp, role, indexed);
-    HdPrimvarDescriptorVector::iterator it =
-        std::find(vec->begin(), vec->end(), primvar);
-    if (it == vec->end())
-        vec->push_back(primvar);
-    else
-        *it = primvar;
+
+    for (HdPrimvarDescriptorVector::iterator it = vec->begin();
+        it != vec->end(); ++it) {
+        if (it->name == name) {
+            *it =  primvar;
+            return;
+        }
+    }
+
+    vec->push_back(primvar);
 }
 
 void
