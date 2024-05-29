@@ -440,6 +440,8 @@ private:
 
     // Riley instance.
     riley::Riley *_riley;
+    // Mutex around riley->Stop(), so as to be well-behaved callers.
+    std::mutex _stopMutex;
 
     std::unique_ptr<class HdRenderThread> _renderThread;
     std::unique_ptr<HdPrmanFramebuffer> _framebuffer;

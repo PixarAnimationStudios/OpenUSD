@@ -2148,30 +2148,13 @@ HdPrman_RenderParam::_RenderThreadCallback()
         RixStr.k_dice_referencecamera, 
         defaultReferenceCamera);
 
-    bool renderComplete = false;
-    while (!renderComplete) {
-        while (_renderThread->IsPauseRequested()) {
-            if (_renderThread->IsStopRequested()) {
-                break;
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
-        if (_renderThread->IsStopRequested()) {
-            break;
-        }
+    HdPrman_RenderViewContext &ctx = GetRenderViewContext();
+    const riley::RenderViewId renderViewIds[] = { ctx.GetRenderViewId() };
 
-        HdPrman_RenderViewContext &ctx = GetRenderViewContext();
-
-        const riley::RenderViewId renderViewIds[] = { ctx.GetRenderViewId() };
-
-        _riley->Render(
-            { static_cast<uint32_t>(TfArraySize(renderViewIds)),
-              renderViewIds },
-            renderOptions);
-
-        // If a pause was requested, we may have stopped early
-        renderComplete = !_renderThread->IsPauseDirty();
-    }
+    _riley->Render(
+        { static_cast<uint32_t>(TfArraySize(renderViewIds)),
+          renderViewIds },
+        renderOptions);
 }
 
 void 
@@ -2467,19 +2450,19 @@ HdPrman_RenderParam::StopRender(bool blocking)
     //    is a no-op and we need to call it again after we call into Riley.
     // 2. We've occassionally seen cases where Stop() returns successfully,
     //    but the riley threadpools don't shut down right away.
+
+    // Only let one thread try to stop things at once.
+    std::lock_guard<std::mutex> lock(_stopMutex);
+
     while (_renderThread->IsRendering()) {
         {
             TRACE_SCOPE("riley::Stop");
             _riley->Stop();
         }
         using namespace std::chrono_literals;
-        std::this_thread::sleep_for(100us);
-    }
-
-    // Clear out old stats values. TODO: should we be calling this here? 
-    if (_statsSession)
-    {
-        _statsSession->RemoveOldMetricData();
+        if (_renderThread->IsRendering()) {
+            std::this_thread::sleep_for(1ms);
+        }
     }
 }
 
@@ -2492,7 +2475,7 @@ HdPrman_RenderParam::IsRendering()
 bool
 HdPrman_RenderParam::IsPauseRequested()
 {
-    return _renderThread && _renderThread->IsPauseRequested();
+    return false;
 }
 
 void
