@@ -674,8 +674,21 @@ _MakeMaterialParamsForTexture(
     NdrTokenVec const& assetIdentifierPropertyNames = 
         sdrNode->GetAssetIdentifierInputNames();
 
-    if (assetIdentifierPropertyNames.size() == 1) {
-        TfToken const& fileProp = assetIdentifierPropertyNames[0];
+    if (!assetIdentifierPropertyNames.empty()) {
+        TfToken fileProp = assetIdentifierPropertyNames[0];
+
+        // Some MaterialX nodes can have multiple file inputs. Take the first
+        // one that matches the param name. If we lookup a <trilinear> texture
+        // against an output named "N42_fileY", we will find the right one.
+        if (assetIdentifierPropertyNames.size() > 1) {
+            for (auto const& propName: assetIdentifierPropertyNames) {
+                if (TfStringEndsWith(outputName.GetString(), propName)) {
+                    fileProp = propName;
+                    break;
+                }
+            }
+        }
+
         auto const& it = node.parameters.find(fileProp);
         if (it != node.parameters.end()){
             const VtValue &v = it->second;

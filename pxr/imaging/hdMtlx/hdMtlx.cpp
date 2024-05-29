@@ -289,13 +289,15 @@ _AddMaterialXNode(
         }
     }
 
-    // MaterialX nodes that use textures are assumed to have a filename input
-    if (mxNodeDef->getNodeGroup() == "texture2d") {
-        if (mxHdData) {
-            // Save the corresponding MaterialX and Hydra names for ShaderGen
-            mxHdData->mxHdTextureMap[mxNodeName] = connectionName;
-            // Save the path to adjust parameters after traversing the network
-            mxHdData->hdTextureNodes.insert(hdNodePath);
+    // MaterialX nodes that use textures can have more than one filename input
+    if (mxHdData) {
+        for (mx::InputPtr const& mxInput : mxNodeDef->getActiveInputs()) {
+            if (mxInput->getType() == "filename") {
+                // Save the corresponding Mx and Hydra names for ShaderGen
+                mxHdData->mxHdTextureMap[mxNodeName].insert(mxInput->getName());
+                // Save the path to adjust parameters after for ShaderGen
+                mxHdData->hdTextureNodes.insert(hdNodePath);
+            }
         }
     }
 
@@ -602,7 +604,7 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
 
     // Validate the MaterialX Document.
     {
-	TRACE_FUNCTION_SCOPE("Validate created Mtlx Document")
+        TRACE_FUNCTION_SCOPE("Validate created Mtlx Document")
         std::string message;
         if (!mxDoc->validate(&message)) {
             TF_WARN("Validation warnings for generated MaterialX file.\n%s\n", 

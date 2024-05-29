@@ -23,10 +23,13 @@
 //
 #include "pxr/imaging/hdSt/materialXFilter.h"
 #include "pxr/imaging/hdSt/materialXShaderGen.h"
+#include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdMtlx/hdMtlx.h"
 #include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/base/tf/diagnostic.h"
+
+#include <MaterialXGenShader/Util.h>
 
 #include <iostream>
 
@@ -34,10 +37,92 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace mx = MaterialX;
 
+// Helpers to determine the Material Tag
+// Note that similar helpers live in HdStMaterialXFilter
+
+static bool 
+_IsDifferentFrom(mx::InputPtr const& mxInput, float value)
+{
+    if (!mxInput) {
+        return false;
+    }
+
+    if (mxInput->hasValue()) {
+        const mx::ValuePtr val = mxInput->getValue();
+        if (val->isA<float>()) {
+            return val->asA<float>() != value;
+        }
+        return true;
+    }
+
+    return mxInput->hasNodeName() || mxInput->hasNodeGraphString() ||
+           mxInput->hasOutputString() || mxInput->hasInterfaceName();
+}
+
+static TfToken const&
+_GetUsdPreviewSurfaceMaterialTag(mx::NodePtr const &terminalNode)
+{
+    // See https://openusd.org/release/spec_usdpreviewsurface.html
+    // and implementation in MaterialX libraries/bxdf/usd_preview_surface.mtlx
+
+    // Non-zero opacityThreshold (or connected) triggers masked mode:
+    if (_IsDifferentFrom(terminalNode->getInput("opacityThreshold"), 0.0f)) {
+        return HdStMaterialTagTokens->masked;
+    }
+
+    // Opacity less than 1.0 (or connected) triggers transparent mode:
+    if (_IsDifferentFrom(terminalNode->getInput("opacity"), 1.0f)) {
+        return HdStMaterialTagTokens->translucent;
+    }
+
+    return HdStMaterialTagTokens->defaultMaterialTag;
+}
+
+static TfToken
+_GetMaterialTag(mx::DocumentPtr const& mxDoc)
+{
+    // Find renderable elements in the Mtlx Document.
+    // Note this code also lives in HdSt_GenMaterialXShader()
+    std::vector<mx::TypedElementPtr> renderableElements;
+    mx::findRenderableElements(mxDoc, renderableElements);
+
+    // Should have exactly one renderable element (material).
+    if (renderableElements.size() != 1) {
+        TF_CODING_ERROR("Generated MaterialX Document does not "
+                        "have 1 material");
+        return HdStMaterialTagTokens->defaultMaterialTag;
+    }
+
+    // Extract out the Surface Shader Node for the Material Node
+    mx::TypedElementPtr renderableElem = renderableElements.at(0);
+    mx::NodePtr node = renderableElem->asA<mx::Node>();
+    if (node && node->getType() == mx::MATERIAL_TYPE_STRING) {
+        // Use auto so can compile against MaterialX 1.38.0 or 1.38.1
+        auto mxShaderNodes =
+            mx::getShaderNodes(node, mx::SURFACE_SHADER_TYPE_STRING);
+        if (!mxShaderNodes.empty()) {
+            renderableElem = *mxShaderNodes.begin();
+        }
+    }
+
+    // The custom code to handle masked mode prevents MaterialX from 
+    // correctly deducing transparency with mx::isTransparentSurface()
+    node = renderableElem->asA<mx::Node>();
+    if (node && node->getCategory() == "UsdPreviewSurface") {
+        return _GetUsdPreviewSurfaceMaterialTag(node);
+    }
+
+    // XXX: Once other material tests are added (eg. glTf) similar helper 
+    // helper functions will need to be added to get the correct MaterialTag
+    if (mx::isTransparentSurface(renderableElem)) {
+        return HdStMaterialTagTokens->translucent;
+    }
+    return HdStMaterialTagTokens->defaultMaterialTag;
+}
 
 void TestShaderGen(
     const mx::FilePath& mtlxFilename, 
-    const HdSt_MxShaderGenInfo& mxHdInfo)
+    HdSt_MxShaderGenInfo* mxHdInfo)
 {
     // Get Standard Libraries and SearchPaths (for mxDoc and mxShaderGen)
     const mx::DocumentPtr& stdLibraries = HdMtlxStdLibraries();
@@ -64,9 +149,11 @@ void TestShaderGen(
         std::cerr << message;
     }
 
+    mxHdInfo->materialTag = _GetMaterialTag(mxDoc);
+
     // Generate the HdSt MaterialX Shader
     mx::ShaderPtr glslfx = HdSt_GenMaterialXShader(
-        mxDoc, stdLibraries, searchPaths, mxHdInfo, HgiTokens->OpenGL);
+        mxDoc, stdLibraries, searchPaths, *mxHdInfo, HgiTokens->OpenGL);
     std::cout << glslfx->getSourceCode(mx::Stage::PIXEL);
 }
 
@@ -109,12 +196,9 @@ int main(int argc, char *argv[])
                 return EXIT_FAILURE;
             }
         }
-        if (arg == "--materialTag") {
-            mxHdInfo.materialTag = argv[++i];
-        }
         if (arg == "--bindless") {
             mxHdInfo.bindlessTexturesEnabled = true;
         }
     }
-    TestShaderGen(mtlxFile, mxHdInfo);
+    TestShaderGen(mtlxFile, &mxHdInfo);
 }
