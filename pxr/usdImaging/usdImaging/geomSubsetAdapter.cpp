@@ -34,6 +34,7 @@
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/geomSubsetSchema.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/types.h"
 
@@ -157,13 +158,15 @@ UsdImagingGeomSubsetAdapter::GetImagingSubprimData(
     if (subprim.IsEmpty()) {
         UsdGeomSubset subset(prim);
         return HdOverlayContainerDataSource::New(
-            HdGeomSubsetSchema::Builder()
-                .SetIndices(UsdImagingDataSourceAttribute<VtIntArray>::New(
-                    subset.GetIndicesAttr(), stageGlobals))
-                .SetType(_ElementTypeConversionDataSource::New(
-                    UsdImagingDataSourceAttribute<TfToken>::New(
-                        subset.GetElementTypeAttr(), stageGlobals)))
-                .Build(),
+            HdRetainedContainerDataSource::New(
+                HdGeomSubsetSchema::GetSchemaToken(),
+                HdGeomSubsetSchema::Builder()
+                    .SetIndices(UsdImagingDataSourceAttribute<VtIntArray>::New(
+                        subset.GetIndicesAttr(), stageGlobals))
+                    .SetType(_ElementTypeConversionDataSource::New(
+                        UsdImagingDataSourceAttribute<TfToken>::New(
+                            subset.GetElementTypeAttr(), stageGlobals)))
+                    .Build()),
             // The geomSubset must also be a prim so it can
             // pick up existing material binding handling.
             UsdImagingDataSourcePrim::New(
