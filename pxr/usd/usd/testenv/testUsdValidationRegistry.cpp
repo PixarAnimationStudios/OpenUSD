@@ -136,9 +136,9 @@ void TestUsdValidationRegistry()
             TfToken("IncludedInAll"),
             TfToken("SomeKeyword1") };
         TF_AXIOM(metadata.keywords == expectedKeywords);
-        const std::string expectedDocs = "TestValidator1 for keywords metadata "
+        const std::string expectedDoc = "TestValidator1 for keywords metadata "
                                          "parsing";
-        TF_AXIOM(metadata.docs == expectedDocs);
+        TF_AXIOM(metadata.doc == expectedDoc);
         TF_AXIOM(!metadata.isSuite);
 
         // Actually go and call validate on this and inspect the Error.
@@ -197,7 +197,7 @@ void TestUsdValidationRegistry()
         TF_AXIOM(metadata.name == TfToken(
              "testValidationPlugin:TestValidatorSuite"));
         TF_AXIOM(metadata.isSuite);
-        TF_AXIOM(metadata.docs == "Suite of TestValidator1 and TestValidator2");
+        TF_AXIOM(metadata.doc == "Suite of TestValidator1 and TestValidator2");
         TF_AXIOM(metadata.keywords.size() == 2);
         TF_AXIOM(metadata.keywords == TfTokenVector({
             TfToken("IncludedInAll"), TfToken("SuiteValidator")}));

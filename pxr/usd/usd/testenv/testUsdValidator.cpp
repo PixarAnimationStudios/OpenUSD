@@ -45,7 +45,7 @@ void TestSimpleValidator()
     };
     UsdValidatorMetadata metadata;
     metadata.name = TfToken("TestSimpleLayerValidator");
-    metadata.docs = "This is a test.";
+    metadata.doc = "This is a test.";
     UsdValidator layerValidator = UsdValidator(metadata, validateLayerTaskFn);
     SdfLayerRefPtr testLayer = SdfLayer::CreateAnonymous();
     {
@@ -72,7 +72,7 @@ void TestSimpleValidator()
                                    "This is an error on the stage")};
     };
     metadata.name = TfToken("TestSimpleStageValidator");
-    metadata.docs = "This is a test.";
+    metadata.doc = "This is a test.";
     UsdValidator stageValidator = UsdValidator(metadata, validateStageTaskFn);
     UsdStageRefPtr usdStage = UsdStage::CreateInMemory();
     {
@@ -116,7 +116,7 @@ void TestSimpleValidator()
     };
     metadata.name = TfToken("TestSimplePrimValidator");
     metadata.schemaTypes = {TfToken("MadeUpPrimType")};
-    metadata.docs = "This is a test.";
+    metadata.doc = "This is a test.";
     UsdValidator schemaTypeValidator = UsdValidator(metadata, 
                                                     validatePrimTaskFn);
     {
@@ -133,7 +133,7 @@ void TestSimpleValidator()
 
     // Simple ValidatorSuite
     metadata.name = TfToken("TestValidatorSuite");
-    metadata.docs = "This is a test.";
+    metadata.doc = "This is a test.";
     metadata.schemaTypes = {};
     metadata.isSuite = true;
     UsdValidatorSuite validatorSuite = UsdValidatorSuite(metadata, 

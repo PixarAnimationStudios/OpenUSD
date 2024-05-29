@@ -60,7 +60,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// mechanism, or by providing metadata field when registering validators.
 ///
 /// Example of registering a validator named "StageMetadataValidator" with 
-/// docs metadata using plufInfo.json:
+/// doc metadata using plufInfo.json:
 ///
 /// \code
 /// {
@@ -76,7 +76,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///                 "keywords" : ["UsdCoreValidators"],
 ///                 ...
 ///                 "StageMetadataValidator": {
-///                     "docs": "Validates stage metadata."
+///                     "doc": "Validates stage metadata."
 ///                 },
 ///                 ...
 ///                 ...

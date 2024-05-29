@@ -41,7 +41,7 @@ TF_INSTANTIATE_SINGLETON(UsdValidationRegistry);
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
     ((PluginValidatorsKey, "Validators"))
     ((Keywords, "keywords"))
-    ((Docs, "docs"))
+    ((Doc, "doc"))
     ((SchemaTypes, "schemaTypes"))
     ((IsSuite, "isSuite"))
     ((PluginValidatorNameDelimiter, ":"))
@@ -135,10 +135,10 @@ UsdValidationRegistry::_PopulateMetadataFromPlugInfo()
                 continue;
             }
 
-            const JsValue * const docs = 
-                TfMapLookupPtr(validatorDict, _tokens->Docs);
-            if (!docs || !docs->IsString() || docs->GetString().empty()) {
-                TF_RUNTIME_ERROR("Missing or invalid or empty docs string "
+            const JsValue * const doc = 
+                TfMapLookupPtr(validatorDict, _tokens->Doc);
+            if (!doc || !doc->IsString() || doc->GetString().empty()) {
+                TF_RUNTIME_ERROR("Missing or invalid or empty doc string "
                                  "metadata for '%s' validator",
                                  validatorName.GetText());
                 continue;
@@ -155,7 +155,7 @@ UsdValidationRegistry::_PopulateMetadataFromPlugInfo()
                 _tokens->PluginValidatorNameDelimiter.GetText()));
             validatorNames.push_back(metadata.name);
 
-            metadata.docs = docs->GetString();
+            metadata.doc = doc->GetString();
 
             metadata.schemaTypes = 
                 _ParseStringArrayValue(validatorDict, _tokens->SchemaTypes,

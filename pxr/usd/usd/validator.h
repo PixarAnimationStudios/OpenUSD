@@ -55,7 +55,7 @@ class UsdPrim;
 /// - pluginPtr: Pointer to the plugin where a plugin based validator is defined.
 /// nullptr for a non-plugin based validator.
 /// - keywords: Keywords associated with this validator. 
-/// - docs: Doc string explaining the purpose of the validator. 
+/// - doc: Doc string explaining the purpose of the validator. 
 /// - schemaTypes: If the validator is associated with specific schemaTypes.
 /// - isSuite: If the validator represents a suite of validators.
 ///
@@ -80,7 +80,7 @@ struct UsdValidatorMetadata
 
     /// doc string extracted from plugInfo.json
     /// This is a mandatory field for a ValidatorMetadata.
-    std::string docs;
+    std::string doc;
 
     /// list of schemaTypes names this test applies to, extracted from
     /// plugInfo.json
