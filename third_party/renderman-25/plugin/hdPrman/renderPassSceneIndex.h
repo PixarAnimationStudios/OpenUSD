@@ -26,7 +26,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/collectionExpressionEvaluator.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
-#include <mutex>
 #include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -64,6 +63,7 @@ protected:
 
 private:
     // State specified by a render pass.
+    // If renderPassPath is the empty path, no render pass is active.
     // Collection evaluators are set sparsely, corresponding to
     // the presence of the collection in the render pass schema.
     struct _RenderPassState {
@@ -72,17 +72,29 @@ private:
         std::optional<HdCollectionExpressionEvaluator> renderVisEval;
         std::optional<HdCollectionExpressionEvaluator> cameraVisEval;
         std::optional<HdCollectionExpressionEvaluator> pruneEval;
+
+        bool DoesOverrideMatte(
+            const SdfPath &primPath,
+            HdSceneIndexPrim const& prim) const;
+        bool DoesOverrideVis(
+            const SdfPath &primPath,
+            HdSceneIndexPrim const& prim) const;
+        bool DoesOverrideCameraVis(
+            const SdfPath &primPath,
+            HdSceneIndexPrim const& prim) const;
+        bool DoesPrune(
+            const SdfPath &primPath) const;
     };
 
     // Pull on the scene globals schema for the active render pass,
-    // computing and caching any state as needed.
-    _RenderPassState const& _PullActiveRenderPasssState() const;
+    // computing and caching its state in _activeRenderPass.
+    void _UpdateActiveRenderPassState(
+        HdSceneIndexObserver::AddedPrimEntries *addedEntries,
+        HdSceneIndexObserver::DirtiedPrimEntries *dirtyEntries,
+        HdSceneIndexObserver::RemovedPrimEntries *removedEntries);
 
-    // State for the render pass that has been applied.
-    mutable std::unique_ptr<_RenderPassState> _activeRenderPass;
-
-    // Mutex protecting _activeRenderPass.
-    mutable std::mutex _activeRenderPassMutex;
+    // State for the active render pass.
+    _RenderPassState _activeRenderPass;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
