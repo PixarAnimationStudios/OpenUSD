@@ -48,21 +48,35 @@ class UsdPrim;
 /// The metadata values are populated from the plugInfo.json associated with a
 /// validator's plugin. PlugInfo can provide the following validator metadata:
 ///
-/// - name: A required field. The metadata stores the validator name as a fully
-/// qualified name which includes the pluginName as well, separated by ":".
+/// - name: A required field. This metadatum stores the validator name. For
+/// validators defined in a plugin, the name must be a fully qualified name 
+/// which includes the pluginName as well, separated by ":". This ensures,
+/// plugin provided validator names are guaranteed to be unique.
+/// - pluginPtr: Pointer to the plugin where a plugin based validator is defined.
+/// nullptr for a non-plugin based validator.
 /// - keywords: Keywords associated with this validator. 
-/// - docs: Doc string explainaing the purpose of the validator. 
+/// - docs: Doc string explaining the purpose of the validator. 
 /// - schemaTypes: If the validator is associated with specific schemaTypes.
 /// - isSuite: If the validator represents a suite of validators.
 ///
 struct UsdValidatorMetadata
 {
-    /// "pluginName:testName" corresponding to the entry in plugInfo.json
+    /// Name of the validator.
+    ///
+    /// For plugin provided validators, this is prefixed with the pluginName,
+    /// like "pluginName:testName" in order to uniquely identify these plugin
+    /// provided validators.
+    ///
     /// This is a mandatory field for a ValidatorMetadata.
     TfToken name;
+
+    /// Pointer to the plugin to which a plugin based validator belongs. 
+    ///
+    /// For non-plugin based validator, pluginPtr is nullptr.
+    PlugPluginPtr pluginPtr;
     
     /// list of keywords extracted for this test from the plugInfo.json
-    std::vector<TfToken> keywords;
+    TfTokenVector keywords;
 
     /// doc string extracted from plugInfo.json
     /// This is a mandatory field for a ValidatorMetadata.
@@ -70,11 +84,13 @@ struct UsdValidatorMetadata
 
     /// list of schemaTypes names this test applies to, extracted from
     /// plugInfo.json
-    std::vector<TfToken> schemaTypes;
+    TfTokenVector schemaTypes;
 
     /// whether this test represents a test suite or not
     bool isSuite;
 }; // UsdValidatorMetadata
+
+using UsdValidatorMetadataVector = std::vector<UsdValidatorMetadata>;
 
 // TODO:
 // - TimeCode (Range), leaving right now for brevity. Will introduce in
@@ -164,7 +180,7 @@ public:
     /// If this Validator doesn't provide a UsdValidateLayerTaskFn, then an
     /// empty vector is returned, which signifies no error.
     USD_API
-    const UsdValidationErrorVector Validate(const SdfLayerHandle &layer) const;
+    UsdValidationErrorVector Validate(const SdfLayerHandle &layer) const;
 
     /// Run validation on the given \p usdStage by executing the contained
     /// validateTaskFn and returns UsdValidationErrorVector.
@@ -172,7 +188,7 @@ public:
     /// If this Validator doesn't provide a UsdValidateStageTaskFn, then an
     /// empty vector is returned, which signifies no error.
     USD_API
-    const UsdValidationErrorVector Validate(const UsdStagePtr &usdStage) const;
+    UsdValidationErrorVector Validate(const UsdStagePtr &usdStage) const;
 
     /// Run validation on the given \p usdPrim by executing the contained
     /// validateTaskFn and returns UsdValidationErrorVector.
@@ -180,9 +196,15 @@ public:
     /// If this Validator doesn't provide a UsdValidatePrimTaskFn, then an
     /// empty vector is returned, which signifies no error.
     USD_API
-    const UsdValidationErrorVector Validate(const UsdPrim& usdPrim) const;
+    UsdValidationErrorVector Validate(const UsdPrim& usdPrim) const;
 
-  private:
+private:
+    // To make sure registry can query task types on a validator.
+    // Registry needs access to _GetValidatorPrimTasks, in order to determine if
+    // the contained validators in a suite, which provides schemaTypes metadata
+    // are compliant.
+    friend class UsdValidationRegistry;
+
     UsdValidatorMetadata _metadata;
     std::variant<UsdValidateLayerTaskFn, 
                  UsdValidateStageTaskFn,

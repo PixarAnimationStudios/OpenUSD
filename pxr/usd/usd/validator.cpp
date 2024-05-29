@@ -68,7 +68,7 @@ UsdValidator::_GetValidatePrimTask() const
     return std::get_if<UsdValidatePrimTaskFn>(&_validateTaskFn);
 }
 
-const UsdValidationErrorVector
+UsdValidationErrorVector
 UsdValidator::Validate(const SdfLayerHandle &layer) const
 {
     const UsdValidateLayerTaskFn *layerTaskFn = _GetValidateLayerTask();
@@ -78,7 +78,7 @@ UsdValidator::Validate(const SdfLayerHandle &layer) const
     return {};
 }
 
-const UsdValidationErrorVector
+UsdValidationErrorVector
 UsdValidator::Validate(const UsdStagePtr &usdStage) const
 {
     const UsdValidateStageTaskFn *stageTaskFn = _GetValidateStageTask();
@@ -88,7 +88,7 @@ UsdValidator::Validate(const UsdStagePtr &usdStage) const
     return {};
 }
 
-const UsdValidationErrorVector
+UsdValidationErrorVector
 UsdValidator::Validate(const UsdPrim &usdPrim) const
 {
     const UsdValidatePrimTaskFn *primTaskFn = _GetValidatePrimTask();

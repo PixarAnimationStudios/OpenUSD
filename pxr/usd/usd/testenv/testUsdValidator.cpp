@@ -146,10 +146,9 @@ void TestSimpleValidator()
 }
 
 int 
-main(int argc, char** argv)
+main()
 {
     TestSimpleValidator();
 
     std::cout << "OK\n";
-    return EXIT_SUCCESS;
 }
