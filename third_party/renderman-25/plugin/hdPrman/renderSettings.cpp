@@ -185,9 +185,13 @@ _UpdateFrame(
     double frame;
     HdUtils::GetCurrentFrame(terminalSi, &frame);
 
+    // k_Ri_Frame in Riley is an integer, not float.
+    // As an explicit policy choice, round down.
+    const int intFrame(floor(frame));
+
     // Store on the options list to be used in a later Riley.SetOptions() call 
     HdPrman_Utils::SetParamFromVtValue(
-        RixStr.k_Ri_Frame, VtValue(frame),
+        RixStr.k_Ri_Frame, VtValue(intFrame),
         /* role */ TfToken(), options);
 }
 
