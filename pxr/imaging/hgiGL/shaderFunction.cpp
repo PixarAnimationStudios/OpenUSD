@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/tf/diagnostic.h"
-#include <pxr/base/tf/stringUtils.h>
+#include "pxr/base/tf/stringUtils.h"
 
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"

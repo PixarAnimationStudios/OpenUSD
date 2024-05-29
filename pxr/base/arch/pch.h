@@ -35,17 +35,20 @@
 #include <sys/malloc.h>
 #include <sys/mount.h>
 #include <sys/param.h>
+#include <sys/ptrace.h>
 #include <sys/resource.h>
 #include <sys/sysctl.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 #include <unistd.h>
+#include <mach-o/arch.h>
 #include <mach-o/dyld.h>
 #include <mach-o/loader.h>
 #include <mach-o/swap.h>
 #include <mach/mach_time.h>
 #endif
 #if defined(ARCH_OS_LINUX)
-#include <csignal>
+#include <chrono>
 #include <dlfcn.h>
 #include <glob.h>
 #include <limits.h>
@@ -76,6 +79,7 @@
 #include <intrin.h>
 #include <io.h>
 #include <process.h>
+#include <stringapiset.h>
 #endif
 #include <algorithm>
 #include <atomic>
@@ -83,11 +87,13 @@
 #include <cerrno>
 #include <cinttypes>
 #include <cmath>
+#include <csignal>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <errno.h>
 #include <fcntl.h>
 #include <fstream>
@@ -99,6 +105,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <numeric>
 #include <ostream>
 #include <regex>
 #include <set>
@@ -114,6 +121,7 @@
 #include <sys/types.h>
 #include <thread>
 #include <time.h>
+#include <type_traits>
 #include <typeindex>
 #include <typeinfo>
 #include <utility>

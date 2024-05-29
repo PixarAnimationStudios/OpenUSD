@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -39,7 +39,8 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-
+#include <Windows.h>
+#include <intrin.h>
 #endif
 #include <algorithm>
 #include <any>
@@ -57,7 +58,6 @@
 #include <deque>
 #include <float.h>
 #include <functional>
-#include <intrin.h>
 #include <iosfwd>
 #include <iostream>
 #include <iterator>
@@ -70,6 +70,7 @@
 #include <mutex>
 #include <new>
 #include <numeric>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <stdarg.h>
@@ -85,13 +86,8 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <boost/function.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/intrusive_ptr.hpp>
-#include <boost/preprocessor/seq/enum.hpp>
-#include <boost/preprocessor/seq/filter.hpp>
-#include <boost/preprocessor/seq/for_each.hpp>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
+#include <boost/function.hpp>
 #include <boost/python.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/converter/from_python.hpp>

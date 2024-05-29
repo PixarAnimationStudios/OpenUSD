@@ -27,18 +27,14 @@
 #define TF_MAX_ARITY 7
 #include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
-#if defined(ARCH_OS_WINDOWS)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-
-#include <boost/preprocessor/variadic/size.hpp>
-#include <boost/vmd/is_empty.hpp>
-#include <boost/vmd/is_tuple.hpp>
+#if defined(ARCH_OS_LINUX)
+#include <unistd.h>
 #endif
 #include <algorithm>
+#include <any>
 #include <atomic>
 #include <cinttypes>
+#include <cmath>
 #include <cstdarg>
 #include <cstdint>
 #include <cstring>
@@ -47,7 +43,9 @@
 #include <list>
 #include <locale>
 #include <map>
+#include <math.h>
 #include <memory>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <stdarg.h>
@@ -57,26 +55,6 @@
 #include <type_traits>
 #include <typeindex>
 #include <typeinfo>
+#include <utility>
+#include <variant>
 #include <vector>
-#include <boost/any.hpp>
-#include <boost/none.hpp>
-#include <boost/operators.hpp>
-#include <boost/optional.hpp>
-#include <boost/preprocessor/arithmetic/add.hpp>
-#include <boost/preprocessor/arithmetic/inc.hpp>
-#include <boost/preprocessor/arithmetic/sub.hpp>
-#include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/comparison/equal.hpp>
-#include <boost/preprocessor/control/expr_iif.hpp>
-#include <boost/preprocessor/facilities/expand.hpp>
-#include <boost/preprocessor/punctuation/comma.hpp>
-#include <boost/preprocessor/punctuation/comma_if.hpp>
-#include <boost/preprocessor/punctuation/paren.hpp>
-#include <boost/preprocessor/repetition/repeat.hpp>
-#include <boost/preprocessor/stringize.hpp>
-#include <boost/preprocessor/tuple/eat.hpp>
-#include <boost/preprocessor/tuple/to_list.hpp>
-#include <boost/preprocessor/tuple/to_seq.hpp>
-#include <boost/type_traits/is_enum.hpp>
-#include <boost/utility/enable_if.hpp>
-#include <boost/variant.hpp>

@@ -31,6 +31,7 @@
 #include <mach/mach_time.h>
 #endif
 #if defined(ARCH_OS_LINUX)
+#include <unistd.h>
 #include <x86intrin.h>
 #include <X11/Xlib.h>
 #endif
@@ -39,11 +40,13 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#include <tchar.h>
 #include <Windows.h>
+#include <tchar.h>
 #include <intrin.h>
-#include <map>
 #endif
+#include <algorithm>
+#include <any>
+#include <array>
 #include <atomic>
 #include <cassert>
 #include <cinttypes>
@@ -56,14 +59,15 @@
 #include <cstring>
 #include <deque>
 #include <functional>
-#include <initializer_list>
 #include <inttypes.h>
 #include <iosfwd>
+#include <iterator>
 #include <list>
 #include <locale>
+#include <map>
 #include <math.h>
 #include <memory>
-#include <mutex>
+#include <numeric>
 #include <set>
 #include <sstream>
 #include <stdarg.h>
@@ -71,6 +75,7 @@
 #include <stdint.h>
 #include <string>
 #include <sys/types.h>
+#include <tuple>
 #include <type_traits>
 #include <typeindex>
 #include <typeinfo>
@@ -78,35 +83,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <boost/any.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/functional/hash_fwd.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/or.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/operators.hpp>
-#include <boost/preprocessor/arithmetic/add.hpp>
-#include <boost/preprocessor/arithmetic/inc.hpp>
-#include <boost/preprocessor/arithmetic/sub.hpp>
-#include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/comparison/equal.hpp>
-#include <boost/preprocessor/control/expr_iif.hpp>
-#include <boost/preprocessor/facilities/expand.hpp>
-#include <boost/preprocessor/iterate.hpp>
-#include <boost/preprocessor/punctuation/comma.hpp>
-#include <boost/preprocessor/punctuation/comma_if.hpp>
-#include <boost/preprocessor/punctuation/paren.hpp>
-#include <boost/preprocessor/repetition/enum.hpp>
-#include <boost/preprocessor/repetition/enum_binary_params.hpp>
-#include <boost/preprocessor/repetition/enum_params.hpp>
-#include <boost/preprocessor/repetition/enum_trailing_binary_params.hpp>
-#include <boost/preprocessor/repetition/enum_trailing_params.hpp>
-#include <boost/preprocessor/repetition/repeat.hpp>
-#include <boost/preprocessor/seq/for_each.hpp>
-#include <boost/preprocessor/tuple/eat.hpp>
-#include <boost/preprocessor/tuple/to_list.hpp>
-#include <boost/preprocessor/tuple/to_seq.hpp>
-#include <boost/preprocessor/variadic/size.hpp>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/python/class.hpp>
 #include <boost/python/converter/from_python.hpp>
@@ -137,15 +113,6 @@
 #undef toupper
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_convertible.hpp>
-#include <boost/type_traits/is_same.hpp>
-#include <boost/type_traits/remove_reference.hpp>
-#include <boost/utility.hpp>
-#include <boost/utility/enable_if.hpp>
-#include <boost/vmd/is_empty.hpp>
-#include <boost/vmd/is_tuple.hpp>
-#include <tbb/atomic.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_rw_mutex.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED

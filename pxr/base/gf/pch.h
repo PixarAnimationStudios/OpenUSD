@@ -28,16 +28,12 @@
 #define TF_MAX_ARITY 7
 #include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
-#if defined(ARCH_OS_WINDOWS)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-
-#include <boost/preprocessor/variadic/size.hpp>
-#include <boost/vmd/is_empty.hpp>
-#include <boost/vmd/is_tuple.hpp>
+#if defined(ARCH_OS_LINUX)
+#include <unistd.h>
 #endif
 #include <algorithm>
+#include <any>
+#include <array>
 #include <assert.h>
 #include <atomic>
 #include <cfloat>
@@ -46,13 +42,12 @@
 #include <cstdarg>
 #include <cstddef>
 #include <cstdint>
-#include <cstdlib>
 #include <cstring>
 #include <deque>
 #include <float.h>
 #include <functional>
-#include <initializer_list>
 #include <iosfwd>
+#include <iostream>
 #include <istream>
 #include <iterator>
 #include <limits>
@@ -61,13 +56,11 @@
 #include <map>
 #include <math.h>
 #include <memory>
-#include <mutex>
 #include <ostream>
 #include <set>
 #include <sstream>
 #include <stdarg.h>
 #include <stddef.h>
-#include <stdint.h>
 #include <string>
 #include <sys/types.h>
 #include <type_traits>
@@ -77,28 +70,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <boost/any.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/functional/hash_fwd.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/or.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/operators.hpp>
-#include <boost/preprocessor/arithmetic/add.hpp>
-#include <boost/preprocessor/arithmetic/inc.hpp>
-#include <boost/preprocessor/arithmetic/sub.hpp>
-#include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/comparison/equal.hpp>
-#include <boost/preprocessor/control/expr_iif.hpp>
-#include <boost/preprocessor/facilities/expand.hpp>
-#include <boost/preprocessor/punctuation/comma.hpp>
-#include <boost/preprocessor/punctuation/comma_if.hpp>
-#include <boost/preprocessor/punctuation/paren.hpp>
-#include <boost/preprocessor/repetition/repeat.hpp>
-#include <boost/preprocessor/stringize.hpp>
-#include <boost/preprocessor/tuple/eat.hpp>
-#include <boost/preprocessor/tuple/to_list.hpp>
-#include <boost/preprocessor/tuple/to_seq.hpp>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/python/args.hpp>
 #include <boost/python/class.hpp>
@@ -137,14 +108,6 @@
 #undef toupper
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-#include <boost/type_traits/add_reference.hpp>
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_const.hpp>
-#include <boost/type_traits/is_convertible.hpp>
-#include <boost/type_traits/is_enum.hpp>
-#include <boost/type_traits/is_same.hpp>
-#include <boost/type_traits/remove_reference.hpp>
-#include <boost/utility/enable_if.hpp>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

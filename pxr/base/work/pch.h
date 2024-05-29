@@ -31,6 +31,7 @@
 #include <mach/mach_time.h>
 #endif
 #if defined(ARCH_OS_LINUX)
+#include <unistd.h>
 #include <x86intrin.h>
 #endif
 #if defined(ARCH_OS_WINDOWS)
@@ -38,13 +39,13 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
+#include <Windows.h>
 #include <intrin.h>
-#include <boost/preprocessor/variadic/size.hpp>
-#include <boost/vmd/is_empty.hpp>
-#include <boost/vmd/is_tuple.hpp>
 #endif
 #include <algorithm>
+#include <any>
 #include <atomic>
+#include <chrono>
 #include <cinttypes>
 #include <cmath>
 #include <cstdarg>
@@ -55,18 +56,20 @@
 #include <deque>
 #include <functional>
 #include <iosfwd>
+#include <iterator>
 #include <list>
 #include <locale>
 #include <map>
 #include <math.h>
 #include <memory>
-#include <mutex>
+#include <numeric>
 #include <set>
 #include <sstream>
 #include <stdarg.h>
 #include <stddef.h>
 #include <string>
 #include <sys/types.h>
+#include <thread>
 #include <type_traits>
 #include <typeindex>
 #include <typeinfo>
@@ -74,27 +77,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <boost/any.hpp>
-#include <boost/functional/hash_fwd.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/or.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/operators.hpp>
-#include <boost/preprocessor/arithmetic/add.hpp>
-#include <boost/preprocessor/arithmetic/inc.hpp>
-#include <boost/preprocessor/arithmetic/sub.hpp>
-#include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/comparison/equal.hpp>
-#include <boost/preprocessor/control/expr_iif.hpp>
-#include <boost/preprocessor/facilities/expand.hpp>
-#include <boost/preprocessor/punctuation/comma.hpp>
-#include <boost/preprocessor/punctuation/comma_if.hpp>
-#include <boost/preprocessor/punctuation/paren.hpp>
-#include <boost/preprocessor/repetition/repeat.hpp>
-#include <boost/preprocessor/stringize.hpp>
-#include <boost/preprocessor/tuple/eat.hpp>
-#include <boost/preprocessor/tuple/to_list.hpp>
-#include <boost/preprocessor/tuple/to_seq.hpp>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/python/def.hpp>
 #include <boost/python/dict.hpp>
@@ -104,21 +86,15 @@
 #undef toupper
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_const.hpp>
-#include <boost/type_traits/is_convertible.hpp>
-#include <boost/type_traits/is_enum.hpp>
-#include <boost/type_traits/is_same.hpp>
-#include <boost/utility/enable_if.hpp>
-#include <tbb/atomic.h>
 #include <tbb/blocked_range.h>
-#include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/enumerable_thread_specific.h>
+#include <tbb/info.h>
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_for_each.h>
 #include <tbb/parallel_reduce.h>
 #include <tbb/spin_rw_mutex.h>
 #include <tbb/task.h>
 #include <tbb/task_arena.h>
+#include <tbb/task_group.h>
 #include <tbb/task_scheduler_init.h>

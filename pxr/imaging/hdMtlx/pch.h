@@ -28,9 +28,19 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_DARWIN)
+#include <glob.h>
+#include <limits.h>
+#include <sys/mount.h>
+#include <sys/param.h>
+#include <unistd.h>
 #include <mach/mach_time.h>
 #endif
 #if defined(ARCH_OS_LINUX)
+#include <glob.h>
+#include <limits.h>
+#include <sys/param.h>
+#include <sys/statfs.h>
+#include <unistd.h>
 #include <x86intrin.h>
 #endif
 #if defined(ARCH_OS_WINDOWS)
@@ -38,12 +48,14 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
+#include <Windows.h>
 #include <intrin.h>
+#include <io.h>
+#include <stringapiset.h>
 #endif
 #include <algorithm>
-#include <array>
+#include <any>
 #include <atomic>
-#include <cfloat>
 #include <cinttypes>
 #include <cmath>
 #include <cstdarg>
@@ -53,6 +65,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <deque>
+#include <fcntl.h>
 #include <functional>
 #include <initializer_list>
 #include <iosfwd>
@@ -65,15 +78,18 @@
 #include <memory>
 #include <mutex>
 #include <new>
-#include <ostream>
+#include <numeric>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <thread>
+#include <tuple>
 #include <type_traits>
 #include <typeindex>
 #include <typeinfo>
@@ -81,69 +97,28 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include <MaterialXCore/Document.h>
+#include <MaterialXCore/Library.h>
 #include <MaterialXCore/Node.h>
 #include <MaterialXFormat/Util.h>
 #include <MaterialXFormat/XmlIo.h>
-#include <boost/any.hpp>
-#include <boost/call_traits.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/functional/hash_fwd.hpp>
-#include <boost/intrusive_ptr.hpp>
-#include <boost/iterator/iterator_adaptor.hpp>
-#include <boost/iterator/reverse_iterator.hpp>
-#include <boost/iterator_adaptors.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/or.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/operators.hpp>
-#include <boost/preprocessor/arithmetic/add.hpp>
-#include <boost/preprocessor/arithmetic/inc.hpp>
-#include <boost/preprocessor/arithmetic/sub.hpp>
-#include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/comparison/equal.hpp>
-#include <boost/preprocessor/control/expr_iif.hpp>
-#include <boost/preprocessor/control/iif.hpp>
-#include <boost/preprocessor/facilities/expand.hpp>
-#include <boost/preprocessor/logical/and.hpp>
-#include <boost/preprocessor/logical/not.hpp>
-#include <boost/preprocessor/punctuation/comma.hpp>
-#include <boost/preprocessor/punctuation/comma_if.hpp>
-#include <boost/preprocessor/punctuation/paren.hpp>
-#include <boost/preprocessor/repetition/repeat.hpp>
-#include <boost/preprocessor/seq/filter.hpp>
-#include <boost/preprocessor/seq/for_each.hpp>
-#include <boost/preprocessor/seq/for_each_i.hpp>
-#include <boost/preprocessor/seq/push_back.hpp>
-#include <boost/preprocessor/seq/size.hpp>
-#include <boost/preprocessor/tuple/eat.hpp>
-#include <boost/preprocessor/tuple/elem.hpp>
-#include <boost/preprocessor/tuple/to_list.hpp>
-#include <boost/preprocessor/tuple/to_seq.hpp>
-#include <boost/preprocessor/variadic/size.hpp>
+#endif // PXR_MATERIALX_SUPPORT_ENABLED
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
+#include <boost/python/dict.hpp>
+#include <boost/python/extract.hpp>
+#include <boost/python/handle.hpp>
+#include <boost/python/object.hpp>
 #include <boost/python/object_fwd.hpp>
 #include <boost/python/object_operators.hpp>
+#include <boost/python/type_id.hpp>
 #if defined(__APPLE__) // Fix breakage caused by Python's pyport.h.
 #undef tolower
 #undef toupper
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-#include <boost/type_traits/has_trivial_assign.hpp>
-#include <boost/type_traits/has_trivial_constructor.hpp>
-#include <boost/type_traits/has_trivial_copy.hpp>
-#include <boost/type_traits/has_trivial_destructor.hpp>
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_convertible.hpp>
-#include <boost/type_traits/is_same.hpp>
-#include <boost/utility/enable_if.hpp>
-#include <boost/vmd/is_empty.hpp>
-#include <boost/vmd/is_tuple.hpp>
-#include <tbb/atomic.h>
 #include <tbb/cache_aligned_allocator.h>
-#include <tbb/concurrent_hash_map.h>
 #include <tbb/concurrent_queue.h>
-#include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_mutex.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"

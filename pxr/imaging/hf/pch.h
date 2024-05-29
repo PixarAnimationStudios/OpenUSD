@@ -26,15 +26,20 @@
 
 #define TF_MAX_ARITY 7
 #include "pxr/pxr.h"
+#include "pxr/base/arch/defines.h"
+#if defined(ARCH_OS_LINUX)
+#include <unistd.h>
+#endif
 #include <algorithm>
+#include <any>
 #include <atomic>
 #include <cinttypes>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <functional>
-#include <initializer_list>
 #include <iosfwd>
 #include <locale>
 #include <map>
@@ -44,7 +49,6 @@
 #include <set>
 #include <stdarg.h>
 #include <stddef.h>
-#include <stdint.h>
 #include <string>
 #include <sys/types.h>
 #include <type_traits>
@@ -53,16 +57,3 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <boost/any.hpp>
-#include <boost/functional/hash_fwd.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/or.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/operators.hpp>
-#include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/stringize.hpp>
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_const.hpp>
-#include <boost/type_traits/is_convertible.hpp>
-#include <boost/type_traits/is_same.hpp>
-#include <boost/utility/enable_if.hpp>
