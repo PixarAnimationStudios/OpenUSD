@@ -42,6 +42,24 @@ UsdImagingCylinderLightAdapter::~UsdImagingCylinderLightAdapter()
 {
 }
 
+TfTokenVector
+UsdImagingCylinderLightAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingCylinderLightAdapter::GetImagingSubprimType(
+    UsdPrim const& prim,
+    TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->cylinderLight;
+    }
+
+    return TfToken();
+}
+
 bool
 UsdImagingCylinderLightAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
