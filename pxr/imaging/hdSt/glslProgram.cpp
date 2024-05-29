@@ -261,10 +261,11 @@ HdStGLSLProgram::~HdStGLSLProgram()
 {
     Hgi *const hgi = _registry->GetHgi();
 
+    for (HgiShaderFunctionHandle fn : _programDesc.shaderFunctions) {
+        hgi->DestroyShaderFunction(&fn);
+    }
+
     if (_program) {
-        for (HgiShaderFunctionHandle fn : _program->GetShaderFunctions()) {
-            hgi->DestroyShaderFunction(&fn);
-        }
         hgi->DestroyShaderProgram(&_program);
     }
 }
