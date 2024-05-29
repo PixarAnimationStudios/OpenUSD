@@ -24,6 +24,7 @@
 #ifndef PXR_IMAGING_HDUI_SCENE_INDEX_TREE_WIDGET_H
 #define PXR_IMAGING_HDUI_SCENE_INDEX_TREE_WIDGET_H
 
+#include "pxr/pxr.h"
 
 #include "pxr/imaging/hd/sceneIndex.h"
 

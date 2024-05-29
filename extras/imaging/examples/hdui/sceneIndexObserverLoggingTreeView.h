@@ -24,6 +24,8 @@
 #ifndef PXR_IMAGING_HDUI_SCENE_INDEX_OBSERVER_LOGGING_TREE_VIEW_H
 #define PXR_IMAGING_HDUI_SCENE_INDEX_OBSERVER_LOGGING_TREE_VIEW_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/imaging/hd/sceneIndex.h"
 
 #include <QTreeView>

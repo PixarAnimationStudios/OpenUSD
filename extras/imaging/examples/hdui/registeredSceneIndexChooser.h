@@ -24,6 +24,8 @@
 #ifndef PXR_IMAGING_HDUI_REGISTERED_SCENE_INDEX_CHOOSER_H
 #define PXR_IMAGING_HDUI_REGISTERED_SCENE_INDEX_CHOOSER_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/imaging/hd/sceneIndex.h"
 
 #include <QPushButton>

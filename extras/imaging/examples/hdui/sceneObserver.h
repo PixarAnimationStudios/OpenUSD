@@ -24,6 +24,8 @@
 #ifndef PXR_IMAGING_HDUI_SCENE_OBSERVER_H
 #define PXR_IMAGING_HDUI_SCENE_OBSERVER_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/imaging/hd/sceneIndexObserver.h"
 
 #include <QObject>
