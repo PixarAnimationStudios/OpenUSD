@@ -28,8 +28,6 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
-#include "pxr/base/tf/staticTokens.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Register the schema with the TfType system.
@@ -39,11 +37,6 @@ TF_REGISTRY_FUNCTION(TfType)
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _schemaTokens,
-    (testo)
-);
 
 /* virtual */
 UsdContrivedPublicMultipleApplyAPI::~UsdContrivedPublicMultipleApplyAPI()
@@ -125,9 +118,9 @@ UsdContrivedPublicMultipleApplyAPI::IsPublicMultipleApplyAPIPath(
     }
 
     if (tokens.size() >= 2
-        && tokens[0] == _schemaTokens->testo) {
+        && tokens[0] == UsdContrivedTokens->testo) {
         *name = TfToken(propertyName.substr(
-            _schemaTokens->testo.GetString().size() + 1));
+           UsdContrivedTokens->testo.GetString().size() + 1));
         return true;
     }
 

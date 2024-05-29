@@ -28,10 +28,6 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
-{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
-#include "pxr/base/tf/staticTokens.h"
-
-{% endif %}
 {% if useExportAPI %}
 {{ namespaceOpen }}
 
@@ -52,13 +48,6 @@ TF_REGISTRY_FUNCTION(TfType)
 {% endif %}
 }
 
-{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
-TF_DEFINE_PRIVATE_TOKENS(
-    _schemaTokens,
-    ({{ cls.propertyNamespacePrefix }})
-);
-
-{% endif %}
 /* virtual */
 {{ cls.cppClassName }}::~{{ cls.cppClassName }}()
 {
@@ -73,10 +62,10 @@ TF_DEFINE_PRIVATE_TOKENS(
         TF_CODING_ERROR("Invalid stage");
         return {{ cls.cppClassName }}();
     }
-{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+{% if cls.isMultipleApply and cls.propertyNamespace %}
     TfToken name;
     if (!Is{{ cls.usdPrimTypeName }}Path(path, &name)) {
-        TF_CODING_ERROR("Invalid {{ cls.propertyNamespacePrefix }} path <%s>.", path.GetText());
+        TF_CODING_ERROR("Invalid {{ cls.propertyNamespace.prefix }} path <%s>.", path.GetText());
         return {{ cls.cppClassName }}();
     }
     return {{ cls.cppClassName }}(stage->GetPrimAtPath(path.GetPrimPath()), name);
@@ -123,7 +112,7 @@ std::vector<{{ cls.cppClassName }}>
         stage->DefinePrim(path, usdPrimTypeName));
 }
 {% endif %}
-{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+{% if cls.isMultipleApply and cls.propertyNamespace %}
 
 /* static */
 bool 
@@ -167,9 +156,9 @@ bool
     }
 
     if (tokens.size() >= 2
-        && tokens[0] == _schemaTokens->{{ cls.propertyNamespacePrefix }}) {
+        && tokens[0] == {{ tokensPrefix }}Tokens->{{ cls.propertyNamespace.token }}) {
         *name = TfToken(propertyName.substr(
-            _schemaTokens->{{ cls.propertyNamespacePrefix }}.GetString().size() + 1));
+           {{ tokensPrefix }}Tokens->{{ cls.propertyNamespace.token }}.GetString().size() + 1));
         return true;
     }
 
@@ -244,7 +233,7 @@ const TfType &
 {
     return _GetStaticTfType();
 }
-{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+{% if cls.isMultipleApply and cls.propertyNamespace %}
 
 /// Returns the property name prefixed with the correct namespace prefix, which
 /// is composed of the the API's propertyNamespacePrefix metadata and the
@@ -265,7 +254,7 @@ _GetNamespacedPropertyName(const TfToken instanceName, const TfToken propName)
 UsdAttribute
 {{ cls.cppClassName }}::Get{{ Proper(attr.apiName) }}Attr() const
 {
-{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+{% if cls.isMultipleApply and cls.propertyNamespace %}
     return GetPrim().GetAttribute(
         _GetNamespacedPropertyName(
             GetName(),
@@ -279,7 +268,7 @@ UsdAttribute
 UsdAttribute
 {{ cls.cppClassName }}::Create{{ Proper(attr.apiName) }}Attr(VtValue const &defaultValue, bool writeSparsely) const
 {
-{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+{% if cls.isMultipleApply and cls.propertyNamespace %}
     return UsdSchemaBase::_CreateAttr(
                        _GetNamespacedPropertyName(
                             GetName(),
@@ -304,7 +293,7 @@ UsdAttribute
 UsdRelationship
 {{ cls.cppClassName }}::Get{{ Proper(rel.apiName) }}Rel() const
 {
-{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+{% if cls.isMultipleApply and cls.propertyNamespace %}
     return GetPrim().GetRelationship(
         _GetNamespacedPropertyName(
             GetName(),
@@ -318,7 +307,7 @@ UsdRelationship
 UsdRelationship
 {{ cls.cppClassName }}::Create{{ Proper(rel.apiName) }}Rel() const
 {
-{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+{% if cls.isMultipleApply and cls.propertyNamespace %}
     return GetPrim().CreateRelationship(
                        _GetNamespacedPropertyName(
                            GetName(),

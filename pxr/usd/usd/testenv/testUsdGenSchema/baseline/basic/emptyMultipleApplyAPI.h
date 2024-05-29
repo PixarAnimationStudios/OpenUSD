@@ -65,7 +65,7 @@ public:
     /// UsdContrivedEmptyMultipleApplyAPI::Get(
     ///    prim.GetStage(),
     ///    prim.GetPath().AppendProperty(
-    ///        "None:name"));
+    ///        ":name"));
     ///
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim

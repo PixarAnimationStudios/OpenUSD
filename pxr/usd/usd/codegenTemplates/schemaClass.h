@@ -88,7 +88,7 @@ public:
     /// {{ cls.cppClassName }}::Get(
     ///    prim.GetStage(),
     ///    prim.GetPath().AppendProperty(
-    ///        "{{ cls.propertyNamespacePrefix }}:name"));
+    ///        "{{ cls.propertyNamespace.prefix }}:name"));
     ///
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
@@ -161,9 +161,9 @@ public:
     /// Return a {{ cls.cppClassName }} holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
-{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+{% if cls.isMultipleApply and cls.propertyNamespace %}
     /// return an invalid schema object.  \p path must be of the format
-    /// <path>.{{ cls.propertyNamespacePrefix }}:name .
+    /// <path>.{{ cls.propertyNamespace.prefix }}:name .
     ///
     /// This is shorthand for the following:
     ///
@@ -234,7 +234,7 @@ public:
     static {{ cls.cppClassName }}
     Define(const UsdStagePtr &stage, const SdfPath &path);
 {% endif %}
-{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+{% if cls.isMultipleApply and cls.propertyNamespace %}
     /// Checks if the given name \p baseName is the base name of a property
     /// of {{ cls.usdPrimTypeName }}.
     {% if useExportAPI -%}

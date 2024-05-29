@@ -66,7 +66,7 @@ _Create{{ Proper(attr.apiName) }}Attr({{ cls.cppClassName }} &self,
 }
 {% endif %}
 {% endfor %}
-{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+{% if cls.isMultipleApply and cls.propertyNamespace %}
 
 static bool _WrapIs{{ cls.usdPrimTypeName }}Path(const SdfPath &path) {
     TfToken collectionName;
@@ -254,7 +254,7 @@ void wrap{{ cls.cppClassName }}()
              &This::Create{{ Proper(rel.apiName) }}Rel)
 {% endif %}
 {% endfor %}
-{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+{% if cls.isMultipleApply and cls.propertyNamespace %}
         .def("Is{{ cls.usdPrimTypeName }}Path", _WrapIs{{ cls.usdPrimTypeName }}Path)
             .staticmethod("Is{{ cls.usdPrimTypeName }}Path")
 {% endif %}
