@@ -34,6 +34,12 @@ TF_REGISTRY_FUNCTION(TfType)
     // No factory here, UsdImagingRepresentedByAncestorPrimAdapter is abstract.
 }
 
+TfTokenVector
+UsdImagingRepresentedByAncestorPrimAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return TfTokenVector();
+}
+
 UsdImagingPrimAdapter::PopulationMode
 UsdImagingRepresentedByAncestorPrimAdapter::GetPopulationMode()
 {

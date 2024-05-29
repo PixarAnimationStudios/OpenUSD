@@ -52,6 +52,7 @@ public:
     /// \name Scene Index Support
     // ---------------------------------------------------------------------- //
 
+    TfTokenVector GetImagingSubprims(UsdPrim const& prim) override;
     PopulationMode GetPopulationMode() override;
 
     // ---------------------------------------------------------------------- //
