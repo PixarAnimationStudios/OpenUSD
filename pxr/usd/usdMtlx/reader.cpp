@@ -1520,7 +1520,8 @@ _Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
             _FindMatchingNodeDef(mtlxShaderNode,
                                  mtlxShaderNode->getCategory(),
                                  UsdMtlxGetVersion(mtlxShaderNode),
-                                 mtlxShaderNode->getTarget());
+                                 mtlxShaderNode->getTarget(),
+                                 mtlxShaderNode);
     }
     auto shaderId = _GetShaderId(mtlxNodeDef);
     if (shaderId.IsEmpty()) {

@@ -65,6 +65,9 @@ R"(#if NUM_LIGHTS > 0
         // Save the indirect light transformation
         if (light.isIndirectLight) {
             hdTransformationMatrix = light.worldToLightTransform;
+            // Note: in Storm, diffuse = lightColor * intensity;
+            u_envLightIntensity = max( max(light.diffuse.r, light.diffuse.g), 
+                                   light.diffuse.b);
         }
         // Save the direct light data
         else {

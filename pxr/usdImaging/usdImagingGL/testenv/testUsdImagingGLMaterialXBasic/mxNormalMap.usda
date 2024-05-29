@@ -167,6 +167,7 @@ def Xform "NormalMapTest"
     {
         def DomeLight "DomeLight"
         {
+            float inputs:intensity = 2.0
             asset inputs:texture:file = @./StinsonBeach.hdr@
         }
         def DistantLight "DistantLight"
