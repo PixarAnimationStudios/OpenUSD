@@ -19,14 +19,30 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static const HioGlslfxSharedPtr &
+_GetRenderPassOitGlslfx()
+{
+    static const HioGlslfxSharedPtr glslfx =
+        std::make_shared<HioGlslfx>(HdxPackageRenderPassOitShader());
+    return glslfx;
+}
+
+static const HioGlslfxSharedPtr &
+_GetRenderPassOitOpaqueGlslfx()
+{
+    static const HioGlslfxSharedPtr glslfx =
+        std::make_shared<HioGlslfx>(HdxPackageRenderPassOitOpaqueShader());
+    return glslfx;
+}
+
 HdxOitRenderTask::HdxOitRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdxRenderTask(delegate, id)
     , _oitTranslucentRenderPassShader(
         std::make_shared<HdStRenderPassShader>(
-            HdxPackageRenderPassOitShader()))
+            _GetRenderPassOitGlslfx()))
     , _oitOpaqueRenderPassShader(
         std::make_shared<HdStRenderPassShader>(
-            HdxPackageRenderPassOitOpaqueShader()))
+            _GetRenderPassOitOpaqueGlslfx()))
     , _isOitEnabled(HdxOitBufferAccessor::IsOitEnabled())
 {
 }

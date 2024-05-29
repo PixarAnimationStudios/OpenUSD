@@ -27,14 +27,28 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static const HioGlslfxSharedPtr &
+_GetRenderPassColorGlslfx()
+{
+    static const HioGlslfxSharedPtr glslfx =
+        std::make_shared<HioGlslfx>(HdxPackageRenderPassColorShader());
+    return glslfx;
+}
+
+static const HioGlslfxSharedPtr &
+_GetRenderPassIdGlslfx()
+{
+    static const HioGlslfxSharedPtr glslfx =
+        std::make_shared<HioGlslfx>(HdxPackageRenderPassIdShader());
+    return glslfx;
+}
+
 HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdTask(id)
     , _colorRenderPassShader(
-        std::make_shared<HdStRenderPassShader>(
-            HdxPackageRenderPassColorShader()))
+        std::make_shared<HdStRenderPassShader>(_GetRenderPassColorGlslfx()))
     , _idRenderPassShader(
-        std::make_shared<HdStRenderPassShader>(
-            HdxPackageRenderPassIdShader()))
+        std::make_shared<HdStRenderPassShader>(_GetRenderPassIdGlslfx()))
     , _viewport(0)
 {
 }

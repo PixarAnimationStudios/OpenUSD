@@ -38,6 +38,8 @@ public:
     HDST_API
     HdStRenderPassShader(TfToken const &glslfxFile);
     HDST_API
+    HdStRenderPassShader(HioGlslfxSharedPtr const &glslfx);
+    HDST_API
     ~HdStRenderPassShader() override;
 
     /// HdShader overrides
@@ -83,8 +85,7 @@ public:
         HdRenderIndex * const renderIndex);
 
 private:
-    TfToken _glslfxFile;
-    std::unique_ptr<HioGlslfx> _glslfx;
+    HioGlslfxSharedPtr _glslfx;
     mutable size_t  _hash;
     mutable bool    _hashValid;
 

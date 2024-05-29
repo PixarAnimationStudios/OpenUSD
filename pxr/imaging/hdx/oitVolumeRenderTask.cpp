@@ -22,12 +22,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static const HioGlslfxSharedPtr &
+_GetRenderPassOitVolumeGlslfx()
+{
+    static const HioGlslfxSharedPtr glslfx =
+        std::make_shared<HioGlslfx>(HdxPackageRenderPassOitVolumeShader());
+    return glslfx;
+}
+
 HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(
                 HdSceneDelegate* delegate, SdfPath const& id)
     : HdxRenderTask(delegate, id)
     , _oitVolumeRenderPassShader(
         std::make_shared<HdStRenderPassShader>(
-            HdxPackageRenderPassOitVolumeShader()))
+            _GetRenderPassOitVolumeGlslfx()))
     , _isOitEnabled(HdxOitBufferAccessor::IsOitEnabled())
 {
 }
