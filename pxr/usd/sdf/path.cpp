@@ -393,25 +393,38 @@ SdfPath::GetPrefixes(SdfPathVector *prefixes) const
 void
 SdfPath::GetPrefixes(SdfPathVector *prefixes, size_t numPrefixes) const
 {
-    Sdf_PathNode const *prop = _propPart.get();
-    Sdf_PathNode const *prim = _primPart.get();
-
     const size_t elemCount = GetPathElementCount();
     if (numPrefixes == 0 || numPrefixes > elemCount) {
         numPrefixes = elemCount;
     }
-
     prefixes->resize(numPrefixes);
+    GetPrefixes(TfSpan<SdfPath>(*prefixes));
+}
 
-    SdfPathVector::reverse_iterator iter = prefixes->rbegin();
+TfSpan<SdfPath>
+SdfPath::GetPrefixes(TfSpan<SdfPath> prefixes) const
+{
+    // We can fill up to prefixes.size() elements.
+    size_t numPrefixes = std::min(prefixes.size(), GetPathElementCount());
+    // If we are not filling the whole span, cut it to the subspan we will fill.
+    if (numPrefixes < prefixes.size()) {
+        prefixes = prefixes.first(numPrefixes);
+    }
+    
+    Sdf_PathNode const *prim = _primPart.get();
+    Sdf_PathNode const *prop = _propPart.get();
+
+    TfSpan<SdfPath>::reverse_iterator iter = prefixes.rbegin();
     for (; prop && numPrefixes; --numPrefixes) {
         *iter++ = SdfPath(prim, prop);
         prop = prop->GetParentNode();
     }
-    for (; prim && numPrefixes; --numPrefixes) {
+    // no need to check 'prim' in the loop since we range-checked above.
+    for (; numPrefixes; --numPrefixes) {
         *iter++ = SdfPath(prim, nullptr);
         prim = prim->GetParentNode();
     }
+    return prefixes;
 }
 
 SdfPathAncestorsRange

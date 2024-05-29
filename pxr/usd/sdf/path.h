@@ -30,6 +30,7 @@
 #include "pxr/usd/sdf/tokens.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/delegatedCountPtr.h"
+#include "pxr/base/tf/span.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/traits.h"
@@ -504,6 +505,20 @@ public:
     /// from longest to shortest.  If \p numPrefixes is 0 or greater than the
     /// number of this path's prefixes, fill all prefixes.
     SDF_API void GetPrefixes(SdfPathVector *prefixes, size_t numPrefixes) const;
+
+    /// Fill \p prefixes with up to \p prefixes.size() prefixes of this path.
+    /// Return the subspan of prefixes filled.
+    ///
+    /// Prefixes are filled in order of shortest to longest.  The path itself is
+    /// always included as the last prefix.  If \p prefixes is not large enough
+    /// to contain all prefixes, the shortest prefixes are omitted.  If \p
+    /// prefixes is larger than the number of prefixes filled, return the
+    /// subspan filled by calling TfSpan::first() with the number of filled
+    /// prefixes.  Note that if the prefix order does not need to be from
+    /// shortest to longest, it can be more efficient to use
+    /// GetAncestorsRange(), which produces an equivalent set of paths, ordered
+    /// from longest to shortest.
+    SDF_API TfSpan<SdfPath> GetPrefixes(TfSpan<SdfPath> prefixes) const;
 
     /// Return a range for iterating over the ancestors of this path.
     ///
