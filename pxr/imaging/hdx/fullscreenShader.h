@@ -99,15 +99,19 @@ public:
     HDX_API
     void BindBuffers(HgiBufferHandleVector const& buffers);
 
-    /// Bind (externally managed) textures to the shader program.
+    /// Bind (externally managed) textures to the shader program and use the
+    /// optionally provided samplers for each one.
     /// This function can be used to bind textures to a custom shader program.
-    /// The lifetime of textures is managed by the caller. HdxFullscreenShader
-    /// does not take ownership.
+    /// The lifetime of textures is managed by the caller as are the samplers.
+    /// HdxFullscreenShader does not take ownership of them.
     /// Textures will be bound at the indices corresponding to their position in
-    /// the provided vector.
+    /// the provided vector.  Each texture will use the corresponding sampler
+    /// that is provided.  If no samplers are provided, or an invalid sampler
+    /// is provided for a texture, a default sampler will be used.
     HDX_API
     void BindTextures(
-        HgiTextureHandleVector const& textures);
+        HgiTextureHandleVector const& textures,
+        HgiSamplerHandleVector const& samplers = HgiSamplerHandleVector());
 
     /// By default HdxFullscreenShader creates a pipeline object that enables
     /// depth testing and enables depth write if there is a depth texture.
@@ -169,8 +173,8 @@ private:
     // Utility to create default vertex buffer descriptor.
     void _SetVertexBufferDescriptor();
 
-    // Utility to create a texture sampler.
-    bool _CreateSampler();
+    // Utility to create and get the default texture sampler.
+    HgiSamplerHandle _GetDefaultSampler();
 
     // Utility to set the default program.
     void _SetDefaultProgram(bool writeDepth);
@@ -189,6 +193,7 @@ private:
     void _PrintCompileErrors();
 
     HgiTextureHandleVector _textures;
+    HgiSamplerHandleVector _samplers;
     HgiBufferHandleVector _buffers;
 
     TfToken _glslfxPath;
@@ -197,7 +202,7 @@ private:
     HgiBufferHandle _indexBuffer;
     HgiBufferHandle _vertexBuffer;
     HgiShaderProgramHandle _shaderProgram;
-    HgiSamplerHandle _sampler;
+    HgiSamplerHandle _defaultSampler;
 
     HgiDepthStencilState _depthStencilState;
 

@@ -104,8 +104,8 @@ HdxFullscreenShader::~HdxFullscreenShader()
         _DestroyShaderProgram(&_shaderProgram);
     }
 
-    if (_sampler) {
-        hgi->DestroySampler(&_sampler);
+    if (_defaultSampler) {
+        hgi->DestroySampler(&_defaultSampler);
     }
 }
 
@@ -302,9 +302,26 @@ HdxFullscreenShader::_CreateBufferResources()
 
 void
 HdxFullscreenShader::BindTextures(
-    HgiTextureHandleVector const& textures)
+    HgiTextureHandleVector const& textures,
+    HgiSamplerHandleVector const& samplers)
 {
+    if (!samplers.empty() && textures.size() != samplers.size()) {
+        TF_CODING_ERROR("Samplers vector must be empty, or match the size of "
+                        "the provided textures vector.");
+        _textures.clear();
+        _samplers.clear();
+        return;
+    }
+
     _textures = textures;
+    if (samplers.empty()) {
+        _samplers.assign(_textures.size(), _GetDefaultSampler());
+    } else {
+        _samplers.resize(samplers.size());
+        for (size_t i = 0; i < samplers.size(); ++i) {
+            _samplers[i] = samplers[i] ? samplers[i] : _GetDefaultSampler();
+        }
+    }
 }
 
 void
@@ -312,30 +329,30 @@ HdxFullscreenShader::_SetResourceBindings()
 {
     HgiTextureBindDescVector textureBindings;
     textureBindings.reserve(_textures.size());
-    size_t bindSlots = 0;
-    for (auto const& texture : _textures) {
+    for (uint32_t index = 0; index < _textures.size(); ++index) {
+        const HgiTextureHandle& texture = _textures[index];
         if (!texture) {
             continue;
         }
         HgiTextureBindDesc texBind;
-        texBind.bindingIndex = bindSlots++;
+        texBind.bindingIndex = index;
         texBind.stageUsage = HgiShaderStageFragment;
         texBind.writable = false;
         texBind.textures.push_back(texture);
-        texBind.samplers.push_back(_sampler);
+        texBind.samplers.push_back(_samplers[index]);
         textureBindings.push_back(std::move(texBind));
     }
     _SetTextureBindings(textureBindings);
 
     HgiBufferBindDescVector bufferBindings;
     bufferBindings.reserve(_buffers.size());
-    bindSlots = 0;
-    for (auto const& buffer : _buffers) {
+    for (uint32_t index = 0; index < _buffers.size(); ++index) {
+        const HgiBufferHandle& buffer = _buffers[index];
         if (!buffer) {
             continue;
         }
         HgiBufferBindDesc bufBind;
-        bufBind.bindingIndex = bindSlots++;
+        bufBind.bindingIndex = index;
         bufBind.resourceType = HgiBindResourceTypeStorageBuffer;
         bufBind.stageUsage = HgiShaderStageFragment;
         bufBind.writable = false;
@@ -368,24 +385,19 @@ HdxFullscreenShader::_SetVertexBufferDescriptor()
     _SetVertexBufferDescs(vboDescs);
 }
 
-bool
-HdxFullscreenShader::_CreateSampler()
+HgiSamplerHandle
+HdxFullscreenShader::_GetDefaultSampler()
 {
-    if (_sampler) {
-        return true;
+    if (!_defaultSampler) {
+        HgiSamplerDesc sampDesc;
+        sampDesc.magFilter = HgiSamplerFilterLinear;
+        sampDesc.minFilter = HgiSamplerFilterLinear;
+        sampDesc.addressModeU = HgiSamplerAddressModeClampToEdge;
+        sampDesc.addressModeV = HgiSamplerAddressModeClampToEdge;
+        _defaultSampler = _GetHgi()->CreateSampler(sampDesc);
     }
 
-    HgiSamplerDesc sampDesc;
-    
-    sampDesc.magFilter = HgiSamplerFilterLinear;
-    sampDesc.minFilter = HgiSamplerFilterLinear;
-
-    sampDesc.addressModeU = HgiSamplerAddressModeClampToEdge;
-    sampDesc.addressModeV = HgiSamplerAddressModeClampToEdge;
-    
-    _sampler = _GetHgi()->CreateSampler(sampDesc);
-
-    return true;
+    return _defaultSampler;
 }
 
 void
@@ -461,9 +473,6 @@ HdxFullscreenShader::_Draw(
     if (!_vertexBuffer) {
         _CreateBufferResources();
     }
-
-    // Create a default texture sampler (first time)
-    _CreateSampler();
 
     // Set or update the resource bindings (textures may have changed)
     _SetResourceBindings();
