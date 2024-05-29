@@ -151,7 +151,7 @@ public:
         //    _PrimsDirtied doesn't.
         //
         if (collectionExists) {
-            // Renove the collection from all tables. This in turn adds
+            // Remove the collection from all tables. This in turn adds
             // invalidation notices for affected targets.
             _RemoveCollection(collectionPath, dirtiedEntries);
 
@@ -569,6 +569,16 @@ _Contains(
     return std::find(tokens.cbegin(), tokens.cend(), key) != tokens.cend();
 }
 
+void
+_AddIfNecessary(
+    const TfToken &token,
+    TfTokenVector *tokens)
+{
+    if (!_Contains(*tokens, token)) {
+        tokens->push_back(token);
+    }
+}
+
 // Queries the cache to compute the (light linking) categories that include
 // `primPath` and returns a container data source with the result.
 //
@@ -605,10 +615,7 @@ public:
     TfTokenVector GetNames() override
     {
         TfTokenVector names = _inputPrimDs->GetNames();
-
-        if (!_Contains(names, HdCategoriesSchemaTokens->categories)) {
-            names.push_back(HdCategoriesSchemaTokens->categories);
-        }
+        _AddIfNecessary(HdCategoriesSchemaTokens->categories, &names);
         return names;
     }
 
@@ -661,12 +668,8 @@ public:
     TfTokenVector GetNames() override
     {
         TfTokenVector names = _inputPrimDs->GetNames();
-
-        if (!_Contains(names,
-                HdInstanceCategoriesSchemaTokens->instanceCategories)) {
-            names.push_back(
-                HdInstanceCategoriesSchemaTokens->instanceCategories);
-        }
+        _AddIfNecessary(
+            HdInstanceCategoriesSchemaTokens->instanceCategories, &names);
         return names;
     }
 
@@ -708,9 +711,7 @@ public:
         if (_lightDs) {
             TfTokenVector names = _lightDs->GetNames();
             for (const TfToken &name : _GetLightLinkingSchemaTokens()) {
-                if (!_Contains(names, name)) {
-                    names.push_back(name);
-                }
+                _AddIfNecessary(name, &names);
             }
             return names;
         }
@@ -819,7 +820,8 @@ private:
 
     const HdContainerDataSourceHandle _inputPrimDs;
     const SdfPath _primPath;
-    const _CacheSharedPtr &_cache;};
+    const _CacheSharedPtr &_cache;
+};
 
 
 } // anon
@@ -931,34 +933,26 @@ HdsiLightLinkingSceneIndex::_PrimsAdded(
     
     TRACE_FUNCTION();
 
-    HdSceneIndexObserver::AddedPrimEntries lightEntries;
-    HdSceneIndexObserver::AddedPrimEntries filterEntries;
-
-    for (const auto &entry : entries) {
-        if (_IsLight(entry.primType)) {
-            lightEntries.push_back(entry);
-            // Update internal tracking.
-            _lightAndFilterPrimPaths.insert(entry.primPath);
-
-        } else if (_IsLightFilter(entry.primType)) {
-            filterEntries.push_back(entry);
-            // Update internal tracking.
-            _lightAndFilterPrimPaths.insert(entry.primPath);
-        }
-    }
-
     // Notices for prims that need to refetch their categories.
     HdSceneIndexObserver::DirtiedPrimEntries dirtiedEntries;
 
-    for (const auto &entry : lightEntries) {
-        _ProcessAddedLightOrFilter(
-            entry,
-            {HdTokens->lightLink, HdTokens->shadowLink},
-            &dirtiedEntries);
-    }
-    for (const auto &entry : filterEntries) {
-        _ProcessAddedLightOrFilter(
-            entry, {HdTokens->filterLink}, &dirtiedEntries);
+    for (const auto &entry : entries) {
+        if (_IsLight(entry.primType)) {
+            // Update internal tracking.
+            _lightAndFilterPrimPaths.insert(entry.primPath);
+
+             _ProcessAddedLightOrFilter(
+                entry,
+                {HdTokens->lightLink, HdTokens->shadowLink},
+                &dirtiedEntries);
+
+        } else if (_IsLightFilter(entry.primType)) {
+            // Update internal tracking.
+            _lightAndFilterPrimPaths.insert(entry.primPath);
+
+            _ProcessAddedLightOrFilter(
+                entry, {HdTokens->filterLink}, &dirtiedEntries);
+        }
     }
 
     _SendPrimsAdded(entries);
@@ -1016,36 +1010,41 @@ HdsiLightLinkingSceneIndex::_PrimsRemoved(
         return;
     }
 
-    SdfPathVector removedLightAndFilterPaths;
+    HdSceneIndexObserver::DirtiedPrimEntries dirtiedEntries;
 
     for (const auto &entry : entries) {
-        const auto it = _lightAndFilterPrimPaths.find(entry.primPath);
-        
-        if (it != _lightAndFilterPrimPaths.end()) {
-            removedLightAndFilterPaths.push_back(entry.primPath);
-            _lightAndFilterPrimPaths.erase(it);
+        // Recall that all descendants of the prim are also removed...
+        const auto itRange = SdfPathFindPrefixedRange(
+            _lightAndFilterPrimPaths.begin(),
+            _lightAndFilterPrimPaths.end(),
+            entry.primPath);
+
+        const auto &begin = itRange.first;
+        if (begin == _lightAndFilterPrimPaths.end()) {
+            continue;
         }
-    }
 
-    _SendPrimsRemoved(entries);
+        TF_DEBUG(HDSI_LIGHT_LINK_VERBOSE).Msg(
+            "Processing removed notice for %s.\n", entry.primPath.GetText());
 
-    if (!removedLightAndFilterPaths.empty()) {
-        HdSceneIndexObserver::DirtiedPrimEntries dirtiedEntries;
-        for (const SdfPath &primPath : removedLightAndFilterPaths) {
+        const auto &end = itRange.second;
+        for (auto it = begin; it != end; ++it) {
+            const SdfPath &trackedPrimPath = *it;
 
-            TF_DEBUG(HDSI_LIGHT_LINK_VERBOSE).Msg(
-                "Processing removed notice for %s.\n", primPath.GetText());
-
-            // XXX We could track lights and light filters separately to loop 
-            // over only the relevant collections.
+            // XXX We could track lights and light filters separately to 
+            // loop over only the relevant collections.
             //
             for (const TfToken &colName : _GetAllLinkingCollectionNames()) {
-                _cache->RemoveCollection(primPath, colName, &dirtiedEntries);
+                _cache->RemoveCollection(
+                    trackedPrimPath, colName, &dirtiedEntries);
             }
         }
 
-        _SendPrimsDirtied(dirtiedEntries);
+        _lightAndFilterPrimPaths.erase(begin, end);
     }
+
+    _SendPrimsRemoved(entries);
+    _SendPrimsDirtied(dirtiedEntries);
 }
 
 void
@@ -1072,59 +1071,63 @@ HdsiLightLinkingSceneIndex::_PrimsDirtied(
     for (const auto &entry : entries) {
         const SdfPath &primPath = entry.primPath;
 
-        if ((_lightAndFilterPrimPaths.find(primPath)
-                != _lightAndFilterPrimPaths.end()) &&
-             entry.dirtyLocators.Intersects(collectionLocators)) {
-            
-            const HdSceneIndexPrim prim = 
-                _GetInputSceneIndex()->GetPrim(primPath);
+        if (_lightAndFilterPrimPaths.find(primPath)
+                == _lightAndFilterPrimPaths.end()) {
+            continue;
+        }
 
-            HdCollectionsSchema collectionsSchema =
-                HdCollectionsSchema::GetFromParent(prim.dataSource);
-            
-            if (!collectionsSchema) {
+        if (!entry.dirtyLocators.Intersects(collectionLocators)) {
+            continue;
+        }
+        
+        const HdSceneIndexPrim prim = 
+            _GetInputSceneIndex()->GetPrim(primPath);
+
+        HdCollectionsSchema collectionsSchema =
+            HdCollectionsSchema::GetFromParent(prim.dataSource);
+        
+        if (!collectionsSchema) {
+            continue;
+        }
+
+        // XXX We could track lights and light filters separately to loop 
+        // over only the relevant collection locators.
+        //
+        for (const auto &locator : collectionLocators) {
+            const TfToken &collectionName = locator.GetLastElement();
+
+            HdCollectionSchema colSchema =
+                collectionsSchema.GetCollection(collectionName);
+            if (!colSchema) {
+                continue;
+            }
+            if (!entry.dirtyLocators.Intersects(locator)) {
                 continue;
             }
 
-            // XXX We could track lights and light filters separately to loop 
-            // over only the relevant collection locators.
-            //
-            for (const auto &locator : collectionLocators) {
-                const TfToken &collectionName = locator.GetLastElement();
+            if (const auto exprDs = colSchema.GetMembershipExpression()) {
 
-                HdCollectionSchema colSchema =
-                    collectionsSchema.GetCollection(collectionName);
-                if (!colSchema) {
-                    continue;
-                }
-                if (!entry.dirtyLocators.Intersects(locator)) {
-                    continue;
-                }
+                TF_DEBUG(HDSI_LIGHT_LINK_VERBOSE).Msg(
+                    "Processing dirtied notice for prim %s for "
+                    " collection %s...\n",
+                    primPath.GetText(), collectionName.GetText());
 
-                if (const auto exprDs = colSchema.GetMembershipExpression()) {
+                // NOTE: We need to process the expression even if it
+                //       is trivial because it might not have been
+                //       earlier. Compare with _PrimsAdded.
+                const SdfPathExpression expr =
+                    exprDs->GetTypedValue(0.0);
 
-                    TF_DEBUG(HDSI_LIGHT_LINK_VERBOSE).Msg(
-                        "Processing dirtied notice for prim %s for "
-                        " collection %s...\n",
-                        primPath.GetText(), collectionName.GetText());
-
-                    // NOTE: We need to process the expression even if it
-                    //       is trivial because it might not have been
-                    //       earlier. Compare with _PrimsAdded.
-                    const SdfPathExpression expr =
-                        exprDs->GetTypedValue(0.0);
-
-                    _cache->UpdateCollection(
-                        primPath,
-                        collectionName,
-                        expr,
-                        &newEntries);
-                    
-                } else {
-                    // XXX Issue warning? We do always expect a value
-                    //     for the locator. Invoke RemoveCollections to clean
-                    //     up?
-                }
+                _cache->UpdateCollection(
+                    primPath,
+                    collectionName,
+                    expr,
+                    &newEntries);
+                
+            } else {
+                // XXX Issue warning? We do always expect a value
+                //     for the locator. Invoke RemoveCollections to clean
+                //     up?
             }
         }
     }
