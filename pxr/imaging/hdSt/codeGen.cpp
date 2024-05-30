@@ -1247,6 +1247,26 @@ _ResourceGenerator::_GenerateGLSLResources(
     }
 }
 
+static
+std::string
+_GetGLSLSamplerTypePrefix(HioFormat hioFormat)
+{
+    GLenum const hioType = HioGetHioType(hioFormat);
+    switch (hioType) {
+        case HioTypeUnsignedByte:
+        case HioTypeUnsignedByteSRGB:
+        case HioTypeUnsignedShort:
+        case HioTypeUnsignedInt:
+            return "u";
+        case HioTypeSignedByte:
+        case HioTypeSignedShort:
+        case HioTypeInt:
+            return "i";
+        default:
+            return "";
+    }
+}
+
 void
 _ResourceGenerator::_GenerateGLSLTextureResources(
     std::stringstream &str,
@@ -1263,13 +1283,18 @@ _ResourceGenerator::_GenerateGLSLTextureResources(
 
         bool const isArrayOfTexture = (texture.arraySize > 0);
 
+        const std::string typePrefix =
+            _GetGLSLSamplerTypePrefix(texture.format);
+
         std::string const samplerType =
+            typePrefix +
             (isShadowTexture
                 ? "sampler" + std::to_string(texture.dim) + "DShadow"
                 : "sampler" + std::to_string(texture.dim) + "D") +
             (isArrayTexture ? "Array" : "");
 
         std::string const resultType =
+            typePrefix +
             (isShadowTexture ? "float" : "vec4");
 
         std::string const resourceName =
@@ -2546,42 +2571,6 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         }
         shaderCompiled = true;
     }
-    if (_hasFS) {
-        HgiShaderFunctionDesc desc;
-        std::stringstream resDecl;
-        resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->fragmentShader, _resCommon, _GetMetaData());
-        resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->fragmentShader, _resFS, _GetMetaData());
-
-        // material in FS
-        resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->fragmentShader, _resMaterial, _GetMetaData());
-        resourceGen._GenerateGLSLTextureResources(resDecl,
-            HdShaderTokens->fragmentShader, _resTextures, _GetMetaData());
-
-        std::string const source =
-            _genDefines.str() + _genDecl.str() + resDecl.str() + _osd.str() +
-            _genAccessors.str() + _genFS.str();
-
-        desc.shaderStage = HgiShaderStageFragment;
-        desc.shaderCode = source.c_str();
-        desc.generatedShaderCodeOut = &_fsSource;
-
-        const bool builtinBarycentricsEnabled =
-            registry->GetHgi()->GetCapabilities()->IsSet(
-                HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
-        if (builtinBarycentricsEnabled) {
-            HgiShaderFunctionAddStageInput(
-                &desc, "hd_BaryCoordNoPersp", "vec3",
-                HgiShaderKeywordTokens->hdBaryCoordNoPersp);
-        }
-
-        if (!glslProgram->CompileShader(desc)) {
-            return nullptr;
-        }
-        shaderCompiled = true;
-    }
     if (_hasTCS) {
         HgiShaderFunctionDesc desc;
         std::stringstream resDecl;
@@ -2665,6 +2654,42 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
             HgiShaderFunctionAddStageOutput(
                 &desc, "gl_ClipDistance", "float",
                 "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
+        }
+
+        if (!glslProgram->CompileShader(desc)) {
+            return nullptr;
+        }
+        shaderCompiled = true;
+    }
+    if (_hasFS) {
+        HgiShaderFunctionDesc desc;
+        std::stringstream resDecl;
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->fragmentShader, _resCommon, _GetMetaData());
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->fragmentShader, _resFS, _GetMetaData());
+
+        // material in FS
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->fragmentShader, _resMaterial, _GetMetaData());
+        resourceGen._GenerateGLSLTextureResources(resDecl,
+            HdShaderTokens->fragmentShader, _resTextures, _GetMetaData());
+
+        std::string const source =
+            _genDefines.str() + _genDecl.str() + resDecl.str() + _osd.str() +
+            _genAccessors.str() + _genFS.str();
+
+        desc.shaderStage = HgiShaderStageFragment;
+        desc.shaderCode = source.c_str();
+        desc.generatedShaderCodeOut = &_fsSource;
+
+        const bool builtinBarycentricsEnabled =
+            registry->GetHgi()->GetCapabilities()->IsSet(
+                HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+        if (builtinBarycentricsEnabled) {
+            HgiShaderFunctionAddStageInput(
+                &desc, "hd_BaryCoordNoPersp", "vec3",
+                HgiShaderKeywordTokens->hdBaryCoordNoPersp);
         }
 
         if (!glslProgram->CompileShader(desc)) {

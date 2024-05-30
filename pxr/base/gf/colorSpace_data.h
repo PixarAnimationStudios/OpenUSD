@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,4 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/vt/functions.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+struct GfColorSpace::_Data
+{
+    ~_Data() {
+        NcFreeColorSpace(colorSpace);
+    }
+
+    const NcColorSpace* colorSpace = nullptr;
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE

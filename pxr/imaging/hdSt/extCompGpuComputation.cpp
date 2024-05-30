@@ -162,7 +162,7 @@ HdStExtCompGpuComputation::Execute(
             // Assumes non-SSBO allocator for the stride
             _uniforms.push_back(buffer->GetStride() / componentSize);
 
-            rbHash = TfHash::Combine(rbHash, buffer->GetHandle().Get());
+            rbHash = TfHash::Combine(rbHash, buffer->GetHandle().GetId());
         }
     }
 
@@ -195,7 +195,7 @@ HdStExtCompGpuComputation::Execute(
                         binding.GetType());
                 }
 
-                rbHash = TfHash::Combine(rbHash, buffer->GetHandle().Get());
+                rbHash = TfHash::Combine(rbHash, buffer->GetHandle().GetId());
             }
         }
     }

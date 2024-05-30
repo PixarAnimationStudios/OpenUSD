@@ -197,7 +197,12 @@ if(NOT TBB_FOUND)
   ##################################
 
   if(TBB_INCLUDE_DIRS)
-    file(READ "${TBB_INCLUDE_DIRS}/tbb/tbb_stddef.h" _tbb_version_file)
+    # Use new oneTBB version header if it exists.
+    if(EXISTS "${TBB_INCLUDE_DIRS}/oneapi/tbb/version.h")
+      file(READ "${TBB_INCLUDE_DIRS}/oneapi/tbb/version.h" _tbb_version_file)
+    else()
+      file(READ "${TBB_INCLUDE_DIRS}/tbb/tbb_stddef.h" _tbb_version_file)
+    endif()
     string(REGEX REPLACE ".*#define TBB_VERSION_MAJOR ([0-9]+).*" "\\1"
         TBB_VERSION_MAJOR "${_tbb_version_file}")
     string(REGEX REPLACE ".*#define TBB_VERSION_MINOR ([0-9]+).*" "\\1"
@@ -211,15 +216,22 @@ if(NOT TBB_FOUND)
   # Find TBB components
   ##################################
 
-  if(TBB_VERSION VERSION_LESS 4.3)
-    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc tbb)
+  # oneTBB on Windows has interface version in the name.
+  if(WIN32 AND TBB_INTERFACE_VERSION GREATER_EQUAL 12000)
+    set(_tbb_library_name tbb12)
   else()
-    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc_proxy tbbmalloc tbb)
+    set(_tbb_library_name tbb)
+  endif()
+
+  if(TBB_VERSION VERSION_LESS 4.3)
+    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc ${_tbb_library_name})
+  else()
+    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc_proxy tbbmalloc ${_tbb_library_name})
   endif()
 
   # Find each component
   foreach(_comp ${TBB_SEARCH_COMPOMPONENTS})
-    if(";${TBB_FIND_COMPONENTS};tbb;" MATCHES ";${_comp};")
+    if(";${TBB_FIND_COMPONENTS};" MATCHES ";${_comp};")
 
       # Search for the libraries
       find_library(TBB_${_comp}_LIBRARY_RELEASE ${_comp}

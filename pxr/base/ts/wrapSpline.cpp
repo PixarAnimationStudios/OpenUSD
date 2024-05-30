@@ -305,7 +305,7 @@ _Iter( const TsSpline & val )
     // complete.
     PyObject *iter = PyObject_GetIter(kf_list);
 
-    // XXX decref on kf_list?
+    Py_DECREF(kf_list);
 
     return iter;
 }

@@ -42,6 +42,20 @@ class TestSdfPathExpression(unittest.TestCase):
         self.assertEqual(pe, Sdf.PathExpression(''))
         self.assertFalse(pe)
 
+        # Leading & trailing whitespace.
+        self.assertEqual(
+            Sdf.PathExpression("  /foo//bar").GetText(), "/foo//bar")
+        self.assertEqual(
+            Sdf.PathExpression("  /foo//bar ").GetText(), "/foo//bar")
+        self.assertEqual(
+            Sdf.PathExpression("/foo//bar ").GetText(), "/foo//bar")
+        self.assertEqual(
+            Sdf.PathExpression("  /foo /bar").GetText(), "/foo /bar")
+        self.assertEqual(
+            Sdf.PathExpression("  /foo /bar ").GetText(), "/foo /bar")
+        self.assertEqual(
+            Sdf.PathExpression("/foo /bar ").GetText(), "/foo /bar")
+
         # Complement of complement should cancel.
         self.assertEqual(
             Sdf.PathExpression('~(~a)'), Sdf.PathExpression('a'))

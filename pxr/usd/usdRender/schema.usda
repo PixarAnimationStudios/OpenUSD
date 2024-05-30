@@ -262,22 +262,32 @@ class RenderProduct "RenderProduct" (
 
 class RenderPass "RenderPass" (
     inherits = </Typed>
-    doc = """A RenderPass prim encapsulates the necessary information
-    to generate multipass renders.  It houses properties for generating
-    dependencies and the necessary commands to run to generate renders, as 
-    well as visibility controls for the scene.  While RenderSettings
-    describes the information needed to generate images from a single 
-    invocation of a renderer, RenderPass describes the additional information
-    needed to generate a time varying set of images.
+    doc = """A RenderPass prim encapsulates necessary information
+    to generate multi-pass renders.  In a multi-pass render, multiple
+    invocations ("passes") of the rendering process are used to
+    generate products using potentially distinct configurations of the
+    stage and renderer.
+
+    UsdRenderPass houses properties for generating dependencies and
+    the necessary commands to run to generate renders, as well as
+    visibility and pruning controls for the scene.
+
+    Whereas UsdRenderSettings describes information about the rendering
+    process itself (such as path-tracing parameters), UsdRenderPass
+    describes information to configure the scene contents and to
+    invoke the renderer as part of a render job that produces a
+    time-varying sequence of images.
 
     There are two consumers of RenderPass prims - a runtime executable that
     generates images from usdRender prims, and pipeline specific code that
     translates between usdRender prims and the pipeline's resource scheduling
     software.  We'll refer to the latter as 'job submission code'.
 
+    The name of the prim is used as the pass's name.
+
     \\anchor usdRender_renderVisibility
-    The objects that are relevant to the render is specified via the 
-    renderVisibility collection (UsdCollectionAPI) and can be accessed via 
+    The set of objects visible in the render is specified via the 
+    renderVisibility collection (UsdCollectionAPI), which can be accessed via 
     GetRenderVisibilityCollectionAPI(). This collection has includeRoot set to 
     true so that all objects participate in the render by default. To render 
     only a specific set of objects, there are two options. One is to modify the 
@@ -286,7 +296,35 @@ class RenderPass "RenderPass" (
     false and explicitly include the desired objects. These are complementary 
     approaches that may each be preferable depending on the scenario.
 
-    The name of the prim is used as the pass's name.
+    In addition, UsdCollectionAPI offers a membershipExpression attribute
+    providing a pattern-based description of the collection.  To use
+    membershipExpression, includeRoot should be overridden to false.
+
+    Note that prims for which UsdGeomImageable::ComputeEffectiveVisibility()
+    returns "invisible" cannot be overridden back to a visible state
+    via renderVisibility.  Conceptually, render passes may be used to
+    partition scene contents across multiple images rendered from the
+    scene; they are not intended to restore parts of the scene that
+    had been marked invisible.
+
+    In addition, renderVisibility only applies to renderable contents
+    of the scene itself, such as geometry and lights; it does not apply
+    to objects associated with the render settings, such as image
+    post-processing filters, even when UsdGeomVisibilityAPI may apply.
+
+    \\anchor usdRender_pruning
+    The prune collection specifies a collection of objects to be removed
+    ("pruned") from the scene prior to rendering.  Whereas visibility
+    may be implemented by the renderer as a lightweight attribute
+    that is relatively cheap to toggle during interactive workflows,
+    pruning entirely removes the objects from the renderer's
+    extracted representation of the scene. This can provide a greater
+    runtime cost savings for batch rendering, with the tradeoff that
+    interactively modifying the prune collection is likely to be more
+    expensive than toggling visibility. In addition, some renderers
+    may not support visibility of certain kinds of scene objects or in
+    certain conditions; in these cases, pruning offers a guaranteed way
+    to remove such objects from the scene.
     """
     customData = {
          string className = "Pass"

@@ -261,6 +261,9 @@ UsdImagingStageSceneIndex::GetPrim(const SdfPath &path) const
     if (prim.IsInstanceProxy()) {
         return s_emptyPrim;
     }
+    if (!_GetPrimPredicate()(prim)) {
+        return s_emptyPrim;
+    }
 
     const TfToken subprim =
         path.IsPropertyPath() ? path.GetNameToken() : TfToken();
@@ -312,7 +315,7 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
             entry.primAdapter->GetPopulationMode() ==
                 UsdImagingPrimAdapter::RepresentsSelfAndDescendents)) {
         UsdPrimSiblingRange range =
-            prim.GetFilteredChildren(_GetTraversalPredicate());
+            prim.GetFilteredChildren(_GetPrimPredicate());
         for (const UsdPrim &child: range) {
             result.push_back(child.GetPath());
         }
@@ -410,7 +413,7 @@ void UsdImagingStageSceneIndex::_PopulateSubtree(UsdPrim subtreeRoot)
     HdSceneIndexObserver::AddedPrimEntries addedPrims;
     size_t lastEnd = 0;
 
-    UsdPrimRange range(subtreeRoot, _GetTraversalPredicate());
+    UsdPrimRange range(subtreeRoot, _GetPrimPredicate());
 
     for (auto it = range.begin(); it != range.end(); ++it) {
         const UsdPrim &prim = *it;
@@ -460,8 +463,8 @@ void UsdImagingStageSceneIndex::_PopulateSubtree(UsdPrim subtreeRoot)
     _SendPrimsAdded(addedPrims);
 }
 
-Usd_PrimFlagsConjunction
-UsdImagingStageSceneIndex::_GetTraversalPredicate() const
+Usd_PrimFlagsPredicate
+UsdImagingStageSceneIndex::_GetPrimPredicate() const
 {
     // Note that it differs from the UsdPrimDefaultPredicate by not requiring
     // UsdPrimIsDefined. This way, we pick up instance and over's and their

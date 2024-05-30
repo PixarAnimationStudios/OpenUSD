@@ -70,24 +70,63 @@ HdPrman_RenderPassSceneIndex::HdPrman_RenderPassSceneIndex(
 {
 }
 
-
-bool _IsGeometryType(const TfToken &primType)
+static bool
+_IsGeometryType(const TfToken &primType)
 {
-    // TODO: It would be good to centralize this.  Note that it is similar to
-    // SUPPORTED_RPRIM_TYPES (currently private to HdPrmanRenderDelegate).
-    static const TfTokenVector geomTypes = {
+    // Additional gprim types supported by HdPrman, beyond those in
+    // HdPrimTypeIsGprim().
+    static const TfTokenVector extraGeomTypes = {
         HdPrimTypeTokens->cone,
         HdPrimTypeTokens->cylinder,
         HdPrimTypeTokens->sphere,
-        HdPrimTypeTokens->mesh,
-        HdPrimTypeTokens->basisCurves,
-        HdPrimTypeTokens->points,
-        HdPrimTypeTokens->volume,
         HdPrmanTokens->meshLightSourceMesh,
         HdPrmanTokens->meshLightSourceVolume
     };
-    return std::find(geomTypes.begin(), geomTypes.end(), primType)
-        != geomTypes.end();
+    return HdPrimTypeIsGprim(primType) ||
+        std::find(extraGeomTypes.begin(), extraGeomTypes.end(), primType)
+            != extraGeomTypes.end();
+}
+
+// Returns true if the renderVisibility rules apply to this prim type.
+static bool
+_ShouldApplyPassVisibility(const TfToken &primType)
+{
+    return _IsGeometryType(primType) || HdPrimTypeIsLight(primType) ||
+        primType == HdPrimTypeTokens->lightFilter;
+}
+
+static bool
+_IsVisible(const HdContainerDataSourceHandle& primSource)
+{
+    if (const auto visSchema = HdVisibilitySchema::GetFromParent(primSource)) {
+        if (const HdBoolDataSourceHandle visDs = visSchema.GetVisibility()) {
+            return visDs->GetTypedValue(0.0f);
+        }
+    }
+    return true;
+}
+
+static bool
+_IsVisibleToCamera(const HdContainerDataSourceHandle& primSource)
+{
+    // XXX Primvar queries like this might be a good candidate for
+    // helper API in hdsi/utils.h.
+    if (const HdPrimvarsSchema primvarsSchema =
+        HdPrimvarsSchema::GetFromParent(primSource)) {
+        if (HdPrimvarSchema primvarSchema =
+            primvarsSchema.GetPrimvar(_tokens->riAttributesVisibilityCamera)) {
+            if (const auto sampledDataSource =
+                primvarSchema.GetPrimvarValue()) {
+                const VtValue value = sampledDataSource->GetValue(0);
+                if (!value.IsEmpty()) {
+                    if (value.IsHolding<VtArray<bool>>()) {
+                        return value.UncheckedGet<bool>();
+                    }
+                }
+            }
+        }
+    }
+    return true;
 }
 
 HdSceneIndexPrim 
@@ -97,6 +136,11 @@ HdPrman_RenderPassSceneIndex::GetPrim(
     // Apply active render pass state to upstream prim.
     _RenderPassState const& state = _PullActiveRenderPasssState();
 
+    // Pruning
+    //
+    // Note that we also apply pruning in GetChildPrimPaths(), but
+    // this ensures that even if a downstream scene index still assks
+    // for a pruned path, it will remain pruned.
     if (state.pruneEval) {
         const bool pruned = state.pruneEval->Match(primPath);
         if (pruned) {
@@ -106,37 +150,79 @@ HdPrman_RenderPassSceneIndex::GetPrim(
 
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
 
-    //
-    // Override primvars
-    //
+    // Temp storage for overriding primvars.
     TfSmallVector<TfToken, 2> primvarNames;
     TfSmallVector<HdDataSourceBaseHandle, 2> primvarVals;
+
+    // Render Visibility -> HdVisibilitySchema
+    //
+    // Renderable prims that are visible in the upstream scene index,
+    // but excluded from the pass renderVisibility collection, get their
+    // visibility overriden to 0.
+    //
+    if (state.renderVisEval &&
+        _ShouldApplyPassVisibility(prim.primType) &&
+        !state.renderVisEval->Match(primPath) &&
+        _IsVisible(prim.dataSource))
+    {
+        static const HdContainerDataSourceHandle invisDs =
+            HdRetainedContainerDataSource::New(
+                HdVisibilitySchema::GetSchemaToken(),
+                HdVisibilitySchema::Builder()
+                    .SetVisibility(
+                        HdRetainedTypedSampledDataSource<bool>::New(0))
+                    .Build());
+        prim.dataSource =
+            HdOverlayContainerDataSource::New(invisDs, prim.dataSource);
+    }
+
+    // Camera Visibility -> ri:visibility:camera
+    //
+    // Renderable prims that are camera-visible in the upstream scene index,
+    // but excluded from the pass cameraVisibility collection, get their
+    // riAttributesVisibilityCamera primvar overriden to 0.
+    //
+    if (state.cameraVisEval &&
+        _ShouldApplyPassVisibility(prim.primType) &&
+        !state.cameraVisEval->Match(primPath) &&
+        _IsVisibleToCamera(prim.dataSource))
+    {
+        static const HdContainerDataSourceHandle cameraInvisDs =
+            HdPrimvarSchema::Builder()
+                .SetPrimvarValue(
+                    HdRetainedTypedSampledDataSource<int>::New(0))
+                .SetInterpolation(
+                    HdPrimvarSchema::BuildInterpolationDataSource(
+                        HdPrimvarSchemaTokens->constant))
+                .Build();
+        primvarNames.push_back(_tokens->riAttributesVisibilityCamera);
+        primvarVals.push_back(cameraInvisDs);
+    }
+
+    // Matte -> ri:Matte
+    //
     // If the matte pattern matches this prim, set ri:Matte=1.
     // Matte only applies to geometry types.
-    if (state.matteEval && _IsGeometryType(prim.primType) &&
-        state.matteEval->Match(primPath)) {
-        primvarNames.push_back(_tokens->riAttributesRiMatte);
-        primvarVals.push_back(
+    // We do not bother to check if the upstream prim already
+    // has matte set since that is essentially never the case.
+    //
+    if (state.matteEval &&
+        _IsGeometryType(prim.primType) &&
+        state.matteEval->Match(primPath))
+    {
+        static const HdContainerDataSourceHandle matteDs =
             HdPrimvarSchema::Builder()
                 .SetPrimvarValue(
                     HdRetainedTypedSampledDataSource<int>::New(1))
                 .SetInterpolation(HdPrimvarSchema::
                     BuildInterpolationDataSource(
                         HdPrimvarSchemaTokens->constant))
-                .Build());
+                .Build();
+        primvarNames.push_back(_tokens->riAttributesRiMatte);
+        primvarVals.push_back(matteDs);
     }
-    // ri:visibility:camera
-    if (state.cameraVisEval) {
-        const bool cameraVis = state.cameraVisEval->Match(primPath);
-        primvarNames.push_back(_tokens->riAttributesVisibilityCamera);
-        primvarVals.push_back(
-            HdPrimvarSchema::Builder()
-                .SetPrimvarValue(
-                    HdRetainedTypedSampledDataSource<int>::New(cameraVis))
-                .SetInterpolation(HdPrimvarSchema::BuildInterpolationDataSource(
-                    HdPrimvarSchemaTokens->constant))
-                .Build());
-    }
+
+    // Apply any accumulated primvar overrides.
     if (!primvarNames.empty()) {
         prim.dataSource =
             HdOverlayContainerDataSource::New(
@@ -146,22 +232,6 @@ HdPrman_RenderPassSceneIndex::GetPrim(
                         primvarNames.size(),
                         primvarNames.data(),
                         primvarVals.data())),
-                prim.dataSource);
-    }
-
-    //
-    // Visibility
-    //
-    if (state.renderVisEval) {
-        const bool vis = state.renderVisEval->Match(primPath);
-        prim.dataSource =
-            HdOverlayContainerDataSource::New(
-                HdRetainedContainerDataSource::New(
-                    HdVisibilitySchema::GetSchemaToken(),
-                    HdVisibilitySchema::Builder()
-                        .SetVisibility(
-                            HdRetainedTypedSampledDataSource<bool>::New(vis))
-                        .Build()),
                 prim.dataSource);
     }
 
@@ -176,7 +246,8 @@ HdPrman_RenderPassSceneIndex::GetChildPrimPaths(
     _RenderPassState const& state = _PullActiveRenderPasssState();
 
     if (state.pruneEval) {
-        SdfPathVector childPathVec;
+        SdfPathVector childPathVec =
+            _GetInputSceneIndex()->GetChildPrimPaths(primPath);
         HdsiUtilsRemovePrunedChildren(primPath, *state.pruneEval,
                                       &childPathVec);
         return childPathVec;

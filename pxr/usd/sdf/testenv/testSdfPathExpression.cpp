@@ -70,6 +70,16 @@ static void
 TestBasics()
 {
     {
+        // Allow leading & trailing whitespace.
+        TF_AXIOM(SdfPathExpression("  /foo//bar").GetText() == "/foo//bar");
+        TF_AXIOM(SdfPathExpression("  /foo//bar ").GetText() == "/foo//bar");
+        TF_AXIOM(SdfPathExpression("/foo//bar ").GetText() == "/foo//bar");
+        TF_AXIOM(SdfPathExpression("  /foo /bar").GetText() == "/foo /bar");
+        TF_AXIOM(SdfPathExpression("  /foo /bar ").GetText() == "/foo /bar");
+        TF_AXIOM(SdfPathExpression("/foo /bar ").GetText() == "/foo /bar");
+    }
+    
+    {
         auto eval = MatchEval { SdfPathExpression("/foo//bar") };
         
         TF_AXIOM(eval.Match(SdfPath("/foo/bar")));

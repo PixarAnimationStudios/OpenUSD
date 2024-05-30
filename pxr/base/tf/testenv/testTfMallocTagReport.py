@@ -196,6 +196,11 @@ class TestMallocTagReporterLoadMallocTag(unittest.TestCase):
             self.assertTrue(parsed.LoadReport(filepath))
             parsed.Report()
 
+            # Spot test to make sure we read in the report correctly.
+            root = parsed.GetRoot()
+            self.assertEqual(len(root.GetChildren()), 2)
+            self.assertEqual(root.nBytes, 2952)
+
         expected = BuildNodeDataTree([
             # incl  excl samp indent+tag
             ( 2952, 1232, 20, "__root"),
@@ -217,6 +222,68 @@ class TestMallocTagReporterLoadMallocTag(unittest.TestCase):
         self.AssertNodeTreesEqual(expected, GetNodeDataTree(parsed))
         self.AssertRoundTripValid(parsed)
 
+    def test_MultipleTrees(self):
+        """
+        Test reading a report that contains multiple malloc tag report trees.
+        """
+
+        # Load a report with more than one tree.
+        #
+        # Note that the trees have to be sorted by descending inclusive memory
+        # in order for the test to work because that's how we sort when
+        # reporting.
+        trace = MallocTagTextFile(textwrap.dedent("""
+            Tree view  ==============
+                  inclusive       exclusive
+              297,871,934 B   283,163,709 B 1063871 samples    mem_after_activate
+                    1,803 B         1,803 B      27 samples    | AfPalette
+               13,218,646 B             0 B       0 samples    | Aui
+               13,218,646 B        29,480 B     283 samples    |   AuiIconManager::_GetIcon
+               13,189,166 B    13,189,166 B    1195 samples    |   | AuiIconManager::_LoadPixmaps
+                    2,080 B             0 B       0 samples    | Browserq
+                    2,080 B         2,080 B      39 samples    |   BrowserqPrimDataSource::_GetChildren
+                    2,973 B         2,973 B      38 samples    | BrowserqPalette
+                1,482,723 B             0 B       0 samples    | Cmd
+                1,482,723 B     1,482,723 B   21068 samples    |   CmdRegistry::CreateCommand
+
+            --------------------------------------------------------------------------------
+
+            Malloc Tag Report
+
+
+            Total bytes = 564,840,530
+
+
+            Runner Info: > TestOpenShot
+
+            Tree view  ==============
+                  inclusive       exclusive
+              108,248,789 B    94,582,913 B  517043 samples    mem_after_instantiate
+                    1,803 B         1,803 B      27 samples    | AfPalette
+               12,181,350 B             0 B       0 samples    | Aui
+               12,181,350 B        27,824 B     253 samples    |   AuiIconManager::_GetIcon
+               12,153,526 B    12,153,526 B    1189 samples    |   | AuiIconManager::_LoadPixmaps
+                1,482,723 B             0 B       0 samples    | Cmd
+                1,482,723 B     1,482,723 B   21068 samples    |   CmdRegistry::CreateCommand
+
+            --------------------------------------------------------------------------------
+
+            Malloc Tag Report
+
+
+            Total bytes = 3,410,460,789
+            """))
+        with trace as filepath:
+            parsed = Tf.MallocTag.GetCallTree()
+            self.assertTrue(parsed.LoadReport(filepath))
+            self.AssertRoundTripValid(parsed)
+
+            # Spot test to make sure we read in the trees correctly.
+            rootChildren = parsed.GetRoot().GetChildren()
+            self.assertEqual(len(rootChildren), 2)
+            self.assertEqual(rootChildren[0].nBytes, 297871934)
+            self.assertEqual(rootChildren[1].nBytes, 108248789)
+
     def test_Errors(self):
         """
         Test error conditions.
@@ -226,20 +293,6 @@ class TestMallocTagReporterLoadMallocTag(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             parsed = Tf.MallocTag.GetCallTree()
             self.assertFalse(parsed.LoadReport("bad_file_path"))
-
-        # Attempt to load a report with more than one root.
-        trace = MallocTagTextFile(textwrap.dedent("""
-        Tree view  ==============
-              inclusive       exclusive
-                    0 B             0 B       0 samples    root1
-                    0 B             0 B       0 samples    | A
-                    0 B             0 B       0 samples    root2
-                    0 B             0 B       0 samples    | B
-            """))
-        with trace as filepath:
-            parsed = Tf.MallocTag.GetCallTree()
-            with self.assertRaises(Tf.ErrorException):
-                self.assertFalse(parsed.LoadReport(filepath))
 
 if __name__ == '__main__':
     unittest.main()

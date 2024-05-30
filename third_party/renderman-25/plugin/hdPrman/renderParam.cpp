@@ -771,11 +771,13 @@ HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
         attrs.SetInteger(RixStr.k_visibility_transmission, 0);
     }
 
-    // Hydra categories -> Riley k_grouping_membership
-    VtArray<TfToken> categories = sceneDelegate->GetCategories(id);
-    ConvertCategoriesToAttributes(id, categories, attrs);
+    if (isGeometry) {
+        // Hydra categories -> Riley k_grouping_membership
+        // Note that lights and light filters also have a grouping membership,
+        // but that comes from the light (linking) params.
+        VtArray<TfToken> categories = sceneDelegate->GetCategories(id);
+        ConvertCategoriesToAttributes(id, categories, attrs);
 
-    if (isGeometry) { 
         // Hydra cullStyle & doubleSided -> Riley k_Ri_Sides
         // Ri:Sides is most analogous to GL culling style. When Ri:Sides = 1,
         // prman will skip intersections on the back, with "back" determined by
@@ -840,10 +842,16 @@ HdPrman_RenderParam::ConvertCategoriesToAttributes(
     RtParamList& attrs)
 {
     if (categories.empty()) {
+        if (!attrs.HasParam( RixStr.k_grouping_membership)) {
+            // Clear any categories that may have been previously tacked on by
+            // explicitly adding an empty string valued attribute.
+            attrs.SetString( RixStr.k_grouping_membership, RtUString("") );
+        }
         attrs.SetString( RixStr.k_lightfilter_subset, RtUString("") );
         attrs.SetString( RixStr.k_lighting_subset, RtUString("default") );
         TF_DEBUG(HDPRMAN_LIGHT_LINKING)
-            .Msg("HdPrman: <%s> no categories; lighting:subset = \"default\"\n",
+            .Msg("HdPrman: <%s> no categories; grouping:membership = \"\"; "
+                 "lighting:subset = \"default\"; lightFilter:subset = \"\"\n",
                  id.GetText());
         return;
     }

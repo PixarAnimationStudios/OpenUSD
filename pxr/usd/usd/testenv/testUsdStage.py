@@ -446,6 +446,70 @@ class TestUsdStage(unittest.TestCase):
             # Should get an invalid prim if passed an empty path
             assert(not s.GetPrimAtPath(Sdf.Path.emptyPath))
 
+    def test_StageCompositionErrors(self):
+        layer = Sdf.Layer.CreateAnonymous('.usda')
+        layer.ImportFromString('''
+        #usda 1.0
+        (
+            subLayers = [
+                @missingLayer.usda@
+            ]
+        )
+
+        def "World"
+        {
+            def "Inst1" (
+                instanceable = true
+                prepend references = </Main>
+            )
+            {
+            }
+            def "Inst2" (
+                instanceable = true
+                prepend references = </Main>
+            )
+            {
+            }
+        }
+
+        def "Main" (
+        )
+        {
+            def "First" (
+                add references = </Main/Second>
+            )
+            {
+            }
+
+            def "Second" (
+                add references = </Main/First>
+            )
+            {
+            }
+        }'''.strip())
+        s = Usd.Stage.Open(layer.identifier)
+        errors = s.GetCompositionErrors()
+        # Make sure composition errors are always in a specific order, to test
+        # the error types below
+        errors = sorted(errors, key=lambda error: error.rootSite.path)
+        self.assertEqual(len(errors), 5)
+        
+        # Find out whats the source path for the instances, for which errors
+        # will be reported.
+        srcPrimPath = s.GetPrototypes()[0]._GetSourcePrimIndex().rootNode.path
+        
+        from pxr import Pcp
+        expectedErrors = [ (Pcp.ErrorType_InvalidSublayerPath, "/"),
+                               (Pcp.ErrorType_ArcCycle, "/Main/First"),
+                               (Pcp.ErrorType_ArcCycle, "/Main/Second"),
+                               (Pcp.ErrorType_ArcCycle, 
+                                srcPrimPath.AppendChild("First").pathString),
+                               (Pcp.ErrorType_ArcCycle, 
+                                srcPrimPath.AppendChild("Second").pathString) ]
+        for i in range(5):
+            self.assertEqual(expectedErrors[i][0], errors[i].errorType)
+            self.assertEqual(expectedErrors[i][1], errors[i].rootSite.path)
+
     def test_GetAtPath(self):
         for fmt in allFormats:
             s = Usd.Stage.CreateInMemory('GetAtPath.'+fmt)

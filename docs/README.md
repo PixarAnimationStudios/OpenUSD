@@ -174,4 +174,99 @@ sphinx-build . /tmp/usddocs
 ```
 
 Sphinx tracks changed files, so subsequent builds will be faster than the first.
- 
+
+### Generating Schema User Docs
+
+Use the python/genSchemaDocs.py tool to generate Sphinx content files from 
+USD schemas. The process for authoring schema user doc is as follows:
+
+- Create (if it doesn't already exist) a sub-directory named "userDoc" where
+  your schema.usda lives.
+- In your userDoc directory, create (or update) overview "guide" markdown files 
+  for your schemas, using the 
+  [Myst Markdown](https://myst-parser.readthedocs.io/en/v0.15.1/sphinx/intro.html) 
+  format. Add any local image files to the user_doc directory as well.
+- In your userDoc directory, create (or update) "schemaUserDoc.usda". This
+  will contain reference user doc for your schema classes and properties. Your
+  schemaUserDoc.usda should sublayer your schema.usda, and provide overs for
+  schema classes you want to add user doc for. Each over should add "userDoc" 
+  and "userDocBrief" customData metadata strings for each schema class and 
+  property. The "userDoc" string is used to generate the Sphinx output, and
+  should be in 
+  [Myst Markdown](https://myst-parser.readthedocs.io/en/v0.15.1/sphinx/intro.html) 
+  format. The "userDocBrief" string is not used for Sphinx output, and is used
+  for brief user doc presented in the UI of DCC Tools. The custom data will
+  look something like the following:
+
+```
+over SchemaClass "SchemaClass" (
+    customData = {
+        string userDocBrief = """A short sentence or two describing the schema."""
+        string userDoc = """A longer set of paragraphs describing the schema
+in detail. Use Markdown format to include images, links, etc. Use Myst Markdown
+to add Sphinx directives like references and labels.
+"""
+)
+{
+    asset schemaAssetProperty (
+      customData = {
+          string userDocBrief = """A short sentence or two describing the 
+  property."""
+          string userDoc = """A longer set of paragraphs describing the property
+  in detail, again using Markdown and Sphinx directives as needed."""
+      }
+    )
+}
+```  
+
+  Your "schemaUserDoc.usda" should also provide a "GLOBAL" prim that contains
+  custom metadata for the schema domain name ("libraryName") and a short title 
+  for the table-of-contents page for the generated Sphinx files 
+  ("userDocTitle"). For example, for usdVol, the GLOBAL over in 
+  schemaUserDoc.usda looks like the following:
+
+```
+over "GLOBAL" (
+    customData = {
+        string libraryName = "usdVol"
+        string userDocTitle = "Volumes"
+    }
+)
+{
+}
+```  
+
+See pxr/usd/usdVol/userDoc/ for examples of the files mentioned above. Some
+additional notes:
+
+- Don't have any leading whitespace in your multiline doc strings. The 
+generation process doesn't strip this out (because that would break spacing in 
+things like codeblocks), and the extra whitespace will show up in the generated 
+HTML.
+- Don't add your own markdown headers (e.g. "# Title") in schemaUserDoc.usda. 
+The generation tool automatically creates headers and Sphinx labels for 
+classes and properties, and extra headers might result in confusing output.
+You don't need to add RST labels for schema classes and attributes 
+- The generation tool automatically adds Sphinx labels for classes and 
+properties, using a `<schema name>_<property name>` format.
+- In your overview guide markdown files, feel free to add labels to any 
+sections you might need to link to from your schemaUserDoc.usda content. 
+Using Myst Markdown, the syntax is "(label name)=" on its own line.
+
+To generate the Sphinx files from your schema user doc files, run the 
+genSchemaDocs.py tool pointing it at your userDocs directory and the 
+desired output path. For example, if your current working directory was
+docs/, you could generate usdVol Sphinx files into 
+docs/user_guides/schemas/usdVol/ using the following command:
+
+```
+python python/genSchemaDocs.py ../pxr/usd/usdVol/userDocs user_guides/schemas -t
+```
+
+This will parse the content in pxr/usd/usdVol/userDocs and generate Sphinx
+files into user_guides/schemas/usdVol, along with a usdVol_toc.rst 
+table-of-contents file that can be included in any Sphinx RST file (like
+docs/user_guides/schemas/index.rst).
+
+Current content in docs/user_guides/schemas have been generating using the 
+genSchemaDocs.py tool. 

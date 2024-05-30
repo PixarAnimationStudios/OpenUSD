@@ -595,7 +595,7 @@ pxr_register_test(testUsdUtilsLocalizeAssetUdims
 pxr_register_test(testUsdUtilsModifyAssetPaths
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsModifyAssetPaths layer.usda modified.usda"
-    DIFF_COMPARE modified.usda duplicates.usda removal.usda ref_layer_mod.usda ref_unmodified.usda
+    DIFF_COMPARE modified.usda duplicates.usda removal.usda removal_preserve_length.usda ref_layer_mod.usda ref_unmodified.usda
     EXPECTED_RETURN_CODE 0
 )
 

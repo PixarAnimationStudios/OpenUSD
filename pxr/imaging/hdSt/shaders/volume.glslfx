@@ -555,7 +555,8 @@ computeRayLength(vec3 rayStartEye, vec3 rayDirectionEye, vec3 rayEndEye,
     return (rayEndZ - rayStartEye.z) / rayDirectionEye.z;
 }
 
-float max3(float a, float b, float c)
+float
+computeMax3(float a, float b, float c)
 {
     return max(a, max(b, c));
 }
@@ -575,9 +576,9 @@ scaleOfMatrix(MAT4 m)
     const mat3 affinePart = mat3(m[0][0], m[0][1], m[0][2], 
                                  m[1][0], m[1][1], m[1][2],
                                  m[2][0], m[2][1], m[2][2]);
-    return max3(length(affinePart[0]),
-                length(affinePart[1]),
-                length(affinePart[2]));
+    return computeMax3(length(affinePart[0]),
+                       length(affinePart[1]),
+                       length(affinePart[2]));
 }
 
 #ifdef HD_HAS_integrateLights

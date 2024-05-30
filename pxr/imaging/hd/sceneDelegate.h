@@ -119,7 +119,7 @@ struct HdDisplayStyle {
     /// \param refineLevel_ the refine level to display.
     ///        Valid range is [0, 8].
     /// \param flatShading enables flat shading, defaults to false.
-    /// \param displacement enables displacement shading, defaults to false.
+    /// \param displacement enables displacement shading, defaults to true.
     /// \param occludedSelectionShowsThrough controls whether the prim lets
     ///        occluded selection show through it, defaults to false.
     /// \param pointsShadingEnabled controls whether the prim's points 

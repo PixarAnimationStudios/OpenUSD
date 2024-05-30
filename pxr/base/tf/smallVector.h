@@ -46,9 +46,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 // *all* of TfSmallVector's template parameters.
 class TfSmallVectorBase
 {
+protected:
+    // We present the public size_type and difference_type as std::size_t and
+    // std::ptrdiff_t to match std::vector, but internally we store size &
+    // capacity as uint32_t.
+    using _SizeMemberType = std::uint32_t;
 public:
-    using size_type = std::uint32_t;
-    using difference_type = std::int32_t;
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
 
     // Returns the local capacity that may be used without increasing the size
     // of the TfSmallVector.  TfSmallVector<T, N> will never use more local
@@ -62,6 +67,20 @@ public:
     }
 
 protected:
+
+    // Enabler used to disambiguate the range-based constructor (begin, end)
+    // from the n-copies constructor (size_t n, value_type const &value)
+    // when the value_type is integral.
+    template<typename _ForwardIterator>
+    using _EnableIfForwardIterator =
+        std::enable_if_t<
+            std::is_convertible_v<
+                typename std::iterator_traits<
+                    _ForwardIterator>::iterator_category,
+                std::forward_iterator_tag
+                >
+        >;
+    
     // Invoke std::uninitialized_copy that either moves or copies entries,
     // depending on whether the type is move constructible or not.
     template <typename Iterator>
@@ -87,48 +106,24 @@ protected:
     union _Data {
     public:
 
-        U *GetLocalStorage() { 
-            return reinterpret_cast<U *>(_local);
-        }
-
-        const U *GetLocalStorage() const {
-            return reinterpret_cast<const U *>(_local);
-        }
-
-        U *GetRemoteStorage() {
-            return _remote;
-        }
-
-        const U *GetRemoteStorage() const {
-            return _remote;
-        }
-
-        void SetRemoteStorage(U *p) {
-            _remote = p;
-        }
-
-    private:
-
-        alignas(U) char _local[sizeof(U)*M];
-        U* _remote;
-
-    };
-
-    // For N == 0 the _Data class has been specialized to elide the local
-    // storage completely. This way we don't have to rely on compiler-specific
-    // support for 0-sized arrays.
-    template < typename U >
-    union _Data<U, 0> {
-    public:
-
         U *GetLocalStorage() {
-            // XXX: Could assert here. Introduce dependency on tf/diagnostic.h?
-            return nullptr;
+            if constexpr (M == 0) {
+                // XXX: Could assert here. Add dependency on tf/diagnostic.h?
+                return nullptr;
+            }
+            else {
+                return reinterpret_cast<U *>(_local);
+            }
         }
 
         const U *GetLocalStorage() const {
-            // XXX: Could assert here. Introduce dependency on tf/diagnostic.h?
-            return nullptr;
+            if constexpr (M == 0) {
+                // XXX: Could assert here. Add dependency on tf/diagnostic.h?
+                return nullptr;
+            }
+            else {
+                return reinterpret_cast<const U *>(_local);
+            }
         }
 
         U *GetRemoteStorage() {
@@ -144,9 +139,11 @@ protected:
         }
 
     private:
-
+        // Pointer to heap storage.
         U* _remote;
-
+        // Local storage -- min size is sizeof(_remote).
+        alignas(M == 0 ? std::alignment_of_v<U*> : std::alignment_of_v<U>)
+        char _local[std::max<size_t>(sizeof(U)*M, sizeof(_remote))];
     };
 
 };
@@ -272,16 +269,6 @@ public:
     TfSmallVector(std::initializer_list<T> values)
         : TfSmallVector(values.begin(), values.end()) {
     }
-
-    template<typename _ForwardIterator>
-    using _EnableIfForwardIterator =
-        typename std::enable_if<
-            std::is_convertible<
-                typename std::iterator_traits<
-                    _ForwardIterator>::iterator_category,
-                    std::forward_iterator_tag
-                >::value
-            >::type;
 
     /// Creates a new vector containing copies of the data between 
     /// \p first and \p last. 
@@ -633,7 +620,7 @@ public:
     /// Returns the maximum size of this vector.
     ///
     static constexpr size_type max_size() {
-        return std::numeric_limits<size_type>::max();
+        return std::numeric_limits<_SizeMemberType>::max();
     }
 
     /// Returns \c true if this vector is empty.
@@ -742,25 +729,25 @@ public:
     /// Returns the last element in the vector.
     ///
     reference back() {
-        return *(data() + size() - 1);
+        return data()[size() - 1];
     }
 
     /// Returns the last elements in the vector.
     ///
     const_reference back() const {
-        return *(data() + size() - 1);
+        return data()[size() - 1];
     }
 
     /// Access the specified element.
     ///
     reference operator[](size_type i) {
-        return *(data() + i);
+        return data()[i];
     }
 
     /// Access the specified element.
     ///
     const_reference operator[](size_type i) const {
-        return *(data() + i);
+        return data()[i];
     }
 
     /// Direct access to the underlying array.
@@ -837,7 +824,7 @@ private:
     }
 
     // Grow the storage to be able to accommodate newCapacity entries. This
-    // always allocates remotes storage.
+    // always allocates remote storage.
     void _GrowStorage(const size_type newCapacity) {
         value_type *newStorage = _Allocate(newCapacity);
         _UninitializedMove(begin(), end(), iterator(newStorage));
@@ -917,11 +904,11 @@ private:
     _Data<value_type, N> _data;
 
     // The current size of the vector, i.e. how many entries it contains.
-    size_type _size;
+    _SizeMemberType _size;
 
     // The current capacity of the vector, i.e. how big the currently allocated
     // storage space is.
-    size_type _capacity;
+    _SizeMemberType _capacity;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

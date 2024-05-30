@@ -373,6 +373,44 @@ PcpPrimIndex::GetSelectionAppliedForVariantSet(
     return std::string();
 }
 
+PcpNodeRef 
+PcpPrimIndex::AddChildPrimIndex(const PcpArc &arcToParent,
+                                PcpPrimIndex &&childPrimIndex,
+                                PcpErrorBasePtr *error)
+{
+    PcpNodeRef parent = arcToParent.parent;
+    PcpNodeRef newNode = parent.InsertChildSubgraph(childPrimIndex.GetGraph(), 
+                                                    arcToParent, error);
+    if (!newNode) {
+        return newNode;
+    }
+
+    if (childPrimIndex.GetGraph()->HasPayloads()) {
+        parent.GetOwningGraph()->SetHasPayloads(true);
+    }
+
+    // update parentOutput's primIndex errors with child PrimIndex's errors
+    if (!childPrimIndex._localErrors) {
+        return newNode;
+    }
+
+    if (!_localErrors) {
+        //Instantiate and move childPrimIndex's localErrors to _localErrors.
+        _localErrors = std::move(childPrimIndex._localErrors);
+        return newNode;
+    }
+
+    auto startLocalErrorsItr = 
+        std::make_move_iterator(childPrimIndex._localErrors->begin());
+    auto endLocalErrorsItr = 
+        std::make_move_iterator(childPrimIndex._localErrors->end());
+    // Inserting moved elements into _localErrors
+    _localErrors->insert(_localErrors->end(), startLocalErrorsItr, 
+                         endLocalErrorsItr);
+
+    return newNode;
+}
+
 ////////////////////////////////////////////////////////////////////////
 
 template <class T>
@@ -407,15 +445,11 @@ PcpPrimIndexOutputs::Append(PcpPrimIndexOutputs&& childOutputs,
                             const PcpArc& arcToParent,
                             PcpErrorBasePtr *error)
 {
-    PcpNodeRef parent = arcToParent.parent;
-    PcpNodeRef newNode = parent.InsertChildSubgraph(
-        childOutputs.primIndex.GetGraph(), arcToParent, error);
+    PcpNodeRef newNode = primIndex.AddChildPrimIndex(
+        arcToParent, std::move(childOutputs.primIndex), error);
+
     if (!newNode) {
         return newNode;
-    }
-
-    if (childOutputs.primIndex.GetGraph()->HasPayloads()) {
-        parent.GetOwningGraph()->SetHasPayloads(true);
     }
 
     dynamicFileFormatDependency.AppendDependencyData(

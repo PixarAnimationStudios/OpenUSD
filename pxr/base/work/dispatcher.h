@@ -33,8 +33,15 @@
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/errorTransport.h"
 
+// Blocked range is not used in this file, but this header happens to pull in
+// the TBB version header in a way that works in all TBB versions.
+#include <tbb/blocked_range.h>
 #include <tbb/concurrent_vector.h>
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
+#include <tbb/task_group.h>
+#else
 #include <tbb/task.h>
+#endif
 
 #include <functional>
 #include <type_traits>
@@ -79,7 +86,7 @@ public:
     WORK_API WorkDispatcher();
 
     /// Wait() for any pending tasks to complete, then destroy the dispatcher.
-    WORK_API ~WorkDispatcher();
+    WORK_API ~WorkDispatcher() noexcept;
 
     WorkDispatcher(WorkDispatcher const &) = delete;
     WorkDispatcher &operator=(WorkDispatcher const &) = delete;
@@ -103,7 +110,11 @@ public:
 
     template <class Callable>
     inline void Run(Callable &&c) {
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
+        _taskGroup.run(_InvokerTask<typename std::remove_reference<Callable>::type>(std::forward<Callable>(c), &_errors));
+#else
         _rootTask->spawn(_MakeInvokerTask(std::forward<Callable>(c)));
+#endif
     }
 
     template <class Callable, class A0, class ... Args>
@@ -136,12 +147,38 @@ private:
     // Function invoker helper that wraps the invocation with an ErrorMark so we
     // can transmit errors that occur back to the thread that Wait() s for tasks
     // to complete.
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
     template <class Fn>
-    struct _InvokerTask : public tbb::task {
+    struct _InvokerTask {
         explicit _InvokerTask(Fn &&fn, _ErrorTransports *err) 
             : _fn(std::move(fn)), _errors(err) {}
 
         explicit _InvokerTask(Fn const &fn, _ErrorTransports *err) 
+            : _fn(fn), _errors(err) {}
+
+        // Ensure only moves happen, no copies or assignments.
+        _InvokerTask(_InvokerTask &&other) = default;
+        _InvokerTask(const _InvokerTask &other) = delete;
+        _InvokerTask &operator=(const _InvokerTask &other) = delete;
+        _InvokerTask &operator=(_InvokerTask &&other) = delete;
+
+        void operator()() const {
+            TfErrorMark m;
+            _fn();
+            if (!m.IsClean())
+                WorkDispatcher::_TransportErrors(m, _errors);
+        }
+    private:
+        Fn _fn;
+        _ErrorTransports *_errors;
+    };
+#else
+    template <class Fn>
+    struct _InvokerTask : public tbb::task {
+        explicit _InvokerTask(Fn &&fn, _ErrorTransports *err)
+            : _fn(std::move(fn)), _errors(err) {}
+
+        explicit _InvokerTask(Fn const &fn, _ErrorTransports *err)
             : _fn(fn), _errors(err) {}
 
         virtual tbb::task* execute() {
@@ -164,16 +201,29 @@ private:
             _InvokerTask<typename std::remove_reference<Fn>::type>(
                 std::forward<Fn>(fn), &_errors);
     }
+#endif
 
     // Helper function that removes errors from \p m and stores them in a new
     // entry in \p errors.
     WORK_API static void
     _TransportErrors(const TfErrorMark &m, _ErrorTransports *errors);
 
-    // Task group context and associated root task that allows us to cancel
-    // tasks invoked directly by this dispatcher.
+    // Task group context to run tasks in.
     tbb::task_group_context _context;
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
+    // Custom task group that lets us implement thread safe concurrent wait.
+    class _TaskGroup : public tbb::task_group {
+    public:
+        _TaskGroup(tbb::task_group_context& ctx) : tbb::task_group(ctx) {}
+         inline tbb::detail::d1::wait_context& _GetInternalWaitContext();
+    };
+
+    _TaskGroup _taskGroup;
+#else
+    // Root task that allows us to cancel tasks invoked directly by this
+    // dispatcher.
     tbb::empty_task* _rootTask;
+#endif
 
     // The error transports we use to transmit errors in other threads back to
     // this thread.

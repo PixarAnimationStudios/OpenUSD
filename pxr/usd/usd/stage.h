@@ -1019,7 +1019,11 @@ public:
     std::string
     ResolveIdentifierToEditTarget(std::string const &identifier) const;
 
-    /// Return this stage's local layers in strong-to-weak order.  If
+    /// Return a PcpErrorVector containing all composition errors encountered 
+    /// when composing the prims and layer stacks on this stage.
+    USD_API
+    PcpErrorVector GetCompositionErrors() const;
+
     /// \a includeSessionLayers is true, return the linearized strong-to-weak
     /// sublayers rooted at the stage's session layer followed by the linearized
     /// strong-to-weak sublayers rooted at this stage's root layer.  If

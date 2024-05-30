@@ -33,6 +33,13 @@ Tf_CastToParent(void* addr, bool derivedToBase);
 template <typename TypeVector>
 struct Tf_BaseTypeInfos;
 
+template <>
+struct Tf_BaseTypeInfos<TfType::Bases<>>
+{
+    static const size_t NumBases = 0;
+    std::type_info const **baseTypeInfos = nullptr;
+};
+
 template <typename... Bases>
 struct Tf_BaseTypeInfos<TfType::Bases<Bases...>>
 {
@@ -42,6 +49,13 @@ struct Tf_BaseTypeInfos<TfType::Bases<Bases...>>
 
 template <class Derived, typename TypeVector>
 struct Tf_TypeCastFunctions;
+
+template <class Derived>
+struct Tf_TypeCastFunctions<Derived, TfType::Bases<>>
+{
+    using CastFunction = void *(*)(void *, bool);
+    CastFunction *castFunctions = nullptr;
+};
 
 template <class Derived, typename... Bases>
 struct Tf_TypeCastFunctions<Derived, TfType::Bases<Bases...>>

@@ -477,17 +477,15 @@ UsdUtils_LocalizationContext::_ProcessAssetValue(
         auto assetPath = val.UncheckedGet<SdfAssetPath>();
         const std::string& rawAssetPath = assetPath.GetAssetPath();
 
-        if (!rawAssetPath.empty()) {
-            const std::vector<std::string> dependencies = 
-                _GetDependencies(layer, rawAssetPath);
+        const std::vector<std::string> dependencies = 
+            _GetDependencies(layer, rawAssetPath);
 
-            const std::vector<std::string> processedDeps = 
-                _delegate->ProcessValuePath(
-                        layer, keyPath, rawAssetPath, dependencies);
-            
-            _EnqueueDependency(layer, rawAssetPath);
-            _EnqueueDependencies(layer, processedDeps);
-        }
+        const std::vector<std::string> processedDeps = 
+            _delegate->ProcessValuePath(
+                    layer, keyPath, rawAssetPath, dependencies);
+        
+        _EnqueueDependency(layer, rawAssetPath);
+        _EnqueueDependencies(layer, processedDeps);
     } else if (val.IsHolding<VtArray<SdfAssetPath>>()) {
         const VtArray<SdfAssetPath>& originalArray = 
             val.UncheckedGet< VtArray<SdfAssetPath> >();
@@ -499,17 +497,15 @@ UsdUtils_LocalizationContext::_ProcessAssetValue(
 
         for (const SdfAssetPath& assetPath : originalArray) {                
             const std::string& rawAssetPath = assetPath.GetAssetPath();
-            if (!rawAssetPath.empty()) {
-                const std::vector<std::string> dependencies = 
-                    _GetDependencies(layer, rawAssetPath);
+            const std::vector<std::string> dependencies = 
+                _GetDependencies(layer, rawAssetPath);
 
-                const std::vector<std::string> processedDeps = 
-                    _delegate->ProcessValuePathArrayElement(
-                            layer, keyPath, rawAssetPath, dependencies);
-                
-                _EnqueueDependency(layer, rawAssetPath);
-                _EnqueueDependencies(layer, processedDeps);
-            }
+            const std::vector<std::string> processedDeps = 
+                _delegate->ProcessValuePathArrayElement(
+                        layer, keyPath, rawAssetPath, dependencies);
+            
+            _EnqueueDependency(layer, rawAssetPath);
+            _EnqueueDependencies(layer, processedDeps);
         }
 
         _delegate->EndProcessingValuePathArray(layer, keyPath);

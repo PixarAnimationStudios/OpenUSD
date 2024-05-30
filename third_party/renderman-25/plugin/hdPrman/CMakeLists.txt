@@ -193,6 +193,7 @@ pxr_plugin(${PXR_PACKAGE}
         virtualStructConditionalGrammar.tab.h
 
     CPPFILES
+        lightLinkingSceneIndexPlugin.cpp
         rendererPlugin.cpp
         virtualStructConditionalGrammar.lex.cpp
         virtualStructConditionalGrammar.tab.cpp

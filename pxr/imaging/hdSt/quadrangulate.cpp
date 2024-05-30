@@ -609,8 +609,8 @@ HdSt_QuadrangulateComputationGPU::Execute(
     // Generate hash for resource bindings and pipeline.
     // XXX Needs fingerprint hash to avoid collisions
     uint64_t rbHash = (uint64_t) TfHash::Combine(
-        primvar->GetHandle().Get(),
-        quadrangulateTable->GetHandle().Get());
+        primvar->GetHandle().GetId(),
+        quadrangulateTable->GetHandle().GetId());
 
     uint64_t pHash = (uint64_t) TfHash::Combine(
         computeProgram->GetProgram().Get(),

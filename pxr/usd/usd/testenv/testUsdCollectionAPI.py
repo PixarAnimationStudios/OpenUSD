@@ -671,11 +671,13 @@ class TestUsdCollectionAPI(unittest.TestCase):
         collections = Usd.CollectionAPI.GetAll(testPrim)
         self.assertTrue(len(collections) > 1)
 
-        # Each of their membership queries should be equal to itself,
-        # and unequal to the others.  Same for their hashes -- although
-        # note that the hashes are not, in general, guaranteed to be
-        # distinct due to the pigeonhole principle.
+        # Each of their membership queries should be equal to itself, and
+        # unequal to the others.  Same for their hashes -- although note that
+        # the hashes are not, in general, guaranteed to be distinct due to the
+        # pigeonhole principle.  Queries that do not use the rule map (i.e. they
+        # use a membershipExpression) do not compare or hash equal.
         mqueries = [c.ComputeMembershipQuery() for c in collections]
+        mqueries = [q for q in mqueries if q.UsesPathExpansionRuleMap()]
         for i in range(len(mqueries)):
             for j in range(i, len(mqueries)):
                 if i == j:
@@ -761,6 +763,49 @@ class TestUsdCollectionAPI(unittest.TestCase):
         query = collection.ComputeMembershipQuery()
         self.assertEqual(
             Usd.ComputeIncludedPathsFromCollection(query, stage), [])
+
+    def test_MembershipExpressions(self):
+        withMembershipExpr = Usd.CollectionAPI.Get(
+            testPrim, 'withMembershipExpr')
+
+        query = withMembershipExpr.ComputeMembershipQuery()
+        self.assertFalse(query.UsesPathExpansionRuleMap())
+
+        self.assertEqual(
+            Usd.ComputeIncludedPathsFromCollection(query, stage),
+            [Sdf.Path('/CollectionTest/Geom/Box'),
+             Sdf.Path('/CollectionTest/Geom/Shapes/Cone'),
+             Sdf.Path('/CollectionTest/Geom/Shapes/Cube'),
+             Sdf.Path('/CollectionTest/Geom/Shapes/Cylinder'),
+             Sdf.Path('/CollectionTest/Geom/Shapes/Sphere/Hemisphere1'),
+             Sdf.Path('/CollectionTest/Geom/Shapes/Sphere/Hemisphere2')])
+
+        expressionRef = Usd.CollectionAPI.Get(
+            testPrim, 'expressionRef') 
+        query = expressionRef.ComputeMembershipQuery()
+        self.assertFalse(query.UsesPathExpansionRuleMap())
+        self.assertEqual(
+            Usd.ComputeIncludedPathsFromCollection(query, stage),
+            [Sdf.Path('/CollectionTest/Geom/Shapes/Sphere/Hemisphere1'),
+             Sdf.Path('/CollectionTest/Geom/Shapes/Sphere/Hemisphere2')])
+
+        # Test that `//` leading exprs translate across references.
+        srcStage = Usd.Stage.CreateInMemory()
+        dstStage = Usd.Stage.CreateInMemory()
+
+        src = srcStage.DefinePrim('/src')
+        dst = dstStage.DefinePrim('/dst')
+
+        dstCapi = Usd.CollectionAPI.Apply(dst, 'testRef')
+        dstCapi.GetMembershipExpressionAttr().Set(Sdf.PathExpression('//'))
+        
+        src.GetReferences().AddReference(
+            dstStage.GetRootLayer().identifier, '/dst')
+
+        srcCapi = Usd.CollectionAPI.Get(src, 'testRef')
+        self.assertTrue(srcCapi)
+        self.assertEqual(srcCapi.GetMembershipExpressionAttr().Get(),
+                         Sdf.PathExpression('//'))
 
     def test_HashMembershipQuery(self):
         self.assertEqual(

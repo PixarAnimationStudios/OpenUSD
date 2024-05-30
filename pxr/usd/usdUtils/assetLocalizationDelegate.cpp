@@ -235,6 +235,10 @@ UsdUtils_WritableLocalizationDelegate::ProcessValuePath(
     const std::string &authoredPath,
     const std::vector<std::string> &dependencies)
 {
+    if (authoredPath.empty()) {
+        return {};
+    }
+
     UsdUtilsDependencyInfo depInfo = {authoredPath, dependencies};
     UsdUtilsDependencyInfo info = _pathCache.GetProcessedInfo(
         layer, depInfo, UsdUtils_DependencyType::Reference);
@@ -271,9 +275,15 @@ UsdUtils_WritableLocalizationDelegate::ProcessValuePathArrayElement(
         return _AllDependenciesForInfo(info);
     }
     else {
+        // We don't want to remove empty paths from arrays. They may be
+        // meaningful, for example in primvar attributes that need to be
+        // a certain length.
+        if (_keepEmptyPathsInArrays) {
+            _currentPathArray.emplace_back(SdfAssetPath());
+        }
+
         return {};
     }
-    
 }
 
 void 
@@ -576,6 +586,10 @@ UsdUtils_ReadOnlyLocalizationDelegate::ProcessValuePath(
     const std::string &authoredPath,
     const std::vector<std::string> &dependencies)
 {
+    if (authoredPath.empty()) {
+        return {};
+    }
+
     return _AllDependenciesForInfo(_pathCache.GetProcessedInfo(layer, 
         {authoredPath, dependencies}, UsdUtils_DependencyType::Reference));
 }
@@ -587,6 +601,12 @@ UsdUtils_ReadOnlyLocalizationDelegate::ProcessValuePathArrayElement(
     const std::string &authoredPath,
     const std::vector<std::string> &dependencies)
 {    
+    // We may get passed an empty authored path if an array has some
+    // explicitly empty elements.
+    if (authoredPath.empty()) {
+        return {};
+    }
+
     return _AllDependenciesForInfo(_pathCache.GetProcessedInfo(layer, 
         {authoredPath, dependencies}, UsdUtils_DependencyType::Reference));
 }

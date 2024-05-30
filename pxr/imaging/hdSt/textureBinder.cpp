@@ -330,6 +330,7 @@ public:
             name,
             sampler.GetTexelsSampler(),
             texture.GetTexelTexture(),
+            sampler.GetLayoutSampler(),
             texture.GetLayoutTexture(),
             bind);
     }
@@ -345,6 +346,7 @@ public:
             name,
             sampler.GetTexelsSampler(),
             texture.GetTexelTexture(),
+            sampler.GetLayoutSampler(),
             texture.GetLayoutTexture(),
             bind);
     }

@@ -89,5 +89,26 @@ class TestUsdPathExpressionAttrs(unittest.TestCase):
                          Sdf.PathExpression(
                              '/srcPrim/srcChild /srcPrim/refChild'))
 
+    def test_BasicPathTranslation2(self):
+        # Test that `//` leading exprs translate across references *and* across
+        # the prototype-to-instance path mapping, which uses a different
+        # mechanism from PcpMapFunction.
+        stage = Usd.Stage.CreateInMemory()
+        stage2 = Usd.Stage.CreateInMemory()
+
+        src = stage.DefinePrim('/src')
+        dst = stage2.DefinePrim('/dst')
+
+        dstCapi = Usd.CollectionAPI.Apply(dst, 'testRef')
+        dstCapi.GetMembershipExpressionAttr().Set(Sdf.PathExpression('//'))
+
+        src.GetReferences().AddReference(
+            stage2.GetRootLayer().identifier, '/dst')
+
+        srcCapi = Usd.CollectionAPI.Get(src, 'testRef')
+        self.assertEqual(srcCapi.GetMembershipExpressionAttr().Get(),
+                         Sdf.PathExpression('//'))
+
+        
 if __name__ == '__main__':
     unittest.main()

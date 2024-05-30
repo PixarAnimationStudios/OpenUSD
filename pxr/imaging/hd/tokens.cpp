@@ -53,6 +53,9 @@ TF_DEFINE_PUBLIC_TOKENS(HdModelDrawModeTokens, HD_MODEL_DRAWMODE_TOKENS);
 
 TF_DEFINE_PUBLIC_TOKENS(HdOptionTokens, HD_OPTION_TOKENS);
 
+TF_DEFINE_PUBLIC_TOKENS(HdLightTypeTokens, HD_LIGHT_TYPE_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HdLightFilterTypeTokens, HD_LIGHT_FILTER_TYPE_TOKENS);
+
 TF_DEFINE_PUBLIC_TOKENS(HdRprimTypeTokens, HD_RPRIMTYPE_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(HdSprimTypeTokens, HD_SPRIMTYPE_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(HdBprimTypeTokens, HD_BPRIMTYPE_TOKENS);
@@ -89,30 +92,14 @@ bool HdPrimTypeIsGprim(TfToken const& primType)
 
 const TfTokenVector &HdLightPrimTypeTokens()
 {
-    static const TfTokenVector vec = {
-        HdPrimTypeTokens->simpleLight,
-        HdPrimTypeTokens->cylinderLight,
-        HdPrimTypeTokens->diskLight,
-        HdPrimTypeTokens->distantLight,
-        HdPrimTypeTokens->domeLight,
-        HdPrimTypeTokens->light,
-        HdPrimTypeTokens->pluginLight,
-        HdPrimTypeTokens->rectLight,
-        HdPrimTypeTokens->sphereLight,
-        HdPrimTypeTokens->meshLight
-    };
-    return vec;
+    return HdLightTypeTokens->allTokens;
 }
-
 
 bool HdPrimTypeIsLight(TfToken const& primType)
 {
-    for (const TfToken &lightPrimType : HdLightPrimTypeTokens()) {
-        if (primType == lightPrimType) {
-            return true;
-        }
-    }
-    return false;
+    const auto &lightTypes = HdLightPrimTypeTokens();
+    return std::find(lightTypes.begin(), lightTypes.end(), primType) !=
+        lightTypes.end();
 }
 
 bool HdPrimTypeSupportsGeomSubsets(const TfToken& primType) {

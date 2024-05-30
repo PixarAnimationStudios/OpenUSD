@@ -7,7 +7,7 @@
 
 def "CollectionTest" (
     kind = "prop"
-    prepend apiSchemas = ["CollectionAPI:leafGeom", "CollectionAPI:allGeom", "CollectionAPI:allGeomProperties", "CollectionAPI:hasRelationships", "CollectionAPI:hasInstanceProxy", "CollectionAPI:coneProperties", "CollectionAPI:includesCollection", "CollectionAPI:includesNestedCollection", "CollectionAPI:excludeInstanceGeom", "CollectionAPI:invalidExpansionRule", "CollectionAPI:invalidExcludesExplicitOnly", "CollectionAPI:invalidExcludesExpandPrims", "CollectionAPI:invalidTopLevelRules"]
+    prepend apiSchemas = ["CollectionAPI:leafGeom", "CollectionAPI:allGeom", "CollectionAPI:allGeomProperties", "CollectionAPI:hasRelationships", "CollectionAPI:hasInstanceProxy", "CollectionAPI:coneProperties", "CollectionAPI:includesCollection", "CollectionAPI:includesNestedCollection", "CollectionAPI:excludeInstanceGeom", "CollectionAPI:invalidExpansionRule", "CollectionAPI:invalidExcludesExplicitOnly", "CollectionAPI:invalidExcludesExpandPrims", "CollectionAPI:invalidTopLevelRules", "CollectionAPI:withMembershipExpr", "CollectionAPI:expressionRef"]
 )
 {
     # simple explicit collection
@@ -105,6 +105,10 @@ def "CollectionTest" (
     uniform token collection:explicitOnlyAndIncludeRoot:expansionRule = "explicitOnly"
     uniform bool collection:explicitOnlyAndIncludeRoot:includeRoot = true
 
+    pathExpression collection:withMembershipExpr:membershipExpression = "/CollectionTest/Geom//C* //{model} //Box %:expressionRef"
+
+    pathExpression collection:expressionRef:membershipExpression = "/CollectionTest/Geom/Shapes//H*"    
+    
     def "Geom" (
         prepend apiSchemas = ["CollectionAPI:allGeom"]
     )

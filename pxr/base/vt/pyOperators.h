@@ -119,26 +119,6 @@ struct _ArrayPyOpHelp<bool> {
     .def(#rmethod,rmethod##tuple<Type>)                     \
     .def(#rmethod,rmethod##list<Type>)                
 
-// to be used for wrapping conditional functions that return bool arrays
-// (i.e. Equal, etc)
-#define VTOPERATOR_WRAP_PYTYPE_BOOL_BASE(func,arg1,arg2,expr)         \
-    template <typename T> static                                      \
-    VtArray<bool> Vt##func(arg1, arg2)                                \
-    {                                                                 \
-        size_t length = len(obj);                                     \
-        if (length != vec.size()) {                                   \
-            TfPyThrowValueError("Non-conforming inputs for " #func);  \
-            return VtArray<bool>();                                   \
-        }                                                             \
-        VtArray<bool> ret(vec.size());                                \
-        for (size_t i = 0; i < length; ++i) {                         \
-            if (!extract<T>(obj[i]).check())                          \
-                TfPyThrowValueError("Element is of incorrect type."); \
-            ret[i] = expr;                                            \
-        }                                                             \
-        return ret;                                                   \
-    }
-
 // array OP pytype
 // pytype OP array
 #define VTOPERATOR_WRAP_PYTYPE_BOOL(func,pytype,op)         \
@@ -152,29 +132,6 @@ struct _ArrayPyOpHelp<bool> {
 #define VTOPERATOR_WRAP_BOOL(func,op)                       \
         VTOPERATOR_WRAP_PYTYPE_BOOL(func,list,op)           \
         VTOPERATOR_WRAP_PYTYPE_BOOL(func,tuple,op)          
-
-// to be used to actually declare the wrapping with def() on the class
-#define VTOPERATOR_WRAPDECLARE_BOOL(func)                   \
-       def(#func,(VtArray<bool> (*)                         \
-            (VtArray<Type> const &,VtArray<Type> const &))  \
-            Vt##func<Type>);                                \
-        def(#func,(VtArray<bool> (*)                        \
-            (Type const &,VtArray<Type> const &))           \
-            Vt##func<Type>);                                \
-        def(#func,(VtArray<bool> (*)                        \
-            (VtArray<Type> const &,Type const &))           \
-            Vt##func<Type>);                                \
-        def(#func,(VtArray<bool> (*)                        \
-            (VtArray<Type> const &,tuple const &))          \
-            Vt##func<Type>);                                \
-        def(#func,(VtArray<bool> (*)                        \
-            (tuple const &,VtArray<Type> const &))          \
-            Vt##func<Type>);                                \
-        def(#func,(VtArray<bool> (*)                        \
-            (VtArray<Type> const &,list const &))           \
-            Vt##func<Type>);                                \
-        def(#func,(VtArray<bool> (*)                        \
-            (list const &,VtArray<Type> const &))           \
-            Vt##func<Type>);                                
+                      
 
 PXR_NAMESPACE_CLOSE_SCOPE

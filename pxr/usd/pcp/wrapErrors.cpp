@@ -42,6 +42,11 @@ static TfEnum _GetErrorType(PcpErrorBasePtr const& err)
     return err->errorType;
 }
 
+static PcpSite _GetRootSite(PcpErrorBasePtr const& err)
+{
+    return err->rootSite;
+}
+
 void 
 wrapErrors()
 {    
@@ -57,6 +62,7 @@ wrapErrors()
     class_<PcpErrorBase, boost::noncopyable, PcpErrorBasePtr>
         ("ErrorBase", "", no_init)
         .add_property("errorType", _GetErrorType)
+        .add_property("rootSite", _GetRootSite)
         .def("__str__", &PcpErrorBase::ToString)
         ;
 

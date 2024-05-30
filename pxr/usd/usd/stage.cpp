@@ -343,20 +343,29 @@ _MapPathExpressionToPrim(
     
     auto mapPattern =
         [&stack, &map, &unmappedPatterns](PathPattern const &pattern) {
-        SdfPath mapped = map(pattern.GetPrefix());
-        // If the prefix path is outside the domain, push the Nothing()
-        // subexpression.
-        if (mapped.IsEmpty()) {
-            if (unmappedPatterns) {
-                unmappedPatterns->push_back(pattern);
-            }
-            stack.push_back(SdfPathExpression::Nothing());
+        // If the pattern starts with '//' we persist it unchanged, as we deem
+        // the intent to be "search everything" regardless of context.  This is
+        // as opposed to any kind of non-speculative prefix, which refers to a
+        // specific prim or property in the originating context.
+        if (pattern.HasLeadingStretch()) {
+            stack.push_back(SdfPathExpression::MakeAtom(pattern));
         }
-        // Otherwise push the mapped pattern.
         else {
-            PathPattern mappedPattern(pattern);
-            mappedPattern.SetPrefix(mapped);
-            stack.push_back(PathExpr::MakeAtom(mappedPattern));
+            SdfPath mapped = map(pattern.GetPrefix());
+            // If the prefix path is outside the domain, push the Nothing()
+            // subexpression.
+            if (mapped.IsEmpty()) {
+                if (unmappedPatterns) {
+                    unmappedPatterns->push_back(pattern);
+                }
+                stack.push_back(SdfPathExpression::Nothing());
+            }
+            // Otherwise push the mapped pattern.
+            else {
+                PathPattern mappedPattern(pattern);
+                mappedPattern.SetPrefix(mapped);
+                stack.push_back(PathExpr::MakeAtom(mappedPattern));
+            }
         }
     };
 
@@ -3882,6 +3891,27 @@ UsdStage::GetPathResolverContext() const
         return empty;
     }
     return _GetPcpCache()->GetLayerStackIdentifier().pathResolverContext;
+}
+
+PcpErrorVector 
+UsdStage::GetCompositionErrors() const
+{
+    PcpErrorVector errors;
+
+    auto _ExtractErrorsFromPrimIndices = [&errors](
+        const PcpPrimIndex &primIndex) {
+            const PcpErrorVector &localErrors = primIndex.GetLocalErrors();
+            errors.insert(errors.end(), localErrors.begin(), localErrors.end());
+    };
+    _GetPcpCache()->ForEachPrimIndex(_ExtractErrorsFromPrimIndices);
+
+    auto _ExtractErrorsFromPcpLayerStack = [&errors](
+        const PcpLayerStackPtr layerStackPtr) {
+            const PcpErrorVector &localErrors = layerStackPtr->GetLocalErrors();
+            errors.insert(errors.end(), localErrors.begin(), localErrors.end());
+    };
+    _GetPcpCache()->ForEachLayerStack(_ExtractErrorsFromPcpLayerStack);
+    return errors;
 }
 
 SdfLayerHandleVector

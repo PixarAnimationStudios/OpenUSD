@@ -79,6 +79,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (leftHanded)                                \
     (linear)                                    \
     (lightLink)                                 \
+    (filterLink)                                \
     (lightFilterLink)                           \
     (lightFilterType)                           \
     (meshLight)                                 \
@@ -296,6 +297,23 @@ PXR_NAMESPACE_OPEN_SCOPE
     (volume)                                    \
     (model)
 
+// XXX Unfortunately, we export a function of the name HdLightPrimTypeTokens.
+//     Omit 'Prim' from the name.
+#define HD_LIGHT_TYPE_TOKENS                    \
+    (cylinderLight)                             \
+    (diskLight)                                 \
+    (distantLight)                              \
+    (domeLight)                                 \
+    (light)                                     \
+    (meshLight)                                 \
+    (pluginLight)                               \
+    (rectLight)                                 \
+    (simpleLight)                               \
+    (sphereLight)
+
+#define HD_LIGHT_FILTER_TYPE_TOKENS             \
+    (lightFilter)
+
 #define HD_SPRIMTYPE_TOKENS                     \
     /* Sprims */                                \
     (camera)                                    \
@@ -308,18 +326,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (sampleFilter)                              \
     (displayFilter)                             \
     (imageShader)                               \
-    /* Sprims Lights */                         \
-    (simpleLight)                               \
-    (cylinderLight)                             \
-    (diskLight)                                 \
-    (distantLight)                              \
-    (domeLight)                                 \
-    (light)                                     \
-    (lightFilter)                               \
-    (meshLight)                                 \
-    (pluginLight)                               \
-    (rectLight)                                 \
-    (sphereLight)                               \
+                                                \
+    HD_LIGHT_TYPE_TOKENS                        \
+    HD_LIGHT_FILTER_TYPE_TOKENS                 \
+                                                \
     /* Sprims ExtComputations */                \
     (extComputation)                            \
 
@@ -500,6 +510,9 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialTerminalTokens, HD_API,
 TF_DECLARE_PUBLIC_TOKENS(HdRenderTagTokens, HD_API, HD_RENDERTAG_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRenderContextTokens, HD_API, HD_RENDER_CONTEXT_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdOptionTokens, HD_API, HD_OPTION_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdLightTypeTokens, HD_API, HD_LIGHT_TYPE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdLightFilterTypeTokens, HD_API,
+    HD_LIGHT_FILTER_TYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRprimTypeTokens, HD_API, HD_RPRIMTYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdSprimTypeTokens, HD_API, HD_SPRIMTYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdBprimTypeTokens, HD_API, HD_BPRIMTYPE_TOKENS);
