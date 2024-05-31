@@ -888,7 +888,7 @@ public:
     /// \note The family type of the <i>materialBind</i> family of subsets 
     /// defaults to UsdGeomTokens->nonOverlapping. It can be set to 
     /// UsdGeomTokens->partition, using the API 
-    /// SetMaterialBindFaceSubsetsFamilyType(). It should never be set to 
+    /// SetMaterialBindSubsetsFamilyType(). It should never be set to 
     /// UsdGeomTokens->unrestricted, since it is invalid for a piece of 
     /// geometry to be bound to multiple materials.
     ///
@@ -969,7 +969,7 @@ public:
     /// 
     /// By default, materialBind subsets have familyType="nonOverlapping", but
     /// they can also be tagged as a "partition", using 
-    /// SetMaterialBindFaceSubsetsFamilyType(). 
+    /// SetMaterialBindSubsetsFamilyType(). 
     /// 
     /// \sa UsdGeomSubset::GetFamilyNameAttr
     USDSHADE_API
