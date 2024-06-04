@@ -673,7 +673,11 @@ ZLIB_URL = "https://github.com/madler/zlib/archive/v1.2.13.zip"
 
 def InstallZlib(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ZLIB_URL, context, force)):
-        RunCMake(context, force, buildArgs)
+        # Install static zlib only to avoid conflict if the application already has zlib shared library but with different version.
+        PatchFile("CMakeLists.txt",
+                  [("install(TARGETS zlib zlibstatic",
+                    "install(TARGETS zlibstatic")])
+        RunCMake(context, force, ['-DCMAKE_POSITION_INDEPENDENT_CODE=ON'] + buildArgs)
 
 ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
         
@@ -2272,13 +2276,6 @@ if context.buildUsdview:
 
 if context.buildAnimXTests:
     requiredDependencies += [ANIMX]
-
-# Assume zlib already exists on Linux platforms and don't build
-# our own. This avoids potential issues where a host application
-# loads an older version of zlib than the one we'd build and link
-# our libraries against.
-if Linux():
-    requiredDependencies.remove(ZLIB)
 
 # Error out if user is building monolithic library on windows with draco plugin
 # enabled. This currently results in missing symbols.
