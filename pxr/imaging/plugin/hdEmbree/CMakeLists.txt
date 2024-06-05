@@ -48,7 +48,11 @@ pxr_plugin(hdEmbree
         implicitSurfaceSceneIndexPlugin
 
     PRIVATE_HEADERS
+        pxrIES/ies.h
         pxrPbrt/pbrtUtils.h
+
+    CPPFILES
+        pxrIES/ies.cpp
 
     RESOURCE_FILES
         plugInfo.json
