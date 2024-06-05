@@ -68,6 +68,7 @@ pxr_library(usd
         tokens
         typed
         validator
+        validatorTokens
         validationError
         validationRegistry
         usdFileFormat
@@ -105,6 +106,9 @@ pxr_library(usd
         listEditImpl.h
         wrapUtils.h
         testenv/TestUsdResolverChangedResolver.h
+
+    CPPFILES
+        coreValidators.cpp
 
     PYTHON_CPPFILES
         moduleDeps.cpp
