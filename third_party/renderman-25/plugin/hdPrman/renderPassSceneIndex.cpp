@@ -424,15 +424,16 @@ _CompileCollection(
     HdCollectionsSchema &collections,
     TfToken const& collectionName,
     HdSceneIndexBaseRefPtr const& sceneIndex,
-    std::optional<HdCollectionExpressionEvaluator> *result)
+    SdfPathExpression *expr,
+    std::optional<HdCollectionExpressionEvaluator> *eval)
 {
     if (HdCollectionSchema collection =
         collections.GetCollection(collectionName)) {
         if (HdPathExpressionDataSourceHandle pathExprDs =
             collection.GetMembershipExpression()) {
-            SdfPathExpression pathExpr = pathExprDs->GetTypedValue(0.0);
-            if (!pathExpr.IsEmpty()) {
-                *result = HdCollectionExpressionEvaluator(sceneIndex, pathExpr);
+            *expr = pathExprDs->GetTypedValue(0.0);
+            if (!expr->IsEmpty()) {
+                *eval = HdCollectionExpressionEvaluator(sceneIndex, *expr);
             }
         }
     }
@@ -469,14 +470,33 @@ HdPrman_RenderPassSceneIndex::_UpdateActiveRenderPassState(
             HdCollectionsSchema::GetFromParent(passPrim.dataSource)) {
             // Prepare evaluators for render pass collections.
             _CompileCollection(collections, _tokens->matte,
-                               inputSceneIndex, &state.matteEval);
+                               inputSceneIndex,
+                               &state.matteExpr,
+                               &state.matteEval);
             _CompileCollection(collections, _tokens->renderVisibility,
-                               inputSceneIndex, &state.renderVisEval);
+                               inputSceneIndex,
+                               &state.renderVisExpr,
+                               &state.renderVisEval);
             _CompileCollection(collections, _tokens->cameraVisibility,
-                               inputSceneIndex, &state.cameraVisEval);
+                               inputSceneIndex,
+                               &state.cameraVisExpr,
+                               &state.cameraVisEval);
             _CompileCollection(collections, _tokens->prune,
-                               inputSceneIndex, &state.pruneEval);
+                               inputSceneIndex,
+                               &state.pruneExpr,
+                               &state.pruneEval);
         }
+    }
+
+    // Short-circuit the analysis below based on which patterns changed.
+    const bool visOrMatteExprDidChange =
+        state.matteExpr != priorState.matteExpr ||
+        state.renderVisExpr != priorState.renderVisExpr ||
+        state.cameraVisExpr != priorState.cameraVisExpr;
+
+    if (state.pruneExpr == priorState.pruneExpr && !visOrMatteExprDidChange) {
+        // No patterns changed; nothing to invalidate.
+        return;
     }
 
     // Generate change entries for affected prims.
@@ -499,7 +519,7 @@ HdPrman_RenderPassSceneIndex::_UpdateActiveRenderPassState(
         } else if (state.DoesPrune(path)) {
             // The prim is newly pruned, so remove it.
             removedEntries->push_back({path});
-        } else {
+        } else if (visOrMatteExprDidChange) {
             // Determine which (if any) locators on the upstream prim
             // are dirtied by the change in render pass state.
             const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(path);

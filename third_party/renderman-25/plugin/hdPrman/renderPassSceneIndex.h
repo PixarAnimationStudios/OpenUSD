@@ -51,6 +51,14 @@ private:
     // the presence of the collection in the render pass schema.
     struct _RenderPassState {
         SdfPath renderPassPath;
+
+        // Retain the expressions so we can compare old vs. new state.
+        SdfPathExpression matteExpr;
+        SdfPathExpression renderVisExpr;
+        SdfPathExpression cameraVisExpr;
+        SdfPathExpression pruneExpr;
+
+        // Evalulators for each pattern expression.
         std::optional<HdCollectionExpressionEvaluator> matteEval;
         std::optional<HdCollectionExpressionEvaluator> renderVisEval;
         std::optional<HdCollectionExpressionEvaluator> cameraVisEval;
