@@ -32,7 +32,7 @@ WorkDispatcher::WorkDispatcher()
 
 #if TBB_INTERFACE_VERSION_MAJOR >= 12
 inline tbb::detail::d1::wait_context& 
-_TaskGroup::_GetInternalWaitContext() {
+WorkDispatcher::_TaskGroup::_GetInternalWaitContext() {
     return m_wait_ctx;
 }
 #endif
