@@ -792,7 +792,16 @@ UsdPrimDefinition::Property::GetVariability() const {
 std::string 
 UsdPrimDefinition::Property::GetDocumentation() const {
     std::string docString;
-    _layerAndPath->HasField(SdfFieldKeys->Documentation, &docString);
+    static const TfToken schemaUserDocBriefToken("userDocBrief");
+
+    // Try to get "userDocBrief" doc from property metadata
+    if (! _layerAndPath->HasFieldDictKey(
+             SdfFieldKeys->CustomData,
+             schemaUserDocBriefToken,
+             &docString)) {
+         // For now, fall back to using the "documentation" metadata if present
+         _layerAndPath->HasField(SdfFieldKeys->Documentation, &docString);
+    }
     return docString;
 }
 

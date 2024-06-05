@@ -42,7 +42,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "testDictionaryMetadata", "value"), 2)
 
         self.assertEqual(primDef.GetDocumentation(),
-                         "Testing documentation metadata")
+                         "Testing brief user doc for schema class")
 
     def test_AttributeMetadata(self):
         primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
@@ -97,9 +97,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(attrDef.GetMetadata("documentation"),
                          "Testing documentation metadata")
         self.assertEqual(attrDef.GetDocumentation(),
-                         "Testing documentation metadata")
+                         "Testing brief user doc for schema attr")
         self.assertEqual(primDef.GetPropertyDocumentation("testAttr"),
-                         "Testing documentation metadata")
+                         "Testing brief user doc for schema attr")
 
         # Dictionary metadata can be gotten by whole value as well as queried
         # for individual keys in the metadata value.
@@ -176,9 +176,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(relDef.GetMetadata("documentation"),
                          "Testing documentation metadata")
         self.assertEqual(relDef.GetDocumentation(),
-                         "Testing documentation metadata")
-        self.assertEqual(primDef.GetPropertyDocumentation("testAttr"),
-                         "Testing documentation metadata")
+                         "Testing brief user doc for schema rel")
+        self.assertEqual(primDef.GetPropertyDocumentation("testRel"),
+                         "Testing brief user doc for schema rel")
 
         # Dictionary metadata can be gotten by whole value as well as queried
         # for individual keys in the metadata value.
@@ -580,7 +580,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                 "hidden" : True,
                 "testCustomMetadata" : "garply",
                 "testDictionaryMetadata" : {"name" : "bar", "value" : 3},
-                "variability" : Sdf.VariabilityVarying
+                "variability" : Sdf.VariabilityVarying,
+                "customData" : 
+                {"userDocBrief" : "Testing brief user doc for schema attr"}
             },
             "testRel" : {
                 "custom" : False,
@@ -590,7 +592,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                 "hidden" : True,
                 "testCustomMetadata" : "garply",
                 "testDictionaryMetadata" : {"name" : "baz", "value" : 5},
-                "variability" : Sdf.VariabilityUniform
+                "variability" : Sdf.VariabilityUniform,
+                "customData" : 
+                {"userDocBrief" : "Testing brief user doc for schema rel"}
             }
         }
 

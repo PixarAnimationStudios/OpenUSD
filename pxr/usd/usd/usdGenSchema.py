@@ -108,6 +108,10 @@ FALLBACK_TYPES = "fallbackTypes"
 INSTANCE_NAME_PLACEHOLDER = \
     Usd.SchemaRegistry.MakeMultipleApplyNameTemplate("", "")
 
+# Custom metadata tokens for user doc
+USERDOC_BRIEF = "userDocBrief"
+USERDOC_FULL = "userDoc"
+
 #------------------------------------------------------------------------------#
 # Parsed Objects                                                               #
 #------------------------------------------------------------------------------#
@@ -1604,6 +1608,55 @@ def _RenamePropertiesWithInstanceablePrefix(usdPrim):
     for name in originalPropNames:
         usdPrim.RemoveProperty(name)
 
+def _GetUserDocForSchemaObj(obj, userDocSchemaObj):
+    """
+    Find brief user doc for a schema object, in either the specifically authored
+    user doc info in userDocSchemaObj, or the schema obj itself.
+    Returns brief user doc string, or None if no reasonable brief user doc found
+    """
+    # Start by looking at userDocSchemaObj for USERDOC_BRIEF customData
+    if userDocSchemaObj is not None and USERDOC_BRIEF in userDocSchemaObj.GetCustomData():
+        return userDocSchemaObj.GetCustomData().get(USERDOC_BRIEF)
+    else:
+        # See if USERDOC_BRIEF exists on schema object's custom data
+        return obj.customData.get(USERDOC_BRIEF)
+
+def _UpdateUserDocForRegistry(filePath, flatLayer):
+    """
+    Find the best source for "brief" user doc for the schema and apply it
+    This is only done for the schema registry, and not for codegen
+    """
+    briefDict = {}
+    # Load <schema path>/userDoc/schemaUserDoc.usda if it exists
+    userDocSchemaFile = os.path.join(os.path.dirname(os.path.abspath(filePath)),
+     "userDoc", "schemaUserDoc.usda")
+    userDocStage = None
+    if (os.path.isfile(userDocSchemaFile) and os.access(userDocSchemaFile, os.R_OK)):
+        userDocStage = Usd.Stage.Open(userDocSchemaFile)        
+    # Walk through flattened schema stage and look for same-path classes in 
+    # userDocStage if available, to get the appropriate brief user doc
+    for cls in flatLayer.rootPrims:
+        # Ignore GLOBAL 
+        if cls.name == "GLOBAL":
+            continue
+        if userDocStage is not None:
+            userDocCls = userDocStage.GetPrimAtPath(cls.path)
+        else:
+            userDocCls = None
+        briefUserDoc = _GetUserDocForSchemaObj(cls, userDocCls)
+        if briefUserDoc is not None:
+            briefDict[cls.path] = briefUserDoc
+        # Look for property user doc
+        for clsProp in cls.properties:
+            if userDocCls is not None:
+                userDocClsProp = userDocCls.GetPropertyAtPath(clsProp.path)
+            else:
+                userDocClsProp = None
+            briefUserDoc = _GetUserDocForSchemaObj(clsProp, userDocClsProp)
+            if briefUserDoc is not None:
+                briefDict[clsProp.path] = briefUserDoc
+    return briefDict
+
 def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
 
     # Get the flattened layer to work with.
@@ -1614,6 +1667,11 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     # lower-level schema modules.  We hop back up to the UsdStage API to do
     # so because it is more convenient for these kinds of operations.
     flatStage = Usd.Stage.Open(flatLayer)
+
+    # Gather schema class and property brief user doc if found.
+    # Do this here, before we strip out customData.
+    briefDict = _UpdateUserDocForRegistry(filePath, flatLayer)
+
     pathsToDelete = []
     primsToKeep = {cls.usdPrimTypeName : cls for cls in classes}
     if not flatStage.RemovePrim('/GLOBAL'):
@@ -1686,6 +1744,19 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
         if apiSchemaOverridePropertyNames:
             p.SetCustomDataByKey('apiSchemaOverridePropertyNames',
                                  Vt.TokenArray(apiSchemaOverridePropertyNames))
+
+        # Set user doc brief strings in class and property customData if
+        # authored, using the path-based dictionary we set in the call to 
+        # _UpdateUserDocForRegistry above. Note that we need to do this after 
+        # clearing other custom data.
+        workPathStr = p.GetPath()
+        if workPathStr in briefDict:
+            p.SetCustomDataByKey(USERDOC_BRIEF, briefDict[workPathStr])
+        for myproperty in p.GetAuthoredProperties():
+            workPathStr = myproperty.GetPath()
+            if workPathStr in briefDict:
+                myproperty.SetCustomDataByKey(USERDOC_BRIEF,
+                 briefDict[workPathStr])
 
     for p in pathsToDelete:
         flatStage.RemovePrim(p)
@@ -1846,7 +1917,7 @@ if __name__ == '__main__':
         libTokens, \
         skipCodeGen, \
         classes = ParseUsd(schemaPath)
-        
+
         if args.validate:
             Print('Validation on, any diffs found will cause failure.')
 
