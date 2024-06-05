@@ -179,6 +179,8 @@ bool IESFile::parse(const string &ies)
   factor *= parser.get_double(); /* Ballast-Lamp Photometric factor */
   parser.get_double();           /* Input Watts */
 
+#ifdef PXR_IES_USE_CANDELA_TO_WATT_MULTIPLIER
+
   /* Intensity values in IES files are specified in candela (lumen/sr), a photometric quantity.
    * Cycles expects radiometric quantities, though, which requires a conversion.
    * However, the Luminous efficacy (ratio of lumens per Watt) depends on the spectral distribution
@@ -192,6 +194,8 @@ bool IESFile::parse(const string &ies)
    * to Watt factor.
    */
   factor *= 0.0706650768394;
+
+#endif //PXR_IES_USE_CANDELA_TO_WATT_MULTIPLIER
 
   v_angles.reserve(v_angles_num);
   for (int i = 0; i < v_angles_num; i++) {

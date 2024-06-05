@@ -1,5 +1,5 @@
 diff --git a/pxr/imaging/plugin/hdEmbree/pxrIES/ies.cpp b/pxr/imaging/plugin/hdEmbree/pxrIES/ies.cpp
-index a6725cc04..243680d91 100644
+index a6725cc04..eadcb5169 100644
 --- a/pxr/imaging/plugin/hdEmbree/pxrIES/ies.cpp
 +++ b/pxr/imaging/plugin/hdEmbree/pxrIES/ies.cpp
 @@ -2,21 +2,22 @@
@@ -62,7 +62,25 @@ index a6725cc04..243680d91 100644
  
      memcpy(data, &h_angles[0], h_angles.size() * sizeof(float));
      data += h_angles.size();
-@@ -407,4 +420,7 @@ IESFile::~IESFile()
+@@ -166,6 +179,8 @@ bool IESFile::parse(const string &ies)
+   factor *= parser.get_double(); /* Ballast-Lamp Photometric factor */
+   parser.get_double();           /* Input Watts */
+ 
++#ifdef PXR_IES_USE_CANDELA_TO_WATT_MULTIPLIER
++
+   /* Intensity values in IES files are specified in candela (lumen/sr), a photometric quantity.
+    * Cycles expects radiometric quantities, though, which requires a conversion.
+    * However, the Luminous efficacy (ratio of lumens per Watt) depends on the spectral distribution
+@@ -180,6 +195,8 @@ bool IESFile::parse(const string &ies)
+    */
+   factor *= 0.0706650768394;
+ 
++#endif //PXR_IES_USE_CANDELA_TO_WATT_MULTIPLIER
++
+   v_angles.reserve(v_angles_num);
+   for (int i = 0; i < v_angles_num; i++) {
+     v_angles.push_back((float)parser.get_double());
+@@ -407,4 +424,7 @@ IESFile::~IESFile()
    clear();
  }
  
