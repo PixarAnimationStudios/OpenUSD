@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -38,28 +21,54 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-    // Order PathPairs using FastLessThan.
-    struct _PathPairOrder
-    {
-        bool operator()(const PcpMapFunction::PathPair &lhs,
-                        const PcpMapFunction::PathPair &rhs) {
-            SdfPath::FastLessThan less;
-            // We need to ensure that "root identity" elements appear first
-            // ('/' -> '/') so we special-case those.
-            SdfPath const &absRoot = SdfPath::AbsoluteRootPath();
-            if (lhs == rhs) {
-                return false;
-            }
-            if (lhs.first == absRoot && lhs.second == absRoot) {
-                return true;
-            }
-            if (rhs.first == absRoot && rhs.second == absRoot) {
-                return false;
-            }
-            return less(lhs.first, rhs.first) ||
-                (lhs.first == rhs.first && less(lhs.second, rhs.second));
+
+// Order PathPairs using element count and FastLessThan.
+struct _PathPairOrder
+{
+    bool operator()(const PcpMapFunction::PathPair &lhs,
+                    const PcpMapFunction::PathPair &rhs) {
+        // First order paths by element count which allows to us to be 
+        // more efficient in finding the best path match in the source to
+        // target direction. This also makes sure that "root identity" 
+        // elements appear first.
+        if (lhs.first.GetPathElementCount() != rhs.first.GetPathElementCount()) {
+            return lhs.first.GetPathElementCount() < 
+                rhs.first.GetPathElementCount();
         }
-    };
+
+        // Otherwise, the path sourece path elememnt count is the same so
+        // use the arbitrary fast less than.
+        SdfPath::FastLessThan less;
+        return less(lhs.first, rhs.first) ||
+            (lhs.first == rhs.first && less(lhs.second, rhs.second));
+    }
+};
+
+// Comparator for lower bounding source paths in a _PathPairOrder ordered
+// container.
+struct _PathPairOrderSourceLowerBound
+{   
+    bool operator()(const PcpMapFunction::PathPair &lhs,
+                    const SdfPath &rhs) {
+        return _PathLessThan(lhs.first, rhs);
+    }
+
+    bool operator()(const SdfPath &lhs,
+                    const PcpMapFunction::PathPair &rhs) {
+        return _PathLessThan(lhs, rhs.first);
+    }
+private:
+    bool _PathLessThan(const SdfPath &lhs, const SdfPath &rhs)
+    {
+        if (lhs.GetPathElementCount() != rhs.GetPathElementCount()) {
+            return lhs.GetPathElementCount() < rhs.GetPathElementCount();
+        }
+
+        SdfPath::FastLessThan less;
+        return less(lhs, rhs);
+    }
+};
+
 };
 
 PcpMapFunction::PcpMapFunction(PathPair const *begin,
@@ -72,22 +81,65 @@ PcpMapFunction::PcpMapFunction(PathPair const *begin,
 }
 
 // Finds the map entry whose source best matches the given path, i.e. the entry
-// with the longest source path that is a prefix of the path. If invert is true,
-// the target path of the entry is used as the "source". minElementCount is used
-// to only look for entries where the source path has at least that many 
+// with the longest source path that is a prefix of the path. minElementCount 
+// is used to only look for entries where the source path has at least that many 
 // elements.
 template <class PairIter>
 static PairIter
 _GetBestSourceMatch(
     const SdfPath &path, const PairIter &begin, const PairIter &end, 
-    bool invert = false, size_t minElementCount = 0)
+    size_t minElementCount = 0)
+{   
+    // Path pairs are ordered such that source path length (i.e. element count)
+    // is  non-decreasing. So we start looking for the best match at the last
+    // path pair whose source length does not exceed the length of the path 
+    // we're matching.
+    PairIter i = std::upper_bound(begin, end, path.GetPathElementCount(),
+        [](size_t pathLen, const auto &pathPair) {
+            return pathLen < pathPair.first.GetPathElementCount();
+        });
+
+    // Iterate over path pairs in reverse as the matching pair with the greatest
+    // source length will be the best match.
+    for (; i != begin;) {
+        --i;
+        const SdfPath &source = i->first;
+        // Opimization if we know the minimum element count (see 
+        // _HasBetterTargetMatch). No match if we've reached source paths
+        // shorter than the minimum.
+        if (source.GetPathElementCount() < minElementCount) {
+            return end;
+        }
+        // If we found a match, this is the best match because of source path
+        // length ordering.
+        if (path.HasPrefix(source)) {
+            return i;
+        }
+    }
+
+    return end;
+}
+
+// Finds the map entry whose target best matches the given path, i.e. the entry
+// with the longest target path that is a prefix of the path. minElementCount 
+// is used to only look for entries where the target path has at least that many 
+// elements.
+template <class PairIter>
+static PairIter
+_GetBestTargetMatch(
+    const SdfPath &path, const PairIter &begin, const PairIter &end, 
+    size_t minElementCount = 0)
 {
+    // While path pair entries are ordered by nondecreasing source path length,
+    // we can't simultaneously make the same true for target paths. Thus we have
+    // to look at every entry comparing path length and checking for a target 
+    // path match.
     PairIter bestIter = end;
     size_t bestElementCount = minElementCount;
     for (PairIter i=begin; i != end; ++i) {
-        const SdfPath &source = invert? i->second : i->first;
-        const size_t count = source.GetPathElementCount();
-        if (count >= bestElementCount && path.HasPrefix(source)) {
+        const SdfPath &target = i->second;
+        const size_t count = target.GetPathElementCount();
+        if (count >= bestElementCount && path.HasPrefix(target)) {
             bestElementCount = count;
             bestIter = i;
         }
@@ -111,9 +163,9 @@ _HasBetterTargetMatch(
     const size_t minElementCount = bestSourceMatch == end ? 0 :
         (invert ? bestSourceMatch->first : bestSourceMatch->second)
             .GetPathElementCount();
-    PairIter bestTargetMatch = _GetBestSourceMatch(targetPath, begin, end, 
-        !invert, 
-        minElementCount);
+    PairIter bestTargetMatch = invert ?
+        _GetBestSourceMatch(targetPath, begin, end, minElementCount) :
+        _GetBestTargetMatch(targetPath, begin, end, minElementCount);
     return bestTargetMatch != end && bestTargetMatch != bestSourceMatch;
 }
 
@@ -125,21 +177,6 @@ _IsRedundant(const PairIter &entry, const PairIter &begin, const PairIter &end)
     const SdfPath &entryTarget = entry->second;
 
     const bool isBlock = entryTarget.IsEmpty();
-
-    // Check for trivial dupes before doing further work.
-    for (PairIter j = begin; j != entry; ++j) {
-        if (entry->first == j->first) {
-            TF_CODING_ERROR("Map function has two entries with the "
-                "same source");
-            return true;
-        }
-
-        if (!isBlock && entry->second == j->second) {
-            TF_CODING_ERROR("Map function has two entries with the "
-                "same target");
-            return true;
-        }
-    }
 
     // A map block is redundant if the source path already wouldn't map without
     // the block.
@@ -173,7 +210,7 @@ _IsRedundant(const PairIter &entry, const PairIter &begin, const PairIter &end)
     }
 
     // Otherwise we have a normal path mapping entry. This will be redundant
-    // in the best matching ancestor mapping would cause the source path to 
+    // if the best matching ancestor mapping would cause the source path to 
     // map to the entry target path
 
     // Early out, the entry can't be redundant if it renames the source when it
@@ -238,7 +275,9 @@ _IsRedundant(const PairIter &entry, const PairIter &begin, const PairIter &end)
 // correspondence.  Note that this function modifies both the content of `begin`
 // and `end` as well as the *value* of `begin` and `end` to produce the
 // resulting range.  Return true if there's a root identity mapping ('/' ->
-// '/').  It will not appear in the resulting \p vec.
+// '/').  It will not appear in the resulting \p vec. Also note that the entries
+// in the range must be in sorted in _PathPairOrder before this function is 
+// called.
 template <class PairIter>
 static bool
 _Canonicalize(PairIter &begin, PairIter &end)
@@ -248,16 +287,21 @@ _Canonicalize(PairIter &begin, PairIter &end)
     for (PairIter i = begin; i != end; /* increment below */) {
 
         if (_IsRedundant(i, begin, end)) {
-            // Entries are not sorted yet so swap to back for O(1) erase.
-            std::swap(*i, *(end-1));
+            // Entries are already sorted so move all subsequent entries down
+            // one to erase this item. Note that while this is potentially 
+            // O(n^2), in practice it's more efficient to keep the entries 
+            // sorted for _IsRedundant checks than it is to make the erase 
+            // efficient as we're guaranteed to call _IsRedundant on every
+            // entry but very few entries will actually be redundant and require
+            // erasure.
+            for (PairIter j = i; j != end - 1; ++j) {
+                *j = std::move(*(j+1));
+            }
             --end;
         } else {
             ++i;
         }
     }
-
-    // Final sort to canonical order.
-    std::sort(begin, end, _PathPairOrder());
 
     bool hasRootIdentity = false;
     if (begin != end) {
@@ -325,6 +369,9 @@ PcpMapFunction::Create(const PathMap &sourceToTarget,
 
     PathPairVector vec(sourceToTarget.begin(), sourceToTarget.end());
     PathPair *begin = vec.data(), *end = vec.data() + vec.size();
+    // XXX: This would be unnecessary if we used _PathPairOrder as the 
+    // comparator input PathMap.
+    std::sort(begin, end, _PathPairOrder());
     bool hasRootIdentity = _Canonicalize(begin, end);
     return PcpMapFunction(begin, end, offset, hasRootIdentity);
 }
@@ -416,8 +463,9 @@ _Map(const SdfPath& path,
  
     // Find longest prefix that has a mapping;
     // this represents the most-specific mapping to apply.
-    const PcpMapFunction::PathPair *bestMatch =
-        _GetBestSourceMatch(path, begin, end, invert);
+    const PcpMapFunction::PathPair *bestMatch = invert ?
+        _GetBestTargetMatch(path, begin, end) :
+        _GetBestSourceMatch(path, begin, end);
 
     SdfPath result;
     // size_t minTargetElementCount = 0;
@@ -647,44 +695,59 @@ PcpMapFunction::Compose(const PcpMapFunction &inner) const
     // of first applying inner, then this function.  Build a list
     // of all of the (source,target) path pairs that result.
 
-    // Apply outer function to the output range of inner.
-    const _Data& data_inner = inner._data;
-    for (PathPair pair: data_inner) {
-        pair.second = MapSourceToTarget(pair.second);
-        if (std::find(scratchBegin, scratch, pair) == scratch) {
-            *scratch++ = std::move(pair);
-        }
-    }
-    // If inner has a root identity, map that too.
-    if (inner.HasRootIdentity()) {
-        PathPair pair;
-        pair.first = SdfPath::AbsoluteRootPath();
-        pair.second = MapSourceToTarget(SdfPath::AbsoluteRootPath());
-        if (std::find(scratchBegin, scratch, pair) == scratch) {
-            *scratch++ = std::move(pair);
-        }
+    // The composed result will have the root identity if and only if both
+    // the inner and outer functions have the root identity. Add this first 
+    // because it'll be first in the sort order.
+    if (HasRootIdentity() && inner.HasRootIdentity()) {
+        PathPair &scratchPair = *scratch++;
+        scratchPair.first = SdfPath::AbsoluteRootPath();
+        scratchPair.second = SdfPath::AbsoluteRootPath();
     }
 
-    // Apply the inverse of inner to the domain of this function.
-    const _Data& data_outer = _data;
-    for (PathPair pair: data_outer) {
-        pair.first = inner.MapTargetToSource(pair.first);
-        if (!pair.first.IsEmpty()) {
-            if (std::find(scratchBegin, scratch, pair) == scratch) {
-                *scratch++ = std::move(pair);
-            }
-        }
+    // Then apply outer function to the output range of inner. 
+    const _Data& data_inner = inner._data;
+    for (const PathPair &pair: data_inner) {
+        PathPair &scratchPair = *scratch++;
+        scratchPair.first = pair.first;
+        scratchPair.second = MapSourceToTarget(pair.second);
     }
-    // If outer has a root identity, map that too.
-    if (HasRootIdentity()) {
-        PathPair pair;
-        pair.first = inner.MapTargetToSource(SdfPath::AbsoluteRootPath());
-        pair.second = SdfPath::AbsoluteRootPath();
-        if (!pair.first.IsEmpty()) {
-            if (std::find(scratchBegin, scratch, pair) == scratch) {
-                *scratch++ = std::move(pair);
-            }
+
+    // This contents of scratch, as of now, will have been automatically sorted
+    // as the inner function's source paths were already unique in the correct
+    // order. The entries we add after this will not be sorted so we need to
+    // keep track of the sorted range.
+    PathPair *scratchSortedEnd = scratch;
+
+    // Then apply the inverse of inner to the domain of this function.
+    const _Data& data_outer = _data;
+    for (const PathPair &pair: data_outer) {
+        SdfPath source = inner.MapTargetToSource(pair.first);
+        if (source.IsEmpty()) {
+            continue;
         }
+
+        // See if this entry's source was already added when we mapped the inner 
+        // function's range through the outer so that we don't add it again. We
+        // do NOT have to check for repeats within the sources we've mapped
+        // through this loop as the map function is guaranteed to not map 
+        // different targets to the same source.
+        if (std::binary_search(scratchBegin, scratchSortedEnd, source, 
+                _PathPairOrderSourceLowerBound())) {
+            continue;
+        }
+        
+        PathPair &scratchPair = *scratch++;
+        scratchPair.first = std::move(source);
+        scratchPair.second = pair.second;
+    }
+
+    // The scratch may be at least partially sorted. Finish the final sorting
+    // of the entire range if necessary as it must be fully sorted before 
+    // we call _Canonicalize.
+    if (scratchSortedEnd != scratch) {
+        std::sort(scratchSortedEnd, scratch, _PathPairOrder());
+        std::inplace_merge(scratchBegin, scratchSortedEnd, scratch, 
+                           _PathPairOrder());
     }
 
     bool hasRootIdentity = _Canonicalize(scratchBegin, scratch);
@@ -713,6 +776,8 @@ PcpMapFunction::GetInverse() const
     PathPair const
         *begin = targetToSource.data(),
         *end = targetToSource.data() + targetToSource.size();
+    // Sort the entries to match the source path ordering requirement.
+    std::sort(targetToSource.begin(), targetToSource.end(), _PathPairOrder());
     return PcpMapFunction(
         begin, end, _offset.GetInverse(), _data.hasRootIdentity);
 }

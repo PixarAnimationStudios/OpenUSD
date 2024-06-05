@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/garch/glApi.h"
 
@@ -968,26 +951,27 @@ HdxPrimOriginInfo::FromPickHit(HdRenderIndex * const renderIndex,
 // Consults given prim source for origin path to either replace
 // the given path (if origin path is absolute) or append to given
 // path (if origin path is relative). If no prim origin data source,
-// leave path unchanged.
+// leave path unchanged. Return whether the path was appended-to.
 static
-void
+bool
 _AppendPrimOriginToPath(HdContainerDataSourceHandle const &primOriginDs,
                         const TfToken &nameInPrimOrigin,
                         SdfPath * const path)
 {
     HdPrimOriginSchema schema = HdPrimOriginSchema(primOriginDs);
     if (!schema) {
-        return;
+        return false;
     }
     const SdfPath scenePath = schema.GetOriginPath(nameInPrimOrigin);
     if (scenePath.IsEmpty()) {
-        return;
+        return false;
     }
     if (scenePath.IsAbsolutePath()) {
         *path = scenePath;
     } else {
         *path = path->AppendPath(scenePath);
     }
+    return true;
 }
 
 SdfPath
@@ -1010,6 +994,38 @@ HdxPrimOriginInfo::GetFullPath(const TfToken &nameInPrimOrigin) const
     _AppendPrimOriginToPath(
         primOrigin, nameInPrimOrigin, &path);
     return path;
+}
+
+HdInstancerContext
+HdxPrimOriginInfo::ComputeInstancerContext(
+        const TfToken &nameInPrimOrigin) const
+{
+    HdInstancerContext outCtx;
+
+    // Loop through the instancer contexts from outermost to innermost, building
+    // up a path.
+
+    SdfPath prefix;
+    for (const HdxInstancerContext &ctx : instancerContexts) {
+        // First, check if instancerPrimOrigin has anything (via _Append
+        // return value); if so, this instancer is in the scene and needs to be
+        // added to outCtx.  We prepend the current prefix, since if the prefix
+        // is non-empty it indicates this instancer participated in instance
+        // aggregation.
+        SdfPath instancer = prefix;
+        if (_AppendPrimOriginToPath(ctx.instancerPrimOrigin,
+                nameInPrimOrigin, &instancer)) {
+            outCtx.push_back(std::make_pair(instancer, ctx.instanceId));
+        }
+
+        // If instancePrimOrigin has anything in it, that indicates this
+        // instancer participated in instance aggregation, and its contribution
+        // to the path of any later instancers needs to be added to the prefix.
+        _AppendPrimOriginToPath(
+            ctx.instancePrimOrigin, nameInPrimOrigin, &prefix);
+    }
+
+    return outCtx;
 }
 
 size_t

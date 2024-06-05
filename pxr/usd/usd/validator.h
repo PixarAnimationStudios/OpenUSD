@@ -1,25 +1,8 @@
 //
 // Copyright 2024 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_USD_VALIDATOR_H
 #define PXR_USD_USD_VALIDATOR_H
@@ -48,33 +31,49 @@ class UsdPrim;
 /// The metadata values are populated from the plugInfo.json associated with a
 /// validator's plugin. PlugInfo can provide the following validator metadata:
 ///
-/// - name: A required field. The metadata stores the validator name as a fully
-/// qualified name which includes the pluginName as well, separated by ":".
+/// - name: A required field. This metadatum stores the validator name. For
+/// validators defined in a plugin, the name must be a fully qualified name 
+/// which includes the pluginName as well, separated by ":". This ensures,
+/// plugin provided validator names are guaranteed to be unique.
+/// - pluginPtr: Pointer to the plugin where a plugin based validator is defined.
+/// nullptr for a non-plugin based validator.
 /// - keywords: Keywords associated with this validator. 
-/// - docs: Doc string explainaing the purpose of the validator. 
+/// - doc: Doc string explaining the purpose of the validator. 
 /// - schemaTypes: If the validator is associated with specific schemaTypes.
 /// - isSuite: If the validator represents a suite of validators.
 ///
 struct UsdValidatorMetadata
 {
-    /// "pluginName:testName" corresponding to the entry in plugInfo.json
+    /// Name of the validator.
+    ///
+    /// For plugin provided validators, this is prefixed with the pluginName,
+    /// like "pluginName:testName" in order to uniquely identify these plugin
+    /// provided validators.
+    ///
     /// This is a mandatory field for a ValidatorMetadata.
     TfToken name;
+
+    /// Pointer to the plugin to which a plugin based validator belongs. 
+    ///
+    /// For non-plugin based validator, pluginPtr is nullptr.
+    PlugPluginPtr pluginPtr;
     
     /// list of keywords extracted for this test from the plugInfo.json
-    std::vector<TfToken> keywords;
+    TfTokenVector keywords;
 
     /// doc string extracted from plugInfo.json
     /// This is a mandatory field for a ValidatorMetadata.
-    std::string docs;
+    std::string doc;
 
     /// list of schemaTypes names this test applies to, extracted from
     /// plugInfo.json
-    std::vector<TfToken> schemaTypes;
+    TfTokenVector schemaTypes;
 
     /// whether this test represents a test suite or not
     bool isSuite;
 }; // UsdValidatorMetadata
+
+using UsdValidatorMetadataVector = std::vector<UsdValidatorMetadata>;
 
 // TODO:
 // - TimeCode (Range), leaving right now for brevity. Will introduce in
@@ -153,7 +152,7 @@ public:
     }
 
     /// Return metadata associated with this validator by-value.
-    UsdValidatorMetadata GetMetadata() const &&
+    UsdValidatorMetadata GetMetadata() &&
     {
         return std::move(_metadata);
     }
@@ -164,7 +163,7 @@ public:
     /// If this Validator doesn't provide a UsdValidateLayerTaskFn, then an
     /// empty vector is returned, which signifies no error.
     USD_API
-    const UsdValidationErrorVector Validate(const SdfLayerHandle &layer) const;
+    UsdValidationErrorVector Validate(const SdfLayerHandle &layer) const;
 
     /// Run validation on the given \p usdStage by executing the contained
     /// validateTaskFn and returns UsdValidationErrorVector.
@@ -172,7 +171,7 @@ public:
     /// If this Validator doesn't provide a UsdValidateStageTaskFn, then an
     /// empty vector is returned, which signifies no error.
     USD_API
-    const UsdValidationErrorVector Validate(const UsdStagePtr &usdStage) const;
+    UsdValidationErrorVector Validate(const UsdStagePtr &usdStage) const;
 
     /// Run validation on the given \p usdPrim by executing the contained
     /// validateTaskFn and returns UsdValidationErrorVector.
@@ -180,9 +179,15 @@ public:
     /// If this Validator doesn't provide a UsdValidatePrimTaskFn, then an
     /// empty vector is returned, which signifies no error.
     USD_API
-    const UsdValidationErrorVector Validate(const UsdPrim& usdPrim) const;
+    UsdValidationErrorVector Validate(const UsdPrim& usdPrim) const;
 
-  private:
+private:
+    // To make sure registry can query task types on a validator.
+    // Registry needs access to _GetValidatorPrimTasks, in order to determine if
+    // the contained validators in a suite, which provides schemaTypes metadata
+    // are compliant.
+    friend class UsdValidationRegistry;
+
     UsdValidatorMetadata _metadata;
     std::variant<UsdValidateLayerTaskFn, 
                  UsdValidateStageTaskFn,
@@ -236,9 +241,9 @@ public:
     /// UsdValidatorSuite. Note that the validators are guaranteed to be valid,
     /// since their lifetime is managed by the UsdValidationRegistry, which has
     /// a higher scope than individual validators. 
-    std::vector<const UsdValidator*> GetContainedValidators() const &&
+    std::vector<const UsdValidator*> GetContainedValidators() &&
     {
-        return _containedValidators;
+        return std::move(_containedValidators);
     }
 
     /// Return metadata associated with this validator.
@@ -248,7 +253,7 @@ public:
     }
 
     /// Return metadata associated with this validator.
-    UsdValidatorMetadata GetMetadata() const &&
+    UsdValidatorMetadata GetMetadata() &&
     {
         return std::move(_metadata);
     }

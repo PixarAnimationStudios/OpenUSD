@@ -1,25 +1,8 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "hdPrman/renderSettings.h"
 #include "hdPrman/debugCodes.h"
@@ -190,6 +173,26 @@ _UpdateRileyCamera(
         cameraContext->UpdateRileyCameraAndClipPlanes(riley, renderIndex);
         cameraContext->MarkValid();
     }
+}
+
+// Update the Frame number from the Stage Global Scene Index
+void
+_UpdateFrame(
+    const HdSceneIndexBaseRefPtr &terminalSi,
+    RtParamList *options)
+{
+    // Get the Frame from the Terminal Scene Index 
+    double frame;
+    HdUtils::GetCurrentFrame(terminalSi, &frame);
+
+    // k_Ri_Frame in Riley is an integer, not float.
+    // As an explicit policy choice, round down.
+    const int intFrame(floor(frame));
+
+    // Store on the options list to be used in a later Riley.SetOptions() call 
+    HdPrman_Utils::SetParamFromVtValue(
+        RixStr.k_Ri_Frame, VtValue(intFrame),
+        /* role */ TfToken(), options);
 }
 
 // Create/update the render view and associated resources based on the
@@ -371,7 +374,7 @@ HdPrman_RenderSettings::UpdateAndRender(
             renderIndex,
             product.cameraPath,
             &cameraContext);
-        
+
         const GfVec2f shutter =
             _ResolveShutterInterval(product, cameraContext, renderIndex);
 
@@ -476,6 +479,11 @@ void HdPrman_RenderSettings::_Sync(
         }
     }
 
+    if (*dirtyBits & HdRenderSettings::DirtyFrameNumber ||
+        *dirtyBits & HdRenderSettings::DirtyNamespacedSettings) {
+        _UpdateFrame(terminalSi, &_settingsOptions);
+    }
+
     // XXX Preserve existing data flow for clients that don't populate the
     //     sceneGlobals.activeRenderSettingsPrim locator at the root prim of the
     //     scene index. In this scenario, scene options and render terminals
@@ -495,7 +503,8 @@ void HdPrman_RenderSettings::_Sync(
 
         if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings ||
             *dirtyBits & HdRenderSettings::DirtyActive ||
-            *dirtyBits & HdRenderSettings::DirtyShutterInterval) {
+            *dirtyBits & HdRenderSettings::DirtyShutterInterval || 
+            *dirtyBits & HdRenderSettings::DirtyFrameNumber) {
             
             // Handle attributes ...
             param->SetRenderSettingsPrimOptions(_settingsOptions);

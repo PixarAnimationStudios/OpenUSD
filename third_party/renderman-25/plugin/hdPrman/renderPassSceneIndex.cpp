@@ -1,24 +1,7 @@
 // Copyright 2024 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 
 #include "hdPrman/renderPassSceneIndex.h"
 #include "hdPrman/tokens.h"
@@ -38,10 +21,12 @@
 #include "pxr/imaging/hd/renderPassSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneGlobalsSchema.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/schema.h" 
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hdsi/utils.h"
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -129,23 +114,56 @@ _IsVisibleToCamera(const HdContainerDataSourceHandle& primSource)
     return true;
 }
 
+bool
+HdPrman_RenderPassSceneIndex::_RenderPassState::DoesOverrideMatte(
+    SdfPath const& primPath,
+    HdSceneIndexPrim const& prim) const
+{
+    return matteEval
+        && _IsGeometryType(prim.primType)
+        && matteEval->Match(primPath);
+}
+
+bool
+HdPrman_RenderPassSceneIndex::_RenderPassState::DoesOverrideVis(
+    SdfPath const& primPath,
+    HdSceneIndexPrim const& prim) const
+{
+    return renderVisEval
+        && _ShouldApplyPassVisibility(prim.primType)
+        && !renderVisEval->Match(primPath)
+        && _IsVisible(prim.dataSource);
+}
+
+bool
+HdPrman_RenderPassSceneIndex::_RenderPassState::DoesOverrideCameraVis(
+    SdfPath const& primPath,
+    HdSceneIndexPrim const& prim) const
+{
+    return cameraVisEval
+        && _ShouldApplyPassVisibility(prim.primType)
+        && !cameraVisEval->Match(primPath)
+        && _IsVisibleToCamera(prim.dataSource);
+}
+
+bool
+HdPrman_RenderPassSceneIndex::_RenderPassState::DoesPrune(
+    SdfPath const& primPath) const
+{
+    return pruneEval && pruneEval->Match(primPath);
+}
+
 HdSceneIndexPrim 
 HdPrman_RenderPassSceneIndex::GetPrim(
     const SdfPath &primPath) const
 {
-    // Apply active render pass state to upstream prim.
-    _RenderPassState const& state = _PullActiveRenderPasssState();
-
     // Pruning
     //
     // Note that we also apply pruning in GetChildPrimPaths(), but
-    // this ensures that even if a downstream scene index still assks
+    // this ensures that even if a downstream scene index asks
     // for a pruned path, it will remain pruned.
-    if (state.pruneEval) {
-        const bool pruned = state.pruneEval->Match(primPath);
-        if (pruned) {
-            return HdSceneIndexPrim();
-        }
+    if (_activeRenderPass.DoesPrune(primPath)) {
+        return HdSceneIndexPrim();
     }
 
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
@@ -160,11 +178,7 @@ HdPrman_RenderPassSceneIndex::GetPrim(
     // but excluded from the pass renderVisibility collection, get their
     // visibility overriden to 0.
     //
-    if (state.renderVisEval &&
-        _ShouldApplyPassVisibility(prim.primType) &&
-        !state.renderVisEval->Match(primPath) &&
-        _IsVisible(prim.dataSource))
-    {
+    if (_activeRenderPass.DoesOverrideVis(primPath, prim)) {
         static const HdContainerDataSourceHandle invisDs =
             HdRetainedContainerDataSource::New(
                 HdVisibilitySchema::GetSchemaToken(),
@@ -182,11 +196,7 @@ HdPrman_RenderPassSceneIndex::GetPrim(
     // but excluded from the pass cameraVisibility collection, get their
     // riAttributesVisibilityCamera primvar overriden to 0.
     //
-    if (state.cameraVisEval &&
-        _ShouldApplyPassVisibility(prim.primType) &&
-        !state.cameraVisEval->Match(primPath) &&
-        _IsVisibleToCamera(prim.dataSource))
-    {
+    if (_activeRenderPass.DoesOverrideCameraVis(primPath, prim)) {
         static const HdContainerDataSourceHandle cameraInvisDs =
             HdPrimvarSchema::Builder()
                 .SetPrimvarValue(
@@ -206,10 +216,7 @@ HdPrman_RenderPassSceneIndex::GetPrim(
     // We do not bother to check if the upstream prim already
     // has matte set since that is essentially never the case.
     //
-    if (state.matteEval &&
-        _IsGeometryType(prim.primType) &&
-        state.matteEval->Match(primPath))
-    {
+    if (_activeRenderPass.DoesOverrideMatte(primPath, prim)) {
         static const HdContainerDataSourceHandle matteDs =
             HdPrimvarSchema::Builder()
                 .SetPrimvarValue(
@@ -242,17 +249,92 @@ SdfPathVector
 HdPrman_RenderPassSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
-    // Apply active render pass state to upstream prim.
-    _RenderPassState const& state = _PullActiveRenderPasssState();
-
-    if (state.pruneEval) {
+    if (_activeRenderPass.pruneEval) {
         SdfPathVector childPathVec =
             _GetInputSceneIndex()->GetChildPrimPaths(primPath);
-        HdsiUtilsRemovePrunedChildren(primPath, *state.pruneEval,
+        HdsiUtilsRemovePrunedChildren(primPath, *_activeRenderPass.pruneEval,
                                       &childPathVec);
         return childPathVec;
     } else {
         return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+    }
+}
+
+/*
+
+General notes on change processing and invalidation:
+
+- Rather than lazily evaluate the active render pass state,
+  and be prepared to do so from multiple caller threads, we
+  instead greedily set up the active render pass state.
+  Though greedy, this is a small amount of computation,
+  and only triggered on changes to two specific scene locations:
+  the root scope where HdSceneGlobalsSchema lives, and the
+  scope where the designated active render pass lives.
+
+- The list of entries for prims added, dirtied, or removed
+  must be filtered against the active render pass prune collection.
+
+- The list of entries for prims added, dirtied, or removed
+  can imply changes to which render pass is active, or to the
+  contents of the active render pass.  In either case, if the
+  effective render pass state changes, downstream observers
+  must be notified about the effects.
+
+*/
+
+// Helper to scan an entry vector for an entry that
+// could affect the active render pass.
+template <typename ENTRIES>
+inline static bool
+_EntryCouldAffectPass(
+    const ENTRIES &entries,
+    SdfPath const& activeRenderPassPath)
+{
+    for (const auto& entry: entries) {
+        // The prim at the root path contains the HdSceneGlobalsSchema.
+        // The prim at the render pass path controls its behavior.
+        if (entry.primPath.IsAbsoluteRootPath()
+            || entry.primPath == activeRenderPassPath) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Helper to apply pruning to an entry list.
+// Returns true if any pruning was applied, putting surviving entries
+// into *postPruneEntries.
+template <typename ENTRIES>
+inline static bool
+_PruneEntries(
+    std::optional<HdCollectionExpressionEvaluator> &pruneEval,
+    const ENTRIES &entries, ENTRIES *postPruneEntries)
+{
+    if (!pruneEval) {
+        // No pruning active.
+        return false;
+    }
+    // Pre-pass to see if any prune applies to the list.
+    bool foundEntryToPrune = false;
+    for (const auto& entry: entries) {
+        if (pruneEval->Match(entry.primPath)) {
+            foundEntryToPrune = true;
+            break;
+        }
+    }
+    if (!foundEntryToPrune) {
+        // No entries to prune.
+        return false;
+    } else {
+        // Prune matching entries.
+        for (const auto& entry: entries) {
+            if (!pruneEval->Match(entry.primPath)) {
+                // Accumulate survivors.
+                postPruneEntries->push_back(entry);
+            }
+        }
+        return true;
     }
 }
 
@@ -261,12 +343,25 @@ HdPrman_RenderPassSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {    
-    {
-        // TODO: Invalidation
-        std::unique_lock<std::mutex> lock(_activeRenderPassMutex);
-        _activeRenderPass.reset();
+    HdSceneIndexObserver::AddedPrimEntries extraAddedEntries;
+    HdSceneIndexObserver::DirtiedPrimEntries extraDirtyEntries;
+    HdSceneIndexObserver::RemovedPrimEntries extraRemovedEntries;
+
+    // Check if any entry could affect the active render pass.
+    if (_EntryCouldAffectPass(entries, _activeRenderPass.renderPassPath)) {
+        _UpdateActiveRenderPassState(
+            &extraAddedEntries, &extraDirtyEntries, &extraRemovedEntries);
     }
-    _SendPrimsAdded(entries);
+
+    // Filter entries against any active render pass prune collection.
+    if (!_PruneEntries(_activeRenderPass.pruneEval, entries,
+                       &extraAddedEntries)) {
+        _SendPrimsAdded(entries);
+    }
+
+    _SendPrimsAdded(extraAddedEntries);
+    _SendPrimsRemoved(extraRemovedEntries);
+    _SendPrimsDirtied(extraDirtyEntries);
 }
 
 void 
@@ -274,12 +369,25 @@ HdPrman_RenderPassSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
-    {
-        // TODO: Invalidation
-        std::unique_lock<std::mutex> lock(_activeRenderPassMutex);
-        _activeRenderPass.reset();
+    HdSceneIndexObserver::AddedPrimEntries extraAddedEntries;
+    HdSceneIndexObserver::DirtiedPrimEntries extraDirtyEntries;
+    HdSceneIndexObserver::RemovedPrimEntries extraRemovedEntries;
+
+    // Check if any entry could affect the active render pass.
+    if (_EntryCouldAffectPass(entries, _activeRenderPass.renderPassPath)) {
+        _UpdateActiveRenderPassState(
+            &extraAddedEntries, &extraDirtyEntries, &extraRemovedEntries);
     }
-    _SendPrimsRemoved(entries);
+
+    // Filter entries against any active render pass prune collection.
+    if (!_PruneEntries(_activeRenderPass.pruneEval, entries,
+                       &extraRemovedEntries)) {
+        _SendPrimsRemoved(entries);
+    }
+
+    _SendPrimsAdded(extraAddedEntries);
+    _SendPrimsRemoved(extraRemovedEntries);
+    _SendPrimsDirtied(extraDirtyEntries);
 }
 
 void
@@ -287,14 +395,26 @@ HdPrman_RenderPassSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
-    {
-        // TODO: Invalidation
-        std::unique_lock<std::mutex> lock(_activeRenderPassMutex);
-        _activeRenderPass.reset();
-    }
-    _SendPrimsDirtied(entries);
-}
+    HdSceneIndexObserver::AddedPrimEntries extraAddedEntries;
+    HdSceneIndexObserver::DirtiedPrimEntries extraDirtyEntries;
+    HdSceneIndexObserver::RemovedPrimEntries extraRemovedEntries;
 
+    // Check if any entry could affect the active render pass.
+    if (_EntryCouldAffectPass(entries, _activeRenderPass.renderPassPath)) {
+        _UpdateActiveRenderPassState(
+            &extraAddedEntries, &extraDirtyEntries, &extraRemovedEntries);
+    }
+
+    // Filter entries against any active render pass prune collection.
+    if (!_PruneEntries(_activeRenderPass.pruneEval, entries,
+                       &extraDirtyEntries)) {
+        _SendPrimsDirtied(entries);
+    }
+
+    _SendPrimsAdded(extraAddedEntries);
+    _SendPrimsRemoved(extraRemovedEntries);
+    _SendPrimsDirtied(extraDirtyEntries);
+}
 
 HdPrman_RenderPassSceneIndex::~HdPrman_RenderPassSceneIndex() = default;
 
@@ -318,39 +438,91 @@ _CompileCollection(
     }
 }
 
-HdPrman_RenderPassSceneIndex::_RenderPassState const&
-HdPrman_RenderPassSceneIndex::_PullActiveRenderPasssState() const
+void
+HdPrman_RenderPassSceneIndex::_UpdateActiveRenderPassState(
+    HdSceneIndexObserver::AddedPrimEntries *addedEntries,
+    HdSceneIndexObserver::DirtiedPrimEntries *dirtyEntries,
+    HdSceneIndexObserver::RemovedPrimEntries *removedEntries)
 {
-    std::unique_lock<std::mutex> lock(_activeRenderPassMutex);
-    if (_activeRenderPass) {
-        // Note: we assume callers invoke this method in a context
-        // that protects against invalidation of the pointer.
-        // Ex: GetPrim(), but not _PrimsDirtied().
-        return *_activeRenderPass;
-    }
+    TRACE_FUNCTION();
+
+    // Swap out the prior pass state to compare against.
+    _RenderPassState &state = _activeRenderPass;
+    _RenderPassState priorState;
+    std::swap(state, priorState);
+
+    // Check upstream scene index for an active render pass.
     HdSceneIndexBaseRefPtr inputSceneIndex = _GetInputSceneIndex();
-    _activeRenderPass = std::make_unique<_RenderPassState>();
-    _RenderPassState &state = *_activeRenderPass;
     HdSceneGlobalsSchema globals =
         HdSceneGlobalsSchema::GetFromSceneIndex(inputSceneIndex);
     if (HdPathDataSourceHandle pathDs = globals.GetActiveRenderPassPrim()) {
         state.renderPassPath = pathDs->GetTypedValue(0.0);
     }
-    const HdSceneIndexPrim passPrim =
-        inputSceneIndex->GetPrim(state.renderPassPath);
-    if (HdCollectionsSchema collections =
-        HdCollectionsSchema::GetFromParent(passPrim.dataSource)) {
-        // Prepare evaluators for render pass collections.
-        _CompileCollection(collections, _tokens->matte,
-                           inputSceneIndex, &state.matteEval);
-        _CompileCollection(collections, _tokens->renderVisibility,
-                           inputSceneIndex, &state.renderVisEval);
-        _CompileCollection(collections, _tokens->cameraVisibility,
-                           inputSceneIndex, &state.cameraVisEval);
-        _CompileCollection(collections, _tokens->prune,
-                           inputSceneIndex, &state.pruneEval);
+    if (state.renderPassPath.IsEmpty() && priorState.renderPassPath.IsEmpty()) {
+        // Avoid further work if no render pass was or is active.
+        return;
     }
-    return state;
+    if (!state.renderPassPath.IsEmpty()) {
+        const HdSceneIndexPrim passPrim =
+            inputSceneIndex->GetPrim(state.renderPassPath);
+        if (HdCollectionsSchema collections =
+            HdCollectionsSchema::GetFromParent(passPrim.dataSource)) {
+            // Prepare evaluators for render pass collections.
+            _CompileCollection(collections, _tokens->matte,
+                               inputSceneIndex, &state.matteEval);
+            _CompileCollection(collections, _tokens->renderVisibility,
+                               inputSceneIndex, &state.renderVisEval);
+            _CompileCollection(collections, _tokens->cameraVisibility,
+                               inputSceneIndex, &state.cameraVisEval);
+            _CompileCollection(collections, _tokens->prune,
+                               inputSceneIndex, &state.pruneEval);
+        }
+    }
+
+    // Generate change entries for affected prims.
+    // Consider all upstream prims.
+    //
+    // TODO: HdCollectionExpressionEvaluator::PopulateAllMatches()
+    // should be used here instead, since in the future it will handle
+    // instance matches as well as parallel traversal.
+    //
+    for (const SdfPath &path: HdSceneIndexPrimView(_GetInputSceneIndex())) {
+        if (priorState.DoesPrune(path)) {
+            // The prim had been pruned.
+            if (!state.DoesPrune(path)) {
+                // The prim is no longer pruned, so add it back.
+                HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(path);
+                addedEntries->push_back({path, prim.primType});
+            } else {
+                // The prim is still pruned, so nothing to do.
+            }
+        } else if (state.DoesPrune(path)) {
+            // The prim is newly pruned, so remove it.
+            removedEntries->push_back({path});
+        } else {
+            // Determine which (if any) locators on the upstream prim
+            // are dirtied by the change in render pass state.
+            const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(path);
+            const bool visibilityDidChange =
+                (priorState.DoesOverrideVis(path, prim)
+                 != state.DoesOverrideVis(path, prim));
+            const bool primvarsDidChange =
+                (priorState.DoesOverrideCameraVis(path, prim)
+                 != state.DoesOverrideCameraVis(path, prim)) ||
+                (priorState.DoesOverrideMatte(path, prim)
+                 != state.DoesOverrideMatte(path, prim));
+            if (primvarsDidChange || visibilityDidChange) {
+                HdDataSourceLocatorSet locators;
+                if (primvarsDidChange) {
+                    locators.insert(HdPrimvarsSchema::GetDefaultLocator());
+                }
+                if (visibilityDidChange) {
+                    locators.insert(HdVisibilitySchema::GetDefaultLocator());
+                }
+               dirtyEntries->push_back({path, locators});
+            }
+        }
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

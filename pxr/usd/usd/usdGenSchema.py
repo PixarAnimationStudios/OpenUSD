@@ -2,25 +2,8 @@
 #
 # Copyright 2016 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 """
 This script generates C++ classes and supporting Python code for USD Schemata.
@@ -41,6 +24,7 @@ generated that will compile and work with USD Core successfully:
 """
 
 from __future__ import print_function
+import dataclasses
 import sys, os, re, inspect
 import keyword
 from argparse import ArgumentParser
@@ -293,14 +277,14 @@ def _CamelCase(aString):
 Token = namedtuple('Token', ['id', 'value', 'desc'])
 
 def _GetNameAndGeneratedSchemaPropNameForPropInfo(sdfPropName, classInfo):
-    if classInfo.propertyNamespacePrefix:
+    if classInfo.propertyNamespace:
         # A property namespace prefix will only exist for multiple apply API
         # schemas and is used to create the instanceable namespace prefix 
         # prepended to all its properties. We prepend this instanceable 
         # prefix to the raw name here.
         generatedSchemaPropName = \
             Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
-                classInfo.propertyNamespacePrefix, sdfPropName)
+                classInfo.propertyNamespace.prefix, sdfPropName)
         # Since the property info's name is used to create the identifier 
         # used for tokens and such, we make it from the instanced property 
         # name with the instance name placeholder replaced with 
@@ -480,6 +464,17 @@ def _InheritsOwnFamily(p):
         p.GetPath().name)
     return family in allInheritedFamilies
 
+@dataclasses.dataclass
+class MultiApplyPropertyNamespace:
+    prefix : str
+    token : str
+
+    @classmethod
+    def Create(cls, prefix, useLiteralIdentifier):
+        return cls(prefix, _MakeValidToken(prefix, useLiteralIdentifier)) \
+               if prefix else None
+
+
 class ClassInfo(object):
     def __init__(self, usdPrim, sdfPrim, useLiteralIdentifier=False):
         # First validate proper class naming...
@@ -601,8 +596,10 @@ class ClassInfo(object):
                 not self.isAPISchemaBase and not self.isTypedBase
         self.apiSchemaType = self.customData.get(API_SCHEMA_TYPE, 
                 SINGLE_APPLY if self.isApi else None)
-        self.propertyNamespacePrefix = \
-            self.customData.get(PROPERTY_NAMESPACE_PREFIX)
+        self.propertyNamespace = MultiApplyPropertyNamespace.Create(
+            self.customData.get(PROPERTY_NAMESPACE_PREFIX),
+            useLiteralIdentifier
+        )
         self.apiAutoApply = self.customData.get(API_AUTO_APPLY)
         self.apiCanOnlyApply = self.customData.get(API_CAN_ONLY_APPLY)
         self.apiAllowedInstanceNames = self.customData.get(
@@ -616,7 +613,7 @@ class ClassInfo(object):
                 sdfPrim.path)
 
         if self.apiSchemaType != MULTIPLE_APPLY:
-            if self.propertyNamespacePrefix:
+            if self.propertyNamespace:
                 raise _GetSchemaDefException(
                     "%s should only be used as a customData field on "
                     "multiple-apply API schemas." % PROPERTY_NAMESPACE_PREFIX,
@@ -795,7 +792,7 @@ def _MakeMultipleApplySchemaNameTemplate(apiSchemaName):
 # use the USD prim because we need to know all override properties for the 
 # flattened schema class, so this will include any overrides provided purely 
 # through inheritance.
-def _GetAPISchemaOverridePropertyNames(usdPrim, propertyNamespacePrefix):
+def _GetAPISchemaOverridePropertyNames(usdPrim, propertyNamespace):
     apiSchemaOverridePropertyNames = []
 
     for usdProp in usdPrim.GetProperties():
@@ -845,9 +842,9 @@ def _GetAPISchemaOverridePropertyNames(usdPrim, propertyNamespacePrefix):
         # schemas. If so, the property names need to be converted into their
         # template names to match the properties that will be in the 
         # generatedSchema.
-        if propertyNamespacePrefix:
+        if propertyNamespace:
             propName = Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
-                propertyNamespacePrefix, propName)
+                propertyNamespace.prefix, propName)
 
         # Add the property name to the list.
         apiSchemaOverridePropertyNames.append(propName)
@@ -880,13 +877,13 @@ def ParseUsd(usdFilePath):
         # make sure that if we have a multiple-apply schema with a property
         # namespace prefix that the prim actually has some properties
         if classInfo.apiSchemaType == MULTIPLE_APPLY:
-            if classInfo.propertyNamespacePrefix and \
+            if classInfo.propertyNamespace and \
                 len(sdfPrim.properties) == 0:
                     raise _GetSchemaDefException(
                         "Multiple-apply schemas that have the "
                         "propertyNamespacePrefix metadata fields must have at "
                         "least one property", sdfPrim.path)
-            if not classInfo.propertyNamespacePrefix and \
+            if not classInfo.propertyNamespace and \
                 not len(sdfPrim.properties) == 0:
                     raise _GetSchemaDefException(
                         "Multiple-apply schemas that do not"
@@ -967,7 +964,7 @@ def ParseUsd(usdFilePath):
         # schemas.
         classInfo.apiSchemaOverridePropertyNames = \
             _GetAPISchemaOverridePropertyNames(
-                usdPrim, classInfo.propertyNamespacePrefix)
+                usdPrim, classInfo.propertyNamespace)
     
     for classInfo in classes:
         # If this is an applied API schema that does not inherit from 
@@ -1265,9 +1262,9 @@ def GatherTokens(classes, libName, libTokens,
 
         # Add property namespace prefix token for multiple-apply API
         # schema to token set
-        if cls.propertyNamespacePrefix:
-            _AddToken(tokenDict, cls.tokens, cls.propertyNamespacePrefix,
-                      cls.propertyNamespacePrefix,
+        if cls.propertyNamespace:
+            _AddToken(tokenDict, cls.tokens, cls.propertyNamespace.token,
+                      cls.propertyNamespace.prefix,
                       "Property namespace prefix for the %s schema." \
                               % cls.cppClassName, True)
 

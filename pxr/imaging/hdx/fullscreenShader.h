@@ -1,25 +1,8 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HDX_FULLSCREENSHADER_H
 #define PXR_IMAGING_HDX_FULLSCREENSHADER_H
@@ -99,15 +82,19 @@ public:
     HDX_API
     void BindBuffers(HgiBufferHandleVector const& buffers);
 
-    /// Bind (externally managed) textures to the shader program.
+    /// Bind (externally managed) textures to the shader program and use the
+    /// optionally provided samplers for each one.
     /// This function can be used to bind textures to a custom shader program.
-    /// The lifetime of textures is managed by the caller. HdxFullscreenShader
-    /// does not take ownership.
+    /// The lifetime of textures is managed by the caller as are the samplers.
+    /// HdxFullscreenShader does not take ownership of them.
     /// Textures will be bound at the indices corresponding to their position in
-    /// the provided vector.
+    /// the provided vector.  Each texture will use the corresponding sampler
+    /// that is provided.  If no samplers are provided, or an invalid sampler
+    /// is provided for a texture, a default sampler will be used.
     HDX_API
     void BindTextures(
-        HgiTextureHandleVector const& textures);
+        HgiTextureHandleVector const& textures,
+        HgiSamplerHandleVector const& samplers = HgiSamplerHandleVector());
 
     /// By default HdxFullscreenShader creates a pipeline object that enables
     /// depth testing and enables depth write if there is a depth texture.
@@ -169,8 +156,8 @@ private:
     // Utility to create default vertex buffer descriptor.
     void _SetVertexBufferDescriptor();
 
-    // Utility to create a texture sampler.
-    bool _CreateSampler();
+    // Utility to create and get the default texture sampler.
+    HgiSamplerHandle _GetDefaultSampler();
 
     // Utility to set the default program.
     void _SetDefaultProgram(bool writeDepth);
@@ -189,6 +176,7 @@ private:
     void _PrintCompileErrors();
 
     HgiTextureHandleVector _textures;
+    HgiSamplerHandleVector _samplers;
     HgiBufferHandleVector _buffers;
 
     TfToken _glslfxPath;
@@ -197,7 +185,7 @@ private:
     HgiBufferHandle _indexBuffer;
     HgiBufferHandle _vertexBuffer;
     HgiShaderProgramHandle _shaderProgram;
-    HgiSamplerHandle _sampler;
+    HgiSamplerHandle _defaultSampler;
 
     HgiDepthStencilState _depthStencilState;
 

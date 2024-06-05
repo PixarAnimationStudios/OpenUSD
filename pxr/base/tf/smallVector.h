@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_TF_SMALL_VECTOR_H
 #define PXR_BASE_TF_SMALL_VECTOR_H
@@ -51,6 +34,16 @@ protected:
     // std::ptrdiff_t to match std::vector, but internally we store size &
     // capacity as uint32_t.
     using _SizeMemberType = std::uint32_t;
+
+    // Union type containing local storage or a pointer to heap storage.
+    template <size_t Size, size_t Align, size_t NumLocal>
+    union _DataUnion;
+
+    // Helper alias to produce the right _DataUnion instantiation for a given
+    // ValueType and NumLocal elements.
+    template <class ValueType, size_t NumLocal>
+    using _Data = _DataUnion<sizeof(ValueType), alignof(ValueType), NumLocal>;
+
 public:
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
@@ -102,50 +95,37 @@ protected:
     // The data storage, which is a union of both the local storage, as well
     // as a pointer, holding the address to the remote storage on the heap, if
     // used.
-    template < typename U, size_type M >
-    union _Data {
+    template <size_t Size, size_t Align, size_t NumLocal>
+    union _DataUnion {
     public:
+        // XXX: Could in principle assert in calls to GetLocalStorage() when
+        // HasLocal is false. Add dependency on tf/diagnostic.h?
+        static constexpr bool HasLocal = NumLocal != 0;
 
-        U *GetLocalStorage() {
-            if constexpr (M == 0) {
-                // XXX: Could assert here. Add dependency on tf/diagnostic.h?
-                return nullptr;
-            }
-            else {
-                return reinterpret_cast<U *>(_local);
-            }
+        void *GetLocalStorage() {
+            return HasLocal ? _local : nullptr;
+        }
+        const void *GetLocalStorage() const {
+            return HasLocal ? _local : nullptr;
         }
 
-        const U *GetLocalStorage() const {
-            if constexpr (M == 0) {
-                // XXX: Could assert here. Add dependency on tf/diagnostic.h?
-                return nullptr;
-            }
-            else {
-                return reinterpret_cast<const U *>(_local);
-            }
+        void *GetRemoteStorage() {
+            return _remote;
         }
-
-        U *GetRemoteStorage() {
+        const void *GetRemoteStorage() const {
             return _remote;
         }
 
-        const U *GetRemoteStorage() const {
-            return _remote;
-        }
-
-        void SetRemoteStorage(U *p) {
+        void SetRemoteStorage(void *p) {
             _remote = p;
         }
-
     private:
         // Pointer to heap storage.
-        U* _remote;
+        void *_remote;
         // Local storage -- min size is sizeof(_remote).
-        alignas(M == 0 ? std::alignment_of_v<U*> : std::alignment_of_v<U>)
-        char _local[std::max<size_t>(sizeof(U)*M, sizeof(_remote))];
+        alignas(NumLocal == 0 ? std::alignment_of_v<void *> : Align)
+        char _local[std::max<size_t>(Size * NumLocal, sizeof(_remote))];
     };
-
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -170,9 +150,8 @@ protected:
 /// Note that a TfSmallVector that has grown beyond its local storage, will
 /// NOT move its entries back into the local storage once it shrinks back to N.
 ///
-template < typename T, uint32_t N >
-class TfSmallVector
-    : public TfSmallVectorBase
+template <typename T, uint32_t N>
+class TfSmallVector : public TfSmallVectorBase
 {
 public:
 
@@ -250,7 +229,7 @@ public:
         // If rhs can not be stored locally, take rhs's remote storage and
         // reset rhs to empty.
         if (rhs.size() > N) {
-            _data.SetRemoteStorage(rhs._data.GetRemoteStorage());
+            _SetRemoteStorage(rhs._GetRemoteStorage());
             std::swap(_capacity, rhs._capacity);
         }
 
@@ -337,9 +316,9 @@ public:
         // Both this vector and rhs are stored remotely. Simply swap the
         // pointers, as well as size and capacity.
         else if (!_IsLocal() && !rhs._IsLocal()) {
-            value_type *tmp = _data.GetRemoteStorage();
-            _data.SetRemoteStorage(rhs._data.GetRemoteStorage());
-            rhs._data.SetRemoteStorage(tmp);
+            value_type *tmp = _GetRemoteStorage();
+            _SetRemoteStorage(rhs._GetRemoteStorage());
+            rhs._SetRemoteStorage(tmp);
 
             std::swap(_size, rhs._size);
             std::swap(_capacity, rhs._capacity);
@@ -362,14 +341,13 @@ public:
             // source will become the one with the remote storage, so those
             // entries will be essentially freed.
             for (size_type i = 0; i < local->size(); ++i) {
-                _MoveConstruct(
-                    remote->_data.GetLocalStorage() + i, &(*local)[i]);
+                _MoveConstruct(remote->_GetLocalStorage() + i, &(*local)[i]);
                 (*local)[i].~value_type();
             }
 
             // Swap the remote storage into the vector which previously had the
             // local storage. It's been properly cleaned up now.
-            local->_data.SetRemoteStorage(remoteStorage);
+            local->_SetRemoteStorage(remoteStorage);
 
             // Swap sizes and capacities. Easy peasy. 
             std::swap(remote->_size, local->_size);
@@ -562,7 +540,7 @@ public:
             // Destroy old data and set up this new buffer.
             _Destruct();
             _FreeStorage();
-            _data.SetRemoteStorage(newStorage);
+            _SetRemoteStorage(newStorage);
             _capacity = nextCapacity;
         }
         else {
@@ -776,6 +754,25 @@ public:
     
 private:
 
+    // Raw data access.
+    value_type *_GetLocalStorage() {
+        return static_cast<value_type *>(_data.GetLocalStorage());
+    }
+    const value_type *_GetLocalStorage() const {
+        return static_cast<const value_type *>(_data.GetLocalStorage());
+    }
+
+    value_type *_GetRemoteStorage() {
+        return static_cast<value_type *>(_data.GetRemoteStorage());
+    }
+    const value_type *_GetRemoteStorage() const {
+        return static_cast<const value_type *>(_data.GetRemoteStorage());
+    }
+
+    void _SetRemoteStorage(value_type *p) {
+        _data.SetRemoteStorage(static_cast<void *>(p));
+    }
+    
     // Returns true if the local storage is used.
     bool _IsLocal() const {
         return _capacity <= N;
@@ -784,19 +781,19 @@ private:
     // Return a pointer to the storage, which is either local or remote
     // depending on the current capacity.
     value_type *_GetStorage() {
-        return _IsLocal() ? _data.GetLocalStorage() : _data.GetRemoteStorage();
+        return _IsLocal() ? _GetLocalStorage() : _GetRemoteStorage();
     }
 
     // Return a const pointer to the storage, which is either local or remote
     // depending on the current capacity.
     const value_type *_GetStorage() const {
-        return _IsLocal() ? _data.GetLocalStorage() : _data.GetRemoteStorage();
+        return _IsLocal() ? _GetLocalStorage() : _GetRemoteStorage();
     }
 
     // Free the remotely allocated storage.
     void _FreeStorage() {
         if (!_IsLocal()) {
-            free(_data.GetRemoteStorage());
+            free(_GetRemoteStorage());
         }
     }
 
@@ -817,7 +814,7 @@ private:
     // Initialize the vector with new storage, updating the capacity and size.
     void _InitStorage(size_type size) {
         if (size > capacity()) {
-            _data.SetRemoteStorage(_Allocate(size));
+            _SetRemoteStorage(_Allocate(size));
             _capacity = size;
         }
         _size = size;
@@ -830,7 +827,7 @@ private:
         _UninitializedMove(begin(), end(), iterator(newStorage));
         _Destruct();
         _FreeStorage();
-        _data.SetRemoteStorage(newStorage);
+        _SetRemoteStorage(newStorage);
         _capacity = newCapacity;
     }
 
@@ -876,7 +873,7 @@ private:
             _Destruct();
             _FreeStorage();
 
-            _data.SetRemoteStorage(newStorage);
+            _SetRemoteStorage(newStorage);
             _capacity = newCapacity;
         }
 

@@ -69,6 +69,7 @@ pxr_library(usd
         typed
         validator
         validationError
+        validationRegistry
         usdFileFormat
         usdaFileFormat
         usdcFileFormat
@@ -469,6 +470,14 @@ pxr_build_test(testUsdValidator
         testenv/testUsdValidator.cpp
 )
 
+pxr_build_test(testUsdValidationRegistry
+    LIBRARIES
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdValidationRegistry.cpp
+)
+
 pxr_build_test(testUsdZipFile_CPP
     LIBRARIES
         ar
@@ -735,6 +744,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdValidationRegistry
+    DEST testUsdValidationRegistry
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdZipFile.testenv
     DEST testUsdZipFile
 )
@@ -981,6 +995,11 @@ pxr_register_test(testUsdMetadataCpp
 
 pxr_register_test(testUsdValidator
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValidator"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdValidationRegistry
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValidationRegistry"
     EXPECTED_RETURN_CODE 0
 )
 

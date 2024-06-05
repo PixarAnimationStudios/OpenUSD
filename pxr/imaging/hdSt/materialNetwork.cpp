@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/imaging/hdSt/materialNetwork.h"
@@ -674,8 +657,21 @@ _MakeMaterialParamsForTexture(
     NdrTokenVec const& assetIdentifierPropertyNames = 
         sdrNode->GetAssetIdentifierInputNames();
 
-    if (assetIdentifierPropertyNames.size() == 1) {
-        TfToken const& fileProp = assetIdentifierPropertyNames[0];
+    if (!assetIdentifierPropertyNames.empty()) {
+        TfToken fileProp = assetIdentifierPropertyNames[0];
+
+        // Some MaterialX nodes can have multiple file inputs. Take the first
+        // one that matches the param name. If we lookup a <trilinear> texture
+        // against an output named "N42_fileY", we will find the right one.
+        if (assetIdentifierPropertyNames.size() > 1) {
+            for (auto const& propName: assetIdentifierPropertyNames) {
+                if (TfStringEndsWith(outputName.GetString(), propName)) {
+                    fileProp = propName;
+                    break;
+                }
+            }
+        }
+
         auto const& it = node.parameters.find(fileProp);
         if (it != node.parameters.end()){
             const VtValue &v = it->second;

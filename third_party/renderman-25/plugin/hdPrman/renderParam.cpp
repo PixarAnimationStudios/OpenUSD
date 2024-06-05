@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "hdPrman/renderParam.h"
 
@@ -2165,30 +2148,13 @@ HdPrman_RenderParam::_RenderThreadCallback()
         RixStr.k_dice_referencecamera, 
         defaultReferenceCamera);
 
-    bool renderComplete = false;
-    while (!renderComplete) {
-        while (_renderThread->IsPauseRequested()) {
-            if (_renderThread->IsStopRequested()) {
-                break;
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
-        if (_renderThread->IsStopRequested()) {
-            break;
-        }
+    HdPrman_RenderViewContext &ctx = GetRenderViewContext();
+    const riley::RenderViewId renderViewIds[] = { ctx.GetRenderViewId() };
 
-        HdPrman_RenderViewContext &ctx = GetRenderViewContext();
-
-        const riley::RenderViewId renderViewIds[] = { ctx.GetRenderViewId() };
-
-        _riley->Render(
-            { static_cast<uint32_t>(TfArraySize(renderViewIds)),
-              renderViewIds },
-            renderOptions);
-
-        // If a pause was requested, we may have stopped early
-        renderComplete = !_renderThread->IsPauseDirty();
-    }
+    _riley->Render(
+        { static_cast<uint32_t>(TfArraySize(renderViewIds)),
+          renderViewIds },
+        renderOptions);
 }
 
 void 
@@ -2484,19 +2450,19 @@ HdPrman_RenderParam::StopRender(bool blocking)
     //    is a no-op and we need to call it again after we call into Riley.
     // 2. We've occassionally seen cases where Stop() returns successfully,
     //    but the riley threadpools don't shut down right away.
+
+    // Only let one thread try to stop things at once.
+    std::lock_guard<std::mutex> lock(_stopMutex);
+
     while (_renderThread->IsRendering()) {
         {
             TRACE_SCOPE("riley::Stop");
             _riley->Stop();
         }
         using namespace std::chrono_literals;
-        std::this_thread::sleep_for(100us);
-    }
-
-    // Clear out old stats values. TODO: should we be calling this here? 
-    if (_statsSession)
-    {
-        _statsSession->RemoveOldMetricData();
+        if (_renderThread->IsRendering()) {
+            std::this_thread::sleep_for(1ms);
+        }
     }
 }
 
@@ -2509,7 +2475,7 @@ HdPrman_RenderParam::IsRendering()
 bool
 HdPrman_RenderParam::IsPauseRequested()
 {
-    return _renderThread && _renderThread->IsPauseRequested();
+    return false;
 }
 
 void

@@ -1,3 +1,9 @@
+#
+# Copyright 2016 Pixar
+#
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
+#
 # This is an example script from the USD tutorial,
 # "Transformations, Time-sampled Animation, and Layer Offsets".
 #
