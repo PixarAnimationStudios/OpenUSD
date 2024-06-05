@@ -257,6 +257,7 @@ pxr_test_scripts(
     testenv/testUsdResolveTargetPy.py
     testenv/testUsdSchemaBasePy.py
     testenv/testUsdSchemaRegistry.py
+    testenv/testUsdSchemaRegistryThreadedInit.py
     testenv/testUsdSchemaVersioning.py
     testenv/testUsdSpecializes.py
     testenv/testUsdStage.py
@@ -1238,6 +1239,12 @@ pxr_register_test(testUsdSchemaRegistry
 
 pxr_register_test(testUsdSchemaRegistryCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaRegistryCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSchemaRegistryThreadedInit
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaRegistryThreadedInit"
     EXPECTED_RETURN_CODE 0
 )
 
