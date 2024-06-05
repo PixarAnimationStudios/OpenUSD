@@ -6,6 +6,7 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/tf/diagnostic.h"
 
@@ -15,7 +16,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 // This test raises SIGFPE to test the Tf crash handler
-
+ARCH_NO_SANITIZE_ADDRESS_FUNCTION
 int
 main(int argc, char **argv)
 {

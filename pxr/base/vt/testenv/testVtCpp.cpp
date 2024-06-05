@@ -51,6 +51,7 @@
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/span.h"
 
+#include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/fileSystem.h"
 
@@ -501,35 +502,36 @@ static void testArray() {
         TF_AXIOM(array.cback() == "aloha");
         TF_AXIOM(aloha == "aloha");
     }
-    {
-        // Test that attempts to create overly large arrays throw
-        // std::bad_alloc
+}
 
-        VtIntArray ia;
-        try {
-            ia.resize(std::numeric_limits<size_t>::max());
-            TF_FATAL_ERROR("Did not throw std::bad_alloc");
-        }
-        catch (std::bad_alloc const &) {
-            // pass
-        }
+static void testArrayBadAlloc() {
+    // Test that attempts to create overly large arrays throw
+    // std::bad_alloc
 
-        VtDoubleArray da;
-        try {
-            da.reserve(std::numeric_limits<size_t>::max() / 2);
-            TF_FATAL_ERROR("Did not throw std::bad_alloc");
-        }
-        catch (std::bad_alloc const &) {
-            // pass
-        }
-        
-        try {
-            da.resize(ia.max_size() + 1);
-            TF_FATAL_ERROR("Did not throw std::bad_alloc");
-        }
-        catch (std::bad_alloc const &) {
-            // pass
-        }
+    VtIntArray ia;
+    try {
+        ia.resize(std::numeric_limits<size_t>::max());
+        TF_FATAL_ERROR("Did not throw std::bad_alloc");
+    }
+    catch (std::bad_alloc const &) {
+        // pass
+    }
+
+    VtDoubleArray da;
+    try {
+        da.reserve(std::numeric_limits<size_t>::max() / 2);
+        TF_FATAL_ERROR("Did not throw std::bad_alloc");
+    }
+    catch (std::bad_alloc const &) {
+        // pass
+    }
+
+    try {
+        da.resize(ia.max_size() + 1);
+        TF_FATAL_ERROR("Did not throw std::bad_alloc");
+    }
+    catch (std::bad_alloc const &) {
+        // pass
     }
 }
 
@@ -1831,6 +1833,16 @@ static void testVtCheapToCopy() {
 int main(int argc, char *argv[])
 {
     testArray();
+
+    // XXX: When testing an address sanitized build the following
+    // test will correctly assert the failed allocation. So only run the test
+    // for non-sanitized builds
+    //
+    // Furthermore, using ARCH_NO_SANITIZE_ADDRESS attribute will not
+    // work since the assertion occurs within VtArray and not the test
+#if !defined(ARCH_SANITIZE_ADDRESS)
+    testArrayBadAlloc();
+#endif
 
     testDictionary();
     testDictionaryKeyPathAPI();

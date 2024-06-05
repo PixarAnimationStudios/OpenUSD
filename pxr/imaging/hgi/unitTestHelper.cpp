@@ -358,13 +358,13 @@ HgiGfxCmdBfrExecutionTestDriver::_CreateResourceBuffers()
         return false;
     }
 
-    static const int32_t indices[3] = { 0, 1, 2 };
+    constexpr int32_t indices[3] = { 0, 1, 2 };
 
     HgiBufferDesc iboDesc;
     iboDesc.debugName = "IndexBuffer";
     iboDesc.usage = HgiBufferUsageIndex32;
     iboDesc.initialData = indices;
-    iboDesc.byteSize = sizeof(indices) * sizeof(indices[0]);
+    iboDesc.byteSize = sizeof(indices);
     _indexBuffer = _hgi->CreateBuffer(iboDesc);
     if (!_indexBuffer) {
         return false;

@@ -8,6 +8,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/stackTrace.h"
 
 #include <chrono>
@@ -29,6 +30,7 @@ _ThreadTask()
     std::this_thread::sleep_for(std::chrono::minutes(10));
 }
 
+ARCH_NO_SANITIZE_ADDRESS_FUNCTION
 int
 main(int argc, char **argv)
 {
