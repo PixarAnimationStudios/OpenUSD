@@ -51,10 +51,12 @@ pxr_plugin(hdEmbree
 
     PRIVATE_HEADERS
         pxrIES/ies.h
+        pxrIES/pxrIES.h
         pxrPbrt/pbrtUtils.h
 
     CPPFILES
         pxrIES/ies.cpp
+        pxrIES/pxrIES.cpp
 
     RESOURCE_FILES
         plugInfo.json
