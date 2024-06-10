@@ -242,10 +242,10 @@ HdStRenderDelegate::SetDrivers(HdDriverVector const& drivers)
         }
     }
     
+    TF_VERIFY(_hgi, "HdSt requires Hgi HdDriver");
+
     _resourceRegistry =
         _HgiToResourceRegistryMap::GetInstance().GetOrCreateRegistry(_hgi);
-
-    TF_VERIFY(_hgi, "HdSt requires Hgi HdDriver");
 }
 
 const TfTokenVector &
