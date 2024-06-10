@@ -1702,6 +1702,9 @@ class StageView(QGLWidget):
             viewProjectionMatrix = Gf.Matrix4f(frustum.ComputeViewMatrix()
                                             * frustum.ComputeProjectionMatrix())
 
+            # Workaround an apparent bug in some recent versions of PySide6
+            GL.glDepthMask(GL.GL_TRUE)
+
             GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
 
             # ensure viewport is right for the camera framing
@@ -2174,6 +2177,9 @@ class StageView(QGLWidget):
 
         # Need a correct OpenGL Rendering context for FBOs
         self.makeCurrent()
+
+        # Workaround an apparent bug in some recent versions of PySide6
+        GL.glDepthMask(GL.GL_TRUE)
 
         # update rendering parameters
         self._renderParams.frame = self._dataModel.currentFrame
