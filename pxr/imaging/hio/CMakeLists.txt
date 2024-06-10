@@ -35,7 +35,7 @@ pxr_library(hio
         OpenEXR/openexr-c.h
         rankedTypeMap.h
         stb/stb_image.h
-        stb/stb_image_resize.h
+        stb/stb_image_resize2.h
         stb/stb_image_write.h
 
     CPPFILES

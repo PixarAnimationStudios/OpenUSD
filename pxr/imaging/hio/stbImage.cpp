@@ -42,7 +42,7 @@ ARCH_PRAGMA_MAYBE_UNINITIALIZED
 
 #define STB_IMAGE_RESIZE_STATIC
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include "pxr/imaging/hio/stb/stb_image_resize.h"
+#include "pxr/imaging/hio/stb/stb_image_resize2.h"
 
 #define STB_IMAGE_WRITE_STATIC
 #ifdef ARCH_OS_WINDOWS
@@ -224,8 +224,6 @@ Hio_StbImage::_CropAndResize(void const *sourceData, int const cropTop,
     if (resizeNeeded) {
         //resize and copy data into storage
         if (IsColorSpaceSRGB()) {
-            int alphaIndex = (_nchannels == 3)?
-                                 STBIR_ALPHA_CHANNEL_NONE : 3;
             stbir_resize_uint8_srgb((unsigned char *) croppedData, 
                                     cropWidth, cropHeight, 
                                     croppedStrideLength,
@@ -233,26 +231,26 @@ Hio_StbImage::_CropAndResize(void const *sourceData, int const cropTop,
                                     storage.width,
                                     storage.height,
                                     storage.width * bpp,
-                                    _nchannels, alphaIndex, 0);
+                                    (stbir_pixel_layout)_nchannels);
         } else {
             if (_outputType == HioTypeFloat) {
-                    stbir_resize_float((float *) croppedData, 
+                    stbir_resize_float_linear((float *) croppedData,
                                        cropWidth, cropHeight, 
                                        croppedStrideLength,
                                        (float *)storage.data, 
                                        storage.width,
                                        storage.height,
                                        storage.width * bpp,
-                                       _nchannels);
+                                              (stbir_pixel_layout)_nchannels);
             } else {
-                stbir_resize_uint8((unsigned char *) croppedData, 
+                stbir_resize_uint8_linear((unsigned char *) croppedData,
                                    cropWidth, cropHeight,
                                    croppedStrideLength,
                                    (unsigned char *)storage.data,
                                    storage.width,
                                    storage.height,
                                    storage.width * bpp,
-                                   _nchannels);
+                                          (stbir_pixel_layout)_nchannels);
             }
         }
     }
@@ -494,8 +492,6 @@ Hio_StbImage::ReadCropped(int const cropTop,
         if (resizeNeeded) {
             // XXX STB only has a sRGB resize for 8bit
             if (IsColorSpaceSRGB() && _outputType == HioTypeUnsignedByte) {
-                const int alphaIndex = (_nchannels != 4)?
-                                       STBIR_ALPHA_CHANNEL_NONE : 3;
                 stbir_resize_uint8_srgb((unsigned char*)imageData, 
                                         _width, 
                                         _height, 
@@ -504,10 +500,10 @@ Hio_StbImage::ReadCropped(int const cropTop,
                                         storage.width,
                                         storage.height,
                                         storage.width * bpp,
-                                        _nchannels, alphaIndex, 0);
+                                        (stbir_pixel_layout)_nchannels);
             } else {
                 if (_outputType == HioTypeFloat) {
-                    stbir_resize_float((float *)imageData, 
+                    stbir_resize_float_linear((float *)imageData,
                                        _width, 
                                        _height,
                                        inputStrideInBytes,
@@ -515,9 +511,9 @@ Hio_StbImage::ReadCropped(int const cropTop,
                                        storage.width,
                                        storage.height,
                                        storage.width * bpp,
-                                       _nchannels);
+                                              (stbir_pixel_layout)_nchannels);
                 } else {
-                    stbir_resize_uint8((unsigned char *)imageData, 
+                    stbir_resize_uint8_linear((unsigned char *)imageData,
                                        _width, 
                                        _height,
                                        inputStrideInBytes,
@@ -525,7 +521,7 @@ Hio_StbImage::ReadCropped(int const cropTop,
                                        storage.width,
                                        storage.height,
                                        storage.width * bpp,
-                                       _nchannels);
+                                              (stbir_pixel_layout)_nchannels);
                 }
             }
 
@@ -701,4 +697,3 @@ Hio_StbImage::Write(StorageSpec const & storageIn,
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
