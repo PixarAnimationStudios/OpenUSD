@@ -81,27 +81,50 @@ TestUsdShadeShaderPropertyCompliance()
                     float inputs:roughness = 0.5
                     float inputs:specular = 0.5
                     token outputs:surface
+               }
+               def Shader "Bogus"
+               {
+                    uniform token info:id = "Bogus"
                })usda";
     SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
     layer->ImportFromString(layerContents);
     UsdStageRefPtr usdStage = UsdStage::Open(layer);
     TF_AXIOM(usdStage);
-    const UsdPrim usdPrim = usdStage->GetPrimAtPath(
-        SdfPath("/Principled_BSDF"));
-    
-    UsdValidationErrorVector errors = validator->Validate(usdPrim);
-    TF_AXIOM(errors.size() == 1);
-    TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
-    TF_AXIOM(errors[0].GetSites().size() == 1);
-    TF_AXIOM(errors[0].GetSites()[0].IsValid());
-    TF_AXIOM(errors[0].GetSites()[0].IsProperty());
-    TF_AXIOM(errors[0].GetSites()[0].GetProperty().GetPath() == 
-             SdfPath("/Principled_BSDF.inputs:diffuseColor"));
-    const std::string expectedErrorMsg = "Incorrect type for "
-        "/Principled_BSDF.inputs:diffuseColor. Expected 'color3f'; "
-        "got 'float3'.";
-    TF_CODING_ERROR("%s", errors[0].GetMessage().c_str());
-    TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
+
+    {
+        const UsdPrim usdPrim = usdStage->GetPrimAtPath(
+            SdfPath("/Principled_BSDF"));
+
+        UsdValidationErrorVector errors = validator->Validate(usdPrim);
+        TF_AXIOM(errors.size() == 1);
+        TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+        TF_AXIOM(errors[0].GetSites().size() == 1);
+        TF_AXIOM(errors[0].GetSites()[0].IsValid());
+        TF_AXIOM(errors[0].GetSites()[0].IsProperty());
+        TF_AXIOM(errors[0].GetSites()[0].GetProperty().GetPath() == 
+                 SdfPath("/Principled_BSDF.inputs:diffuseColor"));
+        const std::string expectedErrorMsg = "Incorrect type for "
+            "/Principled_BSDF.inputs:diffuseColor. Expected 'color3f'; "
+            "got 'float3'.";
+        TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
+    }
+
+    {
+        const UsdPrim usdPrim = usdStage->GetPrimAtPath(
+            SdfPath("/Bogus"));
+
+        UsdValidationErrorVector errors = validator->Validate(usdPrim);
+        TF_AXIOM(errors.size() == 1);
+        TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+        TF_AXIOM(errors[0].GetSites().size() == 1);
+        TF_AXIOM(errors[0].GetSites()[0].IsValid());
+        TF_AXIOM(errors[0].GetSites()[0].IsPrim());
+        TF_AXIOM(errors[0].GetSites()[0].GetPrim().GetPath() == 
+                 SdfPath("/Bogus"));
+        const std::string expectedErrorMsg = "shaderId 'Bogus' specified on "
+            "shader prim </Bogus> not found in sdrRegistry.";
+        TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
+    }
 }
 
 int

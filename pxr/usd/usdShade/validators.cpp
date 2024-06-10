@@ -88,14 +88,23 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
         if (shader.GetShaderId(&shaderId)) {
             // Single shaderNode, just emplace all properties, no need to find
             // anything.
-            SdrShaderNodeConstPtr sdrShaderNode = 
+            if (SdrShaderNodeConstPtr sdrShaderNode = 
                 SdrRegistry::GetInstance().GetShaderNodeByIdentifier(
-                    shaderId);
-            for (const TfToken &propName : sdrShaderNode->GetInputNames()) {
-                if (const SdrShaderPropertyConstPtr sdrProp =
+                    shaderId)) {
+                for (const TfToken &propName : sdrShaderNode->GetInputNames()) {
+                    if (const SdrShaderPropertyConstPtr sdrProp =
                         sdrShaderNode->GetShaderInput(propName)) {
-                    propNameToPropertyMap.emplace(propName, sdrProp);
+                        propNameToPropertyMap.emplace(propName, sdrProp);
+                    }
                 }
+            } else {
+                return {UsdValidationError(
+                    UsdValidationErrorType::Error,
+                    primErrorSite,
+                    TfStringPrintf("shaderId '%s' specified on shader prim "
+                                   "<%s> not found in sdrRegistry.",
+                                   shaderId.GetText(), 
+                                   usdPrim.GetPath().GetText()))};
             }
         }
     } else {
@@ -107,19 +116,28 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
         // We need to gather all unique inputs from all sdrShaderNodes queried
         // using multiple sourceTypes.
         for (const auto& sourceType : sourceTypes) {
-            SdrShaderNodeConstPtr sdrShaderNode = 
-                shader.GetShaderNodeForSourceType(TfToken(sourceType));
-            shaderNodesFromSourceTypes.push_back(sdrShaderNode);
+            if (SdrShaderNodeConstPtr sdrShaderNode = 
+                shader.GetShaderNodeForSourceType(TfToken(sourceType))) {
+                shaderNodesFromSourceTypes.push_back(sdrShaderNode);
 
-            for (const TfToken &propName : sdrShaderNode->GetInputNames()) {
-                // Check if property has already been added to the map.
-                if (propNameToPropertyMap.find(propName) == 
-                    propNameToPropertyMap.end()) {
-                    if (const SdrShaderPropertyConstPtr sdrProp =
-                        sdrShaderNode->GetShaderInput(propName)) {
+                for (const TfToken &propName : sdrShaderNode->GetInputNames()) {
+                    // Check if property has already been added to the map.
+                    if (propNameToPropertyMap.find(propName) == 
+                        propNameToPropertyMap.end()) {
+                        if (const SdrShaderPropertyConstPtr sdrProp =
+                            sdrShaderNode->GetShaderInput(propName)) {
                             propNameToPropertyMap.emplace(propName, sdrProp);
+                        }
                     }
                 }
+            } else {
+                errors.emplace_back(UsdValidationError(
+                    UsdValidationErrorType::Error,
+                    primErrorSite,
+                    TfStringPrintf("sourceType '%s' specified on shader prim "
+                                   "<%s> not found in sdrRegistry.",
+                                   sourceType.c_str(), 
+                                   usdPrim.GetPath().GetText())));
             }
         }
         SdrShaderNode::ComplianceResults sdrShaderComplianceResults = 
