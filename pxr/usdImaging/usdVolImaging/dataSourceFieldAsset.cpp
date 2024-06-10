@@ -124,5 +124,38 @@ UsdImagingDataSourceFieldAssetPrim::Get(const TfToken & name)
     return UsdImagingDataSourcePrim::Get(name);
 }
 
+HdDataSourceLocatorSet
+UsdImagingDataSourceFieldAssetPrim::Invalidate(
+    UsdPrim const& prim,
+    const TfToken &subprim,
+    const TfTokenVector &properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
+{
+    HdDataSourceLocatorSet locators =
+        UsdImagingDataSourcePrim::Invalidate(
+            prim, subprim, properties, invalidationType);
+
+    TfTokenVector fieldNames;
+    if (prim.IsA<UsdVolOpenVDBAsset>()) {
+        fieldNames =
+            _GetStaticUsdAttributeNames<UsdVolOpenVDBAsset>();
+    } else if (prim.IsA<UsdVolField3DAsset>()) {
+        fieldNames =
+            _GetStaticUsdAttributeNames<UsdVolField3DAsset>();
+    } else {
+        TF_CODING_ERROR("Unsupported field type.");
+        return locators;
+    }
+
+    for (const TfToken &propertyName : properties) {
+        if (std::find(fieldNames.begin(), fieldNames.end(), propertyName)
+                != fieldNames.end()) {
+            locators.insert(HdVolumeFieldSchema::GetDefaultLocator());
+            break;
+        }
+    }
+
+    return locators;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
