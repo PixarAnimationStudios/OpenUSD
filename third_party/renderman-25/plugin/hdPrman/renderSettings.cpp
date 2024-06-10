@@ -183,7 +183,9 @@ _UpdateFrame(
 {
     // Get the Frame from the Terminal Scene Index 
     double frame;
-    HdUtils::GetCurrentFrame(terminalSi, &frame);
+    if (!HdUtils::GetCurrentFrame(terminalSi, &frame)) {
+        return;
+    }
 
     // k_Ri_Frame in Riley is an integer, not float.
     // As an explicit policy choice, round down.

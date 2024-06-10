@@ -89,7 +89,7 @@ private:
 
     SdfPath _activeRenderPassPrimPath;
     SdfPath _activeRenderSettingsPrimPath;
-    double _time;
+    double _time = std::numeric_limits<double>::quiet_NaN();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
