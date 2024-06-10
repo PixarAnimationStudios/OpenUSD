@@ -78,11 +78,11 @@ pxr_install_test_dir(
 )
 pxr_register_test(testHgiVulkanCommand
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHgiCommand --write testHgiVulkanCommand_triangle.png"
-    # IMAGE_DIFF_COMPARE
-    #     testHgiVulkanCommand_triangle.png
-    # FAIL 1
-    # FAIL_PERCENT 0.001
-    # PERCEPTUAL
+    IMAGE_DIFF_COMPARE
+        testHgiVulkanCommand_triangle.png
+    FAIL 1
+    FAIL_PERCENT 0.001
+    PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     ENV
         HGI_ENABLE_VULKAN=1
