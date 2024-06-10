@@ -31,7 +31,6 @@ static void
 _SaveToPNG(
     int width,
     int height,
-    HgiFormat format,
     const char* pixels,
     const std::string& filePath)
 {
@@ -70,9 +69,9 @@ _SaveGpuTextureToFile(
 
     HgiBlitCmdsUniquePtr blitCmds = hgiGL.CreateBlitCmds();
     blitCmds->CopyTextureGpuToCpu(copyOp);
-    hgiGL.SubmitCmds(blitCmds.get());
+    hgiGL.SubmitCmds(blitCmds.get(), HgiSubmitWaitTypeWaitUntilCompleted);
 
-    _SaveToPNG(width, height, format, buffer.data(), filePath);
+    _SaveToPNG(width, height, buffer.data(), filePath);
 }
 
 static void
@@ -98,9 +97,9 @@ _SaveGpuBufferToFile(
 
     HgiBlitCmdsUniquePtr blitCmds = hgiGL.CreateBlitCmds();
     blitCmds->CopyBufferGpuToCpu(copyOp);
-    hgiGL.SubmitCmds(blitCmds.get());
+    hgiGL.SubmitCmds(blitCmds.get(), HgiSubmitWaitTypeWaitUntilCompleted);
 
-    _SaveToPNG(width, height, format, buffer.data(), filePath);
+    _SaveToPNG(width, height, buffer.data(), filePath);
 }
 
 static HgiTextureHandle
@@ -145,13 +144,14 @@ _CreateBuffer(
 static HgiGraphicsCmdsDesc
 _CreateGraphicsCmdsColor0Color1Depth(
     HgiGL& hgiGL,
-    GfVec3i const& size)
+    GfVec3i const& size,
+    HgiFormat colorFormat)
 {
     // Create two color attachments
     HgiTextureDesc texDesc;
     texDesc.dimensions = size;
     texDesc.type = HgiTextureType2D;
-    texDesc.format = _imgFormat;
+    texDesc.format = colorFormat;
     texDesc.sampleCount = HgiSampleCount1;
     texDesc.usage = HgiTextureUsageBitsColorTarget;
     HgiTextureHandle colorTex0 = hgiGL.CreateTexture(texDesc);
@@ -166,13 +166,13 @@ _CreateGraphicsCmdsColor0Color1Depth(
     HgiAttachmentDesc colorAttachment0;
     colorAttachment0.loadOp = HgiAttachmentLoadOpClear;
     colorAttachment0.storeOp = HgiAttachmentStoreOpStore;
-    colorAttachment0.format = _imgFormat;
+    colorAttachment0.format = colorFormat;
     colorAttachment0.usage = HgiTextureUsageBitsColorTarget;
 
     HgiAttachmentDesc colorAttachment1;
     colorAttachment1.loadOp = HgiAttachmentLoadOpClear;
     colorAttachment1.storeOp = HgiAttachmentStoreOpStore;
-    colorAttachment1.format = _imgFormat;
+    colorAttachment1.format = colorFormat;
     colorAttachment1.usage = HgiTextureUsageBitsColorTarget;
 
     HgiAttachmentDesc depthAttachment;
@@ -237,7 +237,7 @@ TestContextArenaAndFramebufferCache()
         for (size_t i = 0; i<count; i++) {
             GfVec3i size = GfVec3i(i+1, i+1, 1);
             HgiGraphicsCmdsDesc desc = 
-                _CreateGraphicsCmdsColor0Color1Depth(hgiGL, size);
+                _CreateGraphicsCmdsColor0Color1Depth(hgiGL, size, _imgFormat);
             HgiGraphicsCmdsUniquePtr cmds= hgiGL.CreateGraphicsCmds(desc);
 
             // Track the texture handles so we can delete some later.
@@ -285,7 +285,7 @@ TestContextArenaAndFramebufferCache()
         for (size_t i = 0; i < count; i++) {
             GfVec3i size = GfVec3i(i+1, i+1, 1);
             HgiGraphicsCmdsDesc desc = 
-                _CreateGraphicsCmdsColor0Color1Depth(hgiGL, size);
+                _CreateGraphicsCmdsColor0Color1Depth(hgiGL, size, _imgFormat);
             HgiGraphicsCmdsUniquePtr cmds= hgiGL.CreateGraphicsCmds(desc);
 
             std::copy(desc.colorTextures.begin(), desc.colorTextures.end(),
@@ -345,12 +345,16 @@ TestGraphicsCmdsClear()
 {
     HgiGL hgiGL;
 
+    const size_t width = _imgSize;
+    const size_t height = _imgSize;
+    const HgiFormat format = _imgFormat;
+
     // Create a default cmds description and set the clearValue for the
     // first attachment to something other than black.
     // Setting 'loadOp' tp 'Clear' is important for this test since we expect
     // the attachment to be cleared when the graphics cmds is created.
     HgiGraphicsCmdsDesc desc =_CreateGraphicsCmdsColor0Color1Depth(
-        hgiGL, GfVec3i(_imgSize, _imgSize, 1));
+        hgiGL, GfVec3i(width, height, 1), format);
     desc.colorAttachmentDescs[0].loadOp = HgiAttachmentLoadOpClear;
     desc.colorAttachmentDescs[0].storeOp = HgiAttachmentStoreOpStore;
     desc.colorAttachmentDescs[0].clearValue = GfVec4f(1, 0, 0.5, 1);
@@ -364,9 +368,9 @@ TestGraphicsCmdsClear()
     _SaveGpuTextureToFile(
         hgiGL, 
         desc.colorTextures[0], 
-        _imgSize, 
-        _imgSize, 
-        _imgFormat, 
+        width, 
+        height, 
+        format, 
         "graphicsCmdsClear.png");
 
     // Cleanup
@@ -385,17 +389,20 @@ TestCreateSrgbaTexture()
 {
     HgiGL hgiGL;
 
-    const int w = 128;
-    const int h = 128;
+    const size_t width = 128;
+    const size_t height = 128;
     const HgiFormat format = HgiFormatUNorm8Vec4srgb;
 
-    const size_t bufferByteSize = w * h * HgiGetDataSizeOfFormat(format);
+    const size_t dataByteSize = width * height * HgiGetDataSizeOfFormat(format);
 
-    std::vector<uint8_t> buffer(bufferByteSize, 64);
-
-    static std::string const path = "srgba.png";
-    HgiTextureHandle tex = _CreateTexture(hgiGL, w, h, format, buffer.data());
-    _SaveGpuTextureToFile(hgiGL, tex, w, h, format, path); 
+    // Create the texture
+    std::vector<uint8_t> textureData(dataByteSize, 64);
+    HgiTextureHandle tex = _CreateTexture(
+        hgiGL, width, height, format, textureData.data());
+    
+    // Write texture to file
+    static std::string const filePath = "srgba.png";
+    _SaveGpuTextureToFile(hgiGL, tex, width, height, format, filePath); 
     
     hgiGL.DestroyTexture(&tex);
 
@@ -431,8 +438,7 @@ TestHgiGetMipInitialData()
     const std::vector<HgiMipInfo> mipInfos = HgiGetMipInfos(
         format, size0, layerCount, totalSize);
 
-    if (mipInfos.size() != 3)
-    {
+    if (mipInfos.size() != 3) {
         TF_CODING_ERROR("TestHgiGetMipInfos returned wrong number of infos");
         return false;
     }
@@ -444,8 +450,7 @@ TestHgiGetMipInitialData()
 
     if (mipInfos[2].dimensions != size2 ||
         mipInfos[2].byteSizePerLayer != thirdMipSize ||
-        mipInfos[2].byteOffset != startOfThirdMip)
-    {
+        mipInfos[2].byteOffset != startOfThirdMip) {
         TF_CODING_ERROR("TestHgiGetMipInitialData incorrect return values");
         return false;
     }
@@ -458,30 +463,31 @@ TestHgiTextureToBufferCopy()
 {
     HgiGL hgiGL;
 
-    const int w = 128;
-    const int h = 128;
+    const int width = 128;
+    const int height = 128;
     const HgiFormat format = HgiFormatUNorm8Vec4srgb;
     
-    const size_t bufferByteSize = w * h * HgiGetDataSizeOfFormat(format);
+    const size_t dataByteSize = width * height * HgiGetDataSizeOfFormat(format);
 
-    // Create GL Texture
-    std::vector<uint8_t> pixels(bufferByteSize, 16);
-    HgiTextureHandle tex = _CreateTexture(hgiGL, w, h, format, pixels.data());
+    // Create the texture
+    std::vector<uint8_t> textureData(dataByteSize, 16);
+    HgiTextureHandle tex = _CreateTexture(
+        hgiGL, width, height, format, textureData.data());
 
-    // Create GL Buffer
-    HgiBufferHandle buf = _CreateBuffer(hgiGL, bufferByteSize, nullptr);
+    // Create the buffer
+    HgiBufferHandle buf = _CreateBuffer(hgiGL, dataByteSize, nullptr);
     
-    // Copy Texture to Buffer
+    // Copy texture to buffer
     HgiTextureToBufferOp copyOp;
     copyOp.gpuSourceTexture = tex;
     copyOp.gpuDestinationBuffer = buf;
-    copyOp.byteSize = bufferByteSize;
+    copyOp.byteSize = dataByteSize;
     HgiBlitCmdsUniquePtr blitCmds = hgiGL.CreateBlitCmds();
     blitCmds->CopyTextureToBuffer(copyOp);
     hgiGL.SubmitCmds(blitCmds.get());
 
-    static std::string const path = "copyTextureToBuffer.png";
-    _SaveGpuBufferToFile(hgiGL, buf, w, h, format, path);
+    static std::string const filePath = "copyTextureToBuffer.png";
+    _SaveGpuBufferToFile(hgiGL, buf, width, height, format, filePath);
 
     hgiGL.DestroyBuffer(&buf);
     hgiGL.DestroyTexture(&tex);
@@ -494,30 +500,32 @@ TestHgiBufferToTextureCopy()
 {
     HgiGL hgiGL;
 
-    const int w = 128;
-    const int h = 128;
+    const int width = 128;
+    const int height = 128;
     const HgiFormat format = HgiFormatUNorm8Vec4srgb;
     
-    const size_t bufferByteSize = w * h * HgiGetDataSizeOfFormat(format);
+    const size_t dataByteSize = width * height * HgiGetDataSizeOfFormat(format);
 
-    // Create GL Buffer
-    std::vector<uint8_t> pixels(bufferByteSize, 32);
-    HgiBufferHandle buf = _CreateBuffer(hgiGL, bufferByteSize, pixels.data());
+    // Create the buffer
+    std::vector<uint8_t> bufferData(dataByteSize, 32);
+    HgiBufferHandle buf = _CreateBuffer(
+        hgiGL, dataByteSize, bufferData.data());
 
-    // Create GL Texture
-    HgiTextureHandle tex = _CreateTexture(hgiGL, w, h, format, nullptr);
+    // Create the texture
+    HgiTextureHandle tex =
+        _CreateTexture(hgiGL, width, height, format, nullptr);
     
-    // Copy Buffer To Texture
+    // Copy buffer to texture
     HgiBufferToTextureOp copyOp;
     copyOp.gpuSourceBuffer = buf;
     copyOp.gpuDestinationTexture = tex;
-    copyOp.byteSize = bufferByteSize;
+    copyOp.byteSize = dataByteSize;
     HgiBlitCmdsUniquePtr blitCmds = hgiGL.CreateBlitCmds();
     blitCmds->CopyBufferToTexture(copyOp);
-    hgiGL.SubmitCmds(blitCmds.get());
+    hgiGL.SubmitCmds(blitCmds.get(), HgiSubmitWaitTypeWaitUntilCompleted);
 
-    static std::string const path = "copyBufferToTexture.png";
-    _SaveGpuTextureToFile(hgiGL, tex, w, h, format, path);
+    static std::string const filePath = "copyBufferToTexture.png";
+    _SaveGpuTextureToFile(hgiGL, tex, width, height, format, filePath);
 
     hgiGL.DestroyTexture(&tex);
     hgiGL.DestroyBuffer(&buf);
