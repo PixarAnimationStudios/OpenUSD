@@ -11,7 +11,13 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdsi/implicitSurfaceSceneIndex.h"
 
+#include "pxr/base/tf/envSetting.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(HDPRMAN_TESSELLATE_IMPLICIT_SURFACES, false,
+    "Tessellate implicit surfaces into meshes, "
+    "instead of using Renderman implicits");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -43,13 +49,29 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
         HdRetainedTypedSampledDataSource<TfToken>::New(
             HdsiImplicitSurfaceSceneIndexTokens->toMesh);
 
-    HdContainerDataSourceHandle const inputArgs =
-        HdRetainedContainerDataSource::New(
-            HdPrimTypeTokens->cone, axisToTransformSrc,
-            HdPrimTypeTokens->cylinder, axisToTransformSrc,
-            // HdSphereSchema doesn't specify an axis, so it can be omitted.
-            HdPrimTypeTokens->cube, toMeshSrc,
-            HdPrimTypeTokens->capsule, toMeshSrc);
+    static bool tessellate =
+        (TfGetEnvSetting(HDPRMAN_TESSELLATE_IMPLICIT_SURFACES) == true);
+
+    HdContainerDataSourceHandle inputArgs;
+    if (tessellate) {
+        // Tessellate everything (legacy behavior).
+        inputArgs =
+            HdRetainedContainerDataSource::New(
+                HdPrimTypeTokens->sphere, toMeshSrc,
+                HdPrimTypeTokens->cube, toMeshSrc,
+                HdPrimTypeTokens->cone, toMeshSrc,
+                HdPrimTypeTokens->cylinder, toMeshSrc,
+                HdPrimTypeTokens->capsule, toMeshSrc);
+    } else {
+        // Cone and cylinder need transforms updated, and cube and capsule still
+        // need to be tessellated.
+        inputArgs =
+            HdRetainedContainerDataSource::New(
+                HdPrimTypeTokens->cone, axisToTransformSrc,
+                HdPrimTypeTokens->cylinder, axisToTransformSrc,
+                HdPrimTypeTokens->cube, toMeshSrc,
+                HdPrimTypeTokens->capsule, toMeshSrc);
+    }
 
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
         _pluginDisplayName,
