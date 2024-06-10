@@ -6,6 +6,7 @@
 //
 #include "pxr/base/arch/defines.h"
 
+#include "pxr/imaging/hgi/debugCodes.h"
 #include "pxr/imaging/hgiMetal/hgi.h"
 #include "pxr/imaging/hgiMetal/buffer.h"
 #include "pxr/imaging/hgiMetal/blitCmds.h"
@@ -153,6 +154,9 @@ HgiMetal::IsBackendSupported() const
     if (@available(macOS 10.15, ios 13.0, *)) {
         return true;
     }
+
+    TF_DEBUG(HGI_DEBUG_IS_SUPPORTED).Msg(
+        "HgiMetal unsupported due to OS version\n");
 
     return false;
 }
