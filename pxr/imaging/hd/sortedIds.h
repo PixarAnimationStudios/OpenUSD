@@ -28,12 +28,6 @@ public:
     HD_API
     Hd_SortedIds();
 
-    HD_API
-    ~Hd_SortedIds() = default;
-
-    HD_API
-    Hd_SortedIds(Hd_SortedIds &&other);
-
     /// Sorts the ids if needed and returns the sorted list of ids.
     HD_API
     const SdfPathVector &GetIds();
@@ -64,9 +58,6 @@ private:
     void _InsertSort();
     void _FullSort();
     void _Sort();
-
-    Hd_SortedIds(const Hd_SortedIds &) = delete;
-    Hd_SortedIds &operator =(const Hd_SortedIds &) = delete;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

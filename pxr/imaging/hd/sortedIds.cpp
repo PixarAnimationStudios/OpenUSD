@@ -29,14 +29,6 @@ Hd_SortedIds::Hd_SortedIds()
 
 }
 
-Hd_SortedIds::Hd_SortedIds(Hd_SortedIds &&other)
- : _ids(std::move(other._ids))
- , _sortedCount(other._sortedCount)
- , _afterLastDeletePoint(other._afterLastDeletePoint)
-{
-
-}
-
 const SdfPathVector &
 Hd_SortedIds::GetIds()
 {

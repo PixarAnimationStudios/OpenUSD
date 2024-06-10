@@ -350,6 +350,17 @@ pxr_build_test(testHdSortedIds
        testenv/testHdSortedIds.cpp
 )
 
+pxr_build_test(testHdSortedIdsPerf
+   LIBRARIES
+       hd
+       sdf
+       tf
+       arch
+
+   CPPFILES
+       testenv/testHdSortedIdsPerf.cpp
+)
+
 pxr_build_test(testHdTimeSampleArray
    LIBRARIES
        hd
