@@ -162,9 +162,9 @@ _CreateExposureTimeAttr(UsdGeomCamera &self,
 }
         
 static UsdAttribute
-_CreateExposureFNumberAttr(UsdGeomCamera &self,
+_CreateExposureFStopAttr(UsdGeomCamera &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateExposureFNumberAttr(
+    return self.CreateExposureFStopAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
@@ -329,10 +329,10 @@ void wrapUsdGeomCamera()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetExposureFNumberAttr",
-             &This::GetExposureFNumberAttr)
-        .def("CreateExposureFNumberAttr",
-             &_CreateExposureFNumberAttr,
+        .def("GetExposureFStopAttr",
+             &This::GetExposureFStopAttr)
+        .def("CreateExposureFStopAttr",
+             &_CreateExposureFStopAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         

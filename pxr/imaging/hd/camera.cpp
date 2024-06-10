@@ -276,11 +276,11 @@ HdCamera::Sync(HdSceneDelegate * sceneDelegate,
             _exposureIso = vExposureIso.Get<float>();
         }
 
-        const VtValue vExposureFNumber =
+        const VtValue vExposureFStop =
             sceneDelegate->GetCameraParamValue(
-                id, HdCameraTokens->exposureFNumber);
-        if (!vExposureFNumber.IsEmpty()) {
-            _exposureFNumber = vExposureFNumber.Get<float>();
+                id, HdCameraTokens->exposureFStop);
+        if (!vExposureFStop.IsEmpty()) {
+            _exposureFStop = vExposureFStop.Get<float>();
         }
 
         const VtValue vExposureResponsivity =

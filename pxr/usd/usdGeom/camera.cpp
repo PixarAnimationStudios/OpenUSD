@@ -376,15 +376,15 @@ UsdGeomCamera::CreateExposureTimeAttr(VtValue const &defaultValue, bool writeSpa
 }
 
 UsdAttribute
-UsdGeomCamera::GetExposureFNumberAttr() const
+UsdGeomCamera::GetExposureFStopAttr() const
 {
-    return GetPrim().GetAttribute(UsdGeomTokens->exposureFNumber);
+    return GetPrim().GetAttribute(UsdGeomTokens->exposureFStop);
 }
 
 UsdAttribute
-UsdGeomCamera::CreateExposureFNumberAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomCamera::CreateExposureFStopAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->exposureFNumber,
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->exposureFStop,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -442,7 +442,7 @@ UsdGeomCamera::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->exposure,
         UsdGeomTokens->exposureIso,
         UsdGeomTokens->exposureTime,
-        UsdGeomTokens->exposureFNumber,
+        UsdGeomTokens->exposureFStop,
         UsdGeomTokens->exposureResponsivity,
     };
     static TfTokenVector allNames =
@@ -658,18 +658,18 @@ UsdGeomCamera::GetExposureScale(UsdTimeCode time) const
 {   
     float exposureTime = 1.0f;
     float exposureIso = 100.0f;
-    float exposureFNumber = 1.0f;
+    float exposureFStop = 1.0f;
     float exposureResponsivity = 1.0f;
     float exposureCompensation = 0.0f;
 
     GetExposureTimeAttr().Get(&exposureTime, time);
     GetExposureIsoAttr().Get(&exposureIso, time);
-    GetExposureFNumberAttr().Get(&exposureFNumber, time);
+    GetExposureFStopAttr().Get(&exposureFStop, time);
     GetExposureResponsivityAttr().Get(&exposureResponsivity, time);
     GetExposureAttr().Get(&exposureCompensation, time);
 
     return (exposureTime * exposureIso * powf(2.0f, exposureCompensation) * 
-            exposureResponsivity) / (100.0f * exposureFNumber * exposureFNumber);
+            exposureResponsivity) / (100.0f * exposureFStop * exposureFStop);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

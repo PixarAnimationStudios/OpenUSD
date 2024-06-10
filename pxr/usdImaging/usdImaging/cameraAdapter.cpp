@@ -272,10 +272,10 @@ UsdImagingCameraAdapter::Get(UsdPrim const& prim,
         VtValue vExposureIso;
         cam.GetExposureIsoAttr().Get(&vExposureIso, time); // conversion n/a
         return vExposureIso;
-    } else if (key == HdCameraTokens->exposureFNumber) {
-        VtValue vExposureFNumber;
-        cam.GetExposureFNumberAttr().Get(&vExposureFNumber, time); // conversion n/a
-        return vExposureFNumber;
+    } else if (key == HdCameraTokens->exposureFStop) {
+        VtValue vExposureFStop;
+        cam.GetExposureFStopAttr().Get(&vExposureFStop, time); // conversion n/a
+        return vExposureFStop;
     } else if (key == HdCameraTokens->exposureResponsivity) {
         VtValue vExposureResponsivity;
         cam.GetExposureResponsivityAttr().Get(&vExposureResponsivity, time); // conversion n/a

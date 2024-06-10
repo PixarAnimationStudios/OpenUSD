@@ -76,7 +76,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (exposure)                                                    \
     (exposureTime)                                                \
     (exposureIso)                                                 \
-    (exposureFNumber)                                             \
+    (exposureFStop)                                               \
     (exposureResponsivity)                                        \
     (exposureCompensation)                                        \
                                                                   \
@@ -349,7 +349,7 @@ protected:
     float                   _exposureCompensation;
     float                   _exposureTime;
     float                   _exposureIso;
-    float                   _exposureFNumber;
+    float                   _exposureFStop;
     float                   _exposureResponsivity;
 
     // lens distortion

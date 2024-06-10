@@ -111,17 +111,17 @@ class SdfAssetPath;
 /// the sensor and loss by the lens.
 /// 
 /// The combination of these parameters gives an exposure scaling factor (also 
-/// referred to as the __imaging ratio__) that converts from incident luminance at
-/// the sensor in __nits__, to an output signal based on photometric exposure in 
-/// __lux-seconds__. 
+/// referred to as the __imaging ratio__) that converts from incident luminance 
+/// passing through the lens system and reaching the sensor, in __nits__, to an 
+/// output signal proportional to photometric exposure in __lux-seconds__. 
 /// 
 /// The calculated scaling factor can be obtained from 
 /// \ref UsdGeomCamera::GetExposureScale(), which is also the value provided by 
 /// \ref HdCamera::GetExposure(). It is computed as:
 /// \code
 /// exposureScale = 
-/// (exposureTime * exposureIso * pow(2, exposure) * exposureResponsivity) 
-/// / (100 * exposureFNumber * exposureFNumber)
+/// (exposureTime * (exposureIso/100) * pow(2, exposure) * exposureResponsivity) 
+/// / (exposureFStop * exposureFStop)
 /// \endcode
 /// 
 /// Renderers should simply multiply the brightness of the image by the exposure 
@@ -592,6 +592,10 @@ public:
     // --------------------------------------------------------------------- //
     /// Time in seconds that the sensor is exposed to light when calculating exposure.
     /// Longer exposure times create a brighter image, shorter times darker.
+    /// Note that shutter:open and shutter:close model essentially the 
+    /// same property of a physical camera, but are for specifying the 
+    /// size of the motion blur streak which is for practical purposes
+    /// useful to keep separate.
     ///
     /// | ||
     /// | -- | -- |
@@ -611,26 +615,31 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
-    // EXPOSUREFNUMBER 
+    // EXPOSUREFSTOP 
     // --------------------------------------------------------------------- //
-    /// f-number of the aperture when calculating exposure. Smaller numbers
+    /// f-stop of the aperture when calculating exposure. Smaller numbers
     /// create a brighter image, larger numbers darker.
+    /// Note that the fStop attribute also models the diameter of the camera
+    /// aperture, but for specifying depth of field.  For practical 
+    /// purposes it is useful to keep the exposure and the depth of field
+    /// controls separate.
+    /// 
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float exposure:fNumber = 1` |
+    /// | Declaration | `float exposure:fStop = 1` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDGEOM_API
-    UsdAttribute GetExposureFNumberAttr() const;
+    UsdAttribute GetExposureFStopAttr() const;
 
-    /// See GetExposureFNumberAttr(), and also 
+    /// See GetExposureFStopAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
-    UsdAttribute CreateExposureFNumberAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateExposureFStopAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //

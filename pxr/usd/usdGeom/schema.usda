@@ -2306,7 +2306,7 @@ class Camera "Camera" (
     The combination of these parameters gives an exposure scaling factor (also 
     referred to as the __imaging ratio__) that converts from incident luminance 
     passing through the lens system and reaching the sensor, in __nits__, to an 
-    output signal based on photometric exposure in __lux-seconds__. 
+    output signal proportional to photometric exposure in __lux-seconds__. 
     
     The calculated scaling factor can be obtained from 
     \\ref UsdGeomCamera::GetExposureScale(), which is also the value provided by 
@@ -2314,7 +2314,7 @@ class Camera "Camera" (
     \\code
         exposureScale = 
             (exposureTime * (exposureIso/100) * pow(2, exposure) * exposureResponsivity) 
-            / (exposureFNumber * exposureFNumber)
+            / (exposureFStop * exposureFStop)
     \\endcode
 
     Renderers should simply multiply the brightness of the image by the exposure 
@@ -2408,8 +2408,8 @@ class Camera "Camera" (
                  useful to keep separate."""
     )
 
-    float exposure:fNumber = 1.0 (
-        doc = """f-number of the aperture when calculating exposure. Smaller numbers
+    float exposure:fStop = 1.0 (
+        doc = """f-stop of the aperture when calculating exposure. Smaller numbers
                  create a brighter image, larger numbers darker.
                  Note that the fStop attribute also models the diameter of the camera
                  aperture, but for specifying depth of field.  For practical 

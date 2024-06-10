@@ -210,10 +210,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomCamera
     const TfToken exposure;
-    /// \brief "exposure:fNumber"
+    /// \brief "exposure:fStop"
     /// 
     /// UsdGeomCamera
-    const TfToken exposureFNumber;
+    const TfToken exposureFStop;
     /// \brief "exposure:iso"
     /// 
     /// UsdGeomCamera
