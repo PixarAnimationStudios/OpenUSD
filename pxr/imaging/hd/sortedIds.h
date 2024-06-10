@@ -25,9 +25,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class Hd_SortedIds {
 public:
-    HD_API
-    Hd_SortedIds();
-
     /// Sorts the ids if needed and returns the sorted list of ids.
     HD_API
     const SdfPathVector &GetIds();
@@ -51,13 +48,11 @@ public:
     void Clear();
 
 private:
-    SdfPathVector           _ids;
-    size_t                  _sortedCount;
-    ptrdiff_t               _afterLastDeletePoint;
-
-    void _InsertSort();
-    void _FullSort();
     void _Sort();
+
+    SdfPathVector                            _ids;
+    SdfPathVector                            _updates;
+    bool                                     _removing=false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
