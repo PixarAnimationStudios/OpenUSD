@@ -12,6 +12,8 @@
 
 #include "pxr/usd/sdf/path.h"
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 ///
@@ -22,6 +24,29 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class Hd_SortedIds {
 public:
+    /// Default ctor produces an empty container.
+    HD_API
+    Hd_SortedIds();
+
+    HD_API
+    ~Hd_SortedIds();
+
+    /// Copy construct.
+    HD_API
+    Hd_SortedIds(Hd_SortedIds const &);
+
+    /// Move construct.
+    HD_API
+    Hd_SortedIds(Hd_SortedIds &&);
+
+    /// Copy assign.
+    HD_API
+    Hd_SortedIds &operator=(Hd_SortedIds const &);
+
+    /// Move assign.
+    HD_API
+    Hd_SortedIds &operator=(Hd_SortedIds &&);
+
     /// Sorts the ids if needed and returns the sorted list of ids.
     HD_API
     const SdfPathVector &GetIds();
@@ -47,11 +72,16 @@ public:
     void Clear();
 
 private:
+    class _UpdateImpl;
+
+    enum _EditMode { _NoMode, _InsertMode, _RemoveMode, _UpdateMode };
+    
     void _Sort();
 
     SdfPathVector                            _ids;
-    SdfPathVector                            _updates;
-    bool                                     _removing=false;
+    SdfPathVector                            _edits;
+    _EditMode                                _mode = _NoMode;
+    std::unique_ptr<_UpdateImpl>             _updater;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

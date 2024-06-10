@@ -412,6 +412,44 @@ InsertRemoveDupesTest()
     expected = {};
     TF_AXIOM(sortedIds.GetIds() == expected);
 
+    // Ensure that inserting and removing without calling GetIds() between works
+    // as expected.
+
+    sortedIds.Insert(P("B"));
+    sortedIds.Insert(P("B"));
+    sortedIds.Remove(P("B"));
+    sortedIds.Insert(P("A"));
+    sortedIds.Insert(P("B"));
+    sortedIds.Insert(P("A"));
+    sortedIds.Insert(P("A"));
+    sortedIds.Remove(P("B"));
+    sortedIds.Remove(P("A"));
+    sortedIds.Remove(P("A"));
+
+    expected = {P("A"),P("B")};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+
+    sortedIds.Insert(P("C"));
+    sortedIds.Remove(P("B"));
+    sortedIds.Remove(P("B"));
+    sortedIds.Insert(P("C"));
+    sortedIds.Insert(P("A"));
+    sortedIds.Insert(P("B"));
+    sortedIds.Remove(P("C"));
+    sortedIds.Insert(P("C"));
+    sortedIds.Remove(P("C"));
+    sortedIds.Remove(P("A"));
+
+    expected = {P("A"),P("B"),P("C")};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+
+    sortedIds.Insert(P("D"));
+    sortedIds.Remove(P("D"));
+    sortedIds.Remove(P("B"));
+
+    expected = {P("A"),P("C")};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+
     return true;
 }
 

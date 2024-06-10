@@ -316,6 +316,44 @@ SpreadRemoveInsertTest(Metrics &metrics, size_t numElts)
                          ArchTicksToNanoseconds(ticks));
 }
 
+static
+void
+SubtreeRenameTest(Metrics &metrics,
+                  SdfPath const &oldPrefix,
+                  SdfPath const &newPrefix)
+{
+    const std::vector<std::pair<SdfPath, SdfPath>> renames = [&]() {
+        std::vector<std::pair<SdfPath, SdfPath>> ret;
+        for (SdfPath const &path: _GetInitPaths()) {
+            if (path.HasPrefix(oldPrefix)) {
+                ret.emplace_back(
+                    path, path.ReplacePrefix(oldPrefix, newPrefix));
+            }
+        }
+        return ret;
+    }();
+
+    Hd_SortedIds ids = _GetPopulatedIds();
+
+    int64_t ticks =
+        ArchMeasureExecutionTime([&ids, &renames]() {
+            for (auto &names: renames) {
+                ids.Remove(names.first);
+                ids.Insert(names.second);
+            }
+            ids.GetIds(); // force sort.
+            for (auto &names: renames) {
+                ids.Remove(names.second);
+                ids.Insert(names.first);
+            }
+            ids.GetIds(); // force sort.
+        });
+
+    metrics.emplace_back(
+        "rename_" + _PathToLabel(oldPrefix) + "_to_" + _PathToLabel(newPrefix),
+        ArchTicksToNanoseconds(ticks));
+}
+
 int main()
 {
     Metrics metrics;
@@ -339,6 +377,9 @@ int main()
     SpreadRemoveInsertTest(metrics, 20);
     SpreadRemoveInsertTest(metrics, 50);
     SpreadRemoveInsertTest(metrics, 100);
+    SubtreeRenameTest(metrics, SdfPath("/A/B/C"), SdfPath("/A/B/_C"));
+    SubtreeRenameTest(metrics, SdfPath("/A/B"), SdfPath("/A/_B"));
+    SubtreeRenameTest(metrics, SdfPath("/Z/Z"), SdfPath("/A/B/_Z"));
     
     FILE *statsFile = fopen("perfstats.raw", "w");
     for (const auto &[metricName, ns]: metrics) {
