@@ -136,6 +136,23 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
     TF_UNUSED(reprToken);
 
+    // Check if there are any relevant dirtyBits.
+    // (See the HdChangeTracker::MarkRprimDirty() note regarding
+    // internalDirtyBits used for internal signaling in Hydra.)
+    static const HdDirtyBits internalDirtyBits = 
+        HdChangeTracker::InitRepr |
+        HdChangeTracker::Varying |
+        HdChangeTracker::NewRepr |
+        HdChangeTracker::CustomBitsMask;
+    // HdPrman does not make use of the repr concept or customBits.
+    *dirtyBits &= ~(HdChangeTracker::NewRepr | HdChangeTracker::CustomBitsMask);
+    // If no relevant dirtyBits remain, return early to avoid acquiring write
+    // access to Riley, which requires a pause and restart of rendering.
+    if (((*dirtyBits & ~internalDirtyBits)
+         & HdChangeTracker::AllSceneDirtyBits) == 0) {
+        return;
+    }
+
     HdPrman_RenderParam *param =
         static_cast<HdPrman_RenderParam*>(renderParam);
 
@@ -191,7 +208,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     // Hydra dirty bits corresponding to PRMan prototype attributes (also called
     // "primitive variables" but not synonymous with USD primvars). See prman
     // docs at https://rmanwiki.pixar.com/display/REN24/Primitive+Variables.
-    static const int prmanProtoAttrBits = 
+    static const HdDirtyBits prmanProtoAttrBits = 
         HdChangeTracker::DirtyPoints |
         HdChangeTracker::DirtyNormals |
         HdChangeTracker::DirtyWidths |
@@ -199,7 +216,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
 
     // Hydra dirty bits corresponding to prman instance attributes. See prman
     // docs at https://rmanwiki.pixar.com/display/REN24/Instance+Attributes.
-    static const int prmanInstAttrBits =
+    static const HdDirtyBits prmanInstAttrBits =
         HdChangeTracker::DirtyMaterialId |
         HdChangeTracker::DirtyTransform |
         HdChangeTracker::DirtyVisibility |
