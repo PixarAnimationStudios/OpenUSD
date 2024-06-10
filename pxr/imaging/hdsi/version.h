@@ -11,7 +11,8 @@
 //           HdsiPrimTypeNoticeBatchingSceneIndex
 // 11 -> 12: Adding HdsiPrimManagingSceneIndexObserver::GetTypedPrim.
 // 12 -> 13: Adding HdsiLightLinkingSceneIndex.
+// 13 -> 14: Add utilities for evaluating expressions on pruning collections.
 
-#define HDSI_API_VERSION 13
+#define HDSI_API_VERSION 14
 
 #endif // PXR_IMAGING_HDSI_VERSION_H

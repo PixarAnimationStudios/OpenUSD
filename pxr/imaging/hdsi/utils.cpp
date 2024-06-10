@@ -5,9 +5,58 @@
 // https://openusd.org/license.
 
 #include "pxr/imaging/hdsi/utils.h"
+
 #include "pxr/imaging/hd/collectionExpressionEvaluator.h"
+#include "pxr/usd/sdf/predicateLibrary.h"
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+namespace {
+
+// For pruning collections that use a path expression without a trailing '//',
+// an ancestral match counts.
+// e.g. The path /World/Foo/Bar should be matched by the expression
+//      /World/Foo (or //Foo) because pruning /World/Foo also prunes all of its
+//      descendants.
+//
+SdfPredicateFunctionResult
+_GetPruneMatchResult(
+    const SdfPath &primPath,
+    const HdCollectionExpressionEvaluator &eval)
+{
+    TRACE_FUNCTION();
+
+    // For pruning collections, an ancestral match counts.
+    //
+    const SdfPathVector prefixes = primPath.GetPrefixes();
+    for (const SdfPath &path : prefixes) {
+        const auto result = eval.Match(path);
+
+        // Short circuit when possible:
+        // 1. Path matches.
+        if (result) {
+            return result;
+        }
+
+        // 2. Path doesn't match, nor does any of its descendants.
+        if (result.IsConstant()) {
+            return result;
+        }
+    }
+    
+    return SdfPredicateFunctionResult(false);
+}
+
+} // anon
+
+bool
+HdsiUtilsIsPruned(
+    const SdfPath &primPath,
+    const HdCollectionExpressionEvaluator &eval)
+{
+    return _GetPruneMatchResult(primPath, eval);
+}
 
 void
 HdsiUtilsRemovePrunedChildren(
@@ -23,45 +72,28 @@ HdsiUtilsRemovePrunedChildren(
         return;
     }
 
-    // Evaluate the expression at parentPath.
-    const SdfPredicateFunctionResult res = eval.Match(parentPath);
-    const bool matchesParent = res.GetValue();
-    const bool resultVariesOverDescendants =
-        res.GetConstancy() ==
-        SdfPredicateFunctionResult::MayVaryOverDescendants;
-
-    // Four possibilities:
-    //
-    // # |   result  |   MayVaryOverDescendants | outcome
-    // --|-----------|--------------------------|------------------------------
-    // 1 |   False   |          False           | nothing to prune
-    //   |           |                          |
-    // 2 |   False   |          True            | traverse children to evaluate
-    //   |           |                          | if they are pruned
-    //   |           |                          |
-    // 3 |    True   |          False           | all children are pruned
-    //   |           |                          |
-    // 4 |    True   |          True            | all children are pruned
-    // ------------------------------------------------------------------------
-    //
-    // #4 is interesting. Even though the result may vary over descendants,
-    // since the parent matches, all of its descendants are pruned regardless.
-    //
-
-    // #3 and #4.
-    if (matchesParent) {
+    const auto result = _GetPruneMatchResult(parentPath, eval);
+    if (result) {
+        // If the parent is pruned, all its children are also pruned.
         children->clear();
         return;
     }
 
+    // Parent isn't pruned. We have two possibilities:
+    // 1. Result is constant over descendants, meaning that none of the children
+    //    are pruned.
+    // 2. Result varies over descendants. We need to evaluate the expression at
+    //    each child.
+
     // #1.
-    if (!resultVariesOverDescendants) {
+    if (result.IsConstant()) {
         return;
     }
 
     // #2.
-    // Evaluate the expression at each child. Like #4, we only care about the
-    // result at the child path and do not need to evaluate its descendants.
+    // We only care about the result at the child path and do not need to 
+    // evaluate its descendants.
+    //
     children->erase(
         std::remove_if(
             children->begin(), children->end(),

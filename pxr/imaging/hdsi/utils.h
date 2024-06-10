@@ -15,6 +15,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdCollectionExpressionEvaluator;
 
+/// --------------------------------------------------------------------------
+/// Utilities to evaluate membership expressions for collections with pruning
+/// semantics.
+/// --------------------------------------------------------------------------
+
+/// Returns whether the prim at \p primPath is pruned by the suppied
+/// evaluator.
+///
+HDSI_API
+bool 
+HdsiUtilsIsPruned(
+    const SdfPath &primPath,
+    const HdCollectionExpressionEvaluator &eval);
+
 /// Prunes the given list of children using the supplied evaluator.
 HDSI_API
 void
@@ -22,6 +36,8 @@ HdsiUtilsRemovePrunedChildren(
     const SdfPath &parentPath,
     const HdCollectionExpressionEvaluator &eval,
     SdfPathVector *children);
+
+/// ------------------------------------------------------------------------
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
