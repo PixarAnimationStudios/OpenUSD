@@ -247,37 +247,26 @@ private:
 
     struct _PrimCacheEntry
     {
-        _PrimCacheEntry()
-        : primvarDescriptorsState(ReadStateUnread)
-        , extCmpPrimvarDescriptorsState(ReadStateUnread)
-        {}
-
-        _PrimCacheEntry(const _PrimCacheEntry &rhs)
-        {
-            primType = rhs.primType;
-            primvarDescriptorsState.store(rhs.primvarDescriptorsState.load());
-            extCmpPrimvarDescriptorsState.store(
-                rhs.extCmpPrimvarDescriptorsState.load());
-        }
-
         TfToken primType;
 
-        enum ReadState : unsigned char {
-            ReadStateUnread = 0,
-            ReadStateReading,
-            ReadStateRead,
-        };
-
-        std::atomic<ReadState> primvarDescriptorsState;
-        std::atomic<ReadState> extCmpPrimvarDescriptorsState;
-        std::map<HdInterpolation, HdPrimvarDescriptorVector>
-            primvarDescriptors;
-        std::map<HdInterpolation, HdExtComputationPrimvarDescriptorVector> 
-            extCmpPrimvarDescriptors;
+        using PrimvarDescriptorsArray =
+            std::array<HdPrimvarDescriptorVector, HdInterpolationCount>;
+        std::shared_ptr<PrimvarDescriptorsArray> primvarDescriptors;
+        using ExtCmpPrimvarDescriptorsArray =
+            std::array<HdExtComputationPrimvarDescriptorVector,
+                HdInterpolationCount>;
+        std::shared_ptr<ExtCmpPrimvarDescriptorsArray> extCmpPrimvarDescriptors;
     };
 
     using _PrimCacheTable = SdfPathTable<_PrimCacheEntry>;
     _PrimCacheTable _primCache;
+
+    std::shared_ptr<_PrimCacheEntry::PrimvarDescriptorsArray>
+        _ComputePrimvarDescriptors(
+            const HdContainerDataSourceHandle &primDataSource);
+    std::shared_ptr<_PrimCacheEntry::ExtCmpPrimvarDescriptorsArray>
+        _ComputeExtCmpPrimvarDescriptors(
+            const HdContainerDataSourceHandle &primDataSource);
 
     bool _sceneDelegatesBuilt;
     std::vector<HdSceneDelegate*> _sceneDelegates;
