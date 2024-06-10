@@ -45,8 +45,8 @@ TestIterators()
         UsdZipFile::Iterator i = zipFile.begin(), e = zipFile.end();
         TF_AXIOM(std::distance(i, e) == 4);
 
-        TF_AXIOM(*i == "a.txt"); // Test operator*
-        TF_AXIOM(strcmp(i->c_str(), "a.txt") == 0); // Test operator->
+        TF_AXIOM(*i == "a.test"); // Test operator*
+        TF_AXIOM(strcmp(i->c_str(), "a.test") == 0); // Test operator->
         TF_AXIOM(i == std::next(zipFile.begin(), 0));
         TF_AXIOM(i != std::next(zipFile.begin(), 1));
         TF_AXIOM(i != std::next(zipFile.begin(), 2));
