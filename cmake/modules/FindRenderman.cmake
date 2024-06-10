@@ -121,8 +121,13 @@ get_filename_component(RENDERMAN_BINARY_DIR
 if (RENDERMAN_INCLUDE_DIR AND EXISTS "${RENDERMAN_INCLUDE_DIR}/prmanapi.h" )
     file(STRINGS "${RENDERMAN_INCLUDE_DIR}/prmanapi.h" TMP REGEX "^#define _PRMANAPI_VERSION_MAJOR_.*$")
     string(REGEX MATCHALL "[0-9]+" MAJOR ${TMP})
-
     set (RENDERMAN_VERSION_MAJOR ${MAJOR})
+
+    file(STRINGS "${RENDERMAN_INCLUDE_DIR}/prmanapi.h" TMP REGEX "^#define _PRMANAPI_VERSION_MINOR_.*$")
+    string(REGEX MATCHALL "[0-9]+" MINOR ${TMP})
+    set (RENDERMAN_VERSION_MINOR ${MINOR})
+    # Combine major and minor version numbers into a single version string
+    set(RENDERMAN_VERSION "${RENDERMAN_VERSION_MAJOR}.${RENDERMAN_VERSION_MINOR}")
 endif()
 
 # will set RENDERMAN_FOUND
@@ -133,6 +138,7 @@ list(APPEND required_vars "RENDERMAN_INCLUDE_DIR")
 list(APPEND required_vars "RENDERMAN_EXECUTABLE")
 list(APPEND required_vars "RENDERMAN_BINARY_DIR")
 list(APPEND required_vars "RENDERMAN_VERSION_MAJOR")
+list(APPEND required_vars "RENDERMAN_VERSION")
 list(APPEND required_vars "PRMAN_LIBRARY")
 list(APPEND required_vars "PRMAN_STATS_LIBRARY")
 list(APPEND required_vars "PXRCORE_LIBRARY")
