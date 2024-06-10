@@ -152,13 +152,10 @@ Hd_SortedIds::_Sort()
                     if (*removeBegin == *updateIter) {
                         --removeEnd;
                         removeBegin = _ids.erase(removeBegin);
-                        ++updateIter;
                     }
-                    else {
-                        removeBegin = ++updateIter != updateEnd
-                            ? lower_bound(removeBegin, removeEnd, *updateIter)
-                            : removeEnd;
-                    }
+                    removeBegin = ++updateIter != updateEnd
+                        ? lower_bound(removeBegin, removeEnd, *updateIter)
+                        : removeEnd;
                 }
             }
             else {
@@ -181,10 +178,8 @@ Hd_SortedIds::_Sort()
         auto addBegin = lower_bound(_ids.begin(), _ids.end(), _updates.front());
 
         if (_updates.size() == 1) {
-            // For a single add, we can just insert it if not present.
-            if (addBegin == _ids.end() || *addBegin != _updates.front()) {
-                _ids.insert(addBegin, std::move(_updates.front()));
-            }
+            // For a single add, we just insert it (even if present).
+            _ids.insert(addBegin, std::move(_updates.front()));
         }
         else {
             auto addEnd =
@@ -200,11 +195,14 @@ Hd_SortedIds::_Sort()
                 // Create tmp space to write the union to, then do the union.
                 SdfPathVector tmp;
                 tmp.reserve(std::distance(addBegin, addEnd) + _updates.size());
-                set_union(make_move_iterator(addBegin),
-                          make_move_iterator(addEnd),
-                          make_move_iterator(_updates.begin()),
-                          make_move_iterator(_updates.end()),
-                          back_inserter(tmp));
+                // We explicitly use merge rather than set_union here to
+                // preserve the semantics that inserting duplicates always
+                // succeeds.
+                std::merge(make_move_iterator(addBegin),
+                           make_move_iterator(addEnd),
+                           make_move_iterator(_updates.begin()),
+                           make_move_iterator(_updates.end()),
+                           back_inserter(tmp));
                 
                 size_t numAdded = tmp.size() - std::distance(addBegin, addEnd);
 

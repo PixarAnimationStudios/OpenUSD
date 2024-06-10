@@ -366,21 +366,72 @@ RemoveLastItemTest()
     return true;
 }
 
+static
+bool
+InsertRemoveDupesTest()
+{
+    std::cout << "\n\nInsertRemoveDupesTest():\n";
+    
+    using P = SdfPath;
+    Hd_SortedIds sortedIds;
+    SdfPathVector expected;
+
+    sortedIds.Insert(P("/B"));
+    sortedIds.Insert(P("/A"));
+
+    expected = {P("/A"),P("/B")};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+    
+    sortedIds.Insert(P("/B"));
+    sortedIds.Insert(P("/A"));
+    sortedIds.Insert(P("/B"));
+    sortedIds.Insert(P("/A"));
+
+    expected = {P("/A"),P("/A"),P("/A"),P("/B"),P("/B"),P("/B")};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+
+    sortedIds.Remove(P("/B"));
+
+    expected = {P("/A"),P("/A"),P("/A"),P("/B"),P("/B")};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+
+    sortedIds.Remove(P("/A"));
+    sortedIds.Remove(P("/B"));
+
+    expected = {P("/A"),P("/A"),P("/B")};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+
+    sortedIds.Remove(P("/A"));
+    sortedIds.Remove(P("/B"));
+
+    expected = {P("/A")};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+
+    sortedIds.Remove(P("/A"));
+
+    expected = {};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+
+    return true;
+}
+
 int main()
 {
     TfErrorMark mark;
 
-    bool success  = PopulateTest()
-                 && SingleInsertTest()
-                 && MultiInsertTest()
-                 && RemoveTest()
-                 && RemoveOnlyElementTest()
-                 && RemoveRangeTest()
-                 && RemoveBatchTest()
-                 && RemoveSortedTest()
-                 && RemoveUnsortedTest()
-                 && RemoveAfterInsertNoSync()
-                 && RemoveLastItemTest();
+    bool success = PopulateTest()
+        && SingleInsertTest()
+        && MultiInsertTest()
+        && RemoveTest()
+        && RemoveOnlyElementTest()
+        && RemoveRangeTest()
+        && RemoveBatchTest()
+        && RemoveSortedTest()
+        && RemoveUnsortedTest()
+        && RemoveAfterInsertNoSync()
+        && RemoveLastItemTest()
+        && InsertRemoveDupesTest()
+        ;
 
     TF_VERIFY(mark.IsClean());
 

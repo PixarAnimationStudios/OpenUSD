@@ -17,11 +17,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Manages a container of Hydra Ids in a sorted order.
 ///
-/// For performance reasons, sorting of the list is deferred
-/// due to inserting a large number of items at once.
-///
-/// The class chooses the type of sort based on how many unsorted items
-/// there are in the list.
+/// Note that this class behaves like a multiset.  Duplicate elements are
+/// allowed.
 ///
 class Hd_SortedIds {
 public:
@@ -29,11 +26,13 @@ public:
     HD_API
     const SdfPathVector &GetIds();
 
-    /// Add a new id to the collection
+    /// Add an id to the collection.  If the id is already present in the
+    /// collection, a duplicate id is added.
     HD_API
     void Insert(const SdfPath &id);
 
-    /// Remove an id from the collection.
+    /// Remove up to one occurrence of id from the collection.  If the id is not
+    /// present, do nothing.  Otherwise remove one copy of id.
     HD_API
     void Remove(const SdfPath &id);
 
