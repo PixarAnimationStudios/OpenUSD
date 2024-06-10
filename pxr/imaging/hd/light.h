@@ -75,6 +75,8 @@ public:
     enum DirtyBits : HdDirtyBits {
         Clean                 = 0,
         DirtyTransform        = 1 << 0,
+        // Note: Because DirtyVisibility wasn't added, DirtyParams does double
+        //       duty for params and visibility.
         DirtyParams           = 1 << 1,
         DirtyShadowParams     = 1 << 2,
         DirtyCollection       = 1 << 3,

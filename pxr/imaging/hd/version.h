@@ -88,9 +88,11 @@
 // 67 -> 68: Adds HdSceneDelegate::SampleFOO with startTime and endTime.
 // 68 -> 69: Removes HdGeomSubsetsSchema. Geom subsets are now represented
 //           in Hydra as child prims of their parent geometry.
+// 69 -> 70: Add dirty bit translation for light filter prims in backend
+//           emulation.
 //
 
-#define HD_API_VERSION 69
+#define HD_API_VERSION 70
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

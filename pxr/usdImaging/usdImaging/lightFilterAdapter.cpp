@@ -153,7 +153,8 @@ UsdImagingLightFilterAdapter::MarkVisibilityDirty(UsdPrim const& prim,
                                             SdfPath const& cachePath,
                                             UsdImagingIndexProxy* index)
 {
-    // TBD
+    // "DirtyParam" is the catch-all bit for light params.
+    index->MarkSprimDirty(cachePath, HdLight::DirtyBits::DirtyParams);
 }
 
 VtValue 

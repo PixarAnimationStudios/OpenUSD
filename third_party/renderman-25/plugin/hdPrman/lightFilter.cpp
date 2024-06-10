@@ -11,7 +11,9 @@
 #include "hdPrman/utils.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -54,11 +56,15 @@ void
 HdPrmanLightFilter::Sync(HdSceneDelegate *sceneDelegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits)
-{  
+{
     HdPrman_RenderParam *param =
         static_cast<HdPrman_RenderParam*>(renderParam);
 
+#if HD_API_VERSION >= 70
+    if (*dirtyBits & HdLight::DirtyTransform) {
+#else
     if (*dirtyBits & HdChangeTracker::DirtyTransform) {
+#endif
         std::lock_guard<std::mutex> lock(_syncToRileyMutex);
         _rileyIsInSync = false;
         _SyncToRileyWithLock(sceneDelegate, param->AcquireRiley());
