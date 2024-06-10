@@ -71,8 +71,7 @@ class SdfAssetPath;
 /// explicit bool conversion operator. Examples of applied API schemas include
 /// UsdCollectionAPI, UsdGeomModelAPI and UsdGeomMotionAPI
 /// 
-/// \anchor UsdAPISchemaBase_SingleVsMultipleApply
-/// \name Single vs. Multiple Apply API Schemas
+/// \subsection usd_apischemabase_single_vs_multiple_apply Single vs. Multiple Apply API Schemas
 /// 
 /// Applied API schemas can further be classified into single-apply and 
 /// multiple-apply API schemas. As the name suggests, a single-apply API schema 
