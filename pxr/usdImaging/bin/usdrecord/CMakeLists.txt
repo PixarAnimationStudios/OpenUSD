@@ -168,7 +168,7 @@ pxr_register_test(testUsdRecordSessionLayer
 
 pxr_register_test(testUsdRecordSmallObject
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord test.usda out.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --enableDomeLightVisibility test.usda out.png"
     IMAGE_DIFF_COMPARE
         out.png
     FAIL 0.5
@@ -283,7 +283,7 @@ pxr_register_test(testUsdRecordSessionLayer_SceneIndex
 
 pxr_register_test(testUsdRecordSmallObject_SceneIndex
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord test.usda out.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --enableDomeLightVisibility test.usda out.png"
     IMAGE_DIFF_COMPARE
         out.png
     FAIL 0.5
