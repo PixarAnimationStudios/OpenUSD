@@ -61,30 +61,50 @@ namespace {
 
 } // end anonymous namespace
 
-// Returns lists of value and children field names to be handled during
+// Returns lists of value field names to be handled during
 // the copy process. The returned lists are sorted using the
 // TfTokenFastArbitraryLessThan comparator.
 static
-void
-_GetFieldNames(
-    const SdfLayerHandle& layer, const SdfPath& path, 
-    std::vector<TfToken>* valueFields, 
-    std::vector<TfToken>* childrenFields)
+std::vector<TfToken>
+_GetValueFieldNames(
+    const SdfLayerHandle& layer, const SdfPath& path)
 {
+    std::vector<TfToken> valueFields;
     const SdfSchemaBase& schema = layer->GetSchema();
     const std::vector<TfToken> allFields = layer->ListFields(path);
     for (const TfToken& field : allFields) {
-        if (schema.HoldsChildren(field)) {
-            childrenFields->push_back(field);
-        }
-        else {
-            valueFields->push_back(field);
+        if (!schema.HoldsChildren(field)) {
+            valueFields.push_back(field);
         }
     }
 
     TfTokenFastArbitraryLessThan lessThan;
-    std::sort(valueFields->begin(), valueFields->end(), lessThan);
-    std::sort(childrenFields->begin(), childrenFields->end(), lessThan);
+    std::sort(valueFields.begin(), valueFields.end(), lessThan);
+
+    return valueFields;
+}
+
+// Returns lists of children field names to be handled during
+// the copy process. The returned lists are sorted using the
+// TfTokenFastArbitraryLessThan comparator.
+static
+std::vector<TfToken>
+_GetChildrenFieldNames(
+    const SdfLayerHandle& layer, const SdfPath& path)
+{
+    std::vector<TfToken> childrenFields;
+    const SdfSchemaBase& schema = layer->GetSchema();
+    const std::vector<TfToken> allFields = layer->ListFields(path);
+    for (const TfToken& field : allFields) {
+        if (schema.HoldsChildren(field)) {
+            childrenFields.push_back(field);
+        }
+    }
+
+    TfTokenFastArbitraryLessThan lessThan;
+    std::sort(childrenFields.begin(), childrenFields.end(), lessThan);
+
+    return childrenFields;
 }
 
 // Process the given children and add any children specs that are indicated by
@@ -542,17 +562,11 @@ SdfCopySpec(
         _SpecDataEntry copyEntry(toCopy.dstPath, specType);
 
         // Determine what data is present for the current source and dest specs
-        // and what needs to be copied. Divide the present fields into those
-        // that contain values and those that index children specs.
-        std::vector<TfToken> dstValueFields;
-        std::vector<TfToken> dstChildrenFields;
-        _GetFieldNames(
-            dstLayer, toCopy.dstPath, &dstValueFields, &dstChildrenFields);
-
-        std::vector<TfToken> srcValueFields;
-        std::vector<TfToken> srcChildrenFields;
-        _GetFieldNames(
-            srcLayer, toCopy.srcPath, &srcValueFields, &srcChildrenFields);
+        // and what needs to be copied.
+        const std::vector<TfToken> dstValueFields = _GetValueFieldNames(
+            dstLayer, toCopy.dstPath);
+        const std::vector<TfToken> srcValueFields = _GetValueFieldNames(
+            srcLayer, toCopy.srcPath);
 
         // From the list of value fields, retrieve all values that the copy
         // policy says we need to copy over to the destination.
@@ -639,6 +653,14 @@ SdfCopySpec(
                     copyEntry.dstPath, fieldValue.first, fieldValue.second);
             }
         }
+
+        // Retrieve the children fields to be copied. Don't retrieve them before
+        // value fields are copied as children fields may be modified during copying
+        // value fields.
+        const std::vector<TfToken> dstChildrenFields = _GetChildrenFieldNames(
+            dstLayer, toCopy.dstPath);
+        const std::vector<TfToken> srcChildrenFields = _GetChildrenFieldNames(
+            srcLayer, toCopy.srcPath);
 
         // Now add any children specs that need to be copied to our
         // copy stack.

@@ -789,6 +789,30 @@ class TestSdfCopyUtils(unittest.TestCase):
                     "variability" : Sdf.VariabilityVarying
                 }
             })
+    
+    def test_RelationshipTargetOverwrite(self):
+        """Tests overwriting relationship target from source to target (in USDC) layer.
+        This test should not fail with exceptions as there was an issue about copying to
+        an non-empty relationship target.
+        """
+
+        layerContent = '''#usda 1.0
+
+        def "target" {}
+
+        def "source" {
+            rel myrel
+        }
+
+        def "dest" {
+            rel myrel = </target>
+        }
+        '''
+
+        usdcFileFormat = Sdf.FileFormat.FindById("usdc")
+        layer = Sdf.Layer.CreateAnonymous("usdc_layer", usdcFileFormat)
+        layer.ImportFromString(textwrap.dedent(layerContent))
+        self.assertTrue(Sdf.CopySpec(layer, "/source", layer, "/dest"))
 
 if __name__ == "__main__":
     unittest.main()
