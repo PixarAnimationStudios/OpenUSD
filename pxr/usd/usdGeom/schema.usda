@@ -2305,7 +2305,7 @@ class Camera "Camera" (
 
     The combination of these parameters gives an exposure scaling factor (also 
     referred to as the __imaging ratio__) that converts from incident luminance 
-    passing through the lens system and reaching the sensor, in __nits__, to an 
+    passing through the lens system and reaching the sensor, in __nits__ (cd/m^2), to an 
     output signal proportional to photometric exposure in __lux-seconds__. 
     
     The calculated scaling factor can be obtained from 
