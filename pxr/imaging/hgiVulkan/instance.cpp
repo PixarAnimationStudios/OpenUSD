@@ -58,8 +58,10 @@ HgiVulkanInstance::HgiVulkanInstance()
             VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
         #elif defined(VK_USE_PLATFORM_XLIB_KHR)
             VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
-        #elif defined(VK_USE_PLATFORM_MACOS_MVK)
-            VK_MVK_MACOS_SURFACE_EXTENSION_NAME,
+        #elif defined(VK_USE_PLATFORM_METAL_EXT)
+            VK_EXT_METAL_SURFACE_EXTENSION_NAME,
+            // See: https://github.com/KhronosGroup/MoltenVK/blob/main/Docs/MoltenVK_Runtime_UserGuide.md#interacting-with-the-moltenvk-runtime
+            VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
         #else
             #error Unsupported Platform
         #endif
@@ -79,11 +81,36 @@ HgiVulkanInstance::HgiVulkanInstance()
     if (HgiVulkanIsDebugEnabled()) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         createInfo.ppEnabledLayerNames = debugLayers;
-        createInfo.enabledLayerCount = (uint32_t)  TfArraySize(debugLayers);
+        createInfo.enabledLayerCount = static_cast<uint32_t>(TfArraySize(debugLayers));
+    }
+
+    uint32_t numAvailableExtensions = 0u;
+    TF_VERIFY(vkEnumerateInstanceExtensionProperties(nullptr, &numAvailableExtensions,
+        nullptr) == VK_SUCCESS);
+    std::vector<VkExtensionProperties> availableExtensions;
+    availableExtensions.resize(numAvailableExtensions);
+    TF_VERIFY(vkEnumerateInstanceExtensionProperties(nullptr, &numAvailableExtensions,
+        availableExtensions.data()) == VK_SUCCESS);
+
+    for (auto iter = extensions.begin(); iter != extensions.end();) {
+        if (std::find_if(availableExtensions.begin(), availableExtensions.end(),
+                [name = *iter](const VkExtensionProperties& p) {return strcmp(p.extensionName, name) == 0;})
+                == availableExtensions.end()) {
+            iter = extensions.erase(iter);
+        } else {
+            ++iter;
+        }
     }
 
     createInfo.ppEnabledExtensionNames = extensions.data();
-    createInfo.enabledExtensionCount = (uint32_t) extensions.size();
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+
+    #if defined(VK_USE_PLATFORM_METAL_EXT)
+        if (std::find(extensions.begin(), extensions.end(),
+                VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) != extensions.end()) {
+            createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+        }
+    #endif
 
     TF_VERIFY(
         vkCreateInstance(
