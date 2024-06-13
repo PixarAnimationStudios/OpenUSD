@@ -20,16 +20,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 static 
 HgiTextureUsage _GetTextureUsage(HdFormat format, TfToken const &name)
 {
-    if (HdAovHasDepthSemantic(name)) {
-        return HgiTextureUsageBitsDepthTarget;
-    } else if (HdAovHasDepthStencilSemantic(name)) {
-        return HgiTextureUsageBitsDepthTarget |
-               HgiTextureUsageBitsStencilTarget;
-    }
-
     // We are assuming at some point in a render buffer's lifetime it could be
     // used to read from, so provide that ability to the render buffer. This is 
-    // especially useful when for the HgiVulkan back-end.
+    // especially useful for the HgiVulkan backend.
+
+    if (HdAovHasDepthSemantic(name)) {
+        return HgiTextureUsageBitsDepthTarget | HgiTextureUsageBitsShaderRead;
+    } else if (HdAovHasDepthStencilSemantic(name)) {
+        return HgiTextureUsageBitsDepthTarget |
+               HgiTextureUsageBitsStencilTarget |
+               HgiTextureUsageBitsShaderRead;
+    }
+
     return HgiTextureUsageBitsColorTarget | HgiTextureUsageBitsShaderRead;
 }
 
