@@ -54,6 +54,7 @@ pxr_library(usdGeom
         sphere
         subset
         tetMesh
+        validatorTokens
         visibilityAPI
         xform
         xformable
