@@ -90,9 +90,10 @@
 //           in Hydra as child prims of their parent geometry.
 // 69 -> 70: Add dirty bit translation for light filter prims in backend
 //           emulation.
+// 70 -> 71: Add virtual HdRenderDelegate::IsParallelSyncEnabled.
 //
 
-#define HD_API_VERSION 70
+#define HD_API_VERSION 71
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

@@ -505,8 +505,10 @@ public:
     HD_API
     virtual void Update();
 
-    /// Whether or not multithreaded sync is enabled for the specified prim type.
-    bool IsParallelSyncEnabled(TfToken primType) const;
+    /// Whether or not multithreaded sync is enabled for the
+    /// specified prim type.
+    HD_API
+    virtual bool IsParallelSyncEnabled(const TfToken &primType) const;
 
 protected:
     /// This class must be derived from.
