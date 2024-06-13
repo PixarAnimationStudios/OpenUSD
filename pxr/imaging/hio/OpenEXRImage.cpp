@@ -76,9 +76,10 @@ public:
     bool Write(StorageSpec const &storage,
                VtDictionary const &metadata) override;
 
-    // IsColorSpaceSRGB asks if the color space is SRGB, but
-    // what Hydra really wants to know is whether the pixels are gamma pixels.
-    // OpenEXR images are always linear, so just return false.
+    // IsColorSpaceSRGB asks if the color values are SRGB encoded against the
+    // SRGB curve, although what Hydra really wants to know is whether the 
+    // pixels are gamma pixels. OpenEXR images are always linear, so always 
+    // return false.
     bool IsColorSpaceSRGB() const override { return false; }
     HioFormat GetFormat() const override;
     int  GetWidth() const override { return _exrReader.width; }
@@ -171,9 +172,10 @@ namespace {
     {
         Hio_OpenEXRImage* self = (Hio_OpenEXRImage*) userdata;
         if (!self || !self->Asset() || !buffer || !sz) {
-            if (error_cb)
+            if (error_cb) {
                 error_cb(ctxt, EXR_ERR_INVALID_ARGUMENT,
                          "%s", "Invalid arguments to read callback");
+	    }
             return -1;
         }
         return self->Asset()->Read(buffer, sz, offset);
@@ -205,8 +207,9 @@ namespace {
             int newHeight = height - cropTop - cropBottom;
             
             if (newWidth <= 0 || newHeight <= 0
-                || (newWidth == width && newHeight == height))
+                || (newWidth == width && newHeight == height)) {
                 return;
+            }
             
             for (int y = 0; y < newHeight; ++y) {
                 for (int x = 0; x < newWidth; ++x) {
@@ -222,8 +225,9 @@ namespace {
         static void HalfToFloat(GfHalf* buffer, float* outBuffer,
                                 int width, int height, int channelCount)
         {
-            if (!buffer || !outBuffer)
+            if (!buffer || !outBuffer) {
                 return;
+            }
             
             for (int i = 0; i < width * height * channelCount; ++i) {
                 outBuffer[i] = buffer[i];
@@ -233,8 +237,9 @@ namespace {
         static void FloatToHalf(float* buffer, GfHalf* outBuffer,
                                 int width, int height, int channelCount)
         {
-            if (!buffer || !outBuffer)
+            if (!buffer || !outBuffer) {
                 return;
+            }
             
             for (int i = 0; i < width * height * channelCount; ++i) {
                 outBuffer[i] = buffer[i];
@@ -250,11 +255,13 @@ bool Hio_OpenEXRImage::ReadCropped(
                 StorageSpec const& storage)
 {
 	// not opened for read prior to calling ReadCropped.
-    if (!_asset)
+    if (!_asset) {
         return false;
+    }
 
-    if (cropTop < 0 || cropBottom < 0 || cropLeft < 0 || cropRight < 0)
+    if (cropTop < 0 || cropBottom < 0 || cropLeft < 0 || cropRight < 0) {
         return false;
+    }
 
     // cache values for the read/crop/resize pipeline
 
@@ -274,13 +281,23 @@ bool Hio_OpenEXRImage::ReadCropped(
     bool outputIsHalf =  HioGetHioType(storage.format) == HioTypeHalfFloat;
     bool outputIsUInt =  HioGetHioType(storage.format) == HioTypeUnsignedInt;
 
-    // no conversion between uint and a float type is provided.
-    if (outputIsUInt && !inputIsUInt)
+    // no conversion to anything except these formats
+    if (!(outputIsHalf || outputIsFloat || outputIsUInt)) {
         return false;
-    if (outputIsFloat && !(inputIsFloat || inputIsHalf))
-        return false;
+    }
 
-    int outputBytesPerPixel = (int) HioGetDataSizeOfType(storage.format) * outChannelCount;
+    // no conversion to uint from non uint
+    if (outputIsUInt && !inputIsUInt) {
+        return false;
+    }
+
+    // no coversion of non float to float
+    if (outputIsFloat && !(inputIsFloat || inputIsHalf)) {
+        return false;
+    }
+
+    int outputBytesPerPixel = 
+	    (int) HioGetDataSizeOfType(storage.format) * outChannelCount;
 
     int readWidth = fileWidth - cropLeft - cropRight;
     int readHeight = fileHeight - cropTop - cropBottom;
@@ -392,11 +409,11 @@ bool Hio_OpenEXRImage::ReadCropped(
         uint32_t outCount = outWidth * outHeight * outChannelCount;
         if (inputIsHalf && outputIsHalf) {
             memcpy(reinterpret_cast<void*>(storage.data),
-               &halfInputBuffer[0], outSize);
+               halfInputBuffer.data(), outSize);
         }
         else if (inputIsFloat && outputIsFloat) {
             memcpy(reinterpret_cast<void*>(storage.data),
-               &floatInputBuffer[0], outSize);
+               floatInputBuffer.data(), outSize);
         }
         else if (outputIsFloat) {
             GfHalf* src = halfInputBuffer.data();
@@ -552,16 +569,18 @@ bool Hio_OpenEXRImage::GetSamplerMetadata(HioAddressDimension dim,
 //static
 void Hio_OpenEXRImage::_AttributeReadCallback(void* self_, exr_context_t exr) {
     Hio_OpenEXRImage* self = reinterpret_cast<Hio_OpenEXRImage*>(self_);
-    if (!self->_metadata.empty())
+    if (!self->_metadata.empty()) {
         return;
+    }
     
     const int partIndex = self->_subimage;
     int attrCount = nanoexr_get_attribute_count(exr, partIndex);
     for (int i = 0; i < attrCount; ++i) {
         const exr_attribute_t* attr;
         nanoexr_get_attribute_by_index(exr, partIndex, i, &attr);
-        if (!attr)
+        if (!attr) {
             continue;
+        }
 
         // this switch is an exhaustive alphabetical treatment of all the
         // possible attribute types.
@@ -893,7 +912,7 @@ bool Hio_OpenEXRImage::Write(StorageSpec const &storage,
         ++pixMul;
     }
 
-    if (type == HioTypeFloat)
+    if (type == HioTypeFloat) {
         rv = nanoexr_write_exr(
                 _filename.c_str(),
                 _AttributeWriteCallback, this,
@@ -903,7 +922,8 @@ bool Hio_OpenEXRImage::Write(StorageSpec const &storage,
                 green, pixelStride, lineStride,
                 blue,  pixelStride, lineStride,
                 alpha, pixelStride, lineStride);
-    else
+    }
+    else {
         rv = nanoexr_write_exr(
                 _filename.c_str(),
                 _AttributeWriteCallback, this,
@@ -913,6 +933,7 @@ bool Hio_OpenEXRImage::Write(StorageSpec const &storage,
                 green, pixelStride, lineStride,
                 blue,  pixelStride, lineStride,
                 alpha, pixelStride, lineStride);
+    }
 
     _callbackDict = nullptr;
     return rv == EXR_ERR_SUCCESS;

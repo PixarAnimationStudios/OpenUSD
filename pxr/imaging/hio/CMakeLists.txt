@@ -40,8 +40,8 @@ pxr_library(hio
 
     CPPFILES
         OpenEXRImage.cpp
-        stbImage.cpp
         OpenEXR/openexr-c.c
+        stbImage.cpp
 
     RESOURCE_FILES
         plugInfo.json
@@ -50,3 +50,17 @@ pxr_library(hio
         overview.dox
 )
 
+pxr_build_test(testHioImage
+    LIBRARIES
+        ar
+        hio
+        plug
+        tf
+
+   CPPFILES
+        testenv/testHioImage.cpp
+)
+
+pxr_register_test(testHioImage
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHioImage"
+)

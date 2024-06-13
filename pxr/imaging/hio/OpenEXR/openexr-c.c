@@ -136,9 +136,11 @@ bool nanoexr_Gaussian_resample(const nanoexr_ImageData_t* src,
     // again for height
     radius = ceilf(sqrtf(-2.0f * sigma_h * sigma_h * logf(1.0f - support)));
     int filterSize_h = (int)radius;
-    if (!filterSize_h)
+    if (!filterSize_h) {
+        free(filter_w);
         return false;
-    
+    }
+
     float* filter_h = (float*) malloc(sizeof(float) * (1 + filterSize_h) * 2);
     sum = 0.0f;
     for (int i = 0; i <= filterSize_h; i++) {
@@ -498,7 +500,7 @@ exr_result_t nanoexr_write_exr(
             encoder.channels[c].user_pixel_stride = alphaPixelStride;
             encoder.channels[c].user_line_stride  = alphaLineStride;
             encoder.channels[c].height            = scansperchunk; // chunk height
-            encoder.channels[c].width             = dataw.max.x - dataw.min.y + 1;
+            encoder.channels[c].width             = dataw.max.x - dataw.min.x + 1;
             encoder.channels[c].encode_from_ptr   = pAlpha;
             ++c;
         }
@@ -506,7 +508,7 @@ exr_result_t nanoexr_write_exr(
             encoder.channels[c].user_pixel_stride = bluePixelStride;
             encoder.channels[c].user_line_stride  = blueLineStride;
             encoder.channels[c].height            = scansperchunk; // chunk height
-            encoder.channels[c].width             = dataw.max.x - dataw.min.y + 1;
+            encoder.channels[c].width             = dataw.max.x - dataw.min.x + 1;
             encoder.channels[c].encode_from_ptr   = pBlue;
             ++c;
         }
@@ -514,7 +516,7 @@ exr_result_t nanoexr_write_exr(
             encoder.channels[c].user_pixel_stride = greenPixelStride;
             encoder.channels[c].user_line_stride  = greenLineStride;
             encoder.channels[c].height            = scansperchunk; // chunk height
-            encoder.channels[c].width             = dataw.max.x - dataw.min.y + 1;
+            encoder.channels[c].width             = dataw.max.x - dataw.min.x + 1;
             encoder.channels[c].encode_from_ptr   = pGreen;
             ++c;
         }
@@ -522,7 +524,7 @@ exr_result_t nanoexr_write_exr(
             encoder.channels[c].user_pixel_stride = redPixelStride;
             encoder.channels[c].user_line_stride  = redLineStride;
             encoder.channels[c].height            = scansperchunk; // chunk height
-            encoder.channels[c].width             = dataw.max.x - dataw.min.y + 1;
+            encoder.channels[c].width             = dataw.max.x - dataw.min.x + 1;
             encoder.channels[c].encode_from_ptr   = pRed;
             ++c;
         }
@@ -574,81 +576,42 @@ int nanoexr_getPixelTypeSize(exr_pixel_type_t t)
     }
 }
 
-static bool strIsRed(const char* layerName, const char* str) {
-    if (layerName && (strncmp(layerName, str, strlen(layerName)) != 0))
+// strcasecmp is not available in the MSVC stdlib.
+#ifdef _MSC_VER
+#define strcasecmp _stricmp
+#endif
+
+static bool strIsComponent(const char* layerName, 
+                           const char* str, 
+                           const char* component)
+{
+    if (!str || !component)
         return false;
 
-    // check if the case folded string is R or RED, or ends in .R or .RED
-    char* folded = strdup(str);
-    for (int i = 0; folded[i]; ++i) {
-        folded[i] = tolower(folded[i]);
+    // if the layername is specified, it must match the beginning of the string.
+    // if layername was specified, move the string pointer past it
+    if (layerName) {
+        if (strncmp(layerName, str, strlen(layerName)) != 0)
+            return false;
+        str += strlen(layerName);
     }
-    if (strcmp(folded, "y") == 0 || strcmp(folded, "r") == 0 ||
-        strcmp(folded, "red") == 0)
-        return true;
-    size_t l = strlen(folded);
-    if ((l > 2) && (folded[l - 2] == '.') && (folded[l - 1] == 'r'))
-        return true;
-    if (l < 4)
-        return false;
-    return strcmp(folded + l - 4, ".red");
-}
 
-static bool strIsGreen(const char* layerName, const char* str) {
-    if (layerName && (strncmp(layerName, str, strlen(layerName)) != 0))
-        return false;
-
-    // check if the case folded string is G or GREEN, or ends in .G or .GREEN
-    char* folded = strdup(str);
-    for (int i = 0; folded[i]; ++i) {
-        folded[i] = tolower(folded[i]);
+    // search backwards in str for a dot. If found, move the string pointer
+    // past it
+    const char* dot = strrchr(str, '.');
+    if (dot) {
+        str = dot + 1;
     }
-    if (strcmp(folded, "g") == 0 || strcmp(folded, "green") == 0)
-        return true;
-    size_t l = strlen(folded);
-    if ((l > 2) && (folded[l - 2] == '.') && (folded[l - 1] == 'g'))
-        return true;
-    if (l < 6)
-        return false;
-    return strcmp(folded + l - 6, ".green");
-}
 
-static bool strIsBlue(const char* layerName, const char* str) {
-    if (layerName && (strncmp(layerName, str, strlen(layerName)) != 0))
-        return false;
-
-    // check if the case folded string is B or BLUE, or ends in .B or .BLUE
-    char* folded = strdup(str);
-    for (int i = 0; folded[i]; ++i) {
-        folded[i] = tolower(folded[i]);
+    // if one character is left, then do a case insensitive comparison with the
+    // first character of the component.
+    if (strlen(str) == 1) {
+        return tolower(str[0]) == tolower(component[0]);
     }
-    if (strcmp(folded, "b") == 0 || strcmp(folded, "blue") == 0)
-        return true;
-    size_t l = strlen(folded);
-    if ((l > 2) && (folded[l - 2] == '.') && (folded[l - 1] == 'b'))
-        return true;
-    if (l < 5)
-        return false;
-    return strcmp(folded + l - 5, ".blue");
-}
 
-static bool strIsAlpha(const char* layerName, const char* str) {
-    if (layerName && (strncmp(layerName, str, strlen(layerName)) != 0))
-        return false;
-
-    // check if the case folded string is A or ALPHA, or ends in .A or .ALPHA
-    char* folded = strdup(str);
-    for (int i = 0; folded[i]; ++i) {
-        folded[i] = tolower(folded[i]);
-    }
-    if (strcmp(folded, "a") == 0 || strcmp(folded, "alpha") == 0)
-        return true;
-    size_t l = strlen(folded);
-    if ((l > 2) && (folded[l - 2] == '.') && (folded[l - 1] == 'a'))
-        return true;
-    if (l < 6)
-        return false;
-    return strcmp(folded + l - 6, ".alpha");
+    // The final check is to return true if a case insensitive comparison of
+    // the string with the component is true.
+    return strcasecmp(str, component) == 0;
 }
 
 void nanoexr_release_image_data(nanoexr_ImageData_t* imageData)
@@ -694,19 +657,19 @@ static exr_result_t _nanoexr_rgba_decoding_initialize(
     for (int c = 0; c < decoder->channel_count; ++c) {
         int channelIndex = -1;
         decoder->channels[c].decode_to_ptr = NULL;
-        if (strIsRed(layerName, decoder->channels[c].channel_name)) {
+        if (strIsComponent(layerName, decoder->channels[c].channel_name, "red")) {
             rgba[0] = c;
             channelIndex = 0;
         }
-        else if (strIsGreen(layerName, decoder->channels[c].channel_name)) {
+        else if (strIsComponent(layerName, decoder->channels[c].channel_name, "green")) {
             rgba[1] = c;
             channelIndex = 1;
         }
-        else if (strIsBlue(layerName, decoder->channels[c].channel_name)) {
+        else if (strIsComponent(layerName, decoder->channels[c].channel_name, "blue")) {
             rgba[2] = c;
             channelIndex = 2;
         }
-        else if (strIsAlpha(layerName, decoder->channels[c].channel_name)) {
+        else if (strIsComponent(layerName, decoder->channels[c].channel_name, "alpha")) {
             rgba[3] = c;
             channelIndex = 3;
         }
@@ -1018,7 +981,7 @@ exr_result_t nanoexr_read_exr(const char* filename,
     exr_compression_t compression;
     rv = exr_get_compression(exr, partIndex, &compression);
     if (rv != EXR_ERR_SUCCESS) {
-        fprintf(stderr, "nanoexr compression error: %s\n", 
+        fprintf(stderr, "nanoexr compression error: %s\n",
                 exr_get_default_error_message(rv));
         exr_finish(&exr);
         return rv;
@@ -1068,8 +1031,8 @@ exr_result_t nanoexr_read_exr(const char* filename,
     img->height = height;
     img->dataSize = width * height * img->channelCount * bytesPerChannel;
     img->pixelType = pixelType;
-    img->dataWindowMinY = (datawin.min.y + 1) >> mipLevel;
-    img->dataWindowMaxY = (datawin.max.y + 1) >> mipLevel;
+    img->dataWindowMinY = datawin.min.y >> mipLevel;
+    img->dataWindowMaxY = (datawin.max.y+1) >> mipLevel;
     img->data = (unsigned char*) malloc(img->dataSize);
     if (img->data == NULL) {
         fprintf(stderr, "nanoexr error: could not allocate memory for image data\n");
