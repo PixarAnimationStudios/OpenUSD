@@ -7,42 +7,74 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdr/registry.h"
-#include "pxr/usd/usd/validationRegistry.h"
+#include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/validationError.h"
+#include "pxr/usd/usd/validationRegistry.h"
 #include "pxr/usd/usd/validator.h"
+#include "pxr/usd/usdGeom/validatorTokens.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/shaderDefUtils.h"
 #include "pxr/usd/usdShade/validatorTokens.h"
 
 #include <algorithm>
+#include <set>
+#include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void
 TestUsdShadeValidators()
 {
-    // This should be updated with every new validators added with
+    // This should be updated with every new validator added with the
     // UsdShadeValidators keyword.
-    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
-    UsdValidatorMetadataVector metadata = 
+    const std::set<TfToken> expectedUsdShadeValidatorNames = {
+        UsdShadeValidatorNameTokens->shaderSdrCompliance,
+        UsdShadeValidatorNameTokens->subsetMaterialBindFamilyName
+    };
+
+    // This should be updated with every new validator added with the
+    // UsdGeomSubset keyword.
+    const std::set<TfToken> expectedUsdGeomSubsetNames = {
+        UsdShadeValidatorNameTokens->subsetMaterialBindFamilyName
+    };
+
+    const UsdValidationRegistry& registry =
+        UsdValidationRegistry::GetInstance();
+
+    // Since other validators can be registered with the same keywords,
+    // our validators registered in usdShade are/may be a subset of the
+    // entire set.
+    std::set<TfToken> validatorMetadataNameSet;
+
+    UsdValidatorMetadataVector metadata =
         registry.GetValidatorMetadataForKeyword(
             UsdShadeValidatorKeywordTokens->UsdShadeValidators);
-    // Since other validators can be can registered with a UsdShadeValidators
-    // keyword, our validators registered in usdShade are a subset of the entire
-    // set.
-    std::set<TfToken> validatorMetadataNameSet;
-    for (const UsdValidatorMetadata &metadata : metadata) {
+    for (const UsdValidatorMetadata& metadata : metadata) {
         validatorMetadataNameSet.insert(metadata.name);
     }
 
-    const std::set<TfToken> expectedValidatorNames = 
-            {UsdShadeValidatorNameTokens->shaderSdrCompliance};
+    TF_AXIOM(std::includes(validatorMetadataNameSet.begin(),
+                           validatorMetadataNameSet.end(),
+                           expectedUsdShadeValidatorNames.begin(),
+                           expectedUsdShadeValidatorNames.end()));
 
-    TF_AXIOM(std::includes(validatorMetadataNameSet.begin(), 
-                           validatorMetadataNameSet.end(), 
-                           expectedValidatorNames.begin(), 
-                           expectedValidatorNames.end()));
+    // Repeat the test using a different keyword.
+    validatorMetadataNameSet.clear();
+
+    metadata = registry.GetValidatorMetadataForKeyword(
+        UsdGeomValidatorKeywordTokens->UsdGeomSubset);
+    for (const UsdValidatorMetadata& metadata : metadata) {
+        validatorMetadataNameSet.insert(metadata.name);
+    }
+
+    TF_AXIOM(std::includes(validatorMetadataNameSet.begin(),
+                           validatorMetadataNameSet.end(),
+                           expectedUsdGeomSubsetNames.begin(),
+                           expectedUsdGeomSubsetNames.end()));
 }
 
 void 
@@ -118,11 +150,127 @@ TestUsdShadeShaderPropertyCompliance()
     }
 }
 
+static const std::string subsetsLayerContents =
+R"usda(#usda 1.0
+(
+    defaultPrim = "SubsetsTest"
+    metersPerUnit = 0.01
+    upAxis = "Z"
+)
+
+def Xform "SubsetsTest" (
+    kind = "component"
+)
+{
+    def Xform "Geom"
+    {
+        def Mesh "Cube"
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+            point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+
+            uniform token subsetFamily:materialBind:familyType = "unrestricted"
+
+            def GeomSubset "materialBindShouldNotBeUnrestricted" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token elementType = "face"
+                uniform token familyName = "materialBind"
+                int[] indices = [0, 2, 4]
+                rel material:binding = </SubsetsTest/Materials/TestMaterial>
+            }
+
+            def GeomSubset "materialBindMissingElementType" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token familyName = "materialBind"
+                int[] indices = [1, 3, 5]
+                rel material:binding = </SubsetsTest/Materials/TestMaterial>
+            }
+
+            def GeomSubset "materialBindMissingFamilyName" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token elementType = "face"
+                int[] indices = [1, 3, 5]
+                rel material:binding = </SubsetsTest/Materials/TestMaterial>
+            }
+
+            def GeomSubset "materialBindShouldBeFaceElementType" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token elementType = "point"
+                uniform token familyName = "materialBind"
+                int[] indices = [0, 2, 4]
+                rel material:binding = </SubsetsTest/Materials/TestMaterial>
+            }
+        }
+    }
+
+    def Scope "Materials"
+    {
+        def Material "TestMaterial"
+        {
+            token outputs:surface.connect = </SubsetsTest/Materials/TestMaterial/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1.0, 0.0, 0.0)
+                token outputs:surface
+            }
+        }
+    }
+}
+)usda";
+
+void
+TestUsdShadeSubsetMaterialBindFamilyName()
+{
+    UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
+    const UsdValidator* validator = registry.GetOrLoadValidatorByName(
+        UsdShadeValidatorNameTokens->subsetMaterialBindFamilyName);
+    TF_AXIOM(validator);
+
+    SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
+    layer->ImportFromString(subsetsLayerContents);
+    UsdStageRefPtr usdStage = UsdStage::Open(layer);
+    TF_AXIOM(usdStage);
+
+    {
+        const UsdPrim usdPrim = usdStage->GetPrimAtPath(
+            SdfPath("/SubsetsTest/Geom/Cube/materialBindMissingFamilyName"));
+
+        const UsdValidationErrorVector errors = validator->Validate(usdPrim);
+        TF_AXIOM(errors.size() == 1u);
+        const UsdValidationError& error = errors[0u];
+        TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
+        TF_AXIOM(error.GetSites().size() == 1u);
+        const UsdValidationErrorSite& errorSite = error.GetSites()[0u];
+        TF_AXIOM(errorSite.IsValid());
+        TF_AXIOM(errorSite.IsPrim());
+        TF_AXIOM(errorSite.GetPrim().GetPath() == usdPrim.GetPath());
+        const std::string expectedErrorMsg =
+            "GeomSubset prim "
+            "</SubsetsTest/Geom/Cube/materialBindMissingFamilyName> "
+            "with material bindings applied but no authored family name "
+            "should set familyName to 'materialBind'.";
+        TF_AXIOM(error.GetMessage() == expectedErrorMsg);
+    }
+}
+
 int
 main()
 {
     TestUsdShadeValidators();
     TestUsdShadeShaderPropertyCompliance();
+    TestUsdShadeSubsetMaterialBindFamilyName();
     printf("OK\n");
     return EXIT_SUCCESS;
 };
