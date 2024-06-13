@@ -64,6 +64,9 @@ pxr_library(usdGeom
     PUBLIC_HEADERS
         api.h
 
+    CPPFILES
+        validators.cpp
+
     PYTHON_CPPFILES
         moduleDeps.cpp
 

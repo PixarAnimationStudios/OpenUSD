@@ -390,6 +390,20 @@
                         ], 
                         "schemaKind": "abstractTyped"
                     }
+                },
+                "Validators": {
+                    "SubsetFamilies": {
+                        "doc": "Validates all of the geom subset families authored beneath an Imageable prim.",
+                        "keywords": [
+                            "UsdGeomSubset"
+                        ],
+                        "schemaTypes": [
+                            "UsdGeomImageable"
+                        ]
+                    },
+                    "keywords": [
+                        "UsdGeomValidators"
+                    ]
                 }
             }, 
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@", 
