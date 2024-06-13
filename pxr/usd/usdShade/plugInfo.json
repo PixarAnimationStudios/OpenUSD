@@ -143,6 +143,15 @@
                             "UsdGeomSubset"
                         ]
                     },
+                    "SubsetsMaterialBindFamily": {
+                        "doc": "Geom subsets of the 'materialBind' family should have a restricted family type and element type 'face'.",
+                        "keywords": [
+                            "UsdGeomSubset"
+                        ],
+                        "schemaTypes": [
+                            "UsdGeomImageable"
+                        ]
+                    },
                     "keywords": [
                         "UsdShadeValidators"
                     ]

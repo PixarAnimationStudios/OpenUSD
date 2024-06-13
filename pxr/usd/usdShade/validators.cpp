@@ -16,7 +16,9 @@
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/subset.h"
+#include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/tokens.h"
@@ -252,6 +254,91 @@ _SubsetMaterialBindFamilyName(const UsdPrim& usdPrim)
     };
 }
 
+static
+UsdValidationErrorVector
+_SubsetsMaterialBindFamily(const UsdPrim& usdPrim)
+{
+    if (!(usdPrim && usdPrim.IsInFamily<UsdGeomImageable>(
+            UsdSchemaRegistry::VersionPolicy::All))) {
+        return {};
+    }
+
+    const UsdGeomImageable imageable(usdPrim);
+    if (!imageable) {
+        return {};
+    }
+
+    const std::vector<UsdGeomSubset> materialBindSubsets =
+        UsdGeomSubset::GetGeomSubsets(
+            imageable,
+            /* elementType = */ TfToken(),
+            /* familyName = */ UsdShadeTokens->materialBind);
+
+    if (materialBindSubsets.empty()) {
+        return {};
+    }
+
+    UsdValidationErrorVector errors;
+
+    // Check to make sure that the "materialBind" family is of a restricted
+    // type, since it is invalid for an element of geometry to be bound to
+    // multiple materials.
+    const TfToken materialBindFamilyType = UsdGeomSubset::GetFamilyType(
+        imageable,
+        UsdShadeTokens->materialBind);
+    if (materialBindFamilyType == UsdGeomTokens->unrestricted) {
+        const UsdValidationErrorSites primErrorSites = {
+            UsdValidationErrorSite(usdPrim.GetStage(), usdPrim.GetPath())
+        };
+
+        errors.emplace_back(
+            UsdValidationErrorType::Error,
+            primErrorSites,
+            TfStringPrintf(
+                "Imageable prim <%s> has '%s' subset family with invalid "
+                "family type '%s'. Family type should be '%s' or '%s' "
+                "instead.",
+                usdPrim.GetPath().GetText(),
+                UsdShadeTokens->materialBind.GetText(),
+                materialBindFamilyType.GetText(),
+                UsdGeomTokens->nonOverlapping.GetText(),
+                UsdGeomTokens->partition.GetText())
+        );
+    }
+
+    // Check that all subsets belonging to the "materialBind" family are of
+    // element type "face", since material bindings may only be applied to
+    // geometric faces.
+    for (const UsdGeomSubset& materialBindSubset : materialBindSubsets) {
+        TfToken elementType;
+        materialBindSubset.GetElementTypeAttr().Get(&elementType);
+        if (elementType != UsdGeomTokens->face) {
+            const UsdValidationErrorSites subsetErrorSites = {
+                UsdValidationErrorSite(
+                    materialBindSubset.GetPrim().GetStage(),
+                    materialBindSubset.GetPath())
+            };
+
+            errors.emplace_back(
+                UsdValidationErrorType::Error,
+                subsetErrorSites,
+                TfStringPrintf(
+                    "GeomSubset <%s> belongs to family '%s' but has non-%s "
+                    "element type '%s'. Subsets belonging to family '%s' "
+                    "should be of element type '%s'.",
+                    materialBindSubset.GetPath().GetText(),
+                    UsdShadeTokens->materialBind.GetText(),
+                    UsdGeomTokens->face.GetText(),
+                    elementType.GetText(),
+                    UsdShadeTokens->materialBind.GetText(),
+                    UsdGeomTokens->face.GetText())
+            );
+        }
+    }
+
+    return errors;
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
@@ -263,6 +350,10 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     registry.RegisterPluginValidator(
         UsdShadeValidatorNameTokens->subsetMaterialBindFamilyName,
         _SubsetMaterialBindFamilyName);
+
+    registry.RegisterPluginValidator(
+        UsdShadeValidatorNameTokens->subsetsMaterialBindFamily,
+        _SubsetsMaterialBindFamily);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
