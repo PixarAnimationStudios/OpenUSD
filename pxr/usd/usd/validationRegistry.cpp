@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <memory>
 #include <type_traits>
+#include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -166,6 +167,9 @@ UsdValidationRegistry::_PopulateMetadataFromPlugInfo()
                 metadata.isSuite = false;
             }
 
+            // we need no protection of shared resource here, because this
+            // member function is only called from within the constructor, and
+            // that's guaranteed to run only once by TfSingleton initialization.
             _AddValidatorMetadata(metadata);
         }
         if (!validatorNames.empty()) {
@@ -270,7 +274,7 @@ UsdValidationRegistry::_RegisterValidator(const UsdValidatorMetadata &metadata,
 
     {
         // Lock for writing validators.
-        std::unique_lock lock(_validatorMutex);
+        std::unique_lock lock(_mutex);
         if (_validators.find(metadata.name) != _validators.end()) {
             TF_CODING_ERROR(
                 "Validator '%s' already registered with the "
@@ -282,6 +286,8 @@ UsdValidationRegistry::_RegisterValidator(const UsdValidatorMetadata &metadata,
         // contention only the first validator's (which is being added)
         // metadata will be added.
         if (addMetadata) {
+            // Following call to _AddValidatorMetadata is protected by the lock
+            // above.
             if (!_AddValidatorMetadata(metadata)) {
                 TF_CODING_ERROR(
                     "Metadata already added for a UsdValidatorSuite with the "
@@ -303,7 +309,7 @@ UsdValidationRegistry::_RegisterValidator(const UsdValidatorMetadata &metadata,
 bool
 UsdValidationRegistry::HasValidator(const TfToken &validatorName) const
 {
-    std::shared_lock lock(_validatorMutex);
+    std::shared_lock lock(_mutex);
     return _validators.find(validatorName) != _validators.end();
 }
 
@@ -312,9 +318,14 @@ UsdValidationRegistry::GetOrLoadAllValidators()
 {
     const TfTokenVector &validatorNames = [&]() {
             TfTokenVector result;
-            std::shared_lock lock(_metadataMutex);
+            std::shared_lock lock(_mutex);
             result.reserve(_validatorNameToMetadata.size());
-            for (const auto &entry : _validatorNameToMetadata) {
+
+            // Ensure _validatorNameToMetadata is accessed as a const; This will
+            // ensure multiple threads can safely read from 
+            // _validatorNameToMetadata without risking data races, as const
+            // begin / end overloads will be invoked below.
+            for (const auto &entry : std::as_const(_validatorNameToMetadata)) {
                 if (!entry.second.isSuite) {
                     result.push_back(entry.first);
                 }
@@ -329,9 +340,12 @@ const UsdValidator*
 UsdValidationRegistry::GetOrLoadValidatorByName(const TfToken &validatorName)
 {
     auto _GetValidator = [&](const TfToken &name) -> const UsdValidator* {
-        std::shared_lock lock(_validatorMutex);
-        const auto &validatorItr = _validators.find(name);
-        if (validatorItr != _validators.end()) {
+        std::shared_lock lock(_mutex);
+        // Ensure _validators is accessed as a const; This will ensure multiple
+        // threads can safely read from _validators without risking data races,
+        // as const find overload will be invoked below.
+        const auto &validatorItr = std::as_const(_validators).find(name);
+        if (validatorItr != _validators.cend()) {
             return validatorItr->second.get();
         }
         return nullptr;
@@ -465,7 +479,7 @@ UsdValidationRegistry::_RegisterValidatorSuite(
 
     {
         // Lock for writing validatorSuites 
-        std::unique_lock lock(_validatorSuiteMutex);
+        std::unique_lock lock(_mutex);
         if (_validatorSuites.find(metadata.name) != 
             _validatorSuites.end()) {
             TF_CODING_ERROR(
@@ -478,6 +492,8 @@ UsdValidationRegistry::_RegisterValidatorSuite(
         // contention only the first validator's (which is being added)
         // metadata will be added.
         if (addMetadata) {
+            // Following call to _AddValidatorMetadata is protected by the lock
+            // above.
             if (!_AddValidatorMetadata(metadata)) {
                 TF_CODING_ERROR(
                     "Metadata already added for a UsdValidator with the same "
@@ -500,7 +516,7 @@ UsdValidationRegistry::_RegisterValidatorSuite(
 bool
 UsdValidationRegistry::HasValidatorSuite(const TfToken &suiteName) const
 {
-    std::shared_lock lock(_validatorSuiteMutex);
+    std::shared_lock lock(_mutex);
     return _validatorSuites.find(suiteName) != _validatorSuites.end();
 }
 
@@ -510,9 +526,13 @@ UsdValidationRegistry::GetOrLoadAllValidatorSuites()
 
     const TfTokenVector suiteNames = [&]() {
             TfTokenVector result;
-            std::shared_lock lock(_metadataMutex);
+            std::shared_lock lock(_mutex);
             result.reserve(_validatorNameToMetadata.size());
-            for (const auto &entry : _validatorNameToMetadata) {
+            // Ensure _validatorNameToMetadata is accessed as a const; This will
+            // ensure multiple threads can safely read from 
+            // _validatorNameToMetadata without risking data races, as const
+            // begin / end overloads will be invoked below.
+            for (const auto &entry : std::as_const(_validatorNameToMetadata)) {
                 if (entry.second.isSuite) {
                     result.push_back(entry.first);
                 }
@@ -538,9 +558,12 @@ UsdValidationRegistry::GetOrLoadValidatorSuiteByName(
 {
     auto _GetValidatorSuite = [&](const TfToken &name) 
             -> const UsdValidatorSuite* {
-        std::shared_lock lock(_validatorSuiteMutex);
-        const auto& validatorSuiteItr = _validatorSuites.find(name);
-        if (validatorSuiteItr != _validatorSuites.end()) {
+        std::shared_lock lock(_mutex);
+        // Ensure _validatorSuites is accessed as a const; This will ensure 
+        // multiple threads can safely read from _validatorSuites without 
+        // risking data races, as const find overload will be invoked below.
+        const auto& validatorSuiteItr = std::as_const(_validatorSuites).find(name);
+        if (validatorSuiteItr != _validatorSuites.cend()) {
             return validatorSuiteItr->second.get();
         }
         return nullptr;
@@ -592,7 +615,7 @@ UsdValidationRegistry::GetValidatorMetadata(
     const TfToken &name, 
     UsdValidatorMetadata *metadata) const 
 {
-    std::shared_lock lock(_metadataMutex);
+    std::shared_lock lock(_mutex);
     const auto& validatorNameToMetadataItr = 
         _validatorNameToMetadata.find(name);
     if (validatorNameToMetadataItr == _validatorNameToMetadata.end()) {
@@ -606,7 +629,7 @@ UsdValidatorMetadataVector
 UsdValidationRegistry::GetAllValidatorMetadata() const
 {
     UsdValidatorMetadataVector result;
-    std::shared_lock lock(_metadataMutex);
+    std::shared_lock lock(_mutex);
     result.reserve(_validatorNameToMetadata.size());
     for (const auto &entry : _validatorNameToMetadata) {
         result.push_back(entry.second);
@@ -650,7 +673,7 @@ UsdValidatorMetadataVector
 UsdValidationRegistry::GetValidatorMetadataForKeywords(
     const TfTokenVector &keywords) const
 {
-    std::shared_lock lock(_keywordValidatorNamesMutex);
+    std::shared_lock lock(_mutex);
     return _GetValidatorMetadataForToken(_keywordToValidatorNames, keywords);
 }
 
@@ -658,7 +681,7 @@ UsdValidatorMetadataVector
 UsdValidationRegistry::GetValidatorMetadataForSchemaTypes(
     const TfTokenVector &schemaTypes) const
 {
-    std::shared_lock lock(_schemaTypeValidatorNamesMutex);
+    std::shared_lock lock(_mutex);
     return _GetValidatorMetadataForToken(_schemaTypeToValidatorNames, 
                                          schemaTypes);
 }
@@ -674,7 +697,7 @@ UsdValidationRegistry::_GetValidatorMetadataForToken(
         if (itr == tokenToValidatorNames.end()) {
             continue;
         }
-        std::shared_lock lockMetadata(_metadataMutex);
+        std::shared_lock lock(_mutex);
         for (const TfToken &validatorName : itr->second) {
             // If we have a validatorName in tokenToValidatorNames, we
             // must have a validatorMetadata for this validatorName, because
@@ -694,18 +717,18 @@ UsdValidationRegistry::_AddValidatorMetadata(
 {
     const bool didAddValidatorMetadata = [&]()
         {
-            std::unique_lock lock(_metadataMutex);
             return _validatorNameToMetadata.emplace(
                 metadata.name, metadata).second;
         }();
 
     if (didAddValidatorMetadata) {
+        // Callers are required to hold a lock on `_mutex`, so 
+        // _schemaTypeToValidatorNames and _keywordToValidatorNames are 
+        // protected here.
         _UpdateValidatorNamesMappings(_schemaTypeToValidatorNames,
-                                      metadata.name, metadata.schemaTypes,
-                                      _schemaTypeValidatorNamesMutex);
+                                      metadata.name, metadata.schemaTypes);
         _UpdateValidatorNamesMappings(_keywordToValidatorNames,
-                                      metadata.name, metadata.keywords,
-                                      _keywordValidatorNamesMutex);
+                                      metadata.name, metadata.keywords);
     }
     return didAddValidatorMetadata;
 }
@@ -747,10 +770,8 @@ void
 UsdValidationRegistry::_UpdateValidatorNamesMappings(
     _TokenToValidatorNamesMap &tokenMap,
     const TfToken &validatorName,
-    const TfTokenVector &tokens,
-    std::shared_mutex &mutex)
+    const TfTokenVector &tokens)
 {
-    std::unique_lock lock(mutex);
     for (const TfToken &token : tokens) {
         if (tokenMap.find(token) == tokenMap.end()) {
             tokenMap.emplace(token, TfTokenVector{validatorName});
