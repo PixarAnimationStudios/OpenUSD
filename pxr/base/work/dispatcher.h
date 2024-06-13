@@ -139,11 +139,10 @@ private:
         explicit _InvokerTask(Fn const &fn, _ErrorTransports *err) 
             : _fn(fn), _errors(err) {}
 
-        // Ensure only moves happen, no copies or assignments.
+        // Ensure only moves happen, no copies.
         _InvokerTask(_InvokerTask &&other) = default;
         _InvokerTask(const _InvokerTask &other) = delete;
         _InvokerTask &operator=(const _InvokerTask &other) = delete;
-        _InvokerTask &operator=(_InvokerTask &&other) = delete;
 
         void operator()() const {
             TfErrorMark m;
@@ -166,7 +165,9 @@ private:
 
         virtual tbb::task* execute() {
             TfErrorMark m;
-            _fn();
+            // In anticipation of OneTBB, ensure that _fn meets OneTBB's
+            // requirement that a task's call operator must be const.
+            const_cast<_InvokerTask const *>(this)->_fn();
             if (!m.IsClean())
                 WorkDispatcher::_TransportErrors(m, _errors);
             return NULL;
@@ -215,6 +216,40 @@ private:
     // Concurrent calls to Wait() have to serialize certain cleanup operations.
     std::atomic_flag _waitCleanupFlag;
 };
+
+// Wrapper class for non-const tasks.
+template <class Fn>
+struct Work_DeprecatedMutableTask {
+    explicit Work_DeprecatedMutableTask(Fn &&fn) 
+        : _fn(std::move(fn)) {}
+
+    explicit Work_DeprecatedMutableTask(Fn const &fn) 
+        : _fn(fn) {}
+
+    // Ensure only moves happen, no copies.
+    Work_DeprecatedMutableTask
+        (Work_DeprecatedMutableTask &&other) = default;
+    Work_DeprecatedMutableTask
+        (const Work_DeprecatedMutableTask &other) = delete;
+    Work_DeprecatedMutableTask
+        &operator= (const Work_DeprecatedMutableTask &other) = delete;
+
+    void operator()() const {
+        _fn();
+    }
+private:
+    mutable Fn _fn;
+};
+
+// Wrapper function to convert non-const tasks to a Work_DeprecatedMutableTask. 
+// When adding new tasks refrain from using this wrapper, instead ensure the 
+// call operator of the task is const such that it is compatible with oneTBB.
+template <typename Fn>
+Work_DeprecatedMutableTask<typename std::remove_reference_t<Fn>> 
+WorkMakeDeprecatedMutableTask(Fn &&fn) {
+    return Work_DeprecatedMutableTask<typename std::remove_reference_t<Fn>>
+            (std::forward<Fn>(fn));
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

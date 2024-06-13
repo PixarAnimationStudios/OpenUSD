@@ -195,6 +195,11 @@ HdStPtexTextureObject::_Load()
         hioFormat,
         /* premultiplyAlpha = */ false);
 
+    if (_format == HgiFormatInvalid) {
+        TF_WARN("Unsupported texture format for PTEX");
+        return;
+    }
+
     const HdStTextureUtils::ConversionFunction conversionFunction =
         HdStTextureUtils::GetHioToHgiConversion(
             hioFormat,

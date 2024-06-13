@@ -11,6 +11,10 @@ pxr_library(usdShade
         sdr
         usd
         usdGeom
+        ${TBB_tbb_LIBRARY}
+    
+    INCLUDE_DIRS
+        ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
         connectableAPI
@@ -26,12 +30,16 @@ pxr_library(usdShade
         shaderDefUtils
         nodeGraph
         tokens
+        validatorTokens
         udimUtils
         utils
 
     PUBLIC_HEADERS
         api.h
         types.h
+
+    CPPFILES
+        validators.cpp
 
     PYTHON_CPPFILES
         moduleDeps.cpp
@@ -74,6 +82,26 @@ pxr_build_test(testUsdShadeHasConnectableAPI
     CPPFILES
         testenv/testUsdShadeHasConnectableAPI.cpp
 )
+
+if (TARGET shared_lib)
+# UsdShadeValidators uses SdrRegistry, which doesn't populate all shaders when
+# in a static build, as some shaders used in the test are part of usdShader
+# plugin, so we only enable this test for shared library build.
+pxr_build_test(testUsdShadeValidators
+    LIBRARIES
+        tf
+        usd
+        usdShade
+    CPPFILES
+        testenv/testUsdShadeValidators.cpp
+)
+
+pxr_register_test(testUsdShadeValidators
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeValidators"
+    EXPECTED_RETURN_CODE 0
+)
+
+endif() # end shared_lib
 
 pxr_test_scripts(
     testenv/testUsdShadeBinding.py
@@ -260,3 +288,4 @@ pxr_register_test(testUsdShadeUdimUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeUdimUtils"
     EXPECTED_RETURN_CODE 0
 )
+

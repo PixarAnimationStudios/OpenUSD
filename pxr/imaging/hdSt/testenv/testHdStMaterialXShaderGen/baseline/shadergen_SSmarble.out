@@ -38,13 +38,6 @@ vec3 mx_square(vec3 x)
 {
     return x*x;
 }
-#if NUM_LIGHTS > 0
-#define MAX_LIGHT_SOURCES NUM_LIGHTS
-#else
-#define MAX_LIGHT_SOURCES 1
-#endif
-#define DIRECTIONAL_ALBEDO_METHOD 0
-
 struct BSDF { vec3 response; vec3 throughput; float thickness; float ior; };
 #define EDF vec3
 struct surfaceshader { vec3 color; vec3 transparency; };
@@ -52,6 +45,13 @@ struct volumeshader { vec3 color; vec3 transparency; };
 struct displacementshader { vec3 offset; float scale; };
 struct lightshader { vec3 intensity; vec3 direction; };
 #define material surfaceshader
+
+#if NUM_LIGHTS > 0
+#define MAX_LIGHT_SOURCES NUM_LIGHTS
+#else
+#define MAX_LIGHT_SOURCES 1
+#endif
+#define DIRECTIONAL_ALBEDO_METHOD 0
 
 // Uniform block: PublicUniforms
 float base;

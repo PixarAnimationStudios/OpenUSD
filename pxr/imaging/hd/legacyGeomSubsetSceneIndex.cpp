@@ -144,15 +144,12 @@ _HdDataSourceLegacyGeomSubset::_HdDataSourceLegacyGeomSubset(
 TfTokenVector
 _HdDataSourceLegacyGeomSubset::GetNames()
 {
-    // Includes primvars and sceneDelegate
-    TfTokenVector names = HdDataSourceLegacyPrim::GetNames();
-    // Add geomSubset
+    TfTokenVector names;
     names.push_back(HdGeomSubsetSchema::GetSchemaToken());
-    // Base class does not add visibility or materialBindings because
-    // geomSubsets are not considered gprims. See
-    // HdDataSourceLegacyPrim::GetNames().
     names.push_back(HdVisibilitySchema::GetSchemaToken());
     names.push_back(HdMaterialBindingsSchema::GetSchemaToken());
+    names.push_back(HdPrimvarsSchema::GetSchemaToken());
+    names.push_back(HdSceneIndexEmulationTokens->sceneDelegate);
     return names;
 }
 

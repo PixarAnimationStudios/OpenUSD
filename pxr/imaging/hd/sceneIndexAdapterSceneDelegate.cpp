@@ -250,12 +250,10 @@ HdSceneIndexAdapterSceneDelegate::_PrimAdded(
 
         // Make sure prim type is up-to-date and clear caches.
         entry.primType = primType;
-        entry.primvarDescriptors.clear();
-        entry.primvarDescriptorsState.store(
-            _PrimCacheEntry::ReadStateUnread);
-        entry.extCmpPrimvarDescriptors.clear();
-        entry.extCmpPrimvarDescriptorsState.store(
-            _PrimCacheEntry::ReadStateUnread);
+        std::atomic_store(&(entry.primvarDescriptors),
+            std::shared_ptr<_PrimCacheEntry::PrimvarDescriptorsArray>());
+        std::atomic_store(&(entry.extCmpPrimvarDescriptors),
+            std::shared_ptr<_PrimCacheEntry::ExtCmpPrimvarDescriptorsArray>());
     } else {
         _primCache[indexPath].primType = primType;
     }
@@ -444,16 +442,14 @@ HdSceneIndexAdapterSceneDelegate::PrimsDirtied(
 
         if (entry.dirtyLocators.Intersects(
                 HdPrimvarsSchema::GetDefaultLocator())) {
-            it->second.primvarDescriptors.clear();
-            it->second.primvarDescriptorsState.store(
-                _PrimCacheEntry::ReadStateUnread);
+            std::atomic_store(&(it->second.primvarDescriptors),
+                std::shared_ptr<_PrimCacheEntry::PrimvarDescriptorsArray>());
         }
 
         if (entry.dirtyLocators.Intersects(
                 HdExtComputationPrimvarsSchema::GetDefaultLocator())) {
-            it->second.extCmpPrimvarDescriptors.clear();
-            it->second.extCmpPrimvarDescriptorsState.store(
-                _PrimCacheEntry::ReadStateUnread);
+            std::atomic_store(&(it->second.extCmpPrimvarDescriptors),
+                std::shared_ptr<_PrimCacheEntry::ExtCmpPrimvarDescriptorsArray>());
         }
     }
 }
@@ -1666,28 +1662,47 @@ HdSceneIndexAdapterSceneDelegate::GetPrimvarDescriptors(
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    HdPrimvarDescriptorVector result;
 
     _PrimCacheTable::iterator it = _primCache.find(id);
     if (it == _primCache.end()) {
+        HdPrimvarDescriptorVector result;
         return result;
     }
 
-    if (it->second.primvarDescriptorsState.load() ==
-            _PrimCacheEntry::ReadStateRead) {
-        return it->second.primvarDescriptors[interpolation];
+    std::shared_ptr<_PrimCacheEntry::PrimvarDescriptorsArray> expected =
+        std::atomic_load(&(it->second.primvarDescriptors));
+    if (expected) {
+        return (*expected)[interpolation];
     }
 
     HdSceneIndexPrim prim = _GetInputPrim(id);
-    if (!prim.dataSource) {
-        it->second.primvarDescriptorsState.store(
-            _PrimCacheEntry::ReadStateRead);
-        return result;
+    std::shared_ptr<_PrimCacheEntry::PrimvarDescriptorsArray> desired =
+        _ComputePrimvarDescriptors(prim.dataSource);
+
+    // Since multiple threads may arrive here at once, we only let the first one
+    // write, and later threads discard their version.
+    if (std::atomic_compare_exchange_strong(
+            &(it->second.primvarDescriptors),
+            &expected,
+            desired)) {
+        return (*desired)[interpolation];
+    } else {
+        return (*expected)[interpolation];
+    }
+}
+
+std::shared_ptr<HdSceneIndexAdapterSceneDelegate::_PrimCacheEntry::PrimvarDescriptorsArray>
+HdSceneIndexAdapterSceneDelegate::_ComputePrimvarDescriptors(
+    const HdContainerDataSourceHandle &primDataSource)
+{
+    if (!primDataSource) {
+        return nullptr;
     }
 
-    std::map<HdInterpolation, HdPrimvarDescriptorVector> descriptors;
+    _PrimCacheEntry::PrimvarDescriptorsArray descriptors;
+
     if (HdPrimvarsSchema primvars =
-        HdPrimvarsSchema::GetFromParent(prim.dataSource)) {
+        HdPrimvarsSchema::GetFromParent(primDataSource)) {
         for (const TfToken &name : primvars.GetPrimvarNames()) {
             HdPrimvarSchema primvar = primvars.GetPrimvar(name);
             if (!primvar) {
@@ -1706,6 +1721,10 @@ HdSceneIndexAdapterSceneDelegate::GetPrimvarDescriptors(
             HdInterpolation interpolation =
                 Hd_InterpolationAsEnum(interpolationToken);
 
+            if (interpolation >= HdInterpolationCount) {
+                continue;
+            }
+
             TfToken roleToken;
             if (HdTokenDataSourceHandle roleDataSource =
                     primvar.GetRole()) {
@@ -1719,17 +1738,8 @@ HdSceneIndexAdapterSceneDelegate::GetPrimvarDescriptors(
         }
     }
 
-    _PrimCacheEntry::ReadState current = _PrimCacheEntry::ReadStateUnread;
-    if (it->second.primvarDescriptorsState.compare_exchange_strong(
-            current, _PrimCacheEntry::ReadStateReading)) {
-        it->second.primvarDescriptors = std::move(descriptors);
-        it->second.primvarDescriptorsState.store(
-            _PrimCacheEntry::ReadStateRead);
-
-        return it->second.primvarDescriptors[interpolation];
-    }
-
-    return descriptors[interpolation];
+    return std::make_shared<_PrimCacheEntry::PrimvarDescriptorsArray>(
+            std::move(descriptors));
 }
 
 HdExtComputationPrimvarDescriptorVector
@@ -1738,29 +1748,47 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationPrimvarDescriptors(
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    HdExtComputationPrimvarDescriptorVector result;
 
     _PrimCacheTable::iterator it = _primCache.find(id);
     if (it == _primCache.end()) {
+        HdExtComputationPrimvarDescriptorVector result;
         return result;
     }
 
-    if (it->second.extCmpPrimvarDescriptorsState.load() ==
-            _PrimCacheEntry::ReadStateRead) {
-        return it->second.extCmpPrimvarDescriptors[interpolation];
+    std::shared_ptr<_PrimCacheEntry::ExtCmpPrimvarDescriptorsArray> expected =
+        std::atomic_load(&(it->second.extCmpPrimvarDescriptors));
+    if (expected) {
+        return (*expected)[interpolation];
     }
 
     HdSceneIndexPrim prim = _GetInputPrim(id);
-    if (!prim.dataSource) {
-        it->second.extCmpPrimvarDescriptorsState.store(
-            _PrimCacheEntry::ReadStateRead);
-        return result;
+    std::shared_ptr<_PrimCacheEntry::ExtCmpPrimvarDescriptorsArray> desired =
+        _ComputeExtCmpPrimvarDescriptors(prim.dataSource);
+
+    // Since multiple threads may arrive here at once, we only let the first one
+    // write, and later threads discard their version.
+    if (std::atomic_compare_exchange_strong(
+            (&it->second.extCmpPrimvarDescriptors),
+            &expected,
+            desired)) {
+        return (*desired)[interpolation];
+    } else {
+        return (*expected)[interpolation];
+    }
+}
+
+std::shared_ptr<HdSceneIndexAdapterSceneDelegate::_PrimCacheEntry::ExtCmpPrimvarDescriptorsArray>
+HdSceneIndexAdapterSceneDelegate::_ComputeExtCmpPrimvarDescriptors(
+    const HdContainerDataSourceHandle &primDataSource)
+{
+    if (!primDataSource) {
+        return nullptr;
     }
 
-    std::map<HdInterpolation, HdExtComputationPrimvarDescriptorVector>
-        descriptors;
+    _PrimCacheEntry::ExtCmpPrimvarDescriptorsArray descriptors;
+
     if (HdExtComputationPrimvarsSchema primvars =
-        HdExtComputationPrimvarsSchema::GetFromParent(prim.dataSource)) {
+        HdExtComputationPrimvarsSchema::GetFromParent(primDataSource)) {
         for (const TfToken &name : primvars.GetExtComputationPrimvarNames()) {
             HdExtComputationPrimvarSchema primvar = primvars.GetPrimvar(name);
             if (!primvar) {
@@ -1777,6 +1805,10 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationPrimvarDescriptors(
                 interpolationDataSource->GetTypedValue(0.0f);
             HdInterpolation interpolation =
                 Hd_InterpolationAsEnum(interpolationToken);
+
+            if (interpolation >= HdInterpolationCount) {
+                continue;
+            }
 
             TfToken roleToken;
             if (HdTokenDataSourceHandle roleDataSource =
@@ -1809,22 +1841,8 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationPrimvarDescriptors(
         }
     }
 
-    if (it->second.extCmpPrimvarDescriptorsState.load() ==
-            _PrimCacheEntry::ReadStateUnread) {
-        it->second.extCmpPrimvarDescriptorsState.store(
-            _PrimCacheEntry::ReadStateReading);
-        it->second.extCmpPrimvarDescriptors = std::move(descriptors);
-        it->second.extCmpPrimvarDescriptorsState.store(
-            _PrimCacheEntry::ReadStateRead);
-    } else {
-        // if someone is in the process of filling the entry, just
-        // return our value instead of trying to assign
-        return descriptors[interpolation];
-    }
-    
-    return it->second.extCmpPrimvarDescriptors[interpolation];
-
-
+    return std::make_shared<_PrimCacheEntry::ExtCmpPrimvarDescriptorsArray>(
+            std::move(descriptors));
 }
 
 VtValue 

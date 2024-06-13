@@ -4,6 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
+#include "pxr/imaging/hgi/debugCodes.h"
 #include "pxr/imaging/hgiVulkan/blitCmds.h"
 #include "pxr/imaging/hgiVulkan/buffer.h"
 #include "pxr/imaging/hgiVulkan/capabilities.h"
@@ -71,7 +72,15 @@ HgiVulkan::IsBackendSupported() const
     const uint32_t majorVersion = VK_VERSION_MAJOR(apiVersion);
     const uint32_t minorVersion = VK_VERSION_MINOR(apiVersion);
 
-    return (majorVersion >= 1) && (minorVersion >= 2);
+    bool support = (majorVersion > 1) ||
+        ((majorVersion == 1) && (minorVersion >= 2));
+    if (!support) {
+        TF_DEBUG(HGI_DEBUG_IS_SUPPORTED).Msg(
+            "HgiVulkan unsupported due to Vulkan API version: %d.%d "
+            "(must be >= 1.2)\n",
+            majorVersion, minorVersion);
+    }
+    return support;
 }
 
 /* Multi threaded */

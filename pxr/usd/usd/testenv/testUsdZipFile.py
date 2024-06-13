@@ -34,7 +34,7 @@ class TestUsdZipFile(unittest.TestCase):
         zf = Usd.ZipFile.Open("test_reader.usdz")
         self.assertTrue(zf)
         self.assertEqual(
-            zf.GetFileNames(), ["a.txt", "b.png", "sub/c.png", "sub/d.txt"])
+            zf.GetFileNames(), ["a.test", "b.png", "sub/c.png", "sub/d.txt"])
 
         self.assertIsNone(zf.GetFile("nonexistent.txt"))
         self.assertIsNone(zf.GetFileInfo("nonexistent.txt"))
@@ -45,15 +45,15 @@ class TestUsdZipFile(unittest.TestCase):
         # translations applied.
         fixLineEndings = True
 
-        fileInfo = zf.GetFileInfo("a.txt")
+        fileInfo = zf.GetFileInfo("a.test")
         self.assertEqual(fileInfo.dataOffset, 64)
-        self.assertEqual(fileInfo.size, 82)
-        self.assertEqual(fileInfo.uncompressedSize, 82)
-        self.assertEqual(fileInfo.crc, 3011207731)
+        self.assertEqual(fileInfo.size, 83)
+        self.assertEqual(fileInfo.uncompressedSize, 83)
+        self.assertEqual(fileInfo.crc, 2187659876)
         self.assertEqual(fileInfo.compressionMethod, 0)
         self.assertFalse(fileInfo.encrypted)
         self._ValidateSourceAndZippedFile(
-            "src/a.txt", zf, "a.txt", fixLineEndings)
+            "src/a.test", zf, "a.test", fixLineEndings)
 
         fileInfo = zf.GetFileInfo("b.png")
         self.assertEqual(fileInfo.dataOffset, 192)
@@ -95,8 +95,8 @@ class TestUsdZipFile(unittest.TestCase):
             # writer or the writer is destroyed.
             self.assertFalse(os.path.isfile("test_writer.usdz"))
             
-            addedFile = zfw.AddFile("src/a.txt")
-            self.assertEqual(addedFile, "src/a.txt")
+            addedFile = zfw.AddFile("src/a.test")
+            self.assertEqual(addedFile, "src/a.test")
 
             addedFile = zfw.AddFile("src/b.png", "b.png")
             self.assertEqual(addedFile, "b.png")
@@ -105,7 +105,7 @@ class TestUsdZipFile(unittest.TestCase):
         
         # Verify that the zip file can be read by Usd.ZipFile.
         zf = Usd.ZipFile.Open("test_writer.usdz")
-        self.assertEqual(zf.GetFileNames(), ["src/a.txt", "b.png"])
+        self.assertEqual(zf.GetFileNames(), ["src/a.test", "b.png"])
 
         # Since we're writing files into a .usdz and then extracting
         # and comparing them to the original file, we don't need to
@@ -115,11 +115,11 @@ class TestUsdZipFile(unittest.TestCase):
         def _GetFileSize(file):
             return os.stat(file).st_size
 
-        fileInfo = zf.GetFileInfo("src/a.txt")
+        fileInfo = zf.GetFileInfo("src/a.test")
         self.assertEqual(fileInfo.dataOffset, 64)
-        self.assertEqual(fileInfo.size, _GetFileSize("src/a.txt"))
-        self.assertEqual(fileInfo.uncompressedSize, _GetFileSize("src/a.txt"))
-        self.assertEqual(fileInfo.crc, 3011207731)
+        self.assertEqual(fileInfo.size, _GetFileSize("src/a.test"))
+        self.assertEqual(fileInfo.uncompressedSize, _GetFileSize("src/a.test"))
+        self.assertEqual(fileInfo.crc, 2187659876)
         self.assertEqual(fileInfo.compressionMethod, 0)
         self.assertFalse(fileInfo.encrypted)
 
@@ -132,7 +132,7 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertFalse(fileInfo.encrypted)
 
         self._ValidateSourceAndZippedFile(
-            "src/a.txt", zf, "src/a.txt", dontFixLineEndings)
+            "src/a.test", zf, "src/a.test", dontFixLineEndings)
         self._ValidateSourceAndZippedFile("src/b.png", zf, "b.png")
 
         # Verify that the data offset for all files in the archive are
@@ -143,11 +143,11 @@ class TestUsdZipFile(unittest.TestCase):
         # Verify that zip file can be read by third-party zip libraries
         # (in this case, Python's zip module)
         zf = zipfile.ZipFile("test_writer.usdz")
-        self.assertEqual(zf.namelist(), ["src/a.txt", "b.png"])
+        self.assertEqual(zf.namelist(), ["src/a.test", "b.png"])
         self.assertIsNone(zf.testzip())
 
         self._ValidateSourceAndZippedFile(
-            "src/a.txt", zf, "src/a.txt", dontFixLineEndings)
+            "src/a.test", zf, "src/a.test", dontFixLineEndings)
         self._ValidateSourceAndZippedFile("src/b.png", zf, "b.png")
 
     def test_WriterAlignment(self):

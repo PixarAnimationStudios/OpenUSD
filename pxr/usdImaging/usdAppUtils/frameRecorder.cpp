@@ -41,7 +41,8 @@ UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
     _complexity(1.0f),
     _colorCorrectionMode(HdxColorCorrectionTokens->disabled),
     _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy}),
-    _cameraLightEnabled(true)
+    _cameraLightEnabled(true),
+    _domeLightsVisible(false)
 {
     // Disable presentation to avoid the need to create an OpenGL context when
     // using other graphics APIs such as Metal and Vulkan.
@@ -95,6 +96,12 @@ void
 UsdAppUtilsFrameRecorder::SetCameraLightEnabled(bool cameraLightEnabled)
 {
     _cameraLightEnabled = cameraLightEnabled;
+}
+
+void
+UsdAppUtilsFrameRecorder::SetDomeLightVisibility(bool domeLightsVisible)
+{
+    _domeLightsVisible = domeLightsVisible;
 }
 
 void
@@ -418,6 +425,10 @@ UsdAppUtilsFrameRecorder::Record(
     material.SetShininess(SHININESS_DEFAULT);
 
     _imagingEngine.SetLightingState(lights, material, SCENE_AMBIENT);
+
+    _imagingEngine.SetRendererSetting(
+        HdRenderSettingsTokens->domeLightCameraVisibility,
+        VtValue(_domeLightsVisible));
 
     UsdImagingGLRenderParams renderParams;
     renderParams.frame = timeCode;

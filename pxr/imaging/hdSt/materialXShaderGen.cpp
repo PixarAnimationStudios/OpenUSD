@@ -684,7 +684,6 @@ HdStMaterialXShaderGen<Base>::_EmitConstantsUniformsAndTypeDefs(
                 mxContext.getOptions().hwDirectionalAlbedoMethod)),
             mxStage, false);
     Base::emitLineBreak(mxStage);
-    Base::emitTypeDefinitions(mxContext, mxStage);
 
     // Add all constants and ensure that values are initialized
     const mx::VariableBlock& constants = mxStage.getConstantBlock();
@@ -937,6 +936,10 @@ HdStMaterialXShaderGenGlsl::_EmitMxFunctions(
     mx::ShaderGenerator::emitLibraryInclude(
         "stdlib/" + mx::GlslShaderGenerator::TARGET
         + "/lib/mx_math.glsl", mxContext, mxStage);
+
+    // Add type definitions
+    emitTypeDefinitions(mxContext, mxStage);
+
     _EmitConstantsUniformsAndTypeDefs(
         mxContext, mxStage, _syntax->getConstantQualifier());
 
@@ -1085,6 +1088,10 @@ HdStMaterialXShaderGenVkGlsl::_EmitMxFunctions(
 {
     emitLibraryInclude("stdlib/" + mx::VkShaderGenerator::TARGET
                        + "/lib/mx_math.glsl", mxContext, mxStage);
+
+    // Add type definitions
+    emitTypeDefinitions(mxContext, mxStage);
+
     _EmitConstantsUniformsAndTypeDefs(
         mxContext, mxStage, _syntax->getConstantQualifier());
 
@@ -1246,6 +1253,8 @@ HdStMaterialXShaderGenMsl::_EmitGlslfxMetalShader(
         "shadowOcclusion", mxStage);
 
     // Add type definitions
+    emitTypeDefinitions(mxContext, mxStage);
+
     emitConstantBufferDeclarations(mxContext, resourceBindingCtx, mxStage);
 
     // Add all constants

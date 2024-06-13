@@ -21,6 +21,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "contents");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HGI_DEBUG_INSTANCE_CREATION,
         "Hgi report when attempting to create an Hgi instance");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HGI_DEBUG_IS_SUPPORTED,
+        "Hgi debug info when IsBackendSupported() is false");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

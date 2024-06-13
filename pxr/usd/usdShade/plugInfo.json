@@ -126,6 +126,17 @@
                         ], 
                         "displayName": "USD-based shader definition parser plugin"
                     }
+                }, 
+                "Validators": {
+                    "ShaderSdrCompliance": {
+                        "doc": "Shader prim's input types must be conforming to their appropriate sdf types in the respective sdr shader.", 
+                        "schemaTypes": [
+                            "UsdShadeShader"
+                        ]
+                    }, 
+                    "keywords": [
+                        "UsdShadeValidators"
+                    ]
                 }
             }, 
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@", 

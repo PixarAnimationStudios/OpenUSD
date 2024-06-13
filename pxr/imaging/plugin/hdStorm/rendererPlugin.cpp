@@ -43,7 +43,7 @@ HdStormRendererPlugin::IsSupported(bool gpuEnabled) const
     const bool support = gpuEnabled && HdStRenderDelegate::IsSupported();
     if (!support) {
         TF_DEBUG(HD_RENDERER_PLUGIN).Msg(
-            "hdStorm renderer plugin unsupported: %s",
+            "hdStorm renderer plugin unsupported: %s\n",
             gpuEnabled ? "hgi unsupported" : "no gpu");
     }
     return support;

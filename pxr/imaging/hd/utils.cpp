@@ -70,7 +70,11 @@ GetCurrentFrame(const HdSceneIndexBaseRefPtr &si, double *frame)
     }
 
     if (auto frameHandle = sgSchema.GetCurrentFrame()) {
-        *frame = frameHandle->GetTypedValue(0);
+        const double frameValue = frameHandle->GetTypedValue(0);
+        if (std::isnan(frameValue)) {
+            return false;
+        }
+        *frame = frameValue;
         return true;
     }
 

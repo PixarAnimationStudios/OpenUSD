@@ -6,6 +6,7 @@
 //
 #include "pxr/imaging/garch/glApi.h"
 
+#include "pxr/imaging/hgi/debugCodes.h"
 #include "pxr/imaging/hgi/handle.h"
 #include "pxr/imaging/hgiGL/hgi.h"
 #include "pxr/imaging/hgiGL/blitCmds.h"
@@ -74,7 +75,13 @@ bool
 HgiGL::IsBackendSupported() const
 {
     // Want OpenGL 4.5 or higher.
-    return GetCapabilities()->GetAPIVersion() >= 450;
+    bool support = GetCapabilities()->GetAPIVersion() >= 450;
+    if (!support) {
+        TF_DEBUG(HGI_DEBUG_IS_SUPPORTED).Msg(
+            "HgiGL unsupported due to GL API version: %d (must be >= 450)\n",
+            GetCapabilities()->GetAPIVersion());
+    }
+    return support;
 }
 
 HgiGLDevice*

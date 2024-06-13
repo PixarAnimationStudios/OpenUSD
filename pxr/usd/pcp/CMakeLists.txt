@@ -977,6 +977,16 @@ pxr_install_test_dir(
     DEST testPcpMuseum_ErrorRelocateWithVariantSelection
 )
 
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_VariantSpecializesAndReferenceSurprisingBehavior.testenv
+    DEST testPcpMuseum_VariantSpecializesAndReferenceSurprisingBehavior
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_VariantSpecializesAndReference.testenv
+    DEST testPcpMuseum_VariantSpecializesAndReference
+)
+
 pxr_register_test(testPcpMuseum_BasicInstancing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd BasicInstancing/root.sdf"
@@ -1931,6 +1941,20 @@ pxr_register_test(testPcpMuseum_ErrorRelocateWithVariantSelection
     DIFF_COMPARE compositionResults_ErrorRelocateWithVariantSelection.txt compositionErrors_ErrorRelocateWithVariantSelection.txt
     ENV 
         SDF_SCHEMA_PROHIBIT_INVALID_VARIANT_SELECTIONS=0
+)
+
+pxr_register_test(testPcpMuseum_VariantSpecializesAndReferenceSurprisingBehavior
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd VariantSpecializesAndReferenceSurprisingBehavior/root.sdf" 
+    STDOUT_REDIRECT compositionResults_VariantSpecializesAndReferenceSurprisingBehavior.txt
+    DIFF_COMPARE compositionResults_VariantSpecializesAndReferenceSurprisingBehavior.txt
+)
+
+pxr_register_test(testPcpMuseum_VariantSpecializesAndReference
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd VariantSpecializesAndReference/root.sdf" 
+    STDOUT_REDIRECT compositionResults_VariantSpecializesAndReference.txt
+    DIFF_COMPARE compositionResults_VariantSpecializesAndReference.txt
 )
 
 pxr_register_test(testPcpIterator

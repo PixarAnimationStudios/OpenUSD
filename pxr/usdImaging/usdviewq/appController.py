@@ -1737,23 +1737,17 @@ class AppController(QtCore.QObject):
             action.setCheckable(True)
             return action
 
-        def setColorSpace(action):
+        def setOcioColorSpace(action):
             self._dataModel.viewSettings.setOcioSettings(\
                 colorSpace = str(action.text()))
             self._dataModel.viewSettings.colorCorrectionMode =\
                 ColorCorrectionModes.OPENCOLORIO
 
-        def setOcioConfig(action):
+        def setOcioDisplayView(action):
             display = str(action.parent().title())
             view = str(action.text())
-            if hasattr(config, 'getDisplayViewColorSpaceName'):
-                # OCIO version 2
-                colorSpace = config.getDisplayViewColorSpaceName(display, view)
-            else:
-                # OCIO version 1
-                colorSpace = config.getDisplayColorSpaceName(display, view)
-            self._dataModel.viewSettings.setOcioSettings(colorSpace,\
-                display, view)
+            self._dataModel.viewSettings.setOcioSettings(\
+                display=display, view=view)
             self._dataModel.viewSettings.colorCorrectionMode =\
                 ColorCorrectionModes.OPENCOLORIO
 
@@ -1778,7 +1772,7 @@ class AppController(QtCore.QObject):
                 for v in config.getViews(d):
                     a = addAction(displayMenu, v)
                     group.addAction(a)
-                group.triggered.connect(setOcioConfig)
+                group.triggered.connect(setOcioDisplayView)
                 ocioMenu.addMenu(displayMenu)
                 self._ui.ocioDisplayMenus.append(displayMenu)
 
@@ -1793,7 +1787,7 @@ class AppController(QtCore.QObject):
                 colorSpace = cs.getName()
                 a = addAction(ocioMenu, colorSpace)
                 group.addAction(a)
-            group.triggered.connect(setColorSpace)
+            group.triggered.connect(setOcioColorSpace)
             self._ui.ocioColorSpacesActionGroup = group
 
         # TODO Populate looks menu (config.getLooks())

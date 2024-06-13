@@ -770,7 +770,10 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
         if (_FindLocator(HdXformSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdCamera::DirtyTransform;
         }
-    } else if (HdPrimTypeIsLight(primType)) {
+    } else if (HdPrimTypeIsLight(primType)
+        // Lights and light filters are handled similarly in emulation.
+        || primType == HdPrimTypeTokens->lightFilter) {
+
         if (_FindLocator(HdInstancedBySchema::GetDefaultLocator(), end, &it)) {
             bits |= HdLight::DirtyInstancer;
         }

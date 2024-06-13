@@ -823,7 +823,7 @@ pxr_register_test(testUsdImagingGLCurves_refined
     TESTENV testUsdImagingGLCurves
 )
 
-pxr_register_test(testUsdImagingGL_moreCurves
+pxr_register_test(testUsdImagingGLCurves_moreCurves
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage moreCurves.usda -camlight -shading smooth -write testUsdImagingGL_moreCurves.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGL_moreCurves.png
@@ -834,7 +834,7 @@ pxr_register_test(testUsdImagingGL_moreCurves
     TESTENV testUsdImagingGLCurves
 )
 
-pxr_register_test(testUsdImagingGL_moreCurves_refined
+pxr_register_test(testUsdImagingGLCurves_moreCurves_refined
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -complexity 1.1 -stage moreCurves.usda -camlight -shading smooth -write testUsdImagingGL_moreCurves_refined.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGL_moreCurves_refined.png
@@ -845,7 +845,7 @@ pxr_register_test(testUsdImagingGL_moreCurves_refined
     TESTENV testUsdImagingGLCurves
 )
 
-pxr_register_test(testUsdImagingGL_moreCurves_faketubes
+pxr_register_test(testUsdImagingGLCurves_moreCurves_faketubes
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -complexity 1.2 -stage moreCurves.usda -camlight -shading smooth -write testUsdImagingGL_moreCurves_faketubes.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGL_moreCurves_faketubes.png
@@ -856,7 +856,7 @@ pxr_register_test(testUsdImagingGL_moreCurves_faketubes
     TESTENV testUsdImagingGLCurves
 )
 
-pxr_register_test(testUsdImagingGL_moreCurves_tubes
+pxr_register_test(testUsdImagingGLCurves_moreCurves_tubes
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -complexity 1.3 -stage moreCurves.usda -camlight  -shading smooth -write testUsdImagingGL_moreCurves_tubes.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGL_moreCurves_tubes.png
@@ -867,7 +867,7 @@ pxr_register_test(testUsdImagingGL_moreCurves_tubes
     TESTENV testUsdImagingGLCurves
 )
 
-pxr_register_test(testUsdImagingGL_pinnedCurves
+pxr_register_test(testUsdImagingGLCurves_pinnedCurves
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -complexity 1.3 -stage pinnedCurves.usda -camlight  -shading smooth -write testUsdImagingGL_pinnedCurves.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGL_pinnedCurves.png

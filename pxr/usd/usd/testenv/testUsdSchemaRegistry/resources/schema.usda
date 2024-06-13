@@ -34,6 +34,9 @@ class "AbstractTest" (
             string name = "bar"
             int value = 3
         }
+        customData = {
+            string userDocBrief = """Testing brief user doc for schema attr"""
+        }          
     )
 }
 
@@ -46,6 +49,9 @@ class MetadataTest "MetadataTest" (
         string name = "foo"
         int value = 2
     }
+    customData = {
+        string userDocBrief = """Testing brief user doc for schema class"""
+    }    
 )
 {
     rel testRel (
@@ -57,6 +63,9 @@ class MetadataTest "MetadataTest" (
         testDictionaryMetadata = {
             string name = "baz"
             int value = 5
-        }
+        }      
+        customData = {
+            string userDocBrief = """Testing brief user doc for schema rel"""
+        }          
     )
 }

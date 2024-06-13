@@ -28,7 +28,7 @@
 /// Expand and convert the argument to a string, using a most minimal macro.
 #define TF_PP_STRINGIZE(x) TF_PP_STRINGIZE_IMPL(x)
 
-#ifdef ARCH_COMPILER_MSVC
+#ifdef ARCH_PREPROCESSOR_MSVC_TRADITIONAL
 
 /// Expand to the number of arguments passed.  For example,
 /// TF_PP_VARIADIC_SIZE(foo, bar, baz) expands to 3.  Supports up to 64
@@ -53,7 +53,7 @@
 /// and TF_PP_VARIADIC_ELEM(1, a, b, c) expands to b.
 #define TF_PP_VARIADIC_ELEM(n, ...) TF_PP_CAT(TF_PP_VAE_, n)(__VA_ARGS__,)
 
-#endif // ARCH_COMPILER_MSVC
+#endif // ARCH_PREPROCESSOR_MSVC_TRADITIONAL
 
 #define TF_PP_VARIADIC_SIZE_IMPL(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, size, ...) size
 
@@ -122,7 +122,7 @@
 #define TF_PP_VAE_62(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, ...) a62
 #define TF_PP_VAE_63(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, ...) a63
 
-#ifdef ARCH_COMPILER_MSVC
+#ifdef ARCH_PREPROCESSOR_MSVC_TRADITIONAL
 
 #define TF_PP_FE_0(_macro, ...)
 #define TF_PP_FE_1(_macro, a) _macro(a)
@@ -258,7 +258,7 @@
 
 #endif
 
-#ifdef ARCH_COMPILER_MSVC
+#ifdef ARCH_PREPROCESSOR_MSVC_TRADITIONAL
 
 /// Expand the macro \p x on every variadic argument.  For example
 /// TF_PP_FOR_EACH(MACRO, foo, bar, baz) expands to MACRO(foo) MACRO(bar)
@@ -398,7 +398,7 @@
     _TF_PP_SEQ_EXPAND(_TF_PP_SEQ_DISCARD_HEAD _TF_PP_SEQ_PARTITION_HEAD(seq))
 
 #define _TF_PP_SEQ_FE_0(_macro, ...)
-#ifdef ARCH_COMPILER_MSVC
+#ifdef ARCH_PREPROCESSOR_MSVC_TRADITIONAL
 #define _TF_PP_SEQ_FE_1(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),)
 // # Generates _TF_PP_SEQ_FE_{2:229} (MSVC)
 // python3 -c 'print("\n".join(f"#define _TF_PP_SEQ_FE_{i}(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_{i-1}(_macro, data, _TF_PP_SEQ_TAIL(seq)),)" for i in range(2, 230)))'
@@ -872,7 +872,7 @@
 /// #undef _PRINT
 /// \endcode
 /// Limited to sequences of up to 229 elements
-#ifdef ARCH_COMPILER_MSVC
+#ifdef ARCH_PREPROCESSOR_MSVC_TRADITIONAL
 #define _TF_PP_SEQ_FOR_EACH_IMPL(_macro, size, data, seq)                   \
     TF_PP_CAT(TF_PP_CAT(_TF_PP_SEQ_FE_, size),(_macro, data, seq))
 #define TF_PP_SEQ_FOR_EACH(_macro, data, seq)                               \

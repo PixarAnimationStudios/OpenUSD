@@ -67,6 +67,12 @@ HdSt_FieldTextureCpuData::HdSt_FieldTextureCpuData(
     _textureDesc.format = HdStTextureUtils::GetHgiFormat(
         hioFormat,
         premultiplyAlpha);
+
+    if (_textureDesc.format == HgiFormatInvalid) {
+        TF_WARN("Unsupported texture format for field");
+        return;
+    }
+
     const HdStTextureUtils::ConversionFunction conversionFunction =
         HdStTextureUtils::GetHioToHgiConversion(
             hioFormat,

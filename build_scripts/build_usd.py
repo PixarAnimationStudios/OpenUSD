@@ -1779,7 +1779,7 @@ https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_dual_abi.html
 
 parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
-    description=programDescription)
+    allow_abbrev=False, description=programDescription)
 
 parser.add_argument("install_dir", type=str, 
                     help="Directory where USD will be installed")

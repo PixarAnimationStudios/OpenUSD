@@ -56,12 +56,6 @@
 #undef toupper
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-#ifdef PXR_VULKAN_SUPPORT_ENABLED
-#include <vma/vk_mem_alloc.h>
-#endif // PXR_VULKAN_SUPPORT_ENABLED
-#ifdef PXR_VULKAN_SUPPORT_ENABLED
-#include <vulkan/vulkan.h>
-#endif // PXR_VULKAN_SUPPORT_ENABLED
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

@@ -30,6 +30,26 @@ _OpaqueAlpha() {
 
 template<typename T>
 void
+_ConvertRToRGBA(
+    const void * const src,
+    const size_t numTexels,
+    void * const dst)
+{
+    TRACE_FUNCTION();
+
+    const T * const typedSrc = reinterpret_cast<const T*>(src);
+    T * const typedDst = reinterpret_cast<T*>(dst);
+
+    for (size_t i = 0; i < numTexels; i++) {
+        typedDst[4 * i + 0] = typedSrc[1 * i + 0];
+        typedDst[4 * i + 1] = typedSrc[1 * i + 0];
+        typedDst[4 * i + 2] = typedSrc[1 * i + 0];
+        typedDst[4 * i + 3] = _OpaqueAlpha<T>();
+    }
+}
+
+template<typename T>
+void
 _ConvertRGToRGBA(
     const void * const src,
     const size_t numTexels,
@@ -195,7 +215,7 @@ _GetHgiFormatAndConversion(
         case HioFormatSNorm8:
             return { HgiFormatSNorm8, nullptr };
         case HioFormatSNorm8Vec2:
-            return { HgiFormatSNorm8Vec2, nullptr };
+            return { HgiFormatSNorm8Vec4, _ConvertRGToRGBA<signed char> };
         case HioFormatSNorm8Vec3:
             return { HgiFormatSNorm8Vec4, _ConvertRGBToRGBA<signed char> };
         case HioFormatSNorm8Vec4:
@@ -322,10 +342,11 @@ _GetHgiFormatAndConversion(
                     
         // UNorm8 SRGB
         case HioFormatUNorm8srgb:
+            // 1-channel gamma-encoded is not supported, so we need to convert.
+            return { HgiFormatUNorm8Vec4srgb, _ConvertRToRGBA<unsigned char> };
         case HioFormatUNorm8Vec2srgb:
-            TF_WARN("One and two channel srgb texture formats "
-                    "not supported by Storm");
-            return { HgiFormatInvalid, nullptr };
+            // 2-channel gamma-encoded is not supported, so we need to convert.
+            return { HgiFormatUNorm8Vec4srgb, _ConvertRGToRGBA<unsigned char> };
         case HioFormatUNorm8Vec3srgb:
             // RGB (24bit) is not supported on MTL, so we need to convert it.
             return { HgiFormatUNorm8Vec4srgb, _ConvertRGBToRGBA<unsigned char> };
