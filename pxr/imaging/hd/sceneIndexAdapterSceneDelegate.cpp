@@ -1665,8 +1665,7 @@ HdSceneIndexAdapterSceneDelegate::GetPrimvarDescriptors(
 
     _PrimCacheTable::iterator it = _primCache.find(id);
     if (it == _primCache.end()) {
-        HdPrimvarDescriptorVector result;
-        return result;
+        return {};
     }
 
     std::shared_ptr<_PrimCacheEntry::PrimvarDescriptorsArray> expected =
@@ -1676,6 +1675,10 @@ HdSceneIndexAdapterSceneDelegate::GetPrimvarDescriptors(
     }
 
     HdSceneIndexPrim prim = _GetInputPrim(id);
+    if (!prim.dataSource) {
+        return {};
+    }
+
     std::shared_ptr<_PrimCacheEntry::PrimvarDescriptorsArray> desired =
         _ComputePrimvarDescriptors(prim.dataSource);
 
@@ -1695,7 +1698,7 @@ std::shared_ptr<HdSceneIndexAdapterSceneDelegate::_PrimCacheEntry::PrimvarDescri
 HdSceneIndexAdapterSceneDelegate::_ComputePrimvarDescriptors(
     const HdContainerDataSourceHandle &primDataSource)
 {
-    if (!primDataSource) {
+    if (!TF_VERIFY(primDataSource)) {
         return nullptr;
     }
 
@@ -1751,8 +1754,7 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationPrimvarDescriptors(
 
     _PrimCacheTable::iterator it = _primCache.find(id);
     if (it == _primCache.end()) {
-        HdExtComputationPrimvarDescriptorVector result;
-        return result;
+        return {};
     }
 
     std::shared_ptr<_PrimCacheEntry::ExtCmpPrimvarDescriptorsArray> expected =
@@ -1762,6 +1764,10 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationPrimvarDescriptors(
     }
 
     HdSceneIndexPrim prim = _GetInputPrim(id);
+    if (!prim.dataSource) {
+        return {};
+    }
+
     std::shared_ptr<_PrimCacheEntry::ExtCmpPrimvarDescriptorsArray> desired =
         _ComputeExtCmpPrimvarDescriptors(prim.dataSource);
 
@@ -1781,7 +1787,7 @@ std::shared_ptr<HdSceneIndexAdapterSceneDelegate::_PrimCacheEntry::ExtCmpPrimvar
 HdSceneIndexAdapterSceneDelegate::_ComputeExtCmpPrimvarDescriptors(
     const HdContainerDataSourceHandle &primDataSource)
 {
-    if (!primDataSource) {
+    if (!TF_VERIFY(primDataSource)) {
         return nullptr;
     }
 
