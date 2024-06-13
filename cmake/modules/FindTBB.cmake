@@ -224,22 +224,28 @@ if(NOT TBB_FOUND)
   endif()
 
   if(TBB_VERSION VERSION_LESS 4.3)
-    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc ${_tbb_library_name})
+    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc tbb)
   else()
-    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc_proxy tbbmalloc ${_tbb_library_name})
+    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc_proxy tbbmalloc tbb)
   endif()
 
   # Find each component
   foreach(_comp ${TBB_SEARCH_COMPOMPONENTS})
-    if(";${TBB_FIND_COMPONENTS};" MATCHES ";${_comp};")
+    if(";${TBB_FIND_COMPONENTS};tbb" MATCHES ";${_comp};")
+
+      if(${_comp} STREQUAL tbb)
+        set(_lib_name ${_tbb_library_name})
+      else()
+        set(_lib_name ${_comp})
+      endif()
 
       # Search for the libraries
-      find_library(TBB_${_comp}_LIBRARY_RELEASE ${_comp}
+      find_library(TBB_${_comp}_LIBRARY_RELEASE ${_lib_name}
           HINTS ${TBB_LIBRARY} ${TBB_SEARCH_DIR}
           PATHS ${TBB_DEFAULT_SEARCH_DIR} ENV LIBRARY_PATH
           PATH_SUFFIXES ${TBB_LIB_PATH_SUFFIX})
 
-      find_library(TBB_${_comp}_LIBRARY_DEBUG ${_comp}_debug
+      find_library(TBB_${_comp}_LIBRARY_DEBUG ${_lib_name}_debug
           HINTS ${TBB_LIBRARY} ${TBB_SEARCH_DIR}
           PATHS ${TBB_DEFAULT_SEARCH_DIR} ENV LIBRARY_PATH
           PATH_SUFFIXES ${TBB_LIB_PATH_SUFFIX})
