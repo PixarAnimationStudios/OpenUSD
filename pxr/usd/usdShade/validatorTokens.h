@@ -18,7 +18,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define USD_SHADE_VALIDATOR_NAME_TOKENS                                       \
     ((shaderSdrCompliance, "usdShade:ShaderSdrCompliance"))                   \
-    ((subsetMaterialBindFamilyName, "usdShade:SubsetMaterialBindFamilyName"))
+    ((subsetMaterialBindFamilyName, "usdShade:SubsetMaterialBindFamilyName")) \
+    ((subsetsMaterialBindFamily, "usdShade:SubsetsMaterialBindFamily"))
 
 #define USD_SHADE_VALIDATOR_KEYWORD_TOKENS                                    \
     (UsdShadeValidators)
