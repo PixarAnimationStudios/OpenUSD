@@ -134,6 +134,15 @@
                             "UsdShadeShader"
                         ]
                     }, 
+                    "SubsetMaterialBindFamilyName": {
+                        "doc": "Geom subsets with authored material bindings should have the 'materialBind' family name.",
+                        "keywords": [
+                            "UsdGeomSubset"
+                        ],
+                        "schemaTypes": [
+                            "UsdGeomSubset"
+                        ]
+                    },
                     "keywords": [
                         "UsdShadeValidators"
                     ]
