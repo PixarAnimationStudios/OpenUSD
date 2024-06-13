@@ -350,6 +350,10 @@ UsdImagingGLEngine::_SetActiveRenderSettingsPrimFromStageMetadata(
 void
 UsdImagingGLEngine::_UpdateDomeLightCameraVisibility()
 {
+    if (!_renderIndex->IsSprimTypeSupported(HdPrimTypeTokens->domeLight)) {
+        return;
+    }
+
     // Check to see if the dome light camera visibility has changed, and mark
     // the dome light prim as dirty if it has.
     //
