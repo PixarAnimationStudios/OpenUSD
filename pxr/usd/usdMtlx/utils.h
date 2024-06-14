@@ -47,6 +47,14 @@ USDMTLX_API
 const NdrStringVec&
 UsdMtlxSearchPaths();
 
+/// Return the MaterialX scene unit, set in the environment variable `PXR_MTLX_SCENE_UNIT`
+/// See unitdef in stdlib_defs.mtlx for valid unit names
+/// valid unit names: nanometer, micron, millimeter, centimeter, inch, foot, yard, meter,kilometer, mile
+/// default unit: inch
+USDMTLX_API
+const std::string
+UsdMtlxSceneUnit();
+
 /// Return the MaterialX standard file extensions.
 USDMTLX_API
 NdrStringVec

@@ -94,6 +94,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((light, "light"))
     ((mtlxRenderContext, "mtlx"))
+    ((mtlxDistance, "distance"))
 );
 
 // Returns the name of an element.
@@ -447,6 +448,48 @@ _TypeSupportsColorSpace(const mx::ConstValueElementPtr& mxElem)
     return colorInput || colorImageNode;
 }
 
+// Convert MaterialX unit and unittype attribute to Sdf enum
+static
+void
+_CopyUnitAttributes(const UsdShadeInput& usd, const mx::ConstValueElementPtr& mtlx)
+{
+    if (!mtlx->hasUnit())
+        return;
+    
+    // Add unit information as custom data.    
+
+    // Distance unit
+    if (mtlx->getUnitType() == _tokens->mtlxDistance)
+    {
+        TfEnum displayUnit = SdfDefaultUnit(TfEnum(SdfLengthUnit(0)));
+        const std::string& unit = mtlx->getUnit();
+        
+        if (unit == "nanometer")
+            displayUnit = SdfLengthUnitNanometer;
+        else if (unit == "micron")
+            displayUnit = SdfLengthUnitMicron;
+        else if (unit == "millimeter")
+            displayUnit = SdfLengthUnitMillimeter;
+        else if (unit == "centimeter")
+            displayUnit = SdfLengthUnitCentimeter;
+        else if (unit == "inch")
+            displayUnit = SdfLengthUnitInch;
+        else if (unit == "foot")
+            displayUnit = SdfLengthUnitFoot;
+        else if (unit == "yard")
+            displayUnit = SdfLengthUnitYard;
+        else if (unit == "meter")
+            displayUnit = SdfLengthUnitMeter;
+        else if (unit == "kilometer")
+            displayUnit = SdfLengthUnitKilometer;
+        else if (unit == "mile")
+            displayUnit = SdfLengthUnitMile; 
+
+        usd.GetAttr().SetMetadata(SdfFieldKeys->DisplayUnit,
+                                  VtValue(displayUnit));
+    }
+}
+
 // Copy the value from a Material value element to a UsdShadeInput with a
 // Set() method taking any valid USD value type.
 static
@@ -458,6 +501,8 @@ _CopyValue(const UsdShadeInput& usd, const mx::ConstValueElementPtr& mtlx)
     if (!value.IsEmpty()) {
         usd.Set(value);
     }
+
+    _CopyUnitAttributes(usd, mtlx);
 
     // Check for animated values.
     auto valuecurve = _Attr(mtlx, names.valuecurve);

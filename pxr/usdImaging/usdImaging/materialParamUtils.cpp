@@ -320,6 +320,13 @@ void _WalkGraph(
                     node.parameters[colorSpaceInputName] =
                         VtValue(attr.GetColorSpace());
                 }
+
+                if (attr.HasMetadata(SdfFieldKeys->DisplayUnit)) {
+                    TfToken unitInputName(SdfPath::JoinIdentifier(
+                        SdfFieldKeys->DisplayUnit, inputName));
+                     attr.GetMetadata(SdfFieldKeys->DisplayUnit,
+                         &node.parameters[unitInputName]);
+                }
             }
         }
     }

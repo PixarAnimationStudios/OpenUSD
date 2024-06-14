@@ -11,6 +11,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (colorSpace)
+    ((displayUnit, "displayUnit"))
 );
 
 HdMaterialNode2 *
@@ -141,6 +142,15 @@ HdMaterialNetwork2Interface::GetNodeParameterData(
         if (csIt != node->parameters.end()) {
             paramData.colorSpace = csIt->second.Get<TfToken>();
         }
+
+        // DisplayUnit
+        const TfToken displayUnitParamName(SdfPath::JoinIdentifier(
+            _tokens->displayUnit, paramName));
+        const auto unIt = node->parameters.find(displayUnitParamName);
+        if (unIt != node->parameters.end()) {
+            paramData.displayUnit = unIt->second.Get<VtValue>();
+        }
+
     }
     return paramData;
 }

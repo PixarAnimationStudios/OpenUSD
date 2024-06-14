@@ -43,6 +43,11 @@ HDMTLX_API
 const MaterialX::DocumentPtr&
 HdMtlxStdLibraries();
 
+/// Return the MaterialX scene unit, set in the environment variable `PXR_MTLX_SCENE_UNIT`
+HDMTLX_API
+const std::string
+HdMtlxSceneUnit();
+
 /// Converts the HdParameterValue to a string MaterialX can understand
 HDMTLX_API
 std::string

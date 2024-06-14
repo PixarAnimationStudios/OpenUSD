@@ -211,6 +211,16 @@ UsdMtlxSearchPaths()
     return materialxSearchPaths;
 }
 
+const std::string
+UsdMtlxSceneUnit()
+{
+    const std::string materialUnit = TfGetenv("PXR_MTLX_SCENE_UNIT");
+    if (!materialUnit.empty())
+        return materialUnit;
+
+    return "inch";
+}
+
 NdrStringVec
 UsdMtlxStandardFileExtensions()
 {

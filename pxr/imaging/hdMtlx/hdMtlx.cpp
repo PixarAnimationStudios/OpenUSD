@@ -56,6 +56,12 @@ HdMtlxSearchPaths()
     return searchPaths;
 }
 
+const std::string
+HdMtlxSceneUnit()
+{
+    return UsdMtlxSceneUnit();
+}
+
 static mx::DocumentPtr
 _ComputeStdLibraries()
 {
@@ -113,6 +119,39 @@ _AddNodeToNodeGraph(
     }
     // Otherwise get the existing node from the mxNodeGraph
     return mxNodeGraph->getNode(mxNodeName);
+}
+
+static void
+_CopyUnitAttributes(const HdMaterialNetworkInterface::NodeParamData& paramData,
+                    mx::InputPtr& mxInput)
+{
+    TfEnum displayUnit   = paramData.displayUnit.UncheckedGet<TfEnum>();
+    const std::string unitType = "distance";
+    std::string unit;
+
+    if (displayUnit == SdfLengthUnitNanometer)
+        unit = "nanometer";
+    else if (displayUnit == SdfLengthUnitMicron)
+        unit = "micron";
+    else if (displayUnit == SdfLengthUnitMillimeter)
+        unit = "millimeter";
+    else if (displayUnit == SdfLengthUnitCentimeter)
+        unit = "centimeter";
+    else if (displayUnit == SdfLengthUnitInch)
+        unit = "inch";
+    else if (displayUnit == SdfLengthUnitFoot)
+        unit = "foot";
+    else if (displayUnit == SdfLengthUnitYard)
+        unit = "yard";
+    else if (displayUnit == SdfLengthUnitMeter)
+        unit = "meter";
+    else if (displayUnit == SdfLengthUnitKilometer)
+        unit = "kilometer";
+    else if (displayUnit == SdfLengthUnitMile)
+        unit = "mile";
+
+    mxInput->setUnit(unit);
+    mxInput->setUnitType(unitType);
 }
 
 // Convert the HdParameterValue to a string MaterialX can understand
@@ -175,6 +214,9 @@ HdMtlxConvertToString(VtValue const& hdParameterValue)
     }
     else if (hdParameterValue.IsHolding<TfToken>()) {
         return hdParameterValue.UncheckedGet<TfToken>();
+    }
+    else if (hdParameterValue.IsHolding<TfEnum>()) {
+        return TfEnum::GetName(hdParameterValue.UncheckedGet<TfEnum>());
     }
     else {
         TF_WARN("Unsupported Parameter Type '%s'", 
@@ -264,12 +306,23 @@ _AddMaterialXNode(
             continue;
         }
 
-        // Set the input value, and colorspace  on the mxNode
+        // Skip DisplayUnit parameter, this is already captured in the paramData.
+        // Note: Unit inputNames are of the form 'DisplayUnit:inputName'
+        const std::pair<std::string, bool> displayunitresult
+            = SdfPath::StripPrefixNamespace(mxInputName, SdfFieldKeys->DisplayUnit);
+        if (displayunitresult.second) {
+            continue;
+        }
+
+        // Set the input value, colorspace and unit on the mxNode
         mx::InputPtr mxInput = mxNode->setInputValue(
             mxInputName, mxInputValue, _GetInputType(mxNodeDef, mxInputName));
         if (!paramData.colorSpace.IsEmpty()) {
             mxInput->setColorSpace(paramData.colorSpace);
         }
+
+        if (paramData.displayUnit.IsHolding <TfEnum>())
+            _CopyUnitAttributes(paramData, mxInput);
     }
 
     // MaterialX nodes that use textures can have more than one filename input
@@ -485,13 +538,23 @@ _AddParameterInputsToTerminalNode(
             netInterface->GetNodeParameterData(terminalNodeName, paramName);
         const std::string mxInputValue = HdMtlxConvertToString(paramData.value);
 
-        // Skip Colorspace parameter, this is already captured in the paramData.
-        // Note: Colorspace inputNames are of the form 'colorSpace:inputName'
-        const std::pair<std::string, bool> result = 
-            SdfPath::StripPrefixNamespace(mxInputName, SdfFieldKeys->ColorSpace);
-        if (result.second) {
-            continue;
+        bool skipInput = false;
+        // Skip prefixed parameters, that are already captured in the paramData.
+        // Note: prefixed inputNames are of the form 'prefix:inputName'
+        // e.g. colorSpace:inputName
+        for (const auto& prefixname : 
+            { SdfFieldKeys->ColorSpace,
+              SdfFieldKeys->DisplayUnit }) {
+            const std::pair<std::string, bool> result =
+	            SdfPath::StripPrefixNamespace(mxInputName, prefixname);
+            if (result.second) {
+                skipInput = true;
+                break;
+            }
         }
+
+        if (skipInput)
+            continue;
 
         // Set the Input value on the mxShaderNode
         mx::InputPtr mxInput = mxShaderNode->setInputValue(
@@ -499,6 +562,9 @@ _AddParameterInputsToTerminalNode(
         if (!paramData.colorSpace.IsEmpty()) {
             mxInput->setColorSpace(paramData.colorSpace);
         }
+
+        if (paramData.displayUnit.IsHolding<TfEnum>()) 
+            _CopyUnitAttributes(paramData, mxInput);
     }
 }
 

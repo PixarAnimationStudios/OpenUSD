@@ -196,6 +196,8 @@ enum SdfAuthoringError
 // Dimensionless quantities use a special 'Dimensionless' unit category
 // represented by the enum SdfDimensionlessUnit.
 #define _SDF_LENGTH_UNITS       \
+((Nanometer,  "nm",  0.000000001)) \
+((Micron,     "um",  0.000001))    \
 ((Millimeter, "mm",  0.001))    \
 ((Centimeter, "cm",  0.01))     \
 ((Decimeter,  "dm",  0.1))      \

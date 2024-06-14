@@ -38,4 +38,33 @@
   <surfacematerial name="DefaultValTest" type="material">
     <input name="surfaceshader" type="surfaceshader" nodename="SR_test2" />
   </surfacematerial>
+
+  <nodegraph name="NG_imagetex3" >
+    <!-- opacity_output -->
+    <output name="base_color_output" type="color3" nodename="base_color_image" />
+    <!-- multiply unit converted realworldscale and additional scale-->
+    <multiply name="total_scale" type="vector2">
+      <input name="in1" type="vector2" value="1.0, 1.0" />
+      <input name="in2" type="float" value="10.0" unit="centimeter" unittype="distance" />
+    </multiply>
+    <texcoord name="texcoord1" type="vector2" />
+    <place2d name="a_place2d" type="vector2">
+      <input name="texcoord" type="vector2" nodename="texcoord1" />
+      <input name="offset" type="vector2" value="0.0, 0.0" />
+      <input name="scale" type="vector2" nodename="total_scale" />
+      <input name="pivot" type="vector2" value="0.5, 0.5" />
+    </place2d>
+    <image name="base_color_image" type="color3">
+      <input name="file" type="filename" value="./grid.png" colorspace="srgb_texture" />
+      <input name="texcoord" type="vector2" nodename="a_place2d" />
+    </image>
+  </nodegraph>
+  <standard_surface name="SR_test3" type="surfaceshader">
+    <input name="base" type="float" value="1" />
+    <input name="base_color" type="color3" nodegraph="NG_imagetex3" output="base_color_output" />
+    <input name="metalness" type="float" value="0" />
+  </standard_surface>
+  <surfacematerial name="TextureTestDistanceUnit" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_test3" />
+  </surfacematerial>
 </materialx>

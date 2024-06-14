@@ -4808,7 +4808,49 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLMaterialXTextured
     )
-    
+
+    pxr_register_test(testUsdImagingGLMaterialXTextured_mxTexUnits_inch
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -frameAll -stage mxDefaultUnitsVals.usda -write mxTexUnitsinch.png"
+        IMAGE_DIFF_COMPARE
+        mxTexUnitsinch.png
+        FAIL 0.1
+        FAIL_PERCENT 0.005
+        WARN 0.05
+        WARN_PERCENT 0.02
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLMaterialXTextured
+        ENV
+            PXR_MTLX_SCENE_UNIT=inch
+    )
+
+    pxr_register_test(testUsdImagingGLMaterialXTextured_mxTexUnits_foot
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -frameAll -stage mxDefaultUnitsVals.usda -write mxTexUnitsfoot.png"
+        IMAGE_DIFF_COMPARE
+        mxTexUnitsfoot.png
+        FAIL 0.1
+        FAIL_PERCENT 0.005
+        WARN 0.05
+        WARN_PERCENT 0.02
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLMaterialXTextured
+        ENV
+            PXR_MTLX_SCENE_UNIT=foot
+    )
+
+    pxr_register_test(testUsdImagingGLMaterialXTextured_mxTexUnits_meter
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -frameAll -stage mxDefaultUnitsVals.usda -write mxTexUnitsmeter.png"
+        IMAGE_DIFF_COMPARE
+        mxTexUnitsmeter.png
+        FAIL 0.1
+        FAIL_PERCENT 0.005
+        WARN 0.05
+        WARN_PERCENT 0.02
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLMaterialXTextured
+        ENV
+            PXR_MTLX_SCENE_UNIT=meter
+    )
+
 # These two tests are to provide direct comparisons between the Native and  
 # MaterialX implementations of PreviewSurface Materials. 
 # The first test is using purely Native PreviewSurface materials. 
