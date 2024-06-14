@@ -29,13 +29,15 @@ TestUsdGeomValidators()
     // This should be updated with every new validator added with the
     // UsdGeomValidators keyword.
     const std::set<TfToken> expectedUsdGeomValidatorNames = {
-        UsdGeomValidatorNameTokens->subsetFamilies
+        UsdGeomValidatorNameTokens->subsetFamilies,
+        UsdGeomValidatorNameTokens->subsetParentIsImageable
     };
 
     // This should be updated with every new validator added with the
     // UsdGeomSubset keyword.
     const std::set<TfToken> expectedUsdGeomSubsetNames = {
-        UsdGeomValidatorNameTokens->subsetFamilies
+        UsdGeomValidatorNameTokens->subsetFamilies,
+        UsdGeomValidatorNameTokens->subsetParentIsImageable
     };
 
     const UsdValidationRegistry& registry =
@@ -290,11 +292,47 @@ TestUsdGeomSubsetFamilies()
     }
 }
 
+void
+TestUsdGeomSubsetParentIsImageable()
+{
+    UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
+    const UsdValidator* validator = registry.GetOrLoadValidatorByName(
+        UsdGeomValidatorNameTokens->subsetParentIsImageable);
+    TF_AXIOM(validator);
+
+    SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
+    layer->ImportFromString(subsetsLayerContents);
+    UsdStageRefPtr usdStage = UsdStage::Open(layer);
+    TF_AXIOM(usdStage);
+
+    {
+        const UsdPrim usdPrim = usdStage->GetPrimAtPath(
+            SdfPath("/SubsetsTest/Geom/NonImageable/parentIsNotImageable"));
+
+        const UsdValidationErrorVector errors = validator->Validate(usdPrim);
+        TF_AXIOM(errors.size() == 1u);
+        const UsdValidationError& error = errors[0u];
+        TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
+        TF_AXIOM(error.GetSites().size() == 1u);
+        const UsdValidationErrorSite& errorSite = error.GetSites()[0u];
+        TF_AXIOM(errorSite.IsValid());
+        TF_AXIOM(errorSite.IsPrim());
+        TF_AXIOM(errorSite.GetPrim().GetPath() == usdPrim.GetPath());
+        const std::string expectedErrorMsg =
+            "GeomSubset "
+            "</SubsetsTest/Geom/NonImageable/parentIsNotImageable> has "
+            "direct parent prim </SubsetsTest/Geom/NonImageable> that is "
+            "not Imageable.";
+        TF_AXIOM(error.GetMessage() == expectedErrorMsg);
+    }
+}
+
 int
 main()
 {
     TestUsdGeomValidators();
     TestUsdGeomSubsetFamilies();
+    TestUsdGeomSubsetParentIsImageable();
     printf("OK\n");
     return EXIT_SUCCESS;
 };
