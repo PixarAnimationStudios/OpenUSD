@@ -33,13 +33,15 @@ TestUsdShadeValidators()
     // UsdShadeValidators keyword.
     const std::set<TfToken> expectedUsdShadeValidatorNames = {
         UsdShadeValidatorNameTokens->shaderSdrCompliance,
-        UsdShadeValidatorNameTokens->subsetMaterialBindFamilyName
+        UsdShadeValidatorNameTokens->subsetMaterialBindFamilyName,
+        UsdShadeValidatorNameTokens->subsetsMaterialBindFamily
     };
 
     // This should be updated with every new validator added with the
     // UsdGeomSubset keyword.
     const std::set<TfToken> expectedUsdGeomSubsetNames = {
-        UsdShadeValidatorNameTokens->subsetMaterialBindFamilyName
+        UsdShadeValidatorNameTokens->subsetMaterialBindFamilyName,
+        UsdShadeValidatorNameTokens->subsetsMaterialBindFamily
     };
 
     const UsdValidationRegistry& registry =
@@ -265,12 +267,68 @@ TestUsdShadeSubsetMaterialBindFamilyName()
     }
 }
 
+void
+TestUsdShadeSubsetsMaterialBindFamily()
+{
+    UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
+    const UsdValidator* validator = registry.GetOrLoadValidatorByName(
+        UsdShadeValidatorNameTokens->subsetsMaterialBindFamily);
+    TF_AXIOM(validator);
+
+    SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
+    layer->ImportFromString(subsetsLayerContents);
+    UsdStageRefPtr usdStage = UsdStage::Open(layer);
+    TF_AXIOM(usdStage);
+
+    {
+        const UsdPrim usdPrim = usdStage->GetPrimAtPath(
+            SdfPath("/SubsetsTest/Geom/Cube"));
+
+        const UsdValidationErrorVector errors = validator->Validate(usdPrim);
+        TF_AXIOM(errors.size() == 2u);
+
+        {
+            const UsdValidationError& error = errors[0u];
+            TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
+            TF_AXIOM(error.GetSites().size() == 1u);
+            const UsdValidationErrorSite& errorSite = error.GetSites()[0u];
+            TF_AXIOM(errorSite.IsValid());
+            TF_AXIOM(errorSite.IsPrim());
+            TF_AXIOM(errorSite.GetPrim().GetPath() == usdPrim.GetPath());
+            const std::string expectedErrorMsg =
+                "Imageable prim </SubsetsTest/Geom/Cube> has 'materialBind' "
+                "subset family with invalid family type 'unrestricted'. Family "
+                "type should be 'nonOverlapping' or 'partition' instead.";
+            TF_AXIOM(error.GetMessage() == expectedErrorMsg);
+        }
+
+        {
+            const UsdValidationError& error = errors[1u];
+            TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
+            TF_AXIOM(error.GetSites().size() == 1u);
+            const UsdValidationErrorSite& errorSite = error.GetSites()[0u];
+            TF_AXIOM(errorSite.IsValid());
+            TF_AXIOM(errorSite.IsPrim());
+            TF_AXIOM(errorSite.GetPrim().GetPath() ==
+                SdfPath("/SubsetsTest/Geom/Cube/materialBindShouldBeFaceElementType"));
+            const std::string expectedErrorMsg =
+                "GeomSubset "
+                "</SubsetsTest/Geom/Cube/materialBindShouldBeFaceElementType> "
+                "belongs to family 'materialBind' but has non-face element "
+                "type 'point'. Subsets belonging to family 'materialBind' "
+                "should be of element type 'face'.";
+            TF_AXIOM(error.GetMessage() == expectedErrorMsg);
+        }
+    }
+}
+
 int
 main()
 {
     TestUsdShadeValidators();
     TestUsdShadeShaderPropertyCompliance();
     TestUsdShadeSubsetMaterialBindFamilyName();
+    TestUsdShadeSubsetsMaterialBindFamily();
     printf("OK\n");
     return EXIT_SUCCESS;
 };
