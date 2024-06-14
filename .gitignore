@@ -1,7 +1,10 @@
 .p4*
 .DS_Store
 .AppleDouble
+__pycache__
 USD_emscripten/
 build
+build-*
+dist-*
 .vscode/
 
