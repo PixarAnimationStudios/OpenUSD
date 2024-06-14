@@ -401,6 +401,15 @@
                             "UsdGeomImageable"
                         ]
                     },
+                    "SubsetParentIsImageable": {
+                        "doc": "Validates that GeomSubset prims are direct descendants of an Imageable prim.",
+                        "keywords": [
+                            "UsdGeomSubset"
+                        ],
+                        "schemaTypes": [
+                            "UsdGeomSubset"
+                        ]
+                    },
                     "keywords": [
                         "UsdGeomValidators"
                     ]

@@ -83,6 +83,43 @@ _SubsetFamilies(const UsdPrim& usdPrim)
     return errors;
 }
 
+static
+UsdValidationErrorVector
+_SubsetParentIsImageable(const UsdPrim& usdPrim)
+{
+    if (!(usdPrim && usdPrim.IsInFamily<UsdGeomSubset>(
+            UsdSchemaRegistry::VersionPolicy::All))) {
+        return {};
+    }
+
+    const UsdGeomSubset subset(usdPrim);
+    if (!subset) {
+        return {};
+    }
+
+    const UsdPrim parentPrim = usdPrim.GetParent();
+    const UsdGeomImageable parentImageable(parentPrim);
+    if (parentImageable) {
+        return {};
+    }
+
+    const UsdValidationErrorSites primErrorSites = {
+        UsdValidationErrorSite(usdPrim.GetStage(), usdPrim.GetPath())
+    };
+
+    return {
+        UsdValidationError(
+            UsdValidationErrorType::Error,
+            primErrorSites,
+            TfStringPrintf(
+                "GeomSubset <%s> has direct parent prim <%s> that is not "
+                "Imageable.",
+                usdPrim.GetPath().GetText(),
+                parentPrim.GetPath().GetText())
+        )
+    };
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
@@ -90,6 +127,10 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     registry.RegisterPluginValidator(
         UsdGeomValidatorNameTokens->subsetFamilies,
         _SubsetFamilies);
+
+    registry.RegisterPluginValidator(
+        UsdGeomValidatorNameTokens->subsetParentIsImageable,
+        _SubsetParentIsImageable);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
