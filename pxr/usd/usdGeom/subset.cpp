@@ -749,7 +749,7 @@ UsdGeomSubset::ValidateSubsets(
                     valid = false;
                     if (reason) {
                         *reason += TfStringPrintf("Found overlapping index %d "
-                            "in GeomSubset at path <%s> at time %s.\n", index,
+                            "in GeomSubset at path <%s> at time %s.", index,
                             subset.GetPath().GetText(), TfStringify(t).c_str());
                     }
                 }
@@ -773,7 +773,7 @@ UsdGeomSubset::ValidateSubsets(
             valid = false;
             if (reason) {
                 *reason += TfStringPrintf("Found one or more indices that are "
-                    "greater than the element count %ld at time %s.\n", 
+                    "greater than the element count %ld at time %s.",
                     elementCount, TfStringify(t).c_str());
             }
         }
@@ -781,7 +781,7 @@ UsdGeomSubset::ValidateSubsets(
             valid = false;
             if (reason) {
                 *reason += TfStringPrintf("Found one or more indices that are "
-                    "less than 0 at time %s.\n", TfStringify(t).c_str());
+                    "less than 0 at time %s.", TfStringify(t).c_str());
             }
         }
     }
@@ -798,7 +798,7 @@ UsdGeomSubset::ValidateFamily(
     std::string * const reason)
 {
     if (!_ValidateGeomType(geom, elementType)) {
-        *reason += TfStringPrintf("Invalid geom type for elementType %s.\n", 
+        *reason += TfStringPrintf("Invalid geom type for elementType %s.",
                 elementType.GetText());
         return false;
     }
@@ -821,7 +821,7 @@ UsdGeomSubset::ValidateFamily(
         valid = false;
         if (reason) {
             *reason += TfStringPrintf("Unable to determine element count "
-                "at earliest time for geom <%s>.\n", geom.GetPath().GetText());
+                "at earliest time for geom <%s>.", geom.GetPath().GetText());
         }
     }
 
@@ -865,7 +865,7 @@ UsdGeomSubset::ValidateFamily(
                     if (reason) {
                         *reason += TfStringPrintf("Indices attribute has an "
                             "odd number of elements in GeomSubset at path <%s> "
-                            "at time %s with elementType edge.\n",
+                            "at time %s with elementType edge.",
                             subset.GetPath().GetText(), TfStringify(t).c_str());
                     }
                 }
@@ -882,7 +882,7 @@ UsdGeomSubset::ValidateFamily(
                         valid = false;
                         if (reason) {
                             *reason += TfStringPrintf("Found duplicate index %d "
-                                "in GeomSubset at path <%s> at time %s.\n", index,
+                                "in GeomSubset at path <%s> at time %s.", index,
                                 subset.GetPath().GetText(), TfStringify(t).c_str());
                         }
                     }
@@ -902,7 +902,7 @@ UsdGeomSubset::ValidateFamily(
             if (reason) {
                 *reason += TfStringPrintf("Geometry <%s> has no elements at "
                     "time %s, but the \"%s\" GeomSubset family contains "
-                    "indices.\n", geom.GetPath().GetText(),
+                    "indices.", geom.GetPath().GetText(),
                     TfStringify(t).c_str(), familyName.GetText());
             }
         }
@@ -915,7 +915,7 @@ UsdGeomSubset::ValidateFamily(
                 valid = false;
                 if (reason) {
                     *reason += TfStringPrintf("Number of unique indices at time %s "
-                        "does not match the element count %ld.\n",
+                        "does not match the element count %ld.",
                         TfStringify(t).c_str(), elementCount);
                 }
             }
@@ -933,7 +933,7 @@ UsdGeomSubset::ValidateFamily(
                             valid = false;
                             if (reason) {
                                 *reason += TfStringPrintf("Found duplicate edge index (%d, %d) "
-                                    "in GeomSubset at path <%s> at time %s.\n", edge[0], edge[1],
+                                    "in GeomSubset at path <%s> at time %s.", edge[0], edge[1],
                                     subset.GetPath().GetText(), TfStringify(t).c_str());
                             }
                         }
@@ -952,7 +952,7 @@ UsdGeomSubset::ValidateFamily(
                     valid = false;
                     if (reason) {
                         *reason += TfStringPrintf("At least one edge in family %s at time %s "
-                            "does not exist on the parent prim.\n",
+                            "does not exist on the parent prim.",
                             familyName.GetText(), TfStringify(t).c_str());
                     }
                 }
@@ -970,7 +970,7 @@ UsdGeomSubset::ValidateFamily(
                     valid = false;
                     if (reason) {
                         *reason += TfStringPrintf("Number of unique indices at time %s "
-                            "does not match the element count %ld.\n",
+                            "does not match the element count %ld.",
                             TfStringify(t).c_str(), elementCount);
                     }
                 }
@@ -992,7 +992,7 @@ UsdGeomSubset::ValidateFamily(
             valid = false;
             if (reason) {
                 *reason += TfStringPrintf("Found one or more indices that are "
-                    "greater than the element count %ld at time %s.\n",
+                    "greater than the element count %ld at time %s.",
                     elementCount, TfStringify(t).c_str());
             }
         }
@@ -1002,7 +1002,7 @@ UsdGeomSubset::ValidateFamily(
             valid = false;
             if (reason) {
                 *reason += TfStringPrintf("Found one or more indices that are "
-                    "less than 0 at time %s.\n", TfStringify(t).c_str());
+                    "less than 0 at time %s.", TfStringify(t).c_str());
             }
         }
     }
@@ -1010,7 +1010,7 @@ UsdGeomSubset::ValidateFamily(
     if (!hasIndicesAtAnyTime) {
         valid = false;
         if (reason) {
-            *reason += TfStringPrintf("No indices in family at any time.\n");
+            *reason += TfStringPrintf("No indices in family at any time.");
         }
     }
 
