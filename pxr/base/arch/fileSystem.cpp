@@ -753,7 +753,7 @@ Arch_InitTmpDir()
         // set, the following call will leak a string.
         _TmpDir = strdup(tmpdir.c_str());
     } else {
-#if defined(ARCH_OS_DARWIN)
+#if defined(ARCH_OS_DARWIN) || defined(__EMSCRIPTEN__)
         _TmpDir = "/tmp";
 #else
         _TmpDir = "/var/tmp";
