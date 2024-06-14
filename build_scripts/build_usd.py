@@ -2178,7 +2178,7 @@ group.add_argument("--build-target",
                             "(default: {})".format(
                             GetBuildTargetDefault())))
 
-if MacOS() or Linux():
+if MacOS():
     if apple_utils.IsHostArm():
         # Intel Homebrew stores packages in /usr/local which unfortunately can
         # be where a lot of other things are too. So we only add this flag on arm macs.
