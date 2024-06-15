@@ -456,13 +456,13 @@ VtValue::_GetPythonObject() const
         _info.Get()->GetPyObj(_storage) : TfPyObjWrapper();
 }
 
-#ifdef PXR_JS_BINDINGS_SUPPORT_ENABLED
+#ifdef __EMSCRIPTEN__
 emscripten::val VtValue::_GetJsVal() const
 {
     return _info.GetLiteral() ?
         _info.Get()->GetJsVal(_storage) : emscripten::val::undefined();
 }
-#endif // PXR_JS_BINDINGS_SUPPORT_ENABLED
+#endif // __EMSCRIPTEN__
 
 static void const *
 _FindOrCreateDefaultValue(std::type_info const &type,

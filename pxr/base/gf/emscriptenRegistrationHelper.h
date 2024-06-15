@@ -3,7 +3,7 @@
 #ifndef PXR_BASE_GF_EMSCRIPTEN_REGISTRATION_HELPER_H
 #define PXR_BASE_GF_EMSCRIPTEN_REGISTRATION_HELPER_H
 
-#ifdef PXR_JS_BINDINGS_SUPPORT_ENABLED
+#ifdef __EMSCRIPTEN__
   #include "pxr/base/tf/emscriptenTypeRegistration.h"
   #define REGISTER_GLVECTOR(VectorType) \
     EMSCRIPTEN_REGISTER_TYPE_CONVERSION(VectorType) \
@@ -22,7 +22,5 @@
       } \
       return vec; \
     EMSCRIPTEN_REGISTER_TYPE_CONVERSION_END(VectorType)
-#else // __EMSCRIPTEN__
-  #define REGISTER_GLVECTOR(VectorType)
 #endif // __EMSCRIPTEN__
 #endif // PXR_BASE_GF_EMSCRIPTEN_REGISTRATION_HELPER_H

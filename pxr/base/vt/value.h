@@ -30,13 +30,12 @@
 // Python include ordering issues.
 #include "pxr/base/tf/pyObjWrapper.h"
 
-#if PXR_JS_BINDINGS_SUPPORT_ENABLED
+#if __EMSCRIPTEN__
 #include "pxr/usd/sdf/wrapPathJs.h"
 #include "pxr/base/tf/wrapTokenJs.h"
 #include "pxr/usd/sdf/wrapAssetPathJs.h"
-
 #include <emscripten/bind.h>
-#endif // PXR_JS_BINDINGS_SUPPORT_ENABLED
+#endif // __EMSCRIPTEN__
 
 #include "pxr/base/tf/pyLock.h"
 
@@ -233,9 +232,9 @@ class VtValue
         using _EqualPtrFunc = bool (*)(_Storage const &, void const *);
         using _MakeMutableFunc = void (*)(_Storage &);
         using _GetPyObjFunc = TfPyObjWrapper (*)(_Storage const &);
-#ifdef PXR_JS_BINDINGS_SUPPORT_ENABLED
+#ifdef __EMSCRIPTEN__
         using _GetJsValFunc = emscripten::val (*)(_Storage const &);
-#endif // PXR_JS_BINDINGS_SUPPORT_ENABLED
+#endif // __EMSCRIPTEN__
         using _StreamOutFunc =
             std::ostream & (*)(_Storage const &, std::ostream &);
         using _GetTypeidFunc = std::type_info const & (*)(_Storage const &);
@@ -267,9 +266,9 @@ class VtValue
                             _EqualPtrFunc equalPtr,
                             _MakeMutableFunc makeMutable,
                             _GetPyObjFunc getPyObj,
-#ifdef PXR_JS_BINDINGS_SUPPORT_ENABLED
+#ifdef __EMSCRIPTEN__
                             _GetJsValFunc getJsVal,
-#endif // PXR_JS_BINDINGS_SUPPORT_ENABLED
+#endif // __EMSCRIPTEN__
                             _StreamOutFunc streamOut,
                             _GetTypeidFunc getTypeid,
                             _IsArrayValuedFunc isArrayValued,
@@ -297,9 +296,9 @@ class VtValue
             , _equalPtr(equalPtr)
             , _makeMutable(makeMutable)
             , _getPyObj(getPyObj)
-#ifdef PXR_JS_BINDINGS_SUPPORT_ENABLED
+#ifdef __EMSCRIPTEN__
             , _getJsVal(getJsVal)
-#endif // PXR_JS_BINDINGS_SUPPORT_ENABLED
+#endif // __EMSCRIPTEN__
             , _streamOut(streamOut)
             , _getTypeid(getTypeid)
             , _isArrayValued(isArrayValued)
@@ -341,11 +340,11 @@ class VtValue
         TfPyObjWrapper GetPyObj(_Storage const &storage) const {
             return _getPyObj(storage);
         }
-#ifdef PXR_JS_BINDINGS_SUPPORT_ENABLED
+#ifdef __EMSCRIPTEN__
         emscripten::val GetJsVal(_Storage const &storage) const {
             return _getJsVal(storage);
         }
-#endif // PXR_JS_BINDINGS_SUPPORT_ENABLED
+#endif // __EMSCRIPTEN__
         std::ostream &StreamOut(_Storage const &storage,
                                 std::ostream &out) const {
             return _streamOut(storage, out);
@@ -400,9 +399,9 @@ class VtValue
         _MakeMutableFunc _makeMutable;
         _GetPyObjFunc _getPyObj;
 
-#ifdef PXR_JS_BINDINGS_SUPPORT_ENABLED
+#ifdef __EMSCRIPTEN__
         _GetJsValFunc _getJsVal;
-#endif // PXR_JS_BINDINGS_SUPPORT_ENABLED
+#endif // __EMSCRIPTEN__
         _StreamOutFunc _streamOut;
         _GetTypeidFunc _getTypeid;
         _IsArrayValuedFunc _isArrayValued;
@@ -427,9 +426,9 @@ class VtValue
         constexpr static std::type_info const &GetElementTypeid() {
             return typeid(void);
         }
-#ifdef PXR_JS_BINDINGS_SUPPORT_ENABLED
+#ifdef __EMSCRIPTEN__
         static emscripten::val GetJSVal(T const &obj) { return emscripten::val::undefined(); }
-#endif // PXR_JS_BINDINGS_SUPPORT_ENABLED
+#endif // __EMSCRIPTEN__
     };
     template <class Array>
     struct _ArrayHelper<
@@ -444,7 +443,7 @@ class VtValue
         constexpr static std::type_info const &GetElementTypeid() {
             return typeid(typename Array::ElementType);
         }
-#ifdef PXR_JS_BINDINGS_SUPPORT_ENABLED
+#ifdef __EMSCRIPTEN__
         static emscripten::val GetJSVal(Array const &obj) {
             emscripten::val arrayVal = emscripten::val::array();
             for(size_t i = 0; i < obj.size(); ++i) {
@@ -452,7 +451,7 @@ class VtValue
             }
             return arrayVal;
         }
-#endif // PXR_JS_BINDINGS_SUPPORT_ENABLED
+#endif // __EMSCRIPTEN__
     };
 
     // Function used in case T has equality comparison.
@@ -507,7 +506,7 @@ class VtValue
 #endif //PXR_PYTHON_SUPPORT_ENABLED
         }
 
-#ifdef PXR_JS_BINDINGS_SUPPORT_ENABLED
+#ifdef __EMSCRIPTEN__
         static emscripten::val GetJsVal(T const &obj) {
             ProxiedType const &p = VtGetProxiedObject(obj);
             if (IsArrayValued(obj)) {
@@ -516,7 +515,7 @@ class VtValue
                 return emscripten::val(p);
             }
         }
-#endif // PXR_JS_BINDINGS_SUPPORT_ENABLED
+#endif // __EMSCRIPTEN__
         static std::ostream &StreamOut(T const &obj, std::ostream &out) {
             return VtStreamOut(VtGetProxiedObject(obj), out);
         }
@@ -578,12 +577,12 @@ class VtValue
             return {};
 #endif //PXR_PYTHON_SUPPORT_ENABLED
         }
-#ifdef PXR_JS_BINDINGS_SUPPORT_ENABLED
+#ifdef __EMSCRIPTEN__
         static emscripten::val GetJsVal(ErasedProxy const &obj) {
             VtValue const *val = VtGetErasedProxiedVtValue(obj);
             return emscripten::val(*val);
         }
-#endif // PXR_JS_BINDINGS_SUPPORT_ENABLED
+#endif // __EMSCRIPTEN__
 
         static std::ostream &
         StreamOut(ErasedProxy const &obj, std::ostream &out) {
@@ -650,9 +649,9 @@ class VtValue
                         &This::_EqualPtr,
                         &This::_MakeMutable,
                         &This::_GetPyObj,
-#ifdef PXR_JS_BINDINGS_SUPPORT_ENABLED
+#ifdef __EMSCRIPTEN__
                         &This::_GetJsVal,
-#endif // PXR_JS_BINDINGS_SUPPORT_ENABLED
+#endif // __EMSCRIPTEN__
                         &This::_StreamOut,
 
                         &This::_GetTypeid,
@@ -735,11 +734,11 @@ class VtValue
             return ProxyHelper::GetPyObj(GetObj(storage));
         }
 
-#ifdef PXR_JS_BINDINGS_SUPPORT_ENABLED
+#ifdef __EMSCRIPTEN__
         static emscripten::val _GetJsVal(_Storage const &storage) {
             return ProxyHelper::GetJsVal(GetObj(storage));
         }
-#endif // PXR_JS_BINDINGS_SUPPORT_ENABLED
+#endif // __EMSCRIPTEN__
 
         static std::ostream &_StreamOut(
             _Storage const &storage, std::ostream &out) {
@@ -1562,11 +1561,11 @@ ARCH_PRAGMA_POP
     Vt_GetPythonObjectFromHeldValue(VtValue const &self);
 
     VT_API TfPyObjWrapper _GetPythonObject() const;
-#ifdef PXR_JS_BINDINGS_SUPPORT_ENABLED
+#ifdef __EMSCRIPTEN__
 public:
     VT_API emscripten::val _GetJsVal() const;
 private:
-#endif // PXR_JS_BINDINGS_SUPPORT_ENABLED
+#endif // __EMSCRIPTEN__
 
     _Storage _storage;
     TfPointerAndBits<const _TypeInfo> _info;
