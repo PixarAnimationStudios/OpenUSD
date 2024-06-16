@@ -2303,24 +2303,25 @@ class Camera "Camera" (
     factor to model the overall responsivity of the system, including response of 
     the sensor and loss by the lens.
 
-    The combination of these parameters gives an exposure scaling factor (also 
-    referred to as the __imaging ratio__, in steridian-seconds) that converts from incident luminance 
-    passing through the lens system and reaching the sensor, in __nits__ (cd/m^2), to an 
-    output signal proportional to photometric exposure in __lux-seconds__. 
-    
     The calculated scaling factor can be obtained from 
     \\ref UsdGeomCamera::GetExposureScale(), which is also the value provided by 
     \\ref HdCamera::GetExposure(). It is computed as:
     \\code
-        exposureScale = 
-            (exposureTime * (exposureIso/100) * pow(2, exposure) * exposureResponsivity) 
+        exposureScale = exposureResponsivity * 
+            (exposureTime * (exposureIso/100) * pow(2, exposure)) 
             / (exposureFStop * exposureFStop)
     \\endcode
 
+    This scaling factor is combined from two parts: The first, known as the __imaging ratio__ 
+    (in _steridian-second_), converts from incident luminance at the front 
+    of the lens system, in _nit_ (_cd/m^2_), to photometric exposure at the sensor
+    in _lux-second_. The second, <tt>exposureResponsivity</tt> 
+    (in _inverse lux-second_), converts from photometric exposure at the sensor, in _lux-second_,
+    to a unitless output signal.
+
     Renderers should simply multiply the brightness of the image by the exposure 
     scale. The default values for the exposure-related attributes combine to give
-    a multiplier of 1.0.
-
+    a scale of 1.0.
     
     \\sa \\ref UsdGeom_LinAlgBasics
      """
