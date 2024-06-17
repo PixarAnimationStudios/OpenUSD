@@ -69,14 +69,10 @@ std::vector<TfToken>
 _GetValueFieldNames(
     const SdfLayerHandle& layer, const SdfPath& path)
 {
-    std::vector<TfToken> valueFields;
     const SdfSchemaBase& schema = layer->GetSchema();
-    const std::vector<TfToken> allFields = layer->ListFields(path);
-    for (const TfToken& field : allFields) {
-        if (!schema.HoldsChildren(field)) {
-            valueFields.push_back(field);
-        }
-    }
+    std::vector<TfToken> valueFields = layer->ListFields(path);
+    valueFields.erase(std::remove_if(std::begin(valueFields), std::end(valueFields),
+        [&schema](const auto& field) { return schema.HoldsChildren(field); }), std::end(valueFields));
 
     TfTokenFastArbitraryLessThan lessThan;
     std::sort(valueFields.begin(), valueFields.end(), lessThan);
@@ -92,14 +88,10 @@ std::vector<TfToken>
 _GetChildrenFieldNames(
     const SdfLayerHandle& layer, const SdfPath& path)
 {
-    std::vector<TfToken> childrenFields;
     const SdfSchemaBase& schema = layer->GetSchema();
-    const std::vector<TfToken> allFields = layer->ListFields(path);
-    for (const TfToken& field : allFields) {
-        if (schema.HoldsChildren(field)) {
-            childrenFields.push_back(field);
-        }
-    }
+    std::vector<TfToken> childrenFields = layer->ListFields(path);
+    childrenFields.erase(std::remove_if(std::begin(childrenFields), std::end(childrenFields),
+        [&schema](const auto& field) { return !schema.HoldsChildren(field); }), std::end(childrenFields));
 
     TfTokenFastArbitraryLessThan lessThan;
     std::sort(childrenFields.begin(), childrenFields.end(), lessThan);
