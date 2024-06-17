@@ -148,7 +148,10 @@
                 "Validators": {
                     "CompositionErrorTest": {
                         "doc": "Validator aims at providing all composition errors, which were generated while composing the stage."
-                    }, 
+                    },
+                    "StageMetadataChecker": {
+                        "doc": "All stages should declare their 'upAxis' and 'metersPerUnit'. Stages that can be consumed as referencable assets should furthermore have a valid 'defaultPrim' declared, and stages meant for consumer-level packaging should always have upAxis set to 'Y'."
+                    },
                     "keywords": [
                         "UsdCoreValidators"
                     ]
