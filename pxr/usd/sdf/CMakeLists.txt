@@ -30,6 +30,7 @@ pxr_library(sdf
         cleanupEnabler
         copyUtils
         data
+        debugCodes
         declareHandles
         fileFormat
         identity
@@ -79,7 +80,7 @@ pxr_library(sdf
 
         # Flex/Bison generated code
         textFileFormat.tab
-   
+
     PYTHON_PUBLIC_CLASSES
         pyChildrenProxy
         pyChildrenView
@@ -182,7 +183,7 @@ pxr_library(sdf
         wrapTypesJs.cpp
         wrapValueTypeNameJs.cpp
 
-    PYMODULE_FILES 
+    PYMODULE_FILES
         __init__.py
 
     RESOURCE_FILES
@@ -205,10 +206,10 @@ elseif(NOT FLEX_FOUND)
 else()
     add_custom_command(
         TARGET sdf
-        PRE_BUILD 
+        PRE_BUILD
         COMMENT "Validating sdf generated code..."
         COMMAND
-            ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/sdfGenAsciiParsers.py 
+            ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/sdfGenAsciiParsers.py
             --srcDir ${CMAKE_CURRENT_SOURCE_DIR}
             --bison ${BISON_EXECUTABLE}
             --flex ${FLEX_EXECUTABLE}
@@ -302,7 +303,7 @@ pxr_build_test(testSdfAttributeBlocking_Cpp
         sdf
     CPPFILES
         testenv/testSdfAttributeBlocking.cpp
-) 
+)
 
 pxr_build_test(testSdfHardToReach
     LIBRARIES
