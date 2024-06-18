@@ -1655,6 +1655,7 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
         GfMatrix4f cullMatrix;
         GfVec2f drawRangeNDC;
         uint32_t drawCommandNumUints;
+        uint32_t indexEnd;
     };
 
     // We perform frustum culling in a compute shader, stomping the
@@ -1729,17 +1730,19 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
     HdStBufferResourceSharedPtr paramBuffer = _dispatchBuffer->
         GetBufferArrayRange()->GetResource(HdTokens->drawDispatch);
 
+    int const inputCount = _dispatchBufferCullInput->GetCount();
+
     // set instanced cull parameters
     Uniforms cullParams;
     cullParams.cullMatrix = cullMatrix;
     cullParams.drawRangeNDC = drawRangeNdc;
     cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
+    cullParams.indexEnd = inputCount;
 
     computeCmds->SetConstantValues(
         psoHandle, 0,
         sizeof(Uniforms), &cullParams);
 
-    int const inputCount = _dispatchBufferCullInput->GetCount();
     computeCmds->Dispatch(inputCount, 1);
     computeCmds->PopDebugGroup();
 
