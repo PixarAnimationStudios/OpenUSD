@@ -56,7 +56,11 @@ UsdValidator::Validate(const SdfLayerHandle &layer) const
 {
     const UsdValidateLayerTaskFn *layerTaskFn = _GetValidateLayerTask();
     if (layerTaskFn) {
-        return (*layerTaskFn)(layer);
+        UsdValidationErrorVector errors = (*layerTaskFn)(layer);
+        for (UsdValidationError &error : errors) {
+            error._SetValidator(this);
+        }
+        return errors;
     }
     return {};
 }
@@ -66,7 +70,11 @@ UsdValidator::Validate(const UsdStagePtr &usdStage) const
 {
     const UsdValidateStageTaskFn *stageTaskFn = _GetValidateStageTask();
     if (stageTaskFn) {
-        return (*stageTaskFn)(usdStage);
+        UsdValidationErrorVector errors = (*stageTaskFn)(usdStage);
+        for (UsdValidationError &error : errors) {
+            error._SetValidator(this);
+        }
+        return errors;
     }
     return {};
 }
@@ -76,7 +84,11 @@ UsdValidator::Validate(const UsdPrim &usdPrim) const
 {
     const UsdValidatePrimTaskFn *primTaskFn = _GetValidatePrimTask();
     if (primTaskFn) {
-        return (*primTaskFn)(usdPrim);
+        UsdValidationErrorVector errors = (*primTaskFn)(usdPrim);
+        for (UsdValidationError &error : errors) {
+            error._SetValidator(this);
+        }
+        return errors;
     }
     return {};
 }
