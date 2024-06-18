@@ -28,12 +28,32 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
         self.assertEqual(builder.GetEditedRelocatesMap(), 
                          self._FormatRelocatesDict(expectedRelocates))
 
+    # Removes a relocate by source path from the edit builder, which we expect
+    # to succeed, and verifies that we end up with the expected relocates map.
+    def _RemoveRelocateAndVerify(self, builder, source, expectedRelocates):
+        self.assertTrue(builder.RemoveRelocate(source))
+        self.assertEqual(builder.GetEditedRelocatesMap(), 
+                         self._FormatRelocatesDict(expectedRelocates))
+
     # Attempts to add a relocate to the builder that we expect to fail and
     # verifies that adding it fails with the expected "why not" message.
     def _VerifyInvalidRelocate(self, builder, source, target, expectedWhyNot):
         initialRelocates = builder.GetEditedRelocatesMap()
         initialEdits = builder.GetEdits()
         result = builder.Relocate(source, target)
+        self.assertFalse(result)
+        self.assertEqual(result.whyNot, expectedWhyNot)
+        # Also verify that the relocates map and edits were not changed at all.
+        self.assertEqual(builder.GetEditedRelocatesMap(), initialRelocates)
+        self.assertEqual(builder.GetEdits(), initialEdits)
+
+    # Attempts to remove a relocate by source from the builder that, which we
+    # expect to fail, and verifies that removing it fails with the expected
+    # "why not" message.
+    def _VerifyInvalidRemoveRelocate(self, builder, source, expectedWhyNot):
+        initialRelocates = builder.GetEditedRelocatesMap()
+        initialEdits = builder.GetEdits()
+        result = builder.RemoveRelocate(source)
         self.assertFalse(result)
         self.assertEqual(result.whyNot, expectedWhyNot)
         # Also verify that the relocates map and edits were not changed at all.
@@ -153,8 +173,12 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
             "Cannot relocate </Root/B> to </Root/C>: A relocate from </Root/A> "
             "to </Root/C> already exists and the same target cannot be "
             "relocated to again.")
-        # Relocate target /Root/C back to source /Root/A to delete the relocate.
-        self._AddRelocateAndVerify(builder, "/Root/C", "/Root/A",
+        # Remove the relocate. Remove only works using the source path /Root/A;
+        # we cannot remove via the target path /Root/C.
+        self._VerifyInvalidRemoveRelocate(builder, "/Root/C",
+            "Cannot remove relocate for source path </Root/C>: No relocate "
+            "with the source path found.")
+        self._RemoveRelocateAndVerify(builder, "/Root/A",
             {})
 
         # Steps: 
@@ -170,7 +194,7 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
             "</Root/B> to </Root/C>; the only prim that can be relocated to "
             "</Root/B> is the existing relocate's target </Root/C>, which "
             "will remove the relocate.")
-        # But we can relocate /Root/C back to /Root/B to delete the relocate
+        # We can relocate /Root/C back to /Root/B to delete the relocate
         self._AddRelocateAndVerify(builder, "/Root/C", "/Root/B",
             {})
 
@@ -197,8 +221,8 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
             {"/Root/A" : "/Root/B"})
         self._AddRelocateAndVerify(builder, "/Root/B", "/Root/C",
             {"/Root/A" : "/Root/C"})
-        # Relocate /Root/A back to itself. This also deletes the relocate.
-        self._AddRelocateAndVerify(builder, "/Root/A", "/Root/A",
+        # Remove the relocate.
+        self._RemoveRelocateAndVerify(builder, "/Root/A",
             {})
 
         # Steps:
@@ -239,9 +263,8 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
         #   6) Relocate /Root/A -> /Root/B
         # Result: Steps 4 and 5 will both fail because of invalid targets that
         # are already relocation sources or target. 
-        # Step 6 succeeds with the resulting /Root/A -> /Root/B mapping 
-        # subsuming the updated children relocates. This is would be same result
-        # as relocating /Root/F -> /Root/B. 
+        # Step 6 succeeds with the resulting /Root/F -> /Root/B mapping 
+        # subsuming the updated children relocates.
         self._VerifyInvalidRelocate(builder, "/Root/B", "/Root/F",
             "Cannot relocate </Root/B> to </Root/F>: A relocate from </Root/A> "
             "to </Root/F> already exists and the same target cannot be "
@@ -252,10 +275,10 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
             "</Root/A> to </Root/F>; the only prim that can be relocated to "
             "</Root/A> is the existing relocate's target </Root/F>, which "
             "will remove the relocate.")
-        self._AddRelocateAndVerify(builder, "/Root/A", "/Root/B",
+        self._AddRelocateAndVerify(builder, "/Root/F", "/Root/B",
             {"/Root/A" : "/Root/B"})
-        # Relocate /Root/A back to itself. This also deletes the relocate.
-        self._AddRelocateAndVerify(builder, "/Root/A", "/Root/A",
+        # Remove the relocate.
+        self._RemoveRelocateAndVerify(builder, "/Root/A",
             {})
 
         # Steps:
@@ -286,8 +309,8 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
         # parent back their original source.
         self._AddRelocateAndVerify(builder, "/Root/F", "/Root/A",
             {"/Root/B" : "/Root/A"})
-        # Relocate /Root/A back to /Root/B. This also deletes the relocate.
-        self._AddRelocateAndVerify(builder, "/Root/A", "/Root/B",
+        # Remove the last relocate.
+        self._RemoveRelocateAndVerify(builder, "/Root/B",
             {})
 
         # Steps:
@@ -305,8 +328,8 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
              "/Root/A/D" : "/Root/B/D"})
         self._AddRelocateAndVerify(builder, "/Root/B", "/Root/A",
             {"/Root/B" : "/Root/A"})
-        # Relocate /Root/B back to itself. This also deletes the relocate.
-        self._AddRelocateAndVerify(builder, "/Root/B", "/Root/B",
+        # Relocate the relocate.
+        self._RemoveRelocateAndVerify(builder, "/Root/B",
             {})
 
         # Steps:
@@ -348,69 +371,15 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
         self._VerifyInvalidRelocate(builder, "/OtherRoot", "/Root",
             "Cannot relocate </OtherRoot> to </Root>: Adding a relocate from "
             "</OtherRoot> would result in a root prim being relocated.")
-        # Undo the /Root/A and then the /Root/A/B relocates to delete all 
-        # relocates.    
-        self._AddRelocateAndVerify(builder, "/Root/A", "/Root/A",
+        # Remove the /Root/A relocate. This updates the source path of the 
+        # remaining relocate to be /Root/A/B instead of /OtherRoot/A/B to account
+        # for the fact that /Root/A/B is no longer ancestrally relocated by the 
+        # /Root/A to /OtherRoot/A relocate.
+        self._RemoveRelocateAndVerify(builder, "/Root/A",
             {"/Root/A/B" : "/Root/B"})
-        self._AddRelocateAndVerify(builder, "/Root/A/B", "/Root/A/B",
+        # Remove the /Root/A/B relocate.    
+        self._RemoveRelocateAndVerify(builder, "/Root/A/B",
             {})
-
-        # This whole set of steps below showcase how any combination or 
-        # unrelocated and partially relocated source paths can be used when 
-        # editing as long as the source path is valid when relocated by existing
-        # relocates.
-
-        # Steps:
-        #   1) Relocate /Root/A -> /Root/Z
-        self._AddRelocateAndVerify(builder, "/Root/A", "/Root/Z",
-            {"/Root/A" : "/Root/Z"})
-        
-        #   2) Relocate /Root/A/B -> /Root/Z/Y
-        # Cannot use a pre-relocated target path.
-        self._VerifyInvalidRelocate(builder, "/Root/A/B", "/Root/A/Y",
-            "Cannot relocate </Root/Z/B> (relocated from original source "
-            "</Root/A/B>) to </Root/A/Y>: Cannot relocate a prim to be a "
-            "descendant of </Root/A> which is already relocated to </Root/Z>.")
-        # Can use the pre-relocated source path with the final relocated
-        # target path. Source path is relocated when added.
-        self._AddRelocateAndVerify(builder, "/Root/A/B", "/Root/Z/Y",
-            {"/Root/A" : "/Root/Z",
-             "/Root/Z/B" : "/Root/Z/Y"})
-        
-        #   3) Relocate /Root/A/B/C -> /Root/Z/Y/X
-        # Cannot use any pre-relocated target paths.
-        self._VerifyInvalidRelocate(builder, "/Root/A/B/C", "/Root/A/B/X",
-            "Cannot relocate </Root/Z/Y/C> (relocated from original source "
-            "</Root/A/B/C>) to </Root/A/B/X>: Cannot relocate a prim to be a "
-            "descendant of </Root/A> which is already relocated to </Root/Z>.")
-        self._VerifyInvalidRelocate(builder, "/Root/A/B/C", "/Root/A/Y/X",
-            "Cannot relocate </Root/Z/Y/C> (relocated from original source "
-            "</Root/A/B/C>) to </Root/A/Y/X>: Cannot relocate a prim to be a "
-            "descendant of </Root/A> which is already relocated to </Root/Z>.")
-        # Can use a partially relocated source path with the final relocated
-        # target path. Source path is fully relocated when added.
-        self._AddRelocateAndVerify(builder, "/Root/Z/B/C", "/Root/Z/Y/X",
-            {"/Root/A" : "/Root/Z",
-             "/Root/Z/B" : "/Root/Z/Y",
-             "/Root/Z/Y/C" : "/Root/Z/Y/X"})
-        
-        #   4) Relocate /Root/A/B/C/D -> /Root/Z/Y/X/W
-        #   5) Relocate /Root/A/B/C/D/E -> /Root/Z/Y/X/W/V
-        # Can use mixed relocation source paths with the final relocated 
-        # target path as long as the source paths can be fully relocated to a 
-        # non-conflicting source paths. Source paths are fully relocated when 
-        # added.
-        self._AddRelocateAndVerify(builder, "/Root/Z/B/X/D", "/Root/Z/Y/X/W",
-            {"/Root/A" : "/Root/Z",
-             "/Root/Z/B" : "/Root/Z/Y",
-             "/Root/Z/Y/C" : "/Root/Z/Y/X",
-             "/Root/Z/Y/X/D" : "/Root/Z/Y/X/W"})
-        self._AddRelocateAndVerify(builder, "/Root/A/Y/C/W/E", "/Root/Z/Y/X/W/V",
-            {"/Root/A" : "/Root/Z",
-            "/Root/Z/B" : "/Root/Z/Y",
-            "/Root/Z/Y/C" : "/Root/Z/Y/X",
-            "/Root/Z/Y/X/D" : "/Root/Z/Y/X/W",
-            "/Root/Z/Y/X/W/E" : "/Root/Z/Y/X/W/V"})
 
     def test_HierarchyRelocates(self):
 
@@ -636,15 +605,17 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
             "Cannot relocate </Root/B/H> to </Root/A/I>: Cannot relocate a "
             "prim to be a descendant of </Root/A> which is already relocated "
             "to </Root/B>.")
-        self._VerifyInvalidRelocate(builder, "/Root/A/H", "/Root/A/I",
-            "Cannot relocate </Root/B/H> (relocated from original source "
-            "</Root/A/H>) to </Root/A/I>: Cannot relocate a prim to be a "
-            "descendant of </Root/A> which is already relocated to </Root/B>.")
+        # Nor can we use /Root/A/H as a source path because /Root/A has been
+        # relocated away.
+        self._VerifyInvalidRelocate(builder, "/Root/A/H", "/Root/B/I",
+            "Cannot relocate </Root/A/H> to </Root/B/I>: A relocate from "
+            "</Root/A> to </Root/B> already exists; neither the source "
+            "</Root/A> nor any of its descendants can be relocated again using "
+            "their original paths.")
 
         # The target of the relocate must be the final relocated target path
-        # /Root/B/I. The source path can be either the origin source path 
-        # /Root/A/H or the relocated source path /Root/B/H. These both produce
-        # the same results so we'll use the relocated /Root/B/H here.
+        # /Root/B/I and the source path must be the relocated source path 
+        # /Root/B/H.
         self._AddRelocateAndVerify(builder, "/Root/B/H", "/Root/B/I", 
             {"/Root/A" : "/Root/B",
              "/Root/B/H" : "/Root/B/I", # added new child relocate
@@ -657,23 +628,20 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
         #
         # First, we cannot use /Root/E/F/J as a target path as anything under 
         # /Root/E/F is already relocated away and can never be a target path.
-        self._VerifyInvalidRelocate(builder, "/Root/C/J", "/Root/E/F/J",
-            "Cannot relocate </Root/D/C/J> (relocated from original source "
-            "</Root/C/J>) to </Root/E/F/J>: Cannot relocate a prim to be a "
-            "descendant of </Root/E/F> which is already relocated to </Root/G>.")
         self._VerifyInvalidRelocate(builder, "/Root/D/C/J", "/Root/E/F/J",
             "Cannot relocate </Root/D/C/J> to </Root/E/F/J>: Cannot relocate a "
             "prim to be a descendant of </Root/E/F> which is already relocated "
             "to </Root/G>.")
+        # Nor can we use the pre-relocation source path of /Root/C/J 
+        self._VerifyInvalidRelocate(builder, "/Root/C/J", "/Root/G/J",
+            "Cannot relocate </Root/C/J> to </Root/G/J>: A relocate from "
+            "</Root/C> to </Root/D/C> already exists; neither the source "
+            "</Root/C> nor any of its descendants can be relocated again using "
+            "their original paths.")
 
-        # The target of the relocate must be the final relocated target path
-        # /Root/G/J. The source path can be either the origin source path 
-        # /Root/C/J or the relocated source path /Root/D/C/J. These both produce
-        # the same results so we'll use the origin source path /Root/C/J here
-        # in contrast with the prior edit. Note that the newly added relocate
-        # has the relocated source /Root/D/C/J anyway as we always map source 
-        # paths to be fully relocated when adding the relocate.
-        self._AddRelocateAndVerify(builder, "/Root/C/J", "/Root/G/J", 
+        # The target of the relocate must use final relocated target path
+        # /Root/G/J and the relocated source path /Root/D/C/J.
+        self._AddRelocateAndVerify(builder, "/Root/D/C/J", "/Root/G/J", 
             {"/Root/A" : "/Root/B",
              "/Root/B/H" : "/Root/B/I",
              "/Root/C" : "/Root/D/C",
@@ -767,41 +735,31 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
         # update the existing relocates to remap them. The difference here is
         # that we'll use origin source paths to add the relocates.
 
-        # Rename the original prim /Root/A to be /Root/OldB. Because /Root/A
-        # is relocated to /Root/New/B in the existing relocates, we relocate
-        # the source path from /Root/A to /Root/New/B before processing and
-        # we end up adding a relocate from /Root/New/B to /Root/OldB.
-        # And now since /Root/New/B is already a target of a relocate from 
-        # /Root/A, this will just update existing relocates paths to account for
-        # the new prim move without adding a new entry
-        self._AddRelocateAndVerify(builder, "/Root/A", "/Root/OldB", 
+        # Reparent and rename the relocated /Root/New/B to be /Root/OldB. Since
+        # /Root/New/B is already a target of a relocate from /Root/A, this will
+        # just update existing relocates paths to account for the new prim move
+        # without adding a new entry
+        self._AddRelocateAndVerify(builder, "/Root/New/B", "/Root/OldB", 
             {"/Root/A" : "/Root/OldB", # existing target is updated
              "/Root/OldB/H" : "/Root/OldB/I", # existing source and target are updated
              "/Root/C" : "/Root/New/C",
              "/Root/E/F" : "/Root/New/F",
              "/Root/New/C/J" : "/Root/New/F/J"})
-        # Reparent the original prim /Root/C to be /Root/OldD/C. Because /Root/C
-        # is relocated to /Root/New/C in the existing relocates, we relocate
-        # the source path from /Root/C to /Root/New/C before processing and
-        # we end up adding a relocate from /Root/New/C to /Root/OldD/C.
-        # And now since /Root/New/C is already a target of a relocate from 
-        # /Root/C, this will just update existing relocates paths to account for
-        # the new prim move without adding a new entry
-        self._AddRelocateAndVerify(builder, "/Root/C", "/Root/OldD/C", 
+        # Reparent the relocated prim /Root/New/C to be /Root/OldD/C. Since 
+        # /Root/New/C is already a target of a relocate from /Root/C, this will
+        # just update existing relocates paths to account for the new prim move
+        # without adding a new entry
+        self._AddRelocateAndVerify(builder, "/Root/New/C", "/Root/OldD/C", 
             {"/Root/A" : "/Root/OldB",
              "/Root/OldB/H" : "/Root/OldB/I",
              "/Root/C" : "/Root/OldD/C", # existing target is updated
              "/Root/E/F" : "/Root/New/F",
              "/Root/OldD/C/J" : "/Root/New/F/J"}) # existing source is updated
-        # Reparent and rename the original prim /Root/E/F to be /Root/OldG. 
-        # Because /Root/E/F is relocated to /Root/New/F in the existing 
-        # relocates, we relocate the source path from /Root/E/F to /Root/New/F 
-        # before processing and we end up adding a relocate from /Root/New/F to 
-        # /Root/OldG.
-        # And now since /Root/New/F is already a target of a relocate from 
-        # /Root/E/F, this will just update existing relocates paths to account 
-        # for the new prim move without adding a new entry
-        self._AddRelocateAndVerify(builder, "/Root/E/F", "/Root/OldG", 
+        # Reparent and rename the relocated prim /Root/New/F to be /Root/OldG. 
+        # Since /Root/New/F is already a target of a relocate from /Root/E/F, 
+        # this will just update existing relocates paths to account for the new
+        # prim move without adding a new entry
+        self._AddRelocateAndVerify(builder, "/Root/New/F", "/Root/OldG", 
             {"/Root/A" : "/Root/OldB",
              "/Root/OldB/H" : "/Root/OldB/I",
              "/Root/C" : "/Root/OldD/C",
@@ -885,7 +843,7 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
              "/Root/A/F" : "/Root/F"})
         # Add another new relocate that ends up just changing an existing 
         # relocate's target path.
-        self._AddRelocateAndVerify(builder, "/Root/A/C", "/Root/F/C",
+        self._AddRelocateAndVerify(builder, "/Root/C", "/Root/F/C",
             {"/Root/A/B" : "/Root/B",
              "/Root/A/C" : "/Root/F/C", # updated relocate target path
              "/Root/A/D" : "/Root/D",
@@ -922,7 +880,7 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
 
         # Add a relocate that updates an existing relocate that is authored in
         # the root layer (and redundantly in sublayer2)
-        self._AddRelocateAndVerify(builder, "/Root/A/B", "/Root/A/G/B",
+        self._AddRelocateAndVerify(builder, "/Root/B", "/Root/A/G/B",
             {"/Root/A/B" : "/Root/A/G/B", # updated relocate
              "/Root/A/C" : "/Root/F/C",
              "/Root/A/D" : "/Root/D",

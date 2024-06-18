@@ -125,51 +125,32 @@ public:
     /// Existing relocates:
     ///   - </Root/A> -> </Root/B>
     /// Relocate(</Root/B>, </Root/A>) 
-    ///   - Deletes the relocate that has been moved back to its original source
+    ///   - Deletes the relocate that has been moved back to its original 
+    ///     source. This is equivalent to calling RemoveRelocate(</Root/A>)
     /// Result relocates:
     ///   - none
     ///
-    /// The source path provided to this function will be mapped across any 
-    /// existing relocates to convert it to the most relocated source before it
-    /// is used to edit the current relocates. This means the source path can be
-    /// an original source path, a fully relocated path, or any partially 
-    /// relocated path as long as it can be converted to a valid source path 
-    /// when existing relocates are applied.
-    ///
-    /// For example, if we start with relocates map that already has the 
-    /// mappings:
-    ///   - </Root/A> -> </Root/X>
-    ///   - </Root/X/B> -> </Root/X/Y>
-    ///
-    /// This is the equivalent of taking the prim hierarchy of /Root/A/B and 
-    /// renaming/moving it be the hierarchy /Root/X/Y. Now say we want the 
-    /// original path of /Root/A/B/C to now be moved to /Root/X/Y/Z. We have the
-    /// option of adding this relocate in any of four ways:
-    ///   1. Original source path
-    ///      - Relocate(</Root/A/B/C>, </Root/X/Y/Z>) 
-    ///   2. Fully relocated source path
-    ///      - Relocate(</Root/X/Y/C>, </Root/X/Y/Z>)
-    ///   3. Partially relocated source path -
-    ///      - Relocate(</Root/X/B/C>, </Root/X/Y/Z>)
-    ///   4. Subtle partially relocated source path -
-    ///      - Relocate(</Root/A/Y/C>, </Root/X/Y/Z>)
-    ///
-    /// All of the example source paths become </Root/X/Y/C> by applying 
-    /// existing relocates and adding the relocate using any of the four source
-    /// paths gives us the same resulting relocates map:
-    ///   </Root/A> -> </Root/X>
-    ///   </Root/X/B> -> </Root/X/Y>
-    ///   </Root/X/Y/C> -> </Root/X/Y/Z>
-    ///
-    /// The provided target path is never adjusted by existing relocations, 
-    /// unlike the source path, and therefore must always be expressed as a 
-    /// fully relocated final path. Thus, in the prior example, the only valid
-    /// option for the target path that would've produced the move to 
-    /// </Root/X/Y/Z> was the path </Root/X/Y/Z> itself. 
     PCP_API
     bool Relocate(
         const SdfPath &sourcePath, 
         const SdfPath &targetPath, 
+        std::string *whyNot = nullptr);
+
+    /// Updates the relocates map and layer edits so that the relocate with 
+    /// \p sourcePath is removed from the edited relocates.
+    ///
+    /// Returns true if a relocate with the given source path exists in the
+    /// current relocates map and can be removed. Returns false and populates
+    /// \p whyNot, (if it's not nullptr) with the reason why if not.
+    ///
+    /// Like the Relocate method, calling this function will maintain the 
+    /// validity of relocates map and may update or delete other existing
+    /// relocates entries, in addition to the entry with the input source path,
+    /// to do so.
+    /// 
+    PCP_API
+    bool RemoveRelocate(
+        const SdfPath &sourcePath,
         std::string *whyNot = nullptr);
 
     /// An edit is a layer and an SdfRelocates value to set in the layer's 
@@ -200,10 +181,8 @@ public:
     const SdfRelocatesMap &GetEditedRelocatesMap() const;
 
 private:
-    bool _AddAndUpdateRelocates(
-        const SdfPath &newSource, 
-        const SdfPath &newTarget, 
-        std::string *whyNot);
+    void _UpdateExistingRelocates(
+        const SdfPath &source, const SdfPath &target);
 
     void _RemoveRelocatesWithErrors(const PcpErrorVector &errors);
 
