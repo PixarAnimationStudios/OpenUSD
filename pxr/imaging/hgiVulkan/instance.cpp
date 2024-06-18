@@ -15,6 +15,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static
+bool
+_CheckInstanceValidationLayerSupport(const char * layerName)
+{  
+    uint32_t layerCount;  
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);  
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+  
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    for (const auto& layerProperties : availableLayers) {  
+        if (strcmp(layerName, layerProperties.layerName) == 0) {  
+            return true;
+        }  
+    }  
+
+    return false;  
+}
 
 HgiVulkanInstance::HgiVulkanInstance()
     : vkDebugMessenger(nullptr)
@@ -52,13 +70,19 @@ HgiVulkanInstance::HgiVulkanInstance()
 
     // Enable validation layers extension.
     // Requires VK_LAYER_PATH to be set.
-    const char* debugLayers[] = {
+    const std::vector<const char*> debugLayers = {
         "VK_LAYER_KHRONOS_validation"
     };
     if (HgiVulkanIsDebugEnabled()) {
+        for (const auto& debugLayer : debugLayers) {
+            if (!_CheckInstanceValidationLayerSupport(debugLayer)) {
+                TF_WARN("Instance layer %s is not present, instance "
+                    "creation will fail", debugLayer);
+            }
+        }
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        createInfo.ppEnabledLayerNames = debugLayers;
-        createInfo.enabledLayerCount = (uint32_t)  TfArraySize(debugLayers);
+        createInfo.ppEnabledLayerNames = debugLayers.data();
+        createInfo.enabledLayerCount = (uint32_t)debugLayers.size();
     }
 
     createInfo.ppEnabledExtensionNames = extensions.data();
