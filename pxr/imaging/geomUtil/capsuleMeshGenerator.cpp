@@ -104,7 +104,7 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
 
         // Now, the latidude at which to clip the sphere is the angle of
         // this point from the horizontal:
-        latitudeRange = acos(rDiff / height);
+        latitudeRange = atan(rDiff / height);
     }
 
     // Bottom point:
