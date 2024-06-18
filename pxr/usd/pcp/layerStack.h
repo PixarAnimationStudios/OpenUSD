@@ -340,7 +340,8 @@ std::ostream& operator<<(std::ostream&, const PcpLayerStackRefPtr&);
 
 /// Checks if the source and target paths constitute a valid relocates. This
 /// validation is not context specific, i.e. if this returns false, the 
-/// combination of sourse and target paths is always invalid in any layer.
+/// combination of source and target paths is always invalid for any attempted
+/// relocation.
 bool
 Pcp_IsValidRelocatesEntry(
     const SdfPath &source, const SdfPath &target, std::string *errorMessage);

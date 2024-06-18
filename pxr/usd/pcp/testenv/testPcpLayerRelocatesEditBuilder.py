@@ -104,15 +104,15 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
         self._VerifyInvalidRelocate(builder, "/Root/A/B", "/Root/A",
             "Cannot relocate </Root/A/B> to </Root/A>: The target of a "
             "relocate cannot be an ancestor of its source.")
-        self._VerifyInvalidRelocate(builder, "/Root", "/Root/A",
-            "Cannot relocate </Root> to </Root/A>: Root prims cannot be the "
-            "source or target of a relocate.")
         self._VerifyInvalidRelocate(builder, "/Root/A", "/Root",
-            "Cannot relocate </Root/A> to </Root>: Root prims cannot be the "
-            "source or target of a relocate.")
-        self._VerifyInvalidRelocate(builder, "/Root", "/OtherRoot",
-            "Cannot relocate </Root> to </OtherRoot>: Root prims cannot be the "
-            "source or target of a relocate.")
+            "Cannot relocate </Root/A> to </Root>: The target of a "
+            "relocate cannot be an ancestor of its source.")
+        self._VerifyInvalidRelocate(builder, "/Root", "/Root/A",
+            "Cannot relocate </Root> to </Root/A>: The target of a "
+            "relocate cannot be a descendant of its source.")
+        self._VerifyInvalidRelocate(builder, "/Root", "/OtherRoot/Root",
+            "Cannot relocate </Root> to </OtherRoot/Root>: Adding a relocate "
+            "from </Root> would result in a root prim being relocated.")
         self._VerifyInvalidRelocate(builder, "Root/A", "/Root/B",
             "Cannot relocate <Root/A> to </Root/B>: Relocates must use "
             "absolute paths.")
@@ -128,9 +128,6 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
         self._VerifyInvalidRelocate(builder, "/Root/A/B", "/Root/A{v=x}",
             "Cannot relocate </Root/A/B> to </Root/A{v=x}>: Relocates cannot "
             "have any variant selections.")
-        self._VerifyInvalidRelocate(builder, "/Root/A", "/OtherRoot/A",
-            "Cannot relocate </Root/A> to </OtherRoot/A>: Prims cannot be "
-            "relocated to be a descendant of a different root prim.")
 
         # Each of above calls verifies the relocates map remained the same 
         # (empty). Also verify that no layer edits are produced by builder.
@@ -310,6 +307,52 @@ class TestPcpLayerRelocatesEditBuilder(unittest.TestCase):
             {"/Root/B" : "/Root/A"})
         # Relocate /Root/B back to itself. This also deletes the relocate.
         self._AddRelocateAndVerify(builder, "/Root/B", "/Root/B",
+            {})
+
+        # Steps:
+        #   1) Relocate /A -> /B
+        #   2) Relocate /Root/A -> /A
+        #   3) Relocate /A -> /B
+        # Result: The first attempt at relocating /A to /B will fail because /A
+        # is a root prim. The second relocate succeeds as we allow a non-root
+        # prim to be relocated to become a root prim. After that relocating 
+        # /A to /B will succeed as it results in only changing the path that the 
+        # relocated non-root prim is moved to.
+        self._VerifyInvalidRelocate(builder, "/A", "/B",
+            "Cannot relocate </A> to </B>: Adding a relocate from </A> would "
+            "result in a root prim being relocated.")
+        self._AddRelocateAndVerify(builder, "/Root/A", "/A",
+            {"/Root/A" : "/A"})
+        self._AddRelocateAndVerify(builder, "/A", "/B",
+            {"/Root/A" : "/B"})
+        # Relocate target /B back to source /Root/A to delete the relocate, 
+        # which works because it adjusts (deletes) an existing relocate and
+        # wouldn't introduce an actual relocate from a root prim.
+        self._AddRelocateAndVerify(builder, "/B", "/Root/A",
+            {})
+
+        # Steps:
+        #   1) Relocate /Root/A -> /OtherRoot/A
+        #   2) Relocate /OtherRoot/A/B -> /Root/B
+        #   3) Relocate /OtherRoot -> /Root
+        # Result: The first two relocates succeed as relocating prims to be
+        # descendants of a different root prim is perfectly valid. The third
+        # relocate will fail because even though relocating /OtherRoot would
+        # update existing relocates, it would still have to add a new relocate
+        # from /OtherRoot to /Root and that is not allowed.
+        self._AddRelocateAndVerify(builder, "/Root/A", "/OtherRoot/A",
+            {"/Root/A" : "/OtherRoot/A"})
+        self._AddRelocateAndVerify(builder, "/OtherRoot/A/B", "/Root/B",
+            {"/Root/A" : "/OtherRoot/A",
+             "/OtherRoot/A/B" : "/Root/B"})
+        self._VerifyInvalidRelocate(builder, "/OtherRoot", "/Root",
+            "Cannot relocate </OtherRoot> to </Root>: Adding a relocate from "
+            "</OtherRoot> would result in a root prim being relocated.")
+        # Undo the /Root/A and then the /Root/A/B relocates to delete all 
+        # relocates.    
+        self._AddRelocateAndVerify(builder, "/Root/A", "/Root/A",
+            {"/Root/A/B" : "/Root/B"})
+        self._AddRelocateAndVerify(builder, "/Root/A/B", "/Root/A/B",
             {})
 
         # This whole set of steps below showcase how any combination or 

@@ -197,13 +197,6 @@ Pcp_IsValidRelocatesEntry(
             return false;
         }
 
-        // This is not enforced by the Sdf Schema but is still not allowed
-        if (path.IsRootPrimPath()) {
-            *errorMessage = 
-                "Root prims cannot be the source or target of a relocate.";
-            return false;
-        }
-
         return true;
     };
 
@@ -227,13 +220,6 @@ Pcp_IsValidRelocatesEntry(
     if (source.HasPrefix(target)) {
         *errorMessage = 
             "The target of a relocate cannot be an ancestor of its source.";
-        return false;
-    }
-
-    if (source.GetCommonPrefix(target).IsAbsoluteRootPath()) {
-        *errorMessage = 
-            "Prims cannot be relocated to be a descendant of a different "
-            "root prim.";
         return false;
     }
 
@@ -391,6 +377,29 @@ private:
         }
     }
 
+    // Pcp_IsValidRelocatesEntry is used for validating relocates both when 
+    // composing and when attempting to edit relocates. We have additional
+    // restrictions when composing relocates.
+    static bool 
+    _IsValidRelocatesEntryForComposing(
+        const SdfPath &source, const SdfPath &target, std::string *errorMessage)
+    {
+        if (!Pcp_IsValidRelocatesEntry(source, target, errorMessage)) {
+            return false;
+        }
+
+        // Root prims are never allowed to be the source of a relocate as their 
+        // parent is the pseudoroot which can never have composition arcs. The 
+        // target can be a root prim however.
+        if (source.IsRootPrimPath()) {
+            *errorMessage = 
+                "Root prims cannot be the source of a relocate.";
+            return false;
+        }
+
+        return true;
+    }
+
     template <class RelocatesType>
     void
     _CollectRelocates(
@@ -410,7 +419,8 @@ private:
             // Validate the relocate in context of just itself and add to
             // the processed relocates or log an error.
             std::string errorMessage;
-            if (Pcp_IsValidRelocatesEntry(source, target, &errorMessage)) {
+            if (_IsValidRelocatesEntryForComposing(
+                    source, target, &errorMessage)) {
                 // It's not an error for this to fail to be added; it just 
                 // means a stronger relocate for the source path as been 
                 // added already.
@@ -556,7 +566,7 @@ private:
                 // we're still supporting legacy relocates, we'll just warn when
                 // this occurs (instead of a proper error) and use the first
                 // relocate to have claimed this source path.
-                TF_WARN("Could confrom relocate from %s to %s to use the "
+                TF_WARN("Couldn't conform relocate from %s to %s to use the "
                     "correct source path %s because a relocate from %s to %s "
                     "already exists. This relocate will be ignored.",
                     oldIt->first.GetText(),
@@ -629,7 +639,7 @@ private:
             // enforce by making sure that it cannot itself be ancestrally 
             // relocated by any other relocates in the layer stack.
             for (SdfPath pathToCheck = targetPath.GetParentPath();
-                    !pathToCheck.IsRootPrimPath(); 
+                    !pathToCheck.IsAbsoluteRootPath(); 
                     pathToCheck = pathToCheck.GetParentPath()) {
                 if (auto it = processedRelocates.find(pathToCheck); 
                         it != processedRelocates.end()) {
@@ -908,38 +918,17 @@ Pcp_ComputeRelocationsForLayerStack(
 
     // Use the processed relocates to populate the bi-directional mapping of all
     // the relocates maps.
-    if (TfGetEnvSetting(PCP_ENABLE_LEGACY_RELOCATES_BEHAVIOR)) {
-        for (const auto &[source, reloInfo] : ws.processedRelocates) {
-            incrementalRelocatesSourceToTarget->emplace(
-                source, reloInfo.targetPath);
-            // XXX: With the legacy behavior you can end up with the erroneous 
-            // behavior of more than one source mapping to the same target. We 
-            // need to at least make this consistent by making sure we choose 
-            // the lexicographically greater source when we have a target conflict.
-            auto [it, inserted] = incrementalRelocatesTargetToSource->emplace(
-                reloInfo.targetPath, source);
-            if (!inserted && source > it->second) {
-                it->second = source;
-            }
+    for (const auto &[source, reloInfo] : ws.processedRelocates) {
+        incrementalRelocatesSourceToTarget->emplace(
+            source, reloInfo.targetPath);
+        incrementalRelocatesTargetToSource->emplace(
+            reloInfo.targetPath, source);
 
-            relocatesTargetToSource->emplace(
-                reloInfo.targetPath, reloInfo.computedSourceOrigin);
-            relocatesSourceToTarget->emplace(
-                reloInfo.computedSourceOrigin, reloInfo.targetPath);
-        }       
-    } else {
-        for (const auto &[source, reloInfo] : ws.processedRelocates) {
-            incrementalRelocatesSourceToTarget->emplace(
-                source, reloInfo.targetPath);
-            incrementalRelocatesTargetToSource->emplace(
-                reloInfo.targetPath, source);
-
-            relocatesTargetToSource->emplace(
-                reloInfo.targetPath, reloInfo.computedSourceOrigin);
-            relocatesSourceToTarget->emplace(
-                reloInfo.computedSourceOrigin, reloInfo.targetPath);
-        }       
-    }
+        relocatesTargetToSource->emplace(
+            reloInfo.targetPath, reloInfo.computedSourceOrigin);
+        relocatesSourceToTarget->emplace(
+            reloInfo.computedSourceOrigin, reloInfo.targetPath);
+    }       
 
     // Take the list of prim paths with relocates.
     relocatesPrimPaths->assign(
@@ -976,9 +965,8 @@ _FilterRelocationsForPath(const PcpLayerStack& layerStack,
          n = incrementalRelocates.end();
          (i != n) && (i->first.HasPrefix(path)); ++i) {
 
-        if (seenTargets.find(i->second) == seenTargets.end()) {
+        if (seenTargets.insert(i->second).second) {
             siteRelocates.insert(*i);
-            seenTargets.insert(i->second);
         }
     }
 

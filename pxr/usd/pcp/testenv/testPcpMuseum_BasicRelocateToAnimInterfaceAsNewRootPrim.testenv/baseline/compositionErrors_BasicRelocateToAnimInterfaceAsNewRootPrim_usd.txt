@@ -1,0 +1,5 @@
+------------------------------------------------------------------------
+Errors while composing </Model/Rig/PathRig>
+
+The relationship target </PathRig/Path/Anim.track> from </PathRig.relationshipToPathAvar> in layer @BasicRelocateToAnimInterfaceAsNewRootPrim/pathRig.sdf@ refers to a path outside the scope of the reference from </CharRig/Rig/PathRig>.  Ignoring.
+

@@ -378,6 +378,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_BasicRelocateToAnimInterfaceAsNewRootPrim.testenv
+    DEST testPcpMuseum_BasicRelocateToAnimInterfaceAsNewRootPrim
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_BasicInherits.testenv
     DEST testPcpMuseum_BasicInherits
 )
@@ -690,6 +695,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_TrickyInheritsAndRelocates5.testenv
     DEST testPcpMuseum_TrickyInheritsAndRelocates5
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_TrickyInheritsAndRelocatesToNewRootPrim.testenv
+    DEST testPcpMuseum_TrickyInheritsAndRelocatesToNewRootPrim
 )
 
 pxr_install_test_dir(
@@ -1068,6 +1078,13 @@ pxr_register_test(testPcpMuseum_BasicRelocateToAnimInterface
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd BasicRelocateToAnimInterface/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicRelocateToAnimInterface.txt
     DIFF_COMPARE compositionResults_BasicRelocateToAnimInterface.txt 
+)
+
+pxr_register_test(testPcpMuseum_BasicRelocateToAnimInterfaceAsNewRootPrim
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd --errorFile compositionErrors_BasicRelocateToAnimInterfaceAsNewRootPrim_usd.txt BasicRelocateToAnimInterfaceAsNewRootPrim/root.sdf" 
+    STDOUT_REDIRECT compositionResults_BasicRelocateToAnimInterfaceAsNewRootPrim_usd.txt
+    DIFF_COMPARE compositionResults_BasicRelocateToAnimInterfaceAsNewRootPrim_usd.txt compositionErrors_BasicRelocateToAnimInterfaceAsNewRootPrim_usd.txt
 )
 
 pxr_register_test(testPcpMuseum_BasicInherits
@@ -1545,6 +1562,13 @@ pxr_register_test(testPcpMuseum_TrickyInheritsAndRelocates5
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd TrickyInheritsAndRelocates5/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyInheritsAndRelocates5.txt
     DIFF_COMPARE compositionResults_TrickyInheritsAndRelocates5.txt 
+)
+
+pxr_register_test(testPcpMuseum_TrickyInheritsAndRelocatesToNewRootPrim
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd  --errorFile compositionErrors_TrickyInheritsAndRelocatesToNewRootPrim.txt TrickyInheritsAndRelocatesToNewRootPrim/root.sdf" 
+    STDOUT_REDIRECT compositionResults_TrickyInheritsAndRelocatesToNewRootPrim.txt
+    DIFF_COMPARE compositionResults_TrickyInheritsAndRelocatesToNewRootPrim.txt compositionErrors_TrickyInheritsAndRelocatesToNewRootPrim.txt
 )
 
 pxr_register_test(testPcpMuseum_TrickyInheritsInVariants

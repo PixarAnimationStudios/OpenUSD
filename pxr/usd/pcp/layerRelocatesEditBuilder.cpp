@@ -389,6 +389,18 @@ PcpLayerRelocatesEditBuilder::_AddAndUpdateRelocates(
         }
     }
 
+    // One last validation: if this would result in adding a new relocate entry
+    // we have to make sure the source is not a root prim as that is invalid in
+    // the layer stack. We can't filter out root prim sources before this point
+    // as we allow root prims that are already targets of relocates to be 
+    // re-relocated through this method.
+    if (addNewRelocate && newSource.IsRootPrimPath()) {
+        *whyNot = TfStringPrintf(
+            "Adding a relocate from <%s> would result in a root prim "
+            "being relocated.", newSource.GetText());
+        return false;
+    }
+
     // For each layer with relocates entries update all of them that need to 
     // have their source or target paths ancestrally relocated by the new 
     // relocate.
