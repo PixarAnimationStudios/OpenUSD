@@ -17,7 +17,6 @@ import codecs
 import contextlib
 import ctypes
 import datetime
-import distutils
 import fnmatch
 import glob
 import locale
