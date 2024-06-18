@@ -286,6 +286,13 @@ def CopyFiles(context, src, dest):
         raise RuntimeError("File(s) to copy {src} not found".format(src=src))
 
     instDestDir = os.path.join(context.instDir, dest)
+    if not os.path.isdir(instDestDir):
+        try:
+            os.mkdir(instDestDir)
+        except Exception as e:
+            raise RuntimeError(
+                "Unable to create {destDir}".format(destDir=instDestDir)) from e
+
     for f in filesToCopy:
         PrintCommandOutput("Copying {file} to {destDir}\n"
                            .format(file=f, destDir=instDestDir))
@@ -2236,7 +2243,10 @@ if extraPythonPaths:
 
 # Determine list of dependencies that are required based on options
 # user has selected.
-requiredDependencies = [ZLIB, BOOST, TBB]
+requiredDependencies = [ZLIB, TBB]
+
+if context.buildPython:
+    requiredDependencies += [BOOST]
 
 if context.buildAlembic:
     if context.enableHDF5:

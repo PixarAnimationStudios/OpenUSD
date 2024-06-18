@@ -46,11 +46,7 @@ Dependencies
 Required:
  - C/C++ compiler
  - [CMake](https://cmake.org/documentation/)
- - [Boost](https://boost.org)
  - [Intel TBB](https://www.threadingbuildingblocks.org/)
-
-Optional:
- - [Python](https://python.org)
 
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 
@@ -70,10 +66,16 @@ Optional:
  - [OSL (OpenShadingLanguage)](https://github.com/imageworks/OpenShadingLanguage)
  - [Ptex](http://ptex.us/)                          
 
+**Python Bindings**
+
+Required:
+ - [Python](https://python.org)
+ - [Boost](https://boost.org)
+
 **usdview**
 
 Required:
-
+ - Python bindings
  - [PySide6](http://wiki.qt.io/PySide6) or [PySide2](http://wiki.qt.io/PySide2)
  - [PyOpenGL](https://pypi.python.org/pypi/PyOpenGL/)
 
