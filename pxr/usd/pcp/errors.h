@@ -28,6 +28,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 enum PcpErrorType {
     PcpErrorType_ArcCycle,
     PcpErrorType_ArcPermissionDenied,
+    PcpErrorType_ArcToProhibitedChild,
     PcpErrorType_IndexCapacityExceeded,
     PcpErrorType_ArcCapacityExceeded,
     PcpErrorType_ArcNamespaceDepthCapacityExceeded,
@@ -145,6 +146,42 @@ public:
 private:
     /// Constructor is private. Use New() instead.
     PcpErrorArcPermissionDenied();
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Forward declarations:
+class PcpErrorArcToProhibitedChild;
+typedef std::shared_ptr<PcpErrorArcToProhibitedChild> 
+    PcpErrorArcToProhibitedChildPtr;
+
+/// \class PcpErrorArcToProhibitedChild
+///
+/// Arcs that were not made between PcpNodes because the target is a prohibited
+/// child prim of its parent due to relocations.
+///
+class PcpErrorArcToProhibitedChild : public PcpErrorBase {
+public:
+    /// Returns a new error object.
+    static PcpErrorArcToProhibitedChildPtr New();
+    /// Destructor.
+    PCP_API ~PcpErrorArcToProhibitedChild() override;
+    /// Converts error to string message.
+    PCP_API std::string ToString() const override;
+    
+    /// The site where the invalid arc was expressed.
+    PcpSite site;
+    /// The target site of the invalid arc which is a prohibited child.
+    PcpSite targetSite;
+    /// The site of the node under targetSite that is a relocation source in its
+    /// layer stack.
+    PcpSite relocationSourceSite;
+    /// The type of arc.
+    PcpArcType arcType;
+    
+private:
+    /// Constructor is private. Use New() instead.
+    PcpErrorArcToProhibitedChild();
 };
 
 ///////////////////////////////////////////////////////////////////////////////

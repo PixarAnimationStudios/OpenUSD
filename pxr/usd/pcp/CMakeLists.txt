@@ -973,6 +973,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ErrorInvalidReferenceToRelocationSource.testenv
+    DEST testPcpMuseum_ErrorInvalidReferenceToRelocationSource
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_ErrorRelocateWithVariantSelection.testenv
     DEST testPcpMuseum_ErrorRelocateWithVariantSelection
 )
@@ -1873,9 +1878,9 @@ pxr_register_test(testPcpMuseum_ErrorInconsistentProperties
 
 pxr_register_test(testPcpMuseum_ErrorInvalidInstanceTargetPath
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd --errorFile compositionErrors_ErrorInvalidInstanceTargetPath.txt ErrorInvalidInstanceTargetPath/root.sdf" 
-    STDOUT_REDIRECT compositionResults_ErrorInvalidInstanceTargetPath.txt
-    DIFF_COMPARE compositionResults_ErrorInvalidInstanceTargetPath.txt compositionErrors_ErrorInvalidInstanceTargetPath.txt
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd --errorFile compositionErrors_ErrorInvalidInstanceTargetPath_usd.txt ErrorInvalidInstanceTargetPath/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ErrorInvalidInstanceTargetPath_usd.txt
+    DIFF_COMPARE compositionResults_ErrorInvalidInstanceTargetPath_usd.txt compositionErrors_ErrorInvalidInstanceTargetPath_usd.txt
 )
 
 pxr_register_test(testPcpMuseum_ErrorInvalidPreRelocateTargetPath
@@ -1933,6 +1938,13 @@ if (NOT WIN32)
             PCP_ENABLE_LEGACY_RELOCATES_BEHAVIOR=0
     )
 endif()
+
+pxr_register_test(testPcpMuseum_ErrorInvalidReferenceToRelocationSource
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd --errorFile compositionErrors_ErrorInvalidReferenceToRelocationSource.txt ErrorInvalidReferenceToRelocationSource/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ErrorInvalidReferenceToRelocationSource.txt
+    DIFF_COMPARE compositionResults_ErrorInvalidReferenceToRelocationSource.txt compositionErrors_ErrorInvalidReferenceToRelocationSource.txt
+)
 
 pxr_register_test(testPcpMuseum_ErrorRelocateWithVariantSelection
     PYTHON
