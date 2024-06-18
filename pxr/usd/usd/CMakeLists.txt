@@ -299,6 +299,13 @@ pxr_build_test_shared_lib(TestUsdResolverChangedResolver
         testenv/TestUsdResolverChangedResolver.cpp
 )
 
+pxr_build_test(testCoreUsdValidators
+        LIBRARIES
+        usd
+        CPPFILES
+        testenv/testCoreUsdValidators.cpp
+)
+
 pxr_build_test(testUsdAttributeBlockingCpp
     LIBRARIES
         tf
@@ -761,6 +768,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdZipFile.testenv
     DEST testUsdZipFile_CPP
+)
+
+pxr_register_test(testCoreUsdValidators
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testCoreUsdValidators"
+        EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdAppliedAPISchemas

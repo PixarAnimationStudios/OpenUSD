@@ -10,8 +10,6 @@
 #include "pxr/usd/usd/validatorTokens.h"
 #include "pxr/usd/usd/validator.h"
 
-//#include "pxr/usd/usdGeom/tokens.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 static
@@ -41,19 +39,7 @@ _GetStageMetadataErrors(const UsdStagePtr &usdStage)
                             UsdValidationErrorSites{UsdValidationErrorSite(usdStage, SdfPath("/"))},
                             "Stage has missing or invalid defaultPrim.");
     }
-//    if (!usdStage->HasAuthoredMetadata(
-//            UsdGeomTokens->metersPerUnit)) {
-//        errors.emplace_back(UsdValidationErrorType::Error,
-//                            UsdValidationErrorSites{UsdValidationErrorSite(usdStage, SdfPath("/"))},
-//                            "Stage does not specify its linear scale in "
-//                            "metersPerUnit.");
-//    }
-//    if (!usdStage->HasAuthoredMetadata(
-//            UsdGeomTokens->upAxis)) {
-//        errors.emplace_back(UsdValidationErrorType::Error,
-//                            UsdValidationErrorSites{UsdValidationErrorSite(usdStage, SdfPath("/"))},
-//                            "Stage does not specify an upAxis.");
-//    }
+
     return errors;
 }
 
