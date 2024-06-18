@@ -426,6 +426,9 @@ _ConvertNodes(
             if (propType == SdrPropertyTypes->Color) {
                 sn.params.SetColor(name, RtColorRGB(v[0], v[1], v[2]));
                 ok = true;
+            } else if (propType == SdrPropertyTypes->Point) {
+                sn.params.SetPoint(name, RtPoint3(v[0], v[1], v[2]));
+                ok = true;
             }
         } else if (param.second.IsHolding<VtArray<GfVec3d>>()) {
             if (propType == SdrPropertyTypes->Color) {
@@ -436,6 +439,15 @@ _ConvertNodes(
                                       name,
                                       reinterpret_cast<const RtColorRGB*>(v.cdata()),
                                       v.size());
+                ok = true;
+            } else if (propType == SdrPropertyTypes->Point) {
+                const VtArray<GfVec3d>& vd =
+                    param.second.UncheckedGet<VtArray<GfVec3d>>();
+                VtArray<GfVec3f> v = _ConvertToVec3fArray(vd);
+                sn.params.SetPointArray(
+                    name,
+                    reinterpret_cast<const RtPoint3*>(v.cdata()),
+                    v.size());
                 ok = true;
             }
         } else if (param.second.IsHolding<float>()) {
