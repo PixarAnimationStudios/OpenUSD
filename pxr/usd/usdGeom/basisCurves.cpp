@@ -332,4 +332,94 @@ UsdGeomBasisCurves::ComputeVertexDataSize(
     return _ComputeVertexDataSize(curveVertexCounts);
 }
 
+VtIntArray
+UsdGeomBasisCurves::ComputeSegmentCounts(
+        const UsdTimeCode& timeCode) const
+{
+    VtIntArray curveVertexCounts;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+    if (!GetCurveVertexCountsAttr().Get(&curveVertexCounts, timeCode)) {
+        TF_WARN("CurveVertexCounts could not be read from prim, " 
+            "cannot compute segment counts.");
+        return VtIntArray();
+    }
+
+    TfToken type;
+    if (!GetTypeAttr().Get(&type, timeCode)) {
+        TF_WARN("Curve type could not be read from prim, " 
+            "cannot compute segment counts.");
+        return VtIntArray();
+    }
+
+    TfToken wrap;
+    if (!GetWrapAttr().Get(&wrap, timeCode)) {
+        TF_WARN("Curve wrap could not be read from prim, " 
+            "cannot compute segment counts.");
+        return VtIntArray();
+    }
+
+    TfToken basis;
+    if (!GetBasisAttr().Get(&basis, timeCode)) {
+        TF_WARN("Curve basis could not be read from prim, " 
+            "cannot compute segment counts.");
+        return VtIntArray();
+    }
+
+    VtIntArray segmentCounts(curveVertexCounts.size());
+    bool isValid = false;
+
+    if (type == UsdGeomTokens->linear) {
+        if (wrap == UsdGeomTokens->periodic) {
+            // Linear and periodic
+            segmentCounts = curveVertexCounts;
+            isValid = true;
+        } else if (wrap == UsdGeomTokens->nonperiodic || 
+                wrap == UsdGeomTokens->pinned) {
+            // Linear and nonperiodic/pinned
+            std::transform(curveVertexCounts.cbegin(), curveVertexCounts.cend(), 
+                segmentCounts.begin(), [](int n) { return n - 1; });
+            isValid = true;
+        }
+    } else if (type == UsdGeomTokens->cubic) {
+        if (basis == UsdGeomTokens->bezier) {
+            constexpr int vstep = 3;
+            if (wrap == UsdGeomTokens->periodic) {
+                // Cubic, bezier, periodic
+                std::transform(curveVertexCounts.cbegin(), curveVertexCounts.cend(), 
+                    segmentCounts.begin(), [vstep](int n) { return n / vstep; });
+                isValid = true;
+            } else if (wrap == UsdGeomTokens->nonperiodic || 
+                    wrap == UsdGeomTokens->pinned) {
+                // Cubic, bezier, nonperiodic/pinned
+                std::transform(curveVertexCounts.cbegin(), curveVertexCounts.cend(), 
+                    segmentCounts.begin(), [vstep](int n) { return (n - 4) / vstep + 1; });
+                isValid = true;
+            }
+        } else if (basis == UsdGeomTokens->bspline ||
+                basis == UsdGeomTokens->catmullRom) {
+            if (wrap == UsdGeomTokens->periodic) {
+                // Cubic, bspline/catmullRom, periodic
+                segmentCounts = curveVertexCounts;
+                isValid = true;
+            } else if (wrap == UsdGeomTokens->nonperiodic) {
+                // Cubic, bspline/catmullRom, nonperiodic
+                std::transform(curveVertexCounts.cbegin(), curveVertexCounts.cend(), 
+                    segmentCounts.begin(), [](int n) { return n - 3; });
+                isValid = true;
+            } else if (wrap == UsdGeomTokens->pinned) {
+                // Cubic, bspline/catmullRom, pinned
+                std::transform(curveVertexCounts.cbegin(), curveVertexCounts.cend(), 
+                    segmentCounts.begin(), [](int n) { return n - 1; });
+                isValid = true;
+            }
+        }
+    }
+
+    if (!isValid) {
+        TF_WARN("Invalid type, wrap, or basis.");
+        return VtIntArray();
+    }
+
+    return segmentCounts;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

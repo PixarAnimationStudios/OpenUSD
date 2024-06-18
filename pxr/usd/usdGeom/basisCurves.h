@@ -466,6 +466,11 @@ public:
     USDGEOM_API
     size_t ComputeVertexDataSize(const UsdTimeCode& timeCode) const;
 
+    /// Computes the segment counts of the curves based on their vertex counts
+    /// from the \c curveVertexCounts attribute.
+    USDGEOM_API
+    VtIntArray ComputeSegmentCounts(const UsdTimeCode& timeCode) const;
+
     /// \}
 };
 

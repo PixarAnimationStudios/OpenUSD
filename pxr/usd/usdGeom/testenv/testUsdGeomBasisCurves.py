@@ -60,5 +60,23 @@ class TestUsdGeomBasisCurves(unittest.TestCase):
             self.assertEqual(invalid.ComputeCurveCount(
                 Usd.TimeCode.EarliestTime()), 0)
 
+    def test_ComputeSegmentCount(self):
+        stage = Usd.Stage.Open('basisCurves.usda')
+        data = [
+            (UsdGeom.BasisCurves.Get(stage, '/LinearNonperiodic'), [1, 2, 1, 4]),
+            (UsdGeom.BasisCurves.Get(stage, '/LinearPeriodic'), [3, 7]),
+            (UsdGeom.BasisCurves.Get(stage, '/CubicNonperiodicBezier'), [1, 2, 3, 1, 2]),
+            (UsdGeom.BasisCurves.Get(stage, '/CubicNonperiodicBspline'), [2, 1, 3, 4]),
+            (UsdGeom.BasisCurves.Get(stage, '/CubicPeriodicBezier'), [2, 3, 2]),
+            (UsdGeom.BasisCurves.Get(stage, '/CubicPeriodicBspline'), [6, 9, 6]),
+            (UsdGeom.BasisCurves.Get(stage, '/CubicPinnedCatmullRom'), [1, 2, 1, 4]),
+            (UsdGeom.BasisCurves.Get(stage, '/CubicPinnedBezier'), [1, 2, 3, 1, 2])
+        ]
+
+        for curve, curveSegmentCounts in data:
+            self.assertEqual(
+                curve.ComputeSegmentCounts(Usd.TimeCode.EarliestTime()), 
+                curveSegmentCounts)
+
 if __name__ == '__main__':
     unittest.main()
