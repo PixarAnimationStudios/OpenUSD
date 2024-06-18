@@ -32,6 +32,7 @@ pxr_library(hdsi
         sceneGlobalsSceneIndex
         tetMeshConversionSceneIndex
         utils
+        velocityMotionResolvingSceneIndex
 
     PUBLIC_HEADERS
         api.h

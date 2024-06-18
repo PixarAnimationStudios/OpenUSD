@@ -134,6 +134,7 @@ pxr_library(hdSt
         unitTestGLDrawing
         vboMemoryManager
         vboSimpleMemoryManager
+        velocityMotionResolvingSceneIndexPlugin
         volume
         ${optionalPublicClasses}
 

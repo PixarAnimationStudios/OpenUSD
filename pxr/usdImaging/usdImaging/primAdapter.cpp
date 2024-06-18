@@ -6,6 +6,8 @@
 //
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
+#include "pxr/base/gf/interval.h"
+#include "pxr/usd/usd/attribute.h"
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
@@ -29,6 +31,8 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/type.h"
 
+#include <algorithm>
+#include <cstddef>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -396,6 +400,40 @@ UsdImagingPrimAdapter::GetInstancerPrototypes(
     return SdfPathVector();
 }
 
+static void
+_GetTimeSamplesForInterval(
+    const UsdAttribute& attr,
+    const GfInterval& interval,
+    std::vector<double>* timeSamples)
+{
+    // Start with the times that fall within the interval
+    attr.GetTimeSamplesInInterval(interval, timeSamples);
+    // Add bracketing sample times for the leading and trailing edges of the
+    // interval.
+    double first, ignore, last;
+    bool hasFirst, hasLast;
+    // If hasFirst/hasLast comes back false for an edge, or if both the left and
+    // right bracketing times for the edge are the same, it means there's no
+    // bracketing sample time anywhere beyond that edge, so we fall back to the
+    // interval's edge.
+    attr.GetBracketingTimeSamples(interval.GetMin(), &first, &ignore, &hasFirst);
+    if (!hasFirst || first == ignore) {
+        first = interval.GetMin();
+    }
+    attr.GetBracketingTimeSamples(interval.GetMax(), &ignore, &last, &hasLast);
+    if (!hasLast || last == ignore ) {
+        last = interval.GetMax();
+    }
+    // Add the bracketing sample times only if they actually fall outside the
+    // interval. This maintains ordering and uniqueness.
+    if (timeSamples->empty() || first < timeSamples->front()) {
+        timeSamples->insert(timeSamples->begin(), first);    
+    }
+    if (last > timeSamples->back()) {
+        timeSamples->insert(timeSamples->end(), last);
+    }
+}
+
 /*virtual*/
 size_t
 UsdImagingPrimAdapter::SamplePrimvar(
@@ -423,19 +461,35 @@ UsdImagingPrimAdapter::SamplePrimvar(
     std::vector<double> timeSamples;
 
     if (pv && pv.HasValue()) {
-        if (pv.ValueMightBeTimeVarying()) {
-            pv.GetTimeSamplesInInterval(interval, &timeSamples);
-
-            // Add time samples at the boundary conditions
-            timeSamples.push_back(interval.GetMin());
-            timeSamples.push_back(interval.GetMax());
-
-            // Sort here
-            std::sort(timeSamples.begin(), timeSamples.end());
-            timeSamples.erase(
-                std::unique(timeSamples.begin(), 
-                    timeSamples.end()), 
+        if (pv.ValueMightBeTimeVarying()) { 
+            // Start with the contributing times for value, including any
+            // contributing bracketing times.
+            _GetTimeSamplesForInterval(pv.GetAttr(), interval, &timeSamples);
+            // Only include times derived from the indices if the caller wants
+            // the indices separately. Otherwise we'll use ComputeFlattened, and
+            // the only times we need for that are the ones with authored value.
+            if (sampleIndices && pv.IsIndexed()) {
+                // Index changes during the interval that fall on times with no
+                // authored value are important, so we need to add the sample
+                // times due to indices. We don't need bracketing times though
+                // because indices never interpolate.
+                std::vector<double> indicesTimeSamples;
+                pv.GetIndicesAttr().GetTimeSamplesInInterval(
+                    interval, &indicesTimeSamples);
+                // Combine them, merge and uniquify
+                const size_t mid = timeSamples.size();
+                timeSamples.insert(
+                    timeSamples.end(),
+                    indicesTimeSamples.begin(), indicesTimeSamples.end());
+                // since both sets are already sorted, inplace_merge beats sort
+                std::inplace_merge(
+                    timeSamples.begin(),
+                    timeSamples.begin() + mid,
                     timeSamples.end());
+                timeSamples.erase(
+                    std::unique(timeSamples.begin(), timeSamples.end()), 
+                    timeSamples.end());
+            }
 
             size_t numSamples = timeSamples.size();
 
@@ -480,18 +534,7 @@ UsdImagingPrimAdapter::SamplePrimvar(
     // are considered primvars by Hydra but non-primvar attributes by USD.
     if (UsdAttribute attr = usdPrim.GetAttribute(key)) {
         if (attr.ValueMightBeTimeVarying()) {
-            attr.GetTimeSamplesInInterval(interval, &timeSamples);
-    
-            // Add time samples at the boudary conditions
-            timeSamples.push_back(interval.GetMin());
-            timeSamples.push_back(interval.GetMax());
-
-            // Sort here
-            std::sort(timeSamples.begin(), timeSamples.end());
-            timeSamples.erase(
-                std::unique(timeSamples.begin(), 
-                    timeSamples.end()), 
-                    timeSamples.end());
+            _GetTimeSamplesForInterval(attr, interval, &timeSamples);
 
             size_t numSamples = timeSamples.size();
 

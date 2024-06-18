@@ -14,6 +14,8 @@
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdImagingDataSourceAttribute<T>
@@ -66,14 +68,32 @@ public:
             time.GetValue() + startTime,
             time.GetValue() + endTime);
         std::vector<double> timeSamples;
+    
+        // Start with the times that fall within the interval
         _usdAttrQuery.GetTimeSamplesInInterval(interval, &timeSamples);
-
-        // Add boundary timesamples, if necessary.
-        if (timeSamples.empty() || timeSamples[0] > interval.GetMin()) {
-            timeSamples.insert(timeSamples.begin(), interval.GetMin());
+        // Add bracketing sample times for the leading and trailing edges of the
+        // interval.
+        double first, ignore, last;
+        bool hasFirst, hasLast;
+        // If hasFirst/hasLast comes back false for an edge, or if both the left and
+        // right bracketing times for the edge are the same, it means there's no
+        // bracketing sample time anywhere beyond that edge, so we fall back to the
+        // interval's edge.
+        _usdAttrQuery.GetBracketingTimeSamples(interval.GetMin(), &first, &ignore, &hasFirst);
+        if (!hasFirst || first == ignore) {
+            first = interval.GetMin();
         }
-        if (timeSamples.back() < interval.GetMax()) {
-            timeSamples.push_back(interval.GetMax());
+        _usdAttrQuery.GetBracketingTimeSamples(interval.GetMax(), &ignore, &last, &hasLast);
+        if (!hasLast || last == ignore ) {
+            last = interval.GetMax();
+        }
+        // Add the bracketing sample times only if they actually fall outside the
+        // interval. This maintains ordering and uniqueness.
+        if (timeSamples.empty() || first < timeSamples.front()) {
+            timeSamples.insert(timeSamples.begin(), first);    
+        }
+        if (last > timeSamples.back()) {
+            timeSamples.insert(timeSamples.end(), last);
         }
 
         // We need to convert the time array because usd uses double and
@@ -83,7 +103,7 @@ public:
             (*outSampleTimes)[i] = timeSamples[i] - time.GetValue();
         }
 
-        return true;
+        return outSampleTimes->size() > 1;
     }
 
 private:
