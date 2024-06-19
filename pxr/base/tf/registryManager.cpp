@@ -170,6 +170,10 @@ public:
          return TfSingleton<Tf_RegistryManagerImpl>::GetInstance();
     }
 
+    static void DeleteInstance() {
+        TfSingleton<Tf_RegistryManagerImpl>::DeleteInstance();
+    }
+
     /// Stores the active library's registration functions and runs those
     /// that are subscribed to then makes no library active. Returns an
     /// identifier that can be passed to \c UnloadLibrary().
@@ -548,7 +552,10 @@ TfRegistryManager::TfRegistryManager()
 
 TfRegistryManager::~TfRegistryManager()
 {
-    // Do nothing
+    // Delete the actual instance.
+    // If we get here, then this instance is being deleted, which means nobody
+    // can use TfRegistryManager any more.
+    Tf_RegistryManagerImpl::DeleteInstance();
 }
 
 TfRegistryManager&
