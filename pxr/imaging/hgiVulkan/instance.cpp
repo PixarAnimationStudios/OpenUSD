@@ -28,6 +28,7 @@
 #include "pxr/base/tf/iterator.h"
 
 #include <vector>
+#include <algorithm>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
