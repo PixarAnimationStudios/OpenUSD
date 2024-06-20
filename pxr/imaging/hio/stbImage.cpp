@@ -408,6 +408,12 @@ Hio_StbImage::ReadCropped(int const cropTop,
                           int const cropRight,
                           StorageSpec const & storage)
 {
+    // check if the image is already in the desired format
+    if (storage.format != _format) {
+        TF_RUNTIME_ERROR("Image format mismatch");
+        return false;
+    }
+
     // read from file
     // NOTE: stbi_load will always return image data as a contiguous block 
     //       of memory for every image format (i.e. image data is packed 
@@ -428,7 +434,7 @@ Hio_StbImage::ReadCropped(int const cropTop,
         ArResolvedPath(_filename));
     if (!asset) 
     {
-        TF_CODING_ERROR("Cannot open image %s for reading", _filename.c_str());
+        TF_RUNTIME_ERROR("Cannot open image %s for reading", _filename.c_str());
         return false;
     }
 
@@ -459,7 +465,7 @@ Hio_StbImage::ReadCropped(int const cropTop,
     //// Read pixel data
     if (!imageData)
     {
-        TF_CODING_ERROR("unable to get_pixels");
+        TF_RUNTIME_ERROR("unable to get_pixels");
         return false;
     }
    
@@ -476,7 +482,7 @@ Hio_StbImage::ReadCropped(int const cropTop,
         if (!_CropAndResize(imageData, cropTop, cropBottom, cropLeft, cropRight, 
               resizeNeeded, storage))
         {
-            TF_CODING_ERROR("Unable to crop and resize");
+            TF_RUNTIME_ERROR("Unable to crop and resize");
             stbi_image_free(imageData);
             return false;
         }
@@ -538,7 +544,7 @@ Hio_StbImage::ReadCropped(int const cropTop,
 
     if (!storage.data)
     {
-        TF_CODING_ERROR("Failed to copy data to storage.data");
+        TF_RUNTIME_ERROR("Failed to copy data to storage.data");
     }
 
     stbi_image_free(imageData);
@@ -623,13 +629,13 @@ Hio_StbImage::Write(StorageSpec const & storageIn,
         quantizedSpec = _Quantize<GfHalf>(storageIn, quantizedData, isSRGB);
     }
     else if (type != HioTypeUnsignedByte && fileExtension != "hdr") {
-        TF_CODING_ERROR("stb expects unsigned byte data to write filetype %s",
+        TF_RUNTIME_ERROR("stb expects unsigned byte data to write filetype %s",
                         fileExtension.c_str());
         return false;
     }
     else if (type != HioTypeFloat && fileExtension == "hdr")
     {
-        TF_CODING_ERROR("stb expects linear float data to write filetype hdr");
+        TF_RUNTIME_ERROR("stb expects linear float data to write filetype hdr");
         return false;
     }
 

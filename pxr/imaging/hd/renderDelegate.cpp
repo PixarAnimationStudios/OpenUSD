@@ -217,7 +217,7 @@ HdRenderDelegate::Pause()
 }
 
 bool HdRenderDelegate::IsParallelSyncEnabled(
-    TfToken primType) const
+    const TfToken &primType) const
 {
     if (primType == HdPrimTypeTokens->extComputation) {
         return true;

@@ -520,6 +520,7 @@ private:
     // Add validator metadata to _validatorNameToMetadata, also updates
     // _schemaTypeToValidatorNames and _keywordToValidatorNames, for easy access
     // to what validators are linked to specific schemaTypes or keywords.
+    // _mutex must be acquired before calling this method.
     bool _AddValidatorMetadata(const UsdValidatorMetadata &metadata);
     
     using _ValidatorNameToValidatorMap = 
@@ -540,10 +541,10 @@ private:
 
     // Helper to populate _keywordToValidatorNames and
     // _schemaTypeToValidatorNames
+    // _mutex must be acquired before calling this method.
     static
     void _UpdateValidatorNamesMappings(_TokenToValidatorNamesMap &tokenMap, 
-        const TfToken &validatorName, const TfTokenVector &tokens, 
-        std::shared_mutex &mutex);
+        const TfToken &validatorName, const TfTokenVector &tokens);
 
     // Main datastructure which holds validatorName to 
     // std::unique_ptr<UsdValidator>
@@ -573,13 +574,8 @@ private:
     // and remains constant thereafter.
     _TokenToValidatorNamesMap _pluginNameToValidatorNames;
 
-    // Mutex to protect access to appropriate shared resources.
-    mutable std::shared_mutex _validatorMutex;
-    mutable std::shared_mutex _validatorSuiteMutex;
-    mutable std::shared_mutex _metadataMutex;
-    mutable std::shared_mutex _pluginNameToValidatorNamesMutex;
-    mutable std::shared_mutex _keywordValidatorNamesMutex;
-    mutable std::shared_mutex _schemaTypeValidatorNamesMutex;
+    // Mutex to protect access to all data members.
+    mutable std::shared_mutex _mutex;
 };
 
 USD_API_TEMPLATE_CLASS(TfSingleton<UsdValidationRegistry>);

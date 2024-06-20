@@ -619,18 +619,15 @@ HgiVulkanTexture::GetDefaultImageLayout(HgiTextureUsage usage)
     if (usage & HgiTextureUsageBitsShaderWrite) {
         // Assume the ShaderWrite means its a storage image.
         return VK_IMAGE_LAYOUT_GENERAL;
-    } else if (usage & HgiTextureUsageBitsShaderRead) {
-        // Also check if image is going to be used as a color attachment as 
-        // well. If yes, then explicitly give it a color attachment layout.
-        if (usage & HgiTextureUsageBitsColorTarget) {
-            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        } else {
-            return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        }
-    } else if (usage & HgiTextureUsageBitsDepthTarget) {
-        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    // Prioritize attachment layouts over shader read layout. Some textures 
+    // might have both usages.
     } else if (usage & HgiTextureUsageBitsColorTarget) {
         return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    } else if (usage & HgiTextureUsageBitsDepthTarget ||
+               usage & HgiTextureUsageBitsStencilTarget) {
+        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    } else if (usage & HgiTextureUsageBitsShaderRead) {
+        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }
 
     return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
