@@ -250,7 +250,7 @@ pxr_library(tf
         typeInfoMap.h
         type_Impl.h
     
-    JS_PUBLIC_HEADERS
+        # JS_PUBLIC_HEADERS
         emscriptenTypeRegistration.h
         wrapTokenJs.h
 

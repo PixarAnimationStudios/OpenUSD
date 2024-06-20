@@ -100,12 +100,12 @@ pxr_library(usd
         usdzResolver
         valueUtils
 
-    JS_PUBLIC_HEADERS
-        emscriptenPtrRegistrationHelper.h
-        emscriptenSdfToVtValue.h
-
     PUBLIC_HEADERS
         api.h
+
+        # JS_PUBLIC_HEADERS
+        emscriptenPtrRegistrationHelper.h
+        emscriptenSdfToVtValue.h
 
     PRIVATE_HEADERS
         crateDataTypes.h

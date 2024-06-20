@@ -101,7 +101,7 @@ pxr_library(sdf
         predicateProgram.h
         schemaTypeRegistration.h
 
-    JS_PUBLIC_HEADERS
+        # JS_PUBLIC_HEADERS
         wrapPathJs.h
         wrapAssetPathJs.h
 
