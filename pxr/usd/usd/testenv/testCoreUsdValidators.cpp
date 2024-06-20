@@ -15,7 +15,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 static
-void TestCoreUsdStageMetadataDefined()
+void TestCoreUsdStageMetadata()
 {
 
     // Get stageMetadataChecker
@@ -42,7 +42,7 @@ void TestCoreUsdStageMetadataDefined()
 int
 main()
 {
-    TestCoreUsdStageMetadataDefined();
+    TestCoreUsdStageMetadata();
 
     std::cout << "OK\n";
 }
