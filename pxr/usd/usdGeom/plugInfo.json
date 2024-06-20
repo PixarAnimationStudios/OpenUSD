@@ -390,6 +390,14 @@
                         ], 
                         "schemaKind": "abstractTyped"
                     }
+                },
+                "Validators": {
+                    "StageMetadataChecker": {
+                        "doc": "All stages should declare their 'upAxis' and 'metersPerUnit' and stages meant for consumer-level packaging should always have upAxis set to 'Y'."
+                    },
+                    "keywords": [
+                        "UsdGeomValidators"
+                    ]
                 }
             }, 
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@", 
