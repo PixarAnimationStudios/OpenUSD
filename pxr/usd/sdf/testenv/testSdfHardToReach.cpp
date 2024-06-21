@@ -99,6 +99,36 @@ _TestSdfLayerTimeSampleValueType()
 }
 
 static void
+_TestSdfLayerTransferContentsEmptyLayer()
+{
+    // Tests that setting data on non empty layers properly cleans up all
+    // specs in that layer without the use of SdfLayer::_IsInertSubtree
+    const char* layerStr = 
+    R"(#sdf 1.4.32
+    def "Root"{
+        def "Node1" (
+            prepend variantSets = "testVariants"
+            variants = { string testVariants = "option1" }
+        )
+        {
+            variantSet "testVariants" = {
+                "option1" {
+                    def "VariantChild" {}
+                }
+            }
+            def "Node1Child" {}
+        }
+    })";
+
+    SdfLayerRefPtr srcLayer = SdfLayer::CreateAnonymous();
+    srcLayer->ImportFromString(layerStr);
+    TF_AXIOM(!srcLayer->IsEmpty());
+    
+    srcLayer->TransferContent(SdfLayer::CreateAnonymous());
+    TF_AXIOM(srcLayer->IsEmpty());
+}
+
+static void
 _TestSdfLayerTransferContents()
 {
     // Test for bug where transferring an empty over (an inert spec)
@@ -508,6 +538,7 @@ main(int argc, char **argv)
     _TestSdfLayerDictKeyOps();
     _TestSdfLayerTimeSampleValueType();
     _TestSdfLayerTransferContents();
+    _TestSdfLayerTransferContentsEmptyLayer();
     _TestSdfRelationshipTargetSpecEdits();
     _TestSdfPathFindLongestPrefix();
     _TestSdfFpsAndTcps();
