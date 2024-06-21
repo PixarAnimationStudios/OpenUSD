@@ -137,12 +137,6 @@ TfRealPath(string const& path, bool allowInaccessibleSuffix, string* error)
     }
     std::string resolved = _ExpandSymlinks(prefix);
 
-    // Make sure drive letters are always lower-case out of TfRealPath on
-    // Windows -- this is so that we can be sure we can reliably use the
-    // paths as keys in tables, etc.
-    if (resolved[0] && resolved[1] == ':') {
-        resolved[0] = tolower(resolved[0]);
-    }
     return TfAbsPath(resolved + suffix);
 #else
     char resolved[ARCH_PATH_MAX];

@@ -812,7 +812,7 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
             # identifier regardless of platform
             def getFormattedCwd():
                 drive, tail = os.path.splitdrive(os.getcwd())
-                return drive.lower() + tail.replace('\\', '/')
+                return drive + tail.replace('\\', '/')
 
             uneditableLayerMessage = (
                 "The spec @{cwd}/basic/sub_1.usda@<{propPath}> cannot be "

@@ -900,7 +900,7 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         # identifier regardless of platform
         def getFormattedCwd():
             drive, tail = os.path.splitdrive(os.getcwd())
-            return drive.lower() + tail.replace('\\', '/')
+            return drive + tail.replace('\\', '/')
 
         # Cannot delete or rename /C (there are no valid reparent targets for 
         # /C on this stage currently regardless of layer permission)

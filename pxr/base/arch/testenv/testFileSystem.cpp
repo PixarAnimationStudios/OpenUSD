@@ -36,8 +36,10 @@ TestArchNormPath()
             "foo/bar/../../../../../../baz") == "../../../../baz");
 
 #if defined(ARCH_OS_WINDOWS)
-    ARCH_AXIOM(ArchNormPath("C:\\foo\\bar") == "c:/foo/bar");
-    ARCH_AXIOM(ArchNormPath("C:foo\\bar") == "c:foo/bar");
+    ARCH_AXIOM(ArchNormPath("C:\\foo\\bar") == "C:/foo/bar");
+    ARCH_AXIOM(ArchNormPath("C:foo\\bar") == "C:foo/bar");
+    ARCH_AXIOM(ArchNormPath("c:\\foo\\bar") == "c:/foo/bar");
+    ARCH_AXIOM(ArchNormPath("c:foo\\bar") == "c:foo/bar");
     ARCH_AXIOM(ArchNormPath(
             "C:\\foo\\bar", /* stripDriveSpecifier = */ true) == "/foo/bar");
     ARCH_AXIOM(ArchNormPath(
