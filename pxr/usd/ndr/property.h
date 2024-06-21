@@ -105,7 +105,7 @@ public:
     /// indicate a dynamically-sized array. For types that are not a fixed-size
     /// array or dynamic array, this returns 0.
     NDR_API
-    int GetArraySize() const { return _arraySize; }
+    int GetArraySize() const { return static_cast<int>(_arraySize); }
 
     /// Gets a string with basic information about this property. Helpful for
     /// things like adding this property to a log.
