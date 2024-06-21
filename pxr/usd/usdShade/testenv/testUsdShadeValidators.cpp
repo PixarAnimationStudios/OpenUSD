@@ -6,10 +6,13 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/usd/sdr/registry.h"
 #include "pxr/usd/usd/validationRegistry.h"
 #include "pxr/usd/usd/validationError.h"
 #include "pxr/usd/usd/validator.h"
-
+#include "pxr/usd/usdShade/shader.h"
+#include "pxr/usd/usdShade/shaderDefUtils.h"
 #include "pxr/usd/usdShade/validatorTokens.h"
 
 #include <algorithm>
@@ -45,6 +48,15 @@ TestUsdShadeValidators()
 void 
 TestUsdShadeShaderPropertyCompliance()
 {
+    // Need to setup our test shader in sdrRegistry first
+    UsdStageRefPtr shaderDefStage = UsdStage::Open("./shaderDefs.usda");
+    UsdShadeShader shaderDef =
+        UsdShadeShader::Get(shaderDefStage, SdfPath("/TestShaderNode"));
+    SdrRegistry::GetInstance().AddDiscoveryResult(
+        UsdShadeShaderDefUtils::GetNodeDiscoveryResults(
+            shaderDef, shaderDefStage->GetRootLayer()->GetRealPath())[0]);
+
+    // Now lets test our ShaderProperty validator
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
     const UsdValidator *validator = registry.GetOrLoadValidatorByName(
         UsdShadeValidatorNameTokens->shaderSdrCompliance);
@@ -52,17 +64,12 @@ TestUsdShadeShaderPropertyCompliance()
 
     static const std::string layerContents =
         R"usda(#usda 1.0
-               def Shader "Principled_BSDF"
+               def Shader "Test"
                {
-                    uniform token info:id = "UsdPreviewSurface"
-                    float inputs:clearcoat = 0
-                    float inputs:clearcoatRoughness = 0.03
-                    float3 inputs:diffuseColor = (0.54924256, 0.13939838, 0.7999993)
-                    float inputs:ior = 1.45
-                    float inputs:metallic = 0
-                    float inputs:opacity = 1
-                    float inputs:roughness = 0.5
-                    float inputs:specular = 0.5
+                    uniform token info:id = "TestShaderNode"
+                    int inputs:inputInt = 2
+                    float inputs:inputFloat = 2.0
+                    float3 inputs:inputColor = (2.0, 3.0, 4.0)
                     token outputs:surface
                }
                def Shader "Bogus"
@@ -76,18 +83,19 @@ TestUsdShadeShaderPropertyCompliance()
 
     {
         const UsdPrim usdPrim = usdStage->GetPrimAtPath(
-            SdfPath("/Principled_BSDF"));
+            SdfPath("/Test"));
 
         UsdValidationErrorVector errors = validator->Validate(usdPrim);
+
         TF_AXIOM(errors.size() == 1);
         TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
         TF_AXIOM(errors[0].GetSites().size() == 1);
         TF_AXIOM(errors[0].GetSites()[0].IsValid());
         TF_AXIOM(errors[0].GetSites()[0].IsProperty());
         TF_AXIOM(errors[0].GetSites()[0].GetProperty().GetPath() == 
-                 SdfPath("/Principled_BSDF.inputs:diffuseColor"));
+                 SdfPath("/Test.inputs:inputColor"));
         const std::string expectedErrorMsg = "Incorrect type for "
-            "/Principled_BSDF.inputs:diffuseColor. Expected 'color3f'; "
+            "/Test.inputs:inputColor. Expected 'color3f'; "
             "got 'float3'.";
         TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
     }
@@ -101,9 +109,9 @@ TestUsdShadeShaderPropertyCompliance()
         TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
         TF_AXIOM(errors[0].GetSites().size() == 1);
         TF_AXIOM(errors[0].GetSites()[0].IsValid());
-        TF_AXIOM(errors[0].GetSites()[0].IsPrim());
-        TF_AXIOM(errors[0].GetSites()[0].GetPrim().GetPath() == 
-                 SdfPath("/Bogus"));
+        TF_AXIOM(errors[0].GetSites()[0].IsProperty());
+        TF_AXIOM(errors[0].GetSites()[0].GetProperty().GetPath() == 
+                 SdfPath("/Bogus.info:id"));
         const std::string expectedErrorMsg = "shaderId 'Bogus' specified on "
             "shader prim </Bogus> not found in sdrRegistry.";
         TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
