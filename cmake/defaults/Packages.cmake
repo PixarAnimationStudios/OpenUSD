@@ -144,11 +144,8 @@ add_definitions(${TBB_DEFINITIONS})
 if(WIN32)
     # Math functions are linked automatically by including math.h on Windows.
     set(M_LIB "")
-elseif (APPLE)
-    # On Apple platforms, its idiomatic to just provide the -l linkage for sdk libs to be portable across SDK versions
-    set(M_LIB "-lm")
 else()
-    find_library(M_LIB m)
+    set(M_LIB m)
 endif()
 
 if (NOT PXR_MALLOC_LIBRARY)
