@@ -806,12 +806,10 @@ UsdImagingGLEngine::TestIntersection(
         const HdxPrimOriginInfo info = HdxPrimOriginInfo::FromPickHit(
             _renderIndex.get(), hit);
         hit.objectId = info.GetFullPath();
-        HdInstancerContext ctx = info.ComputeInstancerContext();
-        if (!ctx.empty()) {
-            hit.instancerId = ctx.back().first;
-            if (outInstancerContext) {
-                *outInstancerContext = std::move(ctx);
-            }
+        hit.instancerId = hit.instancerId.ReplacePrefix(_sceneDelegateId,
+            SdfPath::AbsoluteRootPath());
+        if (outInstancerContext) {
+            *outInstancerContext = info.ComputeInstancerContext();
         }
     }
 
@@ -841,30 +839,39 @@ UsdImagingGLEngine::DecodeIntersection(
         return false;
     }
 
-    if (_GetUseSceneIndices()) {
-        // XXX(HYD-2299): picking
-        return false;
-    }
-
-    TF_VERIFY(_sceneDelegate);
-
     const int primId = HdxPickTask::DecodeIDRenderColor(primIdColor);
     const int instanceIdx = HdxPickTask::DecodeIDRenderColor(instanceIdColor);
-    SdfPath primPath =
-        _sceneDelegate->GetRenderIndex().GetRprimPathFromPrimId(primId);
 
+    SdfPath primPath = _renderIndex->GetRprimPathFromPrimId(primId);
     if (primPath.IsEmpty()) {
         return false;
     }
 
     SdfPath delegateId, instancerId;
-    _sceneDelegate->GetRenderIndex().GetSceneDelegateAndInstancerIds(
+    _renderIndex->GetSceneDelegateAndInstancerIds(
         primPath, &delegateId, &instancerId);
 
-    primPath = _sceneDelegate->GetScenePrimPath(
-        primPath, instanceIdx, outInstancerContext);
-    instancerId = _sceneDelegate->ConvertIndexPathToCachePath(instancerId)
-                  .GetAbsoluteRootOrPrimPath();
+    if (_sceneDelegate) {
+        primPath = _sceneDelegate->GetScenePrimPath(
+            primPath, instanceIdx, outInstancerContext);
+        instancerId = _sceneDelegate->ConvertIndexPathToCachePath(instancerId)
+            .GetAbsoluteRootOrPrimPath();
+    } else {
+        HdxPickHit hit;
+        hit.delegateId = delegateId;
+        hit.objectId = primPath;
+        hit.instancerId = instancerId;
+        hit.instanceIndex = instanceIdx;
+
+        const HdxPrimOriginInfo info = HdxPrimOriginInfo::FromPickHit(
+            _renderIndex.get(), hit);
+        primPath = info.GetFullPath();
+        instancerId = instancerId.ReplacePrefix(_sceneDelegateId,
+            SdfPath::AbsoluteRootPath());
+        if (outInstancerContext) {
+            *outInstancerContext = info.ComputeInstancerContext();
+        }
+    }
 
     if (outHitPrimPath) {
         *outHitPrimPath = primPath;
