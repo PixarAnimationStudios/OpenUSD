@@ -1266,11 +1266,15 @@ def InstallOpenImageIO(context, force, buildArgs):
                      '-DUSE_PYTHON=OFF',
                      '-DSTOP_ON_WARNING=OFF']
 
-        # USD natively supports reading .exr files. Disable support in
-        # OpenImageIO so we don't need to build OpenEXR as a dependency,
-        # and so we don't accidentally pick up an OpenEXR library outside
-        # of our build.
-        extraArgs.append('-DUSE_OPENEXR=OFF')
+        # OIIO's FindOpenEXR module circumvents CMake's normal library 
+        # search order, which causes versions of OpenEXR installed in
+        # /usr/local or other hard-coded locations in the module to
+        # take precedence over the version we've built, which would 
+        # normally be picked up when we specify CMAKE_PREFIX_PATH. 
+        # This may lead to undefined symbol errors at build or runtime. 
+        # So, we explicitly specify the OpenEXR we want to use here.
+        extraArgs.append('-DOPENEXR_ROOT="{instDir}"'
+                         .format(instDir=context.instDir))
 
         # If Ptex support is disabled in USD, disable support in OpenImageIO
         # as well. This ensures OIIO doesn't accidentally pick up a Ptex
@@ -2268,7 +2272,7 @@ if context.buildImaging:
         requiredDependencies += [BLOSC, BOOST, OPENEXR, OPENVDB, TBB]
     
     if context.buildOIIO:
-        requiredDependencies += [BOOST, JPEG, TIFF, PNG, OPENIMAGEIO]
+        requiredDependencies += [BOOST, JPEG, TIFF, PNG, OPENEXR, OPENIMAGEIO]
 
     if context.buildOCIO:
         requiredDependencies += [OPENCOLORIO]
