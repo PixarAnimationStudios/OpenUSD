@@ -6,7 +6,8 @@
     relocates = {
         </source> : </target>, 
         </absolute> : <some/nested/relative/path>,
-        <relative/path> : <some/other/relative/path>
+        <relative/path> : <some/other/relative/path>,
+        <to/delete> : <>
     }
 )
 
@@ -16,7 +17,8 @@ def MfScope "TestPrim" (
     relocates = {
         </source> : </target>, 
         </absolute> : <some/nested/relative/path>,
-        <relative/path> : <some/other/relative/path>
+        <relative/path> : <some/other/relative/path>,
+        <to/delete> : <>
     }
 )
 {

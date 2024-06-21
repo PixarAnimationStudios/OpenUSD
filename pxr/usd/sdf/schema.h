@@ -290,7 +290,9 @@ public:
     SDF_API 
     static SdfAllowed IsValidRelationshipTargetPath(const SdfPath& path);
     SDF_API 
-    static SdfAllowed IsValidRelocatesPath(const SdfPath& path);
+    static SdfAllowed IsValidRelocatesSourcePath(const SdfPath& path);
+    SDF_API 
+    static SdfAllowed IsValidRelocatesTargetPath(const SdfPath& path);
     SDF_API 
     static SdfAllowed IsValidRelocate(const SdfRelocate& relocate);
     SDF_API 

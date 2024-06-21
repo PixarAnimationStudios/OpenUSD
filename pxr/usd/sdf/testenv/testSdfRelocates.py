@@ -120,12 +120,14 @@ def Scope "Root" (
         layer.relocates = [
              ("/Root/source2", "/Root/target2"),
              ("/Root/source1", "/Root/target1"),
-             ("/Root/source3", "/Root/target3")]
+             ("/Root/source3", "/Root/target3"),
+             ("/Root/sourceToDelete", Sdf.Path())]
         self.assertTrue(layer.HasRelocates())
         self.assertEqual(layer.relocates, 
             [("/Root/source2", "/Root/target2"),
              ("/Root/source1", "/Root/target1"),
-             ("/Root/source3", "/Root/target3")])
+             ("/Root/source3", "/Root/target3"),
+             ("/Root/sourceToDelete", Sdf.Path())])
 
         # Write layer; relocates are written as layer metadata when the layer 
         # is written.
@@ -134,7 +136,8 @@ def Scope "Root" (
     relocates = {
         </Root/source2>: </Root/target2>, 
         </Root/source1>: </Root/target1>, 
-        </Root/source3>: </Root/target3>
+        </Root/source3>: </Root/target3>, 
+        </Root/sourceToDelete>: <>
     }
 )
 
@@ -152,7 +155,8 @@ def Scope "Root"
         self.assertFalse(("/Root/source2", "/Root/target2") in layer.relocates)
         self.assertEqual(layer.relocates, 
             [(Sdf.Path('/Root/source1'), Sdf.Path('/Root/target1')), 
-             (Sdf.Path('/Root/source3'), Sdf.Path('/Root/target3'))])
+             (Sdf.Path('/Root/source3'), Sdf.Path('/Root/target3')),
+             (Sdf.Path('/Root/sourceToDelete'), Sdf.Path())])
 
         # Add a single new relocate
         newRelocates = layer.relocates
@@ -163,6 +167,7 @@ def Scope "Root"
         self.assertEqual(layer.relocates, 
             [(Sdf.Path('/Root/source1'), Sdf.Path('/Root/target1')), 
              (Sdf.Path('/Root/source3'), Sdf.Path('/Root/target3')),
+             (Sdf.Path('/Root/sourceToDelete'), Sdf.Path()),
              (Sdf.Path('/Root/source4'), Sdf.Path('/Root/target4'))])
 
         # Overwrite an existing relocate
@@ -175,6 +180,7 @@ def Scope "Root"
         self.assertEqual(layer.relocates, 
             [(Sdf.Path('/Root/source1'), Sdf.Path('/Root/targetFoo')), 
              (Sdf.Path('/Root/source3'), Sdf.Path('/Root/target3')),
+             (Sdf.Path('/Root/sourceToDelete'), Sdf.Path()),
              (Sdf.Path('/Root/source4'), Sdf.Path('/Root/target4'))])
 
         # Clear all relocates
