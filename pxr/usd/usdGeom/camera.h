@@ -120,9 +120,9 @@ class SdfAssetPath;
 /// \endcode
 /// 
 /// This scaling factor is combined from two parts: The first, known as the __imaging ratio__ 
-/// (in _steridian-second_), converts from incident luminance at the front 
+/// (in _steradian-second_), converts from incident luminance at the front 
 /// of the lens system, in _nit_ (_cd/m^2_), to photometric exposure at the sensor
-/// in _lux-second_. The second, <tt>exposureResponsivity</tt> 
+/// in _lux-second_. The second, `exposureResponsivity` 
 /// (in _inverse lux-second_), converts from photometric exposure at the sensor, in _lux-second_,
 /// to a unitless output signal.
 /// 
@@ -620,7 +620,7 @@ public:
     // --------------------------------------------------------------------- //
     /// f-stop of the aperture when calculating exposure. Smaller numbers
     /// create a brighter image, larger numbers darker.
-    /// Note that the fStop attribute also models the diameter of the camera
+    /// Note that the `fStop` attribute also models the diameter of the camera
     /// aperture, but for specifying depth of field.  For practical 
     /// purposes it is useful to keep the exposure and the depth of field
     /// controls separate.
