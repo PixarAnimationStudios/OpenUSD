@@ -134,5 +134,5 @@ setuptools.setup(
         "Environment :: Console",
         "Topic :: Multimedia :: Graphics",
     ],
-    python_requires='>=3.6, <3.12',
+    python_requires='>=3.6, <3.13',
 )
