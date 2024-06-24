@@ -217,10 +217,6 @@ PcpErrorArcToProhibitedChild::ToString() const
         msg += "inherit from:\n";
         break;
     case PcpArcTypeRelocate:
-        TF_CODING_ERROR("Relocate arc from %s to %s should never produce a "
-            "prohibited child error",
-            TfStringify(site).c_str(), 
-            TfStringify(targetSite).c_str());
         msg += "be relocated from:\n";
         break;
     case PcpArcTypeVariant:

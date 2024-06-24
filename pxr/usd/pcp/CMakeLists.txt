@@ -1314,9 +1314,9 @@ pxr_register_test(testPcpMuseum_RelativePathReferences
 
 pxr_register_test(testPcpMuseum_RelocatePrimsWithSameName
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd RelocatePrimsWithSameName/root.sdf" 
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd --errorFile compositionErrors_RelocatePrimsWithSameName.txt RelocatePrimsWithSameName/root.sdf" 
     STDOUT_REDIRECT compositionResults_RelocatePrimsWithSameName.txt
-    DIFF_COMPARE compositionResults_RelocatePrimsWithSameName.txt 
+    DIFF_COMPARE compositionResults_RelocatePrimsWithSameName.txt compositionErrors_RelocatePrimsWithSameName.txt
 )
 
 pxr_register_test(testPcpMuseum_RelocateToNone

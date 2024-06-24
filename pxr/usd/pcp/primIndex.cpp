@@ -5400,19 +5400,18 @@ Pcp_BuildPrimIndex(
         // is the case, we need to employ the salted earth policy and cull all
         // opinions from this prim index.
         // 
-        // But we only employ this policy when the root node contributes specs. 
-        // When we add a relocates arc, we build a prim index for a relocation 
-        // source where the root node doesn't contribute specs. We don't want to
-        // cull this prim index's opinions as this prim index is how we attach
-        // the ancestral opinions from the relocation source to the relocation
-        // target's prim index node in the first place.
-        if (rootNodeShouldContributeSpecs) {
+        // Note that if we are building a prim index for a relocation node, it's
+        // guaranteed that the root node of the graph is the source of a 
+        // relocation, but the root node is also guaranteed to be inert so that
+        // won't mark the prim index as prohibited. But this will catch the 
+        // cases where the another arc below the relocation might be the source
+        // of a different relocates causing it, and therefore the prim index 
+        // we're building for a relocation arc, to be be prohibited.
+        if (_ElidePrimIndexIfProhibited(&indexer)) {
             // If the prim index is prohibited, there will be no nodes 
             // contributing opinions we won't have any tasks to process and can
             // just return.
-            if (_ElidePrimIndexIfProhibited(&indexer)) {
-                return;
-            }
+            return;
         }
     }
 
