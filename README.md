@@ -38,6 +38,9 @@ Supported Platforms
 USD is primarily developed on Linux platforms (CentOS 7), but is built, tested 
 and supported on macOS and Windows.
 
+It is also possible to build USD libraries that can be embedded
+in iOS and visionOS apps.
+
 Please see [VERSIONS.md](VERSIONS.md) for explicitly tested versions. 
 
 Dependencies
@@ -131,7 +134,7 @@ then build and install USD into `/path/to/my_usd_install_dir`.
 > python OpenUSD/build_scripts/build_usd.py /path/to/my_usd_install_dir
 ```
 
-##### MacOS:
+##### macOS:
 
 In a terminal, run `xcode-select` to ensure command line developer tools are
 installed. Then run the script.
@@ -141,6 +144,33 @@ then build and install USD into `/path/to/my_usd_install_dir`.
 
 ```
 > python OpenUSD/build_scripts/build_usd.py /path/to/my_usd_install_dir
+```
+
+##### iOS and visionOS:
+
+When building from a macOS system, you can cross compile
+for iOS based platforms.
+
+Cross compilation builds are restricted to building libraries that can be
+embedded in applications built for the target platform. It can be helpful
+to use a monolithic build when embedding USD
+(see [Advanced Build Configuration](BUILDING.md)).
+
+These builds do not support Python bindings or command line tools.
+
+Currently, these builds also do not support Imaging or USD Imaging.
+
+For example, the following will download, build, and install USD's dependencies,
+then build and install USD for iOS into `/path/to/my_usd_install_dir`.
+
+```
+> python OpenUSD/build_scripts/build_usd.py --build-target iOS --build-monolithic /path/to/my_usd_install_dir
+```
+
+Or for visionOS:
+
+```
+> python OpenUSD/build_scripts/build_usd.py --build-target visionOS --build-monolithic /path/to/my_usd_install_dir
 ```
 
 ##### Windows:
