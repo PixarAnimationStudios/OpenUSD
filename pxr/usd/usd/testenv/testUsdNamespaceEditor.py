@@ -1136,9 +1136,9 @@ class TestUsdNamespaceEditor(unittest.TestCase):
             "The prim to edit is a prototype proxy descendant of an instance "
             "prim")
         _VerifyCannotApplyDeletePrim(nonInstancePrim.GetChild("B"), 
-            "The prim to delete must be deactivated rather than deleted since "
-            "it composes opinions introduced by ancestral composition arcs; "
-            "deletion via deactivation is not yet supported")
+            "The prim to edit requires authoring relocates since it composes "
+            "opinions introduced by ancestral composition arcs; authoring "
+            "relocates is not yet supported")
 
         # Like with delete, we can rename any of the instance and non-instance 
         # prims (as long as the new name is valid).
@@ -1158,7 +1158,7 @@ class TestUsdNamespaceEditor(unittest.TestCase):
             "The prim to edit is a prototype proxy descendant of an instance "
             "prim")
         _VerifyCannotApplyRenamePrim(nonInstancePrim.GetChild("B"), "NewB", 
-            "The prim to move requires authoring relocates since it composes "
+            "The prim to edit requires authoring relocates since it composes "
             "opinions introduced by ancestral composition arcs; authoring "
             "relocates is not yet supported")
 
@@ -1325,15 +1325,11 @@ class TestUsdNamespaceEditor(unittest.TestCase):
 
         # Helper to verify that the prim cannot be deleted nor moved.
         def _VerifyCannotEditPrimAtPath(primPath):
-            _VerifyCannotApplyDeletePrimAtPath(primPath,
-                "The prim to delete must be deactivated rather than deleted "
-                "since it composes opinions introduced by ancestral "
-                "composition arcs; deletion via deactivation is not yet "
-                "supported")
-            _VerifyCannotApplyMovePrimAtPath(primPath, "/Foo",
-                "The prim to move requires authoring relocates since it "
-                "composes opinions introduced by ancestral composition arcs; "
-                "authoring relocates is not yet supported")
+            expectedMessage = "The prim to edit requires authoring relocates " \
+                "since it composes opinions introduced by ancestral " \
+                "composition arcs; authoring relocates is not yet supported"
+            _VerifyCannotApplyDeletePrimAtPath(primPath, expectedMessage)
+            _VerifyCannotApplyMovePrimAtPath(primPath, "/Foo", expectedMessage)
 
         # A prim with a direct reference to another prim can be edited.
         _VerifyCanEditPrimAtPath("/PrimWithReference")

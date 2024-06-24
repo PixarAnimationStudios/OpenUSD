@@ -261,9 +261,6 @@ private:
         // removed from its parent spec in a layer.
         bool removeInertAncestorOvers = false;
 
-        // Whether the edit would require relocates (or deactivation for delete)
-        bool requiresRelocates = false;
-
         // Applies this processed edit, performing the individual edits 
         // necessary to each layer that needs to be updated.
         bool Apply();
