@@ -107,8 +107,9 @@ private:
 
     static void _CombinePathArrays(const _DensePathSet &s, SdfPathVector *v);
 
-    struct _ProcEntry : public TfWeakBase
+    class _ProcEntry : public TfWeakBase
     {
+    public:
         enum State : unsigned char {
             StateUncooked = 0,
             StateDependenciesCooking,
