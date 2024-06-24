@@ -36,7 +36,12 @@ class ValidationOnlyLauncher(Launcher):
 
         return parser.parse_args(self._args)
 
-    def _Launcher__LaunchProcess(self, arg_parse_result):
+    def LaunchPreamble(self, arg_parse_result):
+        """Do nothing. We don't want to launch the main application."""
+
+        return (None, None)
+
+    def LaunchProcess(self, arg_parse_result, app, appController):
         """Do nothing. We don't want to launch the main application."""
 
         return

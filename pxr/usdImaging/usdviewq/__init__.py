@@ -66,7 +66,8 @@ class Launcher(object):
 
                 traceCollector.enabled = True
 
-            self.__LaunchProcess(arg_parse_result)
+            app, appController = self.LaunchPreamble(arg_parse_result)
+            self.LaunchProcess(arg_parse_result, app, appController)
 
         if traceCollector:
             traceCollector.enabled = False
@@ -355,8 +356,12 @@ class Launcher(object):
 
         return r.CreateDefaultContextForAsset(usdFile)
 
+    def OverrideMaxSamples(self):
+        # Return True if HdPrman's default max samples should be overridden,
+        # False otherwise.
+        return True
 
-    def LaunchPreamble(self, arg_parse_result, overrideMaxSamples = True):
+    def LaunchPreamble(self, arg_parse_result):
         # Initialize concurrency limit as early as possible so that it is
         # respected by subsequent imports.
         from pxr import Work
@@ -365,7 +370,7 @@ class Launcher(object):
         # XXX Override HdPrman's defaults using the env var.  In the
         # future we expect there may be more formal ways to represent
         # per-app settings for particular Hydra plugins.
-        if overrideMaxSamples:
+        if self.OverrideMaxSamples():
             os.environ.setdefault('HD_PRMAN_MAX_SAMPLES', '1024')
 
         if arg_parse_result.clearSettings:
@@ -379,13 +384,10 @@ class Launcher(object):
 
         return (app, appController)
 
-    def __LaunchProcess(self, arg_parse_result):
+    def LaunchProcess(self, arg_parse_result, app, appController):
         '''
         after the arguments have been parsed, launch the UI in a forked process
         '''
-        # Initialize concurrency limit as early as possible so that it is
-        # respected by subsequent imports.
-        (app, appController) = self.LaunchPreamble(arg_parse_result)
         
         if arg_parse_result.quitAfterStartup:
             # Enqueue event to shutdown application. We don't use quit() because
