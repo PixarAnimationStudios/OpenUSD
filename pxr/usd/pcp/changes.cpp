@@ -2212,6 +2212,10 @@ _DeterminePathsAffectedByRelocationChanges( const SdfRelocatesMap & oldMap,
             affectedPaths->insert(newTargetPath);
         }
     }
+
+    // Target paths can be empty so just make sure we don't include the empty
+    // path as affected.
+    affectedPaths->erase(SdfPath::EmptyPath());
 }
 
 // Handle changes to relocations.  This requires:

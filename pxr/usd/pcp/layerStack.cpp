@@ -200,8 +200,25 @@ Pcp_IsValidRelocatesEntry(
         return true;
     };
 
-    // The source and target must be valid relocates paths.
-    if (!isValidPathFn(source) || !isValidPathFn(target)) {
+    // Source paths cannot be empty though targets can.
+    if (source.IsEmpty()) {
+        *errorMessage = "Relocates source paths cannot be empty.";
+        return false;
+    }
+
+    // The source must be a valid prim path.
+    if (!isValidPathFn(source)) {
+        return false;
+    }
+
+    // Empty target paths are allowed and if the target is empty, we're done.
+    if (target.IsEmpty()) {
+        return true;
+    }
+
+    // Otherwise the target must be a valid prim path and we have to validate
+    // it against the source.
+    if (!isValidPathFn(target)) {
         return false;
     }
 
@@ -595,20 +612,21 @@ private:
             const SdfPath &sourcePath = relocatesEntry.first;                        
             const SdfPath &targetPath = relocatesEntry.second.targetPath;                        
 
-            std::string whyNot;
-            // If we can't add this relocate to the "by target" map, we have
-            // a duplicate target error.
-            if (auto [it, success] = targetPathToProcessedRelocateMap.emplace(
-                    targetPath, &relocatesEntry); !success) {
-                auto *&existingAuthoredRelocatesEntry = it->second;
+            if (!targetPath.IsEmpty()) {
+                // If we can't add this relocate to the "by target" map, we have
+                // a duplicate target error.
+                if (auto [it, success] = targetPathToProcessedRelocateMap.emplace(
+                        targetPath, &relocatesEntry); !success) {
+                    auto *&existingAuthoredRelocatesEntry = it->second;
 
-                // Always add this relocate entry as an error. If this function
-                // returns true, it's adding the error for this target for the
-                // first time so add the existing relocate entry to the error
-                // as well in that case.
-                if (_LogInvalidSameTargetRelocates(relocatesEntry)) {
-                    _LogInvalidSameTargetRelocates(
-                        *existingAuthoredRelocatesEntry);
+                    // Always add this relocate entry as an error. If this function
+                    // returns true, it's adding the error for this target for the
+                    // first time so add the existing relocate entry to the error
+                    // as well in that case.
+                    if (_LogInvalidSameTargetRelocates(relocatesEntry)) {
+                        _LogInvalidSameTargetRelocates(
+                            *existingAuthoredRelocatesEntry);
+                    }
                 }
             }
 
@@ -621,30 +639,32 @@ private:
                 continue;
             }
 
-            // If the target can be found as a source path of any of our 
-            // relocates, then both relocates are invalid.
-            if (auto it = processedRelocates.find(targetPath); 
-                    it != processedRelocates.end()) {
-                _LogInvalidConflictingRelocate(
-                    relocatesEntry,
-                    *it,
-                    ConflictReason::TargetIsConflictSource);
-                _LogInvalidConflictingRelocate(
-                    *it,
-                    relocatesEntry,
-                    ConflictReason::SourceIsConflictTarget);           
-            }
-
-            // The target of a relocate must be a fully relocated path which we
-            // enforce by making sure that it cannot itself be ancestrally 
-            // relocated by any other relocates in the layer stack.
-            for (SdfPath pathToCheck = targetPath.GetParentPath();
-                    !pathToCheck.IsAbsoluteRootPath(); 
-                    pathToCheck = pathToCheck.GetParentPath()) {
-                if (auto it = processedRelocates.find(pathToCheck); 
+            if (!targetPath.IsEmpty()) {
+                // If the target can be found as a source path of any of our 
+                // relocates, then both relocates are invalid.
+                if (auto it = processedRelocates.find(targetPath); 
                         it != processedRelocates.end()) {
-                    _LogInvalidConflictingRelocate(relocatesEntry, *it,
-                        ConflictReason::TargetIsConflictSourceDescendant);
+                    _LogInvalidConflictingRelocate(
+                        relocatesEntry,
+                        *it,
+                        ConflictReason::TargetIsConflictSource);
+                    _LogInvalidConflictingRelocate(
+                        *it,
+                        relocatesEntry,
+                        ConflictReason::SourceIsConflictTarget);           
+                }
+
+                // The target of a relocate must be a fully relocated path which we
+                // enforce by making sure that it cannot itself be ancestrally 
+                // relocated by any other relocates in the layer stack.
+                for (SdfPath pathToCheck = targetPath.GetParentPath();
+                        !pathToCheck.IsAbsoluteRootPath(); 
+                        pathToCheck = pathToCheck.GetParentPath()) {
+                    if (auto it = processedRelocates.find(pathToCheck); 
+                            it != processedRelocates.end()) {
+                        _LogInvalidConflictingRelocate(relocatesEntry, *it,
+                            ConflictReason::TargetIsConflictSourceDescendant);
+                    }
                 }
             }
 
@@ -954,8 +974,12 @@ _FilterRelocationsForPath(const PcpLayerStack& layerStack,
     for (SdfRelocatesMap::const_iterator
          i = relocates.lower_bound(path), n = relocates.end();
          (i != n) && (i->first.HasPrefix(path)); ++i) {
-        siteRelocates.insert(*i);
-        seenTargets.insert(i->second);
+        // Skip relocates to empty targets. We don't want to prevent these paths
+        // from mapping through the node.
+        if (!i->second.IsEmpty()) {
+            siteRelocates.insert(*i);
+            seenTargets.insert(i->second);
+        }
     }
 
     const SdfRelocatesMap& incrementalRelocates = 
@@ -965,7 +989,9 @@ _FilterRelocationsForPath(const PcpLayerStack& layerStack,
          n = incrementalRelocates.end();
          (i != n) && (i->first.HasPrefix(path)); ++i) {
 
-        if (seenTargets.insert(i->second).second) {
+        // Skip relocates to empty targets. We don't want to prevent these paths
+        // from mapping through the node.
+        if (!i->second.IsEmpty() && seenTargets.insert(i->second).second) {
             siteRelocates.insert(*i);
         }
     }

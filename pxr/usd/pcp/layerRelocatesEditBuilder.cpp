@@ -215,18 +215,6 @@ _ValidateAgainstExistingRelocate(
     const SdfPath &existingSource, const SdfPath &existingTarget,
     std::string *whyNot)
 {
-    // Cannot relocate to an existing relocate's target again. E.g. if a 
-    // relocate from <A> -> <B> already exists, we cannot add a relocate 
-    // from <C> -> <B>.
-    if (newTarget == existingTarget) {
-        _PrintToWhyNot(whyNot, newSource, newTarget,
-            "A relocate from <%s> to <%s> already exists and the same "
-            "target cannot be relocated to again.", 
-            existingSource.GetText(),
-            existingTarget.GetText());
-        return false;
-    }
-
     // Cannot relocate a descendant of a path that is already the source 
     // of an existing relocate.
     if (newSource.HasPrefix(existingSource)) {
@@ -237,6 +225,23 @@ _ValidateAgainstExistingRelocate(
             existingSource.GetText(),
             existingTarget.GetText(),
             existingSource.GetText());
+        return false;
+    }
+
+    // If the target is empty, we're good after validating the source path.
+    if (newTarget.IsEmpty()) {
+        return true;
+    }
+
+    // Cannot relocate to an existing relocate's target again. E.g. if a 
+    // relocate from <A> -> <B> already exists, we cannot add a relocate 
+    // from <C> -> <B>.
+    if (newTarget == existingTarget) {
+        _PrintToWhyNot(whyNot, newSource, newTarget,
+            "A relocate from <%s> to <%s> already exists and the same "
+            "target cannot be relocated to again.", 
+            existingSource.GetText(),
+            existingTarget.GetText());
         return false;
     }
 
@@ -412,14 +417,29 @@ PcpLayerRelocatesEditBuilder::RemoveRelocate(
     }
 
     const SdfPath &targetPath = it->second;
-
-    // Update existing relocates as if we have relocated the target path 
-    // back to the source path in order to account for how removing this
-    // relocation will change their paths. Note that this call will handle
-    // removing the existing relocate itself. Also note that we do not have
-    // to do any validation of the source and target paths as their presence
-    // in the relocates map already assures the validity of this call.
-    _UpdateExistingRelocates(targetPath, sourcePath);
+    if (targetPath.IsEmpty()) {
+        // If this the target path of the existing relocate is empty, we had a
+        // "deletion" relocate. To remove it we just have to delete any 
+        // relocates entries in any layer that use the source path.
+        for (auto &[layer, relocates] : _layerRelocatesEdits ) {
+            auto removeIt = std::remove_if(relocates.begin(), relocates.end(),
+                [&](const auto &relocate) { 
+                    return relocate.first == sourcePath;
+                });
+            if (removeIt != relocates.end()) {
+                _layersWithRelocatesChanges.insert(layer);
+                relocates.erase(removeIt, relocates.end());
+            }
+        }
+    } else {
+        // Update existing relocates as if we have relocated the target path 
+        // back to the source path in order to account for how removing this
+        // relocation will change their paths. Note that this call will handle
+        // removing the existing relocate itself. Also note that we do not have
+        // to do any validation of the source and target paths as their presence
+        // in the relocates map already assures the validity of this call.
+        _UpdateExistingRelocates(targetPath, sourcePath);
+    }
 
     // The relocates were updated so the relocates map will need to be
     // recomputed the next time it's needed.
