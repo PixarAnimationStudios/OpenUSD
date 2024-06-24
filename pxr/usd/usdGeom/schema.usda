@@ -2313,7 +2313,7 @@ class Camera "Camera" (
     \\endcode
 
     This scaling factor is combined from two parts: The first, known as the __imaging ratio__ 
-    (in _steridian-second_), converts from incident luminance at the front 
+    (in _steradian-second_), converts from incident luminance at the front 
     of the lens system, in _nit_ (_cd/m^2_), to photometric exposure at the sensor
     in _lux-second_. The second, <tt>exposureResponsivity</tt> 
     (in _inverse lux-second_), converts from photometric exposure at the sensor, in _lux-second_,
