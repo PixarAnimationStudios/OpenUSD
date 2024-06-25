@@ -523,7 +523,8 @@ function(_pxr_enable_precompiled_header TARGET_NAME)
     # Headers live in subdirectories.
     set(rel_output_header_path "${PXR_PREFIX}/${TARGET_NAME}/${output_header_name}")
     set(abs_output_header_path "${PROJECT_BINARY_DIR}/include/${rel_output_header_path}")
-    set(abs_precompiled_path ${PROJECT_BINARY_DIR}/include/${PXR_PREFIX}/${TARGET_NAME}/${CMAKE_BUILD_TYPE}/${precompiled_name})
+    set(abs_precompiled_directory ${PROJECT_BINARY_DIR}/include/${PXR_PREFIX}/${TARGET_NAME}/${CMAKE_BUILD_TYPE})
+    set(abs_precompiled_path ${abs_precompiled_directory}/${precompiled_name})
 
     # Additional compile flags to use precompiled header.  This will be
     set(compile_flags "")
@@ -540,6 +541,12 @@ function(_pxr_enable_precompiled_header TARGET_NAME)
     # Use FALSE if we have an external precompiled header we can use.
     if(TRUE)
         if(MSVC)
+            # Make sure the directory with the pch.pch file is created
+            add_custom_command(
+                OUTPUT "${abs_precompiled_directory}"
+                COMMAND ${CMAKE_COMMAND} -E make_directory "${abs_precompiled_directory}"
+            )
+
             # Copy the header to precompile.
             add_custom_command(
                 OUTPUT "${abs_output_header_path}"
@@ -556,6 +563,7 @@ function(_pxr_enable_precompiled_header TARGET_NAME)
             add_custom_command(
                 OUTPUT "${abs_output_source_path}"
                 COMMAND ${CMAKE_COMMAND} -E touch ${abs_output_source_path}
+                DEPENDS "${abs_precompiled_directory}"
             )
 
             # The trigger file gets a special compile flag (/Yc).
