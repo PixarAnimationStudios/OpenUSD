@@ -487,23 +487,37 @@ UniformAggregationTest(bool aggregation, bool ssbo,
     // color vec3      : 12 byte
     // total           : 140 byte
     //                 : 160 byte, round up to 32 byte align (due to dmat4)
-    //                   or, 256 byte (GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT)
-
+    //
+    // For an uniform buffer offset alignment of 256 (the value of
+    // GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT on Pixar workstations), this would 
+    // align to 256 bytes.
+    // For an uniform buffer offset alignment of 64 (the value of
+    // VkPhysicalDeviceLimit's minUniformBufferOffsetAlignment on Pixar 
+    // workstations), this would align to 192 bytes.
     {
         HdStBufferArrayRangeSharedPtr range1GL = 
             std::static_pointer_cast<HdStBufferArrayRange>(range1);
 
         if (aggregation) {
+            constexpr int alignedStride = 160;
+
             if (ssbo) {
                 TF_VERIFY(range1GL->GetResource(HdTokens->transform)->GetOffset() == 0);
                 TF_VERIFY(range1GL->GetResource(HdTokens->displayColor)->GetOffset() == 128);
-                TF_VERIFY(range1GL->GetResource(HdTokens->transform)->GetStride() == 160);
-                TF_VERIFY(range1GL->GetResource(HdTokens->displayColor)->GetStride() == 160);
+                TF_VERIFY(range1GL->GetResource(HdTokens->transform)->GetStride() == alignedStride);
+                TF_VERIFY(range1GL->GetResource(HdTokens->displayColor)->GetStride() == alignedStride);
             } else {
+                const int uniformBufferOffsetAlignment = 
+                    registry->GetHgi()->GetCapabilities()->
+                        GetUniformBufferOffsetAlignment();
+                const int uniformAlignedStride = uniformBufferOffsetAlignment *
+                    ((alignedStride + uniformBufferOffsetAlignment - 1) / 
+                        uniformBufferOffsetAlignment);
+
                 TF_VERIFY(range1GL->GetResource(HdTokens->transform)->GetOffset() == 0);
                 TF_VERIFY(range1GL->GetResource(HdTokens->displayColor)->GetOffset() == 128);
-                TF_VERIFY(range1GL->GetResource(HdTokens->transform)->GetStride() == 256);
-                TF_VERIFY(range1GL->GetResource(HdTokens->displayColor)->GetStride() == 256);
+                TF_VERIFY(range1GL->GetResource(HdTokens->transform)->GetStride() == uniformAlignedStride);
+                TF_VERIFY(range1GL->GetResource(HdTokens->displayColor)->GetStride() == uniformAlignedStride);
             }
         } else {
             TF_VERIFY(range1GL->GetResource(HdTokens->transform)->GetOffset() == 0);
@@ -968,12 +982,6 @@ int main(int argc, char *argv[])
     // Initialize the resource registry we will test
 
     std::unique_ptr<Hgi> hgi = Hgi::CreatePlatformDefaultHgi();
-
-    const int uniformBufferOffsetAlignment = 
-        hgi->GetCapabilities()->GetUniformBufferOffsetAlignment();
-
-    // Test verification relies on known GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT
-    TF_VERIFY(uniformBufferOffsetAlignment == 256);
 
     HdStResourceRegistry resourceRegistry(hgi.get());
 
