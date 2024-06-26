@@ -55,6 +55,7 @@ void wrapUsdNamespaceEditor()
 
     scope s = class_<This>("NamespaceEditor", no_init)
         .def(init<const UsdStagePtr &>())
+        .def(init<const UsdStagePtr &, const This::EditOptions &>())
 
         .def("DeletePrimAtPath", &This::DeletePrimAtPath)
         .def("MovePrimAtPath", &This::MovePrimAtPath)
@@ -82,5 +83,12 @@ void wrapUsdNamespaceEditor()
 
         .def("ApplyEdits", &This::ApplyEdits)
         .def("CanApplyEdits", &_CanApplyEdits)
+    ;
+
+    class_<This::EditOptions>("EditOptions")
+        .def(init<>())
+        .add_property("allowRelocatesAuthoring", 
+            &This::EditOptions::allowRelocatesAuthoring, 
+            &This::EditOptions::allowRelocatesAuthoring)
     ;
 }
