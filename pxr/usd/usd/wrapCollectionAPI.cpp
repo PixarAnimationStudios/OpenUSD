@@ -267,6 +267,10 @@ WRAP_CUSTOM {
              (arg("prim"), arg("collectionName")))
             .staticmethod("GetNamedCollectionPath")
 
+        .def("ResolveCompleteMembershipExpression",
+             (SdfPathExpression (This::*)() const)
+             &This::ResolveCompleteMembershipExpression)
+
         .def("IsSchemaPropertyBaseName", &This::IsSchemaPropertyBaseName,
             arg("baseName"))
             .staticmethod("IsSchemaPropertyBaseName")
