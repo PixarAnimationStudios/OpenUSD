@@ -209,7 +209,7 @@ stages:
           PYTHON_TAG: cp312
     timeoutInMinutes: 180
     pool:
-      vmImage: 'macOS-11'
+      vmImage: 'macOS-12'
     steps:
     - task: UsePythonVersion@0
       inputs:
@@ -342,31 +342,31 @@ stages:
           PYTHON_INTERPRETER: python
         Mac_Python36:
           PYTHON_VERSION_SPEC: 3.6
-          IMAGE: 'macOS-11'
+          IMAGE: 'macOS-12'
           PYTHON_INTERPRETER: python3
         Mac_Python37:
           PYTHON_VERSION_SPEC: 3.7
-          IMAGE: 'macOS-11'
+          IMAGE: 'macOS-12'
           PYTHON_INTERPRETER: python3
         Mac_Python38:
           PYTHON_VERSION_SPEC: 3.8
-          IMAGE: 'macOS-11'
+          IMAGE: 'macOS-12'
           PYTHON_INTERPRETER: python3
         Mac_Python39:
           PYTHON_VERSION_SPEC: 3.9
-          IMAGE: 'macOS-11'
+          IMAGE: 'macOS-12'
           PYTHON_INTERPRETER: python3
         Mac_Python310:
           PYTHON_VERSION_SPEC: 3.10
-          IMAGE: 'macOS-11'
+          IMAGE: 'macOS-12'
           PYTHON_INTERPRETER: python3
         Mac_Python311:
           PYTHON_VERSION_SPEC: 3.11
-          IMAGE: 'macOS-11'
+          IMAGE: 'macOS-12'
           PYTHON_INTERPRETER: python3
         Mac_Python312:
           PYTHON_VERSION_SPEC: 3.12
-          IMAGE: 'macOS-11'
+          IMAGE: 'macOS-12'
           PYTHON_INTERPRETER: python3
     timeoutInMinutes: 10
     pool:
