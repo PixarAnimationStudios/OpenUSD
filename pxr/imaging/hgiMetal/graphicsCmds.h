@@ -153,7 +153,6 @@ private:
     uint32_t _primitiveIndexSize;
     uint32_t _drawBufferBindingIndex;
     NSString* _debugLabel;
-    bool _hasWork;
     bool _viewportSet;
     bool _scissorRectSet;
     bool _enableParallelEncoder;
