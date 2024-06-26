@@ -490,11 +490,21 @@ public:
 
     /// Returns the product of a matrix \e m and a column vector \e vec.
     /// Note that the return type is a \c GfVec4f.
+    ///
+    /// \deprecated
+    /// This function is deprecated, as it can result in unintentional loss of
+    /// precision. Call GfVec4d operator *(const GfMatrix4d&, const GfVec4d &)
+    /// instead and explicitly convert the result to GfVec3f, if necessary.
     GF_API
     friend GfVec4f operator *(const GfMatrix4d& m, const GfVec4f& vec);
 
     /// Returns the product of row vector \e vec and a matrix \e m.
     /// Note that the return type is a \c GfVec4f.
+    ///
+    /// \deprecated
+    /// This function is deprecated, as it can result in unintentional loss of
+    /// precision. Call GfVec4d operator *(const GfVec4d &, const GfMatrix4d&)
+    /// instead and explicitly convert the result to GfVec3f, if necessary.
     GF_API
     friend GfVec4f operator *(const GfVec4f &vec, const GfMatrix4d& m);
 
@@ -661,6 +671,11 @@ public:
     /// This treats the vector as a 4-component vector whose fourth component
     /// is 1. This is an overloaded method; it differs from the other version
     /// in that it returns a different value type.
+    ///
+    /// \deprecated
+    /// This method is deprecated, as it can result in unintentional loss of
+    /// precision. Call GfVec3d Transform(const GfVec3d &) instead and
+    /// explicitly convert the result to GfVec3f, if necessary.
     GfVec3f Transform(const GfVec3f &vec) const {
         return GfVec3f(GfProject(GfVec4d(
             vec[0] * _mtx[0][0] + vec[1] * _mtx[1][0] + vec[2] * _mtx[2][0] + _mtx[3][0],
@@ -686,6 +701,11 @@ public:
     /// a 4-component vector whose fourth component is 0.  This is an
     /// overloaded method; it differs from the other version in that it
     /// returns a different value type.
+    ///
+    /// \deprecated
+    /// This method is deprecated, as it can result in unintentional loss of
+    /// precision. Call GfVec3d TransformDir(const GfVec3d &) instead and
+    /// explicitly convert the result to GfVec3f, if necessary.
     GfVec3f TransformDir(const GfVec3f &vec) const {
         return GfVec3f(
             vec[0] * _mtx[0][0] + vec[1] * _mtx[1][0] + vec[2] * _mtx[2][0],
@@ -708,6 +728,11 @@ public:
     /// This treats the vector as a 4-component vector whose fourth component
     /// is 1 and ignores the fourth column of the matrix (i.e. assumes it is
     /// (0, 0, 0, 1)).
+    ///
+    /// \deprecated
+    /// This method is deprecated, as it can result in unintentional loss of
+    /// precision. Call GfVec3d TransformAffine(const GfVec3d &) instead and
+    /// explicitly convert the result to GfVec3f, if necessary.
     GfVec3f TransformAffine(const GfVec3f &vec) const {
         return GfVec3f(
             vec[0] * _mtx[0][0] + vec[1] * _mtx[1][0] + vec[2] * _mtx[2][0] + _mtx[3][0],
