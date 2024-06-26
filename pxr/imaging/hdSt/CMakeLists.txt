@@ -2793,6 +2793,7 @@ pxr_register_test(testHdStIndirectDrawBatchCodeGen
     EXPECTED_RETURN_CODE 0
     ENV
         HD_ENABLE_GPU_FRUSTUM_CULLING=false
+        HGI_ENABLE_VULKAN=0
 )
 pxr_register_test(testHdStIndirectDrawBatchCulling
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStIndirectDrawBatchCulling"
