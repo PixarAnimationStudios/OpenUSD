@@ -71,6 +71,8 @@ TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_DEBUG_SCENE_DELEGATE_ID, "/",
 TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX, false,
                       "Use Scene Index API for imaging scene input");
 
+TF_DEFINE_ENV_SETTING(HGI_ENABLE_WEBGPU, 0,
+                      "Enable WebGPU as platform default Hgi backend (WIP)");
 
 namespace UsdImagingGLEngine_Impl
 {
@@ -129,7 +131,7 @@ _GetPlatformDependentRendererDisplayName(HfPluginDesc const &pluginDescriptor)
     return "WebGPU";
 #else
 
-    if (Tf_GetEnvSettingByName("HGI_ENABLE_WEBGPU"))
+    if (TfGetEnvSetting(HGI_ENABLE_WEBGPU))
     #if defined(PXR_WEBGPU_SUPPORT_ENABLED)
             return "WebGPU";
     #else
