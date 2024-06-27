@@ -231,3 +231,11 @@ if (${PXR_BUILD_PYTHON_DOCUMENTATION})
         set(PXR_BUILD_PYTHON_DOCUMENTATION "OFF" CACHE BOOL "" FORCE)
     endif()
 endif()
+
+# Configure the use of compiler caches for faster compilation
+option(PXR_ENABLE_COMPILER_CACHE "Enable the use of a compiler cache" OFF)
+set(PXR_COMPILER_CACHE_NAME "ccache"
+        CACHE
+        STRING
+        "The name of the compiler cache program to use"
+)
