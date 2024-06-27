@@ -71,9 +71,6 @@ TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_DEBUG_SCENE_DELEGATE_ID, "/",
 TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX, false,
                       "Use Scene Index API for imaging scene input");
 
-TF_DEFINE_ENV_SETTING(HGI_ENABLE_WEBGPU, 0,
-                      "Enable WebGPU as platform default Hgi backend (WIP)");
-
 namespace UsdImagingGLEngine_Impl
 {
 
@@ -272,7 +269,7 @@ UsdImagingGLEngine::~UsdImagingGLEngine()
 
 void
 UsdImagingGLEngine::PrepareBatch(
-    const UsdPrim& root, 
+    const UsdPrim& root,
     const UsdImagingGLRenderParams& params)
 {
     if (ARCH_UNLIKELY(!_renderDelegate)) {
@@ -373,7 +370,7 @@ UsdImagingGLEngine::_SetActiveRenderSettingsPrimFromStageMetadata(
             stage->GetMetadata(
                 UsdRenderTokens->renderSettingsPrimPath, &pathStr);
         }
-        // Add the delegateId prefix since the scene globals scene index is 
+        // Add the delegateId prefix since the scene globals scene index is
         // inserted into the merging scene index.
         if (!pathStr.empty()) {
             SetActiveRenderSettingsPrimPath(
@@ -435,7 +432,7 @@ UsdImagingGLEngine::_SetBBoxParams(
 
 void
 UsdImagingGLEngine::RenderBatch(
-    const SdfPathVector& paths, 
+    const SdfPathVector& paths,
     const UsdImagingGLRenderParams& params)
 {
     if (ARCH_UNLIKELY(!_renderDelegate)) {
@@ -452,10 +449,10 @@ UsdImagingGLEngine::RenderBatch(
 
     _SetBBoxParams(params.bboxes, params.bboxLineColor, params.bboxLineDashSize);
 
-    // XXX App sets the clear color via 'params' instead of setting up Aovs 
+    // XXX App sets the clear color via 'params' instead of setting up Aovs
     // that has clearColor in their descriptor. So for now we must pass this
     // clear color to the color AOV.
-    HdAovDescriptor colorAovDesc = 
+    HdAovDescriptor colorAovDesc =
         _taskController->GetRenderOutputSettings(HdAovTokens->color);
     if (colorAovDesc.format != HdFormatInvalid) {
         colorAovDesc.clearValue = VtValue(params.clearColor);
@@ -472,9 +469,9 @@ UsdImagingGLEngine::RenderBatch(
     _Execute(params, _taskController->GetRenderingTasks());
 }
 
-void 
+void
 UsdImagingGLEngine::Render(
-    const UsdPrim& root, 
+    const UsdPrim& root,
     const UsdImagingGLRenderParams &params)
 {
     if (ARCH_UNLIKELY(!_renderDelegate)) {
@@ -619,7 +616,7 @@ UsdImagingGLEngine::SetCameraPath(SdfPath const& id)
     }
 }
 
-void 
+void
 UsdImagingGLEngine::SetCameraState(const GfMatrix4d& viewMatrix,
                                    const GfMatrix4d& projectionMatrix)
 {
@@ -713,7 +710,7 @@ UsdImagingGLEngine::ClearSelected()
         _selectionSceneIndex->ClearSelection();
         return;
     }
-    
+
     TF_VERIFY(_selTracker);
 
     _selTracker->SetSelection(std::make_shared<HdSelection>());
@@ -770,7 +767,7 @@ UsdImagingGLEngine::SetSelectionColor(GfVec4f const& color)
 // Picking
 //----------------------------------------------------------------------------
 
-bool 
+bool
 UsdImagingGLEngine::TestIntersection(
     const GfMatrix4d &viewMatrix,
     const GfMatrix4d &projectionMatrix,
@@ -1097,7 +1094,7 @@ UsdImagingGLEngine::_AppendSceneGlobalsSceneIndexCallback(
 {
     UsdImagingGLEngine_Impl::_AppSceneIndicesSharedPtr appSceneIndices =
         s_renderInstanceTracker->GetInstance(renderInstanceId);
-    
+
     if (appSceneIndices) {
         auto &sgsi = appSceneIndices->sceneGlobalsSceneIndex;
         sgsi = HdsiSceneGlobalsSceneIndex::New(inputScene);
@@ -1204,7 +1201,7 @@ UsdImagingGLEngine::_SetRenderDelegate(
 
         const UsdImagingSceneIndices sceneIndices =
             UsdImagingCreateSceneIndices(info);
-        
+
         _stageSceneIndex = sceneIndices.stageSceneIndex;
         _selectionSceneIndex = sceneIndices.selectionSceneIndex;
         _sceneIndex = sceneIndices.finalSceneIndex;
@@ -1259,7 +1256,7 @@ UsdImagingGLEngine::GetRendererAovs() const
 
         TfTokenVector aovs = { HdAovTokens->color };
         for (auto const& aov : candidates) {
-            if (_renderDelegate->GetDefaultAovDescriptor(aov).format 
+            if (_renderDelegate->GetDefaultAovDescriptor(aov).format
                     != HdFormatInvalid) {
                 aovs.push_back(aov);
             }
@@ -1436,7 +1433,7 @@ UsdImagingGLEngine::SetPresentationOutput(
 // Command API
 // ---------------------------------------------------------------------
 
-HdCommandDescriptors 
+HdCommandDescriptors
 UsdImagingGLEngine::GetRendererCommandDescriptors() const
 {
     if (ARCH_UNLIKELY(!_renderDelegate)) {
@@ -1531,7 +1528,7 @@ UsdImagingGLEngine::RestartRenderer()
 //----------------------------------------------------------------------------
 // Color Correction
 //----------------------------------------------------------------------------
-void 
+void
 UsdImagingGLEngine::SetColorCorrectionSettings(
     TfToken const& colorCorrectionMode,
     TfToken const& ocioDisplay,
@@ -1593,7 +1590,7 @@ UsdImagingGLEngine::_GetRenderIndex() const
     return _renderIndex.get();
 }
 
-void 
+void
 UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
                              HdTaskSharedPtrVector tasks)
 {
@@ -1605,12 +1602,12 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
     }
 }
 
-bool 
+bool
 UsdImagingGLEngine::_CanPrepare(const UsdPrim& root)
 {
     HD_TRACE_FUNCTION();
 
-    if (!TF_VERIFY(root, "Attempting to draw an invalid/null prim\n")) 
+    if (!TF_VERIFY(root, "Attempting to draw an invalid/null prim\n"))
         return false;
 
     if (!root.GetPath().HasPrefix(_rootPath)) {
@@ -1635,26 +1632,26 @@ _GetRefineLevel(float c)
     // to avoid floating point inaccuracy (e.g. 1.3 > 1.3f)
     c = std::min(c + 0.01f, 2.0f);
 
-    if (1.0f <= c && c < 1.1f) { 
+    if (1.0f <= c && c < 1.1f) {
         refineLevel = 0;
-    } else if (1.1f <= c && c < 1.2f) { 
+    } else if (1.1f <= c && c < 1.2f) {
         refineLevel = 1;
-    } else if (1.2f <= c && c < 1.3f) { 
+    } else if (1.2f <= c && c < 1.3f) {
         refineLevel = 2;
-    } else if (1.3f <= c && c < 1.4f) { 
+    } else if (1.3f <= c && c < 1.4f) {
         refineLevel = 3;
-    } else if (1.4f <= c && c < 1.5f) { 
+    } else if (1.4f <= c && c < 1.5f) {
         refineLevel = 4;
-    } else if (1.5f <= c && c < 1.6f) { 
+    } else if (1.5f <= c && c < 1.6f) {
         refineLevel = 5;
-    } else if (1.6f <= c && c < 1.7f) { 
+    } else if (1.6f <= c && c < 1.7f) {
         refineLevel = 6;
-    } else if (1.7f <= c && c < 1.8f) { 
+    } else if (1.7f <= c && c < 1.8f) {
         refineLevel = 7;
-    } else if (1.8f <= c && c <= 2.0f) { 
+    } else if (1.8f <= c && c <= 2.0f) {
         refineLevel = 8;
     } else {
-        TF_CODING_ERROR("Invalid complexity %f, expected range is [1.0,2.0]\n", 
+        TF_CODING_ERROR("Invalid complexity %f, expected range is [1.0,2.0]\n",
                 c);
     }
     return refineLevel;
@@ -1705,7 +1702,7 @@ UsdImagingGLEngine::_UpdateHydraCollection(
     // choose repr
     HdReprSelector reprSelector = HdReprSelector(HdReprTokens->smoothHull);
     const bool refined = params.complexity > 1.0;
-    
+
     if (params.drawMode == UsdImagingGLDrawMode::DRAW_POINTS) {
         reprSelector = HdReprSelector(HdReprTokens->points);
     } else if (params.drawMode == UsdImagingGLDrawMode::DRAW_GEOM_FLAT ||
@@ -1746,7 +1743,7 @@ UsdImagingGLEngine::_UpdateHydraCollection(
             if (oldRoots[i] == roots[i])
                 continue;
             // Binary search to find the current root.
-            if (!std::binary_search(oldRoots.begin(), oldRoots.end(), roots[i])) 
+            if (!std::binary_search(oldRoots.begin(), oldRoots.end(), roots[i]))
             {
                 match = false;
                 break;
@@ -1769,7 +1766,7 @@ HdxRenderTaskParams
 UsdImagingGLEngine::_MakeHydraUsdImagingGLRenderParams(
     UsdImagingGLRenderParams const& renderParams)
 {
-    // Note this table is dangerous and making changes to the order of the 
+    // Note this table is dangerous and making changes to the order of the
     // enums in UsdImagingGLCullStyle, will affect this with no compiler help.
     static const HdCullStyle USD_2_HD_CULL_STYLE[] =
     {
@@ -1779,8 +1776,8 @@ UsdImagingGLEngine::_MakeHydraUsdImagingGLRenderParams(
         HdCullStyleFront,                 // CULL_STYLE_FRONT,
         HdCullStyleBackUnlessDoubleSided, // CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
     };
-    static_assert(((sizeof(USD_2_HD_CULL_STYLE) / 
-                    sizeof(USD_2_HD_CULL_STYLE[0])) 
+    static_assert(((sizeof(USD_2_HD_CULL_STYLE) /
+                    sizeof(USD_2_HD_CULL_STYLE[0]))
               == (size_t)UsdImagingGLCullStyle::CULL_STYLE_COUNT),
         "enum size mismatch");
 
@@ -1845,7 +1842,7 @@ UsdImagingGLEngine::_ComputeRenderTags(UsdImagingGLRenderParams const& params,
 TfToken
 UsdImagingGLEngine::_GetDefaultRendererPluginId()
 {
-    static const std::string defaultRendererDisplayName = 
+    static const std::string defaultRendererDisplayName =
         TfGetenv("HD_DEFAULT_RENDERER", "");
 
     if (defaultRendererDisplayName.empty()) {

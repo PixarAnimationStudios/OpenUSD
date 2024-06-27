@@ -25,6 +25,7 @@
 #define PXR_IMAGING_HGI_HGI_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
@@ -53,6 +54,7 @@ class HgiIndirectCommandEncoder;
 
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
 
+extern TfEnvSetting<decltype(Tf_ChooseEnvSettingType(0))> HGI_ENABLE_WEBGPU;
 
 /// \class Hgi
 ///
@@ -71,7 +73,7 @@ using HgiUniquePtr = std::unique_ptr<class Hgi>;
 /// in mind. We want to try and take advantage of this where possible.
 /// However we also wish to continue to support OpenGL for the time being.
 ///
-/// In an application where OpenGL is involved, when we say "main thread" we 
+/// In an application where OpenGL is involved, when we say "main thread" we
 /// mean the thread on which the gl-context is bound.
 ///
 /// Each Hgi backend should at minimum support the following:
@@ -122,11 +124,11 @@ public:
     /// the cmd buffers of the cmds object(s) to the device queue.
     /// Derived classes can override _SubmitCmds to customize submission.
     /// Thread safety: This call is not thread-safe. Submission must happen on
-    /// the main thread so we can continue to support the OpenGL platform. 
+    /// the main thread so we can continue to support the OpenGL platform.
     /// See notes above.
     HGI_API
     void SubmitCmds(
-        HgiCmds* cmds, 
+        HgiCmds* cmds,
         HgiSubmitWaitType wait = HgiSubmitWaitTypeNoWait);
 
     /// *** DEPRECATED *** Please use: CreatePlatformDefaultHgi
