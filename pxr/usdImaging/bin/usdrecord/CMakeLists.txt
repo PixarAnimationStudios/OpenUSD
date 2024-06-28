@@ -1,7 +1,6 @@
 set(PXR_PREFIX pxr/usdImaging)
-# XXX: PXR_PACKAGE must be set to 'usdrecord_script' to match the target created 
-# by the call to pxr_python_bin() below.  
-set(PXR_PACKAGE usdrecord_script)
+set(PXR_PACKAGE usdrecord)
+
 
 # usdrecord has usdAppUtils as a dependency, which is only built when GPU
 # support is enabled.
@@ -11,10 +10,23 @@ if (NOT ${PXR_BUILD_GPU_SUPPORT})
     return()
 endif()
 
-pxr_python_bin(usdrecord
-    DEPENDENCIES
+pxr_cpp_bin(usdrecord
+        LIBRARIES
+        tf
+        sdf
         usd
-        usdAppUtils)
+        usdAppUtils
+        usdUtils
+        usdImagingGL
+)
+
+if (NOT APPLE)
+    # Non apple platforms require a OpenGL context to be created - use GLFW to do this
+    # in a platform independent way
+    find_package(glfw3 3.4 REQUIRED)
+    target_link_libraries(usdrecord glfw)
+    target_compile_definitions(usdrecord PRIVATE PXR_USE_GLFW=1)
+endif()
 
 if (${PXR_HEADLESS_TEST_MODE})
     message(STATUS "Skipping ${PXR_PACKAGE} tests because PXR_HEADLESS_TEST_MODE is ON")
@@ -32,7 +44,7 @@ if (WIN32)
 endif()
 
 # usdrecord tests require plugin mechanism to find different renderer
-# plugins, which we do not support for static build configurations due to 
+# plugins, which we do not support for static build configurations due to
 # potential conflict in client applications linking against static build USD
 if (NOT BUILD_SHARED_LIBS)
     message(STATUS "Skipping ${PXR_PACKAGE} tests on static build configuration")
@@ -91,7 +103,6 @@ pxr_install_test_dir(
 )
 
 pxr_register_test(testUsdRecordSingleFrame
-    PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord AnimCube.usda AnimCube.1.png"
     IMAGE_DIFF_COMPARE
         AnimCube.1.png
@@ -104,7 +115,6 @@ pxr_register_test(testUsdRecordSingleFrame
 )
 
 pxr_register_test(testUsdRecordMultipleFrames
-    PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord AnimCube.usda AnimCube.#.png --frames 1,5,10"
     IMAGE_DIFF_COMPARE
         AnimCube.1.png
@@ -120,7 +130,6 @@ pxr_register_test(testUsdRecordMultipleFrames
 
 if (PXR_BUILD_PRMAN_PLUGIN OR PXR_BUILD_EMBREE_PLUGIN)
     pxr_register_test(testUsdRecordSingleFrame_NoGpu
-        PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --disableGpu AnimCube.usda AnimCubeNoGpu.1.png"
         IMAGE_DIFF_COMPARE
             AnimCubeNoGpu.1.png
@@ -135,7 +144,6 @@ if (PXR_BUILD_PRMAN_PLUGIN OR PXR_BUILD_EMBREE_PLUGIN)
     )
 
     pxr_register_test(testUsdRecordMultipleFrames_NoGpu
-        PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --disableGpu AnimCube.usda AnimCubeNoGpu.#.png --frames 1,5,10"
         IMAGE_DIFF_COMPARE
             AnimCubeNoGpu.1.png
@@ -154,7 +162,6 @@ endif()
 
 
 pxr_register_test(testUsdRecordSessionLayer
-    PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --sessionLayer overrideDisplayColor.usda AnimCube.usda AnimCube_overrides.1.png"
     IMAGE_DIFF_COMPARE
         AnimCube_overrides.1.png
@@ -167,7 +174,6 @@ pxr_register_test(testUsdRecordSessionLayer
 )
 
 pxr_register_test(testUsdRecordSmallObject
-    PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --enableDomeLightVisibility test.usda out.png"
     IMAGE_DIFF_COMPARE
         out.png
@@ -182,7 +188,6 @@ pxr_register_test(testUsdRecordSmallObject
 # XXX: Temporarily disable test due to intermittent failures
 # if (PXR_BUILD_PRMAN_PLUGIN)
 #     pxr_register_test(testUsdRecordMotionBlur
-#         PYTHON
 #         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord motionBlur.usda motionBlur.exr -cam /first_cam -r Prman"
 #         IMAGE_DIFF_COMPARE
 #             motionBlur.exr
@@ -200,7 +205,6 @@ pxr_register_test(testUsdRecordSmallObject
 
 # Versions of the the above tests using the new stage scene index
 pxr_register_test(testUsdRecordSingleFrame_SceneIndex
-    PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord AnimCube.usda AnimCube.1.png"
     IMAGE_DIFF_COMPARE
         AnimCube.1.png
@@ -215,7 +219,6 @@ pxr_register_test(testUsdRecordSingleFrame_SceneIndex
 )
 
 pxr_register_test(testUsdRecordMultipleFrames_SceneIndex
-    PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord AnimCube.usda AnimCube.#.png --frames 1,5,10"
     IMAGE_DIFF_COMPARE
         AnimCube.1.png
@@ -230,10 +233,9 @@ pxr_register_test(testUsdRecordMultipleFrames_SceneIndex
     ENV
         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
-    
+
 if (PXR_BUILD_PRMAN_PLUGIN OR PXR_BUILD_EMBREE_PLUGIN)
     pxr_register_test(testUsdRecordSingleFrame_SceneIndex_NoGpu
-        PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --disableGpu AnimCube.usda AnimCubeNoGpu.1.png"
         IMAGE_DIFF_COMPARE
             AnimCubeNoGpu.1.png
@@ -248,7 +250,6 @@ if (PXR_BUILD_PRMAN_PLUGIN OR PXR_BUILD_EMBREE_PLUGIN)
             RMANTREE=${RENDERMAN_LOCATION}
     )
     pxr_register_test(testUsdRecordMultipleFrames_SceneIndex_NoGpu
-        PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord AnimCube.usda --disableGpu AnimCubeNoGpu.#.png --frames 1,5,10"
         IMAGE_DIFF_COMPARE
             AnimCubeNoGpu.1.png
@@ -267,7 +268,6 @@ if (PXR_BUILD_PRMAN_PLUGIN OR PXR_BUILD_EMBREE_PLUGIN)
 endif()
 
 pxr_register_test(testUsdRecordSessionLayer_SceneIndex
-    PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --sessionLayer overrideDisplayColor.usda AnimCube.usda AnimCube_overrides.1.png"
     IMAGE_DIFF_COMPARE
         AnimCube_overrides.1.png
@@ -282,7 +282,6 @@ pxr_register_test(testUsdRecordSessionLayer_SceneIndex
 )
 
 pxr_register_test(testUsdRecordSmallObject_SceneIndex
-    PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --enableDomeLightVisibility test.usda out.png"
     IMAGE_DIFF_COMPARE
         out.png
@@ -299,7 +298,6 @@ pxr_register_test(testUsdRecordSmallObject_SceneIndex
 # XXX: Temporarily disable test due to intermittent failures
 # if (PXR_BUILD_PRMAN_PLUGIN)
 #     pxr_register_test(testUsdRecordMotionBlur_SceneIndex
-#         PYTHON
 #         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord motionBlur.usda motionBlur_SI.exr -cam /first_cam -r Prman"
 #         IMAGE_DIFF_COMPARE
 #             motionBlur_SI.exr
