@@ -22,6 +22,24 @@
 #include <chrono>
 #include <thread>
 
+namespace {
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+// -------------------------------------------------------------------------
+// General Ray Utilities
+// -------------------------------------------------------------------------
+
+inline GfVec3f
+_CalculateHitPosition(RTCRayHit const& rayHit)
+{
+    return GfVec3f(rayHit.ray.org_x + rayHit.ray.tfar * rayHit.ray.dir_x,
+                   rayHit.ray.org_y + rayHit.ray.tfar * rayHit.ray.dir_y,
+                   rayHit.ray.org_z + rayHit.ray.tfar * rayHit.ray.dir_z);
+}
+
+}  // anonymous namespace
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdEmbreeRenderer::HdEmbreeRenderer()
@@ -762,9 +780,7 @@ HdEmbreeRenderer::_ComputeDepth(RTCRayHit const& rayHit,
     }
 
     if (clip) {
-        GfVec3f hitPos = GfVec3f(rayHit.ray.org_x + rayHit.ray.tfar * rayHit.ray.dir_x,
-            rayHit.ray.org_y + rayHit.ray.tfar * rayHit.ray.dir_y,
-            rayHit.ray.org_z + rayHit.ray.tfar * rayHit.ray.dir_z);
+        GfVec3f hitPos = _CalculateHitPosition(rayHit);
 
         hitPos = GfVec3f(_viewMatrix.Transform(hitPos));
         hitPos = GfVec3f(_projMatrix.Transform(hitPos));
@@ -874,9 +890,7 @@ HdEmbreeRenderer::_ComputeColor(RTCRayHit const& rayHit,
                 rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,rayHit.hit.geomID)));
 
     // Compute the worldspace location of the rayHit hit.
-    GfVec3f hitPos = GfVec3f(rayHit.ray.org_x + rayHit.ray.tfar * rayHit.ray.dir_x,
-            rayHit.ray.org_y + rayHit.ray.tfar * rayHit.ray.dir_y,
-            rayHit.ray.org_z + rayHit.ray.tfar * rayHit.ray.dir_z);
+    GfVec3f hitPos = _CalculateHitPosition(rayHit);
 
     // If a normal primvar is present (e.g. from smooth shading), use that
     // for shading; otherwise use the flat face normal.
