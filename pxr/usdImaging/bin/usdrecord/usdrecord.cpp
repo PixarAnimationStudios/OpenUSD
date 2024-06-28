@@ -101,7 +101,7 @@ void cameraArgs_AddCmdlineArgs(CLI::App *app, Args &args, std::string defaultVal
                    "camera\'s prim name (i.e. just the last element in the prim "
                    "path), or as a full prim path. Note that if only the prim name "
                    "is used and more than one camera exists with that name, which "
-                   "one is used will effectively be random (default=%(default)s)";
+                   "one is used will effectively be random";
     }
 
     app->add_option("--cam, --camera", args.camera, helpText)
@@ -308,7 +308,7 @@ void complexityArgs_AddCmdlineArgs(CLI::App *app, Args &args, const std::string&
 
     std::string helpText = altHelpText;
     if (helpText.empty()) {
-        helpText = "level of refinement to use (default="+defaultValue+")";
+        helpText = "level of refinement to use";
     }
 
     app->add_option("-c,--complexity", args.complexity, helpText)
@@ -325,7 +325,7 @@ void colorArgs_AddCmdlineArgs(CLI::App *app, Args &args, const std::string &defa
 
     std::string helpText = altHelpText;
     if (helpText.empty()) {
-        helpText = "the color correction mode to use (default=" + defaultValue + ")";
+        helpText = "the color correction mode to use";
     }
     app->add_option("--color,--colorCorrectionMode", args.colorCorrectionMode, helpText)
             ->default_val(defaultValue)
@@ -434,12 +434,12 @@ static void Configure(CLI::App *app, Args &args) {
     app->add_option< int, int>(
                     "-w,--imageWidth", args.imageWidth,
                     "Width of the output image. The height will be computed from this "
-                    "value and the camera\'s aspect ratio (default=960)")
+                    "value and the camera\'s aspect ratio")
             ->default_val(960);
 
     app->add_option(
                     "-a,--aov", args.aovName,
-                    "Specify the aov to output (default=color)")
+                    "Specify the aov to output")
             ->default_val("color")
             ->check(CLI::IsMember({"color", "depth", "primId"}));
 
