@@ -12,10 +12,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/assetInfo.h"
+#include "pxr/usd/ar/pyAsset.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/refPtr.h"
 
 #include <boost/noncopyable.hpp>
@@ -33,6 +35,19 @@ public:
     {
     }
 };
+
+static
+Ar_PyAsset
+_OpenAsset(ArResolver& resolver, const ArResolvedPath& resolvedPath) {
+    std::shared_ptr<ArAsset> asset = resolver.OpenAsset(resolvedPath);
+    if (!asset) {
+        // In case of invalid asset reference, raise an exception to the Python
+        // caller that an operation was attempted on an object whose context is
+        // not appropriately opened:
+        TfPyThrowValueError("Failed to open asset " + resolvedPath.GetPathString());
+    }
+    return Ar_PyAsset(std::move(asset));
+}
 
 static 
 Ar_PyAnnotatedBoolResult
@@ -95,6 +110,8 @@ wrapResolver()
              (args("assetPath"), args("resolvedPath")))
         .def("GetModificationTimestamp", &This::GetModificationTimestamp,
              (args("assetPath"), args("resolvedPath")))
+        .def("OpenAsset", _OpenAsset,
+             (args("resolvedPath")))
         .def("GetExtension", &This::GetExtension,
              args("assetPath"))
 
