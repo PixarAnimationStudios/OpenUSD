@@ -1534,10 +1534,22 @@ def InstallMaterialX(context, force, buildArgs):
         ]
 
         if MacOSTargetEmbedded(context):
+            # The materialXShaderGen in hdSt assumes the GLSL shadergen is available
+            # but MaterialX intertwines GLSL shadergen support with also requiring rendering support.
             cmakeOptions.extend([
                 '-DMATERIALX_BUILD_GEN_MSL=ON',
-                '-DMATERIALX_BUILD_GEN_GLSL=OFF',
+                '-DMATERIALX_BUILD_GEN_GLSL=ON',
                 '-DMATERIALX_BUILD_IOS=ON'])
+            PatchFile("CMakeLists.txt",
+                      [('    set(MATERIALX_BUILD_GEN_GLSL OFF)',
+                        '    set(MATERIALX_BUILD_GEN_GLSL ON)'),
+                       ('    if (MATERIALX_BUILD_GEN_GLSL)\n' +
+                        '        add_subdirectory(source/MaterialXRenderGlsl)\n' +
+                        '    endif()',
+                        '    if (MATERIALX_BUILD_GEN_GLSL AND NOT MATERIALX_BUILD_IOS)\n' +
+                        '        add_subdirectory(source/MaterialXRenderGlsl)\n' +
+                        '    endif()')
+                       ], multiLineMatches=True)
 
         cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
@@ -2255,7 +2267,7 @@ class InstallContext:
 
         # - Imaging
         self.buildImaging = (args.build_imaging == IMAGING or
-                             args.build_imaging == USD_IMAGING) and not embedded
+                             args.build_imaging == USD_IMAGING)
         self.enablePtex = self.buildImaging and args.enable_ptex
         self.enableOpenVDB = self.buildImaging and args.enable_openvdb
 

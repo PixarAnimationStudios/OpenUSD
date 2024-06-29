@@ -120,6 +120,7 @@ HgiMetalComputeCmds::Dispatch(int dimX, int dimY)
         thread_height = maxTotalThreads / thread_width;
     }
 
+#if defined(ARCH_OS_OSX)
     if (_argumentBuffer.storageMode != MTLStorageModeShared &&
         [_argumentBuffer respondsToSelector:@selector(didModifyRange:)]) {
         NSRange range = NSMakeRange(0, _argumentBuffer.length);
@@ -129,6 +130,7 @@ HgiMetalComputeCmds::Dispatch(int dimX, int dimY)
         [_argumentBuffer didModifyRange:range];
         ARCH_PRAGMA_POP
     }
+#endif
 
     [_encoder dispatchThreads:MTLSizeMake(dimX, dimY, 1)
         threadsPerThreadgroup:MTLSizeMake(MIN(thread_width, dimX),

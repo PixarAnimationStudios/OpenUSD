@@ -7,14 +7,21 @@ if (NOT ${PXR_BUILD_GPU_SUPPORT} OR NOT ${PXR_ENABLE_METAL_SUPPORT})
     return()
 endif()
 
+if (PXR_APPLE_EMBEDDED)
+    set(APPLE_UI_FRAMEWORK "UIKit")
+else()
+    set(APPLE_UI_FRAMEWORK "AppKit")
+endif()
+
 pxr_library(hgiMetal
     LIBRARIES
         arch
         hgi
         tf
         trace
+        "-framework Foundation"
         "-framework Metal"
-        "-framework AppKit"
+        "-framework ${APPLE_UI_FRAMEWORK}"
 
     PUBLIC_HEADERS
         api.h

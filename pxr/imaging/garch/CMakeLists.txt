@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE garch)
 
-if (NOT ${PXR_ENABLE_GL_SUPPORT})
+if ((NOT ${PXR_ENABLE_GL_SUPPORT}) AND (NOT PXR_APPLE_EMBEDDED))
     message(STATUS
         "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
     return()
@@ -11,7 +11,13 @@ if(APPLE)
     set(GARCH_GLPLATFORMCONTEXT       glPlatformContextDarwin)
     set(GARCH_GLPLATFORMDEBUGWINDOW   glPlatformDebugWindowDarwin)
     set(GARCH_SOURCE_EXTENSION        mm)
-    set(GARCH_PLATFORM_LIBRARIES      "-framework AppKit")
+    list(APPEND optionalLibs "-framework Foundation")
+    if(PXR_APPLE_EMBEDDED)
+        list(APPEND optionalLibs "-framework UIKit")
+    else()
+        list(APPEND optionalLibs "-framework AppKit")
+    endif()
+
 elseif(X11_FOUND)
     set(GARCH_GLPLATFORMCONTEXT       glPlatformContextGLX)
     set(GARCH_GLPLATFORMDEBUGWINDOW   glPlatformDebugWindowGLX)
@@ -22,13 +28,16 @@ elseif(WIN32)
     set(GARCH_SOURCE_EXTENSION        cpp)
 endif()
 
+if (TARGET OpenGL::GL)
+    list(APPEND optionalLibs OpenGL::GL)
+endif()
+
 pxr_library(garch
     LIBRARIES
         arch
         tf
         ${X11_LIBRARIES}
-        OpenGL::GL
-        ${GARCH_PLATFORM_LIBRARIES}
+        ${optionalLibs}
 
     PUBLIC_CLASSES
         glApi
