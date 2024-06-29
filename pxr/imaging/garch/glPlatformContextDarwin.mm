@@ -5,14 +5,15 @@
 // https://openusd.org/license.
 //
 #import <Foundation/Foundation.h>
-#import <AppKit/NSOpenGL.h>
 
 #include "pxr/pxr.h"
 #include "glPlatformContextDarwin.h"
 
 #ifdef ARCH_OS_IPHONE
+#import <UIKit/UIKit.h>
 typedef EAGLContext NSGLContext;
 #else
+#import <AppKit/NSOpenGL.h>
 typedef NSOpenGLContext NSGLContext;
 #endif
 
@@ -84,7 +85,11 @@ GarchNSGLContextState::MakeCurrent()
 void
 GarchNSGLContextState::DoneCurrent()
 {
-    [NSGLContext clearCurrentContext];
+#if defined(ARCH_OS_IPHONE)
+  [EAGLContext setCurrentContext:nil];
+#else
+  [NSGLContext clearCurrentContext];
+#endif
 }
 
 GarchGLPlatformContextState
@@ -96,6 +101,9 @@ GarchGetNullGLPlatformContextState()
 void *
 GarchSelectCoreProfileMacVisual()
 {
+#if defined(ARCH_OS_IPHONE)
+return NULL
+#else
     NSOpenGLPixelFormatAttribute attribs[10];
     int c = 0;
 
@@ -105,6 +113,7 @@ GarchSelectCoreProfileMacVisual()
     attribs[c++] = 0;
 
     return [[NSOpenGLPixelFormat alloc] initWithAttributes:attribs];
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

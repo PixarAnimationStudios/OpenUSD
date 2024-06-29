@@ -58,7 +58,7 @@ void HgiInterop::TransferToApp(
         return;
     }
 
-#if defined(PXR_GL_SUPPORT_ENABLED)
+#if defined(PXR_GL_SUPPORT_ENABLED)  && !defined(ARCH_OS_IPHONE)
     if (srcApi == HgiTokens->OpenGL) {
         // Transfer OpenGL textures to OpenGL application
         if (!_hgiInteropImpl->_openGLToOpenGL) {
@@ -86,7 +86,7 @@ void HgiInterop::TransferToApp(
     }
 #endif
 
-#if defined(PXR_METAL_SUPPORT_ENABLED)
+#if defined(PXR_METAL_SUPPORT_ENABLED) && !defined(ARCH_OS_IPHONE)
     if (srcApi == HgiTokens->Metal) {
         // Transfer Metal textures to OpenGL application
         // XXX: It's possible that if we use the same HgiInterop with a 

@@ -54,13 +54,21 @@ static const MTLPixelFormat _PIXEL_FORMAT_DESC[] =
     
     //MTLPixelFormatRGB8Unorm_sRGB, // Unsupported by HgiFormat
     MTLPixelFormatRGBA8Unorm_sRGB,  // HgiFormatUNorm8Vec4srgb,
-
+#if defined(ARCH_OS_IPHONE)
+    MTLPixelFormatInvalid,      // Unsupported by iOS Metal
+    MTLPixelFormatInvalid,      // Unsupported by iOS Metal
+    MTLPixelFormatInvalid,      // Unsupported by iOS Metal
+    MTLPixelFormatInvalid,      // Unsupported by iOS Metal
+    MTLPixelFormatInvalid,      // Unsupported by iOS Metal
+    MTLPixelFormatInvalid,      // Unsupported by iOS Metal
+#else
     MTLPixelFormatBC6H_RGBFloat,  // HgiFormatBC6FloatVec3
     MTLPixelFormatBC6H_RGBUfloat, // HgiFormatBC6UFloatVec3
     MTLPixelFormatBC7_RGBAUnorm,      // HgiFormatBC7UNorm8Vec4
     MTLPixelFormatBC7_RGBAUnorm_sRGB, // HgiFormatBC7UNorm8Vec4srgb
     MTLPixelFormatBC1_RGBA,           // HgiFormatBC1UNorm8Vec4
     MTLPixelFormatBC3_RGBA,           // HgiFormatBC3UNorm8Vec4
+#endif
 
     MTLPixelFormatDepth32Float_Stencil8, // HgiFormatFloat32UInt8
 
