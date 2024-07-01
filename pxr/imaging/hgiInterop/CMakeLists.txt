@@ -20,7 +20,10 @@ if (PXR_ENABLE_GL_SUPPORT)
 endif()
 
 if (PXR_ENABLE_VULKAN_SUPPORT)
-    list(APPEND optionalLibraries hgiVulkan)
+    # We hope that on Windows, the vulkan dlls can be delay loaded.
+    if (NOT WIN32)
+        list(APPEND optionalLibraries hgiVulkan)
+    endif()
     list(APPEND optionalCppFiles vulkan.cpp)
     list(APPEND optionalPrivateHeaders vulkan.h)
 endif()
