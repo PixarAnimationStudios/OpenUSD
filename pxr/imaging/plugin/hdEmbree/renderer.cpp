@@ -70,6 +70,12 @@ HdEmbreeRenderer::SetEnableSceneColors(bool enableSceneColors)
 }
 
 void
+HdEmbreeRenderer::SetRandomNumberSeed(int randomNumberSeed)
+{
+    _randomNumberSeed = randomNumberSeed;
+}
+
+void
 HdEmbreeRenderer::SetDataWindow(const GfRect2i &dataWindow)
 {
     _dataWindow = dataWindow;
@@ -432,8 +438,8 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
         // Always pass the renderThread to _RenderTiles to allow the first frame
         // to be interrupted.
         WorkParallelForN(numTilesX*numTilesY,
-            std::bind(&HdEmbreeRenderer::_RenderTiles, this, renderThread,
-                std::placeholders::_1, std::placeholders::_2));
+            std::bind(&HdEmbreeRenderer::_RenderTiles, this,
+                renderThread, i, std::placeholders::_1, std::placeholders::_2));
 
         // After the first pass, mark the single-sampled attachments as
         // converged and unmap them. If there are no multisampled attachments,
@@ -472,7 +478,7 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 }
 
 void
-HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
+HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread, int sampleNum,
                                size_t tileStart, size_t tileEnd)
 {
     const unsigned int minX = _dataWindow.GetMinX();
@@ -497,8 +503,14 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
 
     // Initialize the RNG for this tile (each tile creates one as
     // a lazy way to do thread-local RNGs).
-    size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
+    size_t seed;
+    if (_randomNumberSeed == -1) {
+        seed = std::chrono::system_clock::now().time_since_epoch().count();
+    } else {
+        seed = static_cast<size_t>(_randomNumberSeed);
+    }
     seed = TfHash::Combine(seed, tileStart);
+    seed = TfHash::Combine(seed, sampleNum);
     std::default_random_engine random(seed);
 
     // Create a uniform distribution for jitter calculations.

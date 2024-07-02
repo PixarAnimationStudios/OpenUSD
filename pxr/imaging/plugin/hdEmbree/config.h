@@ -20,6 +20,7 @@ constexpr int HdEmbreeDefaultAmbientOcclusionSamples = 16;
 constexpr bool HdEmbreeDefaultJitterCamera = true;
 constexpr bool HdEmbreeDefaultUseFaceColors = true;
 constexpr int HdEmbreeDefaultCameraLightIntensity = 300;
+constexpr int HdEmbreeDefaultRandomNumberSeed = -1;
 
 /// \class HdEmbreeConfig
 ///
@@ -78,6 +79,15 @@ public:
     ///
     /// Override with *HDEMBREE_CAMERA_LIGHT_INTENSITY*.
     float cameraLightIntensity = HdEmbreeDefaultCameraLightIntensity;
+
+    /// Seed to give to the random number generator. A value of anything other
+    /// than -1, combined with setting PXR_WORK_THREAD_LIMIT=1, should give
+    /// deterministic / repeatable results. A value of -1 (the default) will
+    /// allow the implementation to set a value that varies from invocation to
+    /// invocation and thread to thread.
+    ///
+    /// Override with *HDEMBREE_RANDOM_NUMBER_SEED*.
+    int randomNumberSeed = HdEmbreeDefaultRandomNumberSeed;
 
 private:
     // The constructor initializes the config variables with their
