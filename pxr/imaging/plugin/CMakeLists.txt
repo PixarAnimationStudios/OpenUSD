@@ -5,6 +5,13 @@ endif()
 if (${PXR_BUILD_PRMAN_PLUGIN} AND "${RENDERMAN_VERSION_MAJOR}" GREATER "22")
     add_subdirectory(hdPrmanLoader)
 endif()
+
+if (APPLE)
+    if (PXR_BUILD_IMAGEIO_PLUGIN)
+        add_subdirectory(hioImageIO)
+    endif()
+endif()
+
 if (PXR_BUILD_OPENIMAGEIO_PLUGIN)
     add_subdirectory(hioOiio)
 endif()
