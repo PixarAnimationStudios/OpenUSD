@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/pxrCLI11/CLI11.h"
 #include "pxr/base/tf/exception.h"
+#include "pxr/base/tf/scoped.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/fileFormat.h"
@@ -49,6 +50,48 @@
 #endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+#if PXR_USE_GLFW
+class GLFWOpenGLContext;
+using GLFWOpenGLContextPtr = std::unique_ptr<GLFWOpenGLContext>;
+
+// RAII wrapper around the GLFW resources. Not currently safe for multiple uses in other tools
+// would need to be a singleton wrapper around the init/terminate, with a call to serve up
+// managed windows/contexts. 
+class GLFWOpenGLContext
+{
+    GLFWOpenGLContext() {};
+
+    GLFWOpenGLContext(const GLFWOpenGLContext&) = delete;
+    GLFWOpenGLContext &operator=(const GLFWOpenGLContext&) = delete;
+
+public:
+    ~GLFWOpenGLContext() {
+        glfwTerminate();
+    };
+
+    static GLFWOpenGLContextPtr create(unsigned int imageWidth, unsigned int imageHeight) {
+        if (!glfwInit())
+            return nullptr;
+
+        GLFWOpenGLContextPtr contextPtr = std::unique_ptr<GLFWOpenGLContext>(new GLFWOpenGLContext());
+
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+
+        // Create a windowed mode window and its OpenGL context
+        GLFWwindow* window = glfwCreateWindow(imageWidth, imageWidth, "no title", NULL, NULL);
+        if (!window) {
+            return nullptr;
+        }
+
+        // Make the window's context current
+        glfwMakeContextCurrent(window);
+
+        return contextPtr;
+    }
+};
+#endif
+
 
 using namespace pxr_CLI;
 
@@ -611,30 +654,11 @@ static int32_t UsdRecord(const Args &args) {
     // NOTE - this isn't required when we use Metal, but if we want to pass this code back to pixar we may need to reintroduce this
     // and test on other platforms.
 #if PXR_USE_GLFW
+    GLFWOpenGLContextPtr glContext = nullptr;
     if (gpuEnabled) {
-        // UsdAppUtilsFrameRecorder will expect that an OpenGL context has
-        // been created and made current if the GPU is enabled.
-        //
-        // Frame-independent initialization.
-        // Note that the size of the widget doesn't actually affect the size of
-        // the output image. We just pass it along for cleanliness.
-
-        // Initialize the library
-        if (!glfwInit())
+        glContext = GLFWOpenGLContext::create(args.imageWidth, args.imageWidth);
+        if (!glContext)
             return -1;
-
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-
-        // Create a windowed mode window and its OpenGL context
-        GLFWwindow* window = glfwCreateWindow(args.imageWidth, args.imageWidth, "usdrecord", NULL, NULL);
-        if (!window)
-        {
-            glfwTerminate();
-            return -1;
-        }
-
-        // Make the window's context current
-        glfwMakeContextCurrent(window);
     }
 #endif
 
@@ -681,7 +705,7 @@ static int32_t UsdRecord(const Args &args) {
 
         try {
             frameRecorder->Record(usdStage, usdCamera, timeCode, outputImagePath);
-        } catch (TfBaseException e) {
+        } catch (const TfBaseException& e) {
             std::cerr << "Recording aborted due to the following failure at time code " << timeCode << ": "
                       << e.what() << std::endl;
             return 1;
@@ -690,10 +714,6 @@ static int32_t UsdRecord(const Args &args) {
 
     // Release our reference to the frame recorder so it can be deleted before other resources are freed
     frameRecorder = nullptr;
-
-#if PXR_USE_GLFW
-    glfwTerminate();
-#endif
 
     return 0;
 }
