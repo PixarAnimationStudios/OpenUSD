@@ -163,10 +163,6 @@ for layerPath in args.layer:
         assert pcpCache.FindPrimIndex(primPath) is not None
         errors += primIndexErrors
 
-        primStack = primIndex.primStack
-        if len(primStack) == 0:
-            continue
-
         print('-'*72)
         print('Results for composing <%s>' % (primPath))
 
@@ -242,7 +238,7 @@ for layerPath in args.layer:
                     deletedTargetPathsMap[propPath] = deletedPaths
 
         print('\nPrim Stack:')
-        for primSpec in primStack:
+        for primSpec in primIndex.primStack:
             # Determine a short form of the spec's layer's path.
             layerLabel = GetLayerLabel(primSpec.layer)
             print('    %-20s %s' % (layerLabel, primSpec.path))

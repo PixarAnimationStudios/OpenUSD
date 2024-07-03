@@ -163,6 +163,7 @@ WRAP_CUSTOM {
         .def("ComputeUniformDataSize", &This::ComputeUniformDataSize)
         .def("ComputeVaryingDataSize", &This::ComputeVaryingDataSize)
         .def("ComputeVertexDataSize", &This::ComputeVertexDataSize)
+        .def("ComputeSegmentCounts", &This::ComputeSegmentCounts)
     ;
 }
 

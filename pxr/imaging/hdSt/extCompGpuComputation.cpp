@@ -182,6 +182,7 @@ HdStExtCompGpuComputation::Execute(
             }
         }
     }
+    _uniforms.push_back(GetDispatchCount());
 
     Hgi* hgi = hdStResourceRegistry->GetHgi();
 

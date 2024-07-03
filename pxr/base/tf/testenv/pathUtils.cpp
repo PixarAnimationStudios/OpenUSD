@@ -86,25 +86,12 @@ TestTfRealPath()
     }
 
     if (testSymlinks) {
-#if defined(ARCH_OS_WINDOWS)
-        // On Windows, TfRealPath explicitly lower-cases drive letters if the given path contains symlinks,
-        // otherwise it returns the same as os.path.abspath.
-        // This is inconsistent, using TfNormPath to test the current behavior.
-        // Leaf dir is symlink
-        TF_AXIOM(TfNormPath(TfRealPath("d", true)) == TfNormPath(TfAbsPath("subdir")));
-        // Symlinks through to dir
-        TF_AXIOM(TfNormPath(TfRealPath("d/e", true)) == TfNormPath(TfAbsPath("subdir/e")));
-        // Symlinks through to nonexistent dirs
-        TF_AXIOM(TfNormPath(TfRealPath("d/e/f/g/h", true)) == TfNormPath(TfAbsPath("subdir/e/f/g/h")));
-#else
         // Leaf dir is symlink
         TF_AXIOM(TfRealPath("d", true) == TfAbsPath("subdir"));
         // Symlinks through to dir
         TF_AXIOM(TfRealPath("d/e", true) == TfAbsPath("subdir/e"));
         // Symlinks through to nonexistent dirs
         TF_AXIOM(TfRealPath("d/e/f/g/h", true) == TfAbsPath("subdir/e/f/g/h"));
-        // Symlinks through to broken link
-#endif
         // Symlinks through to broken link
         TF_AXIOM(TfRealPath("g", true) == "");
     }
@@ -125,7 +112,7 @@ TestTfRealPath()
     }
 
 #if defined(ARCH_OS_WINDOWS)
-    string thisdir = TfNormPath(TfRealPath("."));
+    string thisdir = TfRealPath(".");
     // This directory on Windows should start with a drive letter.
     TF_AXIOM(thisdir.length() > 2 && thisdir[1] == ':');
     // Strip off the drive letter, leaving a path that starts with a slash,
@@ -133,7 +120,7 @@ TestTfRealPath()
     // (because of the "current drive" concept in Windows).
     string testdir = thisdir;
     testdir.erase(0, 2);
-    TF_AXIOM(TfNormPath(TfRealPath(testdir)) == thisdir);
+    TF_AXIOM(TfRealPath(testdir) == thisdir);
     if (testSymlinks) {
         // Call Windows function to change the current working directory to
         // put us inside a directory that is a symlink. Then validate that
@@ -142,17 +129,17 @@ TestTfRealPath()
         ::SetCurrentDirectory("b");
         string thissubdir = thisdir;
         thissubdir += "/subdir";
-        TF_AXIOM(TfNormPath(TfRealPath(".")) == thissubdir);
+        TF_AXIOM(TfRealPath(".") == thissubdir);
         ::SetCurrentDirectory("..");
         // Then from outside the directory, validate that the more indirect
         // symlink (d->c->b->subdir) also resolves properly. We can't actually
         // "cd" to "d", because it isn't configured as a "directory" symlink.
         string testsubdir = thisdir;
         testsubdir += "/d";
-        TF_AXIOM(TfNormPath(TfRealPath(testsubdir)) == thissubdir);
+        TF_AXIOM(TfRealPath(testsubdir) == thissubdir);
         // Test the more direct and indirect symlinks as relative paths.
-        TF_AXIOM(TfNormPath(TfRealPath("b")) == thissubdir);
-        TF_AXIOM(TfNormPath(TfRealPath("d")) == thissubdir);
+        TF_AXIOM(TfRealPath("b") == thissubdir);
+        TF_AXIOM(TfRealPath("d") == thissubdir);
     }
 #endif
 

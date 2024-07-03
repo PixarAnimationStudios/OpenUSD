@@ -18,6 +18,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdPrim;
+class UsdValidator;
 
 /// \class UsdValidationErrorType
 ///
@@ -229,7 +230,8 @@ public:
     bool operator==(const UsdValidationError& other) const {
         return (_errorType == other._errorType) &&
                (_errorSites == other._errorSites) &&
-               (_errorMsg == other._errorMsg);
+               (_errorMsg == other._errorMsg) &&
+               (_validator == other._validator);
     }
 
     bool operator!=(const UsdValidationError& other) const {
@@ -250,6 +252,16 @@ public:
         return _errorSites;
     }
 
+    /// Returns the UsdValidator that reported this error.
+    ///
+    /// This will return nullptr if there is no UsdValidator associated with
+    /// this error. This will never be nullptr for validation errors returned 
+    /// from calls to UsdValidator::Validate.
+    const UsdValidator* GetValidator() const
+    {
+        return _validator;
+    }
+
     /// Returns the message associated with this UsdValidationError
     const std::string& GetMessage() const
     {
@@ -267,6 +279,18 @@ public:
     }
 
 private:
+    // UsdValidatorError holds a pointer to the UsdValidator that generated it, so
+    // we need to provide friend access to allow the necessary mutation.
+    friend class UsdValidator;
+
+    // Used by UsdValidator::Validate methods to embed itself to the reported
+    // errors.
+    void _SetValidator(const UsdValidator *validator);
+
+    // _validator is set when ValidationError is generated via a 
+    // UsdValidator::Validate() call.
+    const UsdValidator *_validator;
+
     // These data members should not be modified other than during
     // initialization by the validate task functions.
     UsdValidationErrorType _errorType;

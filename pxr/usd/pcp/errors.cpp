@@ -190,6 +190,59 @@ PcpErrorArcPermissionDenied::ToString() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
+PcpErrorArcToProhibitedChildPtr
+PcpErrorArcToProhibitedChild::New()
+{
+    return PcpErrorArcToProhibitedChildPtr(
+        new PcpErrorArcToProhibitedChild);
+}
+
+PcpErrorArcToProhibitedChild::PcpErrorArcToProhibitedChild() :
+    PcpErrorBase(PcpErrorType_ArcToProhibitedChild)
+{
+}
+
+PcpErrorArcToProhibitedChild::
+~PcpErrorArcToProhibitedChild()
+{
+}
+
+// virtual
+std::string
+PcpErrorArcToProhibitedChild::ToString() const
+{
+    std::string msg = TfStringPrintf("%s\nCANNOT ", TfStringify(site).c_str());
+    switch(arcType) {
+    case PcpArcTypeInherit:
+        msg += "inherit from:\n";
+        break;
+    case PcpArcTypeRelocate:
+        msg += "be relocated from:\n";
+        break;
+    case PcpArcTypeVariant:
+        msg += "use variant:\n";
+        break;
+    case PcpArcTypeReference:
+        msg += "reference:\n";
+        break;
+    case PcpArcTypePayload:
+        msg += "get payload from:\n";
+        break;
+    default:
+        msg += "refer to:\n";
+        break;
+    }   
+    msg += TfStringPrintf("%s\nwhich is a prohibited child of its parent "
+        "because it would require allowing opinions from the source of a "
+        "relocation at %s.", 
+        TfStringify(targetSite).c_str(),
+        TfStringify(relocationSourceSite).c_str());
+
+    return msg;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 PcpErrorCapacityExceededPtr
 PcpErrorCapacityExceeded::New(PcpErrorType errorType)
 {

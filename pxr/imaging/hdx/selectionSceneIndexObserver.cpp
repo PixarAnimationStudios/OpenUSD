@@ -12,10 +12,17 @@
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/selectionSchema.h"
 #include "pxr/imaging/hd/selectionsSchema.h"
+#include "pxr/base/work/loops.h"
 
 #include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+static void
+_AddToSelection(
+    HdSceneIndexBaseRefPtr const &sceneIndex,
+    const SdfPath &primPath,
+    HdSelectionSharedPtr const &result);
 
 HdxSelectionSceneIndexObserver::HdxSelectionSceneIndexObserver()
  : _version(0)
@@ -23,17 +30,21 @@ HdxSelectionSceneIndexObserver::HdxSelectionSceneIndexObserver()
 {
 }
 
-// TODO: Move UsdImaging_SceneIndexPrimView to hd and use it here.
 static
 void
 _PopulateFromSceneIndex(
     HdSceneIndexBaseRefPtr const &sceneIndex,
     const SdfPath &path,
-    SdfPathSet * const paths)
+    HdSelectionSharedPtr const &result)
 {
-    paths->insert(path);
-    for (const SdfPath &child : sceneIndex->GetChildPrimPaths(path)) {
-        _PopulateFromSceneIndex(sceneIndex, child, paths);
+    _AddToSelection(sceneIndex, path, result);
+    const SdfPathVector childPaths = sceneIndex->GetChildPrimPaths(path);
+    if (!childPaths.empty()) {
+        WorkParallelForEach(
+            childPaths.begin(), childPaths.end(),
+            [&](SdfPath const& childPath) {
+                _PopulateFromSceneIndex(sceneIndex, childPath, result);
+            });
     }
 }
 
@@ -51,14 +62,16 @@ HdxSelectionSceneIndexObserver::SetSceneIndex(
         _sceneIndex->RemoveObserver(self);
     }
 
-    if (sceneIndex) {
+    _sceneIndex = sceneIndex;
+    _selection = std::make_shared<HdSelection>();
+    _dirtiedPrims.clear();
+
+    if (_sceneIndex) {
         sceneIndex->AddObserver(self);
         _PopulateFromSceneIndex(
-            sceneIndex, SdfPath::AbsoluteRootPath(), &_dirtiedPrims);
+            sceneIndex, SdfPath::AbsoluteRootPath(), _selection);
     }
     
-    _sceneIndex = sceneIndex;
-
     _version++;
 }
 

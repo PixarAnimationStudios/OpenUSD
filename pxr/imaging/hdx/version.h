@@ -19,7 +19,8 @@
 //            enableLocateHighlight on HdxSelectionTask and HdxColorizeSelectionTask params.
 // 10 -> 11 : New signature for HdxFullscreenShader::BindTextures.
 // 11 -> 12 : change HdxPickHit::worldSpaceHitPoint from GfVec3f to GfVec3d.
+// 12 -> 13 : Add HdxPickTask "resolveDeep" mode.
 //
-#define HDX_API_VERSION 12
+#define HDX_API_VERSION 13
 
 #endif // PXR_IMAGING_HDX_VERSION_H

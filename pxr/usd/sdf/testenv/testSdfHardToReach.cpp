@@ -99,6 +99,36 @@ _TestSdfLayerTimeSampleValueType()
 }
 
 static void
+_TestSdfLayerTransferContentsEmptyLayer()
+{
+    // Tests that setting data on non empty layers properly cleans up all
+    // specs in that layer without the use of SdfLayer::_IsInertSubtree
+    const char* layerStr = 
+    R"(#sdf 1.4.32
+    def "Root"{
+        def "Node1" (
+            prepend variantSets = "testVariants"
+            variants = { string testVariants = "option1" }
+        )
+        {
+            variantSet "testVariants" = {
+                "option1" {
+                    def "VariantChild" {}
+                }
+            }
+            def "Node1Child" {}
+        }
+    })";
+
+    SdfLayerRefPtr srcLayer = SdfLayer::CreateAnonymous();
+    srcLayer->ImportFromString(layerStr);
+    TF_AXIOM(!srcLayer->IsEmpty());
+    
+    srcLayer->TransferContent(SdfLayer::CreateAnonymous());
+    TF_AXIOM(srcLayer->IsEmpty());
+}
+
+static void
 _TestSdfLayerTransferContents()
 {
     // Test for bug where transferring an empty over (an inert spec)
@@ -450,13 +480,23 @@ _TestSdfSchemaPathValidation()
     TF_AXIOM(!schema.IsValidReference(SdfReference("a.sdf", 
                                                    SdfPath("/A{x=y}B"))));
 
-    TF_AXIOM(schema.IsValidRelocatesPath(SdfPath("A")));
-    TF_AXIOM(schema.IsValidRelocatesPath(SdfPath("/A")));
-    TF_AXIOM(schema.IsValidRelocatesPath(SdfPath("/A/B")));
-    TF_AXIOM(!schema.IsValidRelocatesPath(SdfPath()));
-    TF_AXIOM(!schema.IsValidRelocatesPath(SdfPath("/A.a")));
-    TF_AXIOM(!schema.IsValidRelocatesPath(SdfPath("/A{x=y}")));
-    TF_AXIOM(!schema.IsValidRelocatesPath(SdfPath("/A{x=y}B")));
+    TF_AXIOM(schema.IsValidRelocatesSourcePath(SdfPath("A")));
+    TF_AXIOM(schema.IsValidRelocatesSourcePath(SdfPath("/A")));
+    TF_AXIOM(schema.IsValidRelocatesSourcePath(SdfPath("/A/B")));
+    TF_AXIOM(!schema.IsValidRelocatesSourcePath(SdfPath()));
+    TF_AXIOM(!schema.IsValidRelocatesSourcePath(SdfPath("/A.a")));
+    TF_AXIOM(!schema.IsValidRelocatesSourcePath(SdfPath("/A{x=y}")));
+    TF_AXIOM(!schema.IsValidRelocatesSourcePath(SdfPath("/A{x=y}B")));
+
+    // IsValidRelocatesTargetPath is the same as IsValidRelocatesSourcePath
+    // except that the empty path is allowed for target paths.
+    TF_AXIOM(schema.IsValidRelocatesTargetPath(SdfPath("A")));
+    TF_AXIOM(schema.IsValidRelocatesTargetPath(SdfPath("/A")));
+    TF_AXIOM(schema.IsValidRelocatesTargetPath(SdfPath("/A/B")));
+    TF_AXIOM(schema.IsValidRelocatesTargetPath(SdfPath()));
+    TF_AXIOM(!schema.IsValidRelocatesTargetPath(SdfPath("/A.a")));
+    TF_AXIOM(!schema.IsValidRelocatesTargetPath(SdfPath("/A{x=y}")));
+    TF_AXIOM(!schema.IsValidRelocatesTargetPath(SdfPath("/A{x=y}B")));
 }
 
 static void 
@@ -508,6 +548,7 @@ main(int argc, char **argv)
     _TestSdfLayerDictKeyOps();
     _TestSdfLayerTimeSampleValueType();
     _TestSdfLayerTransferContents();
+    _TestSdfLayerTransferContentsEmptyLayer();
     _TestSdfRelationshipTargetSpecEdits();
     _TestSdfPathFindLongestPrefix();
     _TestSdfFpsAndTcps();

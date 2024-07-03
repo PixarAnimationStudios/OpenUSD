@@ -47,7 +47,9 @@ vec2 GetTexCoords(ivec2 outCoords)
 vec3 SampleEnvMapLod(vec3 sampleVec, float sampleLod) {
     vec2 coord = vec2((atan(sampleVec.z, sampleVec.x) + PI) / (2.0 * PI),
                       acos(sampleVec.y) / PI);
-    return HgiTextureLod_inTexture(coord, sampleLod).rgb;
+    vec3 value = HgiTextureLod_inTexture(coord, sampleLod).rgb;
+
+    return mix(value, vec3(0.0, 0.0, 0.0), vec3(isnan(value)));
 }
 
 // compute world position from texture coords

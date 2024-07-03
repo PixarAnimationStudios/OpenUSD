@@ -1,0 +1,43 @@
+#sdf 1.4.32
+(
+    """
+    This is an altered version of testPcpMuseum_BasicRelocateToAnimInterface
+    where the Path anim scope in charRig is relocated completely out of the 
+    rig into a new root prim. This requires that the relocated /Path scope 
+    needs be separated referenced under the Anim scope here. The composition
+    results are almost the same as testPcpMuseum_BasicRelocateToAnimInterface
+    with the notable exception that relationship targets specified in pathRig and
+    charRig to the /Path scope don't map across the reference in the same way.
+    """
+)
+
+def "Model" (
+    add references = @./charRig.sdf@</CharRig>
+)
+{
+    over "Anim"
+    {
+        over "Path" (
+            add references = @./charRig.sdf@</Path>
+        )
+        {
+            over "AnimScope"
+            {
+                custom double track
+            }
+        }
+    }
+
+    over "Rig"
+    {
+        over "PathRig"
+        {
+            over "Path" (
+                doc = "This is a prohibited location in namespace due to the relocation.  This opinion should be skipped over!"
+            )
+            {
+                custom double track
+            }
+        }
+    }
+}

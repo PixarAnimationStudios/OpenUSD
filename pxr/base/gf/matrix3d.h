@@ -409,11 +409,21 @@ public:
 
     /// Returns the product of a matrix \e m and a column vector \e vec.
     /// Note that the return type is a \c GfVec3f.
+    ///
+    /// \deprecated
+    /// This function is deprecated, as it can result in unintentional loss of
+    /// precision. Call GfVec3d operator *(const GfMatrix3d&, const GfVec3d &)
+    /// instead and explicitly convert the result to GfVec3f, if necessary.
     GF_API
     friend GfVec3f operator *(const GfMatrix3d& m, const GfVec3f& vec);
 
     /// Returns the product of row vector \e vec and a matrix \e m.
     /// Note that the return type is a \c GfVec3f.
+    ///
+    /// \deprecated
+    /// This function is deprecated, as it can result in unintentional loss of
+    /// precision. Call GfVec3d operator *(const GfVec3d &, const GfMatrix3d&)
+    /// instead and explicitly convert the result to GfVec3f, if necessary.
     GF_API
     friend GfVec3f operator *(const GfVec3f &vec, const GfMatrix3d& m);
 

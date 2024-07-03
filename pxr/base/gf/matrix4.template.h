@@ -308,6 +308,13 @@ class GfMatrix3{{ SCL[0] }};
     /// This treats the vector as a 4-component vector whose fourth component
     /// is 1. This is an overloaded method; it differs from the other version
     /// in that it returns a different value type.
+{% if SCL == 'double' %}
+    ///
+    /// \deprecated
+    /// This method is deprecated, as it can result in unintentional loss of
+    /// precision. Call GfVec3d Transform(const GfVec3d &) instead and
+    /// explicitly convert the result to GfVec3f, if necessary.
+{% endif %}
     GfVec3f Transform(const GfVec3f &vec) const {
 {% if SCL == 'float' %}
         return (GfProject(GfVec4f(
@@ -337,6 +344,13 @@ class GfMatrix3{{ SCL[0] }};
     /// a 4-component vector whose fourth component is 0.  This is an
     /// overloaded method; it differs from the other version in that it
     /// returns a different value type.
+{% if SCL == 'double' %}
+    ///
+    /// \deprecated
+    /// This method is deprecated, as it can result in unintentional loss of
+    /// precision. Call GfVec3d TransformDir(const GfVec3d &) instead and
+    /// explicitly convert the result to GfVec3f, if necessary.
+{% endif %}
     GfVec3f TransformDir(const GfVec3f &vec) const {
         return GfVec3f(
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][0]", sep=" + ", num=3) }},
@@ -359,6 +373,13 @@ class GfMatrix3{{ SCL[0] }};
     /// This treats the vector as a 4-component vector whose fourth component
     /// is 1 and ignores the fourth column of the matrix (i.e. assumes it is
     /// (0, 0, 0, 1)).
+{% if SCL == 'double' %}
+    ///
+    /// \deprecated
+    /// This method is deprecated, as it can result in unintentional loss of
+    /// precision. Call GfVec3d TransformAffine(const GfVec3d &) instead and
+    /// explicitly convert the result to GfVec3f, if necessary.
+{% endif %}
     GfVec3f TransformAffine(const GfVec3f &vec) const {
         return GfVec3f(
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][0]", sep=" + ", num=3) }} + _mtx[3][0],

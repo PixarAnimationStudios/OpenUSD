@@ -763,6 +763,12 @@ class TestUsdCollectionAPI(unittest.TestCase):
              Sdf.Path('/CollectionTest/Geom/Shapes/Sphere/Hemisphere1'),
              Sdf.Path('/CollectionTest/Geom/Shapes/Sphere/Hemisphere2')])
 
+        # Test ResolveCompleteMembershipExpression.
+        self.assertEqual(
+            withMembershipExpr.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression("/CollectionTest/Geom//C* //{model} //Box "
+                               "/CollectionTest/Geom/Shapes//H*"))
+
         expressionRef = Usd.CollectionAPI.Get(
             testPrim, 'expressionRef') 
         query = expressionRef.ComputeMembershipQuery()

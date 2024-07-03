@@ -226,6 +226,13 @@ _TargetIsPermitted(
     const SdfPath owningPrimInRootNS = connectionPathInRootNS.GetPrimPath();
     const PcpPrimIndex& owningPrimIndex = context.GetTargetObjectPrimIndex();
 
+    // If the root node of the prim index is inert, the prim index is an 
+    // invalid prim, typically because it is or is under the source of a 
+    // relocation and is therefore prohibited.
+    if (owningPrimIndex.GetRootNode().IsInert()) {
+        return InvalidTarget;
+    }
+
     // Search for the node for the owning prim where the connection was
     // authored. 
     const SdfPath owningPrimInNodeNS = connectionPathInNodeNS.GetPrimPath();

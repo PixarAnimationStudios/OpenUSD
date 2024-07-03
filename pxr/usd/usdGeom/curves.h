@@ -163,7 +163,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float[] widths` |
+    /// | Declaration | `float[] widths = [0.1]` |
     /// | C++ Type | VtArray<float> |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDGEOM_API
@@ -195,8 +195,8 @@ public:
     /// Although 'widths' is not classified as a generic UsdGeomPrimvar (and
     /// will not be included in the results of UsdGeomPrimvarsAPI::GetPrimvars() )
     /// it does require an interpolation specification.  The fallback
-    /// interpolation, if left unspecified, is UsdGeomTokens->vertex , 
-    /// which means a width value is specified at the end of each curve segment.
+    /// interpolation, if left unspecified, is UsdGeomTokens->constant , 
+    /// which means a single width value is specified for the whole prim.
     USDGEOM_API
     TfToken GetWidthsInterpolation() const;
 

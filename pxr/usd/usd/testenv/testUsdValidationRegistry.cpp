@@ -134,6 +134,7 @@ void TestUsdValidationRegistry()
         TF_AXIOM(errors.size() == 1);
         TF_AXIOM(!errors[0].HasNoError());
         TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+        TF_AXIOM(errors[0].GetValidator() == validator);
         const UsdValidationErrorSites &errorSites = errors[0].GetSites();
         TF_AXIOM(errorSites.size() == 1);
         TF_AXIOM(!errorSites[0].IsValidSpecInLayer());
@@ -298,6 +299,7 @@ void TestUsdValidationRegistry()
 
         // Lets make sure pcpErrors and validationErrors match
         for (size_t index = 0; index < errors.size(); ++index) {
+            TF_AXIOM(errors[index].GetValidator() == compositionErrorValidator);
             TF_AXIOM(errors[index].GetMessage() == 
                      expectedPcpErrors[index]->ToString());
             TF_AXIOM(errors[index].GetSites().size() == 1);

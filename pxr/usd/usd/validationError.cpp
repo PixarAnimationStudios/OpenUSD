@@ -25,6 +25,7 @@ UsdValidationErrorSite::UsdValidationErrorSite(const UsdStagePtr &usdStage,
 UsdValidationError::UsdValidationError() : 
     _errorType(UsdValidationErrorType::None)
 {
+    _validator = nullptr;
 }
 
 UsdValidationError::UsdValidationError(const UsdValidationErrorType &type,
@@ -32,6 +33,7 @@ UsdValidationError::UsdValidationError(const UsdValidationErrorType &type,
                                    const std::string &errorMsg) :
     _errorType(type), _errorSites(errorSites), _errorMsg(errorMsg)
 {
+    _validator = nullptr;
 }
 
 std::string
@@ -55,6 +57,12 @@ UsdValidationError::GetErrorAsString() const
 
     const std::string separator = ": ";
     return errorTypeAsString + separator + _errorMsg;
+}
+
+void
+UsdValidationError::_SetValidator(const UsdValidator *validator)
+{
+    _validator = validator;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

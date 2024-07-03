@@ -13,6 +13,7 @@
 #include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/pcp/layerRelocatesEditBuilder.h"
 #include "pxr/usd/sdf/namespaceEdit.h"
 
 
@@ -26,8 +27,30 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdNamespaceEditor 
 {
 public:
+    /// Structure for holding the options for how the namespace editor will
+    /// behave when trying to perform edits.
+    struct EditOptions {
+
+        /// Whether the namespace editor will allow the authoring of relocates
+        /// in order to perform edits that would otherwise not be possible 
+        /// because of opinions across composition arcs. By default this is set
+        /// to true. If set to false the namespace editor will consider edits
+        /// that require relocates as errors and will not apply the edit.
+        bool allowRelocatesAuthoring = true;
+    };
+
     USD_API
     explicit UsdNamespaceEditor(const UsdStageRefPtr &stage);
+
+    USD_API
+    UsdNamespaceEditor(
+        const UsdStageRefPtr &stage, 
+        EditOptions &&editOptions);
+
+    USD_API
+    UsdNamespaceEditor(
+        const UsdStageRefPtr &stage, 
+        const EditOptions &editOptions);
 
     /// Adds an edit operation to delete the composed prim at the given \p path 
     /// from this namespace editor's stage.
@@ -228,6 +251,10 @@ private:
         // namespace edit applied.
         SdfLayerHandleVector layersToEdit;
 
+        // The list of relocates edits that need to be made to layers in order
+        // to relocate a prim.
+        PcpLayerRelocatesEditBuilder::LayerRelocatesEdits relocatesEdits;
+
         // Layer edits that need to be performed to update connection and 
         // relationship targets of other properties in order to keep them 
         // targeting the same object after applying this processed edit.
@@ -260,9 +287,6 @@ private:
         // Some edits want to remove inert ancestor overs after a prim is
         // removed from its parent spec in a layer.
         bool removeInertAncestorOvers = false;
-
-        // Whether the edit would require relocates (or deactivation for delete)
-        bool requiresRelocates = false;
 
         // Applies this processed edit, performing the individual edits 
         // necessary to each layer that needs to be updated.
@@ -297,6 +321,7 @@ private:
     class _EditProcessor;
 
     UsdStageRefPtr _stage;
+    EditOptions _editOptions;
     _EditDescription _editDescription;
     mutable std::optional<_ProcessedEdit> _processedEdit;   
 };

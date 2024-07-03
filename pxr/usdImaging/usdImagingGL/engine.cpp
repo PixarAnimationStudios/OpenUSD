@@ -751,6 +751,49 @@ UsdImagingGLEngine::TestIntersection(
     int *outHitInstanceIndex,
     HdInstancerContext *outInstancerContext)
 {
+    PickParams pickParams = { HdxPickTokens->resolveNearestToCenter };
+    IntersectionResultVector results;
+
+    if (TestIntersection(pickParams, viewMatrix, projectionMatrix,
+            root, params, &results)) {
+        if (results.size() != 1) {
+            // Since we are in nearest-hit mode, we expect allHits to have a
+            // single point in it.
+            return false;
+        }
+        IntersectionResult &result = results.front();
+        if (outHitPoint) {
+            *outHitPoint = result.hitPoint;
+        }
+        if (outHitNormal) {
+            *outHitNormal = result.hitNormal;
+        }
+        if (outHitPrimPath) {
+            *outHitPrimPath = result.hitPrimPath;
+        }
+        if (outHitInstancerPath) {
+            *outHitInstancerPath = result.hitInstancerPath;
+        }
+        if (outHitInstanceIndex) {
+            *outHitInstanceIndex = result.hitInstanceIndex;
+        }
+        if (outInstancerContext) {
+            *outInstancerContext = result.instancerContext;
+        }
+        return true;
+    }
+    return false;
+}
+
+bool
+UsdImagingGLEngine::TestIntersection(
+    const PickParams& pickParams,
+    const GfMatrix4d& viewMatrix,
+    const GfMatrix4d& projectionMatrix,
+    const UsdPrim& root,
+    const UsdImagingGLRenderParams& params,
+    IntersectionResultVector* outResults)
+{
     if (ARCH_UNLIKELY(!_renderDelegate)) {
         return false;
     }
@@ -769,60 +812,48 @@ UsdImagingGLEngine::TestIntersection(
     _PrepareRender(params);
 
     HdxPickHitVector allHits;
-    HdxPickTaskContextParams pickParams;
-    pickParams.resolveMode = HdxPickTokens->resolveNearestToCenter;
-    pickParams.viewMatrix = viewMatrix;
-    pickParams.projectionMatrix = projectionMatrix;
-    pickParams.clipPlanes = params.clipPlanes;
-    pickParams.collection = _intersectCollection;
-    pickParams.outHits = &allHits;
-    const VtValue vtPickParams(pickParams);
+    HdxPickTaskContextParams pickCtxParams;
+    pickCtxParams.resolveMode = pickParams.resolveMode;
+    pickCtxParams.viewMatrix = viewMatrix;
+    pickCtxParams.projectionMatrix = projectionMatrix;
+    pickCtxParams.clipPlanes = params.clipPlanes;
+    pickCtxParams.collection = _intersectCollection;
+    pickCtxParams.outHits = &allHits;
+    const VtValue vtPickCtxParams(pickCtxParams);
 
-    _engine->SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
+    _engine->SetTaskContextData(HdxPickTokens->pickParams, vtPickCtxParams);
     _Execute(params, _taskController->GetPickingTasks());
 
-    // Since we are in nearest-hit mode, we expect allHits to have
-    // a single point in it.
-    if (allHits.size() != 1) {
+    // return false if there were no hits
+    if (allHits.size() == 0) {
         return false;
     }
 
-    HdxPickHit &hit = allHits[0];
+    for(HdxPickHit& hit : allHits)
+    {
+        IntersectionResult res;
 
-    if (outHitPoint) {
-        *outHitPoint = hit.worldSpaceHitPoint;
-    }
-
-    if (outHitNormal) {
-        *outHitNormal = hit.worldSpaceHitNormal;
-    }
-
-    if (_sceneDelegate) {
-        hit.objectId = _sceneDelegate->GetScenePrimPath(
-            hit.objectId, hit.instanceIndex, outInstancerContext);
-        hit.instancerId = _sceneDelegate->ConvertIndexPathToCachePath(
-            hit.instancerId).GetAbsoluteRootOrPrimPath();
-    } else {
-        const HdxPrimOriginInfo info = HdxPrimOriginInfo::FromPickHit(
-            _renderIndex.get(), hit);
-        hit.objectId = info.GetFullPath();
-        HdInstancerContext ctx = info.ComputeInstancerContext();
-        if (!ctx.empty()) {
-            hit.instancerId = ctx.back().first;
-            if (outInstancerContext) {
-                *outInstancerContext = std::move(ctx);
-            }
+        if (_sceneDelegate) {
+            res.hitPrimPath = _sceneDelegate->GetScenePrimPath(
+                    hit.objectId, hit.instanceIndex, &(res.instancerContext));
+            res.hitInstancerPath = _sceneDelegate->ConvertIndexPathToCachePath(
+                    hit.instancerId).GetAbsoluteRootOrPrimPath();
+        } else {
+            const HdxPrimOriginInfo info = HdxPrimOriginInfo::FromPickHit(
+                _renderIndex.get(), hit);
+            res.hitPrimPath = info.GetFullPath();
+            res.hitInstancerPath = hit.instancerId.ReplacePrefix(
+                _sceneDelegateId, SdfPath::AbsoluteRootPath());
+            res.instancerContext = info.ComputeInstancerContext();
         }
-    }
 
-    if (outHitPrimPath) {
-        *outHitPrimPath = hit.objectId;
-    }
-    if (outHitInstancerPath) {
-        *outHitInstancerPath = hit.instancerId;
-    }
-    if (outHitInstanceIndex) {
-        *outHitInstanceIndex = hit.instanceIndex;
+        res.hitPoint = hit.worldSpaceHitPoint;
+        res.hitNormal = hit.worldSpaceHitNormal;
+        res.hitInstanceIndex = hit.instanceIndex;
+
+        if (outResults) {
+            outResults->push_back(res);
+        }
     }
 
     return true;
@@ -841,30 +872,39 @@ UsdImagingGLEngine::DecodeIntersection(
         return false;
     }
 
-    if (_GetUseSceneIndices()) {
-        // XXX(HYD-2299): picking
-        return false;
-    }
-
-    TF_VERIFY(_sceneDelegate);
-
     const int primId = HdxPickTask::DecodeIDRenderColor(primIdColor);
     const int instanceIdx = HdxPickTask::DecodeIDRenderColor(instanceIdColor);
-    SdfPath primPath =
-        _sceneDelegate->GetRenderIndex().GetRprimPathFromPrimId(primId);
 
+    SdfPath primPath = _renderIndex->GetRprimPathFromPrimId(primId);
     if (primPath.IsEmpty()) {
         return false;
     }
 
     SdfPath delegateId, instancerId;
-    _sceneDelegate->GetRenderIndex().GetSceneDelegateAndInstancerIds(
+    _renderIndex->GetSceneDelegateAndInstancerIds(
         primPath, &delegateId, &instancerId);
 
-    primPath = _sceneDelegate->GetScenePrimPath(
-        primPath, instanceIdx, outInstancerContext);
-    instancerId = _sceneDelegate->ConvertIndexPathToCachePath(instancerId)
-                  .GetAbsoluteRootOrPrimPath();
+    if (_sceneDelegate) {
+        primPath = _sceneDelegate->GetScenePrimPath(
+            primPath, instanceIdx, outInstancerContext);
+        instancerId = _sceneDelegate->ConvertIndexPathToCachePath(instancerId)
+            .GetAbsoluteRootOrPrimPath();
+    } else {
+        HdxPickHit hit;
+        hit.delegateId = delegateId;
+        hit.objectId = primPath;
+        hit.instancerId = instancerId;
+        hit.instanceIndex = instanceIdx;
+
+        const HdxPrimOriginInfo info = HdxPrimOriginInfo::FromPickHit(
+            _renderIndex.get(), hit);
+        primPath = info.GetFullPath();
+        instancerId = instancerId.ReplacePrefix(_sceneDelegateId,
+            SdfPath::AbsoluteRootPath());
+        if (outInstancerContext) {
+            *outInstancerContext = info.ComputeInstancerContext();
+        }
+    }
 
     if (outHitPrimPath) {
         *outHitPrimPath = primPath;

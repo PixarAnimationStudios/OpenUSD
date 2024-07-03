@@ -361,15 +361,10 @@ ArchNormPath(const string& inPath, bool stripDriveSpecifier)
 
     // Extract the drive specifier.  Note that we don't correctly handle
     // UNC paths or paths that start with \\? (which allow longer paths).
-    //
-    // Also make sure drive letters are always lower-case out of ArchNormPath
-    // on Windows -- this is so that we can be sure we can reliably use the
-    // paths as keys in tables, etc.
     string prefix;
     if (path.size() >= 2 && path[1] == ':') {
         if (!stripDriveSpecifier) {
-            prefix.assign(2, ':');
-            prefix[0] = std::tolower(path[0]);
+            prefix = path.substr(0,2);
         }
         path.erase(0, 2);
     }

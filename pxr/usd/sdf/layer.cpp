@@ -3970,7 +3970,12 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
                 if (!specDefinition->IsRequiredField(*field))
                     _PrimSetField(path, *field, VtValue());
             }
-            _PrimDeleteSpec(*i, _IsInertSubtree(*i));
+
+            // Since we are deleting bottom up, we should only ever be
+            // considering prims which do not have children to determine
+            // inertness
+            _PrimDeleteSpec(*i, _IsInert(*i, true /*ignoreChildren*/, 
+                  true /* requiredFieldOnlyPropertiesAreInert */));
         }
     }
 

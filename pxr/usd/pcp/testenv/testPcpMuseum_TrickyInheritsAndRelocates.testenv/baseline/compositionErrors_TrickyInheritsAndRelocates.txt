@@ -24,3 +24,11 @@ Errors while composing </Rig/Anim/RigInstance>
 
 The layer @TrickyInheritsAndRelocates/root.sdf@ has an invalid opinion at the relocation source path </Rig/RigClass>, which will be ignored.
 
+------------------------------------------------------------------------
+Errors while composing </Rig/Anim/BadRigInstance>
+
+@TrickyInheritsAndRelocates/root.sdf@</Rig/Anim/BadRigInstance>
+CANNOT inherit from:
+@TrickyInheritsAndRelocates/root.sdf@</Rig/RigClass>
+which is a prohibited child of its parent because it would require allowing opinions from the source of a relocation at @TrickyInheritsAndRelocates/root.sdf@</Rig/RigClass>.
+

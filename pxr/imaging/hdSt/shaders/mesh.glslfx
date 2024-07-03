@@ -103,9 +103,9 @@ void main(void)
 
     // Get the indata Neye if provided.
     bool isFlipped = IsFlipped();
-    vec3 Neye0 = isFlipped ? -GetNormal(vec3(0),0) : GetNormal(vec3(0),0);
-    vec3 Neye1 = isFlipped ? -GetNormal(vec3(0),1) : GetNormal(vec3(0),1);
-    vec3 Neye2 = isFlipped ? -GetNormal(vec3(0),2) : GetNormal(vec3(0),2);
+    vec3 Neye0 = GetNormal(vec3(0),0);
+    vec3 Neye1 = GetNormal(vec3(0),1);
+    vec3 Neye2 = GetNormal(vec3(0),2);
 
     Neye0 = GetTriGeometryNormal(Neye0, point0, point1, point2, isFlipped);
     Neye1 = GetTriGeometryNormal(Neye1, point0, point1, point2, isFlipped);
@@ -177,10 +177,10 @@ void main(void)
 
     // Get the indata Neye if provided.
     bool isFlipped = IsFlipped();
-    vec3 Neye0 = isFlipped ? -GetNormal(vec3(0),0) : GetNormal(vec3(0),0);
-    vec3 Neye1 = isFlipped ? -GetNormal(vec3(0),1) : GetNormal(vec3(0),1);
-    vec3 Neye2 = isFlipped ? -GetNormal(vec3(0),2) : GetNormal(vec3(0),2);
-    vec3 Neye3 = isFlipped ? -GetNormal(vec3(0),3) : GetNormal(vec3(0),3);
+    vec3 Neye0 = GetNormal(vec3(0),0);
+    vec3 Neye1 = GetNormal(vec3(0),1);
+    vec3 Neye2 = GetNormal(vec3(0),2);
+    vec3 Neye3 = GetNormal(vec3(0),3);
 
     Neye0 = GetQuadGeometryNormal(
                 Neye0, point0, point1, point2, point3, isFlipped);
@@ -259,10 +259,10 @@ void main(void)
 
     //Get the indata Neye if provided.
     bool isFlipped = IsFlipped();
-    vec3 Neye0 = isFlipped ? -GetNormal(vec3(0),0) : GetNormal(vec3(0),0);
-    vec3 Neye1 = isFlipped ? -GetNormal(vec3(0),1) : GetNormal(vec3(0),1);
-    vec3 Neye2 = isFlipped ? -GetNormal(vec3(0),2) : GetNormal(vec3(0),2);
-    vec3 Neye3 = isFlipped ? -GetNormal(vec3(0),4) : GetNormal(vec3(0),4);
+    vec3 Neye0 = GetNormal(vec3(0),0);
+    vec3 Neye1 = GetNormal(vec3(0),1);
+    vec3 Neye2 = GetNormal(vec3(0),2);
+    vec3 Neye3 = GetNormal(vec3(0),4);
 
     Neye0 = GetQuadGeometryNormal(Neye0,
                 point0, point1, point2, point3, isFlipped);

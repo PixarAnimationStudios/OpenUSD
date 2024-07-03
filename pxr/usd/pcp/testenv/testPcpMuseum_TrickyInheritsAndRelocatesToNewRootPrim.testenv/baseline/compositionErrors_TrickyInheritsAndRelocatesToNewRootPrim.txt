@@ -1,0 +1,34 @@
+------------------------------------------------------------------------
+Errors while composing </Model_Renamed>
+
+The layer @TrickyInheritsAndRelocatesToNewRootPrim/root.sdf@ has an invalid opinion at the relocation source path </Group/Model>, which will be ignored.
+
+------------------------------------------------------------------------
+Errors while composing </Model_Renamed/B>
+
+The layer @TrickyInheritsAndRelocatesToNewRootPrim/root.sdf@ has an invalid opinion at the relocation source path </Group/Model>, which will be ignored.
+
+------------------------------------------------------------------------
+Errors while composing </Model_Renamed/Scope>
+
+The layer @TrickyInheritsAndRelocatesToNewRootPrim/root.sdf@ has an invalid opinion at the relocation source path </Group/Model>, which will be ignored.
+The layer @TrickyInheritsAndRelocatesToNewRootPrim/root.sdf@ has an invalid opinion at the relocation source path </Group/Model>, which will be ignored.
+
+------------------------------------------------------------------------
+Errors while composing </Rig/Anim/RigInstance>
+
+The layer @TrickyInheritsAndRelocatesToNewRootPrim/root.sdf@ has an invalid opinion at the relocation source path </Rig/RigClass>, which will be ignored.
+
+------------------------------------------------------------------------
+Errors while composing </Rig/Anim/BadRigInstance>
+
+@TrickyInheritsAndRelocatesToNewRootPrim/root.sdf@</Rig/Anim/BadRigInstance>
+CANNOT inherit from:
+@TrickyInheritsAndRelocatesToNewRootPrim/root.sdf@</Rig/RigClass>
+which is a prohibited child of its parent because it would require allowing opinions from the source of a relocation at @TrickyInheritsAndRelocatesToNewRootPrim/root.sdf@</Rig/RigClass>.
+
+------------------------------------------------------------------------
+Errors while composing </RigClass>
+
+The layer @TrickyInheritsAndRelocatesToNewRootPrim/root.sdf@ has an invalid opinion at the relocation source path </Rig/RigClass>, which will be ignored.
+

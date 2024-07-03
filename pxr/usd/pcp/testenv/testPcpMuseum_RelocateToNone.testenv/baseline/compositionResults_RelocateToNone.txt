@@ -1,0 +1,101 @@
+Loading @RelocateToNone/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Char>
+
+Prim Stack:
+    root.sdf             /Char
+    model.sdf            /Model
+
+Child names:
+     ['Relocated']
+
+Prohibited child names:
+     ['ToBeDeleted', 'ToBeRelocated']
+
+Property names:
+     ['relationship1', 'relationship2', 'relationship3']
+
+Property stacks:
+/Char.relationship1:
+    model.sdf            /Model.relationship1
+/Char.relationship2:
+    model.sdf            /Model.relationship2
+/Char.relationship3:
+    model.sdf            /Model.relationship3
+
+Relationship targets:
+/Char.relationship2:
+    /Char/Relocated/Child
+
+------------------------------------------------------------------------
+Results for composing </Char/Relocated>
+
+Prim Stack:
+    root.sdf             /Char/Relocated
+    model.sdf            /Model/ToBeRelocated
+
+Child names:
+     ['Child']
+
+Prohibited child names:
+     ['ToBeDeletedChild']
+
+------------------------------------------------------------------------
+Results for composing </Char/Relocated/Child>
+
+Prim Stack:
+    root.sdf             /Char/Relocated/Child
+    model.sdf            /Model/ToBeRelocated/Child
+
+------------------------------------------------------------------------
+Results for composing </Good_SubrootRefToRelocated>
+
+Prim Stack:
+    root.sdf             /Good_SubrootRefToRelocated
+    root.sdf             /Char/Relocated
+    model.sdf            /Model/ToBeRelocated
+
+Child names:
+     ['Child']
+
+Prohibited child names:
+     ['ToBeDeletedChild']
+
+------------------------------------------------------------------------
+Results for composing </Good_SubrootRefToRelocated/Child>
+
+Prim Stack:
+    root.sdf             /Char/Relocated/Child
+    model.sdf            /Model/ToBeRelocated/Child
+
+------------------------------------------------------------------------
+Results for composing </Good_SubrootRefToRelocatedChild>
+
+Prim Stack:
+    root.sdf             /Good_SubrootRefToRelocatedChild
+    root.sdf             /Char/Relocated/Child
+    model.sdf            /Model/ToBeRelocated/Child
+
+------------------------------------------------------------------------
+Results for composing </Bad_SubrootRefToDeleted>
+
+Prim Stack:
+    root.sdf             /Bad_SubrootRefToDeleted
+
+------------------------------------------------------------------------
+Results for composing </Bad_SubrootRefToPreRelocated>
+
+Prim Stack:
+    root.sdf             /Bad_SubrootRefToPreRelocated
+
+------------------------------------------------------------------------
+Results for composing </Bad_SubrootRefToDeletedRelocatedChild>
+
+Prim Stack:
+    root.sdf             /Bad_SubrootRefToDeletedRelocatedChild
+

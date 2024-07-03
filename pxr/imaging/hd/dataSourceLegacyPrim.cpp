@@ -191,7 +191,7 @@ public:
         // returned samples to be in the right range.
         _FillSampleTimes(_timeSamples, startTime, endTime, outSampleTimes);
 
-        return true;
+        return outSampleTimes->size() > 1;
     }
 
 private:

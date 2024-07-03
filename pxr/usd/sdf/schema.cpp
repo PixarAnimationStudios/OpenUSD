@@ -377,7 +377,8 @@ SDF_VALIDATE_WRAPPER(InheritPath, SdfPath);
 SDF_VALIDATE_WRAPPER(Payload, SdfPayload);
 SDF_VALIDATE_WRAPPER(Reference, SdfReference);
 SDF_VALIDATE_WRAPPER(RelationshipTargetPath, SdfPath);
-SDF_VALIDATE_WRAPPER(RelocatesPath, SdfPath);
+SDF_VALIDATE_WRAPPER(RelocatesSourcePath, SdfPath);
+SDF_VALIDATE_WRAPPER(RelocatesTargetPath, SdfPath);
 SDF_VALIDATE_WRAPPER(Relocate, SdfRelocate);
 SDF_VALIDATE_WRAPPER(SpecializesPath, SdfPath);
 SDF_VALIDATE_WRAPPER(SubLayer, std::string);
@@ -771,8 +772,8 @@ SdfSchemaBase::_RegisterStandardFields()
     _DoRegisterField(SdfFieldKeys->LayerRelocates, SdfRelocates())
         .ListValueValidator(&_ValidateRelocate);
     _DoRegisterField(SdfFieldKeys->Relocates, SdfRelocatesMap())
-        .MapKeyValidator(&_ValidateRelocatesPath)
-        .MapValueValidator(&_ValidateRelocatesPath);
+        .MapKeyValidator(&_ValidateRelocatesSourcePath)
+        .MapValueValidator(&_ValidateRelocatesTargetPath);
     _DoRegisterField(SdfFieldKeys->Specifier, SdfSpecifierOver);
     _DoRegisterField(SdfFieldKeys->StartFrame, 0.0);
     _DoRegisterField(SdfFieldKeys->StartTimeCode, 0.0);
@@ -1326,7 +1327,7 @@ SdfSchemaBase::IsValidVariantSelection(const std::string& sel)
 }
 
 SdfAllowed 
-SdfSchemaBase::IsValidRelocatesPath(const SdfPath& path)
+SdfSchemaBase::IsValidRelocatesSourcePath(const SdfPath& path)
 {
     if (_PathContainsProhibitedVariantSelection(path)) {
         return SdfAllowed("Relocate paths cannot contain "
@@ -1341,12 +1342,24 @@ SdfSchemaBase::IsValidRelocatesPath(const SdfPath& path)
 }
 
 SdfAllowed 
+SdfSchemaBase::IsValidRelocatesTargetPath(const SdfPath& path)
+{
+    // Relocates target paths are allowed to be empty but source paths are not.
+    if (path.IsEmpty()) {
+        return true;
+    }
+    return IsValidRelocatesSourcePath(path);
+}
+
+SdfAllowed 
 SdfSchemaBase::IsValidRelocate(const SdfRelocate &relocate)
 {
-    if (SdfAllowed isValid = IsValidRelocatesPath(relocate.first); !isValid) {
+    if (SdfAllowed isValid = IsValidRelocatesSourcePath(relocate.first);
+            !isValid) {
         return isValid;
     }
-    if (SdfAllowed isValid = IsValidRelocatesPath(relocate.second); !isValid) {
+    if (SdfAllowed isValid = IsValidRelocatesTargetPath(relocate.second);
+            !isValid) {
         return isValid;
     }
 

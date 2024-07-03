@@ -337,7 +337,9 @@ HgiVulkanBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
     // Copy from device-local GPU buffer into GPU staging buffer
     VkBufferCopy copyRegion = {};
     copyRegion.srcOffset = copyOp.sourceByteOffset;
-    copyRegion.dstOffset = copyOp.destinationByteOffset;
+    // No need to use dst offset during intermediate step of copying into 
+    // staging buffer.
+    copyRegion.dstOffset = 0;
     copyRegion.size = copyOp.byteSize;
     vkCmdCopyBuffer(
         _commandBuffer->GetVulkanCommandBuffer(), 
@@ -351,9 +353,10 @@ HgiVulkanBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
     // Offset into the dst buffer
     char* dst = ((char*) copyOp.cpuDestinationBuffer) +
         copyOp.destinationByteOffset;
-    
-    // Offset into the src buffer
-    const char* src = ((const char*) cpuAddress) + copyOp.sourceByteOffset;
+
+    // No need to offset into src buffer since we copied into staging buffer
+    // without dst offset.
+    const char* src = ((const char*) cpuAddress);
 
     // bytes to copy
     size_t size = copyOp.byteSize;

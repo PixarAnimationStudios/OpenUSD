@@ -84,7 +84,6 @@ private:
     id<MTLBuffer> _argumentBuffer;
     id<MTLComputeCommandEncoder> _encoder;
     bool _secondaryCommandBuffer;
-    bool _hasWork;
     HgiComputeDispatch _dispatchMethod;
 };
 

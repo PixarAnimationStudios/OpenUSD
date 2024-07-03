@@ -1,13 +1,18 @@
 /*!
 \page Developer_Guides Developer Guides
 
-\section Developer_Guides_Hydra Hydra Guides
+<b>General Guidelines</b>
+
+- \subpage Page_Coding_Guidelines
+- \subpage Page_Testing_Guidelines
+
+<b>Hydra Guides</b>
 
 - \subpage Page_Hydra_Getting_Started_Guide
 - \subpage Page_Hydra_Scene_Browser
 - \subpage Page_Hydra_Prim_Schemas
 
-\section Developer_Guides_MaterialX MaterialX Guides
+<b>MaterialX Guides</b>
 
 - \subpage Page_MaterialX_In_Hydra_USD
 

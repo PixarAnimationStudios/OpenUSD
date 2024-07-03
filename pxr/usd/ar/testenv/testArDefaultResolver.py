@@ -7,6 +7,7 @@
 #
 import os
 import pathlib
+import sys
 from pxr import Ar, Tf
 
 import unittest
@@ -20,11 +21,9 @@ class TestArDefaultResolver(unittest.TestCase):
         path1 = str(path1)
         path2 = str(path2)
 
-        # Flip backslashes to forward slashes and make sure path case doesn't
-        # cause test failures to accommodate platform differences. We don't use
-        # os.path.normpath since that might fix up other differences we'd want
-        # to catch in these tests.
-        self.assertEqual(os.path.normcase(path1), os.path.normcase(path2))
+        # Flip backslashes to forward slashes to accommodate platform
+        # differences. 
+        self.assertEqual(os.path.normpath(path1), os.path.normpath(path2))
 
     def _CreateEmptyTestFile(self, path):
         dir = os.path.dirname(path)
@@ -86,6 +85,16 @@ class TestArDefaultResolver(unittest.TestCase):
         self.assertPathsEqual(
             '/dir/AbsolutePath.txt',
             r.CreateIdentifier('/dir/.//AbsolutePath.txt', _RP('subdir/A.txt')))
+        
+        # Windows is case insensitive so ensuring that the drive letter of the 
+        # resulting identifier matches that of the original input path.
+        if sys.platform == "win32":
+            self.assertPathsEqual(
+                'C:\dir\AbsolutePath.txt',
+                r.CreateIdentifier('C:/dir/AbsolutePath.txt'))
+            self.assertPathsEqual(
+                'c:\dir\AbsolutePath.txt',
+                r.CreateIdentifier('c:/dir/AbsolutePath.txt'))
 
         # The identifier for a file-relative path (i.e. a relative path
         # starting with "./" or "../" is obtained by anchoring that path
@@ -147,6 +156,16 @@ class TestArDefaultResolver(unittest.TestCase):
             '/dir/AbsolutePath.txt',
             r.CreateIdentifierForNewAsset(
                 '/dir/.//AbsolutePath.txt', _RP('subdir/A.txt')))
+        
+        # Windows is case insensitive so ensuring that the drive letter of the 
+        # resulting identifier matches that of the original input path.
+        if sys.platform == "win32":
+            self.assertPathsEqual(
+                'C:\dir\AbsolutePath.txt',
+                r.CreateIdentifier('C:/dir/AbsolutePath.txt'))
+            self.assertPathsEqual(
+                'c:\dir\AbsolutePath.txt',
+                r.CreateIdentifier('c:/dir/AbsolutePath.txt'))
 
         # The identifier for a relative path (file-relative or search-relative)
         # will always be the anchored absolute path.

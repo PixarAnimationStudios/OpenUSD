@@ -359,9 +359,7 @@ class LayerInfo(object):
         realPath = ''
         try:
             resolver = Ar.GetResolver()
-            with Ar.ResolverContextBinder(stage.GetPathResolverContext()):
-                realPath = resolver.Resolve(resolver.CreateIdentifier(
-                    identifier, parentLayer.resolvedPath)).GetPathString()
+            realPath = resolver.Resolve(identifier).GetPathString()
         except Exception as e:
             PrintWarning('Failed to resolve identifier {} '
                          .format(identifier), e)
@@ -417,13 +415,6 @@ class LayerInfo(object):
             Sdf.Layer.GetDisplayNameFromIdentifier(self._identifier))
 
 def _AddLayerTree(stage, layerTree, depth=0):
-    layers = [LayerInfo.FromLayer(
-        layerTree.layer, stage, layerTree.offset, depth)]
-    for child in layerTree.childTrees:
-        layers.extend(_AddLayerTree(stage, child, depth=depth + 1))
-    return layers
-
-def _AddLayerTreeWithMutedSubLayers(stage, layerTree, depth=0):
 
     layers = [LayerInfo.FromLayer(
         layerTree.layer, stage, layerTree.offset, depth)]
@@ -435,31 +426,38 @@ def _AddLayerTreeWithMutedSubLayers(stage, layerTree, depth=0):
     # layers in the correct sublayer position, we go through the sublayer paths
     # parsing either the muted layer or a layer stack tree subtree.
     # 
-    # XXX: It would be nice if we could get this whole layer stack tree with
-    # muted layers and composed offsets without having to cross reference two
-    # different APIs. 
+    # The layer tree will also not have any entries for layers that failed to
+    # load. We need to handle this case as well.
     childTrees = layerTree.childTrees
     subLayerPaths = layerTree.layer.subLayerPaths
     childTreeIter = iter(layerTree.childTrees)
-    numMutedLayers = 0
+    numMissingLayers = 0
     for subLayerPath in subLayerPaths:
-        if stage.IsLayerMuted(subLayerPath):
+        anchoredSubLayerPath = Sdf.ComputeAssetPathRelativeToLayer(
+            layerTree.layer, subLayerPath)
+        if stage.IsLayerMuted(anchoredSubLayerPath):
             # The sublayer path is muted so add muted layer by path. We don't 
             # recurse on sublayers for muted layers.
             layers.append(LayerInfo.FromMutedLayerIdentifier(
-                subLayerPath, layerTree.layer, stage, depth=depth+1))
-            numMutedLayers = numMutedLayers + 1
+                anchoredSubLayerPath, layerTree.layer, stage, depth=depth+1))
+            numMissingLayers = numMissingLayers + 1
+        elif not Sdf.Layer.Find(anchoredSubLayerPath):
+            # Otherwise, the sublayer failed to load for some other reason.
+            # Just skip it to maintain current behavior; in the future, we
+            # may want to show an entry with some annotation to tell the
+            # user about this sublayer.
+            numMissingLayers = numMissingLayers + 1
         else:
             # Otherwise we expect the unmuted sublayer to be the next child
             # tree in the layer stack tree so we recursively add it.
-            layers.extend(_AddLayerTreeWithMutedSubLayers(
+            layers.extend(_AddLayerTree(
                 stage, next(childTreeIter), depth=depth + 1))
 
     # Since we're relying on the correspondence between the unmuted sublayer 
     # paths and the child layer stack trees, report an error if the total number
     # of muted layers and child trees don't match up so we can track if it 
     # becomes an issue.
-    if numMutedLayers + len(childTrees) != len(subLayerPaths):
+    if numMissingLayers + len(childTrees) != len(subLayerPaths):
         print("CODING ERROR: Encountered an unexpected number of muted "
               "sublayers of layer {}. The root layer stack may be "
               "incorrect in the layer stack view".format(
@@ -471,9 +469,7 @@ def GetRootLayerStackInfo(stage):
     primIndex = stage.GetPseudoRoot().GetPrimIndex()
     layerStack = primIndex.rootNode.layerStack
 
-    if layerStack.mutedLayers:
-        return _AddLayerTreeWithMutedSubLayers(stage, layerStack.layerTree)
-    else:
+    with Ar.ResolverContextBinder(stage.GetPathResolverContext()):
         return _AddLayerTree(stage, layerStack.layerTree)
 
 def PrettyFormatSize(sz):

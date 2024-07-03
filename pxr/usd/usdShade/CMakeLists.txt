@@ -83,25 +83,15 @@ pxr_build_test(testUsdShadeHasConnectableAPI
         testenv/testUsdShadeHasConnectableAPI.cpp
 )
 
-if (TARGET shared_lib)
-# UsdShadeValidators uses SdrRegistry, which doesn't populate all shaders when
-# in a static build, as some shaders used in the test are part of usdShader
-# plugin, so we only enable this test for shared library build.
 pxr_build_test(testUsdShadeValidators
     LIBRARIES
+        sdr
         tf
         usd
         usdShade
     CPPFILES
         testenv/testUsdShadeValidators.cpp
 )
-
-pxr_register_test(testUsdShadeValidators
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeValidators"
-    EXPECTED_RETURN_CODE 0
-)
-
-endif() # end shared_lib
 
 pxr_test_scripts(
     testenv/testUsdShadeBinding.py
@@ -177,6 +167,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdShadeUdimUtils
     DEST testUsdShadeUdimUtils
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdShadeValidators
+    DEST testUsdShadeValidators
 )
 
 pxr_register_test(testUsdShadeBinding
@@ -286,6 +281,11 @@ pxr_register_test(testUsdShadeConnectability_OldEncoding
 pxr_register_test(testUsdShadeUdimUtils
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeUdimUtils"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdShadeValidators
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeValidators"
     EXPECTED_RETURN_CODE 0
 )
 

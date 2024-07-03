@@ -680,7 +680,12 @@ enum _ArcFlags {
 inline static size_t
 _ScanArcs(PcpNodeRef const& node)
 {
+    if (!node.CanContributeSpecs()) {
+        return 0;
+    }
+
     size_t arcs = 0;
+
     // Relocates mappings are defined for an entire layer stack so if the node's
     // layer stack has any relocates we have to check for relocates on this 
     // node.
@@ -691,8 +696,7 @@ _ScanArcs(PcpNodeRef const& node)
     // If the node does not have specs or cannot contribute specs,
     // we can avoid even enqueueing certain kinds of tasks that will
     // end up being no-ops.
-    const bool contributesSpecs = node.HasSpecs() && node.CanContributeSpecs();
-    if (!contributesSpecs) {
+    if (!node.HasSpecs()) {
         return arcs;
     }
 
@@ -1796,23 +1800,6 @@ _AddArc(
         }
     }
 
-    // Local opinions are not allowed at the source of a relocation (or below). 
-    // This is colloquially known as the "salted earth" policy. We enforce 
-    // this policy here to ensure we examine all arcs as they're being added.
-    // Optimizations:
-    // - We only need to do this for non-root prims because root prims can't
-    //   be relocated. This is indicated by the includeAncestralOpinions flag.
-    if (opts.directNodeShouldContributeSpecs && opts.includeAncestralOpinions &&
-            site.layerStack->HasRelocates()) {
-        const SdfRelocatesMap & layerStackRelocates =
-            site.layerStack->GetRelocatesSourceToTarget();
-        SdfRelocatesMap::const_iterator
-            i = layerStackRelocates.lower_bound( site.path );
-        if (i != layerStackRelocates.end() && i->first.HasPrefix(site.path)) {
-            opts.directNodeShouldContributeSpecs = false;
-        }
-    }
-
     // Set up the arc.
     PcpArc newArc;
     newArc.type = arcType;
@@ -2692,10 +2679,10 @@ _EvalUnresolvedPrimPathError(
 
 static void
 _ElideSubtree(
-    const Pcp_PrimIndexer& indexer,
-    PcpNodeRef node)
+    PcpNodeRef node,
+    bool cull)
 {
-    if (indexer.inputs.cull) {
+    if (cull) {
         node.SetCulled(true);
     }
     else {
@@ -2713,7 +2700,7 @@ _ElideSubtree(
     node.SetSpecContributionRestrictedDepth(1);
 
     TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
-        _ElideSubtree(indexer, *child);
+        _ElideSubtree(*child, cull);
     }
 }
 
@@ -2740,7 +2727,7 @@ _ElideRelocatedSubtrees(
                 layerStack->GetIncrementalRelocatesSourceToTarget();
             if (relocatesSrcToTarget.find(childNode.GetPath()) !=
                 relocatesSrcToTarget.end()) {
-                _ElideSubtree(indexer, childNode);
+                _ElideSubtree(childNode, indexer.inputs.cull);
                 continue;
             }
         }
@@ -2851,7 +2838,7 @@ _EvalNodeRelocations(
             break;
         };
 
-        _ElideSubtree(*indexer, child);
+        _ElideSubtree(child, indexer->inputs.cull);
 
         PCP_INDEXING_UPDATE(
             indexer, child, 
@@ -5268,6 +5255,81 @@ _BuildInitialPrimIndexFromAncestor(
         "Adjusted ancestral index for %s", site.path.GetName().c_str());
 }
 
+// Recursively composes whether the node's site is a prohibited child of its
+// namespace parent due to being the source of a relocate. Our "salted earth"
+// policy indicates that if the source of a relocation can never be a valid 
+// child of its parent even when that parent (or any of its ancestors) is 
+// included via some arc in another prim index. Thus why we have to traverse
+// the whole prim index graph to see if the prim path is prohibited by any of
+// the contributing nodes.
+static bool
+_ComposeIsProhibitedPrimChild(Pcp_PrimIndexer *indexer)
+{
+    const PcpNodeRef rootNode = indexer->outputs->primIndex.GetRootNode();
+
+    auto range = PcpNodeRef_PrivateSubtreeConstRange(rootNode);
+    for (auto iter = range.begin(); iter != range.end(); ++iter) {
+        if (iter->IsCulled()) {
+            iter.PruneChildren();
+            continue;
+        }
+
+        const PcpNodeRef &node = *iter;
+        const PcpLayerStackRefPtr &layerStack = node.GetLayerStack();
+        if (node.IsInert() || !layerStack->HasRelocates()) {
+            continue;
+        }
+
+        // We look for the node path in its layer stack's relocation sources.
+        // The node belongs to a prohibited prim child if we find it.
+        const SdfRelocatesMap & relocatesSourceToTarget =
+            layerStack->GetIncrementalRelocatesSourceToTarget();
+        if (relocatesSourceToTarget.find(node.GetPath()) != 
+                relocatesSourceToTarget.end()) {
+            // Report a composition error if this prohibited prim index was
+            // meant to be the target of a composition arc.
+            if (indexer->previousFrame) {
+                PcpErrorArcToProhibitedChildPtr err = 
+                    PcpErrorArcToProhibitedChild::New();
+                err->rootSite = indexer->rootSite;
+                err->site = indexer->previousFrame->parentNode.GetSite();
+                err->targetSite = indexer->previousFrame->requestedSite;
+                err->relocationSourceSite = node.GetSite();
+                err->arcType = indexer->previousFrame->arcToParent->type;
+                indexer->RecordError(err);
+            }
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Force culls all nodes from the output prim index if would be prohibited as
+// a namespace child of its parent due to the relocation source salted earth
+// policy.
+static bool
+_ElidePrimIndexIfProhibited(Pcp_PrimIndexer *indexer)
+{   
+    TRACE_FUNCTION();
+
+    // Otherwise traverse the prim index graph to see if any node site is
+    // a prohibited child of its parent.
+    if (_ComposeIsProhibitedPrimChild(indexer)) {
+        // We set the root node as inert and force cull all the children as they
+        // are not meant to be part of this prim index.
+        PcpNodeRef rootNode = indexer->outputs->primIndex.GetRootNode();
+        rootNode.SetInert(true);
+        TF_FOR_ALL(child, Pcp_GetChildrenRange(rootNode)) {
+            _ElideSubtree(*child, /* cull = */ true);
+        }
+        return true;
+    }
+
+    return false;
+}
+
 static void
 Pcp_BuildPrimIndex(
     const PcpLayerStackSite & site,
@@ -5304,7 +5366,13 @@ Pcp_BuildPrimIndex(
         // Optimization: Since no composition arcs can live on the
         // pseudo-root, we can return early.
         return;
-    } else if (site.path.IsPrimVariantSelectionPath()) {
+    } 
+    
+    Pcp_PrimIndexer indexer(inputs, outputs, rootSite, ancestorRecursionDepth,
+                            previousFrame, evaluateImpliedSpecializes,
+                            evaluateVariantsAndDynamicPayloads);
+
+    if (site.path.IsPrimVariantSelectionPath()) {
         // For variant selection paths, unlike regular prim paths, we do not
         // recurse on the parent to obtain ancestral opinions. This is
         // because variant arcs are evaluated in the process of evaluating
@@ -5325,12 +5393,29 @@ Pcp_BuildPrimIndex(
             evaluateImpliedSpecializes, evaluateVariantsAndDynamicPayloads,
             rootNodeShouldContributeSpecs,
             inputs, outputs);
+
+        // At this point the prim index contains only the ancestral arcs that 
+        // contribute to this path. Any of these nodes could represent a path in
+        // its layer stack that has been relocated to another path. And if that
+        // is the case, we need to employ the salted earth policy and cull all
+        // opinions from this prim index.
+        // 
+        // Note that if we are building a prim index for a relocation node, it's
+        // guaranteed that the root node of the graph is the source of a 
+        // relocation, but the root node is also guaranteed to be inert so that
+        // won't mark the prim index as prohibited. But this will catch the 
+        // cases where the another arc below the relocation might be the source
+        // of a different relocates causing it, and therefore the prim index 
+        // we're building for a relocation arc, to be be prohibited.
+        if (_ElidePrimIndexIfProhibited(&indexer)) {
+            // If the prim index is prohibited, there will be no nodes 
+            // contributing opinions we won't have any tasks to process and can
+            // just return.
+            return;
+        }
     }
 
     // Initialize the task list.
-    Pcp_PrimIndexer indexer(inputs, outputs, rootSite, ancestorRecursionDepth,
-                            previousFrame, evaluateImpliedSpecializes,
-                            evaluateVariantsAndDynamicPayloads);
     indexer.AddTasksForRootNode(outputs->primIndex.GetRootNode());
 
     // Process task list.
@@ -5502,6 +5587,10 @@ _ComposePrimChildNamesAtNode(
     PcpTokenSet *nameSet,
     PcpTokenSet *prohibitedNameSet)
 {
+    if (!node.CanContributeSpecs()) {
+        return;
+    }
+
     if (node.GetLayerStack()->HasRelocates()) {
         // Apply relocations from just this layer stack.
         // Classify them into three groups:  names to add, remove, or replace.
@@ -5620,12 +5709,10 @@ _ComposePrimChildNamesAtNode(
     }
 
     // Compose the site's local names over the current result.
-    if (node.CanContributeSpecs()) {
-        PcpComposeSiteChildNames(
-            node.GetLayerStack()->GetLayers(), node.GetPath(), 
-            SdfChildrenKeys->PrimChildren, nameOrder, nameSet,
-            &SdfFieldKeys->PrimOrder);
-    }
+    PcpComposeSiteChildNames(
+        node.GetLayerStack()->GetLayers(), node.GetPath(), 
+        SdfChildrenKeys->PrimChildren, nameOrder, nameSet,
+        &SdfFieldKeys->PrimOrder);
 
     // Post-conditions, for debugging.
     // Disabled by default to avoid extra overhead.

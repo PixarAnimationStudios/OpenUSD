@@ -105,7 +105,10 @@ Here is the workflow we recommend for contributing changes to USD:
 
        
 
-    #. Now you can work in your branch locally.
+    #. Now you can work in your branch locally. Please review the USD
+       `Coding Guidelines <api/_page__coding__guidelines.html>`__ and 
+       `Testing Guidelines <api/_page__testing__guidelines.html>`__ 
+       when making code changes.
 
         .. | space |
 

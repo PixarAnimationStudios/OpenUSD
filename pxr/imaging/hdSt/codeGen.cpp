@@ -2487,6 +2487,7 @@ HdSt_CodeGen::_GenerateComputeParameters(HgiShaderFunctionDesc * const csDesc)
     // main
     _genCS << "void main() {\n";
     _genCS << "  int computeCoordinate = int(hd_GlobalInvocationID.x);\n";
+    _genCS << "  if (computeCoordinate >= indexEnd) {\n    return;\n  };\n";
     _genCS << "  compute(computeCoordinate);\n";
     _genCS << "}\n";
 
@@ -3102,6 +3103,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
     if (_hasCS) {
         HgiShaderFunctionDesc csDesc;
         csDesc.shaderStage = HgiShaderStageCompute;
+        csDesc.computeDescriptor.localSize = GfVec3i(64, 1, 1);
 
         _GenerateComputeParameters(&csDesc);
 
@@ -3112,6 +3114,8 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             HdShaderTokens->computeShader, _resCommon, _GetMetaData());
         resourceGen._GenerateHgiResources(registry->GetHgi(), &csDesc,
             HdShaderTokens->computeShader, _resCS, _GetMetaData());
+
+        HgiShaderFunctionAddConstantParam(&csDesc, "indexEnd", _tokens->_uint);
 
         std::string const declarations = _genDefines.str() + _genDecl.str();
         std::string const source = _genAccessors.str() + _genCS.str();

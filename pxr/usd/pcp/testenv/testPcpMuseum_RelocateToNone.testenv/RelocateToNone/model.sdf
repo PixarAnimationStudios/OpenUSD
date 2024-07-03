@@ -1,0 +1,36 @@
+#sdf 1.4.32
+
+def "Model" 
+{
+    def "ToBeDeleted"
+    {
+        def "Child"
+        {
+        }
+    }
+
+    def "ToBeRelocated"
+    {
+        def "Child"
+        {
+        }
+
+        def "ToBeDeletedChild"
+        {
+        }
+    }
+
+    rel relationship1 = </Model/ToBeDeleted/Child> (
+        doc = """This relationship target will be invalid in root.sdf
+            when ToBeDeleted is deleted via relocation"""
+    )
+    rel relationship2 = </Model/ToBeRelocated/Child> (
+        doc = """This relationship target will be valid and remapped in
+            root.sdf when ToBeRelocated is relocated to Relocated"""
+    )
+    rel relationship3 = </Model/ToBeRelocated/ToBeDeletedChild> (
+        doc = """This relationship target will be invalid in root.sdf
+            when its mapped path Relocated/ToBeDeletedChild is deleted
+            via relocation"""
+    )
+}

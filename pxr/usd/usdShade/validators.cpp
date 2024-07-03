@@ -39,15 +39,15 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
         {UsdShadeTokens->id, UsdShadeTokens->sourceAsset, 
             UsdShadeTokens->sourceCode};
 
-    const UsdValidationErrorSites primErrorSite = {
-        UsdValidationErrorSite(usdPrim.GetStage(), 
-                               usdPrim.GetPath()) };
-
     const TfToken implSource = shader.GetImplementationSource();
     if (std::find(expectedImplSource.begin(), expectedImplSource.end(),
                   implSource) == expectedImplSource.end()) {
+        const UsdValidationErrorSites implSourceErrorSite = {
+            UsdValidationErrorSite(
+                usdPrim.GetStage(), 
+                shader.GetImplementationSourceAttr().GetPath()) };
         return {UsdValidationError(UsdValidationErrorType::Error, 
-                            primErrorSite,
+                            implSourceErrorSite,
                             TfStringPrintf("Shader <%s> has invalid "
                                            "implementation source '%s'.", 
                                            usdPrim.GetPath().GetText(), 
@@ -56,6 +56,9 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
 
     const std::vector<std::string> sourceTypes = shader.GetSourceTypes();
     if (sourceTypes.empty() && implSource != UsdShadeTokens->id) {
+        const UsdValidationErrorSites primErrorSite = {
+            UsdValidationErrorSite(usdPrim.GetStage(), 
+                                   usdPrim.GetPath()) };
         return {UsdValidationError(
             UsdValidationErrorType::Error, 
             primErrorSite, 
@@ -81,9 +84,12 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
                     }
                 }
             } else {
+                const UsdValidationErrorSites shaderIdErrorSite = {
+                    UsdValidationErrorSite(usdPrim.GetStage(), 
+                                           shader.GetIdAttr().GetPath()) };
                 return {UsdValidationError(
                     UsdValidationErrorType::Error,
-                    primErrorSite,
+                    shaderIdErrorSite,
                     TfStringPrintf("shaderId '%s' specified on shader prim "
                                    "<%s> not found in sdrRegistry.",
                                    shaderId.GetText(), 
@@ -114,13 +120,20 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
                     }
                 }
             } else {
-                errors.emplace_back(UsdValidationError(
+                UsdValidationErrorSites sourceTypeSites;
+                for (const auto& sourceTypeProp : 
+                         usdPrim.GetPropertiesInNamespace(
+                             SdfPath::JoinIdentifier("info", sourceType))) {
+                    sourceTypeSites.emplace_back(usdPrim.GetStage(), 
+                                                 sourceTypeProp.GetPath());
+                }
+                errors.emplace_back(
                     UsdValidationErrorType::Error,
-                    primErrorSite,
+                    sourceTypeSites,
                     TfStringPrintf("sourceType '%s' specified on shader prim "
                                    "<%s> not found in sdrRegistry.",
                                    sourceType.c_str(), 
-                                   usdPrim.GetPath().GetText())));
+                                   usdPrim.GetPath().GetText()));
             }
         }
         SdrShaderNode::ComplianceResults sdrShaderComplianceResults = 

@@ -28,26 +28,24 @@ class TestUsdView(Usdviewq.Launcher):
                             help="The test script to run after loading. "
                                  "This script must expect to take a single")
 
-    def Run(self):
-        parser = argparse.ArgumentParser(prog=sys.argv[0],
-                                         description=self.GetHelpDescription())
-        self.RegisterOptions(parser)
-        super(TestUsdView, self).RegisterPositionals(parser)
+    def ParseOptions(self, parser):
         arg_parse_result = super(TestUsdView, self).ParseOptions(parser)
 
         # We always set --defaultsettings to ensure a consistent test 
         # environment for our test scripts.
         arg_parse_result.defaultSettings = True
-        super(TestUsdView, self).ValidateOptions(arg_parse_result)
-        
-        self.__LaunchProcess(arg_parse_result)
+        return arg_parse_result
 
-    def __LaunchProcess(self, arg_parse_result):
-        callBack = self._ValidateTestFile(arg_parse_result.testScript)
-        (app, appController) = (
-            super(TestUsdView, self).LaunchPreamble(
-                arg_parse_result, overrideMaxSamples = False))
+    def OverrideMaxSamples(self):
+        return False
 
+    def LaunchPreamble(self, arg_parse_result):
+        # Load the test script. This must be done before the creation
+        # of the AppController in the base class' LaunchPreamble.
+        self._LoadTestFile(arg_parse_result.testScript)
+        return super(TestUsdView, self).LaunchPreamble(arg_parse_result)
+
+    def LaunchProcess(self, arg_parse_result, app, appController):
         # Set a fixed size on the stage view so that any image tests get a
         # consistent resolution - but only if we've created a viewer
         if appController._stageView:
@@ -55,19 +53,19 @@ class TestUsdView(Usdviewq.Launcher):
 
         # Process initial loading events
         app.processEvents()
-        callBack(appController)
+        self.callBack(appController)
         # Process event triggered by the callbacks
         app.processEvents()
         # Trigger application shutdown.
         app.instance().closeAllWindows()
-        return
 
     # Verify that we have a valid file as input, and it contains
     # our expected entry point for testing.
     #
-    # Upon success, this will return the callback to be called after
-    # launching Usdview and doing the initial load pass
-    def _ValidateTestFile(self, filePath):
+    # Upon success, this will set the callback to be called after
+    # launching Usdview and doing the initial load pass into
+    # self.callBack.
+    def _LoadTestFile(self, filePath):
         if not os.path.exists(filePath):
             sys.stderr.write('Invalid file supplied, does not exist: {}\n'
                 .format(filePath))
@@ -90,8 +88,8 @@ class TestUsdView(Usdviewq.Launcher):
         with open(filePath) as inputFile:
             code = compile(inputFile.read(), filePath, 'exec')
             exec(code, localVars)
-        callBack = localVars.get(TEST_USD_VIEW_CALLBACK_IDENT)
-        if not callBack:
+        self.callBack = localVars.get(TEST_USD_VIEW_CALLBACK_IDENT)
+        if not self.callBack:
             sys.stderr.write('Invalid file supplied, must contain a function of '
                              'the signature' + TEST_USD_VIEW_CALLBACK_IDENT +
                              '(appController): {}\n'.format(filePath))
@@ -103,15 +101,12 @@ class TestUsdView(Usdviewq.Launcher):
                     'Error: %s')
 
         (args, varargs, keywords, defaults, _, _, _) = \
-                                           inspect.getfullargspec(callBack)
+                                           inspect.getfullargspec(self.callBack)
 
         assert not varargs, errorMsg % 'Varargs are disallowed'
         assert not keywords, errorMsg % 'Kwargs are disallowed'
         assert not defaults, errorMsg % 'Defaults are disallowed'
         assert len(args) == 1, errorMsg % 'Incorrect number of args (1 expected)'
-
-        return callBack
-
 
 # Monkey patch AppController to add helper test interface methods
 

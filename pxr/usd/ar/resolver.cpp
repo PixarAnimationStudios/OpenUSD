@@ -71,12 +71,6 @@ TF_DEFINE_ENV_SETTING(
     PXR_AR_DISABLE_PLUGIN_URI_RESOLVERS, false,
     "Disables plugin URI/IRI resolver implementations.");
 
-TF_DEFINE_ENV_SETTING(
-    PXR_AR_DISABLE_STRICT_SCHEME_VALIDATION, false,
-    "Disables strict validation for URI/IRI schemes. In future releases, "
-    "strict validation will be enforced."
-);
-
 static TfStaticData<std::string> _preferredResolver;
 
 void
@@ -1161,32 +1155,19 @@ private:
                         uriScheme.c_str(), 
                         (*existingResolver)->GetType().GetTypeName().c_str());
                 }
+                else if (const auto validation =
+                            _ValidateResourceIdentifierScheme(uriScheme);
+                         !validation.first) {
+                    TF_WARN(
+                        "ArGetResolver(): '%s' for '%s' is not a valid "
+                        "resource identifier scheme: %s. Paths with this "
+                        "prefix will be handled by other resolvers.",
+                        uriScheme.c_str(),
+                        resolverInfo.type.GetTypeName().c_str(),
+                        validation.second.c_str());
+                }
                 else {
-                    const auto validation =
-                        _ValidateResourceIdentifierScheme(uriScheme);
-                    if (validation.first) {
-                        uriSchemes.push_back(uriScheme);
-                    }
-                    else if (TfGetEnvSetting(
-                                PXR_AR_DISABLE_STRICT_SCHEME_VALIDATION)){
-                        uriSchemes.push_back(uriScheme);
-                        TF_WARN("'%s' for '%s' is not a valid "
-                                "resource identifier scheme and "
-                                "will be restricted in future releases: %s",
-                                 uriScheme.c_str(),
-                                 resolverInfo.type.GetTypeName().c_str(),
-                                 validation.second.c_str());
-                    } else{
-                        TF_WARN(
-                            "'%s' for '%s' is not a valid resource identifier "
-                            "scheme: %s. Paths with this prefix will be "
-                            "handled by other resolvers. Set "
-                            "PXR_AR_DISABLE_STRICT_SCHEME_VALIDATION to "
-                            "disable strict scheme validation.",
-                            uriScheme.c_str(),
-                            resolverInfo.type.GetTypeName().c_str(),
-                            validation.second.c_str());
-                    }
+                    uriSchemes.push_back(uriScheme);
                 }
             }
 

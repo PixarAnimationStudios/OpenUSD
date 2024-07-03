@@ -55,6 +55,9 @@ HgiMetalBlitCmds::_CreateEncoder()
             [_label release];
             _label = nil;
         }
+        if (!_secondaryCommandBuffer) {
+            _hgi->SetHasWork();
+        }
     }
 }
 

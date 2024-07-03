@@ -234,14 +234,30 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
         glTextureParameteri(_textureId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTextureParameteri(_textureId, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-        const uint16_t mips = desc.mipLevels;
-        GLint minFilter = mips > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
-        glTextureParameteri(_textureId, GL_TEXTURE_MIN_FILTER, minFilter);
-        glTextureParameteri(_textureId, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        if (desc.usage &
+            (HgiTextureUsageBitsDepthTarget |
+             HgiTextureUsageBitsStencilTarget)) {
+            glTextureParameteri(_textureId, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTextureParameteri(_textureId, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        } else {
+            glTextureParameteri(
+                _textureId,
+                GL_TEXTURE_MIN_FILTER,
+                GL_LINEAR_MIPMAP_LINEAR);
+            glTextureParameteri(
+                _textureId,
+                GL_TEXTURE_MAG_FILTER,
+                GL_LINEAR);
 
-        float aniso = 2.0f;
-        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
-        glTextureParameterf(_textureId, GL_TEXTURE_MAX_ANISOTROPY_EXT,aniso);
+            float aniso = 2.0f;
+            glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
+            glTextureParameterf(
+                _textureId,
+                GL_TEXTURE_MAX_ANISOTROPY_EXT,
+                aniso);
+        }
+
+        const uint16_t mips = desc.mipLevels;
         glTextureParameteri(_textureId, GL_TEXTURE_BASE_LEVEL, /*low-mip*/0);
         glTextureParameteri(_textureId, GL_TEXTURE_MAX_LEVEL, /*hi-mip*/mips-1);
 

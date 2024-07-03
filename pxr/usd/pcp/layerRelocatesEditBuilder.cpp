@@ -194,79 +194,19 @@ PcpLayerRelocatesEditBuilder::GetEditedRelocatesMap() const {
     return *_relocatesMap;
 }
 
-bool
-PcpLayerRelocatesEditBuilder::Relocate(
-    const SdfPath &source, 
-    const SdfPath &target, 
-    std::string *whyNot)
+template <typename... Args>
+static void _PrintToWhyNot(
+    std::string *whyNot,
+    const SdfPath &source, const SdfPath &target,
+    const char *format, Args... args)
 {
-    // When building relocates, we'll allow the source path to be an unrelocated
-    // path (or even partially relocated if there are mutltiple ancestral 
-    // relocates that affect a path). But these source paths need to mapped to 
-    // their fully relocated path before applying as that is how they must be
-    // expressed in the final relocates map.
-    // 
-    // Note that we do not do the same for target paths as these must only be 
-    // expressed in their final relocated paths as we cannot always determine 
-    // the intention otherwise.
-
-    // We'll apply relocates starting from the root most ancestor, Get all the
-    // prefixes so we can do this cumulatively in order
-    SdfPathVector ancestorPaths = source.GetPrefixes();
-    for (auto ancestorPathsIt = ancestorPaths.begin(); 
-            ancestorPathsIt != ancestorPaths.end(); 
-            ++ancestorPathsIt) {
-
-        // Find an existing relocate that moves this ancestor path and if we do
-        // apply the source to target mapping to it and ALL of its descendant 
-        // paths in the ancestor paths vector.
-        const SdfRelocatesMap &relocatesMap = GetEditedRelocatesMap();
-        const auto foundRelocateIt = relocatesMap.find(*ancestorPathsIt);
-        if (foundRelocateIt == relocatesMap.end()) {
-            continue;
-        }
-
-        const SdfPath &relocateSource = foundRelocateIt->first;
-        const SdfPath &relocateTarget = foundRelocateIt->second;
-
-        for (auto pathsToRelocateIt = ancestorPathsIt; 
-                pathsToRelocateIt != ancestorPaths.end(); 
-                ++pathsToRelocateIt) {
-            *pathsToRelocateIt = pathsToRelocateIt->ReplacePrefix(
-                relocateSource, relocateTarget);
-        }
+    if (!whyNot) {
+        return;
     }
-
-    // The last path in ancestorPaths started as the source path itself, so now
-    // the last path is the original source path with all ancestral relocates 
-    // applied.
-    const SdfPath &relocatedSource = ancestorPaths.back();
-
-    // Attempt to add the relocate with the updated source path.
-    std::string reason;
-    if (_AddAndUpdateRelocates(relocatedSource, target, &reason)) {
-        // Success!
-        return true;
-    }
-
-    // Relocate failed if we get here, so report the reason if desired.
-    if (whyNot) {
-        if (relocatedSource != source) {
-            *whyNot = TfStringPrintf("Cannot relocate <%s> (relocated from "
-                "original source <%s>) to <%s>: %s",
-                relocatedSource.GetText(),
-                source.GetText(),
-                target.GetText(),
-                reason.c_str());
-        } else {
-            *whyNot = 
-                TfStringPrintf("Cannot relocate <%s> to <%s>: %s",
-                    relocatedSource.GetText(),
-                    target.GetText(),
-                    reason.c_str());
-        }
-    }
-    return false;
+    *whyNot = 
+        TfStringPrintf("Cannot relocate <%s> to <%s>: ",
+            source.GetText(), target.GetText()) +
+        TfStringPrintf(format, args...);
 }
 
 static bool 
@@ -275,38 +215,34 @@ _ValidateAgainstExistingRelocate(
     const SdfPath &existingSource, const SdfPath &existingTarget,
     std::string *whyNot)
 {
-    // Cannot relocate to an existing relocate's target again. E.g. if a 
-    // relocate from <A> -> <B> already exists, we cannot add a relocate 
-    // from <C> -> <B>.
-    if (newTarget == existingTarget) {
-        *whyNot = TfStringPrintf(
-            "A relocate from <%s> to <%s> already exists and the same "
-            "target cannot be relocated to again.", 
-            existingSource.GetText(),
-            existingTarget.GetText());
-        return false;
-    }
-
     // Cannot relocate a descendant of a path that is already the source 
     // of an existing relocate.
-    //
-    // This case should be impossible as all source paths are updated to
-    // their fully ancestrally relocated paths before they get passed to 
-    // this function. E.g. if a relocate from <A> -> <B> already existed 
-    // and we tried to add a relocate from <A/C> -> <C>, the source path 
-    // <A/C> would have already been converted to <B/C> before we got here,
-    // therefore avoiding this error condition.
-    //
-    // We still check it and issue a coding error just in case.
-    if (ARCH_UNLIKELY(newSource.HasPrefix(existingSource))) {
-        TF_CODING_ERROR(
+    if (newSource.HasPrefix(existingSource)) {
+        _PrintToWhyNot(whyNot, newSource, newTarget,
             "A relocate from <%s> to <%s> already exists; neither the "
             "source <%s> nor any of its descendants can be relocated again "
             "using their original paths.", 
             existingSource.GetText(),
             existingTarget.GetText(),
             existingSource.GetText());
-            return false;
+        return false;
+    }
+
+    // If the target is empty, we're good after validating the source path.
+    if (newTarget.IsEmpty()) {
+        return true;
+    }
+
+    // Cannot relocate to an existing relocate's target again. E.g. if a 
+    // relocate from <A> -> <B> already exists, we cannot add a relocate 
+    // from <C> -> <B>.
+    if (newTarget == existingTarget) {
+        _PrintToWhyNot(whyNot, newSource, newTarget,
+            "A relocate from <%s> to <%s> already exists and the same "
+            "target cannot be relocated to again.", 
+            existingSource.GetText(),
+            existingTarget.GetText());
+        return false;
     }
 
     // The target of a relocate cannot be a prim, or a descendant of a prim,
@@ -321,7 +257,7 @@ _ValidateAgainstExistingRelocate(
     // /A/B.
     if (newTarget.HasPrefix(existingSource)) {
         if (newTarget != existingSource) {
-            *whyNot = TfStringPrintf(
+            _PrintToWhyNot(whyNot, newSource, newTarget,
                 "Cannot relocate a prim to be a descendant of <%s> which "
                 "is already relocated to <%s>.", 
                 existingSource.GetText(),
@@ -330,7 +266,7 @@ _ValidateAgainstExistingRelocate(
         } 
 
         if (newSource != existingTarget) {
-            *whyNot = TfStringPrintf(
+            _PrintToWhyNot(whyNot, newSource, newTarget,
                 "The target of the relocate is the same as the source of "
                 "an existing relocate from <%s> to <%s>; the only prim "
                 "that can be relocated to <%s> is the existing relocate's "
@@ -346,8 +282,47 @@ _ValidateAgainstExistingRelocate(
     return true;
 }
 
+void 
+PcpLayerRelocatesEditBuilder::_UpdateExistingRelocates(
+    const SdfPath &source, const SdfPath &target)
+{
+    // For each layer with relocates entries update all of them that need to 
+    // have their source or target paths ancestrally relocated by the new 
+    // relocate.
+    for (auto &[layer, relocates] : _layerRelocatesEdits ) {
+        
+        for (auto &[existingSource, existingTarget] : relocates) {
+            // If the existing relocate source would be ancestrally relocated by
+            // the new relocate, apply the relocate to it.
+            if (existingSource.HasPrefix(source)) {
+                existingSource = 
+                    existingSource.ReplacePrefix(source, target);
+                _layersWithRelocatesChanges.insert(layer);
+            }
+            // If the existing target source would be ancestrally relocated by
+            // the new relocate, apply the relocate to it.
+            if (existingTarget.HasPrefix(source)) {
+                existingTarget = 
+                    existingTarget.ReplacePrefix(source, target);
+                _layersWithRelocatesChanges.insert(layer);
+            }
+        }
+
+        // Applying the new relocate to the existing relocates can cause any 
+        // number of them to map a source path to itself, making them redundant
+        // no-ops. These cases are effectively a relocate delete so we remove
+        // these relocates from the layer's relocates list.
+        relocates.erase(
+            std::remove_if(relocates.begin(), relocates.end(),
+                [](const auto &relocate) { 
+                    return relocate.first == relocate.second;
+                }),
+            relocates.end());
+    }
+}
+
 bool
-PcpLayerRelocatesEditBuilder::_AddAndUpdateRelocates(
+PcpLayerRelocatesEditBuilder::Relocate(
     const SdfPath &newSource, 
     const SdfPath &newTarget, 
     std::string *whyNot)
@@ -358,7 +333,9 @@ PcpLayerRelocatesEditBuilder::_AddAndUpdateRelocates(
     }
 
     // Validate the that this source and target pair is a valid relocate period.
-    if (!Pcp_IsValidRelocatesEntry(newSource, newTarget, whyNot)) {
+    std::string reason;
+    if (!Pcp_IsValidRelocatesEntry(newSource, newTarget, &reason)) {
+        _PrintToWhyNot(whyNot, newSource, newTarget, "%s", reason.c_str());
         return false;
     }
 
@@ -389,39 +366,21 @@ PcpLayerRelocatesEditBuilder::_AddAndUpdateRelocates(
         }
     }
 
-    // For each layer with relocates entries update all of them that need to 
-    // have their source or target paths ancestrally relocated by the new 
-    // relocate.
-    for (auto &[layer, relocates] : _layerRelocatesEdits ) {
-        
-        for (auto &[existingSource, existingTarget] : relocates) {
-            // If the existing relocate source would be ancestrally relocated by
-            // the new relocate, apply the relocate to it.
-            if (existingSource.HasPrefix(newSource)) {
-                existingSource = 
-                    existingSource.ReplacePrefix(newSource, newTarget);
-                _layersWithRelocatesChanges.insert(layer);
-            }
-            // If the existing target source would be ancestrally relocated by
-            // the new relocate, apply the relocate to it.
-            if (existingTarget.HasPrefix(newSource)) {
-                existingTarget = 
-                    existingTarget.ReplacePrefix(newSource, newTarget);
-                _layersWithRelocatesChanges.insert(layer);
-            }
-        }
-
-        // Applying the new relocate to the existing relocates can cause any 
-        // number of them to map a source path to itself, making them redundant
-        // no-ops. These cases are effectively a relocate delete so we remove
-        // these relocates from the layer's relocates list.
-        relocates.erase(
-            std::remove_if(relocates.begin(), relocates.end(),
-                [](const auto &relocate) { 
-                    return relocate.first == relocate.second;
-                }),
-            relocates.end());
+    // One last validation: if this would result in adding a new relocate entry
+    // we have to make sure the source is not a root prim as that is invalid in
+    // the layer stack. We can't filter out root prim sources before this point
+    // as we allow root prims that are already targets of relocates to be 
+    // re-relocated through this method.
+    if (addNewRelocate && newSource.IsRootPrimPath()) {
+        _PrintToWhyNot(whyNot, newSource, newTarget,
+            "Adding a relocate from <%s> would result in a root prim "
+            "being relocated.", newSource.GetText());
+        return false;
     }
+
+    // Update existing relocates to account for how this new relocation will 
+    // change their paths.
+    _UpdateExistingRelocates(newSource, newTarget);
 
     // Always add the new relocate after updating existing relocates so we don't
     // end up updating it to be relocated by itself.
@@ -435,6 +394,54 @@ PcpLayerRelocatesEditBuilder::_AddAndUpdateRelocates(
     }
 
     // The relocate was added successfully so the relocates map will need to be
+    // recomputed the next time it's needed.
+    _relocatesMap.reset();
+
+    return true;
+}
+
+bool 
+PcpLayerRelocatesEditBuilder::RemoveRelocate(
+    const SdfPath &sourcePath,
+    std::string *whyNot)
+{
+    const auto &relocatesMap = GetEditedRelocatesMap();
+    auto it = relocatesMap.find(sourcePath);
+    if (it == relocatesMap.end()) {
+        if (whyNot) {
+            *whyNot = TfStringPrintf("Cannot remove relocate for source path "
+                "<%s>: No relocate with the source path found.",
+                sourcePath.GetText());
+            return false;
+        }
+    }
+
+    const SdfPath &targetPath = it->second;
+    if (targetPath.IsEmpty()) {
+        // If this the target path of the existing relocate is empty, we had a
+        // "deletion" relocate. To remove it we just have to delete any 
+        // relocates entries in any layer that use the source path.
+        for (auto &[layer, relocates] : _layerRelocatesEdits ) {
+            auto removeIt = std::remove_if(relocates.begin(), relocates.end(),
+                [&](const auto &relocate) { 
+                    return relocate.first == sourcePath;
+                });
+            if (removeIt != relocates.end()) {
+                _layersWithRelocatesChanges.insert(layer);
+                relocates.erase(removeIt, relocates.end());
+            }
+        }
+    } else {
+        // Update existing relocates as if we have relocated the target path 
+        // back to the source path in order to account for how removing this
+        // relocation will change their paths. Note that this call will handle
+        // removing the existing relocate itself. Also note that we do not have
+        // to do any validation of the source and target paths as their presence
+        // in the relocates map already assures the validity of this call.
+        _UpdateExistingRelocates(targetPath, sourcePath);
+    }
+
+    // The relocates were updated so the relocates map will need to be
     // recomputed the next time it's needed.
     _relocatesMap.reset();
 

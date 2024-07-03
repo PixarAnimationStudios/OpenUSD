@@ -29,6 +29,7 @@ void TestSimpleValidator()
     UsdValidatorMetadata metadata;
     metadata.name = TfToken("TestSimpleLayerValidator");
     metadata.doc = "This is a test.";
+    metadata.isSuite = false;
     UsdValidator layerValidator = UsdValidator(metadata, validateLayerTaskFn);
     SdfLayerRefPtr testLayer = SdfLayer::CreateAnonymous();
     {
@@ -36,6 +37,7 @@ void TestSimpleValidator()
         TF_AXIOM(errors.size() == 1);
         TF_AXIOM(errors[0].HasNoError());
         TF_AXIOM(errors[0].GetSites().empty());
+        TF_AXIOM(errors[0].GetValidator() == &layerValidator);
     }
     // Use the LayerValidator to validate a prim!!
     // Note that this validator has no UsdValidatePrimTaskFn!
@@ -55,7 +57,6 @@ void TestSimpleValidator()
                                    "This is an error on the stage")};
     };
     metadata.name = TfToken("TestSimpleStageValidator");
-    metadata.doc = "This is a test.";
     UsdValidator stageValidator = UsdValidator(metadata, validateStageTaskFn);
     UsdStageRefPtr usdStage = UsdStage::CreateInMemory();
     {
@@ -63,6 +64,7 @@ void TestSimpleValidator()
         TF_AXIOM(errors.size() == 1);
         TF_AXIOM(!errors[0].HasNoError());
         TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+        TF_AXIOM(errors[0].GetValidator() == &stageValidator);
         const UsdValidationErrorSites &errorSites = errors[0].GetSites();
         TF_AXIOM(errorSites.size() == 1);
         TF_AXIOM(!errorSites[0].IsValidSpecInLayer());
@@ -82,6 +84,7 @@ void TestSimpleValidator()
         TF_AXIOM(errors.size() == 1);
         TF_AXIOM(!errors[0].HasNoError());
         TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+        TF_AXIOM(errors[0].GetValidator() == &stageValidator);
         const UsdValidationErrorSites &errorSites = errors[0].GetSites();
         TF_AXIOM(errorSites.size() == 1);
         TF_AXIOM(!errorSites[0].IsValidSpecInLayer());
@@ -99,7 +102,6 @@ void TestSimpleValidator()
     };
     metadata.name = TfToken("TestSimplePrimValidator");
     metadata.schemaTypes = {TfToken("MadeUpPrimType")};
-    metadata.doc = "This is a test.";
     UsdValidator schemaTypeValidator = UsdValidator(metadata, 
                                                     validatePrimTaskFn);
     {
@@ -107,6 +109,7 @@ void TestSimpleValidator()
         TF_AXIOM(errors.size() == 1);
         TF_AXIOM(!errors[0].HasNoError());
         TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+        TF_AXIOM(errors[0].GetValidator() == &schemaTypeValidator);
         const UsdValidationErrorSites &errorSites = errors[0].GetSites();
         TF_AXIOM(errorSites.size() == 1);
         TF_AXIOM(!errorSites[0].IsValidSpecInLayer());

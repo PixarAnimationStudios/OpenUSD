@@ -1,0 +1,78 @@
+#sdf 1.4.32
+(
+    """
+    These cases exercise deleting prims via relocation.
+    """
+
+    relocates = {
+        </Char/ToBeDeleted>: <>, 
+        </Char/ToBeRelocated>: </Char/Relocated>, 
+        </Char/Relocated/ToBeDeletedChild>: <>, 
+    }
+)
+
+def "Char" (
+    references = @model.sdf@</Model>
+) 
+{
+    over "ToBeDeleted" 
+    (
+        doc = """Invalid opinion at deleted via relocation path"""
+    )
+    {
+    }
+
+    over "Relocated" (
+        doc = """Valid opinion at relocated path"""
+    )
+    {
+        over "Child" (
+            doc = """Valid opinion at child of relocated path"""
+        )
+        {
+        }
+
+        over "ToBeDeletedChild" 
+        (
+            doc = """Invalid opinion at deleted via relocation path"""
+        )
+        {
+        }
+    }
+}
+
+def "Good_SubrootRefToRelocated" (
+    doc = """Reference to post-relocation prim is valid"""
+    references = </Char/Relocated>
+)
+{
+}
+
+def "Good_SubrootRefToRelocatedChild" (
+    doc = """Reference to post-relocation prim child is valid"""
+    references = </Char/Relocated/Child>
+)
+{
+}
+
+def "Bad_SubrootRefToDeleted" (
+    doc = """Reference to deleted via relocation prim is invalid"""
+    references = </Char/ToBeDeleted>
+)
+{
+}
+
+def "Bad_SubrootRefToPreRelocated" (
+    doc = """Reference to pre-relocation prim is invalid"""
+    references = </Char/ToBeRelocated>
+)
+{
+}
+
+def "Bad_SubrootRefToDeletedRelocatedChild" (
+    doc = """Reference to post-relocation prim child that has been
+        deleted via relocation prim is invalid"""
+    references = </Char/Relocated/ToBeDeletedChild>
+)
+{
+}

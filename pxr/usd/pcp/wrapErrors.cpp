@@ -68,6 +68,11 @@ wrapErrors()
         ("ErrorArcPermissionDenied", "", no_init)
         ;
 
+    class_<PcpErrorArcToProhibitedChild, bases<PcpErrorBase>,
+        PcpErrorArcToProhibitedChildPtr>
+        ("ErrorArcToProhibitedChild", "", no_init)
+        ;
+
     class_<PcpErrorCapacityExceeded, bases<PcpErrorBase>,
         PcpErrorCapacityExceededPtr >
         ("ErrorCapacityExceeded", "", no_init)

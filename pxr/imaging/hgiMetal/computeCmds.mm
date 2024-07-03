@@ -27,7 +27,6 @@ HgiMetalComputeCmds::HgiMetalComputeCmds(
     , _argumentBuffer(nil)
     , _encoder(nil)
     , _secondaryCommandBuffer(false)
-    , _hasWork(false)
     , _dispatchMethod(desc.dispatchMethod)
 {
     _CreateEncoder();
@@ -135,7 +134,10 @@ HgiMetalComputeCmds::Dispatch(int dimX, int dimY)
         threadsPerThreadgroup:MTLSizeMake(MIN(thread_width, dimX),
                                           MIN(thread_height, dimY), 1)];
 
-    _hasWork = true;
+    if (!_secondaryCommandBuffer) {
+        _hgi->SetHasWork();
+    }
+
     _argumentBuffer = nil;
 }
 
@@ -174,11 +176,9 @@ HgiMetalComputeCmds::GetDispatchMethod() const
 bool
 HgiMetalComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {
-    bool submittedWork = false;
     if (_encoder) {
         [_encoder endEncoding];
         _encoder = nil;
-        submittedWork = true;
 
         HgiMetal::CommitCommandBufferWaitType waitType;
         switch(wait) {
@@ -204,7 +204,7 @@ HgiMetalComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
     _commandBuffer = nil;
     _argumentBuffer = nil;
 
-    return submittedWork;
+    return true;
 }
 
 HGIMETAL_API

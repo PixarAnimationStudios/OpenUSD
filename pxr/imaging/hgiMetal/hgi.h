@@ -154,13 +154,18 @@ public:
     // So for the sake of efficiency, we try to create only one cmd buf and
     // only use the secondary command buffer when the client code requires it.
     // For example, the client code may record in a HgiBlitCmds and a
-    // HgiComputeCmds at the same time.
+    // HgiComputeCmds at the same time. It is the responsibility of the
+    // command buffer implementation to call SetHasWork() if there is
+    // work to be submitted from the primary command buffer.
     HGIMETAL_API
     id<MTLCommandBuffer> GetPrimaryCommandBuffer(HgiCmds *requester = nullptr,
                                                  bool flush = true);
 
     HGIMETAL_API
     id<MTLCommandBuffer> GetSecondaryCommandBuffer();
+
+    HGIMETAL_API
+    void SetHasWork();
 
     HGIMETAL_API
     int GetAPIVersion() const;

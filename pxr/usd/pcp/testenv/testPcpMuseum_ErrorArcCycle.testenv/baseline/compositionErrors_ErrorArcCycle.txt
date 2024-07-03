@@ -85,6 +85,17 @@ CANNOT inherit from:
 
 
 ------------------------------------------------------------------------
+Errors while composing </RelocatedInheritOfChild/Object>
+
+Cycle detected:
+@ErrorArcCycle/root.sdf@</RelocatedInheritOfChild/Object>
+is relocated from:
+@ErrorArcCycle/root.sdf@</RelocatedInheritOfChild/Child>
+which CANNOT inherit from:
+@ErrorArcCycle/root.sdf@</RelocatedInheritOfChild/Child/Class>
+
+
+------------------------------------------------------------------------
 Errors while composing </RelocatedInheritOfChild/Child>
 
 Cycle detected:

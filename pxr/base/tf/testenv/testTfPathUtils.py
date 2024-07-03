@@ -38,29 +38,17 @@ class TestPathUtils(unittest.TestCase):
                 if not os.path.islink('g'):
                     os.symlink('f', 'g')
 
-                # XXX:
-                # On Windows, TfRealPath explicitly lower-cases drive letters
-                # if the given path contains symlinks, otherwise it returns
-                # the same as os.path.abspath. This is inconsistent but
-                # fixing it is a bit riskier. So for now, we just test the
-                # the current behavior.
-                def _TestSymlink(expected, got):
-                    if platform.system() == 'Windows':
-                        drive, tail = os.path.splitdrive(expected)
-                        expected = drive.lower() + tail
-                    self.assertEqual(expected, got)
-
                 self.log.info('leaf dir is symlink')
-                _TestSymlink(os.path.abspath('subdir'),
+                self.assertEqual(os.path.abspath('subdir'),
                              Tf.RealPath('d', True))
                 self.log.info('symlinks through to dir')
-                _TestSymlink(os.path.abspath('subdir/e'),
+                self.assertEqual(os.path.abspath('subdir/e'),
                              Tf.RealPath('d/e', True))
                 self.log.info('symlinks through to nonexistent dirs')
-                _TestSymlink(os.path.abspath('subdir/e/f/g/h'),
+                self.assertEqual(os.path.abspath('subdir/e/f/g/h'),
                              Tf.RealPath('d/e/f/g/h', True))
                 self.log.info('symlinks through to broken link')
-                _TestSymlink('', Tf.RealPath('g', True))
+                self.assertEqual('', Tf.RealPath('g', True))
 
                 self.log.info('symlinks through to broken link, '
                               'raiseOnError=True')
@@ -78,7 +66,7 @@ class TestPathUtils(unittest.TestCase):
                             cwd = os.getcwd()
                             try:
                                 os.chdir(r'C:/symlink-test-link')
-                                _TestSymlink(os.path.abspath('C:/symlink-test'),
+                                self.assertEqual(os.path.abspath('C:/symlink-test'),
                                              Tf.RealPath(r'C:/symlink-test-link'))
                             finally:
                                 # Restore cwd before trying to remove the test

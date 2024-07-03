@@ -35,6 +35,15 @@ _Relocate(PcpLayerRelocatesEditBuilder &self,
     return Pcp_LayerRelocatesEditBuilderRelocateResult(result, whyNot);
 }
 
+Pcp_LayerRelocatesEditBuilderRelocateResult
+_RemoveRelocate(PcpLayerRelocatesEditBuilder &self, 
+    const SdfPath &source)
+{
+    std::string whyNot;
+    bool result = self.RemoveRelocate(source, &whyNot);
+    return Pcp_LayerRelocatesEditBuilderRelocateResult(result, whyNot);
+}
+
 } // anonymous namespace 
 
 void wrapLayerRelocatesEditBuilder()
@@ -48,6 +57,7 @@ void wrapLayerRelocatesEditBuilder()
         .def(init<const PcpLayerStackPtr &>())
         .def(init<const PcpLayerStackPtr &, const SdfLayerHandle &>())
         .def("Relocate", &_Relocate)
+        .def("RemoveRelocate", &_RemoveRelocate)
         .def("GetEditedRelocatesMap",
              &PcpLayerRelocatesEditBuilder::GetEditedRelocatesMap,
              return_value_policy<return_by_value>())

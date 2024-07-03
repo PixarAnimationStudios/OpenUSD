@@ -644,6 +644,16 @@ pxr_install_test_dir(
     DEST testUsdImagingGLDomeLightTaskController
 )
 
+pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLVelocityMotion
+    DEST testUsdImagingGLVelocityMotion
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLVelocityMotion
+    DEST testUsdImagingGLVelocityMotion_SceneIndex
+)
+
 #
 # Register tests that don't depend on build configuration or external libraries
 # (such as MaterialX, OpenVDB, PTEX).
@@ -4540,6 +4550,32 @@ pxr_register_test(testUsdImagingGLDomeLightTaskController
     WARN_PERCENT 0.005
     TESTENV testUsdImagingGLDomeLightTaskController
 )
+
+pxr_register_test(testUsdImagingGLVelocityMotion
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading wireOnSurface -camera /World/main_cam -stage scene.usda -times 1 2.5 4 -write testUsdImagingGLVelocityMotion.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLVelocityMotion_001.png
+        testUsdImagingGLVelocityMotion_2.5.png
+        testUsdImagingGLVelocityMotion_004.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLVelocityMotion)
+
+pxr_register_test(testUsdImagingGLVelocityMotion_SceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading wireOnSurface -camera /World/main_cam -stage scene.usda -times 1 2.5 4 -write testUsdImagingGLVelocityMotion.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLVelocityMotion_001.png
+        testUsdImagingGLVelocityMotion_2.5.png
+        testUsdImagingGLVelocityMotion_004.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLVelocityMotion_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1)
 
 #
 # Conditionally install and register MaterialX tests
