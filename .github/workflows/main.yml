@@ -1,0 +1,126 @@
+name: Build USD
+
+on:
+  push:
+    branches:
+      - release
+      - dev
+
+jobs:
+  # Linux:
+  #   runs-on: ubuntu-20.04
+  #   timeout-minutes: 120
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     - name: Restore cached artifacts
+  #       id: cache-usd-build-dependency
+  #       uses: actions/cache/restore@v3
+  #       with:
+  #         path: |
+  #           USDgen/build
+  #           USDinst
+  #           !USDgen/build/USD
+  #         #key: ${{ runner.os }}-build-${{ hashFiles('$GITHUB_WORKSPACE/USDgen/build/**', exclude: 'USD/**') }}
+  #         #key: ${{ runner.os }}-build-${{ hashFiles('$GITHUB_WORKSPACE/USDgen/build/**') }}
+  #         key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+  #     - name: Install dependencies
+  #       if: steps.cache-dependencies.outputs.cache-hit != 'true'
+  #       run: |
+  #         echo "Cache Miss?: ${{ steps.cache-dependencies.outputs.cache-hit }}"
+  #         sudo apt-get -qq update
+  #         sudo apt-get install -y python3-setuptools libglew-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev
+  #         sudo pip install --upgrade pip
+  #         sudo pip install PySide2 PyOpenGL
+  #     - name: Build USD
+  #       run: |
+  #         python3 build_scripts/build_usd.py --no-materialx --build USDgen/build --src USDgen/src USDinst -v
+  #     - name: Save build artifacts to cache
+  #       if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+  #       uses: actions/cache/save@v3
+  #       with:
+  #         path: |
+  #           USDgen/build
+  #           USDinst
+  #           !USDgen/build/USD
+  #         #key: ${{ runner.os }}-build-${{ hashFiles('$GITHUB_WORKSPACE/USDgen/build/**', exclude: 'USD/**') }}
+  #         #key: ${{ runner.os }}-build-${{ hashFiles('$GITHUB_WORKSPACE/USDgen/build/**') }}
+  #         key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+
+  macOS:
+    runs-on: macos-12
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Restore cached artifacts
+        id: cache-usd-build-dependency
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            USDgen/build
+            USDinst
+            !USDgen/build/USD
+          #key: ${{ runner.os }}-build-${{ hashFiles('$GITHUB_WORKSPACE/USDgen/build/**', exclude: 'USD/**') }}
+          #key: ${{ runner.os }}-build-${{ hashFiles('$GITHUB_WORKSPACE/USDgen/build/**') }}
+          key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+      - name: Install dependencies
+        run: |
+          export PATH=/Library/Frameworks/Python.framework/Versions/3.11/bin:$PATH
+          sudo xcode-select -s /Applications/Xcode_13.3.app/Contents/Developer
+          export SYSTEM_VERSION_COMPAT=1
+          sudo pip3 install PySide6 PyOpenGL setuptools
+      - name: Build USD
+        run: |
+          python3 build_scripts/build_usd.py --no-materialx --generator Xcode --build USDgen/build --src USDgen/src USDinst -v
+      - name: Save build artifacts to cache
+        if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            USDgen/build
+            USDinst
+            !USDgen/build/USD
+          #key: ${{ runner.os }}-build-${{ hashFiles('$GITHUB_WORKSPACE/USDgen/build/**', exclude: 'USD/**') }}
+          #key: ${{ runner.os }}-build-${{ hashFiles('$GITHUB_WORKSPACE/USDgen/build/**') }}
+          key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+
+  # Windows:
+  #   runs-on: windows-2019
+  #   timeout-minutes: 120
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     - name: Restore cached artifacts
+  #       id: cache-usd-build-dependency
+  #       uses: actions/cache/restore@v3
+  #       with:
+  #         path: |
+  #           USDgen/build
+  #           USDinst
+  #           !USDgen/build/OpenUSD
+  #         #key: ${{ runner.os }}-build-${{ hashFiles('$GITHUB_WORKSPACE/USDgen/build/**', exclude: 'USD/**') }}
+  #         #key: ${{ runner.os }}-build-${{ hashFiles('$GITHUB_WORKSPACE/USDgen/build/**') }}
+  #         key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+  #     - name: Install Python and dependencies
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: '3.7'
+  #     - name: Install dependencies
+  #       run: |
+  #         python -m pip install --upgrade pip
+  #         python -m pip install PySide2 PyOpenGL
+  #     - name: Build USD
+  #       run: |
+  #         python build_scripts/build_usd.py --no-materialx --generator "Visual Studio 16 2019" --build USDgen/build --src USDgen/src USDinst --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF" -v
+  #     - name: Save build artifacts to cache
+  #       if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+  #       uses: actions/cache/save@v3
+  #       with:
+  #         path: |
+  #           USDgen/build
+  #           USDinst
+  #           !USDgen/build/OpenUSD
+  #         #key: ${{ runner.os }}-build-${{ hashFiles('$GITHUB_WORKSPACE/USDgen/build/**', exclude: 'USD/**') }}
+  #         #key: ${{ runner.os }}-build-${{ hashFiles('$GITHUB_WORKSPACE/USDgen/build/**') }}
+  #         key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
