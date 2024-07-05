@@ -562,6 +562,13 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
 
     // Initialize a MaterialX Document
     mx::DocumentPtr mxDoc = mx::createDocument();
+
+    // Need to figure out how to read the actual value from the netInterface
+    std::string materialXVersionString = "1.37";
+
+    mxDoc->setVersionString(materialXVersionString);
+
+
     mxDoc->importLibrary(libraries);
     
     // Create a material that instantiates the shader
@@ -584,6 +591,23 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
         terminalNodeName,
         mxType,
         mxShaderNode);
+
+    bool localDebug = false;
+
+    if (localDebug) {
+      writeToXmlFile(
+          mxDoc, mx::FilePath("./before.mtlx"));
+    }
+
+    // Potentially upgrade the MaterialX document to the "current" version using the
+    // MaterialX upgrade mechanism.
+    mxDoc->upgradeVersion();
+
+    if (localDebug) {
+      writeToXmlFile(
+          mxDoc,
+          mx::FilePath("./after.mtlx"));
+    }
 
     // Validate the MaterialX Document.
     {
