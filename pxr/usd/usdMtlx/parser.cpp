@@ -6,6 +6,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usdMtlx/utils.h"
+#include "pxr/usd/usdMtlx/tokens.h"
 #include "pxr/usd/ndr/debugCodes.h"
 #include "pxr/usd/ndr/node.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"

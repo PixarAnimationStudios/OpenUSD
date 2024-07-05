@@ -26,6 +26,7 @@ pxr_library(usdMtlx
         debugCodes.cpp
         discovery.cpp
         parser.cpp
+        tokens.cpp
 
     PRIVATE_CLASSES
         backdoor
@@ -34,12 +35,14 @@ pxr_library(usdMtlx
     PUBLIC_CLASSES
         reader
         utils
+        MaterialXInfoAPI
 
     PRIVATE_HEADERS
         debugCodes.h
 
     PUBLIC_HEADERS
         api.h
+        tokens.h
 
     PYTHON_CPPFILES
         moduleDeps.cpp
@@ -47,11 +50,13 @@ pxr_library(usdMtlx
     PYMODULE_CPPFILES
         module.cpp
         wrapBackdoor.cpp
+        wrapMaterialXInfoAPI.cpp
 
     PYMODULE_FILES
         __init__.py
 
     RESOURCE_FILES
+        generatedSchema.usda
         plugInfo.json
 
     DOXYGEN_FILES

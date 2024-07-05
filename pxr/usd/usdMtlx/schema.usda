@@ -1,0 +1,39 @@
+#usda 1.0
+(
+    "This file describes the USD MaterialX schemata for code generation."
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName       = "usdMtlx"
+        string libraryPath       = "pxr/usd/usdMtlx"
+        dictionary libraryTokens = {
+            dictionary DefaultOutputName = {
+                string value = "out"
+                string doc = """ document this """
+            }
+        }
+    }
+)
+{
+}
+
+class "MaterialXInfoAPI" (
+    inherits = </APISchemaBase>
+    doc = """Write some docs
+    """
+    customData = {
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+        }
+        token[] apiSchemaCanOnlyApplyTo = ["UsdShadeMaterial"]
+    }
+) {
+    string mtlxinfo:version = "1.38" (
+        doc = """Defaults to 1.38 to allow correct verisoning of old files"""
+    )
+}
+
