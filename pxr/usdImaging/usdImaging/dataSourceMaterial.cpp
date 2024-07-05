@@ -716,6 +716,8 @@ _BuildMaterial(
     std::vector<HdDataSourceBaseHandle> terminalsValues;
     TfTokenVector nodeNames;
     std::vector<HdDataSourceBaseHandle> nodeValues;
+    TfTokenVector infoNames;
+    std::vector<HdDataSourceBaseHandle> infoValues;
 
     // Strip the material path prefix from all node names.
     // This makes the network more concise to read, as well
@@ -797,16 +799,49 @@ _BuildMaterial(
     }
 
 
+
+    // finally collect any 'info' on the Material prim
+    // Collect in to a VtDictionary to take advantage of
+    // SetValueAtPath for nested namespaces in the attribute
+    // names.
+    VtDictionary infoDict;
+    for (const auto& attr : usdMat.GetPrim().GetAuthoredAttributes()) {
+      const std::string name = attr.GetName().GetString();
+      const std::string substr = name.substr(0, 5);
+      if (substr.compare("info:") == 0) {
+        VtValue value;
+        attr.Get(&value);
+        infoDict.SetValueAtPath(name.substr(5), value);
+      }
+    }
+
+    infoNames.reserve(infoDict.size());
+    infoValues.reserve(infoDict.size());
+    for (const auto& infoEntry : infoDict)
+    {
+      // from _dataSourceLegacyPrim.cpp - _ToContainerDS(VtDictionary)
+      infoNames.push_back(TfToken(infoEntry.first));
+      infoValues.push_back(HdRetainedSampledDataSource::New(infoEntry.second));
+    }
+
+
     HdContainerDataSourceHandle nodesDs = 
         HdRetainedContainerDataSource::New(
             nodeNames.size(),
             nodeNames.data(),
             nodeValues.data());
 
+    HdContainerDataSourceHandle infoDefaultContext =
+        HdRetainedContainerDataSource::New(
+            infoNames.size(),
+            infoNames.data(),
+            infoValues.data());
+
 
     return HdMaterialNetworkSchema::Builder()
         .SetNodes(nodesDs)
         .SetTerminals(terminalsDs)
+        .SetInfo(infoDefaultContext)
         .SetInterfaceMappings(_UsdImagingDataSourceInterfaceMappings::New(
             UsdShadeMaterial(usdMat.GetPrim())))
         .Build();

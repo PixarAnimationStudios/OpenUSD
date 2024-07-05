@@ -33,7 +33,7 @@ class "MaterialXInfoAPI" (
         token[] apiSchemaCanOnlyApplyTo = ["UsdShadeMaterial"]
     }
 ) {
-    string mtlxinfo:version = "1.38" (
+    string info:mtlx:version = "1.38" (
         doc = """MaterialX library version that the data has been authored against.
         Defaults to 1.38 to allow correct verisoning of old files."""
     )

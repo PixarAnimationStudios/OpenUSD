@@ -144,6 +144,8 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
     std::vector<HdDataSourceBaseHandle> terminalsValues;
     std::vector<TfToken> nodeNames;
     std::vector<HdDataSourceBaseHandle> nodeValues;
+    TfTokenVector infoNames;
+    std::vector<HdDataSourceBaseHandle> infoValues;
 
     struct ParamData {
         VtValue value;
@@ -274,21 +276,37 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
                 .Build());
     }
 
+    infoNames.reserve(hdNetworkMap.info.size());
+    infoValues.reserve(hdNetworkMap.info.size());
+    for (const auto& infoEntry : hdNetworkMap.info)
+    {
+      // from _dataSourceLegacyPrim.cpp - _ToContainerDS(VtDictionary)
+        infoNames.push_back(TfToken(infoEntry.first));
+        infoValues.push_back(HdRetainedSampledDataSource::New(infoEntry.second));
+    }
+
     HdContainerDataSourceHandle nodesDefaultContext = 
         HdRetainedContainerDataSource::New(
             nodeNames.size(),
             nodeNames.data(),
             nodeValues.data());
 
-    HdContainerDataSourceHandle terminalsDefaultContext = 
+    HdContainerDataSourceHandle terminalsDefaultContext =
         HdRetainedContainerDataSource::New(
             terminalsNames.size(),
             terminalsNames.data(),
             terminalsValues.data());
 
+    HdContainerDataSourceHandle infoDefaultContext =
+        HdRetainedContainerDataSource::New(
+            infoNames.size(),
+            infoNames.data(),
+            infoValues.data());
+
     return HdMaterialNetworkSchema::Builder()
         .SetNodes(nodesDefaultContext)
         .SetTerminals(terminalsDefaultContext)
+        .SetInfo(infoDefaultContext)
         .Build();
 }
 

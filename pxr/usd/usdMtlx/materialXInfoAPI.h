@@ -1,25 +1,8 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef USDMTLX_GENERATED_MATERIALXINFOAPI_H
 #define USDMTLX_GENERATED_MATERIALXINFOAPI_H
@@ -170,26 +153,26 @@ private:
 
 public:
     // --------------------------------------------------------------------- //
-    // MTLXINFOVERSION 
+    // INFOMTLXVERSION
     // --------------------------------------------------------------------- //
     /// MaterialX library version that the data has been authored against.
     /// Defaults to 1.38 to allow correct verisoning of old files.
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `string mtlxinfo:version = "1.38"` |
+    /// | Declaration | `string info:mtlx:version = "1.38"` |
     /// | C++ Type | std::string |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->String |
     USDMTLX_API
-    UsdAttribute GetMtlxinfoVersionAttr() const;
+    UsdAttribute GetInfoMtlxVersionAttr() const;
 
-    /// See GetMtlxinfoVersionAttr(), and also 
+    /// See GetInfoMtlxVersionAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDMTLX_API
-    UsdAttribute CreateMtlxinfoVersionAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateInfoMtlxVersionAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

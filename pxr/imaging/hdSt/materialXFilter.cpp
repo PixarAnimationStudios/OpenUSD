@@ -692,7 +692,7 @@ _AddStrippedSurfaceNode(
                 _AddStrippedSurfaceNode(mxDocument, hdConnectedPath.GetName(),
                                         hdConnectedNode, hdNetwork);
             mx::InputPtr mxInput =
-                mxNode->addInput(mxInput->getName(), mxInput->getType());
+                mxNode->addInput(mxInputDef->getName(), mxInputDef->getType());
             mxInput->setConnectedNode(mxConnectedNode);
         }
         // Add the connection as an input with each component set to 0.5
@@ -1320,6 +1320,7 @@ size_t _BuildEquivalentMaterialNetwork(
     // Copy the incoming hdNetwork to the topoNetwork using only the 
     // anonymized names
     topoNetwork->primvars = hdNetwork.primvars;
+    topoNetwork->info = hdNetwork.info;
     for (const auto& terminal : hdNetwork.terminals) {
         topoNetwork->terminals.emplace(
             terminal.first,

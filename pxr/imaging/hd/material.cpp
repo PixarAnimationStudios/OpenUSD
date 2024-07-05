@@ -105,6 +105,10 @@ HdConvertToHdMaterialNetwork2(
         // Transfer primvars:
         result.primvars = hdNetwork.primvars;
     }
+
+    // Transfer info dictionary
+    result.info = hdNetworkMap.info;
+
     return result;
 }
 
@@ -353,7 +357,8 @@ bool operator==(const HdMaterialNetworkMap& lhs,
                 const HdMaterialNetworkMap& rhs) 
 {
     return lhs.map == rhs.map &&
-           lhs.terminals == rhs.terminals;
+           lhs.terminals == rhs.terminals &&
+           lhs.info == rhs.info;
 }
 
 bool operator!=(const HdMaterialNetworkMap& lhs,

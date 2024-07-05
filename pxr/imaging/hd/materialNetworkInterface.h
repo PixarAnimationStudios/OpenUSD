@@ -35,6 +35,16 @@ public:
 
     virtual SdfPath GetMaterialPrimPath() const = 0;
 
+    /// Material info is a collections of data related to the entire material,
+    /// initially introduced to track MaterialX document version.
+    ///
+    /// Similarly to GetNodeTypeInfoXXX() below, only getters are provided, as
+    /// we don't intent mutating this information.
+    virtual TfTokenVector
+    GetMaterialInfoKeys() const = 0;
+    virtual VtValue
+    GetMaterialInfoValue(const TfToken& key) const = 0;
+
     /// Returns the nearest enclosing model asset name, as described by
     /// the model schema, or empty string if none is available.
     virtual std::string GetModelAssetName() const = 0;
