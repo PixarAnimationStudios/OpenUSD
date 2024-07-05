@@ -14,7 +14,7 @@
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hio/glslfxResourceLayout.h"
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include <sstream>
 
@@ -129,7 +129,28 @@ private:
     std::string _GetFallbackScalarSwizzleString(TfToken const &returnType,
                                                 TfToken const &paramName);
 
-    void _PlumbInterstageElements(TfToken const &name, TfToken const &dataType);
+    void _PlumbInterstageElements();
+
+    // The packed field name (grouping vector) and
+    // name of its component that holds the resource.
+    struct _PackedResourceMapping {
+        TfToken groupName;
+        std::string component;
+    };
+
+    _PackedResourceMapping _GetDrawingCoordMapping(std::string const &name);
+
+    void _GetDrawingCoord(std::stringstream &ss,
+                          std::vector<std::string> const &drawingCoordParams,
+                          int instanceIndexWidth,
+                          char const *inputPrefix,
+                          char const *inArraySize);
+
+    void _ProcessDrawingCoord(std::stringstream &ss,
+                              std::vector<std::string> const &drawingCoordParams,
+                              int instanceIndexWidth,
+                              char const *outputPrefix,
+                              char const *outArraySize);
 
     void _GenerateComputeParameters(HgiShaderFunctionDesc *csDesc);
 
@@ -171,6 +192,7 @@ private:
     ElementVector _resCS;
 
     ElementVector _resInterstage;
+    std::unordered_map<std::string, _PackedResourceMapping> _resInterstagePackedMappings;
 
     ElementVector _resCommon;
     ElementVector _resAttrib;

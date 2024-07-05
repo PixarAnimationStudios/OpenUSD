@@ -22,6 +22,7 @@
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/capabilities.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -342,7 +343,10 @@ size_t
 HdStVBOSimpleMemoryManager::_SimpleBufferArray::GetMaxNumElements() const
 {
     static size_t vboMaxSize = TfGetEnvSetting(HD_MAX_VBO_SIZE);
-    return vboMaxSize / _maxBytesPerElement;
+    Hgi* hgi = _resourceRegistry->GetHgi();
+    const size_t storageMaxSize = hgi->GetCapabilities()->
+        GetMaxShaderStorageBlockSize();
+    return std::min(storageMaxSize, vboMaxSize) / _maxBytesPerElement;
 }
 
 void
@@ -555,4 +559,3 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::_GetAggregation() const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

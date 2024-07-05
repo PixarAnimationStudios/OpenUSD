@@ -297,7 +297,7 @@ HgiVulkanCommandQueue::_AcquireInflightIdBit()
     // may have updated the `expected` value!), we re-apply our bit and try
     // again. Relaxed memory order since this isn't used to order read/writes.
     // If no bits are available, then exit with nothing. The caller will try
-    // to free some bits by updating the in-flight status of the existing 
+    // to free some bits by updating the in-flight status of the existing
     // buffers.
     uint64_t freeBit;
     uint64_t expected = _inflightBits.load(std::memory_order_relaxed);

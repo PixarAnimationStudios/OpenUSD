@@ -103,10 +103,10 @@ public:
     HGIVULKAN_API
     VkSemaphore GetVulkanSemaphore() const;
 
-    /// Update the command buffer in-flight status. If the status was 
-    /// StillInFlight on the last update, the result will be FinishedFlight if 
-    /// the device has finished consuming the buffer. Otherwise if not 
-    /// consumed, it will be StillInFlight. Finally if the buffer had finished 
+    /// Update the command buffer in-flight status. If the status was
+    /// StillInFlight on the last update, the result will be FinishedFlight if
+    /// the device has finished consuming the buffer. Otherwise if not
+    /// consumed, it will be StillInFlight. Finally if the buffer had finished
     /// flight or was not in flight, it will be NotInFlight.
     HGIVULKAN_API
     InFlightUpdateResult UpdateInFlightStatus(HgiSubmitWaitType wait);
@@ -116,7 +116,7 @@ public:
     /// 'not reset' means it is still inflight or that it was previously reset.
     /// When the command buffer was reset the 'CompletedHandler' fns will have
     /// been executed in case of GPU->CPU read back cmds.
-    // If wait = HgiSubmitWaitTypeWaitUntilCompleted, the function will wait 
+    // If wait = HgiSubmitWaitTypeWaitUntilCompleted, the function will wait
     // for the command buffer to be consumed before continuing.
     HGIVULKAN_API
     bool ResetIfConsumedByGPU(HgiSubmitWaitType wait);

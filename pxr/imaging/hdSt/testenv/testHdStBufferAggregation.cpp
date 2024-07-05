@@ -832,9 +832,10 @@ OverAggregationTest(HdStResourceRegistry *registry)
     // * 50
     //   8 entries = 915MB
     //   split into 7 buffers.
-    int count = 50;
+    size_t count = 50;
+    size_t countPerCommit = count / 2;
     std::vector<HdBufferArrayRangeSharedPtr> ranges;
-    for (int i = 0; i < count/2; ++i) {
+    for (size_t i = 0; i < countPerCommit; ++i) {
         HdBufferSourceSharedPtrVector sources;
         sources.push_back(
             std::make_shared<HdVtBufferSource>(
@@ -854,9 +855,9 @@ OverAggregationTest(HdStResourceRegistry *registry)
 
     registry->Commit();
 
-    // Schedule some more resources which will aggregate with the 
+    // Schedule some more resources which will aggregate with the
     // previously committed resources.
-    for (int i = count/2; i < count; ++i) {
+    for (size_t i = countPerCommit; i < count; ++i) {
         HdBufferSourceSharedPtrVector sources;
         sources.push_back(
             std::make_shared<HdVtBufferSource>(
@@ -877,24 +878,34 @@ OverAggregationTest(HdStResourceRegistry *registry)
     registry->Commit();
 
     // read
-    for (int i = 0; i < count; ++i) {
+    for (size_t i = 0; i < count; ++i) {
         VtValue const& rangeData = ranges[i]->ReadData(HdTokens->points);
         if (points != rangeData) {
             // XXX The below code is added for debugging why this test
             // sometimes fails. We suspect a floating-point compare issue where
             // we may need to have a small epsilon for comparing floats?
             TF_VERIFY(rangeData.IsHolding<VtArray<GfVec3f>>());
-            VtArray<GfVec3f> const& vec3fArray = 
+            VtArray<GfVec3f> const& vec3fArray =
                 rangeData.UncheckedGet<VtArray<GfVec3f>>();
 
             std::cerr << "point size: " << points.size() << std::endl;
             std::cerr << "rangeData size: " << vec3fArray.size() << std::endl;
 
-            for (size_t x=0; x<points.size(); x++) {
+            static constexpr size_t maxFailureCountPrint = 300;
+            size_t failureCount = 0;
+            for (size_t x = 0; x < points.size(); x++) {
                 if (points[x] != vec3fArray[x]) {
-                    std::cerr << "Compare failed index: " << x << std::endl;
-                    std::cerr << points[x] << " " << vec3fArray[x] << std::endl;
+                    if (failureCount++ < maxFailureCountPrint) {
+                        std::cerr << "Compare failed index: " << x << std::endl;
+                        std::cerr << points[x] << " " << vec3fArray[x] << std::endl;
+                    }
                 }
+            }
+
+            if (failureCount > maxFailureCountPrint) {
+                std::cerr << "And " << (failureCount - maxFailureCountPrint) <<
+                    " more failures omitted (" << (static_cast<float>(failureCount) /
+                    points.size() * 100) << "% failed)" << std::endl;
             }
 
             TF_VERIFY(false);
@@ -905,8 +916,18 @@ OverAggregationTest(HdStResourceRegistry *registry)
     std::cerr << perfLog.GetCounter(HdStPerfTokens->copyBufferCpuToGpu) << "\n";
     std::cerr << perfLog.GetCounter(HdStPerfTokens->copyBufferGpuToGpu) << "\n";
 
+    // Relocation count depends on the VBO max size. Smaller size means more relocations.
+    // If it's the default 2^30, there will be 9 relocations. But smaller can have much more:
+    // For example Lavapipe limits the size to 2^27 and has 51 relocations.
+    static constexpr size_t vboMaxSize = 1 << 30; // default for HD_MAX_VBO_SIZE
+    const size_t storageMaxSize = registry->GetHgi()->GetCapabilities()->GetMaxShaderStorageBlockSize();
+    const size_t rangesPerBuffer = std::min(storageMaxSize, vboMaxSize) / (points.size() * sizeof(GfVec3f));
+    const size_t relocationsFirstCommit = (countPerCommit - 1) / rangesPerBuffer + 1;
+    const size_t relocationsSecondCommit = (countPerCommit - 1 + rangesPerBuffer) / rangesPerBuffer + 1;
+    const size_t totalRelocations = relocationsFirstCommit + relocationsSecondCommit;
+
     // check perf counters
-    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->vboRelocated) == 9);
+    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->vboRelocated) == totalRelocations);
     TF_VERIFY(perfLog.GetCounter(HdStPerfTokens->copyBufferCpuToGpu) == 50);
     TF_VERIFY(perfLog.GetCounter(HdStPerfTokens->copyBufferGpuToGpu) == 1);
 
@@ -1064,4 +1085,3 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 }
-
