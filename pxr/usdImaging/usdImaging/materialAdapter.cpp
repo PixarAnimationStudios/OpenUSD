@@ -379,6 +379,19 @@ UsdImagingMaterialAdapter::GetMaterialResource(UsdPrim const &prim,
             time);
     }
 
+    // finally collect any 'info' on the Material prim
+    VtDictionary infoDict;
+    for (const auto& attr : prim.GetAuthoredAttributes()) {
+        const std::string name = attr.GetName().GetString();
+        const std::string substr = name.substr(0, 5);
+        if (substr.compare("info:") == 0) {
+            VtValue value;
+            attr.Get(&value);
+            infoDict.SetValueAtPath(name.substr(5), value);
+        }
+    }
+    networkMap.info = infoDict;
+
     return VtValue(networkMap);
 }
 

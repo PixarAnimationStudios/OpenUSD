@@ -1460,13 +1460,12 @@ UsdShadeMaterial
 _Context::BeginMaterial(const mx::ConstNodePtr& mtlxMaterial)
 {
     if (TF_VERIFY(!_usdMaterial)) {
-        auto mtlxVersionValue = VtValue(mtlxMaterial->getDocument()->getVersionString());
-
         auto materialPath =
             _materialsPath.AppendChild(_MakeName(mtlxMaterial));
         if (auto usdMaterial = UsdShadeMaterial::Define(_stage, materialPath)) {
             auto mtlxInfoAPI = UsdMtlxMaterialXInfoAPI::Apply(usdMaterial.GetPrim());
-            mtlxInfoAPI.CreateMtlxinfoVersionAttr(mtlxVersionValue);
+            auto mtlxVersionValue = VtValue(mtlxMaterial->getDocument()->getVersionString());
+            mtlxInfoAPI.CreateInfoMtlxVersionAttr(mtlxVersionValue);
 
             _SetCoreUIAttributes(usdMaterial.GetPrim(), mtlxMaterial);
 

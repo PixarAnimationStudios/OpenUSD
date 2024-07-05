@@ -23,10 +23,12 @@ public:
     _MaterialDataSource(
         const HdContainerDataSourceHandle &materialInput,
         const HdContainerDataSourceHandle &primInput,
+        const HdContainerDataSourceHandle &info,
         const SdfPath &primPath,
         const HdMaterialFilteringSceneIndexBase::FilteringFnc &fnc)
     : _materialInput(materialInput)
     , _primInput(primInput)
+    , _info(info)
     , _primPath(primPath)
     , _fnc(fnc)
     {}
@@ -62,6 +64,7 @@ public:
 private:
     HdContainerDataSourceHandle _materialInput;
     HdContainerDataSourceHandle _primInput;
+    HdContainerDataSourceHandle _info;
     SdfPath _primPath;
     HdMaterialFilteringSceneIndexBase::FilteringFnc _fnc;
 };
@@ -99,7 +102,7 @@ public:
                 if (HdContainerDataSourceHandle materialContainer =
                         HdContainerDataSource::Cast(result)) {
                     return _MaterialDataSource::New(
-                        materialContainer, _primInput, _primPath,
+                        materialContainer, _primInput, _info, _primPath,
                         _base->GetFilteringFunction());
                 }
             }
@@ -114,6 +117,7 @@ private:
     // filtering function.
     const HdMaterialFilteringSceneIndexBase* _base;
     HdContainerDataSourceHandle _primInput;
+    HdContainerDataSourceHandle _info;
     SdfPath _primPath;
 };
 
