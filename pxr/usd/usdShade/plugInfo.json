@@ -133,7 +133,10 @@
                         "schemaTypes": [
                             "UsdShadeShader"
                         ]
-                    }, 
+                    },
+                    "MaterialBindingApiChecker": {
+                        "doc": "Verify a prim has the MaterialBindingAPI applied if it has a material relationship binding."
+                    },
                     "keywords": [
                         "UsdShadeValidators"
                     ]

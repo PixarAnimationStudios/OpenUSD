@@ -16,6 +16,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/validatorTokens.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
 
 #include <algorithm>
 #include <unordered_map>
@@ -192,6 +193,34 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
     return errors;
 }
 
+
+static
+UsdValidationErrorVector
+_MaterialBindingApiChecker(const UsdPrim &usdPrim)
+{
+    UsdValidationErrorVector errors;
+
+    if (!usdPrim.CanApplyAPI<UsdShadeMaterialBindingAPI>()){
+        return errors;
+    }
+
+    UsdShadeMaterialBindingAPI materialBindingAPI(usdPrim);
+
+    if (materialBindingAPI.GetDirectBinding().IsBound() && !usdPrim.HasAPI<UsdShadeMaterialBindingAPI>()) {
+        errors.emplace_back(
+                UsdValidationErrorType::Error,
+                UsdValidationErrorSites{
+                        UsdValidationErrorSite(usdPrim.GetStage(),
+                                               usdPrim.GetPath())
+                },
+                TfStringPrintf("Found material bindings but no " \
+                    "MaterialBindingAPI applied on the prim <%s>.",
+                               usdPrim.GetPath().GetText()));
+    }
+
+    return errors;
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
@@ -199,6 +228,10 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     registry.RegisterPluginValidator(
         UsdShadeValidatorNameTokens->shaderSdrCompliance, 
         _ShaderPropertyTypeConformance);
+
+    registry.RegisterPluginValidator(
+            UsdShadeValidatorNameTokens->materialBindingApiChecker,
+            _MaterialBindingApiChecker);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

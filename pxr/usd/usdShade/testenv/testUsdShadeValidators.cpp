@@ -14,6 +14,10 @@
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/shaderDefUtils.h"
 #include "pxr/usd/usdShade/validatorTokens.h"
+#include <pxr/usd/usdShade/material.h>
+#include <pxr/usd/usdShade/materialBindingAPI.h>
+#include <pxr/usd/usd/relationship.h>
+#include <pxr/usd/usd/prim.h>
 
 #include <algorithm>
 
@@ -118,11 +122,50 @@ TestUsdShadeShaderPropertyCompliance()
     }
 }
 
+void
+TestUsdShadeMaterialBindingAPIChecker()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const UsdValidator *validator = registry.GetOrLoadValidatorByName(
+        UsdShadeValidatorNameTokens->materialBindingApiChecker);
+    TF_AXIOM(validator);
+
+    UsdStageRefPtr usdStage = UsdStage::CreateInMemory();
+    const UsdPrim usdPrim = usdStage->DefinePrim(SdfPath("/Test"));
+    UsdShadeMaterial material = UsdShadeMaterial::Define(usdStage, SdfPath("/Test/Material"));
+
+    // Create the material binding relationship manually
+    UsdRelationship materialBinding = usdPrim.CreateRelationship(TfToken("material:binding"));
+    materialBinding.AddTarget(material.GetPath());
+
+    UsdValidationErrorVector errors = validator->Validate(usdPrim);
+
+    auto site = errors[0].GetSites()[0];
+    TF_AXIOM(errors.size() == 1);
+    TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+    TF_AXIOM(errors[0].GetSites().size() == 1);
+    TF_AXIOM(errors[0].GetSites()[0].IsValid());
+    TF_AXIOM(errors[0].GetSites()[0].IsPrim());
+    TF_AXIOM(errors[0].GetSites()[0].GetPrim().GetPath() == SdfPath("/Test"));
+    const std::string expectedErrorMsg = "Found material bindings but no MaterialBindingAPI applied on the prim </Test>.";
+    TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
+
+    // Apply the material binding API to the prim and bind the material
+    UsdShadeMaterialBindingAPI bindingAPI = UsdShadeMaterialBindingAPI::Apply(usdPrim);
+    bindingAPI.Bind(material);
+
+    errors = validator->Validate(usdPrim);
+
+    // Verify the errors are fixed
+    TF_AXIOM(errors.size() == 0);
+}
+
 int
 main()
 {
     TestUsdShadeValidators();
     TestUsdShadeShaderPropertyCompliance();
+    TestUsdShadeMaterialBindingAPIChecker();
     printf("OK\n");
     return EXIT_SUCCESS;
 };
