@@ -2955,7 +2955,7 @@ class "Curves" (
         deactivating geometry prims, invisible geometry is still 
         available for inspection, for positioning, for defining volumes, etc.'''
     )
-    float[] widths = [0.1] (
+    float[] widths (
         doc = """Provides width specification for the curves, whose application
         will depend on whether the curve is oriented (normals are defined for
         it), in which case widths are \"ribbon width\", or unoriented, in which
@@ -2963,7 +2963,6 @@ class "Curves" (
         but the number of elements in this attribute will be determined by
         its 'interpolation'.  See .  If 'widths'
         and 'primvars:widths' are both specified, the latter has precedence."""
-        interpolation = "constant"
     )
     uniform token[] xformOpOrder (
         doc = """Encodes the sequence of transformation operations in the
@@ -3335,7 +3334,7 @@ class BasisCurves "BasisCurves" (
         deactivating geometry prims, invisible geometry is still 
         available for inspection, for positioning, for defining volumes, etc.'''
     )
-    float[] widths = [0.1] (
+    float[] widths (
         doc = """Provides width specification for the curves, whose application
         will depend on whether the curve is oriented (normals are defined for
         it), in which case widths are \"ribbon width\", or unoriented, in which
@@ -3343,7 +3342,6 @@ class BasisCurves "BasisCurves" (
         but the number of elements in this attribute will be determined by
         its 'interpolation'.  See .  If 'widths'
         and 'primvars:widths' are both specified, the latter has precedence."""
-        interpolation = "constant"
     )
     uniform token wrap = "nonperiodic" (
         allowedTokens = ["nonperiodic", "periodic", "pinned"]
@@ -3558,7 +3556,7 @@ class NurbsCurves "NurbsCurves" (
         deactivating geometry prims, invisible geometry is still 
         available for inspection, for positioning, for defining volumes, etc.'''
     )
-    float[] widths = [0.1] (
+    float[] widths (
         doc = """Provides width specification for the curves, whose application
         will depend on whether the curve is oriented (normals are defined for
         it), in which case widths are \"ribbon width\", or unoriented, in which
@@ -3566,7 +3564,6 @@ class NurbsCurves "NurbsCurves" (
         but the number of elements in this attribute will be determined by
         its 'interpolation'.  See .  If 'widths'
         and 'primvars:widths' are both specified, the latter has precedence."""
-        interpolation = "constant"
     )
     uniform token[] xformOpOrder (
         doc = """Encodes the sequence of transformation operations in the
@@ -4746,7 +4743,7 @@ class HermiteCurves "HermiteCurves" (
         deactivating geometry prims, invisible geometry is still 
         available for inspection, for positioning, for defining volumes, etc.'''
     )
-    float[] widths = [0.1] (
+    float[] widths (
         doc = """Provides width specification for the curves, whose application
         will depend on whether the curve is oriented (normals are defined for
         it), in which case widths are \"ribbon width\", or unoriented, in which
@@ -4754,7 +4751,6 @@ class HermiteCurves "HermiteCurves" (
         but the number of elements in this attribute will be determined by
         its 'interpolation'.  See .  If 'widths'
         and 'primvars:widths' are both specified, the latter has precedence."""
-        interpolation = "constant"
     )
     uniform token[] xformOpOrder (
         doc = """Encodes the sequence of transformation operations in the

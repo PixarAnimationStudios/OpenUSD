@@ -1566,7 +1566,7 @@ class "Curves" (
     )
     
     # shaping attributes
-    float[] widths  = [0.1] (
+    float[] widths (
         doc = """Provides width specification for the curves, whose application
         will depend on whether the curve is oriented (normals are defined for
         it), in which case widths are "ribbon width", or unoriented, in which
@@ -1574,7 +1574,6 @@ class "Curves" (
         but the number of elements in this attribute will be determined by
         its 'interpolation'.  See \\ref SetWidthsInterpolation() .  If 'widths'
         and 'primvars:widths' are both specified, the latter has precedence."""
-        interpolation = "constant"
     )
 }
 
