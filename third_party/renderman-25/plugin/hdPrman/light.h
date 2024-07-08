@@ -4,12 +4,24 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_H
-#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_H
+#ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_H
+#define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_H
+
+#include "pxr/imaging/hd/light.h"
+#include "pxr/imaging/hd/sprim.h"
+#include "pxr/imaging/hd/types.h"
+
+#include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/tf/token.h"
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/light.h"
-#include "Riley.h"
+
+#include <Riley.h>
+#include <RileyIds.h>
+#include <RiTypesHelper.h>
+
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -44,17 +56,17 @@ private:
     riley::LightShaderId _shaderId;
     riley::LightInstanceId _instanceId;
     
-    // state for change tracking
-    riley::GeometryPrototypeId _geometryPrototypeId;
-    SdfPath _sourceGeomPath;
     RtUString _lightShaderType;
     TfToken _lightLink;
+    TfToken _shadowLink;
     SdfPathVector _lightFilterPaths;
     std::vector<TfToken> _lightFilterLinks;
-    TfToken _shadowLink;
-};
 
+    // state for mesh light change tracking
+    riley::GeometryPrototypeId _geometryPrototypeId;
+    SdfPath _sourceGeomPath;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_H
+#endif  // EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_H

@@ -9,18 +9,64 @@
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/debugUtil.h"
 #include "hdPrman/light.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/utils.h"
 
+#include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/instancer.h"
+#include "pxr/imaging/hd/light.h"
+#include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/timeSampleArray.h"
+#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/types.h"
+#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hf/perfLog.h"
+
+#include "pxr/usd/sdf/path.h"
+
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/quatd.h"
+#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/tf/callContext.h"
+#include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/trace/trace.h"
+#include "pxr/base/vt/array.h"
 #include "pxr/base/vt/typeHeaders.h"
+#include "pxr/base/vt/types.h"
 #include "pxr/base/vt/visitValue.h"
 #include "pxr/base/work/loops.h"
-#include "pxr/imaging/hd/light.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/tokens.h"
+
+#include "pxr/pxr.h"
+
+#include <prmanapi.h>
+#include <Riley.h>
+#include <RileyIds.h>
+#include <RiTypesHelper.h>
+#include <stats/Roz.h>
+
+#include <tbb/spin_rw_mutex.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <string>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
+#if _PRMANAPI_VERSION_ >= 27 // Check for prman batch API
+#define PRMAN_HAS_BATCH
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -111,7 +157,7 @@ HdTimeSampleArray<M,C> _MultiplyTransforms(
 
 void _BuildStatsId(
     const SdfPath& instancerId, 
-    const int index, 
+    const size_t index, 
     const SdfPath& protoId, 
     RtParamList& params)
 {
@@ -129,11 +175,11 @@ void _BuildStatsId(
         valStr = TfStringReplace(
             valStr, 
             instancerId.GetString(), 
-            TfStringPrintf("%s[%i]", instancerId.GetText(), index));
+            TfStringPrintf("%s[%zu]", instancerId.GetText(), index));
         val = RtUString(valStr.c_str());
     } else {
         std::string valStr = TfStringPrintf(
-            "%s[%i]{%s}", 
+            "%s[%zu]{%s}", 
             instancerId.GetText(), 
             index, 
             protoId.GetName().c_str());
@@ -256,7 +302,7 @@ HdPrmanInstancer::Sync(
 
     _UpdateInstancer(delegate, dirtyBits);
 
-    HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(renderParam);
+    auto* param = static_cast<HdPrman_RenderParam*>(renderParam);
 
     // Convert (and cache) instancer coordinate systems.
     if (HdPrman_RenderParam::RileyCoordSysIdVecRefPtr convertedCoordSys =
@@ -298,21 +344,23 @@ HdPrmanInstancer::Finalize(HdRenderParam *renderParam)
     HD_TRACE_FUNCTION();
     TF_DEBUG(HDPRMAN_INSTANCERS).Msg("*** Finalize called on <%s>\n\n",
         GetId().GetText());
-    HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(renderParam);
+    auto* param = static_cast<HdPrman_RenderParam*>(renderParam);
     riley::Riley *riley = param->AcquireRiley();
 
     // Release retained conversions of coordSys bindings.
     param->ReleaseCoordSysBindings(GetId());
     
     // Delete all my riley instances
-    _protoMap.citerate([riley](const SdfPath& path, const _ProtoMapEntry& entry) {
+    _protoMap.citerate([riley](const SdfPath& /* path */,
+        const _ProtoMapEntry& entry) {
         for (const auto& rp : entry.map) {
             const _InstanceIdVec& ids = rp.second;
             _ParallelFor(ids.size(), [&](size_t i) {
                 const _RileyInstanceId& ri = ids[i];
                 if (ri.lightInstanceId != riley::LightInstanceId::InvalidId()) {
                     riley->DeleteLightInstance(ri.groupId, ri.lightInstanceId);
-                } else if (ri.geoInstanceId != riley::GeometryInstanceId::InvalidId()) {
+                } else if (ri.geoInstanceId !=
+                    riley::GeometryInstanceId::InvalidId()) {
                     riley->DeleteGeometryInstance(ri.groupId, ri.geoInstanceId);
                 }
             });
@@ -329,7 +377,8 @@ HdPrmanInstancer::Finalize(HdRenderParam *renderParam)
     }
 
     // Delete my prototype groups
-    _groupMap.citerate([&](const _FlattenData fd, const riley::GeometryPrototypeId& gp) {
+    _groupMap.citerate([&](const _FlattenData& /* fd */,
+        const riley::GeometryPrototypeId& gp) {
         if (gp != riley::GeometryPrototypeId::InvalidId()) {
             riley->DeleteGeometryPrototype(gp);
         }
@@ -346,8 +395,9 @@ void HdPrmanInstancer::Populate(
     const SdfPath& hydraPrototypeId,
     const std::vector<riley::GeometryPrototypeId>& rileyPrototypeIds,
     const riley::CoordinateSystemList& coordSysList,
-    const RtParamList protoParams,
-    const HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> protoXform,
+    const RtParamList& prototypeParams,
+    const HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES>&
+        prototypeXform,
     const std::vector<riley::MaterialId>& rileyMaterialIds,
     const SdfPathVector& prototypePaths,
     const riley::LightShaderId& lightShaderId)
@@ -363,8 +413,8 @@ void HdPrmanInstancer::Populate(
         hydraPrototypeId,
         rileyPrototypeIds,
         coordSysList,
-        protoParams,
-        protoXform,
+        prototypeParams,
+        prototypeXform,
         rileyMaterialIds,
         prototypePaths,
         lightShaderId,
@@ -388,7 +438,7 @@ void HdPrmanInstancer::Depopulate(
             HdPrmanDebugUtil::RileyIdVecToString(excludedPrototypeIds).c_str(),
             HdPrmanDebugUtil::GetCallerAsString(TF_CALL_CONTEXT).c_str());
     }
-    HdPrman_RenderParam* param = static_cast<HdPrman_RenderParam*>(renderParam);
+    auto* param = static_cast<HdPrman_RenderParam*>(renderParam);
     riley::Riley* riley = param->AcquireRiley();
 
     _RemoveDeadInstances(riley, prototypePrimPath, excludedPrototypeIds);
@@ -399,8 +449,7 @@ void HdPrmanInstancer::Depopulate(
 // **    Private methods called during Sync    **
 // **********************************************
 
-void HdPrmanInstancer::_SyncPrimvars(
-    HdDirtyBits* dirtyBits)
+void HdPrmanInstancer::_SyncPrimvars(const HdDirtyBits* dirtyBits)
 {
 
     // This method syncs USD primvars authored on the instancer into a cache.
@@ -512,9 +561,24 @@ bool UnboxOrientations(
     return false;
 }
 
+template <typename T>
 void
-HdPrmanInstancer::_SyncTransforms(
-    HdDirtyBits* dirtyBits)
+_ValidateSamplesTimes(HdTimeSampleArray<T, HDPRMAN_MAX_TIME_SAMPLES>& samples)
+{
+    for (size_t i = 0; i < samples.count; ++i) {
+        if (samples.values[i].size() != samples.values[0].size()) {
+            HdTimeSampleArray<T, HDPRMAN_MAX_TIME_SAMPLES> new_samples;
+            new_samples.Resize(1);
+            new_samples.times[0] = 0.f;
+            new_samples.values[0] = samples.Resample(0.f);
+            samples = new_samples;
+            return;
+        }
+    }
+}
+
+void
+HdPrmanInstancer::_SyncTransforms(const HdDirtyBits* dirtyBits)
 {
     HdSceneDelegate* delegate = GetDelegate();
     const SdfPath& id = GetId();
@@ -522,7 +586,7 @@ HdPrmanInstancer::_SyncTransforms(
     // XXX: When finally removing these, eliminate the variables. Replace
     // their usages with the appropriate HdInstancerTokens inline. Don't forget
     // to reformat the "not ... expected type" warning messages, too!
-#if HD_API_VERSION < 56  // USD_VERSION < 23.05
+#if HD_API_VERSION < 56 // USD_VERSION < 23.05
     TfToken instanceTranslationsToken = HdInstancerTokens->translate;
     TfToken instanceRotationsToken = HdInstancerTokens->rotate;
     TfToken instanceScalesToken = HdInstancerTokens->scale;
@@ -532,7 +596,7 @@ HdPrmanInstancer::_SyncTransforms(
     TfToken instanceRotationsToken = HdInstancerTokens->instanceRotations;
     TfToken instanceScalesToken = HdInstancerTokens->instanceScales;
     TfToken instanceTransformsToken = HdInstancerTokens->instanceTransforms;
-#if HD_API_VERSION < 67  // USD_VERSION < 24.05
+#if HD_API_VERSION < 67 // USD_VERSION < 24.05
     if (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)) {
         instanceTranslationsToken = HdInstancerTokens->translate;
         instanceRotationsToken = HdInstancerTokens->rotate;
@@ -598,6 +662,12 @@ HdPrmanInstancer::_SyncTransforms(
             TF_WARN("<%s> %s did not have expected type vec3f[]",
                 instanceScalesToken.GetText(), id.GetText());
         }
+
+        // Check the number of instances is constant between time samples.
+        _ValidateSamplesTimes(instanceXforms);
+        _ValidateSamplesTimes(translates);
+        _ValidateSamplesTimes(scales);
+        _ValidateSamplesTimes(rotates);
 
         // As a simple resampling strategy, find the input with the max #
         // of samples and use its sample placement.  In practice we expect
@@ -669,7 +739,7 @@ HdPrmanInstancer::_SyncTransforms(
 }
 
 void
-HdPrmanInstancer::_SyncCategories(HdDirtyBits* dirtyBits)
+HdPrmanInstancer::_SyncCategories(const HdDirtyBits* dirtyBits)
 {
     // XXX: Instance categories only exist under native instancing, because
     // point instancer instances are not path-addressable. For point instancers,
@@ -734,9 +804,8 @@ HdPrmanInstancer::_SyncCategories(HdDirtyBits* dirtyBits)
                 intersection = newIntersection;
             }
             if (intersection.size() > 0) {
-                for (size_t i = 0; i < _instanceCategories.size(); ++i) {
-                    VtTokenArray instCats = _instanceCategories[i];
-                    // already sorted above
+                for (auto& instCats : _instanceCategories) {
+                     // already sorted above
                     VtTokenArray newCats;
                     std::set_difference(
                         instCats.cbegin(), instCats.cend(),
@@ -752,7 +821,7 @@ HdPrmanInstancer::_SyncCategories(HdDirtyBits* dirtyBits)
 }
 
 void
-HdPrmanInstancer::_SyncVisibility(HdDirtyBits* dirtyBits)
+HdPrmanInstancer::_SyncVisibility(const HdDirtyBits* dirtyBits)
 {
     HdSceneDelegate* delegate = GetDelegate();
     const SdfPath& id = GetId();
@@ -769,7 +838,7 @@ HdPrmanInstancer::_SetPrototypesDirty()
     if (parent && _Depth() > HDPRMAN_MAX_SUPPORTED_NESTING_DEPTH) {
         parent->_SetPrototypesDirty();
     } else {
-        _protoMap.iterate([&](const SdfPath& pp, _ProtoMapEntry& entry) {
+        _protoMap.iterate([&](const SdfPath& /* pp */, _ProtoMapEntry& entry) {
             entry.dirty = true;
         });
     }
@@ -787,8 +856,9 @@ HdPrmanInstancer::_PopulateInstancesFromChild(
     const SdfPath& prototypePrimPath,
     const std::vector<riley::GeometryPrototypeId>& rileyPrototypeIds,
     const riley::CoordinateSystemList& coordSysList,
-    const RtParamList prototypeParams,
-    const HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> prototypeXform,
+    const RtParamList& prototypeParams,
+    const HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES>&
+        prototypeXform,
     const std::vector<riley::MaterialId>& rileyMaterialIds,
     const SdfPathVector& prototypePaths,
     const riley::LightShaderId& lightShaderId,
@@ -821,8 +891,9 @@ HdPrmanInstancer::_PopulateInstances(
     const SdfPath& prototypePrimPath,
     const std::vector<riley::GeometryPrototypeId>& rileyPrototypeIds,
     const riley::CoordinateSystemList& coordSysList,
-    const RtParamList prototypeParams,
-    const HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> prototypeXform,
+    const RtParamList& prototypeParams,
+    const HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES>&
+        prototypeXform,
     const std::vector<riley::MaterialId>& rileyMaterialIds,
     const SdfPathVector& prototypePaths,
     const riley::LightShaderId& lightShaderId,
@@ -831,6 +902,12 @@ HdPrmanInstancer::_PopulateInstances(
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+
+#if defined(PRMAN_HAS_BATCH)
+    // RtScopedBatchMemoryTracking
+    RtScopedBatchMemoryTracking batchedMemoryTracking(
+        RtScopedBatchMemoryTracking::k_batchGeometryInstance);
+#endif
 
     // This is our main workhorse. This method instructs the instancer to
     // generate riley instances of a given prototype. When coming from the
@@ -848,7 +925,7 @@ HdPrmanInstancer::_PopulateInstances(
     // Further complicating issues, this method may be called concurrently from
     // multiple threads, so some actions must be gated behind mutex locks.
 
-    HdPrman_RenderParam* param = static_cast<HdPrman_RenderParam*>(renderParam);
+    auto* param = static_cast<HdPrman_RenderParam*>(renderParam);
     riley::Riley* riley = param->AcquireRiley();
     HdSceneDelegate* delegate = GetDelegate();
     HdRenderIndex& renderIndex = delegate->GetRenderIndex();
@@ -1053,6 +1130,13 @@ HdPrmanInstancer::_PopulateInstances(
         
         // Prepare each instance to be sent to riley
         _ParallelFor(instances.size(), [&](size_t i) {
+
+#if defined(PRMAN_HAS_BATCH)
+            // RtScopedBatchMemoryTracking
+            RtScopedBatchMemoryTracking batchMemoryTrackingInner(
+                RtScopedBatchMemoryTracking::k_batchGeometryInstance);
+#endif
+
             const _InstanceData& instance = instances[i];
 
             // Multiply the prototype transform by the instance transform. If
@@ -1170,7 +1254,7 @@ HdPrmanInstancer::_PopulateInstances(
                 // behavior in the unnested case.
 
                 const SdfPath instancePath = delegate->GetScenePrimPath(
-                    prototypePaths[j], i, nullptr);
+                    prototypePaths[j], static_cast<int>(i), nullptr);
                 riley::UserId userId = riley::UserId(
                     stats::AddDataLocation(instancePath.GetText()).GetValue());
 
@@ -1632,8 +1716,9 @@ HdPrmanInstancer::_AcquireGroupId(
         bool found = false;
         if (!lock.upgrade_to_writer()) {
             groupId = _groupMap.get(flattenGroup);
-            if (groupId != riley::GeometryPrototypeId::InvalidId())
+            if (groupId != riley::GeometryPrototypeId::InvalidId()) {
                 found = true;
+            }
         }
 
         if (!found) {
@@ -1671,13 +1756,12 @@ HdPrmanInstancer::_GetParentInstancer()
     HdRenderIndex& renderIndex = delegate->GetRenderIndex();
     SdfPath parentId = GetParentId();
     while (!parentId.IsEmpty() && !parentId.IsAbsoluteRootPath()) {
-        HdPrmanInstancer* instancer = static_cast<HdPrmanInstancer*>(
+        auto* instancer = static_cast<HdPrmanInstancer*>(
             renderIndex.GetInstancer(parentId));
         if (instancer) {
             return instancer;
-        } else {
-            parentId = parentId.GetParentPath();
         }
+        parentId = parentId.GetParentPath();
     }
     return nullptr;
 }
@@ -1706,7 +1790,7 @@ HdPrmanInstancer::_GetInstanceParams(
     const size_t instanceIndex,
     RtParamList& params)
 {
-    for (auto entry: _primvarMap) {
+    for (const auto& entry : _primvarMap) {
         const HdPrimvarDescriptor& primvar = entry.second.desc;
         
         // 'constant' and 'uniform' USD primvars are inherited in toto by
