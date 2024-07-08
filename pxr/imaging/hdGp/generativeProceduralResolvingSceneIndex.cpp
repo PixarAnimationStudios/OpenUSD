@@ -166,7 +166,7 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
 
     bool entriesCopied = false;
 
-    { // _dependencies and _procedural lock aquire
+    { // _dependencies and _procedural lock acquire
     // hold lock for longer but don't try to acquire it per iteration
     _MapLock procsLock(_proceduralsMutex);
     _MapLock depsLock(_dependenciesMutex);
@@ -191,6 +191,12 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
             proceduralsToCook.insert(entry.primPath);
 
         } else {
+            if (_procedurals.find(entry.primPath) != _procedurals.end()) {
+                // This was a procedural that we previously cooked that is no
+                // longer the target type.  We "cook" it primarily to make sure
+                // it gets removed.
+                proceduralsToCook.insert(entry.primPath);
+            }
             if (entriesCopied) {
                 notices.added.emplace_back(entry.primPath, entry.primType);
             }
@@ -598,16 +604,15 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsDirtied(
     }
 }
 
-
 HdGpGenerativeProceduralResolvingSceneIndex::_ProcEntry *
 HdGpGenerativeProceduralResolvingSceneIndex::_UpdateProceduralDependencies(
-    const SdfPath &proceduralPrimPath) const
+    const SdfPath& proceduralPrimPath, _Notices* outputNotices) const
 {
     HdSceneIndexPrim procPrim =
         _GetInputSceneIndex()->GetPrim(proceduralPrimPath);
 
     if (procPrim.primType != _targetPrimTypeName) {
-        _RemoveProcedural(proceduralPrimPath);
+        _RemoveProcedural(proceduralPrimPath, outputNotices);
         return nullptr;
     }
 
@@ -740,7 +745,7 @@ HdGpGenerativeProceduralResolvingSceneIndex::_UpdateProcedural(
     }
 
     if (procEntry.state.load() < _ProcEntry::StateDependenciesCooked) {
-        if (!_UpdateProceduralDependencies(proceduralPrimPath)) {
+        if (!_UpdateProceduralDependencies(proceduralPrimPath, outputNotices)) {
             return nullptr;
         }
     }
@@ -798,6 +803,21 @@ HdGpGenerativeProceduralResolvingSceneIndex::_RemoveProcedural(
     }
 
     const _ProcEntry &procEntry = it->second;
+
+    // 0) Before we clear things out, record the children that we'll need to
+    // notify that are being removed.
+    if (outputNotices) {
+        // Record the removal the children of the procedural.
+        size_t procPathLen = proceduralPrimPath.GetPathElementCount();
+        for (const auto& pathPathSetPair : procEntry.childHierarchy) {
+            const SdfPath& childPrimPath = pathPathSetPair.first;
+            const bool isImmediateChild
+                = childPrimPath.GetPathElementCount() == procPathLen + 1;
+            if (isImmediateChild) {
+                outputNotices->removed.push_back(childPrimPath);
+            }
+        }
+    }
 
     // 1) remove existing dependencies
     if (!procEntry.dependencies.empty()) {
