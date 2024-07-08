@@ -43,7 +43,7 @@ public:
         SdfPath primPath;
         TfToken primType;
 
-        AddedPrimEntry() {}
+        AddedPrimEntry() = default;
         AddedPrimEntry(const SdfPath &primPath, const TfToken &primType)
         : primPath(primPath)
         , primType(primType)
@@ -61,6 +61,7 @@ public:
     {
         SdfPath primPath;
         
+        RemovedPrimEntry() = default;
         RemovedPrimEntry(const SdfPath &primPath)
         : primPath(primPath)
         {}
@@ -80,6 +81,7 @@ public:
         SdfPath primPath;
         HdDataSourceLocatorSet dirtyLocators;
 
+        DirtiedPrimEntry() = default;
         DirtiedPrimEntry(
             const SdfPath &primPath,
             const HdDataSourceLocatorSet &dirtyLocators)
@@ -98,6 +100,8 @@ public:
     {
         SdfPath oldPrimPath;
         SdfPath newPrimPath;
+
+        RenamedPrimEntry() = default;
         RenamedPrimEntry(
             const SdfPath &oldPrimPath,
             const SdfPath &newPrimPath)
