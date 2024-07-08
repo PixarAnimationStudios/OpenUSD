@@ -1037,6 +1037,11 @@ UsdGeomSubset::ValidateFamily(
                         // that segmentIndex is within bound of segmentCounts
                         for (const GfVec2i& segment : pairsInFamily) {
                             int curveIndex = segment[0];
+                            if (curveIndex < 0) {
+                                // Verification that all indices are >= 0 happens later,
+                                // so skip without producing errors for now
+                                continue;
+                            }
                             if (curveIndex >= static_cast<int>(curveVertexCounts.size())) {
                                 valid = false;
                                 if (reason) {
@@ -1044,8 +1049,7 @@ UsdGeomSubset::ValidateFamily(
                                         "greater than the curve vertex count %lu at time %s.\n",
                                         curveVertexCounts.size(), TfStringify(t).c_str());
                                 }
-                            }
-                            if (segment[1] >= segmentCounts[curveIndex]) {
+                            } else if (segment[1] >= segmentCounts[curveIndex]) {
                                 valid = false;
                                 if (reason) {
                                     *reason += TfStringPrintf("Found one or more indices that are "
