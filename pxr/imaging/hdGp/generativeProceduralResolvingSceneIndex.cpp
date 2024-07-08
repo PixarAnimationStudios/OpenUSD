@@ -11,6 +11,7 @@
 #include "pxr/imaging/hd/systemMessages.h"
 
 #include "pxr/base/tf/denseHashSet.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/withScopedParallelism.h"
 
@@ -100,6 +101,7 @@ SdfPathVector
 HdGpGenerativeProceduralResolvingSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
+    TRACE_FUNCTION();
 
     // Always incorporate the input's children even if we are beneath a
     // resolved procedural. This allows a procedural to mask the type or data
@@ -157,10 +159,11 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     // Added/removed/dirtied notices which result from cooking or recooking
     // a procedural.
     _Notices notices;
-
 
     TfDenseHashSet<SdfPath, TfHash> proceduralsToCook;
 
@@ -305,6 +308,8 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     using _PathSetMap =
          TfDenseHashMap<SdfPath, TfDenseHashSet<SdfPath, TfHash>, TfHash>;
 
@@ -499,6 +504,8 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     TfDenseHashMap<SdfPath, HdGpGenerativeProcedural::DependencyMap, TfHash>
         invalidatedProceduralDependencies;
 
@@ -733,6 +740,8 @@ HdGpGenerativeProceduralResolvingSceneIndex::_UpdateProcedural(
     _Notices *outputNotices,
     const HdGpGenerativeProcedural::DependencyMap *dirtiedDependencies) const
 {
+    TRACE_FUNCTION();
+
     _ProcEntry *procEntryPtr;
     {
         _MapLock procsLock(_proceduralsMutex);
@@ -890,6 +899,8 @@ HdGpGenerativeProceduralResolvingSceneIndex::_SystemMessage(
     const TfToken &messageType,
     const HdDataSourceBaseHandle &args)
 {
+    TRACE_FUNCTION();
+
     if (!_attemptAsync) {
         if (messageType == HdSystemMessageTokens->asyncAllow) {
             _attemptAsync = true;
@@ -901,13 +912,8 @@ HdGpGenerativeProceduralResolvingSceneIndex::_SystemMessage(
         }
     }
 
-
-
-
     _Notices notices;
     HdGpGenerativeProcedural::ChildPrimTypeMap primTypes;
-
-
     TfSmallVector<SdfPath, 8> removedEntries;
 
     for (auto &pathEntryPair : _activeSyncProcedurals) {
