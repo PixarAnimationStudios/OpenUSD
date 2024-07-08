@@ -53,6 +53,20 @@ class testUsdGeomSubset(unittest.TestCase):
                 ('onlyNegativeIndices',     ["Found one or more indices that are less than 0",
                                              "does not exist on the parent prim"]),
                 ('emptyIndicesAtAllTimes',  ["No indices in family at any time"])]
+        elif elementType == UsdGeom.Tokens.segment:
+            invalidFamilies = [
+                ('invalidIndices',  ["greater than the curve vertex count",
+                                     "greater than the segment count",
+                                     "Indices attribute has an odd number of elements",
+                                     "Found one or more indices that are less than 0"]), 
+                ('badPartition1',   ["Found one or more indices that are greater than the curve vertex count"]), 
+                ('badPartition2',   ["does not match the element count"]),
+                ('badPartition3',   ["Found duplicate segment"]), 
+                ('invalidNonOverlapping',   ["Found duplicate segment"]),
+                ('invalidUnrestricted',     ["Found one or more indices that are greater than the segment count",
+                                             "Found one or more indices that are less than 0"]), 
+                ('onlyNegativeIndices',     ["Found one or more indices that are less than 0"]),
+                ('emptyIndicesAtAllTimes',  ["No indices in family at any time"])]
         else:
             invalidFamilies = [
                 ('invalidIndices',  ["Found one or more indices that are greater than the element count",
@@ -138,6 +152,21 @@ class testUsdGeomSubset(unittest.TestCase):
         self._TestSubsetRetrieval(geom, UsdGeom.Tokens.face, "materialBind")
         self._TestSubsetValidity(geom, varyingGeom, nullGeom, UsdGeom.Tokens.face)
 
+        sphere = stage.GetPrimAtPath("/Sphere/BasisCurves")
+        geom = UsdGeom.Imageable(sphere)
+        self.assertTrue(geom)
+
+        varyingMesh = stage.GetPrimAtPath("/Sphere/VaryingBasisCurves")
+        varyingGeom = UsdGeom.Imageable(varyingMesh)
+        self.assertTrue(varyingGeom)
+
+        nullMesh = stage.GetPrimAtPath("/Sphere/NullBasisCurves")
+        nullGeom = UsdGeom.Imageable(nullMesh)
+        self.assertTrue(nullGeom)
+
+        self._TestSubsetRetrieval(geom, UsdGeom.Tokens.segment, "physicsAttachment")
+        self._TestSubsetValidity(geom, varyingGeom, nullGeom, UsdGeom.Tokens.segment)
+
 
     def test_GetUnassignedIndicesForEdges(self):
         testFile = "Sphere.usda"
@@ -182,6 +211,48 @@ class testUsdGeomSubset(unittest.TestCase):
                          UsdGeom.Tokens.edge, "testEdgeFamily"), 
                          Vt.IntArray([1, 5]))
 
+    def test_GetUnassignedIndicesForSegments(self):
+        testFile = "Sphere.usda"
+        stage = Usd.Stage.Open(testFile)
+        sphere = stage.GetPrimAtPath("/Sphere/SimpleSegments")
+        geom = UsdGeom.Imageable(sphere)
+        self.assertTrue(geom)
+
+        newSubset = UsdGeom.Subset.CreateGeomSubset(geom, 'testSegment', 
+            UsdGeom.Tokens.segment, indices=Vt.IntArray())
+        newSubset.GetFamilyNameAttr().Set('testSegmentFamily')
+
+        # Indices are empty when unassigned.
+        self.assertEqual(newSubset.GetIndicesAttr().Get(), Vt.IntArray())
+        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices(geom, 
+                         UsdGeom.Tokens.segment, "testSegmentFamily"), 
+                         Vt.IntArray([0, 0, 0, 1, 0, 2, 1, 0, 1, 1]))
+
+        # Some indices are assigned
+        indices = [0, 0, 1, 0]
+        newSubset.GetIndicesAttr().Set(indices)
+        self.assertEqual(list(newSubset.GetIndicesAttr().Get()), indices)
+        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices(geom, 
+                         UsdGeom.Tokens.segment, "testSegmentFamily"), 
+                         Vt.IntArray([0, 1, 0, 2, 1, 1]))
+
+        # All indices are assigned
+        indices = [0, 0, 0, 1, 0, 2, 1, 0, 1, 1]
+        newSubset.GetIndicesAttr().Set(indices)
+        self.assertEqual(list(newSubset.GetIndicesAttr().Get()), indices)
+        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices(geom, 
+                         UsdGeom.Tokens.segment, "testSegmentFamily"), 
+                         Vt.IntArray())
+
+        # Confirm GetUnassignedIndices still works with invalid indices
+        invalidIndices = [0, 0, 1, 0, -1, 0, 5, 2]
+        newSubset = UsdGeom.Subset.CreateGeomSubset(geom, 'testSegment', 
+            UsdGeom.Tokens.segment, indices=invalidIndices)
+        newSubset.GetFamilyNameAttr().Set('testSegmentFamily')
+        self.assertEqual(list(newSubset.GetIndicesAttr().Get()), invalidIndices)
+        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices(geom, 
+                         UsdGeom.Tokens.segment, "testSegmentFamily"), 
+                         Vt.IntArray([0, 1, 0, 2, 1, 1]))
 
     def test_CreateGeomSubset(self):
         testFile = "Sphere.usda"

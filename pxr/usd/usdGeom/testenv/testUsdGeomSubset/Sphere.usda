@@ -9,6 +9,354 @@ def Xform "Sphere" (
     kind = "component"
 )
 {
+    def BasisCurves "SimpleSegments"
+    {
+        uniform token type = "linear"
+        uniform token wrap = "periodic"
+        int[] curveVertexCounts = [3, 2] # segment counts [3, 2]
+    }
+    def BasisCurves "BasisCurves"
+    {
+        uniform token type = "cubic"
+        uniform token wrap = "pinned"
+        uniform token basis = "bspline"
+
+        # Segment subsets
+
+        uniform token subsetFamily:segment_physicsAttachment:familyType = "partition"
+        uniform token subsetFamily:segment_validPartition:familyType = "partition"
+
+        uniform token subsetFamily:segment_badPartition1:familyType = "partition"
+        uniform token subsetFamily:segment_badPartition2:familyType = "partition"
+        uniform token subsetFamily:segment_badPartition3:familyType = "partition"
+
+        uniform token subsetFamily:segment_validNonOverlapping:familyType = "nonOverlapping"
+        uniform token subsetFamily:segment_invalidNonOverlapping:familyType = "nonOverlapping"
+
+        uniform token subsetFamily:segment_validUnrestricted:familyType = "unrestricted"
+        uniform token subsetFamily:segment_invalidUnrestricted:familyType = "unrestricted"
+
+        PointFloat[] points = [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619), (9.32115e-07, 7.10811, -1.57832e-15), (-7.10811, 6.2141e-07, -1.37981e-22)]
+        int[] curveVertexCounts = [5, 4, 3] # segment counts [4, 3, 2]
+        # Segments: (curveIndex, segmentIndex)
+        # (0, 0), (0, 1), (0, 2), (0, 3)
+        # (1, 0), (1, 1), (1, 2)
+        # (2, 0), (2, 1)
+
+        def GeomSubset "segment_green"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_physicsAttachment"
+            int[] indices = [0, 0, 0, 1, 0, 2]
+            int[] indices.timeSamples = {
+                1: [0, 0, 0, 1, 0, 2],
+                2: [0, 3, 1, 0, 1, 1],
+                3: [0, 0, 0, 1, 0, 2]
+            }
+        }
+
+        def GeomSubset "segment_blue"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_physicsAttachment"
+            int[] indices = [1, 2, 2, 0, 2, 1]
+            int[] indices.timeSamples = {
+                1: [1, 2, 2, 0, 2, 1],
+                2: [0, 0, 0, 1, 0, 2],
+                3: [1, 2, 2, 0, 2, 1]
+            }
+        }
+
+        def GeomSubset "segment_red"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_physicsAttachment"
+            int[] indices = [0, 3, 1, 0, 1, 1]
+            int[] indices.timeSamples = {
+                1: [0, 3, 1, 0, 1, 1],
+                2: [1, 2, 2, 0, 2, 1],
+                3: [0, 3, 1, 0, 1, 1]
+            }
+        }
+
+        def GeomSubset "segment_invalidIndices" 
+        # Indices (0, 4), (5, 0) at default time and (-1, 12) at frame 3 are invalid.
+        # Frame 2 has an odd number of indices
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_invalidIndices"
+            int[] indices = [0, 4, 5, 0, 1, 1]
+            int[] indices.timeSamples = {
+                1: [0, 0, 0, 1, 0, 2],
+                2: [0, 3, 1, 0, 1],
+                3: [-1, 2, 2, 0, 2, 1]
+            }
+        }
+
+        def GeomSubset "segment_validNonOverlapping_1"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_validNonOverlapping"
+            int[] indices = [0, 0, 0, 1, 0, 2]            
+            int[] indices.timeSamples = {
+                1: [0, 3, 1, 0, 1, 1]
+            }
+        }
+
+        def GeomSubset "segment_validNonOverlapping_2"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_validNonOverlapping"
+            int[] indices = [0, 3, 1, 0, 1, 1]
+            int[] indices.timeSamples = {
+                2: [0, 0, 0, 1, 0, 2]
+            }
+        }
+
+        def GeomSubset "segment_invalidNonOverlapping_1"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_invalidNonOverlapping"
+            int[] indices = [0, 0, 0, 1, 0, 2]          
+            int[] indices.timeSamples = {
+                1: [0, 3, 1, 0, 1, 1]
+            }
+        }
+
+        def GeomSubset "segment_invalidNonOverlapping_2"
+        {
+            # Index (0, 3) is duplicated at time 2
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_invalidNonOverlapping"
+            int[] indices = [0, 3, 1, 0, 1, 1]
+            int[] indices.timeSamples = {
+                2: [0, 0, 0, 1, 0, 2, 0, 3]
+            }
+        }
+
+        def GeomSubset "segment_validUnrestricted_1"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_validUnrestricted"
+            # index (0, 1) is overlapping
+            int[] indices = [0, 3, 1, 0, 1, 1, 0, 1]
+            int[] indices.timeSamples = {
+                # index (2, 1) is not included in timeSamples.
+                1: [0, 0, 0, 1, 0, 2, 1, 2, 2, 0]
+            }
+        }
+
+        def GeomSubset "segment_validUnrestricted_2"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_validUnrestricted"
+            int[] indices = [0, 3, 1, 0, 1, 1]
+            int[] indices.timeSamples = {
+                2: [0, 0, 0, 1, 0, 2]
+            }
+        }
+
+        def GeomSubset "segment_invalidUnrestricted_1"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_invalidUnrestricted"
+            # out of bound index - (0, 4)
+            int[] indices = [0, 4, 1, 0, 1, 1, 0, 1]           
+            int[] indices.timeSamples = {
+                # negative index
+                1: [0, 0, 0, -1, 0, 2, 1, 2, 2, 0]
+            }
+        }
+
+        def GeomSubset "segment_invalidUnrestricted_2"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_invalidUnrestricted"
+            int[] indices = [0, 3, 1, 0, 1, 1]
+            int[] indices.timeSamples = {
+                2: [0, 0, 0, 1, 0, 2]
+            }
+        }
+
+        def GeomSubset "segment_badPartition1_1"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_badPartition1"
+            int[] indices = [0, 0, 0, 1, 0, 2]    
+            int[] indices.timeSamples = {
+                1: [0, 0, 0, 1, 0, 2]
+            }
+        }
+
+        def GeomSubset "segment_badPartition1_2"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_badPartition1"
+            # out of bounds index - (5, 6)
+            int[] indices = [0, 3, 1, 0, 1, 1, 1, 2, 2, 0, 2, 1, 5, 6]
+            int[] indices.timeSamples = {
+                2: [0, 3, 1, 0, 1, 1, 1, 2, 2, 0, 2, 1]
+            }
+        }
+
+        def GeomSubset "segment_badPartition2_1"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_badPartition2"
+            # mising indices (0, 0) and (0, 1)
+            int[] indices = [0, 2, 0, 3, 1, 0, 1, 1, 1, 2, 2, 0, 2, 1]
+        }
+
+        def GeomSubset "segment_badPartition3_1"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_badPartition3"
+            # duplicate index (0, 0)
+            int[] indices = [0, 0, 0, 1, 0, 2, 0, 3, 1, 0, 1, 1, 1, 2, 2, 0, 2, 1, 0, 0]
+        }
+
+        def GeomSubset "segment_validPartition_1"
+        {       
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_validPartition"
+            int[] indices = [0, 0, 0, 1, 0, 2]
+            int[] indices.timeSamples = {
+                1: [1, 2, 2, 0, 2, 1],
+                3: [0, 0, 0, 1, 0, 2]
+            }
+        }
+
+        def GeomSubset "segment_validPartition_2"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_validPartition"
+            int[] indices = [0, 3, 1, 0, 1, 1]
+            int[] indices.timeSamples = {
+                1: [0, 3, 1, 0, 1, 1],
+                2: [0, 0, 0, 1, 0, 2],
+                3: [1, 2, 2, 0, 2, 1]
+            }
+        }
+
+        def GeomSubset "segment_validPartition_3"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_validPartition"
+            int[] indices = [1, 2, 2, 0, 2, 1]
+            int[] indices.timeSamples = {
+                1: [0, 0, 0, 1, 0, 2],
+                2: [0, 3, 1, 0, 1, 1]
+            }
+        }
+
+        def GeomSubset "segment_onlyNegativeIndices"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_onlyNegativeIndices"
+            int[] indices = [-1, -2, -1, -1]
+        }
+
+        def GeomSubset "segment_emptyIndicesSomeTimes"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_emptyIndicesSomeTimes"
+            int[] indices.timeSamples = {
+                0: [],
+                1: [0, 3, 1, 0, 1, 1],
+                2: []
+            }
+        }
+
+        def GeomSubset "segment_emptyIndicesAtAllTimes"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_emptyIndicesAtAllTimes"
+        }
+    }
+
+    def BasisCurves "VaryingBasisCurves"
+    {
+        uniform token type = "cubic"
+        uniform token wrap = "pinned"
+        uniform token basis = "bspline"
+        uniform token subsetFamily:segment_validPartition:familyType = "partition"
+
+        int[] curveVertexCounts.timeSamples = {
+            1: [5],
+            2: [5, 4],
+            3: [5, 4, 3]
+        }
+
+        PointFloat[] points.timeSamples = {
+            1: [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619)],
+            2: [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619), (9.32115e-07, 7.10811, -1.57832e-15), (-7.10811, 6.2141e-07, -1.37981e-22), (-3.10705e-07, -7.10811, 1.57832e-15), (7.10811, 0, 0)],
+            3: [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619), (9.32115e-07, 7.10811, -1.57832e-15), (-7.10811, 6.2141e-07, -1.37981e-22), (-3.10705e-07, -7.10811, 1.57832e-15), (7.10811, 0, 0), (6.59105e-07, 5.02619, 5.02619), (-5.02619, 4.39403e-07, 5.02619), (-2.19702e-07, -5.02619, 5.02619), (5.02619, 1.11604e-15, 5.02619)]
+        }
+
+        def GeomSubset "segment_validPartition_1"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_validPartition"
+            int[] indices.timeSamples = {
+                1: [0, 0, 0, 1, 0, 2, 0, 3],
+                2: [],
+                3: [0, 0, 0, 1, 0, 2, 0, 3]
+            }
+        }
+
+        def GeomSubset "segment_validPartition_2"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_validPartition"
+            int[] indices.timeSamples = {
+                1: [],
+                2: [0, 0, 0, 1, 0, 2, 0, 3, 1, 0, 1, 1, 1, 2],
+                3: [1, 0, 1, 1, 1, 2]
+            }
+        }
+
+        def GeomSubset "segment_validPartition_3"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_validPartition"
+            int[] indices.timeSamples = {
+                1: [],
+                2: [],
+                3: [2, 0, 2, 1]
+            }
+        }
+
+        def GeomSubset "segment_invalidNoDefaultTimeElements"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_invalidNoDefaultTimeElements"
+            int[] indices = [0, 1]
+            int[] indices.timeSamples = {
+                1: [0, 0, 0, 1, 0, 2, 0, 3],
+                2: [0, 0, 0, 1, 0, 2, 0, 3, 1, 0, 1, 1, 1, 2],
+                3: [0, 0, 0, 1, 0, 2, 0, 3, 1, 0, 1, 1, 1, 2, 2, 0, 2, 1]
+            }
+        }
+    }
+
+    def BasisCurves "NullBasisCurves"
+    {
+        uniform token subsetFamily:segment_invalidPartition:familyType = "partition"
+
+        def GeomSubset "segment_emptyIndicesAtAllTimes"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_emptyIndicesAtAllTimes"
+        }
+
+        def GeomSubset "segment_invalidPartition_1"
+        {
+            uniform token elementType = "segment"
+            uniform token familyName = "segment_invalidPartition"
+            int[] indices = [0, 1, 1, 2]
+        }
+    }
+    
     def Mesh "SimpleEdges"
     {
         int[] faceVertexCounts = [4, 4]

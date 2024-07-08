@@ -2427,7 +2427,7 @@ class TetMesh "TetMesh" (
 class GeomSubset "GeomSubset" (
     doc = """Encodes a subset of a piece of geometry (i.e. a UsdGeomImageable) 
     as a set of indices. Currently supports encoding subsets of faces, 
-    points, edges, and tetrahedrons.
+    points, edges, segments, and tetrahedrons.
 
     To apply to a geometric prim, a GeomSubset prim must be the prim's direct 
     child in namespace, and possess a concrete defining specifier (i.e. def). 
@@ -2447,7 +2447,7 @@ class GeomSubset "GeomSubset" (
 )
 {
     uniform token elementType = "face" (
-        allowedTokens = ["face", "point", "edge", "tetrahedron"]
+        allowedTokens = ["face", "point", "edge", "segment", "tetrahedron"]
         doc = """The type of element that the indices target. \"elementType\" can
         have one of the following values:
         <ul><li><b>face</b>: Identifies faces on a Gprim's surface. For a 
@@ -2465,6 +2465,11 @@ class GeomSubset "GeomSubset" (
         attribute. Edges are not currently defined for a UsdGeomTetMesh, but
         could be derived from all tetrahedron edges or surface face edges only 
         if a specific use-case arises.</li>
+        <li><b>segment</b>: for any Curve, each pair of elements 
+        in the _indices_ attribute would refer to a pair of indices 
+        (_curveIndex_, _segmentIndex_) where _curveIndex_ is the position of 
+        the specified curve in the Curve's _curveVertexCounts_ attribute, and 
+        _segmentIndex_ is the index of the segment within that curve.</li>
         <li><b>tetrahedron</b>: for any UsdGeomTetMesh, each element of the 
         _indices_ attribute would refer to an element of the TetMesh's 
         _tetVertexIndices_ attribute.

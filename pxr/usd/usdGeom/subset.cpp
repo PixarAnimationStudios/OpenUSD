@@ -198,7 +198,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 /// than edge \p y. Considers the first element of the edge the principal
 /// dimension for comparison, and compares the second elements if there is a tie.
 namespace {
-struct cmpEdge {
+struct cmpPair {
     bool operator()(const GfVec2i &x, const GfVec2i &y) const { 
         if (x[0] == y[0]) {
             return x[1] < y[1];
@@ -396,7 +396,7 @@ UsdGeomSubset::GetFamilyType(
 }
 
 static bool _GetEdgesFromPrim(const UsdGeomImageable &geom, const UsdTimeCode &t,
-        std::set<GfVec2i, cmpEdge> &edgesOnPrim) {
+        std::set<GfVec2i, cmpPair> &edgesOnPrim) {
     const UsdAttribute fvcAttr = geom.GetPrim().GetAttribute(
                     UsdGeomTokens->faceVertexCounts);
     const UsdAttribute fviAttr = geom.GetPrim().GetAttribute(
@@ -426,6 +426,30 @@ static bool _GetEdgesFromPrim(const UsdGeomImageable &geom, const UsdTimeCode &t
         int pointB = faceVertexIndices[fviIndex - (count - 1)];
         edgesOnPrim.insert(GfVec2i(std::min(pointA, pointB), std::max(pointA, pointB)));
         fviIndex++;
+    }
+    return true;
+}
+
+static bool _GetAllPossibleSegments(const UsdGeomImageable &geom, const UsdTimeCode &t,
+                                    std::set<GfVec2i, cmpPair> &allSegments) {
+    const UsdAttribute curvesAttr = geom.GetPrim().GetAttribute(
+            UsdGeomTokens->curveVertexCounts);
+    if (!curvesAttr) {
+        return false;
+    }
+
+    VtIntArray curveVertexCounts;
+    if (!curvesAttr.Get(&curveVertexCounts, t)) {
+        return false;
+    }
+
+    // Compute all possible (curveIndex, segmentIndex) pairs based on the number
+    // of curves and the segment count of each curve.
+    VtIntArray segmentCounts = UsdGeomBasisCurves(geom.GetPrim()).ComputeSegmentCounts(t);
+    for (size_t i = 0; i < curveVertexCounts.size(); i++) {
+        for (int j = 0; j < segmentCounts[i]; j++) {
+            allSegments.insert(GfVec2i(i, j));
+        }
     }
     return true;
 }
@@ -484,7 +508,7 @@ _GetElementCountAtTime(
             }
         } 
     } else if (elementType == UsdGeomTokens->edge) {
-        std::set<GfVec2i, cmpEdge> edgesOnPrim;
+        std::set<GfVec2i, cmpPair> edgesOnPrim;
         if (_GetEdgesFromPrim(geom, time, edgesOnPrim)) {
             elementCount = edgesOnPrim.size();
 
@@ -495,6 +519,20 @@ _GetElementCountAtTime(
             if (fvcAttr && fviAttr && isCountTimeVarying) {
                 *isCountTimeVarying = fvcAttr.ValueMightBeTimeVarying() ||
                                         fviAttr.ValueMightBeTimeVarying();
+            }
+        }
+    } else if (elementType == UsdGeomTokens->segment) {
+        std::set<GfVec2i, cmpPair> segmentsOnPrim;
+        const UsdAttribute curvesAttr = geom.GetPrim().GetAttribute(
+            UsdGeomTokens->curveVertexCounts);
+        if (curvesAttr) {
+            const UsdGeomBasisCurves curves = UsdGeomBasisCurves(geom.GetPrim());
+            VtIntArray segmentCounts = curves.ComputeSegmentCounts(time);
+            for (int segmentCount : segmentCounts) {
+                elementCount += segmentCount;
+            }
+            if (isCountTimeVarying) {
+                *isCountTimeVarying = curvesAttr.ValueMightBeTimeVarying();
             }
         }
     } else if (elementType == UsdGeomTokens->tetrahedron) {
@@ -532,6 +570,12 @@ static bool _ValidateGeomType(const UsdGeomImageable &geom, const TfToken &eleme
                             elementType.GetText());
             return false;
         }
+    } else if (prim.IsA<UsdGeomBasisCurves>()) {
+        if (elementType != UsdGeomTokens->segment) {
+            TF_CODING_ERROR("Unsupported element type '%s' for prim type BasisCurves.",
+                            elementType.GetText());
+            return false;
+        }
     } else {
         TF_CODING_ERROR("Unsupported prim type '%s'.",
                         elementType.GetText());
@@ -540,7 +584,8 @@ static bool _ValidateGeomType(const UsdGeomImageable &geom, const TfToken &eleme
     return true;
 }
 
-VtVec2iArray UsdGeomSubset::_GetEdges(const UsdTimeCode t) const {
+VtVec2iArray UsdGeomSubset::_GetIndexPairs(const UsdTimeCode t, 
+                                            bool preserveOrder=false) const {
     VtVec2iArray subsetIndices;
     VtIntArray indicesAttr;
     this->GetIndicesAttr().Get(&indicesAttr, t);
@@ -549,8 +594,12 @@ VtVec2iArray UsdGeomSubset::_GetEdges(const UsdTimeCode t) const {
     for (size_t i = 0; i < indicesAttr.size() / 2; ++i) {
         int pointA = indicesAttr[2*i];
         int pointB = indicesAttr[2*i+1];
-        subsetIndices.emplace_back(GfVec2i(std::min(pointA, pointB),
+        if (preserveOrder) {
+            subsetIndices.emplace_back(GfVec2i(pointA, pointB));
+        } else {
+            subsetIndices.emplace_back(GfVec2i(std::min(pointA, pointB),
                                             std::max(pointA, pointB)));
+        }
     }
 
     return subsetIndices;
@@ -574,7 +623,7 @@ UsdGeomSubset::GetUnassignedIndices(
 
     const size_t elementCount = _GetElementCountAtTime(geom, elementType, time);
 
-    if (elementType != UsdGeomTokens->edge) {
+    if (elementType != UsdGeomTokens->edge && elementType != UsdGeomTokens->segment) {
         std::set<int> assignedIndices;
         for (const auto &subset : subsets) {
             VtIntArray indices;
@@ -616,26 +665,37 @@ UsdGeomSubset::GetUnassignedIndices(
                 std::back_inserter(result));
         }
     } else {
-        std::set<GfVec2i, cmpEdge> edgesOnPrim;
-        if (_GetEdgesFromPrim(geom, time, edgesOnPrim)) {
-            VtVec2iArray edgesInFamily;
-            for (const auto &subset : subsets) {
-                VtVec2iArray subsetEdges = subset._GetEdges(time);
-                std::copy(subsetEdges.begin(), subsetEdges.end(), 
-                        std::back_inserter(edgesInFamily));
+        std::set<GfVec2i, cmpPair> possiblePairs;
+        bool preserveOrder = false;
+        if (elementType == UsdGeomTokens->segment) {
+            preserveOrder = true;
+            if (!_GetAllPossibleSegments(geom, time, possiblePairs)) {
+                TF_WARN("Unable to determine curve vertex count or segment count.");
+                return result;
             }
-
-            struct cmpEdge e;
-            std::vector<GfVec2i> unassignedEdges;
-            std::set_difference(edgesOnPrim.begin(), edgesOnPrim.end(), 
-                    edgesInFamily.begin(), edgesInFamily.end(), 
-                    std::inserter(unassignedEdges, unassignedEdges.begin()), e);
-
-            result.reserve(elementCount);
-            for (GfVec2i edge : unassignedEdges) {
-                result.push_back(edge[0]);
-                result.push_back(edge[1]);
+        } else {
+            if (!_GetEdgesFromPrim(geom, time, possiblePairs)) {
+                TF_WARN("Unable to interpret edges from prim.");
+                return result;
             }
+        }
+        VtVec2iArray pairsInFamily;
+        for (const auto &subset : subsets) {
+            VtVec2iArray subsetPairs = subset._GetIndexPairs(time, preserveOrder);
+            std::move(subsetPairs.begin(), subsetPairs.end(), 
+                    std::back_inserter(pairsInFamily));
+        }
+
+        struct cmpPair e;
+        std::vector<GfVec2i> unassignedIndexPairs;
+        std::set_difference(possiblePairs.begin(), possiblePairs.end(), 
+                pairsInFamily.begin(), pairsInFamily.end(), 
+                std::inserter(unassignedIndexPairs, unassignedIndexPairs.begin()), e);
+
+        result.reserve(elementCount);
+        for (GfVec2i indexPair : unassignedIndexPairs) {
+            result.push_back(indexPair[0]);
+            result.push_back(indexPair[1]);
         }
     }
 
@@ -856,22 +916,25 @@ UsdGeomSubset::ValidateFamily(
         for (const UsdGeomSubset &subset : familySubsets) {
             VtIntArray subsetIndices;
             subset.GetIndicesAttr().Get(&subsetIndices, t);
-            if (elementType == UsdGeomTokens->edge) {
+            if (elementType == UsdGeomTokens->edge || 
+                elementType == UsdGeomTokens->segment) {
                 if (subsetIndices.size() % 2 != 0) {
                     valid = false;
                     if (reason) {
                         *reason += TfStringPrintf("Indices attribute has an "
                             "odd number of elements in GeomSubset at path <%s> "
-                            "at time %s with elementType edge.\n",
-                            subset.GetPath().GetText(), TfStringify(t).c_str());
+                            "at time %s with elementType %s.\n",
+                            subset.GetPath().GetText(), TfStringify(t).c_str(),
+                            elementType.GetText());
                     }
                 }
             }
 
             // Check for duplicate indices if the family is restricted.
-            // This check is not applicable to edges as the same point may 
-            /// be part of multiple distinct edges.
-            if (!familyIsRestricted || elementType == UsdGeomTokens->edge) {
+            // This check is not applicable to edges and segments as the same  
+            // index may be part of multiple distinct edges or segments.
+            if (!familyIsRestricted || elementType == UsdGeomTokens->edge || 
+                elementType == UsdGeomTokens->segment) {
                 indicesInFamily.insert(subsetIndices.begin(), subsetIndices.end());
             } else {
                 for (const int index : subsetIndices) {
@@ -904,7 +967,7 @@ UsdGeomSubset::ValidateFamily(
             }
         }
 
-        if (elementType != UsdGeomTokens->edge) {
+        if (elementType != UsdGeomTokens->edge && elementType != UsdGeomTokens->segment) {
             // Make sure every index appears exactly once if it's a partition.
             if (familyType == UsdGeomTokens->partition &&
                 indicesInFamily.size() != elementCount)
@@ -917,20 +980,24 @@ UsdGeomSubset::ValidateFamily(
                 }
             }
         } else {
-            // Check for duplicate edges if elementType is edge
-            std::set<GfVec2i, cmpEdge> edgesInFamily;
+            // Check for duplicate pairs if elementType is edge or segment
+            std::set<GfVec2i, cmpPair> pairsInFamily;
             for (const UsdGeomSubset &subset : familySubsets) {
-                VtVec2iArray subsetIndices = subset._GetEdges(t);
+                // Segment index ordering matters, while edge index ordering does not:
+                // (a, b) = (b, a) for edges.
+                bool preserveOrder = (elementType == UsdGeomTokens->segment);
+                VtVec2iArray subsetIndices = subset._GetIndexPairs(t, preserveOrder);
 
                 if (!familyIsRestricted) {
-                    edgesInFamily.insert(subsetIndices.begin(), subsetIndices.end());
+                    pairsInFamily.insert(subsetIndices.begin(), subsetIndices.end());
                 } else {
                     for (const GfVec2i &edge : subsetIndices) {
-                        if (!edgesInFamily.insert(edge).second) {
+                        if (!pairsInFamily.insert(edge).second) {
                             valid = false;
                             if (reason) {
-                                *reason += TfStringPrintf("Found duplicate edge index (%d, %d) "
-                                    "in GeomSubset at path <%s> at time %s.\n", edge[0], edge[1],
+                                *reason += TfStringPrintf("Found duplicate %s (%d, %d) "
+                                    "in GeomSubset at path <%s> at time %s.\n", 
+                                    elementType.GetText(),edge[0], edge[1],
                                     subset.GetPath().GetText(), TfStringify(t).c_str());
                             }
                         }
@@ -938,31 +1005,68 @@ UsdGeomSubset::ValidateFamily(
                 }
             }
 
-            // Check if every edge in the subset is a valid edge on the prim
-            std::set<GfVec2i, cmpEdge> edgesOnPrim;
-            if (_GetEdgesFromPrim(geom, t, edgesOnPrim)) {
-                struct cmpEdge e;
-                bool hasValidEdges = std::includes(edgesOnPrim.begin(), edgesOnPrim.end(), 
-                        edgesInFamily.begin(), edgesInFamily.end(), e);
-                
-                if (!hasValidEdges) {
-                    valid = false;
-                    if (reason) {
-                        *reason += TfStringPrintf("At least one edge in family %s at time %s "
-                            "does not exist on the parent prim.\n",
-                            familyName.GetText(), TfStringify(t).c_str());
+            std::set<GfVec2i, cmpPair> possiblePairs;
+            if (elementType == UsdGeomTokens->edge) {
+                // Check if every edge in the subset is a valid edge on the prim
+                if (_GetEdgesFromPrim(geom, t, possiblePairs)) {
+                    struct cmpPair e;
+                    bool hasValidEdges = std::includes(possiblePairs.begin(), possiblePairs.end(), 
+                            pairsInFamily.begin(), pairsInFamily.end(), e);
+                    
+                    if (!hasValidEdges) {
+                        valid = false;
+                        if (reason) {
+                            *reason += TfStringPrintf("At least one edge in family %s at time %s "
+                                "does not exist on the parent prim.\n",
+                                familyName.GetText(), TfStringify(t).c_str());
+                        }
+                    }
+                }
+            } else if (elementType == UsdGeomTokens->segment) {
+                _GetAllPossibleSegments(geom, t, possiblePairs);
+
+                const UsdAttribute curvesAttr = geom.GetPrim().GetAttribute(
+                    UsdGeomTokens->curveVertexCounts);
+                if (curvesAttr) {
+                    VtIntArray curveVertexCounts;
+                    if (curvesAttr.Get(&curveVertexCounts, t)) {
+                        VtIntArray segmentCounts = 
+                            UsdGeomBasisCurves(geom.GetPrim()).ComputeSegmentCounts(t);
+
+                        // Verify curveIndex is within bound of curveVertexCounts and
+                        // that segmentIndex is within bound of segmentCounts
+                        for (const GfVec2i& segment : pairsInFamily) {
+                            int curveIndex = segment[0];
+                            if (curveIndex >= static_cast<int>(curveVertexCounts.size())) {
+                                valid = false;
+                                if (reason) {
+                                    *reason += TfStringPrintf("Found one or more indices that are "
+                                        "greater than the curve vertex count %lu at time %s.\n",
+                                        curveVertexCounts.size(), TfStringify(t).c_str());
+                                }
+                            }
+                            if (segment[1] >= segmentCounts[curveIndex]) {
+                                valid = false;
+                                if (reason) {
+                                    *reason += TfStringPrintf("Found one or more indices that are "
+                                        "greater than the segment count %d at time %s.\n",
+                                        segmentCounts[curveIndex], TfStringify(t).c_str());
+                                }
+                            }
+                        }
                     }
                 }
             }
 
-            // Make sure every edge appears exactly once if it's a partition.
+            // Make sure every edge/segment appears exactly once if it's a partition.
             if (familyType == UsdGeomTokens->partition)
             {
-                struct cmpEdge e;
+                struct cmpPair e;
                 std::vector<GfVec2i> res;
-                std::set_difference(edgesOnPrim.begin(), edgesOnPrim.end(), edgesInFamily.begin(), edgesInFamily.end(), 
+                std::set_difference(possiblePairs.begin(), possiblePairs.end(), 
+                        pairsInFamily.begin(), pairsInFamily.end(), 
                         std::inserter(res, res.begin()), e);
-              
+            
                 if (res.size() != 0) {
                     valid = false;
                     if (reason) {
@@ -983,14 +1087,16 @@ UsdGeomSubset::ValidateFamily(
         hasIndicesAtAnyTime = true;
 
         // Make sure the indices are valid and don't exceed the elementCount.
-        const int lastIndex = *indicesInFamily.rbegin();
-        if (elementCount > 0 && lastIndex >= 0 &&
-            static_cast<size_t>(lastIndex) >= elementCount) {
-            valid = false;
-            if (reason) {
-                *reason += TfStringPrintf("Found one or more indices that are "
-                    "greater than the element count %ld at time %s.\n",
-                    elementCount, TfStringify(t).c_str());
+        if (elementType != UsdGeomTokens->segment) {
+            const int lastIndex = *indicesInFamily.rbegin();
+            if (elementCount > 0 && lastIndex >= 0 &&
+                static_cast<size_t>(lastIndex) >= elementCount) {
+                valid = false;
+                if (reason) {
+                    *reason += TfStringPrintf("Found one or more indices that are "
+                        "greater than the element count %ld at time %s.\n",
+                        elementCount, TfStringify(t).c_str());
+                }
             }
         }
 
