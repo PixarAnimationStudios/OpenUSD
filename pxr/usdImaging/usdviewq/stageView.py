@@ -379,7 +379,6 @@ class Prim2DDrawTask():
     def __init__(self):
         self._prims = []
         self._colors = []
-        self._pixelRatio = QtWidgets.QApplication.instance().devicePixelRatio()
 
 
     def Sync(self, ctx):
@@ -396,8 +395,10 @@ class Outline(Prim2DDrawTask):
         self._outlineColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(0.0, 0.0, 0.0, 1.0))
 
     def updatePrims(self, croppedViewport, qglwidget):
-        width = float(qglwidget.width()) * self._pixelRatio
-        height = float(qglwidget.height()) * self._pixelRatio
+        pixelRatio = qglwidget.devicePixelRatioF()
+        width = float(qglwidget.width()) * pixelRatio
+        height = float(qglwidget.height()) * pixelRatio
+
         prims = [ OutlineRect.fromXYWH(croppedViewport) ]
         self._prims = [p.scaledAndBiased((2.0 / width, 2.0 / height), (-1, -1))
                 for p in prims]
@@ -412,8 +413,10 @@ class Reticles(Prim2DDrawTask):
         self._outlineColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(*color))
 
     def updatePrims(self, croppedViewport, qglwidget, inside, outside):
-        width = float(qglwidget.width()) * self._pixelRatio
-        height = float(qglwidget.height()) * self._pixelRatio
+        pixelRatio = qglwidget.devicePixelRatioF()
+        width = float(qglwidget.width()) * pixelRatio
+        height = float(qglwidget.height()) * pixelRatio
+
         prims = [ ]
         ascenders = [0, 0]
         descenders = [0, 0]
@@ -453,8 +456,10 @@ class Mask(Prim2DDrawTask):
         self._maskColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(*color))
 
     def updatePrims(self, croppedViewport, qglwidget):
-        width = float(qglwidget.width()) * self._pixelRatio
-        height = float(qglwidget.height()) * self._pixelRatio
+        pixelRatio = qglwidget.devicePixelRatioF()
+        width = float(qglwidget.width()) * pixelRatio
+        height = float(qglwidget.height()) * pixelRatio
+        
         rect = FilledRect.fromXYWH((0, 0, width, height))
         prims = rect.difference(croppedViewport)
         self._prims = [p.scaledAndBiased((2.0 / width, 2.0 / height), (-1, -1))
