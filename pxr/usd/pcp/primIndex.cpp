@@ -2629,8 +2629,18 @@ _EvalUnresolvedPrimPathError(
 
     if (!_PrimSpecExistsUnderNodeAtIntroduction(node, indexer)) {
         const PcpNodeRef parentNode = node.GetParentNode();
-        const SdfPath parentNodePath = 
+        SdfPath parentNodePath = 
             node.GetMapToParent().MapSourceToTarget(pathAtIntroduction);
+
+        // Map the node path at introduction to the parent node, also applying
+        // any variant selections from the parent path.
+        if (const SdfPath parentPath = parentNode.GetPath();
+                parentPath.ContainsPrimVariantSelection()) {
+
+            parentNodePath = parentNodePath.ReplacePrefix(
+                parentPath.StripAllVariantSelections(),
+                parentPath);
+        }
 
         PcpErrorUnresolvedPrimPathPtr err = PcpErrorUnresolvedPrimPath::New();
         err->rootSite = PcpSite(node.GetRootNode().GetSite());
