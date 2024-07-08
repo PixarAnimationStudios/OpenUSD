@@ -433,7 +433,7 @@ Using Light-linking to Filter Objects Affected by Lights
 You might need to control which geometry 
 is illuminated by a particular light. To support this, USD provides 
 *light-linking* which uses the 
-:usda:`collection:lightLink` :ref:`object collection <usdglossary-collection>`
+:usda:`collection:lightLink` :ref:`object collection<collections_and_patterns>`
 to specify which objects are illuminated by a light. 
 By default the collection has :usda:`includeRoot` set to true, indicating that 
 the light will potentially illuminate all objects. To illuminate only a specific 
@@ -494,7 +494,8 @@ Material bindings inherit down the prim namespace and come in two forms:
 - Direct bindings, in which a prim directly names (via relationship) the 
   Material it wants to bind, as shown in the previous example.
 
-- Collection-based bindings, in which a USD Collection identifies a set of prims, 
+- Collection-based bindings, in which a 
+  :ref:`USD Collection<collections_and_patterns>` identifies a set of prims, 
   and the binding (again, a relationship) names both the Collection and the 
   Material to which the collected prims should be bound. See 
   :ref:`material_collection_binding` for more information on collection-based 
@@ -962,6 +963,8 @@ representing a building, and applies a material binding to those collections.
 Note that a fallback binding is provided in the above example, which is used if 
 no collection-based binding applies to Gprims in the model hierarchy. 
 
+For more details on collections, see :ref:`collections_and_patterns`.
+
 .. _material_collection_binding_strength:
 
 Setting Collection Binding Strength
@@ -1406,7 +1409,8 @@ dependencies between passes. A single pass generally represents not just a
 single set of products, but a sequence of temporally varying frames of outputs 
 that depend on temporally varying inputs.
 
-RenderPass also lets you specify collections of prims that are visible to the 
+RenderPass also lets you specify 
+:ref:`collections of prims<collections_and_patterns>` that are visible to the 
 renderer for that pass, using the :usda:`collection:renderVisibility` collection. 
 Use this collection if you have separate passes for different sets of objects 
 in the stage (e.g., separate foreground and background passes), or passes that 

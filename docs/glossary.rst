@@ -571,6 +571,10 @@ down the asset into meaningful groups) with other collections.
 
 We create and query Collections using :usdcpp:`UsdCollectionAPI`.
 
+For more details on Collections, including pattern-based collections that use
+a path expression to determine collection membership, 
+see :ref:`collections_and_patterns`.`
+
 .. _usdglossary-component:
 
 Component

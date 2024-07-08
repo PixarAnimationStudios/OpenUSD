@@ -22,6 +22,7 @@
    :caption: User Guides
    :maxdepth: 1
 
+   Collections and Patterns <user_guides/collections_and_patterns>
    Namespace Editing <user_guides/namespace_editing>
    Rendering with USD <user_guides/render_user_guide>
    USD Variable Expressions <user_guides/variable_expressions>
