@@ -64,7 +64,7 @@ struct UsdMtlxTokensType {
     USDMTLX_API UsdMtlxTokensType();
     /// \brief "out"
     /// 
-    /// document this 
+    /// Special token for the usdMtlx library.
     const TfToken DefaultOutputName;
     /// \brief "mtlxinfo:version"
     /// 

@@ -13,7 +13,6 @@ over "GLOBAL" (
         dictionary libraryTokens = {
             dictionary DefaultOutputName = {
                 string value = "out"
-                string doc = """ document this """
             }
         }
     }
@@ -23,17 +22,20 @@ over "GLOBAL" (
 
 class "MaterialXInfoAPI" (
     inherits = </APISchemaBase>
-    doc = """Write some docs
+    doc = """MaterialXInfoAPI is an API schema that provides an interface for
+    storing information about the MaterialX environment.
+
+    Initially, it only exposed an interface to record the MaterialX library version
+    that data was authored against. The intention is to use this information to allow
+    the MaterialX library to perform upgrades on data from prior MaterialX versions.
     """
     customData = {
-        dictionary extraPlugInfo = {
-            bool providesUsdShadeConnectableAPIBehavior = 1
-        }
         token[] apiSchemaCanOnlyApplyTo = ["UsdShadeMaterial"]
     }
 ) {
     string mtlxinfo:version = "1.38" (
-        doc = """Defaults to 1.38 to allow correct verisoning of old files"""
+        doc = """MaterialX library version that the data has been authored against.
+        Defaults to 1.38 to allow correct verisoning of old files."""
     )
 }
 

@@ -37,7 +37,6 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
-                        "providesUsdShadeConnectableAPIBehavior": true, 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdMtlxParserPlugin": {
