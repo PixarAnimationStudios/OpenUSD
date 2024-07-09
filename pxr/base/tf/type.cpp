@@ -959,8 +959,8 @@ TfType::_DefineCppType(const std::type_info & typeInfo,
     ScopedLock regLock(r.GetMutex(), /*write=*/true);
     if (_info->typeInfo.load() != nullptr) {
         regLock.Release();
-        TF_CODING_ERROR("TfType '%s' already has a defined C++ type; "
-                        "cannot redefine", GetTypeName().c_str());
+        TF_WARN("TfType '%s' already has a defined C++ type; "
+                "cannot redefine", GetTypeName().c_str());
         return;
     }
     r.SetTypeInfo(_info, typeInfo, sizeofType, isPodType, isEnumType);
@@ -1135,8 +1135,7 @@ TfType::SetFactory(std::unique_ptr<FactoryBase> factory) const
     ScopedLock regLock(GetRegistryMutex(), /*write=*/true);
     if (_info->factory) {
         regLock.Release();
-        TF_CODING_ERROR("Cannot change the factory of %s\n",
-                        GetTypeName().c_str());
+        TF_WARN("Cannot change the factory of %s\n", GetTypeName().c_str());
         return;
     }
 
