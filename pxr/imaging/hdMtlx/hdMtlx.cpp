@@ -586,7 +586,6 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
 
     mxDoc->setVersionString(materialXVersionString);
 
-
     mxDoc->importLibrary(libraries);
     
     // Create a material that instantiates the shader
@@ -610,8 +609,8 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
         mxType,
         mxShaderNode);
 
+    // just for testing...
     bool localDebug = false;
-
     if (localDebug) {
       writeToXmlFile(
           mxDoc, mx::FilePath("./before.mtlx"));

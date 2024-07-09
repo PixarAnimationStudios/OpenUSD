@@ -52,7 +52,12 @@ class SdfAssetPath;
 
 /// \class UsdMtlxMaterialXInfoAPI
 ///
-/// Write some docs
+/// MaterialXInfoAPI is an API schema that provides an interface for
+/// storing information about the MaterialX environment.
+/// 
+/// Initially, it only exposed an interface to record the MaterialX library version
+/// that data was authored against. The intention is to use this information to allow
+/// the MaterialX library to perform upgrades on data from prior MaterialX versions.
 /// 
 ///
 class UsdMtlxMaterialXInfoAPI : public UsdAPISchemaBase
@@ -167,7 +172,8 @@ public:
     // --------------------------------------------------------------------- //
     // MTLXINFOVERSION 
     // --------------------------------------------------------------------- //
-    /// Defaults to 1.38 to allow correct verisoning of old files
+    /// MaterialX library version that the data has been authored against.
+    /// Defaults to 1.38 to allow correct verisoning of old files.
     ///
     /// | ||
     /// | -- | -- |
