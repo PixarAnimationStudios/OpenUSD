@@ -55,5 +55,5 @@ jobs:
           D:
           cd D:\packaging
           dir
-          python setup.py ABC bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name win_amd64
+          python setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name win_amd64
         shell: cmd
