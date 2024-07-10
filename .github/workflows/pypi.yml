@@ -6,32 +6,6 @@ on:
       - enable_pypi
 
 jobs:
-  macOS:
-    strategy:
-      matrix:
-        PYTHON:
-#           - VERSION_SPEC: 3.6
-#             TAG: cp36
-#           - VERSION_SPEC: 3.7
-#             TAG: cp37
-#           - VERSION_SPEC: 3.8
-#             TAG: cp38
-#           - VERSION_SPEC: 3.9
-#             TAG: cp39
-#           - VERSION_SPEC: 3.10
-#             TAG: cp310
-          - VERSION_SPEC: 3.11
-            INTERPRETER: python3.11
-            TAG: cp311
-    runs-on: macos-12
-    timeout-minutes: 120
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.PYTHON.VERSION_SPEC }}
-    
   Windows:
     strategy:
       matrix:
