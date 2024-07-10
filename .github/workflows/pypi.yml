@@ -6,6 +6,32 @@ on:
       - enable_pypi
 
 jobs:
+  macOS:
+    strategy:
+      matrix:
+        PYTHON:
+#           - VERSION_SPEC: 3.6
+#             TAG: cp36
+#           - VERSION_SPEC: 3.7
+#             TAG: cp37
+#           - VERSION_SPEC: 3.8
+#             TAG: cp38
+#           - VERSION_SPEC: 3.9
+#             TAG: cp39
+#           - VERSION_SPEC: 3.10
+#             TAG: cp310
+          - VERSION_SPEC: 3.11
+            INTERPRETER: python3.11
+            TAG: cp311
+    runs-on: macos-12
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.PYTHON.VERSION_SPEC }}
+    
   Windows:
     strategy:
       matrix:
@@ -29,6 +55,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.PYTHON.VERSION_SPEC }}
+      - name: Restore cached artifacts
+        id: cache-usd-build-dependency
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            USDgen/build
+            USDinst
+            !USDgen/build/USD
+          key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
       - name: Build USD
         run: |
           call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat
@@ -56,4 +91,13 @@ jobs:
           cd D:\packaging
           dir
           python setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name win_amd64
+      - name: Save build artifacts to cache
+        if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            USDgen/build
+            USDinst
+            !USDgen/build/USD
+          key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
         shell: cmd
