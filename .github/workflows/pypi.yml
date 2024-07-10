@@ -10,14 +10,14 @@ jobs:
     strategy:
       matrix:
         PYTHON:
-          - VERSION_SPEC: 3.6
-            TAG: cp36
-          - VERSION_SPEC: 3.7
-            TAG: cp37
-          - VERSION_SPEC: 3.8
-            TAG: cp38
-          - VERSION_SPEC: 3.9
-            TAG: cp39
+#           - VERSION_SPEC: 3.6
+#             TAG: cp36
+#           - VERSION_SPEC: 3.7
+#             TAG: cp37
+#           - VERSION_SPEC: 3.8
+#             TAG: cp38
+#           - VERSION_SPEC: 3.9
+#             TAG: cp39
 #           - VERSION_SPEC: 3.10
 #             TAG: cp310
           - VERSION_SPEC: 3.11
@@ -52,6 +52,7 @@ jobs:
         shell: cmd
       - name: Running setup.py
         run: |
+          D:
           cd D:\packaging
           dir
           python setup.py ABC bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name win_amd64
