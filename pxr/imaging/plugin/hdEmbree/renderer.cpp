@@ -28,9 +28,15 @@
 #include <embree3/rtcore_geometry.h>
 #include <embree3/rtcore_scene.h>
 
+#include <tbb/tbb_stddef.h>
+#if TBB_INTERFACE_VERSION_MAJOR < 12
+#include <tbb/task_scheduler_init.h>
+#endif
+
 #include <algorithm>
 #include <chrono>
 #include <limits>
+#include <memory>
 #include <stdint.h>
 #include <thread>
 
@@ -50,6 +56,30 @@ constexpr float _rayHitContinueBias = 0.001f;
 constexpr float _minLuminanceCutoff = 1e-9f;
 
 constexpr GfVec3f _invalidColor = GfVec3f(-std::numeric_limits<float>::infinity());
+
+// -------------------------------------------------------------------------
+// Old TBB workaround - can remove once OneTBB is mandatory
+// -------------------------------------------------------------------------
+
+#if TBB_INTERFACE_VERSION_MAJOR < 12
+// Make the calling context respect PXR_WORK_THREAD_LIMIT, if run from a thread
+// other than the main thread (ie, the renderThread)
+class _ScopedThreadScheduler {
+public:
+    _ScopedThreadScheduler() {
+        auto limit = WorkGetConcurrencyLimitEnvSetting();
+        if (limit != 0) {
+            _tbbTaskSchedInit =
+                std::make_unique<tbb::task_scheduler_init>(limit);
+        }
+    }
+
+    std::unique_ptr<tbb::task_scheduler_init> _tbbTaskSchedInit;
+};
+#else
+class _ScopedThreadScheduler {
+};
+#endif
 
 // -------------------------------------------------------------------------
 // General Math Utilities
@@ -1074,6 +1104,7 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 
         // Render by scheduling square tiles of the sample buffer in a parallel
         // for loop.
+        _ScopedThreadScheduler scheduler;
         // Always pass the renderThread to _RenderTiles to allow the first frame
         // to be interrupted.
         WorkParallelForN(numTilesX*numTilesY,
