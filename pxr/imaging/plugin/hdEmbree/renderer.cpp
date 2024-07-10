@@ -22,6 +22,87 @@
 #include <chrono>
 #include <thread>
 
+// -------------------------------------------------------------------------
+// Old TBB workaround - can remove once OneTBB is mandatory
+// -------------------------------------------------------------------------
+#include <tbb/tbb_stddef.h>
+
+#if TBB_INTERFACE_VERSION_MAJOR < 12
+
+#include <memory>
+
+#include <tbb/task_scheduler_init.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+// PXR_WORK_THREAD_LIMIT isn't exported as part of it's api, and we're not
+// part of the work library, so we can't use:
+//     extern TfEnvSetting<int> PXR_WORK_THREAD_LIMIT;
+extern std::variant<int, bool, std::string> const *
+Tf_GetEnvSettingByName(std::string const&);
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+namespace {
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+// This function always returns either 0 (meaning "no change") or >= 1
+//
+// Duplication of code from threadLimits.cpp - copied here to avoid having to
+// change API of work lib.  Will go away once we don't need to support tbb < 12
+// (ie, pre-OneTBB)
+static unsigned
+HdEmbree_NormalizeThreadCount(const int n)
+{
+    // Zero means "no change", and n >= 1 means exactly n threads, so simply
+    // pass those values through unchanged.
+    // For negative integers, subtract the absolute value from the total number
+    // of available cores (denoting all but n cores). If |n| >= number of cores,
+    // clamp to 1 to set single-threaded mode.
+    return n >= 0 ? n : std::max<int>(1, n + WorkGetPhysicalConcurrencyLimit());
+}
+
+
+// Returns the normalized thread limit value from the environment setting. Note
+// that 0 means "no change", i.e. the environment setting does not apply.
+//
+// Duplication of code from threadLimits.cpp - copied here to avoid having to
+// change API of work lib.  Will go away once we don't need to support tbb < 12
+// (ie, pre-OneTBB)
+static unsigned
+HdEmbree_GetConcurrencyLimitSetting()
+{
+    std::variant<int, bool, std::string> const *
+        variantValue = Tf_GetEnvSettingByName("PXR_WORK_THREAD_LIMIT");
+    int threadLimit = 0;
+    if (int const *value = std::get_if<int>(variantValue)) {
+        threadLimit = *value;
+    }
+    return HdEmbree_NormalizeThreadCount(threadLimit);
+}
+
+
+// Make the calling context respect PXR_WORK_THREAD_LIMIT, if run from a thread
+// other than the main thread (ie, the renderThread)
+class _ScopedThreadScheduler {
+public:
+    _ScopedThreadScheduler() {
+        auto limit = HdEmbree_GetConcurrencyLimitSetting();
+        if (limit != 0) {
+            _tbbTaskSchedInit =
+                std::make_unique<tbb::task_scheduler_init>(limit);
+        }
+    }
+
+    std::unique_ptr<tbb::task_scheduler_init> _tbbTaskSchedInit;
+};
+
+} // anonymous namespace
+
+#endif  // TBB_INTERFACE_VERSION_MAJOR < 12
+
+
 namespace {
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -453,6 +534,9 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 
         // Render by scheduling square tiles of the sample buffer in a parallel
         // for loop.
+#if TBB_INTERFACE_VERSION_MAJOR < 12
+        _ScopedThreadScheduler scheduler;
+#endif
         // Always pass the renderThread to _RenderTiles to allow the first frame
         // to be interrupted.
         WorkParallelForN(numTilesX*numTilesY,
