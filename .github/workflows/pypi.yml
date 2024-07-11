@@ -62,6 +62,12 @@ jobs:
           # link against this library anyway, so it doesn't matter.
           docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} -c "import pathlib,sysconfig; pathlib.Path(sysconfig.get_config_var('LIBDIR'), sysconfig.get_config_var('LDLIBRARY')).touch()"
           docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }}  build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --build /opt/USD/gen/build --src /opt/USD/gen/src /opt/USD/inst -v
+      - name: Setting up docker
+        run: |
+          docker exec usdmanylinux mkdir ./packaging
+          docker exec usdmanylinux cp -R /opt/USD/inst ./packaging
+          docker exec usdmanylinux sh -c 'cp build_scripts/pypi/package_files/* ./packaging'
+          docker exec usdmanylinux sh -c 'cp LICENSE.txt ./packaging'
       - name: Save build artifacts to cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
