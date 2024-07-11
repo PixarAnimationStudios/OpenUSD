@@ -9,5 +9,6 @@ WORKDIR /opt/USD
 # The above manylinux2014 image contains CMake 3.22, but we require
 # 3.27+ for Python 3.11 support. So we install 3.27 manually here.
 RUN pipx install --force cmake==3.27.9
+RUN pipx install pathlib
 
 CMD bash
