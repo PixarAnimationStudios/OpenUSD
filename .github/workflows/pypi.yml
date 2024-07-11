@@ -77,10 +77,10 @@ jobs:
       - name: Updating pluginfo paths
         run: |
           WHEEL_PACKAGE_NAME=`docker exec usdmanylinux ls wheelhouse`
+          docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} build_scripts/pypi/updatePluginfos.py "wheelhouse/$WHEEL_PACKAGE_NAME" "/opt/USD-dist/$WHEEL_PACKAGE_NAME"
       - name: Stopping docker container
         run: |
           docker stop usdmanylinux
-          docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} build_scripts/pypi/updatePluginfos.py "wheelhouse/$WHEEL_PACKAGE_NAME" "/opt/USD-dist/$WHEEL_PACKAGE_NAME"
       - name: Save build artifacts to cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
