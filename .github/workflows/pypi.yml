@@ -46,6 +46,7 @@ jobs:
           docker run --name usdmanylinux --rm -id -v ./:/opt/USD -v /home/vsts/dist:/opt/USD-dist manylinuxwithcmake
       - name: Installing Python
         run: |
+          docker exec usdmanylinux sudo apt-get install -y python3-setuptools
           docker exec usdmanylinux python -m pip install wheel pathlib
       - name: Building USD
         run: |
