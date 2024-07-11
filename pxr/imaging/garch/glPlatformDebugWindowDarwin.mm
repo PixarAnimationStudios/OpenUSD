@@ -226,7 +226,7 @@ Garch_GLPlatformDebugWindow::ExitApp()
     [NSApp stop:nil];
 }
 
-#else
+#else // IPHONE Derivatives
 
         PXR_NAMESPACE_OPEN_SCOPE
 

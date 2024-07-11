@@ -2255,7 +2255,7 @@ class InstallContext:
 
         # - Imaging
         self.buildImaging = (args.build_imaging == IMAGING or
-                             args.build_imaging == USD_IMAGING) and not embedded
+                             args.build_imaging == USD_IMAGING)
         self.enablePtex = self.buildImaging and args.enable_ptex
         self.enableOpenVDB = self.buildImaging and args.enable_openvdb
 
@@ -2272,8 +2272,8 @@ class InstallContext:
         self.buildPrman = self.buildImaging and args.build_prman
         self.prmanLocation = (os.path.abspath(args.prman_location)
                                if args.prman_location else None)                               
-        self.buildOIIO = args.build_oiio or (self.buildUsdImaging
-                                             and self.buildTests)
+        self.buildOIIO = (args.build_oiio or (self.buildUsdImaging
+                                             and self.buildTests))
         self.buildOCIO = args.build_ocio
 
         # - Alembic Plugin
