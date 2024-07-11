@@ -44,10 +44,6 @@ jobs:
         run: |
           docker build -t manylinuxwithcmake build_scripts/pypi/docker
           docker run --name usdmanylinux --rm -id -v ./:/opt/USD -v /home/vsts/dist:/opt/USD-dist manylinuxwithcmake
-      - name: Installing Python
-        run: |
-          docker exec -u root -t -i usdmanylinux apt-get install python3-pip
-          docker exec usdmanylinux python -m pip install wheel pathlib
       - name: Building USD
         run: |
           # Terrible, terrible hack. The manylinux Docker image used to build the
