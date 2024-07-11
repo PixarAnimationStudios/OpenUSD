@@ -22,7 +22,6 @@ jobs:
           #   INTERPRETER: python3.11
           - TAG: cp311
             INTERPRETER: /opt/python/cp311-cp311/bin/python
-            VERSION_SPEC: 3.11
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
