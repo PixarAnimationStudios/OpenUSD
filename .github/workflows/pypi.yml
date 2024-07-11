@@ -62,6 +62,13 @@ jobs:
       - name: Installing Python
         run: |
           python -m pip install delocate~=0.10.2 wheel
+      - name: Running delocate
+        run: |
+          cd packaging
+          python setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name macosx_10_9_universal2
+      - name: Running delocate
+        run: |
+          delocate-wheel -v -w dist-delocated packaging/dist/*
       - name: Save build artifacts to cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
@@ -129,7 +136,6 @@ jobs:
         run: |
           D:
           cd D:\packaging
-          dir
           python setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name win_amd64
         shell: cmd
       - name: Save build artifacts to cache
