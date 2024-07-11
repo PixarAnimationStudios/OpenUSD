@@ -42,7 +42,26 @@ jobs:
       - name: Setting up docker
         run: |
           docker build -t manylinuxwithcmake build_scripts/pypi/docker
-          docker run --name usdmanylinux --rm -id -v $(Build.SourcesDirectory):/opt/USD -v /home/vsts/dist:/opt/USD-dist manylinuxwithcmake
+          docker run --name usdmanylinux --rm -id -v ./:/opt/USD -v /home/vsts/dist:/opt/USD-dist manylinuxwithcmake
+      - name: Building USD
+      run: |
+          # Terrible, terrible hack. The manylinux Docker image used to build the
+          # Python wheel does not include the corresponding Python shared library
+          # to link against. https://peps.python.org/pep-0513/#libpythonx-y-so-1
+          # describes why this is so. However, the FindPython CMake module used
+          # by USD's build system requires that the library exists and will error
+          # out otherwise, even though we explicitly avoid linking against Python
+          # via the PXR_PY_UNDEFINED_DYNAMIC_LOOKUP flag.
+          # 
+          # To work around this, we create a dummy file for the library using
+          # the same logic as build_usd.py to determine where the library should
+          # exist (see GetPythonInfo). FindPython will see that the library exists
+          # and allow the build to continue. The file is 100% bogus, but the
+          # PXR_PY_UNDEFINED_DYNAMIC_LOOKUP flag will ensure that we never try to
+          # link against this library anyway, so it doesn't matter.
+          docker exec usdmanylinux $(PYTHON_INTERPRETER) -c "import pathlib,sysconfig; pathlib.Path(sysconfig.get_config_var('LIBDIR'), sysconfig.get_config_var('LDLIBRARY')).touch()"
+          docker exec usdmanylinux $(PYTHON_INTERPRETER)  build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --build /opt/USD/gen/build --src /opt/USD/gen/src /opt/USD/inst -v
+
 
   # macOS:
 #     strategy:
