@@ -68,15 +68,15 @@ jobs:
           docker exec usdmanylinux cp -R /opt/USD/inst ./packaging
           docker exec usdmanylinux sh -c 'cp build_scripts/pypi/package_files/* ./packaging'
           docker exec usdmanylinux sh -c 'cp LICENSE.txt ./packaging'
-      - name: Save build artifacts to cache
-        if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v3
-        with:
-          path: |
-            USDgen/build
-            USDinst
-            !USDgen/build/USD
-          key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+#       - name: Save build artifacts to cache
+#         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+#         uses: actions/cache/save@v3
+#         with:
+#           path: |
+#             USDgen/build
+#             USDinst
+#             !USDgen/build/USD
+#           key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
 
   # macOS:
 #     strategy:
