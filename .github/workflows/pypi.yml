@@ -53,16 +53,16 @@ jobs:
         run: |
           pwd
           ls -la
-          mkdir ./packaging
-          mkdir ./packaging/inst
-          cp -R $HOME/work/OpenUSD/OpenUSD/USDinst/* ./packaging/inst
-          cp build_scripts/pypi/package_files/* ./packaging
-          cp LICENSE.txt ./packaging
+          mkdir packaging
+          mkdir packaging/inst
+          cp -R USDinst/* packaging/inst/
+          cp build_scripts/pypi/package_files/* packaging/
+          cp LICENSE.txt ./packaging/
           ls -la ./packaging
           ls -la ./packaging/inst
       - name: Installing Python
         run: |
-          python -m pip install delocate~=0.10.2 wheel
+          python -m pip install delocate wheel
       - name: Running setup.py
         run: |
           cd packaging
