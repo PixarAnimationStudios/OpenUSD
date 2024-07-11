@@ -64,8 +64,8 @@ jobs:
           # and allow the build to continue. The file is 100% bogus, but the
           # PXR_PY_UNDEFINED_DYNAMIC_LOOKUP flag will ensure that we never try to
           # link against this library anyway, so it doesn't matter.
-          docker exec usdmanylinux python -c "import pathlib,sysconfig; pathlib.Path(sysconfig.get_config_var('LIBDIR'), sysconfig.get_config_var('LDLIBRARY')).touch()"
-          docker exec usdmanylinux python  build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --build /opt/USD/gen/build --src /opt/USD/gen/src /opt/USD/inst -v
+          docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} -c "import pathlib,sysconfig; pathlib.Path(sysconfig.get_config_var('LIBDIR'), sysconfig.get_config_var('LDLIBRARY')).touch()"
+          docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }}  build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --build /opt/USD/gen/build --src /opt/USD/gen/src /opt/USD/inst -v
 
 
   # macOS:
