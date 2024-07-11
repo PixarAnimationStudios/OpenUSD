@@ -503,7 +503,7 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
 
     // Create a uniform distribution for jitter calculations.
     std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
-    std::function<float()> uniform_float = std::bind(uniform_dist, random);
+    auto uniform_float = [&random, &uniform_dist]() { return uniform_dist(random); };
 
     // _RenderTiles gets a range of tiles; iterate through them.
     for (unsigned int tile = tileStart; tile < tileEnd; ++tile) {
@@ -923,7 +923,7 @@ HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
 {
     // Create a uniform random distribution for AO calculations.
     std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
-    std::function<float()> uniform_float = std::bind(uniform_dist, random);
+    auto uniform_float = [&random, &uniform_dist]() { return uniform_dist(random); };
 
     // 0 ambient occlusion samples means disable the ambient occlusion term.
     if (_ambientOcclusionSamples < 1) {
