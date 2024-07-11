@@ -13,9 +13,9 @@ jobs:
           # - TAG: cp36
           #   INTERPRETER: /opt/python/cp36-cp36m/bin/python
           #   VERSION_SPEC: 3.6
-          # - TAG: cp37
-          #   INTERPRETER: /opt/python/cp37-cp37m/bin/python
-          #   VERSION_SPEC: 3.7
+          - TAG: cp37
+            INTERPRETER: /opt/python/cp37-cp37m/bin/python
+            VERSION_SPEC: 3.7
           - TAG: cp38
             INTERPRETER: /opt/python/cp38-cp38/bin/python
             VERSION_SPEC: 3.8
