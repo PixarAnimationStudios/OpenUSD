@@ -71,10 +71,9 @@ jobs:
       - name: Running setup.py
         run: |
           docker exec -w /opt/USD/packaging usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }}
-      - name: Running setup.py
+      - name: Running auditwheel repair (moves .so files into package)
         run: |
-          docker exec usdmanylinux /bin/bash -c 'PYTHONPATH=/opt/USD/packaging/pypi/lib/python LD_LIBRARY_PATH=/opt/USD/packaging/pypi/lib:$LD_LIBRARY_PATH auditwheel repair packaging/dist/*.whl'        
-      displayName: 'Running auditwheel repair (moves .so files into package)'          
+          docker exec usdmanylinux /bin/bash -c 'PYTHONPATH=/opt/USD/packaging/pypi/lib/python LD_LIBRARY_PATH=/opt/USD/packaging/pypi/lib:$LD_LIBRARY_PATH auditwheel repair packaging/dist/*.whl'             
       - name: Save build artifacts to cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
