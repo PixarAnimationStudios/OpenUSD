@@ -36,6 +36,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.PYTHON.VERSION_SPEC }}
+      - name: Restore cached artifacts
+        id: cache-usd-build-dependency
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            USDgen/build
+            USDinst
+            !USDgen/build/USD
+          key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
   Windows:
     strategy:
       matrix:
