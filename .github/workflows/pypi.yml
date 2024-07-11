@@ -42,7 +42,7 @@ jobs:
       - name: Setting up docker
         run: |
           docker build -t manylinuxwithcmake build_scripts/pypi/docker
-          docker run --name usdmanylinux --rm -id -v $(Build.SourcesDirectory):/opt/USD -v /home/vsts/dist:/opt/USD-dist manylinuxwithcmake
+          docker run --name usdmanylinux --rm -id -v ./:/opt/USD -v /home/vsts/dist:/opt/USD-dist manylinuxwithcmake
 
 
 
