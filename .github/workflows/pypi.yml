@@ -243,7 +243,7 @@ jobs:
 #             !USDgen/build/USD
 #           key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
 
-  Collect Packages:
+  CollectPackages:
     if: ${{ always() }}
     needs: [Linux, macOS]
     timeout-minutes: 120
