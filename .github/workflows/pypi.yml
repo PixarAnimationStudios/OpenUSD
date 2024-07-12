@@ -149,7 +149,7 @@ jobs:
           ls -la
           mkdir ./packaging
           mkdir ./packaging/inst
-          cp -R ./USDinst/* ./packaging/inst
+          cp -R USDinst/* ./packaging/inst
           cp build_scripts/pypi/package_files/* ./packaging
           cp LICENSE.txt ./packaging
           ls -la ./packaging
@@ -160,10 +160,10 @@ jobs:
       - name: Running setup.py
         run: |
           cd packaging
-          ${{ matrix.PYTHON.INTERPRETER }} setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name macosx_10_9_universal2
+          ${{ matrix.PYTHON.INTERPRETER }} setup.py bdist_wheel --python-tag ${PYTHON_TAG} --plat-name macosx_10_9_universal2
       - name: Running delocate
         run: |
-          delocate-wheel -v -w dist-delocated --require-archs universal2 packaging/dist/*
+          delocate-wheel -v -w dist-delocated packaging/dist/*
       - name: Save build artifacts to cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
