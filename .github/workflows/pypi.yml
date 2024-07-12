@@ -103,9 +103,9 @@ jobs:
           # - VERSION_SPEC: '3.6'
           #   INTERPRETER: python3.6
           #   TAG: cp36
-          # - VERSION_SPEC: '3.7'
-          #   INTERPRETER: python3.7
-          #   TAG: cp37
+          - VERSION_SPEC: '3.7'
+            INTERPRETER: python3.7
+            TAG: cp37
           # - VERSION_SPEC: '3.8'
           #   INTERPRETER: python3.8
           #   TAG: cp38
@@ -115,9 +115,9 @@ jobs:
           # - VERSION_SPEC: '3.10'
           #   INTERPRETER: python3.10
           #   TAG: cp310
-          - VERSION_SPEC: '3.11'
-            INTERPRETER: python3.11
-            TAG: cp311
+          # - VERSION_SPEC: '3.11'
+          #   INTERPRETER: python3.11
+          #   TAG: cp311
     runs-on: macos-12 # macos-13/14 doesn't work with delocate
     timeout-minutes: 120
     steps:
