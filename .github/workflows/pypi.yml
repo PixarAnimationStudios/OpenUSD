@@ -159,7 +159,7 @@ jobs:
           python setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name macosx_10_9_universal2
       - name: Running delocate
         run: |
-          delocate-wheel -v -w dist-delocated packaging/dist/*
+          delocate-wheel -v -w dist-delocated --require-archs universal2 packaging/dist/*
       - name: Save build artifacts to cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
