@@ -288,7 +288,7 @@ jobs:
     steps:
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.PYTHON.VERSION_SPEC }}
+          python-version: ${{ matrix.BUILD_CONFIG.PYTHON_VERSION_SPEC }}
       - uses: actions/download-artifact@v4
         with:
           path: dist-final
