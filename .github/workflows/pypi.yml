@@ -160,7 +160,7 @@ jobs:
       - name: Running setup.py
         run: |
           cd packaging
-          ${{ matrix.PYTHON.INTERPRETER }} setup.py bdist_wheel --python-tag ${PYTHON_TAG} --plat-name macosx_10_9_universal2
+          ${{ matrix.PYTHON.INTERPRETER }} setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name macosx_10_9_universal2
       - name: Running delocate
         run: |
           delocate-wheel -v -w dist-delocated packaging/dist/*
@@ -243,20 +243,24 @@ jobs:
 #             !USDgen/build/USD
 #           key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
 
-  # Deliver:
-  #   if: ${{ always() }}
-  #   needs: [Linux, macOS]
-  #   timeout-minutes: 120
-  #   runs-on: ubuntu-24.04
-  #   steps:
-  #   - uses: actions/download-artifact@v4
-  #     with:
-  #       path: artifacts
-  #       pattern: my-artifact-*
-  #       merge-multiple: true
-  #   - name: Display structure of downloaded files
-  #     run: ls -R artifacts
-
+  Collect Packages:
+    if: ${{ always() }}
+    needs: [Linux, macOS]
+    timeout-minutes: 120
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        path: dist-final
+        pattern: dist-*-*
+        merge-multiple: true
+    - name: Display structure of downloaded files
+      run: ls -R dist-final
+    - name: Upload artifiacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-final
+        path: dist-final
 
 
   #   steps:
