@@ -264,7 +264,7 @@ jobs:
 
   Test:
     needs: [CollectPackages]
-    timeoutInMinutes: 10
+    timeout-minutes: 10
     strategy:
       matrix:
         BUILD_CONFIG:
