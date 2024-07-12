@@ -95,7 +95,7 @@ jobs:
             USDinst
             !USDgen/build/USD
           key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
-      - name Upload artifiacts
+      - name: Upload artifiacts
         uses: actions/upload-artifact@v4
         with:
           name: dist-linux-${{ matrix.PYTHON.TAG }}
