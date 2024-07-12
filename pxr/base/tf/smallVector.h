@@ -429,7 +429,7 @@ public:
         else if (newSize > size()) {
             reserve(newSize);
             std::uninitialized_fill(data() + size(), data() + newSize, v);
-            _size = newSize;
+            _size = static_cast<_SizeMemberType>(newSize);
         }
     }
 
@@ -451,7 +451,7 @@ public:
         const size_type newSize = std::distance(first, last);
         reserve(newSize);
         std::uninitialized_copy(first, last, begin());
-        _size = newSize;
+        _size = static_cast<_SizeMemberType>(newSize);
     }
 
     /// Replace existing contents with the contents of \p ilist.
@@ -541,7 +541,7 @@ public:
             _Destruct();
             _FreeStorage();
             _SetRemoteStorage(newStorage);
-            _capacity = nextCapacity;
+            _capacity = static_cast<_SizeMemberType>(nextCapacity);
         }
         else {
             // Insert in-place requires handling four ranges.
@@ -592,7 +592,7 @@ public:
     /// Returns the current size of the vector.
     ///
     size_type size() const {
-        return _size;
+        return static_cast<size_type>(_size);
     }
 
     /// Returns the maximum size of this vector.
@@ -613,7 +613,7 @@ public:
     /// the local storage once it shrinks to N.
     ///
     size_type capacity() const {
-        return _capacity;
+        return static_cast<size_type>(_capacity);
     }
 
     /// Returns the local storage capacity. The vector uses its local storage
@@ -815,9 +815,9 @@ private:
     void _InitStorage(size_type size) {
         if (size > capacity()) {
             _SetRemoteStorage(_Allocate(size));
-            _capacity = size;
+            _capacity = static_cast<_SizeMemberType>(size);
         }
-        _size = size;
+        _size = static_cast<_SizeMemberType>(size);
     }
 
     // Grow the storage to be able to accommodate newCapacity entries. This
@@ -828,7 +828,7 @@ private:
         _Destruct();
         _FreeStorage();
         _SetRemoteStorage(newStorage);
-        _capacity = newCapacity;
+        _capacity = static_cast<_SizeMemberType>(newCapacity);
     }
 
     // Returns the next capacity to use for vector growth. The growth factor
@@ -874,7 +874,7 @@ private:
             _FreeStorage();
 
             _SetRemoteStorage(newStorage);
-            _capacity = newCapacity;
+            _capacity = static_cast<_SizeMemberType>(newCapacity);
         }
 
         // Our current capacity is big enough to allow us to simply shift
