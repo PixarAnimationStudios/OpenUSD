@@ -118,7 +118,7 @@ jobs:
           - VERSION_SPEC: '3.11'
             INTERPRETER: python3.11
             TAG: cp311
-    runs-on: macos-14
+    runs-on: macos-13 # macos-14 doesn't work with delocate yet
     timeout-minutes: 120
     steps:
       - name: Checkout code
