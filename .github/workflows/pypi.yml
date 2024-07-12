@@ -259,15 +259,42 @@ jobs:
     - name: Upload artifiacts
       uses: actions/upload-artifact@v4
       with:
-        name: dist-final
+        name: dist
         path: dist-final
 
-
-  #   steps:
-  #   - name: Download All Artifacts
-  #     uses: actions/download-artifact@v4
-  #     with:
-  #       path: my-artifact
-  #       pattern: my-artifact-*
-  #       merge-multiple: true
-  #   - run: ls -R my-artifact
+  Test:
+    needs: [CollectPackages]
+    timeoutInMinutes: 10
+    strategy:
+      matrix:
+        BUILD_CONFIG:
+          - NAME: Linux_Python38
+            PYTHON_VERSION_SPEC: '3.8'
+            IMAGE: 'Ubuntu-20.04'
+            PYTHON_INTERPRETER: python3
+          - NAME: Linux_Python39
+            PYTHON_VERSION_SPEC: '3.9'
+            IMAGE: Ubuntu-20.04
+            PYTHON_INTERPRETER: python3
+          - NAME: Linux_Python310
+            PYTHON_VERSION_SPEC: '3.10'
+            IMAGE: Ubuntu-20.04
+            PYTHON_INTERPRETER: python3
+          - NAME: Linux_Python311
+            PYTHON_VERSION_SPEC: '3.11'
+            IMAGE: Ubuntu-20.04
+            PYTHON_INTERPRETER: python3
+    runs-on: ${{ matrix.BUILD_CONFIG.IMAGE }}
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.PYTHON.VERSION_SPEC }}
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist-final
+          pattern: dist-final
+          merge-multiple: true
+      - name: Packaging USD
+        run: |
+          pwd
+          ls -la
