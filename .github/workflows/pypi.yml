@@ -91,9 +91,9 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: |
-            USDgen/build
-            USDinst
-            !USDgen/build/USD
+            gen/build
+            inst
+            !gen/build/USD
           key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
       - name: Upload artifiacts
         uses: actions/upload-artifact@v4
