@@ -18,16 +18,16 @@ jobs:
           #   VERSION_SPEC: 3.7.17
           - TAG: cp38
             INTERPRETER: /opt/python/cp38-cp38/bin/python
-            VERSION_SPEC: 3.8
+            VERSION_SPEC: '3.8'
           - TAG: cp39
             INTERPRETER: /opt/python/cp39-cp39/bin/python
-            VERSION_SPEC: 3.9
-          # - TAG: cp310
-          #   INTERPRETER: /opt/python/cp310-cp310/bin/python
-          #   VERSION_SPEC: 3.10
+            VERSION_SPEC: '3.9'
+          - TAG: cp310
+            INTERPRETER: /opt/python/cp310-cp310/bin/python
+            VERSION_SPEC: '3.10'
           - TAG: cp311
             INTERPRETER: /opt/python/cp311-cp311/bin/python
-            VERSION_SPEC: 3.11
+            VERSION_SPEC: '3.11'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
