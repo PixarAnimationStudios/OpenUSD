@@ -517,6 +517,9 @@ public:
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
+    // Return true if this data source should be provided for the prim.
+    static bool HasData(const UsdPrim &prim);
+
 private:
     UsdImagingDataSourcePrim_ModelAPI(const UsdModelAPI &model);
     const UsdModelAPI _model;
@@ -528,6 +531,20 @@ UsdImagingDataSourcePrim_ModelAPI::UsdImagingDataSourcePrim_ModelAPI(
         const UsdModelAPI &model)
   : _model(model)
 {
+}
+
+bool
+UsdImagingDataSourcePrim_ModelAPI::HasData(const UsdPrim &prim)
+{
+    // UsdImagingModelSchema corresponds to UsdModelAPI, so provide
+    // it when the prim has the relevant data -- i.e., assetInfo.
+    //
+    // Note that this is not the same as querying IsModel():
+    // USD model hierarchy rules dictate that an embedded model reference
+    // that is not part of the model hierarchy will return IsModel()==false.
+    // Nonetheless, we still want to reflect UsdModelAPI to Hydra,
+    // since the assetInfo may be required for texture asset resolution.
+    return prim.HasAssetInfo();
 }
 
 TfTokenVector
@@ -708,7 +725,7 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         }
     } else if (name == UsdImagingModelSchema::GetSchemaToken()) {
         if (UsdModelAPI model = UsdModelAPI(_GetUsdPrim())) {
-            if (model.IsModel()) {
+            if (UsdImagingDataSourcePrim_ModelAPI::HasData(_usdPrim)) {
                 return UsdImagingDataSourcePrim_ModelAPI::New(model);
             }
         }
