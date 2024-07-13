@@ -22,6 +22,7 @@
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/fileSystem.h"
 
 #include <ostream>
@@ -357,8 +358,17 @@ SdfTextFileFormat::ReadFromString(
 {
     SdfLayerHints hints;
     SdfAbstractDataRefPtr data = InitData(layer->GetFileFormatArguments());
+
+    // XXX: Its possible that str has leading whitespace, owing to in-code layer
+    // constructions. This is currently allowed in flex+bison parser, but will
+    // be tightened with the pegtl parser. Note that this whitespace trimming 
+    // code will eventually be removed, it's being put in place so as to provide 
+    // backward compatibility for in-code layer constructs to work with pegtl 
+    // parser also. This code should be removed when (USD-9838) gets worked on.
+    const std::string trimmedStr = TfStringTrimLeft(str);
+    
     if (!Sdf_ParseLayerFromString(
-            str, GetFormatId(), GetVersionString(),
+            trimmedStr, GetFormatId(), GetVersionString(),
             TfDynamic_cast<SdfDataRefPtr>(data), &hints)) {
         return false;
     }
