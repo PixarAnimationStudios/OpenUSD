@@ -247,6 +247,16 @@ pxr_build_test_shared_lib(TestSdfFileFormatCapabilities
         testenv/TestSdfFileFormatCapabilities.cpp
 )
 
+pxr_build_test_shared_lib(TestSdfLayerExceptionHandling
+    INSTALL_PREFIX SdfPlugins
+    LIBRARIES
+        sdf
+        tf
+
+    CPPFILES
+        testenv/TestSdfLayerExceptionHandling.cpp
+)
+
 pxr_build_test_shared_lib(TestSdfNoAssetFileFormat
     INSTALL_PREFIX SdfPlugins
     LIBRARIES

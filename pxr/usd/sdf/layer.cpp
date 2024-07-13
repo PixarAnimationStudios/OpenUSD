@@ -833,8 +833,13 @@ SdfLayer::FindOrOpen(const string &identifier,
     return WorkWithScopedParallelism([&]() -> SdfLayerRefPtr {
         
         // Otherwise we create the layer and insert it into the registry.
-        return _OpenLayerAndUnlockRegistry(lock, layerInfo,
+        try {
+            return _OpenLayerAndUnlockRegistry(lock, layerInfo,
                                            /* metadataOnly */ false);
+        } catch (std::exception &e) {
+            TF_RUNTIME_ERROR("Exception thrown while opening layer: %s", e.what());
+            return TfNullPtr;
+        }
     });
 }
 
@@ -900,9 +905,15 @@ SdfLayer::OpenAsAnonymous(
     }
 
     // Run the file parser to read in the file contents.
-    if (!layer->_Read(layerInfo.identifier, layerInfo.resolvedLayerPath, 
-                      metadataOnly)) {
+    try {
+        if (!layer->_Read(layerInfo.identifier, layerInfo.resolvedLayerPath, 
+                        metadataOnly)) {
+            layer->_FinishInitialization(/* success = */ false);
+            return TfNullPtr;
+        }
+    } catch (std::exception &e) {
         layer->_FinishInitialization(/* success = */ false);
+        TF_RUNTIME_ERROR("Exception thrown while opening layer: %s", e.what());
         return TfNullPtr;
     }
 
