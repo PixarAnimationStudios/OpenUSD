@@ -176,6 +176,7 @@ pxr_plugin(${PXR_PACKAGE}
         rileyRenderViewPrim
         rileySampleFilterPrim
         rileyTypes
+        sceneIndexObserverApi
         terminalSceneIndexObserver
         updateObjectSettingsSceneIndex
         updateObjectSettingsSceneIndexPlugin
@@ -191,7 +192,6 @@ pxr_plugin(${PXR_PACKAGE}
         pxr/base/vt/typeHeaders.h # polyfill until USD 22.08
         pxr/base/vt/visitValue.h  # polyfill until USD 22.11
         rileyIds.h
-        sceneIndexObserverApi.h
         virtualStructConditionalGrammar.tab.h
 
     CPPFILES

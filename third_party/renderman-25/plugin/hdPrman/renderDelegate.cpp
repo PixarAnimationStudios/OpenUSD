@@ -54,17 +54,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
-
-TF_DEFINE_ENV_SETTING(HD_PRMAN_EXPERIMENTAL_RILEY_SCENE_INDEX_OBSERVER, false,
-                      "Enable scene index observer calling the Riley API for "
-                      "the prims in the terminal scene index. This is scene "
-                      "index observer is the first step towards a future "
-                      "Hydra 2.0 implementation. "
-                      "See HdPrmanRenderDelegate::_RileySceneIndices for more.");
-
-#endif
-
 // \class HdPrmanRenderDelegate::_RileySceneIndices.
 //
 // Holds the scene indices and scene index observers past the terminal scene
