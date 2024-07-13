@@ -19,17 +19,32 @@ HdGpGenerativeProceduralFilteringSceneIndex::
 : HdSingleInputFilteringSceneIndexBase(inputScene)
 , _allowedProceduralTypes(allowedProceduralTypes)
 , _targetPrimTypeName(HdGpGenerativeProceduralTokens->generativeProcedural)
+, _allowedPrimTypeName(_targetPrimTypeName)
+, _skippedPrimTypeName(HdGpGenerativeProceduralTokens->skippedGenerativeProcedural)
 {
 }
 
 HdGpGenerativeProceduralFilteringSceneIndex::
-        HdGpGenerativeProceduralFilteringSceneIndex(
-    const HdSceneIndexBaseRefPtr &inputScene,
-    const TfTokenVector &allowedProceduralTypes,
-    const TfToken &targetPrimTypeName)
+    HdGpGenerativeProceduralFilteringSceneIndex(
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const TfTokenVector &allowedProceduralTypes,
+        const std::optional<TfToken> &maybeTargetPrimTypeName,
+        const std::optional<TfToken> &maybeAllowedPrimTypeName,
+        const std::optional<TfToken> &maybeSkippedPrimTypeName)
 : HdSingleInputFilteringSceneIndexBase(inputScene)
 , _allowedProceduralTypes(allowedProceduralTypes)
-, _targetPrimTypeName(targetPrimTypeName)
+, _targetPrimTypeName(
+    maybeTargetPrimTypeName
+        ? *maybeTargetPrimTypeName
+        : HdGpGenerativeProceduralTokens->generativeProcedural)
+, _allowedPrimTypeName(
+    maybeAllowedPrimTypeName
+        ? *maybeAllowedPrimTypeName
+        : _targetPrimTypeName)
+, _skippedPrimTypeName(
+    maybeSkippedPrimTypeName
+        ? *maybeSkippedPrimTypeName
+        : HdGpGenerativeProceduralTokens->skippedGenerativeProcedural)
 {
 }
 
@@ -38,8 +53,16 @@ HdGpGenerativeProceduralFilteringSceneIndex::GetPrim(
     const SdfPath &primPath) const
 {
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
-    if (_ShouldSkipPrim(prim)) {
-        prim.primType = HdGpGenerativeProceduralTokens->skippedGenerativeProcedural;
+    switch (_ShouldSkipPrim(prim)) {
+        case _ShouldSkipResult::Ignore: {
+            // leave it alone
+        } break;
+        case _ShouldSkipResult::Skip: {
+            prim.primType = _skippedPrimTypeName;
+        } break;
+        case _ShouldSkipResult::Allow: {
+            prim.primType = _allowedPrimTypeName;
+        } break;
     }
     return prim;
 }
@@ -72,9 +95,17 @@ HdGpGenerativeProceduralFilteringSceneIndex::_PrimsAdded(
     // Apply filtering
     HdSceneIndexObserver::AddedPrimEntries filteredEntries = entries;
     for (HdSceneIndexObserver::AddedPrimEntry &entry : filteredEntries) {
-        HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(entry.primPath);
-        if (_ShouldSkipPrim(prim)) {
-            entry.primType = HdGpGenerativeProceduralTokens->skippedGenerativeProcedural;
+        const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(entry.primPath);
+        switch (_ShouldSkipPrim(prim)) {
+            case _ShouldSkipResult::Ignore: {
+                // leave it alone
+            } break;
+            case _ShouldSkipResult::Skip: {
+                entry.primType = _skippedPrimTypeName;
+            } break;
+            case _ShouldSkipResult::Allow: {
+                entry.primType = _allowedPrimTypeName;
+            } break;
         }
     }
     _SendPrimsAdded(filteredEntries);
@@ -112,25 +143,23 @@ HdGpGenerativeProceduralFilteringSceneIndex::_GetProceduralType(
     return TfToken();
 }
 
-bool
+HdGpGenerativeProceduralFilteringSceneIndex::_ShouldSkipResult
 HdGpGenerativeProceduralFilteringSceneIndex::_ShouldSkipPrim(
     HdSceneIndexPrim const& prim) const
 {
-    if (prim.primType == _targetPrimTypeName) {
-        const TfToken procType = _GetProceduralType(prim);
-        for (TfToken const& allowedType: _allowedProceduralTypes) {
-            if (allowedType == HdGpGenerativeProceduralTokens->anyProceduralType ||
-                allowedType == procType) {
-                // Allow this procedural; do not skip
-                return false;
-            }
-        }
-        // Skip it
-        return true;
-    } else {
+    if (prim.primType != _targetPrimTypeName) {
         // Not a target procedural type
-        return false;
+        return _ShouldSkipResult::Ignore;
     }
+
+    const TfToken procType = _GetProceduralType(prim);
+    for (TfToken const& allowedType: _allowedProceduralTypes) {
+        if (allowedType == HdGpGenerativeProceduralTokens->anyProceduralType ||
+            allowedType == procType) {
+            return _ShouldSkipResult::Allow;
+        }
+    }
+    return _ShouldSkipResult::Skip;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
