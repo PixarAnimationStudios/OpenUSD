@@ -142,6 +142,12 @@ HdPrman_RenderParam::HdPrman_RenderParam(
     
     // Register RenderMan display driver
     HdPrmanFramebuffer::Register(_rix);
+
+    // Calling these before
+    // RixSymbolResolver::ResolvePredefinedStrings (which is in _CreateRiley)
+    // causes a crash.
+    _envOptions = HdPrman_Utils::GetRileyOptionsFromEnvironment();
+    _fallbackOptions = HdPrman_Utils::GetDefaultRileyOptions();
 }
 
 HdPrman_RenderParam::~HdPrman_RenderParam()
@@ -2182,8 +2188,6 @@ HdPrman_RenderParam::IsValid() const
 void 
 HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
 {
-    _envOptions = HdPrman_Utils::GetRileyOptionsFromEnvironment();
-    _fallbackOptions = HdPrman_Utils::GetDefaultRileyOptions();
     // Initialize legacy options from the render settings map.
     UpdateLegacyOptions();
     
