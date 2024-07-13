@@ -368,24 +368,19 @@ class GfMatrix3{{ SCL[0] }};
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][1]", sep=" + ", num=3) }} + _mtx[3][1],
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][2]", sep=" + ", num=3) }} + _mtx[3][2]);
     }
+{% if SCL == 'float' %}
 
     /// Transforms the row vector \e vec by the matrix, returning the result.
     /// This treats the vector as a 4-component vector whose fourth component
     /// is 1 and ignores the fourth column of the matrix (i.e. assumes it is
     /// (0, 0, 0, 1)).
-{% if SCL == 'double' %}
-    ///
-    /// \deprecated
-    /// This method is deprecated, as it can result in unintentional loss of
-    /// precision. Call GfVec3d TransformAffine(const GfVec3d &) instead and
-    /// explicitly convert the result to GfVec3f, if necessary.
-{% endif %}
     GfVec3f TransformAffine(const GfVec3f &vec) const {
         return GfVec3f(
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][0]", sep=" + ", num=3) }} + _mtx[3][0],
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][1]", sep=" + ", num=3) }} + _mtx[3][1],
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][2]", sep=" + ", num=3) }} + _mtx[3][2]);
     }
+{% endif %}
     /// @}
 
 private:

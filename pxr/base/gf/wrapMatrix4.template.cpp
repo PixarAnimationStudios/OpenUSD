@@ -134,8 +134,10 @@ static {{ MAT }} RemoveScaleShearWrapper( const {{ MAT }} &self ) {
         .def("TransformDir",
 	     (GfVec3d (This::*)(const GfVec3d &) const)&This::TransformDir)
 
+{% if SCL == 'float' %}
         .def("TransformAffine",
 	     (GfVec3f (This::*)(const GfVec3f &) const)&This::TransformAffine)
+{% endif %}
         .def("TransformAffine",
 	     (GfVec3d (This::*)(const GfVec3d &) const)&This::TransformAffine)
         .def("SetScale", (This & (This::*)( {{ SCL }} ))&This::SetScale,

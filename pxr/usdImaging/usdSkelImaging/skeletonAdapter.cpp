@@ -2679,7 +2679,8 @@ UsdSkelImagingSkeletonAdapter::_SkelData::ComputePoints(
 
                 // XXX: Joint transforms in UsdSkel are required to be
                 // affine, so this is safe!
-                points[pi] = jointXforms[jointIdx].TransformAffine(points[pi]);
+                points[pi] =
+                    GfVec3f(jointXforms[jointIdx].TransformAffine(points[pi]));
             }
             return skinnedPoints;
         }

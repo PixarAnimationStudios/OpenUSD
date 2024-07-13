@@ -723,22 +723,6 @@ public:
             vec[0] * _mtx[0][1] + vec[1] * _mtx[1][1] + vec[2] * _mtx[2][1] + _mtx[3][1],
             vec[0] * _mtx[0][2] + vec[1] * _mtx[1][2] + vec[2] * _mtx[2][2] + _mtx[3][2]);
     }
-
-    /// Transforms the row vector \e vec by the matrix, returning the result.
-    /// This treats the vector as a 4-component vector whose fourth component
-    /// is 1 and ignores the fourth column of the matrix (i.e. assumes it is
-    /// (0, 0, 0, 1)).
-    ///
-    /// \deprecated
-    /// This method is deprecated, as it can result in unintentional loss of
-    /// precision. Call GfVec3d TransformAffine(const GfVec3d &) instead and
-    /// explicitly convert the result to GfVec3f, if necessary.
-    GfVec3f TransformAffine(const GfVec3f &vec) const {
-        return GfVec3f(
-            vec[0] * _mtx[0][0] + vec[1] * _mtx[1][0] + vec[2] * _mtx[2][0] + _mtx[3][0],
-            vec[0] * _mtx[0][1] + vec[1] * _mtx[1][1] + vec[2] * _mtx[2][1] + _mtx[3][1],
-            vec[0] * _mtx[0][2] + vec[1] * _mtx[1][2] + vec[2] * _mtx[2][2] + _mtx[3][2]);
-    }
     /// @}
 
 private:

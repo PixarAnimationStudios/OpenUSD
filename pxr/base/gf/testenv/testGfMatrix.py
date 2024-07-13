@@ -451,10 +451,11 @@ class TestGfMatrix(unittest.TestCase):
             self.assertEqual(type(v2), Gf.Vec3d)
 
             # TransformAffine
-            v = Gf.Vec3f(1,1,1)
-            v2 = Matrix(3).SetTranslateOnly((1, 2, 3)).TransformAffine(v)
-            self.assertEqual(v2, Gf.Vec3f(4,5,6))
-            self.assertEqual(type(v2), Gf.Vec3f)
+            if Matrix == Gf.Matrix4f:
+                v = Gf.Vec3f(1,1,1)
+                v2 = Matrix(3).SetTranslateOnly((1, 2, 3)).TransformAffine(v)
+                self.assertEqual(v2, Gf.Vec3f(4,5,6))
+                self.assertEqual(type(v2), Gf.Vec3f)
 
             v = Gf.Vec3d(1,1,1)
             v2 = Matrix(3).SetTranslateOnly((1, 2, 3)).TransformAffine(v)

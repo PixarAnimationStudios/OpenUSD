@@ -422,8 +422,6 @@ void wrapMatrix4d()
 	     (GfVec3d (This::*)(const GfVec3d &) const)&This::TransformDir)
 
         .def("TransformAffine",
-	     (GfVec3f (This::*)(const GfVec3f &) const)&This::TransformAffine)
-        .def("TransformAffine",
 	     (GfVec3d (This::*)(const GfVec3d &) const)&This::TransformAffine)
         .def("SetScale", (This & (This::*)( double ))&This::SetScale,
 	     return_self<>())
