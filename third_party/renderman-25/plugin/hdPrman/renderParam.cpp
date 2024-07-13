@@ -2291,6 +2291,13 @@ HdPrman_RenderParam::_DeleteInternalPrims()
 }
 
 void
+HdPrman_RenderParam::SetRileySceneIndexObserverOptions(
+    RtParamList const &params)
+{
+    _rileySceneIndexObserverOptions = params;
+}
+
+void
 HdPrman_RenderParam::SetRenderSettingsPrimOptions(
     RtParamList const &params)
 {
@@ -2341,7 +2348,8 @@ HdPrman_RenderParam::SetRileyOptions()
     //
     {
         // Compose scene options with the precedence:
-        //     env > render settings prim > legacy settings map > fallback
+        //   scene index observer > env > render settings prim >
+        //                                    legacy settings map > fallback
         //
         // XXX: Some riley clients require certain options to be present
         // on every SetOptions call (e.g. XPU currently needs
@@ -2350,6 +2358,7 @@ HdPrman_RenderParam::SetRileyOptions()
         // Ideally, the latter would require just the legacy and prim options.
 
         RtParamList composedParams = HdPrman_Utils::Compose(
+            _rileySceneIndexObserverOptions,
             _envOptions,
             _renderSettingsPrimOptions, 
             GetLegacyOptions(),

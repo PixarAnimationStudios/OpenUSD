@@ -39,6 +39,10 @@ protected:
 
     const GfVec2f &_GetShutterInterval();
 
+    // Merges the given params with various legacy params to call
+    // Riley::SetOptions.
+    void _SetRileyOptions(const RtParamList &params);
+
 private:
     HdPrman_RenderParam * const _renderParam;
 };
