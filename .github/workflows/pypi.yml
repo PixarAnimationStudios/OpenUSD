@@ -292,8 +292,7 @@ jobs:
           python-version: ${{ matrix.BUILD_CONFIG.PYTHON_VERSION_SPEC }}
       - uses: actions/download-artifact@v4
         with:
-          path: dist-final
-          pattern: dist-final*
+          name: dist
           merge-multiple: true
       - name: Packaging USD
         run: |
