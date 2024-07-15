@@ -232,6 +232,7 @@ jobs:
           D:
           cd D:\packaging
           python setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name win_amd64
+          dir
         shell: cmd
       - name: Save build artifacts to cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
@@ -242,6 +243,7 @@ jobs:
             USDinst
             !USDgen/build/USD
           key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+
 
   CollectPackages:
     if: ${{ always() }}
