@@ -275,26 +275,26 @@ jobs:
     strategy:
       matrix:
         BUILD_CONFIG:
-          - NAME: Linux_Python38
-            PYTHON_VERSION_SPEC: '3.8'
-            IMAGE: ubuntu-20.04
-            PYTHON_INTERPRETER: python3
-          - NAME: Linux_Python39
-            PYTHON_VERSION_SPEC: '3.9'
-            IMAGE: ubuntu-20.04
-            PYTHON_INTERPRETER: python3
-          - NAME: Linux_Python310
-            PYTHON_VERSION_SPEC: '3.10'
-            IMAGE: ubuntu-20.04
-            PYTHON_INTERPRETER: python3
-          - NAME: Linux_Python311
-            PYTHON_VERSION_SPEC: '3.11'
-            IMAGE: ubuntu-20.04
-            PYTHON_INTERPRETER: python3
-          # - NAME: Windows_Python311
-          #   PYTHON_VERSION_SPEC: '3.11'
-          #   IMAGE: windows-2019
+          # - NAME: Linux_Python38
+          #   PYTHON_VERSION_SPEC: '3.8'
+          #   IMAGE: ubuntu-20.04
           #   PYTHON_INTERPRETER: python3
+          # - NAME: Linux_Python39
+          #   PYTHON_VERSION_SPEC: '3.9'
+          #   IMAGE: ubuntu-20.04
+          #   PYTHON_INTERPRETER: python3
+          # - NAME: Linux_Python310
+          #   PYTHON_VERSION_SPEC: '3.10'
+          #   IMAGE: ubuntu-20.04
+          #   PYTHON_INTERPRETER: python3
+          # - NAME: Linux_Python311
+          #   PYTHON_VERSION_SPEC: '3.11'
+          #   IMAGE: ubuntu-20.04
+          #   PYTHON_INTERPRETER: python3
+          - NAME: Windows_Python311
+            PYTHON_VERSION_SPEC: '3.11'
+            IMAGE: windows-2019
+            PYTHON_INTERPRETER: python3
     runs-on: ${{ matrix.BUILD_CONFIG.IMAGE }}
     steps:
       - uses: actions/setup-python@v5
