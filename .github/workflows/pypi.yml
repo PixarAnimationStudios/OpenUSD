@@ -292,7 +292,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: dist-final
-          pattern: dist-final
+          pattern: dist-final*
           merge-multiple: true
       - name: Packaging USD
         run: |
@@ -300,5 +300,5 @@ jobs:
           ls -la
           ${{ matrix.BUILD_CONFIG.PYTHON_INTERPRETER }} --version
           ${{ matrix.BUILD_CONFIG.PYTHON_INTERPRETER }} -m pip install pytest
-          ${{ matrix.BUILD_CONFIG.PYTHON_INTERPRETER }} -m pip install --no-index --find-links=dist-final usd-core
+          ${{ matrix.BUILD_CONFIG.PYTHON_INTERPRETER }} -m pip install --no-index --find-links=./dist-final usd-core
           py.test --junitxml TEST-usdinstall.xml build_scripts/pypi/test.py
