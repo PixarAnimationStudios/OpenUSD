@@ -100,6 +100,7 @@ jobs:
   #       with:
   #         name: dist-linux-${{ matrix.PYTHON.TAG }}
   #         path: /home/vsts/dist
+
   # macOS:
   #   strategy:
   #     matrix:
@@ -248,7 +249,7 @@ jobs:
   CollectPackages:
     if: ${{ always() }}
     # needs: [Linux, macOS]
-    needs: [Linux]
+    needs: [Windows]
     timeout-minutes: 120
     runs-on: ubuntu-24.04
     steps:
