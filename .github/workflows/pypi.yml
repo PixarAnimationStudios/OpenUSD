@@ -303,4 +303,11 @@ jobs:
           ${{ matrix.BUILD_CONFIG.PYTHON_INTERPRETER }} --version
           ${{ matrix.BUILD_CONFIG.PYTHON_INTERPRETER }} -m pip install pytest
           ${{ matrix.BUILD_CONFIG.PYTHON_INTERPRETER }} -m pip install --no-index --find-links=$GITHUB_WORKSPACE usd-core
-          py.test --junitxml TEST-usdinstall.xml build_scripts/pypi/test.py
+          py.test --junitxml TEST-usdinstall-${{ matrix.BUILD_CONFIG.NAME }}.xml build_scripts/pypi/test.py
+      - name: Upload pytest test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: TEST-usdinstall-${{ matrix.BUILD_CONFIG.NAME }}
+          path: TEST-usdinstall-${{ matrix.BUILD_CONFIG.NAME }}.xml
+        # Use always() to always run this step to publish test results when there are test failures
+        if: ${{ always() }}
