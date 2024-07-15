@@ -1448,27 +1448,6 @@ def GetPySideInstructions():
 PYSIDE = PythonDependency("PySide", GetPySideInstructions,
                           moduleNames=["PySide2", "PySide6"])
 
-############################################################
-# HDF5
-
-HDF5_URL = "https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.0-patch1/src/hdf5-1.10.0-patch1.zip"
-
-def InstallHDF5(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(HDF5_URL, context, force)):
-        if MacOS():
-            PatchFile("config/cmake_ext_mod/ConfigureChecks.cmake",
-                    [("if (ARCH_LENGTH GREATER 1)", "if (FALSE)")])
-            if context.targetUniversal:
-                PatchFile("config/cmake/H5pubconf.h.in",
-                        [(" #define H5_SIZEOF_LONG_LONG 8",
-                        " #define H5_SIZEOF_LONG_LONG 8\n" +
-                        " #define H5_SIZEOF_LONG_DOUBLE 16")])
-        RunCMake(context, force,
-                 ['-DBUILD_TESTING=OFF',
-                  '-DHDF5_BUILD_TOOLS=OFF',
-                  '-DHDF5_BUILD_EXAMPLES=OFF'] + buildArgs)
-                 
-HDF5 = Dependency("HDF5", InstallHDF5, "include/hdf5.h")
 
 ############################################################
 # Alembic
@@ -1477,17 +1456,7 @@ ALEMBIC_URL = "https://github.com/alembic/alembic/archive/refs/tags/1.8.5.zip"
 
 def InstallAlembic(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ALEMBIC_URL, context, force)):
-        cmakeOptions = ['-DUSE_BINARIES=OFF', '-DUSE_TESTS=OFF']
-        if context.enableHDF5:
-            # HDF5 requires the H5_BUILT_AS_DYNAMIC_LIB macro be defined if
-            # it was built with CMake as a dynamic library.
-            cmakeOptions += [
-                '-DUSE_HDF5=ON',
-                '-DHDF5_ROOT="{instDir}"'.format(instDir=context.instDir),
-                '-DCMAKE_CXX_FLAGS="-D H5_BUILT_AS_DYNAMIC_LIB"']
-        else:
-           cmakeOptions += ['-DUSE_HDF5=OFF']
-                 
+        cmakeOptions = ['-DUSE_BINARIES=OFF', '-DUSE_TESTS=OFF', '-DUSE_HDF5=OFF']
         cmakeOptions += buildArgs
 
         RunCMake(context, force, cmakeOptions)
@@ -1725,15 +1694,6 @@ def InstallUSD(context, force, buildArgs):
 
         if context.buildAlembic:
             extraArgs.append('-DPXR_BUILD_ALEMBIC_PLUGIN=ON')
-            if context.enableHDF5:
-                extraArgs.append('-DPXR_ENABLE_HDF5_SUPPORT=ON')
-
-                # CMAKE_PREFIX_PATH isn't sufficient for the FindHDF5 module 
-                # to find the HDF5 we've built, so provide an extra hint.
-                extraArgs.append('-DHDF5_ROOT="{instDir}"'
-                                 .format(instDir=context.instDir))
-            else:
-                extraArgs.append('-DPXR_ENABLE_HDF5_SUPPORT=OFF')
         else:
             extraArgs.append('-DPXR_BUILD_ALEMBIC_PLUGIN=OFF')
 
@@ -2072,12 +2032,6 @@ subgroup.add_argument("--alembic", dest="build_alembic", action="store_true",
                       help="Build Alembic plugin for USD")
 subgroup.add_argument("--no-alembic", dest="build_alembic", action="store_false",
                       help="Do not build Alembic plugin for USD (default)")
-subgroup = group.add_mutually_exclusive_group()
-subgroup.add_argument("--hdf5", dest="enable_hdf5", action="store_true", 
-                      default=False,
-                      help="Enable HDF5 support in the Alembic plugin")
-subgroup.add_argument("--no-hdf5", dest="enable_hdf5", action="store_false",
-                      help="Disable HDF5 support in the Alembic plugin (default)")
 
 group = parser.add_argument_group(title="Draco Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
@@ -2257,7 +2211,6 @@ class InstallContext:
 
         # - Alembic Plugin
         self.buildAlembic = args.build_alembic
-        self.enableHDF5 = self.buildAlembic and args.enable_hdf5
 
         # - Draco Plugin
         self.buildDraco = args.build_draco
@@ -2314,8 +2267,6 @@ if context.buildPython:
     requiredDependencies += [BOOST]
 
 if context.buildAlembic:
-    if context.enableHDF5:
-        requiredDependencies += [HDF5]
     requiredDependencies += [OPENEXR, ALEMBIC]
 
 if context.buildDraco:
@@ -2561,7 +2512,6 @@ summaryMsg += """\
     Tutorials                   {buildTutorials}
     Tools                       {buildTools}
     Alembic Plugin              {buildAlembic}
-      HDF5 support:             {enableHDF5}
     Draco Plugin                {buildDraco}
 
   Dependencies                  {dependencies}"""
@@ -2625,7 +2575,7 @@ summaryMsg = summaryMsg.format(
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
     buildMayapyTests=("On" if context.buildMayapyTests else "Off"),
     buildAnimXTests=("On" if context.buildAnimXTests else "Off"),
-    enableHDF5=("On" if context.enableHDF5 else "Off"))
+)
 
 Print(summaryMsg)
 
