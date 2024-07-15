@@ -290,10 +290,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.BUILD_CONFIG.PYTHON_VERSION_SPEC }}
+      - name: Checkout code
+        uses: actions/checkout@v4          
       - uses: actions/download-artifact@v4
         with:
           name: dist
-          merge-multiple: true
+          merge-multiple: true          
       - name: Packaging USD
         run: |
           pwd
