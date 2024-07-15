@@ -6,100 +6,100 @@ on:
       - enable_pypi
 
 jobs:
-  # Linux:
-  #   strategy:
-  #     matrix:
-  #       PYTHON:
-  #         # - TAG: cp36
-  #         #   INTERPRETER: /opt/python/cp36-cp36m/bin/python
-  #         #   VERSION_SPEC: 3.6
-  #         # - TAG: cp37
-  #         #   INTERPRETER: /opt/python/cp37-cp37/bin/python
-  #         #   VERSION_SPEC: 3.7
-  #         - TAG: cp38
-  #           INTERPRETER: /opt/python/cp38-cp38/bin/python
-  #           VERSION_SPEC: '3.8'
-  #         - TAG: cp39
-  #           INTERPRETER: /opt/python/cp39-cp39/bin/python
-  #           VERSION_SPEC: '3.9'
-  #         - TAG: cp310
-  #           INTERPRETER: /opt/python/cp310-cp310/bin/python
-  #           VERSION_SPEC: '3.10'
-  #         - TAG: cp311
-  #           INTERPRETER: /opt/python/cp311-cp311/bin/python
-  #           VERSION_SPEC: '3.11'
-  #   runs-on: ubuntu-24.04
-  #   timeout-minutes: 120
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: ${{ matrix.PYTHON.VERSION_SPEC }}
-  #     - name: Restore cached artifacts
-  #       id: cache-usd-build-dependency
-  #       uses: actions/cache/restore@v3
-  #       with:
-  #         path: |
-  #           USDgen/build
-  #           USDinst
-  #           !USDgen/build/USD
-  #         key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
-  #     - name: Setting up docker
-  #       run: |
-  #         docker build -t manylinuxwithcmake build_scripts/pypi/docker
-  #         docker run --name usdmanylinux --rm -id -v ./:/opt/USD -v /home/vsts/dist:/opt/USD-dist manylinuxwithcmake
-  #     - name: Building USD
-  #       run: |
-  #         # Terrible, terrible hack. The manylinux Docker image used to build the
-  #         # Python wheel does not include the corresponding Python shared library
-  #         # to link against. https://peps.python.org/pep-0513/#libpythonx-y-so-1
-  #         # describes why this is so. However, the FindPython CMake module used
-  #         # by USD's build system requires that the library exists and will error
-  #         # out otherwise, even though we explicitly avoid linking against Python
-  #         # via the PXR_PY_UNDEFINED_DYNAMIC_LOOKUP flag.
-  #         # 
-  #         # To work around this, we create a dummy file for the library using
-  #         # the same logic as build_usd.py to determine where the library should
-  #         # exist (see GetPythonInfo). FindPython will see that the library exists
-  #         # and allow the build to continue. The file is 100% bogus, but the
-  #         # PXR_PY_UNDEFINED_DYNAMIC_LOOKUP flag will ensure that we never try to
-  #         # link against this library anyway, so it doesn't matter.
-  #         docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} -c "import pathlib,sysconfig; pathlib.Path(sysconfig.get_config_var('LIBDIR'), sysconfig.get_config_var('LDLIBRARY')).touch()"
-  #         docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }}  build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --build /opt/USD/gen/build --src /opt/USD/gen/src /opt/USD/inst -v
-  #     - name: Creating packaging directory
-  #       run: |
-  #         docker exec usdmanylinux mkdir ./packaging
-  #         docker exec usdmanylinux cp -R /opt/USD/inst ./packaging
-  #         docker exec usdmanylinux sh -c 'cp build_scripts/pypi/package_files/* ./packaging'
-  #         docker exec usdmanylinux sh -c 'cp LICENSE.txt ./packaging'
-  #     - name: Running setup.py
-  #       run: |
-  #         docker exec -w /opt/USD/packaging usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }}
-  #     - name: Running auditwheel repair (moves .so files into package)
-  #       run: |
-  #         docker exec usdmanylinux /bin/bash -c 'PYTHONPATH=/opt/USD/packaging/pypi/lib/python LD_LIBRARY_PATH=/opt/USD/packaging/pypi/lib:$LD_LIBRARY_PATH auditwheel repair packaging/dist/*.whl'
-  #     - name: Updating pluginfo paths
-  #       run: |
-  #         WHEEL_PACKAGE_NAME=`docker exec usdmanylinux ls wheelhouse`
-  #         docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} build_scripts/pypi/updatePluginfos.py "wheelhouse/$WHEEL_PACKAGE_NAME" "/opt/USD-dist/$WHEEL_PACKAGE_NAME"
-  #     - name: Stopping docker container
-  #       run: |
-  #         docker stop usdmanylinux
-  #     - name: Save build artifacts to cache
-  #       if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
-  #       uses: actions/cache/save@v3
-  #       with:
-  #         path: |
-  #           gen/build
-  #           inst
-  #           !gen/build/USD
-  #         key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
-  #     - name: Upload artifiacts
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: dist-linux-${{ matrix.PYTHON.TAG }}
-  #         path: /home/vsts/dist
+  Linux:
+    strategy:
+      matrix:
+        PYTHON:
+          # - TAG: cp36
+          #   INTERPRETER: /opt/python/cp36-cp36m/bin/python
+          #   VERSION_SPEC: 3.6
+          # - TAG: cp37
+          #   INTERPRETER: /opt/python/cp37-cp37/bin/python
+          #   VERSION_SPEC: 3.7
+          - TAG: cp38
+            INTERPRETER: /opt/python/cp38-cp38/bin/python
+            VERSION_SPEC: '3.8'
+          - TAG: cp39
+            INTERPRETER: /opt/python/cp39-cp39/bin/python
+            VERSION_SPEC: '3.9'
+          - TAG: cp310
+            INTERPRETER: /opt/python/cp310-cp310/bin/python
+            VERSION_SPEC: '3.10'
+          - TAG: cp311
+            INTERPRETER: /opt/python/cp311-cp311/bin/python
+            VERSION_SPEC: '3.11'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.PYTHON.VERSION_SPEC }}
+      - name: Restore cached artifacts
+        id: cache-usd-build-dependency
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            USDgen/build
+            USDinst
+            !USDgen/build/USD
+          key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+      - name: Setting up docker
+        run: |
+          docker build -t manylinuxwithcmake build_scripts/pypi/docker
+          docker run --name usdmanylinux --rm -id -v ./:/opt/USD -v /home/vsts/dist:/opt/USD-dist manylinuxwithcmake
+      - name: Building USD
+        run: |
+          # Terrible, terrible hack. The manylinux Docker image used to build the
+          # Python wheel does not include the corresponding Python shared library
+          # to link against. https://peps.python.org/pep-0513/#libpythonx-y-so-1
+          # describes why this is so. However, the FindPython CMake module used
+          # by USD's build system requires that the library exists and will error
+          # out otherwise, even though we explicitly avoid linking against Python
+          # via the PXR_PY_UNDEFINED_DYNAMIC_LOOKUP flag.
+          # 
+          # To work around this, we create a dummy file for the library using
+          # the same logic as build_usd.py to determine where the library should
+          # exist (see GetPythonInfo). FindPython will see that the library exists
+          # and allow the build to continue. The file is 100% bogus, but the
+          # PXR_PY_UNDEFINED_DYNAMIC_LOOKUP flag will ensure that we never try to
+          # link against this library anyway, so it doesn't matter.
+          docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} -c "import pathlib,sysconfig; pathlib.Path(sysconfig.get_config_var('LIBDIR'), sysconfig.get_config_var('LDLIBRARY')).touch()"
+          docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }}  build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --build /opt/USD/gen/build --src /opt/USD/gen/src /opt/USD/inst -v
+      - name: Creating packaging directory
+        run: |
+          docker exec usdmanylinux mkdir ./packaging
+          docker exec usdmanylinux cp -R /opt/USD/inst ./packaging
+          docker exec usdmanylinux sh -c 'cp build_scripts/pypi/package_files/* ./packaging'
+          docker exec usdmanylinux sh -c 'cp LICENSE.txt ./packaging'
+      - name: Running setup.py
+        run: |
+          docker exec -w /opt/USD/packaging usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }}
+      - name: Running auditwheel repair (moves .so files into package)
+        run: |
+          docker exec usdmanylinux /bin/bash -c 'PYTHONPATH=/opt/USD/packaging/pypi/lib/python LD_LIBRARY_PATH=/opt/USD/packaging/pypi/lib:$LD_LIBRARY_PATH auditwheel repair packaging/dist/*.whl'
+      - name: Updating pluginfo paths
+        run: |
+          WHEEL_PACKAGE_NAME=`docker exec usdmanylinux ls wheelhouse`
+          docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} build_scripts/pypi/updatePluginfos.py "wheelhouse/$WHEEL_PACKAGE_NAME" "/opt/USD-dist/$WHEEL_PACKAGE_NAME"
+      - name: Stopping docker container
+        run: |
+          docker stop usdmanylinux
+      - name: Save build artifacts to cache
+        if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            gen/build
+            inst
+            !gen/build/USD
+          key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+      - name: Upload artifiacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-linux-${{ matrix.PYTHON.TAG }}
+          path: /home/vsts/dist
   # macOS:
   #   strategy:
   #     matrix:
@@ -243,16 +243,12 @@ jobs:
             USDinst
             !USDgen/build/USD
           key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
-      - name: Upload artifiacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-linux-${{ matrix.PYTHON.TAG }}
-          path: D:\packaging\dist
+
 
   CollectPackages:
     if: ${{ always() }}
     # needs: [Linux, macOS]
-    needs: [Windows]
+    needs: [Linux]
     timeout-minutes: 120
     runs-on: ubuntu-24.04
     steps:
