@@ -19,15 +19,15 @@ jobs:
           - TAG: cp38
             INTERPRETER: /opt/python/cp38-cp38/bin/python
             VERSION_SPEC: '3.8'
-          # - TAG: cp39
-          #   INTERPRETER: /opt/python/cp39-cp39/bin/python
-          #   VERSION_SPEC: '3.9'
-          # - TAG: cp310
-          #   INTERPRETER: /opt/python/cp310-cp310/bin/python
-          #   VERSION_SPEC: '3.10'
-          # - TAG: cp311
-          #   INTERPRETER: /opt/python/cp311-cp311/bin/python
-          #   VERSION_SPEC: '3.11'
+          - TAG: cp39
+            INTERPRETER: /opt/python/cp39-cp39/bin/python
+            VERSION_SPEC: '3.9'
+          - TAG: cp310
+            INTERPRETER: /opt/python/cp310-cp310/bin/python
+            VERSION_SPEC: '3.10'
+          - TAG: cp311
+            INTERPRETER: /opt/python/cp311-cp311/bin/python
+            VERSION_SPEC: '3.11'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
@@ -284,7 +284,19 @@ jobs:
           - NAME: Linux_Python38
             PYTHON_VERSION_SPEC: '3.8'
             IMAGE: ubuntu-20.04
-          #   PYTHON_INTERPRETER: python3
+            PYTHON_INTERPRETER: python3
+          - NAME: Linux_Python39
+            PYTHON_VERSION_SPEC: '3.9'
+            IMAGE: ubuntu-20.04
+            PYTHON_INTERPRETER: python3
+          - NAME: Linux_Python310
+            PYTHON_VERSION_SPEC: '3.10'
+            IMAGE: ubuntu-20.04
+            PYTHON_INTERPRETER: python3
+          - NAME: Linux_Python311
+            PYTHON_VERSION_SPEC: '3.11'
+            IMAGE: ubuntu-20.04
+            PYTHON_INTERPRETER: python3
           # - NAME: Linux_Python39
           #   PYTHON_VERSION_SPEC: '3.9'
           #   IMAGE: ubuntu-20.04
