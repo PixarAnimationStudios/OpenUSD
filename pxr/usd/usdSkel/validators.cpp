@@ -37,24 +37,25 @@ _SkelBindingApiChecker(const UsdPrim &usdPrim)
 
         for (const TfToken &primToken : primPropertyNames){
             for (const TfToken &skelToken : skelPropertyNames){
-                if (skelToken == primToken){
-                    errors.emplace_back(
-                            UsdValidationErrorType::Error,
-                            UsdValidationErrorSites{
-                                    UsdValidationErrorSite(usdPrim.GetStage(),
-                                                           usdPrim.GetPath())
-                            },
-                            TfStringPrintf("Found a UsdSkelBinding property (%s), " \
-                            "but no SkelBindingAPI applied on the prim <%s>.(fails 'SkelBindingAPIAppliedChecker')",
-                                           skelToken.GetText(), usdPrim.GetPath().GetText()));
-                }
+                if (skelToken != primToken)
+                    continue;
+
+                errors.emplace_back(
+                        UsdValidationErrorType::Error,
+                        UsdValidationErrorSites{
+                                UsdValidationErrorSite(usdPrim.GetStage(),
+                                                       usdPrim.GetPath())
+                        },
+                        TfStringPrintf(("Found a UsdSkelBinding property (%s), "
+                            "but no SkelBindingAPI applied on the prim <%s>.(fails 'SkelBindingAPIAppliedChecker')"),
+                                       skelToken.GetText(), usdPrim.GetPath().GetText()));
             }
         }
     }
     else {
         if (usdPrim.GetTypeName() != UsdSkelTokens->SkelRoot) {
             UsdPrim parentPrim = usdPrim.GetParent();
-            while (!parentPrim.IsPseudoRoot()) {
+            while (parentPrim && !parentPrim.IsPseudoRoot()) {
                 if (parentPrim.GetTypeName() != UsdSkelTokens->SkelRoot) {
                     parentPrim = parentPrim.GetParent();
                 }
@@ -68,9 +69,9 @@ _SkelBindingApiChecker(const UsdPrim &usdPrim)
                             UsdValidationErrorSite(usdPrim.GetStage(),
                                                    usdPrim.GetPath())
                     },
-                    TfStringPrintf("UsdSkelBindingAPI applied on prim: <%s>, " \
-            "which is not of type SkelRoot or is not rooted at a prim " \
-            "of type SkelRoot, as required by the UsdSkel schema.(fails 'SkelBindingAPIAppliedChecker')",
+                    TfStringPrintf(("UsdSkelBindingAPI applied on prim: <%s>, "
+                            "which is not of type SkelRoot or is not rooted at a prim "
+                            "of type SkelRoot, as required by the UsdSkel schema.(fails 'SkelBindingAPIAppliedChecker')"),
                                    usdPrim.GetPath().GetText()));
         }
     }
