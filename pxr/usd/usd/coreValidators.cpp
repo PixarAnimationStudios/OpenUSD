@@ -37,7 +37,7 @@ _GetStageMetadataErrors(const UsdStagePtr &usdStage)
     if (!usdStage->GetDefaultPrim()) {
         errors.emplace_back(UsdValidationErrorType::Error,
                             UsdValidationErrorSites{UsdValidationErrorSite(usdStage, SdfPath("/"))},
-                            "Stage has missing or invalid defaultPrim.");
+                            TfStringPrintf("Stage with root layer <%s> has an invalid or missing defaultPrim.", usdStage->GetRootLayer()->GetIdentifier().c_str()));
     }
 
     return errors;

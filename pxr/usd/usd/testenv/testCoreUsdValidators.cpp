@@ -25,7 +25,9 @@ void TestCoreUsdStageMetadata()
     TF_AXIOM(validator);
 
     // Create an empty stage
-    UsdStageRefPtr usdStage = UsdStage::CreateInMemory();
+    SdfLayerRefPtr rootLayer = SdfLayer::CreateAnonymous();
+    UsdStageRefPtr usdStage = UsdStage::Open(rootLayer);
+    UsdPrim prim = usdStage->DefinePrim(SdfPath("/test"), TfToken("Xform"));
 
     // Validate knowing there is no default prim
     UsdValidationErrorVector errors = validator->Validate(usdStage);
@@ -35,8 +37,17 @@ void TestCoreUsdStageMetadata()
     TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
     TF_AXIOM(errors[0].GetSites().size() == 1);
     TF_AXIOM(errors[0].GetSites()[0].IsValid());
-    const std::string expectedErrorMsg = "Stage has missing or invalid defaultPrim.";
+    const std::string expectedErrorMsg = TfStringPrintf("Stage with root layer <%s> has an invalid or missing defaultPrim.", rootLayer->GetIdentifier().c_str());
+    const std::string error = errors[0].GetMessage();
     TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
+
+    // Set a default prim
+    usdStage->SetDefaultPrim(prim);
+
+    errors = validator->Validate(usdStage);
+
+    // Verify the error is gone
+    TF_AXIOM(errors.size() == 0);
 }
 
 int
