@@ -313,7 +313,7 @@ jobs:
           # - NAME: Mac_Python38
           #   PYTHON_VERSION_SPEC: '3.8'
           #   IMAGE: macos-12
-            PYTHON_INTERPRETER: python3          
+            # PYTHON_INTERPRETER: python3          
           - NAME: Windows_Python38
             PYTHON_VERSION_SPEC: '3.8'
             IMAGE: windows-2019
