@@ -191,10 +191,10 @@ jobs:
             TAG: cp38
           - VERSION_SPEC: 3.9
             TAG: cp39
-#           - VERSION_SPEC: 3.10
-#             TAG: cp310
-          # - VERSION_SPEC: 3.11
-          #   TAG: cp311
+          - VERSION_SPEC: 3.10
+            TAG: cp310
+          - VERSION_SPEC: 3.11
+            TAG: cp311
     runs-on: windows-2019
     timeout-minutes: 120
     steps:
@@ -307,6 +307,14 @@ jobs:
             PYTHON_INTERPRETER: python3
           - NAME: Windows_Python39
             PYTHON_VERSION_SPEC: '3.9'
+            IMAGE: windows-2019
+            PYTHON_INTERPRETER: python3
+          - NAME: Windows_Python310
+            PYTHON_VERSION_SPEC: '3.10'
+            IMAGE: windows-2019
+            PYTHON_INTERPRETER: python3
+          - NAME: Windows_Python311
+            PYTHON_VERSION_SPEC: '3.11'
             IMAGE: windows-2019
             PYTHON_INTERPRETER: python3
     runs-on: ${{ matrix.BUILD_CONFIG.IMAGE }}
