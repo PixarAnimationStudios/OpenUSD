@@ -164,7 +164,7 @@ jobs:
       - name: Running delocate
         run: |
           cd ./packaging
-          delocate-wheel -v -w dist-delocated --ignore-missing-dependencies packaging/dist/*
+          delocate-wheel -v -w dist-delocated --ignore-missing-dependencies ./dist/*
       # - name: Save build artifacts to cache
       #   if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
       #   uses: actions/cache/save@v3
