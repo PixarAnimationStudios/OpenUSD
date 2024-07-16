@@ -178,86 +178,86 @@ jobs:
         with:
           name: dist-mac-${{ matrix.PYTHON.TAG }}
           path: ./packaging/dist
-#   Windows:
-#     strategy:
-#       matrix:
-#         PYTHON:
-# #           - VERSION_SPEC: 3.6
-# #             TAG: cp36
-# #           - VERSION_SPEC: 3.7
-# #             TAG: cp37
-#           - VERSION_SPEC: 3.8
-#             TAG: cp38
-# #           - VERSION_SPEC: 3.9
-# #             TAG: cp39
-# #           - VERSION_SPEC: 3.10
-# #             TAG: cp310
-#           # - VERSION_SPEC: 3.11
-#           #   TAG: cp311
-#     runs-on: windows-2019
-#     timeout-minutes: 120
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v4
-#       - uses: actions/setup-python@v5
-#         with:
-#           python-version: ${{ matrix.PYTHON.VERSION_SPEC }}
-#       - name: Restore cached artifacts
-#         id: cache-usd-build-dependency
-#         uses: actions/cache/restore@v3
-#         with:
-#           path: |
-#             USDgen/build
-#             USDinst
-#             !USDgen/build/USD
-#           key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
-#       - name: Build USD
-#         run: |
-#           call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat
-#           set BOOST_ROOT=
-#           python --version
-#           python build_scripts/build_usd.py --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF -DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --build USDgen/build --src USDgen/src USDinst -v
-#         shell: cmd
-#       - name: Packaging USD
-#         run: |
-#           dir
-#           mkdir D:\packaging
-#           xcopy /E /I USDinst D:\packaging\inst
-#           copy build_scripts\pypi\package_files\* D:\packaging
-#           copy LICENSE.txt D:\packaging
-#           dir D:\packaging
-#           dir D:\packaging\inst
-#         shell: cmd
-#       - name: Installing Python
-#         run: |
-#           python -m pip install wheel
-#         shell: cmd
-#       - name: Running setup.py
-#         run: |
-#           D:
-#           cd D:\packaging
-#           python setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name win_amd64
-#           dir
-#         shell: cmd
-#       - name: Save build artifacts to cache
-#         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
-#         uses: actions/cache/save@v3
-#         with:
-#           path: |
-#             USDgen/build
-#             USDinst
-#             !USDgen/build/USD
-#           key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
-#       - name: Upload artifiacts
-#         uses: actions/upload-artifact@v4
-#         with:
-#           name: dist-windows-${{ matrix.PYTHON.TAG }}
-#           path: D:\packaging\dist
+  Windows:
+    strategy:
+      matrix:
+        PYTHON:
+#           - VERSION_SPEC: 3.6
+#             TAG: cp36
+#           - VERSION_SPEC: 3.7
+#             TAG: cp37
+          - VERSION_SPEC: 3.8
+            TAG: cp38
+#           - VERSION_SPEC: 3.9
+#             TAG: cp39
+#           - VERSION_SPEC: 3.10
+#             TAG: cp310
+          # - VERSION_SPEC: 3.11
+          #   TAG: cp311
+    runs-on: windows-2019
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.PYTHON.VERSION_SPEC }}
+      - name: Restore cached artifacts
+        id: cache-usd-build-dependency
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            USDgen/build
+            USDinst
+            !USDgen/build/USD
+          key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+      - name: Build USD
+        run: |
+          call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat
+          set BOOST_ROOT=
+          python --version
+          python build_scripts/build_usd.py --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF -DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --build USDgen/build --src USDgen/src USDinst -v
+        shell: cmd
+      - name: Packaging USD
+        run: |
+          dir
+          mkdir D:\packaging
+          xcopy /E /I USDinst D:\packaging\inst
+          copy build_scripts\pypi\package_files\* D:\packaging
+          copy LICENSE.txt D:\packaging
+          dir D:\packaging
+          dir D:\packaging\inst
+        shell: cmd
+      - name: Installing Python
+        run: |
+          python -m pip install wheel
+        shell: cmd
+      - name: Running setup.py
+        run: |
+          D:
+          cd D:\packaging
+          python setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name win_amd64
+          dir
+        shell: cmd
+      - name: Save build artifacts to cache
+        if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            USDgen/build
+            USDinst
+            !USDgen/build/USD
+          key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+      - name: Upload artifiacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-windows-${{ matrix.PYTHON.TAG }}
+          path: D:\packaging\dist
 
   CollectPackages:
     if: ${{ always() }}
     # needs: [Linux, macOS]
-    needs: [macOS]
+    needs: [macOS, Windows]
     timeout-minutes: 120
     runs-on: ubuntu-24.04
     steps:
@@ -296,14 +296,14 @@ jobs:
           #   PYTHON_VERSION_SPEC: '3.11'
           #   IMAGE: ubuntu-20.04
           #   PYTHON_INTERPRETER: python3
-          - NAME: Mac_Python37
-            PYTHON_VERSION_SPEC: '3.7'
+          - NAME: Mac_Python38
+            PYTHON_VERSION_SPEC: '3.8'
             IMAGE: macos-12
             PYTHON_INTERPRETER: python3          
-          # - NAME: Windows_Python311
-          #   PYTHON_VERSION_SPEC: '3.11'
-          #   IMAGE: windows-2019
-          #   PYTHON_INTERPRETER: python3
+          - NAME: Windows_Python38
+            PYTHON_VERSION_SPEC: '3.8'
+            IMAGE: windows-2019
+            PYTHON_INTERPRETER: python3
     runs-on: ${{ matrix.BUILD_CONFIG.IMAGE }}
     steps:
       - uses: actions/setup-python@v5
