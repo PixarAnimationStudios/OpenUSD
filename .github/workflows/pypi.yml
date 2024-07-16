@@ -327,7 +327,7 @@ jobs:
           dir $GITHUB_WORKSPACE
           ${{ matrix.BUILD_CONFIG.PYTHON_INTERPRETER }} --version
           ${{ matrix.BUILD_CONFIG.PYTHON_INTERPRETER }} -m pip install pytest
-          ${{ matrix.BUILD_CONFIG.PYTHON_INTERPRETER }} -m pip install --no-index --find-links=file://${{ github.workspace }} usd-core
+          ${{ matrix.BUILD_CONFIG.PYTHON_INTERPRETER }} -m pip install --no-index --find-links=file://${{ env.GITHUB_WORKSPACE }} usd-core
           py.test --junitxml TEST-usdinstall-${{ matrix.BUILD_CONFIG.NAME }}.xml build_scripts/pypi/test.py
       - name: Upload pytest test results
         uses: actions/upload-artifact@v4
