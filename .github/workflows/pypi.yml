@@ -148,7 +148,7 @@ jobs:
       - name: Running setup.py
         run: |
           cd ./packaging
-          ${{ matrix.PYTHON.INTERPRETER }} setup.py bdist_wheel --python-tag ${PYTHON_TAG} --plat-name macosx_10_9_universal2
+          ${{ matrix.PYTHON.INTERPRETER }} setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name macosx_10_9_universal2
       - name: Running delocate
         run: |
           delocate-wheel -vv -w dist-delocated packaging/dist/*
