@@ -203,15 +203,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.PYTHON.VERSION_SPEC }}
-      - name: Restore cached artifacts
-        id: cache-usd-build-dependency
-        uses: actions/cache/restore@v3
-        with:
-          path: |
-            USDgen/build
-            USDinst
-            !USDgen/build/USD
-          key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+      # - name: Restore cached artifacts
+      #   id: cache-usd-build-dependency
+      #   uses: actions/cache/restore@v3
+      #   with:
+      #     path: |
+      #       USDgen/build
+      #       USDinst
+      #       !USDgen/build/USD
+      #     key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
       - name: Build USD
         run: |
           call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat
@@ -240,15 +240,15 @@ jobs:
           python setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name win_amd64
           dir
         shell: cmd
-      - name: Save build artifacts to cache
-        if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v3
-        with:
-          path: |
-            USDgen/build
-            USDinst
-            !USDgen/build/USD
-          key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+      # - name: Save build artifacts to cache
+      #   if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+      #   uses: actions/cache/save@v3
+      #   with:
+      #     path: |
+      #       USDgen/build
+      #       USDinst
+      #       !USDgen/build/USD
+      #     key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
       - name: Upload artifiacts
         uses: actions/upload-artifact@v4
         with:
