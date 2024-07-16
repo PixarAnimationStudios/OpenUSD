@@ -189,8 +189,8 @@ jobs:
 #             TAG: cp37
           - VERSION_SPEC: 3.8
             TAG: cp38
-#           - VERSION_SPEC: 3.9
-#             TAG: cp39
+          - VERSION_SPEC: 3.9
+            TAG: cp39
 #           - VERSION_SPEC: 3.10
 #             TAG: cp310
           # - VERSION_SPEC: 3.11
@@ -303,6 +303,10 @@ jobs:
           #   PYTHON_INTERPRETER: python3          
           - NAME: Windows_Python38
             PYTHON_VERSION_SPEC: '3.8'
+            IMAGE: windows-2019
+            PYTHON_INTERPRETER: python3
+          - NAME: Windows_Python39
+            PYTHON_VERSION_SPEC: '3.9'
             IMAGE: windows-2019
             PYTHON_INTERPRETER: python3
     runs-on: ${{ matrix.BUILD_CONFIG.IMAGE }}
