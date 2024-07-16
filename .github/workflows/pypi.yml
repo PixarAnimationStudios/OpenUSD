@@ -322,6 +322,7 @@ jobs:
           merge-multiple: true          
       - name: Packaging USD
         run: |
+          @echo on
           dir $GITHUB_WORKSPACE
           dir
           dir $GITHUB_WORKSPACE
