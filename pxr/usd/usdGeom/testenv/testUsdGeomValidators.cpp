@@ -26,22 +26,26 @@ void TestUsdStageMetadata()
     TF_AXIOM(validator);
 
     // Create an empty stage
-    UsdStageRefPtr usdStage = UsdStage::CreateInMemory();
+    SdfLayerRefPtr rootLayer = SdfLayer::CreateAnonymous();
+    UsdStageRefPtr usdStage = UsdStage::Open(rootLayer);
 
     UsdValidationErrorVector errors = validator->Validate(usdStage);
 
     // Verify both metersPerUnit and upAxis errors are present
     TF_AXIOM(errors.size() == 2);
-    TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
-    TF_AXIOM(errors[0].GetSites().size() == 1);
-    TF_AXIOM(errors[0].GetSites()[0].IsValid());
-    const std::string expectedMetersPerUnitErrorMsg = "Stage does not specify its linear scale in metersPerUnit.";
-    TF_AXIOM(errors[0].GetMessage() == expectedMetersPerUnitErrorMsg);
-    TF_AXIOM(errors[1].GetType() == UsdValidationErrorType::Error);
-    TF_AXIOM(errors[1].GetSites().size() == 1);
-    TF_AXIOM(errors[1].GetSites()[0].IsValid());
-    const std::string expectedUpAxisErrorMsg = "Stage does not specify an upAxis.";
-    TF_AXIOM(errors[1].GetMessage() == expectedUpAxisErrorMsg);
+    auto rootLayerIdentifier = rootLayer->GetIdentifier().c_str();
+    std::vector<std::string> expectedErrorMessages = {
+            TfStringPrintf("Stage with root layer <%s> does not specify its linear scale in metersPerUnit.", rootLayerIdentifier),
+            TfStringPrintf("Stage with root layer <%s> does not specify an upAxis.", rootLayerIdentifier)
+    };
+
+    for(int i = 0; i < errors.size(); ++i)
+    {
+        TF_AXIOM(errors[i].GetType() == UsdValidationErrorType::Error);
+        TF_AXIOM(errors[i].GetSites().size() == 1);
+        TF_AXIOM(errors[i].GetSites()[0].IsValid());
+        TF_AXIOM(errors[i].GetMessage() == expectedErrorMessages[i]);
+    }
 
     // Fix the errors
     UsdGeomSetStageMetersPerUnit(usdStage, 0.01);
