@@ -305,15 +305,21 @@ TestUsdValidators()
     const UsdValidatorMetadataVector coreValidatorMetadata =
             registry.GetValidatorMetadataForKeyword(
                     UsdValidatorKeywordTokens->UsdCoreValidators);
-    TF_AXIOM(coreValidatorMetadata.size() == 1);
-    const std::vector<TfToken> expectedValidatorNames =
+    TF_AXIOM(coreValidatorMetadata.size() == 2);
+
+    std::set<TfToken> validatorMetadataNameSet;
+    for (const UsdValidatorMetadata &metadata : coreValidatorMetadata) {
+        validatorMetadataNameSet.insert(metadata.name);
+    }
+
+    const std::set<TfToken> expectedValidatorNames =
             {UsdValidatorNameTokens->compositionErrorTest,
              UsdValidatorNameTokens->stageMetadataChecker};
 
-    for (size_t index = 0; index < coreValidatorMetadata.size(); ++index) {
-        TF_AXIOM(coreValidatorMetadata[index].name ==
-                 expectedValidatorNames[index]);
-    }
+    TF_AXIOM(std::includes(validatorMetadataNameSet.begin(),
+                           validatorMetadataNameSet.end(),
+                           expectedValidatorNames.begin(),
+                           expectedValidatorNames.end()));
 }
 int 
 main()
