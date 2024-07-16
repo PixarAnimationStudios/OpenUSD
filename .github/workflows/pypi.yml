@@ -284,6 +284,7 @@ jobs:
           - NAME: Linux_Python38
             PYTHON_VERSION_SPEC: '3.8'
             IMAGE: ubuntu-20.04
+            PYTHON_INTERPRETER: python3   
           #   PYTHON_INTERPRETER: python3
           # - NAME: Linux_Python39
           #   PYTHON_VERSION_SPEC: '3.9'
