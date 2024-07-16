@@ -187,13 +187,13 @@ jobs:
 #             TAG: cp36
 #           - VERSION_SPEC: 3.7
 #             TAG: cp37
-          - VERSION_SPEC: 3.8
+          - VERSION_SPEC: '3.8'
             TAG: cp38
-          - VERSION_SPEC: 3.9
+          - VERSION_SPEC: '3.9'
             TAG: cp39
-          - VERSION_SPEC: 3.10
+          - VERSION_SPEC: '3.10'
             TAG: cp310
-          - VERSION_SPEC: 3.11
+          - VERSION_SPEC: '3.11'
             TAG: cp311
     runs-on: windows-2019
     timeout-minutes: 120
