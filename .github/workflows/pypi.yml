@@ -257,7 +257,7 @@ jobs:
   CollectPackages:
     if: ${{ always() }}
     # needs: [Linux, macOS]
-    needs: [macOS, Windows]
+    needs: [Windows]
     timeout-minutes: 120
     runs-on: ubuntu-24.04
     steps:
