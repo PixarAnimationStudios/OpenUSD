@@ -21,7 +21,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static
 UsdValidationErrorVector
-_SkelBindingApiChecker(const UsdPrim &usdPrim)
+_SkelBindingApiAppliedValidator(const UsdPrim &usdPrim)
 {
     UsdValidationErrorVector errors;
 
@@ -82,8 +82,8 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
 
     registry.RegisterPluginValidator(
-            UsdSkelValidatorNameTokens->skelBindingApiAppliedChecker,
-            _SkelBindingApiChecker);
+            UsdSkelValidatorNameTokens->skelBindingApiAppliedValidator,
+            _SkelBindingApiAppliedValidator);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

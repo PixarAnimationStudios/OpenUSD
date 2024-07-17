@@ -32,7 +32,7 @@ TestUsdSkelValidators()
     }
 
     const std::set<TfToken> expectedValidatorNames =
-            {UsdSkelValidatorNameTokens->skelBindingApiAppliedChecker};
+            {UsdSkelValidatorNameTokens->skelBindingApiAppliedValidator};
 
     TF_AXIOM(std::includes(validatorMetadataNameSet.begin(),
                            validatorMetadataNameSet.end(),
@@ -41,12 +41,12 @@ TestUsdSkelValidators()
 }
 
 void
-TestUsdSkelBindingAPIChecker()
+TestUsdSkelBindingApiAppliedValidator()
 {
     // Verify that the validator exists.
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
     const UsdValidator *validator = registry.GetOrLoadValidatorByName(
-            UsdSkelValidatorNameTokens->skelBindingApiAppliedChecker);
+            UsdSkelValidatorNameTokens->skelBindingApiAppliedValidator);
     TF_AXIOM(validator);
 
     // Create Stage and mesh with a skel binding property
@@ -101,7 +101,7 @@ int
 main()
 {
     TestUsdSkelValidators();
-    TestUsdSkelBindingAPIChecker();
+    TestUsdSkelBindingApiAppliedValidator();
     printf("OK\n");
     return EXIT_SUCCESS;
 };
