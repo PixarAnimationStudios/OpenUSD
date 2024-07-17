@@ -98,19 +98,20 @@ jobs:
     strategy:
       matrix:
         PYTHON:
-          - VERSION_SPEC: '3.8'
-            INTERPRETER: python3.8
-            TAG: cp38
-          # - VERSION_SPEC: '3.9'
-          #   INTERPRETER: python3.9
-          #   TAG: cp39
+          # - VERSION_SPEC: '3.8'
+          #   INTERPRETER: python3.8
+          #   TAG: cp38
+          - VERSION_SPEC: '3.9'
+            INTERPRETER: python3.9
+            TAG: cp39
           # - VERSION_SPEC: '3.10'
           #   INTERPRETER: python3.10
           #   TAG: cp310
           # - VERSION_SPEC: '3.11'
           #   INTERPRETER: python3.11
           #   TAG: cp311
-    runs-on: macos-12 # macos-13/14 doesn't work with delocate
+    # runs-on: macos-12 # macos-13/14 doesn't work with delocate
+    runs-on: macos-14-self-hosted # macos-13/14 doesn't work with delocate
     timeout-minutes: 120
     steps:
       - name: Checkout code
@@ -285,9 +286,9 @@ jobs:
             PYTHON_VERSION_SPEC: '3.11'
             IMAGE: ubuntu-20.04
             PYTHON_INTERPRETER: python3
-          - NAME: Mac_Python38
-            PYTHON_VERSION_SPEC: '3.8'
-            IMAGE: macos-12
+          - NAME: Mac_Python39
+            PYTHON_VERSION_SPEC: '3.9'
+            IMAGE: macos-14-self-hosted
             PYTHON_INTERPRETER: python3          
           - NAME: Windows_Python38
             PYTHON_VERSION_SPEC: '3.8'
