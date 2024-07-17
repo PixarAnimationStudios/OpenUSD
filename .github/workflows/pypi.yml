@@ -293,7 +293,7 @@ jobs:
           - NAME: Mac_Python39
             PYTHON_VERSION_SPEC: '3.9'
             IMAGE: macos-14-self-hosted
-          #   PYTHON_INTERPRETER: python3          
+            PYTHON_INTERPRETER: python3          
           # - NAME: Windows_Python38
           #   PYTHON_VERSION_SPEC: '3.8'
           #   IMAGE: windows-2019
