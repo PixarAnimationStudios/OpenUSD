@@ -180,7 +180,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dist-mac-${{ matrix.PYTHON.TAG }}
-          path: ./packaging/dist
+          path: ./dist
   # Windows:
   #   strategy:
   #     matrix:
