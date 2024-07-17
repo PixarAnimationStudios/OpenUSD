@@ -134,8 +134,8 @@
                             "UsdShadeShader"
                         ]
                     },
-                    "MaterialBindingApiChecker": {
-                        "doc": "Verify a prim has the MaterialBindingAPI applied if it has a material relationship binding."
+                    "MaterialBindingApiAppliedValidator": {
+                        "doc": "Verify a prim has the MaterialBindingAPI applied if it has a material binding relationship."
                     },
                     "keywords": [
                         "UsdShadeValidators"

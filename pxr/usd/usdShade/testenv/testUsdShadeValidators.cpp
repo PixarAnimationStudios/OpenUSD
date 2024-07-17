@@ -26,13 +26,13 @@ PXR_NAMESPACE_USING_DIRECTIVE
 void
 TestUsdShadeValidators()
 {
-    // This should be updated with every new validators added with
+    // This should be updated with every new validator added with the
     // UsdShadeValidators keyword.
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
     UsdValidatorMetadataVector metadata = 
         registry.GetValidatorMetadataForKeyword(
             UsdShadeValidatorKeywordTokens->UsdShadeValidators);
-    // Since other validators can be can registered with a UsdShadeValidators
+    // Since other validators can be registered with a UsdShadeValidators
     // keyword, our validators registered in usdShade are a subset of the entire
     // set.
     std::set<TfToken> validatorMetadataNameSet;
@@ -41,7 +41,8 @@ TestUsdShadeValidators()
     }
 
     const std::set<TfToken> expectedValidatorNames = 
-            {UsdShadeValidatorNameTokens->shaderSdrCompliance};
+            {UsdShadeValidatorNameTokens->shaderSdrCompliance,
+             UsdShadeValidatorNameTokens->materialBindingApiAppliedValidator};
 
     TF_AXIOM(std::includes(validatorMetadataNameSet.begin(), 
                            validatorMetadataNameSet.end(), 
@@ -123,11 +124,11 @@ TestUsdShadeShaderPropertyCompliance()
 }
 
 void
-TestUsdShadeMaterialBindingAPIChecker()
+TestUsdShadeMaterialBindingAPIAppliedValidator()
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
     const UsdValidator *validator = registry.GetOrLoadValidatorByName(
-        UsdShadeValidatorNameTokens->materialBindingApiChecker);
+        UsdShadeValidatorNameTokens->materialBindingApiAppliedValidator);
     TF_AXIOM(validator);
 
     UsdStageRefPtr usdStage = UsdStage::CreateInMemory();
@@ -165,7 +166,7 @@ main()
 {
     TestUsdShadeValidators();
     TestUsdShadeShaderPropertyCompliance();
-    TestUsdShadeMaterialBindingAPIChecker();
+    TestUsdShadeMaterialBindingAPIAppliedValidator();
     printf("OK\n");
     return EXIT_SUCCESS;
 };

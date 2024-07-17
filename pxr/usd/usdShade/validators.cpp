@@ -10,7 +10,6 @@
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/validationError.h"
 #include "pxr/usd/usd/validationRegistry.h"
-#include "pxr/usd/usd/validator.h"
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -193,20 +192,23 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
     return errors;
 }
 
+static bool _HasMaterialBindingRelationship(const UsdPrim& usdPrim) {
+    const std::vector<UsdRelationship> relationships = usdPrim.GetRelationships();
+    const std::string materialBindingString = (UsdShadeTokens->materialBinding).GetString();
+
+    return std::any_of(relationships.begin(), relationships.end(),
+                       [&](const UsdRelationship &rel) {
+                           return TfStringStartsWith(rel.GetName(), materialBindingString);
+                       });
+}
 
 static
 UsdValidationErrorVector
-_MaterialBindingApiChecker(const UsdPrim &usdPrim)
+_MaterialBindingApiAppliedValidator(const UsdPrim &usdPrim)
 {
     UsdValidationErrorVector errors;
 
-    if (!usdPrim.CanApplyAPI<UsdShadeMaterialBindingAPI>()){
-        return errors;
-    }
-
-    UsdShadeMaterialBindingAPI materialBindingAPI(usdPrim);
-
-    if (materialBindingAPI.GetDirectBinding().IsBound() && !usdPrim.HasAPI<UsdShadeMaterialBindingAPI>()) {
+    if (!usdPrim.HasAPI<UsdShadeMaterialBindingAPI>() && _HasMaterialBindingRelationship(usdPrim)) {
         errors.emplace_back(
                 UsdValidationErrorType::Error,
                 UsdValidationErrorSites{
@@ -230,8 +232,8 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
         _ShaderPropertyTypeConformance);
 
     registry.RegisterPluginValidator(
-            UsdShadeValidatorNameTokens->materialBindingApiChecker,
-            _MaterialBindingApiChecker);
+            UsdShadeValidatorNameTokens->materialBindingApiAppliedValidator,
+            _MaterialBindingApiAppliedValidator);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
