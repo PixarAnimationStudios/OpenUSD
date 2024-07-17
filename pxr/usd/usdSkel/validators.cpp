@@ -33,7 +33,7 @@ _SkelBindingApiChecker(const UsdPrim &usdPrim)
             std::vector<TfToken> vectorOfNames = primDef->GetPropertyNames();
             return std::unordered_set<TfToken, TfHash>(vectorOfNames.begin(), vectorOfNames.end());
         }();
- 
+
         for (const TfToken &primToken : primPropertyNames){
             if (skelPropertyNames.find(primToken) == skelPropertyNames.end()){
                 continue;
@@ -47,6 +47,7 @@ _SkelBindingApiChecker(const UsdPrim &usdPrim)
                     TfStringPrintf(("Found a UsdSkelBinding property (%s), "
                                     "but no SkelBindingAPI applied on the prim <%s>."),
                                    primToken.GetText(), usdPrim.GetPath().GetText()));
+            break;
         }
     }
     else {
