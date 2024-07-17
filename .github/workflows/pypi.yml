@@ -6,94 +6,94 @@ on:
       - enable_pypi
 
 jobs:
-  Linux:
-    strategy:
-      matrix:
-        PYTHON:
-          - TAG: cp38
-            INTERPRETER: /opt/python/cp38-cp38/bin/python
-            VERSION_SPEC: '3.8'
-          - TAG: cp39
-            INTERPRETER: /opt/python/cp39-cp39/bin/python
-            VERSION_SPEC: '3.9'
-          - TAG: cp310
-            INTERPRETER: /opt/python/cp310-cp310/bin/python
-            VERSION_SPEC: '3.10'
-          - TAG: cp311
-            INTERPRETER: /opt/python/cp311-cp311/bin/python
-            VERSION_SPEC: '3.11'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 120
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.PYTHON.VERSION_SPEC }}
-      # - name: Restore cached artifacts
-      #   id: cache-usd-build-dependency
-      #   uses: actions/cache/restore@v3
-      #   with:
-      #     path: |
-      #       USDgen/build
-      #       USDinst
-      #       !USDgen/build/USD
-      #     key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
-      - name: Setting up docker
-        run: |
-          docker build -t manylinuxwithcmake build_scripts/pypi/docker
-          docker run --name usdmanylinux --rm -id -v ./:/opt/USD -v /home/vsts/dist:/opt/USD-dist manylinuxwithcmake
-      - name: Building USD
-        run: |
-          # Terrible, terrible hack. The manylinux Docker image used to build the
-          # Python wheel does not include the corresponding Python shared library
-          # to link against. https://peps.python.org/pep-0513/#libpythonx-y-so-1
-          # describes why this is so. However, the FindPython CMake module used
-          # by USD's build system requires that the library exists and will error
-          # out otherwise, even though we explicitly avoid linking against Python
-          # via the PXR_PY_UNDEFINED_DYNAMIC_LOOKUP flag.
-          # 
-          # To work around this, we create a dummy file for the library using
-          # the same logic as build_usd.py to determine where the library should
-          # exist (see GetPythonInfo). FindPython will see that the library exists
-          # and allow the build to continue. The file is 100% bogus, but the
-          # PXR_PY_UNDEFINED_DYNAMIC_LOOKUP flag will ensure that we never try to
-          # link against this library anyway, so it doesn't matter.
-          docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} -c "import pathlib,sysconfig; pathlib.Path(sysconfig.get_config_var('LIBDIR'), sysconfig.get_config_var('LDLIBRARY')).touch()"
-          docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }}  build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --build /opt/USD/gen/build --src /opt/USD/gen/src /opt/USD/inst -v
-      - name: Creating packaging directory
-        run: |
-          docker exec usdmanylinux mkdir ./packaging
-          docker exec usdmanylinux cp -R /opt/USD/inst ./packaging
-          docker exec usdmanylinux sh -c 'cp build_scripts/pypi/package_files/* ./packaging'
-          docker exec usdmanylinux sh -c 'cp LICENSE.txt ./packaging'
-      - name: Running setup.py
-        run: |
-          docker exec -w /opt/USD/packaging usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }}
-      - name: Running auditwheel repair (moves .so files into package)
-        run: |
-          docker exec usdmanylinux /bin/bash -c 'PYTHONPATH=/opt/USD/packaging/pypi/lib/python LD_LIBRARY_PATH=/opt/USD/packaging/pypi/lib:$LD_LIBRARY_PATH auditwheel repair packaging/dist/*.whl'
-      - name: Updating pluginfo paths
-        run: |
-          WHEEL_PACKAGE_NAME=`docker exec usdmanylinux ls wheelhouse`
-          docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} build_scripts/pypi/updatePluginfos.py "wheelhouse/$WHEEL_PACKAGE_NAME" "/opt/USD-dist/$WHEEL_PACKAGE_NAME"
-      - name: Stopping docker container
-        run: |
-          docker stop usdmanylinux
-      # - name: Save build artifacts to cache
-      #   if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
-      #   uses: actions/cache/save@v3
-      #   with:
-      #     path: |
-      #       gen/build
-      #       inst
-      #       !gen/build/USD
-      #     key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
-      - name: Upload artifiacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-linux-${{ matrix.PYTHON.TAG }}
-          path: /home/vsts/dist
+  # Linux:
+  #   strategy:
+  #     matrix:
+  #       PYTHON:
+  #         - TAG: cp38
+  #           INTERPRETER: /opt/python/cp38-cp38/bin/python
+  #           VERSION_SPEC: '3.8'
+  #         - TAG: cp39
+  #           INTERPRETER: /opt/python/cp39-cp39/bin/python
+  #           VERSION_SPEC: '3.9'
+  #         - TAG: cp310
+  #           INTERPRETER: /opt/python/cp310-cp310/bin/python
+  #           VERSION_SPEC: '3.10'
+  #         - TAG: cp311
+  #           INTERPRETER: /opt/python/cp311-cp311/bin/python
+  #           VERSION_SPEC: '3.11'
+  #   runs-on: ubuntu-24.04
+  #   timeout-minutes: 120
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ matrix.PYTHON.VERSION_SPEC }}
+  #     # - name: Restore cached artifacts
+  #     #   id: cache-usd-build-dependency
+  #     #   uses: actions/cache/restore@v3
+  #     #   with:
+  #     #     path: |
+  #     #       USDgen/build
+  #     #       USDinst
+  #     #       !USDgen/build/USD
+  #     #     key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+  #     - name: Setting up docker
+  #       run: |
+  #         docker build -t manylinuxwithcmake build_scripts/pypi/docker
+  #         docker run --name usdmanylinux --rm -id -v ./:/opt/USD -v /home/vsts/dist:/opt/USD-dist manylinuxwithcmake
+  #     - name: Building USD
+  #       run: |
+  #         # Terrible, terrible hack. The manylinux Docker image used to build the
+  #         # Python wheel does not include the corresponding Python shared library
+  #         # to link against. https://peps.python.org/pep-0513/#libpythonx-y-so-1
+  #         # describes why this is so. However, the FindPython CMake module used
+  #         # by USD's build system requires that the library exists and will error
+  #         # out otherwise, even though we explicitly avoid linking against Python
+  #         # via the PXR_PY_UNDEFINED_DYNAMIC_LOOKUP flag.
+  #         # 
+  #         # To work around this, we create a dummy file for the library using
+  #         # the same logic as build_usd.py to determine where the library should
+  #         # exist (see GetPythonInfo). FindPython will see that the library exists
+  #         # and allow the build to continue. The file is 100% bogus, but the
+  #         # PXR_PY_UNDEFINED_DYNAMIC_LOOKUP flag will ensure that we never try to
+  #         # link against this library anyway, so it doesn't matter.
+  #         docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} -c "import pathlib,sysconfig; pathlib.Path(sysconfig.get_config_var('LIBDIR'), sysconfig.get_config_var('LDLIBRARY')).touch()"
+  #         docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }}  build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --build /opt/USD/gen/build --src /opt/USD/gen/src /opt/USD/inst -v
+  #     - name: Creating packaging directory
+  #       run: |
+  #         docker exec usdmanylinux mkdir ./packaging
+  #         docker exec usdmanylinux cp -R /opt/USD/inst ./packaging
+  #         docker exec usdmanylinux sh -c 'cp build_scripts/pypi/package_files/* ./packaging'
+  #         docker exec usdmanylinux sh -c 'cp LICENSE.txt ./packaging'
+  #     - name: Running setup.py
+  #       run: |
+  #         docker exec -w /opt/USD/packaging usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }}
+  #     - name: Running auditwheel repair (moves .so files into package)
+  #       run: |
+  #         docker exec usdmanylinux /bin/bash -c 'PYTHONPATH=/opt/USD/packaging/pypi/lib/python LD_LIBRARY_PATH=/opt/USD/packaging/pypi/lib:$LD_LIBRARY_PATH auditwheel repair packaging/dist/*.whl'
+  #     - name: Updating pluginfo paths
+  #       run: |
+  #         WHEEL_PACKAGE_NAME=`docker exec usdmanylinux ls wheelhouse`
+  #         docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} build_scripts/pypi/updatePluginfos.py "wheelhouse/$WHEEL_PACKAGE_NAME" "/opt/USD-dist/$WHEEL_PACKAGE_NAME"
+  #     - name: Stopping docker container
+  #       run: |
+  #         docker stop usdmanylinux
+  #     # - name: Save build artifacts to cache
+  #     #   if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+  #     #   uses: actions/cache/save@v3
+  #     #   with:
+  #     #     path: |
+  #     #       gen/build
+  #     #       inst
+  #     #       !gen/build/USD
+  #     #     key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+  #     - name: Upload artifiacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: dist-linux-${{ matrix.PYTHON.TAG }}
+  #         path: /home/vsts/dist
   macOS:
     strategy:
       matrix:
@@ -153,7 +153,7 @@ jobs:
           ${{ matrix.PYTHON.INTERPRETER }} setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name macosx_10_9_universal2
       - name: Running delocate
         run: |
-          DYLD_FALLBACK_LIBRARY_PATH=`readlink -f USDinst/lib`
+          export DYLD_FALLBACK_LIBRARY_PATH=`readlink -f USDinst/lib`
           echo $DYLD_FALLBACK_LIBRARY_PATH
           ls -la $DYLD_FALLBACK_LIBRARY_PATH
           delocate-wheel -vv -w dist-delocated packaging/dist/*
@@ -176,82 +176,82 @@ jobs:
         with:
           name: dist-mac-${{ matrix.PYTHON.TAG }}
           path: ./packaging/dist
-  Windows:
-    strategy:
-      matrix:
-        PYTHON:
-          - VERSION_SPEC: '3.8'
-            TAG: cp38
-          - VERSION_SPEC: '3.9'
-            TAG: cp39
-          - VERSION_SPEC: '3.10'
-            TAG: cp310
-          - VERSION_SPEC: '3.11'
-            TAG: cp311
-    runs-on: windows-2019
-    timeout-minutes: 120
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.PYTHON.VERSION_SPEC }}
-      # - name: Restore cached artifacts
-      #   id: cache-usd-build-dependency
-      #   uses: actions/cache/restore@v3
-      #   with:
-      #     path: |
-      #       USDgen/build
-      #       USDinst
-      #       !USDgen/build/USD
-      #     key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
-      - name: Build USD
-        run: |
-          call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat
-          set BOOST_ROOT=
-          python --version
-          python build_scripts/build_usd.py --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF -DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --build USDgen/build --src USDgen/src USDinst -v
-        shell: cmd
-      - name: Packaging USD
-        run: |
-          dir
-          mkdir D:\packaging
-          xcopy /E /I USDinst D:\packaging\inst
-          copy build_scripts\pypi\package_files\* D:\packaging
-          copy LICENSE.txt D:\packaging
-          dir D:\packaging
-          dir D:\packaging\inst
-        shell: cmd
-      - name: Installing Python
-        run: |
-          python -m pip install wheel
-        shell: cmd
-      - name: Running setup.py
-        run: |
-          D:
-          cd D:\packaging
-          python setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name win_amd64
-          dir
-        shell: cmd
-      # - name: Save build artifacts to cache
-      #   if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
-      #   uses: actions/cache/save@v3
-      #   with:
-      #     path: |
-      #       USDgen/build
-      #       USDinst
-      #       !USDgen/build/USD
-      #     key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
-      - name: Upload artifiacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-windows-${{ matrix.PYTHON.TAG }}
-          path: D:\packaging\dist
+  # Windows:
+  #   strategy:
+  #     matrix:
+  #       PYTHON:
+  #         - VERSION_SPEC: '3.8'
+  #           TAG: cp38
+  #         - VERSION_SPEC: '3.9'
+  #           TAG: cp39
+  #         - VERSION_SPEC: '3.10'
+  #           TAG: cp310
+  #         - VERSION_SPEC: '3.11'
+  #           TAG: cp311
+  #   runs-on: windows-2019
+  #   timeout-minutes: 120
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ matrix.PYTHON.VERSION_SPEC }}
+  #     # - name: Restore cached artifacts
+  #     #   id: cache-usd-build-dependency
+  #     #   uses: actions/cache/restore@v3
+  #     #   with:
+  #     #     path: |
+  #     #       USDgen/build
+  #     #       USDinst
+  #     #       !USDgen/build/USD
+  #     #     key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+  #     - name: Build USD
+  #       run: |
+  #         call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat
+  #         set BOOST_ROOT=
+  #         python --version
+  #         python build_scripts/build_usd.py --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF -DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --build USDgen/build --src USDgen/src USDinst -v
+  #       shell: cmd
+  #     - name: Packaging USD
+  #       run: |
+  #         dir
+  #         mkdir D:\packaging
+  #         xcopy /E /I USDinst D:\packaging\inst
+  #         copy build_scripts\pypi\package_files\* D:\packaging
+  #         copy LICENSE.txt D:\packaging
+  #         dir D:\packaging
+  #         dir D:\packaging\inst
+  #       shell: cmd
+  #     - name: Installing Python
+  #       run: |
+  #         python -m pip install wheel
+  #       shell: cmd
+  #     - name: Running setup.py
+  #       run: |
+  #         D:
+  #         cd D:\packaging
+  #         python setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name win_amd64
+  #         dir
+  #       shell: cmd
+  #     # - name: Save build artifacts to cache
+  #     #   if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+  #     #   uses: actions/cache/save@v3
+  #     #   with:
+  #     #     path: |
+  #     #       USDgen/build
+  #     #       USDinst
+  #     #       !USDgen/build/USD
+  #     #     key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
+  #     - name: Upload artifiacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: dist-windows-${{ matrix.PYTHON.TAG }}
+  #         path: D:\packaging\dist
 
   CollectPackages:
     if: ${{ always() }}
-    # needs: [Linux, macOS]
-    needs: [Linux, macOS, Windows]
+    # needs: [Linux, macOS, Windows]
+    needs: [macOS]
     timeout-minutes: 120
     runs-on: ubuntu-24.04
     steps:
@@ -274,42 +274,42 @@ jobs:
     strategy:
       matrix:
         BUILD_CONFIG:
-          - NAME: Linux_Python38
-            PYTHON_VERSION_SPEC: '3.8'
-            IMAGE: ubuntu-20.04
-            PYTHON_INTERPRETER: python3
-          - NAME: Linux_Python39
-            PYTHON_VERSION_SPEC: '3.9'
-            IMAGE: ubuntu-20.04
-            PYTHON_INTERPRETER: python3
-          - NAME: Linux_Python310
-            PYTHON_VERSION_SPEC: '3.10'
-            IMAGE: ubuntu-20.04
-            PYTHON_INTERPRETER: python3
-          - NAME: Linux_Python311
-            PYTHON_VERSION_SPEC: '3.11'
-            IMAGE: ubuntu-20.04
-            PYTHON_INTERPRETER: python3
+          # - NAME: Linux_Python38
+          #   PYTHON_VERSION_SPEC: '3.8'
+          #   IMAGE: ubuntu-20.04
+          #   PYTHON_INTERPRETER: python3
+          # - NAME: Linux_Python39
+          #   PYTHON_VERSION_SPEC: '3.9'
+          #   IMAGE: ubuntu-20.04
+          #   PYTHON_INTERPRETER: python3
+          # - NAME: Linux_Python310
+          #   PYTHON_VERSION_SPEC: '3.10'
+          #   IMAGE: ubuntu-20.04
+          #   PYTHON_INTERPRETER: python3
+          # - NAME: Linux_Python311
+          #   PYTHON_VERSION_SPEC: '3.11'
+          #   IMAGE: ubuntu-20.04
+          #   PYTHON_INTERPRETER: python3
           - NAME: Mac_Python39
             PYTHON_VERSION_SPEC: '3.9'
             IMAGE: macos-14-self-hosted
-            PYTHON_INTERPRETER: python3          
-          - NAME: Windows_Python38
-            PYTHON_VERSION_SPEC: '3.8'
-            IMAGE: windows-2019
-            PYTHON_INTERPRETER: python3
-          - NAME: Windows_Python39
-            PYTHON_VERSION_SPEC: '3.9'
-            IMAGE: windows-2019
-            PYTHON_INTERPRETER: python3
-          - NAME: Windows_Python310
-            PYTHON_VERSION_SPEC: '3.10'
-            IMAGE: windows-2019
-            PYTHON_INTERPRETER: python3
-          - NAME: Windows_Python311
-            PYTHON_VERSION_SPEC: '3.11'
-            IMAGE: windows-2019
-            PYTHON_INTERPRETER: python3
+          #   PYTHON_INTERPRETER: python3          
+          # - NAME: Windows_Python38
+          #   PYTHON_VERSION_SPEC: '3.8'
+          #   IMAGE: windows-2019
+          #   PYTHON_INTERPRETER: python3
+          # - NAME: Windows_Python39
+          #   PYTHON_VERSION_SPEC: '3.9'
+          #   IMAGE: windows-2019
+          #   PYTHON_INTERPRETER: python3
+          # - NAME: Windows_Python310
+          #   PYTHON_VERSION_SPEC: '3.10'
+          #   IMAGE: windows-2019
+          #   PYTHON_INTERPRETER: python3
+          # - NAME: Windows_Python311
+          #   PYTHON_VERSION_SPEC: '3.11'
+          #   IMAGE: windows-2019
+          #   PYTHON_INTERPRETER: python3
     runs-on: ${{ matrix.BUILD_CONFIG.IMAGE }}
     steps:
       - uses: actions/setup-python@v5
