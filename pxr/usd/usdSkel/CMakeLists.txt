@@ -99,13 +99,12 @@ pxr_library(usdSkel
 )
 
 pxr_build_test(testUsdSkelValidators
-        LIBRARIES
-        sdr
-        tf
-        usd
-        usdSkel
-        CPPFILES
-        testenv/testUsdSkelValidators.cpp
+    LIBRARIES
+    tf
+    usd
+    usdSkel
+    CPPFILES
+    testenv/testUsdSkelValidators.cpp
 )
    
 pxr_test_scripts(
@@ -130,6 +129,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdSkelCache
     DEST testUsdSkelCache
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdSkelRoot
+    DEST testUsdSkelRoot
 )
 
 pxr_install_test_dir(

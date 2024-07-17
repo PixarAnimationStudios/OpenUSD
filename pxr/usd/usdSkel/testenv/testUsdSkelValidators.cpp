@@ -4,22 +4,41 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-
-#include "pxr/pxr.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/sdr/registry.h"
 #include "pxr/usd/usd/validationRegistry.h"
 #include "pxr/usd/usd/validationError.h"
-#include "pxr/usd/usd/validator.h"
 #include <pxr/usd/usdSkel/validatorTokens.h>
 #include <pxr/usd/usdSkel/root.h>
 #include <pxr/usd/usdSkel/bindingAPI.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/primvarsAPI.h>
 
-#include <algorithm>
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+void
+TestUsdSkelValidators()
+{
+    // This should be updated with every new validator added with
+    // UsdSkelValidators keyword.
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    UsdValidatorMetadataVector metadata =
+            registry.GetValidatorMetadataForKeyword(
+                    UsdSkelValidatorKeywordTokens->UsdSkelValidators);
+    // Since other validators can be registered with a UsdSkelValidators
+    // keyword, our validators registered in usdSkel are a subset of the entire
+    // set.
+    std::set<TfToken> validatorMetadataNameSet;
+    for (const UsdValidatorMetadata &metadata : metadata) {
+        validatorMetadataNameSet.insert(metadata.name);
+    }
+
+    const std::set<TfToken> expectedValidatorNames =
+            {UsdSkelValidatorNameTokens->skelBindingApiAppliedChecker};
+
+    TF_AXIOM(std::includes(validatorMetadataNameSet.begin(),
+                           validatorMetadataNameSet.end(),
+                           expectedValidatorNames.begin(),
+                           expectedValidatorNames.end()));
+}
 
 void
 TestUsdSkelBindingAPIChecker()
@@ -48,8 +67,7 @@ TestUsdSkelBindingAPIChecker()
     TF_AXIOM(errors[0].GetSites()[0].GetPrim().GetPath() ==
              SdfPath("/SkelRoot/Mesh"));
     std::string expectedErrorMsg = ("Found a UsdSkelBinding property (primvars:skel:jointIndices)"
-                                    ", but no SkelBindingAPI applied on the prim </SkelRoot/Mesh>."
-                                    "(fails 'SkelBindingAPIAppliedChecker')");
+                                    ", but no SkelBindingAPI applied on the prim </SkelRoot/Mesh>.");
     TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
 
     // Apply the SkelBindingAPI.
@@ -67,7 +85,7 @@ TestUsdSkelBindingAPIChecker()
              SdfPath("/SkelRoot/Mesh"));
     expectedErrorMsg = ("UsdSkelBindingAPI applied on prim: </SkelRoot/Mesh>, "
                 "which is not of type SkelRoot or is not rooted at a prim "
-                "of type SkelRoot, as required by the UsdSkel schema.(fails 'SkelBindingAPIAppliedChecker')");
+                "of type SkelRoot, as required by the UsdSkel schema.");
     const std::string message = errors[0].GetMessage();
     TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
 
@@ -82,6 +100,7 @@ TestUsdSkelBindingAPIChecker()
 int
 main()
 {
+    TestUsdSkelValidators();
     TestUsdSkelBindingAPIChecker();
     printf("OK\n");
     return EXIT_SUCCESS;
