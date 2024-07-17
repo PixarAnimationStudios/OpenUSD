@@ -324,6 +324,7 @@ jobs:
           merge-multiple: true          
       - name: Packaging USD
         run: |
+          which python3
           ${{ matrix.BUILD_CONFIG.PYTHON_INTERPRETER }} --version
           ${{ matrix.BUILD_CONFIG.PYTHON_INTERPRETER }} -m pip install pytest
           ${{ matrix.BUILD_CONFIG.PYTHON_INTERPRETER }} -m pip install --no-index --find-links=file://${{ github.workspace }} usd-core
