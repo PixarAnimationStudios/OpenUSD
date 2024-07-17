@@ -153,6 +153,7 @@ jobs:
           ${{ matrix.PYTHON.INTERPRETER }} setup.py bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name macosx_10_9_universal2
       - name: Running delocate
         run: |
+          DYLD_FALLBACK_LIBRARY_PATH=`readlink -f USDinst/lib`
           delocate-wheel -vv -w dist-delocated packaging/dist/*
       - name: Updating pluginfo paths
         run: |
