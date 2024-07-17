@@ -158,10 +158,14 @@ jobs:
           echo $DYLD_FALLBACK_LIBRARY_PATH
           ls -la $DYLD_FALLBACK_LIBRARY_PATH
           delocate-wheel -vv -w dist-delocated packaging/dist/*
+          ls -la packaging/dist
+          ls -la dist-delocated
       - name: Updating pluginfo paths
         run: |
           WHEEL_PACKAGE_NAME=`ls ./packaging/dist`
           mkdir -p ./dist
+          ls -la ./packaging/dist
+          ls -la ./dist
           ${{ matrix.PYTHON.INTERPRETER }} build_scripts/pypi/updatePluginfos.py "./dist-delocated/$WHEEL_PACKAGE_NAME" "./dist/$WHEEL_PACKAGE_NAME"
       # - name: Save build artifacts to cache
       #   if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
