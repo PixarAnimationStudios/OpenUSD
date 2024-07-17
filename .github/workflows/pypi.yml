@@ -154,6 +154,8 @@ jobs:
       - name: Running delocate
         run: |
           DYLD_FALLBACK_LIBRARY_PATH=`readlink -f USDinst/lib`
+          echo $DYLD_FALLBACK_LIBRARY_PATH
+          ls -la $DYLD_FALLBACK_LIBRARY_PATH
           delocate-wheel -vv -w dist-delocated packaging/dist/*
       - name: Updating pluginfo paths
         run: |
