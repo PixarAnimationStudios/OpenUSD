@@ -831,8 +831,8 @@ UsdGeomSubset::ValidateFamily(
         subset.GetElementTypeAttr().Get(&subsetElementType);
         if (subsetElementType != elementType) {
             if (reason) {
-                *reason = TfStringPrintf("Subset at path <%s> has elementType "
-                    "%s, which does not match '%s'.",
+                *reason = TfStringPrintf("GeomSubset at path <%s> has "
+                    "elementType '%s', which does not match '%s'.",
                     subset.GetPath().GetText(), subsetElementType.GetText(),
                     elementType.GetText());
             }
