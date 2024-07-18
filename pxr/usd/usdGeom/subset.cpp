@@ -803,8 +803,11 @@ UsdGeomSubset::ValidateFamily(
         return false;
     }
 
+    // Get subsets of *all* element types in the family so we can detect
+    // whether any are authored that do not match the given element type.
     const std::vector<UsdGeomSubset> familySubsets =
-        UsdGeomSubset::GetGeomSubsets(geom, elementType, familyName);
+        UsdGeomSubset::GetGeomSubsets(
+            geom, /* elementType = */ TfToken(), familyName);
     const TfToken familyType = GetFamilyType(geom, familyName);
     const bool familyIsRestricted = (familyType != UsdGeomTokens->unrestricted);
 
