@@ -26,14 +26,14 @@ _SkelBindingApiAppliedValidator(const UsdPrim &usdPrim)
     UsdValidationErrorVector errors;
 
     if (!usdPrim.HasAPI<UsdSkelBindingAPI>()){
-        std::vector<TfToken> primPropertyNames = usdPrim.GetPropertyNames();
         static const std::unordered_set<TfToken, TfHash> skelPropertyNames = []() {
             UsdSchemaRegistry& usdSchemaRegistry = UsdSchemaRegistry::GetInstance();
-            std::unique_ptr<UsdPrimDefinition> primDef = usdSchemaRegistry.BuildComposedPrimDefinition(TfToken(), {TfToken("SkelBindingAPI")});
-            std::vector<TfToken> vectorOfNames = primDef->GetPropertyNames();
-            return std::unordered_set<TfToken, TfHash>(vectorOfNames.begin(), vectorOfNames.end());
+            std::unique_ptr<UsdPrimDefinition> primDef = usdSchemaRegistry.BuildComposedPrimDefinition(TfToken(), {UsdSkelTokens->SkelBindingAPI});
+            const std::vector<TfToken> skelPropertyNamesVector = primDef->GetPropertyNames();
+            return std::unordered_set<TfToken, TfHash>(skelPropertyNamesVector.begin(), skelPropertyNamesVector.end());
         }();
 
+        const std::vector<TfToken> primPropertyNames = usdPrim.GetPropertyNames();
         for (const TfToken &primToken : primPropertyNames){
             if (skelPropertyNames.find(primToken) == skelPropertyNames.end()){
                 continue;
