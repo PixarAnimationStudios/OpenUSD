@@ -4,7 +4,9 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#define _CRT_SECURE_NO_WARNINGS
+#if !defined(_CRT_SECURE_NO_WARNINGS)
+    #define _CRT_SECURE_NO_WARNINGS
+#endif
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/testArchUtil.h"
@@ -70,7 +72,7 @@ Arch_ReadInvalidAddresses(bool spawnthread)
     for (size_t i = 0; i != ~0ull; ++i) {
         // This will eventually give us NULL in a way that the compiler probably
         // cannot prove at compile-time.
-        char const *ptr = reinterpret_cast<char const *>(rand() & 7);
+        char const *ptr = reinterpret_cast<char const *>((intptr_t)rand() & 7);
         printf("byte %p = %d\n", ptr, *ptr);
     }
 

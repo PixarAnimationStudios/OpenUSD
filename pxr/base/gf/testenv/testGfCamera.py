@@ -11,7 +11,12 @@ from pxr import Gf
 import math
 import unittest
 
+if 'unittest.util' in __import__('sys').modules:
+    # Show full diff in self.assertEqual.
+    __import__('sys').modules['unittest.util']._MAX_LENGTH = 999999999
+
 class TestGfCamera(unittest.TestCase):
+    maxDiff = None
 
     def AssertListGfClose(self, l1, l2, delta = 1e-6):
         for v1, v2 in zip(l1, l2):
