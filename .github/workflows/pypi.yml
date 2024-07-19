@@ -116,9 +116,6 @@ jobs:
           - VERSION_SPEC: '3.11'
             INTERPRETER: python3.11
             TAG: cp311
-    # runs-on: macos-12 # macos-13/14 doesn't work with delocate
-    # runs-on: macos-14-self-hosted # macos-13/14 doesn't work with delocate
-    # runs-on: macos-14
     runs-on: macos-12
     timeout-minutes: 120
     steps:
@@ -185,7 +182,6 @@ jobs:
             USDgen/build
             USDinst
             !USDgen/build/USD
-          # key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
           key: ${{ runner.os }}-pypi-${{ matrix.PYTHON.VERSION_SPEC }}
       - name: Upload artifiacts
         uses: actions/upload-artifact@v4
