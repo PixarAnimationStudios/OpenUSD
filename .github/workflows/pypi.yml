@@ -41,7 +41,7 @@ jobs:
             USDgen/build
             USDinst
             !USDgen/build/USD
-          key: ${{ runner.os }}-${{ matrix.PYTHON.VERSION_SPEC }}
+          key: ${{ runner.os }}-pypi-${{ matrix.PYTHON.VERSION_SPEC }}
       - name: Setting up docker
         run: |
           docker build -t manylinuxwithcmake build_scripts/pypi/docker
@@ -91,7 +91,7 @@ jobs:
             gen/build
             inst
             !gen/build/USD
-          key: ${{ runner.os }}-${{ matrix.PYTHON.VERSION_SPEC }}
+          key: ${{ runner.os }}-pypi-${{ matrix.PYTHON.VERSION_SPEC }}
       - name: Upload artifiacts
         uses: actions/upload-artifact@v4
         with:
@@ -135,8 +135,7 @@ jobs:
             USDgen/build
             USDinst
             !USDgen/build/USD
-          #key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
-          key: ${{ runner.os }}-${{ matrix.PYTHON.VERSION_SPEC }}
+          key: ${{ runner.os }}-pypi-${{ matrix.PYTHON.VERSION_SPEC }}
       - name: Build USD
         run: |
           sudo xcode-select -s /Applications/Xcode_13.3.app/Contents/Developer
@@ -187,7 +186,7 @@ jobs:
             USDinst
             !USDgen/build/USD
           # key: ${{ runner.os }}-build-${{ hashFiles('build_scripts/**') }}
-          key: ${{ runner.os }}-${{ matrix.PYTHON.VERSION_SPEC }}
+          key: ${{ runner.os }}-pypi-${{ matrix.PYTHON.VERSION_SPEC }}
       - name: Upload artifiacts
         uses: actions/upload-artifact@v4
         with:
@@ -223,7 +222,7 @@ jobs:
             USDgen/build
             USDinst
             !USDgen/build/USD
-          key: ${{ runner.os }}-${{ matrix.PYTHON.VERSION_SPEC }}
+          key: ${{ runner.os }}-pypi-${{ matrix.PYTHON.VERSION_SPEC }}
       - name: Build USD
         run: |
           call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat
@@ -260,7 +259,7 @@ jobs:
             USDgen/build
             USDinst
             !USDgen/build/USD
-          key: ${{ runner.os }}-${{ matrix.PYTHON.VERSION_SPEC }}
+          key: ${{ runner.os }}-pypi-${{ matrix.PYTHON.VERSION_SPEC }}
       - name: Upload artifiacts
         uses: actions/upload-artifact@v4
         with:
