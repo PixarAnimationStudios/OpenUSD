@@ -295,7 +295,8 @@ jobs:
         BUILD_CONFIG:
           - NAME: Linux_Python37
             PYTHON_VERSION_SPEC: '3.7'
-            IMAGE: ubuntu-20.04        
+            IMAGE: ubuntu-20.04
+            PYTHON_INTERPRETER: python3
           - NAME: Linux_Python38
             PYTHON_VERSION_SPEC: '3.8'
             IMAGE: ubuntu-20.04
@@ -315,6 +316,7 @@ jobs:
           - NAME: Mac_Python37
             PYTHON_VERSION_SPEC: '3.7'
             IMAGE: macos-12
+            PYTHON_INTERPRETER: python3
           - NAME: Mac_Python38
             PYTHON_VERSION_SPEC: '3.8'
             IMAGE: macos-12
