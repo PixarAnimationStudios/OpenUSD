@@ -8,6 +8,7 @@ on:
     branches:
       - dev
       - release
+      - enable_pypi
     paths:
       - .github/workflows/pypi.yml
       - build_scripts/pypi/*.py
