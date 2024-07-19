@@ -25,7 +25,7 @@ jobs:
           - TAG: cp311
             INTERPRETER: /opt/python/cp311-cp311/bin/python
             VERSION_SPEC: '3.11'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-20.04
     timeout-minutes: 120
     steps:
       - name: Checkout code
