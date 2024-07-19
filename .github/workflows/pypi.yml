@@ -10,6 +10,9 @@ jobs:
     strategy:
       matrix:
         PYTHON:
+          - TAG: cp37
+            INTERPRETER: /opt/python/cp37-cp37/bin/python
+            VERSION_SPEC: '3.7'
           - TAG: cp38
             INTERPRETER: /opt/python/cp38-cp38/bin/python
             VERSION_SPEC: '3.8'
@@ -98,6 +101,9 @@ jobs:
     strategy:
       matrix:
         PYTHON:
+          - VERSION_SPEC: '3.7'
+            INTERPRETER: python3.7
+            TAG: cp37
           - VERSION_SPEC: '3.8'
             INTERPRETER: python3.8
             TAG: cp38
@@ -189,6 +195,8 @@ jobs:
     strategy:
       matrix:
         PYTHON:
+          - VERSION_SPEC: '3.7'
+            TAG: cp37
           - VERSION_SPEC: '3.8'
             TAG: cp38
           - VERSION_SPEC: '3.9'
@@ -283,6 +291,9 @@ jobs:
     strategy:
       matrix:
         BUILD_CONFIG:
+          - NAME: Linux_Python37
+            PYTHON_VERSION_SPEC: '3.7'
+            IMAGE: ubuntu-20.04        
           - NAME: Linux_Python38
             PYTHON_VERSION_SPEC: '3.8'
             IMAGE: ubuntu-20.04
@@ -299,6 +310,9 @@ jobs:
             PYTHON_VERSION_SPEC: '3.11'
             IMAGE: ubuntu-20.04
             PYTHON_INTERPRETER: python3
+          - NAME: Mac_Python37
+            PYTHON_VERSION_SPEC: '3.7'
+            IMAGE: macos-14
           - NAME: Mac_Python38
             PYTHON_VERSION_SPEC: '3.8'
             IMAGE: macos-14
@@ -315,6 +329,10 @@ jobs:
             PYTHON_VERSION_SPEC: '3.11'
             IMAGE: macos-14
             PYTHON_INTERPRETER: python3          
+          - NAME: Windows_Python37
+            PYTHON_VERSION_SPEC: '3.7'
+            IMAGE: windows-2019
+            PYTHON_INTERPRETER: python3
           - NAME: Windows_Python38
             PYTHON_VERSION_SPEC: '3.8'
             IMAGE: windows-2019
