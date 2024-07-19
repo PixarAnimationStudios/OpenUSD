@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - enable_pypi
-
-on:
   pull_request:
     branches:
       - dev
