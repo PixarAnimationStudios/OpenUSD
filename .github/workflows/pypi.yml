@@ -5,6 +5,16 @@ on:
     branches:
       - enable_pypi
 
+on:
+  pull_request:
+    branches:
+      - dev
+      - release
+    paths:
+      - .github/workflows/pypi.yml
+      - build_scripts/pypi/*.py
+      - build_scripts/pypi/package_files/*
+
 jobs:
   Linux:
     strategy:
@@ -26,7 +36,7 @@ jobs:
             INTERPRETER: /opt/python/cp311-cp311/bin/python
             VERSION_SPEC: '3.11'
     runs-on: ubuntu-20.04
-    timeout-minutes: 120
+    timeout-minutes: 90
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -117,7 +127,7 @@ jobs:
             INTERPRETER: python3.11
             TAG: cp311
     runs-on: macos-12
-    timeout-minutes: 120
+    timeout-minutes: 90
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
