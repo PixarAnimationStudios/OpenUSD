@@ -192,23 +192,23 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
     return errors;
 }
 
-static bool _HasMaterialBindingRelationship(const UsdPrim& usdPrim) {
-    const std::vector<UsdRelationship> relationships = usdPrim.GetRelationships();
-    const std::string materialBindingString = (UsdShadeTokens->materialBinding).GetString();
-
-    return std::any_of(relationships.begin(), relationships.end(),
-                       [&](const UsdRelationship &rel) {
-                           return TfStringStartsWith(rel.GetName(), materialBindingString);
-                       });
-}
-
 static
 UsdValidationErrorVector
 _MaterialBindingApiAppliedValidator(const UsdPrim &usdPrim)
 {
     UsdValidationErrorVector errors;
 
-    if (!usdPrim.HasAPI<UsdShadeMaterialBindingAPI>() && _HasMaterialBindingRelationship(usdPrim)) {
+    auto hasMaterialBindingRelationship = [](const UsdPrim& usdPrim) {
+        const std::vector<UsdRelationship> relationships = usdPrim.GetRelationships();
+        static const std::string materialBindingString = (UsdShadeTokens->materialBinding).GetString();
+
+        return std::any_of(relationships.begin(), relationships.end(),
+                           [&](const UsdRelationship &rel) {
+                               return TfStringStartsWith(rel.GetName(), materialBindingString);
+                           });
+    };
+
+    if (!usdPrim.HasAPI<UsdShadeMaterialBindingAPI>() && hasMaterialBindingRelationship(usdPrim)) {
         errors.emplace_back(
                 UsdValidationErrorType::Error,
                 UsdValidationErrorSites{
