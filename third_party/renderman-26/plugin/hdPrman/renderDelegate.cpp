@@ -798,14 +798,6 @@ HdPrmanRenderDelegate::Update()
 {
 #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
     if (_rileySceneIndices) {
-        // We need to set some paths before any riley Create call can
-        // be issued - otherwise, we get a crash.
-        //
-        // TODO: There should be a designated prim in the scene index
-        // to communicate the global riley options.
-        //
-        _renderParam->SetRileyOptions();
-
         _rileySceneIndices->Update();
     }
 #endif

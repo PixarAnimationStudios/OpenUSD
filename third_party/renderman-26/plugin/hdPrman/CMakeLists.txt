@@ -115,6 +115,7 @@ pxr_plugin(${PXR_PACKAGE}
         rileyFallbackMaterialSceneIndexPlugin
         rileyGeometryInstanceSchema
         rileyGeometryPrototypeSchema
+        rileyGlobalsSceneIndexPlugin
         rileyGlobalsSchema
         rileyIntegratorSchema
         rileyLightInstanceSchema
@@ -164,6 +165,7 @@ pxr_plugin(${PXR_PACKAGE}
         rileyDisplayPrim
         rileyGeometryInstancePrim
         rileyGeometryPrototypePrim
+        rileyGlobalsSceneIndex
         rileyGlobalsPrim
         rileyIntegratorPrim
         rileyLightInstancePrim
