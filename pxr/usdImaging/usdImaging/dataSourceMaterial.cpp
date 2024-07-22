@@ -431,21 +431,27 @@ public:
         if (name == HdMaterialNodeSchemaTokens->nodeIdentifier) {
             TfToken nodeId;
 
-            // the default identifier
-            UsdShadeNodeDefAPI nodeDef(_shaderNode.GetPrim());
-            if (nodeDef) {
+            // Type dispatch for GetShaderId()
+            if (UsdShadeNodeDefAPI nodeDef =
+                UsdShadeNodeDefAPI(_shaderNode.GetPrim())) {
+                // Run this case after the more specialized API's above
+                // to avoid the warning in GetImplementationSource()
+                // for cases where info:implementationSource does not exist.
                 nodeDef.GetShaderId(&nodeId);
             } else if (UsdLuxLightFilter lightFilter =
-                    UsdLuxLightFilter(_shaderNode.GetPrim())) {
+                       UsdLuxLightFilter(_shaderNode.GetPrim())) {
+                // Light filter
                 nodeId = lightFilter.GetShaderId({_renderContext});
             } else if (UsdLuxLightAPI light =
-                    UsdLuxLightAPI(_shaderNode.GetPrim())) {
+                       UsdLuxLightAPI(_shaderNode.GetPrim())) {
+                // Light
                 nodeId = light.GetShaderId({_renderContext});
             } else if (UsdShadeNodeGraph nodegraph = 
-                    UsdShadeNodeGraph(_shaderNode.GetPrim())) {
+                       UsdShadeNodeGraph(_shaderNode.GetPrim())) {
+                // Shader graph
                 nodeId = TfToken();
             }
-            _shaderNode.GetShaderId(&nodeId);
+
             return HdRetainedTypedSampledDataSource<TfToken>::New(nodeId);
         }
 
