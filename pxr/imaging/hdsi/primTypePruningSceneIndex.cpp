@@ -82,7 +82,7 @@ T _Get(HdContainerDataSourceHandle const &container,
     return ds->GetTypedValue(0.0f);
 }
 
-};
+}
 
 // static
 HdsiPrimTypePruningSceneIndexRefPtr
@@ -138,13 +138,6 @@ HdsiPrimTypePruningSceneIndex::SetEnabled(const bool enabled)
     HdSceneIndexObserver::DirtiedPrimEntries dirtiedEntries;
     HdSceneIndexObserver::AddedPrimEntries addedEntries;
 
-    // Invalidate all data source locators.  Even though the prim
-    // data source we use here will double-check whether the scene index
-    // has been enabled, we only insert those sparsely,
-    // and only when needed, at the cost of making the required
-    // invalidation more extensive.
-    const HdDataSourceLocatorSet locators{ HdDataSourceLocator() };
-
     for (const SdfPath &primPath: HdSceneIndexPrimView(inputSceneIndex)) {
         // Note that we make the assumption here that a material and the prim
         // binding the material are either both at prim paths or non-prim paths.
@@ -160,7 +153,6 @@ HdsiPrimTypePruningSceneIndex::SetEnabled(const bool enabled)
             if (_enabled) {
                 // Prune this primType.
                 _pruneMap[primPath] = true;
-                dirtiedEntries.emplace_back(primPath, locators);
                 // Add prim with an empty prim type to trigger the 
                 // prim to be removed.
                 addedEntries.emplace_back(primPath, TfToken());
@@ -169,15 +161,19 @@ HdsiPrimTypePruningSceneIndex::SetEnabled(const bool enabled)
                 if (i != _pruneMap.end() && i->second) {
                     // Add back this previously-pruned prim.
                     addedEntries.emplace_back(primPath, prim.primType);
-                    // Don't bother erasing the _pruneMap entry;
-                    // will clear below.
-                    dirtiedEntries.emplace_back(primPath, locators);
                 }
             }
         } else if (!_bindingToken.IsEmpty()) {
             if (prim.dataSource && prim.dataSource->Get(_bindingToken)) {
                 // Dirty this prim's binding.
-                dirtiedEntries.emplace_back(primPath, locators);
+
+                // Invalidate all data source locators.
+                // Even though the prim data source we use here will
+                // double-check whether the scene index has been enabled, we
+                // only insert those sparsely, and only when needed, at the
+                // cost of making the required invalidation more extensive.
+                dirtiedEntries.emplace_back(
+                    primPath, HdDataSourceLocatorSet::UniversalSet());
             }
         }
     }
@@ -226,11 +222,7 @@ SdfPathVector
 HdsiPrimTypePruningSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
-    SdfPathVector result;
-    if (auto const input = _GetInputSceneIndex()) {
-        result = input->GetChildPrimPaths(primPath);
-    }
-    return result;
+    return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
 }
 
 void
