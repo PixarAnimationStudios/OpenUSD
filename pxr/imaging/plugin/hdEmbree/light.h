@@ -37,6 +37,7 @@
 ///   - inputs:shaping:focusTint
 ///   - inputs:shaping:cone:angle
 ///   - inputs:shaping:cone:softness
+/// - Respects double-sidedness of meshes
 ///
 /// Currently Unsupported Features / Limitations:
 /// - Surface shaders (all surfaces are assumed to be 100% reflective diffuse
@@ -74,7 +75,6 @@
 ///   - inputs:shaping:ies:file
 ///   - inputs:shaping:ies:angleScale
 ///   - inputs:shaping:ies:normalize
-/// - Ignores double-sidedness of meshes (always assumed one-sided)
 /// - No support for direct-camera visibility
 /// - No support for motion blur (currently, if motion blur is enabled, all
 ///   samples taken at the first time sample, ie, when the shutter opens).
