@@ -2352,7 +2352,7 @@ HdPrman_RenderParam::SetRileyOptions()
     //
     {
         // Compose scene options with the precedence:
-        //   scene index observer > env > render settings prim >
+        //   env > scene index observer > render settings prim >
         //                                    legacy settings map > fallback
         //
         // XXX: Some riley clients require certain options to be present
@@ -2362,8 +2362,8 @@ HdPrman_RenderParam::SetRileyOptions()
         // Ideally, the latter would require just the legacy and prim options.
 
         RtParamList composedParams = HdPrman_Utils::Compose(
-            _rileySceneIndexObserverOptions,
             _envOptions,
+            _rileySceneIndexObserverOptions,
             _renderSettingsPrimOptions, 
             GetLegacyOptions(),
             _fallbackOptions);
