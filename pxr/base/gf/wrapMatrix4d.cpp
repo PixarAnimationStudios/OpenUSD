@@ -421,6 +421,13 @@ void wrapMatrix4d()
         .def("TransformDir",
 	     (GfVec3d (This::*)(const GfVec3d &) const)&This::TransformDir)
 
+        // Provide wrapping that makes up for the fact that, in Python, we
+        // don't allow implicit conversion from GfVec3f to GfVec3d (which we
+        // do in C++).
+        .def("TransformAffine",
+	     +[](const This &self, const GfVec3f &p) -> GfVec3d {
+                 return self.TransformAffine(p);
+             })
         .def("TransformAffine",
 	     (GfVec3d (This::*)(const GfVec3d &) const)&This::TransformAffine)
         .def("SetScale", (This & (This::*)( double ))&This::SetScale,
