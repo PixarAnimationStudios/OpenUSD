@@ -1854,8 +1854,23 @@ HdEmbreeRenderer::_ComputeLighting(
         float vis = _Visibility(position, ls.wI, ls.dist * 0.99f);
 
         // Add exitant luminance
+        float cosOffNormal = GfDot(ls.wI, normal);
+        if (cosOffNormal < 0.0f) {
+            bool doubleSided = false;
+            HdEmbreeMesh *mesh =
+                dynamic_cast<HdEmbreeMesh*>(prototypeContext->rprim);
+            if (mesh) {
+                doubleSided = mesh->EmbreeMeshIsDoubleSided();
+            }
+
+            if (doubleSided) {
+                cosOffNormal *= -1.0f;
+            } else {
+                cosOffNormal = 0.0f;
+            }
+        }
         finalColor += ls.Li
-            * _DotZeroClip(ls.wI, normal)
+            * cosOffNormal
             * brdf
             * vis
             * ls.invPdfW;
