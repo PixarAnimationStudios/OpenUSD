@@ -26,7 +26,6 @@
 #include "hdPrman/mesh.h"
 #include "hdPrman/points.h"
 #include "hdPrman/resourceRegistry.h"
-#include "hdPrman/terminalSceneIndexObserver.h"
 #include "hdPrman/tokens.h"
 #include "hdPrman/volume.h"
 #include "hdPrman/sceneIndexObserverApi.h"
@@ -771,12 +770,6 @@ void
 HdPrmanRenderDelegate::SetTerminalSceneIndex(
     const HdSceneIndexBaseRefPtr &terminalSceneIndex)
 {
-    if (!_terminalObserver) {
-        _terminalObserver =
-            std::make_unique<HdPrman_TerminalSceneIndexObserver>(
-                _renderParam, terminalSceneIndex);
-    }
-
 #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
     if (terminalSceneIndex) {
         if (TfGetEnvSetting(HD_PRMAN_EXPERIMENTAL_RILEY_SCENE_INDEX_OBSERVER)) {
@@ -798,13 +791,6 @@ HdPrmanRenderDelegate::Update()
         _rileySceneIndices->Update();
     }
 #endif
-
-    if (!_terminalObserver) {
-        TF_CODING_ERROR("Invalid terminal scene index observer.");
-        return;
-    }
-
-    _terminalObserver->Update();
 }
 
 #endif

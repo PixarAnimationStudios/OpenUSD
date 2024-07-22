@@ -179,7 +179,6 @@ pxr_plugin(${PXR_PACKAGE}
         rileySampleFilterPrim
         rileyTypes
         sceneIndexObserverApi
-        terminalSceneIndexObserver
         updateObjectSettingsSceneIndex
         updateObjectSettingsSceneIndexPlugin
         utils
