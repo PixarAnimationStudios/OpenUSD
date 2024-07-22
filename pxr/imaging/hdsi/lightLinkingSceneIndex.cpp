@@ -935,6 +935,17 @@ HdsiLightLinkingSceneIndex::_PrimsAdded(
 
             _ProcessAddedLightOrFilter(
                 entry, {HdTokens->filterLink}, &dirtiedEntries);
+
+        } else if (auto it =_lightAndFilterPrimPaths.find(entry.primPath);
+            it != _lightAndFilterPrimPaths.end()) {
+
+            // The prim is no longer a light/light filter.
+            for (const TfToken &colName : _GetAllLinkingCollectionNames()) {
+                _cache->RemoveCollection(
+                    entry.primPath, colName, &dirtiedEntries);
+            }
+
+            _lightAndFilterPrimPaths.erase(it);
         }
     }
 
