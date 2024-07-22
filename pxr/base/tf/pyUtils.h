@@ -314,17 +314,6 @@ boost::python::object TfPyCopyBufferToByteArray(const char* buffer, size_t size)
 TF_API
 std::vector<std::string> TfPyGetTraceback();
 
-/// Populates the vector passed in with pointers to strings containing the
-/// python interpreter stack frames. 
-/// Note that TfPyGetStackFrames allocates these strings on the heap and its
-/// the caller's responsibility to free them.
-TF_API
-void TfPyGetStackFrames(std::vector<uintptr_t> *frames);
-
-/// Print the current python traceback to stdout.
-TF_API
-void TfPyDumpTraceback();
-
 /// Set an environment variable in \c os.environ.
 ///
 /// This function is equivalent to
