@@ -187,6 +187,23 @@ UsdUINodeGraphNodeAPI::CreateSizeAttr(VtValue const &defaultValue, bool writeSpa
                        writeSparsely);
 }
 
+UsdAttribute
+UsdUINodeGraphNodeAPI::GetDocURIAttr() const
+{
+    return GetPrim().GetAttribute(UsdUITokens->uiNodegraphNodeDocURI);
+}
+
+UsdAttribute
+UsdUINodeGraphNodeAPI::CreateDocURIAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdUITokens->uiNodegraphNodeDocURI,
+                       SdfValueTypeNames->String,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -210,6 +227,7 @@ UsdUINodeGraphNodeAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdUITokens->uiNodegraphNodeIcon,
         UsdUITokens->uiNodegraphNodeExpansionState,
         UsdUITokens->uiNodegraphNodeSize,
+        UsdUITokens->uiNodegraphNodeDocURI,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

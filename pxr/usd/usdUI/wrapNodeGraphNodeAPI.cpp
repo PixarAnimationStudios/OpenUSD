@@ -74,6 +74,13 @@ _CreateSizeAttr(UsdUINodeGraphNodeAPI &self,
     return self.CreateSizeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float2), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateDocURIAttr(UsdUINodeGraphNodeAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateDocURIAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->String), writeSparsely);
+}
 
 static std::string
 _Repr(const UsdUINodeGraphNodeAPI &self)
@@ -177,6 +184,13 @@ void wrapUsdUINodeGraphNodeAPI()
              &This::GetSizeAttr)
         .def("CreateSizeAttr",
              &_CreateSizeAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetDocURIAttr",
+             &This::GetDocURIAttr)
+        .def("CreateDocURIAttr",
+             &_CreateDocURIAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
