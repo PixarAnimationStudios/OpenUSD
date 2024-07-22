@@ -302,6 +302,7 @@ UsdGeomBBoxCache::UsdGeomBBoxCache(UsdGeomBBoxCache const &other)
     , _ctmCache(other._ctmCache)
     , _bboxCache(other._bboxCache)
     , _useExtentsHint(other._useExtentsHint)
+    , _ignoreVisibility(other._ignoreVisibility)
 {
 }
 
@@ -316,6 +317,7 @@ UsdGeomBBoxCache::operator=(UsdGeomBBoxCache const &other)
     _ctmCache = other._ctmCache;
     _bboxCache = other._bboxCache;
     _useExtentsHint = other._useExtentsHint;
+    _ignoreVisibility = other._ignoreVisibility;
     return *this;
 }
 
