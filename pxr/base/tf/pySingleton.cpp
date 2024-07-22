@@ -33,8 +33,4 @@ Tf_PySingleton::Visitor TfPySingleton() {
     return Tf_PySingleton::Visitor();
 }
 
-Tf_PySingleton::Visitor TfPySingleton(string const &reprPrefix) {
-    return Tf_PySingleton::Visitor(reprPrefix);
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE

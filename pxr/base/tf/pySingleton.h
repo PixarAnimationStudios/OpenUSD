@@ -16,12 +16,9 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/default_call_policies.hpp>
 #include <boost/python/def_visitor.hpp>
 #include <boost/python/raw_function.hpp>
 
-#include <functional>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -60,8 +57,7 @@ TF_API
 std::string _Repr(bp::object const &self, std::string const &prefix);
     
 struct Visitor : bp::def_visitor<Visitor> {
-    explicit Visitor(std::string const &reprPrefix = std::string()) :
-        _reprPrefix(reprPrefix) {}
+    explicit Visitor() {}
     
     friend class bp::def_visitor_access;
     template <typename CLS>
@@ -75,26 +71,13 @@ struct Visitor : bp::def_visitor<Visitor> {
         c.def("__new__", _GetSingletonWeakPtr<PtrType>).staticmethod("__new__");
         // Make __init__ do nothing.
         c.def("__init__", bp::raw_function(_DummyInit));
-
-        // If they supplied a repr prefix, provide a repr implementation.
-        if (!_reprPrefix.empty())
-            c.def("__repr__",
-                  make_function(std::bind(
-                                    _Repr, std::placeholders::_1, _reprPrefix),
-                                bp::default_call_policies(),
-                                boost::mpl::vector2<std::string,
-                                                    bp::object const &>()));
     }
-private:
-    std::string _reprPrefix;
 };
 
 }
 
 TF_API
 Tf_PySingleton::Visitor TfPySingleton();
-TF_API
-Tf_PySingleton::Visitor TfPySingleton(std::string const &reprPrefix);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
