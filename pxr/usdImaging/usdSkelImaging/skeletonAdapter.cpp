@@ -826,7 +826,7 @@ _TransformPoints(TfSpan<GfVec3f> points, const GfMatrix4d& xform)
         [&](size_t start, size_t end)
         {
             for (size_t i = start; i < end; ++i) {
-                points[i] = xform.Transform(points[i]);
+                points[i] = GfVec3f(xform.Transform(points[i]));
             }
         }, /*grainSize*/ 1000);
 }
@@ -2639,7 +2639,7 @@ UsdSkelImagingSkeletonAdapter::_SkelData::ComputeTopologyAndRestState()
             int jointIdx = jointIndices[i];
             TF_DEV_AXIOM(jointIdx >= 0 &&
                          static_cast<size_t>(jointIdx) < xforms.size());
-            points[i] = invBindXforms[jointIdx].Transform(points[i]);
+            points[i] = GfVec3f(invBindXforms[jointIdx].Transform(points[i]));
         }
     }
 

@@ -142,7 +142,8 @@ protected:
             const PointType& pt) const
         {
             IterType& iter = *static_cast<IterType*>(_untypedIterPtr);
-            *iter = _framePtr->Transform(pt);
+            using OutType = typename std::remove_reference_t<decltype(*iter)>;
+            *iter = static_cast<OutType>(_framePtr->Transform(pt));
             ++iter;
         }
 

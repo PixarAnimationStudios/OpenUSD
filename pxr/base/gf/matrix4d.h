@@ -52,9 +52,9 @@ class GfMatrix3d;
 ///
 /// The following methods interpret a GfMatrix4d as a 3D
 /// transformation: SetRotate(), SetScale(), SetTranslate(), SetLookAt(),
-/// Factor(), ExtractTranslation(), ExtractRotation(), Transform(), TransformDir().
-/// By convention, vectors are treated primarily as row vectors,
-/// implying the following:
+/// Factor(), ExtractTranslation(), ExtractRotation(), Transform(),
+/// TransformDir(). By convention, vectors are treated primarily as row
+/// vectors, implying the following:
 /// \li Transformation matrices are organized to deal with row
 ///        vectors, not column vectors. For example, the last row of a matrix
 ///        contains the translation amounts.
@@ -665,23 +665,6 @@ public:
             vec[0] * _mtx[0][1] + vec[1] * _mtx[1][1] + vec[2] * _mtx[2][1] + _mtx[3][1],
             vec[0] * _mtx[0][2] + vec[1] * _mtx[1][2] + vec[2] * _mtx[2][2] + _mtx[3][2],
             vec[0] * _mtx[0][3] + vec[1] * _mtx[1][3] + vec[2] * _mtx[2][3] + _mtx[3][3]));
-    }
-
-    /// Transforms the row vector \e vec by the matrix, returning the result.
-    /// This treats the vector as a 4-component vector whose fourth component
-    /// is 1. This is an overloaded method; it differs from the other version
-    /// in that it returns a different value type.
-    ///
-    /// \deprecated
-    /// This method is deprecated, as it can result in unintentional loss of
-    /// precision. Call GfVec3d Transform(const GfVec3d &) instead and
-    /// explicitly convert the result to GfVec3f, if necessary.
-    GfVec3f Transform(const GfVec3f &vec) const {
-        return GfVec3f(GfProject(GfVec4d(
-            vec[0] * _mtx[0][0] + vec[1] * _mtx[1][0] + vec[2] * _mtx[2][0] + _mtx[3][0],
-            vec[0] * _mtx[0][1] + vec[1] * _mtx[1][1] + vec[2] * _mtx[2][1] + _mtx[3][1],
-            vec[0] * _mtx[0][2] + vec[1] * _mtx[1][2] + vec[2] * _mtx[2][2] + _mtx[3][2],
-            vec[0] * _mtx[0][3] + vec[1] * _mtx[1][3] + vec[2] * _mtx[2][3] + _mtx[3][3])));
     }
 
     /// Transforms row vector \e vec by the matrix, returning the result. This

@@ -1353,7 +1353,7 @@ _SkinPointsLBS(const Matrix4& geomBindTransform,
         {
             for (size_t pi = start; pi < end; ++pi) {
 
-                const GfVec3f initialP = geomBindTransform.Transform(points[pi]);
+                const GfVec3f initialP(geomBindTransform.Transform(points[pi]));
                 GfVec3f p(0,0,0);
                 
                 for (int wi = 0; wi < numInfluencesPerPoint; ++wi) {
@@ -1442,7 +1442,7 @@ _SkinPointsDQS(const Matrix4& geomBindTransform,
         {
             for (size_t pi = start; pi < end; ++pi) {
 
-                const GfVec3f initialP = geomBindTransform.Transform(points[pi]);
+                const GfVec3f initialP(geomBindTransform.Transform(points[pi]));
                 GfVec3f scaledP(0, 0, 0);
 
                 GfQuatd pivotQuat(0.0);

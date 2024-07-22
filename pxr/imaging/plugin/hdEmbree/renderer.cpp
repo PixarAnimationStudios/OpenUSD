@@ -544,7 +544,7 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
                     2 * ((x + jitter[0] - minX) / w) - 1,
                     2 * ((y + jitter[1] - minY) / h) - 1,
                     -1);
-                const GfVec3f nearPlaneTrace = _inverseProjMatrix.Transform(ndc);
+                const GfVec3f nearPlaneTrace(_inverseProjMatrix.Transform(ndc));
 
                 GfVec3f origin;
                 GfVec3f dir;
@@ -563,7 +563,7 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
                     dir = nearPlaneTrace;
                 }
                 // Transform camera rays to world space.
-                origin = _inverseViewMatrix.Transform(origin);
+                origin = GfVec3f(_inverseViewMatrix.Transform(origin));
                 dir = _inverseViewMatrix.TransformDir(dir).GetNormalized();
 
                 // Trace the ray.
@@ -753,8 +753,8 @@ HdEmbreeRenderer::_ComputeDepth(RTCRayHit const& rayHit,
             rayHit.ray.org_y + rayHit.ray.tfar * rayHit.ray.dir_y,
             rayHit.ray.org_z + rayHit.ray.tfar * rayHit.ray.dir_z);
 
-        hitPos = _viewMatrix.Transform(hitPos);
-        hitPos = _projMatrix.Transform(hitPos);
+        hitPos = GfVec3f(_viewMatrix.Transform(hitPos));
+        hitPos = GfVec3f(_projMatrix.Transform(hitPos));
 
         // For the depth range transform, we assume [0,1].
         *depth = (hitPos[2] + 1.0f) / 2.0f;
