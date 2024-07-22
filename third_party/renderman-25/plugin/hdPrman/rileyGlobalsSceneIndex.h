@@ -12,12 +12,18 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdSceneGlobalsSchema;
 TF_DECLARE_REF_PTRS(HdPrman_RileyGlobalsSceneIndex);
 
 /// \class HdPrman_RileyGlobalsSceneIndex
 ///
-/// A scene index that inspects, e.g., HdSceneGlobalsSchema to
-/// add a riley:globals prim that calls Riley::SetOptions.
+/// A filtering scene index that adds a riley:globals prim populated with riley
+/// options. The riley scene index observer will use these options when calling
+/// Riley::SetOptions.
+///
+/// The options are generated from the HdSceneGlobalsSchema (particular using
+/// the current frame) and from the namespaced settings on the current render
+/// settings.
 ///
 class HdPrman_RileyGlobalsSceneIndex : 
     public HdSingleInputFilteringSceneIndexBase
@@ -31,7 +37,9 @@ public:
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
 private:
-    HdContainerDataSourceHandle _GetRileyOptions() const;
+    HdContainerDataSourceHandle _GetRileyParams(
+        HdSceneGlobalsSchema globalsSchema,
+        const SdfPath &renderSettingsPath) const;
     HdContainerDataSourceHandle _GetGlobalsPrimSource() const;
     
 protected:
