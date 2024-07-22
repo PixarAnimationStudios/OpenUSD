@@ -360,10 +360,7 @@ HdPrmanRenderDelegate::_Initialize()
         _renderParam);
 }
 
-HdPrmanRenderDelegate::~HdPrmanRenderDelegate()
-{
-    _renderParam.reset();
-}
+HdPrmanRenderDelegate::~HdPrmanRenderDelegate() = default;
 
 HdRenderSettingsMap
 HdPrmanRenderDelegate::GetRenderSettingsMap() const

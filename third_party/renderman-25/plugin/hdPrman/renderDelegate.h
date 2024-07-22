@@ -241,6 +241,8 @@ protected:
         _terminalObserver;
 #endif
 
+    // _rileySceneIndices holds on to _renderParam, so it needs to
+    // be after _renderParam so that we destroy it before _renderParam.
     struct _RileySceneIndices;
     std::unique_ptr<_RileySceneIndices> _rileySceneIndices;
 
