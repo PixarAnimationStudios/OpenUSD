@@ -349,7 +349,7 @@ inline TfRefPtr<T>::TfRefPtr(const TfWeakPtrFacade<X, U>& p,
     : _refBase(get_pointer(p))
 {
     _AddRef();
-    Tf_RefPtrTracker_New(this, _GetObjectForTracking());
+    Tf_RefPtrTracker_New(this, _refBase, _NullT);
 }
 
 //
