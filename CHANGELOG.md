@@ -1,6 +1,6 @@
 # Change Log
 
-## [24.08] - 2024-07-19
+## [24.08] - 2024-07-25
 
 OpenUSD is now licensed under the Tomorrow Open Source Technology license. This
 is a renaming of the license, but the terms and conditions are the same as
@@ -24,6 +24,7 @@ for details.
    [#2466](https://github.com/PixarAnimationStudios/OpenUSD/pull/2466))
 
 - Various fixes and changes to build_usd.py:
+  - Added "--onetbb" option to use oneTBB instead of TBB.
   - Added support for cross-compiling for iOS and visionOS.
     (PR: [#2949](https://github.com/PixarAnimationStudios/OpenUSD/pull/2949), 
      [#2950](https://github.com/PixarAnimationStudios/OpenUSD/pull/2950), 
@@ -32,7 +33,8 @@ for details.
     "--debug-python".
   - Updated to build with MaterialX v1.38.10.
 
-- Added support for Python 3.12 for usd-core PyPI package
+- Added support for Python 3.12 and deprecated support for 3.6 for usd-core
+  PyPI package.
 
 - Added the build type to the absolute path used to store the PCH result, 
   preventing Debug/Release PCH files from over-writing each other causing linker 
