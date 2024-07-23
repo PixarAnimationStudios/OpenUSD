@@ -509,8 +509,8 @@ bool Hio_AVIFImage::ReadCropped(
             inputFloat = outF32.data();
             inputHalf = nullptr;
         }
-        GfColorSpace dst(GfColorSpaceNames->LinearRec709);
-        GfColorSpace src(GfColorSpaceNames->SRGB);
+        GfColorSpace dst(GfColorSpaceNames->SRGB);
+        GfColorSpace src(GfColorSpaceNames->LinearRec709);
         if (channelCount == 3)
             dst.ConvertRGBSpan(src, TfSpan<float>(inputFloat, img.width * img.height * channelCount));
         else
