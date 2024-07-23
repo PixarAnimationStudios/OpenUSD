@@ -63,47 +63,34 @@ GfColor::GfColor(const GfColor &srcColor, const GfColorSpace& dstColorSpace)
     _rgb = GfVec3f(dstRGB.r, dstRGB.g, dstRGB.b);
 }
 
-// Set the color from a CIEXY coordinate in the chromaticity chart.
-void GfColor::SetFromChromaticity(const GfVec2f& xy)
-{
-    NcYxy c = { 1.f, xy[0], xy[1] };
-    NcRGB rgb = NcYxyToRGB(_colorSpace._data->colorSpace, c);
-    _rgb = GfVec3f(rgb.r, rgb.g, rgb.b);
-}
-
-// Set the color from a NcXYZ coordinate, in the existing color space.
-void GfColor::SetFromXYZ(const GfVec3f& xyz)
-{
-    NcXYZ ncxyz = { xyz[0], xyz[1], xyz[2] };
-    NcRGB dst = NcXYZToRGB(_colorSpace._data->colorSpace, ncxyz);
-    _rgb = GfVec3f(dst.r, dst.g, dst.b);
-}
-
-// Set the color from blackbody temperature in Kelvin, 
-// converting to the existing color space.
-void GfColor::SetFromBlackbodyKelvin(float kelvin, float lumimance)
+// Set the color from the Planckian locus (blackbody radiation) temperature
+// in Kelvin, in the existing color space.
+// Values are computed for temperatures between 1000K and 15000K.
+// Note that temperatures below 1900K are out of gamut for Rec709.
+void GfColor::SetFromPlanckianLocus(float kelvin, float lumimance)
 {
     NcYxy c = NcKelvinToYxy(kelvin, lumimance);
     NcRGB rgb = NcYxyToRGB(_colorSpace._data->colorSpace, c);
     _rgb = GfVec3f(rgb.r, rgb.g, rgb.b);
 }
 
-// Get the XYZ coordinate of the color.
-GfVec3f GfColor::GetXYZ() const
-{
-    NcRGB src = {_rgb[0], _rgb[1], _rgb[2]};
-    NcXYZ dst = NcRGBToXYZ(_colorSpace._data->colorSpace, src);
-    return GfVec3f(dst.x, dst.y, dst.z);
-}
-
-// Get the CIEXY coordinate of the color in the chromaticity chart.
+// Get the CIEXY coordinate of the color in the chromaticity chart,
+// For use in testing.
 GF_API
-GfVec2f GfColor::GetChromaticity() const
-{
+GfVec2f GfColor::_GetChromaticity() const {
     NcRGB src = {_rgb[0], _rgb[1], _rgb[2]};
     NcXYZ rgb = NcRGBToXYZ(_colorSpace._data->colorSpace, src);
     NcYxy chroma = NcXYZToYxy(rgb);
     return GfVec2f(chroma.x, chroma.y);
+}
+
+// Set the color from a CIEXY coordinate in the chromaticity chart.
+// For use in testing.
+GF_API
+void GfColor::_SetFromChromaticity(const GfVec2f& xy) {
+    NcYxy c = { 1.f, xy[0], xy[1] };
+    NcRGB rgb = NcYxyToRGB(_colorSpace._data->colorSpace, c);
+    _rgb = GfVec3f(rgb.r, rgb.g, rgb.b);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

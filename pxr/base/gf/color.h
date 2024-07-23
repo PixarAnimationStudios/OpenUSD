@@ -61,26 +61,14 @@ public:
     GF_API
     GfColor(const GfColor &color, const GfColorSpace& colorSpace);
 
-    /// Set the color from an xy coordinate in the chromaticity chart,
-    /// in the existing color space. Note the xy is conventionally annotated
-    /// as lower case coordinates.
-    /// \param xy The xy coordinate.
-    GF_API
-    void SetFromChromaticity(const GfVec2f& xy);
-
-    /// Set the color from an XYZ coordinate, in the existing color space.
-    /// Note that XYZ is conventionally annotated as upper case coordinates.
-    /// \param XYZ The XYZ coordinate.
-    GF_API
-    void SetFromXYZ(const GfVec3f& XYZ);
-
-    /// Set the color from blackbody temperature in Kelvin, in the existing color space.
+    /// Set the color from the Planckian locus (blackbody radiation) temperature
+    /// in Kelvin, in the existing color space.
     /// Values are computed for temperatures between 1000K and 15000K.
     /// Note that temperatures below 1900K are out of gamut for Rec709.
-    /// \param kelvin The blackbody temperature in Kelvin.
+    /// \param kelvin The temperature in Kelvin.
     /// \param luminance The desired luminance.
     GF_API
-    void SetFromBlackbodyKelvin(float kelvin, float luminance);
+    void SetFromPlanckianLocus(float kelvin, float luminance);
 
     /// Get the RGB tuple.
     /// \return The RGB tuple.
@@ -89,16 +77,6 @@ public:
     /// Get the color space.
     /// \return The color space.
     GfColorSpace GetColorSpace() const { return _colorSpace; }
-
-    /// Get the XYZ coordinate of the color.
-    /// \return The XYZ coordinate.
-    GF_API
-    GfVec3f GetXYZ() const;
-
-    /// Get the chromaticity of the color.
-    /// \return The chromaticity.
-    GF_API
-    GfVec2f GetChromaticity() const;
 
     /// Equality operator.
     /// \param rh The right-hand side color.
@@ -112,9 +90,19 @@ public:
     /// \return True if the colors are not equal, false otherwise.
     bool operator !=(const GfColor &rh) const { return !(*this == rh); }
 
-private:
+protected:
     GfColorSpace _colorSpace; ///< The color space.
     GfVec3f      _rgb;        ///< The RGB tuple.
+
+    // Get the CIEXY coordinate of the color in the chromaticity chart,
+    // For use in testing.
+    GF_API
+    GfVec2f _GetChromaticity() const;
+
+    // Set the color from a CIEXY coordinate in the chromaticity chart.
+    // For use in testing.
+    GF_API
+    void _SetFromChromaticity(const GfVec2f& xy);
 };
 
 
