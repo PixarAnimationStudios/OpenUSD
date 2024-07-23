@@ -336,7 +336,8 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
             setVec4(lightingData->lightSource[i].ambient, light.GetAmbient());
             setVec4(lightingData->lightSource[i].specular, light.GetSpecular());
             setVec3(lightingData->lightSource[i].spotDirection,
-                    _worldToViewMatrix.TransformDir(light.GetSpotDirection()));
+                    GfVec3f(_worldToViewMatrix.TransformDir(
+                                light.GetSpotDirection())));
             setVec3(lightingData->lightSource[i].attenuation,
                     light.GetAttenuation());
             lightingData->lightSource[i].spotCutoff = light.GetSpotCutoff();
@@ -494,7 +495,7 @@ GlfSimpleLightingContext::SetStateFromOpenGL()
             GLfloat spotDirection[3];
             glGetLightfv(lightName, GL_SPOT_DIRECTION, spotDirection);
             light.SetSpotDirection(
-                viewToWorldMatrix.TransformDir(GfVec3f(spotDirection)));
+                GfVec3f(viewToWorldMatrix.TransformDir(GfVec3f(spotDirection))));
 
             GLfloat floatValue;
 

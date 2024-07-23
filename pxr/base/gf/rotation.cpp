@@ -622,7 +622,7 @@ GfRotation::ComposeRotation(double         tw,
 GfVec3f
 GfRotation::TransformDir( const GfVec3f &vec ) const
 {
-    return GfMatrix4d().SetRotate( *this ).TransformDir( vec );
+    return GfVec3f(GfMatrix4d().SetRotate( *this ).TransformDir( vec ));
 }
 
 GfVec3d

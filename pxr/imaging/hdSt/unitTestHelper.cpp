@@ -217,8 +217,8 @@ HdSt_TestLightingShader::SetCamera(GfMatrix4d const &worldToViewMatrix,
     bool lightsChanged = false;
 
     for (int i = 0; i < 2; ++i) {
-        GfVec3f eyeDir =
-            worldToViewMatrix.TransformDir(_lights[i].dir).GetNormalized();
+        GfVec3f eyeDir = GfVec3f(
+            worldToViewMatrix.TransformDir(_lights[i].dir)).GetNormalized();
 
         if (_lights[i].eyeDir != eyeDir) {
             lightsChanged = true;

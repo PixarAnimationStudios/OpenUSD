@@ -564,7 +564,8 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
                 }
                 // Transform camera rays to world space.
                 origin = GfVec3f(_inverseViewMatrix.Transform(origin));
-                dir = _inverseViewMatrix.TransformDir(dir).GetNormalized();
+                dir = GfVec3f(
+                    _inverseViewMatrix.TransformDir(dir)).GetNormalized();
 
                 // Trace the ray.
                 _TraceRay(x, y, origin, dir, random);
@@ -791,7 +792,7 @@ HdEmbreeRenderer::_ComputeNormal(RTCRayHit const& rayHit,
 
     n = instanceContext->objectToWorldMatrix.TransformDir(n);
     if (eye) {
-        n = _viewMatrix.TransformDir(n);
+        n = GfVec3f(_viewMatrix.TransformDir(n));
     }
     n.Normalize();
 

@@ -446,7 +446,10 @@ class TestGfMatrix(unittest.TestCase):
             v = Gf.Vec3f(1,1,1)
             v2 = Matrix(3).TransformDir(v)
             self.assertEqual(v2, Gf.Vec3f(3,3,3))
-            self.assertEqual(type(v2), Gf.Vec3f)
+            if Matrix == Gf.Matrix4f:
+                self.assertEqual(type(v2), Gf.Vec3f)
+            else:
+                self.assertEqual(type(v2), Gf.Vec3d)
 
             v = Gf.Vec3d(1,1,1)
             v2 = Matrix(3).TransformDir(v)

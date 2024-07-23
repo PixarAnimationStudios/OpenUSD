@@ -968,7 +968,7 @@ HdxPickResult::_GetNormal(int index) const
     if (_neyes != nullptr) {
         GfVec3f neye =
             HdVec4f_2_10_10_10_REV(_neyes[index]).GetAsVec<GfVec3f>();
-        normal = _eyeToWorld.TransformDir(neye);
+        normal = GfVec3f(_eyeToWorld.TransformDir(neye));
     }
     return normal;
 }

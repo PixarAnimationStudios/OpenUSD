@@ -139,8 +139,18 @@ static {{ MAT }} RemoveScaleShearWrapper( const {{ MAT }} &self ) {
         .def("Transform",
 	     (GfVec3d (This::*)(const GfVec3d &) const)&This::Transform)
 
+{% if SCL == 'double' %}
+        // Provide wrapping that makes up for the fact that, in Python, we
+        // don't allow implicit conversion from GfVec3f to GfVec3d (which we
+        // do in C++).
+        .def("TransformDir",
+	     +[](const This &self, const GfVec3f &p) -> GfVec3d {
+                 return self.TransformDir(p);
+             })
+{% else %}
         .def("TransformDir",
 	     (GfVec3f (This::*)(const GfVec3f &) const)&This::TransformDir)
+{% endif %}
         .def("TransformDir",
 	     (GfVec3d (This::*)(const GfVec3d &) const)&This::TransformDir)
 
