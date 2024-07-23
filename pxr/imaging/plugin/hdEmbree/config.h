@@ -12,6 +12,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// NOTE: types here restricted to bool/int/string, as also used for
+// TF_DEFINE_ENV_SETTING
+constexpr int HdEmbreeDefaultSamplesToConvergence = 100;
+constexpr int HdEmbreeDefaultTileSize = 8;
+constexpr int HdEmbreeDefaultAmbientOcclusionSamples = 16;
+constexpr bool HdEmbreeDefaultJitterCamera = true;
+constexpr bool HdEmbreeDefaultUseFaceColors = true;
+constexpr int HdEmbreeDefaultCameraLightIntensity = 300;
+
 /// \class HdEmbreeConfig
 ///
 /// This class is a singleton, holding configuration parameters for HdEmbree.
@@ -27,6 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class HdEmbreeConfig {
 public:
+
     /// \brief Return the configuration singleton.
     static const HdEmbreeConfig &GetInstance();
 
@@ -34,38 +44,40 @@ public:
     /// converged?
     ///
     /// Override with *HDEMBREE_SAMPLES_TO_CONVERGENCE*.
-    unsigned int samplesToConvergence;
+    unsigned int samplesToConvergence = HdEmbreeDefaultSamplesToConvergence;
 
     /// How many pixels are in an atomic unit of parallel work?
     /// A work item is a square of size [tileSize x tileSize] pixels.
     ///
     /// Override with *HDEMBREE_TILE_SIZE*.
-    unsigned int tileSize;
+    unsigned int tileSize = HdEmbreeDefaultTileSize;
 
     /// How many ambient occlusion rays should we generate per
     /// camera ray?
     ///
     /// Override with *HDEMBREE_AMBIENT_OCCLUSION_SAMPLES*.
-    unsigned int ambientOcclusionSamples;
+    unsigned int ambientOcclusionSamples = HdEmbreeDefaultAmbientOcclusionSamples;
 
     /// Should the renderpass jitter camera rays for antialiasing?
     ///
-    /// Override with *HDEMBREE_JITTER_CAMERA*. Integer values greater than
-    /// zero are considered "true".
-    bool jitterCamera;
+    /// Override with *HDEMBREE_JITTER_CAMERA*. The case-insensitive strings
+    /// "true", "yes", "on", and "1" are considered true; an empty value uses
+    /// the default, and all other values are false.
+    bool jitterCamera = HdEmbreeDefaultJitterCamera;
 
     /// Should the renderpass use the color primvar, or flat white colors?
     /// (Flat white shows off ambient occlusion better).
     ///
-    /// Override with *HDEMBREE_USE_FACE_COLORS*. Integer values greater than
-    /// zero are considered "true".
-    bool useFaceColors;
+    /// Override with *HDEMBREE_USE_FACE_COLORS*.  The case-insensitive strings
+    /// "true", "yes", "on", and "1" are considered true; an empty value uses
+    /// the default, and all other values are false.
+    bool useFaceColors = HdEmbreeDefaultUseFaceColors;
 
     /// What should the intensity of the camera light be, specified as a
     /// percent of <1, 1, 1>.  For example, 300 would be <3, 3, 3>.
     ///
     /// Override with *HDEMBREE_CAMERA_LIGHT_INTENSITY*.
-    float cameraLightIntensity;
+    float cameraLightIntensity = HdEmbreeDefaultCameraLightIntensity;
 
 private:
     // The constructor initializes the config variables with their
