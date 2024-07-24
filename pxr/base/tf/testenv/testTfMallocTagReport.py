@@ -138,18 +138,17 @@ class TestMallocTagReporterLoadMallocTag(unittest.TestCase):
         parsed report, which will ensure that saving and loading are consistent.
         """
 
-        with MallocTagTextFile("") as filepath:
-            parsed.Report(filepath)
+        filepath = parsed.LogReport()
 
-            with open(filepath, 'r') as file:
-                print(f"Saved report for {self.id().split('.')[-1]}:")
-                print(file.read())
+        with open(filepath, 'r') as file:
+            print(f"Saved report for {self.id().split('.')[-1]}:")
+            print(file.read())
 
-            newParsed = Tf.MallocTag.GetCallTree()
-            self.assertTrue(newParsed.LoadReport(filepath))
+        newParsed = Tf.MallocTag.GetCallTree()
+        self.assertTrue(newParsed.LoadReport(filepath))
 
-            self.AssertNodeTreesEqual(
-                GetNodeDataTree(parsed), GetNodeDataTree(newParsed))
+        self.AssertNodeTreesEqual(
+            GetNodeDataTree(parsed), GetNodeDataTree(newParsed))
 
     def test_Basic(self):
         """
