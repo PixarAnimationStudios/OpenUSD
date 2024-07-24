@@ -91,9 +91,11 @@
 // 69 -> 70: Add dirty bit translation for light filter prims in backend
 //           emulation.
 // 70 -> 71: Add virtual HdRenderDelegate::IsParallelSyncEnabled.
+// 71 -> 72: Add render index API to batch notices sent by the merging scene
+//           index.
 //
 
-#define HD_API_VERSION 71
+#define HD_API_VERSION 72
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2
