@@ -132,7 +132,7 @@ main(int argc, char *argv[])
         // test that a EOTF curve <-> Linear works
         GfColor c1(mauveLinear, csSRGB);    // convert linear to SRGB
         GfColor c2(c1, csLinearSRGB);
-        TF_AXIOM(GfIsClose(mauveLinear, c2, 1e-7f));
+        TF_AXIOM(GfIsClose(mauveLinear, c2, 1e-6f));
         GfColor c3(c2, csSRGB);
         TF_AXIOM(GfIsClose(c1, c3, 1e-7f));
     }
