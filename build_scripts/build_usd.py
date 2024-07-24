@@ -2473,9 +2473,10 @@ if context.buildDraco and context.buildMonolithic and Windows():
     PrintError("Draco plugin can not be enabled for monolithic build on Windows")
     sys.exit(1)
 
-# The versions of Embree we currently support do not support oneTBB.
-if context.buildOneTBB and context.buildEmbree:
-    PrintError("Embree support cannot be enabled when building against oneTBB")
+# When building with both oneTBB and Embree, a 4.x version of Embree must be
+# used.
+if context.buildOneTBB and (context.buildEmbree and context.embreeMajorVersion < 4):
+    PrintError("Embree 4.x or later must be selected when building against oneTBB")
     sys.exit(1)
 
 # Windows ARM64 requires oneTBB. Since oneTBB is a non-standard option for the
