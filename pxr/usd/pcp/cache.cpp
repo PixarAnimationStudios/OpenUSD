@@ -565,8 +565,15 @@ _ProcessDependentNode(
         // a relocate node's map function is always
         // identity, we must do our own prefix replacement
         // to step out of the relocate, then continue
-        // with regular path translation.
-        const PcpNodeRef parent = node.GetParentNode(); 
+        // with regular path translation. We must step out of all 
+        // consecutive relocate nodes since they all only hold the 
+        // identity mapping. Once we hit a non-relocates node, any
+        // relocates above that will be accounted for in the map to 
+        // root function
+        PcpNodeRef parent = node.GetParentNode();
+        while (parent.GetArcType() == PcpArcTypeRelocate) {
+            parent = parent.GetParentNode();
+        }
         depIndexPath = PcpTranslatePathFromNodeToRoot(
             parent,
             localSitePath.ReplacePrefix( node.GetPath(),

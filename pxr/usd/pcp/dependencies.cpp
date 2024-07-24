@@ -539,9 +539,26 @@ Pcp_AddCulledDependency(
     dep.flags = depFlags;
     dep.layerStack = node.GetLayerStack();
     dep.sitePath = node.GetPath();
-    dep.unrelocatedSitePath = 
-        node.GetArcType() == PcpArcTypeRelocate ? 
-        node.GetParentNode().GetPath() : SdfPath();
+    if (node.GetArcType() == PcpArcTypeRelocate) {
+        // See _ProcessDependentNode in pcp/cache.cpp for the similar code
+        // we use to handle non-culled dependency
+        //
+        // Relocates require special handling.  Because a relocate node's map 
+        // function is always identity, mapping the node's path to root will
+        // not map the effects of the relocate. We must manually map the node 
+        // path a across the relocates node so that we have a path that will 
+        // then correctly be translated by this node's map function. We must 
+        // map across all consecutive relocate nodes since they all only hold 
+        // the identity mapping. Once we hit a non-relocates node, any relocates
+        // above that will be accounted for in the map to root function
+        PcpNodeRef parent = node.GetParentNode();
+        while (parent.GetArcType() == PcpArcTypeRelocate) {
+            parent = parent.GetParentNode();
+        }
+        dep.unrelocatedSitePath = parent.GetPath();
+    } else {
+        dep.unrelocatedSitePath = SdfPath();
+    }
     dep.mapToRoot = node.GetMapToRoot().Evaluate();
 
     culledDeps->push_back(std::move(dep));

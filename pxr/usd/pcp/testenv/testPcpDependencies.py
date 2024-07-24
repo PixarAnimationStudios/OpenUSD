@@ -365,7 +365,7 @@ class TestPcpDependencies(unittest.TestCase):
                 '/HumanRig/rig/Face/rig/LEyeRig/Anim',
                 Pcp.MapFunction.Identity()),
             Pcp.Dependency(
-                '/HumanRig/rig/Face/Anim/LEye',
+                '/HumanRig/Anim/Face/LEye',
                 '/HumanRig/rig/Face/rig/LEyeRig/Anim',
                 Pcp.MapFunction.Identity()),
             Pcp.Dependency(
@@ -373,7 +373,7 @@ class TestPcpDependencies(unittest.TestCase):
                 '/HumanRig/rig/Face/rig/LEyeRig/Anim',
                 Pcp.MapFunction.Identity()),
             Pcp.Dependency(
-                '/HumanRig/rig/Face/Anim/LEye',
+                '/HumanRig/Anim/Face/LEye',
                 '/HumanRig/rig/Face/rig/LEyeRig/Anim',
                 Pcp.MapFunction.Identity()),
             ])
