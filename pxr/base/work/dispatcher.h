@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_WORK_DISPATCHER_H
 #define PXR_BASE_WORK_DISPATCHER_H
@@ -33,8 +16,15 @@
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/errorTransport.h"
 
+// Blocked range is not used in this file, but this header happens to pull in
+// the TBB version header in a way that works in all TBB versions.
+#include <tbb/blocked_range.h>
 #include <tbb/concurrent_vector.h>
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
+#include <tbb/task_group.h>
+#else
 #include <tbb/task.h>
+#endif
 
 #include <functional>
 #include <type_traits>
@@ -79,7 +69,7 @@ public:
     WORK_API WorkDispatcher();
 
     /// Wait() for any pending tasks to complete, then destroy the dispatcher.
-    WORK_API ~WorkDispatcher();
+    WORK_API ~WorkDispatcher() noexcept;
 
     WorkDispatcher(WorkDispatcher const &) = delete;
     WorkDispatcher &operator=(WorkDispatcher const &) = delete;
@@ -103,7 +93,11 @@ public:
 
     template <class Callable>
     inline void Run(Callable &&c) {
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
+        _taskGroup.run(_InvokerTask<typename std::remove_reference<Callable>::type>(std::forward<Callable>(c), &_errors));
+#else
         _rootTask->spawn(_MakeInvokerTask(std::forward<Callable>(c)));
+#endif
     }
 
     template <class Callable, class A0, class ... Args>
@@ -136,17 +130,44 @@ private:
     // Function invoker helper that wraps the invocation with an ErrorMark so we
     // can transmit errors that occur back to the thread that Wait() s for tasks
     // to complete.
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
     template <class Fn>
-    struct _InvokerTask : public tbb::task {
+    struct _InvokerTask {
         explicit _InvokerTask(Fn &&fn, _ErrorTransports *err) 
             : _fn(std::move(fn)), _errors(err) {}
 
         explicit _InvokerTask(Fn const &fn, _ErrorTransports *err) 
             : _fn(fn), _errors(err) {}
 
-        virtual tbb::task* execute() {
+        // Ensure only moves happen, no copies.
+        _InvokerTask(_InvokerTask &&other) = default;
+        _InvokerTask(const _InvokerTask &other) = delete;
+        _InvokerTask &operator=(const _InvokerTask &other) = delete;
+
+        void operator()() const {
             TfErrorMark m;
             _fn();
+            if (!m.IsClean())
+                WorkDispatcher::_TransportErrors(m, _errors);
+        }
+    private:
+        Fn _fn;
+        _ErrorTransports *_errors;
+    };
+#else
+    template <class Fn>
+    struct _InvokerTask : public tbb::task {
+        explicit _InvokerTask(Fn &&fn, _ErrorTransports *err)
+            : _fn(std::move(fn)), _errors(err) {}
+
+        explicit _InvokerTask(Fn const &fn, _ErrorTransports *err)
+            : _fn(fn), _errors(err) {}
+
+        virtual tbb::task* execute() {
+            TfErrorMark m;
+            // In anticipation of OneTBB, ensure that _fn meets OneTBB's
+            // requirement that a task's call operator must be const.
+            const_cast<_InvokerTask const *>(this)->_fn();
             if (!m.IsClean())
                 WorkDispatcher::_TransportErrors(m, _errors);
             return NULL;
@@ -164,16 +185,29 @@ private:
             _InvokerTask<typename std::remove_reference<Fn>::type>(
                 std::forward<Fn>(fn), &_errors);
     }
+#endif
 
     // Helper function that removes errors from \p m and stores them in a new
     // entry in \p errors.
     WORK_API static void
     _TransportErrors(const TfErrorMark &m, _ErrorTransports *errors);
 
-    // Task group context and associated root task that allows us to cancel
-    // tasks invoked directly by this dispatcher.
+    // Task group context to run tasks in.
     tbb::task_group_context _context;
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
+    // Custom task group that lets us implement thread safe concurrent wait.
+    class _TaskGroup : public tbb::task_group {
+    public:
+        _TaskGroup(tbb::task_group_context& ctx) : tbb::task_group(ctx) {}
+         inline tbb::detail::d1::wait_context& _GetInternalWaitContext();
+    };
+
+    _TaskGroup _taskGroup;
+#else
+    // Root task that allows us to cancel tasks invoked directly by this
+    // dispatcher.
     tbb::empty_task* _rootTask;
+#endif
 
     // The error transports we use to transmit errors in other threads back to
     // this thread.
@@ -182,6 +216,40 @@ private:
     // Concurrent calls to Wait() have to serialize certain cleanup operations.
     std::atomic_flag _waitCleanupFlag;
 };
+
+// Wrapper class for non-const tasks.
+template <class Fn>
+struct Work_DeprecatedMutableTask {
+    explicit Work_DeprecatedMutableTask(Fn &&fn) 
+        : _fn(std::move(fn)) {}
+
+    explicit Work_DeprecatedMutableTask(Fn const &fn) 
+        : _fn(fn) {}
+
+    // Ensure only moves happen, no copies.
+    Work_DeprecatedMutableTask
+        (Work_DeprecatedMutableTask &&other) = default;
+    Work_DeprecatedMutableTask
+        (const Work_DeprecatedMutableTask &other) = delete;
+    Work_DeprecatedMutableTask
+        &operator= (const Work_DeprecatedMutableTask &other) = delete;
+
+    void operator()() const {
+        _fn();
+    }
+private:
+    mutable Fn _fn;
+};
+
+// Wrapper function to convert non-const tasks to a Work_DeprecatedMutableTask. 
+// When adding new tasks refrain from using this wrapper, instead ensure the 
+// call operator of the task is const such that it is compatible with oneTBB.
+template <typename Fn>
+Work_DeprecatedMutableTask<typename std::remove_reference_t<Fn>> 
+WorkMakeDeprecatedMutableTask(Fn &&fn) {
+    return Work_DeprecatedMutableTask<typename std::remove_reference_t<Fn>>
+            (std::forward<Fn>(fn));
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

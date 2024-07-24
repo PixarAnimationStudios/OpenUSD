@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/base/tf/errorMark.h"
@@ -27,6 +10,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/pathExpressionEval.h"
+#include "pxr/usd/sdf/pathPattern.h"
 #include "pxr/usd/sdf/predicateLibrary.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -69,6 +53,16 @@ static void
 TestBasics()
 {
     {
+        // Allow leading & trailing whitespace.
+        TF_AXIOM(SdfPathExpression("  /foo//bar").GetText() == "/foo//bar");
+        TF_AXIOM(SdfPathExpression("  /foo//bar ").GetText() == "/foo//bar");
+        TF_AXIOM(SdfPathExpression("/foo//bar ").GetText() == "/foo//bar");
+        TF_AXIOM(SdfPathExpression("  /foo /bar").GetText() == "/foo /bar");
+        TF_AXIOM(SdfPathExpression("  /foo /bar ").GetText() == "/foo /bar");
+        TF_AXIOM(SdfPathExpression("/foo /bar ").GetText() == "/foo /bar");
+    }
+    
+    {
         auto eval = MatchEval { SdfPathExpression("/foo//bar") };
         
         TF_AXIOM(eval.Match(SdfPath("/foo/bar")));
@@ -77,8 +71,19 @@ TestBasics()
         TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar/baz")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar.baz")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar.baz:buz")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo.bar")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z.bar")));
     }
     
+    {
+        auto eval = MatchEval { SdfPathExpression("/foo/bar/*") };
+        
+        TF_AXIOM(!eval.Match(SdfPath("/foo/bar"))); 
+        TF_AXIOM(eval.Match(SdfPath("/foo/bar/x")));
+        TF_AXIOM(eval.Match(SdfPath("/foo/bar/y")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo/bar/x/y")));
+    }
+
     {
         auto eval = MatchEval { SdfPathExpression("//foo/bar/baz/qux/quux") };
         
@@ -447,6 +452,65 @@ TestSearch()
 
 }
 
+static void
+TestPathPattern()
+{
+    SdfPathPattern pat;
+
+    TF_AXIOM(!pat);
+    TF_AXIOM(!pat.HasTrailingStretch());
+    TF_AXIOM(pat.GetPrefix().IsEmpty());
+    TF_AXIOM(pat.CanAppendChild({})); // Can append stretch.
+    TF_AXIOM(pat.AppendChild({}));
+    TF_AXIOM(pat == SdfPathPattern::EveryDescendant());
+    TF_AXIOM(pat.HasTrailingStretch());
+    TF_AXIOM(pat.GetPrefix() == SdfPath::ReflexiveRelativePath());
+    TF_AXIOM(!pat.HasLeadingStretch());
+
+    // Set prefix to '/', should become Everything().
+    pat.SetPrefix(SdfPath::AbsoluteRootPath());
+    TF_AXIOM(pat == SdfPathPattern::Everything());
+    TF_AXIOM(pat.HasLeadingStretch());
+    TF_AXIOM(pat.HasTrailingStretch());
+
+    // Remove trailing stretch, should become just '/'
+    pat.RemoveTrailingStretch();
+    TF_AXIOM(!pat.HasLeadingStretch());
+    TF_AXIOM(!pat.HasTrailingStretch());
+    TF_AXIOM(pat.GetPrefix() == SdfPath::AbsoluteRootPath());
+    TF_AXIOM(pat.GetComponents().empty());
+
+    // Add some components.
+    pat.AppendChild("foo").AppendChild("bar").AppendChild("baz");
+    // This should have modified the prefix path, rather than appending matching
+    // components.
+    TF_AXIOM(pat.GetPrefix() == SdfPath("/foo/bar/baz"));
+
+    pat.AppendStretchIfPossible().AppendProperty("prop");
+
+    // Appending a property to a pattern with trailing stretch has to append a
+    // prim wildcard '*'.
+    TF_AXIOM(pat.IsProperty());
+    TF_AXIOM(pat.GetComponents().size() == 3);
+    TF_AXIOM(pat.GetComponents()[0].text.empty());
+    TF_AXIOM(pat.GetComponents()[1].text == "*");
+    TF_AXIOM(pat.GetComponents()[2].text == "prop");
+
+    TF_AXIOM(pat.GetText() == "/foo/bar/baz//*.prop");
+
+    // Can't append children or properties to property patterns.
+    TF_AXIOM(!pat.CanAppendChild("foo"));
+    TF_AXIOM(!pat.CanAppendProperty("foo"));
+
+    pat.RemoveTrailingComponent();
+    TF_AXIOM(pat.GetText() == "/foo/bar/baz//*");
+    pat.RemoveTrailingComponent();
+    TF_AXIOM(pat.GetText() == "/foo/bar/baz//");
+    pat.RemoveTrailingComponent();
+    TF_AXIOM(pat.GetText() == "/foo/bar/baz");
+    pat.RemoveTrailingComponent(); // No more trailing components, only prefix.
+    TF_AXIOM(pat.GetText() == "/foo/bar/baz");
+}
 
 static void
 TestErrors()
@@ -482,6 +546,7 @@ main(int argc, char **argv)
 {
     TestBasics();
     TestSearch();
+    TestPathPattern();
     TestErrors();
     
     printf(">>> Test SUCCEEDED\n");

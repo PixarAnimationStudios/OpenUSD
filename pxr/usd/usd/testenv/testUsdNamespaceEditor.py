@@ -2,25 +2,8 @@
 #
 # Copyright 2023 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 import sys, os, unittest
 from pxr import Sdf, Usd, Tf, Plug
@@ -917,7 +900,7 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         # identifier regardless of platform
         def getFormattedCwd():
             drive, tail = os.path.splitdrive(os.getcwd())
-            return drive.lower() + tail.replace('\\', '/')
+            return drive + tail.replace('\\', '/')
 
         # Cannot delete or rename /C (there are no valid reparent targets for 
         # /C on this stage currently regardless of layer permission)
@@ -1143,19 +1126,16 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         nonInstancePrim = _VerifyCanDeletePrimAtPath("/NonInstancePrim")
 
         # But we can't delete any of the children of the instance prims as they
-        # are proxies from the prototype. We also can't delete a child of the 
-        # non-instance prim but for a different reason as it is defined across a
-        # reference and we don't yet support deactivation as delete.
+        # are proxies from the prototype. 
         _VerifyCannotApplyDeletePrim(instance1.GetChild("B"), 
             "The prim to edit is a prototype proxy descendant of an instance "
             "prim")
         _VerifyCannotApplyDeletePrim(instance2.GetChild("B"), 
             "The prim to edit is a prototype proxy descendant of an instance "
             "prim")
-        _VerifyCannotApplyDeletePrim(nonInstancePrim.GetChild("B"), 
-            "The prim to delete must be deactivated rather than deleted since "
-            "it composes opinions introduced by ancestral composition arcs; "
-            "deletion via deactivation is not yet supported")
+        # We can delete a child of the non-instance prim but only if relocates
+        # authoring is allowed as it is defined across a reference.
+        _VerifyCanDeletePrimAtPath("/NonInstancePrim/B")
 
         # Like with delete, we can rename any of the instance and non-instance 
         # prims (as long as the new name is valid).
@@ -1165,19 +1145,18 @@ class TestUsdNamespaceEditor(unittest.TestCase):
             "/NonInstancePrim", "/NewNonInstancePrim")
 
         # And just like with delete, we can't rename any of the children of the 
-        # instance prims because they are proxies into the prototype. The 
-        # non-instanced prim can't be renamed because relocates aren't supported
-        # yet.
+        # instance prims because they are proxies into the prototype.
         _VerifyCannotApplyRenamePrim(instance1.GetChild("B"), "NewB", 
             "The prim to edit is a prototype proxy descendant of an instance "
             "prim")
         _VerifyCannotApplyRenamePrim(instance2.GetChild("B"), "NewB", 
             "The prim to edit is a prototype proxy descendant of an instance "
             "prim")
-        _VerifyCannotApplyRenamePrim(nonInstancePrim.GetChild("B"), "NewB", 
-            "The prim to move requires authoring relocates since it composes "
-            "opinions introduced by ancestral composition arcs; authoring "
-            "relocates is not yet supported")
+        # But we can rename a child of the non-instance prim but only if 
+        # relocates authoring is allowed as it is defined across a reference.
+        _VerifyCanMovePrimAtPath(
+            "/NonInstancePrim/B", "/NonInstancePrim/NewB")
+
 
         # We can reparent an instance prim under a non-instance prim
         instance1 = _VerifyCanMovePrimAtPath(
@@ -1225,16 +1204,15 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         _VerifyCannotApplyReparentPrim(nonInstancePrim, prototypePrim.GetChild("B"), 
             "The new parent prim belongs to a prototype prim")
 
-    def test_EditPrimsWithCompositionArcs(self):
-        """Tests namespace edit operations on prims with specs that contribute
-        opinions across composition arcs.
-        """
+    def _RunEditPrimsWithCompositionArcs(self, allowRelocatesAuthoring):
 
         # This stage has few variety of composition arcs on the root prims.
         stage = Usd.Stage.Open("composition_arcs/root.usda")
         self.assertTrue(stage)
 
-        editor = Usd.NamespaceEditor(stage)
+        editOptions = Usd.NamespaceEditor.EditOptions()
+        editOptions.allowRelocatesAuthoring = allowRelocatesAuthoring
+        editor = Usd.NamespaceEditor(stage, editOptions)
 
         # Helper functions for testing prims that we expect to be able to 
         # successfully edit.
@@ -1342,15 +1320,12 @@ class TestUsdNamespaceEditor(unittest.TestCase):
 
         # Helper to verify that the prim cannot be deleted nor moved.
         def _VerifyCannotEditPrimAtPath(primPath):
-            _VerifyCannotApplyDeletePrimAtPath(primPath,
-                "The prim to delete must be deactivated rather than deleted "
-                "since it composes opinions introduced by ancestral "
-                "composition arcs; deletion via deactivation is not yet "
-                "supported")
-            _VerifyCannotApplyMovePrimAtPath(primPath, "/Foo",
-                "The prim to move requires authoring relocates since it "
-                "composes opinions introduced by ancestral composition arcs; "
-                "authoring relocates is not yet supported")
+            expectedMessage = "The prim to edit requires authoring relocates " \
+                "since it composes opinions introduced by ancestral " \
+                "composition arcs; relocates authoring must be enabled to " \
+                "perform this edit"
+            _VerifyCannotApplyDeletePrimAtPath(primPath, expectedMessage)
+            _VerifyCannotApplyMovePrimAtPath(primPath, "/Foo", expectedMessage)
 
         # A prim with a direct reference to another prim can be edited.
         _VerifyCanEditPrimAtPath("/PrimWithReference")
@@ -1358,9 +1333,14 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         # But children of the prim which were defined across the reference 
         # (i.e. brought in by an ancestral reference) cannot be edited without
         # relocates.
-        _VerifyCannotEditPrimAtPath("/PrimWithReference/ClassChild")
-        _VerifyCannotEditPrimAtPath("/PrimWithReference/B")
-        _VerifyCannotEditPrimAtPath("/PrimWithReference/B/A")
+        if allowRelocatesAuthoring:
+            _VerifyCanEditPrimAtPath("/PrimWithReference/ClassChild")
+            _VerifyCanEditPrimAtPath("/PrimWithReference/B")
+            _VerifyCanEditPrimAtPath("/PrimWithReference/B/A")
+        else:
+            _VerifyCannotEditPrimAtPath("/PrimWithReference/ClassChild")
+            _VerifyCannotEditPrimAtPath("/PrimWithReference/B")
+            _VerifyCannotEditPrimAtPath("/PrimWithReference/B/A")
 
         # But a child prim that was added entirely in the root layer stack, even
         # though its parent is defined across the reference, can still be edited
@@ -1370,7 +1350,10 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         # A prim with a subroot prim reference behaves the same way as a prim
         # with a root prim reference.
         _VerifyCanEditPrimAtPath("/PrimWithSubrootReference")
-        _VerifyCannotEditPrimAtPath("/PrimWithSubrootReference/A")
+        if allowRelocatesAuthoring:
+            _VerifyCanEditPrimAtPath("/PrimWithSubrootReference/A")
+        else:
+            _VerifyCannotEditPrimAtPath("/PrimWithSubrootReference/A")
         _VerifyCanEditPrimAtPath("/PrimWithSubrootReference/A/A_Root_Child")
 
         # A prim with a variant selection can be edited given the variant is 
@@ -1379,14 +1362,223 @@ class TestUsdNamespaceEditor(unittest.TestCase):
 
         # But children of the prim which were defined across the reference 
         # within the selected variant cannot be edited without relocates.
-        _VerifyCannotEditPrimAtPath("/PrimWithVariant/ClassChild")
-        _VerifyCannotEditPrimAtPath("/PrimWithVariant/B")
-        _VerifyCannotEditPrimAtPath("/PrimWithVariant/B/A")
+        if allowRelocatesAuthoring:
+            _VerifyCanEditPrimAtPath("/PrimWithVariant/ClassChild")
+            _VerifyCanEditPrimAtPath("/PrimWithVariant/B")
+            _VerifyCanEditPrimAtPath("/PrimWithVariant/B/A")
+        else:
+            _VerifyCannotEditPrimAtPath("/PrimWithVariant/ClassChild")
+            _VerifyCannotEditPrimAtPath("/PrimWithVariant/B")
+            _VerifyCannotEditPrimAtPath("/PrimWithVariant/B/A")
 
         # But also a child defined fully in the root layer stack but inside
         # the variant self still cannot be edited without relocates or edit 
         # target support as it has specs across an ancestral variant arc.
-        _VerifyCannotEditPrimAtPath("/PrimWithVariant/V1_Root_Child")
+        if allowRelocatesAuthoring:
+            _VerifyCanEditPrimAtPath("/PrimWithVariant/V1_Root_Child")
+        else:
+            _VerifyCannotEditPrimAtPath("/PrimWithVariant/V1_Root_Child")
+
+    def test_EditPrimsWithCompositionArcs(self):
+        """Tests namespace edit operations on prims with specs that contribute
+        opinions across composition arcs.
+        """
+        
+        self._RunEditPrimsWithCompositionArcs(allowRelocatesAuthoring=True)
+        self._RunEditPrimsWithCompositionArcs(allowRelocatesAuthoring=False)
+
+    def test_RelocatesAndProhibitedChildren(self):
+        """Tests how relocates and prohibited children affect allowed namespace
+        edits."""
+        
+        # Layer with a prim with two children
+        ref2Layer = Sdf.Layer.CreateAnonymous("ref2.usda")
+        ref2Layer.ImportFromString('''#usda 1.0
+                                   
+            def "Ref2Prim" 
+            {
+                def MadeUpTypeName_2 "ChildInRef2"
+                {
+                    float a = 2.5
+                }
+                
+                def MadeUpTypeName_1 "Child" {
+                    int foo = 3
+                }
+            }
+            ''')
+
+        # Layer with a prim that references the above layer and relocates
+        # one the prim's children (with over opinions.)
+        ref1Layer = Sdf.Layer.CreateAnonymous("ref1.usda")
+        ref1Layer.ImportFromString('''#usda 1.0
+            (
+                relocates = {
+                    </Ref1Prim/ChildInRef2> : </Ref1Prim/RelocatedFromRef2>
+                }
+            )
+
+            def "Ref1Prim" (
+                references = @''' + ref2Layer.identifier + '''@</Ref2Prim>
+            ) {
+                over "RelocatedFromRef2" {
+                    string b = "hello"
+                }
+            }
+            ''')
+
+        # Root layer with a prim that references the above layer
+        rootLayer = Sdf.Layer.CreateAnonymous("root.usda")
+        rootLayer .ImportFromString('''#usda 1.0
+
+            def "PrimWithReference" (
+                references = @''' + ref1Layer.identifier + '''@</Ref1Prim>
+            ) {
+                over "Child" {
+                    int bar = 5
+                }
+                
+                def "RootChild" {
+                }
+            }
+            ''')
+
+        # Create our test stage and namespace editor which allows relocates (by
+        # default).
+        stage = Usd.Stage.Open(rootLayer)
+        editor = Usd.NamespaceEditor(stage)
+
+        # Helper for verifying the contents on the composed 
+        # /PrimWithReference/Child as we move it around. Tested on the initial
+        # prim
+        def _VerifyChildContents(prim):
+            self.assertEqual(prim.GetTypeName(), "MadeUpTypeName_1")
+            self.assertEqual(prim.GetPropertyNames(),
+                ["bar", "foo"])
+            self.assertEqual(prim.GetAttribute("foo").Get(), 3)
+            self.assertEqual(prim.GetAttribute("bar").Get(), 5)
+        _VerifyChildContents(stage.GetPrimAtPath('/PrimWithReference/Child'))
+
+        # Helper for verifying the contents on the composed 
+        # /PrimWithReference/RelocatedFromRef2 as we move it around. Tested on
+        # the initial prim
+        def _VerifyRelocatedFromRef2Contents(prim):
+            self.assertEqual(prim.GetTypeName(), "MadeUpTypeName_2")
+            self.assertEqual(prim.GetPropertyNames(),
+                ["a", "b"])
+            self.assertEqual(prim.GetAttribute("a").Get(), 2.5)
+            self.assertEqual(prim.GetAttribute("b").Get(), "hello")
+        _VerifyRelocatedFromRef2Contents(
+            stage.GetPrimAtPath('/PrimWithReference/RelocatedFromRef2'))
+
+        # Performs and verifies the move of the prim at primPath to newPrimPath.
+        # Runs to the given verifyContentsFunc to confirm the composed prim was
+        # indeed moved in its entirety
+        def _VerifyCanMovePrimAtPath(primPath, newPrimPath, verifyContentsFunc):
+            # Verify the initial prim exists has the expected contents.
+            prim = stage.GetPrimAtPath(primPath)
+            self.assertTrue(prim)
+            verifyContentsFunc(prim)
+
+            # Verify the new path does not exist.
+            self.assertFalse(stage.GetPrimAtPath(newPrimPath))
+
+            # Apply the move edit.
+            self.assertTrue(editor.MovePrimAtPath(primPath, newPrimPath))
+            self.assertTrue(editor.CanApplyEdits())
+            self.assertTrue(editor.ApplyEdits())
+
+            # Verify that no prim exists at the original path.
+            self.assertFalse(stage.GetPrimAtPath(primPath))
+
+            # Verify the prim does exist at the new path and has the expected
+            # contents
+            newPrim = stage.GetPrimAtPath(newPrimPath)
+            self.assertTrue(newPrim)
+            verifyContentsFunc(newPrim)
+
+        # Verifies that the prim at primPath cannot be moved to newPrimPath
+        # because the new path is a prohibited child of its parent
+        def _VerifyCannotApplyMovePrimAtPath(primPath, newPrimPath):
+            # Verify the prim actually exists first
+            prim = stage.GetPrimAtPath(primPath)
+            self.assertTrue(prim)
+
+            # Verify that we cannot move the prim for the expected reason
+            self.assertTrue(editor.MovePrimAtPath(primPath, newPrimPath))
+            self._VerifyFalseResult(editor.CanApplyEdits(), 
+                'The new path is a prohibited child of its parent path because '
+                'of existing relocates.')
+            with self.assertRaises(Tf.ErrorException):
+                editor.ApplyEdits()
+   
+        # We can move a child prim from across a reference with local relocates.
+        self.assertEqual(rootLayer.relocates, [])
+        _VerifyCanMovePrimAtPath(
+            '/PrimWithReference/Child', '/MovedChild', _VerifyChildContents)
+        self.assertEqual(rootLayer.relocates, [
+            (Sdf.Path('/PrimWithReference/Child'), Sdf.Path('/MovedChild'))
+            ])
+
+        # We cannot move a different prim to the now empty pre-relocation path
+        # even though there is no prim there. This is because relocation
+        # tombstones do not allow a prim to exist at this path.
+        _VerifyCannotApplyMovePrimAtPath(
+            '/PrimWithReference/RootChild', '/PrimWithReference/Child')
+
+        # We can move the moved prim again to another loacation. This updates 
+        # the relocation.
+        _VerifyCanMovePrimAtPath(
+            '/MovedChild', '/RenamedMovedChild', _VerifyChildContents)
+        self.assertEqual(rootLayer.relocates, [
+            (Sdf.Path('/PrimWithReference/Child'), Sdf.Path('/RenamedMovedChild'))
+            ])
+
+        # And we can move the locally relocated prim back to its original path.
+        # This is the only prim that be moved to this tombstone location and is
+        # accomplished by removing the local relocate.
+        _VerifyCanMovePrimAtPath(
+            '/RenamedMovedChild', '/PrimWithReference/Child',
+            _VerifyChildContents)
+        self.assertEqual(rootLayer.relocates, [])
+
+        # Now try a prim that has been relocated within the reference itself. 
+        # This prim can still be moved in the local layer stack using local
+        # relocates.
+        _VerifyCanMovePrimAtPath(
+            '/PrimWithReference/RelocatedFromRef2', '/MovedRelocatedFromRef2',
+             _VerifyRelocatedFromRef2Contents)
+        self.assertEqual(rootLayer.relocates, [
+            (Sdf.Path('/PrimWithReference/RelocatedFromRef2'), 
+                Sdf.Path('/MovedRelocatedFromRef2'))
+            ])
+
+        # We cannnot move a different prim to the now empty pre-relocation path.
+        _VerifyCannotApplyMovePrimAtPath(
+            '/PrimWithReference/RootChild', 
+            '/PrimWithReference/RelocatedFromRef2')
+
+        # We also cannot move a prim into a location that would be the path of
+        # RelocatedFromRef2 if it were not relocated in the reference layer
+        # itself (namely ChildInRef2). This is because pre-relocation 
+        # tombstones are propagated through composition arcs.    
+        _VerifyCannotApplyMovePrimAtPath(
+            '/PrimWithReference/RootChild', '/PrimWithReference/ChildInRef2')
+
+        # We can move the locally relocated prim back to its original 
+        # path within the local layer stack, RelocatedFromRef2, because we
+        # can undo that relocation locally.
+        _VerifyCanMovePrimAtPath(
+            '/MovedRelocatedFromRef2', '/PrimWithReference/RelocatedFromRef2',
+            _VerifyRelocatedFromRef2Contents)
+        self.assertEqual(rootLayer.relocates, [])
+
+        # But we cannot move this prim back to it's pre-relocation path from 
+        # within the reference as we can't undo the reference's relocates in the
+        # local layer stack.
+        _VerifyCannotApplyMovePrimAtPath(
+            '/PrimWithReference/RelocatedFromRef2', 
+            '/PrimWithReference/ChildInRef2')
 
 if __name__ == '__main__':
     unittest.main()

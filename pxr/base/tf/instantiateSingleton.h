@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 /*
  * This header is not meant to be included in a .h file.
@@ -42,9 +25,24 @@
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/arch/demangle.h"
 
+#include <memory>
 #include <thread>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// This GIL-releasing helper is implemented in singleton.cpp.  We do it this way
+// to avoid including the Python headers here.
+struct Tf_SingletonPyGILDropper
+{
+    TF_API
+    Tf_SingletonPyGILDropper();
+    TF_API
+    ~Tf_SingletonPyGILDropper();
+private:
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+    std::unique_ptr<class TfPyLock> _pyLock;
+#endif // PXR_PYTHON_SUPPORT_ENABLED
+};
 
 template <class T> std::atomic<T *> TfSingleton<T>::_instance;
 
@@ -67,6 +65,10 @@ TfSingleton<T>::_CreateInstance(std::atomic<T *> &instance)
     
     TfAutoMallocTag2 tag("Tf", "TfSingleton::_CreateInstance",
                          "Create Singleton " + ArchGetDemangled<T>());
+
+    // Drop the GIL if we have it, before possibly locking to create the
+    // singleton instance.
+    Tf_SingletonPyGILDropper dropGIL;
 
     // Try to take isInitializing false -> true.  If we do it, then check to see
     // if we don't yet have an instance.  If we don't, then we get to create it.

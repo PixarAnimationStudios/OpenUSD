@@ -63,6 +63,9 @@ stages:
         Python311:
           PYTHON_INTERPRETER: /opt/python/cp311-cp311/bin/python
           PYTHON_TAG: cp311
+        Python312:
+          PYTHON_INTERPRETER: /opt/python/cp312-cp312/bin/python
+          PYTHON_TAG: cp312
     timeoutInMinutes: 90
     pool:
       vmImage: Ubuntu-20.04
@@ -134,6 +137,9 @@ stages:
         Python311:
           PYTHON_VERSION_SPEC: 3.11
           PYTHON_TAG: cp311
+        Python312:
+          PYTHON_VERSION_SPEC: 3.12
+          PYTHON_TAG: cp312
     timeoutInMinutes: 90
     pool:
       vmImage: 'windows-2019'
@@ -158,7 +164,7 @@ stages:
         dir D:\packaging\inst
       displayName: "Creating packaging directory"
     - script: |
-        python -m pip install wheel
+        python -m pip install wheel setuptools
       displayName: 'Installing python packages'
     - script: |
         cd D:\packaging
@@ -197,9 +203,13 @@ stages:
           PYTHON_VERSION_SPEC: 3.11
           PYTHON_INTERPRETER: python3.11
           PYTHON_TAG: cp311
+        Python312:
+          PYTHON_VERSION_SPEC: 3.12
+          PYTHON_INTERPRETER: python3.12
+          PYTHON_TAG: cp312
     timeoutInMinutes: 180
     pool:
-      vmImage: 'macOS-11'
+      vmImage: 'macOS-12'
     steps:
     - task: UsePythonVersion@0
       inputs:
@@ -210,7 +220,7 @@ stages:
         $(PYTHON_INTERPRETER) build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pluginfo" --no-materialx --no-imaging --no-examples --no-tutorials --generator Xcode --build-target universal --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst -v
       displayName: 'Building USD'
     - bash: |
-        $(PYTHON_INTERPRETER) -m pip install delocate~=0.10.2 wheel
+        $(PYTHON_INTERPRETER) -m pip install delocate~=0.10.2 wheel setuptools
       displayName: 'Installing python packages'
     - bash: |
         mkdir ./packaging
@@ -298,6 +308,10 @@ stages:
           PYTHON_VERSION_SPEC: 3.11
           IMAGE: 'Ubuntu-20.04'
           PYTHON_INTERPRETER: python3
+        Linux_Python312:
+          PYTHON_VERSION_SPEC: 3.12
+          IMAGE: 'Ubuntu-20.04'
+          PYTHON_INTERPRETER: python3
         Windows_Python36:
           PYTHON_VERSION_SPEC: 3.6
           IMAGE: 'windows-2019'
@@ -322,29 +336,37 @@ stages:
           PYTHON_VERSION_SPEC: 3.11
           IMAGE: 'windows-2019'
           PYTHON_INTERPRETER: python
+        Windows_Python312:
+          PYTHON_VERSION_SPEC: 3.12
+          IMAGE: 'windows-2019'
+          PYTHON_INTERPRETER: python
         Mac_Python36:
           PYTHON_VERSION_SPEC: 3.6
-          IMAGE: 'macOS-11'
+          IMAGE: 'macOS-12'
           PYTHON_INTERPRETER: python3
         Mac_Python37:
           PYTHON_VERSION_SPEC: 3.7
-          IMAGE: 'macOS-11'
+          IMAGE: 'macOS-12'
           PYTHON_INTERPRETER: python3
         Mac_Python38:
           PYTHON_VERSION_SPEC: 3.8
-          IMAGE: 'macOS-11'
+          IMAGE: 'macOS-12'
           PYTHON_INTERPRETER: python3
         Mac_Python39:
           PYTHON_VERSION_SPEC: 3.9
-          IMAGE: 'macOS-11'
+          IMAGE: 'macOS-12'
           PYTHON_INTERPRETER: python3
         Mac_Python310:
           PYTHON_VERSION_SPEC: 3.10
-          IMAGE: 'macOS-11'
+          IMAGE: 'macOS-12'
           PYTHON_INTERPRETER: python3
         Mac_Python311:
           PYTHON_VERSION_SPEC: 3.11
-          IMAGE: 'macOS-11'
+          IMAGE: 'macOS-12'
+          PYTHON_INTERPRETER: python3
+        Mac_Python312:
+          PYTHON_VERSION_SPEC: 3.12
+          IMAGE: 'macOS-12'
           PYTHON_INTERPRETER: python3
     timeoutInMinutes: 10
     pool:

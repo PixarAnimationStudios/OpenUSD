@@ -1,25 +1,8 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_FILTERING_SCENE_INDEX_H
 #define PXR_IMAGING_HD_FILTERING_SCENE_INDEX_H
@@ -52,6 +35,79 @@ class HdFilteringSceneIndexBase : public HdSceneIndexBase
 {
 public:
     virtual std::vector<HdSceneIndexBaseRefPtr> GetInputScenes() const = 0;
+};
+
+///
+/// \class HdEncapsulatingSceneIndexBase
+///
+/// A mix-in class for scene indices that implement their behaviour by
+/// creating other scene indices (internally).
+///
+/// Note that this can be combined with the HdFilteringSceneIndexBase.
+///
+/// The intention here is that we can traverse the scene index topology
+/// at different levels of detail in, e.g., a piece of software to display
+/// the scene index graph.
+///
+/// More precisely, the topology of scene indices should be imagined as a
+/// nested directed acyclic graph, that is, each node of the graph itself
+/// contains a graph. The high-level directed acyclic graph structure is
+/// obtained by recursing GetInputScenes. A node itself contains a graph
+/// if the node corresponds to an encapsulating scene index. This nested
+/// graph consists of the scene indices internal to the encapsulating scene
+/// index as defined below. We also need some extra information in how
+/// some of the internal scene indices are connected to the external scene
+/// indices to completely describe the scene index topology.
+///
+/// Given a scene index that is both an HdFilteringSceneIndexBase and an
+/// HdEncapsulatingSceneIndexBase, we call the result of GetInputScenes()
+/// the "external" scene indices. Now consider the scene indices that can be
+/// reached by first calling GetEncapsulatingScenes and then recursing
+/// GetInputScenes until we hit an external scene index. We call these scene
+/// indices "internal". If the scene index is not subclassing from
+/// HdFilteringSceneIndexBase, we compute the internal scene indices in the
+/// same way under the premise that there are no external scene indices.
+///
+/// If this mix-in class is combined with HdFilteringSceneIndexBase, then
+/// GetInputScenes() should be a subset of the scene indices obtained by
+/// recursively calling GetInputScenes or GetEncapsulatedScenes (or a mix of
+/// those).
+///
+///
+/// Example:
+/// B filtering scene index with inputs {A}
+/// C filtering scene index with inputs {B}
+/// D filtering scene index with inputs {B}
+/// E filtering scene index with inputs {C, D}
+/// F filtering and encapsulating scene index with inputs {B} and
+///                 encapsulated scenes {E}
+/// G filtering scene index with inputs {F}
+///
+/// Nested scene index Graph:
+///
+///                A
+///                |
+///                B
+///               / \                                  |
+///      -F------/---\--------
+///      |      /     \      |
+///      |     C       D     |
+///      |      \     /      |
+///      |       \   /       |
+///      |        \ /        |
+///      |         E         |
+///      |                   |
+///      ---------------------
+///                |
+///                G
+///
+class HdEncapsulatingSceneIndexBase
+{
+public:
+    virtual std::vector<HdSceneIndexBaseRefPtr>
+    GetEncapsulatedScenes() const = 0;
+
+    static HdEncapsulatingSceneIndexBase * Cast(const HdSceneIndexBaseRefPtr &);
 };
 
 TF_DECLARE_WEAK_AND_REF_PTRS(HdSingleInputFilteringSceneIndexBase);

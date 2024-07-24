@@ -3,25 +3,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 --- This is what an import might look like.
@@ -147,7 +130,8 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     ["out", "vec4", "elementIdOut"],
     ["out", "vec4", "edgeIdOut"],
     ["out", "vec4", "pointIdOut"],
-    ["out", "vec4", "neyeOut"]
+    ["out", "vec4", "neyeOut"],
+    ["buffer readWrite", "CounterBuffer", "PickBuffer", ["atomic_int", "PickBuffer"]]
 ]
 
 -- glsl HdxRenderPass.RenderPick
@@ -165,6 +149,11 @@ FORWARD_DECL(int GetElementID()); // generated via codeGen
 FORWARD_DECL(int GetPrimitiveEdgeId()); // defined in edgeId.glslfx, or generated via codeGen
 FORWARD_DECL(int GetPointId()); // defined in pointId.glslfx
 
+// Declared below.
+#if defined(HD_HAS_PickBuffer)
+FORWARD_DECL(void RenderDeepPicks(int primId, int instanceId, int elementId, int edgeId, int pointId));
+#endif
+
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     int primId = HdGet_primID();
@@ -176,12 +165,163 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     int instanceId = GetDrawingCoord().instanceIndex[0];
     instanceIdOut = IntToVec4(instanceId);
 
-    elementIdOut = IntToVec4(GetElementID());
-    edgeIdOut = IntToVec4(GetPrimitiveEdgeId());
-    pointIdOut = IntToVec4(GetPointId());
+    int elementId = GetElementID();
+    int edgeId = GetPrimitiveEdgeId();
+    int pointId = GetPointId();
+
+    elementIdOut = IntToVec4(elementId);
+    edgeIdOut = IntToVec4(edgeId);
+    pointIdOut = IntToVec4(pointId);
     
     neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
+
+#if defined(HD_HAS_PickBuffer)
+    RenderDeepPicks(primId, instanceId, elementId, edgeId, pointId);
+#endif
 }
+
+#if defined(HD_HAS_PickBuffer)
+int cantor(int a, int b) {
+   return (a + b + 1) * (a + b) / 2 + b;
+}
+
+// Uses cantor pairing to compute a hash value for a-b-c.
+int hash3(int a, int b, int c) {
+   return cantor(a, cantor(b, c));
+}
+
+bool 
+compareOrSet(
+    const int valueOffset, 
+    const int primId, 
+    const int instanceId, 
+    const int partId)
+{
+    int primIdOffset = valueOffset;
+    int instanceIdOffset = valueOffset + 1;
+    int partIdOffset = valueOffset + 2;
+
+    int primIdValue = ATOMIC_LOAD(PickBuffer[primIdOffset]);
+    int instanceIdValue = ATOMIC_LOAD(PickBuffer[instanceIdOffset]);
+    int partIdValue = ATOMIC_LOAD(PickBuffer[partIdOffset]);
+
+    // Check if the slot is in use.
+    // if all the values are initialized, just compare 
+    if ((primIdValue != -9) && 
+        (instanceIdValue != -9) && 
+        (partIdValue != -9)) {
+        return  (primId == primIdValue) && 
+                (instanceId == instanceIdValue) && 
+                (partId == partIdValue);
+    } else {
+
+        // Potentially available slot, store the values and return true if successful.
+        int expected = -9;
+        primIdValue = ATOMIC_COMP_SWAP(PickBuffer[primIdOffset], expected, primId);
+
+        // Exit if the slot was unavailable.
+        if (primIdValue != -9 && primIdValue != primId)
+            return false;
+
+        expected = -9;
+        instanceIdValue = ATOMIC_COMP_SWAP(PickBuffer[instanceIdOffset], expected, instanceId);
+
+        // Exit if the slot was unavailable.
+        if (instanceIdValue != -9 && instanceIdValue != instanceId)
+            return false;
+
+        expected = -9;
+        partIdValue = ATOMIC_COMP_SWAP(PickBuffer[partIdOffset], expected, partId);
+
+        // Exit if the slot was unavailable.
+        if (partIdValue != -9 && partIdValue != partId)
+            return false;
+    }
+    
+    return true;
+}
+
+void RenderDeepPicks(int primId, int instanceId, int elementId,
+                     int edgeId, int pointId)
+{
+    // add the item to the pick buffer, but only unique
+
+    // if the pick buffer is not initialized, we are done 
+    if (ATOMIC_LOAD(PickBuffer[0]) == 0)
+        return;
+	
+    // Get some constants from the Pick Buffer
+    // These are initialized in: HdxPickTask::_ClearPickBuffer()
+    //
+    // The first 8 entries in the PickBuffer describe the buffer layout
+    // [0] == The number of sub-buffers (total max hits allowed / sub-buffer size)
+    //        The total max hits allowed is configurable on the pickContext (default = 32,000)
+    // [1] == The max number of hits hashed and stored per sub-buffer (value = 32)
+    // [2] == The TableOffset which is the first entry after this header block.  (value = 8)
+    //        The Table is a collection of fields the length of the number of sub-buffers.
+    //        It holds the number of current hits stored per sub-buffer. 
+    //        These fields are initialized to zero and populated by this shader to track hit storage.
+    // [3] == The StorageOffset which is the starting point where hits are stored.
+    //        Hit results are stored in sub-buffers.
+    //        Each sub-buffer holds up to 32 entries each with 3 entries per hit (primId, instanceId, partId).
+    // [4] == Indicates if faces should be picked (value == 1 or 0)
+    // [5] == Indicates if edges should be picked (value == 1 or 0)
+    // [6] == Indicates if points should be picked (value == 1 or 0)
+    // [7] == Padding
+    // 
+    // [TableOffset -> StorageOffset]
+    //        The table of current entry counts in each sub-buffer (values initialized to 0)
+    // [StorageOffset -> End of Buffer]
+    //        The collection of hits as a (primId, instanceId, partId) tuple. (values initialized to -9)
+
+    const int entrySize = 3;
+    const int numSubBuffers = ATOMIC_LOAD(PickBuffer[0]);
+    const int subBufferCapacity = ATOMIC_LOAD(PickBuffer[1]);
+    const int tableOffset = ATOMIC_LOAD(PickBuffer[2]);
+    const int storageOffset = ATOMIC_LOAD(PickBuffer[3]);
+    const int partId =  ATOMIC_LOAD(PickBuffer[4]) * elementId + 
+                        ATOMIC_LOAD(PickBuffer[5]) * edgeId +
+                        ATOMIC_LOAD(PickBuffer[6]) * pointId;
+
+    // compute the hash for an instance/element and assign it to a sub-buffer
+    const int hashValue = hash3(primId, instanceId, partId);
+    const int subBufferNumber = hashValue % numSubBuffers;
+    int bufferNumber = subBufferNumber;
+
+    // Loop through all sub buffers to find space if we fail to find any in the designated one.
+    do
+    {
+        const int sizeOffset = tableOffset + bufferNumber;
+        const int subBufferOffset = storageOffset + bufferNumber * subBufferCapacity * entrySize;
+
+        // loop through the item's sub-buffer to see if the item is already there
+        // if not, add it in atomic fashion
+        int entryNumber = 0;
+        do
+        {
+            // see if we need to add a new entry
+            if (entryNumber == ATOMIC_LOAD(PickBuffer[sizeOffset])) {
+                ATOMIC_COMP_SWAP(PickBuffer[sizeOffset], entryNumber, entryNumber + 1);
+            }
+
+            // if either the item equals to the current entry or we managed to 
+            // initialize the entry with the item's data, we are done
+            if (compareOrSet(
+                    subBufferOffset + entryNumber * entrySize, 
+                    primId, instanceId, partId)) {
+
+                // We are done.
+                return;
+            }
+        } // we exit out if we reach the capacity of the sub-buffer
+        while(++entryNumber != subBufferCapacity);
+
+        // Get the next buffer.
+        bufferNumber = (bufferNumber + 1) % numSubBuffers;
+    }
+    while (bufferNumber != subBufferNumber);
+}
+#endif // HD_HAS_PickBuffer
 
 -- layout HdxRenderPass.RenderColorAndSelection
 

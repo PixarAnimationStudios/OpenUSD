@@ -1,25 +1,8 @@
 #
 # Copyright 2023 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http:#www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 [
     dict(
@@ -78,6 +61,7 @@
     # geomSubset
     dict(
         SCHEMA_NAME = 'GeomSubset',
+        SCHEMA_TOKEN = 'geomSubset',
         MEMBERS = [
             ('type', T_TOKEN, {}),
             ('indices', T_INTARRAY, {}),
@@ -86,15 +70,8 @@
         STATIC_TOKEN_DATASOURCE_BUILDERS = [ # optional for shared token ds's
             ('type', ['typeFaceSet', 'typePointSet', 'typeCurveSet']),
         ],
-    ),
-
-    #--------------------------------------------------------------------------
-    # geomSubsets
-    dict(
-        SCHEMA_NAME = 'GeomSubsets',
-        SCHEMA_TOKEN = 'geomSubsets',
-        GENERIC_MEMBER = ('geomSubset', 'HdGeomSubsetSchema', {}),
-        SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/geomSubsetSchema'],
+        
+        ADD_DEFAULT_LOCATOR = True,
     ),
 
     #--------------------------------------------------------------------------
@@ -104,15 +81,13 @@
         SCHEMA_TOKEN = 'mesh',
         SCHEMA_INCLUDES =
             ['{{LIBRARY_PATH}}/meshTopologySchema',
-             '{{LIBRARY_PATH}}/subdivisionTagsSchema',
-             '{{LIBRARY_PATH}}/geomSubsetsSchema'],
+             '{{LIBRARY_PATH}}/subdivisionTagsSchema'],
         
         MEMBERS = [
             ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
             ('topology', 'HdMeshTopologySchema', {}),
             ('subdivisionScheme', T_TOKEN, {}),
             ('subdivisionTags', 'HdSubdivisionTagsSchema', {}),
-            ('geomSubsets', 'HdGeomSubsetsSchema', {}),
             ('doubleSided', T_BOOL, {}),
         ],
 
@@ -165,6 +140,7 @@
         SCHEMA_TOKEN = 'topology',
         MEMBERS = [
             ('tetVertexIndices', T_VEC4IARRAY, dict(ADD_LOCATOR = True)),
+            ('surfaceFaceVertexIndices', T_VEC3IARRAY, dict(ADD_LOCATOR = True)),
             ('orientation', T_TOKEN, {}),
         ],
         IMPL_SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/tetMeshSchema'],
@@ -231,13 +207,11 @@
         SCHEMA_NAME = 'BasisCurves',
         SCHEMA_TOKEN = 'basisCurves',
         SCHEMA_INCLUDES =
-            ['{{LIBRARY_PATH}}/basisCurvesTopologySchema',
-             '{{LIBRARY_PATH}}/geomSubsetsSchema'],
+            ['{{LIBRARY_PATH}}/basisCurvesTopologySchema'],
 
         MEMBERS = [
             ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
             ('topology', 'HdBasisCurvesTopologySchema', {}),
-            ('geomSubsets', 'HdGeomSubsetsSchema', {}),
         ],
 
         ADD_DEFAULT_LOCATOR = True,
@@ -732,6 +706,20 @@
     ),
 
     #--------------------------------------------------------------------------
+    # renderPass
+    dict(
+        SCHEMA_NAME = 'RenderPass',
+        SCHEMA_TOKEN = 'renderPass',
+        ADD_DEFAULT_LOCATOR = True,
+        SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/schemaTypeDefs'],
+        MEMBERS = [
+            ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
+            ('passType', T_TOKEN, {}),
+            ('renderSource', T_PATH, {}),
+        ],
+    ),
+
+    #--------------------------------------------------------------------------
     # renderSettings
     dict(
         SCHEMA_NAME = 'RenderSettings',
@@ -873,6 +861,7 @@
         SCHEMA_NAME = 'Camera',
         SCHEMA_TOKEN = 'camera',
         SCHEMA_INCLUDES = [
+            '{{LIBRARY_PATH}}/schemaTypeDefs',
             '{{LIBRARY_PATH}}/splitDiopterSchema',
             '{{LIBRARY_PATH}}/lensDistortionSchema'],
         ADD_DEFAULT_LOCATOR = True,
@@ -894,6 +883,7 @@
             ('dofAspect', T_FLOAT, {}),
             ('splitDiopter', 'HdSplitDiopterSchema', {}),
             ('lensDistortion', 'HdLensDistortionSchema', {}),
+            ('namespacedProperties', 'HdSampledDataSourceContainerContainerSchema', dict(ADD_LOCATOR = True)),
         ],
         STATIC_TOKEN_DATASOURCE_BUILDERS = [ # optional for shared token ds's
             ('projection', ['perspective', 'orthographic']),
@@ -1150,11 +1140,12 @@
     dict(
         SCHEMA_NAME = 'SceneGlobals',
         DOC = '''The {{ SCHEMA_CLASS_NAME }} encapsulates "global" state to orchestrate a
-                 render. It currently houses the active render settings prim path that
-                 describes the information necessary to generate images from a single
-                 invocation of a renderer, and the active time sample range that
-                 may be relevant to downstream scene indices (e.g. procedural
-                 evaluation).
+                 render. It currently houses the active render settings
+                 and pass prim paths that describe the information
+                 necessary to generate images from a single invocation
+                 of a renderer, and the active time sample range and current  
+                 frame number that may be relevant to downstream scene indices 
+                 (e.g. procedural evaluation).
 
                  We shall use the convention of a container data source at the root prim
                  of the scene index that is populated with this global state.
@@ -1164,9 +1155,11 @@
         ADD_DEFAULT_LOCATOR = True,
         MEMBERS = [
             ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
+            ('activeRenderPassPrim', T_PATH, {}),
             ('activeRenderSettingsPrim', T_PATH, {}),
             ('startTimeCode', T_DOUBLE, {}),
             ('endTimeCode', T_DOUBLE, {}),
+            ('currentFrame', T_DOUBLE, {}),
         ],
     ),
 

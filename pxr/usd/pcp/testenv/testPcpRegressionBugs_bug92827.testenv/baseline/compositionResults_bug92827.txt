@@ -14,6 +14,11 @@ Child names:
      ['B', 'Class', 'Other']
 
 ------------------------------------------------------------------------
+Results for composing </Rig/B>
+
+Prim Stack:
+
+------------------------------------------------------------------------
 Results for composing </Rig/Class>
 
 Prim Stack:

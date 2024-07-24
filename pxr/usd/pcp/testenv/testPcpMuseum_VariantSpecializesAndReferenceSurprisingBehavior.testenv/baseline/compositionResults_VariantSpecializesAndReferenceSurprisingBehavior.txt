@@ -1,0 +1,110 @@
+Loading @VariantSpecializesAndReferenceSurprisingBehavior/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model_defaultShadingVariant>
+
+Prim Stack:
+    root.sdf             /Model_defaultShadingVariant
+
+Child names:
+     ['Material']
+
+------------------------------------------------------------------------
+Results for composing </Model_defaultShadingVariant/Material>
+
+Prim Stack:
+    root.sdf             /Model_defaultShadingVariant/Material
+
+Property names:
+     ['myInt']
+
+Property stacks:
+/Model_defaultShadingVariant/Material.myInt:
+    root.sdf             /Model_defaultShadingVariant/Material.myInt
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.sdf             /Model
+    root.sdf             /Model{shadingVariant=New_Shading_Variant}
+    root.sdf             /New_Shading_Variant
+    root.sdf             /Model_defaultShadingVariant
+
+Variant Selections:
+    {shadingVariant = New_Shading_Variant}
+
+Child names:
+     ['Material', 'Material_Child']
+
+------------------------------------------------------------------------
+Results for composing </Model/Material>
+
+Prim Stack:
+    root.sdf             /New_Shading_Variant/Material
+    root.sdf             /Model_defaultShadingVariant/Material
+
+Property names:
+     ['myInt']
+
+Property stacks:
+/Model/Material.myInt:
+    root.sdf             /New_Shading_Variant/Material.myInt
+    root.sdf             /Model_defaultShadingVariant/Material.myInt
+
+------------------------------------------------------------------------
+Results for composing </Model/Material_Child>
+
+Prim Stack:
+    root.sdf             /New_Shading_Variant/Material_Child
+    root.sdf             /Model_defaultShadingVariant/Material
+    root.sdf             /New_Shading_Variant/Material
+
+Property names:
+     ['myInt']
+
+Property stacks:
+/Model/Material_Child.myInt:
+    root.sdf             /Model_defaultShadingVariant/Material.myInt
+    root.sdf             /New_Shading_Variant/Material.myInt
+
+------------------------------------------------------------------------
+Results for composing </New_Shading_Variant>
+
+Prim Stack:
+    root.sdf             /New_Shading_Variant
+
+Child names:
+     ['Material_Child', 'Material']
+
+------------------------------------------------------------------------
+Results for composing </New_Shading_Variant/Material_Child>
+
+Prim Stack:
+    root.sdf             /New_Shading_Variant/Material_Child
+    root.sdf             /New_Shading_Variant/Material
+
+Property names:
+     ['myInt']
+
+Property stacks:
+/New_Shading_Variant/Material_Child.myInt:
+    root.sdf             /New_Shading_Variant/Material.myInt
+
+------------------------------------------------------------------------
+Results for composing </New_Shading_Variant/Material>
+
+Prim Stack:
+    root.sdf             /New_Shading_Variant/Material
+
+Property names:
+     ['myInt']
+
+Property stacks:
+/New_Shading_Variant/Material.myInt:
+    root.sdf             /New_Shading_Variant/Material.myInt
+

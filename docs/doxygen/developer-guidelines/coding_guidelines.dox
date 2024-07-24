@@ -1,0 +1,139 @@
+/*!
+\page Page_Coding_Guidelines Coding Guidelines for OpenUSD
+
+Use the following coding guidelines when making code changes to OpenUSD.
+
+\section Coding_Conventions_And_Formatting OpenUSD Code Conventions and Formatting Guidelines
+
+Code should follow the formatting rules:
+
+<ul>
+<li>Each line shouldn't exceed 80 characters.</li>
+<li>K&R style braces are required, even for: `if`, `for`, `while`, and similar 
+control-flow statements that have a single line in their bodies. Always put the 
+body code for a function or control-flow statement on a separate line.</li>
+<li>Naming conventions:</li>
+<ul> 
+<li>Class names should be upper camel case nouns, and should be preceded by the 
+library prefix (for example, `UsdLuxLightFilter`).</li>
+<li>Use CapWords style for method names (for example, `ReadImage()`). If 
+possible, prefix method and function names with a verb.</li>
+<li>Instance variables (data members) should start with a lowercase letter and 
+should use the mixedCase style for multiple words (for example, `imageData`).</li>
+<li>Begin private and protected methods, functions, and member variables with an 
+underscore (for example, `_PrivateMethod()`, `_privateData`).</li>
+</ul>
+<li>Make sure your code is wrapped in the `PXR` namespace. To do this:</li>
+<ul>
+<li>Add `PXR_NAMESPACE_OPEN_SCOPE` at the top of every C++ file, header and cpp, 
+after the includes.</li>
+<li>Add `PXR_NAMESPACE_CLOSE_SCOPE` at the bottom of every C++ file, header and 
+cpp.</li>
+<li>Add `PXR_NAMESPACE_USING_DIRECTIVE` at the top of any C++ test code, after 
+the includes.</li>
+</ul>
+<li>Protect header files from multiple inclusion by using guard macros, using a 
+macro name of the form `PACKAGENAME_HEADERNAME_H`. For example, in 
+`pxr/usd/usd/tokens.h` the following guard macros are used: 
+
+\code{.c}
+#ifndef USD_TOKENS_H
+#define USD_TOKENS_H
+...header content…
+#endif
+\endcode
+ 
+Use guard macros rather than `#pragma once` directives.</li>
+<li>For libraries, export your symbols by doing the following:</li>
+<ul>
+<li>Add an api.h file if needed (these are mostly boilerplate and you can copy and 
+edit an existing one from any existing library). Define a `LIBNAME_API` macro 
+for your library (e.g. `USD_API`, `SDF_API`, etc).</li>
+<li>API tags should go on (non-inlined) methods rather than classes. The only 
+exception is for subclasses of Qt classes; for these, you should use the macro 
+name `LIBNAME_API_CLASS` rather than `LIBNAME_API` for code-search purposes.</li>
+<li>Use your appropriate `LIBNAME_API` macro for any declaration you need to 
+export. This will typically include:</li>
+<ul> 
+<li>On non-templated public members of public classes, including statics and 
+operators.</li>
+<li>On non-templated public free functions and global data.</li>
+<li>On destructors of public classes.</li>
+<li>On protected members of public base classes that may be subclassed outside 
+the library.</li>
+<li>On public pure-virtual declarations of public base classes.</li>
+<li>On any function or datum (even private) that may be referenced from a 
+wrapping implementation, referenced from a public method marked inline, or that 
+may be called from a public templated function definition in a header file.</li>
+<li>On full specializations of public templated functions (i.e., `template<>` 
+with empty parameters).</li>
+<li>As a special declaration for templates that must have a common 
+instantiation, e.g. because of global data.</li>
+</ul>
+<li>Use your `LIBNAME_API` macro on declarations, not definitions. It should be 
+added after `template`, `class`, and/or `struct`, if present, and before `static`
+and/or `virtual`, if present, and before the symbol's type. For classes, you'll 
+typically mark individual methods/members, and not entire classes, although 
+small public structs may be exported in their entirety.</li>
+</ul>
+<li>License header: please add this text at the top of each new source file
+(in comments):
+
+\code{.unparsed}
+Copyright YYYY Pixar 
+
+Licensed under the terms set forth in the LICENSE.txt file available at https://openusd.org/license
+\endcode
+</li>
+</ul>
+
+\section Coding_General_Guidelines General Guidelines
+
+\subsection Coding_Small_Changes Make Small Atomic Changes
+
+Keep your changes small and atomic so it's easier to do code reviews, and, if 
+necessary, to troubleshoot regressions.  
+
+For example, split features into their own changelists; split API changes and 
+behavior changes into different changelists; split schema changes and 
+implementation into different changelists. Splitting up larger changes makes it 
+easier and less risky to incorporate these changes into the codebase.
+
+\subsection Coding_Testing Test Your Changes
+
+All code changes should have proper test coverage to ensure code quality. See 
+\ref Page_Testing_Guidelines for more information on writing tests.
+
+\subsection Coding_Add_Documentation Add Documentation
+
+Changes should be accompanied by API documentation and user documentation, if 
+applicable, to help other developers and users make the most of your changes.
+
+\subsubsection Coding_API_Documentation API Documentation
+
+If you are adding new or modifying existing APIs, please update the 
+corresponding documentation. This should be completed prior to getting a code 
+review, so the reviewer has more context and can also help identify anything in 
+the documentation that may cause confusion.
+
+For C++ code we use <a href="https://www.doxygen.nl/index.html">doxygen-style comments</a>
+for documentation and generate HTML documentation from these comments.
+
+If you are adding or updating USD schemas that will get generated into C++ code 
+from the schema.usda file (i.e. not codeless schemas), you should add your API 
+documentation (in doxygen-style format) in the "doc" metadata field string of 
+the schema class or attribute. These strings will be converted into C++ comments 
+in the generated code (via usdGenSchema.py).
+
+\subsubsection Coding_User_Documentation User Documentation
+
+User documentation is usually written in <a href="https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html">reStructured Text</a>
+(as .rst files) or <a href="https://mystmd.org/">Myst Markdown</a> 
+(as .md files) format, and generated into HTML using <a href="https://www.sphinx-doc.org/en/master/index.html">Sphinx</a>. 
+Content files and Sphinx scripts are currently in the `docs/` directory.
+
+If you are adding or updating USD schemas, you should also add user 
+documentation for the schema classes and properties using the "userDocBrief" 
+and "userDoc" custom metadata fields. See `docs/README.md` for more details.
+
+*/

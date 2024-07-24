@@ -1,0 +1,25 @@
+--- original/stb_image_resize2.h	2024-06-17 15:21:31.710216172 -0700
++++ stb_image_resize2.h	2024-06-17 15:22:47.283085817 -0700
+@@ -6771,7 +6771,11 @@
+   void * alloced = 0;
+   size_t alloced_total = 0;
+   int vertical_first;
+-  int decode_buffer_size, ring_buffer_length_bytes, ring_buffer_size, vertical_buffer_size, alloc_ring_buffer_num_entries;
++  int decode_buffer_size, ring_buffer_length_bytes, vertical_buffer_size, alloc_ring_buffer_num_entries;
++
++#ifndef STBIR__SEPARATE_ALLOCATIONS
++  int ring_buffer_size;
++#endif
+ 
+   int alpha_weighting_type = 0; // 0=none, 1=simple, 2=fancy
+   int conservative_split_output_size = stbir__get_max_split( splits, vertical->scale_info.output_sub_size );
+@@ -6838,7 +6842,9 @@
+   if ( ( !vertical->is_gather ) && ( alloc_ring_buffer_num_entries > conservative_split_output_size ) )
+     alloc_ring_buffer_num_entries = conservative_split_output_size;
+ 
++#ifndef STBIR__SEPARATE_ALLOCATIONS
+   ring_buffer_size = alloc_ring_buffer_num_entries * ring_buffer_length_bytes;
++#endif
+ 
+   // The vertical buffer is used differently, depending on whether we are scattering
+   //   the vertical scanlines, or gathering them.

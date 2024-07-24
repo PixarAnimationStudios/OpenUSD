@@ -1,25 +1,8 @@
 //
 // Copyright 2024 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
@@ -29,6 +12,7 @@
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/cube.h"
+#include "pxr/usd/usdGeom/points.h"
 
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/meshTopologySchema.h"
@@ -40,7 +24,6 @@
 #include <iostream>
 #include <queue>
 #include <sstream>
-
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -124,6 +107,11 @@ public:
     AddedPrimEntries const& GetAdded() { return _added; }
     DirtiedPrimEntries const& GetDirtied() { return _dirtied; }
 
+    void ResetEntries() {
+        _added.clear();
+        _dirtied.clear();
+    }
+    
 private:
     SdfPathSet _prims;
     AddedPrimEntries _added;
@@ -486,6 +474,242 @@ void AddNonEmptyLayerTest()
     }
 }
 
+bool
+_Contains(const TfTokenVector &vec, const TfToken &t)
+{
+    return std::count(vec.begin(), vec.end(), t);
+}
+
+// A class that caches the data sources related to a primvar on a prim
+// in a scene index.
+//
+// The class is intended to check that sufficient invalidation is send out
+// and that there is no stale state cached somewhere in the scene index.
+//
+// It holds on to each data source and the primvar value and only pulls it
+// again if an explicit notice with a generic enough data source locator
+// was send.
+//
+class _PrimvarDataSourcesCache
+{
+public:
+    _PrimvarDataSourcesCache(HdSceneIndexBaseRefPtr const &sceneIndex,
+                             const SdfPath &primPath,
+                             const TfToken &primvarName)
+      : primvarsSchema(nullptr)
+      , primvarSchema(nullptr)
+      , hasPrimvarName(false)
+      , _sceneIndex(sceneIndex)
+      , _primPath(primPath)
+      , _primvarName(primvarName)
+    {
+        // Initialize data sources if scene index was already populated.
+        _ProcessEntry(_primPath, HdDataSourceLocatorSet::UniversalSet());
+        
+        _sceneIndex->AddObserver(HdSceneIndexObserverPtr(&_primListener));
+    }
+
+    HdContainerDataSourceHandle primSource;
+    HdPrimvarsSchema primvarsSchema;
+    HdPrimvarSchema primvarSchema;
+    HdSampledDataSourceHandle primvarValueSource;
+    VtArray<float> primvarValue;
+
+    // Did the primvar name appear in the result of
+    // HdContainerDataSource::GetNames() for the primvars?
+    bool hasPrimvarName;
+
+    // Pull data in response to invalidation notices.
+    void
+    Pull() {
+        for (const HdSceneIndexObserver::AddedPrimEntry &entry :
+                 _primListener.GetAdded()) {
+            _ProcessEntry(
+                entry.primPath, HdDataSourceLocatorSet::UniversalSet());
+        }
+        for (const HdSceneIndexObserver::DirtiedPrimEntry &entry :
+                 _primListener.GetDirtied()) {
+            _ProcessEntry(
+                entry.primPath, entry.dirtyLocators);
+        }
+
+        _primListener.ResetEntries();
+    }
+
+private:
+    void
+    _ProcessEntry(const SdfPath &primPath,
+                  const HdDataSourceLocatorSet &dirtyLocators)
+    {
+        if (primPath != _primPath) {
+            return;
+        }
+        if (dirtyLocators.Contains(
+                HdDataSourceLocator::EmptyLocator())) {
+            primSource =
+                _sceneIndex->GetPrim(_primPath).dataSource;
+        }
+        if (dirtyLocators.Contains(
+                HdPrimvarsSchema::GetDefaultLocator())) {
+            // Note that Contains is true if dirtyLocators contains
+            // a prefix. So if we refresh the primSource above, we
+            // would automatically refresh primvarsSchema as well.
+            primvarsSchema =
+                HdPrimvarsSchema::GetFromParent(primSource);
+        }
+        if (dirtyLocators.Contains(
+                HdPrimvarsSchema::GetDefaultLocator()
+                    .Append(_primvarName))) {
+
+            primvarSchema =
+                primvarsSchema.GetPrimvar(_primvarName);
+
+            // If a name appears or disappears in
+            // HdContainerDataSource::GetNames() is it sufficient to
+            // send the more specific data source locator for the name
+            // within the data source or should we send out the locator for
+            // the container data source itself?
+            //
+            // We are conservative here and call GetNames() when we
+            // get the specific data source locator (and thus also the more
+            // generic data source locator).
+            //
+            hasPrimvarName = _Contains(
+                primvarsSchema.GetPrimvarNames(), _primvarName);
+        }
+        if (dirtyLocators.Contains(
+                HdPrimvarsSchema::GetDefaultLocator()
+                    .Append(_primvarName)
+                    .Append(HdPrimvarSchemaTokens->primvarValue))) {
+            primvarValueSource =
+                primvarSchema.GetPrimvarValue();
+
+            if (HdFloatArrayDataSourceHandle const typedSource =
+                    HdFloatArrayDataSource::Cast(primvarValueSource)) {
+                primvarValue = typedSource->GetTypedValue(0.0f);
+            } else {
+                primvarValue = {};
+            }
+        }
+    }
+
+    HdSceneIndexBaseRefPtr const _sceneIndex;
+    PrimListener _primListener;
+    const SdfPath _primPath;
+    const TfToken _primvarName;
+};
+
+void CustomPrimvarChangeTest()
+{
+    SdfLayerRefPtr rootLayer = SdfLayer::CreateAnonymous(".usda");
+    UsdStageRefPtr stage = UsdStage::Open(rootLayer);
+    if (!TF_VERIFY(stage)) {
+        return;
+    }
+
+    UsdImagingStageSceneIndexRefPtr inputSceneIndex =
+        UsdImagingStageSceneIndex::New();
+    if (!TF_VERIFY(inputSceneIndex)) {
+        return;
+    }
+
+    inputSceneIndex->SetStage(stage);
+
+    const SdfPath primPath("/points");
+    _PrimvarDataSourcesCache dataSourcesCache(
+        inputSceneIndex, primPath, TfToken("widths"));
+
+    inputSceneIndex->ApplyPendingUpdates();
+    dataSourcesCache.Pull();
+
+    if (!TF_VERIFY(!dataSourcesCache.primSource)) {
+        // Expect no prim since prim has not yet been created.
+        return;
+    }
+    
+    UsdGeomPoints points = UsdGeomPoints::Define(stage, SdfPath("/points"));
+    if (!TF_VERIFY(points)) {
+        return;
+    }
+
+    inputSceneIndex->ApplyPendingUpdates();
+    dataSourcesCache.Pull();
+
+    if (!TF_VERIFY(dataSourcesCache.primSource)) {
+        // Prim has been created.
+        return;
+    }
+
+    // Note that we do not check dataSourcesCache.hasPrimvarName
+    // or dataSourcesCache.primvarSchema.
+    // As long as the primvar value data source is null, the implementation
+    // is correct - whether the primvars container data source lists the
+    // primvar (and whether on top, gives a data source for the primvar
+    // schema).
+
+    if (!TF_VERIFY(!dataSourcesCache.primvarValueSource)) {
+        // Nothing authored, so we do not expect a data source for the value.
+        return;
+    }
+
+    UsdAttribute widthsAttr = points.CreateWidthsAttr();
+    if (!TF_VERIFY(widthsAttr)) {
+        return;
+    }
+
+    inputSceneIndex->ApplyPendingUpdates();
+    dataSourcesCache.Pull();
+        
+    if (!TF_VERIFY(!dataSourcesCache.primvarValueSource)) {
+        // Attribute has been created in authoring layer but has no opinion,
+        // so we still do not expect a data source for the value.
+        return;
+    }
+
+    for (int i = 0; i < 2; ++i) {
+        const VtArray<float> widths{
+            1.0f + 3.0f * i, 2.0f + 3.0f * i, 3.0f + 3.0f * i};
+
+        // Author opinion.
+        if (!TF_VERIFY(widthsAttr.Set(widths))) {
+            return;
+        }
+
+        inputSceneIndex->ApplyPendingUpdates();
+        dataSourcesCache.Pull();
+
+        if (!TF_VERIFY(dataSourcesCache.hasPrimvarName)) {
+            // We expect that the primvar is listed by the
+            // primvars container data source, now that we
+            // have an authored value.
+            return;
+        }
+
+        if (!TF_VERIFY(dataSourcesCache.primvarValueSource)) {
+            // Same for data source for primvar value.
+            return;
+        }
+
+        if (!TF_VERIFY(dataSourcesCache.primvarValue == widths)) {
+            // And the data source better provided the authored
+            // value.
+            return;
+        }
+    }
+
+    // Clear attribute.
+    widthsAttr.Clear();
+
+    inputSceneIndex->ApplyPendingUpdates();
+    dataSourcesCache.Pull();
+
+    if (!TF_VERIFY(!dataSourcesCache.primvarValueSource)) {
+        // Authored opinion is cleared, so we should not a
+        // data source for the prim var value.
+        return;
+    }
+}
+
 int main()
 {
     TfErrorMark mark;
@@ -509,6 +733,8 @@ int main()
     // Ensure that adding a non-empty layer to the layer stack will trigger the
     // appropriate resyncs.
     AddNonEmptyLayerTest();
+
+    CustomPrimvarChangeTest();
 
     if (TF_VERIFY(mark.IsClean())) {
         std::cout << "OK" << std::endl;

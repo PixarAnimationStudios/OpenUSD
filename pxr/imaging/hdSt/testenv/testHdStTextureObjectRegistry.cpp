@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 
@@ -134,7 +117,7 @@ My_TestGLDrawing::OffscreenTest()
         HdStTextureObjectSharedPtr const texture1 =
             _registry->AllocateTextureObject(
                 HdStTextureIdentifier(TfToken("texture1.png")),
-                HdTextureType::Uv);
+                HdStTextureType::Uv);
 
         // Check that texture gets committed
         _CheckEqual(
@@ -188,7 +171,7 @@ My_TestGLDrawing::OffscreenTest()
         _CheckEqual(
             _registry->AllocateTextureObject(
                 HdStTextureIdentifier(TfToken("texture1.png")),
-                HdTextureType::Uv),
+                HdStTextureType::Uv),
             texture1,
             "Texture was not de-duplicated");
 
@@ -213,7 +196,7 @@ My_TestGLDrawing::OffscreenTest()
         HdStTextureObjectSharedPtr const texture1 =
             _registry->AllocateTextureObject(
                 HdStTextureIdentifier(TfToken("texture1.png")),
-                HdTextureType::Uv);
+                HdStTextureType::Uv);
 
         // Texture 1 has to be committed again since it was garbage
         // collected. Target memory should be reset.
@@ -237,7 +220,7 @@ My_TestGLDrawing::OffscreenTest()
         HdStTextureObjectSharedPtr const texture2 =
             _registry->AllocateTextureObject(
                 HdStTextureIdentifier(TfToken("texture2.png")),
-                HdTextureType::Uv);
+                HdStTextureType::Uv);
         
         _CheckEqual(
             _registry->Commit(), { texture2 },
@@ -265,7 +248,7 @@ My_TestGLDrawing::OffscreenTest()
         HdStTextureObjectSharedPtr const texture =
             _registry->AllocateTextureObject(
                 HdStTextureIdentifier(TfToken("grayscaleTexture.png")),
-                HdTextureType::Uv);
+                HdStTextureType::Uv);
         
         _CheckEqual(
             _registry->Commit(), { texture },

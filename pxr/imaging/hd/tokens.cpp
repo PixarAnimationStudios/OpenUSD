@@ -1,27 +1,14 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hd/tokens.h"
+
+#include "pxr/base/tf/token.h"
+
+#include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -49,6 +36,9 @@ TF_DEFINE_PUBLIC_TOKENS(HdModelDrawModeTokens, HD_MODEL_DRAWMODE_TOKENS);
 
 TF_DEFINE_PUBLIC_TOKENS(HdOptionTokens, HD_OPTION_TOKENS);
 
+TF_DEFINE_PUBLIC_TOKENS(HdLightTypeTokens, HD_LIGHT_TYPE_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HdLightFilterTypeTokens, HD_LIGHT_FILTER_TYPE_TOKENS);
+
 TF_DEFINE_PUBLIC_TOKENS(HdRprimTypeTokens, HD_RPRIMTYPE_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(HdSprimTypeTokens, HD_SPRIMTYPE_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(HdBprimTypeTokens, HD_BPRIMTYPE_TOKENS);
@@ -72,6 +62,9 @@ TF_DEFINE_PUBLIC_TOKENS(HdResourceTypeTokens, HD_RESOURCE_TYPE_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(HdSceneIndexEmulationTokens, 
     HD_SCENE_INDEX_EMULATION_TOKENS);
 
+TF_DEFINE_PUBLIC_TOKENS(HdCollectionEmulationTokens, 
+    HD_COLLECTION_EMULATION_TOKENS);
+
 bool HdPrimTypeIsGprim(TfToken const& primType)
 {
     return (primType == HdPrimTypeTokens->mesh ||
@@ -82,30 +75,23 @@ bool HdPrimTypeIsGprim(TfToken const& primType)
 
 const TfTokenVector &HdLightPrimTypeTokens()
 {
-    static const TfTokenVector vec = {
-        HdPrimTypeTokens->simpleLight,
-        HdPrimTypeTokens->cylinderLight,
-        HdPrimTypeTokens->diskLight,
-        HdPrimTypeTokens->distantLight,
-        HdPrimTypeTokens->domeLight,
-        HdPrimTypeTokens->light,
-        HdPrimTypeTokens->pluginLight,
-        HdPrimTypeTokens->rectLight,
-        HdPrimTypeTokens->sphereLight,
-        HdPrimTypeTokens->meshLight
-    };
-    return vec;
+    return HdLightTypeTokens->allTokens;
 }
-
 
 bool HdPrimTypeIsLight(TfToken const& primType)
 {
-    for (const TfToken &lightPrimType : HdLightPrimTypeTokens()) {
-        if (primType == lightPrimType) {
-            return true;
-        }
-    }
-    return false;
+    const auto &lightTypes = HdLightPrimTypeTokens();
+    return std::find(lightTypes.begin(), lightTypes.end(), primType) !=
+        lightTypes.end();
+}
+
+bool HdPrimTypeSupportsGeomSubsets(const TfToken& primType) {
+    static const TfTokenVector types = {
+        HdPrimTypeTokens->mesh,
+        HdPrimTypeTokens->basisCurves,
+        // XXX: tetMesh not yet supported
+    };
+    return std::find(types.begin(), types.end(), primType) != types.end();
 }
 
 TfToken HdAovTokensMakePrimvar(TfToken const& primvar)

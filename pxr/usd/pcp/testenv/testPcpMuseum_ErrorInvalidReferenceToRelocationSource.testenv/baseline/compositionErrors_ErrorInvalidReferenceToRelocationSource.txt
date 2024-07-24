@@ -1,0 +1,39 @@
+------------------------------------------------------------------------
+Errors while composing </Bad_ReloOfPreRelo>
+
+@ErrorInvalidReferenceToRelocationSource/root.sdf@</Bad_ReloOfPreRelo>
+CANNOT be relocated from:
+@ErrorInvalidReferenceToRelocationSource/root.sdf@</ReferencedChar/PreRelo>
+which is a prohibited child of its parent because it would require allowing opinions from the source of a relocation at @ErrorInvalidReferenceToRelocationSource/char.sdf@</Char/PreRelo>.
+
+------------------------------------------------------------------------
+Errors while composing </Good_ReloOfRelocated>
+
+The layer @ErrorInvalidReferenceToRelocationSource/char.sdf@ has an invalid opinion at the relocation source path </Char/PreRelo>, which will be ignored.
+
+------------------------------------------------------------------------
+Errors while composing </Good_RefToRelocated>
+
+The layer @ErrorInvalidReferenceToRelocationSource/char.sdf@ has an invalid opinion at the relocation source path </Char/PreRelo>, which will be ignored.
+
+------------------------------------------------------------------------
+Errors while composing </Good_RefToChildOfRelocated>
+
+The layer @ErrorInvalidReferenceToRelocationSource/char.sdf@ has an invalid opinion at the relocation source path </Char/PreRelo>, which will be ignored.
+
+------------------------------------------------------------------------
+Errors while composing </Bad_RefToPreRelo>
+
+@ErrorInvalidReferenceToRelocationSource/root.sdf@</Bad_RefToPreRelo>
+CANNOT reference:
+@ErrorInvalidReferenceToRelocationSource/char.sdf@</Char/PreRelo>
+which is a prohibited child of its parent because it would require allowing opinions from the source of a relocation at @ErrorInvalidReferenceToRelocationSource/char.sdf@</Char/PreRelo>.
+
+------------------------------------------------------------------------
+Errors while composing </Bad_RefToChildOfPreRelo>
+
+@ErrorInvalidReferenceToRelocationSource/root.sdf@</Bad_RefToChildOfPreRelo>
+CANNOT reference:
+@ErrorInvalidReferenceToRelocationSource/char.sdf@</Char/PreRelo/ModelChild>
+which is a prohibited child of its parent because it would require allowing opinions from the source of a relocation at @ErrorInvalidReferenceToRelocationSource/char.sdf@</Char/PreRelo>.
+

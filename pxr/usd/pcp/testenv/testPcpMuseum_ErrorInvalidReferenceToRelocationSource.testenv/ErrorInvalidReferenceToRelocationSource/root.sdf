@@ -1,0 +1,51 @@
+#sdf 1.4.32
+(
+    """
+    These cases exercise invalid reference and relocation arcs to prim
+    paths that are prohibited for being the source of a relocation.
+    """
+
+    relocates = {
+        </ReferencedChar/Relocated>: </Good_ReloOfRelocated>, 
+        </ReferencedChar/PreRelo>: </Bad_ReloOfPreRelo>, 
+    }
+)
+
+def "Good_RefToRelocated" (
+	doc = """Reference to post-relocation prim is allowed"""
+    references = @char.sdf@</Char/Relocated>
+)
+{
+}
+
+def "Good_RefToChildOfRelocated" (
+	doc = """Reference to a child of post-relocation prim is allowed"""
+    references = @char.sdf@</Char/Relocated/ModelChild>
+)
+{
+}
+
+def "Bad_RefToPreRelo" (
+	doc = """Reference to pre-relocation prim is invalid"""
+    references = @char.sdf@</Char/PreRelo>
+)
+{
+}
+
+def "Bad_RefToChildOfPreRelo" (
+	doc = """Reference to a child of pre-relocation prim is invalid"""
+    references = @char.sdf@</Char/PreRelo/ModelChild>
+)
+{
+}
+
+def "ReferencedChar" (
+    doc = """Reference to /Char for testing local relocations of pre 
+        and post relocation children. The relocates in this layer 
+        try to relocate the reference's relocated child, 'Relocated',
+        and its pre-relocation child 'PreRelo'. The former succeeds
+        while the latter emits a composition error."""
+    references = @char.sdf@</Char>
+)
+{
+}

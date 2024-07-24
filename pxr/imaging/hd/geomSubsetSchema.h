@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -50,6 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // --(END CUSTOM CODE: Declares)--
 
 #define HD_GEOM_SUBSET_SCHEMA_TOKENS \
+    (geomSubset) \
     (type) \
     (indices) \
     (typeFaceSet) \
@@ -71,6 +55,15 @@ public:
     HdGeomSubsetSchema(HdContainerDataSourceHandle container)
       : HdSchema(container) {}
 
+    /// Retrieves a container data source with the schema's default name token
+    /// "geomSubset" from the parent container and constructs a
+    /// HdGeomSubsetSchema instance.
+    /// Because the requested container data source may not exist, the result
+    /// should be checked with IsDefined() or a bool comparison before use.
+    HD_API
+    static HdGeomSubsetSchema GetFromParent(
+        const HdContainerDataSourceHandle &fromParentContainer);
+
     /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
@@ -84,6 +77,21 @@ public:
 
     HD_API
     HdIntArrayDataSourceHandle GetIndices() const; 
+
+    /// @}
+
+    /// \name Schema location
+    /// @{
+
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    HD_API
+    static const TfToken &GetSchemaToken();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the container representing this schema is found by default.
+    HD_API
+    static const HdDataSourceLocator &GetDefaultLocator();
 
     /// @} 
 

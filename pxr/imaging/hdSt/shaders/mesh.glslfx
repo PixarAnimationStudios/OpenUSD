@@ -3,25 +3,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 --- This is what an import might look like.
@@ -120,9 +103,9 @@ void main(void)
 
     // Get the indata Neye if provided.
     bool isFlipped = IsFlipped();
-    vec3 Neye0 = isFlipped ? -GetNormal(vec3(0),0) : GetNormal(vec3(0),0);
-    vec3 Neye1 = isFlipped ? -GetNormal(vec3(0),1) : GetNormal(vec3(0),1);
-    vec3 Neye2 = isFlipped ? -GetNormal(vec3(0),2) : GetNormal(vec3(0),2);
+    vec3 Neye0 = GetNormal(vec3(0),0);
+    vec3 Neye1 = GetNormal(vec3(0),1);
+    vec3 Neye2 = GetNormal(vec3(0),2);
 
     Neye0 = GetTriGeometryNormal(Neye0, point0, point1, point2, isFlipped);
     Neye1 = GetTriGeometryNormal(Neye1, point0, point1, point2, isFlipped);
@@ -194,10 +177,10 @@ void main(void)
 
     // Get the indata Neye if provided.
     bool isFlipped = IsFlipped();
-    vec3 Neye0 = isFlipped ? -GetNormal(vec3(0),0) : GetNormal(vec3(0),0);
-    vec3 Neye1 = isFlipped ? -GetNormal(vec3(0),1) : GetNormal(vec3(0),1);
-    vec3 Neye2 = isFlipped ? -GetNormal(vec3(0),2) : GetNormal(vec3(0),2);
-    vec3 Neye3 = isFlipped ? -GetNormal(vec3(0),3) : GetNormal(vec3(0),3);
+    vec3 Neye0 = GetNormal(vec3(0),0);
+    vec3 Neye1 = GetNormal(vec3(0),1);
+    vec3 Neye2 = GetNormal(vec3(0),2);
+    vec3 Neye3 = GetNormal(vec3(0),3);
 
     Neye0 = GetQuadGeometryNormal(
                 Neye0, point0, point1, point2, point3, isFlipped);
@@ -276,10 +259,10 @@ void main(void)
 
     //Get the indata Neye if provided.
     bool isFlipped = IsFlipped();
-    vec3 Neye0 = isFlipped ? -GetNormal(vec3(0),0) : GetNormal(vec3(0),0);
-    vec3 Neye1 = isFlipped ? -GetNormal(vec3(0),1) : GetNormal(vec3(0),1);
-    vec3 Neye2 = isFlipped ? -GetNormal(vec3(0),2) : GetNormal(vec3(0),2);
-    vec3 Neye3 = isFlipped ? -GetNormal(vec3(0),4) : GetNormal(vec3(0),4);
+    vec3 Neye0 = GetNormal(vec3(0),0);
+    vec3 Neye1 = GetNormal(vec3(0),1);
+    vec3 Neye2 = GetNormal(vec3(0),2);
+    vec3 Neye3 = GetNormal(vec3(0),4);
 
     Neye0 = GetQuadGeometryNormal(Neye0,
                 point0, point1, point2, point3, isFlipped);
@@ -306,6 +289,23 @@ void main(void)
     ApplyClipPlanes(outData.Peye);
 
     ProcessPrimvarsOut(basis, 0, 1, 2, 4);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.TessControl.PatchCommon
+
+void
+ClampTessLevels(inout vec4 tessOuterLo, inout vec4 tessOuterHi)
+{
+    // Clamp outer tess levels to a minimum of 2 so that we always
+    // sample along each edge and in the middle of transition patches.
+    const vec4 minOuterTessLevel = vec4(2.0);
+
+    // Values in the tessOuterHi segments which are zero should remain zero.
+    const bvec4 maskOuterHi = notEqual(tessOuterHi, vec4(0.0));
+
+    tessOuterLo = max(minOuterTessLevel, tessOuterLo);
+    tessOuterHi = max(minOuterTessLevel * vec4(maskOuterHi), tessOuterHi);
 }
 
 --- --------------------------------------------------------------------------
@@ -352,8 +352,11 @@ void main(void)
             cpBezier[i] = outpt[i].v;
         }
         OsdEvalPatchBezierTessLevels(cpBezier, patchParam,
-                                     tessLevelOuter, tessLevelInner,
                                      tessOuterLo, tessOuterHi);
+        ClampTessLevels(tessOuterLo, tessOuterHi);
+
+        OsdComputeTessLevels(tessOuterLo, tessOuterHi,
+                             tessLevelOuter, tessLevelInner);
 
         gl_TessLevelOuter[0] = tessLevelOuter[0];
         gl_TessLevelOuter[1] = tessLevelOuter[1];
@@ -464,8 +467,11 @@ void main(void)
             cpBezier[i] = outpt[i].v.P;
         }
         OsdEvalPatchBezierTriangleTessLevels(cpBezier, patchParam,
-                                            tessLevelOuter, tessLevelInner,
                                             tessOuterLo, tessOuterHi);
+        ClampTessLevels(tessOuterLo, tessOuterHi);
+
+        OsdComputeTessLevelsTriangle(tessOuterLo, tessOuterHi,
+                                     tessLevelOuter, tessLevelInner);
 
         gl_TessLevelOuter[0] = tessLevelOuter[0];
         gl_TessLevelOuter[1] = tessLevelOuter[1];
@@ -527,6 +533,23 @@ void main(void)
         (1.0f-UV.x-UV.y), UV.x, UV.y, 0.0f);
 
     ProcessPrimvarsOut(basis, 4, 5, 8, 0, UV);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.PostTessControl.PatchCommon
+
+void
+ClampTessLevels(thread vec4 &tessOuterLo, thread vec4 &tessOuterHi)
+{
+    // Clamp outer tess levels to a minimum of 2 so that we always
+    // sample along each edge and in the middle of transition patches.
+    const vec4 minOuterTessLevel = vec4(2.0);
+
+    // Values in the tessOuterHi segments which are zero should remain zero.
+    const bvec4 maskOuterHi = notEqual(tessOuterHi, vec4(0.0));
+
+    tessOuterLo = max(minOuterTessLevel, tessOuterLo);
+    tessOuterHi = max(minOuterTessLevel * vec4(maskOuterHi), tessOuterHi);
 }
 
 --- --------------------------------------------------------------------------
@@ -606,6 +629,7 @@ void main(void)
     Osd_GetTessLevelsFromPatchBoundaries4(
         GetTessLevel(), GetProjectionMatrix(), transform,
         corners, midPoints, patchParam, tessOuterLo, tessOuterHi);
+    ClampTessLevels(tessOuterLo, tessOuterHi);
 
     OsdComputeTessLevels(tessOuterLo, tessOuterHi,
                          tessLevelOuter, tessLevelInner);
@@ -790,6 +814,7 @@ void main(void)
     Osd_GetTessLevelsFromPatchBoundaries3(
         GetTessLevel(), GetProjectionMatrix(), transform,
         corners, midPoints, patchParam, tessOuterLo, tessOuterHi);
+    ClampTessLevels(tessOuterLo, tessOuterHi);
 
     OsdComputeTessLevelsTriangle(tessOuterLo, tessOuterHi,
                          tessLevelOuter, tessLevelInner);

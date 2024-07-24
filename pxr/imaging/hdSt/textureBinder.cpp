@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdSt/textureBinder.h"
 #include "pxr/imaging/hdSt/ptexTextureObject.h"
@@ -53,7 +36,7 @@ HdSt_TextureBinder::GetBufferSpecs(
 
     for (const NamedTextureHandle & texture : textures) {
         switch (texture.type) {
-        case HdTextureType::Uv:
+        case HdStTextureType::Uv:
             if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
@@ -65,7 +48,7 @@ HdSt_TextureBinder::GetBufferSpecs(
                     HdSt_ResourceBindingSuffixTokens->valid),
                 HdTupleType{HdTypeBool, 1});
             break;
-        case HdTextureType::Field:
+        case HdStTextureType::Field:
             if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
@@ -83,7 +66,7 @@ HdSt_TextureBinder::GetBufferSpecs(
                 HdTupleType{ (doublesSupported ?
                     HdTypeDoubleMat4 : HdTypeFloatMat4), 1});
             break;
-        case HdTextureType::Ptex:
+        case HdStTextureType::Ptex:
             if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
@@ -100,7 +83,7 @@ HdSt_TextureBinder::GetBufferSpecs(
                     HdSt_ResourceBindingSuffixTokens->valid),
                 HdTupleType{HdTypeBool, 1});
             break;
-        case HdTextureType::Udim:
+        case HdStTextureType::Udim:
             if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
@@ -330,6 +313,7 @@ public:
             name,
             sampler.GetTexelsSampler(),
             texture.GetTexelTexture(),
+            sampler.GetLayoutSampler(),
             texture.GetLayoutTexture(),
             bind);
     }
@@ -345,6 +329,7 @@ public:
             name,
             sampler.GetTexelsSampler(),
             texture.GetTexelTexture(),
+            sampler.GetLayoutSampler(),
             texture.GetLayoutTexture(),
             bind);
     }
@@ -413,7 +398,7 @@ public:
     }
 };
 
-template<HdTextureType textureType, class Functor, typename ...Args>
+template<HdStTextureType textureType, class Functor, typename ...Args>
 void _CastAndCompute(
     HdStShaderCode::NamedTextureHandle const &namedTextureHandle,
     Args&& ...args)
@@ -454,20 +439,20 @@ void _Dispatch(
     Args&& ...args)
 {
     switch (namedTextureHandle.type) {
-    case HdTextureType::Uv:
-        _CastAndCompute<HdTextureType::Uv, Functor>(
+    case HdStTextureType::Uv:
+        _CastAndCompute<HdStTextureType::Uv, Functor>(
             namedTextureHandle, std::forward<Args>(args)...);
         break;
-    case HdTextureType::Field:
-        _CastAndCompute<HdTextureType::Field, Functor>(
+    case HdStTextureType::Field:
+        _CastAndCompute<HdStTextureType::Field, Functor>(
             namedTextureHandle, std::forward<Args>(args)...);
         break;
-    case HdTextureType::Ptex:
-        _CastAndCompute<HdTextureType::Ptex, Functor>(
+    case HdStTextureType::Ptex:
+        _CastAndCompute<HdStTextureType::Ptex, Functor>(
             namedTextureHandle, std::forward<Args>(args)...);
         break;
-    case HdTextureType::Udim:
-        _CastAndCompute<HdTextureType::Udim, Functor>(
+    case HdStTextureType::Udim:
+        _CastAndCompute<HdStTextureType::Udim, Functor>(
             namedTextureHandle, std::forward<Args>(args)...);
         break;
     }

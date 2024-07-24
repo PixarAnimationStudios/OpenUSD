@@ -1,25 +1,8 @@
 #
 # Copyright 2016 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 
 # pylint: disable=round-builtin
@@ -394,6 +377,7 @@ class AppController(QtCore.QObject):
 
             self._allowViewUpdates = True
             self._allowAsync = parserData.allowAsync
+            self._bboxstandin = parserData.bboxstandin
 
             # When viewer mode is active, the panel sizes are cached so they can
             # be restored later.
@@ -1753,23 +1737,17 @@ class AppController(QtCore.QObject):
             action.setCheckable(True)
             return action
 
-        def setColorSpace(action):
+        def setOcioColorSpace(action):
             self._dataModel.viewSettings.setOcioSettings(\
                 colorSpace = str(action.text()))
             self._dataModel.viewSettings.colorCorrectionMode =\
                 ColorCorrectionModes.OPENCOLORIO
 
-        def setOcioConfig(action):
+        def setOcioDisplayView(action):
             display = str(action.parent().title())
             view = str(action.text())
-            if hasattr(config, 'getDisplayViewColorSpaceName'):
-                # OCIO version 2
-                colorSpace = config.getDisplayViewColorSpaceName(display, view)
-            else:
-                # OCIO version 1
-                colorSpace = config.getDisplayColorSpaceName(display, view)
-            self._dataModel.viewSettings.setOcioSettings(colorSpace,\
-                display, view)
+            self._dataModel.viewSettings.setOcioSettings(\
+                display=display, view=view)
             self._dataModel.viewSettings.colorCorrectionMode =\
                 ColorCorrectionModes.OPENCOLORIO
 
@@ -1794,7 +1772,7 @@ class AppController(QtCore.QObject):
                 for v in config.getViews(d):
                     a = addAction(displayMenu, v)
                     group.addAction(a)
-                group.triggered.connect(setOcioConfig)
+                group.triggered.connect(setOcioDisplayView)
                 ocioMenu.addMenu(displayMenu)
                 self._ui.ocioDisplayMenus.append(displayMenu)
 
@@ -1809,7 +1787,7 @@ class AppController(QtCore.QObject):
                 colorSpace = cs.getName()
                 a = addAction(ocioMenu, colorSpace)
                 group.addAction(a)
-            group.triggered.connect(setColorSpace)
+            group.triggered.connect(setOcioColorSpace)
             self._ui.ocioColorSpacesActionGroup = group
 
         # TODO Populate looks menu (config.getLooks())
@@ -1853,6 +1831,7 @@ class AppController(QtCore.QObject):
                     makeTimer=self._makeTimer)
 
                 self._stageView.allowAsync = self._allowAsync
+                self._stageView.bboxstandin = self._bboxstandin
 
                 self._stageView.fpsHUDInfo = self._fpsHUDInfo
                 self._stageView.fpsHUDKeys = self._fpsHUDKeys

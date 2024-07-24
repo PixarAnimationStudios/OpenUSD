@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -27,6 +10,7 @@
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/node_Iterator.h"
 #include "pxr/usd/pcp/primIndex_StackFrame.h"
+#include "pxr/usd/pcp/strengthOrdering.h"
 #include "pxr/usd/pcp/utils.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/vt/value.h"
@@ -75,6 +59,9 @@ private:
         bool strongestOpinionOnly = true)
         : _iterator(context->_parentNode, context->_previousStackFrame)
         , _strongestOpinionOnly(strongestOpinionOnly)
+        , _parent(context->_parentNode)
+        , _pathInNode(context->_pathInNode)
+        , _arcNum(context->_arcNum)
     {
     }
 
@@ -106,7 +93,16 @@ private:
             }
         }
 
+        const bool isParent = node == _parent;
         TF_FOR_ALL(childNode, Pcp_GetChildrenRange(node)) {
+            // If this is the parent, check if each of its children
+            // is weaker than the future node
+            if (isParent) {
+                if (PcpCompareSiblingPayloadNodeStrength(
+                    _parent, _arcNum, *childNode) == -1) {
+                    return true;
+                }
+            }
             // Map the path in this node to the next child node, also applying
             // any variant selections represented by the child node.
             SdfPath pathInChildNode = 
@@ -132,7 +128,8 @@ private:
             }
         }
 
-        return false;
+        // Do not look for opinions from nodes weaker than the parent.
+        return isParent;
     };
 
     // Recursively composes opinions from ancestors of the parent node and 
@@ -145,8 +142,8 @@ private:
         const ComposeFunc &composeFunc)
     {
         return _ComposeOpinionFromAncestors(
-            _iterator.node, _iterator.node.GetPath(),
-            propName, fieldName, composeFunc);
+            _iterator.node, _pathInNode.IsEmpty() ? _iterator.node.GetPath() : 
+            _pathInNode,  propName, fieldName, composeFunc);
     }
 
     template <typename ComposeFunc>
@@ -192,14 +189,21 @@ private:
     PcpPrimIndex_StackFrameIterator _iterator;
     bool _strongestOpinionOnly;
     bool _foundValue {false};
+    PcpNodeRef _parent;
+    SdfPath _pathInNode;
+    int _arcNum;
 };
 
 PcpDynamicFileFormatContext::PcpDynamicFileFormatContext(
     const PcpNodeRef &parentNode, 
+    const SdfPath &pathInNode,
+    int arcNum,
     PcpPrimIndex_StackFrame *previousStackFrame,
     TfToken::Set *composedFieldNames,
     TfToken::Set *composedAttributeNames)
     : _parentNode(parentNode)
+    , _pathInNode(pathInNode)
+    , _arcNum(arcNum)
     , _previousStackFrame(previousStackFrame)
     , _composedFieldNames(composedFieldNames)
     , _composedAttributeNames(composedAttributeNames)
@@ -328,12 +332,15 @@ PcpDynamicFileFormatContext::ComposeAttributeDefaultValue(
 // be used by prim indexing.
 PcpDynamicFileFormatContext
 Pcp_CreateDynamicFileFormatContext(const PcpNodeRef &parentNode, 
+                                   const SdfPath &ancestralPath,
+                                   int arcNum,
                                    PcpPrimIndex_StackFrame *previousFrame,
                                    TfToken::Set *composedFieldNames,
                                    TfToken::Set *composedAttributeNames)
 {
     return PcpDynamicFileFormatContext(
-        parentNode, previousFrame, composedFieldNames, composedAttributeNames);
+        parentNode, ancestralPath, arcNum, previousFrame, composedFieldNames, 
+        composedAttributeNames);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

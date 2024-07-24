@@ -2,25 +2,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 from pxr import Sdf, Pcp, Tf
 import unittest
@@ -982,6 +965,493 @@ class TestPcpChanges(unittest.TestCase):
             self.assertEqual(cp.GetSpecChanges(), [])
             self.assertEqual(cp.GetPrimChanges(),
                              ['/FSToyCarA/Looks/PaintedWood_PaintedYellow'])
+
+    def test_AddMuteRemoveSublayerWithRelocates(self):
+        """Tests that adding/muting/removing sublayers that only define layer 
+           relocates will invalidate affected cached prim indexes."""
+
+        # Start with simple setup. Root layer has one prim that references 
+        # a simple hierarchy in ref layer
+        refLayer = Sdf.Layer.CreateAnonymous()
+        refLayer.ImportFromString(
+            '''#sdf 1.4.32
+                def "Ref" {
+                    def "A" {
+                        def "B" {
+                            def "C" {
+                            }                         
+                        }
+                    }
+                }''')
+
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootLayer.ImportFromString(
+            '''#sdf 1.4.32
+                def "Root" (
+                    references = @''' + refLayer.identifier + '''@</Ref>
+                ) {}''')
+
+        # Create the PcpCache
+        layerStackId = Pcp.LayerStackIdentifier(rootLayer)
+        cache = Pcp.Cache(layerStackId, usd=True)
+
+        from contextlib import contextmanager
+        @contextmanager
+        def _VerifyChanges(primIndexPaths):
+            # Verify that we have a computed prim index for all expected paths
+            # beforehand
+            for path in primIndexPaths:
+                self.assertTrue(cache.FindPrimIndex(path))
+            try:
+                yield
+            finally:
+                for path in primIndexPaths:
+                    self.assertFalse(cache.FindPrimIndex(path))
+
+        # Verify computed prim indexes for initial setup
+
+        # /Root has child 'A'
+        pi, err = cache.ComputePrimIndex('/Root')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['A'], []))
+
+        # /Root/A has child 'B'
+        pi, err = cache.ComputePrimIndex('/Root/A')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['B'], []))
+
+        # /Root/A/B has child 'C'
+        pi, err = cache.ComputePrimIndex('/Root/A/B')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['C'], []))
+
+        # Create a layer whose only contents is a relocate from /Root/A to
+        # /Root/Foo.
+        subLayer1 = Sdf.Layer.CreateAnonymous()
+        subLayer1.ImportFromString(
+            '''#sdf 1.4.32
+                (
+                    relocates = {
+                        </Root/A> : </Root/Foo>
+                    }
+                )''')
+        self.assertFalse(subLayer1.empty)
+
+        # Add this layer as sublayer of root and verify all our previously
+        # cached prim indices have been invalidated.
+        with _VerifyChanges(['/Root', '/Root/A', '/Root/A/B']):
+            with Pcp._TestChangeProcessor(cache) as cp:
+                rootLayer.subLayerPaths = [subLayer1.identifier]
+                self.assertEqual(cp.GetSignificantChanges(), ['/'])
+
+        # Verify computed prim indexes with new relocates
+
+        # /Root has child 'Foo' and prohibits child 'A'
+        pi, err = cache.ComputePrimIndex('/Root')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['Foo'], ['A']))
+
+        # '/Root/Foo' has child 'B'
+        pi, err = cache.ComputePrimIndex('/Root/Foo')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['B'], []))
+
+        # '/Root/Foo/B' has child 'C'
+        pi, err = cache.ComputePrimIndex('/Root/Foo/B')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['C'], []))
+
+        # Create another new layer whose only contents is a relocate from 
+        # /Root/Foo/B to /Root/Foo/Bar.
+        subLayer2 = Sdf.Layer.CreateAnonymous()
+        subLayer2.ImportFromString(
+            '''#sdf 1.4.32
+                (
+                    relocates = {
+                        </Root/Foo/B> : </Root/Foo/Bar>
+                    }
+                )''')
+        self.assertFalse(subLayer2.empty)
+
+        # Add this layer as an additional sublayer of root and verify all our 
+        # previously cached prim indices have been invalidated.
+        with _VerifyChanges(['/Root', '/Root/Foo', '/Root/Foo/B']):
+            with Pcp._TestChangeProcessor(cache) as cp:
+                rootLayer.subLayerPaths = [
+                    subLayer1.identifier, subLayer2.identifier]
+                self.assertEqual(cp.GetSignificantChanges(), ['/'])
+
+        # Verify computed prim indexes with new relocates
+
+        # /Root has child 'Foo' and prohibits child 'A'
+        pi, err = cache.ComputePrimIndex('/Root')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['Foo'], ['A']))
+
+        # '/Root/Foo' has child 'Bar' and prohibits child 'B'
+        pi, err = cache.ComputePrimIndex('/Root/Foo')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['Bar'], ['B']))
+
+        # '/Root/Foo/Bar' has child 'C'
+        pi, err = cache.ComputePrimIndex('/Root/Foo/Bar')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['C'], []))
+
+        # Request muting of sublayer 2 and verify all our 
+        # previously cached prim indices have been invalidated.
+        with _VerifyChanges(['/Root', '/Root/Foo', '/Root/Foo/Bar']):
+            cache.RequestLayerMuting([subLayer2.identifier], [])
+
+        # Computed prim indexes and children will be back to the same as before
+        # we added sublayer 2
+        pi, err = cache.ComputePrimIndex('/Root')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['Foo'], ['A']))
+
+        pi, err = cache.ComputePrimIndex('/Root/Foo')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['B'], []))
+
+        pi, err = cache.ComputePrimIndex('/Root/Foo/B')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['C'], []))
+
+        # Request unmuting of sublayer 2 and verify all our 
+        # previously cached prim indices have been invalidated.
+        with _VerifyChanges(['/Root', '/Root/Foo', '/Root/Foo/B']):
+            cache.RequestLayerMuting([],[subLayer2.identifier])
+
+        # Computed prim indexes and children will be restored to the same as 
+        # before we muted sublayer 2
+        pi, err = cache.ComputePrimIndex('/Root')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['Foo'], ['A']))
+
+        pi, err = cache.ComputePrimIndex('/Root/Foo')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['Bar'], ['B']))
+
+        pi, err = cache.ComputePrimIndex('/Root/Foo/Bar')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['C'], []))
+
+        # Delete both sublayers from the root prim
+        with _VerifyChanges(['/Root', '/Root/Foo', '/Root/Foo/Bar']):
+            with Pcp._TestChangeProcessor(cache) as cp:
+                rootLayer.subLayerPaths = []
+                self.assertEqual(cp.GetSignificantChanges(), ['/'])
+
+        # Verify computed prim indexes are back to the initial setup
+        pi, err = cache.ComputePrimIndex('/Root')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['A'], []))
+
+        pi, err = cache.ComputePrimIndex('/Root/A')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['B'], []))
+
+        pi, err = cache.ComputePrimIndex('/Root/A/B')
+        self.assertFalse(len(err))
+        self.assertEqual(pi.ComputePrimChildNames(), (['C'], []))
+
+    def test_RelocatesMapFunctionChanges(self):
+        """Tests that adding/removing relocates correctly updates map functions
+        in reference nodes that are needed for target path mapping. Also tests
+        the behavior related to what prim indexes get invalidate when these
+        relocates are edited."""
+
+        # Test layer setup: /Root prim in root layer references /Ref prim in
+        # ref layer which references /Model prim in ref layer 2. /Model has 
+        # some descendants we can relocate.
+        # Also /OtherRoot prim in root layer references /OtherRef in ref
+        # ref layer which references the same /Model in ref layer 2. Nothing
+        # in /OtherRoot will be relocated but is present to demonstrate
+        # the specific cache invalidation effects when relocates are added
+        # for the first time.
+        modelLayer = Sdf.Layer.CreateAnonymous()
+        modelLayer.ImportFromString('''#sdf 1.4.32
+            def "Model" {
+                def "PreRelo" {
+                    def "PreReloChild" {
+                    }
+                }
+            }''')
+
+        refLayer = Sdf.Layer.CreateAnonymous()
+        refLayer.ImportFromString('''#sdf 1.4.32
+            def "Ref" (
+                references = @''' + modelLayer.identifier + '''@</Model>
+            ) {}
+            
+            def "OtherRef" (
+                references = @''' + modelLayer.identifier + '''@</Model>
+            ) {}
+            ''')
+
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootLayer.ImportFromString('''#sdf 1.4.32
+            def "Root" (
+                references = @''' + refLayer.identifier + '''@</Ref>
+            ) {}
+            
+            def "OtherRoot" (
+                references = @''' + refLayer.identifier + '''@</OtherRef>
+            ) {}
+            ''')
+
+        # Create the cache for the root layer.
+        layerStackId = Pcp.LayerStackIdentifier(rootLayer)
+        cache = Pcp.Cache(layerStackId, usd=True)
+
+        # Helper function that finds cached prim indexes or computes a new prim
+        # index for every prim in the namespace hierarchy. Then it verifies that
+        # found and computed prim index paths match the paths we expected to be
+        # found and computed. The end result is every prim in the namespace 
+        # hierarchy will have a cached prim index when this is complete.
+        def _FindOrComputeAllPrimIndexes(
+                expectedFoundPaths, expectedComputedPaths):
+            foundPaths = []
+            computedPaths = []
+
+            def _FindOrComputeRecursive(path):
+                pi = cache.FindPrimIndex(path)
+                if pi:
+                    foundPaths.append(path)
+                else:
+                    pi, err = cache.ComputePrimIndex(path)
+                    self.assertFalse(err)
+                    computedPaths.append(path)
+                # Whether found or computed the prim index will be cache for this
+                # path.
+                self.assertTrue(cache.FindPrimIndex(path))
+
+                # Compute children of this path and recurse
+                childNames, prohibitedChildNames = pi.ComputePrimChildNames()
+                for child in childNames:
+                    childPath = path.AppendChild(child)
+                    _FindOrComputeRecursive(childPath)
+
+            _FindOrComputeRecursive(Sdf.Path.absoluteRootPath)
+
+            self.assertEqual(foundPaths, expectedFoundPaths)
+            self.assertEqual(computedPaths, expectedComputedPaths)
+
+        # Helper for verifying the map to parent functions on the two reference
+        # nodes in computed prim index for /Root evaluate to the expected 
+        # mappings. The prim index graph for /Root in this test should always be:
+        # 
+        # @rootLayer@</Root> --ref--> @refLayer@</Ref> --ref--> @modelLayer@</Model>
+        #      
+        def _VerifyRootPrimIndexRefNodeMapToParentFunctions(refNode1Map, refNode2Map):
+            pi = cache.FindPrimIndex('/Root')
+            self.assertTrue(pi)
+            refNode1 = pi.rootNode.children[0]
+            refNode2 = refNode1.children[0]
+            self.assertEqual(refNode1.mapToParent.Evaluate(),
+                             Pcp.MapFunction(refNode1Map))
+            self.assertEqual(refNode2.mapToParent.Evaluate(),
+                             Pcp.MapFunction(refNode2Map))
+
+        # Helper for setting a layer's relocates metadata to a new value with
+        # change processing and verifying the expected paths are logged as 
+        # significant changes, removing their prim indexes from the cache
+        def _SetRelocatesAndVerify(layer, relocates, expectedSignificantChanges):
+            with Pcp._TestChangeProcessor(cache) as cp:
+                if relocates is None:
+                    layer.ClearRelocates()
+                else:
+                    layer.relocates = relocates
+                # Relocates changes will only produce significant changes and
+                # no prim or spec changes.
+                self.assertEqual(cp.GetSignificantChanges(),
+                                 expectedSignificantChanges)
+                self.assertFalse(cp.GetPrimChanges())
+                self.assertFalse(cp.GetSpecChanges())
+
+            for path in expectedSignificantChanges:
+                self.assertFalse(cache.FindPrimIndex(path))
+
+        # To start, compute all prim indexes with no relocates
+        _FindOrComputeAllPrimIndexes(
+            expectedFoundPaths = [],
+            expectedComputedPaths = [
+                '/', '/Root', '/Root/PreRelo', '/Root/PreRelo/PreReloChild', 
+                '/OtherRoot', '/OtherRoot/PreRelo', '/OtherRoot/PreRelo/PreReloChild'])
+
+        # Without relocates, both of /Root's refence nodes' map to parent 
+        # functions are the single arc mapping from referencee to referencer
+        _VerifyRootPrimIndexRefNodeMapToParentFunctions(
+            refNode1Map = { '/Ref': '/Root' },
+            refNode2Map = { '/Model': '/Ref' })
+
+        # First case: we'll add relocates to the root layer.
+
+        # Relocate /Root/PreRelo to /Root/Relocated in the root layer.
+        #
+        # Because this is the first relocate added to this layer stack, 
+        # this causes a significant change to the entire hierarchy starting from
+        # the pseudoroot. This is because we don't store map expression 
+        # variables when there are no relocates for a layer stack to avoid the
+        # memory cost of tracking these in caches that never have relocates. The
+        # trade off is we pay a resync cost, and subsequently the memory cost, 
+        # on the first edit that introduces relocates.
+        _SetRelocatesAndVerify(
+            layer = rootLayer, 
+            relocates = [('/Root/PreRelo', '/Root/Relocated')], 
+            expectedSignificantChanges = ['/'])
+        # All prim indexes have to be recomputed but now /Root/PreRelo is 
+        # renamed to /Root/Relocated.
+        _FindOrComputeAllPrimIndexes(
+            expectedFoundPaths = [],
+            expectedComputedPaths = [
+                '/', '/Root', '/Root/Relocated', '/Root/Relocated/PreReloChild', 
+                '/OtherRoot', '/OtherRoot/PreRelo', '/OtherRoot/PreRelo/PreReloChild'])
+        # /Root's first reference node's map to parent function now includes the 
+        # relocation mapping (for target and connection path mapping).
+        _VerifyRootPrimIndexRefNodeMapToParentFunctions(
+            refNode1Map = { 
+                '/Ref': '/Root', 
+                '/Ref/PreRelo': '/Root/Relocated' },
+            refNode2Map = { '/Model': '/Ref' })
+
+        # Now add an additional relocate /Root/Relocated/PreReloChild to 
+        # /Root/Relocated/RelocatedChild in the root layer.
+        #
+        # This time, because we already had relocates on the root layer, 
+        # we only have significant changes on the relocated prim's prior
+        # path and new path.
+        _SetRelocatesAndVerify(
+            layer = rootLayer, 
+            relocates = [
+                ('/Root/PreRelo', '/Root/Relocated'),
+                ('/Root/Relocated/PreReloChild', '/Root/Relocated/RelocatedChild')], 
+            expectedSignificantChanges = [
+                '/Root/Relocated/PreReloChild', '/Root/Relocated/RelocatedChild'])
+        # Likewise, all prim indexes except /Root/Relocated/PreReloChild should
+        # be found in the cache and we need to compute the prim index at the 
+        # new path /Root/Relocated/RelocatedChild
+        _FindOrComputeAllPrimIndexes(
+            expectedFoundPaths = [
+                '/', '/Root', '/Root/Relocated', 
+                '/OtherRoot', '/OtherRoot/PreRelo', '/OtherRoot/PreRelo/PreReloChild'],
+            expectedComputedPaths = ['/Root/Relocated/RelocatedChild'])
+        # /Root's first reference node's map to parent function now includes 
+        # both relocation mappings.
+        _VerifyRootPrimIndexRefNodeMapToParentFunctions(
+            refNode1Map = { 
+                '/Ref': '/Root', 
+                '/Ref/PreRelo': '/Root/Relocated', 
+                '/Ref/PreRelo/PreReloChild': '/Root/Relocated/RelocatedChild' },
+            refNode2Map = { '/Model': '/Ref' })
+            
+        # Now clear all relocates on the root layer
+        #
+        # Just like when we added the first relocate to this layer stack,
+        # deleting all relocates from the layer stack also causes a 
+        # significant change to the whole hierarchy starting at the pseudoroot.
+        # This is the reciprocal of adding the first relocate and regains the 
+        # memory no longer needed for tracking relocates. But the trade off 
+        # again is a full resync.
+        _SetRelocatesAndVerify(
+            layer = rootLayer, 
+            relocates = None, 
+            expectedSignificantChanges = ['/'])
+        _FindOrComputeAllPrimIndexes(
+            expectedFoundPaths = [],
+            expectedComputedPaths = [
+                '/', '/Root', '/Root/PreRelo', '/Root/PreRelo/PreReloChild', 
+                '/OtherRoot', '/OtherRoot/PreRelo', '/OtherRoot/PreRelo/PreReloChild'
+            ])
+        # The reference nodes' map functions return to their original functions
+        # without relocation mappings.
+        _VerifyRootPrimIndexRefNodeMapToParentFunctions(
+            refNode1Map = { '/Ref': '/Root' },
+            refNode2Map = { '/Model': '/Ref' })
+
+        # Second case: we'll add relocates to the first ref layer.
+
+        # Relocate /Ref/PreRelo to /Ref/Relocated in the ref layer.
+        #
+        # This is the first relocate added to the reference's layer stack, 
+        # so this causes a significant change to any prim index in our cache
+        # that depends on the ref layer. In this cache, that is the prim at
+        # /Root AND the prim at /OtherRoot even though only /Root is 
+        # actually affected by the relocates.
+        _SetRelocatesAndVerify(
+            layer = refLayer, 
+            relocates = [('/Ref/PreRelo', '/Ref/Relocated')], 
+            expectedSignificantChanges = ['/OtherRoot', '/Root'])
+        # The pseudoroot prim index does not have to be recomputed, however all
+        # prim indexes have to be recomputed since both root level prims were 
+        # invalidated. Also /Root/PreRelo is renamed to /Root/Relocated as it
+        # is now relocated across the reference.
+        _FindOrComputeAllPrimIndexes(
+            expectedFoundPaths = ['/'],
+            expectedComputedPaths = [
+                '/Root', '/Root/Relocated', '/Root/Relocated/PreReloChild', 
+                '/OtherRoot', '/OtherRoot/PreRelo', '/OtherRoot/PreRelo/PreReloChild'
+            ])
+        # /Root's second reference node's map to parent function now includes 
+        # the relocation mapping from the ref layer.
+        _VerifyRootPrimIndexRefNodeMapToParentFunctions(
+            refNode1Map = { '/Ref': '/Root' },
+            refNode2Map = {
+                '/Model': '/Ref',
+                '/Model/PreRelo': '/Ref/Relocated' })
+
+        # Now add an additional relocate /Ref/Relocated/PreReloChild to 
+        # /Ref/Relocated/RelocatedChild in the ref layer.
+        #
+        # This time, because we already had relocates on the ref layer, 
+        # we only have significant changes on the prim indexes with dependencies
+        # on relocated prim's prior path and new path.
+        _SetRelocatesAndVerify(
+            layer = refLayer, 
+            relocates = [
+                ('/Ref/PreRelo', '/Ref/Relocated'),
+                ('/Ref/Relocated/PreReloChild', '/Ref/Relocated/RelocatedChild')], 
+            expectedSignificantChanges = [
+                '/Root/Relocated/PreReloChild', '/Root/Relocated/RelocatedChild'])
+        # Likewise, all prim indexes except /Root/Relocated/PreReloChild should
+        # be found in the cache and we need to compute the prim index at the 
+        # new path /Root/Relocated/RelocatedChild
+        _FindOrComputeAllPrimIndexes(
+            expectedFoundPaths = [
+                '/', '/Root', '/Root/Relocated', 
+                '/OtherRoot', '/OtherRoot/PreRelo', '/OtherRoot/PreRelo/PreReloChild'],
+            expectedComputedPaths = ['/Root/Relocated/RelocatedChild'])
+        # /Root's second reference node's map to parent function now includes 
+        # both relocation mappings.
+        _VerifyRootPrimIndexRefNodeMapToParentFunctions(
+            refNode1Map = { '/Ref': '/Root' },
+            refNode2Map = { 
+                '/Model': '/Ref',
+                '/Model/PreRelo': '/Ref/Relocated',
+                '/Model/PreRelo/PreReloChild': '/Ref/Relocated/RelocatedChild'})
+
+        # Now set the relocates to explicitly empty on the ref layer (which is
+        # different than clearing the relocates metadata).
+        #
+        # Just like clearing the relocates on the root layer, making relocates
+        # explicitly empty has the same effect where we need to resync 
+        # everything that depends on any paths in the ref layer which again 
+        # is /Root and /OtherRoot.
+        _SetRelocatesAndVerify(
+            layer = refLayer, 
+            relocates = [], 
+            expectedSignificantChanges = ['/OtherRoot', '/Root'])
+        _FindOrComputeAllPrimIndexes(
+            expectedFoundPaths = ['/'],
+            expectedComputedPaths = [
+                '/Root', '/Root/PreRelo', '/Root/PreRelo/PreReloChild', 
+                '/OtherRoot', '/OtherRoot/PreRelo', '/OtherRoot/PreRelo/PreReloChild'])
+        # The reference nodes' map functions return to their original functions
+        # without relocation mappings.
+        _VerifyRootPrimIndexRefNodeMapToParentFunctions(
+            refNode1Map = { '/Ref': '/Root' },
+            refNode2Map = { '/Model': '/Ref' }
+        )
 
 if __name__ == "__main__":
     unittest.main()

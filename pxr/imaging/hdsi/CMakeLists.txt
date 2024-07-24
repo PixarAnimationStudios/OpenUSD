@@ -14,13 +14,13 @@ pxr_library(hdsi
         hf
         hd
         pxOsd
-        usdGeom
 
     PUBLIC_CLASSES
         coordSysPrimSceneIndex
         extComputationPrimvarPruningSceneIndex
         implicitSurfaceSceneIndex
         legacyDisplayStyleOverrideSceneIndex
+        lightLinkingSceneIndex
         materialBindingResolvingSceneIndex
         materialPrimvarTransferSceneIndex
         nurbsApproximatingSceneIndex
@@ -31,6 +31,8 @@ pxr_library(hdsi
         renderSettingsFilteringSceneIndex
         sceneGlobalsSceneIndex
         tetMeshConversionSceneIndex
+        utils
+        velocityMotionResolvingSceneIndex
 
     PUBLIC_HEADERS
         api.h

@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -39,7 +22,6 @@
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/errors.hpp>
-#include <boost/python/raw_function.hpp>
 #include <boost/python/return_by_value.hpp>
 #include <boost/python/return_value_policy.hpp>
 #include <boost/python/scope.hpp>
@@ -91,29 +73,6 @@ _Fatal(string const &msg, string const& moduleName, string const& functionName,
          TF_DIAGNOSTIC_FATAL_ERROR_TYPE). Post("Python Fatal Error: " + msg);
 }
 // CODE_COVERAGE_ON
-
-static handle<>
-_InvokeWithErrorHandling(tuple const &args, dict const &kw)
-{
-    // This function uses basically bare Python C API since it wants to be as
-    // fast as it can be.
-    TfErrorMark m;
-    PyObject *argsp = args.ptr();
-    // first tuple element is the callable.
-    PyObject *callable = PyTuple_GET_ITEM(argsp, 0);
-    // remove callable from positional args.
-    handle<> args_tail(PyTuple_GetSlice(argsp, 1, PyTuple_GET_SIZE(argsp)));
-    // call the callable -- if this raises a python exception, handle<>'s
-    // constructor will throw a c++ exception which will exit this function and
-    // return to python.
-    handle<> ret(PyObject_Call(callable, args_tail.get(), kw.ptr()));
-    // if the call completed successfully, then we need to see if any tf errors
-    // occurred, and if so, convert them to python exceptions.
-    if (!m.IsClean() && TfPyConvertTfErrorsToPythonException(m))
-        throw_error_already_set();
-    // if we made it this far, we return the result.
-    return ret;
-}
 
 static string
 TfError__repr__(TfError const &self) 
@@ -224,7 +183,6 @@ void wrapError() {
     def("SetPythonExceptionDebugTracingEnabled",
         _SetPythonExceptionDebugTracingEnabled, arg("enabled"));
     def("__SetErrorExceptionClass", Tf_PySetErrorExceptionClass);
-    def("InvokeWithErrorHandling", raw_function(_InvokeWithErrorHandling, 1));
     TfPyContainerConversions::from_python_sequence< vector<TfError>,
         TfPyContainerConversions::variable_capacity_policy >();
 

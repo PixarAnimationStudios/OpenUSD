@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 /// \file Changes.cpp
 
@@ -2204,32 +2187,35 @@ _DeterminePathsAffectedByRelocationChanges( const SdfRelocatesMap & oldMap,
                                             const SdfRelocatesMap & newMap,
                                             SdfPathSet *affectedPaths )
 {
-    TF_FOR_ALL(path, oldMap) {
-        SdfRelocatesMap::const_iterator i = newMap.find(path->first);
-        if (i == newMap.end() || i->second != path->second) {
-            // This entry in oldMap does not exist in newMap, or
+    // Look through the old map looking for entries with the same source in
+    // the new map.
+    for (const auto &[oldSourcePath, oldTargetPath] : oldMap) {
+        const SdfPath *newTargetPath = TfMapLookupPtr(newMap, oldSourcePath);
+        if (!newTargetPath) {
+            // This source does not exist in newMap
+            affectedPaths->insert(oldSourcePath);
+            affectedPaths->insert(oldTargetPath);
+        } else if (*newTargetPath != oldTargetPath) {
             // newMap relocates this to a different path.
-            // Record the affected paths.
-            affectedPaths->insert(path->first);
-            affectedPaths->insert(path->second);
-            if (i != newMap.end()) {
-                affectedPaths->insert(i->second);
-            }
+            affectedPaths->insert(oldTargetPath);
+            affectedPaths->insert(*newTargetPath);
         }
     }
-    TF_FOR_ALL(path, newMap) {
-        SdfRelocatesMap::const_iterator i = oldMap.find(path->first);
-        if (i == oldMap.end() || i->second != path->second) {
-            // This entry in newMap does not exist in oldMap, or
-            // oldMap relocated this to a different path.
-            // Record the affected paths.
-            affectedPaths->insert(path->first);
-            affectedPaths->insert(path->second);
-            if (i != oldMap.end()) {
-                affectedPaths->insert(i->second);
-            }
+
+    // We only have to look for sources that exist in the new map but do not 
+    // exist in the old map as we have covered sources that exist in both
+    // already.
+    for (const auto &[newSourcePath, newTargetPath] : newMap) {
+        if (oldMap.find(newSourcePath) == oldMap.end()) {
+            // This entry in newMap does not exist in oldMap
+            affectedPaths->insert(newSourcePath);
+            affectedPaths->insert(newTargetPath);
         }
     }
+
+    // Target paths can be empty so just make sure we don't include the empty
+    // path as affected.
+    affectedPaths->erase(SdfPath::EmptyPath());
 }
 
 // Handle changes to relocations.  This requires:
@@ -2287,8 +2273,8 @@ PcpChanges::_DidChangeLayerStackRelocations(
         // Compare the old and new relocations to determine which
         // paths (in this layer stack) are affected.
         _DeterminePathsAffectedByRelocationChanges(
-            layerStack->GetRelocatesSourceToTarget(),
-            changes.newRelocatesSourceToTarget,
+            layerStack->GetIncrementalRelocatesSourceToTarget(),
+            changes.newIncrementalRelocatesSourceToTarget,
             &changes.pathsAffectedByRelocationChanges);
     }
 

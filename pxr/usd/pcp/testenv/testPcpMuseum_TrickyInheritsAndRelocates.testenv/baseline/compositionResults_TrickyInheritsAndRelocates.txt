@@ -135,5 +135,4 @@ Results for composing </Rig/Anim/BadRigInstance>
 
 Prim Stack:
     root.sdf             /Rig/Anim/BadRigInstance
-    rig.sdf              /Rig/RigClass
 

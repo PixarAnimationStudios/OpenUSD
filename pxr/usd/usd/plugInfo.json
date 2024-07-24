@@ -144,6 +144,14 @@
                             "usdz"
                         ]
                     }
+                }, 
+                "Validators": {
+                    "CompositionErrorTest": {
+                        "doc": "Validator aims at providing all composition errors, which were generated while composing the stage."
+                    }, 
+                    "keywords": [
+                        "UsdCoreValidators"
+                    ]
                 }
             }, 
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@", 

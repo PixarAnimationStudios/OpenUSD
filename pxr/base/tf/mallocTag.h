@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_TF_MALLOC_TAG_H
 #define PXR_BASE_TF_MALLOC_TAG_H
@@ -99,14 +82,16 @@ public:
             size_t nBytes;          ///< Allocated bytes.
         };
 
-        // Note: enum below must be kept in sync with tfmodule/mallocCallTree.h
-
         /// Specify which parts of the report to print.
         enum PrintSetting {
             TREE = 0,                   ///< Print the full call tree
             CALLSITES,                  ///< Print just the call sites > 0.1%
             BOTH                        ///< Print both tree and call sites
         };
+
+
+        /// \name Input/Output
+        /// @{
 
         /// Return the malloc report string.
         ///
@@ -134,18 +119,27 @@ public:
 
         /// Generates a report to the ostream \p out.
         ///
-        /// This report is printed in a way that is intended to be used by
-        /// xxtracediff.  If \p rootName is non-empty it will replace the name
-        /// of the tree root in the report.
+        /// If \p rootName is non-empty it will replace the name of the tree
+        /// root in the report.
         TF_API
         void Report(
             std::ostream &out,
             const std::string &rootName) const;
 
-        /// \overload
+        /// Generates a report to the ostream \p out.
         TF_API
         void Report(
             std::ostream &out) const;
+
+        /// Load the contents of \p in into the root of the call tree.
+        ///
+        /// Returns true if the report loaded successfully, false otherwise.
+        TF_API
+        bool LoadReport(
+            std::istream &in);
+
+        /// @}
+
 
         /// All call sites.
         std::vector<CallSite> callSites;
@@ -280,9 +274,12 @@ public:
         template <class Str, class... Strs>
         explicit Auto(Str &&name1, Strs &&... nameN)
             : _threadData(TfMallocTag::_Push(_CStr(std::forward<Str>(name1))))
-            , _nTags(_threadData
-                     ? 1 + _PushImpl(std::forward<Strs>(nameN)...)
-                     : 0) {}
+            , _nTags(_threadData ? 1 + sizeof...(Strs) : 0) {
+            if (_threadData) {
+                (..., TfMallocTag::_Begin(
+                    _CStr(std::forward<Strs>(nameN)), _threadData));
+            }
+        }
 
         /// Pop the tag from the stack before it is destructed.
         ///
@@ -295,10 +292,10 @@ public:
         /// TfMallocTag::Pop() because it isn't vulnerable to early returns or
         /// exceptions.
         inline void Release() {
-            while (_nTags--) {
-                TfMallocTag::_End(_threadData);
+            if (_threadData) {
+                TfMallocTag::_End(_nTags, _threadData);
+                _threadData = nullptr;
             }
-            _threadData = nullptr;
         }
 
         /// Pop a memory tag from the local-call stack.
@@ -314,18 +311,7 @@ public:
 
         char const *_CStr(char const *cstr) const { return cstr; }
         char const *_CStr(std::string const &str) const { return str.c_str(); }
-        
-        template <class Str, class... Strs>
-        int _PushImpl(Str &&tag, Strs &&... rest) {
-            TfMallocTag::_Begin(_CStr(std::forward<Str>(tag)), _threadData);
-            return 1 + _PushImpl(std::forward<Strs>(rest)...);
-        }
 
-        int _PushImpl() {
-            // Recursion termination base-case.
-            return 0;
-        }
-        
         _ThreadData* _threadData;
         int _nTags;
 
@@ -431,7 +417,7 @@ private:
 
     TF_API static _ThreadData *_Begin(char const *name,
                                       _ThreadData *threadData = nullptr);
-    TF_API static void _End(_ThreadData *threadData = nullptr);
+    TF_API static void _End(int nTags = 1, _ThreadData *threadData = nullptr);
 
     static void* _MallocWrapper(size_t, const void*);
     static void* _ReallocWrapper(void*, size_t, const void*);

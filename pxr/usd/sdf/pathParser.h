@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_SDF_PATH_PARSER_H
 #define PXR_USD_SDF_PATH_PARSER_H
@@ -29,7 +12,7 @@
 #include "pxr/base/tf/unicodeUtils.h"
 #include "pxr/usd/sdf/path.h"
 
-#include "pxr/base/tf/pxrPEGTL/pegtl.h"
+#include "pxr/base/pegtl/pegtl.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,7 +21,7 @@ Sdf_ParsePath(std::string const &pathStr, SdfPath *path, std::string *errMsg);
 
 namespace Sdf_PathParser {
 
-namespace PEGTL_NS = tao::TAO_PEGTL_NAMESPACE;
+namespace PEGTL_NS = PXR_PEGTL_NAMESPACE;
 
 ////////////////////////////////////////////////////////////////////////
 // Helper rules for parsing UTF8 content
@@ -51,7 +34,7 @@ struct XidStart
         {
             // peek at the next character in the input
             // if the size is not 0, it was a valid code point
-            auto utf8_char = tao::TAO_PEGTL_NAMESPACE::internal::peek_utf8::peek(in);
+            auto utf8_char = PEGTL_NS::internal::peek_utf8::peek(in);
             if (utf8_char.size != 0)
             {
                 // valid utf8_char, data has the code point
@@ -77,7 +60,7 @@ struct XidContinue
         {
             // peek at the next character in the input
             // if the size is not 0, it was a valid code point
-            auto utf8_char = tao::TAO_PEGTL_NAMESPACE::internal::peek_utf8::peek(in);
+            auto utf8_char = PEGTL_NS::internal::peek_utf8::peek(in);
             if (utf8_char.size != 0)
             {
                 // valid utf8_char, data has the code point
@@ -166,7 +149,7 @@ struct BracketPath : PEGTL_NS::if_must<TargetPathOpen, TargPath, TargetPathClose
 
 struct RelationalAttributeName : PropertyName {};
 
-struct MapperKW : TAO_PEGTL_KEYWORD("mapper") {};
+struct MapperKW : PXR_PEGTL_KEYWORD("mapper") {};
 
 struct MapperArg : PEGTL_NS::identifier {};
 
@@ -174,7 +157,7 @@ struct MapperPathSeq : PEGTL_NS::if_must<
     PEGTL_NS::seq<Dot, MapperKW>, BracketPath<MapperPath>,
     PEGTL_NS::opt<Dot, MapperArg>> {};
 
-struct Expression : TAO_PEGTL_KEYWORD("expression") {};
+struct Expression : PXR_PEGTL_KEYWORD("expression") {};
 
 struct RelAttrSeq : PEGTL_NS::if_must<
     PEGTL_NS::one<'.'>, RelationalAttributeName,

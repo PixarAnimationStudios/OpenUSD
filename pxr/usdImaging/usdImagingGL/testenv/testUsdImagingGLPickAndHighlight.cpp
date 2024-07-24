@@ -1,25 +1,8 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
@@ -38,6 +21,7 @@
 #include "pxr/imaging/garch/glDebugWindow.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/metrics.h"
@@ -58,14 +42,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 using UsdImagingGLEngineSharedPtr = std::shared_ptr<class UsdImagingGLEngine>;
 
-struct OutHit {
-    GfVec3d outHitPoint;
-    GfVec3d outHitNormal;
-    SdfPath outHitPrimPath;
-    SdfPath outHitInstancerPath;
-    int outHitInstanceIndex;
-};
-
+using OutHit = UsdImagingGLEngine::IntersectionResult;
 
 static bool
 _CompareOutHit(OutHit const & lhs, OutHit const & rhs)
@@ -75,16 +52,54 @@ _CompareOutHit(OutHit const & lhs, OutHit const & rhs)
         false);
 
     double const epsilon = 1e-6;
-    return GfIsClose(lhs.outHitPoint[0], rhs.outHitPoint[0], epsilon) &&
-           GfIsClose(lhs.outHitPoint[1], rhs.outHitPoint[1], epsilon) &&
-           GfIsClose(lhs.outHitPoint[2], rhs.outHitPoint[2], epsilon) &&
-           GfIsClose(lhs.outHitNormal[0], rhs.outHitNormal[0], epsilon) &&
-           GfIsClose(lhs.outHitNormal[1], rhs.outHitNormal[1], epsilon) &&
-           GfIsClose(lhs.outHitNormal[2], rhs.outHitNormal[2], epsilon) &&
-           lhs.outHitPrimPath == rhs.outHitPrimPath &&
+    bool compare = GfIsClose(lhs.hitPoint[0], rhs.hitPoint[0], epsilon) &&
+           GfIsClose(lhs.hitPoint[1], rhs.hitPoint[1], epsilon) &&
+           GfIsClose(lhs.hitPoint[2], rhs.hitPoint[2], epsilon) &&
+           GfIsClose(lhs.hitNormal[0], rhs.hitNormal[0], epsilon) &&
+           GfIsClose(lhs.hitNormal[1], rhs.hitNormal[1], epsilon) &&
+           GfIsClose(lhs.hitNormal[2], rhs.hitNormal[2], epsilon) &&
+           lhs.hitPrimPath == rhs.hitPrimPath &&
            (skipInstancerDetails ||
-            (lhs.outHitInstancerPath == rhs.outHitInstancerPath &&
-             lhs.outHitInstanceIndex == rhs.outHitInstanceIndex));
+            (lhs.hitInstancerPath == rhs.hitInstancerPath &&
+             lhs.hitInstanceIndex == rhs.hitInstanceIndex));
+
+    return compare;
+}
+
+
+static bool
+_CompareDeepSelectionResults(
+    UsdImagingGLEngine::IntersectionResultVector const& lhsVector, 
+    UsdImagingGLEngine::IntersectionResultVector const& rhsVector)
+{
+    UsdImagingGLEngine::IntersectionResultVector lhs_sorted = lhsVector;
+    std::sort(lhs_sorted.begin(), lhs_sorted.end(),
+        [](const UsdImagingGLEngine::IntersectionResult &a,
+           const UsdImagingGLEngine::IntersectionResult &b)
+        {
+            return a.hitPrimPath < b.hitPrimPath;
+        });
+    UsdImagingGLEngine::IntersectionResultVector rhs_sorted = rhsVector;
+    std::sort(rhs_sorted.begin(), rhs_sorted.end(),
+        [](const UsdImagingGLEngine::IntersectionResult &a,
+           const UsdImagingGLEngine::IntersectionResult &b)
+        {
+            return a.hitPrimPath < b.hitPrimPath;
+        });
+
+    if (lhs_sorted.size() != rhs_sorted.size()) {
+        return false;
+    }
+
+    for (size_t i = 0; i < lhs_sorted.size(); ++i) {
+        // Note, hitInstancerId and hitInstanceIndex aren't guaranteed to be stable
+        // for native instances, so we don't check them here.
+        if (lhs_sorted[i].hitPrimPath != rhs_sorted[i].hitPrimPath) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 class My_TestGLDrawing : public UsdImagingGL_UnitTestGLDrawing {
@@ -108,6 +123,7 @@ public:
     void Draw(bool render=true);
     void Pick(GfVec2i const &startPos, GfVec2i const &endPos);
     void Pick(GfVec2i const &startPos, GfVec2i const &endPos, OutHit* out);
+    void DeepSelect(GfVec2i const& startPos, GfVec2i const& endPos, UsdImagingGLEngine::IntersectionResultVector& out);
 
 private:
     UsdStageRefPtr _stage;
@@ -194,7 +210,8 @@ My_TestGLDrawing::DrawTest(bool offscreen)
                 SdfPath("/Group/GI1/I1/Mesh1/Plane1"), 
                 _stage->GetPrimAtPath(SdfPath("/Group/GI1/I1")).GetPrototype().
                     GetPath().AppendPath(SdfPath("Mesh1")),
-                2 }
+                2,
+                {} }
         },
         {
             TfToken("HdEmbreeRendererPlugin"), 
@@ -202,7 +219,65 @@ My_TestGLDrawing::DrawTest(bool offscreen)
                 GfVec3d(0, 0, 0),
                 SdfPath("/Instance/I1/Mesh1/Plane1"), 
                 SdfPath::EmptyPath(),
-                0 }
+                0,
+                {} }
+        }
+    };
+
+    const UsdImagingGLEngine::IntersectionResultVector expectedOutputVector = {
+        {
+        GfVec3d(0.0, 0.0, 0.0),
+        GfVec3d(0.0, 0.0, 0.0),
+        SdfPath("/Group/GI1/I1/Mesh1/Plane1"),
+        _stage->GetPrimAtPath(SdfPath("/Group/GI1/I1")).GetPrototype().
+            GetPath().AppendPath(SdfPath("Mesh1")),
+        2,
+        {}
+        },
+        {
+        GfVec3d(0.0, 0.0, 0.0),
+        GfVec3d(0.0, 0.0, 0.0),
+        SdfPath("/Group/GI2/I1/Mesh1/Plane2"),
+        _stage->GetPrimAtPath(SdfPath("/Group/GI2/I1")).GetPrototype().
+            GetPath().AppendPath(SdfPath("Mesh1")),
+        3,
+        {}
+        },
+        {
+        GfVec3d(0.0, 0.0, 0.0),
+        GfVec3d(0.0, 0.0, 0.0),
+        SdfPath("/Instance/I1/Mesh1/Plane1"),
+        _stage->GetPrimAtPath(SdfPath("/Instance/I1")).GetPrototype().
+            GetPath().AppendPath(SdfPath("Mesh1")),
+        0,
+        {}
+        },
+        {
+        GfVec3d(0.0, 0.0, 0.0),
+        GfVec3d(0.0, 0.0, 0.0),
+        SdfPath("/Group/GI2/I1/Mesh1/Plane1"),
+        _stage->GetPrimAtPath(SdfPath("/Group/GI2/I1")).GetPrototype().
+            GetPath().AppendPath(SdfPath("Mesh1")),
+        3,
+        {}
+        },
+        {
+        GfVec3d(0.0, 0.0, 0.0),
+        GfVec3d(0.0, 0.0, 0.0),
+        SdfPath("/Group/GI1/I1/Mesh1/Plane2"),
+        _stage->GetPrimAtPath(SdfPath("/Group/GI1/I1")).GetPrototype().
+            GetPath().AppendPath(SdfPath("Mesh1")),
+        2,
+        {}
+        },
+        {
+        GfVec3d(0.0, 0.0, 0.0),
+        GfVec3d(0.0, 0.0, 0.0),
+        SdfPath("/Instance/I1/Mesh1/Plane2"),
+        _stage->GetPrimAtPath(SdfPath("/Instance/I1")).GetPrototype().
+            GetPath().AppendPath(SdfPath("Mesh1")),
+        0,
+        {}
         }
     };
 
@@ -223,6 +298,22 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         Pick(GfVec2i(400, 200), GfVec2i(401, 201));
         Draw();
     } else {
+        Draw();
+    }
+
+    // currently only HdStorm supports deep selection
+    static const TfToken _stormRendererPluginName("HdStormRendererPlugin");
+    if (_engine->GetCurrentRendererId() == _stormRendererPluginName)
+    {
+        // Test windowed deep selection
+        UsdImagingGLEngine::IntersectionResultVector testOutVector;
+        DeepSelect(GfVec2i(320, 130), GfVec2i(171, 131), testOutVector);
+        TF_VERIFY(_CompareDeepSelectionResults(testOutVector, expectedOutputVector));
+        Draw();
+
+        // Single pick deep selection
+        testOutVector.clear();
+        DeepSelect(GfVec2i(170, 130), GfVec2i(171, 131), testOutVector);
         Draw();
     }
 }
@@ -345,6 +436,57 @@ My_TestGLDrawing::Pick(GfVec2i const &startPos, GfVec2i const &endPos) {
 }
 
 void
+My_TestGLDrawing::DeepSelect(GfVec2i const& startPos, GfVec2i const& endPos,
+    UsdImagingGLEngine::IntersectionResultVector& outResults)
+{
+    GfFrustum frustum = _frustum;
+    float width = GetWidth(), height = GetHeight();
+
+    GfVec2d min(2 * startPos[0] / width - 1, 1 - 2 * startPos[1] / height);
+    GfVec2d max(2 * (endPos[0] + 1) / width - 1, 1 - 2 * (endPos[1] + 1) / height);
+    // scale window
+    GfVec2d origin = frustum.GetWindow().GetMin();
+    GfVec2d scale = frustum.GetWindow().GetMax() - frustum.GetWindow().GetMin();
+    min = origin + GfCompMult(scale, 0.5 * (GfVec2d(1.0, 1.0) + min));
+    max = origin + GfCompMult(scale, 0.5 * (GfVec2d(1.0, 1.0) + max));
+
+    frustum.SetWindow(GfRange2d(min, max));
+
+    // XXX: For a timevarying test need to set timecode for frame param
+    UsdImagingGLRenderParams params;
+    params.enableIdRender = true;
+
+    SdfPathVector selection;
+
+    UsdImagingGLEngine::PickParams pickParams = {
+        HdxPickTokens->resolveDeep
+    };
+
+    if (_engine->TestIntersection(
+        pickParams,
+        _viewMatrix,
+        frustum.ComputeProjectionMatrix(),
+        _stage->GetPseudoRoot(),
+        params,
+        &outResults)) {
+
+        for (size_t i = 0; i < outResults.size(); ++i)
+        {
+            UsdImagingGLEngine::IntersectionResult outHit = outResults[i];
+            std::cout << "Hit "
+                << i << ": "
+                << outHit.hitPrimPath << ", "
+                << outHit.hitInstancerPath << ", "
+                << outHit.hitInstanceIndex << "\n";
+
+            selection.push_back(outHit.hitPrimPath);
+        }
+    }
+
+    _engine->SetSelected(selection);
+}
+
+void
 My_TestGLDrawing::Pick(GfVec2i const &startPos, GfVec2i const &endPos, 
         OutHit* out)
 {
@@ -365,36 +507,42 @@ My_TestGLDrawing::Pick(GfVec2i const &startPos, GfVec2i const &endPos,
     UsdImagingGLRenderParams params;
     params.enableIdRender = true;
 
-    OutHit outHit;
+    UsdImagingGLEngine::IntersectionResultVector outResults;
 
     SdfPathVector selection;
 
+    UsdImagingGLEngine::PickParams pickParams = {
+        HdxPickTokens->resolveNearestToCenter,
+    };
+
     if (_engine->TestIntersection(
+        pickParams,
         _viewMatrix,
         frustum.ComputeProjectionMatrix(),
         _stage->GetPseudoRoot(),
         params,
-        &outHit.outHitPoint,
-        &outHit.outHitNormal,
-        &outHit.outHitPrimPath,
-        &outHit.outHitInstancerPath,
-        &outHit.outHitInstanceIndex)) {
+        &outResults)) {
 
-        std::cout << "Hit "
-                  << outHit.outHitPoint << ", "
-                  << outHit.outHitNormal << ", "
-                  << outHit.outHitPrimPath << ", "
-                  << outHit.outHitInstancerPath << ", "
-                  << outHit.outHitInstanceIndex << "\n";
+        if (outResults.size() == 1)
+        {
+            std::cout << "Hit "
+                << outResults[0].hitPoint << ", "
+                << outResults[0].hitNormal << ", "
+                << outResults[0].hitPrimPath << ", "
+                << outResults[0].hitInstancerPath << ", "
+                << outResults[0].hitInstanceIndex << "\n";
 
-        _engine->SetSelectionColor(GfVec4f(1, 1, 0, 1));
-        selection.push_back(outHit.outHitPrimPath);
-    }
+            _engine->SetSelectionColor(GfVec4f(1, 1, 0, 1));
+            selection.push_back(outResults[0].hitPrimPath);
 
-    if (out) {
-        *out = outHit;
-    } else {
-        _engine->SetSelected(selection);
+            if (out) {
+                *out = outResults[0];
+            }
+        }
+
+        if (!out) {
+            _engine->SetSelected(selection);
+        }
     }
 }
 

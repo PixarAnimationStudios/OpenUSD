@@ -1,37 +1,23 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
 
 #include "pxr/base/trace/reporter.h"
+
+#include "pxr/base/trace/aggregateTree.h"
 #include "pxr/base/trace/reporterDataSourceCollector.h"
 
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
-#include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/pyResultConversions.h"
 
 #include <boost/python/class.hpp>
+#include <boost/python/scope.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -68,7 +54,6 @@ _ReportTimes(TraceReporterPtr self)
     self->ReportTimes(std::cout);
 }
 
-
 static void
 _ReportChromeTracing(
     const TraceReporterPtr &self)
@@ -85,6 +70,18 @@ _ReportChromeTracingToFile(
     self->ReportChromeTracing(os);
 }
 
+static std::vector<TraceReporter::ParsedTree> 
+_LoadReport(
+    const std::string &fileName)
+{
+    std::ifstream fileStream(fileName.c_str());
+    if (!fileStream.is_open()) {
+        TF_RUNTIME_ERROR("Failed to open file at %s", fileName.c_str());
+        return {};
+    }
+
+    return TraceReporter::LoadReport(fileStream);
+}
 
 static TraceReporterRefPtr
 _Constructor1(const std::string &label)
@@ -97,7 +94,7 @@ void wrapReporter()
     using This = TraceReporter;
     using ThisPtr = TraceReporterPtr;
 
-    object reporter_class = 
+    scope reporter_class = 
         class_<This, ThisPtr, boost::noncopyable>("Reporter", no_init)
         .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(_Constructor1))
@@ -117,6 +114,11 @@ void wrapReporter()
         .def("ReportChromeTracing", &::_ReportChromeTracing)
         .def("ReportChromeTracingToFile", &::_ReportChromeTracingToFile)
 
+        .def("LoadReport", &::_LoadReport, 
+            (arg("fileName")),
+            return_value_policy<TfPySequenceToList>())
+        .staticmethod("LoadReport")
+
         .add_property("aggregateTreeRoot", &This::GetAggregateTreeRoot)
 
         .def("UpdateTraceTrees", &This::UpdateTraceTrees)
@@ -134,5 +136,14 @@ void wrapReporter()
             &This::SetShouldAdjustForOverheadAndNoise)
 
         .add_static_property("globalReporter", &This::GetGlobalReporter)
+        ;
+
+    class_<This::ParsedTree>("ParsedTree", no_init)
+        .add_property("tree", 
+            make_function(+[](const This::ParsedTree &self) {
+                return self.tree;
+            },
+            return_value_policy<TfPyRefPtrFactory<>>()))
+        .def_readonly("iterationCount", &This::ParsedTree::iterationCount)
         ;
 };

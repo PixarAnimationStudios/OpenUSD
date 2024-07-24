@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/imaging/hgiVulkan/blitCmds.h"
@@ -62,6 +45,25 @@ HgiVulkanBlitCmds::PopDebugGroup()
     HgiVulkanEndLabel(_hgi->GetPrimaryDevice(), _commandBuffer);
 }
 
+static
+VkImageAspectFlags
+_GetImageAspectMaskForCopy(HgiTextureUsage textureUsage)
+{
+    // XXX: Vulkan validation demands that only one flag at a time be used 
+    // during the copy operation. Both depth and stencil flags cannot be 
+    // simultaneously passed as aspects to copy.
+    // So, we assume that the user wants to copy depth when the texture is a 
+    // depthStencil texture. If need arises, this part of the implementation 
+    // needs to be re-written such that an aspect flag is passed to this copy 
+    // operation to resolve the discrepancy.
+    VkImageAspectFlags aspectFlags =
+        HgiVulkanConversions::GetImageAspectFlag(textureUsage);
+    if (aspectFlags & VK_IMAGE_ASPECT_DEPTH_BIT) {
+        aspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
+    }
+    return aspectFlags;
+}
+
 void
 HgiVulkanBlitCmds::CopyTextureGpuToCpu(
     HgiTextureGpuToCpuOp const& copyOp)
@@ -100,19 +102,7 @@ HgiVulkanBlitCmds::CopyTextureGpuToCpu(
     imageSub.baseArrayLayer = isTexArray ? copyOp.sourceTexelOffset[2] : 0;
     imageSub.layerCount = 1;
     imageSub.mipLevel = copyOp.mipLevel;
-
-    // XXX: Vulkan validation demands that only one flag at a time be used 
-    // during the copy operation. Both depth and stencil flags cannot be 
-    // simultaneously passed as aspects to copy.
-    // So, we assume that the user wants to copy depth when the texture is a 
-    // depthStencil texture. If need arises, this part of the implementation 
-    // needs to be re-written such that an aspect flag is passed to this copy 
-    // operation to resolve the discrepancy.
-    imageSub.aspectMask =
-        HgiVulkanConversions::GetImageAspectFlag(texDesc.usage);
-    if (imageSub.aspectMask & VK_IMAGE_ASPECT_DEPTH_BIT) {
-        imageSub.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    }
+    imageSub.aspectMask = _GetImageAspectMaskForCopy(texDesc.usage);
 
     // See vulkan docs: Copying Data Between Buffers and Images
     VkBufferImageCopy region;
@@ -347,7 +337,9 @@ HgiVulkanBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
     // Copy from device-local GPU buffer into GPU staging buffer
     VkBufferCopy copyRegion = {};
     copyRegion.srcOffset = copyOp.sourceByteOffset;
-    copyRegion.dstOffset = copyOp.destinationByteOffset;
+    // No need to use dst offset during intermediate step of copying into 
+    // staging buffer.
+    copyRegion.dstOffset = 0;
     copyRegion.size = copyOp.byteSize;
     vkCmdCopyBuffer(
         _commandBuffer->GetVulkanCommandBuffer(), 
@@ -361,9 +353,10 @@ HgiVulkanBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
     // Offset into the dst buffer
     char* dst = ((char*) copyOp.cpuDestinationBuffer) +
         copyOp.destinationByteOffset;
-    
-    // Offset into the src buffer
-    const char* src = ((const char*) cpuAddress) + copyOp.sourceByteOffset;
+
+    // No need to offset into src buffer since we copied into staging buffer
+    // without dst offset.
+    const char* src = ((const char*) cpuAddress);
 
     // bytes to copy
     size_t size = copyOp.byteSize;
@@ -377,13 +370,168 @@ HgiVulkanBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
 void
 HgiVulkanBlitCmds::CopyTextureToBuffer(HgiTextureToBufferOp const& copyOp)
 {
-    TF_CODING_ERROR("Missing Implementation");
+    if (copyOp.byteSize == 0) {
+        TF_WARN("The size of the data to copy was zero, aborting copy.");
+        return;
+    }
+
+    _CreateCommandBuffer();
+
+    HgiVulkanTexture* srcTexture =
+        static_cast<HgiVulkanTexture*>(copyOp.gpuSourceTexture.Get());
+    if (!TF_VERIFY(srcTexture && srcTexture->GetImage(), "Invalid texture")) {
+        return;
+    }
+    HgiTextureDesc const& texDesc = srcTexture->GetDescriptor();
+
+    HgiVulkanBuffer* dstBuffer =
+        static_cast<HgiVulkanBuffer*>(copyOp.gpuDestinationBuffer.Get());
+    if (!TF_VERIFY(dstBuffer && dstBuffer->GetVulkanBuffer(),
+        "Invalid buffer")) {
+        return;
+    }
+
+    // Transition image layout to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL.
+    VkImageLayout oldLayout = srcTexture->GetImageLayout();
+    HgiVulkanTexture::TransitionImageBarrier(
+        _commandBuffer,
+        srcTexture,
+        /*oldLayout*/oldLayout,
+        /*newLayout*/VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        /*producerAccess*/HgiVulkanTexture::GetDefaultAccessFlags(texDesc.usage),
+        /*consumerAccess*/VK_ACCESS_TRANSFER_READ_BIT,
+        /*producerStage*/VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+        /*consumerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT,
+        copyOp.mipLevel);
+
+    VkOffset3D origin;
+    origin.x = copyOp.sourceTexelOffset[0];
+    origin.y = copyOp.sourceTexelOffset[1];
+    origin.z = copyOp.sourceTexelOffset[2];
+
+    VkExtent3D size;
+    size.width = texDesc.dimensions[0];
+    size.height = texDesc.dimensions[1];
+    size.depth = texDesc.dimensions[2];
+
+    VkImageSubresourceLayers imageSub;
+    imageSub.baseArrayLayer = 0;
+    imageSub.layerCount = texDesc.layerCount;
+    imageSub.mipLevel = copyOp.mipLevel;
+    imageSub.aspectMask = _GetImageAspectMaskForCopy(texDesc.usage);
+
+    VkBufferImageCopy region;
+    region.bufferImageHeight = 0; // Buffer is tightly packed, like image
+    region.bufferRowLength = 0;   // Buffer is tightly packed, like image
+    region.bufferOffset = copyOp.destinationByteOffset;
+    region.imageExtent = size;
+    region.imageOffset = origin;
+    region.imageSubresource = imageSub;
+
+    vkCmdCopyImageToBuffer(
+        _commandBuffer->GetVulkanCommandBuffer(),
+        srcTexture->GetImage(),
+        srcTexture->GetImageLayout(),
+        dstBuffer->GetVulkanBuffer(),
+        /*regionCount*/1,
+        &region
+    );
+
+    // Transition image layout back to original layout.
+    HgiVulkanTexture::TransitionImageBarrier(
+        _commandBuffer,
+        srcTexture,
+        /*oldLayout*/VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        /*newLayout*/oldLayout,
+        /*producerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
+        /*consumerAccess*/HgiVulkanTexture::GetDefaultAccessFlags(texDesc.usage),
+        /*producerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT,
+        /*consumerStage*/VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+        copyOp.mipLevel);
 }
 
 void
 HgiVulkanBlitCmds::CopyBufferToTexture(HgiBufferToTextureOp const& copyOp)
 {
-    TF_CODING_ERROR("Missing Implementation");
+    if (copyOp.byteSize == 0) {
+        TF_WARN("The size of the data to copy was zero, aborting copy.");
+        return;
+    }
+
+    _CreateCommandBuffer();
+
+    HgiBufferHandle const& srcBufHandle = copyOp.gpuSourceBuffer;
+    HgiVulkanBuffer* srcBuffer =
+        static_cast<HgiVulkanBuffer*>(srcBufHandle.Get());
+    if (!TF_VERIFY(srcBuffer && srcBuffer->GetVulkanBuffer(),
+        "Invalid buffer")) {
+        return;
+    }
+
+    HgiVulkanTexture* dstTexture =
+        static_cast<HgiVulkanTexture*>(copyOp.gpuDestinationTexture.Get());
+    if (!TF_VERIFY(dstTexture && dstTexture->GetImage(),
+        "Invalid texture handle")) {
+        return;
+    }
+    HgiTextureDesc const& texDesc = dstTexture->GetDescriptor();
+
+    // Transition image layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL.
+    VkImageLayout oldLayout = dstTexture->GetImageLayout();
+    HgiVulkanTexture::TransitionImageBarrier(
+        _commandBuffer,
+        dstTexture,
+        /*oldLayout*/oldLayout,
+        /*newLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        /*producerAccess*/HgiVulkanTexture::GetDefaultAccessFlags(texDesc.usage),
+        /*consumerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
+        /*producerStage*/VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+        /*consumerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT,
+        copyOp.mipLevel);
+
+    VkOffset3D origin;
+    origin.x = copyOp.destinationTexelOffset[0];
+    origin.y = copyOp.destinationTexelOffset[1];
+    origin.z = copyOp.destinationTexelOffset[2];
+
+    VkExtent3D size;
+    size.width = texDesc.dimensions[0] - copyOp.destinationTexelOffset[0];
+    size.height = texDesc.dimensions[1] - copyOp.destinationTexelOffset[1];
+    size.depth = texDesc.dimensions[2] - copyOp.destinationTexelOffset[2];
+
+    VkImageSubresourceLayers imageSub;
+    imageSub.baseArrayLayer = 0;
+    imageSub.layerCount = texDesc.layerCount;
+    imageSub.mipLevel = copyOp.mipLevel;
+    imageSub.aspectMask = _GetImageAspectMaskForCopy(texDesc.usage);
+
+    VkBufferImageCopy region;
+    region.bufferImageHeight = 0; // Buffer is tightly packed, like image
+    region.bufferRowLength = 0;   // Buffer is tightly packed, like image
+    region.bufferOffset = copyOp.sourceByteOffset;
+    region.imageExtent = size;
+    region.imageOffset = origin;
+    region.imageSubresource = imageSub;
+
+    vkCmdCopyBufferToImage(
+        _commandBuffer->GetVulkanCommandBuffer(),
+        srcBuffer->GetVulkanBuffer(),
+        dstTexture->GetImage(),
+        dstTexture->GetImageLayout(),
+        /*regionCount*/1,
+        &region);
+
+    // Transition image layout back to original layout.
+    HgiVulkanTexture::TransitionImageBarrier(
+        _commandBuffer,
+        dstTexture,
+        /*oldLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        /*newLayout*/oldLayout,
+        /*producerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
+        /*consumerAccess*/HgiVulkanTexture::GetDefaultAccessFlags(texDesc.usage),
+        /*producerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT,
+        /*consumerStage*/VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+        copyOp.mipLevel);
 }
 
 void

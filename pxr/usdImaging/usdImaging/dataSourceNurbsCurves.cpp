@@ -1,29 +1,12 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdImaging/dataSourceNurbsCurves.h"
 
-#include "pxr/usdImaging/usdImaging/dataSourceSchemaBased.h"
+#include "pxr/usdImaging/usdImaging/dataSourceMapped.h"
 
 #include "pxr/usd/usdGeom/nurbsCurves.h"
 
@@ -37,38 +20,42 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-struct _NurbsCurvesTranslator
+std::vector<UsdImagingDataSourceMapped::AttributeMapping>
+_GetAttributeMappings()
 {
-    static
-    TfToken
-    UsdAttributeNameToHdName(const TfToken &name)
-    {
-        // Suppress widths from UsdGeomCurves (which is a custom
-        // primvar that UsdImagingDataSourceGprim gives us) and
-        // pointWeights from UsdGeomNurbsCurves (which is a custom
-        // primvar we process in the prim source below).
-        if (name == UsdGeomTokens->widths ||
-            name == UsdGeomTokens->pointWeights) {
-            return TfToken();
+    std::vector<UsdImagingDataSourceMapped::AttributeMapping> result;
+
+    for (const TfToken &usdName :
+             UsdGeomNurbsCurves::GetSchemaAttributeNames(
+                 /* includeInherited = */ false)) {
+        if (usdName == UsdGeomTokens->pointWeights) {
+            // Suppress pointWeights from UsdGeomNurbsCurves (which is a custom
+            // primvar we process in the prim source below).
+            continue;
         }
-
-        return name;
+        result.push_back({ usdName, HdDataSourceLocator(usdName) });
     }
 
-    static
-    HdDataSourceLocator
-    GetContainerLocator()
-    {
-        return HdNurbsCurvesSchema::GetDefaultLocator();
+    for (const TfToken &usdName :
+             UsdGeomCurves::GetSchemaAttributeNames(
+                 /* includeInherited = */ false)) {
+        if (usdName == UsdGeomTokens->widths) {
+            // Suppress widths from UsdGeomCurves (which is a custom
+            // primvar that UsdImagingDataSourceGprim gives us).
+            continue;
+        }
+        result.push_back({ usdName, HdDataSourceLocator(usdName) });
     }
-};
 
-// Data source for locator nurbsCurves
-//
-// Include (non-inherited) attributes of UsdGeomNurbsCurves and
-// of UsdGeomCurves (to pick up curveVertexCounts).
-using _NurbsCurvesDataSource = UsdImagingDataSourceSchemaBased<
-    UsdGeomNurbsCurves, std::tuple<UsdGeomCurves>, _NurbsCurvesTranslator>;
+    return result;
+}
+
+const UsdImagingDataSourceMapped::AttributeMappings &
+_GetMappings() {
+    static const UsdImagingDataSourceMapped::AttributeMappings result(
+        _GetAttributeMappings(), HdNurbsCurvesSchema::GetDefaultLocator());
+    return result;
+}
 
 const UsdImagingDataSourceCustomPrimvars::Mappings &
 _GetCustomPrimvarMappings(const UsdPrim &usdPrim)
@@ -107,9 +94,10 @@ UsdImagingDataSourceNurbsCurvesPrim::Get(const TfToken & name)
 {
     if (name == HdNurbsCurvesSchema::GetSchemaToken()) {
         return
-            _NurbsCurvesDataSource::New(
+            UsdImagingDataSourceMapped::New(
+                _GetUsdPrim(),
                 _GetSceneIndexPath(),
-                UsdGeomNurbsCurves(_GetUsdPrim()),
+                _GetMappings(),
                 _GetStageGlobals());
     }
 
@@ -138,8 +126,8 @@ UsdImagingDataSourceNurbsCurvesPrim::Invalidate(
     TRACE_FUNCTION();
 
     HdDataSourceLocatorSet locators =
-        _NurbsCurvesDataSource::Invalidate(
-            subprim, properties);
+        UsdImagingDataSourceMapped::Invalidate(
+            properties, _GetMappings());
     
     locators.insert(
         UsdImagingDataSourceGprim::Invalidate(

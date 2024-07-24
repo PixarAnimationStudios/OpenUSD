@@ -1,25 +1,8 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_SCENE_INDEX_ADAPTER_SCENE_DELEGATE_H
 #define PXR_IMAGING_HD_SCENE_INDEX_ADAPTER_SCENE_DELEGATE_H
@@ -103,10 +86,18 @@ public:
     GfMatrix4d GetTransform(SdfPath const &id) override;
     size_t SampleTransform(SdfPath const &id, size_t maxSampleCount,
         float *sampleTimes, GfMatrix4d *sampleValues) override;
+    size_t SampleTransform(SdfPath const &id,
+        float startTime, float endTime,
+        size_t maxSampleCount,
+        float *sampleTimes, GfMatrix4d *sampleValues) override;
 
     GfMatrix4d GetInstancerTransform(
         SdfPath const &instancerId) override;
     size_t SampleInstancerTransform(SdfPath const &instancerId,
+        size_t maxSampleCount, float *sampleTimes,
+        GfMatrix4d *sampleValues) override;
+    size_t SampleInstancerTransform(SdfPath const &instancerId,
+        float startTime, float endTime,
         size_t maxSampleCount, float *sampleTimes,
         GfMatrix4d *sampleValues) override;
 
@@ -124,10 +115,17 @@ public:
     size_t SamplePrimvar(SdfPath const &id, TfToken const &key,
             size_t maxSampleCount, float *sampleTimes, 
             VtValue *sampleValues) override;
+    size_t SamplePrimvar(SdfPath const &id, TfToken const &key,
+            float startTime, float endTime,
+            size_t maxSampleCount, float *sampleTimes, 
+            VtValue *sampleValues) override;
     size_t SampleIndexedPrimvar(SdfPath const &id, TfToken const &key,
             size_t maxNumSamples, float *times, VtValue *samples, 
             VtIntArray *sampleIndices) override;
-
+    size_t SampleIndexedPrimvar(SdfPath const &id, TfToken const &key,
+            float startTime, float endTime,                                
+            size_t maxNumSamples, float *times, VtValue *samples, 
+            VtIntArray *sampleIndices) override;
     
     // ------------------------------------------------------------------------
     // Instancer API
@@ -183,6 +181,14 @@ public:
         size_t maxSampleCount,
         float *sampleTimes,
         VtValue *sampleValues) override;
+    size_t SampleExtComputationInput(
+        SdfPath const &computationId,
+        TfToken const &input,
+        float startTime,
+        float endTime,
+        size_t maxSampleCount,
+        float *sampleTimes,
+        VtValue *sampleValues) override;
 
     HdExtComputationInputDescriptorVector GetExtComputationInputDescriptors(
         SdfPath const &computationId) override;
@@ -233,6 +239,7 @@ private:
         const TfToken& key);
 
     size_t _SamplePrimvar(SdfPath const &id, TfToken const &key,
+        float startTime, float endTime,
         size_t maxNumSamples, float *times, VtValue *samples, 
         VtIntArray *sampleIndices);
 
@@ -240,37 +247,26 @@ private:
 
     struct _PrimCacheEntry
     {
-        _PrimCacheEntry()
-        : primvarDescriptorsState(ReadStateUnread)
-        , extCmpPrimvarDescriptorsState(ReadStateUnread)
-        {}
-
-        _PrimCacheEntry(const _PrimCacheEntry &rhs)
-        {
-            primType = rhs.primType;
-            primvarDescriptorsState.store(rhs.primvarDescriptorsState.load());
-            extCmpPrimvarDescriptorsState.store(
-                rhs.extCmpPrimvarDescriptorsState.load());
-        }
-
         TfToken primType;
 
-        enum ReadState : unsigned char {
-            ReadStateUnread = 0,
-            ReadStateReading,
-            ReadStateRead,
-        };
-
-        std::atomic<ReadState> primvarDescriptorsState;
-        std::atomic<ReadState> extCmpPrimvarDescriptorsState;
-        std::map<HdInterpolation, HdPrimvarDescriptorVector>
-            primvarDescriptors;
-        std::map<HdInterpolation, HdExtComputationPrimvarDescriptorVector> 
-            extCmpPrimvarDescriptors;
+        using PrimvarDescriptorsArray =
+            std::array<HdPrimvarDescriptorVector, HdInterpolationCount>;
+        std::shared_ptr<PrimvarDescriptorsArray> primvarDescriptors;
+        using ExtCmpPrimvarDescriptorsArray =
+            std::array<HdExtComputationPrimvarDescriptorVector,
+                HdInterpolationCount>;
+        std::shared_ptr<ExtCmpPrimvarDescriptorsArray> extCmpPrimvarDescriptors;
     };
 
     using _PrimCacheTable = SdfPathTable<_PrimCacheEntry>;
     _PrimCacheTable _primCache;
+
+    std::shared_ptr<_PrimCacheEntry::PrimvarDescriptorsArray>
+        _ComputePrimvarDescriptors(
+            const HdContainerDataSourceHandle &primDataSource);
+    std::shared_ptr<_PrimCacheEntry::ExtCmpPrimvarDescriptorsArray>
+        _ComputeExtCmpPrimvarDescriptors(
+            const HdContainerDataSourceHandle &primDataSource);
 
     bool _sceneDelegatesBuilt;
     std::vector<HdSceneDelegate*> _sceneDelegates;

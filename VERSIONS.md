@@ -13,8 +13,8 @@ Our test machines have the following software versions installed.
 
 | Software      | Linux                | macOS                        | Windows                        |
 | ------------- | -------------------- | ---------------------------- | ------------------------------ |
-| OS            | CentOS Linux 7       | 12.6.3                       | Windows 10                     |
-| C++ Compiler  | gcc 9.3.1            | Apple clang 13.1.6 (Xcode 13.3) | Visual Studio 2017 15.9     |
+| OS            | CentOS Linux 7       | 12.6.3, 14.5 for visionOS  | Windows 10                     |
+| C++ Compiler  | gcc 9.3.1            | Apple clang 13.1.6 (Xcode 13.3)<br>Apple clang 15.0.0 (Xcode 15.4) for visionOS | Visual Studio 2017 15.9     |
 | CMake         | 3.17.5               | 3.19.5                       | 3.25.3                         |
 | Python        | 3.9.16               | 3.9.13                       | 3.9.13                         |
 | Boost         | 1.76.0               | 1.78.0                       | 1.76.0                         |
@@ -30,7 +30,7 @@ Our test machines have the following software versions installed.
 | RenderMan     | 25.3                 | 25.3                         | 25.3                           |
 | Alembic       | 1.8.5                | 1.8.5                        | 1.8.5                          |
 | OpenEXR       | 3.1.11               | 3.1.11                       | 3.1.11                         |
-| MaterialX     | 1.38.8               | 1.38.8                       | 1.38.8                         |
+| MaterialX     | 1.38.10              | 1.38.10                      | 1.38.10                        |
 | Jinja2        | 2.0                  |                              |                                |
 | Flex          | 2.5.39               |                              |                                |
 | Bison         | 2.4.1                |                              |                                |

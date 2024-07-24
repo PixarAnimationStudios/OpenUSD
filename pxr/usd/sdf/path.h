@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_SDF_PATH_H
 #define PXR_USD_SDF_PATH_H
@@ -30,6 +13,7 @@
 #include "pxr/usd/sdf/tokens.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/delegatedCountPtr.h"
+#include "pxr/base/tf/span.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/traits.h"
@@ -504,6 +488,20 @@ public:
     /// from longest to shortest.  If \p numPrefixes is 0 or greater than the
     /// number of this path's prefixes, fill all prefixes.
     SDF_API void GetPrefixes(SdfPathVector *prefixes, size_t numPrefixes) const;
+
+    /// Fill \p prefixes with up to \p prefixes.size() prefixes of this path.
+    /// Return the subspan of prefixes filled.
+    ///
+    /// Prefixes are filled in order of shortest to longest.  The path itself is
+    /// always included as the last prefix.  If \p prefixes is not large enough
+    /// to contain all prefixes, the shortest prefixes are omitted.  If \p
+    /// prefixes is larger than the number of prefixes filled, return the
+    /// subspan filled by calling TfSpan::first() with the number of filled
+    /// prefixes.  Note that if the prefix order does not need to be from
+    /// shortest to longest, it can be more efficient to use
+    /// GetAncestorsRange(), which produces an equivalent set of paths, ordered
+    /// from longest to shortest.
+    SDF_API TfSpan<SdfPath> GetPrefixes(TfSpan<SdfPath> prefixes) const;
 
     /// Return a range for iterating over the ancestors of this path.
     ///

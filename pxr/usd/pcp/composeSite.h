@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_PCP_COMPOSE_SITE_H
 #define PXR_USD_PCP_COMPOSE_SITE_H
@@ -72,20 +55,21 @@ TF_DECLARE_WEAK_AND_REF_PTRS(PcpLayerStack);
 
 class PcpLayerStackSite;
 
-/// \struct PcpSourceArcInfo
+/// \struct PcpArcInfo
 ///
-/// Information about the source of the target of an arc.
-/// All arcs have a layer that the arc comes from. References and payloads 
+/// Helper information about an arc. All arcs have a 
+/// layer that the arc comes from. References and payloads 
 /// supply an authored asset path as well.
 ///
-struct PcpSourceArcInfo {
-    SdfLayerHandle layer;
-    SdfLayerOffset layerStackOffset;
+struct PcpArcInfo {
+    SdfLayerHandle sourceLayer;
+    SdfLayerOffset sourceLayerStackOffset;
     std::string authoredAssetPath;
+    int arcNum;
 };
 
 /// A vector of reference or payload arc information.
-typedef std::vector<PcpSourceArcInfo> PcpSourceArcInfoVector;
+typedef std::vector<PcpArcInfo> PcpArcInfoVector;
 
 /// References
 PCP_API
@@ -94,7 +78,7 @@ PcpComposeSiteReferences(
     PcpLayerStackRefPtr const &layerStack,
     SdfPath const &path,
     SdfReferenceVector *result,
-    PcpSourceArcInfoVector *info,
+    PcpArcInfoVector *info,
     std::unordered_set<std::string> *exprVarDependencies,
     PcpErrorVector *errors);
 
@@ -103,7 +87,7 @@ PcpComposeSiteReferences(
     PcpLayerStackRefPtr const &layerStack,
     SdfPath const &path,
     SdfReferenceVector *result,
-    PcpSourceArcInfoVector *info)
+    PcpArcInfoVector *info)
 {
     return PcpComposeSiteReferences(
         layerStack, path, result, info, nullptr , nullptr);
@@ -113,7 +97,7 @@ inline void
 PcpComposeSiteReferences(
     PcpNodeRef const &node,
     SdfReferenceVector *result,
-    PcpSourceArcInfoVector *info,
+    PcpArcInfoVector *info,
     std::unordered_set<std::string> *exprVarDependencies,
     PcpErrorVector *errors)
 {
@@ -126,7 +110,7 @@ inline void
 PcpComposeSiteReferences(
     PcpNodeRef const &node,
     SdfReferenceVector *result,
-    PcpSourceArcInfoVector *info)
+    PcpArcInfoVector *info)
 {
     return PcpComposeSiteReferences(
         node.GetLayerStack(), node.GetPath(), result, info, nullptr, nullptr);
@@ -139,7 +123,7 @@ PcpComposeSitePayloads(
     PcpLayerStackRefPtr const &layerStack,
     SdfPath const &path,
     SdfPayloadVector *result,
-    PcpSourceArcInfoVector *info,
+    PcpArcInfoVector *info,
     std::unordered_set<std::string> *exprVarDependencies,
     PcpErrorVector *errors);
 
@@ -148,7 +132,7 @@ PcpComposeSitePayloads(
     PcpLayerStackRefPtr const &layerStack,
     SdfPath const &path,
     SdfPayloadVector *result,
-    PcpSourceArcInfoVector *info)
+    PcpArcInfoVector *info)
 {
     return PcpComposeSitePayloads(
         layerStack, path, result, info, nullptr, nullptr);
@@ -158,7 +142,7 @@ inline void
 PcpComposeSitePayloads(
     PcpNodeRef const &node,
     SdfPayloadVector *result,
-    PcpSourceArcInfoVector *info,
+    PcpArcInfoVector *info,
     std::unordered_set<std::string> *exprVarDependencies,
     PcpErrorVector *errors)
 {
@@ -171,7 +155,7 @@ inline void
 PcpComposeSitePayloads(
     PcpNodeRef const &node,
     SdfPayloadVector *result,
-    PcpSourceArcInfoVector *info)
+    PcpArcInfoVector *info)
 {
     return PcpComposeSitePayloads(
         node.GetLayerStack(), node.GetPath(), result, info, nullptr, nullptr);
@@ -244,7 +228,7 @@ PCP_API
 void
 PcpComposeSiteInherits(PcpLayerStackRefPtr const &layerStack,
                        SdfPath const &path, SdfPathVector *result,
-                       PcpSourceArcInfoVector *info);
+                       PcpArcInfoVector *info);
 
 PCP_API
 void
@@ -262,7 +246,7 @@ PCP_API
 void
 PcpComposeSiteSpecializes(PcpLayerStackRefPtr const &layerStack,
                           SdfPath const &path, SdfPathVector *result,
-                          PcpSourceArcInfoVector *info);
+                          PcpArcInfoVector *info);
 
 PCP_API
 void
@@ -282,7 +266,7 @@ void
 PcpComposeSiteVariantSets(PcpLayerStackRefPtr const &layerStack,
                           SdfPath const &path,
                           std::vector<std::string> *result,
-                          PcpSourceArcInfoVector *info);
+                          PcpArcInfoVector *info);
 
 PCP_API
 void

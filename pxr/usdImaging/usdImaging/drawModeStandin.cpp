@@ -1,25 +1,8 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 
 #include "pxr/usdImaging/usdImaging/drawModeStandin.h"
 
@@ -28,18 +11,20 @@
 
 #include "pxr/imaging/hd/basisCurvesSchema.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
+#include "pxr/imaging/hd/dataSource.h"
+#include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/extentSchema.h"
+#include "pxr/imaging/hd/geomSubsetSchema.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/legacyDisplayStyleSchema.h"
 #include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/materialConnectionSchema.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
-#include "pxr/imaging/hd/materialNodeSchema.h"
 #include "pxr/imaging/hd/materialNodeParameterSchema.h"
+#include "pxr/imaging/hd/materialNodeSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
-#include "pxr/imaging/hd/meshTopologySchema.h"
 #include "pxr/imaging/hd/meshSchema.h"
-#include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/meshTopologySchema.h"
 #include "pxr/imaging/hd/primvarSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
@@ -47,19 +32,20 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
-#include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/hio/image.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usd/sdr/registry.h"
-#include "pxr/usd/sdr/shaderNode.h"
+#include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/range3d.h"
+#include "pxr/base/tf/token.h"
+
+#include "pxr/pxr.h"
 
 #include <array>
-#include <functional>
 #include <bitset>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -79,19 +65,30 @@ UsdImaging_DrawModeStandin::GetPrim() const
 }
 
 HdSceneIndexPrim
-UsdImaging_DrawModeStandin::GetChildPrim(const TfToken &name) const
+UsdImaging_DrawModeStandin::GetDescendantPrim(const SdfPath& path) const
 {
-    return { _GetChildPrimType(name), _GetChildPrimSource(name) };
+    if (path.IsAbsolutePath() && path.HasPrefix(_path)) {
+        const SdfPath relPath = path.MakeRelativePath(_path);
+        return {
+            _GetDescendantPrimType(relPath),
+            _GetDescendantPrimSource(relPath) };
+    }
+    if (!path.IsAbsolutePath()) {
+        return {
+            _GetDescendantPrimType(path),
+            _GetDescendantPrimSource(path) };
+    }
+    return { TfToken(), nullptr };
 }
 
 SdfPathVector
-UsdImaging_DrawModeStandin::GetChildPrimPaths() const
+UsdImaging_DrawModeStandin::GetDescendantPrimPaths() const
 {
-    const TfTokenVector &childNames = _GetChildNames();
+    const SdfPathVector& relPaths = _GetDescendantPaths();
     SdfPathVector result;
-    result.reserve(childNames.size());
-    for (const TfToken &childName : childNames) {
-        result.push_back(_path.AppendChild(childName));
+    result.reserve(relPaths.size());
+    for (const SdfPath& relPath : relPaths) {
+        result.push_back(_path.AppendPath(relPath));
     }
     return result;
 }
@@ -100,12 +97,24 @@ void
 UsdImaging_DrawModeStandin::ComputePrimAddedEntries(
     HdSceneIndexObserver::AddedPrimEntries * entries) const
 {
-    entries->push_back({_path, TfToken()});
-    const TfTokenVector &childNames = _GetChildNames();
-    for (const TfToken &childName : childNames) {
-        const SdfPath childPath = _path.AppendChild(childName);
-        entries->push_back( { childPath, _GetChildPrimType(childName) });
+    entries->push_back({ _path, TfToken() });
+    const SdfPathVector& relPaths = _GetDescendantPaths();
+    for (const SdfPath& relPath : relPaths) {
+        entries->push_back({
+            _path.AppendPath(relPath),
+            _GetDescendantPrimType(relPath) });
     }
+}
+
+void
+UsdImaging_DrawModeStandin::ComputePrimRemovedEntries(
+    HdSceneIndexObserver::RemovedPrimEntries* entries) const
+{
+    const SdfPathVector& relPaths = _GetDescendantPaths();
+    for (const SdfPath& relPath : relPaths) {
+        entries->push_back({ _path.AppendPath(relPath) });
+    }
+    entries->push_back({ _path });
 }
 
 namespace {
@@ -624,19 +633,20 @@ public:
     {
     }
 
-    const TfTokenVector
-    _GetChildNames() const override {
-        static const TfTokenVector childNames{ _primNameTokens->boundsCurves };
-        return childNames;
+    const SdfPathVector
+    _GetDescendantPaths() const override {
+        static const SdfPathVector paths {
+            SdfPath(_primNameTokens->boundsCurves) };
+        return paths;
     }
 
     TfToken
-    _GetChildPrimType(const TfToken &name) const override {
+    _GetDescendantPrimType(const SdfPath& /*path*/) const override {
         return HdPrimTypeTokens->basisCurves;
     }
 
     HdContainerDataSourceHandle
-    _GetChildPrimSource(const TfToken &name) const override {
+    _GetDescendantPrimSource(const SdfPath& /*path*/) const override {
         return _BoundsPrimDataSource::New(_primSource);
     }
 
@@ -678,12 +688,12 @@ public:
                         .Append(HdTokens->displayColor);
                 primDirtyLocators.insert(displayColor);
             }
-            for (const SdfPath &path : GetChildPrimPaths()) {
+            for (const SdfPath &path : GetDescendantPrimPaths()) {
                 entries->push_back({path, primDirtyLocators});
             }
         } else {
             // Can just forward the dirty locators to the basis curves prim.
-            for (const SdfPath &path : GetChildPrimPaths()) {
+            for (const SdfPath &path : GetDescendantPrimPaths()) {
                 entries->push_back({path, dirtyLocators});
             }
         }
@@ -842,19 +852,20 @@ public:
     {
     }
 
-    const TfTokenVector
-    _GetChildNames() const override {
-        static const TfTokenVector childNames{ _primNameTokens->originCurves };
-        return childNames;
+    const SdfPathVector
+    _GetDescendantPaths() const override {
+        static const SdfPathVector paths {
+            SdfPath(_primNameTokens->originCurves) };
+        return paths;
     }
 
     TfToken
-    _GetChildPrimType(const TfToken &name) const override {
+    _GetDescendantPrimType(const SdfPath& /*path*/) const override {
         return HdPrimTypeTokens->basisCurves;
     }
 
     HdContainerDataSourceHandle
-    _GetChildPrimSource(const TfToken &name) const override {
+    _GetDescendantPrimSource(const SdfPath& /*path*/) const override {
         return _OriginPrimDataSource::New(_primSource);
     }
 
@@ -881,11 +892,11 @@ public:
                 HdPrimvarsSchema::GetDefaultLocator()
                     .Append(HdTokens->displayColor);
             primDirtyLocators.insert(displayColorValue);
-            for (const SdfPath &path : GetChildPrimPaths()) {
+            for (const SdfPath &path : GetDescendantPrimPaths()) {
                 entries->push_back({path, primDirtyLocators});
             }
         } else {
-            for (const SdfPath &path : GetChildPrimPaths()) {
+            for (const SdfPath &path : GetDescendantPrimPaths()) {
                 entries->push_back({path, dirtyLocators});
             }
         }
@@ -947,10 +958,10 @@ using _MaterialsDict = std::unordered_map<
 ///
 /// Implements stand-in for cards draw mode.
 ///
-/// It is providing a mesh with a material. The mesh consists of up to 6 quads.
-/// Besides points, it has the vertex-varying cardsUv and face-varying
-/// cardsTexAssgin - determining where to sample which of the up to 6 textures
-/// that can be specified by the UsdImagingGeomModelSchema.
+/// It is providing a mesh with a material. The mesh consists of up to 6 quads,
+/// each assigned to its own geom subset. Up to six materials, each bound to a
+/// geom subset, are also supplied. The parent mesh has the vertex-varying
+/// primvar `cardsUv`, used for correctly sampling any assigned texture.
 ///
 /// Details vary based on the card geometry which is box, cross, or fromTexture.
 ///
@@ -988,9 +999,20 @@ public:
     HdDataSourceBaseHandle
     GetUVs() { return _GetCardsData()->uvs; }
 
-    /// The individual face geometry subsets.
+    /// An individual face geometry subset.
     HdContainerDataSourceHandle
-    GetGeomSubsets() { return _GetCardsData()->geomSubsets; }
+    GetGeomSubset(const TfToken& name) { 
+        return _GetCardsData()->GetSubset(name);
+    }
+    
+    TfTokenVector
+    GetGeomSubsetNames() {
+        TfTokenVector names;
+        for (const auto& kv :_GetCardsData()->geomSubsets) {
+            names.push_back(kv.first);
+        }
+        return names;
+    }
 
     /// The topology.
     HdContainerDataSourceHandle
@@ -1044,15 +1066,27 @@ private:
     /// The cached data.
     struct _CardsData
     {
+        using SubsetMap = std::unordered_map<TfToken,
+            HdContainerDataSourceHandle, TfToken::HashFunctor>;
+            
         _CardsData(const _SchemaValues &values, const SdfPath &primPath);
 
         TfToken cardGeometry;
         VtVec3fArray points;
         HdContainerDataSourceHandle extent;
         HdDataSourceBaseHandle uvs;
-        HdContainerDataSourceHandle geomSubsets;
+        SubsetMap geomSubsets;
         HdContainerDataSourceHandle meshTopology;
         _MaterialsDict materials;
+        
+        HdContainerDataSourceHandle
+        GetSubset(const TfToken& name) {
+            const auto it = geomSubsets.find(name);
+            if (it != geomSubsets.end()) {
+                return it->second;
+            }
+            return nullptr;
+        }
         
     private:
         static
@@ -1062,7 +1096,7 @@ private:
         VtVec2fArray
         _ComputeUVs(const _SchemaValues &values);
         static
-        HdContainerDataSourceHandle
+        SubsetMap
         _ComputeGeomSubsets(const _SchemaValues &values, 
             const SdfPath &primPath);
         static const
@@ -1397,7 +1431,7 @@ _CardsDataCache::_CardsData::_ComputePoints(const _SchemaValues &values)
     return points;
 }
 
-HdContainerDataSourceHandle
+_CardsDataCache::_CardsData::SubsetMap
 _CardsDataCache::_CardsData::_ComputeGeomSubsets(
     const _SchemaValues &values, const SdfPath &primPath)
 {
@@ -1406,8 +1440,7 @@ _CardsDataCache::_CardsData::_ComputeGeomSubsets(
     static const std::array<TfToken, 6> materialNameTokens = 
         _AddAxesToNames("subsetMaterial", "");
     
-    std::vector<TfToken> subsetNames;
-    std::vector<HdDataSourceBaseHandle> subsets;
+    SubsetMap subsets;
 
     // Do not generate subsets if there are no textures for any face.
     // The entire standin prim will use the renderer's fallback material, which 
@@ -1430,60 +1463,61 @@ _CardsDataCache::_CardsData::_ComputeGeomSubsets(
         
         for (size_t i = 0; i < 6; i++) {
             const size_t vi = (i % 2 == 0 ? 0 : 3) + i / 2;
-            if (values.hasFace[vi]) {
-                static HdTokenDataSourceHandle const typeSource =
-                    HdGeomSubsetSchema::BuildTypeDataSource(
-                        HdGeomSubsetSchemaTokens->typeFaceSet);
-                const int subsetIndex(subsets.size());
-                // use the opposite face's material if no texture for this face
-                const size_t matIndex = values.hasTexture[vi] ? vi : (vi + 3) % 6;
-                static const TfToken purposes[] = {
-                    HdMaterialBindingsSchemaTokens->allPurpose
-                };
-                const SdfPath materialPath =
-                    // geomSubset's materialBinding path must be absolute
-                    primPath.AppendChild(materialNameTokens[matIndex]);
-
-                // Note that we use the hydra material bindings schema here (and
-                // below) rather than UsdImagingDirectMaterialBinding(s)Schema.
-                // We want these bindings to be unaffected by any USD material
-                // bindings up-namespace.
-                //
-                HdDataSourceBaseHandle const materialBindingSources[] = {
-                    HdMaterialBindingSchema::Builder()
-                        .SetPath(
-                            HdRetainedTypedSampledDataSource<SdfPath>::New(
-                                materialPath))
-                        .Build()
-                };
-
-                subsetNames.push_back(subsetNameTokens[vi]);
-                subsets.push_back(
-                    HdOverlayContainerDataSource::New(
-                        HdGeomSubsetSchema::Builder()
-                            .SetType(typeSource)
-                            .SetIndices(
-                                HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                                    { subsetIndex }))
-                            .Build(),
-
-                        HdRetainedContainerDataSource::New(
-                            HdMaterialBindingsSchema::GetSchemaToken(),
-                            HdMaterialBindingsSchema::BuildRetained(
-                                TfArraySize(purposes),
-                                purposes,
-                                materialBindingSources))));
-                        
+            if (!values.hasFace[vi]) {
+                continue;
             }
+            static HdTokenDataSourceHandle const typeSource =
+                HdGeomSubsetSchema::BuildTypeDataSource(
+                    HdGeomSubsetSchemaTokens->typeFaceSet);
+            static const HdBoolDataSourceHandle trueSource =
+                HdRetainedTypedSampledDataSource<bool>::New(true);
+            const int subsetIndex((int)(subsets.size()));
+            // use the opposite face's material if no texture for this face
+            const size_t mi = values.hasTexture[vi] ? vi : (vi + 3) % 6;
+            static const TfToken materialBindingNames[] = {
+                HdMaterialBindingsSchemaTokens->allPurpose
+            };
+            const SdfPath materialPath =
+                // geomSubset's materialBinding path must be absolute
+                primPath.AppendChild(materialNameTokens[mi]);
+
+            // Note that we use the hydra material bindings schema here (and
+            // below) rather than UsdImagingDirectMaterialBinding(s)Schema.
+            // We want these bindings to be unaffected by any USD material
+            // bindings up-namespace.
+            //
+            HdDataSourceBaseHandle const materialBindingSources[] = {
+                HdMaterialBindingSchema::Builder()
+                    .SetPath(HdRetainedTypedSampledDataSource<SdfPath>::New(
+                        materialPath))
+                    .Build()
+            };
+
+            subsets.insert({
+                subsetNameTokens[vi], 
+                HdRetainedContainerDataSource::New(
+                    HdGeomSubsetSchema::GetSchemaToken(),
+                    HdGeomSubsetSchema::Builder()
+                        .SetType(typeSource)
+                        .SetIndices(
+                            HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                                { subsetIndex }))
+                        .Build(),
+
+                    HdVisibilitySchema::GetSchemaToken(),
+                    HdVisibilitySchema::Builder()
+                        .SetVisibility(trueSource)
+                        .Build(),
+
+                    HdMaterialBindingsSchema::GetSchemaToken(),
+                    HdMaterialBindingsSchema::BuildRetained(
+                        TfArraySize(materialBindingNames),
+                        materialBindingNames,
+                        materialBindingSources)) });
         }
     }
 
-    if (subsetNames.empty()) {
-        return nullptr;
-    } else {
-        return HdRetainedContainerDataSource::New(
-            subsetNames.size(), subsetNames.data(), subsets.data());
-    }
+    return subsets;
 }
 
 HdContainerDataSourceHandle
@@ -1955,7 +1989,6 @@ public:
                 .SetTopology(_dataCache->GetMeshTopology())
                 .SetDoubleSided(
                     HdRetainedTypedSampledDataSource<bool>::New(false))
-                .SetGeomSubsets(_dataCache->GetGeomSubsets())
                 .Build();
         }
         if (name == HdPrimvarsSchemaTokens->primvars) {
@@ -2020,34 +2053,50 @@ public:
     {
     }
 
-    const TfTokenVector
-    _GetChildNames() const override {
-        TfTokenVector names = { _primNameTokens->cardsMesh };
-        const _MaterialsDict mats = _dataCache->GetMaterials();
-        for (const auto &kv : mats) {
-            names.push_back(kv.first);
+    const SdfPathVector
+    _GetDescendantPaths() const override {
+        SdfPathVector paths = { SdfPath(_primNameTokens->cardsMesh) };
+        // materials are siblings of 'cardsMesh'
+        for (const auto &kv : _dataCache->GetMaterials()) {
+            paths.emplace_back(kv.first);
         }
-        return names;
+        // geom subsets are children of 'cardsMesh'
+        for (const TfToken& name : _dataCache->GetGeomSubsetNames()) {
+            paths.push_back(paths.front().AppendChild(name));
+        }
+        return paths;
     }
 
     TfToken
-    _GetChildPrimType(const TfToken &name) const override {
-        if (name == _primNameTokens->cardsMesh) {
+    _GetDescendantPrimType(const SdfPath& path) const override {
+        static const SdfPath cardsMeshPath = SdfPath(_primNameTokens->cardsMesh);
+        if (path == cardsMeshPath) {
             return HdPrimTypeTokens->mesh;
+        }
+        if (path.HasPrefix(cardsMeshPath)) {
+            return HdPrimTypeTokens->geomSubset;
         }
         return HdPrimTypeTokens->material;
     }
 
     HdContainerDataSourceHandle
-    _GetChildPrimSource(const TfToken &name) const override {
+    _GetDescendantPrimSource(const SdfPath& path) const override {
+        static const SdfPath cardsMeshPath = SdfPath(_primNameTokens->cardsMesh);
+        if (path == cardsMeshPath) {
+            return _CardsPrimDataSource::New(_path, _primSource, _dataCache);
+        }
+        if (path.HasPrefix(cardsMeshPath)) {
+            return _dataCache->GetGeomSubset(path.GetNameToken());
+        }
         // We rely on the consumer calling HdSceneIndex::GetPrim()
         // again when we send a prim dirtied for the material prims
         // with an empty data source locators.
         const _MaterialsDict &materials = _dataCache->GetMaterials();
+        const TfToken& name = path.GetNameToken();
         if (materials.count(name)) {
             return materials.at(name);
         }
-        return _CardsPrimDataSource::New(_path, _primSource, _dataCache);
+        return nullptr;
     }
 
     void ProcessDirtyLocators(
@@ -2077,7 +2126,7 @@ public:
         // Blast the entire thing.
         if (dirtyLocators.Intersects(cardLocators)) {
             (*needsRefresh) = true;
-            for (const SdfPath &path : GetChildPrimPaths()) {
+            for (const SdfPath &path : GetDescendantPrimPaths()) {
                 static const HdDataSourceLocator empty;
                 entries->push_back({path, empty});
             }

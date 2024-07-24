@@ -135,7 +135,7 @@ html_theme_options = {
     'display_version': False,
     'collapse_navigation': False,
     'sticky_navigation': False,
-    'navigation_depth': 3,
+    'navigation_depth': 4,
     'style_nav_header_background': '#606060'
 }
 

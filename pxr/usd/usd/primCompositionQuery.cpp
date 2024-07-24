@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/primCompositionQuery.h"
@@ -82,7 +65,7 @@ template <class ResultType>
 using _PcpComposeFunc = void (*)(PcpLayerStackRefPtr const &,
                                  SdfPath const &, 
                                  std::vector<ResultType> *,
-                                 PcpSourceArcInfoVector *);
+                                 PcpArcInfoVector *);
 
 // Helper for getting the corresponding list entry and arc source info from
 // the composed list op of an arc introducing node for all list op types.
@@ -91,12 +74,12 @@ static
 bool
 _GetIntroducingComposeInfo(const UsdPrimCompositionQueryArc &arc,
                            _PcpComposeFunc<ResultType> composeFunc, 
-                           PcpSourceArcInfo *arcInfo,
+                           PcpArcInfo *arcInfo,
                            ResultType *entry)
 {
     // Run the Pcp compose func to get the parallel vectors of composed list
     // entries and arc source info.
-    PcpSourceArcInfoVector info;
+    PcpArcInfoVector info;
     std::vector<ResultType> result;
     composeFunc(arc.GetIntroducingNode().GetLayerStack(), 
                 arc.GetIntroducingPrimPath(), 
@@ -177,7 +160,7 @@ UsdPrimCompositionQueryArc::GetIntroducingLayer() const
     // The arc source info returned by the various Pcp compose functions for 
     // list op fields will hold the layer whose prim spec adds this arc to the
     // list. Just need to call the correct function for each arc type.
-    PcpSourceArcInfo info;
+    PcpArcInfo info;
     bool foundInfo = false;
     switch (_node.GetArcType()) {
     case PcpArcTypeReference:
@@ -204,7 +187,7 @@ UsdPrimCompositionQueryArc::GetIntroducingLayer() const
         break;
     }
     if (foundInfo) {
-        return info.layer;
+        return info.sourceLayer;
     }
     // Empty layer for root arc and unsupported arc types.
     return SdfLayerHandle();
@@ -229,9 +212,9 @@ UsdPrimCompositionQueryArc::GetIntroducingPrimPath() const
 static
 SdfPrimSpecHandle
 _GetIntroducingPrimSpec(const UsdPrimCompositionQueryArc &arc, 
-                        const PcpSourceArcInfo &info)
+                        const PcpArcInfo &info)
 {
-    return info.layer->GetPrimAtPath(arc.GetIntroducingPrimPath());
+    return info.sourceLayer->GetPrimAtPath(arc.GetIntroducingPrimPath());
 }
 
 bool
@@ -245,7 +228,7 @@ UsdPrimCompositionQueryArc::GetIntroducingListEditor(
     }
 
     // Compose the references on the introducing node.
-    PcpSourceArcInfo info;
+    PcpArcInfo info;
     if (!_GetIntroducingComposeInfo<SdfReference>(
         *this, &PcpComposeSiteReferences, &info, ref)) {
         return false;
@@ -270,7 +253,7 @@ UsdPrimCompositionQueryArc::GetIntroducingListEditor(
     }
 
     // Compose the payloads on the introducing node.
-    PcpSourceArcInfo info;
+    PcpArcInfo info;
     if (!_GetIntroducingComposeInfo<SdfPayload>(
         *this, &PcpComposeSitePayloads, &info, payload)) {
         return false;
@@ -296,7 +279,7 @@ UsdPrimCompositionQueryArc::GetIntroducingListEditor(
         return false;
     }
 
-    PcpSourceArcInfo info;
+    PcpArcInfo info;
     if (GetArcType() == PcpArcTypeInherit) {
         // Compose the inherit paths on the introducing node.
         if (!_GetIntroducingComposeInfo<SdfPath>(
@@ -329,7 +312,7 @@ UsdPrimCompositionQueryArc::GetIntroducingListEditor(
     }
 
     // Compose the variant set names on the introducing node.
-    PcpSourceArcInfo info;
+    PcpArcInfo info;
     if (!_GetIntroducingComposeInfo<std::string>(
         *this, &PcpComposeSiteVariantSets, &info, name)) {
         return false;

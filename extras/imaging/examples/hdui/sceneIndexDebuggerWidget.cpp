@@ -1,25 +1,8 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "sceneIndexDebuggerWidget.h"
 #include "dataSourceTreeWidget.h"
@@ -37,7 +20,6 @@
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-#include <QSplitter>
 #include <QWidgetAction>
 
 #include <fstream>
@@ -47,8 +29,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HduiSceneIndexDebuggerWidget::HduiSceneIndexDebuggerWidget(QWidget *parent)
+HduiSceneIndexDebuggerWidget::HduiSceneIndexDebuggerWidget(
+    QWidget *parent,
+    const Options &options)
 : QWidget(parent)
+, _goToInputButton(Q_NULLPTR)
+, _goToInputButtonMenu(Q_NULLPTR)
 {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     QHBoxLayout *toolbarLayout = new QHBoxLayout;
@@ -57,10 +43,12 @@ HduiSceneIndexDebuggerWidget::HduiSceneIndexDebuggerWidget(QWidget *parent)
     _siChooser = new HduiRegisteredSceneIndexChooser;
     toolbarLayout->addWidget(_siChooser);
 
-    _goToInputButton = new QPushButton("Inputs");
-    _goToInputButton->setEnabled(false);
-    _goToInputButtonMenu = new QMenu(this);
-    _goToInputButton->setMenu(_goToInputButtonMenu);
+    if (options.showInputsButton) {
+        _goToInputButton = new QPushButton("Inputs");
+        _goToInputButton->setEnabled(false);
+        _goToInputButtonMenu = new QMenu(this);
+        _goToInputButton->setMenu(_goToInputButtonMenu);
+    }
 
     toolbarLayout->addWidget(_goToInputButton);
 
@@ -75,17 +63,17 @@ HduiSceneIndexDebuggerWidget::HduiSceneIndexDebuggerWidget(QWidget *parent)
 
     toolbarLayout->addStretch();
 
-    QSplitter * splitter = new QSplitter(Qt::Horizontal);
-    mainLayout->addWidget(splitter, 10);
+    _splitter = new QSplitter(Qt::Horizontal);
+    mainLayout->addWidget(_splitter, 10);
 
     _siTreeWidget = new HduiSceneIndexTreeWidget;
-    splitter->addWidget(_siTreeWidget);
+    _splitter->addWidget(_siTreeWidget);
 
     _dsTreeWidget = new HduiDataSourceTreeWidget;
-    splitter->addWidget(_dsTreeWidget);
+    _splitter->addWidget(_dsTreeWidget);
 
     _valueTreeView = new HduiDataSourceValueTreeView;
-    splitter->addWidget(_valueTreeView);
+    _splitter->addWidget(_valueTreeView);
 
     QObject::connect(_siTreeWidget, &HduiSceneIndexTreeWidget::PrimSelected,
         [this](const SdfPath &primPath,
@@ -112,11 +100,13 @@ HduiSceneIndexDebuggerWidget::HduiSceneIndexDebuggerWidget(QWidget *parent)
             &HduiRegisteredSceneIndexChooser::SceneIndexSelected,
         [this](const std::string &name,
                 HdSceneIndexBaseRefPtr sceneIndex) {
-            this->SetSceneIndex(name, sceneIndex, true);
+            this->SetRegisteredSceneIndex(name, sceneIndex);
     });
 
-    QObject::connect(_goToInputButtonMenu, &QMenu::aboutToShow, this,
-            &HduiSceneIndexDebuggerWidget::_FillGoToInputMenu);
+    if (_goToInputButtonMenu) {
+        QObject::connect(_goToInputButtonMenu, &QMenu::aboutToShow, this,
+                         &HduiSceneIndexDebuggerWidget::_FillGoToInputMenu);
+    }
 
 
     QObject::connect(loggerButton, &QPushButton::clicked,
@@ -162,6 +152,14 @@ HduiSceneIndexDebuggerWidget::HduiSceneIndexDebuggerWidget(QWidget *parent)
 }
 
 void
+HduiSceneIndexDebuggerWidget::SetRegisteredSceneIndex(
+    const std::string &registeredName,
+    HdSceneIndexBaseRefPtr sceneIndex)
+{
+    SetSceneIndex(registeredName, std::move(sceneIndex), true);
+}
+
+void
 HduiSceneIndexDebuggerWidget::SetSceneIndex(const std::string &displayName,
     HdSceneIndexBaseRefPtr sceneIndex, bool pullRoot)
 {
@@ -175,7 +173,9 @@ HduiSceneIndexDebuggerWidget::SetSceneIndex(const std::string &displayName,
         }
     }
 
-    _goToInputButton->setEnabled(inputsPresent);
+    if (_goToInputButton) {
+        _goToInputButton->setEnabled(inputsPresent);
+    }
 
     std::ostringstream buffer;
     if (sceneIndex) {
@@ -217,12 +217,16 @@ HduiSceneIndexDebuggerWidget::_FillGoToInputMenu()
     QMenu *menu = _goToInputButtonMenu;
     menu->clear();
 
+    QSizePolicy policy = menu->sizePolicy();
+    policy.setHorizontalPolicy(QSizePolicy::Expanding);
+    menu->setSizePolicy(policy);
+
     QTreeWidget *menuTreeWidget = new QTreeWidget;
     menuTreeWidget->setHeaderHidden(true);
     menuTreeWidget->setAllColumnsShowFocus(true);
     menuTreeWidget->setMouseTracking(true);
     menuTreeWidget->setSizeAdjustPolicy(
-            QAbstractScrollArea::AdjustToContentsOnFirstShow);
+            QAbstractScrollArea::AdjustToContents);
 
     QObject::connect(menuTreeWidget, &QTreeWidget::itemEntered,
         [menuTreeWidget](QTreeWidgetItem *item, int column) {
@@ -231,7 +235,7 @@ HduiSceneIndexDebuggerWidget::_FillGoToInputMenu()
     });
 
     QObject::connect(menuTreeWidget, &QTreeWidget::itemClicked,
-        [this, menu, menuTreeWidget](QTreeWidgetItem *item, int column) {
+        [this, menu](QTreeWidgetItem *item, int column) {
 
             if (_InputSelectionItem *selectionItem =
                     dynamic_cast<_InputSelectionItem*>(item)) {
@@ -264,7 +268,7 @@ HduiSceneIndexDebuggerWidget::_AddSceneIndexToTreeMenu(
             sceneIndex->GetDisplayName().c_str());
 
         item->sceneIndex = sceneIndex;
-        
+        item->treeWidget()->resizeColumnToContents(0);
         parentItem = item;
     }
 

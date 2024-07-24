@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -57,6 +40,13 @@ HdTetMeshTopologySchema::GetTetVertexIndices() const
         HdTetMeshTopologySchemaTokens->tetVertexIndices);
 }
 
+HdVec3iArrayDataSourceHandle
+HdTetMeshTopologySchema::GetSurfaceFaceVertexIndices() const
+{
+    return _GetTypedDataSource<HdVec3iArrayDataSource>(
+        HdTetMeshTopologySchemaTokens->surfaceFaceVertexIndices);
+}
+
 HdTokenDataSourceHandle
 HdTetMeshTopologySchema::GetOrientation() const
 {
@@ -68,17 +58,23 @@ HdTetMeshTopologySchema::GetOrientation() const
 HdContainerDataSourceHandle
 HdTetMeshTopologySchema::BuildRetained(
         const HdVec4iArrayDataSourceHandle &tetVertexIndices,
+        const HdVec3iArrayDataSourceHandle &surfaceFaceVertexIndices,
         const HdTokenDataSourceHandle &orientation
 )
 {
-    TfToken _names[2];
-    HdDataSourceBaseHandle _values[2];
+    TfToken _names[3];
+    HdDataSourceBaseHandle _values[3];
 
     size_t _count = 0;
 
     if (tetVertexIndices) {
         _names[_count] = HdTetMeshTopologySchemaTokens->tetVertexIndices;
         _values[_count++] = tetVertexIndices;
+    }
+
+    if (surfaceFaceVertexIndices) {
+        _names[_count] = HdTetMeshTopologySchemaTokens->surfaceFaceVertexIndices;
+        _values[_count++] = surfaceFaceVertexIndices;
     }
 
     if (orientation) {
@@ -97,6 +93,14 @@ HdTetMeshTopologySchema::Builder::SetTetVertexIndices(
 }
 
 HdTetMeshTopologySchema::Builder &
+HdTetMeshTopologySchema::Builder::SetSurfaceFaceVertexIndices(
+    const HdVec3iArrayDataSourceHandle &surfaceFaceVertexIndices)
+{
+    _surfaceFaceVertexIndices = surfaceFaceVertexIndices;
+    return *this;
+}
+
+HdTetMeshTopologySchema::Builder &
 HdTetMeshTopologySchema::Builder::SetOrientation(
     const HdTokenDataSourceHandle &orientation)
 {
@@ -109,6 +113,7 @@ HdTetMeshTopologySchema::Builder::Build()
 {
     return HdTetMeshTopologySchema::BuildRetained(
         _tetVertexIndices,
+        _surfaceFaceVertexIndices,
         _orientation
     );
 }
@@ -148,6 +153,16 @@ HdTetMeshTopologySchema::GetTetVertexIndicesLocator()
     static const HdDataSourceLocator locator =
         GetDefaultLocator().Append(
             HdTetMeshTopologySchemaTokens->tetVertexIndices);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdTetMeshTopologySchema::GetSurfaceFaceVertexIndicesLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdTetMeshTopologySchemaTokens->surfaceFaceVertexIndices);
     return locator;
 }
 

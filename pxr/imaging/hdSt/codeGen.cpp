@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdSt/codeGen.h"
 #include "pxr/imaging/hdSt/binding.h"
@@ -145,6 +128,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (line_strip)
     (triangle_strip)
     (early_fragment_tests)
+    (OsdPerPatchVertexBezier)
 );
 
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_HGI_RESOURCE_GENERATION, false,
@@ -582,6 +566,7 @@ public:
     ~_ResourceGenerator() = default;
 
     void _GenerateHgiResources(
+        Hgi const * hgi,
         HgiShaderFunctionDesc *funcDesc,
         TfToken const & shaderStage,
         HioGlslfxResourceLayout::ElementVector const & elements,
@@ -606,6 +591,12 @@ public:
         HioGlslfxResourceLayout::TextureElementVector const & textureElements,
         HdSt_ResourceBinder::MetaData const & metaData);
 
+    void  _AdvanceShaderStage()
+    {
+        // Reset interstage slot counter when moving to next stage.
+        _nextInterstageSlot = 0;
+    }
+
 private:
     using _SlotTable = std::unordered_map<TfToken, int32_t, TfHash>;
 
@@ -625,16 +616,17 @@ private:
         return _nextOutputLocation++;
     }
 
-    int32_t _GetSlot(TfToken const & name, uint32_t const count = 1)
+    int32_t _GetSlot(TfToken const & name, bool in, uint32_t const count = 1)
     {
         _SlotTable::iterator entry = _interstageSlotTable.find(name);
 
-        if (entry != _interstageSlotTable.end()) {
+        // For input interstage slots, check slot table.
+        if (in && entry != _interstageSlotTable.end()) {
             return entry->second;
         }
 
         int32_t const currentSlot = _nextInterstageSlot;
-        _interstageSlotTable.insert({name, currentSlot});
+        _interstageSlotTable.insert_or_assign(name, currentSlot);
         _nextInterstageSlot += count;
 
         return currentSlot;
@@ -713,8 +705,27 @@ _IsVertexAttribInputStage(TfToken const & shaderStage)
            (shaderStage == HdShaderTokens->postTessVertexShader);
 }
 
+// Most data types we use in Storm take up one location slot. There are some 
+// exceptions, which we can add here as we find them.
+uint32_t
+_GetLocationCount(Hgi const * hgi, TfToken const & dataType)
+{
+    if (dataType == _tokens->OsdPerPatchVertexBezier) {
+        return 2;
+    }
+    
+    // In Vulkan, 64-bit three or four component vectors take up two slots.
+    if ((dataType == _tokens->dvec3 || dataType == _tokens->dvec4) && 
+        hgi->GetAPIName() == HgiTokens->Vulkan) {
+        return 2;
+    }
+    
+    return 1;
+}
+
 void
 _ResourceGenerator::_GenerateHgiResources(
+    Hgi const * hgi,
     HgiShaderFunctionDesc *funcDesc,
     TfToken const & shaderStage,
     HioGlslfxResourceLayout::ElementVector const & elements,
@@ -740,7 +751,8 @@ _ResourceGenerator::_GenerateHgiResources(
                     HgiShaderFunctionParamDesc param;
                     param.nameInShader = element.name;
                     param.type = element.dataType;
-                    param.interstageSlot = _GetSlot(element.name);
+                    param.interstageSlot = _GetSlot(element.name, /*in*/true,
+                        _GetLocationCount(hgi, element.dataType));
                     param.interpolation = _GetInterpolation(element.qualifiers);
                     param.sampling = _GetSamplingQualifier(element.qualifiers);
                     param.storage = _GetStorageQualifier(element.qualifiers);
@@ -758,7 +770,8 @@ _ResourceGenerator::_GenerateHgiResources(
                     HgiShaderFunctionParamDesc param;
                     param.nameInShader = element.name,
                     param.type = element.dataType,
-                    param.interstageSlot = _GetSlot(element.name);
+                    param.interstageSlot = _GetSlot(element.name, /*in*/false,
+                        _GetLocationCount(hgi, element.dataType));
                     param.interpolation = _GetInterpolation(element.qualifiers);
                     param.sampling = _GetSamplingQualifier(element.qualifiers);
                     param.storage = _GetStorageQualifier(element.qualifiers);
@@ -775,7 +788,13 @@ _ResourceGenerator::_GenerateHgiResources(
             TfToken const firstMemberBlockName =
                 _GetFlattenedName(element.aggregateName,
                                   element.members.front().name);
-            paramBlock.interstageSlot = _GetSlot(firstMemberBlockName);
+
+            uint32_t locationCount = 0;
+            for (const auto& member : element.members) {
+                locationCount += _GetLocationCount(hgi, member.dataType);
+            }
+            paramBlock.interstageSlot = _GetSlot(firstMemberBlockName,
+                /*in*/element.inOut == InOut::STAGE_IN, locationCount);
 
             for (auto const & member : element.members) {
                 HgiShaderFunctionParamBlockDesc::Member paramMember;
@@ -1211,6 +1230,26 @@ _ResourceGenerator::_GenerateGLSLResources(
     }
 }
 
+static
+std::string
+_GetGLSLSamplerTypePrefix(HioFormat hioFormat)
+{
+    GLenum const hioType = HioGetHioType(hioFormat);
+    switch (hioType) {
+        case HioTypeUnsignedByte:
+        case HioTypeUnsignedByteSRGB:
+        case HioTypeUnsignedShort:
+        case HioTypeUnsignedInt:
+            return "u";
+        case HioTypeSignedByte:
+        case HioTypeSignedShort:
+        case HioTypeInt:
+            return "i";
+        default:
+            return "";
+    }
+}
+
 void
 _ResourceGenerator::_GenerateGLSLTextureResources(
     std::stringstream &str,
@@ -1227,13 +1266,18 @@ _ResourceGenerator::_GenerateGLSLTextureResources(
 
         bool const isArrayOfTexture = (texture.arraySize > 0);
 
+        const std::string typePrefix =
+            _GetGLSLSamplerTypePrefix(texture.format);
+
         std::string const samplerType =
+            typePrefix +
             (isShadowTexture
                 ? "sampler" + std::to_string(texture.dim) + "DShadow"
                 : "sampler" + std::to_string(texture.dim) + "D") +
             (isArrayTexture ? "Array" : "");
 
         std::string const resultType =
+            typePrefix +
             (isShadowTexture ? "float" : "vec4");
 
         std::string const resourceName =
@@ -2443,6 +2487,7 @@ HdSt_CodeGen::_GenerateComputeParameters(HgiShaderFunctionDesc * const csDesc)
     // main
     _genCS << "void main() {\n";
     _genCS << "  int computeCoordinate = int(hd_GlobalInvocationID.x);\n";
+    _genCS << "  if (computeCoordinate >= indexEnd) {\n    return;\n  };\n";
     _genCS << "  compute(computeCoordinate);\n";
     _genCS << "}\n";
 
@@ -2503,42 +2548,6 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
             HgiShaderFunctionAddStageOutput(
                 &desc, "gl_ClipDistance", "float",
                 "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
-        }
-
-        if (!glslProgram->CompileShader(desc)) {
-            return nullptr;
-        }
-        shaderCompiled = true;
-    }
-    if (_hasFS) {
-        HgiShaderFunctionDesc desc;
-        std::stringstream resDecl;
-        resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->fragmentShader, _resCommon, _GetMetaData());
-        resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->fragmentShader, _resFS, _GetMetaData());
-
-        // material in FS
-        resourceGen._GenerateGLSLResources(&desc, resDecl,
-            HdShaderTokens->fragmentShader, _resMaterial, _GetMetaData());
-        resourceGen._GenerateGLSLTextureResources(resDecl,
-            HdShaderTokens->fragmentShader, _resTextures, _GetMetaData());
-
-        std::string const source =
-            _genDefines.str() + _genDecl.str() + resDecl.str() + _osd.str() +
-            _genAccessors.str() + _genFS.str();
-
-        desc.shaderStage = HgiShaderStageFragment;
-        desc.shaderCode = source.c_str();
-        desc.generatedShaderCodeOut = &_fsSource;
-
-        const bool builtinBarycentricsEnabled =
-            registry->GetHgi()->GetCapabilities()->IsSet(
-                HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
-        if (builtinBarycentricsEnabled) {
-            HgiShaderFunctionAddStageInput(
-                &desc, "hd_BaryCoordNoPersp", "vec3",
-                HgiShaderKeywordTokens->hdBaryCoordNoPersp);
         }
 
         if (!glslProgram->CompileShader(desc)) {
@@ -2636,6 +2645,42 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         }
         shaderCompiled = true;
     }
+    if (_hasFS) {
+        HgiShaderFunctionDesc desc;
+        std::stringstream resDecl;
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->fragmentShader, _resCommon, _GetMetaData());
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->fragmentShader, _resFS, _GetMetaData());
+
+        // material in FS
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->fragmentShader, _resMaterial, _GetMetaData());
+        resourceGen._GenerateGLSLTextureResources(resDecl,
+            HdShaderTokens->fragmentShader, _resTextures, _GetMetaData());
+
+        std::string const source =
+            _genDefines.str() + _genDecl.str() + resDecl.str() + _osd.str() +
+            _genAccessors.str() + _genFS.str();
+
+        desc.shaderStage = HgiShaderStageFragment;
+        desc.shaderCode = source.c_str();
+        desc.generatedShaderCodeOut = &_fsSource;
+
+        const bool builtinBarycentricsEnabled =
+            registry->GetHgi()->GetCapabilities()->IsSet(
+                HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+        if (builtinBarycentricsEnabled) {
+            HgiShaderFunctionAddStageInput(
+                &desc, "hd_BaryCoordNoPersp", "vec3",
+                HgiShaderKeywordTokens->hdBaryCoordNoPersp);
+        }
+
+        if (!glslProgram->CompileShader(desc)) {
+            return nullptr;
+        }
+        shaderCompiled = true;
+    }
 
     if (!shaderCompiled) {
         return nullptr;
@@ -2667,11 +2712,12 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionDesc vsDesc;
         vsDesc.shaderStage = HgiShaderStageVertex;
 
-        resourceGen._GenerateHgiResources(&vsDesc,
+        resourceGen._AdvanceShaderStage();
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &vsDesc,
             HdShaderTokens->vertexShader, _resAttrib, _GetMetaData());
-        resourceGen._GenerateHgiResources(&vsDesc,
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &vsDesc,
             HdShaderTokens->vertexShader, _resCommon, _GetMetaData());
-        resourceGen._GenerateHgiResources(&vsDesc,
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &vsDesc,
             HdShaderTokens->vertexShader, _resVS, _GetMetaData());
 
         std::string const declarations = _genDefines.str() + _genDecl.str();
@@ -2723,62 +2769,14 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         shaderCompiled = true;
     }
 
-    if (_hasFS) {
-        HgiShaderFunctionDesc fsDesc;
-        fsDesc.shaderStage = HgiShaderStageFragment;
-
-        resourceGen._GenerateHgiResources(&fsDesc,
-            HdShaderTokens->fragmentShader, _resCommon, _GetMetaData());
-        resourceGen._GenerateHgiResources(&fsDesc,
-            HdShaderTokens->fragmentShader, _resFS, _GetMetaData());
-
-        // material in FS
-        resourceGen._GenerateHgiResources(&fsDesc,
-            HdShaderTokens->fragmentShader, _resMaterial, _GetMetaData());
-        resourceGen._GenerateHgiTextureResources(&fsDesc,
-            HdShaderTokens->fragmentShader, _resTextures, _GetMetaData());
-
-        std::string const declarations =
-            _genDefines.str() + _genDecl.str() + _osd.str();
-        std::string const source = _genAccessors.str() + _genFS.str();
-
-        fsDesc.shaderCodeDeclarations = declarations.c_str();
-        fsDesc.shaderCode = source.c_str();
-        fsDesc.generatedShaderCodeOut = &_fsSource;
-
-        // builtins
-        HgiShaderFunctionAddStageInput(
-            &fsDesc, "gl_PrimitiveID", "uint",
-            HgiShaderKeywordTokens->hdPrimitiveID);
-        HgiShaderFunctionAddStageInput(
-            &fsDesc, "gl_FrontFacing", "bool",
-            HgiShaderKeywordTokens->hdFrontFacing);
-        HgiShaderFunctionAddStageInput(
-            &fsDesc, "gl_FragCoord", "vec4",
-            HgiShaderKeywordTokens->hdPosition);
-        const bool builtinBarycentricsEnabled =
-            registry->GetHgi()->GetCapabilities()->IsSet(
-                HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
-        if (builtinBarycentricsEnabled) {
-            HgiShaderFunctionAddStageInput(
-                &fsDesc, "hd_BaryCoordNoPersp", "vec3",
-                HgiShaderKeywordTokens->hdBaryCoordNoPersp);
-        }
-
-        if (!glslProgram->CompileShader(fsDesc)) {
-            return nullptr;
-        }
-
-        shaderCompiled = true;
-    }
-
     if (_hasTCS) {
         HgiShaderFunctionDesc tcsDesc;
         tcsDesc.shaderStage = HgiShaderStageTessellationControl;
 
-        resourceGen._GenerateHgiResources(&tcsDesc,
+        resourceGen._AdvanceShaderStage();
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &tcsDesc,
             HdShaderTokens->tessControlShader, _resCommon, _GetMetaData());
-        resourceGen._GenerateHgiResources(&tcsDesc,
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &tcsDesc,
             HdShaderTokens->tessControlShader, _resTCS, _GetMetaData());
 
         std::string const declarations =
@@ -2800,9 +2798,10 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionDesc tesDesc;
         tesDesc.shaderStage = HgiShaderStageTessellationEval;
 
-        resourceGen._GenerateHgiResources(&tesDesc,
+        resourceGen._AdvanceShaderStage();
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &tesDesc,
             HdShaderTokens->tessEvalShader, _resCommon, _GetMetaData());
-        resourceGen._GenerateHgiResources(&tesDesc,
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &tesDesc,
             HdShaderTokens->tessEvalShader, _resTES, _GetMetaData());
 
         std::string const declarations =
@@ -2856,15 +2855,16 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             HgiShaderFunctionTessellationDesc::PatchType::Isolines;
         }
 
-        resourceGen._GenerateHgiResources(&ptcsDesc,
+        resourceGen._AdvanceShaderStage();
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &ptcsDesc,
             HdShaderTokens->postTessControlShader, _resAttrib, _GetMetaData());
-        resourceGen._GenerateHgiResources(&ptcsDesc,
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &ptcsDesc,
             HdShaderTokens->postTessControlShader, _resCommon, _GetMetaData());
-        resourceGen._GenerateHgiResources(&ptcsDesc,
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &ptcsDesc,
             HdShaderTokens->postTessControlShader, _resPTCS, _GetMetaData());
 
         // material in PTCS
-        resourceGen._GenerateHgiResources(&ptcsDesc,
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &ptcsDesc,
             HdShaderTokens->postTessControlShader, _resMaterial, _GetMetaData());
         resourceGen._GenerateHgiTextureResources(&ptcsDesc,
             HdShaderTokens->postTessControlShader, _resTextures, _GetMetaData());
@@ -2942,15 +2942,16 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                 HgiShaderFunctionTessellationDesc::PatchType::Isolines;
         }
 
-        resourceGen._GenerateHgiResources(&ptvsDesc,
+        resourceGen._AdvanceShaderStage();
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &ptvsDesc,
             HdShaderTokens->postTessVertexShader, _resAttrib, _GetMetaData());
-        resourceGen._GenerateHgiResources(&ptvsDesc,
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &ptvsDesc,
             HdShaderTokens->postTessVertexShader, _resCommon, _GetMetaData());
-        resourceGen._GenerateHgiResources(&ptvsDesc,
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &ptvsDesc,
             HdShaderTokens->postTessVertexShader, _resPTVS, _GetMetaData());
 
         // material in PTVS
-        resourceGen._GenerateHgiResources(&ptvsDesc,
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &ptvsDesc,
             HdShaderTokens->postTessVertexShader, _resMaterial, _GetMetaData());
         resourceGen._GenerateHgiTextureResources(&ptvsDesc,
             HdShaderTokens->postTessVertexShader, _resTextures, _GetMetaData());
@@ -3016,13 +3017,14 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionDesc gsDesc;
         gsDesc.shaderStage = HgiShaderStageGeometry;
 
-        resourceGen._GenerateHgiResources(&gsDesc,
+        resourceGen._AdvanceShaderStage();
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &gsDesc,
             HdShaderTokens->geometryShader, _resCommon, _GetMetaData());
-        resourceGen._GenerateHgiResources(&gsDesc,
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &gsDesc,
             HdShaderTokens->geometryShader, _resGS, _GetMetaData());
 
         // material in GS
-        resourceGen._GenerateHgiResources(&gsDesc,
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &gsDesc,
             HdShaderTokens->geometryShader, _resMaterial, _GetMetaData());
         resourceGen._GenerateHgiTextureResources(&gsDesc,
             HdShaderTokens->geometryShader, _resTextures, _GetMetaData());
@@ -3048,18 +3050,72 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         shaderCompiled = true;
     }
 
+    if (_hasFS) {
+        HgiShaderFunctionDesc fsDesc;
+        fsDesc.shaderStage = HgiShaderStageFragment;
+
+        resourceGen._AdvanceShaderStage();
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &fsDesc,
+            HdShaderTokens->fragmentShader, _resCommon, _GetMetaData());
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &fsDesc,
+            HdShaderTokens->fragmentShader, _resFS, _GetMetaData());
+
+        // material in FS
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &fsDesc,
+            HdShaderTokens->fragmentShader, _resMaterial, _GetMetaData());
+        resourceGen._GenerateHgiTextureResources(&fsDesc,
+            HdShaderTokens->fragmentShader, _resTextures, _GetMetaData());
+
+        std::string const declarations =
+            _genDefines.str() + _genDecl.str() + _osd.str();
+        std::string const source = _genAccessors.str() + _genFS.str();
+
+        fsDesc.shaderCodeDeclarations = declarations.c_str();
+        fsDesc.shaderCode = source.c_str();
+        fsDesc.generatedShaderCodeOut = &_fsSource;
+
+        // builtins
+        HgiShaderFunctionAddStageInput(
+            &fsDesc, "gl_PrimitiveID", "uint",
+            HgiShaderKeywordTokens->hdPrimitiveID);
+        HgiShaderFunctionAddStageInput(
+            &fsDesc, "gl_FrontFacing", "bool",
+            HgiShaderKeywordTokens->hdFrontFacing);
+        HgiShaderFunctionAddStageInput(
+            &fsDesc, "gl_FragCoord", "vec4",
+            HgiShaderKeywordTokens->hdPosition);
+        const bool builtinBarycentricsEnabled =
+            registry->GetHgi()->GetCapabilities()->IsSet(
+                HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+        if (builtinBarycentricsEnabled) {
+            HgiShaderFunctionAddStageInput(
+                &fsDesc, "hd_BaryCoordNoPersp", "vec3",
+                HgiShaderKeywordTokens->hdBaryCoordNoPersp);
+        }
+
+        if (!glslProgram->CompileShader(fsDesc)) {
+            return nullptr;
+        }
+
+        shaderCompiled = true;
+    }
+
     if (_hasCS) {
         HgiShaderFunctionDesc csDesc;
         csDesc.shaderStage = HgiShaderStageCompute;
+        csDesc.computeDescriptor.localSize = GfVec3i(64, 1, 1);
 
         _GenerateComputeParameters(&csDesc);
 
-        resourceGen._GenerateHgiResources(&csDesc,
+        resourceGen._AdvanceShaderStage();
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &csDesc,
             HdShaderTokens->computeShader, _resAttrib, _GetMetaData());
-        resourceGen._GenerateHgiResources(&csDesc,
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &csDesc,
             HdShaderTokens->computeShader, _resCommon, _GetMetaData());
-        resourceGen._GenerateHgiResources(&csDesc,
+        resourceGen._GenerateHgiResources(registry->GetHgi(), &csDesc,
             HdShaderTokens->computeShader, _resCS, _GetMetaData());
+
+        HgiShaderFunctionAddConstantParam(&csDesc, "indexEnd", _tokens->_uint);
 
         std::string const declarations = _genDefines.str() + _genDecl.str();
         std::string const source = _genAccessors.str() + _genCS.str();

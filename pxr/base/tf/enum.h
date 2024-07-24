@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_TF_ENUM_H
 #define PXR_BASE_TF_ENUM_H
@@ -388,15 +371,19 @@ public:
     /// should NOT be called directly. Instead, call AddName(), which does
     /// exactly the same thing.
     TF_API
-    static void _AddName(TfEnum val, const std::string &valName,
-                         const std::string &displayName="");
+    static void _AddName(TfEnum val, char const *valName,
+                         char const *displayName);
+
+    // Helper for TF_ADD_ENUM_NAME() dealing with empty vs nonempty __VA_ARGS__
+    static char const *
+    _NameIdent(char const *str = nullptr) { return str; }
 
     /// Associates a name with an enumerated value.
     /// \see _AddName().
     static void AddName(TfEnum val, const std::string &valName,
                         const std::string &displayName="")
     {
-        _AddName(val, valName, displayName);
+        _AddName(val, valName.c_str(), displayName.c_str());
     }
      
     template <typename T>
@@ -469,7 +456,7 @@ TF_API std::ostream& operator<<(std::ostream& out, const TfEnum & e);
 /// \hideinitializer
 #define TF_ADD_ENUM_NAME(VAL, ...)                               \
     TfEnum::_AddName(VAL, TF_PP_STRINGIZE(VAL),                  \
-                     std::string{__VA_ARGS__});
+                     TfEnum::_NameIdent(__VA_ARGS__));
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

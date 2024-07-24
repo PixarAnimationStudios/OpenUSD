@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_ST_MATERIALX_SHADER_GEN_H
 #define PXR_IMAGING_HD_ST_MATERIALX_SHADER_GEN_H
@@ -28,6 +11,7 @@
 
 #include <MaterialXGenGlsl/GlslShaderGenerator.h>
 #include <MaterialXGenMsl/MslShaderGenerator.h>
+#include <MaterialXGenGlsl/VkShaderGenerator.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -118,7 +102,7 @@ protected:
 /// \class HdStMaterialXShaderGenGlsl
 ///
 /// Generates a glslfx shader with a surfaceShader function for a MaterialX 
-/// network
+/// network, targeting OpenGL GLSL.
 
 class HdStMaterialXShaderGenGlsl
     : public HdStMaterialXShaderGen<MaterialX::GlslShaderGenerator>
@@ -145,11 +129,40 @@ private:
                           MaterialX::ShaderStage& mxStage) const;
 };
 
+/// \class HdStMaterialXShaderGenVkGlsl
+///
+/// Generates a glslfx shader with a surfaceShader function for a MaterialX 
+/// network, targeting Vulkan GLSL.
+
+class HdStMaterialXShaderGenVkGlsl
+    : public HdStMaterialXShaderGen<MaterialX::VkShaderGenerator>
+{
+public:
+    HdStMaterialXShaderGenVkGlsl(HdSt_MxShaderGenInfo const& mxHdInfo);
+    
+    static MaterialX::ShaderGeneratorPtr create(
+            HdSt_MxShaderGenInfo const& mxHdInfo) {
+        return std::make_shared<HdStMaterialXShaderGenVkGlsl>(mxHdInfo);
+    }
+    
+    MaterialX::ShaderPtr generate(const std::string& shaderName,
+                           MaterialX::ElementPtr mxElement,
+                           MaterialX::GenContext& mxContext) const override;
+
+private:
+    void _EmitGlslfxShader(const MaterialX::ShaderGraph& mxGraph,
+                           MaterialX::GenContext& mxContext,
+                           MaterialX::ShaderStage& mxStage) const;
+
+    void _EmitMxFunctions(const MaterialX::ShaderGraph& mxGraph,
+                          MaterialX::GenContext& mxContext,
+                          MaterialX::ShaderStage& mxStage) const;
+};
 
 /// \class HdStMaterialXShaderGenMsl
 ///
-/// Generates a Glslfx shader with some additional Metal code, and a 
-/// surfaceShader function for a MaterialX network
+/// Generates a glslfx shader with a surfaceShader function for a MaterialX 
+/// network, targeting Metal Shading Language.
 
 class HdStMaterialXShaderGenMsl
     : public HdStMaterialXShaderGen<MaterialX::MslShaderGenerator>

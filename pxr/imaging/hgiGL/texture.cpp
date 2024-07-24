@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/garch/glApi.h"
 
@@ -251,14 +234,30 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
         glTextureParameteri(_textureId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTextureParameteri(_textureId, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-        const uint16_t mips = desc.mipLevels;
-        GLint minFilter = mips > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
-        glTextureParameteri(_textureId, GL_TEXTURE_MIN_FILTER, minFilter);
-        glTextureParameteri(_textureId, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        if (desc.usage &
+            (HgiTextureUsageBitsDepthTarget |
+             HgiTextureUsageBitsStencilTarget)) {
+            glTextureParameteri(_textureId, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTextureParameteri(_textureId, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        } else {
+            glTextureParameteri(
+                _textureId,
+                GL_TEXTURE_MIN_FILTER,
+                GL_LINEAR_MIPMAP_LINEAR);
+            glTextureParameteri(
+                _textureId,
+                GL_TEXTURE_MAG_FILTER,
+                GL_LINEAR);
 
-        float aniso = 2.0f;
-        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
-        glTextureParameterf(_textureId, GL_TEXTURE_MAX_ANISOTROPY_EXT,aniso);
+            float aniso = 2.0f;
+            glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
+            glTextureParameterf(
+                _textureId,
+                GL_TEXTURE_MAX_ANISOTROPY_EXT,
+                aniso);
+        }
+
+        const uint16_t mips = desc.mipLevels;
         glTextureParameteri(_textureId, GL_TEXTURE_BASE_LEVEL, /*low-mip*/0);
         glTextureParameteri(_textureId, GL_TEXTURE_MAX_LEVEL, /*hi-mip*/mips-1);
 

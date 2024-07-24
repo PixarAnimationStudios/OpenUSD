@@ -2,25 +2,8 @@
 #
 # Copyright 2024 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 from pxr import Sdf, Tf
 import sys, unittest
@@ -41,6 +24,34 @@ class TestSdfPathExpression(unittest.TestCase):
                 Sdf.PathExpression.Everything()))
         self.assertEqual(pe, Sdf.PathExpression(''))
         self.assertFalse(pe)
+
+        # Leading & trailing whitespace.
+        self.assertEqual(
+            Sdf.PathExpression("  /foo//bar").GetText(), "/foo//bar")
+        self.assertEqual(
+            Sdf.PathExpression("  /foo//bar ").GetText(), "/foo//bar")
+        self.assertEqual(
+            Sdf.PathExpression("/foo//bar ").GetText(), "/foo//bar")
+        self.assertEqual(
+            Sdf.PathExpression("  /foo /bar").GetText(), "/foo /bar")
+        self.assertEqual(
+            Sdf.PathExpression("  /foo /bar ").GetText(), "/foo /bar")
+        self.assertEqual(
+            Sdf.PathExpression("/foo /bar ").GetText(), "/foo /bar")
+
+        # Complement of complement should cancel.
+        self.assertEqual(
+            Sdf.PathExpression('~(~a)'), Sdf.PathExpression('a'))
+        self.assertEqual(
+            Sdf.PathExpression('~(~(~a))'), Sdf.PathExpression('~a'))
+        self.assertEqual(
+            Sdf.PathExpression('~(~(~(~a)))'), Sdf.PathExpression('a'))
+        self.assertEqual(
+            Sdf.PathExpression('// - a'), Sdf.PathExpression('~a'))
+        self.assertEqual(
+            Sdf.PathExpression('~(// - a)'), Sdf.PathExpression('a'))
+        self.assertEqual(
+            Sdf.PathExpression('~(// - ~a)'), Sdf.PathExpression('~a'))
 
     def test_Matching(self):
 
@@ -306,6 +317,57 @@ class TestSdfPathExpression(unittest.TestCase):
         attr.default = Sdf.PathExpression("child")
         # Should have been made absolute:
         self.assertEqual(attr.default, Sdf.PathExpression("/prim/child"))
+
+    def test_PathPattern(self):
+        self.assertIs(Sdf.PathPattern, Sdf.PathExpression.PathPattern)
+        
+        pat = Sdf.PathPattern()
+        self.assertFalse(pat)
+        self.assertFalse(pat.HasTrailingStretch())
+        self.assertTrue(pat.GetPrefix().isEmpty)
+        self.assertTrue(pat.CanAppendChild(''))
+        self.assertTrue(pat.AppendChild(''))
+        self.assertEqual(pat, Sdf.PathPattern.EveryDescendant())
+        self.assertTrue(pat.HasTrailingStretch())
+        self.assertEqual(pat.GetPrefix(), Sdf.Path.reflexiveRelativePath)
+        self.assertFalse(pat.HasLeadingStretch())
+
+        # Set prefix to '/', should become Everything().
+        pat.SetPrefix(Sdf.Path.absoluteRootPath)
+        self.assertEqual(pat, Sdf.PathPattern.Everything())
+        self.assertTrue(pat.HasLeadingStretch())
+        self.assertTrue(pat.HasTrailingStretch())
+
+        # Remove trailing stretch, should become just '/'
+        pat.RemoveTrailingStretch()
+        self.assertFalse(pat.HasLeadingStretch())
+        self.assertFalse(pat.HasTrailingStretch())
+        self.assertEqual(pat.GetPrefix(), Sdf.Path.absoluteRootPath)
+
+        # Add some components.
+        pat.AppendChild("foo").AppendChild("bar").AppendChild("baz")
+        # This should have modified the prefix path, rather than appending
+        # matching components.
+        self.assertEqual(pat.GetPrefix(), Sdf.Path("/foo/bar/baz"))
+
+        # Appending a property to a pattern with trailing stretch has to append
+        # a prim wildcard '*'.
+        pat.AppendStretchIfPossible().AppendProperty("prop")
+        self.assertTrue(pat.IsProperty())
+        self.assertEqual(pat.GetText(), "/foo/bar/baz//*.prop")
+
+        # Can't append children or properties to property patterns.
+        self.assertFalse(pat.CanAppendChild("foo"))
+        self.assertFalse(pat.CanAppendProperty("foo"))
+
+        pat.RemoveTrailingComponent()
+        self.assertEqual(pat.GetText(), "/foo/bar/baz//*")
+        pat.RemoveTrailingComponent()
+        self.assertEqual(pat.GetText(), "/foo/bar/baz//")
+        pat.RemoveTrailingComponent()
+        self.assertEqual(pat.GetText(), "/foo/bar/baz")
+        pat.RemoveTrailingComponent() # No more components, only prefix.
+        self.assertEqual(pat.GetText(), "/foo/bar/baz")
 
 if __name__ == '__main__':
     unittest.main()

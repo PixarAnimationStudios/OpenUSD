@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -28,7 +11,6 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/vt/streamOut.h"
 #include "pxr/base/vt/types.h"
-#include "pxr/base/vt/functions.h"
 #include "pxr/base/vt/visitValue.h"
 
 #include "pxr/base/gf/matrix2f.h"
@@ -548,34 +530,6 @@ static void testArray() {
         catch (std::bad_alloc const &) {
             // pass
         }
-    }
-}
-
-static void testArrayOperators() {
-
-    {
-        VtDoubleArray a(3), b(3);
-        a[0] = 1;
-        a[1] = 2;
-        a[2] = 3;
-        b[0] = 4;
-        b[1] = 5;
-        b[2] = 6;
-
-        VtDoubleArray c = VtCat(a,b);
-        VtDoubleArray d = c * 2.0;
-        TF_AXIOM(d[3] == 8);
-        VtDoubleArray e = a * b / 2.0;
-        TF_AXIOM(e[2] == 9);
-        TF_AXIOM(VtAnyTrue(VtEqual(a,VtZero<double>())) == false);
-        TF_AXIOM(VtAllTrue(VtEqual(a-a,VtZero<double>())) == true);
-        std::string empty = VtZero<std::string>();
-        VtStringArray s(4);
-        s[0] = empty;
-        s[1] = "a";
-        s[2] = "test";
-        s[3] = "array";
-        TF_AXIOM(VtAllTrue(VtNotEqual(s,VtZero<std::string>())) == false);
     }
 }
 
@@ -1877,7 +1831,6 @@ static void testVtCheapToCopy() {
 int main(int argc, char *argv[])
 {
     testArray();
-    testArrayOperators();
 
     testDictionary();
     testDictionaryKeyPathAPI();

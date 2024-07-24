@@ -1,0 +1,8 @@
+------------------------------------------------------------------------
+Errors while composing </ChainedReferences/Child_1>
+
+@RelocatePrimsWithSameName/root.sdf@</ChainedReferences/Child_1>
+CANNOT be relocated from:
+@RelocatePrimsWithSameName/root.sdf@</ChainedReferences/Child>
+which is a prohibited child of its parent because it would require allowing opinions from the source of a relocation at @RelocatePrimsWithSameName/root.sdf@</ChainedRef_2/Child>.
+

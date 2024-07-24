@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hgiVulkan/instance.h"
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
@@ -32,6 +15,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static
+bool
+_CheckInstanceValidationLayerSupport(const char * layerName)
+{  
+    uint32_t layerCount;  
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);  
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+  
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    for (const auto& layerProperties : availableLayers) {  
+        if (strcmp(layerName, layerProperties.layerName) == 0) {  
+            return true;
+        }  
+    }  
+
+    return false;  
+}
 
 HgiVulkanInstance::HgiVulkanInstance()
     : vkDebugMessenger(nullptr)
@@ -69,13 +70,19 @@ HgiVulkanInstance::HgiVulkanInstance()
 
     // Enable validation layers extension.
     // Requires VK_LAYER_PATH to be set.
+    const std::vector<const char*> debugLayers = {
+        "VK_LAYER_KHRONOS_validation"
+    };
     if (HgiVulkanIsDebugEnabled()) {
+        for (const auto& debugLayer : debugLayers) {
+            if (!_CheckInstanceValidationLayerSupport(debugLayer)) {
+                TF_WARN("Instance layer %s is not present, instance "
+                    "creation will fail", debugLayer);
+            }
+        }
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        const char* debugLayers[] = {
-            "VK_LAYER_KHRONOS_validation"
-        };
-        createInfo.ppEnabledLayerNames = debugLayers;
-        createInfo.enabledLayerCount = (uint32_t)  TfArraySize(debugLayers);
+        createInfo.ppEnabledLayerNames = debugLayers.data();
+        createInfo.enabledLayerCount = (uint32_t)debugLayers.size();
     }
 
     createInfo.ppEnabledExtensionNames = extensions.data();

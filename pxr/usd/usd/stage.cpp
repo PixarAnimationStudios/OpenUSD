@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
@@ -343,20 +326,29 @@ _MapPathExpressionToPrim(
     
     auto mapPattern =
         [&stack, &map, &unmappedPatterns](PathPattern const &pattern) {
-        SdfPath mapped = map(pattern.GetPrefix());
-        // If the prefix path is outside the domain, push the Nothing()
-        // subexpression.
-        if (mapped.IsEmpty()) {
-            if (unmappedPatterns) {
-                unmappedPatterns->push_back(pattern);
-            }
-            stack.push_back(SdfPathExpression::Nothing());
+        // If the pattern starts with '//' we persist it unchanged, as we deem
+        // the intent to be "search everything" regardless of context.  This is
+        // as opposed to any kind of non-speculative prefix, which refers to a
+        // specific prim or property in the originating context.
+        if (pattern.HasLeadingStretch()) {
+            stack.push_back(SdfPathExpression::MakeAtom(pattern));
         }
-        // Otherwise push the mapped pattern.
         else {
-            PathPattern mappedPattern(pattern);
-            mappedPattern.SetPrefix(mapped);
-            stack.push_back(PathExpr::MakeAtom(mappedPattern));
+            SdfPath mapped = map(pattern.GetPrefix());
+            // If the prefix path is outside the domain, push the Nothing()
+            // subexpression.
+            if (mapped.IsEmpty()) {
+                if (unmappedPatterns) {
+                    unmappedPatterns->push_back(pattern);
+                }
+                stack.push_back(SdfPathExpression::Nothing());
+            }
+            // Otherwise push the mapped pattern.
+            else {
+                PathPattern mappedPattern(pattern);
+                mappedPattern.SetPrefix(mapped);
+                stack.push_back(PathExpr::MakeAtom(mappedPattern));
+            }
         }
     };
 
@@ -2118,16 +2110,20 @@ UsdStage::GetPseudoRoot() const
 UsdPrim
 UsdStage::GetDefaultPrim() const
 {
-    TfToken name = GetRootLayer()->GetDefaultPrim();
-    return SdfPath::IsValidIdentifier(name)
-        ? GetPrimAtPath(SdfPath::AbsoluteRootPath().AppendChild(name))
-        : UsdPrim();
+    SdfPath path = GetRootLayer()->GetDefaultPrimAsPath();
+    return path.IsEmpty() 
+        ? UsdPrim()
+        : GetPrimAtPath(path);
 }
 
 void
 UsdStage::SetDefaultPrim(const UsdPrim &prim)
 {
-    GetRootLayer()->SetDefaultPrim(prim.GetName());
+    if (prim){
+        prim.GetParent() == GetPseudoRoot()
+            ? GetRootLayer()->SetDefaultPrim(prim.GetName())
+            : GetRootLayer()->SetDefaultPrim(prim.GetPath().GetAsToken());
+    }
 }
 
 void
@@ -3878,6 +3874,27 @@ UsdStage::GetPathResolverContext() const
         return empty;
     }
     return _GetPcpCache()->GetLayerStackIdentifier().pathResolverContext;
+}
+
+PcpErrorVector 
+UsdStage::GetCompositionErrors() const
+{
+    PcpErrorVector errors;
+
+    auto _ExtractErrorsFromPrimIndices = [&errors](
+        const PcpPrimIndex &primIndex) {
+            const PcpErrorVector &localErrors = primIndex.GetLocalErrors();
+            errors.insert(errors.end(), localErrors.begin(), localErrors.end());
+    };
+    _GetPcpCache()->ForEachPrimIndex(_ExtractErrorsFromPrimIndices);
+
+    auto _ExtractErrorsFromPcpLayerStack = [&errors](
+        const PcpLayerStackPtr layerStackPtr) {
+            const PcpErrorVector &localErrors = layerStackPtr->GetLocalErrors();
+            errors.insert(errors.end(), localErrors.begin(), localErrors.end());
+    };
+    _GetPcpCache()->ForEachLayerStack(_ExtractErrorsFromPcpLayerStack);
+    return errors;
 }
 
 SdfLayerHandleVector
@@ -9501,7 +9518,7 @@ double
 UsdStage::GetEndTimeCode() const
 {
     // Look for 'endTimeCode' first. If it is not available, then look for 
-    // the deprecated field 'startFrame'.
+    // the deprecated field 'endFrame'.
     const SdfLayerConstHandle sessionLayer = GetSessionLayer();
     if (sessionLayer) {
         if (sessionLayer->HasEndTimeCode())

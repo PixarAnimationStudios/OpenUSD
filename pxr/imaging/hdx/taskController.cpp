@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdx/taskController.h"
 
@@ -868,11 +851,6 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
     // When not using storm, initialize the camera light transform based on
     // the SimpleLight position
     else if (_simpleLightTaskId.IsEmpty()) {
-        GfMatrix4d trans(1.0);
-        const GfVec4d& pos = light.GetPosition();
-        trans.SetTranslateOnly(GfVec3d(pos[0], pos[1], pos[2]));
-        _delegate.SetParameter(pathName, HdTokens->transform, VtValue(trans));
-
         // Initialize distant light specific parameters
         _delegate.SetParameter(pathName, HdLightTokens->angle, 
             VtValue(DISTANT_LIGHT_ANGLE));
@@ -1800,20 +1778,6 @@ HdxTaskController::_SetBuiltInLightingState(
             }
             GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
                 _lightIds[i], HdLight::DirtyParams | HdLight::DirtyTransform);
-        }
-
-        // Update the camera light transform if needed
-        if (_simpleLightTaskId.IsEmpty() && !activeLight.IsDomeLight()) {
-            GfMatrix4d const& viewInvMatrix = 
-                _freeCameraSceneDelegate->GetTransform(
-                    _freeCameraSceneDelegate->GetCameraId());
-            VtValue trans = VtValue(viewInvMatrix * activeLight.GetTransform());
-            VtValue prevTrans = _delegate.Get(_lightIds[i], HdTokens->transform);
-            if (viewInvMatrix != GfMatrix4d(1.0) && trans != prevTrans) {
-                _delegate.SetParameter(_lightIds[i], HdTokens->transform, trans);
-                GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
-                    _lightIds[i], HdLight::DirtyTransform);
-            }
         }
     }
 }

@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 // \file LayerStack.cpp
 
@@ -184,19 +167,19 @@ _ApplyOwnedSublayerOrder(
     }
 }
 
-namespace {
-
-// Checks if the source and target paths constitute a valid relocates. This
-// validation is not context specific, i.e. if this returns false, the 
-// combination of sourse and target paths is always invalid in any layer.
-static bool
-_IsValidRelocatesEntry(
+bool
+Pcp_IsValidRelocatesEntry(
     const SdfPath &source, const SdfPath &target, std::string *errorMessage) 
 {
     auto isValidPathFn = [&](SdfPath const& path) {
         // The SdfSchema should already enforce that these are valid paths for 
         // relocates, however we still double-check here to avoid problematic 
         // results under composition.
+        if (!path.IsAbsolutePath()) {
+            *errorMessage = "Relocates must use absolute paths.";
+            return false;
+        }
+
         if (!path.IsPrimPath()) {
             // Prim variant selection paths are not prim paths, but it's more
             // important to report the that the variant selection is the issue
@@ -214,18 +197,28 @@ _IsValidRelocatesEntry(
             return false;
         }
 
-        // This is not enforced by the Sdf Schema but is still not allowed
-        if (path.IsRootPrimPath()) {
-            *errorMessage = 
-                "Root prims cannot be the source or target of a relocate.";
-            return false;
-        }
-
         return true;
     };
 
-    // The source and target must be valid relocates paths.
-    if (!isValidPathFn(source) || !isValidPathFn(target)) {
+    // Source paths cannot be empty though targets can.
+    if (source.IsEmpty()) {
+        *errorMessage = "Relocates source paths cannot be empty.";
+        return false;
+    }
+
+    // The source must be a valid prim path.
+    if (!isValidPathFn(source)) {
+        return false;
+    }
+
+    // Empty target paths are allowed and if the target is empty, we're done.
+    if (target.IsEmpty()) {
+        return true;
+    }
+
+    // Otherwise the target must be a valid prim path and we have to validate
+    // it against the source.
+    if (!isValidPathFn(target)) {
         return false;
     }
 
@@ -247,15 +240,10 @@ _IsValidRelocatesEntry(
         return false;
     }
 
-    if (source.GetCommonPrefix(target).IsAbsoluteRootPath()) {
-        *errorMessage = 
-            "Prims cannot be relocated to be a descendant of a different "
-            "root prim.";
-        return false;
-    }
-
     return true;
 }
+
+namespace {
 
 // Helper class for Pcp_ComputeRelocationsForLayerStack for gathering and 
 // validating relocates for a layer stack.
@@ -263,10 +251,8 @@ class Pcp_ComputeRelocationsForLayerStackWorkspace {
     
 public:
 
-    Pcp_ComputeRelocationsForLayerStackWorkspace(
-        const PcpLayerStack *layerStack) :
-        _layerStack(layerStack) {};
-
+    Pcp_ComputeRelocationsForLayerStackWorkspace() = default;
+    
     // Public members; running Compute on the workspace populates these
     
     // Value type for the map of processed relocates, which will map authored
@@ -310,15 +296,43 @@ public:
     // Computes all the relocates populating the public members of this 
     // workspace.
     void 
-    Compute() 
+    Compute(const PcpLayerStack &layerStack) 
     {
         TRACE_FUNCTION();
 
-        const SdfLayerRefPtrVector & layers = _layerStack->GetLayers();
+        _layerStack = &layerStack;
+        _isUsd = layerStack.IsUsd();
+
+        const SdfLayerRefPtrVector & layers = layerStack.GetLayers();
 
         // Compose the authored relocations from each layer.
         for (const SdfLayerRefPtr &layer : layers) {
             _CollectRelocatesForLayer(layer);
+        }
+
+        _ValidateAndRemoveConflictingRelocates();
+
+        // Compute the source origin for each valid relocate. This function may
+        // recurse for ancestral opinions so this will only compute each if 
+        // necessary.
+        for (auto &mapEntry : processedRelocates) {
+            _ComputeSourceOriginForTargetIfNeeded(&mapEntry);
+        }
+
+        _ConformLegacyRelocates();
+    }
+
+    void 
+    Compute(const std::vector<std::pair<SdfLayerHandle, SdfRelocates>> &layerRelocates) 
+    {
+        TRACE_FUNCTION();
+
+        _layerStack = nullptr;
+        _isUsd = true;
+
+        // Compose the authored relocations from each layer.
+        for (const auto &[layer, relocates] : layerRelocates) {
+            _CollectRelocates(layer, SdfPath::AbsoluteRootPath(), relocates);
         }
 
         _ValidateAndRemoveConflictingRelocates();
@@ -349,7 +363,7 @@ private:
         // layer metadata relocates usurp any relocates otherwise authored on
         // prims so we skip the full traversal of namespace for relocates if 
         // we found layer metadata or are in USD mode.
-        if (_CollectLayerRelocates(layer) || _layerStack->IsUsd()) {
+        if (_CollectLayerRelocates(layer) || _isUsd) {
             return;
         }
 
@@ -380,6 +394,29 @@ private:
         }
     }
 
+    // Pcp_IsValidRelocatesEntry is used for validating relocates both when 
+    // composing and when attempting to edit relocates. We have additional
+    // restrictions when composing relocates.
+    static bool 
+    _IsValidRelocatesEntryForComposing(
+        const SdfPath &source, const SdfPath &target, std::string *errorMessage)
+    {
+        if (!Pcp_IsValidRelocatesEntry(source, target, errorMessage)) {
+            return false;
+        }
+
+        // Root prims are never allowed to be the source of a relocate as their 
+        // parent is the pseudoroot which can never have composition arcs. The 
+        // target can be a root prim however.
+        if (source.IsRootPrimPath()) {
+            *errorMessage = 
+                "Root prims cannot be the source of a relocate.";
+            return false;
+        }
+
+        return true;
+    }
+
     template <class RelocatesType>
     void
     _CollectRelocates(
@@ -399,7 +436,8 @@ private:
             // Validate the relocate in context of just itself and add to
             // the processed relocates or log an error.
             std::string errorMessage;
-            if (_IsValidRelocatesEntry(source, target, &errorMessage)) {
+            if (_IsValidRelocatesEntryForComposing(
+                    source, target, &errorMessage)) {
                 // It's not an error for this to fail to be added; it just 
                 // means a stronger relocate for the source path as been 
                 // added already.
@@ -409,10 +447,7 @@ private:
             } else {
                 PcpErrorInvalidAuthoredRelocationPtr err = 
                     PcpErrorInvalidAuthoredRelocation::New();
-                err->rootSite = PcpSite(
-                    _layerStack->GetIdentifier(), 
-                    SdfPath::AbsoluteRootPath());
-
+                err->rootSite = _GetErrorRootSite();
                 err->layer = layer;
                 err->owningPath = primPath;
                 err->sourcePath = std::move(source);
@@ -453,6 +488,114 @@ private:
         return true;
     }
 
+    // XXX: There are non-USD use cases that rely on the fact that we 
+    // allowed the source of relocates statement to be expressed as either
+    // a fully unrelocated path or a partially or fully relocated path (due
+    // to ancestral relocates). For example if a relocate from 
+    // /Prim/Foo -> /Prim/Bar exists, a rename of Foo's child prim A could
+    // expressed as either 
+    //      /Prim/Foo/A -> /Prim/Bar/B
+    //   or /Prim/Bar/A -> /Prim/Bar/B
+    //
+    // In USD relocates, this would only be expressable using the latter 
+    // /Prim/Bar/A -> /Prim/Bar/B. Furthermore, an upcoming change will 
+    // actually cause /Prim/Foo/A -> /Prim/Bar/B to have a completely 
+    // different meaning and composition result than relocating from 
+    // /Prim/Bar/A. So in order to maintain legacy behavior when these 
+    // changes come online, we need to to convert unrelocated source paths
+    // to be instead the "most ancestrally relocated" source path here.
+    //
+    // This behavior is not meant to be long-term; this a placeholder 
+    // solution until we can update existing assets to conform to USD
+    // relocates requirements. At that point we'll remove this legacy 
+    // behavior.
+    void
+    _ConformLegacyRelocates()
+    {
+        if (_isUsd || !TfGetEnvSetting(PCP_ENABLE_LEGACY_RELOCATES_BEHAVIOR)) {
+            return;
+        }
+
+        TRACE_FUNCTION();
+
+        // We're building a list of relocation source path that need be updated
+        // which means they will moved in the map.
+        std::vector<std::pair<SdfPath, SdfPath>> relocateSourcesToMove;
+
+        for (const auto &[source, reloInfo] : processedRelocates) {
+
+            // We're looking at the computed source origin of each relocate as 
+            // that will be consistent regardless of the how the authored 
+            // relocate is represented. And we start with the parent path of
+            // the origin source as we want closest relocate that moves our 
+            // origin source path that isn't this relocate itself.
+            const SdfPath sourceOriginParent = 
+                reloInfo.computedSourceOrigin.GetParentPath();
+
+            // Find the best match relocate by looking for another relocate with 
+            // the longest computed origin source path that is a prefix of this
+            // relocate's computed origin source path
+            auto bestMatchIt = processedRelocates.end();
+            size_t bestMatchElementCount = 0;
+            for (auto otherRelocateIt = processedRelocates.begin();
+                    otherRelocateIt != processedRelocates.end();
+                    ++otherRelocateIt) {
+                const SdfPath &anotherSourceOriginPath = 
+                    otherRelocateIt->second.computedSourceOrigin;
+                const size_t elementCount = 
+                    anotherSourceOriginPath.GetPathElementCount();
+                if (elementCount > bestMatchElementCount &&
+                        sourceOriginParent.HasPrefix(anotherSourceOriginPath)) {
+                    bestMatchIt = otherRelocateIt;
+                    bestMatchElementCount = elementCount;
+                }
+            }
+            if (bestMatchIt == processedRelocates.end()) {
+                continue;
+            }
+
+            // Apply the best match relocate to the computed origin source path
+            // to get the most relocated source path. If this doesn't match
+            // the actual source path then this relocate needs to be updated.
+            SdfPath mostRelocatedSource = 
+                reloInfo.computedSourceOrigin.ReplacePrefix(
+                    bestMatchIt->second.computedSourceOrigin, 
+                    bestMatchIt->second.targetPath);
+            if (mostRelocatedSource != source) {
+                relocateSourcesToMove.emplace_back(
+                    source, std::move(mostRelocatedSource));
+            }
+        }
+
+        // With all relocates processed we can update the necessary source paths
+        // to conform to "most relocated".
+        for (auto &[oldSource, newSource] : relocateSourcesToMove) {
+            auto oldIt = processedRelocates.find(oldSource);
+            if (auto [it, success] = processedRelocates.emplace(
+                    newSource, std::move(oldIt->second));
+                    !success && it->second.targetPath != oldIt->second.targetPath) {
+                // It's possible that this could fail since different authored 
+                // relocate sources can represent the same "most relocated" 
+                // source path. Legacy relocates didn't use to correct for this
+                // at all meaning it was possible to relocate a prim to multiple
+                // locations if authored incorrectly. This was never intended 
+                // and is impossible in the updated layer relocates. So while 
+                // we're still supporting legacy relocates, we'll just warn when
+                // this occurs (instead of a proper error) and use the first
+                // relocate to have claimed this source path.
+                TF_WARN("Couldn't conform relocate from %s to %s to use the "
+                    "correct source path %s because a relocate from %s to %s "
+                    "already exists. This relocate will be ignored.",
+                    oldIt->first.GetText(),
+                    oldIt->second.targetPath.GetText(),
+                    newSource.GetText(),
+                    it->first.GetText(),
+                    it->second.targetPath.GetText());
+            }
+            processedRelocates.erase(oldIt);
+        }       
+    }
+
     // Run after all authored relocates are collected from all layers; validates
     // that relocates are valid in the context of all other relocates in the
     // layer stack and removes any that are not. This also populates the target
@@ -465,76 +608,63 @@ private:
 
         TRACE_FUNCTION();
 
-        // XXX: There are some non-USD use cases that rely on the fact that
-        // we validate and reject these conflicting relocates in Pcp. We 
-        // will update these cases to conform in the future, but the work to
-        // do so is non-trivial, so for now we need to allow these cases to 
-        // still work.
-        if (!_layerStack->IsUsd() && 
-                TfGetEnvSetting(PCP_ENABLE_LEGACY_RELOCATES_BEHAVIOR)) {
-            // Even though we're not further validating relocates here, we 
-            // need to populate the target path to relocates map.
-            for (auto &authoredRelocatesEntry : processedRelocates) {
-                const SdfPath &targetPath = 
-                    authoredRelocatesEntry.second.targetPath;                        
-                auto [it, inserted] = targetPathToProcessedRelocateMap.emplace(
-                    targetPath, &authoredRelocatesEntry);
-                // With the legacy behavior you can end up with the erroneous behavior
-                // of more than one source mapping to the same target. We need to at 
-                // least make this consistent by making sure we choose the 
-                // lexicographically greater source when we have a target conflict.
-                if (!inserted && authoredRelocatesEntry.first > it->second->first) {
-                    it->second = &authoredRelocatesEntry;
-                }
-            }
-            return;
-        }
-
         for (auto &relocatesEntry : processedRelocates) {
             const SdfPath &sourcePath = relocatesEntry.first;                        
             const SdfPath &targetPath = relocatesEntry.second.targetPath;                        
 
-            std::string whyNot;
-            // If we can't add this relocate to the "by target" map, we have
-            // a duplicate target error.
-            if (auto [it, success] = targetPathToProcessedRelocateMap.emplace(
-                    targetPath, &relocatesEntry); !success) {
-                auto *&existingAuthoredRelocatesEntry = it->second;
+            if (!targetPath.IsEmpty()) {
+                // If we can't add this relocate to the "by target" map, we have
+                // a duplicate target error.
+                if (auto [it, success] = targetPathToProcessedRelocateMap.emplace(
+                        targetPath, &relocatesEntry); !success) {
+                    auto *&existingAuthoredRelocatesEntry = it->second;
 
-                // Always add this relocate entry as an error. If this function
-                // returns true, it's adding the error for this target for the
-                // first time so add the existing relocate entry to the error
-                // as well in that case.
-                if (_LogInvalidSameTargetRelocates(relocatesEntry)) {
-                    _LogInvalidSameTargetRelocates(
-                        *existingAuthoredRelocatesEntry);
+                    // Always add this relocate entry as an error. If this function
+                    // returns true, it's adding the error for this target for the
+                    // first time so add the existing relocate entry to the error
+                    // as well in that case.
+                    if (_LogInvalidSameTargetRelocates(relocatesEntry)) {
+                        _LogInvalidSameTargetRelocates(
+                            *existingAuthoredRelocatesEntry);
+                    }
                 }
             }
 
-            // If the target can be found as a source path of any of our 
-            // relocates, then both relocates are invalid.
-            if (auto it = processedRelocates.find(targetPath); 
-                    it != processedRelocates.end()) {
-                _LogInvalidConflictingRelocate(
-                    relocatesEntry,
-                    *it,
-                    ConflictReason::TargetIsConflictSource);
-                _LogInvalidConflictingRelocate(
-                    *it,
-                    relocatesEntry,
-                    ConflictReason::SourceIsConflictTarget);           
+            // XXX: There are some non-USD use cases that rely on the fact that
+            // we validate and reject these conflicting relocates in Pcp. We 
+            // will update these cases to conform in the future, but the work to
+            // do so is non-trivial, so for now we need to allow these cases to 
+            // still work.
+            if (!_isUsd && TfGetEnvSetting(PCP_ENABLE_LEGACY_RELOCATES_BEHAVIOR)) {
+                continue;
             }
 
-            // The target of a relocate must be a fully relocated path which we
-            // enforce by making sure that it cannot itself be ancestrally 
-            // relocated by any other relocates in the layer stack.
-            for (SdfPath pathToCheck = targetPath.GetParentPath();
-                    !pathToCheck.IsRootPrimPath(); 
-                    pathToCheck = pathToCheck.GetParentPath()) {
-                if (auto it = processedRelocates.find(pathToCheck); 
+            if (!targetPath.IsEmpty()) {
+                // If the target can be found as a source path of any of our 
+                // relocates, then both relocates are invalid.
+                if (auto it = processedRelocates.find(targetPath); 
                         it != processedRelocates.end()) {
-                    _LogInvalidConflictingRelocate(relocatesEntry, *it,
-                        ConflictReason::TargetIsConflictSourceDescendant);
+                    _LogInvalidConflictingRelocate(
+                        relocatesEntry,
+                        *it,
+                        ConflictReason::TargetIsConflictSource);
+                    _LogInvalidConflictingRelocate(
+                        *it,
+                        relocatesEntry,
+                        ConflictReason::SourceIsConflictTarget);           
+                }
+
+                // The target of a relocate must be a fully relocated path which we
+                // enforce by making sure that it cannot itself be ancestrally 
+                // relocated by any other relocates in the layer stack.
+                for (SdfPath pathToCheck = targetPath.GetParentPath();
+                        !pathToCheck.IsAbsoluteRootPath(); 
+                        pathToCheck = pathToCheck.GetParentPath()) {
+                    if (auto it = processedRelocates.find(pathToCheck); 
+                            it != processedRelocates.end()) {
+                        _LogInvalidConflictingRelocate(relocatesEntry, *it,
+                            ConflictReason::TargetIsConflictSourceDescendant);
+                    }
                 }
             }
 
@@ -687,8 +817,7 @@ private:
         // Add the error for this relocate
         PcpErrorInvalidConflictingRelocationPtr err = 
             PcpErrorInvalidConflictingRelocation::New();
-        err->rootSite = PcpSite(
-            _layerStack->GetIdentifier(), SdfPath::AbsoluteRootPath());
+        err->rootSite = _GetErrorRootSite();
 
         err->layer = entry.second.owningSite.layer;
         err->owningPath = entry.second.owningSite.path;
@@ -737,7 +866,16 @@ private:
         return createNewError;
     }
 
-    const PcpLayerStack *_layerStack;
+    PcpSite _GetErrorRootSite() const
+    {
+        return PcpSite(
+            _layerStack ? _layerStack->GetIdentifier() : PcpLayerStackIdentifier(), 
+            SdfPath::AbsoluteRootPath());
+    }
+
+    const PcpLayerStack *_layerStack = nullptr;
+    bool _isUsd = true;
+
     std::vector<PcpErrorInvalidConflictingRelocationPtr>
         _invalidConflictingRelocates;
     std::map<SdfPath, PcpErrorInvalidSameTargetRelocationsPtr> 
@@ -745,6 +883,25 @@ private:
 };
 
 }; // end anonymous namespace
+
+void
+Pcp_BuildRelocateMap(
+    const std::vector<std::pair<SdfLayerHandle, SdfRelocates>> &layerRelocates,
+    SdfRelocatesMap *relocatesMap,
+    PcpErrorVector *errors)
+{
+    Pcp_ComputeRelocationsForLayerStackWorkspace ws;
+    ws.Compute(layerRelocates);
+
+    relocatesMap->clear();
+    for (const auto &[source, reloInfo] : ws.processedRelocates) {
+        (*relocatesMap)[source] = reloInfo.targetPath;
+    }
+
+    if (errors) {
+        *errors = std::move(ws.errors);
+    }
+}
 
 void
 Pcp_ComputeRelocationsForLayerStack(
@@ -760,46 +917,11 @@ Pcp_ComputeRelocationsForLayerStack(
 
     // Use the workspace helper to compute and validate the full set of 
     // relocates on the layer stack.
-    Pcp_ComputeRelocationsForLayerStackWorkspace ws(&layerStack);
-    ws.Compute();
-
-    // Use the processed relocates to populate the bi-directional mapping of all
-    // the relocates maps.
-    if (TfGetEnvSetting(PCP_ENABLE_LEGACY_RELOCATES_BEHAVIOR)) {
-        for (const auto &[source, reloInfo] : ws.processedRelocates) {
-            incrementalRelocatesSourceToTarget->emplace(
-                source, reloInfo.targetPath);
-            // XXX: With the legacy behavior you can end up with the erroneous 
-            // behavior of more than one source mapping to the same target. We 
-            // need to at least make this consistent by making sure we choose 
-            // the lexicographically greater source when we have a target conflict.
-            auto [it, inserted] = incrementalRelocatesTargetToSource->emplace(
-                reloInfo.targetPath, source);
-            if (!inserted && source > it->second) {
-                it->second = source;
-            }
-
-            relocatesTargetToSource->emplace(
-                reloInfo.targetPath, reloInfo.computedSourceOrigin);
-            relocatesSourceToTarget->emplace(
-                reloInfo.computedSourceOrigin, reloInfo.targetPath);
-        }       
-    } else {
-        for (const auto &[source, reloInfo] : ws.processedRelocates) {
-            incrementalRelocatesSourceToTarget->emplace(
-                source, reloInfo.targetPath);
-            incrementalRelocatesTargetToSource->emplace(
-                reloInfo.targetPath, source);
-
-            relocatesTargetToSource->emplace(
-                reloInfo.targetPath, reloInfo.computedSourceOrigin);
-            relocatesSourceToTarget->emplace(
-                reloInfo.computedSourceOrigin, reloInfo.targetPath);
-        }       
-    }
+    Pcp_ComputeRelocationsForLayerStackWorkspace ws;
+    ws.Compute(layerStack);
 
     // Take any encountered errors.
-    if (errors) {
+    if (errors && !ws.errors.empty()) {
         if (errors->empty()) {
             *errors = std::move(ws.errors);
         } else {
@@ -809,6 +931,24 @@ Pcp_ComputeRelocationsForLayerStack(
                 std::make_move_iterator(ws.errors.end()));
         }
     }
+
+    if (ws.processedRelocates.empty()) {
+        return;
+    }
+
+    // Use the processed relocates to populate the bi-directional mapping of all
+    // the relocates maps.
+    for (const auto &[source, reloInfo] : ws.processedRelocates) {
+        incrementalRelocatesSourceToTarget->emplace(
+            source, reloInfo.targetPath);
+        incrementalRelocatesTargetToSource->emplace(
+            reloInfo.targetPath, source);
+
+        relocatesTargetToSource->emplace(
+            reloInfo.targetPath, reloInfo.computedSourceOrigin);
+        relocatesSourceToTarget->emplace(
+            reloInfo.computedSourceOrigin, reloInfo.targetPath);
+    }       
 
     // Take the list of prim paths with relocates.
     relocatesPrimPaths->assign(
@@ -834,8 +974,12 @@ _FilterRelocationsForPath(const PcpLayerStack& layerStack,
     for (SdfRelocatesMap::const_iterator
          i = relocates.lower_bound(path), n = relocates.end();
          (i != n) && (i->first.HasPrefix(path)); ++i) {
-        siteRelocates.insert(*i);
-        seenTargets.insert(i->second);
+        // Skip relocates to empty targets. We don't want to prevent these paths
+        // from mapping through the node.
+        if (!i->second.IsEmpty()) {
+            siteRelocates.insert(*i);
+            seenTargets.insert(i->second);
+        }
     }
 
     const SdfRelocatesMap& incrementalRelocates = 
@@ -845,9 +989,10 @@ _FilterRelocationsForPath(const PcpLayerStack& layerStack,
          n = incrementalRelocates.end();
          (i != n) && (i->first.HasPrefix(path)); ++i) {
 
-        if (seenTargets.find(i->second) == seenTargets.end()) {
+        // Skip relocates to empty targets. We don't want to prevent these paths
+        // from mapping through the node.
+        if (!i->second.IsEmpty() && seenTargets.insert(i->second).second) {
             siteRelocates.insert(*i);
-            seenTargets.insert(i->second);
         }
     }
 

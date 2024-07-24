@@ -1,38 +1,20 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "streamIO.h"
 #include "stream.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/lexical_cast.hpp>
-#include <boost/iterator.hpp>
-
 #include <algorithm>
+#include <charconv>
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <utility>
 
 using std::string;
 using std::vector;
@@ -59,22 +41,22 @@ UsdObjReadDataFromFile(std::string const &fileName,
 static UsdObjStream::Point
 _ParsePoint(string const &str)
 {
-    using boost::iterator_range;
-    using boost::make_iterator_range;
-    using boost::lexical_cast;
-
     UsdObjStream::Point result;
 
     // Break the string up into up to 3 segments separated by slashes.
-    iterator_range<char const *> ranges[3];
     int numRanges = 0;
     char const *from = str.data(),
         *pos = str.data(), *end = str.data() + strlen(str.data());
+    std::pair<char const*, char const*> ranges[3] = {
+        { end, end }, { end, end }, { end, end }
+    };
+
     while (numRanges != 3) {
         pos = std::find(from, end, '/');
-        ranges[numRanges++] = make_iterator_range(from, pos);
-        if (pos == end)
+        ranges[numRanges++] = std::make_pair(from, pos);
+        if (pos == end) {
             break;
+        }
         from = pos + 1;
     }
 
@@ -82,8 +64,10 @@ _ParsePoint(string const &str)
     // 1-based in the file, but we store them 0-based in the data structure.
     int *indexes[] = {&result.vertIndex, &result.uvIndex, &result.normalIndex};
     for (int i = 0; i != numRanges; ++i) {
-        if (!ranges[i].empty())
-            *indexes[i] = lexical_cast<int>(ranges[i]) - 1;
+        if (std::from_chars(ranges[i].first, ranges[i].second, *indexes[i]).ec 
+                == std::errc{}) {
+            --(*indexes[i]);
+        }
     }
 
     return result;

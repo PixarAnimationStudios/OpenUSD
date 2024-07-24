@@ -67,6 +67,10 @@ pxr_library(usd
         timeCode
         tokens
         typed
+        validator
+        validatorTokens
+        validationError
+        validationRegistry
         usdFileFormat
         usdaFileFormat
         usdcFileFormat
@@ -102,6 +106,9 @@ pxr_library(usd
         listEditImpl.h
         wrapUtils.h
         testenv/TestUsdResolverChangedResolver.h
+
+    CPPFILES
+        coreValidators.cpp
 
     PYTHON_CPPFILES
         moduleDeps.cpp
@@ -250,6 +257,7 @@ pxr_test_scripts(
     testenv/testUsdResolveTargetPy.py
     testenv/testUsdSchemaBasePy.py
     testenv/testUsdSchemaRegistry.py
+    testenv/testUsdSchemaRegistryThreadedInit.py
     testenv/testUsdSchemaVersioning.py
     testenv/testUsdSpecializes.py
     testenv/testUsdStage.py
@@ -457,6 +465,22 @@ pxr_build_test(testUsdUsdzResolver
         usd
     CPPFILES
         testenv/testUsdUsdzResolver.cpp
+)
+
+pxr_build_test(testUsdValidator
+    LIBRARIES
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdValidator.cpp
+)
+
+pxr_build_test(testUsdValidationRegistry
+    LIBRARIES
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdValidationRegistry.cpp
 )
 
 pxr_build_test(testUsdZipFile_CPP
@@ -725,6 +749,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdValidationRegistry
+    DEST testUsdValidationRegistry
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdZipFile.testenv
     DEST testUsdZipFile
 )
@@ -969,6 +998,16 @@ pxr_register_test(testUsdMetadataCpp
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdValidator
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValidator"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdValidationRegistry
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValidationRegistry"
+    EXPECTED_RETURN_CODE 0
+)
+
 # This test relies on a plugin built specifically for this test.
 # The build system currently doesn't support this for static library
 # builds, so we only enable this test on shared library builds.
@@ -1200,6 +1239,12 @@ pxr_register_test(testUsdSchemaRegistry
 
 pxr_register_test(testUsdSchemaRegistryCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaRegistryCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSchemaRegistryThreadedInit
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaRegistryThreadedInit"
     EXPECTED_RETURN_CODE 0
 )
 

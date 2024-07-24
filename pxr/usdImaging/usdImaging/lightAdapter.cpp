@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdImaging/lightAdapter.h"
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
@@ -273,10 +256,6 @@ UsdImagingLightAdapter::GetMaterialResource(UsdPrim const &prim,
                                             SdfPath const& cachePath, 
                                             UsdTimeCode time) const
 {
-    if (!_GetSceneLightsEnabled()) {
-        return VtValue();
-    }
-
     if (!prim.HasAPI<UsdLuxLightAPI>()) {
         TF_RUNTIME_ERROR("Expected light prim at <%s> to have an applied API "
                          "of type 'UsdLuxLightAPI'; ignoring",
@@ -298,6 +277,14 @@ UsdImagingLightAdapter::GetMaterialResource(UsdPrim const &prim,
         &networkMap,
         time);
 
+    if (!_GetSceneLightsEnabled()) {
+        // When scene lights are disabeled we need to mark them as disabled
+        // by setting the intensity value to 0. This parameter is found on 
+        // the terminal node, which is the last node in the light network.
+        networkMap.map[HdMaterialTerminalTokens->light].nodes.back().
+            parameters[HdLightTokens->intensity] = 0.0f;
+    }
+
     return VtValue(networkMap);
 }
 
@@ -309,11 +296,8 @@ UsdImagingLightAdapter::_AddSprim(
     const UsdImagingInstancerContext* instancerContext)
 {
     SdfPath cachePath = ResolveCachePath(usdPrim.GetPath(), instancerContext);
-
-    // For an instanced light prim, this is the instancer prim.
-    // For a non-instanced light prim, this is just the light prim.
-    UsdPrim proxyPrim = usdPrim.GetStage()->GetPrimAtPath(
-        cachePath.GetAbsoluteRootOrPrimPath());
+    UsdPrim proxyPrim = _GetPrim(ResolveProxyPrimPath(
+        cachePath, instancerContext));
 
     if (instancerContext != nullptr) {
         index->InsertSprim(

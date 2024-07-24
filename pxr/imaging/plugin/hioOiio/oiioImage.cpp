@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/hio/types.h"
@@ -52,13 +35,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 OIIO_NAMESPACE_USING
 
-// _ioProxySupportedExtensions is a list of hardcoded file extensions that 
-// support ioProxy. Although OIIO has an api call for checking whether or 
-// not a file type supports ioProxy, version 2.0.9 does not include this 
+// _ioProxySupportedExtensions is a list of hardcoded file extensions that
+// support ioProxy. Although OIIO has an api call for checking whether or
+// not a file type supports ioProxy, version 2.0.9 does not include this
 // for EXR's, even though EXR's support ioProxy. This issue was fixed in
-// commit 7677d498b599295fa8277d050ef994efbd297b55. Thus, for now we check 
-// whether or not a file extension is included in our hardcoded list of 
-// extensions we know to support ioProxy. 
+// commit 7677d498b599295fa8277d050ef994efbd297b55. Thus, for now we check
+// whether or not a file extension is included in our hardcoded list of
+// extensions we know to support ioProxy.
 TF_MAKE_STATIC_DATA(std::vector<std::string>, _ioProxySupportedExtensions)
 {
     _ioProxySupportedExtensions->push_back("exr");
@@ -83,7 +66,7 @@ public:
 
     bool IsColorSpaceSRGB() const override;
 
-    bool GetMetadata(TfToken const & key, 
+    bool GetMetadata(TfToken const & key,
                              VtValue * value) const override;
     bool GetSamplerMetadata(HioAddressDimension pname,
                             HioAddressMode * param) const override;
@@ -100,7 +83,7 @@ public:
 
 protected:
     bool _OpenForReading(std::string const & filename, int subimage,
-                                 int mip, 
+                                 int mip,
                                  HioImage::SourceColorSpace sourceColorSpace,
                                  bool suppressErrors) override;
     bool _OpenForWriting(std::string const & filename) override;
@@ -110,9 +93,9 @@ private:
 #if OIIO_VERSION >= 20003
     cspan<unsigned char> _GenerateBufferCSpan(
         const std::shared_ptr<const char>& buffer,
-        int bufferSize) const;
+        size_t bufferSize) const;
 #endif
-    bool _CanUseIOProxyForExtension(std::string extension, 
+    bool _CanUseIOProxyForExtension(std::string extension,
                                     const ImageSpec &config) const;
     std::string _filename;
     int _subimage;
@@ -154,7 +137,7 @@ _GetHioFormatFromImageData(unsigned int nchannels, TypeDesc typedesc,
                 case TypeDesc::HALF:
                     return HioFormatFloat16;
                 case TypeDesc::FLOAT:
-                    return HioFormatFloat32;                
+                    return HioFormatFloat32;
             }
         case 2:
             switch (typedesc.basetype) {
@@ -176,7 +159,7 @@ _GetHioFormatFromImageData(unsigned int nchannels, TypeDesc typedesc,
                 case TypeDesc::HALF:
                     return HioFormatFloat16Vec2;
                 case TypeDesc::FLOAT:
-                    return HioFormatFloat32Vec2;             
+                    return HioFormatFloat32Vec2;
             }
         case 3:
             switch (typedesc.basetype) {
@@ -198,7 +181,7 @@ _GetHioFormatFromImageData(unsigned int nchannels, TypeDesc typedesc,
                 case TypeDesc::HALF:
                     return HioFormatFloat16Vec3;
                 case TypeDesc::FLOAT:
-                    return HioFormatFloat32Vec3;             
+                    return HioFormatFloat32Vec3;
             }
         case 4:
             switch (typedesc.basetype) {
@@ -220,7 +203,7 @@ _GetHioFormatFromImageData(unsigned int nchannels, TypeDesc typedesc,
                 case TypeDesc::HALF:
                     return HioFormatFloat16Vec4;
                 case TypeDesc::FLOAT:
-                    return HioFormatFloat32Vec4;             
+                    return HioFormatFloat32Vec4;
             }
         default:
             TF_CODING_ERROR("Unsupported type");
@@ -228,7 +211,7 @@ _GetHioFormatFromImageData(unsigned int nchannels, TypeDesc typedesc,
     }
 }
 /// Converts an HioFormat into its OpenImageIO component type equivalent.
-// XXX does not support conversions for:HioFormatBC6FloatVec3, 
+// XXX does not support conversions for:HioFormatBC6FloatVec3,
 // HioFormatBC6UFloatVec3, HioFormatBC7UNorm8Vec4, or HioFormatBC7UNorm8Vec4srgb
 static TypeDesc
 _GetOIIOBaseType(HioFormat hioFormat)
@@ -284,7 +267,7 @@ _GetOIIOBaseType(HioFormat hioFormat)
     }
 }
 
-// For compatability with Ice/Imr we transmogrify some matrix metadata
+// For compatibility with Ice/Imr we transmogrify some matrix metadata
 static std::string
 _TranslateMetadataKey(std::string const & metadataKey, bool *convertMatrixTypes)
 {
@@ -462,7 +445,7 @@ HioOIIO_Image::IsColorSpaceSRGB() const
 {
     if (_sourceColorSpace == HioImage::SRGB) {
         return true;
-    } 
+    }
     if (_sourceColorSpace == HioImage::Raw) {
         return false;
     }
@@ -539,7 +522,7 @@ HioOIIO_Image::GetNumMipLevels() const
     return 1;
 }
 
-std::string 
+std::string
 HioOIIO_Image::_GetFilenameExtension() const
 {
     std::string fileExtension = ArGetResolver().GetExtension(_filename);
@@ -549,9 +532,9 @@ HioOIIO_Image::_GetFilenameExtension() const
 #if OIIO_VERSION >= 20003
 cspan<unsigned char>
 HioOIIO_Image::_GenerateBufferCSpan(const std::shared_ptr<const char>& buffer,
-                                    int bufferSize) const
+                                    size_t bufferSize) const
 {
-    const char* bufferPtr = buffer.get(); 
+    const char* bufferPtr = buffer.get();
     const unsigned char* bufferPtrUnsigned = (const unsigned char *) bufferPtr;
     cspan<unsigned char> bufferCSpan(bufferPtrUnsigned, bufferSize);
     return bufferCSpan;
@@ -562,8 +545,8 @@ bool
 HioOIIO_Image::_CanUseIOProxyForExtension(std::string extension,
                                           const ImageSpec & config) const
 {
-    if (std::find(_ioProxySupportedExtensions->begin(), 
-                  _ioProxySupportedExtensions->end(), 
+    if (std::find(_ioProxySupportedExtensions->begin(),
+                  _ioProxySupportedExtensions->end(),
                   extension)
             != _ioProxySupportedExtensions->end()) {
         return true;
@@ -585,20 +568,20 @@ HioOIIO_Image::_CanUseIOProxyForExtension(std::string extension,
 /* virtual */
 bool
 HioOIIO_Image::_OpenForReading(std::string const & filename, int subimage,
-                               int mip, 
+                               int mip,
                                HioImage::SourceColorSpace sourceColorSpace,
                                bool suppressErrors)
 {
     _filename = filename;
     _subimage = subimage;
-    _miplevel = mip;    
+    _miplevel = mip;
     _sourceColorSpace = sourceColorSpace;
     _imagespec = ImageSpec();
 
 #if OIIO_VERSION >= 20003
     std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
         ArResolvedPath(_filename));
-    if (!asset) { 
+    if (!asset) {
         return false;
     }
 
@@ -660,7 +643,7 @@ HioOIIO_Image::ReadCropped(int const cropTop,
 #if OIIO_VERSION >= 20003
     std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
         ArResolvedPath(_filename));
-    if (!asset) { 
+    if (!asset) {
         return false;
     }
 
@@ -670,7 +653,7 @@ HioOIIO_Image::ReadCropped(int const cropTop,
     }
 
     size_t bufferSize = asset->GetSize();
-    
+
     Filesystem::IOMemReader memreader(_GenerateBufferCSpan(buffer, bufferSize));
     void *ptr = &memreader;
     ImageSpec config;
@@ -696,6 +679,13 @@ HioOIIO_Image::ReadCropped(int const cropTop,
 
 #endif
 
+    // Creation may fail when the file does not exist or is too large.
+    if (!imageInput)
+    {
+        TF_RUNTIME_ERROR("Failed to open image file \"%s\"", _filename.c_str());
+        return false;
+    }
+
     //// seek subimage
     ImageSpec spec = imageInput->spec();
     if (!imageInput->seek_subimage(_subimage, _miplevel, spec)){
@@ -703,45 +693,61 @@ HioOIIO_Image::ReadCropped(int const cropTop,
         TF_CODING_ERROR("Unable to seek subimage");
         return false;
     }
-   
-    int strideLength = imageInput->spec().width * 
-                       imageInput->spec().pixel_bytes();
-    int readStride = (storage.flipped)? 
-                     (-strideLength) : (strideLength);
-    int size = imageInput->spec().height * strideLength;
+
+    // NOTE: For values that refer to buffer sizes (in bytes),
+    // we use the size_t type. Operations with the int type
+    // may overflow INT_MAX, which can be less than SIZE_MAX.
+    size_t strideLength = imageInput->spec().width *
+                          imageInput->spec().pixel_bytes();
+    size_t readStride = (storage.flipped) ?
+                        (-strideLength) : (strideLength);
+    size_t size = imageInput->spec().height * strideLength;
 
     std::unique_ptr<uint8_t[]>pixelData(new uint8_t[size]);
     unsigned char *pixels = pixelData.get();
-    void *start = (storage.flipped)? 
+    void *start = (storage.flipped)?
                   (pixels + size - strideLength) : (pixels);
 
     // Read Image into pixels, flipping upon load so that
     // origin is at lower left corner
     // If needed, convert double precision images to float
+    bool res = false;
     if (imageInput->spec().format == TypeDesc::DOUBLE) {
-        imageInput->read_image(TypeDesc::FLOAT,
-                               start,
-                               AutoStride,
-                               readStride,
-                               AutoStride);
+        res = imageInput->read_image(TypeDesc::FLOAT,
+            start,
+            AutoStride,
+            readStride,
+            AutoStride);
     } else{
-        imageInput->read_image(imageInput->spec().format,
-                         start,
-                         AutoStride,
-                         readStride,
-                         AutoStride);
+        res = imageInput->read_image(imageInput->spec().format,
+            start,
+            AutoStride,
+            readStride,
+            AutoStride);
     }
-    
-    imageInput->close();
-    
+
+    if (!res)
+    {
+        TF_RUNTIME_ERROR("Failed to read image pixel from \"%s\", error = %s",
+                         _filename.c_str(), imageInput->geterror().c_str());
+        return false;
+    }
+
+    if (!imageInput->close())
+    {
+        TF_RUNTIME_ERROR("Failed to close image file \"%s\", error = %s",
+                         _filename.c_str(), imageInput->geterror().c_str());
+        return false;
+    }
+
     // Construct ImageBuf that wraps around allocated pixels memory
-    ImageBuf imagebuf =ImageBuf(imageInput->spec(), pixels);
+    ImageBuf imagebuf = ImageBuf(imageInput->spec(), pixels);
     ImageBuf *image = &imagebuf;
 
     // Convert color images to linear (unless they are sRGB)
     // (Currently unimplemented, requires OpenColorIO support from OpenImageIO)
 
-    // Crop 
+    // Crop
     ImageBuf cropped;
     if (cropTop || cropBottom || cropLeft || cropRight) {
         ImageBufAlgo::cut(cropped, *image,
@@ -752,7 +758,7 @@ HioOIIO_Image::ReadCropped(int const cropTop,
 
     // Reformat
     ImageBuf scaled;
-    if (image->spec().width != storage.width || 
+    if (image->spec().width != storage.width ||
         image->spec().height != storage.height) {
         ImageBufAlgo::resample(scaled, *image, /*interpolate=*/false,
                 ROI(0, storage.width, 0, storage.height));

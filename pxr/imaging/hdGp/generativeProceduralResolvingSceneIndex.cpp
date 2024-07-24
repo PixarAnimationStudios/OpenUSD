@@ -1,25 +1,8 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "generativeProceduralResolvingSceneIndex.h"
 #include "generativeProceduralPluginRegistry.h"
@@ -190,6 +173,10 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
 
     for (auto it = entries.begin(), e = entries.end(); it != e; ++it) {
         const HdSceneIndexObserver::AddedPrimEntry &entry = *it;
+        if (entry.primPath.IsAbsoluteRootPath()) {
+            continue;
+        }
+
         if (entry.primType == _targetPrimTypeName) {
             if (!entriesCopied) {
                 entriesCopied = true;
@@ -209,9 +196,12 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
             }
         }
 
+        // We've already skipped the case where entry.primPath is the absolute
+        // root, so GetParentPath() makes sense here.
+        const SdfPath entryPrimParentPath = entry.primPath.GetParentPath();
         // NOTE: potentially share code with primsremoved
         _DependencyMap::const_iterator dIt =
-            _dependencies.find(entry.primPath.GetParentPath());
+            _dependencies.find(entryPrimParentPath);
         if (dIt != _dependencies.end()) {
             for (const SdfPath &dependentPath : dIt->second) {
                 // don't bother checking a procedural which already scheduled
@@ -228,7 +218,7 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
 
                 const _ProcEntry &procEntry = procIt->second;
                 const auto dslIt =
-                    procEntry.dependencies.find(entry.primPath.GetParentPath());
+                    procEntry.dependencies.find(entryPrimParentPath);
                 
                 if (dslIt == procEntry.dependencies.end()) {
                     continue;

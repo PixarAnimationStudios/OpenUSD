@@ -2,25 +2,8 @@
 #
 # Copyright 2023 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 import sys, os, unittest
 from pxr import Sdf, Usd, Tf, Plug
@@ -2337,6 +2320,245 @@ class TestUsdNamespaceEditorTargetPathFixup(unittest.TestCase):
                     }
                 }
             })
+
+    def test_TargetsFromCompositionArcs(self):
+
+        # Setup: Layer to be referenced with prims that have relationship and 
+        # attributes with targets and connections. /Model/A has targets to 
+        # /Model/B (which exists). /Model/B has targets to /Model/A (which 
+        # exists) and /Model/C (which does NOT exists but will speculatively 
+        # map to a prim in the root layer that will exist.)
+        refLayer = Sdf.Layer.CreateAnonymous("ref.usda")
+        refLayer.ImportFromString('''#usda 1.0
+            def "Model" 
+            {
+                def "A"
+                {
+                    rel a_rel = [</Model/B>]
+                    int a_attr
+                    int a_attr.connect = [</Model/B.b_attr>]
+                }
+                
+                def "B"
+                {
+                    rel b_rel = [</Model/A>, </Model/C>]
+                    int b_attr
+                    int b_attr.connect = [</Model/A.a_attr>, </Model/C.c_attr>]
+                }
+            }
+        ''')
+
+        # Root layer which references the above. Defines /Root/C which has 
+        # targets to A and B (brought in by the reference) and is also the 
+        # prim that is speculatively targeted by /Model/B. Also provides an
+        # over to A that adds targets to /Root/C.
+        rootLayer = Sdf.Layer.CreateAnonymous("root.usda")
+        rootLayer.ImportFromString('''#usda 1.0
+            def "Root" (
+                references = @''' + refLayer.identifier + '''@</Model>
+            )
+            {
+                def "C"
+                {
+                    rel c_rel = [</Root/A>, </Root/B>]
+                    int c_attr
+                    int c_attr.connect = [</Root/A.a_attr>, </Root/B.b_attr>]
+                }
+
+                over "A"
+                {
+                    append rel a_rel = [</Root/C>]
+                    append int a_attr.connect = [</Root/C.c_attr>]
+                }
+            }
+        ''')
+
+        # Create a stage and editor.
+        stage = Usd.Stage.Open(rootLayer)
+        editor = Usd.NamespaceEditor(stage)
+
+        # Verify initial prims
+        self.assertEqual(stage.GetPrimAtPath("/Root").GetChildrenNames(), 
+                         ["A", "B", "C"])
+        # Verify no relocates
+        self.assertEqual(rootLayer.relocates, [])
+
+        # /Root/A properties target B and C 
+        self.assertEqual(
+            stage.GetRelationshipAtPath("/Root/A.a_rel").GetTargets(),
+            ["/Root/B", "/Root/C"])
+        self.assertEqual(
+            stage.GetAttributeAtPath("/Root/A.a_attr").GetConnections(),
+            ["/Root/B.b_attr", "/Root/C.c_attr"])
+
+        # /Root/B properties target A and C 
+        self.assertEqual(
+            stage.GetRelationshipAtPath("/Root/B.b_rel").GetTargets(),
+            ["/Root/A", "/Root/C"])
+        self.assertEqual(
+            stage.GetAttributeAtPath("/Root/B.b_attr").GetConnections(),
+            ["/Root/A.a_attr", "/Root/C.c_attr"])
+
+        # /Root/C properties target A and B
+        self.assertEqual(
+            stage.GetRelationshipAtPath("/Root/C.c_rel").GetTargets(),
+            ["/Root/A", "/Root/B"])
+        self.assertEqual(
+            stage.GetAttributeAtPath("/Root/C.c_attr").GetConnections(),
+            ["/Root/A.a_attr", "/Root/B.b_attr"])
+
+        # Rename /Root/A to Moved_A
+        self.assertTrue(editor.MovePrimAtPath("/Root/A", "/Root/Moved_A"))
+        self.assertTrue(editor.ApplyEdits())
+
+        # Verify the prim was renamed.
+        self.assertEqual(stage.GetPrimAtPath("/Root").GetChildrenNames(), 
+                         ["Moved_A", "B", "C"])
+        # Verify A was relocated.
+        self.assertEqual(rootLayer.relocates, [("/Root/A", "/Root/Moved_A")])
+
+        # Moved_A has the same targets as before the rename.
+        self.assertEqual(
+            stage.GetRelationshipAtPath("/Root/Moved_A.a_rel").GetTargets(),
+            ["/Root/B", "/Root/C"])
+        self.assertEqual(
+            stage.GetAttributeAtPath("/Root/Moved_A.a_attr").GetConnections(),
+            ["/Root/B.b_attr", "/Root/C.c_attr"])
+
+        # /Root/B properties have been updated to target Moved_A
+        self.assertEqual(
+            stage.GetRelationshipAtPath("/Root/B.b_rel").GetTargets(),
+            ["/Root/Moved_A", "/Root/C"])
+        self.assertEqual(
+            stage.GetAttributeAtPath("/Root/B.b_attr").GetConnections(),
+            ["/Root/Moved_A.a_attr", "/Root/C.c_attr"])
+
+        # /Root/C properties have been updated to target Moved_A
+        self.assertEqual(
+            stage.GetRelationshipAtPath("/Root/C.c_rel").GetTargets(),
+            ["/Root/Moved_A", "/Root/B"])
+        self.assertEqual(
+            stage.GetAttributeAtPath("/Root/C.c_attr").GetConnections(),
+            ["/Root/Moved_A.a_attr", "/Root/B.b_attr"])
+
+        # Rename /Root/B to Moved_B
+        self.assertTrue(editor.MovePrimAtPath("/Root/B", "/Root/Moved_B"))
+        self.assertTrue(editor.ApplyEdits())
+
+        # Verify that B is now also renamed.
+        self.assertEqual(stage.GetPrimAtPath("/Root").GetChildrenNames(), 
+                         ["Moved_A", "Moved_B", "C"])
+        # Verify B is now also relocated.
+        self.assertEqual(rootLayer.relocates, [
+            ("/Root/A", "/Root/Moved_A"),
+            ("/Root/B", "/Root/Moved_B")])
+
+        # /Root/Moved_A properties have been updated to target Moved_B
+        self.assertEqual(
+            stage.GetRelationshipAtPath("/Root/Moved_A.a_rel").GetTargets(),
+            ["/Root/Moved_B", "/Root/C"])
+        self.assertEqual(
+            stage.GetAttributeAtPath("/Root/Moved_A.a_attr").GetConnections(),
+            ["/Root/Moved_B.b_attr", "/Root/C.c_attr"])
+
+        # Moved_B has the same targets as before the rename.
+        self.assertEqual(
+            stage.GetRelationshipAtPath("/Root/Moved_B.b_rel").GetTargets(),
+            ["/Root/Moved_A", "/Root/C"])
+        self.assertEqual(
+            stage.GetAttributeAtPath("/Root/Moved_B.b_attr").GetConnections(),
+            ["/Root/Moved_A.a_attr", "/Root/C.c_attr"])
+
+        # /Root/Moved_C properties have been updated to target Moved_B
+        self.assertEqual(
+            stage.GetRelationshipAtPath("/Root/C.c_rel").GetTargets(),
+            ["/Root/Moved_A", "/Root/Moved_B"])
+        self.assertEqual(
+            stage.GetAttributeAtPath("/Root/C.c_attr").GetConnections(),
+            ["/Root/Moved_A.a_attr", "/Root/Moved_B.b_attr"])
+
+        # Rename /Root/C to Moved_C
+        self.assertTrue(editor.MovePrimAtPath("/Root/C", "/Root/Moved_C"))
+        self.assertTrue(editor.ApplyEdits())
+
+        # Verify that C is now also renamed.
+        self.assertEqual(stage.GetPrimAtPath("/Root").GetChildrenNames(), 
+                         ["Moved_A", "Moved_B", "Moved_C"])
+        # Verify that the relocates haven't changed as moving /Root/C does not
+        # require relocates.
+        self.assertEqual(rootLayer.relocates, [
+            ("/Root/A", "/Root/Moved_A"),
+            ("/Root/B", "/Root/Moved_B")])
+
+        # /Root/Moved_A properties have been updated to target Moved_C because
+        # the opinions that target C are in the root layer and can be edited.
+        self.assertEqual(
+            stage.GetRelationshipAtPath("/Root/Moved_A.a_rel").GetTargets(),
+            ["/Root/Moved_B", "/Root/Moved_C"])
+        self.assertEqual(
+            stage.GetAttributeAtPath("/Root/Moved_A.a_attr").GetConnections(),
+            ["/Root/Moved_B.b_attr", "/Root/Moved_C.c_attr"])
+
+        # /Root/Moved_B properties have NOT been updated to target Moved_C 
+        # because these opinions are in the reference and /Root/C cannot be
+        # relocated as it has no opinions across the reference itself.
+        self.assertEqual(
+            stage.GetRelationshipAtPath("/Root/Moved_B.b_rel").GetTargets(),
+            ["/Root/Moved_A", "/Root/C"])
+        self.assertEqual(
+            stage.GetAttributeAtPath("/Root/Moved_B.b_attr").GetConnections(),
+            ["/Root/Moved_A.a_attr", "/Root/C.c_attr"])
+
+        # Moved_C has the same targets as before the rename.
+        self.assertEqual(
+            stage.GetRelationshipAtPath("/Root/Moved_C.c_rel").GetTargets(),
+            ["/Root/Moved_A", "/Root/Moved_B"])
+        self.assertEqual(
+            stage.GetAttributeAtPath("/Root/Moved_C.c_attr").GetConnections(),
+            ["/Root/Moved_A.a_attr", "/Root/Moved_B.b_attr"])
+
+        # Delete /Root/Moved_A
+        self.assertTrue(editor.DeletePrimAtPath("/Root/Moved_A"))
+        self.assertTrue(editor.ApplyEdits())
+
+        # Verify Moved_A is no longer a prim
+        self.assertEqual(stage.GetPrimAtPath("/Root").GetChildrenNames(), 
+                         ["Moved_B", "Moved_C"])
+        # Verify the relocates have been updates so /Root/A now maps to empty
+        self.assertEqual(rootLayer.relocates, [
+            ("/Root/A", Sdf.Path()), 
+            ("/Root/B", "/Root/Moved_B")])
+
+        # /Root/Moved_B properties have been updated but instead of 
+        # /Root/Moved_A being removed from its targets, it has returned to 
+        # using the unrelocated path of /Root/A. This is because Pcp doesn't 
+        # removed composed targets that have been relocated.
+        # 
+        # XXX: This really should remove the deleted targets to /Root/A but we
+        # don't currently add the mapping to empty in the map function for 
+        # /Root/A. This is because the PcpTargetIndex computation uses the
+        # map function to map the target path and it will produce a composition
+        # error if the path is not mappable. An unmappable target path that is
+        # due to a "relocate to delete" should not be an error, but any other 
+        # case where it's not mappable is an error. Unfortunately, we don't have
+        # an easy way of distinguishing between these two cases in the target
+        # index so for now we have to let deleted prims map to avoid false 
+        # errors in the presence of a relocate to delete.
+        self.assertEqual(
+            stage.GetRelationshipAtPath("/Root/Moved_B.b_rel").GetTargets(),
+            ["/Root/A", "/Root/C"])
+        self.assertEqual(
+            stage.GetAttributeAtPath("/Root/Moved_B.b_attr").GetConnections(),
+            ["/Root/A.a_attr", "/Root/C.c_attr"])
+
+        # /Root/Moved_C, on the other hand, does have targets to Moved_A removed
+        # because the opinions are local to the root layer.
+        self.assertEqual(
+            stage.GetRelationshipAtPath("/Root/Moved_C.c_rel").GetTargets(),
+            ["/Root/Moved_B"])
+        self.assertEqual(
+            stage.GetAttributeAtPath("/Root/Moved_C.c_attr").GetConnections(),
+            ["/Root/Moved_B.b_attr"])
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,0 +1,14 @@
+#usda 1.0
+
+def Shader "TestShaderNode" (
+    doc = "This node is used for testing UsdShadeValidator test"
+)
+{
+    uniform asset info:glslfx:sourceAsset = @./TestShader.glslfx@
+    uniform token info:id = "TestShaderNode"
+    uniform token info:implementationSource = "sourceAsset"
+    int inputs:inputInt = 1
+    string inputs:inputString = "foo"
+    float inputs:inputFloat = 1.0
+    color3f inputs:inputColor = (1.0, 1.0, 1.0)
+}

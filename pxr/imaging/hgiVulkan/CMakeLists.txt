@@ -68,6 +68,32 @@ if (WIN32)
     return()
 endif()
 
+pxr_build_test(testHgiVulkan
+    LIBRARIES
+        hgiVulkan
+        hgi
+        hio
+        tf
+    CPPFILES
+        testenv/testHgiVulkan.cpp
+)
+pxr_install_test_dir(
+    SRC testenv/testHgiVulkan
+    DEST testHgiVulkan
+)
+pxr_register_test(testHgiVulkan
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHgiVulkan"
+    IMAGE_DIFF_COMPARE
+        graphicsCmdsClear.png
+        srgba.png
+        copyTextureToBuffer.png
+        copyBufferToTexture.png
+    FAIL 1
+    FAIL_PERCENT 0.001
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+)
+
 # This test is not currently supported on static builds as it relies on 
 # testHgiCommand, which is not linked in the static hgiVulkan library. 
 if (BUILD_SHARED_LIBS)
@@ -78,11 +104,11 @@ pxr_install_test_dir(
 )
 pxr_register_test(testHgiVulkanCommand
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHgiCommand --write testHgiVulkanCommand_triangle.png"
-    # IMAGE_DIFF_COMPARE
-    #     testHgiVulkanCommand_triangle.png
-    # FAIL 1
-    # FAIL_PERCENT 0.001
-    # PERCEPTUAL
+    IMAGE_DIFF_COMPARE
+        testHgiVulkanCommand_triangle.png
+    FAIL 1
+    FAIL_PERCENT 0.001
+    PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     ENV
         HGI_ENABLE_VULKAN=1

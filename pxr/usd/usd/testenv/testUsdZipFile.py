@@ -2,25 +2,8 @@
 #
 # Copyright 2018 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 import os
 import unittest
@@ -51,7 +34,7 @@ class TestUsdZipFile(unittest.TestCase):
         zf = Usd.ZipFile.Open("test_reader.usdz")
         self.assertTrue(zf)
         self.assertEqual(
-            zf.GetFileNames(), ["a.txt", "b.png", "sub/c.png", "sub/d.txt"])
+            zf.GetFileNames(), ["a.test", "b.png", "sub/c.png", "sub/d.txt"])
 
         self.assertIsNone(zf.GetFile("nonexistent.txt"))
         self.assertIsNone(zf.GetFileInfo("nonexistent.txt"))
@@ -62,15 +45,15 @@ class TestUsdZipFile(unittest.TestCase):
         # translations applied.
         fixLineEndings = True
 
-        fileInfo = zf.GetFileInfo("a.txt")
+        fileInfo = zf.GetFileInfo("a.test")
         self.assertEqual(fileInfo.dataOffset, 64)
-        self.assertEqual(fileInfo.size, 82)
-        self.assertEqual(fileInfo.uncompressedSize, 82)
-        self.assertEqual(fileInfo.crc, 3011207731)
+        self.assertEqual(fileInfo.size, 83)
+        self.assertEqual(fileInfo.uncompressedSize, 83)
+        self.assertEqual(fileInfo.crc, 2187659876)
         self.assertEqual(fileInfo.compressionMethod, 0)
         self.assertFalse(fileInfo.encrypted)
         self._ValidateSourceAndZippedFile(
-            "src/a.txt", zf, "a.txt", fixLineEndings)
+            "src/a.test", zf, "a.test", fixLineEndings)
 
         fileInfo = zf.GetFileInfo("b.png")
         self.assertEqual(fileInfo.dataOffset, 192)
@@ -112,8 +95,8 @@ class TestUsdZipFile(unittest.TestCase):
             # writer or the writer is destroyed.
             self.assertFalse(os.path.isfile("test_writer.usdz"))
             
-            addedFile = zfw.AddFile("src/a.txt")
-            self.assertEqual(addedFile, "src/a.txt")
+            addedFile = zfw.AddFile("src/a.test")
+            self.assertEqual(addedFile, "src/a.test")
 
             addedFile = zfw.AddFile("src/b.png", "b.png")
             self.assertEqual(addedFile, "b.png")
@@ -122,7 +105,7 @@ class TestUsdZipFile(unittest.TestCase):
         
         # Verify that the zip file can be read by Usd.ZipFile.
         zf = Usd.ZipFile.Open("test_writer.usdz")
-        self.assertEqual(zf.GetFileNames(), ["src/a.txt", "b.png"])
+        self.assertEqual(zf.GetFileNames(), ["src/a.test", "b.png"])
 
         # Since we're writing files into a .usdz and then extracting
         # and comparing them to the original file, we don't need to
@@ -132,11 +115,11 @@ class TestUsdZipFile(unittest.TestCase):
         def _GetFileSize(file):
             return os.stat(file).st_size
 
-        fileInfo = zf.GetFileInfo("src/a.txt")
+        fileInfo = zf.GetFileInfo("src/a.test")
         self.assertEqual(fileInfo.dataOffset, 64)
-        self.assertEqual(fileInfo.size, _GetFileSize("src/a.txt"))
-        self.assertEqual(fileInfo.uncompressedSize, _GetFileSize("src/a.txt"))
-        self.assertEqual(fileInfo.crc, 3011207731)
+        self.assertEqual(fileInfo.size, _GetFileSize("src/a.test"))
+        self.assertEqual(fileInfo.uncompressedSize, _GetFileSize("src/a.test"))
+        self.assertEqual(fileInfo.crc, 2187659876)
         self.assertEqual(fileInfo.compressionMethod, 0)
         self.assertFalse(fileInfo.encrypted)
 
@@ -149,7 +132,7 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertFalse(fileInfo.encrypted)
 
         self._ValidateSourceAndZippedFile(
-            "src/a.txt", zf, "src/a.txt", dontFixLineEndings)
+            "src/a.test", zf, "src/a.test", dontFixLineEndings)
         self._ValidateSourceAndZippedFile("src/b.png", zf, "b.png")
 
         # Verify that the data offset for all files in the archive are
@@ -160,11 +143,11 @@ class TestUsdZipFile(unittest.TestCase):
         # Verify that zip file can be read by third-party zip libraries
         # (in this case, Python's zip module)
         zf = zipfile.ZipFile("test_writer.usdz")
-        self.assertEqual(zf.namelist(), ["src/a.txt", "b.png"])
+        self.assertEqual(zf.namelist(), ["src/a.test", "b.png"])
         self.assertIsNone(zf.testzip())
 
         self._ValidateSourceAndZippedFile(
-            "src/a.txt", zf, "src/a.txt", dontFixLineEndings)
+            "src/a.test", zf, "src/a.test", dontFixLineEndings)
         self._ValidateSourceAndZippedFile("src/b.png", zf, "b.png")
 
     def test_WriterAlignment(self):

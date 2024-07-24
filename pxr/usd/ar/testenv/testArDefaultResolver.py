@@ -2,28 +2,12 @@
 #
 # Copyright 2016 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 import os
 import pathlib
+import sys
 from pxr import Ar, Tf
 
 import unittest
@@ -37,11 +21,9 @@ class TestArDefaultResolver(unittest.TestCase):
         path1 = str(path1)
         path2 = str(path2)
 
-        # Flip backslashes to forward slashes and make sure path case doesn't
-        # cause test failures to accommodate platform differences. We don't use
-        # os.path.normpath since that might fix up other differences we'd want
-        # to catch in these tests.
-        self.assertEqual(os.path.normcase(path1), os.path.normcase(path2))
+        # Flip backslashes to forward slashes to accommodate platform
+        # differences. 
+        self.assertEqual(os.path.normpath(path1), os.path.normpath(path2))
 
     def _CreateEmptyTestFile(self, path):
         dir = os.path.dirname(path)
@@ -103,6 +85,16 @@ class TestArDefaultResolver(unittest.TestCase):
         self.assertPathsEqual(
             '/dir/AbsolutePath.txt',
             r.CreateIdentifier('/dir/.//AbsolutePath.txt', _RP('subdir/A.txt')))
+        
+        # Windows is case insensitive so ensuring that the drive letter of the 
+        # resulting identifier matches that of the original input path.
+        if sys.platform == "win32":
+            self.assertPathsEqual(
+                'C:\dir\AbsolutePath.txt',
+                r.CreateIdentifier('C:/dir/AbsolutePath.txt'))
+            self.assertPathsEqual(
+                'c:\dir\AbsolutePath.txt',
+                r.CreateIdentifier('c:/dir/AbsolutePath.txt'))
 
         # The identifier for a file-relative path (i.e. a relative path
         # starting with "./" or "../" is obtained by anchoring that path
@@ -164,6 +156,16 @@ class TestArDefaultResolver(unittest.TestCase):
             '/dir/AbsolutePath.txt',
             r.CreateIdentifierForNewAsset(
                 '/dir/.//AbsolutePath.txt', _RP('subdir/A.txt')))
+        
+        # Windows is case insensitive so ensuring that the drive letter of the 
+        # resulting identifier matches that of the original input path.
+        if sys.platform == "win32":
+            self.assertPathsEqual(
+                'C:\dir\AbsolutePath.txt',
+                r.CreateIdentifier('C:/dir/AbsolutePath.txt'))
+            self.assertPathsEqual(
+                'c:\dir\AbsolutePath.txt',
+                r.CreateIdentifier('c:/dir/AbsolutePath.txt'))
 
         # The identifier for a relative path (file-relative or search-relative)
         # will always be the anchored absolute path.

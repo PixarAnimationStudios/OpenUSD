@@ -1,31 +1,16 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 
 #include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/drawModeStandin.h"
 
+#include "pxr/usdImaging/usdImaging/drawModeStandin.h"
 #include "pxr/usdImaging/usdImaging/geomModelSchema.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
+
+#include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -161,23 +146,26 @@ UsdImagingDrawModeSceneIndex::GetPrim(
         
         if (relPathLen == 0) {
             // Example
-            // Querried prim is /Foo and the DrawModeStandin is at /Foo.
+            // Queried prim is /Foo and the DrawModeStandin is at /Foo.
             //
-            // We query the DrawmodeStandin for its prim.
+            // We query the DrawmodeStandin for its self, untyped prim.
             return standin->GetPrim();
         }
-        if (relPathLen == 1) {
+        if (relPathLen == 1 || relPathLen == 2) {
             // Example:
-            // Querried prim is /Foo/mesh and the DrawModeStandin is at /Foo.
+            // DrawModeStandin is at /Foo, and queried prim is at
+            //   /Foo/cardsMesh, or
+            //   /Foo/subsetMaterialXPos, or
+            //   /Foo/cardsMesh/subsetXPos
             //
-            // We query the DrawmodeStandin for the child prim mesh.
-            return standin->GetChildPrim(primPath.GetNameToken());
+            // We query the DrawmodeStandin for the descendant prim.
+            return standin->GetDescendantPrim(primPath);
         }
         // Example:
-        // Querried prim is /Foo/A/B and the DrawModeStandin is at /Foo.
+        // Queried prim is /Foo/A/B and the DrawModeStandin is at /Foo.
         //
         // We block everything at this level since draw mode standin's
-        // only have immediate children.
+        // only have children (depth 1) or grandchildren (depth 2).
         return { TfToken(), nullptr };
     }
 
@@ -195,12 +183,21 @@ UsdImagingDrawModeSceneIndex::GetChildPrimPaths(
     size_t relPathLen;
     if (UsdImaging_DrawModeStandinSharedPtr const standin =
             _FindStandinForPrimOrAncestor(primPath, &relPathLen)) {
-        if (relPathLen == 0) {
-            // List immediate children of standin.
-            return standin->GetChildPrimPaths();
+        // standin->GetDescendantPrimPaths() gives all descendants, but
+        // we just want the queried prim's direct children so we only
+        // want the descendant paths with the full queried path as prefix and
+        // exactly one additional path component. This works whether the
+        // queried path is for the typeless container (children: standin prim +
+        // materials), the standin prim (children: subsets), a subset (children:
+        // none), or a material (children: none).
+        SdfPathVector paths;
+        for (const SdfPath& path : standin->GetDescendantPrimPaths()) {
+            if (path.HasPrefix(primPath) && path.GetPathElementCount()
+                - primPath.GetPathElementCount() == 1) {
+                paths.push_back(path);
+            }
         }
-        // Standin only has immediate children. So just block.
-        return {};
+        return paths;
     }
 
     return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
@@ -416,7 +413,7 @@ UsdImagingDrawModeSceneIndex::_PrimsDirtied(
                     // Add new stand-in geometry.
                     standin->ComputePrimAddedEntries(&addedEntries);
                     _prims[path] = std::move(standin);
-                    // Do not traverse ancestors of this prim.
+                    // Do not traverse descendants of this prim.
                     lastPath = path;
                 }
             } else {
@@ -473,7 +470,7 @@ UsdImagingDrawModeSceneIndex::_PrimsDirtied(
         }
 
         if (relPathLen > 0) {
-            // Ancestors of prims with non-default draw mode can be ignored.
+            // Descendants of prims with non-default draw mode can be ignored.
             continue;
         }
         

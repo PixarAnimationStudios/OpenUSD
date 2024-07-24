@@ -1,28 +1,12 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usd/usd/collectionMembershipQuery.h"
 
+#include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/usd/usd/object.h"
 
@@ -49,6 +33,50 @@ static bool _WrapIsPathIncluded_2(
     return query.IsPathIncluded(path, parentExpansionRule);
 }
 
+struct _PathExpansionRuleMapFromPython
+{
+    using RuleMap = Usd_CollectionMembershipQueryBase::PathExpansionRuleMap;
+    
+    _PathExpansionRuleMapFromPython() {
+        converter::registry::insert(
+            &convertible, &construct, type_id<RuleMap>());
+    }
+    
+    static PyObject *convert(PyObject *p, RuleMap *result) {
+        if (!PyDict_Check(p)) {
+            return nullptr;
+        }
+        Py_ssize_t pos = 0;
+        PyObject *pyKey = nullptr, *pyVal = nullptr;
+        while (PyDict_Next(p, &pos, &pyKey, &pyVal)) {
+            extract<SdfPath> keyProxy(pyKey);
+            extract<TfToken> valProxy(pyVal);
+            if (!keyProxy.check() || !valProxy.check()) {
+                return nullptr;
+            }
+            object pVal(handle<>(borrowed(pyVal)));
+            if (result) {
+                (*result)[keyProxy()] = valProxy();
+            }
+        }
+        return p;
+    }
+
+    static void *convertible(PyObject *p) {
+        return convert(p, nullptr);
+    }
+
+    static void construct(PyObject *source,
+                          converter::rvalue_from_python_stage1_data *data) {
+        void *storage = (
+            (converter::rvalue_from_python_storage<RuleMap>*)
+            data)->storage.bytes;
+        new (storage) RuleMap;
+        data->convertible = storage;
+        convert(source, (RuleMap *)storage);
+    }
+};
+
 } // anonymous namespace
 
 void
@@ -66,6 +94,10 @@ wrapUsdCollectionMembershipQuery()
          arg("predicate")=UsdPrimDefaultPredicate),
         return_value_policy<TfPySequenceToList>());
 
+    def("ComputePathExpressionFromCollectionMembershipQueryRuleMap",
+        UsdComputePathExpressionFromCollectionMembershipQueryRuleMap,
+        arg("ruleMap"));
+
     class_<UsdCollectionMembershipQuery>("UsdCollectionMembershipQuery")
         .def("IsPathIncluded", _WrapIsPathIncluded_1, arg("path"))
         .def("IsPathIncluded", _WrapIsPathIncluded_2, 
@@ -77,10 +109,18 @@ wrapUsdCollectionMembershipQuery()
         .def("GetIncludedCollections",
              &UsdCollectionMembershipQuery::GetIncludedCollections,
              return_value_policy<TfPySequenceToList>())
+        .def("UsesPathExpansionRuleMap",
+             &UsdCollectionMembershipQuery::UsesPathExpansionRuleMap)
         .def("__hash__", &UsdCollectionMembershipQuery::GetHash)
         .def(self == self)
         .def(self != self)
         ;
+
+    // from-python conversion from PathExpansionRuleMap.
+    TfPyContainerConversions::from_python_tuple_pair<
+        Usd_CollectionMembershipQueryBase::PathExpansionRuleMap::value_type>();
+
+    _PathExpansionRuleMapFromPython();
 }
 
 

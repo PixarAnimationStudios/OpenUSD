@@ -1,25 +1,8 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdImaging/lightAPIAdapter.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
@@ -48,24 +31,6 @@ TF_REGISTRY_FUNCTION(TfType)
 namespace
 {
 
-// XXX: Borrowed from collectionCache.cpp. Need to be able to prevent creation
-//      of meaningless categories for light and shadow linking as both an
-//      optimization and to allow lights without linking to work correctly now.
-//      TODO: Remove copy of this code once collection-to-category mechanisms
-//            are defined -- which may mean use of a refactored 
-//            UsdImaging_CollectionCache in which the code is already shared.
-// A query is trivial if it includes everything.
-bool
-_IsQueryTrivial(UsdCollectionAPI::MembershipQuery const& query)
-{
-    // XXX Should be a faster way to do this!
-    UsdCollectionAPI::MembershipQuery::PathExpansionRuleMap ruleMap =
-        query.GetAsPathExpansionRuleMap();
-    return ruleMap.size() == 1 &&
-        ruleMap.begin()->first == SdfPath::AbsoluteRootPath() &&
-        ruleMap.begin()->second == UsdTokens->expandPrims;
-}
-
 class _LightDataSource final : public HdContainerDataSource
 {
 public:
@@ -84,37 +49,12 @@ public:
             SdfPathVector filterPaths;
             _lightApi.GetFiltersRel().GetForwardedTargets(&filterPaths);
             return HdCreateTypedRetainedDataSource(VtValue(filterPaths));
-        } else if (name == HdTokens->lightLink) {
-            // exclude lightLink values for unauthored or collections which
-            // would otherwise match everything
-            UsdCollectionAPI c = _lightApi.GetLightLinkCollectionAPI();
-            if (_IsQueryTrivial(c.ComputeMembershipQuery())) {
-                return nullptr;
-            }
 
-            // NOTE: The value here corresponds to the "category" name
-            //       generated from our linking collection. For USD lights,
-            //       that will be the full property path to the linking
-            //       collection.
-            return HdRetainedTypedSampledDataSource<TfToken>::New(
-                c.GetCollectionPath().GetToken());
-        } else if (name == HdTokens->shadowLink) {
-            // exclude shadowLink values for unauthored or collections which
-            // would otherwise match everything
-            UsdCollectionAPI c = _lightApi.GetShadowLinkCollectionAPI();
-            if (_IsQueryTrivial(c.ComputeMembershipQuery())) {
-                return nullptr;
-            }
-
-            // NOTE: The value here corresponds to the "category" name
-            //       generated from our linking collection. For USD lights,
-            //       that will be the full property path to the linking
-            //       collection.
-            return HdRetainedTypedSampledDataSource<TfToken>::New(
-                c.GetCollectionPath().GetToken());
-        } else if (name == HdTokens->isLight) {
+        }
+        if (name == HdTokens->isLight) {
             return HdRetainedTypedSampledDataSource<bool>::New(true);
-        } else if (name == HdTokens->materialSyncMode) {
+        }
+        if (name == HdTokens->materialSyncMode) {
             if (UsdAttribute attr = _lightApi.GetMaterialSyncModeAttr()) {
                 TfToken v;
                 if (attr.Get(&v)) {
@@ -135,8 +75,6 @@ public:
                     _lightApi.GetPrim().GetPath(),
                     HdLightSchema::GetDefaultLocator().Append(name));
             }
-
-
         }
 
         return nullptr;
@@ -146,10 +84,13 @@ private:
 
     static const TfTokenVector & _GetNames()
     {
+        // Light linking fields 'lightLink' and 'shadowLink' that provide the
+        // category ID for the corresponding collection  are computed by a
+        // scene index downstream.
+        // The collections are transported by collectionAPIAdapter.
+        //
         static const TfTokenVector names = {
             HdTokens->filters,
-            HdTokens->lightLink,
-            HdTokens->shadowLink,
             HdTokens->isLight,
             HdTokens->materialSyncMode,
         };
@@ -227,18 +168,11 @@ UsdImagingLightAPIAdapter::InvalidateImagingSubprim(
             // since we report parameter values in the "light" data source
             // also, we need to invalidate it also
             result.insert(HdLightSchema::GetDefaultLocator());
-            
         }
 
-        // NOTE: Having to make assumptions regarding relevant linking
-        //       parameters as the relevant USD schemas don't offer static
-        //       functions for name comparison without access to the prim
-        //       instance. Let's assume collections defined here are linking
-        //       related.
-        if (!dirtiedLight
-                && (UsdCollectionAPI::CanContainPropertyName(propertyName)
-                    // This will capture other contents of light data source
-                    || TfStringStartsWith(propertyName.GetString(), "light:"))){
+        if (!dirtiedLight && !dirtiedMaterial &&
+            // This will capture other contents of light data source
+            TfStringStartsWith(propertyName.GetString(), "light:")) {
             dirtiedLight = true;
             result.insert(HdLightSchema::GetDefaultLocator());
         }

@@ -757,6 +757,7 @@ WARN_LOGFILE           =
 INPUT                  = docs/doxygen/externalOverview.dox \
                          docs/doxygen/developer_guides.dox \
                          docs/doxygen/architecture-guides \
+                         docs/doxygen/developer-guidelines \
                          docs/include/pxr/extras/imaging \
                          docs/include/pxr/base \
                          docs/include/pxr/usd \

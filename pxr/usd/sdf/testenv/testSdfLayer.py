@@ -2,25 +2,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 import os, platform, itertools, sys, unittest
 
@@ -930,6 +913,37 @@ over "test"
                 completed = sum(1 if f.result() else 0 for f in
                                 concurrent.futures.as_completed(futures))
             self.assertEqual(completed, OPENS)
+    
+    def test_DefaultPrim(self):
+        layer = Sdf.Layer.CreateAnonymous()
+        
+        # Set defaultPrim
+        layer.defaultPrim = '/foo'
+        self.assertEqual(layer.GetDefaultPrimAsPath(), '/foo')
+
+        # Set the defaultPrim by name, should return path
+        layer.defaultPrim = 'bar'
+        Sdf.CreatePrimInLayer(layer, '/bar')
+        self.assertEqual(layer.GetDefaultPrimAsPath(), '/bar')
+
+        # Set sub-root prims as default, should return path
+        layer.defaultPrim = 'foo/bar'
+        Sdf.CreatePrimInLayer(layer, '/foo/bar')
+        self.assertEqual(layer.GetDefaultPrimAsPath(), '/foo/bar')
+
+        # Set invalid prim path as default, should return empty path
+        layer.defaultPrim = 'foo.bar'
+        self.assertEqual(layer.GetDefaultPrimAsPath(), '')
+        # Set invalid path as default, should return empty path
+        layer.defaultPrim = '//'
+        self.assertEqual(layer.GetDefaultPrimAsPath(), '')
+        layer.defaultPrim = ''
+        self.assertEqual(layer.GetDefaultPrimAsPath(), '')
+
+        # Try layer-level authoring API.
+        self.assertTrue(layer.HasDefaultPrim())
+        layer.ClearDefaultPrim()
+        self.assertFalse(layer.HasDefaultPrim())
 
 if __name__ == "__main__":
     unittest.main()

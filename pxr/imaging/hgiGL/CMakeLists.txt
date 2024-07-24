@@ -64,6 +64,36 @@ if (WIN32)
     return()
 endif()
 
+pxr_build_test(testHgiGL
+    LIBRARIES
+        hgiGL
+        hgi
+        hio
+        tf
+        gf
+        garch
+    CPPFILES
+        testenv/testHgiGL.cpp
+)
+pxr_install_test_dir(
+    SRC testenv/testHgiGL
+    DEST testHgiGL
+)
+pxr_register_test(testHgiGL
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHgiGL"
+    DIFF_COMPARE
+        graphicsCmdsDescCache.txt
+    IMAGE_DIFF_COMPARE
+        graphicsCmdsClear.png
+        srgba.png
+        copyTextureToBuffer.png
+        copyBufferToTexture.png
+    FAIL 1
+    FAIL_PERCENT 0.001
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+)
+
 # This test is not currently supported on static builds as it relies on 
 # testHgiCommand, which is not linked in the static hgiGL library. 
 if (BUILD_SHARED_LIBS)

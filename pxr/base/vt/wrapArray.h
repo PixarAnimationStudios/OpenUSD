@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_VT_WRAP_ARRAY_H
 #define PXR_BASE_VT_WRAP_ARRAY_H
@@ -30,7 +13,6 @@
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/vt/pyOperators.h"
-#include "pxr/base/vt/functions.h"
 
 #include "pxr/base/arch/math.h"
 #include "pxr/base/arch/inttypes.h"
@@ -49,9 +31,6 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
-
-#include <boost/preprocessor/punctuation/comma_if.hpp>
-#include <boost/preprocessor/repetition/repeat.hpp>
 
 #include <boost/python/class.hpp>
 #include <boost/python/copy_const_reference.hpp>
@@ -429,12 +408,6 @@ VTOPERATOR_WRAP(__mul__,__rmul__)
 VTOPERATOR_WRAP_NONCOMM(__div__,__rdiv__)
 VTOPERATOR_WRAP_NONCOMM(__mod__,__rmod__)
 
-VTOPERATOR_WRAP_BOOL(Equal,==)
-VTOPERATOR_WRAP_BOOL(NotEqual,!=)
-VTOPERATOR_WRAP_BOOL(Greater,>)
-VTOPERATOR_WRAP_BOOL(Less,<)
-VTOPERATOR_WRAP_BOOL(GreaterOrEqual,>=)
-VTOPERATOR_WRAP_BOOL(LessOrEqual,<=)
 ARCH_PRAGMA_POP
 }
 
@@ -522,15 +495,6 @@ void VtWrapArray()
 
         ;
 
-#define WRITE(z, n, data) BOOST_PP_COMMA_IF(n) data
-#define VtCat_DEF(z, n, unused) \
-    def("Cat",(VtArray<Type> (*)( BOOST_PP_REPEAT(n, WRITE, VtArray<Type> const &) ))VtCat<Type>);
-    BOOST_PP_REPEAT_FROM_TO(1, VT_FUNCTIONS_MAX_ARGS, VtCat_DEF, ~)
-#undef VtCat_DEF
-
-    VTOPERATOR_WRAPDECLARE_BOOL(Equal)
-    VTOPERATOR_WRAPDECLARE_BOOL(NotEqual)
-
     // Wrap conversions from python sequences.
     TfPyContainerConversions::from_python_sequence<
         This,
@@ -540,24 +504,6 @@ void VtWrapArray()
     // Wrap implicit conversions from VtArray to TfSpan.
     implicitly_convertible<This, TfSpan<Type> >();
     implicitly_convertible<This, TfSpan<const Type> >();
-}
-
-// wrapping for functions that work for base types that support comparisons
-template <typename T>
-void VtWrapComparisonFunctions()
-{
-    using namespace Vt_WrapArray;
-    
-    typedef T This;
-    typedef typename This::ElementType Type;
-
-    def("AnyTrue", VtAnyTrue<Type>);
-    def("AllTrue", VtAllTrue<Type>);
-
-    VTOPERATOR_WRAPDECLARE_BOOL(Greater)
-    VTOPERATOR_WRAPDECLARE_BOOL(Less)
-    VTOPERATOR_WRAPDECLARE_BOOL(GreaterOrEqual)
-    VTOPERATOR_WRAPDECLARE_BOOL(LessOrEqual)
 }
 
 template <class Array>
@@ -643,8 +589,6 @@ void VtRegisterValueCastsFromPythonSequencesToArray()
 
 #define VT_WRAP_ARRAY(unused, elem)          \
     VtWrapArray< VtArray< VT_TYPE(elem) > >();
-#define VT_WRAP_COMPARISON(unused, elem)        \
-    VtWrapComparisonFunctions< VtArray< VT_TYPE(elem) > >();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

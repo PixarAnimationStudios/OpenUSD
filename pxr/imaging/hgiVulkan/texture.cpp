@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/imaging/hgiVulkan/buffer.h"
@@ -636,18 +619,15 @@ HgiVulkanTexture::GetDefaultImageLayout(HgiTextureUsage usage)
     if (usage & HgiTextureUsageBitsShaderWrite) {
         // Assume the ShaderWrite means its a storage image.
         return VK_IMAGE_LAYOUT_GENERAL;
-    } else if (usage & HgiTextureUsageBitsShaderRead) {
-        // Also check if image is going to be used as a color attachment as 
-        // well. If yes, then explicitly give it a color attachment layout.
-        if (usage & HgiTextureUsageBitsColorTarget) {
-            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        } else {
-            return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        }
-    } else if (usage & HgiTextureUsageBitsDepthTarget) {
-        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    // Prioritize attachment layouts over shader read layout. Some textures 
+    // might have both usages.
     } else if (usage & HgiTextureUsageBitsColorTarget) {
         return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    } else if (usage & HgiTextureUsageBitsDepthTarget ||
+               usage & HgiTextureUsageBitsStencilTarget) {
+        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    } else if (usage & HgiTextureUsageBitsShaderRead) {
+        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }
 
     return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

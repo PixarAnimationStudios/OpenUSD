@@ -1,25 +1,8 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdx/colorCorrectionTask.h"
 #include "pxr/imaging/hdx/package.h"
@@ -349,9 +332,9 @@ HdxColorCorrectionTask::_CreateOpenColorIOResourcesImpl(
     shaderDesc->setFunctionName("OCIODisplay");
     const float *lutValues = nullptr;
     shaderDesc->setLanguage(
-        hgi->GetAPIName() == HgiTokens->OpenGL ?
-                    OCIO::GPU_LANGUAGE_GLSL_4_0 :
-                    OCIO::GPU_LANGUAGE_MSL_2_0);
+        hgi->GetAPIName() == HgiTokens->Metal ?
+                    OCIO::GPU_LANGUAGE_MSL_2_0 :
+                    OCIO::GPU_LANGUAGE_GLSL_4_0);
     gpuProcessor->extractGpuShaderInfo(shaderDesc);
 
     //
@@ -570,7 +553,7 @@ HdxColorCorrectionTask::_CreateOpenColorIOShaderCode(
         }
         else
         {
-            // For OpenGL case:
+            // For OpenGL and Vulkan case:
             // Since OCIO textures don't have a binding index, we use
             // the declaration provided by Hgi that has a proper
             // binding and layout. Therefore we subsitute sampler
@@ -584,10 +567,23 @@ HdxColorCorrectionTask::_CreateOpenColorIOShaderCode(
                 size_t offset = ocioGpuShaderText.find(texInfo.samplerName);
                 if (offset != std::string::npos)
                 {
-                    offset += samplerNameLength;
-                        // ignore first occurance that is variable definition
-                    offset = ocioGpuShaderText.find(
-                                    texInfo.samplerName, offset);
+                    // Remove entire line containing first occurrence
+                    // (the variable declaration).
+                    size_t prevNewLineOffset = ocioGpuShaderText.rfind(
+                        "\n", offset);
+                    size_t nextNewLineOffset = ocioGpuShaderText.find(
+                        "\n", offset);
+                    if (prevNewLineOffset == std::string::npos) {
+                        prevNewLineOffset = 0;
+                    }
+                    if (nextNewLineOffset == std::string::npos) {
+                        nextNewLineOffset = ocioGpuShaderText.length();
+                    }
+                    ocioGpuShaderText.erase(prevNewLineOffset,
+                        nextNewLineOffset - prevNewLineOffset);
+
+                    // Now find and replace second occurrence.
+                    offset = ocioGpuShaderText.find(texInfo.samplerName);
                     while (offset != std::string::npos)
                     {
                         ocioGpuShaderText.replace(

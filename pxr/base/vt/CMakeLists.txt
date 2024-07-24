@@ -17,7 +17,6 @@ pxr_library(vt
     PUBLIC_CLASSES
         array
         dictionary
-        functions
         hash
         streamOut
         types
@@ -73,7 +72,6 @@ pxr_build_test(testVtCpp
 pxr_test_scripts(
     testenv/testVtArray.py
     testenv/testVtValue.py
-    testenv/testVtFunctions.py
 )
 pxr_register_test(testVtValue
     PYTHON
@@ -82,10 +80,6 @@ pxr_register_test(testVtValue
 pxr_register_test(testVtArray
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtArray"
-)
-pxr_register_test(testVtFunctions
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtFunctions"
 )
 pxr_register_test(testVtCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtCpp"

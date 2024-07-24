@@ -1,25 +1,8 @@
 #
 # Copyright 2016 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 
 from __future__ import print_function
@@ -83,7 +66,8 @@ class Launcher(object):
 
                 traceCollector.enabled = True
 
-            self.__LaunchProcess(arg_parse_result)
+            app, appController = self.LaunchPreamble(arg_parse_result)
+            self.LaunchProcess(arg_parse_result, app, appController)
 
         if traceCollector:
             traceCollector.enabled = False
@@ -179,6 +163,10 @@ class Launcher(object):
         parser.add_argument('--unloaded', action='store_true',
                             dest='unloaded',
                             help='Do not load payloads')
+
+        parser.add_argument('--bboxStandin', action='store_true',
+                            dest='bboxstandin',
+                            help='Display unloaded prims with bounding boxes')
 
         parser.add_argument('--timing', action='store_true',
                             dest='timing',
@@ -368,8 +356,12 @@ class Launcher(object):
 
         return r.CreateDefaultContextForAsset(usdFile)
 
+    def OverrideMaxSamples(self):
+        # Return True if HdPrman's default max samples should be overridden,
+        # False otherwise.
+        return True
 
-    def LaunchPreamble(self, arg_parse_result, overrideMaxSamples = True):
+    def LaunchPreamble(self, arg_parse_result):
         # Initialize concurrency limit as early as possible so that it is
         # respected by subsequent imports.
         from pxr import Work
@@ -378,7 +370,7 @@ class Launcher(object):
         # XXX Override HdPrman's defaults using the env var.  In the
         # future we expect there may be more formal ways to represent
         # per-app settings for particular Hydra plugins.
-        if overrideMaxSamples:
+        if self.OverrideMaxSamples():
             os.environ.setdefault('HD_PRMAN_MAX_SAMPLES', '1024')
 
         if arg_parse_result.clearSettings:
@@ -392,13 +384,10 @@ class Launcher(object):
 
         return (app, appController)
 
-    def __LaunchProcess(self, arg_parse_result):
+    def LaunchProcess(self, arg_parse_result, app, appController):
         '''
         after the arguments have been parsed, launch the UI in a forked process
         '''
-        # Initialize concurrency limit as early as possible so that it is
-        # respected by subsequent imports.
-        (app, appController) = self.LaunchPreamble(arg_parse_result)
         
         if arg_parse_result.quitAfterStartup:
             # Enqueue event to shutdown application. We don't use quit() because

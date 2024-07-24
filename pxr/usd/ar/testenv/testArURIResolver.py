@@ -2,25 +2,8 @@
 #
 # Copyright 2020 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 import os
 import unittest
@@ -104,21 +87,10 @@ class TestArURIResolver(unittest.TestCase):
         invalid_utf8_path = "test-π-utf8:/abc.xyz"
         invalid_numeric_prefix_path = "113-test:/abc.xyz"
         invalid_colon_path = "other:test:/abc.xyz"
-        if Tf.GetEnvSetting("PXR_AR_DISABLE_STRICT_SCHEME_VALIDATION"):
-            self.assertEqual(resolver.Resolve(invalid_underbar_path),
-                             invalid_underbar_path)
-            self.assertEqual(resolver.Resolve(invalid_utf8_path),
-                             invalid_utf8_path)
-            self.assertEqual(resolver.Resolve(invalid_numeric_prefix_path),
-                             invalid_numeric_prefix_path)
-            # Even when strict scheme validation mode is disabled
-            # schemes with colons in them may fail to resolve
-            self.assertFalse(resolver.Resolve(invalid_colon_path))
-        else:
-            self.assertFalse(resolver.Resolve(invalid_underbar_path))
-            self.assertFalse(resolver.Resolve(invalid_utf8_path))
-            self.assertFalse(resolver.Resolve(invalid_numeric_prefix_path))
-            self.assertFalse(resolver.Resolve(invalid_colon_path))
+        self.assertFalse(resolver.Resolve(invalid_underbar_path))
+        self.assertFalse(resolver.Resolve(invalid_utf8_path))
+        self.assertFalse(resolver.Resolve(invalid_numeric_prefix_path))
+        self.assertFalse(resolver.Resolve(invalid_colon_path))
 
     def testGetRegisteredURISchemes(self):
         "Tests that all URI schemes for discovered plugins are returned"

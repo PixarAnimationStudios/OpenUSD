@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/imaging/hdSt/textureUtils.h"
@@ -43,6 +26,26 @@ constexpr T
 _OpaqueAlpha() {
     return std::numeric_limits<T>::is_integer ?
         std::numeric_limits<T>::max() : T(1);
+}
+
+template<typename T>
+void
+_ConvertRToRGBA(
+    const void * const src,
+    const size_t numTexels,
+    void * const dst)
+{
+    TRACE_FUNCTION();
+
+    const T * const typedSrc = reinterpret_cast<const T*>(src);
+    T * const typedDst = reinterpret_cast<T*>(dst);
+
+    for (size_t i = 0; i < numTexels; i++) {
+        typedDst[4 * i + 0] = typedSrc[1 * i + 0];
+        typedDst[4 * i + 1] = typedSrc[1 * i + 0];
+        typedDst[4 * i + 2] = typedSrc[1 * i + 0];
+        typedDst[4 * i + 3] = _OpaqueAlpha<T>();
+    }
 }
 
 template<typename T>
@@ -212,7 +215,7 @@ _GetHgiFormatAndConversion(
         case HioFormatSNorm8:
             return { HgiFormatSNorm8, nullptr };
         case HioFormatSNorm8Vec2:
-            return { HgiFormatSNorm8Vec2, nullptr };
+            return { HgiFormatSNorm8Vec4, _ConvertRGToRGBA<signed char> };
         case HioFormatSNorm8Vec3:
             return { HgiFormatSNorm8Vec4, _ConvertRGBToRGBA<signed char> };
         case HioFormatSNorm8Vec4:
@@ -339,10 +342,11 @@ _GetHgiFormatAndConversion(
                     
         // UNorm8 SRGB
         case HioFormatUNorm8srgb:
+            // 1-channel gamma-encoded is not supported, so we need to convert.
+            return { HgiFormatUNorm8Vec4srgb, _ConvertRToRGBA<unsigned char> };
         case HioFormatUNorm8Vec2srgb:
-            TF_WARN("One and two channel srgb texture formats "
-                    "not supported by Storm");
-            return { HgiFormatInvalid, nullptr };
+            // 2-channel gamma-encoded is not supported, so we need to convert.
+            return { HgiFormatUNorm8Vec4srgb, _ConvertRGToRGBA<unsigned char> };
         case HioFormatUNorm8Vec3srgb:
             // RGB (24bit) is not supported on MTL, so we need to convert it.
             return { HgiFormatUNorm8Vec4srgb, _ConvertRGBToRGBA<unsigned char> };

@@ -1,0 +1,20 @@
+#sdf 1.4.32
+
+def Model "Model"
+{
+    class Scope "A"
+    {
+    }
+
+    class Scope "B" (
+        add inherits = </Model/A>
+    )
+    {
+    }
+
+    def Scope "Scope" (
+        add inherits = </Model/B>
+    )
+    {
+    }
+}

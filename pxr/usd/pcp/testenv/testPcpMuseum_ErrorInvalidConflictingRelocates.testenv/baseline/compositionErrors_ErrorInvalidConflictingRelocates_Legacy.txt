@@ -1,0 +1,6 @@
+------------------------------------------------------------------------
+Errors while computing Layer Stack
+
+The path </Model_1/Instance/Test> is the target of multiple relocations from different sources. The following relocates to this target are invalid and will be ignored: relocation from </Model_1/Instance/ClassChild> authored at @ErrorInvalidConflictingRelocates/root.sdf@</>; relocation from </Model_1/Instance/InstanceChild> authored at @ErrorInvalidConflictingRelocates/root.sdf@</>.
+The path </Model_3/Instance/Test> is the target of multiple relocations from different sources. The following relocates to this target are invalid and will be ignored: relocation from </Model_3/Instance/ClassChild> authored at @ErrorInvalidConflictingRelocates/root.sdf@</>; relocation from </Model_3/Test> authored at @ErrorInvalidConflictingRelocates/root.sdf@</>.
+

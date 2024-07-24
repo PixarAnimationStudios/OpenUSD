@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -48,12 +31,15 @@
 
 #include <algorithm>
 #include <atomic>
+#include <istream>
+#include <ostream>
+#include <regex>
+#include <stack>
 #include <string>
 #include <stdlib.h>
 #include <thread>
 #include <type_traits>
 #include <vector>
-#include <ostream>
 
 using std::map;
 using std::make_pair;
@@ -1214,13 +1200,15 @@ TfMallocTag::_Begin(const char* name, _ThreadData *threadData)
 }
 
 void
-TfMallocTag::_End(TfMallocTag::_ThreadData *tls)
+TfMallocTag::_End(int nTags, TfMallocTag::_ThreadData *tls)
 {
     if (!tls) {
         tls = &TfMallocTag::Tls::Find();
     }
 
-    tls->Pop();
+    while (nTags--) {
+        tls->Pop();
+    }
 }
 
 // Returns the given number as a string with commas used as thousands
@@ -1567,12 +1555,19 @@ TfMallocTag::CallTree::Report(
     Report(out, emptyRootName);
 }
 
+static const std::string &
+_GetTreeHeader()
+{
+    static const std::string treeHeader("Tree view  ==============");
+    return treeHeader;
+}
+
 void
 TfMallocTag::CallTree::Report(
     std::ostream &out,
     const std::string &rootName) const
 {
-    out << "\nTree view  ==============\n";
+    out << "\n" << _GetTreeHeader() << "\n";
     out << "      inclusive       exclusive\n";
 
     _ReportMallocNode(out, this->root, 0, &rootName);
@@ -1584,6 +1579,106 @@ TfMallocTag::CallTree::Report(
     if (!this->capturedCallStacks.empty()) {
         _ReportCapturedMallocStacks(out, this->capturedCallStacks);
     }
+}
+
+bool
+TfMallocTag::CallTree::LoadReport(
+    std::istream &in)
+{
+    // The matches here are:
+    // 1. Exclusive memory (in bytes)
+    // 2. Inclusive memory (in bytes)
+    // 3. The number of allocations recorded
+    // 4. The indentation string, which we match exactly (excluding leading
+    //    whitespace) so that we can use the length to compute the depth, below.
+    // 5. The name of the callsite.
+    static const std::regex re(
+        R"( *([\d].*) B *([\d].*) B *([\d].*) samples    ([ |]*)(.*))");
+
+    // State of the parser. 
+    enum class State {
+        // Tree header not yet found
+        FindingTree,
+        // Found root, reading scopes
+        ReadingTree
+    } state = State::FindingTree;
+
+    // Initialize the stack with a synthetic root node, so that we can support
+    // loading multiple report trees. (This root node will be elided later if we
+    // end up loading a single tree.)
+    root = {0, 0, 0, "root", {}};
+    std::stack<PathNode *> nodes;
+    nodes.push(&root);
+
+    // Parse the file contents
+    for (std::string line; std::getline(in, line);) {
+        // When finding the tree, only parse for the tree header.
+        if (state == State::FindingTree) {
+            if (line == _GetTreeHeader()) {
+                state = State::ReadingTree;
+            }
+            continue;
+        }
+        if (!TF_VERIFY(state == State::ReadingTree)) {
+            break;
+        }
+
+        // When we see an empty line, that means we've gotten a full tree. Clear
+        // the stack and switch back to tree finding.
+        if (TfStringTrim(line).empty()) {
+            state = State::FindingTree;
+            nodes = {};
+            nodes.push(&root);
+            continue;
+        }
+
+        std::cmatch match;
+        if (!std::regex_match(line.c_str(), match, re)) {
+            continue;
+        }
+
+        const size_t nBytes =
+            TfStringToULong(TfStringReplace(match[1].str(), ",", ""));
+        const size_t nBytesDirect =
+            TfStringToULong(TfStringReplace(match[2].str(), ",", ""));
+        const size_t nAllocations = TfStringToULong(match[3].str());
+        const size_t depth = match[4].length() / 2;
+        const std::string& siteName = match[5].str();
+
+        // Pop nodes off the stack until the top is the parent of the node we
+        // just parsed. (We add one here to account for the synthetic root
+        // node.)
+        while (nodes.size() > depth + 1) {
+            nodes.pop();
+        }
+
+        PathNode *const parent = nodes.top();
+
+        // Add the current node as a child.
+        parent->children.push_back(
+            {nBytes, nBytesDirect, nAllocations, siteName, {}});
+
+        // Push the child onto the stack.
+        PathNode *const child = &(parent->children.back());
+        nodes.push(child);
+    }
+
+    // If we only ended up with one tree, elide the root node, since we only
+    // created it to support reading multiple trees. Otherwise, sum up the child
+    // allocations, mainly so we have a non-zero value at the root, so that we
+    // don't produce an empty report by pruning at the root.
+    if (root.children.size() == 1) {
+        // Here, we copy the root's child before overwriting the root. While we
+        // squeaked by here on linux, on windows we didn't get so (un)lucky.
+        const PathNode newRoot = root.children[0];
+        root = newRoot;
+    } else {
+        for (const PathNode& child : root.children) {
+            root.nBytes += child.nBytes;
+        }
+    }
+
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_IMAGING_USD_IMAGING_DATA_SOURCE_ATTRIBUTE_H
 #define PXR_USD_IMAGING_USD_IMAGING_DATA_SOURCE_ATTRIBUTE_H
@@ -30,6 +13,8 @@
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
+
+#include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -83,14 +68,32 @@ public:
             time.GetValue() + startTime,
             time.GetValue() + endTime);
         std::vector<double> timeSamples;
+    
+        // Start with the times that fall within the interval
         _usdAttrQuery.GetTimeSamplesInInterval(interval, &timeSamples);
-
-        // Add boundary timesamples, if necessary.
-        if (timeSamples.empty() || timeSamples[0] > interval.GetMin()) {
-            timeSamples.insert(timeSamples.begin(), interval.GetMin());
+        // Add bracketing sample times for the leading and trailing edges of the
+        // interval.
+        double first, ignore, last;
+        bool hasFirst, hasLast;
+        // If hasFirst/hasLast comes back false for an edge, or if both the left and
+        // right bracketing times for the edge are the same, it means there's no
+        // bracketing sample time anywhere beyond that edge, so we fall back to the
+        // interval's edge.
+        _usdAttrQuery.GetBracketingTimeSamples(interval.GetMin(), &first, &ignore, &hasFirst);
+        if (!hasFirst || first == ignore) {
+            first = interval.GetMin();
         }
-        if (timeSamples.back() < interval.GetMax()) {
-            timeSamples.push_back(interval.GetMax());
+        _usdAttrQuery.GetBracketingTimeSamples(interval.GetMax(), &ignore, &last, &hasLast);
+        if (!hasLast || last == ignore ) {
+            last = interval.GetMax();
+        }
+        // Add the bracketing sample times only if they actually fall outside the
+        // interval. This maintains ordering and uniqueness.
+        if (timeSamples.empty() || first < timeSamples.front()) {
+            timeSamples.insert(timeSamples.begin(), first);    
+        }
+        if (last > timeSamples.back()) {
+            timeSamples.insert(timeSamples.end(), last);
         }
 
         // We need to convert the time array because usd uses double and
@@ -100,7 +103,7 @@ public:
             (*outSampleTimes)[i] = timeSamples[i] - time.GetValue();
         }
 
-        return true;
+        return outSampleTimes->size() > 1;
     }
 
 private:

@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_SORTED_IDS_H
 #define PXR_IMAGING_HD_SORTED_IDS_H
@@ -29,37 +12,52 @@
 
 #include "pxr/usd/sdf/path.h"
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 ///
 /// Manages a container of Hydra Ids in a sorted order.
 ///
-/// For performance reasons, sorting of the list is deferred
-/// due to inserting a large number of items at once.
-///
-/// The class chooses the type of sort based on how many unsorted items
-/// there are in the list.
+/// Note that this class behaves like a multiset.  Duplicate elements are
+/// allowed.
 ///
 class Hd_SortedIds {
 public:
+    /// Default ctor produces an empty container.
     HD_API
     Hd_SortedIds();
 
     HD_API
-    ~Hd_SortedIds() = default;
+    ~Hd_SortedIds();
 
+    /// Copy construct.
     HD_API
-    Hd_SortedIds(Hd_SortedIds &&other);
+    Hd_SortedIds(Hd_SortedIds const &);
+
+    /// Move construct.
+    HD_API
+    Hd_SortedIds(Hd_SortedIds &&);
+
+    /// Copy assign.
+    HD_API
+    Hd_SortedIds &operator=(Hd_SortedIds const &);
+
+    /// Move assign.
+    HD_API
+    Hd_SortedIds &operator=(Hd_SortedIds &&);
 
     /// Sorts the ids if needed and returns the sorted list of ids.
     HD_API
     const SdfPathVector &GetIds();
 
-    /// Add a new id to the collection
+    /// Add an id to the collection.  If the id is already present in the
+    /// collection, a duplicate id is added.
     HD_API
     void Insert(const SdfPath &id);
 
-    /// Remove an id from the collection.
+    /// Remove up to one occurrence of id from the collection.  If the id is not
+    /// present, do nothing.  Otherwise remove one copy of id.
     HD_API
     void Remove(const SdfPath &id);
 
@@ -74,16 +72,16 @@ public:
     void Clear();
 
 private:
-    SdfPathVector           _ids;
-    size_t                  _sortedCount;
-    ptrdiff_t               _afterLastDeletePoint;
+    class _UpdateImpl;
 
-    void _InsertSort();
-    void _FullSort();
+    enum _EditMode { _NoMode, _InsertMode, _RemoveMode, _UpdateMode };
+    
     void _Sort();
 
-    Hd_SortedIds(const Hd_SortedIds &) = delete;
-    Hd_SortedIds &operator =(const Hd_SortedIds &) = delete;
+    SdfPathVector                            _ids;
+    SdfPathVector                            _edits;
+    _EditMode                                _mode = _NoMode;
+    std::unique_ptr<_UpdateImpl>             _updater;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
