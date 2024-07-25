@@ -57,7 +57,7 @@ public:
     };
 private:
     IndexAndPrimIndex _BuildLinesIndexArray();
-    IndexAndPrimIndex _BuildLineSegmentIndexArray();
+    IndexAndPrimIndex _BuildLineSegmentIndexArray(bool needAdjInfo);
     IndexAndPrimIndex _BuildCubicIndexArray();
                                     
     HdBasisCurvesTopology *_topology;

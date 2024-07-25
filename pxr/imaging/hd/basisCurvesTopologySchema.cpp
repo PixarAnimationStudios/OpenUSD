@@ -68,6 +68,13 @@ HdBasisCurvesTopologySchema::GetWrap() const
         HdBasisCurvesTopologySchemaTokens->wrap);
 }
 
+HdTokenDataSourceHandle
+HdBasisCurvesTopologySchema::GetStyle() const
+{
+    return _GetTypedDataSource<HdTokenDataSource>(
+        HdBasisCurvesTopologySchemaTokens->style);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdBasisCurvesTopologySchema::BuildRetained(
@@ -75,11 +82,12 @@ HdBasisCurvesTopologySchema::BuildRetained(
         const HdIntArrayDataSourceHandle &curveIndices,
         const HdTokenDataSourceHandle &basis,
         const HdTokenDataSourceHandle &type,
-        const HdTokenDataSourceHandle &wrap
+        const HdTokenDataSourceHandle &wrap,
+        const HdTokenDataSourceHandle &style
 )
 {
-    TfToken _names[5];
-    HdDataSourceBaseHandle _values[5];
+    TfToken _names[6];
+    HdDataSourceBaseHandle _values[6];
 
     size_t _count = 0;
 
@@ -106,6 +114,11 @@ HdBasisCurvesTopologySchema::BuildRetained(
     if (wrap) {
         _names[_count] = HdBasisCurvesTopologySchemaTokens->wrap;
         _values[_count++] = wrap;
+    }
+
+    if (style) {
+        _names[_count] = HdBasisCurvesTopologySchemaTokens->style;
+        _values[_count++] = style;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -150,6 +163,14 @@ HdBasisCurvesTopologySchema::Builder::SetWrap(
     return *this;
 }
 
+HdBasisCurvesTopologySchema::Builder &
+HdBasisCurvesTopologySchema::Builder::SetStyle(
+    const HdTokenDataSourceHandle &style)
+{
+    _style = style;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdBasisCurvesTopologySchema::Builder::Build()
 {
@@ -158,7 +179,8 @@ HdBasisCurvesTopologySchema::Builder::Build()
         _curveIndices,
         _basis,
         _type,
-        _wrap
+        _wrap,
+        _style
     );
 }
 

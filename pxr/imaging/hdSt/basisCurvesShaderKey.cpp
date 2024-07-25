@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -19,6 +19,8 @@ TF_REGISTRY_FUNCTION(TfEnum) {
      TF_ADD_ENUM_NAME(HdSt_BasisCurvesShaderKey::WIRE);
      TF_ADD_ENUM_NAME(HdSt_BasisCurvesShaderKey::RIBBON);
      TF_ADD_ENUM_NAME(HdSt_BasisCurvesShaderKey::HALFTUBE);
+     TF_ADD_ENUM_NAME(HdSt_BasisCurvesShaderKey::DASHDOT);
+     TF_ADD_ENUM_NAME(HdSt_BasisCurvesShaderKey::DASHDOTSS);
 };
 
 TF_REGISTRY_FUNCTION(TfEnum) {
@@ -31,6 +33,7 @@ TF_REGISTRY_FUNCTION(TfEnum) {
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,                      "basisCurves.glslfx"))
+    ((dashDotGLSLFX,                   "dashDotCurves.glslfx"))
 
     // curve data
     ((curvesCommonData,                "Curves.CommonData"))
@@ -93,9 +96,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((curvesFragmentRibbonOriented,    "Curves.Fragment.Ribbon.Oriented"))
     ((curvesFragmentHair,              "Curves.Fragment.Hair"))
 
+    ((curvesDashDotFactorSS,           "DashDotFactor.ScreenSpace"))
+    ((curvesDashDotFactorNoSS,         "DashDotFactor.NoScreenSpace"))
+
     // main for all the shader stages
     ((curvesVertexPatch,               "Curves.Vertex.Patch"))
     ((curvesVertexWire,                "Curves.Vertex.Wire"))
+    ((curvesVertexDashDot,             "DashDot.Vertex"))
 
     ((curvesTessControlLinearPatch,    "Curves.TessControl.Linear.Patch"))
     ((curvesTessControlCubicWire,      "Curves.TessControl.Cubic.Wire"))
@@ -116,6 +123,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((curvesFragmentWire,              "Curves.Fragment.Wire"))
     ((curvesFragmentPatch,             "Curves.Fragment.Patch"))
+    ((curvesFragmentDashDot,           "DashDot.Fragment"))
 
     // instancing related mixins
     ((instancing,                      "Instancing.Transform"))
@@ -153,13 +161,16 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     bool pointsShadingEnabled,
     bool hasMetalTessellation)
     : useMetalTessellation(false)
-    , glslfx(_tokens->baseGLSLFX)
 {
     bool drawThick = (drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE) || 
                      (drawStyle == HdSt_BasisCurvesShaderKey::RIBBON);
+    bool dashDot = (drawStyle == HdSt_BasisCurvesShaderKey::DASHDOT) || 
+        (drawStyle == HdSt_BasisCurvesShaderKey::DASHDOTSS);
     bool cubic  = (type == HdTokens->cubic);
     bool linear = (type == HdTokens->linear);
     TF_VERIFY(cubic || linear);
+
+    glslfx = dashDot ? _tokens->dashDotGLSLFX : _tokens->baseGLSLFX;
 
     // The order of the clauses below matters!
     if (drawStyle == HdSt_BasisCurvesShaderKey::POINTS) {
@@ -172,7 +183,12 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     } else if (drawThick){
         primType =
         HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES;
-    } else {
+    } else if (dashDot){
+        // We need the adjacent information if the line has style.
+        primType =
+            HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINES_HAS_STYLE;
+    } else
+    {
         primType = HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINES;
     }
 
@@ -180,19 +196,25 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
 
     bool oriented = normalStyle == HdSt_BasisCurvesShaderKey::ORIENTED;
 
-    // skip Metal tessellation for linear points and wire curves.
+    // skip Metal tessellation for linear points, wire or styled curves.
     bool const skipTessLinear =
             linear && (drawStyle == HdSt_BasisCurvesShaderKey::POINTS ||
-                       drawStyle == HdSt_BasisCurvesShaderKey::WIRE);
+                       drawStyle == HdSt_BasisCurvesShaderKey::WIRE ||
+                       drawStyle == HdSt_BasisCurvesShaderKey::DASHDOT);
 
     useMetalTessellation = hasMetalTessellation && !(skipTessLinear);
 
     uint8_t vsIndex = 0;
 
     VS[vsIndex++]  = _tokens->instancing;
-    VS[vsIndex++]  = drawThick ? _tokens->curvesVertexPatch 
-                       : _tokens->curvesVertexWire;
-    VS[vsIndex++]  = oriented ? _tokens->curvesVertexNormalOriented 
+    if(drawStyle == HdSt_BasisCurvesShaderKey::DASHDOT)
+        VS[vsIndex++] = _tokens->curvesDashDotFactorNoSS;
+    else if (drawStyle == HdSt_BasisCurvesShaderKey::DASHDOTSS)
+        VS[vsIndex++] = _tokens->curvesDashDotFactorSS;
+    VS[vsIndex++]  = dashDot ? _tokens->curvesVertexDashDot :
+                     (drawThick ? _tokens->curvesVertexPatch
+                       : _tokens->curvesVertexWire);
+    VS[vsIndex++]  = oriented ? _tokens->curvesVertexNormalOriented
                       : _tokens->curvesVertexNormalImplicit;
     if (isPrimTypePoints) {
         // Add mixins that allow for picking and sel highlighting of points.
@@ -250,6 +272,8 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
         switch(drawStyle) {
         case HdSt_BasisCurvesShaderKey::POINTS:
         case HdSt_BasisCurvesShaderKey::WIRE:
+        case HdSt_BasisCurvesShaderKey::DASHDOT:
+        case HdSt_BasisCurvesShaderKey::DASHDOTSS:
         {
             TCS[0] = TfToken();
             TES[0] = TfToken();
@@ -492,7 +516,13 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
                                                       _tokens->topVisFallbackFS;
 
 
-    if (drawStyle == HdSt_BasisCurvesShaderKey::WIRE || 
+    if (drawStyle == HdSt_BasisCurvesShaderKey::DASHDOT ||
+        drawStyle == HdSt_BasisCurvesShaderKey::DASHDOTSS)
+    {
+        FS[fsIndex++] = _tokens->curvesFragmentDashDot;
+        FS[fsIndex++] = TfToken();
+    }
+    else if (drawStyle == HdSt_BasisCurvesShaderKey::WIRE ||
         drawStyle == HdSt_BasisCurvesShaderKey::POINTS) {
         FS[fsIndex++] = _tokens->curvesFragmentWire;
         FS[fsIndex++] = TfToken();

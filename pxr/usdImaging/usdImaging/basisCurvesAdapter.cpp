@@ -376,7 +376,7 @@ UsdImagingBasisCurvesAdapter::GetTopology(UsdPrim const& prim,
     }
 
     HdBasisCurvesTopology topology(
-        topoCurveType, topoCurveBasis, topoCurveWrap,
+        topoCurveType, topoCurveBasis, topoCurveWrap, HdTokens->none,
         _Get<VtIntArray>(prim, UsdGeomTokens->curveVertexCounts, time),
         VtIntArray());
     return VtValue(topology);

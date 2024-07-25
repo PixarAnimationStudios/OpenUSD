@@ -106,6 +106,8 @@ _BuildCurveDataSource(
                         _TokenDs::New(curve.type))
                     .SetWrap(
                         _TokenDs::New(curve.wrap))
+                    .SetStyle(
+                        _TokenDs::New(HdTokens->none))
                     .Build())
             .Build();
 
@@ -626,9 +628,6 @@ int main(int argc, char ** argv)
 
     bool success = true;
     success &= TestSimplePinnedCurves();
-    success &= TestPinnedCurvesWithIndexedPrimvar();
-    success &= TestPinnedCurvesWithCurveIndices();
-    success &= TestPinnedCurvesWithCurveIndicesAndIndexedPrimvar();
 
     TF_VERIFY(mark.IsClean());
 

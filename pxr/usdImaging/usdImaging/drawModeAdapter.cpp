@@ -1025,7 +1025,7 @@ UsdImagingDrawModeAdapter::_GenerateOriginGeometry(
     for (int i = 0; i < 6; ++i) { curveIndices[i] = indices[i]; }
 
     HdBasisCurvesTopology topology(
-        HdTokens->linear, HdTokens->bezier, HdTokens->segmented,
+        HdTokens->linear, HdTokens->bezier, HdTokens->segmented, HdTokens->none,
         curveVertexCounts, curveIndices);
     *topo = VtValue(topology);
 }
@@ -1061,7 +1061,7 @@ UsdImagingDrawModeAdapter::_GenerateBoundsGeometry(
     for (int i = 0; i < 24; ++i) { curveIndices[i] = indices[i]; }
 
     HdBasisCurvesTopology topology(
-        HdTokens->linear, HdTokens->bezier, HdTokens->segmented,
+        HdTokens->linear, HdTokens->bezier, HdTokens->segmented, HdTokens->none,
         curveVertexCounts, curveIndices);
     *topo = VtValue(topology);
 }

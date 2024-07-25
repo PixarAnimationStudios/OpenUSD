@@ -90,6 +90,13 @@
                         "includeSchemaFamily": true,
                         "primTypeName": "Cylinder"
                     },
+                    "UsdImagingDashDotLinesAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "DashDotLines"
+                    },
                     "UsdImagingDrawModeAdapter" : {
                         "bases": ["UsdImagingInstanceablePrimAdapter"],
                         "isInternal": true,

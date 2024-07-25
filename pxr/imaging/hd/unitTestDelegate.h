@@ -175,6 +175,7 @@ public:
                         VtVec3fArray const &normals,
                         TfToken const &type,
                         TfToken const &basis,
+                        TfToken const& style,
                         VtValue const &color,
                         HdInterpolation colorInterpolation,
                         VtValue const &opacity,
@@ -186,6 +187,7 @@ public:
     /// Add a basis curves prim containing two curves
     HD_API
     void AddCurves(SdfPath const &id, TfToken const &type, TfToken const &basis,
+                   TfToken const &style,
                    GfMatrix4f const &transform,
                    HdInterpolation colorInterp=HdInterpolationConstant,
                    HdInterpolation widthInterp=HdInterpolationConstant,
@@ -457,9 +459,10 @@ private:
                 VtIntArray const &curveIndices,
                 TfToken const &type,
                 TfToken const &basis,
-                TfToken const &wrap = HdTokens->nonperiodic) :
-            points(points), curveVertexCounts(curveVertexCounts), 
-            curveIndices(curveIndices), type(type), basis(basis), wrap(wrap) { }
+                TfToken const &wrap = HdTokens->nonperiodic,
+                TfToken const &style = HdTokens->none) :
+            points(points), curveVertexCounts(curveVertexCounts),
+            curveIndices(curveIndices), type(type), basis(basis), wrap(wrap), style(style) { }
 
         VtVec3fArray points;
         VtIntArray curveVertexCounts;
@@ -467,6 +470,7 @@ private:
         TfToken type;
         TfToken basis;
         TfToken wrap;
+        TfToken style;
     };
     struct _Points {
         _Points() { }

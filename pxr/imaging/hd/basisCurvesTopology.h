@@ -68,6 +68,7 @@ public:
     HdBasisCurvesTopology(const TfToken &curveType,
                           const TfToken &curveBasis,
                           const TfToken &curveWrap,
+                          const TfToken &curveStyle,
                           const VtIntArray &curveVertexCounts,
                           const VtIntArray &curveIndices);
     HD_API
@@ -123,6 +124,7 @@ public:
     TfToken GetCurveType() const { return _curveType; }
     TfToken GetCurveBasis() const { return _curveBasis; }
     TfToken GetCurveWrap() const { return _curveWrap; }
+    TfToken GetCurveStyle() const { return _curveStyle; }
 
     /// Does the topology use an index buffer
     bool HasIndices() const { return !_curveIndices.empty(); }
@@ -149,6 +151,7 @@ private:
     TfToken _curveType;
     TfToken _curveBasis;
     TfToken _curveWrap;
+    TfToken _curveStyle;
     VtIntArray _curveVertexCounts;
     VtIntArray _curveIndices;
     VtIntArray _invisiblePoints;

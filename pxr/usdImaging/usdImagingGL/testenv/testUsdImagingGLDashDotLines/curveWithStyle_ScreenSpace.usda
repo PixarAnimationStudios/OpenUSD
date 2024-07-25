@@ -1,0 +1,193 @@
+#usda 1.0
+(
+    upAxis = "Y"
+    doc = """This layer represents the various geometric forms that curves
+     may be used to represent."""
+)
+
+
+def DashDotLines "StyledPolyline1" (
+    inherits = [</Pattern1>]
+){
+    float3[] extent = [(-20, 0, 0),(20, 120, 0)]
+    uniform bool screenSpacePattern = true
+    rel dashDotPattern:binding = </Pattern1>
+    uniform token startCapType = "round"
+    uniform token endCapType = "triangle"
+    uniform float patternScale = 5
+    int[] curveVertexCounts = [7]
+    point3f[] points = [(0, 0, 0), (20, 20, 0), (20, 40, 0), (0, 60, 0), (-20, 80, 0), (-20, 100, 0), (0, 120, 0)]
+    float[] widths = [5] (interpolation = "constant")
+    color3f[] primvars:displayColor = [(1, 0, 0)]
+}
+def DashDotLines "StyledPolyline2" (
+    inherits = [</Pattern1>]
+){
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (30, 0, 0)
+    float3[] extent = [(10, 0, 0),(50, 120, 0)]
+    uniform bool screenSpacePattern = true
+    rel dashDotPattern:binding = </Pattern1>
+    uniform token startCapType = "square"
+    uniform token endCapType = "round"
+    uniform float patternScale = 7
+    int[] curveVertexCounts = [7]
+    point3f[] points = [(0, 0, 0), (20, 20, 0), (20, 40, 0), (0, 60, 0), (-20, 80, 0), (-20, 100, 0), (0, 120, 0)]
+    float[] widths = [8] (interpolation = "constant")
+    color3f[] primvars:displayColor = [(1, 0, 0)]
+}
+def DashDotLines "StyledPolyline3" (
+    inherits = [</Pattern1>]
+){
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (60, 0, 0)
+    float3[] extent = [(40, 0, 0),(80, 120, 0)]
+    uniform bool screenSpacePattern = true
+    rel dashDotPattern:binding = </Pattern1>
+    uniform token startCapType = "round"
+    uniform token endCapType = "round"
+    uniform float patternScale = 10
+    int[] curveVertexCounts = [7]
+    point3f[] points = [(0, 0, 0), (20, 20, 0), (20, 40, 0), (0, 60, 0), (-20, 80, 0), (-20, 100, 0), (0, 120, 0)]
+    float[] widths = [3] (interpolation = "constant")
+    color3f[] primvars:displayColor = [(1, 0, 0)]
+}
+def DashDotLines "StyledPolyline4" (
+){
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (90, 0, 0)
+    float3[] extent = [(70, 0, 0),(110, 120, 0)]
+    uniform token startCapType = "square"
+    uniform token endCapType = "triangle"
+    int[] curveVertexCounts = [7]
+    point3f[] points = [(0, 0, 0), (20, 20, 0), (20, 40, 0), (0, 60, 0), (-20, 80, 0), (-20, 100, 0), (0, 120, 0)]
+    float[] widths = [8] (interpolation = "constant")
+    color3f[] primvars:displayColor = [(1, 0, 0)]
+}
+
+def DashDotLines "StyledPolyline5" (
+    inherits = [</Pattern1>]
+){
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (0, -140, 0)
+    float3[] extent = [(-20, -140, 0),(20, -20, 0)]
+    uniform bool screenSpacePattern = true
+    rel dashDotPattern:binding = </Pattern1>
+    uniform token startCapType = "triangle"
+    uniform token endCapType = "triangle"
+    uniform float patternScale = 5
+    int[] curveVertexCounts = [7]
+    point3f[] points = [(0, 0, 0), (20, 20, 0), (20, 40, 0), (0, 60, 0), (-20, 80, 0), (-20, 100, 0), (0, 120, 0)]
+    float[] widths = [5] (interpolation = "constant")
+    color3f[] primvars:displayColor = [(0, 1, 0)]
+}
+def DashDotLines "StyledPolyline6" (
+    inherits = [</Pattern2>]
+){
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (30, -140, 0)
+    float3[] extent = [(10, -140, 0),(50, -20, 0)]
+    uniform bool screenSpacePattern = true
+    rel dashDotPattern:binding = </Pattern2>
+    uniform token startCapType = "round"
+    uniform token endCapType = "round"
+    uniform float patternScale = 5
+    int[] curveVertexCounts = [7]
+    point3f[] points = [(0, 0, 0), (20, 20, 0), (20, 40, 0), (0, 60, 0), (-20, 80, 0), (-20, 100, 0), (0, 120, 0)]
+    float[] widths = [5] (interpolation = "constant")
+    color3f[] primvars:displayColor = [(0, 1, 0)]
+}
+def DashDotLines "StyledPolyline7" (
+    inherits = [</Pattern3>]
+){
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (60, -140, 0)
+    float3[] extent = [(40, -140, 0),(80, -20, 0)]
+    uniform bool screenSpacePattern = true
+    rel dashDotPattern:binding = </Pattern3>
+    uniform token startCapType = "round"
+    uniform token endCapType = "square"
+    uniform float patternScale = 5
+    int[] curveVertexCounts = [7]
+    point3f[] points = [(0, 0, 0), (20, 20, 0), (20, 40, 0), (0, 60, 0), (-20, 80, 0), (-20, 100, 0), (0, 120, 0)]
+    float[] widths = [5] (interpolation = "constant")
+    color3f[] primvars:displayColor = [(0, 1, 0)]
+}
+def DashDotLines "StyledPolyline8" (
+    inherits = [</Pattern4>]
+){
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (90, -140, 0)
+    float3[] extent = [(70, -140, 0),(110, -20, 0)]
+    uniform bool screenSpacePattern = true
+    rel dashDotPattern:binding = </Pattern4>
+    uniform token startCapType = "square"
+    uniform token endCapType = "square"
+    uniform float patternScale = 5
+    int[] curveVertexCounts = [7]
+    point3f[] points = [(0, 0, 0), (20, 20, 0), (20, 40, 0), (0, 60, 0), (-20, 80, 0), (-20, 100, 0), (0, 120, 0)]
+    float[] widths = [5] (interpolation = "constant")
+    color3f[] primvars:displayColor = [(0, 1, 0)]
+}
+
+def DashDotLines "StyledPolyline9" (
+){
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (120, 100, 0)
+    float3[] extent = [(120, 50, 0),(124, 100, 0)]
+    uniform token startCapType = "round"
+    uniform token endCapType = "round"
+    int[] curveVertexCounts = [3]
+    point3f[] points = [(0, 0, 0), (2, -50, 0), (4, 0, 0)]
+    float[] widths = [5] (interpolation = "constant")
+    color3f[] primvars:displayColor = [(1, 0, 0)]
+}
+
+def DashDotLines "StyledPolyline10" (
+    inherits = [</Pattern1>]
+){
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (120, -40, 0)
+    float3[] extent = [(120, -90, 0),(124, -40, 0)]
+    uniform bool screenSpacePattern = true
+    rel dashDotPattern:binding = </Pattern1>
+    uniform token startCapType = "triangle"
+    uniform token endCapType = "square"
+    uniform float patternScale = 7
+    int[] curveVertexCounts = [3]
+    point3f[] points = [(0, 0, 0), (2, -50, 0), (4, 0, 0)]
+    float[] widths = [5] (interpolation = "constant")
+    color3f[] primvars:displayColor = [(0, 1, 0)]
+}
+
+def "Pattern1" (
+    prepend apiSchemas = ["DashDotPatternAPI"]
+)
+{
+    uniform float patternPeriod = 20
+    uniform float2[] pattern = [(0, 12.5), (2.5, 2.5)]
+}
+
+def "Pattern2" (
+    prepend apiSchemas = ["DashDotPatternAPI"]
+)
+{
+    uniform float patternPeriod = 10
+    uniform float2[] pattern = [(0, 5), (2.5, 0)]
+}
+
+def "Pattern3" (
+    prepend apiSchemas = ["DashDotPatternAPI"]
+)
+{
+    uniform float patternPeriod = 15
+    uniform float2[] pattern = [(0, 10)]
+}
+
+def "Pattern4" (
+    prepend apiSchemas = ["DashDotPatternAPI"]
+)
+{
+    uniform float patternPeriod = 5
+    uniform float2[] pattern = [(0, 0)]
+}

@@ -1,0 +1,895 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2024 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+// -----------------------------------------------------------------------------
+// The algorithm is based on the paper "Shader-Based Antialiased, Dashed, Stroked 
+// Polylines" by Nicolas P. Rougier[1], 2013
+// -----------------------------------------------------------------------------
+// Copyright (c) 2013 Nicolas P. Rougier. All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+// 
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
+// 
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+// 
+// THIS SOFTWARE IS PROVIDED BY NICOLAS P. ROUGIER ''AS IS'' AND ANY EXPRESS OR
+// IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+// EVENT SHALL NICOLAS P. ROUGIER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+// INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+// THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// 
+// The views and conclusions contained in the software and documentation are
+// those of the authors and should not be interpreted as representing official
+// policies, either expressed or implied, of Nicolas P. Rougier.
+// -----------------------------------------------------------------------------
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/dashDotCurves.glslfx
+
+#import $TOOLS/hdSt/shaders/instancing.glslfx
+#import $TOOLS/hdSt/shaders/terminals.glslfx
+#import $TOOLS/hdSt/shaders/pointId.glslfx
+#import $TOOLS/hdSt/shaders/visibility.glslfx
+#import $TOOLS/hdSt/shaders/basisCurves.glslfx
+
+--- --------------------------------------------------------------------------
+-- glsl DashDotFactor.NoScreenSpace
+
+// Get the factor from the unit of the accumulated length to a screen pixel.
+// The unit of the accumulated length is the world unit when the style is not
+// screen-spaced. So we use the ratio between length of the line on the screen 
+// and the length in the world as the ToScreenFactor.
+float ToScreenFactor(vec2 SCRxy0, vec2 SCRxy1, vec4 peye0, vec4 peye1)
+{
+    return distance(SCRxy1, SCRxy0) / distance(peye1, peye0);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl DashDotFactor.ScreenSpace
+
+// Get the factor from the unit of the accumulated length to a screen pixel.
+// The unit of the accumulated length is the screen pixel when the style is 
+// screen-spaced. So ToScreenFactor is 1.
+float ToScreenFactor(vec2 SCRxy0, vec2 SCRxy1, vec4 peye0, vec4 peye1)
+{
+    return 1.0;
+}
+
+--- --------------------------------------------------------------------------
+-- layout DashDot.Vertex
+
+[
+    ["out block", "CurveFragmentData", "outData",
+        ["vec4", "Peye"],
+        ["vec2", "UVCoord"],
+        ["vec2", "UVCoordBorder", "", "flat"],
+        ["int", "SegmentFlag", "", "flat"],
+        ["float", "Discard", "", "flat"],
+        ["float", "Factor"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl DashDot.Vertex
+
+// Fwd declare methods defined in pointId.glslfx, that are used below.
+FORWARD_DECL(int GetPointId());
+FORWARD_DECL(float GetPointRasterSize(int));
+FORWARD_DECL(void ProcessPointId(int));
+
+// Clip a line segment.
+float ClipSegmentToPlane(REF(thread, vec4) pl, REF(thread, vec4) p0, REF(thread, vec4) p1, REF(thread, vec4) pr, vec4 plane)
+{
+    float dist0 = dot(p0, plane);
+    float dist1 = dot(p1, plane);
+    bool inside0 = dist0 >= 0.0;
+    bool inside1 = dist1 >= 0.0;
+
+    // If both p0 and p1 are outside of plane, set clip flag,
+    // the whole segment will be discarded by fragment shader
+    if (!inside0 && !inside1)
+    {
+        return 1.0;
+    }
+
+    // Clipped by the place
+    if (inside0 != inside1)
+    {
+        float denominator = dist0 - dist1;
+
+        // avoiding divided by zero
+        if (abs(denominator) < 1e-30)
+        {
+            denominator = 1e-30;
+        }
+
+        float t = dist0 / denominator;
+
+        // If left-p0 is clipped by plane, set left neighbor to p0,
+        // and compute clipped coordinate of P0
+        if (inside1)
+        {
+            pl = p0;
+            p0 = mix(p0, p1, t);
+        }
+        // If p1-right is clipped by plane, set right neighbor to p1,
+        // and compute clipped coordinate of P1
+        else
+        {
+            pr = p1;
+            p1 = mix(p0, p1, t);
+        }
+    }
+
+    return 0.0;
+}
+
+// Convert NDC size to screen size.
+vec2 NDCToScreen(vec2 NDC, vec2 screenDim)
+{
+    return (NDC * screenDim * 0.5 + screenDim * 0.5);
+}
+
+// Convert screen size to NDC size.
+vec2 screenToNDC(vec2 SCR, vec2 invViewportPixelSize)
+{
+    return (2.0 * SCR * invViewportPixelSize - 1.0);
+}
+
+// Compute the Z value in NDC space.
+float computeZ(vec2 SCRxy0, vec2 SCRxy1, vec2 vSCR, vec4 Hv0, vec4 Hv1, float Hz, vec2 invViewportPixelSize)
+{
+    // project the vertex onto the line
+    vec2 SCRvdir = vSCR - SCRxy0;
+    vec2 SCRldir = SCRxy1 - SCRxy0;
+    float SCRlen2 = dot(SCRldir, SCRldir);
+    if (SCRlen2 > 0.001)
+    {
+        // the projected vertex on the line
+        vec2 SCRproj = mix(SCRxy0, SCRxy1, dot(SCRvdir, SCRldir) / SCRlen2);
+        vec2 Hproj = screenToNDC(SCRproj, invViewportPixelSize);
+
+        // the z for the projected vertex on the line
+        vec3 Hldir = Hv1.xyz - Hv0.xyz;
+        if (abs(Hldir.x) < 1e-30)
+        {
+            if (abs(Hldir.y) < 1e-30)
+                return Hz;
+            else
+                return mix(Hv0.z, Hv1.z, (Hproj.y - Hv0.y) / Hldir.y);
+        }
+        else
+        {
+            return mix(Hv0.z, Hv1.z, (Hproj.x - Hv0.x) / Hldir.x);
+        }
+    }
+    else
+    {
+        // The line is 0-length in screen..
+        return Hz;
+    }
+}
+
+void main(void)
+{
+    const MAT4 worldToViewMatrix = GetWorldToViewMatrix();
+    const MAT4 projectionMatrix = GetProjectionMatrix();
+    MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+    vec4 point = vec4(HdGet_points().xyz, 1);
+
+    vec4 adjPoint1 = vec4(HdGet_adjPoints1(), 1);
+    vec4 adjPoint2 = vec4(HdGet_adjPoints2(), 1);
+    vec4 adjPoint3 = vec4(HdGet_adjPoints3(), 1);
+    vec4 viewport = HdGet_viewport();
+    float extrude = HdGet_extrude();
+    vec2 accumulatedLength = HdGet_accumulatedLength();
+
+    mat4 wvMatrix = worldToViewMatrix * transform;
+    mat4 wvpMatrix = projectionMatrix * wvMatrix;
+
+    vec4 peye0, peye1;
+    vec4 Hv0, Hv1, Hvl, Hvr;
+    if (extrude < 0.5)
+    {
+        Hvl = wvpMatrix * point;
+        peye0 = wvMatrix * adjPoint1;
+        peye1 = wvMatrix * adjPoint2;
+        Hv0 = wvpMatrix * adjPoint1;
+        Hv1 = wvpMatrix * adjPoint2;
+        Hvr = wvpMatrix * adjPoint3;
+    }
+    else if (extrude < 1.5)
+    {
+        Hvl = wvpMatrix * adjPoint1;
+        peye0 = wvMatrix * point;
+        peye1 = wvMatrix * adjPoint2;
+        Hv0 = wvpMatrix * point;
+        Hv1 = wvpMatrix * adjPoint2;
+        Hvr = wvpMatrix * adjPoint3;
+    }
+    else if (extrude < 2.5)
+    {
+        Hvl = wvpMatrix * adjPoint1;
+        peye0 = wvMatrix * adjPoint2;
+        peye1 = wvMatrix * point;
+        Hv0 = wvpMatrix * adjPoint2;
+        Hv1 = wvpMatrix * point;
+        Hvr = wvpMatrix * adjPoint3;
+    }
+    else
+    {
+        Hvl = wvpMatrix * adjPoint1;
+        peye0 = wvMatrix * adjPoint2;
+        peye1 = wvMatrix * adjPoint3;
+        Hv0 = wvpMatrix * adjPoint2;
+        Hv1 = wvpMatrix * adjPoint3;
+        Hvr = wvpMatrix * point;
+    }
+
+    vec4 Position;
+    vec2 UVCoord;
+    float Discard = 0.0;
+
+    // Clip the line segment to the near plane to decide if the line will be discarded.
+    vec4 nearPlane = vec4(0.0, 0.0, 1.0, 1.0);
+    Discard = ClipSegmentToPlane(Hvl, Hv0, Hv1, Hvr, nearPlane);
+
+    Hv0 = Hv0 / Hv0.w;
+    Hv1 = Hv1 / Hv1.w;
+    Hvl = Hvl / Hvl.w;
+    Hvr = Hvr / Hvr.w;
+
+    //compute inverse of window size
+    vec2 screenDim = vec2(viewport.z, viewport.w);
+    vec2 invViewportPixelSize = 1.0 / screenDim;
+
+    //For ortho projection, no need to divide by w
+    //but for perspective projection, divide by w needed
+    vec2 NDCxyl = Hvl.xy;
+    vec2 NDCxy0 = Hv0.xy;
+    vec2 NDCxy1 = Hv1.xy;
+    vec2 NDCxyr = Hvr.xy;
+
+    //compute screen coordinate
+    vec2 SCRxyl = NDCToScreen(NDCxyl, screenDim);
+    vec2 SCRxy0 = NDCToScreen(NDCxy0, screenDim);
+    vec2 SCRxy1 = NDCToScreen(NDCxy1, screenDim);
+    vec2 SCRxyr = NDCToScreen(NDCxyr, screenDim);
+
+    // If the screen coordinate of the two points are too close, we will ignore this segment.
+    const float lengthThreshold = 0.01;
+    if (distance(SCRxy1, SCRxy0) < lengthThreshold)
+    {
+        Discard = 1.0;
+    }
+
+    float w = ceil(1.25 + HdGet_widths(0)) * 0.5;
+
+    // 0: A middle segment.
+    // 1: The start segment.
+    // 2: The end segment.
+    // 3: Both a start segment and end segment.
+    int SegmentFlag = 0;
+
+    vec2 v0Dist = vec2(0.0, 0.0);
+    vec2 v1Dist = vec2(0.0, 0.0);
+
+    float v0IsBroken = 0.0;
+    float v1IsBroken = 0.0;
+    float sinAngle0;
+    float sinAngle1;
+    vec2 brokenOffsetL = vec2(0.0, 0.0);
+    vec2 brokenOffsetR = vec2(0.0, 0.0);
+
+    float uOffsetL = 0.0;
+    float uOffsetR = 0.0;
+
+    float joinDistanceL = 0.0;
+    float joinDistanceR = 0.0;
+
+    // restrict the angle between n and n1 to cos(89.90),
+    // to avoid divided by zero error caused by angle -> 90 degree
+    float cosHalfVertexAngleLimit = 0.99619469809174553229501040247389;
+    const float cosAngle89_90 = 0.00174532836589830883577820272085;
+    const float normalizeThreshold = 0.0000001;
+    const float delta = 0.01;
+
+    if (length(SCRxy0 - SCRxyl) > delta)
+    {
+        // vl and v0 is different, it means this segment is not a start segment.
+        // So v0 is a join.
+        vec2 t0 = normalize(SCRxy0 - SCRxyl);
+        vec2 n0 = vec2(-t0.y, t0.x);
+
+        vec2 t1 = normalize(SCRxy1 - SCRxy0);
+        vec2 n1 = vec2(-t1.y, t1.x);
+
+        brokenOffsetL = t1;
+
+        if (length(n0 + n1) >= normalizeThreshold)
+        {
+            vec2 n = normalize(n0 + n1);
+            if (dot(n0, n1) < -0.9999)
+            {
+                n = t1;
+            }
+
+            float cosAngle = abs(dot(n, n1));
+
+            if (cosAngle < cosAngle89_90)
+            {
+                cosAngle = cosAngle89_90;
+            }
+
+            if (cosAngle < cosHalfVertexAngleLimit)
+            {
+                v0IsBroken = 1.0;
+                sinAngle0 = sqrt(1.0 - cosAngle * cosAngle);
+            }
+
+            //compute the dispacement
+            joinDistanceL = w / cosAngle;
+
+            v0Dist = joinDistanceL * n;
+
+            uOffsetL = dot(v0Dist - (w * n1), t1);
+        }
+        else
+        {
+            joinDistanceL = w;
+            v0Dist = w * n1;
+        }
+    }
+    else
+    {
+        // The start segment.
+        SegmentFlag = 1;
+    }
+
+    if (length(SCRxy1 - SCRxyr) > delta)
+    {
+        // v1 and vr is different, it means this segment is not an end segment.
+        // So v1 is a join.
+        vec2 t0 = normalize(SCRxy1 - SCRxy0);
+        vec2 n0 = vec2(-t0.y, t0.x);
+
+        vec2 t1 = normalize(SCRxyr - SCRxy1);
+        vec2 n1 = vec2(-t1.y, t1.x);
+
+        brokenOffsetR = t0;
+
+        if (length(n0 + n1) >= normalizeThreshold)
+        {
+            vec2 n = normalize(n0 + n1);
+            if (dot(n0, n1) < -0.9999)
+            {
+                n = t1;
+            }
+
+            //compute the dispacement
+            float cosAngle = abs(dot(n, n1));
+
+            if (cosAngle < cosAngle89_90)
+            {
+                cosAngle = cosAngle89_90;
+            }
+
+            if (cosAngle < cosHalfVertexAngleLimit)
+            {
+                v1IsBroken = 1.0;
+                sinAngle1 = sqrt(1.0 - cosAngle * cosAngle);
+            }
+
+            joinDistanceR = w / cosAngle;
+
+            v1Dist = joinDistanceR * n;
+
+            uOffsetR = dot(v1Dist - (w * n0), t0);
+        }
+        else
+        {
+            joinDistanceR = w;
+            v1Dist = w * n0;
+        }
+    }
+    else
+    {
+        // The end segment.
+        SegmentFlag += 2;
+    }
+
+    //line dir and normal dir for this line segment
+    vec2 lineDir = normalize(SCRxy1 - SCRxy0);
+    vec2 normalDir = vec2(-lineDir.y, lineDir.x);
+
+    // The ratio between the unit of accumulated length and the screen pixel.
+    float toScreenFactor = ToScreenFactor(SCRxy0, SCRxy1, peye0, peye1);
+    // The reciprocal pf the toScreenFactor. It is used to convert the screen
+    // unit to the unit of the accumulated length.
+    float reciprocal = 1.0 / toScreenFactor;
+
+    vec2 vSCR, vNDC;
+    float zNDC;
+    float UCoord;
+
+    vec2 UVCoordBorder = vec2(0.0, 0.0);
+    // The world space accumulated length.
+    UVCoordBorder = vec2(accumulatedLength.x, accumulatedLength.y);
+
+    if (extrude < 0.5)
+    {
+        // Calculate the position of the first vertex of the start edge. 
+        if (SegmentFlag == 0 || SegmentFlag == 2)
+        {
+            // The start edge is an join.
+            vSCR = SCRxy0 - v0Dist;
+            if (v0IsBroken > 0)
+            {
+                UCoord = UVCoordBorder.x - uOffsetL * reciprocal;
+                if (uOffsetL < 0)
+                {
+                    //offset vertex 0
+                    vSCR -= joinDistanceL / sinAngle0 * brokenOffsetL;
+                    UCoord -= ((joinDistanceL / sinAngle0) * reciprocal);
+                }
+            }
+            else
+            {
+                //continuous
+                UCoord = UVCoordBorder.x;
+            }
+        }
+        else
+        {
+            // The start edge is a cap.
+            vSCR = SCRxy0 - w * normalDir - w * lineDir;
+            UCoord = UVCoordBorder.x - w * reciprocal;
+        }
+
+        //convert to NDC coordinate
+        vNDC = screenToNDC(vSCR, invViewportPixelSize);
+        zNDC = computeZ(SCRxy0, SCRxy1, vSCR, Hv0, Hv1, Hv0.z, invViewportPixelSize);
+
+        //convert to homogeneous coordinate
+        Position = vec4(vNDC, zNDC, Hv0.w);
+        UVCoord = vec2(UCoord, -w);
+    }
+    else if (extrude < 1.5)
+    {
+        // Calculate the position of the second vertex of the start edge. 
+        if (SegmentFlag == 0 || SegmentFlag == 2)
+        {
+            // The start edge is an join.
+            vSCR = SCRxy0 + v0Dist;
+            if (v0IsBroken > 0)
+            {
+                UCoord = UVCoordBorder.x + uOffsetL * reciprocal;
+                if (uOffsetL >= 0)
+                {
+                    //offset vertex 0
+                    vSCR -= joinDistanceL / sinAngle0 * brokenOffsetL;
+                    UCoord -= ((joinDistanceL / sinAngle0) * reciprocal);
+                }
+            }
+            else
+            {
+                //continuous
+                UCoord = UVCoordBorder.x;
+            }
+        }
+        else
+        {
+            // The start edge is a cap.
+            vSCR = SCRxy0 + w * normalDir - w * lineDir;
+            UCoord = UVCoordBorder.x - w * reciprocal;
+        }
+
+        //convert to NDC coordinate
+        vNDC = screenToNDC(vSCR, invViewportPixelSize);
+        zNDC = computeZ(SCRxy0, SCRxy1, vSCR, Hv0, Hv1, Hv0.z, invViewportPixelSize);
+
+        //convert to homogeneous coordinate
+        Position = vec4(vNDC, zNDC, Hv0.w);
+        UVCoord = vec2(UCoord, w);
+    }
+    else if (extrude < 2.5)
+    {
+        // Calculate the position of the first vertex of the end edge. 
+        if (SegmentFlag == 0 || SegmentFlag == 1)
+        {
+            // The end edge is an join.
+            vSCR = SCRxy1 - v1Dist;
+            if (v1IsBroken > 0)
+            {
+                UCoord = UVCoordBorder.y - uOffsetR * reciprocal;
+                if (uOffsetR >= 0)
+                {
+                    //offset vertex 0
+                    vSCR += joinDistanceR / sinAngle1 * brokenOffsetR;
+                    UCoord += ((joinDistanceR / sinAngle1) * reciprocal);
+                }
+            }
+            else
+            {
+                //continuous
+                UCoord = UVCoordBorder.y;
+            }
+        }
+        else
+        {
+            // The end edge is a cap.
+            vSCR = SCRxy1 + w * (lineDir - normalDir);
+            UCoord = UVCoordBorder.y + w * reciprocal;
+        }
+
+        //convert to NDC coordinate
+        vNDC = screenToNDC(vSCR, invViewportPixelSize);
+        zNDC = computeZ(SCRxy0, SCRxy1, vSCR, Hv0, Hv1, Hv1.z, invViewportPixelSize);
+
+        //convert to homogeneous coordinate
+        Position = vec4(vNDC, zNDC, Hv1.w);
+        UVCoord = vec2(UCoord, -w);
+    }
+    else
+    {
+        // Calculate the position of the second vertex of the end edge. 
+        if (SegmentFlag == 0 || SegmentFlag == 1)
+        {
+            // The end edge is an join.
+            vSCR = SCRxy1 + v1Dist;
+            if (v1IsBroken > 0)
+            {
+                UCoord = UVCoordBorder.y + uOffsetR * reciprocal;
+                if (uOffsetR < 0)
+                {
+                    //offset vertex 0
+                    vSCR += joinDistanceR / sinAngle1 * brokenOffsetR;
+                    UCoord += ((joinDistanceR / sinAngle1) * reciprocal);
+                }
+            }
+            else
+            {
+                //continuous
+                UCoord = UVCoordBorder.y;
+            }
+        }
+        else
+        {
+            // The end edge is a cap.
+            vSCR = SCRxy1 + w * (lineDir + normalDir);
+            UCoord = UVCoordBorder.y + w * reciprocal;
+        }
+
+        //convert to NDC coordinate
+        vNDC = screenToNDC(vSCR, invViewportPixelSize);
+        zNDC = computeZ(SCRxy0, SCRxy1, vSCR, Hv0, Hv1, Hv1.z, invViewportPixelSize);
+
+        //convert to homogeneous coordinate
+        Position = vec4(vNDC, zNDC, Hv1.w);
+        UVCoord = vec2(UCoord, w);
+    }
+    gl_Position = Position;
+    outData.Peye = inverse(projectionMatrix) * Position;
+    outData.UVCoord = UVCoord;
+    outData.UVCoordBorder = UVCoordBorder;
+    outData.SegmentFlag = SegmentFlag;
+    outData.Discard = Discard;
+    outData.Factor = toScreenFactor;
+
+    ProcessPrimvarsIn();
+    ApplyClipPlanes(outData.Peye);
+
+    int pointId = GetPointId();
+#if defined(HD_HAS_pointSizeScale)
+    float scale = HdGet_pointSizeScale();
+#else
+    float scale = 1;
+#endif
+    gl_PointSize = GetPointRasterSize(pointId) * scale;
+    ProcessPointId(pointId);
+}
+
+--- --------------------------------------------------------------------------
+-- layout DashDot.Fragment
+
+[
+    ["in block", "CurveFragmentData", "inData",
+        ["vec4", "Peye"],
+        ["vec2", "UVCoord"],
+        ["vec2", "UVCoordBorder", "", "flat"],
+        ["int", "SegmentFlag", "", "flat"],
+        ["float", "Discard", "", "flat"],
+        ["float", "Factor"]
+    ]
+]
+--- --------------------------------------------------------------------------
+-- glsl DashDot.Fragment
+
+float capDist(int type, float x, float y)
+{
+    // square
+    if (type == 1)
+    {
+        return max(x, y);
+    }
+    // triangle out
+    else if (type == 2)
+    {
+        return (x + y);
+    }
+    // round
+    else
+    {
+        return sqrt(x * x + y * y);
+    }
+}
+
+float joinDist(float dx, float dy)
+{
+    return sqrt(dx * dx + dy * dy);
+}
+
+// Get the position of the pixel in the dash or dot symbol.
+// The pixel could be at the body of the dash, or at the gap between two dashes. If it is at the gap, and it
+// is close to the start of a dash, the pixel is in the left cap. If it is at the gap, and it is close to the
+// end of a dash, the pixel is in the right cap. When the pixel is in a cap, we need to know the position of
+// reference point. The reference point is the center of the cap. If the pixel is in the left cap, the 
+// reference point is the start of the dash. If the pixel is in the right cap, the reference point is the end
+// of the dash.
+// The nodeType is 0 if the pixel is in the body of the dash, 1 if the pixel is at the gap and it is close
+// to the start of a dash, and 2 if it is at the gap and is close to the end of a dash.
+// The dashStartSymbolized is the position of the start of the dash which the pixel is on. The 
+// dashEndSymbolized is the position of the end of the dash. The refPointSymbolized is the position of the 
+// reference point of the dash.
+void posInSymbol(float pos, float period, float patternScale, int patternPartCount,
+    out int nodeType, out float dashStartSymbolized, out float dashEndSymbolized, out float refPointSymbolized)
+{
+    // The start position of the dash which the current pixel is on, in the pattern space.
+    float start = 0.0;
+    // The end position of the dash which the current pixel is on, in the pattern space.
+    float end = 0.0;
+    // The position of the reference point, in the pattern space.
+    float refPoint = 0.0;
+    nodeType = 0;
+
+    // Calculate the position of the current pixel in the pattern space.
+    float scaleDownPos = pos / patternScale;
+    float posInPattern = mod(scaleDownPos, period);
+
+    // The start position of the current dash/dot symbol.
+    float symbolPos = 0.0;
+    for (int i = 0; i < patternPartCount; ++i)
+    {
+        // First, find a dash or dot whose start position is at the right of the pixel.
+        vec2 theValue = HdGet_pattern(i);
+        symbolPos = symbolPos + theValue.x;
+        if (symbolPos > posInPattern)
+        {
+            // If we find a dash who is at the right of the pixel, we will first find the middle position
+            // of the start of this dash and the end of the previous dash.
+            float separator = (end + symbolPos) / 2;
+            // If this middle position is larger than the current pixel, this pixel is closer to the end of
+            // previous dash. So nodeType is 2. This pixel is at the right cap. The reference point is the
+            // end of the previous dash. The start and end is the start and end of the previous dash.
+            if (separator > posInPattern)
+            {
+                nodeType = 2;
+                refPoint = end;
+            }
+            // If this middle position is not larger than the current pixel, this pixel is closer to the 
+            // start of previous dash. So nodeType is 1. This pixel is at the left cap. The reference point
+            // is the start of the current dash. The start and end is the start and end of the current dash.
+            else
+            {
+                nodeType = 1;
+                start = symbolPos;
+                symbolPos = symbolPos + theValue.y;
+                end = symbolPos;
+                refPoint = start;
+            }
+            break;
+        }
+        else
+        {
+            // Update start and end with the current dash.
+            start = symbolPos;
+            symbolPos = symbolPos + theValue.y;
+            end = symbolPos;
+            // If the start of the dash is before the current pixel, and the end of the dash is after the
+            // current pixel, the pixel is at the body. So nodeType is 0, and the start and end is the start
+            // and end of the current dash.
+            if (symbolPos > posInPattern)
+            {
+                nodeType = 0;
+                break;
+            }
+        }
+    }
+    // At this time, if we already find the dash of current pixel, symbolPos must be larger than the current
+    // position. If we didn't find the dash, the symbolPos will be not larger than posInPattern. In this case,
+    // the end of the last dash is still smaller than the position. 
+    if (symbolPos <= posInPattern)
+    {
+        // We will use the middle position of the end of the last dash, and the end of a period. If the middle
+        // position is larger than the current point, the pixel is at the right cap of the last dash. If the 
+        // middle point is smaller than the posInPattern, the pixel is at the left cap.
+        float separator = (symbolPos + period) / 2;
+        if (separator > posInPattern)
+        {
+            nodeType = 2;
+            refPoint = end;
+        }
+        else
+        {
+            nodeType = 1;
+            start = period;
+            end = period;
+            refPoint = start;
+        }
+    }
+    // Below is the position of the start of current period. Add to the start position of current dash, it is
+    // the start of the current dash. Multiply with patternScale, we will get the start position of current
+    // dash in the object space.
+    float currentPeriod = scaleDownPos - posInPattern;
+    dashStartSymbolized = (currentPeriod + start) * patternScale;
+    // The calculation of the position of the end of current period. Similar to pervious calculation.
+    dashEndSymbolized = (currentPeriod + end) * patternScale;
+    // The calculation of the position of the end of the reference point. Similar to pervious calculation.
+    refPointSymbolized = (currentPeriod + refPoint) * patternScale;
+}
+
+void main(void)
+{
+    if (inData.Discard == 1.0)
+    {
+        discard;
+    }
+    DiscardBasedOnTopologicalVisibility();
+
+    vec4 color = vec4(0.5, 0.5, 0.5, 1);
+#ifdef HD_HAS_displayColor
+    color.rgb = HdGet_displayColor().rgb;
+#endif
+#ifdef HD_HAS_displayOpacity
+    color.a = HdGet_displayOpacity();
+#endif
+    color.rgb = ApplyColorOverrides(color).rgb;
+
+    vec3 Peye = inData.Peye.xyz / inData.Peye.w;
+
+    // We would like to have a better oriented normal here, however to keep the
+    // shader fast, we use this camera-facing approximation.
+    vec3 Neye = vec3(0, 0, 1);
+
+    vec4 patchCoord = vec4(0);
+
+    float dist = 0.0;
+    float dashStartSymbolized = inData.UVCoordBorder.x;
+    float dashEndSymbolized = inData.UVCoordBorder.y;
+    float refPointSymbolized = 0.0;
+    int nodeType = 0;
+
+    int   startCapType   = HdGetScalar_startCapType();
+    int   endCapType     = HdGetScalar_endCapType();
+    float patternScale   = HdGetScalar_patternScale();
+    float period         = HdGetScalar_patternPeriod();
+    int patternPartCount = HdGetScalar_patternPartCount();
+
+    if (patternPartCount > 0)
+    {
+        // If there is pattern, we need to check if the pixel is within a dash, or it is at the left cap,
+        // or right cap of a dash.
+        float pos = inData.UVCoord.x;
+        // If the pixel position is smaller than the left of the current line segment, we will use the start
+        // of the line segment to check. So that the dash before the line segment will not impact on the 
+        // pixel.
+        if (inData.UVCoord.x < inData.UVCoordBorder.x)
+            pos = inData.UVCoordBorder.x;
+        // If the pixel position is larger than the right of the current line segment, we will use the end
+        // of the line segment to check. So that the dash after the line segment will not impact on the 
+        // pixel.
+        else if (inData.UVCoord.x > inData.UVCoordBorder.y)
+            pos = inData.UVCoordBorder.y;
+        // Get the position of the pixel in the dash or dot symbol.
+        posInSymbol(pos, period, patternScale, patternPartCount,
+            nodeType, dashStartSymbolized, dashEndSymbolized, refPointSymbolized);
+    }
+    if (inData.UVCoord.x < inData.UVCoordBorder.x && (inData.SegmentFlag == 1 || inData.SegmentFlag == 3) &&
+        (dashStartSymbolized <= inData.UVCoordBorder.x) && (dashEndSymbolized >= inData.UVCoordBorder.x))
+    {
+        //left cap
+        dist = capDist(startCapType, -inData.UVCoord.x * inData.Factor, abs(inData.UVCoord.y));
+    }
+    else if (inData.UVCoord.x > inData.UVCoordBorder.y && inData.SegmentFlag >= 2 &&
+        (dashStartSymbolized <= inData.UVCoordBorder.y) && (dashEndSymbolized >= inData.UVCoordBorder.y))
+    {
+        //right cap
+        dist = capDist(endCapType, (inData.UVCoord.x - inData.UVCoordBorder.y) * inData.Factor, abs(inData.UVCoord.y));
+    }
+    else
+    {
+        if (nodeType == 2)
+        {
+            //dash right cap
+            dist = capDist(endCapType, (inData.UVCoord.x - refPointSymbolized) * inData.Factor, abs(inData.UVCoord.y));
+        }
+        else if (nodeType == 1)
+        {
+            //dash left cap
+            dist = capDist(startCapType, (refPointSymbolized - inData.UVCoord.x) * inData.Factor, abs(inData.UVCoord.y));
+        }
+        else
+        {
+            //line body
+            dist = abs(inData.UVCoord.y);
+        }
+    }
+
+    if ((inData.SegmentFlag == 1 && inData.UVCoord.x > 0.0) || inData.SegmentFlag == 0 || (inData.SegmentFlag == 2 && inData.UVCoord.x < inData.UVCoordBorder.y))
+    {
+        if ((inData.UVCoord.x <= inData.UVCoordBorder.x) && 
+            (dashStartSymbolized <= inData.UVCoordBorder.x) && (dashEndSymbolized >= inData.UVCoordBorder.x))
+        {
+            //left join
+            dist = joinDist((inData.UVCoordBorder.x - inData.UVCoord.x) * inData.Factor, inData.UVCoord.y);
+        }
+        else if ((inData.UVCoord.x > inData.UVCoordBorder.y) && 
+            (dashStartSymbolized <= inData.UVCoordBorder.y) && (dashEndSymbolized >= inData.UVCoordBorder.y))
+        {
+            //right join
+            dist = joinDist((inData.UVCoord.x - inData.UVCoordBorder.y) * inData.Factor, inData.UVCoord.y);
+        }
+    }
+
+    dist -= HdGet_widths(0) * 0.5;
+
+    if (dist < 0.0)
+    {
+        color = color;
+    }
+    else
+    {
+        float styleOpacity = exp(-dist * dist);
+        color = vec4(styleOpacity * color.rgb, styleOpacity * color.a);
+    }
+
+#ifdef HD_MATERIAL_TAG_MASKED   
+    if (ShouldDiscardByAlpha(color)) {
+        discard;
+    }
+#endif
+
+    RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
+}

@@ -835,8 +835,14 @@ HdSceneIndexAdapterSceneDelegate::GetBasisCurvesTopology(SdfPath const &id)
         wrap = wrapDataSource->GetTypedValue(0.0f);
     }
 
+    TfToken style = HdTokens->none;
+    HdTokenDataSourceHandle styleDataSource = bcTopologySchema.GetStyle();
+    if (styleDataSource) {
+        style = styleDataSource->GetTypedValue(0.0f);
+    }
+
     HdBasisCurvesTopology result(
-        type, basis, wrap,
+        type, basis, wrap, style,
         curveVertexCountsDataSource->GetTypedValue(0.0f),
         curveIndices);
 

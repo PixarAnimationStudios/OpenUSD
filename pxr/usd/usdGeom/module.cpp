@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -13,6 +13,7 @@ TF_WRAP_MODULE
 {
     TF_WRAP(UsdGeomBBoxCache); 
     TF_WRAP(UsdGeomConstraintTarget);
+    TF_WRAP(UsdGeomDashDotPatternAPI);
     TF_WRAP(UsdGeomModelAPI);
     TF_WRAP(UsdGeomPrimvar);
     TF_WRAP(UsdGeomPrimvarsAPI);
@@ -48,6 +49,7 @@ TF_WRAP_MODULE
                         TF_WRAP(UsdGeomPoints);
                         TF_WRAP(UsdGeomCurves);
                             TF_WRAP(UsdGeomBasisCurves);
+                            TF_WRAP(UsdGeomDashDotLines);
                             TF_WRAP(UsdGeomHermiteCurves);
                             TF_WRAP(UsdGeomNurbsCurves);
                 TF_WRAP(UsdGeomPointInstancer);

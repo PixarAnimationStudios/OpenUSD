@@ -29,7 +29,12 @@ HdSt_BasisCurvesIndexBuilderComputation::GetBufferSpecs(
     HdBufferSpecVector *specs) const
 {
     // index buffer
-    if(!_forceLines && _topology->GetCurveType() == HdTokens->cubic) {
+    if (_topology->GetCurveStyle() != HdTokens->none)
+    {
+        specs->emplace_back(HdTokens->indices,
+            HdTupleType{ HdTypeInt32Vec3, 1 });
+    }
+    else if(!_forceLines && _topology->GetCurveType() == HdTokens->cubic) {
         specs->emplace_back(HdTokens->indices,
                             HdTupleType{HdTypeInt32Vec4, 1});
     }
@@ -103,7 +108,7 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLinesIndexArray()
 }
 
 HdSt_BasisCurvesIndexBuilderComputation::IndexAndPrimIndex
-HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
+HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray(bool needAdjInfo)
 {
     // Note: This is similiar to the GL_LINE_STRIP and GL_LINE_LOOP primitive
     //       modes where each pair of adjacent vertices form a line.
@@ -116,7 +121,10 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
          basis == HdTokens->centripetalCatmullRom) &&
          wrap != HdTokens->pinned;
 
+    // The indices when we don't need adjacent information.
     std::vector<GfVec2i> indices;
+    // The indices when we need adjacent information.
+    std::vector<GfVec3i> indicesAdj;
     // primIndices stores the curve index that generated each line segment.
     std::vector<int> primIndices;
     const VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
@@ -125,53 +133,83 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
     int curveIndex = 0;  // Index of next curve to emit
     // For each curve
     TF_FOR_ALL(itCounts, vertexCounts) {
-        int v0 = vertexIndex;
-        int v1;
-        // Store first vert index incase we are wrapping
-        const int firstVert = v0;
-        ++ vertexIndex;
-        for(int i = 1;i < *itCounts; ++i) {
-            v1 = vertexIndex;
-            ++ vertexIndex;
-            if (!skipFirstAndLastSegs || (i > 1 && i < (*itCounts)-1)) {
-                indices.push_back(GfVec2i(v0, v1));
-                // Map this line segment back to the curve it came from
+        if (needAdjInfo)
+        {
+            int maxVertexIndex = vertexIndex + *itCounts - 1;
+            for (int i = vertexIndex; i < maxVertexIndex; ++i) {
+                // For each line segment, it will be converted to one quad. So 
+                // we add two triangle indices.
+                int currentSegmentStart = i * 4;
+                indicesAdj.push_back(GfVec3i(currentSegmentStart, currentSegmentStart + 1,
+                    currentSegmentStart + 2));
+                indicesAdj.push_back(GfVec3i(currentSegmentStart + 2, currentSegmentStart + 1,
+                    currentSegmentStart + 3));
+            }
+            vertexIndex = maxVertexIndex;
+        }
+        else
+        {
+            // The first vertex of the segment.
+            int v0 = vertexIndex;
+            // The second vertex of the segment.
+            int v1;
+            // Store first vert index incase we are wrapping
+            const int firstVert = v0;
+            ++vertexIndex;
+            for (int i = 1; i < *itCounts; ++i) {
+                v1 = vertexIndex;
+                ++vertexIndex;
+                if (!skipFirstAndLastSegs || (i > 1 && i < (*itCounts) - 1)) {
+                    indices.push_back(GfVec2i(v0, v1));
+                    // Map this line segment back to the curve it came from
+                    primIndices.push_back(curveIndex);
+                }
+                v0 = v1;
+            }
+            if (periodic) {
+                indices.push_back(GfVec2i(v0, firstVert));
                 primIndices.push_back(curveIndex);
             }
-            v0 = v1;
+            ++curveIndex;
         }
-        if (periodic) {
-            indices.push_back(GfVec2i(v0, firstVert));
-            primIndices.push_back(curveIndex);
-        }
-        ++curveIndex;
     }
 
     VtVec2iArray finalIndices(indices.size());
+    VtVec3iArray finalIndicesAdj(indicesAdj.size());
 
     // If have topology has indices set, map the generated indices
     // with the given indices.
     if (!_topology->HasIndices())
     {
-        std::copy(indices.begin(), indices.end(), finalIndices.begin());
+        if (needAdjInfo)
+            std::copy(indicesAdj.begin(), indicesAdj.end(), finalIndicesAdj.begin());
+        else
+            std::copy(indices.begin(), indices.end(), finalIndices.begin());
     }
     else
     {
-        VtIntArray const &curveIndices = _topology->GetCurveIndices();
-        size_t lineCount = indices.size();
-        int maxIndex = curveIndices.size() - 1;
-
-        for (size_t lineNum = 0; lineNum < lineCount; ++lineNum)
+        if (needAdjInfo)
         {
-            const GfVec2i &line = indices[lineNum];
+            TF_CODING_ERROR("Indices is set for styled BasisCurve");
+        }
+        else
+        {
+            VtIntArray const& curveIndices = _topology->GetCurveIndices();
+            size_t lineCount = needAdjInfo ? indicesAdj.size() : indices.size();
+            int maxIndex = curveIndices.size() - 1;
 
-            int i0 = std::min(line[0], maxIndex);
-            int i1 = std::min(line[1], maxIndex);
+            for (size_t lineNum = 0; lineNum < lineCount; ++lineNum)
+            {
+                const GfVec2i& line = indices[lineNum];
 
-            int v0 = curveIndices[i0];
-            int v1 = curveIndices[i1];
+                int i0 = std::min(line[0], maxIndex);
+                int i1 = std::min(line[1], maxIndex);
 
-            finalIndices[lineNum].Set(v0, v1);
+                int v0 = curveIndices[i0];
+                int v1 = curveIndices[i1];
+
+                finalIndices[lineNum].Set(v0, v1);
+            }
         }
     }
 
@@ -180,7 +218,8 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
                 primIndices.end(),
                 finalPrimIndices.begin());
 
-    return IndexAndPrimIndex(VtValue(finalIndices), VtValue(finalPrimIndices));
+    return needAdjInfo ? IndexAndPrimIndex(VtValue(finalIndicesAdj), VtValue(finalPrimIndices)) :
+        IndexAndPrimIndex(VtValue(finalIndices), VtValue(finalPrimIndices));
 }
 
 HdSt_BasisCurvesIndexBuilderComputation::IndexAndPrimIndex
@@ -405,7 +444,7 @@ HdSt_BasisCurvesIndexBuilderComputation::Resolve()
         if (_topology->GetCurveWrap() == HdTokens->segmented) {
             result = _BuildLinesIndexArray();
         } else {
-            result = _BuildLineSegmentIndexArray();
+            result = _BuildLineSegmentIndexArray(_topology->GetCurveStyle() != HdTokens->none);
         }
     }
 

@@ -184,6 +184,7 @@ pxr_library(hdSt
         plugInfo.json
         shaders/basisCurves.glslfx
         shaders/compute.glslfx
+        shaders/dashDotCurves.glslfx
         shaders/domeLight.glslfx
         shaders/edgeId.glslfx
         shaders/fallbackLighting.glslfx
@@ -235,6 +236,33 @@ pxr_build_test(testHdStBasicDrawing
         testenv/testHdStBasicDrawing.cpp
 )
 endif()
+
+pxr_install_test_dir(
+    SRC testenv/testHdStRPrimsAddRemove
+    DEST testHdStRPrimsAddRemove
+)
+
+pxr_build_test(testHdStRPrimsAddRemove
+   LIBRARIES
+        hdSt
+        hd
+        garch
+        glf
+
+   CPPFILES
+       testenv/testHdStRPrimsAddRemove.cpp
+)
+
+pxr_register_test(testHdStRPrimsAddRemove
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStRPrimsAddRemove --offscreen --addRemoveBasisCurves --write testHdStRPrimsAddRemove_BasisCurves.png"
+    IMAGE_DIFF_COMPARE
+        testHdStRPrimsAddRemove_BasisCurves.png
+    FAIL .05
+    FAIL_PERCENT .03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStRPrimsAddRemove
+)
 
 if (X11_FOUND)
 pxr_build_test(testHdStBarAllocationLimit

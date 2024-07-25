@@ -1860,6 +1860,71 @@ class NurbsCurves "NurbsCurves" (
     )
 }
 
+class DashDotLines "DashDotLines" (
+    inherits = </Curves>
+    doc = """This schema is for a line primitive whose width in screen space will not change. And the primitive
+    can have dash-dot patterns. This type of curve is usually used in a sketch file, or nondiegetic visualizations.
+    
+    The basic shape for the primitive is a set of lines or polylines. A general type curve is not supported in this
+    schema.
+    
+    If the lines have dash-dot patterns, it must inherit from a "pattern" who applies with DashDotPatternAPI. The
+    length of the pattern can be in screen space or world space."""
+) {
+    uniform bool screenSpacePattern = true (
+        doc = """Whether the dash-dot pattern length can be varied. It is only valid when the DashDotLines primitive
+        inherits from a "pattern" who applies with DashDotPatternAPI. If it is true, the length of the pattern is in
+        screen space, and it will not change. If you zoom in and the line is longer on the screen, you will see the
+        patterns will move on the line, and there will be more patterns on the line. If it is false, the length of
+        the pattern is in world space. If you zoom in, you will see the pattern will be larger, and it will not move
+        on the line.
+        """
+    )
+
+    uniform float patternScale = 1.0 (
+        doc = """This property is a scale value to lengthen or shorten a dash-dot pattern. It is only valid when the
+        DashDotLines primitive inherits from a "pattern" who applies with DashDotPatternAPI."""
+    )
+
+    uniform token startCapType = "round" (
+        allowedTokens = ["round", "square", "triangle"]
+        doc = """The shape of the line cap at the start of the line. It is also applied to the start cap of each dash
+        when the line has pattern.
+        """)
+
+    uniform token endCapType = "round" (
+        allowedTokens = ["round", "square", "triangle"]
+        doc = """The shape of the line cap at the end of the line. It is also applied to the end cap of each dash
+        when the line has pattern.
+        """)
+}
+
+class "DashDotPatternAPI" (
+    inherits = </APISchemaBase>
+    doc = """UsdGeomDashDotPatternAPI is an API schema that provides an interface for the dash-dot patterns of the
+    DashDotLines primitive."""
+)
+{
+    uniform float2[] pattern (
+        doc = """An array of float2 which saves the dash-dot pattern. For each float2, the x value and the y value
+        must be zero or positive. The x value saves the offset of the start of current symbol, from the end of the 
+        previous symbol. If the current symbol is the first symbol, the offset is from the start of the pattern to 
+        the start of current symbol. The y value saves the length of the current symbol. If it is zero, the current 
+        symbol is a dot. If it is larger than zero, the current symbol is a dash. As a result, the total sum of all
+        the x value and y value will be the length from the start of the pattern to the end of the last symbol. This
+        sum must be smaller than patternPeriod.
+        
+        For example, assume the pattern is [(0, 10), (1, 4), (3, 0)]. It means the first symbol is a dash which is
+        from 0 to 10. The second symbol is a dash which is from 11 to 15, and the third symbol is a dot which is at
+        position 18. There are gaps between 10 and 11, and between 15 and 18. If the patternPeriod is 20, there is 
+        also a gap between 18 and 20."""
+    )
+
+    uniform float patternPeriod = 0.0 (
+        doc = """The length of a pattern. If there is no pattern, it should be zero."""
+    )
+}
+
 class Points "Points" (
     customData = {
         dictionary extraPlugInfo = {

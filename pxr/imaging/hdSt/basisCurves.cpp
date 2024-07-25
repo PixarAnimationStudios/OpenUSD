@@ -25,6 +25,7 @@
 
 #include "pxr/base/arch/hash.h"
 
+#include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/vec2d.h"
@@ -213,18 +214,26 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     }
 
     /* PRIMVAR */
-    if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
+    bool dirtyPrimvar = HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id);
+    bool dirtyTransform = (*dirtyBits & DirtyCamera);
+    if (dirtyPrimvar || dirtyTransform) {
         // XXX: curves don't use refined vertex primvars, however,
         // the refined renderpass masks the dirtiness of non-refined vertex
         // primvars, so we need to see refined dirty for updating coarse
         // vertex primvars if there is only refined reprs being updated.
         // we'll fix the change tracking in order to address this craziness.
+        // When primvar is dirty, we need to pull the value of dirty primvar.
+        // When camera is dirty, we also need to pull the value of the 
+        // accumulated length.
         _PopulateVertexPrimvars(
             sceneDelegate, renderParam, drawItem, dirtyBits);
-        _PopulateVaryingPrimvars(
-            sceneDelegate, renderParam, drawItem, dirtyBits);
-        _PopulateElementPrimvars(
-            sceneDelegate, renderParam, drawItem, dirtyBits);
+        if (dirtyPrimvar)
+        {
+            _PopulateVaryingPrimvars(
+                sceneDelegate, renderParam, drawItem, dirtyBits);
+            _PopulateElementPrimvars(
+                sceneDelegate, renderParam, drawItem, dirtyBits);
+        }
     }
 
     // When we have multiple drawitems for the same prim we need to clean the
@@ -273,6 +282,7 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
     
     TfToken curveType = _topology->GetCurveType();
     TfToken curveBasis = _topology->GetCurveBasis();
+    TfToken curveStyle = _topology->GetCurveStyle();
     bool supportsRefinement = _SupportsRefinement(_refineLevel);
     if (!supportsRefinement) {
         // XXX: Rendering non-linear (i.e., cubic) curves as linear segments
@@ -288,49 +298,66 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
         HdSt_BasisCurvesShaderKey::WIRE;
     HdSt_BasisCurvesShaderKey::NormalStyle normalStyle = 
         HdSt_BasisCurvesShaderKey::HAIR;
-    switch (desc.geomStyle) {
-    case HdBasisCurvesGeomStylePoints:
+    // Currently the dashDot, and screenSpaceDashDot is only
+    // valid when curveType is linear.
+    if (curveType == HdTokens->linear && curveStyle == HdTokens->dashDot)
     {
-        drawStyle = HdSt_BasisCurvesShaderKey::POINTS;
+        //Use dashDot shader if we have dashdot style.
+        drawStyle = HdSt_BasisCurvesShaderKey::DASHDOT;
         normalStyle = HdSt_BasisCurvesShaderKey::HAIR;
-        break;
     }
-    case HdBasisCurvesGeomStyleWire:
+    else if(curveType == HdTokens->linear && curveStyle == HdTokens->screenSpaceDashDot)
     {
-        drawStyle = HdSt_BasisCurvesShaderKey::WIRE;
+        //Use screen space dashDot shader.
+        drawStyle = HdSt_BasisCurvesShaderKey::DASHDOTSS;
         normalStyle = HdSt_BasisCurvesShaderKey::HAIR;
-        break;
     }
-    case HdBasisCurvesGeomStylePatch:
+    else
     {
-        if (_SupportsRefinement(_refineLevel) &&
-            _SupportsUserWidths(drawItem)) {
-            if (_SupportsUserNormals(drawItem)){
-                drawStyle = HdSt_BasisCurvesShaderKey::RIBBON;
-                normalStyle = HdSt_BasisCurvesShaderKey::ORIENTED;
-            }
-            else{
-                if (_refineLevel > 2){
-                    normalStyle = HdSt_BasisCurvesShaderKey::ROUND;
-                    drawStyle = HdSt_BasisCurvesShaderKey::HALFTUBE;
-                }
-                else if (_refineLevel > 1){
-                    normalStyle = HdSt_BasisCurvesShaderKey::ROUND;
-                    drawStyle = HdSt_BasisCurvesShaderKey::RIBBON;
-                }
-                else{
-                    drawStyle = HdSt_BasisCurvesShaderKey::RIBBON;
-                    normalStyle = HdSt_BasisCurvesShaderKey::HAIR;
-                }
-            }
+        switch (desc.geomStyle) {
+        case HdBasisCurvesGeomStylePoints:
+        {
+            drawStyle = HdSt_BasisCurvesShaderKey::POINTS;
+            normalStyle = HdSt_BasisCurvesShaderKey::HAIR;
+            break;
         }
-        break;
-    }
-    default:
-    {
-        TF_CODING_ERROR("Invalid geomstyle in basis curve %s repr desc.",
-                        GetId().GetText());
-    }
+        case HdBasisCurvesGeomStyleWire:
+        {
+            drawStyle = HdSt_BasisCurvesShaderKey::WIRE;
+            normalStyle = HdSt_BasisCurvesShaderKey::HAIR;
+            break;
+        }
+        case HdBasisCurvesGeomStylePatch:
+        {
+            if (_SupportsRefinement(_refineLevel) &&
+                _SupportsUserWidths(drawItem)) {
+                if (_SupportsUserNormals(drawItem)) {
+                    drawStyle = HdSt_BasisCurvesShaderKey::RIBBON;
+                    normalStyle = HdSt_BasisCurvesShaderKey::ORIENTED;
+                }
+                else {
+                    if (_refineLevel > 2) {
+                        normalStyle = HdSt_BasisCurvesShaderKey::ROUND;
+                        drawStyle = HdSt_BasisCurvesShaderKey::HALFTUBE;
+                    }
+                    else if (_refineLevel > 1) {
+                        normalStyle = HdSt_BasisCurvesShaderKey::ROUND;
+                        drawStyle = HdSt_BasisCurvesShaderKey::RIBBON;
+                    }
+                    else {
+                        drawStyle = HdSt_BasisCurvesShaderKey::RIBBON;
+                        normalStyle = HdSt_BasisCurvesShaderKey::HAIR;
+                    }
+                }
+            }
+            break;
+        }
+        default:
+        {
+            TF_CODING_ERROR("Invalid geomstyle in basis curve %s repr desc.",
+                GetId().GetText());
+        }
+        }
     }
 
     TF_DEBUG(HD_RPRIM_UPDATED).
@@ -452,7 +479,11 @@ HdStBasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
                     *dirtyBits |= DirtyIndices;
                 }
             }
-
+            if (!(_customDirtyBitsInUse & DirtyCamera)) {
+                _customDirtyBitsInUse |= DirtyCamera;
+                // DirtyCamera is not set at first. It is only set when a new frame
+                // starts.
+            }
             // Set up drawing coord instance primvars.
             drawingCoord->SetInstancePrimvarBaseIndex(
                 HdStBasisCurves::InstancePrimvar);
@@ -571,6 +602,16 @@ HdStBasisCurves::_UpdateMaterialTagsForAllReprs(HdSceneDelegate *sceneDelegate,
         "(%s) - Updating material tags for draw items of all reprs.\n", 
         GetId().GetText());
 
+    // If the curve has dash-dot pattern, its material tag must be translucent.
+    bool materialTagIsTranslucent = false;
+    TfToken curveType = _topology->GetCurveType();
+    TfToken curveStyle = _topology->GetCurveStyle();
+    if (curveType == HdTokens->linear &&
+        (curveStyle == HdTokens->dashDot || curveStyle == HdTokens->screenSpaceDashDot))
+    {
+        materialTagIsTranslucent = true;
+    }
+
     for (auto const& reprPair : _reprs) {
         const TfToken &reprToken = reprPair.first;
         _BasisCurvesReprConfig::DescArray const &descs =
@@ -584,7 +625,10 @@ HdStBasisCurves::_UpdateMaterialTagsForAllReprs(HdSceneDelegate *sceneDelegate,
             HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
                 repr->GetDrawItem(drawItemIndex++));
 
-            HdStSetMaterialTag(sceneDelegate, renderParam, drawItem, 
+            if(materialTagIsTranslucent)
+                HdStSetMaterialTag(renderParam, drawItem, HdStMaterialTagTokens->translucent);
+            else
+                HdStSetMaterialTag(sceneDelegate, renderParam, drawItem, 
                 this->GetMaterialId(), _displayOpacity, 
                 _occludedSelectionShowsThrough);
         }
@@ -826,6 +870,377 @@ void ProcessVertexOrVaryingPrimvar(
 }
 } // anonymous namespace
 
+GfVec2f NDCToScreen(GfVec2f NDC, GfVec2f screenDim)
+{
+    float const* ndcData = NDC.data();
+    float const* screenDimData = screenDim.data();
+    return GfVec2f(ndcData[0] * screenDimData[0] * 0.5f + screenDimData[0] * 0.5f,
+        ndcData[1] * screenDimData[1] * 0.5f + screenDimData[1] * 0.5f);
+}
+
+void HdStBasisCurves::_CalculateAccumulatedLength(HdSceneDelegate* sceneDelegate, const VtVec3fArray& points,
+    const VtIntArray& curveVertexCounts, bool screenSpaced, VtVec2fArray& accumulatedLengths)
+{
+    // Initialize the accumulatedLengths.
+    float accumulatedLength = 0.0f;
+
+    // The count of points.
+    size_t pointCount = points.size(); 
+    // The count of curves.
+    size_t curveCount = curveVertexCounts.size();
+
+    // Initialize the maximum vertex Index of the first curve.
+    int currentCurveMaxVertexIndex = pointCount - 1;
+    if (curveCount > 0)
+    {
+        currentCurveMaxVertexIndex = curveVertexCounts[0] - 1;
+    }
+    // Initialize the index of the first curve.
+    int currentCurveIndex = 0;
+
+    // Initialize the lastPoint.
+    float const* lastPointData = points[0].data();
+
+    GfMatrix4d transform;
+    if (screenSpaced)
+    {
+        // For screen space length, we need to get the transform for each point.
+        transform = sceneDelegate->GetTransform(GetId());
+        transform = transform * _wvpMatrix;
+    }
+
+    // Calculate the accumulated length.
+    for (size_t pointIndex = 1; pointIndex < pointCount; ++pointIndex)
+    {
+        if (pointIndex > currentCurveMaxVertexIndex)
+        {
+            // Move to next curve.
+            ++currentCurveIndex;
+            if (currentCurveIndex < curveCount)
+            {
+                currentCurveMaxVertexIndex += curveVertexCounts[currentCurveIndex];
+                // Reset accumulatedLength.
+                accumulatedLength = 0;
+            }
+            else
+                break;
+            lastPointData = points[pointIndex].data();
+        }
+        else
+        {
+        	// Each point requires two accumulated length. First is the accumlated length at 
+        	// the start of the segment, second is the accumulated length at the end of the 
+        	// segment.
+            GfVec2f currentLengths;
+            currentLengths[0] = accumulatedLength;
+            // Calculate the length from last point to current point, and accumulate it to the
+            // accumulated length.
+            float const* pointData = points[pointIndex].data();
+            if (screenSpaced)
+            {
+                // For screen spaced calculation, we need to convert the position to the screen
+                // space position first.
+                GfVec4f NDCPos1 = GfVec4f(lastPointData[0], lastPointData[1], lastPointData[2], 1.0f) * transform;
+                NDCPos1 /= NDCPos1.data()[3];
+                GfVec4f NDCPos2 = GfVec4f(pointData[0], pointData[1], pointData[2], 1.0f) * transform;
+                NDCPos2 /= NDCPos2.data()[3];
+                GfVec2f SCRPos1 = NDCToScreen(GfVec2f(NDCPos1.data()[0], NDCPos1.data()[1]),
+                    GfVec2f(_viewport.data()[2], _viewport.data()[3]));
+                GfVec2f SCRPos2 = NDCToScreen(GfVec2f(NDCPos2.data()[0], NDCPos2.data()[1]),
+                    GfVec2f(_viewport.data()[2], _viewport.data()[3]));
+                accumulatedLength += (SCRPos2 - SCRPos1).GetLength();
+            }
+            else
+            {
+                // World space calculation, we can directly calculate the length.
+                GfVec3f worldPos1(lastPointData[0], lastPointData[1], lastPointData[2]);
+                GfVec3f worldPos2(pointData[0], pointData[1], pointData[2]);
+                accumulatedLength += (worldPos2 - worldPos1).GetLength();
+            }
+            currentLengths[1] = accumulatedLength;
+            accumulatedLengths.push_back(currentLengths);
+            accumulatedLengths.push_back(currentLengths);
+            accumulatedLengths.push_back(currentLengths);
+            accumulatedLengths.push_back(currentLengths);
+            lastPointData = pointData;
+        }
+    }
+}
+
+void HdStBasisCurves::_CalculateVertexInfo(const VtVec3fArray& points,
+    const VtIntArray& curveVertexCounts, VtVec3fArray& styleCurvePoints,
+    VtVec3fArray& styleCurveAdjPoints1, VtVec3fArray& styleCurveAdjPoints2,
+    VtVec3fArray& styleCurveAdjPoints3, VtFloatArray& styleCurveExtrude)
+{
+    // The count of orginal points.
+    size_t pointCount = points.size();
+    // The count of curves.
+    size_t curveCount = curveVertexCounts.size();
+
+    // Initialize the maximum vertex Index of the first curve.
+    int currentCurveMaxVertexIndex = -1;
+    int currentCurveMinVertexIndex = -1;
+    // Initialize the index of the first curve.
+    int currentCurveIndex = 0;
+
+    // Calculate the vertex information.
+    // For each line segment, we will add four points: the previous adjacent point, the first point,
+    // the second point, and the next adjacent point. At each point, we will also record the other
+    // three points of the line segment. We record the three points in AdjPoint1-3.
+    // If the line segment is a start segment of a curve, the previous adjacent point will be the
+    // first point. If the line segment is the end segment of a curve, the next adjacent point will
+    // be the second point.
+    // We use extrude to identify the role of the point: 0.0 for previous adjacent point, 1.0 for
+    // first point, 2.0 for second point, and 3.0 for next adjacent point.
+    // Example: A curve which has 4 points, 1,2,3,4. Then the vertex information will be like below:
+    // First line segment:
+    // Points:      Pos1,     Pos1,     Pos2,     Pos3
+    // AdjPoint1:   Pos1,     Pos1,     Pos1,     Pos1
+    // AdjPoint2:   Pos2,     Pos2,     Pos1,     Pos1
+    // AdjPoint3:   Pos3,     Pos3,     Pos3,     Pos2
+    // Extrude:     0.0,      1.0,      2.0,      3.0
+    // Second line segment:
+    // Points:      Pos1,     Pos2,     Pos3,     Pos4
+    // AdjPoint1:   Pos2,     Pos1,     Pos1,     Pos1
+    // AdjPoint2:   Pos3,     Pos3,     Pos2,     Pos2
+    // AdjPoint3:   Pos4,     Pos4,     Pos4,     Pos3
+    // Extrude:     0.0,      1.0,      2.0,      3.0
+    // Third line segment:
+    // Points:      Pos2,     Pos3,     Pos4,     Pos4
+    // AdjPoint1:   Pos3,     Pos2,     Pos2,     Pos2
+    // AdjPoint2:   Pos4,     Pos4,     Pos3,     Pos3
+    // AdjPoint3:   Pos4,     Pos4,     Pos4,     Pos4
+    // Extrude:     0.0,      1.0,      2.0,      3.0
+    for (int pointIndex = 0; pointIndex < pointCount; ++pointIndex)
+    {
+        if (pointIndex > currentCurveMaxVertexIndex)
+        {
+            // This is the first point of the current curve.
+            // Reset the currentCurveMinVertexIndex and currentCurveMaxVertexIndex.
+            currentCurveMinVertexIndex = currentCurveMaxVertexIndex + 1;
+            if (curveCount > 0)
+            {
+                currentCurveMaxVertexIndex += curveVertexCounts[currentCurveIndex];
+                ++currentCurveIndex;
+            }
+            else
+                currentCurveMaxVertexIndex = pointCount - 1;
+
+            // For this line segment, because this point is the first point of the curve,
+            // it doesn't have previous point. It can only be the first point of the current
+            // line segment. We will first add this point as the previous adjacent point, and
+            // then add this point again as the first point of the line segment.
+            styleCurvePoints.push_back(points[pointIndex]);
+            styleCurvePoints.push_back(points[pointIndex]);
+
+            // The adjacent points record the three other points of the line segment.
+            styleCurveAdjPoints1.push_back(points[pointIndex]);
+            styleCurveAdjPoints1.push_back(points[pointIndex]);
+            styleCurveAdjPoints2.push_back(points[pointIndex + 1]);
+            styleCurveAdjPoints2.push_back(points[pointIndex + 1]);
+            if ((pointIndex + 1) == currentCurveMaxVertexIndex)
+            {
+                styleCurveAdjPoints3.push_back(points[pointIndex + 1]);
+                styleCurveAdjPoints3.push_back(points[pointIndex + 1]);
+            }
+            else
+            {
+                styleCurveAdjPoints3.push_back(points[pointIndex + 2]);
+                styleCurveAdjPoints3.push_back(points[pointIndex + 2]);
+            }
+
+            // The extrude is 0.0 and 1.0.
+            styleCurveExtrude.push_back(0.0);
+            styleCurveExtrude.push_back(1.0);
+        }
+        else if (pointIndex == currentCurveMaxVertexIndex)
+        {
+            // This is the last point of the current curve.
+            // For this line segment, because this point is the last point of the curve,
+            // it doesn't have next point. It can only be the second point of the current
+            // line segment. We will first add this point as the second point, and then
+            // add this point again as the next adjacent point of the line segment.
+            styleCurvePoints.push_back(points[pointIndex]);
+            styleCurvePoints.push_back(points[pointIndex]);
+
+            // The adjacent points record the three other points of the line segment.
+            if (pointIndex - 1 == currentCurveMinVertexIndex)
+            {
+                styleCurveAdjPoints1.push_back(points[pointIndex - 1]);
+                styleCurveAdjPoints1.push_back(points[pointIndex - 1]);
+            }
+            else 
+            {
+                styleCurveAdjPoints1.push_back(points[pointIndex - 2]);
+                styleCurveAdjPoints1.push_back(points[pointIndex - 2]);
+            }
+            styleCurveAdjPoints2.push_back(points[pointIndex - 1]);
+            styleCurveAdjPoints2.push_back(points[pointIndex - 1]);
+            styleCurveAdjPoints3.push_back(points[pointIndex]);
+            styleCurveAdjPoints3.push_back(points[pointIndex]);
+            
+            // The extrude is 2.0 and 3.0.
+            styleCurveExtrude.push_back(2.0);
+            styleCurveExtrude.push_back(3.0);
+        }
+        else
+        {
+            // This is one of the middle point of the curve. It can be the second point of the
+            // previous line segment, and the first point of the next line segment.
+            // So we add this point and next point as the second point and next adjacent point
+            // of the previous line. And add the previous point and this point as the previous 
+            // adjacent and first point of the next line.
+            styleCurvePoints.push_back(points[pointIndex]);
+            styleCurvePoints.push_back(points[pointIndex + 1]);
+            styleCurvePoints.push_back(points[pointIndex - 1]);
+            styleCurvePoints.push_back(points[pointIndex]);
+
+            // The adjacent points record the three other points of the line segment.
+            if (pointIndex - 1 == currentCurveMinVertexIndex)
+            {
+                styleCurveAdjPoints1.push_back(points[pointIndex - 1]);
+                styleCurveAdjPoints1.push_back(points[pointIndex - 1]);
+            }
+            else
+            {
+                styleCurveAdjPoints1.push_back(points[pointIndex - 2]);
+                styleCurveAdjPoints1.push_back(points[pointIndex - 2]);
+            }
+            styleCurveAdjPoints1.push_back(points[pointIndex]);
+            styleCurveAdjPoints1.push_back(points[pointIndex - 1]);
+            styleCurveAdjPoints2.push_back(points[pointIndex - 1]);
+            styleCurveAdjPoints2.push_back(points[pointIndex - 1]);
+            styleCurveAdjPoints2.push_back(points[pointIndex + 1]);
+            styleCurveAdjPoints2.push_back(points[pointIndex + 1]);
+            styleCurveAdjPoints3.push_back(points[pointIndex + 1]);
+            styleCurveAdjPoints3.push_back(points[pointIndex]);
+            if ((pointIndex + 1) == currentCurveMaxVertexIndex)
+            {
+                styleCurveAdjPoints3.push_back(points[pointIndex + 1]);
+                styleCurveAdjPoints3.push_back(points[pointIndex + 1]);
+            }
+            else
+            {
+                styleCurveAdjPoints3.push_back(points[pointIndex + 2]);
+                styleCurveAdjPoints3.push_back(points[pointIndex + 2]);
+            }
+
+            // The extrude is 2.0 and 3.0 for the previous line, and 0.0 and 1.0 for the next line.
+            styleCurveExtrude.push_back(2.0);
+            styleCurveExtrude.push_back(3.0);
+            styleCurveExtrude.push_back(0.0);
+            styleCurveExtrude.push_back(1.0);
+        }
+    }
+}
+
+template <typename ELEM>
+static bool _AssignArrayValues(const VtIntArray& curveVertexCounts,
+    const VtArray<ELEM>& inputArray, VtArray<ELEM>& outputArray)
+{
+    // The count of curves.
+    size_t curveCount = curveVertexCounts.size();            
+    // The count of orginal values.
+    size_t inputCount = inputArray.size();
+    // If there is no curveVertexCounts, there is only one curve. So the first and the
+    // last vertex will generate 2 new vertices each, and the middle vertex will generate
+    // 4 new vertices each. Totally there will be 4 + (inputCount - 2) * 4 new vertices.
+    // If there is curveVertexCounts, for each curve, the start and end vertex will
+    // generate 2 new vertices each, and the middle vertices will generate 4 new vertices
+    // each, so there will be totally curveCount * 4 + (inputCount - curveCount * 2) * 4
+    // new vertices.
+    size_t outputCount = (curveCount == 0) ? 4 + (inputCount - 2) * 4 :
+        curveCount * 4 + (inputCount - curveCount * 2) * 4;
+    outputArray.reserve(outputCount);
+
+    // Initialize the index of the first curve.
+    size_t currentCurveIndex = 0;
+    // Initialize the minimum vertex Index of the next curve. This is used to indicate if
+    // a curve is finished.
+    size_t nextCurveMinVertexIndex = 0;
+    for (size_t intputIndex = 0; intputIndex < inputCount; ++intputIndex)
+    {
+        if (intputIndex == nextCurveMinVertexIndex)
+        {
+            // This is the first value of a new curve.
+            // Reset the nextCurveMinVertexIndex.
+            if (curveCount > 0)
+            {
+                nextCurveMinVertexIndex += curveVertexCounts[currentCurveIndex];
+                ++currentCurveIndex;
+                if (currentCurveIndex > curveCount)
+                {
+                    TF_CODING_ERROR("The count of primvar values doesn't match \
+                                the curveVertexCounts property.");
+                    break;
+                }
+            }
+            else
+                nextCurveMinVertexIndex = inputCount;
+
+            // The first vertex will be duplicated with two instances. So the vertex
+            // primvar will also be duplicated.
+            outputArray.push_back(inputArray[intputIndex]);
+            outputArray.push_back(inputArray[intputIndex]);
+        }
+        else if (intputIndex == nextCurveMinVertexIndex - 1)
+        {
+            // This is the last value of the current curve.
+            // The last vertex will be duplicated with two instances. So the vertex
+            // primvar will also be duplicated.
+            outputArray.push_back(inputArray[intputIndex]);
+            outputArray.push_back(inputArray[intputIndex]);
+        }
+        else
+        {
+            // The middle vertex will be duplicated with four instances. So the vertex
+            // primvar will also be duplicated.
+            outputArray.push_back(inputArray[intputIndex]);
+            outputArray.push_back(inputArray[intputIndex]);
+            outputArray.push_back(inputArray[intputIndex]);
+            outputArray.push_back(inputArray[intputIndex]);
+        }
+    }
+    if (currentCurveIndex != curveCount || nextCurveMinVertexIndex != inputCount)
+    {
+        TF_CODING_ERROR("The count of primvar values doesn't match \
+                                the curveVertexCounts property.");
+        return false;
+    }
+    return true;
+}
+
+static VtValue _AssignValues(VtValue& values,
+    const VtIntArray& curveVertexCounts)
+{
+    if(!values.IsArrayValued())
+        return values;
+    else
+    {
+        // We will handle float3 primvars such as color and normal, and float primvars
+        // such as width. We will not handle the other types of primvars.
+        if (values.IsHolding<VtVec3fArray>())
+        {
+            const VtVec3fArray& float3Array = values.Get<VtVec3fArray>();
+            VtVec3fArray newFloat3Array;
+            _AssignArrayValues(curveVertexCounts, float3Array, newFloat3Array);
+            return VtValue(newFloat3Array);
+        }
+        else if (values.IsHolding<VtFloatArray>())
+        {
+            const VtFloatArray& floatArray = values.Get<VtFloatArray>();
+            VtFloatArray newFloatArray;
+            _AssignArrayValues(curveVertexCounts, floatArray, newFloatArray);
+            return VtValue(newFloatArray);
+        }
+        else
+        {
+            TF_CODING_ERROR("We don't support this type of vertex primvars, for a dash-dot BasisCurves.");
+            return values;
+        }
+    }
+}
+
 void
 HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                          HdRenderParam *renderParam,
@@ -866,31 +1281,153 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         &computations);
 
     for (HdPrimvarDescriptor const& primvar: primvars) {
-        if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, primvar.name))
-            continue;
+        // AccumulatedLength is required if the curve has style.
+        if (primvar.name == HdTokens->accumulatedLength &&
+            _topology->GetCurveStyle() != HdTokens->none)
+        {
+            // If the camera is dirty, it means the curve requires screen space accumulated length.
+            // In this case, we will calculate the length per frame.
+            bool screenSpacedLength = ((*dirtyBits & HdBasisCurves::DirtyCamera) != 0);
+            // The accumulated length is dirty, so it requires calculation.
+            bool dirtyAccuLength = HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->accumulatedLength);
 
-        // TODO: We don't need to pull primvar metadata every time a value
-        // changes, but we need support from the delegate.
+            if (screenSpacedLength | dirtyAccuLength)
+            {
+                // Should have topology.
+                if (!_topology)
+                {
+                    TF_CODING_ERROR("No topology set for BasisCurve %s",
+                        id.GetName().c_str());
+                    break;
+                }
 
-        // Having a null topology is possible, but shouldn't happen when there
-        // are points
-        if (!_topology) {
-            if (primvar.name == HdTokens->points) {
-                TF_CODING_ERROR("No topology set for BasisCurve %s",
-                                id.GetName().c_str());
-                break;
+                // If the primvar is accumulated length, we will calculated the length here.
+                // First get the position for all points.
+                VtValue value = GetPrimvar(sceneDelegate, HdTokens->points);
+                value = VtValue::Cast<VtVec3fArray>(value);
+                if (value.IsEmpty())
+                    continue;
+                VtVec3fArray points = value.Get<VtVec3fArray>();
+
+                VtVec2fArray accumulatedLengths;
+                // Then get the curve information.
+                VtIntArray curveVertexCounts = _topology->GetCurveVertexCounts();
+
+                // Calculate the accumulatedLengths.
+                _CalculateAccumulatedLength(sceneDelegate, points, curveVertexCounts,
+                    screenSpacedLength, accumulatedLengths);
+                ProcessVertexOrVaryingPrimvar(id, primvar.name,
+                    HdInterpolationVertex, VtValue(accumulatedLengths), _topology, &sources);
             }
+        }
+        else if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, primvar.name))
+        {
             continue;
-        } 
+        }
+        else
+        {
+            // TODO: We don't need to pull primvar metadata every time a value
+            // changes, but we need support from the delegate.
+            // If the curve has style, the points must be specially handled. And we also need to
+            // add other vertex information.
+            if (primvar.name == HdTokens->points && _topology->GetCurveStyle() != HdTokens->none)
+            {
+                // Having a null topology is possible, but shouldn't happen when there
+                // are points
+                if (!_topology)
+                {
+                    TF_CODING_ERROR("No topology set for BasisCurve %s",
+                        id.GetName().c_str());
+                    break;
+                }
+                // Get the original points value.
+                VtValue value = GetPrimvar(sceneDelegate, HdTokens->points);
+                value = VtValue::Cast<VtVec3fArray>(value);
+                if (!value.IsEmpty()) {
+                    VtVec3fArray points = value.Get<VtVec3fArray>();
+                    VtVec3fArray styleCurvePoints;
+                    VtVec3fArray styleCurveAdjPoints1;
+                    VtVec3fArray styleCurveAdjPoints2;
+                    VtVec3fArray styleCurveAdjPoints3;
+                    VtFloatArray styleCurveExtrude;
 
-        //assert name not in range.bufferArray.GetResources()
-        VtValue value = GetPrimvar(sceneDelegate, primvar.name);
-        if (!value.IsEmpty()) {
-            ProcessVertexOrVaryingPrimvar(id, primvar.name,
-                HdInterpolationVertex, value, _topology, &sources);
+                    // Then get the curve information.
+                    VtIntArray curveVertexCounts = _topology->GetCurveVertexCounts();
 
-            if (primvar.name == HdTokens->displayOpacity) {
-                _displayOpacity = true;
+                    // Calculate the vertex information.
+                    _CalculateVertexInfo(points, curveVertexCounts, styleCurvePoints, 
+                        styleCurveAdjPoints1, styleCurveAdjPoints2, styleCurveAdjPoints3, 
+                        styleCurveExtrude);
+
+                    // Add the points source.
+                    sources.push_back(
+                        std::make_shared<HdSt_BasisCurvesPrimvarInterpolaterComputation<GfVec3f>>(
+                            _topology, styleCurvePoints, id, HdTokens->points,
+                            HdInterpolationVertex, GfVec3f(1, 0, 0),
+                            HdGetValueTupleType(VtValue(styleCurvePoints)).type));
+
+                    // Add the first adjacent information source.
+                    sources.push_back(
+                        std::make_shared<HdSt_BasisCurvesPrimvarInterpolaterComputation<GfVec3f>>(
+                            _topology, styleCurveAdjPoints1, id, HdTokens->adjPoints1,
+                            HdInterpolationVertex, GfVec3f(1, 0, 0),
+                            HdGetValueTupleType(VtValue(styleCurveAdjPoints1)).type));
+
+                    // Add the second adjacent information source.
+                    sources.push_back(
+                        std::make_shared<HdSt_BasisCurvesPrimvarInterpolaterComputation<GfVec3f>>(
+                            _topology, styleCurveAdjPoints2, id, HdTokens->adjPoints2,
+                            HdInterpolationVertex, GfVec3f(1, 0, 0),
+                            HdGetValueTupleType(VtValue(styleCurveAdjPoints2)).type));
+
+                    // Add the third adjacent information source.
+                    sources.push_back(
+                        std::make_shared<HdSt_BasisCurvesPrimvarInterpolaterComputation<GfVec3f>>(
+                            _topology, styleCurveAdjPoints3, id, HdTokens->adjPoints3,
+                            HdInterpolationVertex, GfVec3f(1, 0, 0),
+                            HdGetValueTupleType(VtValue(styleCurveAdjPoints3)).type));
+
+                    // Add the extrude information source.
+                    sources.push_back(
+                        std::make_shared<HdSt_BasisCurvesPrimvarInterpolaterComputation<float>>(
+                            _topology, styleCurveExtrude, id, HdTokens->extrude,
+                            HdInterpolationVertex, 0.0,
+                            HdGetValueTupleType(VtValue(styleCurveExtrude)).type));
+                }
+                else
+                    continue;
+            }
+            else
+            {
+                // Having a null topology is possible, but shouldn't happen when there
+                // are points
+                if (!_topology) {
+                    if (primvar.name == HdTokens->points) {
+                        TF_CODING_ERROR("No topology set for BasisCurve %s",
+                            id.GetName().c_str());
+                        break;
+                    }
+                    continue;
+                }
+
+                //assert name not in range.bufferArray.GetResources()
+                VtValue value = GetPrimvar(sceneDelegate, primvar.name);
+                if (!value.IsEmpty()) {
+                    if (_topology->GetCurveStyle() != HdTokens->none)
+                    {
+                        // If the curveStyle is dashdot, we need to expand the vertex primivars
+                        // so that each final vertex will have a corresponding value.
+                        VtIntArray curveVertexCounts = _topology->GetCurveVertexCounts();
+                        value = _AssignValues(value, curveVertexCounts);
+                    }
+
+                    ProcessVertexOrVaryingPrimvar(id, primvar.name,
+                        HdInterpolationVertex, value, _topology, &sources);
+
+                    if (primvar.name == HdTokens->displayOpacity) {
+                        _displayOpacity = true;
+                    }
+                }
             }
         }
     }
@@ -1141,6 +1678,32 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         resourceRegistry->AddSources(drawItem->GetElementPrimvarRange(),
                                      std::move(sources));
     }
+}
+
+bool
+HdStBasisCurves::NeedUpdateEachFrame(HdSceneDelegate* sceneDelegate) const
+{
+    // The basisCurves need screen spaced accumulated length, if the style is screenSpaceDashDot.
+    if (!_topology)
+    {
+        // If topology is not available, we directly check the value of curve style.
+        VtValue screenSpacePatternValue = sceneDelegate->Get(GetId(), HdTokens->screenSpacePattern);
+        bool screenSpacePattern = false;
+        screenSpacePatternValue = VtValue::Cast<bool>(screenSpacePatternValue);
+        if (!screenSpacePatternValue.IsEmpty())
+            screenSpacePattern = screenSpacePatternValue.Get<bool>();
+
+        return screenSpacePattern;
+    }
+    else
+    {
+        TfToken curveType = _topology->GetCurveType();
+        TfToken curveStyle = _topology->GetCurveStyle();
+        if (curveType == HdTokens->linear && curveStyle == HdTokens->screenSpaceDashDot)
+            return true;
+    }
+
+    return false;
 }
 
 static bool 

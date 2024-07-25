@@ -46,6 +46,7 @@ public:
     enum class PrimitiveType {
         PRIM_POINTS,
         PRIM_BASIS_CURVES_LINES,     // when linear (or) non-refined cubic
+        PRIM_BASIS_CURVES_LINES_HAS_STYLE, // when the curve has line style 
         PRIM_BASIS_CURVES_LINEAR_PATCHES,  // refined linear curves
         PRIM_BASIS_CURVES_CUBIC_PATCHES,   // refined cubic curves
         PRIM_MESH_COARSE_TRIANGLES,
@@ -67,6 +68,7 @@ public:
 
     static inline bool IsPrimTypeBasisCurves(PrimitiveType primType) {
         return (primType == PrimitiveType::PRIM_BASIS_CURVES_LINES ||
+                primType == PrimitiveType::PRIM_BASIS_CURVES_LINES_HAS_STYLE ||
                 primType == PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES ||
                 primType == PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES);
     }

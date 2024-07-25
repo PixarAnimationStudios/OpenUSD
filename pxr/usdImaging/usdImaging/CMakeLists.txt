@@ -83,6 +83,7 @@ pxr_library(usdImaging
         cubeAdapter
         cylinderAdapter
         cylinderLightAdapter
+        dashDotLinesAdapter
         diskLightAdapter
         distantLightAdapter
         domeLightAdapter

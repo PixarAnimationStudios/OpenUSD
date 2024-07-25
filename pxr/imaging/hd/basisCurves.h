@@ -53,6 +53,13 @@ class HdBasisCurves : public HdRprim
 public:
     HD_API
     ~HdBasisCurves() override;
+
+    enum DirtyBits : HdDirtyBits {
+        DirtyIndices = HdChangeTracker::CustomBitsBegin,
+        // Need to update the accumulated length when camera is dirty and the curve has screen space
+        // Style.
+        DirtyCamera = (DirtyIndices << 1)
+    };
     
     ///
     /// Topology
@@ -71,7 +78,23 @@ public:
     /// Returns whether refinement is always on or not.
     HD_API
     static bool IsEnabledForceRefinedCurves();
-    
+
+    /// Set the WVP matrix.
+    void UpdateWVPMatrix(const GfMatrix4d& wvpMatrix)
+    {
+        _wvpMatrix = wvpMatrix;
+    }
+
+    /// Set the Viewport
+    void UpdateViewport(const GfVec4f& viewport)
+    {
+        _viewport = viewport;
+    }
+
+    /// Check if the curve need to be updated each frame.
+    HD_API
+    virtual bool NeedUpdateEachFrame(HdSceneDelegate* /*sceneDelegate*/) const { return false; }
+
 protected:
     HD_API
     HdBasisCurves(SdfPath const& id);
@@ -82,6 +105,8 @@ protected:
     static _BasisCurvesReprConfig::DescArray
         _GetReprDesc(TfToken const &reprName);
 
+    GfMatrix4d _wvpMatrix;
+    GfVec4f _viewport;
 private:
     // Class can not be default constructed or copied.
     HdBasisCurves()                                  = delete;
