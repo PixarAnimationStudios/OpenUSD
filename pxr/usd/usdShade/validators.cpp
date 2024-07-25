@@ -32,6 +32,49 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static
 UsdValidationErrorVector
+_MaterialBindingRelationships(const UsdPrim& usdPrim)
+{
+    if (!usdPrim) {
+        return {};
+    }
+
+    const std::vector<UsdProperty> matBindingProperties =
+        usdPrim.GetProperties(
+            /* predicate = */ [](const TfToken& name) {
+                return UsdShadeMaterialBindingAPI::CanContainPropertyName(
+                    name);
+            }
+        );
+
+    UsdValidationErrorVector errors;
+
+    for (const UsdProperty& matBindingProperty : matBindingProperties) {
+        if (matBindingProperty.Is<UsdRelationship>()) {
+            continue;
+        }
+
+        const UsdValidationErrorSites propertyErrorSites = {
+            UsdValidationErrorSite(
+                usdPrim.GetStage(),
+                matBindingProperty.GetPath())
+        };
+
+        errors.emplace_back(
+            UsdValidationErrorType::Error,
+            propertyErrorSites,
+            TfStringPrintf(
+                "Prim <%s> has material binding property '%s' that is not "
+                "a relationship.",
+                usdPrim.GetPath().GetText(),
+                matBindingProperty.GetName().GetText())
+        );
+    }
+
+    return errors;
+}
+
+static
+UsdValidationErrorVector
 _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
 {
     if (!(usdPrim && usdPrim.IsInFamily<UsdShadeShader>(
@@ -342,6 +385,10 @@ _SubsetsMaterialBindFamily(const UsdPrim& usdPrim)
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+
+    registry.RegisterPluginValidator(
+        UsdShadeValidatorNameTokens->materialBindingRelationships,
+        _MaterialBindingRelationships);
 
     registry.RegisterPluginValidator(
         UsdShadeValidatorNameTokens->shaderSdrCompliance, 
