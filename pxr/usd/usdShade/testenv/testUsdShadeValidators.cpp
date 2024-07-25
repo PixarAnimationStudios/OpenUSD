@@ -18,6 +18,7 @@
 #include "pxr/usd/usdGeom/validatorTokens.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/shaderDefUtils.h"
+#include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/usdShade/validatorTokens.h"
 
 #include <algorithm>
@@ -32,6 +33,7 @@ TestUsdShadeValidators()
     // This should be updated with every new validator added with the
     // UsdShadeValidators keyword.
     const std::set<TfToken> expectedUsdShadeValidatorNames = {
+        UsdShadeValidatorNameTokens->materialBindingRelationships,
         UsdShadeValidatorNameTokens->shaderSdrCompliance,
         UsdShadeValidatorNameTokens->subsetMaterialBindFamilyName,
         UsdShadeValidatorNameTokens->subsetsMaterialBindFamily
@@ -77,6 +79,73 @@ TestUsdShadeValidators()
                            validatorMetadataNameSet.end(),
                            expectedUsdGeomSubsetNames.begin(),
                            expectedUsdGeomSubsetNames.end()));
+}
+
+void
+TestUsdShadeMaterialBindingRelationships()
+{
+    UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
+    const UsdValidator* validator = registry.GetOrLoadValidatorByName(
+        UsdShadeValidatorNameTokens->materialBindingRelationships);
+    TF_AXIOM(validator);
+
+    static const std::string layerContents =
+        R"usda(#usda 1.0
+               def Xform "MatBindAttributes"
+               {
+                   int material:binding = 42
+                   token material:binding:someAttribute = "bogus"
+               })usda";
+    SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
+    layer->ImportFromString(layerContents);
+    UsdStageRefPtr usdStage = UsdStage::Open(layer);
+    TF_AXIOM(usdStage);
+
+    {
+        const SdfPath primPath("/MatBindAttributes");
+        const UsdPrim usdPrim = usdStage->GetPrimAtPath(primPath);
+
+        const UsdValidationErrorVector errors = validator->Validate(usdPrim);
+        TF_AXIOM(errors.size() == 2u);
+
+        {
+            const UsdValidationError& error = errors[0u];
+
+            const SdfPath attrPath =
+                primPath.AppendProperty(UsdShadeTokens->materialBinding);
+
+            TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
+            TF_AXIOM(error.GetSites().size() == 1u);
+            const UsdValidationErrorSite& errorSite = error.GetSites()[0u];
+            TF_AXIOM(errorSite.IsValid());
+            TF_AXIOM(errorSite.IsProperty());
+            TF_AXIOM(errorSite.GetProperty().GetPath() == attrPath);
+            const std::string expectedErrorMsg =
+                "Prim </MatBindAttributes> has material binding property "
+                "'material:binding' that is not a relationship.";
+            TF_AXIOM(error.GetMessage() == expectedErrorMsg);
+        }
+
+        {
+            const UsdValidationError& error = errors[1u];
+
+            const SdfPath attrPath =
+                primPath.AppendProperty(TfToken(
+                    SdfPath::JoinIdentifier(
+                        UsdShadeTokens->materialBinding, "someAttribute")));
+
+            TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
+            TF_AXIOM(error.GetSites().size() == 1u);
+            const UsdValidationErrorSite& errorSite = error.GetSites()[0u];
+            TF_AXIOM(errorSite.IsValid());
+            TF_AXIOM(errorSite.IsProperty());
+            TF_AXIOM(errorSite.GetProperty().GetPath() == attrPath);
+            const std::string expectedErrorMsg =
+                "Prim </MatBindAttributes> has material binding property "
+                "'material:binding:someAttribute' that is not a relationship.";
+            TF_AXIOM(error.GetMessage() == expectedErrorMsg);
+        }
+    }
 }
 
 void 
@@ -326,6 +395,7 @@ int
 main()
 {
     TestUsdShadeValidators();
+    TestUsdShadeMaterialBindingRelationships();
     TestUsdShadeShaderPropertyCompliance();
     TestUsdShadeSubsetMaterialBindFamilyName();
     TestUsdShadeSubsetsMaterialBindFamily();
