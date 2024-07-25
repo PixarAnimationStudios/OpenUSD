@@ -772,12 +772,10 @@ HdPrmanRenderDelegate::SetTerminalSceneIndex(
 {
 #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
     if (terminalSceneIndex) {
-        if (TfGetEnvSetting(HD_PRMAN_EXPERIMENTAL_RILEY_SCENE_INDEX_OBSERVER)) {
-            if (!_rileySceneIndices) {
-                _rileySceneIndices =
-                    std::make_unique<_RileySceneIndices>(
-                        terminalSceneIndex, _renderParam.get());
-            }
+        if (!_rileySceneIndices) {
+            _rileySceneIndices =
+                std::make_unique<_RileySceneIndices>(
+                    terminalSceneIndex, _renderParam.get());
         }
     }
 #endif
