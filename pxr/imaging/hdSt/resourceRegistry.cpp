@@ -1101,6 +1101,8 @@ HdStResourceRegistry::_GarbageCollect()
     _materialXShaderRegistry.GarbageCollect();
 #endif
 
+    _textureHandleRegistry->GarbageCollect();
+    
     // Cleanup Hgi resources
     _resourceBindingsRegistry.GarbageCollect(
         std::bind(&_DestroyResourceBindings, _hgi, std::placeholders::_1));

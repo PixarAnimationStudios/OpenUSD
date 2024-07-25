@@ -119,6 +119,8 @@ public:
     HDST_API
     std::set<HdStShaderCodeSharedPtr> Commit();
 
+    void GarbageCollect();
+
     /// Sets how much memory a single texture can consume in bytes by
     /// texture type.
     ///
@@ -138,7 +140,6 @@ private:
     void _ComputeAllMemoryRequests();
 
     bool _GarbageCollectHandlesAndComputeTargetMemory();
-    void _GarbageCollectAndComputeTargetMemory();
     std::set<HdStShaderCodeSharedPtr> _Commit();
 
     class _TextureToHandlesMap;
