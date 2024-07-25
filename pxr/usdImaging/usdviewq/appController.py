@@ -1185,7 +1185,7 @@ class AppController(QtCore.QObject):
             # fix up bad input on the users behalf since any leading, trailing
             # or duplicate | operators result in a match for every layer and
             # thus break the stage.
-            pattern =  re.sub('^\||(?<=\|)\|+|\|$', '', pattern)
+            pattern =  re.sub(r'^\||(?<=\|)\|+|\|$', '', pattern)
             if not pattern:
                 return
             matcher = re.compile(pattern)
