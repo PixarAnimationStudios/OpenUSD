@@ -5,6 +5,8 @@
 
 #include "hdPrman/rileyGlobalsSceneIndex.h"
 
+#ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
+
 #include "hdPrman/rileyGlobalsSchema.h"
 #include "hdPrman/rileyParamSchema.h"
 #include "hdPrman/rileyParamListSchema.h"
@@ -40,6 +42,8 @@ _GetGlobalsPrimPath()
     return path;
 }
 
+#if HD_API_VERSION >= 71
+
 static
 const TfToken &
 _GetRileyFrameToken()
@@ -70,6 +74,8 @@ _GetFrameDependency()
             .Build();
     return ds;
 }
+
+#endif // #if HD_API_VERSION >= 71
 
 /// Invalidate riley options if the namespaced settings on the
 /// active render settings prim changes.
@@ -126,15 +132,19 @@ HdContainerDataSourceHandle
 _GetDependencies(const SdfPath &renderSettingsPath)
 {
     static TfToken names[3]  = {
+#if HD_API_VERSION >= 71
         _dependencyTokens->frame,
+#endif
         _dependencyTokens->renderSettingsPath,
         _dependencyTokens->renderSettings
     };
     static HdDataSourceBaseHandle values[3];
     size_t count = 0;
 
+#if HD_API_VERSION >= 71
     values[count] = _GetFrameDependency();
     count++;
+#endif
 
     values[count] = _GetRenderSettingsPathDependency();
     count++;
@@ -142,6 +152,7 @@ _GetDependencies(const SdfPath &renderSettingsPath)
     if (!renderSettingsPath.IsEmpty()) {
         values[count] =
             _GetRenderSettingsDependency(renderSettingsPath);
+        count++;
     }
 
     return
@@ -160,6 +171,8 @@ _FillRileyParamsFromSceneGlobals(
     std::vector<TfToken> * const names,
     std::vector<HdDataSourceBaseHandle> * const dataSources)
 {
+
+#if HD_API_VERSION >= 71
     if (HdDoubleDataSourceHandle const currentFrameDs =
             globalsSchema.GetCurrentFrame())
     {
@@ -174,7 +187,9 @@ _FillRileyParamsFromSceneGlobals(
                     .Build());
         }
     }
+#endif
 }
+
 
 // Given the namespaced settings container of the current render settings
 // prim, add the suitable settings to the riley params (as riley
@@ -376,3 +391,5 @@ HdPrman_RileyGlobalsSceneIndex::_PrimsDirtied(
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER

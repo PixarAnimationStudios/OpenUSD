@@ -52,7 +52,11 @@ HdPrman_RileyGlobalsSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {
+#ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
     return HdPrman_RileyGlobalsSceneIndex::New(inputScene, inputArgs);
+#else
+    return inputScene;
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

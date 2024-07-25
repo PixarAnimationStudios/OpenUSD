@@ -368,7 +368,7 @@ _FallbackMaterialScene()
     return scene;
 }
 
-#endif
+#endif // HDPRMAN_USE_SCENE_INDEX_OBSERVER
 
 ////////////////////////////////////////////////////////////////////////////////
 // Plugin registrations

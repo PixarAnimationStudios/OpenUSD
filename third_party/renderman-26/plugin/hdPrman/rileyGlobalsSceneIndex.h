@@ -7,6 +7,9 @@
 #define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_GLOBALS_SCENE_INDEX_H
 
 #include "pxr/pxr.h"
+#include "hdPrman/sceneIndexObserverApi.h"
+
+#ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
@@ -60,5 +63,7 @@ protected:
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
 
 #endif
