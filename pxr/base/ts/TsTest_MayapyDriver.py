@@ -1,5 +1,5 @@
 #
-# Copyright 2023 Pixar
+# Copyright 2024 Pixar
 #
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
@@ -9,7 +9,7 @@
 ################################################################################
 # Runs inside mayapy.
 # Started by, and communicates via pipe with, TsTest_MayapyEvaluator.
-# Tested against Maya 2022 Update 4, Linux (Python 3.7.7).
+# Tested against Maya 2023 Update 3, Linux (Python 3.9.7).
 ################################################################################
 #
 
@@ -161,6 +161,7 @@ def SetUpCurve(curve, data, opts):
     # X and Y values must be multiplied by 3.
 
     tanType = Curve.kTangentGlobal
+    prevValue = None
 
     times = []
     values = []
@@ -177,9 +178,18 @@ def SetUpCurve(curve, data, opts):
         if knot.leftValue is not None:
             raise Exception("Maya splines can't use dual-valued knots")
 
-        # Time and value are straightforward.
+        # XXX: if two consecutive knots have identical values, mayapy often
+        # (always?)  evaluates the entire segment as flat.  A tiny difference
+        # appears to be enough to prevent this.
+        if knot.value != prevValue:
+            value = knot.value
+        else:
+            value = knot.value + 1e-100
+        prevValue = value
+
+        # Time and value.
         times.append(knot.time)
-        values.append(knot.value)
+        values.append(value)
 
         if data.isHermite:
             # Hermite spline.  Tan lengths may be zero and are ignored.  Any
@@ -266,9 +276,10 @@ def SetUpCurve(curve, data, opts):
         curve.setPostInfinityType(
             _ExtrapTypeMap[data.postExtrapolation.method])
 
-    # I haven't been able to find a way to add diverse keyframes without API
-    # problems.  So far, the most effective workaround appears to be (1) call
-    # addKeysWithTangents; (2) call set{In,Out}TangentType for certain types.
+    # XXX: I haven't been able to find a way to add diverse keyframes without
+    # API problems.  So far, the most effective workaround appears to be (1)
+    # call addKeysWithTangents; (2) call set{In,Out}TangentType for certain
+    # types.
 
     # Create keyframes.
     curve.addKeysWithTangents(
@@ -280,12 +291,20 @@ def SetUpCurve(curve, data, opts):
 
     # Re-establish certain tangent types that seem to get confused by
     # addKeysWithTangents.
+    debugInTypes = []
+    debugOutTypes = []
     for i in range(len(data.knots)):
         if data.knots[i].preAuto:
             curve.setInTangentType(i, tanInTypes[i])
         if data.knots[i].nextSegInterpMethod == SData.InterpHeld \
                 or data.knots[i].postAuto:
             curve.setOutTangentType(i, tanOutTypes[i])
+        debugInTypes.append(curve.inTangentType(i))
+        debugOutTypes.append(curve.outTangentType(i))
+
+    # Debug after resetting types.
+    _Debug("tanInTypes again: %s" % debugInTypes)
+    _Debug("tanOutTypes again: %s" % debugOutTypes)
 
 def DoEval(data, times, opts):
 

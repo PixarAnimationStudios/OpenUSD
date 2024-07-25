@@ -391,18 +391,18 @@ public:
     /// Resolve and return all metadata (including both authored and
     /// fallback values) on this object, sorted lexicographically.
     ///
-    /// \note This method does not return field keys for composition arcs,
-    /// such as references, inherits, payloads, sublayers, variants, or
-    /// primChildren, nor does it return the default value or timeSamples.
+    /// \note This method does not return field keys for composition arcs, such
+    /// as references, inherits, payloads, sublayers, variants, or primChildren,
+    /// nor does it return the default value, timeSamples, or spline.
     USD_API
     UsdMetadataValueMap GetAllMetadata() const;
 
     /// Resolve and return all user-authored metadata on this object,
     /// sorted lexicographically.
     ///
-    /// \note This method does not return field keys for composition arcs,
-    /// such as references, inherits, payloads, sublayers, variants, or
-    /// primChildren, nor does it return the default value or timeSamples.
+    /// \note This method does not return field keys for composition arcs, such
+    /// as references, inherits, payloads, sublayers, variants, or primChildren,
+    /// nor does it return the default value, timeSamples, or spline.
     USD_API
     UsdMetadataValueMap GetAllAuthoredMetadata() const;
 

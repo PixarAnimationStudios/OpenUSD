@@ -12,9 +12,12 @@
 #include "pxr/usd/sdf/fileIO_Common.h"
 #include "pxr/usd/sdf/pathExpression.h"
 
+#include "pxr/base/ts/valueTypeDispatch.h"
+
 #include "pxr/base/tf/stringUtils.h"
 
 #include <cctype>
+#include <functional>
 
 using std::map;
 using std::ostream;
@@ -543,6 +546,221 @@ Sdf_FileIOUtility::WriteTimeSamples(
     return true;
 }
 
+static void _WriteSplineExtrapolation(
+    Sdf_TextOutput &out,
+    size_t indent,
+    const char *label,
+    const TsExtrapolation &extrap)
+{
+    if (extrap == TsExtrapolation()) {
+        return;
+    }
+
+    if (extrap.mode == TsExtrapSloped) {
+        Sdf_FileIOUtility::Write(out, indent + 1, "%s: %s(%s),\n",
+            label,
+            Sdf_FileIOUtility::Stringify(extrap.mode),
+            TfStringify(extrap.slope).c_str());
+    } else {
+        Sdf_FileIOUtility::Write(out, indent + 1, "%s: %s,\n",
+            label,
+            Sdf_FileIOUtility::Stringify(extrap.mode));
+    }
+}
+
+namespace
+{
+    template <typename T>
+    struct _SplineKnotWriter
+    {
+        void operator()(
+            Sdf_TextOutput &out,
+            const size_t indent,
+            const TsKnotMap &knotMap,
+            const TsCurveType curveType)
+        {
+            // On the pre-side of the first knot, there is no segment and no
+            // interpolation.  But start with Curve just so that if there's a
+            // pre-tangent on the first knot, we record it.
+            TsInterpMode interp = TsInterpCurve;
+
+            for (const TsKnot &knot : knotMap) {
+                // Time.
+                Sdf_FileIOUtility::Write(out, indent + 1, "%s:",
+                    TfStringify(knot.GetTime()).c_str());
+
+                // Pre-value, if any.
+                if (knot.IsDualValued()) {
+                    T preValue = 0;
+                    knot.GetPreValue(&preValue);
+                    Sdf_FileIOUtility::Write(out, 0, " %s &",
+                        TfStringify(preValue).c_str());
+                }
+
+                // Value.
+                T value = 0;
+                knot.GetValue(&value);
+                Sdf_FileIOUtility::Write(out, 0, " %s",
+                    TfStringify(value).c_str());
+
+                // We write tangents even when they're not significant due to
+                // facing an extrapolation region.  If more knots are added,
+                // these tangents may become significant, so we record them.
+
+                // Pre-tangent, if any.
+                if (interp == TsInterpCurve) {
+                    const bool isBez = (curveType == TsCurveTypeBezier);
+                    const bool isMaya = (knot.IsPreTanMayaForm());
+
+                    T width = 0, heightOrSlope = 0;
+                    if (isMaya) {
+                        knot.GetMayaPreTanHeight(&heightOrSlope);
+                        if (isBez) {
+                            width = knot.GetMayaPreTanWidth();
+                        }
+                    } else {
+                        knot.GetPreTanSlope(&heightOrSlope);
+                        if (isBez) {
+                            width = knot.GetPreTanWidth();
+                        }
+                    }
+
+                    _WriteTangent(
+                        out, "pre", isBez, isMaya, width, heightOrSlope);
+                }
+
+                // Pre-segment finished.  Switch to post-segment.
+                interp = knot.GetNextInterpolation();
+
+                // Post-tangent, if any.
+                if (interp == TsInterpCurve) {
+                    const bool isBez = (curveType == TsCurveTypeBezier);
+                    const bool isMaya = (knot.IsPostTanMayaForm());
+
+                    T width = 0, heightOrSlope = 0;
+                    if (isMaya) {
+                        knot.GetMayaPostTanHeight(&heightOrSlope);
+                        if (isBez) {
+                            width = knot.GetMayaPostTanWidth();
+                        }
+                    } else {
+                        knot.GetPostTanSlope(&heightOrSlope);
+                        if (isBez) {
+                            width = knot.GetPostTanWidth();
+                        }
+                    }
+
+                    _WriteTangent(
+                        out, "post curve", isBez, isMaya, width, heightOrSlope);
+                }
+
+                // If no post-tangent, write next segment interp method.
+                else {
+                    Sdf_FileIOUtility::Write(out, 0, "; post %s",
+                        Sdf_FileIOUtility::Stringify(interp));
+                }
+
+                // Custom data.
+                const VtDictionary customData = knot.GetCustomData();
+                if (!customData.empty()) {
+                    Sdf_FileIOUtility::Write(out, 0, "; ");
+                    Sdf_FileIOUtility::WriteDictionary(
+                        out, 0, /* multiline = */ false, customData,
+                        /* stringValuesOnly = */ false);
+                }
+
+                Sdf_FileIOUtility::Write(out, 0, ",\n");
+            }
+        }
+
+        void _WriteTangent(
+            Sdf_TextOutput &out,
+            const char* const label,
+            const bool isBez,
+            const bool isMaya,
+            const T width,
+            const T heightOrSlope)
+        {
+            if (isBez) {
+                if (isMaya) {
+                    // Bezier, Maya form: width and height.
+                    Sdf_FileIOUtility::Write(
+                        out, 0, "; %s wh(%s, %s)",
+                        label,
+                        TfStringify(width).c_str(),
+                        TfStringify(heightOrSlope).c_str());
+                } else {
+                    // Bezier, standard form: width and slope.
+                    Sdf_FileIOUtility::Write(
+                        out, 0, "; %s ws(%s, %s)",
+                        label,
+                        TfStringify(width).c_str(),
+                        TfStringify(heightOrSlope).c_str());
+                }
+            } else {
+                if (isMaya) {
+                    // Hermite, Maya form: height.
+                    Sdf_FileIOUtility::Write(out, 0, "; %s h(%s)",
+                        label,
+                        TfStringify(heightOrSlope).c_str());
+                } else {
+                    // Hermite, standard form: slope.
+                    Sdf_FileIOUtility::Write(out, 0, "; %s s(%s)",
+                        label,
+                        TfStringify(heightOrSlope).c_str());
+                }
+            }
+        }
+    };
+}
+
+void
+Sdf_FileIOUtility::WriteSpline(
+    Sdf_TextOutput &out, const size_t indent, const TsSpline &spline)
+{
+    // Example:
+    //
+    //   varying double myAttr.spline = {
+    //       bezier,
+    //       pre: linear,
+    //       post: sloped(0.57),
+    //       loop: (15, 25, 0, 2, 11.7),
+    //       7: 5.5 & 7.21; post held,
+    //       15: 8.18; post curve ws(2.49, 1.17); { string comment = "climb!" },
+    //       20: 14.72; pre ws(3.77, -1.4); post curve ws(1.1, -1.4),
+    //   }
+
+    const TsKnotMap knotMap = spline.GetKnots();
+
+    // Spline type, if significant.
+    if (knotMap.HasCurveSegments()) {
+        Write(out, indent + 1, "%s,\n",
+            Stringify(spline.GetCurveType()));
+    }
+
+    // Extrapolations, if different from default (held).
+    _WriteSplineExtrapolation(
+        out, indent, "pre", spline.GetPreExtrapolation());
+    _WriteSplineExtrapolation(
+        out, indent, "post", spline.GetPostExtrapolation());
+
+    // Inner loop params, if present.
+    if (spline.HasInnerLoops()) {
+        const TsLoopParams lp = spline.GetInnerLoopParams();
+        Write(out, indent + 1, "loop: (%s, %s, %d, %d, %s),\n",
+            TfStringify(lp.protoStart).c_str(),
+            TfStringify(lp.protoEnd).c_str(),
+            lp.numPreLoops,
+            lp.numPostLoops,
+            TfStringify(lp.valueOffset).c_str());
+    }
+
+    // Knots.
+    TsDispatchToValueTypeTemplate<_SplineKnotWriter>(
+        spline.GetValueType(),
+        std::ref(out), indent, std::ref(knotMap), spline.GetCurveType());
+}
+
 template <class RelocatesContainer> 
 bool 
 _WriteRelocates(
@@ -911,6 +1129,46 @@ const char* Sdf_FileIOUtility::Stringify( SdfVariability val )
         TF_CODING_ERROR("unknown value");
         return "";
     }
+}
+
+const char* Sdf_FileIOUtility::Stringify(TsExtrapMode mode)
+{
+    switch (mode) {
+        case TsExtrapValueBlock: return "none";
+        case TsExtrapHeld: return "held";
+        case TsExtrapLinear: return "linear";
+        case TsExtrapSloped: return "sloped";
+        case TsExtrapLoopRepeat: return "loop repeat";
+        case TsExtrapLoopReset: return "loop reset";
+        case TsExtrapLoopOscillate: return "loop oscillate";
+    }
+
+    TF_CODING_ERROR("unknown value");
+    return "";
+}
+
+const char* Sdf_FileIOUtility::Stringify(TsCurveType curveType)
+{
+    switch (curveType) {
+        case TsCurveTypeBezier: return "bezier";
+        case TsCurveTypeHermite: return "hermite";
+    }
+
+    TF_CODING_ERROR("unknown value");
+    return "";
+}
+
+const char* Sdf_FileIOUtility::Stringify(TsInterpMode interp)
+{
+    switch (interp) {
+        case TsInterpValueBlock: return "none";
+        case TsInterpHeld: return "held";
+        case TsInterpLinear: return "linear";
+        case TsInterpCurve: return "curve";
+    }
+
+    TF_CODING_ERROR("unknown value");
+    return "";
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

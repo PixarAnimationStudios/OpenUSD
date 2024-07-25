@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -27,13 +27,6 @@ TsTest_SampleTimes::SampleTime::SampleTime(
 TsTest_SampleTimes::SampleTime::SampleTime(
     double timeIn, bool preIn)
     : time(timeIn), pre(preIn) {}
-
-TsTest_SampleTimes::SampleTime::SampleTime(
-    const SampleTime &other) = default;
-
-TsTest_SampleTimes::SampleTime&
-TsTest_SampleTimes::SampleTime::operator=(
-    const SampleTime &other) = default;
 
 TsTest_SampleTimes::SampleTime&
 TsTest_SampleTimes::SampleTime::operator=(
@@ -74,7 +67,9 @@ TsTest_SampleTimes::_GetKnotTimes() const
     for (const SData::Knot &knot : _splineData.GetKnots())
     {
         if (held || knot.isDualValued)
+        {
             result.insert(SampleTime(knot.time, /* pre = */ true));
+        }
 
         result.insert(SampleTime(knot.time));
 
@@ -169,19 +164,21 @@ void TsTest_SampleTimes::AddExtrapolationTimes(
         return;
     }
 
+    // Use this simplistic technique for non-looped extrapolation, which always
+    // produces a straight line, and so can be illustrated with a single sample.
+    const bool preLoop =
+        (_splineData.GetPreExtrapolation().method == SData::ExtrapLoop);
+    const bool postLoop =
+        (_splineData.GetPostExtrapolation().method == SData::ExtrapLoop);
+    if (preLoop && postLoop)
+    {
+        return;
+    }
+
     const SampleTimeSet knotTimes = _GetKnotTimes();
     if (knotTimes.size() < 2)
     {
         TF_CODING_ERROR("AddExtrapolationTimes: too few knots");
-        return;
-    }
-
-    if (_splineData.GetPreExtrapolation().method == SData::ExtrapLoop
-        || _splineData.GetPostExtrapolation().method == SData::ExtrapLoop)
-    {
-        // This technique is too simplistic for extrapolating loops.  These
-        // should be baked out by clients before passing spline data.
-        TF_CODING_ERROR("AddExtrapolationTimes: extrapolating loops");
         return;
     }
 
@@ -190,8 +187,107 @@ void TsTest_SampleTimes::AddExtrapolationTimes(
     const double knotRange = lastTime - firstTime;
     const double extrap = extrapolationFactor * knotRange;
 
-    _times.insert(SampleTime(firstTime - extrap));
-    _times.insert(SampleTime(lastTime + extrap));
+    if (!preLoop)
+    {
+        _times.insert(SampleTime(firstTime - extrap));
+    }
+    if (!postLoop)
+    {
+        _times.insert(SampleTime(lastTime + extrap));
+    }
+}
+
+void TsTest_SampleTimes::AddExtrapolatingLoopTimes(
+    const int numIterations,
+    const int numSamplesPerIteration)
+{
+    if (!_haveSplineData)
+    {
+        TF_CODING_ERROR("AddExtrapolatingLoopTimes: no spline data");
+        return;
+    }
+
+    if (numIterations <= 0)
+    {
+        TF_CODING_ERROR("AddExtrapolatingLoopTimes: invalid iteration count");
+        return;
+    }
+
+    // Use this technique for looped extrapolation, which requires copies of the
+    // sample times from the knot range to illustrate properly.
+    const bool preLoop =
+        (_splineData.GetPreExtrapolation().method == SData::ExtrapLoop);
+    const bool postLoop =
+        (_splineData.GetPostExtrapolation().method == SData::ExtrapLoop);
+    if (!preLoop && !postLoop)
+    {
+        return;
+    }
+
+    const SampleTimeSet knotTimes = _GetKnotTimes();
+    if (knotTimes.size() < 2)
+    {
+        TF_CODING_ERROR("AddExtrapolatingLoopTimes: too few knots");
+        return;
+    }
+
+    const double firstTime = knotTimes.begin()->time;
+    const double lastTime = knotTimes.rbegin()->time;
+    const double knotRange = lastTime - firstTime;
+
+    // Create standard times for the knot range using a sub-instance.
+    TsTest_SampleTimes knotRangeTimes(_splineData);
+    knotRangeTimes.AddKnotTimes();
+    knotRangeTimes.AddUniformInterpolationTimes(numSamplesPerIteration);
+    const SampleTimeSet &knotRangeSet = knotRangeTimes.GetTimes();
+
+    if (preLoop)
+    {
+        // Make a copy of the knot-range times for each pre-iteration.
+        for (int i = -numIterations; i < 0; i++)
+        {
+            for (const SampleTime &sample : knotRangeSet)
+            {
+                _times.insert(
+                    SampleTime(
+                        sample.time + knotRange * i,
+                        sample.pre));
+            }
+        }
+
+        // Add a pre-time at each pre-loop join.
+        for (int i = -numIterations; i <= 0; i++)
+        {
+            _times.insert(
+                SampleTime(
+                    firstTime + knotRange * i,
+                    /* pre = */ true));
+        }
+    }
+
+    if (postLoop)
+    {
+        // Make a copy of the knot-range times for each post-iteration.
+        for (int i = 1; i <= numIterations; i++)
+        {
+            for (const SampleTime &sample : knotRangeSet)
+            {
+                _times.insert(
+                    SampleTime(
+                        sample.time + knotRange * i,
+                        sample.pre));
+            }
+        }
+
+        // Add a pre-time at each post-loop join.
+        for (int i = 0; i <= numIterations; i++)
+        {
+            _times.insert(
+                SampleTime(
+                    lastTime + knotRange * i,
+                    /* pre = */ true));
+        }
+    }
 }
 
 void TsTest_SampleTimes::AddStandardTimes()
@@ -199,6 +295,7 @@ void TsTest_SampleTimes::AddStandardTimes()
     AddKnotTimes();
     AddUniformInterpolationTimes(200);
     AddExtrapolationTimes(0.2);
+    AddExtrapolatingLoopTimes(3, 200);
 }
 
 const TsTest_SampleTimes::SampleTimeSet&

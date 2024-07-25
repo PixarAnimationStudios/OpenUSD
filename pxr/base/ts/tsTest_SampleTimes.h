@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -23,20 +23,32 @@ public:
     // A time at which to perform evaluation.  Typically just a time, but can
     // also be a "pre" time, which at a dual-valued knot can differ from the
     // ordinary value.
-    struct TS_API SampleTime
+    class SampleTime
     {
+    public:
         double time = 0.0;
         bool pre = false;
 
     public:
+        TS_API
         SampleTime();
+
+        TS_API
         SampleTime(double time);
+
+        TS_API
         SampleTime(double time, bool pre);
-        SampleTime(const SampleTime &other);
-        SampleTime& operator=(const SampleTime &other);
+
+        TS_API
         SampleTime& operator=(double time);
+
+        TS_API
         bool operator<(const SampleTime &other) const;
+
+        TS_API
         bool operator==(const SampleTime &other) const;
+
+        TS_API
         bool operator!=(const SampleTime &other) const;
     };
 
@@ -83,15 +95,23 @@ public:
     // extrapolationFactor on each end, and adds one pre-extrapolating and one
     // post-extrapolating sample.  For example, with a time range of 10, and an
     // extrapolationFactor of 0.25, samples will be added 2.5 time units before
-    // the first knot and 2.5 time units after the last.
+    // the first knot and 2.5 time units after the last.  For looping
+    // extrapolation regions, this method does nothing; call
+    // AddExtrapolatingLoopTimes instead or in addition.
     TS_API
     void AddExtrapolationTimes(
         double extrapolationFactor);
 
+    // Adds times to handle extrapolating loops, if there are any.
+    TS_API
+    void AddExtrapolatingLoopTimes(
+        int numIterations,
+        int numSamplesPerIteration);
+
     // MACRO
 
-    // Calls AddKnotTimes(), AddUniformInterpolationTimes(200), and
-    // AddExtrapolationTimes(0.2).
+    // Calls AddKnotTimes(), AddUniformInterpolationTimes(200),
+    // AddExtrapolationTimes(0.2), and AddExtrapolatingLoopTimes(3, 200).
     TS_API
     void AddStandardTimes();
 

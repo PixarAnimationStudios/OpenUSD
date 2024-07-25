@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -56,7 +56,7 @@ TsTest_SampleBezier(
     const SData::KnotSet &knots = splineData.GetKnots();
     if (knots.size() < 2)
     {
-        TF_CODING_ERROR("SampleBezier requires at least two keyframes");
+        TF_CODING_ERROR("SampleBezier requires at least two knots");
         return {};
     }
 

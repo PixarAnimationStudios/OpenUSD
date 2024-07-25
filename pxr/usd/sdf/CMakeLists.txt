@@ -8,6 +8,7 @@ pxr_library(sdf
         gf
         pegtl
         trace
+        ts
         vt
         work
         ar

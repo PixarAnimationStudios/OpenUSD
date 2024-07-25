@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -10,301 +10,166 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/ts/api.h"
-
-#include "pxr/base/gf/vec2d.h"
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/base/gf/vec4d.h"
-#include "pxr/base/gf/vec4i.h"
-#include "pxr/base/gf/quatd.h"
-#include "pxr/base/gf/quatf.h"
-
-#include "pxr/base/gf/matrix2d.h"
-#include "pxr/base/gf/matrix3d.h"
-#include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/interval.h"
-#include "pxr/base/gf/multiInterval.h"
-#include "pxr/base/gf/range1d.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/token.h"
-// Including weakPtrFacade.h before vt/value.h works around a problem
-// finding get_pointer.
-#include "pxr/base/tf/weakPtrFacade.h"
-#include "pxr/base/vt/array.h"
-#include "pxr/base/vt/value.h"
-#include <string>
-#include <map>
+
+#include <cstdint>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// The time type used by Ts.
-typedef double TsTime;
 
-/// \brief Keyframe knot types.
-///
-/// These specify the method used to interpolate keyframes.
-/// This enum is registered with TfEnum for conversion to/from std::string.
-///
-enum TsKnotType {
-    TsKnotHeld = 0,     //!< A held-value knot; tangents will be ignored
-    TsKnotLinear,       //!< A Linear knot; tangents will be ignored
-    TsKnotBezier,       //!< A Bezier knot
+// Times are encoded as double.
+using TsTime = double;
 
-    TsKnotNumTypes
+//////////////////////////////
+// ** NOTE TO MAINTAINERS **
+//
+// The following enum values are used in the binary crate format.
+// Do not change them; only add.
+
+/// Interpolation mode for a spline segment (region between two knots).
+///
+enum TsInterpMode
+{
+    TsInterpValueBlock  = 0,  //< No value in this segment.
+    TsInterpHeld        = 1,  //< Constant value in this segment.
+    TsInterpLinear      = 2,  //< Linear interpolation.
+    TsInterpCurve       = 3   //< Bezier or Hermite, depends on curve type.
 };
 
-/// \brief Spline extrapolation types.
+/// Type of interpolation for a spline's \c Curve segments.
 ///
-/// These specify the method used to extrapolate splines.
-/// This enum is registered with TfEnum for conversion to/from std::string.
-///
-enum TsExtrapolationType {
-    TsExtrapolationHeld = 0, //!< Held;  splines hold values at edges
-    TsExtrapolationLinear,   //!< Linear;  splines hold slopes at edges
-
-    TsExtrapolationNumTypes
+enum TsCurveType
+{
+    TsCurveTypeBezier  = 0,  //< Bezier curve, free tangent widths.
+    TsCurveTypeHermite = 1   //< Hermite curve, like Bezier but fixed tan width.
 };
 
-/// \brief A pair of TsExtrapolationTypes indicating left
-/// and right extrapolation in first and second, respectively.
-typedef std::pair<TsExtrapolationType,TsExtrapolationType> 
-    TsExtrapolationPair;
-
-/// \brief Dual-value keyframe side.
-enum TsSide {
-    TsLeft,
-    TsRight
+/// Curve-shaping mode for one of a spline's extrapolation regions (before all
+/// knots and after all knots).
+///
+enum TsExtrapMode
+{
+    TsExtrapValueBlock    = 0, //< No value in this region.
+    TsExtrapHeld          = 1, //< Constant value in this region.
+    TsExtrapLinear        = 2, //< Linear interpolation based on edge knots.
+    TsExtrapSloped        = 3, //< Linear interpolation with specified slope.
+    TsExtrapLoopRepeat    = 4, //< Knot curve repeated, offset so ends meet.
+    TsExtrapLoopReset     = 5, //< Curve repeated exactly, discontinuous joins.
+    TsExtrapLoopOscillate = 6  //< Like Reset, but every other copy reversed.
 };
 
-/// \brief An individual sample.  A sample is either a blur, defining a
-/// rectangle, or linear, defining a line for linear interpolation.
-/// In both cases the sample is half-open on the right.
-typedef struct TsValueSample {
+/// Inner-loop parameters.
+///
+/// At most one inner-loop region can be specified per spline.  Only whole
+/// numbers of pre- and post-iterations are supported.
+///
+/// The value offset specifies the difference between the values at the starts
+/// of consecutive iterations.
+///
+/// There must always be a knot at the protoStart time; otherwise the loop
+/// parameters are invalid and will be ignored.
+///
+/// A copy of the start knot is always made at the end of the prototype region.
+/// This is true even if there is no post-looping; it ensures that all
+/// iterations (including pre-loops) match the prototype region exactly.
+///
+/// Enabling inner looping will generally change the shape of the prototype
+/// interval (and thus all looped copies), because the first knot is echoed as
+/// the last.  Inner looping does not aim to make copies of an existing shape;
+/// it aims to set up for continuity at loop joins.
+///
+/// When inner looping is applied, any knots specified in the pre-looped or
+/// post-looped intervals are removed from consideration, though they remain in
+/// the spline parameters.  A knot exactly at the end of the prototype interval
+/// is not part of the prototype; it will be ignored, and overwritten by the
+/// start-knot copy.
+///
+/// When protoEnd <= protoStart, inner looping is disabled.
+///
+/// Negative numbers of loops are not meaningful; they are treated the same as
+/// zero counts.  These quantities are signed only so that accidental underflow
+/// does not result in huge loop counts.
+///
+class TsLoopParams
+{
 public:
-    TsValueSample(TsTime inLeftTime, const VtValue& inLeftValue,
-        TsTime inRightTime, const VtValue& inRightValue,
-        bool inBlur = false) :
-        isBlur(inBlur),
-        leftTime(inLeftTime),
-        rightTime(inRightTime),
-        leftValue(inLeftValue),
-        rightValue(inRightValue)
-    {}
+    TsTime protoStart = 0.0;
+    TsTime protoEnd = 0.0;
+    int32_t numPreLoops = 0;
+    int32_t numPostLoops = 0;
+    double valueOffset = 0.0;
 
 public:
-    bool isBlur;        //!< True if a blur sample
-    TsTime leftTime;  //!< Left side time (inclusive)
-    TsTime rightTime; //!< Right side time (exclusive)
-    VtValue leftValue;  //!< Value at left or, for blur, min value
-    VtValue rightValue; //!< Value at right or, for blur, max value
-} TsValueSample;
+    TS_API
+    bool operator==(const TsLoopParams &other) const;
 
-/// A sequence of samples.
-typedef std::vector<TsValueSample> TsSamples;
+    TS_API
+    bool operator!=(const TsLoopParams &other) const;
 
-// Traits for types used in TsSplines.
-//
-// Depending on a type's traits, different interpolation techniques are
-// available:
-//
-// * if not interpolatable, only TsKnotHeld can be used
-// * if interpolatable, TsKnotHeld and TsKnotLinear can be used
-// * if supportsTangents, any knot type can be used
-//
-template <typename T>
-struct TsTraits {
-    // True if this is a valid value type for splines.
-    // Default is false; set to true for all supported types.
-    static const bool isSupportedSplineValueType = false;
+    /// Returns the prototype region, [protoStart, protoEnd).
+    TS_API
+    GfInterval GetPrototypeInterval() const;
 
-    // True if the type can be interpolated by taking linear combinations.
-    // If this is false, only TsKnotHeld is isSupportedSplineValueType.
-    static const bool interpolatable = true;
-
-    // True if the value can be extrapolated outside of the keyframe
-    // range. If this is false we always use TsExtrapolateHeld behaviour.
-    // This is true if a slope can be computed from the line between two knots
-    // of this type.
-    static const bool extrapolatable = false;
-
-    // True if the value type supports tangents.
-    // If true, interpolatable must also be true.
-    static const bool supportsTangents = true;
-
-    // The origin or zero vector for this type.
-    static const T zero;
+    /// Returns the union of the prototype region and the echo region(s).
+    TS_API
+    GfInterval GetLoopedInterval() const;
 };
 
-template <>
-struct TS_API TsTraits<std::string> {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = false;
-    static const bool extrapolatable = false;
-    static const bool supportsTangents = false;
-    static const std::string zero;
+/// Extrapolation parameters for the ends of a spline beyond the knots.
+///
+class TsExtrapolation
+{
+public:
+    TsExtrapMode mode = TsExtrapHeld;
+    double slope = 0.0;
+
+public:
+    TS_API
+    TsExtrapolation();
+
+    TS_API
+    TsExtrapolation(TsExtrapMode mode);
+
+    TS_API
+    bool operator==(const TsExtrapolation &other) const;
+
+    TS_API
+    bool operator!=(const TsExtrapolation &other) const;
+
+    /// Returns whether our mode is one of the looping extrapolation modes.
+    TS_API
+    bool IsLooping() const;
 };
 
-template <>
-struct TS_API TsTraits<double> {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = true;
-    static const bool extrapolatable = true;
-    static const bool supportsTangents = true;
-    static const double zero;
+/// Modes for enforcing non-regression in splines.
+///
+/// See \ref page_ts_regression for a general introduction to regression and
+/// anti-regression.
+///
+enum TsAntiRegressionMode
+{
+    /// Do not enforce.  If there is regression, runtime evaluation will use
+    /// KeepRatio.
+    TsAntiRegressionNone,
+
+    /// Prevent tangents from crossing neighboring knots.  This guarantees
+    /// non-regression, but is slightly over-conservative, preventing the
+    /// authoring of some extreme curves that cannot be created without
+    /// non-contained tangents.
+    TsAntiRegressionContain,
+
+    /// If there is regression in a segment, shorten both of its tangents until
+    /// the regression is just barely prevented (the curve comes to a
+    /// near-standstill at some time).  Preserve the ratio of the tangent
+    /// lengths.
+    TsAntiRegressionKeepRatio,
+
+    /// If there is regression in a segment, leave its start tangent alone, and
+    /// shorten its end tangent until the regression is just barely prevented.
+    /// This matches Maya behavior.
+    TsAntiRegressionKeepStart
 };
 
-template <>
-struct TS_API TsTraits<float> {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = true;
-    static const bool extrapolatable = true;
-    static const bool supportsTangents = true;
-    static const float zero;
-};
-
-template <>
-struct TS_API TsTraits<int> {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = false;
-    static const bool extrapolatable = false;
-    static const bool supportsTangents = false;
-    static const int zero;
-};
-
-template <>
-struct TS_API TsTraits<bool> {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = false;
-    static const bool extrapolatable = false;
-    static const bool supportsTangents = false;
-    static const bool zero;
-};
-
-template <>
-struct TS_API TsTraits<GfVec2d> {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = true;
-    static const bool extrapolatable = true;
-    static const bool supportsTangents = false;
-    static const GfVec2d zero;
-};
-
-template <>
-struct TS_API TsTraits<GfVec2f> {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = true;
-    static const bool extrapolatable = true;
-    static const bool supportsTangents = false;
-    static const GfVec2f zero;
-};
-
-template <>
-struct TS_API TsTraits<GfVec3d> {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = true;
-    static const bool extrapolatable = true;
-    static const bool supportsTangents = false;
-    static const GfVec3d zero;
-};
-
-template <>
-struct TS_API TsTraits<GfVec3f> {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = true;
-    static const bool extrapolatable = true;
-    static const bool supportsTangents = false;
-    static const GfVec3f zero;
-};
-
-template <>
-struct TS_API TsTraits<GfVec4d> {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = true;
-    static const bool extrapolatable = true;
-    static const bool supportsTangents = false;
-    static const GfVec4d zero;
-};
-
-template <>
-struct TS_API TsTraits<GfVec4f> {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = true;
-    static const bool extrapolatable = true;
-    static const bool supportsTangents = false;
-    static const GfVec4f zero;
-};
-
-template <>
-struct TS_API TsTraits<GfQuatd>  {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = true;
-    static const bool extrapolatable = false;
-    static const bool supportsTangents = false;
-    static const GfQuatd zero;
-};
-
-template <>
-struct TS_API TsTraits<GfQuatf>  {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = true;
-    static const bool extrapolatable = false;
-    static const bool supportsTangents = false;
-    static const GfQuatf zero;
-};
-
-template <>
-struct TS_API TsTraits<GfMatrix2d> {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = true;
-    static const bool extrapolatable = true;
-    static const bool supportsTangents = false;
-    static const GfMatrix2d zero;
-};
-
-template <>
-struct TS_API TsTraits<GfMatrix3d> {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = true;
-    static const bool extrapolatable = true;
-    static const bool supportsTangents = false;
-    static const GfMatrix3d zero;
-};
-
-template <>
-struct TS_API TsTraits<GfMatrix4d> {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = true;
-    static const bool extrapolatable = true;
-    static const bool supportsTangents = false;
-    static const GfMatrix4d zero;
-};
-
-template <>
-struct TS_API TsTraits< VtArray<double> > {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = true;
-    static const bool extrapolatable = true;
-    static const bool supportsTangents = false;
-    static const VtArray<double> zero;
-};
-
-template <>
-struct TS_API TsTraits< VtArray<float> > {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = true;
-    static const bool extrapolatable = true;
-    static const bool supportsTangents = false;
-    static const bool supportsVaryingShapes = false;
-    static const VtArray<float> zero;
-};
-
-template <>
-struct TS_API TsTraits<TfToken> {
-    static const bool isSupportedSplineValueType = true;
-    static const bool interpolatable = false;
-    static const bool extrapolatable = false;
-    static const bool supportsTangents = false;
-    static const TfToken zero;
-};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

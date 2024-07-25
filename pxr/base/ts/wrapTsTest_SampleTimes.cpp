@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -13,7 +13,10 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/diagnostic.h"
 
-#include <boost/python.hpp>
+#include <boost/python/class.hpp>
+#include <boost/python/scope.hpp>
+#include <boost/python/make_constructor.hpp>
+#include <boost/python/operators.hpp>
 #include <sstream>
 #include <string>
 #include <cstdio>
@@ -60,9 +63,13 @@ _ConstructSampleTimes(
     {
         extract<std::vector<This::SampleTime>> extractor(times);
         if (extractor.check())
+        {
             sts = extractor();
+        }
         else
+        {
             TF_CODING_ERROR("Unexpected type for times");
+        }
     }
     result->AddTimes(sts);
 
@@ -137,6 +144,10 @@ void wrapTsTest_SampleTimes()
 
         .def("AddExtrapolationTimes", &This::AddExtrapolationTimes,
             (arg("extrapolationFactor")))
+
+        .def("AddExtrapolatingLoopTimes", &This::AddExtrapolatingLoopTimes,
+            (arg("numIterations"),
+             arg("numSamplesPerIteration")))
 
         .def("AddStandardTimes", &This::AddStandardTimes)
 

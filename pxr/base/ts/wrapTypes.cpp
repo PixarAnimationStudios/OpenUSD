@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -7,67 +7,55 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/ts/types.h"
-#include "pxr/base/ts/wrapUtils.h"
-
-#include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
 
-#include <boost/python.hpp>
+#include <boost/python/class.hpp>
+#include <boost/python/operators.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 using namespace boost::python;
 
 
-static void wrapValueSample()
-{
-    typedef TsValueSample This;
-
-    class_<This>
-        ("ValueSample", 
-         "An individual sample.  A sample is either a blur, "
-                       "defining a rectangle, or linear, defining a line for "
-                       "linear interpolation. In both cases the sample is "
-                       "half-open on the right.", 
-         no_init)
-
-        .def_readonly(
-            "isBlur", &This::isBlur, "True if a blur sample")
-        .def_readonly(
-            "leftTime", &This::leftTime, "Left side time (inclusive)")
-        .def_readonly(
-            "rightTime", &This::rightTime, "Right side time (exclusive)")
-
-        // We need to specify a return_value_policy for VtValues, since
-        // the default policy of add_property is return_internal_reference
-        // but VtValues don't provide an lvalue.  Instead, we just copy
-        // them on read.
-        .add_property(
-            "leftValue",
-            make_getter(
-                &This::leftValue, return_value_policy<return_by_value>()),
-            "Value at left or, for blur, min value")
-        .add_property(
-            "rightValue",
-            make_getter(
-                &This::rightValue, return_value_policy<return_by_value>()),
-            "Value at right or, for blur, max value")
-        ;
-}
-
-
 void wrapTypes()
 {
-    TfPyWrapEnum<TsExtrapolationType>();
+    TfPyWrapEnum<TsInterpMode>();
+    TfPyWrapEnum<TsCurveType>();
+    TfPyWrapEnum<TsExtrapMode>();
+    TfPyWrapEnum<TsAntiRegressionMode>();
 
-    TfPyContainerConversions::tuple_mapping_pair<
-        std::pair<TsExtrapolationType, TsExtrapolationType> >();
+    class_<TsLoopParams>("LoopParams")
 
-    TfPyContainerConversions::from_python_sequence<
-        std::set<double> , TfPyContainerConversions::set_policy >();
+        // Default init is not suppressed, so automatically generated.
 
-    wrapValueSample();
+        .def(init<const TsLoopParams &>())
+        .def(self == self)
+        .def(self != self)
 
-    Ts_AnnotatedBoolResult::Wrap<Ts_AnnotatedBoolResult>(
-        "_AnnotatedBoolResult", "reasonWhyNot");
+        .def_readwrite("protoStart", &TsLoopParams::protoStart)
+        .def_readwrite("protoEnd", &TsLoopParams::protoEnd)
+        .def_readwrite("numPreLoops", &TsLoopParams::numPreLoops)
+        .def_readwrite("numPostLoops", &TsLoopParams::numPostLoops)
+        .def_readwrite("valueOffset", &TsLoopParams::valueOffset)
+
+        .def("GetPrototypeInterval", &TsLoopParams::GetPrototypeInterval)
+        .def("GetLoopedInterval", &TsLoopParams::GetLoopedInterval)
+
+        ;
+
+    class_<TsExtrapolation>("Extrapolation")
+
+        // Default init is not suppressed, so automatically generated.
+
+        .def(init<TsExtrapMode>())
+        .def(init<const TsExtrapolation &>())
+        .def(self == self)
+        .def(self != self)
+
+        .def_readwrite("mode", &TsExtrapolation::mode)
+        .def_readwrite("slope", &TsExtrapolation::slope)
+
+        .def("IsLooping", &TsExtrapolation::IsLooping)
+
+        ;
 }

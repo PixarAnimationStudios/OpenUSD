@@ -14,6 +14,7 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/types.h"
 
+#include "pxr/base/ts/spline.h"
 #include "pxr/base/gf/interval.h"
 #include "pxr/base/vt/value.h"
 
@@ -316,6 +317,15 @@ Usd_ApplyLayerOffsetToValue(SdfTimeSampleMap *value,
         // The value may also have be mapped if it is time mappable.
         Usd_ApplyLayerOffsetToValue(&newSample, offset);
     }
+}
+
+inline void
+Usd_ApplyLayerOffsetToValue(
+    TsSpline *spline, const SdfLayerOffset &offset)
+{
+    // Splines have their own optimized method.
+    Ts_SplineOffsetAccess::ApplyOffsetAndScale(
+        spline, offset.GetOffset(), offset.GetScale());
 }
 
 /// \overload

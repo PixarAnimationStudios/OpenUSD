@@ -1,0 +1,9 @@
+#sdf 1.4.32
+
+def Xform "Prim1"
+{
+    string bork.spline = {
+        1: "hello",
+        2: "smellynose",
+    }
+}

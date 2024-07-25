@@ -1,13 +1,13 @@
 #!/pxrpythonsubst
 
 #
-# Copyright 2023 Pixar
+# Copyright 2024 Pixar
 #
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 #
 
-from pxr import Ts, Gf
+from pxr import Ts
 
 import unittest
 
@@ -19,70 +19,87 @@ class TsTest_Derivatives(unittest.TestCase):
 
     def _DoTest(
             self, case, extrap,
-            types, times, vals,
-            expB, expL, expR,
-            single = True, dual = True):
+            interps, times, vals,
+            expB, expP, expK,
+            single = True, dual = True,
+            graph = False, graphParams = {}):
         """
         Build a spline and validate expected derivatives.
 
         The knots are specified by the parallel lists 'types', 'times', and
-        'vals'.  Types may be "H" (held), "L" (linear), or "B" (Bezier).  Times
+        'vals'.  Interps specify the interpolation mode of the following
+        segment, and may be "H" (held), "L" (linear), or "B" (curve).  Times
         and vals are floats.
 
-        Extrapolation mode is specified by 'extrap', which is "H" (held) or "L"
-        (linear).
+        Extrapolation mode is specified by 'extrap', which is "H" (held), "L"
+        (linear), "S" (sloped), "LR" (loop repeat), "LX" (loop reset), or "LO"
+        (loop oscillate).
 
-        Expected derivative values are specified by 'expB', 'expL', and 'expR'.
-        These respectively are between knots, on the left sides of knots, and on
-        the right sides of knots.  'expB' is one element longer than the knot
+        Expected derivative values are specified by 'expB', 'expP', and 'expK'.
+        These respectively are between knots, pre-values at knots, and ordinary
+        values at knots.  'expB' is one element longer than the knot
         lists; it gives expected values before the first knot, between each pair
-        of knots, and after the last.  'expL' and 'expR' correspond exactly to
+        of knots, and after the last.  'expP' and 'expK' correspond exactly to
         the knot lists.
 
-        Values in 'expB', 'expL', and 'expR' may be floats, or they may be
+        Values in 'expB', 'expP', and 'expK' may be floats, or they may be
         strings that denote special values; see 'expMap' in the implementation.
 
         Single-valued and dual-valued knots may be tested.  Specify which in
         'single' and 'dual', which are both true by default.
 
-        Float-valued splines are always tested.  If there are no Bezier knots in
-        the 'types' list, vector-valued splines will also be tested.  Vector
-        values are just Gf.Vec2d with both components set to the float values
-        specified in 'vals'.
+        If 'graph' is true, a graph of the spline will be written to a file to
+        aid debugging.  If 'graphParams' is provided, the contents will be used
+        as kwargs to TsTest_Grapher.
         """
         # Constants we use in our splines.
+        extrapSlope = 1.2
         bezTans = {"lens": [.5, .5], "slopes": [.3, .3]}
         garbageTans = {"lens": [2.7, 0.8], "slopes": [0.4, -4.0]}
 
         # Meanings of convenience abbreviations.
-        extrapMap = {"H": Ts.ExtrapolationHeld, "L": Ts.ExtrapolationLinear}
-        typeMap = {"H": Ts.KnotHeld, "L": Ts.KnotLinear, "B": Ts.KnotBezier}
+        extrapMap = {"H": Ts.ExtrapHeld, "L": Ts.ExtrapLinear,
+                     "S": Ts.ExtrapSloped, "LR": Ts.ExtrapLoopRepeat,
+                     "LX": Ts.ExtrapLoopReset, "LO": Ts.ExtrapLoopOscillate}
+        interpMap = {"H": Ts.InterpHeld, "L": Ts.InterpLinear,
+                     "C": Ts.InterpCurve}
 
         # Special expected results that are specified by name.
-        # "b" is the Bezier tangent slope we use.
-        # "xy" is the midpoint tangent in a segment bracketed by types x and y.
-        # The midpoint tangents are empirical, not mathematically derived.
-        expMap = {"b": .3, "bb": 1.70, "bl": 1.35, "bh": 1.68, "lb": 1.19}
+        # "s" is the knot tangent slope we use.
+        # "bb" is the slope centered between two of our Bezier knots.
+        # "e" is the extrapolation slope we use.
+        expMap = {"s": .3, "bb": 1.7, "e": 1.2}
 
         # Set up spline.
         spline = Ts.Spline()
-        extrapMode = extrapMap[extrap]
-        spline.extrapolation = (extrapMode, extrapMode)
+        extrapolation = Ts.Extrapolation(extrapMap[extrap])
+        extrapolation.slope = extrapSlope
+        spline.SetPreExtrapolation(extrapolation)
+        spline.SetPostExtrapolation(extrapolation)
 
         # Add knots as specified.
         # Give non-Bezier knots garbage tangents, to ensure they have no effect.
-        # Remember whether there are any Beziers; if there are, no vectors.
-        doVectors = True
-        for i in range(len(types)):
-            knot = Ts.KeyFrame(times[i], float(vals[i]), typeMap[types[i]])
-            tans = bezTans if types[i] == "B" else garbageTans
-            knot.leftLen = tans["lens"][0]
-            knot.leftSlope = tans["slopes"][0]
-            knot.rightLen = tans["lens"][1]
-            knot.rightSlope = tans["slopes"][1]
-            spline.SetKeyFrame(knot)
-            if types[i] == "B":
-                doVectors = False
+        for i in range(len(interps)):
+            tans = bezTans if interps[i] == "C" else garbageTans
+            knot = Ts.Knot(
+                time = times[i], value = float(vals[i]),
+                nextInterp = interpMap[interps[i]],
+                preTanWidth = tans["lens"][0],
+                preTanSlope = tans["slopes"][0],
+                postTanWidth = tans["lens"][1],
+                postTanSlope = tans["slopes"][1])
+            spline.SetKnot(knot)
+
+        # If requested, create a graph of the spline to aid debugging.
+        grapher = None
+        if graph and Ts.TsTest_Grapher.Init():
+            evaluator = Ts.TsTest_TsEvaluator()
+            data = evaluator.SplineToSplineData(spline)
+            sampleTimes = Ts.TsTest_SampleTimes(data)
+            sampleTimes.AddStandardTimes()
+            samples = evaluator.Eval(data, sampleTimes)
+            grapher = Ts.TsTest_Grapher(case, **graphParams)
+            grapher.AddSpline(case, data, samples)
 
         # Build the list of between-knot times.
         # This also includes one pre-extrapolation and one post-extrapolation.
@@ -93,7 +110,7 @@ class TsTest_Derivatives(unittest.TestCase):
         betTimes.append(times[-1] + 1)
 
         # Translate any symbolic expected results into numeric values.
-        for expList in expB, expL, expR:
+        for expList in expB, expP, expK:
             for i in range(len(expList)):
                 expVal = expList[i]
                 if type(expVal) == str:
@@ -107,87 +124,61 @@ class TsTest_Derivatives(unittest.TestCase):
                         expVal *= -1
                     expList[i] = expVal
 
-        # Test with scalar values.
-        self._DoTestWithValueTypeVariation(
-            case,
-            spline, times, betTimes, expB, expL, expR,
-            single, dual)
-
-        # Test with vector values if the knot types permit.
-        if doVectors:
-            # Build vector-valued spline.
-            vecSpline = Ts.Spline()
-            vecSpline.extrapolation = (extrapMode, extrapMode)
-            for i in range(len(types)):
-                floatVal = float(vals[i])
-                value = Gf.Vec2d(floatVal, floatVal)
-                knot = Ts.KeyFrame(times[i], value, typeMap[types[i]])
-                vecSpline.SetKeyFrame(knot)
-
-            # Build vector-valued expected values.
-            vecExpB = [Gf.Vec2d(v, v) for v in expB]
-            vecExpL = [Gf.Vec2d(v, v) for v in expL]
-            vecExpR = [Gf.Vec2d(v, v) for v in expR]
-
-            # Test with vector values.
-            self._DoTestWithValueTypeVariation(
-                f"{case} (vectors)",
-                vecSpline, times, betTimes, vecExpB, vecExpL, vecExpR,
-                single, dual)
-
-    def _DoTestWithValueTypeVariation(
-            self, case, spline, times, betTimes, expB, expL, expR,
-            single, dual):
+        errors = 0
 
         if single:
             # Test with the original spline.
-            self._DoTestWithDualityVariation(
+            errors += self._DoTestWithDualityVariation(
                 case,
-                spline, times, betTimes, expB, expL, expR)
+                spline, times, betTimes, expB, expP, expK)
 
         if dual:
             # Modify the spline to have dual-valued knots.
             # Give each segment an offset of 1 unit from previous.
             # This shouldn't affect derivatives at all.
             for i in range(len(times)):
-                knot = spline[times[i]]
-                knot.isDualValued = True
-                values = list(knot.value)
-                if type(values[0]) is float:
-                    values[0] += i
-                    values[1] += i + 1
-                else:
-                    values[0][0] += i
-                    values[0][1] += i
-                    values[1][0] += i + 1
-                    values[1][1] += i + 1
-                knot.value = values
-                spline.SetKeyFrame(knot)
+                knot = spline.GetKnots()[times[i]]
+                baseValue = knot.GetValue() + i
+                knot.SetPreValue(baseValue)
+                knot.SetValue(baseValue + 1)
+                spline.SetKnot(knot)
+
+            if grapher:
+                data = evaluator.SplineToSplineData(spline)
+                sampleTimes = Ts.TsTest_SampleTimes(data)
+                sampleTimes.AddStandardTimes()
+                samples = evaluator.Eval(data, sampleTimes)
+                grapher.AddSpline(f"{case} (dual)", data, samples)
 
             # Test with the dual-valued spline.
-            self._DoTestWithDualityVariation(
+            errors += self._DoTestWithDualityVariation(
                 f"{case} (dual-valued)",
-                spline, times, betTimes, expB, expL, expR)
+                spline, times, betTimes, expB, expP, expK)
+
+        if grapher:
+            grapher.Write(f"{case}.png")
+
+        self.assertEqual(errors, 0)
 
     def _DoTestWithDualityVariation(
-            self, case, spline, times, betTimes, expB, expL, expR):
+            self, case, spline, times, betTimes, expB, expP, expK):
 
         print()
         print(f"{case}:")
 
-        # Compare results between knots, and at left and right sides of knots.
+        # Compare results between knots, pre-values at knots, and at knots.
         errors = 0
         errors += self._DoTestWithPositionVariation(
-            "Betweens", spline, betTimes, expB, Ts.Right)
+            "Betweens", spline, betTimes, expB, pre = False)
         errors += self._DoTestWithPositionVariation(
-            "Lefts", spline, times, expL, Ts.Left)
+            "Pre-Knots", spline, times, expP, pre = True)
         errors += self._DoTestWithPositionVariation(
-            "Rights", spline, times, expR, Ts.Right)
+            "Knots", spline, times, expK, pre = False)
 
-        self.assertEqual(errors, 0)
+        return errors
 
     def _DoTestWithPositionVariation(
-            self, title, spline, times, expList, side):
+            self, title, spline, times, expList, pre):
 
         DERIV_TOLERANCE = 1e-2
         SAMPLE_DISTANCE = 1e-3
@@ -208,29 +199,24 @@ class TsTest_Derivatives(unittest.TestCase):
             expected = expList[i]
 
             # Evaluate derivative.
-            deriv = spline.EvalDerivative(time, side)
+            if pre:
+                deriv = spline.EvalPreDerivative(time)
+            else:
+                deriv = spline.EvalDerivative(time)
 
             # Evaluate nearby predicted and actual values.
-            if side == Ts.Left:
-                valueAtTime = spline.Eval(time, Ts.Left)
+            if pre:
+                valueAtTime = spline.EvalPreValue(time)
                 valueNearby = spline.Eval(time - SAMPLE_DISTANCE)
                 predicted = valueAtTime - deriv * SAMPLE_DISTANCE
             else:
-                valueAtTime = spline.Eval(time, Ts.Right)
+                valueAtTime = spline.Eval(time)
                 valueNearby = spline.Eval(time + SAMPLE_DISTANCE)
                 predicted = valueAtTime + deriv * SAMPLE_DISTANCE
 
             # Compute errors from expected values.
-            if type(deriv) is float:
-                diff = deriv - expected
-                sampleDiff = predicted - valueNearby
-            else:
-                diff = max(
-                    deriv[0] - expected[0],
-                    deriv[1] - expected[1])
-                sampleDiff = max(
-                    predicted[0] - valueNearby[0],
-                    predicted[1] - valueNearby[1])
+            diff = deriv - expected
+            sampleDiff = predicted - valueNearby
 
             # Check error tolerances.
             if abs(diff) < DERIV_TOLERANCE \
@@ -253,39 +239,21 @@ class TsTest_Derivatives(unittest.TestCase):
 
     def test_Main(self):
         """
-        Exercise every combination of successive knot types.
+        Exercise every segment type.
         """
-        # Fit-in-80-column madness
-        nbl = "-bl"
-        bb = "bb"
-        nbh = "-bh"
-        lb = "lb"
-
-        # H = held, L = linear, B = bezier
-        # expB = expected between; expL = expected left; expR = expected right
+        # H = held, L = linear, C = curve (Bezier)
+        # expB = expected between; expP = expected pre; expK = expected at knot
         extrap = "H"
-        types = [ "H", "H", "L", "L", "B", "B", "H", "B", "L", "B", "L", "H" ]
-        times = [  0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11  ]
-        vals =  [  0,   1,   0,   1,   0,   1,   0,   1,   0,   1,   0,   1  ]
-        expB =  [0,  0,   0,   1,  nbl,  bb, nbh,  0,  nbl,  lb, nbl,  1,   0]
-        expL =  [  0,   0,   0,   1,  .3,  .3,   0,   0,  -1,  .3,  -1,   1  ]
-        expR =  [  0,   0,   1,  -1,  .3,  .3,   0,  .3,   1,  .3,   1,   0  ]
+        interps = [ "H", "L", "C", "C" ]
+        times =   [  0,   1,   2,   3  ]
+        vals =    [  5,   6,   7,   8  ]
+        expB =    [0,  0,   1,  "bb", 0]
+        expP =    [  0,   0,   1,  "s" ]
+        expK =    [  0,   1,  "s",  0  ]
 
-        self._DoTest("Main", extrap, types, times, vals, expB, expL, expR)
-
-    def test_Vectors(self):
-        """
-        Exercise every combination of successive knot types for vector values.
-        """
-        extrap = "H"
-        types = [ "H", "H", "L", "L", "H" ]
-        times = [  0,   1,   2,   3,   4  ]
-        vals =  [  0,   1,   0,   1,   0  ]
-        expB =  [0,  0,   0,   1,   -1,  0]
-        expL =  [  0,   0,   0,   1,  -1  ]
-        expR =  [  0,   0,   1,  -1,   0  ]
-
-        self._DoTest("Vectors", extrap, types, times, vals, expB, expL, expR)
+        self._DoTest(
+            "Main", extrap, interps, times, vals, expB, expP, expK,
+            graph = True)
 
     def test_Empty(self):
         """
@@ -294,150 +262,133 @@ class TsTest_Derivatives(unittest.TestCase):
         spline = Ts.Spline()
         self.assertEqual(spline.EvalDerivative(0), None)
 
-    def test_StringValued(self):
-        """
-        Verify that a string-valued spline has no meaningful derivatives.
-        """
-        spline = Ts.Spline()
-        spline.SetKeyFrame(Ts.KeyFrame(0, "welcome"))
-        spline.SetKeyFrame(Ts.KeyFrame(1, "dandelions"))
-        self.assertEqual(spline.EvalDerivative(-1), "")
-        self.assertEqual(spline.EvalDerivative(0, Ts.Left), "")
-        self.assertEqual(spline.EvalDerivative(0, Ts.Right), "")
-        self.assertEqual(spline.EvalDerivative(.5), "")
-        self.assertEqual(spline.EvalDerivative(1, Ts.Left), "")
-        self.assertEqual(spline.EvalDerivative(1, Ts.Right), "")
-        self.assertEqual(spline.EvalDerivative(2), "")
-
-    def test_QuatValued(self):
-        """
-        Verify that a quaternion-valued spline has no meaningful derivatives.
-        """
-        spline = Ts.Spline()
-        spline.SetKeyFrame(Ts.KeyFrame(0, Gf.Quatd(1, 2, 3, 4)))
-        spline.SetKeyFrame(Ts.KeyFrame(1, Gf.Quatd(5, 6, 7, 8)))
-        self.assertEqual(spline.EvalDerivative(-1), Gf.Quatd())
-        self.assertEqual(spline.EvalDerivative(0, Ts.Left), Gf.Quatd())
-        self.assertEqual(spline.EvalDerivative(0, Ts.Right), Gf.Quatd())
-        self.assertEqual(spline.EvalDerivative(.5), Gf.Quatd())
-        self.assertEqual(spline.EvalDerivative(1, Ts.Left), Gf.Quatd())
-        self.assertEqual(spline.EvalDerivative(1, Ts.Right), Gf.Quatd())
-        self.assertEqual(spline.EvalDerivative(2), Gf.Quatd())
-
     def test_Single(self):
         """
         Test derivatives of single-knot splines.  These splines are flat, except
-        in the case of a Bezier knot and linear extrapolation.
+        when there is sloped extrapolation.
         """
+        interps = ["C"]
         times = [1]
         vals = [5]
         expB = [0, 0]
-        expL = [0]
-        expR = [0]
+        expP = [0]
+        expK = [0]
 
         extrap = "H"
-        types = ["H"]
-        self._DoTest("Single, held knot, held extrap",
-                     extrap, types, times, vals, expB, expL, expR)
+        self._DoTest("Single, held extrap",
+                     extrap, interps, times, vals, expB, expP, expK)
 
         extrap = "L"
-        types = ["H"]
-        self._DoTest("Single, held knot, linear extrap",
-                     extrap, types, times, vals, expB, expL, expR)
+        self._DoTest("Single, linear extrap",
+                     extrap, interps, times, vals, expB, expP, expK)
 
-        extrap = "H"
-        types = ["L"]
-        self._DoTest("Single, linear knot, held extrap",
-                     extrap, types, times, vals, expB, expL, expR)
+        extrap = "LR"
+        self._DoTest("Single, loop-repeat extrap",
+                     extrap, interps, times, vals, expB, expP, expK)
 
-        extrap = "L"
-        types = ["L"]
-        self._DoTest("Single, linear knot, linear extrap",
-                     extrap, types, times, vals, expB, expL, expR)
+        extrap = "LX"
+        self._DoTest("Single, loop-reset extrap",
+                     extrap, interps, times, vals, expB, expP, expK)
 
-        extrap = "H"
-        types = ["B"]
-        self._DoTest("Single, Bezier knot, held extrap",
-                     extrap, types, times, vals, expB, expL, expR)
+        extrap = "LO"
+        self._DoTest("Single, loop-oscillate extrap",
+                     extrap, interps, times, vals, expB, expP, expK)
 
-        extrap = "L"
-        types = ["B"]
-        expB = ["b", "b"]
-        expL = ["b"]
-        expR = ["b"]
-        self._DoTest("Single, Bezier knot, linear extrap",
-                     extrap, types, times, vals, expB, expL, expR)
+        extrap = "S"
+        expB = ["e", "e"]
+        expP = ["e"]
+        expK = ["e"]
+        self._DoTest("Single, sloped extrap",
+                     extrap, interps, times, vals, expB, expP, expK)
 
     def test_Extrapolation(self):
         """
         Test derivatives in exrapolation regions.  This includes regions outside
         all knots, and also on the outward-facing sides of edge knots.  Test all
-        combinations of knot type and extrapolation mode.
+        extrapolation modes, and special cases for linear extrapolation
+        (final segment interpolation mode, dual-valued knots).
         """
         times = [0, 1]
         vals = [0, 1]
 
         extrap = "H"
-        types = ["H", "H"]
-        expB = [0, 0, 0]
-        expL = [0, 0]
-        expR = [0, 0]
-        self._DoTest("Extrapolation, held knots, held extrap",
-                     extrap, types, times, vals, expB, expL, expR)
-
-        extrap = "L"
-        types = ["H", "H"]
-        expB = [0, 0, 0]
-        expL = [0, 0]
-        expR = [0, 0]
-        self._DoTest("Extrapolation, held knots, linear extrap",
-                     extrap, types, times, vals, expB, expL, expR)
-
-        extrap = "H"
-        types = ["L", "L"]
+        interps = ["L", "L"]
         expB = [0, 1, 0]
-        expL = [0, 1]
-        expR = [1, 0]
-        self._DoTest("Extrapolation, linear knots, held extrap",
-                     extrap, types, times, vals, expB, expL, expR)
+        expP = [0, 1]
+        expK = [1, 0]
+        self._DoTest("Extrapolation, linear interp, held extrap",
+                     extrap, interps, times, vals, expB, expP, expK)
 
         extrap = "L"
-        types = ["L", "L"]
+        interps = ["H", "H"]
+        expB = [0, 0, 0]
+        expP = [0, 0]
+        expK = [0, 0]
+        self._DoTest("Extrapolation, held interp, linear extrap",
+                     extrap, interps, times, vals, expB, expP, expK)
+
+        extrap = "L"
+        interps = ["L", "L"]
         expB = [1, 1, 1]
-        expL = [1, 1]
-        expR = [1, 1]
-        self._DoTest("Extrapolation, linear knots, linear extrap",
-                     extrap, types, times, vals, expB, expL, expR,
+        expP = [1, 1]
+        expK = [1, 1]
+        self._DoTest("Extrapolation, linear interp, linear extrap",
+                     extrap, interps, times, vals, expB, expP, expK,
                      single = True, dual = False)
 
-        # Linear edge knots, with linear extrapolation, behave differently when
-        # there are dual values.  The determination of an extrapolation slope
-        # from the line between the last two knots is abandoned because the dual
-        # values make it ambiguous.  Held extrapolation is used instead.
         extrap = "L"
-        types = ["L", "L"]
+        interps = ["C", "C"]
+        expB = ["s", "bb", "s"]
+        expP = ["s", "s"]
+        expK = ["s", "s"]
+        self._DoTest("Extrapolation, Bezier interp, linear extrap",
+                     extrap, interps, times, vals, expB, expP, expK,
+                     single = True, dual = False)
+
+        # Linear extrapolation behaves differently when there are dual values at
+        # first/last knots.  The determination of an extrapolation slope is
+        # abandoned because the dual values make it ambiguous.  Held
+        # extrapolation is used instead.
+        extrap = "L"
+        interps = ["L", "L"]
         expB = [0, 1, 0]
-        expL = [0, 1]
-        expR = [1, 0]
-        self._DoTest("Extrapolation, linear knots, linear extrap",
-                     extrap, types, times, vals, expB, expL, expR,
+        expP = [0, 1]
+        expK = [1, 0]
+        self._DoTest("Extrapolation, linear interp, linear extrap",
+                     extrap, interps, times, vals, expB, expP, expK,
                      single = False, dual = True)
 
-        extrap = "H"
-        types = ["B", "B"]
-        expB = [0, "bb", 0]
-        expL = [0, "b"]
-        expR = ["b", 0]
-        self._DoTest("Extrapolation, Bezier knots, held extrap",
-                     extrap, types, times, vals, expB, expL, expR)
+        extrap = "S"
+        interps = ["H", "H"]
+        expB = ["e", 0, "e"]
+        expP = ["e", 0]
+        expK = [0, "e"]
+        self._DoTest("Extrapolation, held interp, sloped extrap",
+                     extrap, interps, times, vals, expB, expP, expK)
 
-        extrap = "L"
-        types = ["B", "B"]
-        expB = ["b", "bb", "b"]
-        expL = ["b", "b"]
-        expR = ["b", "b"]
-        self._DoTest("Extrapolation, Bezier knots, linear extrap",
-                     extrap, types, times, vals, expB, expL, expR)
+        extrap = "LR"
+        interps = ["C", "C"]
+        expB = ["s", "bb", "s"]
+        expP = ["s", "s"]
+        expK = ["s", "s"]
+        self._DoTest("Extrapolation, Bezier interp, loop-repeat extrap",
+                     extrap, interps, times, vals, expB, expP, expK)
+
+        extrap = "LX"
+        interps = ["C", "C"]
+        expB = ["s", "bb", "s"]
+        expP = ["s", "s"]
+        expK = ["s", "s"]
+        self._DoTest("Extrapolation, Bezier interp, loop-reset extrap",
+                     extrap, interps, times, vals, expB, expP, expK)
+
+        extrap = "LO"
+        interps = ["C", "C"]
+        expB = ["-s", "bb", "s"]
+        expP = ["-s", "s"]
+        expK = ["s", "-s"]
+        self._DoTest("Extrapolation, Bezier interp, loop-oscillate extrap",
+                     extrap, interps, times, vals, expB, expP, expK)
 
 
 if __name__ == "__main__":

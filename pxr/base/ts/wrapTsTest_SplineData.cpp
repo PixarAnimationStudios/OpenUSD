@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -14,7 +14,9 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/diagnostic.h"
 
-#include <boost/python.hpp>
+#include <boost/python/class.hpp>
+#include <boost/python/make_constructor.hpp>
+#include <boost/python/operators.hpp>
 #include <sstream>
 #include <string>
 #include <cstdio>
@@ -31,9 +33,13 @@ using This = TsTest_SplineData;
     {                                                             \
         extract<type> extractor(value);                           \
         if (extractor.check())                                    \
+        {                                                         \
             result->member = extractor();                         \
+        }                                                         \
         else                                                      \
+        {                                                         \
             TF_CODING_ERROR("Unexpected type for " #member);      \
+        }                                                         \
     }
 
 #define SET_METHOD(result, type, method, value)                   \
@@ -41,9 +47,13 @@ using This = TsTest_SplineData;
     {                                                             \
         extract<type> extractor(value);                           \
         if (extractor.check())                                    \
+        {                                                         \
             result->method(extractor());                          \
+        }                                                         \
         else                                                      \
+        {                                                         \
             TF_CODING_ERROR("Unexpected type for " #method);      \
+        }                                                         \
     }
 
 // Return a full-precision python repr for a double value.
@@ -59,9 +69,9 @@ _HexFloatRepr(const double num)
 
 static This::Knot*
 _ConstructKnot(
-    const object &timeIn,
-    const object &nextSegInterpMethodIn,
-    const object &valueIn,
+    const double timeIn,
+    const This::InterpMethod nextSegInterpMethodIn,
+    const double valueIn,
     const object &preValueIn,
     const object &preSlopeIn,
     const object &postSlopeIn,
@@ -72,10 +82,10 @@ _ConstructKnot(
 {
     This::Knot *result = new This::Knot();
 
-    SET_MEMBER(result, double, time, timeIn);
-    SET_MEMBER(result, This::InterpMethod,
-        nextSegInterpMethod, nextSegInterpMethodIn);
-    SET_MEMBER(result, double, value, valueIn);
+    result->time = timeIn;
+    result->nextSegInterpMethod = nextSegInterpMethodIn;
+    result->value = valueIn;
+
     SET_MEMBER(result, double, preValue, preValueIn);
     SET_MEMBER(result, double, preSlope, preSlopeIn);
     SET_MEMBER(result, double, postSlope, postSlopeIn);
@@ -85,7 +95,9 @@ _ConstructKnot(
     SET_MEMBER(result, bool, postAuto, postAutoIn);
 
     if (!preValueIn.is_none())
+    {
         result->isDualValued = true;
+    }
 
     return result;
 }
@@ -107,7 +119,9 @@ _KnotRepr(const This::Knot &kf)
            << ", postAuto = " << (kf.postAuto ? "True" : "False");
 
     if (kf.isDualValued)
+    {
         result << ", preValue = " << _HexFloatRepr(kf.preValue);
+    }
 
     result << ")";
 
@@ -116,22 +130,21 @@ _KnotRepr(const This::Knot &kf)
 
 static This::InnerLoopParams*
 _ConstructInnerLoopParams(
-    const object &enabledIn,
+    const bool enabledIn,
     const object &protoStartIn,
     const object &protoEndIn,
-    const object &preLoopStartIn,
-    const object &postLoopEndIn,
-    const object &closedEndIn,
+    const object &numPreLoopsIn,
+    const object &numPostLoopsIn,
     const object &valueOffsetIn)
 {
     This::InnerLoopParams *result = new This::InnerLoopParams();
 
-    SET_MEMBER(result, bool, enabled, enabledIn);
+    result->enabled = enabledIn;
+
     SET_MEMBER(result, double, protoStart, protoStartIn);
     SET_MEMBER(result, double, protoEnd, protoEndIn);
-    SET_MEMBER(result, double, preLoopStart, preLoopStartIn);
-    SET_MEMBER(result, double, postLoopEnd, postLoopEndIn);
-    SET_MEMBER(result, bool, closedEnd, closedEndIn);
+    SET_MEMBER(result, int, numPreLoops, numPreLoopsIn);
+    SET_MEMBER(result, int, numPostLoops, numPostLoopsIn);
     SET_MEMBER(result, double, valueOffset, valueOffsetIn);
 
     return result;
@@ -146,9 +159,8 @@ _InnerLoopParamsRepr(const This::InnerLoopParams &lp)
            << "enabled = " << (lp.enabled ? "True" : "False")
            << ", protoStart = " << _HexFloatRepr(lp.protoStart)
            << ", protoEnd = " << _HexFloatRepr(lp.protoEnd)
-           << ", preLoopStart = " << _HexFloatRepr(lp.preLoopStart)
-           << ", postLoopEnd = " << _HexFloatRepr(lp.postLoopEnd)
-           << ", closedEnd = " << (lp.closedEnd ? "True" : "False")
+           << ", numPreLoops = " << lp.numPreLoops
+           << ", numPostLoops = " << lp.numPostLoops
            << ", valueOffset = " << _HexFloatRepr(lp.valueOffset)
            << ")";
 
@@ -179,14 +191,39 @@ _ExtrapolationRepr(const This::Extrapolation &e)
            << "method = Ts.TsTest_SplineData." << TfEnum::GetName(e.method);
 
     if (e.method == This::ExtrapSloped)
+    {
         result << ", slope = " << _HexFloatRepr(e.slope);
+    }
     else if (e.method == This::ExtrapLoop)
+    {
         result << ", loopMode = Ts.TsTest_SplineData."
                << TfEnum::GetName(e.loopMode);
+    }
 
     result << ")";
 
     return result.str();
+}
+
+static void _SetKnots(
+    This &data,
+    const object &knots)
+{
+    // Convert list-of-knots to std::set-of-knots.
+    if (!knots.is_none())
+    {
+        extract<std::vector<This::Knot>> extractor(knots);
+        if (extractor.check())
+        {
+            std::vector<This::Knot> knotVec = extractor();
+            This::KnotSet knotSet(knotVec.begin(), knotVec.end());
+            data.SetKnots(knotSet);
+        }
+        else
+        {
+            TF_CODING_ERROR("Unexpected type for SetKnots");
+        }
+    }
 }
 
 static This*
@@ -201,7 +238,9 @@ _ConstructSplineData(
 
     result->SetIsHermite(isHermite);
 
-    SET_METHOD(result, This::KnotSet, SetKnots, knots);
+    // Convert list-of-knots to std::set-of-knots.
+    _SetKnots(*result, knots);
+
     SET_METHOD(result, This::InnerLoopParams, SetInnerLoopParams, loopParams);
     SET_METHOD(result, This::Extrapolation, SetPreExtrapolation, preExtrap);
     SET_METHOD(result, This::Extrapolation, SetPostExtrapolation, postExtrap);
@@ -228,6 +267,8 @@ _SplineDataRepr(const This &data)
         for (const This::Knot &kf : knots)
             kfStrs.push_back(_KnotRepr(kf));
 
+        // Expose knots as a list, even though in C++ they're a std::set.
+        // We want them sorted, which Python sets are not.
         result << ", knots = [" << TfStringJoin(kfStrs, ", ") << "]";
     }
 
@@ -240,6 +281,12 @@ _SplineDataRepr(const This &data)
     result << ")";
 
     return result.str();
+}
+
+static std::string
+_SplineDataDebugDescription(const This &data)
+{
+    return data.GetDebugDescription();
 }
 
 void wrapTsTest_SplineData()
@@ -260,9 +307,9 @@ void wrapTsTest_SplineData()
         .def("__init__",
             make_constructor(
                 &_ConstructKnot, default_call_policies(), (
-                    arg("time") = object(),
-                    arg("nextSegInterpMethod") = object(),
-                    arg("value") = object(),
+                    arg("time") = 0.0,
+                    arg("nextSegInterpMethod") = This::InterpHeld,
+                    arg("value") = 0.0,
                     arg("preValue") = object(),
                     arg("preSlope") = object(),
                     arg("postSlope") = object(),
@@ -294,12 +341,11 @@ void wrapTsTest_SplineData()
         .def("__init__",
             make_constructor(
                 &_ConstructInnerLoopParams, default_call_policies(), (
-                    arg("enabled") = object(),
+                    arg("enabled") = false,
                     arg("protoStart") = object(),
                     arg("protoEnd") = object(),
-                    arg("preLoopStart") = object(),
-                    arg("postLoopEnd") = object(),
-                    arg("closedEnd") = object(),
+                    arg("numPreLoops") = object(),
+                    arg("numPostLoops") = object(),
                     arg("valueOffset") = object()
                 )))
         .def("__repr__", &_InnerLoopParamsRepr)
@@ -308,9 +354,8 @@ void wrapTsTest_SplineData()
         .def_readwrite("enabled", &This::InnerLoopParams::enabled)
         .def_readwrite("protoStart", &This::InnerLoopParams::protoStart)
         .def_readwrite("protoEnd", &This::InnerLoopParams::protoEnd)
-        .def_readwrite("preLoopStart", &This::InnerLoopParams::preLoopStart)
-        .def_readwrite("postLoopEnd", &This::InnerLoopParams::postLoopEnd)
-        .def_readwrite("closedEnd", &This::InnerLoopParams::closedEnd)
+        .def_readwrite("numPreLoops", &This::InnerLoopParams::numPreLoops)
+        .def_readwrite("numPostLoops", &This::InnerLoopParams::numPostLoops)
         .def_readwrite("valueOffset", &This::InnerLoopParams::valueOffset)
         .def("IsValid", &This::InnerLoopParams::IsValid)
         ;
@@ -338,6 +383,7 @@ void wrapTsTest_SplineData()
     // ...then the defs, which must occur after the nested type wrappings.
     classObj
 
+        .def(init<const This&>())
         .def("__init__",
             make_constructor(
                 &_ConstructSplineData, default_call_policies(), (
@@ -349,6 +395,7 @@ void wrapTsTest_SplineData()
                 )))
 
         .def("__repr__", &_SplineDataRepr)
+        .def("__str__", &_SplineDataDebugDescription)
 
         .def(self == self)
         .def(self != self)
@@ -359,7 +406,7 @@ void wrapTsTest_SplineData()
         .def("AddKnot", &This::AddKnot,
             (arg("knot")))
 
-        .def("SetKnots", &This::SetKnots,
+        .def("SetKnots", &_SetKnots,
             (arg("knots")))
 
         .def("SetPreExtrapolation", &This::SetPreExtrapolation,
@@ -387,7 +434,8 @@ void wrapTsTest_SplineData()
 
         .def("GetRequiredFeatures", &This::GetRequiredFeatures)
 
-        .def("GetDebugDescription", &This::GetDebugDescription)
+        .def("GetDebugDescription", &This::GetDebugDescription,
+            (arg("precision") = 6))
 
         ;
 }

@@ -11,6 +11,7 @@ pxr_library(usd
         plug
         tf
         trace
+        ts
         vt
         work
         ${Boost_PYTHON_LIBRARY}
@@ -260,6 +261,7 @@ pxr_test_scripts(
     testenv/testUsdSchemaRegistryThreadedInit.py
     testenv/testUsdSchemaVersioning.py
     testenv/testUsdSpecializes.py
+    testenv/testUsdSplines.py
     testenv/testUsdStage.py
     testenv/testUsdStageCache.py
     testenv/testUsdStageDefaultResolver.py
@@ -1139,6 +1141,12 @@ pxr_register_test(testUsdResolveTargetPy
 pxr_register_test(testUsdSpecializes
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSpecializes"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSplines
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSplines"
     EXPECTED_RETURN_CODE 0
 )
 

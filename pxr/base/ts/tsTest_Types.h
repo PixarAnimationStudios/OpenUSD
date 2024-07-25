@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -15,16 +15,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct TS_API TsTest_Sample
+class TsTest_Sample
 {
+public:
     double time = 0;
     double value = 0;
 
 public:
-    TsTest_Sample();
-    TsTest_Sample(double time, double value);
-    TsTest_Sample(const TsTest_Sample &other);
-    TsTest_Sample& operator=(const TsTest_Sample &other);
+    TsTest_Sample() = default;
+
+    TsTest_Sample(double timeIn, double valueIn)
+        : time(timeIn), value(valueIn) {}
 };
 
 using TsTest_SampleVec = std::vector<TsTest_Sample>;

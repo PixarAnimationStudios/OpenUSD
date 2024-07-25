@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -9,7 +9,8 @@
 #include "pxr/base/ts/tsTest_SampleBezier.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python.hpp>
+#include <boost/python/def.hpp>
+#include <boost/python/return_value_policy.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
