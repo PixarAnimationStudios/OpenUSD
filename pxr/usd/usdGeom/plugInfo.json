@@ -390,6 +390,14 @@
                         ], 
                         "schemaKind": "abstractTyped"
                     }
+                }, 
+                "Validators": {
+                    "StageMetadataChecker": {
+                        "doc": "All stages must declare their 'upAxis' and 'metersPerUnit'."
+                    }, 
+                    "keywords": [
+                        "UsdGeomValidators"
+                    ]
                 }
             }, 
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@", 
