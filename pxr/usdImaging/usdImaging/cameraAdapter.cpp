@@ -260,10 +260,12 @@ UsdImagingCameraAdapter::Get(UsdPrim const& prim,
         return vShutterClose;
     } else if (key == HdCameraTokens->exposure) {
         // we hijack the "exposure" token here in order to pass through the calculated
-        // exposure and make it backwards-compatible
+        // exposure and make it backwards-compatible.
+        // existing clients will be expected it as logarithmic exposure, so we need
+        // to convert from a scalar multiplier to logarithmic exposure here.
         // To get the original exposure attribute value, see "exposureCompensation"
         // below
-        return VtValue(cam.GetExposureScale(time));
+        return VtValue(log2(cam.GetExposureScale(time)));
     } else if (key == HdCameraTokens->exposureTime) {
         VtValue vExposureTime;
         cam.GetExposureAttr().Get(&vExposureTime, time); // conversion n/a
