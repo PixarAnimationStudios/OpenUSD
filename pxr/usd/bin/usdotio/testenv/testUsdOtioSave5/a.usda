@@ -1,0 +1,532 @@
+#usda 1.0
+
+def Xform "hello"
+{
+    def Sphere "world"
+    {
+    }
+}
+
+def OtioTimeline "otio"
+{
+    uniform string metadata = "{}"
+    uniform string name = "SingleClip"
+    uniform string OTIO_SCHEMA = "Timeline.1"
+
+    def OtioStack "Stack"
+    {
+        bool enabled = 1
+        uniform string metadata = "{}"
+        uniform string name = "Stack"
+        uniform string OTIO_SCHEMA = "Stack.1"
+
+        def OtioTrack "Video_1"
+        {
+            bool enabled = 1
+            uniform string kind = "Video"
+            uniform string metadata = "{}"
+            uniform string name = "Video"
+            uniform string OTIO_SCHEMA = "Track.1"
+
+            def OtioMarker "marker_1"
+            {
+                uniform string color = "ORANGE"
+                uniform string metadata = "{}"
+                uniform string name = "Marker 4"
+                uniform string OTIO_SCHEMA = "Marker.2"
+
+                def OtioTimeRange "marked_range"
+                {
+                    uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                    def OtioRationalTime "start_time"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 30
+                        double value = 0
+                    }
+
+                    def OtioRationalTime "duration"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 30
+                        double value = 90
+                    }
+                }
+            }
+
+            def OtioClip "Clip_1"
+            {
+                uniform string active_media_reference_key = "DEFAULT_MEDIA"
+                bool enabled = 1
+                uniform string metadata = "{}"
+                uniform string name = "BART_2021-02-07"
+                uniform string OTIO_SCHEMA = "Clip.2"
+
+                def OtioTimeRange "source_range"
+                {
+                    uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                    def OtioRationalTime "start_time"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 30
+                        double value = 90
+                    }
+
+                    def OtioRationalTime "duration"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 30
+                        double value = 30
+                    }
+                }
+
+                def OtioMarker "marker_1"
+                {
+                    uniform string color = "RED"
+                    uniform string metadata = "{}"
+                    uniform string name = "Marker 0"
+                    uniform string OTIO_SCHEMA = "Marker.2"
+
+                    def OtioTimeRange "marked_range"
+                    {
+                        uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                        def OtioRationalTime "start_time"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 30
+                            double value = 10
+                        }
+
+                        def OtioRationalTime "duration"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 30
+                            double value = 10
+                        }
+                    }
+                }
+
+                def OtioMarker "marker_2"
+                {
+                    uniform string color = "GREEN"
+                    uniform string metadata = "{}"
+                    uniform string name = "Marker 1"
+                    uniform string OTIO_SCHEMA = "Marker.2"
+
+                    def OtioTimeRange "marked_range"
+                    {
+                        uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                        def OtioRationalTime "start_time"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 30
+                            double value = 0
+                        }
+
+                        def OtioRationalTime "duration"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 30
+                            double value = 15
+                        }
+                    }
+                }
+
+                def OtioMarker "marker_3"
+                {
+                    uniform string color = "BLUE"
+                    uniform string metadata = "{}"
+                    uniform string name = "Marker 2"
+                    uniform string OTIO_SCHEMA = "Marker.2"
+
+                    def OtioTimeRange "marked_range"
+                    {
+                        uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                        def OtioRationalTime "start_time"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 30
+                            double value = 15
+                        }
+
+                        def OtioRationalTime "duration"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 30
+                            double value = 15
+                        }
+                    }
+                }
+
+                def OtioExternalReference "external_reference"
+                {
+                    uniform string metadata = "{}"
+                    uniform string name = ""
+                    uniform string OTIO_SCHEMA = "ExternalReference.1"
+                    uniform string target_url = "BART_2021-02-07.m4v"
+
+                    def OtioTimeRange "available_range"
+                    {
+                        uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                        def OtioRationalTime "start_time"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 30
+                            double value = 0
+                        }
+
+                        def OtioRationalTime "duration"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 30
+                            double value = 704
+                        }
+                    }
+                }
+            }
+
+            def OtioGap "Gap_1"
+            {
+                bool enabled = 1
+                uniform string metadata = "{}"
+                uniform string name = "Gap"
+                uniform string OTIO_SCHEMA = "Gap.1"
+
+                def OtioTimeRange "source_range"
+                {
+                    uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                    def OtioRationalTime "start_time"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 30
+                        double value = 0
+                    }
+
+                    def OtioRationalTime "duration"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 30
+                        double value = 30
+                    }
+                }
+
+                def OtioMarker "marker_1"
+                {
+                    uniform string color = "YELLOW"
+                    uniform string metadata = "{}"
+                    uniform string name = "Marker 3"
+                    uniform string OTIO_SCHEMA = "Marker.2"
+
+                    def OtioTimeRange "marked_range"
+                    {
+                        uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                        def OtioRationalTime "start_time"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 30
+                            double value = 0
+                        }
+
+                        def OtioRationalTime "duration"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 30
+                            double value = 30
+                        }
+                    }
+                }
+            }
+
+            def OtioClip "Clip_2"
+            {
+                uniform string active_media_reference_key = "DEFAULT_MEDIA"
+                bool enabled = 1
+                uniform string metadata = "{}"
+                uniform string name = "BART_2021-02-07"
+                uniform string OTIO_SCHEMA = "Clip.2"
+
+                def OtioTimeRange "source_range"
+                {
+                    uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                    def OtioRationalTime "start_time"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 30
+                        double value = 150
+                    }
+
+                    def OtioRationalTime "duration"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 30
+                        double value = 30
+                    }
+                }
+
+                def OtioExternalReference "external_reference"
+                {
+                    uniform string metadata = "{}"
+                    uniform string name = ""
+                    uniform string OTIO_SCHEMA = "ExternalReference.1"
+                    uniform string target_url = "BART_2021-02-07.m4v"
+
+                    def OtioTimeRange "available_range"
+                    {
+                        uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                        def OtioRationalTime "start_time"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 30
+                            double value = 0
+                        }
+
+                        def OtioRationalTime "duration"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 30
+                            double value = 704
+                        }
+                    }
+                }
+            }
+        }
+
+        def OtioTrack "Audio_1"
+        {
+            bool enabled = 1
+            uniform string kind = "Audio"
+            uniform string metadata = "{}"
+            uniform string name = "Audio"
+            uniform string OTIO_SCHEMA = "Track.1"
+
+            def OtioMarker "marker_1"
+            {
+                uniform string color = "MAGENTA"
+                uniform string metadata = "{}"
+                uniform string name = "Marker 7"
+                uniform string OTIO_SCHEMA = "Marker.2"
+
+                def OtioTimeRange "marked_range"
+                {
+                    uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                    def OtioRationalTime "start_time"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 44100
+                        double value = 0
+                    }
+
+                    def OtioRationalTime "duration"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 44100
+                        double value = 132300
+                    }
+                }
+            }
+
+            def OtioClip "Clip_3"
+            {
+                uniform string active_media_reference_key = "DEFAULT_MEDIA"
+                bool enabled = 1
+                uniform string metadata = "{}"
+                uniform string name = "BART_2021-02-07"
+                uniform string OTIO_SCHEMA = "Clip.2"
+
+                def OtioTimeRange "source_range"
+                {
+                    uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                    def OtioRationalTime "start_time"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 44100
+                        double value = 132300
+                    }
+
+                    def OtioRationalTime "duration"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 44100
+                        double value = 44100
+                    }
+                }
+
+                def OtioExternalReference "external_reference"
+                {
+                    uniform string metadata = "{}"
+                    uniform string name = ""
+                    uniform string OTIO_SCHEMA = "ExternalReference.1"
+                    uniform string target_url = "BART_2021-02-07.m4v"
+
+                    def OtioTimeRange "available_range"
+                    {
+                        uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                        def OtioRationalTime "start_time"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 44100
+                            double value = 0
+                        }
+
+                        def OtioRationalTime "duration"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 44100
+                            double value = 1033131
+                        }
+                    }
+                }
+            }
+
+            def OtioGap "Gap_2"
+            {
+                bool enabled = 1
+                uniform string metadata = "{}"
+                uniform string name = "Gap"
+                uniform string OTIO_SCHEMA = "Gap.1"
+
+                def OtioTimeRange "source_range"
+                {
+                    uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                    def OtioRationalTime "start_time"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 44100
+                        double value = 0
+                    }
+
+                    def OtioRationalTime "duration"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 44100
+                        double value = 44100
+                    }
+                }
+
+                def OtioMarker "marker_1"
+                {
+                    uniform string color = "CYAN"
+                    uniform string metadata = "{}"
+                    uniform string name = "Marker 5"
+                    uniform string OTIO_SCHEMA = "Marker.2"
+
+                    def OtioTimeRange "marked_range"
+                    {
+                        uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                        def OtioRationalTime "start_time"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 44100
+                            double value = 0
+                        }
+
+                        def OtioRationalTime "duration"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 44100
+                            double value = 44100
+                        }
+                    }
+                }
+            }
+
+            def OtioClip "Clip_4"
+            {
+                uniform string active_media_reference_key = "DEFAULT_MEDIA"
+                bool enabled = 1
+                uniform string metadata = "{}"
+                uniform string name = "BART_2021-02-07"
+                uniform string OTIO_SCHEMA = "Clip.2"
+
+                def OtioTimeRange "source_range"
+                {
+                    uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                    def OtioRationalTime "start_time"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 44100
+                        double value = 132300
+                    }
+
+                    def OtioRationalTime "duration"
+                    {
+                        uniform string OTIO_SCHEMA = "RationalTime.1"
+                        double rate = 44100
+                        double value = 44100
+                    }
+                }
+
+                def OtioMarker "marker_1"
+                {
+                    uniform string color = "PURPLE"
+                    uniform string metadata = "{}"
+                    uniform string name = "Marker 6"
+                    uniform string OTIO_SCHEMA = "Marker.2"
+
+                    def OtioTimeRange "marked_range"
+                    {
+                        uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                        def OtioRationalTime "start_time"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 44100
+                            double value = 0
+                        }
+
+                        def OtioRationalTime "duration"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 44100
+                            double value = 44100
+                        }
+                    }
+                }
+
+                def OtioExternalReference "external_reference"
+                {
+                    uniform string metadata = "{}"
+                    uniform string name = ""
+                    uniform string OTIO_SCHEMA = "ExternalReference.1"
+                    uniform string target_url = "BART_2021-02-07.m4v"
+
+                    def OtioTimeRange "available_range"
+                    {
+                        uniform string OTIO_SCHEMA = "TimeRange.1"
+
+                        def OtioRationalTime "start_time"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 44100
+                            double value = 0
+                        }
+
+                        def OtioRationalTime "duration"
+                        {
+                            uniform string OTIO_SCHEMA = "RationalTime.1"
+                            double rate = 44100
+                            double value = 1033131
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
