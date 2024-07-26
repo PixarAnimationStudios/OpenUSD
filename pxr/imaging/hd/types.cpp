@@ -109,7 +109,8 @@ HdSamplerParameters::HdSamplerParameters()
 
 HdSamplerParameters::HdSamplerParameters(
     HdWrap wrapS, HdWrap wrapT, HdWrap wrapR, 
-    HdMinFilter minFilter, HdMagFilter magFilter, 
+    HdMinFilter minFilter, HdMagFilter magFilter,
+    uint32_t maxAnisotropy,
     HdBorderColor borderColor,
     bool enableCompare, HdCompareFunction compareFunction)
     : wrapS(wrapS)
@@ -117,6 +118,7 @@ HdSamplerParameters::HdSamplerParameters(
     , wrapR(wrapR)
     , minFilter(minFilter)
     , magFilter(magFilter)
+    , maxAnisotropy(maxAnisotropy)
     , borderColor(borderColor)
     , enableCompare(enableCompare)
     , compareFunction(compareFunction)
@@ -131,6 +133,7 @@ HdSamplerParameters::operator==(const HdSamplerParameters &other) const
         (wrapR == other.wrapR) &&
         (minFilter == other.minFilter) &&
         (magFilter == other.magFilter) &&
+        (maxAnisotropy == other.maxAnisotropy) &&
         (borderColor == other.borderColor) &&
         (enableCompare == other.enableCompare) &&
         (compareFunction == other.compareFunction);

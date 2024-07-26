@@ -270,6 +270,7 @@ _GetSamplerParameters(
                  nodeTypeId, parameters, sdrNode, nodePath),
              _ResolveMagSamplerParameter(
                  nodeTypeId, parameters, sdrNode, nodePath),
+             /*maxAnisotropy*/16,
              HdBorderColorTransparentBlack, 
              /*enableCompare*/false, 
              HdCmpFuncNever };

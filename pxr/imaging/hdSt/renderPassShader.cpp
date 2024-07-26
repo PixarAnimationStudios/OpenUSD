@@ -297,7 +297,7 @@ HdStRenderPassShader::UpdateAovInputTextures(
     for (const auto &namedTextureIdentifier : namedTextureIdentifiers) {
         static const HdSamplerParameters samplerParameters(
             HdWrapClamp, HdWrapClamp, HdWrapClamp,
-            HdMinFilterNearest, HdMagFilterNearest);
+            HdMinFilterNearest, HdMagFilterNearest, /*maxAnisotropy*/1);
 
         // Allocate texture handle for given identifier.
         HdStTextureHandleSharedPtr textureHandle =

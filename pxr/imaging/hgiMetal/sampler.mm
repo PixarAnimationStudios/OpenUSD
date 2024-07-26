@@ -38,8 +38,9 @@ HgiMetalSampler::HgiMetalSampler(HgiMetal *hgi, HgiSamplerDesc const& desc)
     if ((desc.minFilter != HgiSamplerFilterNearest ||
          desc.mipFilter == HgiMipFilterLinear) &&
          desc.magFilter != HgiSamplerFilterNearest) {
-        static const int maxAnisotropy = 16;
-        smpDesc.maxAnisotropy = maxAnisotropy;
+        static const uint32_t maxAnisotropy = 16;
+        smpDesc.maxAnisotropy = std::min({maxAnisotropy, desc.maxAnisotropy,
+            static_cast<uint32_t>(TfGetEnvSetting(HGI_MAX_ANISOTROPY))});
     }
     
     HGIMETAL_DEBUG_LABEL(smpDesc, _descriptor.debugName.c_str());

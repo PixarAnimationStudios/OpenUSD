@@ -104,6 +104,7 @@ _GetTextureHandleHash(
         samplerParams.wrapR,
         samplerParams.minFilter,
         samplerParams.magFilter,
+        samplerParams.maxAnisotropy,
         samplerParams.borderColor,
         samplerParams.enableCompare,
         samplerParams.compareFunction);

@@ -67,6 +67,7 @@ _ToHgiSamplerDesc(HdSamplerParameters const &samplerParameters)
         HdStHgiConversions::GetHgiSamplerAddressMode(samplerParameters.wrapT);
     desc.addressModeW =
         HdStHgiConversions::GetHgiSamplerAddressMode(samplerParameters.wrapR);
+    desc.maxAnisotropy = samplerParameters.maxAnisotropy;
     desc.borderColor =
         HdStHgiConversions::GetHgiBorderColor(samplerParameters.borderColor);
     desc.enableCompare = samplerParameters.enableCompare;
@@ -198,6 +199,7 @@ HdSamplerParameters PTEX_SAMPLER_PARAMETERS(
     HdWrapClamp,
     HdMinFilterLinear,
     HdMagFilterLinear,
+    /*maxAnisotropy*/16,
     HdBorderColorTransparentBlack, 
     /*enableCompare*/false, 
     HdCmpFuncNever);
@@ -209,6 +211,7 @@ HdSamplerParameters LAYOUT_SAMPLER_PARAMETERS(
     HdWrapRepeat,
     HdMinFilterNearest,
     HdMagFilterNearest,
+    /*maxAnisotropy*/1,
     HdBorderColorTransparentBlack, 
     /*enableCompare*/false, 
     HdCmpFuncNever);
@@ -255,6 +258,7 @@ HdSamplerParameters UDIM_SAMPLER_PARAMETERS(
     HdWrapClamp,
     HdMinFilterLinearMipmapLinear,
     HdMagFilterLinear,
+    /*maxAnisotropy*/16,
     HdBorderColorTransparentBlack, 
     /*enableCompare*/false, 
     HdCmpFuncNever);

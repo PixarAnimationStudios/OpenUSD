@@ -321,7 +321,7 @@ _MakeNamedTextureHandle(
 
     const HdSamplerParameters samplerParameters(
         wrapModeS, wrapModeT, wrapModeR,
-        minFilter, HdMagFilterLinear);
+        minFilter, HdMagFilterLinear, /*maxAnisotropy*/1);
 
     HdStTextureHandleSharedPtr const textureHandle =
         resourceRegistry->AllocateTextureHandle(
@@ -451,7 +451,7 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdRenderIndex const &renderInde
 
         static const HdSamplerParameters envSamplerParameters(
             HdWrapRepeat, HdWrapClamp, HdWrapClamp,
-            HdMinFilterLinearMipmapLinear, HdMagFilterLinear);
+            HdMinFilterLinearMipmapLinear, HdMagFilterLinear, /*maxAnisotropy*/1);
 
         _domeLightEnvironmentTextureHandle =
             resourceRegistry->AllocateTextureHandle(
@@ -539,7 +539,7 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdRenderIndex const &renderInde
             // for just-allocated texture objects.
             HdSamplerParameters const shadowSamplerParameters{
                 HdWrapClamp, HdWrapClamp, HdWrapClamp,
-                HdMinFilterLinear, HdMagFilterLinear,
+                HdMinFilterLinear, HdMagFilterLinear, /*maxAnisotropy*/1,
                 HdBorderColorOpaqueWhite, /*enableCompare*/true, 
                 HdCmpFuncLEqual};
 
@@ -648,4 +648,3 @@ HdStSimpleLightingShader::GetNamedTextureHandles() const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

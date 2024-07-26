@@ -117,13 +117,15 @@ public:
     HdBorderColor borderColor;
     bool enableCompare;
     HdCompareFunction compareFunction;
+    uint32_t maxAnisotropy;
 
     HD_API
     HdSamplerParameters();   
 
     HD_API
     HdSamplerParameters(HdWrap wrapS, HdWrap wrapT, HdWrap wrapR, 
-        HdMinFilter minFilter, HdMagFilter magFilter, 
+        HdMinFilter minFilter, HdMagFilter magFilter,
+        uint32_t maxAnisotropy=16,
         HdBorderColor borderColor=HdBorderColorTransparentBlack,
         bool enableCompare=false, 
         HdCompareFunction compareFunction=HdCmpFuncNever);
