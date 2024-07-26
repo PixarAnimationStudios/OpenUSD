@@ -1789,7 +1789,7 @@ exr_attr_set_preview (
             attr->preview->height == val->height &&
             attr->preview->alloc_size > 0)
         {
-            size_t copybytes = val->width * val->height * 4;
+            size_t copybytes = (size_t) val->width * (size_t) val->height * (size_t) 4;
             memcpy (
                 EXR_CONST_CAST (void*, attr->preview->rgba),
                 val->rgba,

@@ -131,11 +131,11 @@ one_from_native32 (uint32_t v)
 }
 
 static inline void
-priv_to_native32 (void* ptr, int n)
+priv_to_native32 (void* ptr, uint64_t n)
 {
 #if EXR_HOST_IS_NOT_LITTLE_ENDIAN
     uint32_t* vals = (uint32_t*) ptr;
-    for (int i = 0; i < n; ++i)
+    for (uint64_t i = 0; i < n; ++i)
         vals[i] = le32toh (vals[i]);
 #else
     (void) ptr;
@@ -144,11 +144,11 @@ priv_to_native32 (void* ptr, int n)
 }
 
 static inline void
-priv_from_native32 (void* ptr, int n)
+priv_from_native32 (void* ptr, uint64_t n)
 {
 #if EXR_HOST_IS_NOT_LITTLE_ENDIAN
     uint32_t* vals = (uint32_t*) ptr;
-    for (int i = 0; i < n; ++i)
+    for (uint64_t i = 0; i < n; ++i)
         vals[i] = htole32 (vals[i]);
 #else
     (void) ptr;

@@ -191,9 +191,9 @@ namespace {
             // use std::swap_ranges to flip the image in-place
             for (int y = 0; y < height / 2; ++y) {
                 std::swap_ranges(
-                                 buffer + y * width * channelCount,
-                                 buffer + (y + 1) * width * channelCount,
-                                 buffer + (height - y - 1) * width * channelCount);
+                                 buffer + static_cast<size_t>(y) * static_cast<size_t>(width) * static_cast<size_t>(channelCount),
+                                 buffer + static_cast<size_t>(y + 1) * static_cast<size_t>(width) * static_cast<size_t>(channelCount),
+                                 buffer + static_cast<size_t>(height - y - 1) * static_cast<size_t>(width) * static_cast<size_t>(channelCount));
             }
         }
         
@@ -211,9 +211,9 @@ namespace {
                 return;
             }
             
-            for (int y = 0; y < newHeight; ++y) {
-                for (int x = 0; x < newWidth; ++x) {
-                    for (int c = 0; c < channelCount; ++c) {
+            for (size_t y = 0; y < newHeight; ++y) {
+                for (size_t x = 0; x < newWidth; ++x) {
+                    for (size_t c = 0; c < channelCount; ++c) {
                         buffer[(y * newWidth + x) * channelCount + c] =
                         buffer[((y + cropTop) * width + x + cropLeft)
                                * channelCount + c];
@@ -229,7 +229,9 @@ namespace {
                 return;
             }
             
-            for (int i = 0; i < width * height * channelCount; ++i) {
+            const size_t bufferSize = static_cast<size_t>(width) * static_cast<size_t>(height)
+                * static_cast<size_t>(channelCount);
+            for (size_t i = 0; i < bufferSize; ++i) {
                 outBuffer[i] = buffer[i];
             }
         }
@@ -241,7 +243,9 @@ namespace {
                 return;
             }
             
-            for (int i = 0; i < width * height * channelCount; ++i) {
+            const size_t bufferSize = static_cast<size_t>(width) * static_cast<size_t>(height)
+                * static_cast<size_t>(channelCount);
+            for (size_t i = 0; i < bufferSize; ++i) {
                 outBuffer[i] = buffer[i];
             }
         }
@@ -301,8 +305,10 @@ bool Hio_OpenEXRImage::ReadCropped(
 
     int readWidth = fileWidth - cropLeft - cropRight;
     int readHeight = fileHeight - cropTop - cropBottom;
+    size_t outSize = static_cast<size_t>(outWidth) * static_cast<size_t>(outHeight)
+        * static_cast<size_t>(outputBytesPerPixel);
     if (readHeight <= 0 || readWidth <= 0) {
-        memset(storage.data, 0, outWidth * outHeight * outputBytesPerPixel);
+        memset(storage.data, 0, outSize);
         return true;
     }
     bool resizing = (readWidth != outWidth) || (readHeight != outHeight);
@@ -338,7 +344,7 @@ bool Hio_OpenEXRImage::ReadCropped(
         }
 
         // copy the data to the output buffer.
-        memcpy(storage.data, img.data, outWidth * outHeight * outputBytesPerPixel);
+        memcpy(storage.data, img.data, outSize);
         nanoexr_release_image_data(&img);
         return true;
     }
@@ -347,12 +353,14 @@ bool Hio_OpenEXRImage::ReadCropped(
     // count, for in place conversions.
     int maxChannelCount = std::max(fileChannelCount, outChannelCount);
     std::vector<GfHalf> halfInputBuffer;
+    size_t inputSize = static_cast<size_t>(fileWidth) * static_cast<size_t>(fileHeight)
+        * static_cast<size_t>(maxChannelCount);
     if (inputIsHalf) {
-        halfInputBuffer.resize(fileWidth * fileHeight * maxChannelCount);
+        halfInputBuffer.resize(inputSize);
     }
     std::vector<float> floatInputBuffer;
     if (inputIsFloat || (inputIsHalf && (resizing || outputIsFloat))) {
-        floatInputBuffer.resize(fileWidth * fileHeight * maxChannelCount);
+        floatInputBuffer.resize(inputSize);
     }
 
     {
@@ -404,9 +412,9 @@ bool Hio_OpenEXRImage::ReadCropped(
         }
     }
 
+    size_t outCount = static_cast<size_t>(outWidth) * static_cast<size_t>(outHeight)
+        * static_cast<size_t>(outChannelCount);
     if (!resizing) {
-        uint32_t outSize = outWidth * outHeight * outputBytesPerPixel;
-        uint32_t outCount = outWidth * outHeight * outChannelCount;
         if (inputIsHalf && outputIsHalf) {
             memcpy(reinterpret_cast<void*>(storage.data),
                halfInputBuffer.data(), outSize);
@@ -445,14 +453,15 @@ bool Hio_OpenEXRImage::ReadCropped(
     nanoexr_ImageData_t src = { 0 };
     src.data = reinterpret_cast<uint8_t*>(&floatInputBuffer[0]);
     src.channelCount = fileChannelCount;
-    src.dataSize = readWidth * readHeight * GetBytesPerPixel();
+    src.dataSize = static_cast<size_t>(readWidth) * static_cast<size_t>(readHeight)
+        * static_cast<size_t>(GetBytesPerPixel());
     src.pixelType = EXR_PIXEL_FLOAT;
     src.width = readWidth;
     src.height = readHeight;
 
     nanoexr_ImageData_t dst = { 0 };
     dst.channelCount = outChannelCount;
-    dst.dataSize = outWidth * outHeight * outChannelCount * sizeof(float);
+    dst.dataSize = outCount * sizeof(float);
     dst.pixelType = EXR_PIXEL_FLOAT;
     dst.width = outWidth;
     dst.height = outHeight;
@@ -461,7 +470,7 @@ bool Hio_OpenEXRImage::ReadCropped(
         dst.data = reinterpret_cast<uint8_t*>(storage.data);
     }
     else {
-        resizeOutputBuffer.resize(outWidth * outHeight * outChannelCount);
+        resizeOutputBuffer.resize(outCount);
         dst.data = reinterpret_cast<uint8_t*>(&resizeOutputBuffer[0]);
     }
     nanoexr_Gaussian_resample(&src, &dst);
@@ -474,7 +483,7 @@ bool Hio_OpenEXRImage::ReadCropped(
                                        reinterpret_cast<GfHalf*>(dst.data),
                                        outWidth, outHeight, outChannelCount);
     memcpy(reinterpret_cast<void*>(storage.data), &resizeOutputBuffer[0],
-           outWidth * outHeight * GetBytesPerPixel());
+           static_cast<size_t>(outWidth) * static_cast<size_t>(outHeight) * static_cast<size_t>(GetBytesPerPixel()));
     return true;
 }
 
@@ -844,10 +853,12 @@ bool Hio_OpenEXRImage::Write(StorageSpec const &storage,
         // glf will attempt to write 8 bit unsigned frame buffer data to exr
         // files, so promote the pixels to float16.
         int32_t ch = HioGetComponentCount(storage.format);
-        std::vector<GfHalf> pixels(storage.width * storage.height * ch);
+        size_t sz = static_cast<size_t>(storage.width) * static_cast<size_t>(storage.height)
+            * static_cast<size_t>(ch);
+        std::vector<GfHalf> pixels(sz);
         const uint8_t* src = reinterpret_cast<const uint8_t*>(storage.data);
         GfHalf* dst = pixels.data();
-        for (int i = 0; i < storage.width * storage.height * ch; ++i) {
+        for (size_t i = 0; i < sz; ++i) {
             *dst++ = GfHalf(*src++) / 255.0f;
         }
         int pixMul = 0;

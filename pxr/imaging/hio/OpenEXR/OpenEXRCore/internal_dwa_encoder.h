@@ -317,7 +317,7 @@ LossyDctEncoder_execute (
     uint16_t halfCoef[64];
 
     uint16_t* currAcComp            = (uint16_t*) e->_packedAc;
-    int       tmpHalfBufferElements = 0;
+    size_t    tmpHalfBufferElements = 0;
     uint16_t* tmpHalfBuffer         = NULL;
     uint16_t* tmpHalfBufferPtr      = NULL;
 
@@ -333,13 +333,13 @@ LossyDctEncoder_execute (
     {
         chanData[chan] = e->_channel_encode_data[chan];
         if (chanData[chan]->_type == EXR_PIXEL_FLOAT)
-            tmpHalfBufferElements += e->_width * e->_height;
+            tmpHalfBufferElements += (size_t) e->_width * (size_t) e->_height;
     }
 
     if (tmpHalfBufferElements)
     {
         tmpHalfBuffer = (uint16_t*) alloc_fn (
-            (size_t) tmpHalfBufferElements * sizeof (uint16_t));
+            tmpHalfBufferElements * sizeof (uint16_t));
         if (!tmpHalfBuffer) return EXR_ERR_OUT_OF_MEMORY;
         tmpHalfBufferPtr = tmpHalfBuffer;
     }

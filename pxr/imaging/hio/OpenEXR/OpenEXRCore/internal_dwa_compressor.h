@@ -1711,7 +1711,7 @@ DwaCompressor_setupChannelData (DwaCompressor* me)
         for (int byte = 1; byte < curc->bytes_per_element; ++byte)
         {
             cd->planarUncRle[byte] =
-                cd->planarUncRle[byte - 1] + curc->width * curc->height;
+                cd->planarUncRle[byte - 1] + (size_t) curc->width * (size_t) curc->height;
 
             cd->planarUncRleEnd[byte] = cd->planarUncRle[byte];
         }
