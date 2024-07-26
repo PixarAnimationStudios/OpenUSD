@@ -141,7 +141,6 @@ TestUsdShadeMaterialBindingAPIAppliedValidator()
 
     UsdValidationErrorVector errors = validator->Validate(usdPrim);
 
-    auto site = errors[0].GetSites()[0];
     TF_AXIOM(errors.size() == 1);
     TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
     TF_AXIOM(errors[0].GetSites().size() == 1);
