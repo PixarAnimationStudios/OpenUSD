@@ -90,6 +90,8 @@ HdEmbree_Light::HdEmbree_Light(SdfPath const& id, TfToken const& lightType)
         return;
     }
 
+    TF_DEBUG(HDEMBREE_LIGHT_CREATE).Msg("Creating light %s: %s\n", id.GetText(), lightType.GetText());
+
     // Set the variant to the right type - Sync will fill rest of data
     if (lightType == HdSprimTypeTokens->cylinderLight) {
         _lightData.lightVariant = HdEmbree_Cylinder();
