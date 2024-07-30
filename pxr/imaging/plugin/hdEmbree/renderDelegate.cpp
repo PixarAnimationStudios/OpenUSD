@@ -38,6 +38,7 @@ const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->extComputation,
     HdPrimTypeTokens->cylinderLight,
     HdPrimTypeTokens->diskLight,
+    HdPrimTypeTokens->distantLight,
     HdPrimTypeTokens->domeLight,
     HdPrimTypeTokens->rectLight,
     HdPrimTypeTokens->sphereLight,
@@ -338,6 +339,7 @@ HdEmbreeRenderDelegate::CreateSprim(TfToken const& typeId,
     } else if (typeId == HdPrimTypeTokens->extComputation) {
         return new HdExtComputation(sprimId);
     } else if (typeId == HdPrimTypeTokens->light ||
+               typeId == HdPrimTypeTokens->distantLight ||
                typeId == HdPrimTypeTokens->diskLight ||
                typeId == HdPrimTypeTokens->domeLight ||
                typeId == HdPrimTypeTokens->rectLight ||
@@ -361,6 +363,7 @@ HdEmbreeRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
     } else if (typeId == HdPrimTypeTokens->extComputation) {
         return new HdExtComputation(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->light ||
+               typeId == HdPrimTypeTokens->distantLight ||
                typeId == HdPrimTypeTokens->diskLight ||
                typeId == HdPrimTypeTokens->domeLight ||
                typeId == HdPrimTypeTokens->rectLight ||

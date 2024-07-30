@@ -35,6 +35,11 @@ struct HdEmbree_Disk
     float radius;
 };
 
+struct HdEmbree_Distant
+{
+    float halfAngleRadians;
+};
+
 // Needed for HdEmbree_LightVariant
 struct HdEmbree_Dome
 {};
@@ -54,6 +59,7 @@ using HdEmbree_LightVariant = std::variant<
     HdEmbree_UnknownLight,
     HdEmbree_Cylinder,
     HdEmbree_Disk,
+    HdEmbree_Distant,
     HdEmbree_Dome,
     HdEmbree_Rect,
     HdEmbree_Sphere>;
