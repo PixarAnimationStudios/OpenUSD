@@ -41,6 +41,8 @@
 ///   - inputs:shaping:focusTint
 ///   - inputs:shaping:cone:angle
 ///   - inputs:shaping:cone:softness
+/// - Direct-camera visibility only supported for RectLight
+///   - enabled via inputs:visibility:camera attribute (default: false)
 /// - Respects double-sidedness of meshes
 ///
 /// Currently Unsupported Features / Limitations:
@@ -77,7 +79,8 @@
 ///   - inputs:shaping:ies:file
 ///   - inputs:shaping:ies:angleScale
 ///   - inputs:shaping:ies:normalize
-/// - No support for direct-camera visibility
+/// - No support for direct-camera visibility for light types other than
+///   RectLight
 /// - No support for motion blur (currently, if motion blur is enabled, all
 ///   samples taken at the first time sample, ie, when the shutter opens).
 /// - No support for instanced lights
@@ -163,7 +166,11 @@ struct HdEmbree_LightData
     HdEmbree_LightVariant lightVariant;
     bool normalize = false;
     bool visible = true;
+    bool visible_camera = true;
+    bool visible_shadow = true;
     HdEmbree_Shaping shaping;
+    unsigned rtcMeshId = RTC_INVALID_GEOMETRY_ID;
+    RTCGeometry rtcGeometry = nullptr;
 };
 
 class HdEmbree_Light final : public HdLight
@@ -193,6 +200,8 @@ public:
     }
 
 private:
+    void _PopulateRtcLight(RTCDevice device, RTCScene scene);
+
     HdEmbree_LightData _lightData;
 };
 
