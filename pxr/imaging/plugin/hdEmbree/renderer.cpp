@@ -411,6 +411,45 @@ _EvalAreaLight(HdEmbree_LightData const& light, _ShapeSample const& ss,
     };
 }
 
+_LightSample
+_SampleDomeLight(HdEmbree_LightData const& light, GfVec3f const& direction)
+{
+    float t = acosf(direction[1]) / _pi<float>;
+    float s = atan2f(direction[0], direction[2]) / (2.0f * _pi<float>);
+    s = 1.0f - fmodf(s+0.5f, 1.0f);
+
+    GfVec3f Li = light.texture.pixels.empty() ?
+        GfVec3f(1.0f)
+        : _SampleLightTexture(light.texture, s, t);
+
+    return _LightSample {
+        Li,
+        direction,
+        std::numeric_limits<float>::max(),
+        4.0f * _pi<float>
+    };
+}
+
+_LightSample
+_EvalDomeLight(HdEmbree_LightData const& light, GfVec3f const& W,
+                 float u1, float u2)
+{
+    GfVec3f U, V;
+    GfBuildOrthonormalFrame(W, &U, &V);
+
+    float z = u1;
+    float r = sqrtf(std::max(0.0f, 1.0f - _Sqr(z)));
+    float phi = 2.0f * _pi<float> * u2;
+
+    const GfVec3f wI =
+        (W * z + r * cosf(phi) * U + r * sinf(phi) * V).GetNormalized();
+
+    _LightSample ls = _SampleDomeLight(light, wI);
+    ls.invPdfW = 2.0f * _pi<float>;  // We only picked from the hemisphere
+
+    return ls;
+}
+
 class _LightSampler {
 public:
     static _LightSample GetLightSample(HdEmbree_LightData const& lightData,
@@ -476,6 +515,10 @@ public:
             _u1,
             _u2);
         return _EvalAreaLight(_lightData, shapeSample, _hitPosition);
+    }
+
+    _LightSample operator()(HdEmbree_Dome const& dome) {
+        return _EvalDomeLight(_lightData, _normal, _u1, _u2);
     }
 
 private:
@@ -597,6 +640,10 @@ HdEmbreeRenderer::AddLight(SdfPath const& lightPath,
 {
     ScopedLock lightsWriteLock(_lightsWriteMutex);
     _lightMap[lightPath] = light;
+
+    if (light->IsDome()) {
+        _domes.push_back(light);
+    }
 }
 
 void
@@ -604,6 +651,9 @@ HdEmbreeRenderer::RemoveLight(SdfPath const& lightPath, HdEmbree_Light* light)
 {
     ScopedLock lightsWriteLock(_lightsWriteMutex);
     _lightMap.erase(lightPath);
+    _domes.erase(std::remove_if(_domes.begin(), _domes.end(),
+                                [&light](auto& l){ return l == light; }),
+                 _domes.end());
 }
 
 bool
@@ -1392,6 +1442,29 @@ HdEmbreeRenderer::_ComputeColor(RTCRayHit const& rayHit,
                                 std::default_random_engine &random,
                                 GfVec4f const& clearColor)
 {
+    if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID) {
+        if (_domes.empty()) {
+            return clearColor;
+        }
+
+        // if we missed all geometry in the scene, evaluate the infinite lights
+        // directly
+        GfVec4f domeColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+        for (auto* dome : _domes) {
+            _LightSample ls = _SampleDomeLight(
+                dome->LightData(),
+                GfVec3f(rayHit.ray.dir_x,
+                        rayHit.ray.dir_y,
+                        rayHit.ray.dir_z)
+            );
+            domeColor[0] += ls.Li[0];
+            domeColor[1] += ls.Li[1];
+            domeColor[2] += ls.Li[2];
+        }
+        return domeColor;
+    }
+
     // Get the instance and prototype context structures for the hit prim.
     // We don't use embree's multi-level instancing; we
     // flatten everything in hydra. So instID[0] should always be correct.

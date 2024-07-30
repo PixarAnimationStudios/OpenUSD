@@ -89,6 +89,8 @@ HdEmbree_Light::HdEmbree_Light(SdfPath const& id, TfToken const& lightType)
         _lightData.lightVariant = HdEmbree_Cylinder();
     } else if (lightType == HdSprimTypeTokens->diskLight) {
         _lightData.lightVariant = HdEmbree_Disk();
+    } else if (lightType == HdSprimTypeTokens->domeLight) {
+        _lightData.lightVariant = HdEmbree_Dome();
     } else if (lightType == HdSprimTypeTokens->rectLight) {
         // Get shape parameters
         _lightData.lightVariant = HdEmbree_Rect();
@@ -160,6 +162,9 @@ HdEmbree_Light::Sync(HdSceneDelegate *sceneDelegate,
                 sceneDelegate->GetLightParamValue(id, HdLightTokens->radius)
                     .GetWithDefault(0.5f),
             };
+        } else if constexpr (std::is_same_v<T, HdEmbree_Dome>) {
+            typedLight = HdEmbree_Dome{};
+            _SyncLightTexture(id, _lightData, sceneDelegate);
         } else if constexpr (std::is_same_v<T, HdEmbree_Rect>) {
             typedLight = HdEmbree_Rect{
                 sceneDelegate->GetLightParamValue(id, HdLightTokens->width)
