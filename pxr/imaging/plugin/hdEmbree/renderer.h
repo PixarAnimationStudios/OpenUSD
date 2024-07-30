@@ -242,6 +242,7 @@ private:
     // Lights
     mutable WriteMutex _lightsWriteMutex; // protects the 2 below
     std::map<SdfPath, HdEmbree_Light*> _lightMap;
+    std::vector<HdEmbree_Light*> _domes;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
