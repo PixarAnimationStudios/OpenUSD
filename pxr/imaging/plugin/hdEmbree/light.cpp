@@ -21,6 +21,61 @@
 #include <sstream>
 #include <vector>
 
+namespace {
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+HdEmbree_LightTexture
+_LoadLightTexture(std::string const& path)
+{
+    if (path.empty()) {
+        return HdEmbree_LightTexture();
+    }
+
+    HioImageSharedPtr img = HioImage::OpenForReading(path);
+    if (!img) {
+        return HdEmbree_LightTexture();
+    }
+
+    int width = img->GetWidth();
+    int height = img->GetHeight();
+
+    std::vector<GfVec3f> pixels(width * height * 3.0f);
+
+    HioImage::StorageSpec storage;
+    storage.width = width;
+    storage.height = height;
+    storage.depth = 1;
+    storage.format = HioFormatFloat32Vec3;
+    storage.data = &pixels.front();
+
+    if (img->Read(storage)) {
+        return {std::move(pixels), width, height};
+    }
+    TF_WARN("Could not read image %s", path.c_str());
+    return { std::vector<GfVec3f>(), 0, 0 };
+}
+
+
+void
+_SyncLightTexture(const SdfPath& id, HdEmbree_LightData& light, HdSceneDelegate *sceneDelegate)
+{
+    std::string path;
+    if (VtValue textureValue = sceneDelegate->GetLightParamValue(
+            id, HdLightTokens->textureFile);
+        textureValue.IsHolding<SdfAssetPath>()) {
+        SdfAssetPath texturePath =
+            textureValue.UncheckedGet<SdfAssetPath>();
+        path = texturePath.GetResolvedPath();
+        if (path.empty()) {
+            path = texturePath.GetAssetPath();
+        }
+    }
+    light.texture = _LoadLightTexture(path);
+}
+
+
+} // anonymous namespace
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdEmbree_Light::HdEmbree_Light(SdfPath const& id, TfToken const& lightType)
@@ -112,6 +167,7 @@ HdEmbree_Light::Sync(HdSceneDelegate *sceneDelegate,
                 sceneDelegate->GetLightParamValue(id, HdLightTokens->height)
                     .Get<float>(),
             };
+            _SyncLightTexture(id, _lightData, sceneDelegate);
         } else if constexpr (std::is_same_v<T, HdEmbree_Sphere>) {
             typedLight = HdEmbree_Sphere{
                 sceneDelegate->GetLightParamValue(id, HdLightTokens->radius)

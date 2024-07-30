@@ -53,6 +53,13 @@ using HdEmbree_LightVariant = std::variant<
     HdEmbree_Rect,
     HdEmbree_Sphere>;
 
+struct HdEmbree_LightTexture
+{
+    std::vector<GfVec3f> pixels;
+    int width = 0;
+    int height = 0;
+};
+
 struct HdEmbree_Shaping
 {
     GfVec3f focusTint;
@@ -67,6 +74,7 @@ struct HdEmbree_LightData
     GfMatrix3f normalXformLightToWorld;
     GfMatrix4f xformWorldToLight;
     GfVec3f color;
+    HdEmbree_LightTexture texture;
     float intensity = 1.0f;
     float exposure = 0.0f;
     float colorTemperature = 6500.0f;

@@ -216,6 +216,19 @@ struct _LightSample {
     float invPdfW;
 };
 
+GfVec3f
+_SampleLightTexture(HdEmbree_LightTexture const& texture, float s, float t)
+{
+    if (texture.pixels.empty()) {
+        return GfVec3f(0.0f);
+    }
+
+    int x = float(texture.width) * s;
+    int y = float(texture.height) * t;
+
+    return texture.pixels.at(y*texture.width + x);
+}
+
 _ShapeSample
 _SampleRect(GfMatrix4f const& xf, GfMatrix3f const& normalXform, float width,
             float height, float u1, float u2)
@@ -362,6 +375,12 @@ _EvalAreaLight(HdEmbree_LightData const& light, _ShapeSample const& ss,
     GfVec3f Le = cosThetaOffNormal > 0.0f ?
         _EvalLightBasic(light)
         : GfVec3f(0.0f);
+
+    // Multiply by the texture, if there is one
+    if (!light.texture.pixels.empty()) {
+        Le = GfCompMult(Le, _SampleLightTexture(light.texture, ss.uv[0],
+                                                1.0f - ss.uv[1]));
+    }
 
     // If normalize is enabled, we need to divide the luminance by the surface
     // area of the light, which for an area light is equivalent to multiplying
