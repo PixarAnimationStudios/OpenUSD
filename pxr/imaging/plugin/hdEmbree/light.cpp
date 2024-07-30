@@ -15,6 +15,7 @@
 #include "pxr/imaging/hio/image.h"
 
 #include <embree3/rtcore_buffer.h>
+#include <embree3/rtcore_device.h>
 #include <embree3/rtcore_scene.h>
 
 #include <fstream>
@@ -78,6 +79,11 @@ _SyncLightTexture(const SdfPath& id, HdEmbree_LightData& light, HdSceneDelegate 
 } // anonymous namespace
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(_tokens,
+    ((inputsVisibilityCamera, "inputs:visibility:camera"))
+    ((inputsVisibilityShadow, "inputs:visibility:shadow"))
+);
+
 HdEmbree_Light::HdEmbree_Light(SdfPath const& id, TfToken const& lightType)
     : HdLight(id) {
     if (id.IsEmpty()) {
@@ -115,7 +121,8 @@ HdEmbree_Light::Sync(HdSceneDelegate *sceneDelegate,
         static_cast<HdEmbreeRenderParam*>(renderParam);
 
     // calling this bumps the scene version and causes a re-render
-    embreeRenderParam->AcquireSceneForEdit();
+    RTCScene scene = embreeRenderParam->AcquireSceneForEdit();
+    RTCDevice device = embreeRenderParam->GetEmbreeDevice();
 
     SdfPath const& id = GetId();
 
@@ -143,6 +150,13 @@ HdEmbree_Light::Sync(HdSceneDelegate *sceneDelegate,
 
     // Get visibility
     _lightData.visible = sceneDelegate->GetVisible(id);
+    _lightData.visible_camera = sceneDelegate->GetLightParamValue(
+        id, _tokens->inputsVisibilityCamera).GetWithDefault(false);
+    // XXX: Don't think we can get this to work in Embree unless it's built with
+    // masking only solution would be to use rtcIntersect instead of rtcOccluded
+    // for shadow rays, which maybe isn't the worst for a reference renderer
+    _lightData.visible_shadow = sceneDelegate->GetLightParamValue(
+        id, _tokens->inputsVisibilityShadow).GetWithDefault(false);
 
     // Switch on the _lightData type and pull the relevant attributes from the scene
     // delegate
@@ -207,10 +221,69 @@ HdEmbree_Light::Sync(HdSceneDelegate *sceneDelegate,
         _lightData.shaping.coneSoftness = value.UncheckedGet<float>();
     }
 
+    _PopulateRtcLight(device, scene);
+
     HdEmbreeRenderer *renderer = embreeRenderParam->GetRenderer();
     renderer->AddLight(id, this);
 
     *dirtyBits &= ~HdLight::AllDirty;
+}
+
+void
+HdEmbree_Light::_PopulateRtcLight(RTCDevice device, RTCScene scene)
+{
+    _lightData.rtcMeshId = RTC_INVALID_GEOMETRY_ID;
+
+    // create the light geometry, if required
+    if (_lightData.visible) {
+        if (auto* rect = std::get_if<HdEmbree_Rect>(&_lightData.lightVariant))
+        {
+            // create _lightData mesh
+            GfVec3f v0(-rect->width/2.0f, -rect->height/2.0f, 0.0f);
+            GfVec3f v1( rect->width/2.0f, -rect->height/2.0f, 0.0f);
+            GfVec3f v2( rect->width/2.0f,  rect->height/2.0f, 0.0f);
+            GfVec3f v3(-rect->width/2.0f,  rect->height/2.0f, 0.0f);
+
+            v0 = _lightData.xformLightToWorld.Transform(v0);
+            v1 = _lightData.xformLightToWorld.Transform(v1);
+            v2 = _lightData.xformLightToWorld.Transform(v2);
+            v3 = _lightData.xformLightToWorld.Transform(v3);
+
+            _lightData.rtcGeometry = rtcNewGeometry(device,
+                                                RTC_GEOMETRY_TYPE_QUAD);
+            GfVec3f* vertices = static_cast<GfVec3f*>(
+                rtcSetNewGeometryBuffer(_lightData.rtcGeometry,
+                                        RTC_BUFFER_TYPE_VERTEX,
+                                        0,
+                                        RTC_FORMAT_FLOAT3,
+                                        sizeof(GfVec3f),
+                                        4));
+            vertices[0] = v0;
+            vertices[1] = v1;
+            vertices[2] = v2;
+            vertices[3] = v3;
+
+            unsigned* index = static_cast<unsigned*>(
+                rtcSetNewGeometryBuffer(_lightData.rtcGeometry,
+                                        RTC_BUFFER_TYPE_INDEX,
+                                        0,
+                                        RTC_FORMAT_UINT4,
+                                        sizeof(unsigned)*4,
+                                        1));
+            index[0] = 0; index[1] = 1; index[2] = 2; index[3] = 3;
+
+            auto ctx = std::make_unique<HdEmbreeInstanceContext>();
+            ctx->light = this;
+            rtcSetGeometryTimeStepCount(_lightData.rtcGeometry, 1);
+            rtcCommitGeometry(_lightData.rtcGeometry);
+            _lightData.rtcMeshId = rtcAttachGeometry(scene, _lightData.rtcGeometry);
+            if (_lightData.rtcMeshId == RTC_INVALID_GEOMETRY_ID) {
+                TF_WARN("could not create rect mesh for %s", GetId().GetAsString().c_str());
+            } else {
+                rtcSetGeometryUserData(_lightData.rtcGeometry, ctx.release());
+            }
+        }
+    }
 }
 
 HdDirtyBits
@@ -223,10 +296,22 @@ void
 HdEmbree_Light::Finalize(HdRenderParam *renderParam)
 {
     auto* embreeParam = static_cast<HdEmbreeRenderParam*>(renderParam);
+    RTCScene scene = embreeParam->AcquireSceneForEdit();
 
-    // Remove from renderer's light map
+    // First, remove from renderer's light map
     HdEmbreeRenderer *renderer = embreeParam->GetRenderer();
     renderer->RemoveLight(GetId(), this);
+
+    // Then clean up the associated embree objects
+    if (_lightData.rtcMeshId != RTC_INVALID_GEOMETRY_ID) {
+        delete static_cast<HdEmbreeInstanceContext*>(
+                    rtcGetGeometryUserData(_lightData.rtcGeometry));
+
+        rtcDetachGeometry(scene, _lightData.rtcMeshId);
+        rtcReleaseGeometry(_lightData.rtcGeometry);
+        _lightData.rtcMeshId = RTC_INVALID_GEOMETRY_ID;
+        _lightData.rtcGeometry = nullptr;
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

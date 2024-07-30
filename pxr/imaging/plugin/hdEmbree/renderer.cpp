@@ -344,6 +344,20 @@ _SampleCylinder(GfMatrix4f const& xf, GfMatrix3f const& normalXform,
     };
 }
 
+_ShapeSample
+_IntersectAreaLight(HdEmbree_LightData const& light, RTCRayHit const& rayHit)
+{
+    // XXX: just rect lights at the moment, need to do the others
+    auto const& rect = std::get<HdEmbree_Rect>(light.lightVariant);
+
+    return _ShapeSample {
+        _CalculateHitPosition(rayHit),
+        GfVec3f(rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z),
+        GfVec2f(1.0f - rayHit.hit.u, rayHit.hit.v),
+        _AreaRect(light.xformLightToWorld, rect.width, rect.height)
+    };
+}
+
 GfVec3f
 _EvalLightBasic(HdEmbree_LightData const& light)
 {
@@ -1192,6 +1206,43 @@ _CosineWeightedDirection(GfVec2f const& uniform_float)
     return dir;
 }
 
+bool
+HdEmbreeRenderer::_RayShouldContinue(RTCRayHit const& rayHit) const {
+    if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID) {
+        // missed, don't continue
+        return false;
+    }
+
+    if (rayHit.hit.instID[0] == RTC_INVALID_GEOMETRY_ID) {
+        // not hit an instance, but a "raw" geometry. This should be a light
+        const HdEmbreeInstanceContext *instanceContext =
+            static_cast<HdEmbreeInstanceContext*>(
+                    rtcGetGeometryUserData(rtcGetGeometry(_scene,
+                                                          rayHit.hit.geomID)));
+
+        if (instanceContext->light == nullptr) {
+            // if this isn't a light, don't know what this is
+            return false;
+        }
+
+        auto const& light = instanceContext->light->LightData();
+
+        if ((rayHit.ray.mask & HdEmbree_RayMask::Camera)
+                && !light.visible_camera) {
+            return true;
+        } else if ((rayHit.ray.mask & HdEmbree_RayMask::Shadow)
+                && !light.visible_shadow) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // XXX: otherwise this is a regular geo. we should handle visibility here
+    // too eventually
+    return false;
+}
+
 void
 HdEmbreeRenderer::_TraceRay(unsigned int x, unsigned int y,
                             GfVec3f const &origin, GfVec3f const &dir,
@@ -1221,6 +1272,13 @@ HdEmbreeRenderer::_TraceRay(unsigned int x, unsigned int y,
       rayHit.hit.Ng_x = -rayHit.hit.Ng_x;
       rayHit.hit.Ng_y = -rayHit.hit.Ng_y;
       rayHit.hit.Ng_z = -rayHit.hit.Ng_z;
+    }
+
+    if (_RayShouldContinue(rayHit)) {
+        GfVec3f hitPos = _CalculateHitPosition(rayHit);
+
+        _TraceRay(x, y, hitPos + dir * _rayHitContinueBias, dir, random);
+        return;
     }
 
     // Write AOVs to attachments that aren't converged.
@@ -1278,6 +1336,11 @@ HdEmbreeRenderer::_ComputeId(RTCRayHit const& rayHit, TfToken const& idType,
         return false;
     }
 
+    if (rayHit.hit.instID[0] == RTC_INVALID_GEOMETRY_ID) {
+        // not hit an instance, but a "raw" geometry. This should be a light
+        return false;
+    }
+
     // Get the instance and prototype context structures for the hit prim.
     // We don't use embree's multi-level instancing; we
     // flatten everything in hydra. So instID[0] should always be correct.
@@ -1318,6 +1381,11 @@ HdEmbreeRenderer::_ComputeDepth(RTCRayHit const& rayHit,
         return false;
     }
 
+    if (rayHit.hit.instID[0] == RTC_INVALID_GEOMETRY_ID) {
+        // not hit an instance, but a "raw" geometry. This should be a light
+        return false;
+    }
+
     if (clip) {
         GfVec3f hitPos = _CalculateHitPosition(rayHit);
 
@@ -1338,6 +1406,11 @@ HdEmbreeRenderer::_ComputeNormal(RTCRayHit const& rayHit,
                                  bool eye)
 {
     if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID) {
+        return false;
+    }
+
+    if (rayHit.hit.instID[0] == RTC_INVALID_GEOMETRY_ID) {
+        // not hit an instance, but a "raw" geometry. This should be a light
         return false;
     }
 
@@ -1376,6 +1449,11 @@ HdEmbreeRenderer::_ComputePrimvar(RTCRayHit const& rayHit,
                                   GfVec3f *value)
 {
     if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID) {
+        return false;
+    }
+
+    if (rayHit.hit.instID[0] == RTC_INVALID_GEOMETRY_ID) {
+        // not hit an instance, but a "raw" geometry. This should be a light
         return false;
     }
 
@@ -1463,6 +1541,30 @@ HdEmbreeRenderer::_ComputeColor(RTCRayHit const& rayHit,
             domeColor[2] += ls.Li[2];
         }
         return domeColor;
+    }
+
+    if (rayHit.hit.instID[0] == RTC_INVALID_GEOMETRY_ID) {
+        // if it's not an instance then it's almost certainly a light
+        const HdEmbreeInstanceContext *instanceContext =
+            static_cast<HdEmbreeInstanceContext*>(
+                    rtcGetGeometryUserData(rtcGetGeometry(_scene,
+                                                          rayHit.hit.geomID)));
+
+        // if we hit a light, just evaluate the light directly
+        if (instanceContext->light != nullptr) {
+            auto const& light = instanceContext->light->LightData();
+            _ShapeSample ss = _IntersectAreaLight(light, rayHit);
+            _LightSample ls = _EvalAreaLight(light, ss,
+                GfVec3f(rayHit.ray.org_x, rayHit.ray.org_y, rayHit.ray.org_z));
+
+            return GfVec4f(ls.Li[0], ls.Li[1], ls.Li[2], 1.0f);
+        } else {
+            // should never get here. magenta warning!
+            TF_WARN("Unexpected runtime state - hit an an embree instance "
+                "that wasn't a geo or light");
+            return GfVec4f(1.0f, 0.0f, 1.0f, 1.0f);
+        }
+
     }
 
     // Get the instance and prototype context structures for the hit prim.

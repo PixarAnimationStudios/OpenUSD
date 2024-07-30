@@ -87,7 +87,11 @@ struct HdEmbree_LightData
     HdEmbree_LightVariant lightVariant;
     bool normalize = false;
     bool visible = true;
+    bool visible_camera = true;
+    bool visible_shadow = true;
     HdEmbree_Shaping shaping;
+    unsigned rtcMeshId = RTC_INVALID_GEOMETRY_ID;
+    RTCGeometry rtcGeometry = nullptr;
 };
 
 class HdEmbree_Light final : public HdLight
@@ -117,6 +121,8 @@ public:
     }
 
 private:
+    void _PopulateRtcLight(RTCDevice device, RTCScene scene);
+
     HdEmbree_LightData _lightData;
 };
 
