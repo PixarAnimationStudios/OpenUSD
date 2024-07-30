@@ -47,6 +47,9 @@ pxr_plugin(hdEmbree
         debugCodes
         implicitSurfaceSceneIndexPlugin
 
+    PRIVATE_HEADERS
+        pxrPbrt/pbrtUtils.h
+
     RESOURCE_FILES
         plugInfo.json
 

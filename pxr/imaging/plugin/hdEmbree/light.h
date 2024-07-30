@@ -23,6 +23,8 @@
 ///   - inputs:color
 ///   - inputs:enableColorTemperature
 ///   - inputs:colorTemperature
+/// - DistantLight
+///   - inputs:angle
 /// - DiskLight
 ///   - inputs:radius
 /// - RectLight
@@ -52,7 +54,6 @@
 /// - Unsupported light types:
 ///   - MeshLightAPI
 ///   - VolumeLightAPI
-///   - DistantLight
 ///   - GeometryLight
 ///   - PortalLight
 ///   - PluginLight
@@ -113,6 +114,11 @@ struct HdEmbree_Disk
     float radius;
 };
 
+struct HdEmbree_Distant
+{
+    float halfAngleRadians;
+};
+
 // Needed for HdEmbree_LightVariant
 struct HdEmbree_Dome
 {};
@@ -132,6 +138,7 @@ using HdEmbree_LightVariant = std::variant<
     HdEmbree_UnknownLight,
     HdEmbree_Cylinder,
     HdEmbree_Disk,
+    HdEmbree_Distant,
     HdEmbree_Dome,
     HdEmbree_Rect,
     HdEmbree_Sphere>;
