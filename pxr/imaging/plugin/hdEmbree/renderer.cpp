@@ -359,6 +359,27 @@ _IntersectAreaLight(HdEmbree_LightData const& light, RTCRayHit const& rayHit)
     };
 }
 
+float
+_EvalIES(HdEmbree_LightData const& light, GfVec3f const& wI)
+{
+    HdEmbree_IES const& ies = light.shaping.ies;
+
+    if (!ies.iesFile.valid()) {
+        // Either none specified or there was an error loading. In either case,
+        // just ignore
+        return 1.0f;
+    }
+
+    // emission direction in light space
+    GfVec3f wE = light.xformWorldToLight.TransformDir(wI).GetNormalized();
+
+    float theta = _Theta(wE);
+    float phi = _Phi(wE);
+    float norm = ies.normalize ? ies.iesFile.power() : 1.0f;
+
+    return ies.iesFile.eval(theta, phi, ies.angleScale) / norm;
+}
+
 GfVec3f
 _EvalLightBasic(HdEmbree_LightData const& light)
 {
@@ -462,6 +483,9 @@ _EvalAreaLight(HdEmbree_LightData const& light, _ShapeSample const& ss,
     const float thetaSoft = GfLerp(light.shaping.coneSoftness, thetaCone, 0.0f);
     const float thetaOffZ = acosf(cosThetaOffZ);
     Le *= 1.0f - _Smoothstep(thetaOffZ, GfRange1f(thetaSoft, thetaCone));
+
+    // Apply IES
+    Le *= _EvalIES(light, wI);
 
     return _LightSample {
         Le,

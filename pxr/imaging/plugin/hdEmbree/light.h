@@ -7,6 +7,8 @@
 #ifndef PXR_IMAGING_PLUGIN_HD_EMBREE_LIGHT_H
 #define PXR_IMAGING_PLUGIN_HD_EMBREE_LIGHT_H
 
+#include "pxr/imaging/plugin/hdEmbree/pxrIES/pxrIES.h"
+
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/matrix4f.h"
@@ -71,12 +73,20 @@ struct HdEmbree_LightTexture
     int height = 0;
 };
 
+struct HdEmbree_IES
+{
+    PxrIESFile iesFile;
+    bool normalize = false;
+    float angleScale = 0.0f;
+};
+
 struct HdEmbree_Shaping
 {
     GfVec3f focusTint;
     float focus = 0.0f;
     float coneAngle = 180.0f;
     float coneSoftness = 0.0f;
+    HdEmbree_IES ies;
 };
 
 struct HdEmbree_LightData

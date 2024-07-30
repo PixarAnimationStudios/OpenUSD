@@ -229,6 +229,42 @@ HdEmbree_Light::Sync(HdSceneDelegate *sceneDelegate,
         _lightData.shaping.coneSoftness = value.UncheckedGet<float>();
     }
 
+    if (const auto value = sceneDelegate->GetLightParamValue(
+            id, HdLightTokens->shapingIesFile);
+        value.IsHolding<SdfAssetPath>()) {
+        SdfAssetPath iesAssetPath = value.UncheckedGet<SdfAssetPath>();
+        std::string iesPath = iesAssetPath.GetResolvedPath();
+        if (iesPath.empty()) {
+            iesPath = iesAssetPath.GetAssetPath();
+        }
+
+        if (!iesPath.empty()) {
+            std::ifstream in(iesPath);
+            if (!in.is_open()) {
+                TF_WARN("could not open ies file %s", iesPath.c_str());
+            } else {
+                std::stringstream buffer;
+                buffer << in.rdbuf();
+
+                if (!_lightData.shaping.ies.iesFile.load(buffer.str())) {
+                    TF_WARN("could not load ies file %s", iesPath.c_str());
+                }
+            }
+        }
+    }
+
+    if (const auto value = sceneDelegate->GetLightParamValue(
+            id, HdLightTokens->shapingIesNormalize);
+        value.IsHolding<bool>()) {
+        _lightData.shaping.ies.normalize = value.UncheckedGet<bool>();
+    }
+
+    if (const auto value = sceneDelegate->GetLightParamValue(
+            id, HdLightTokens->shapingIesAngleScale);
+        value.IsHolding<float>()) {
+        _lightData.shaping.ies.angleScale = value.UncheckedGet<float>();
+    }
+
     _PopulateRtcLight(device, scene);
 
     HdEmbreeRenderer *renderer = embreeRenderParam->GetRenderer();
