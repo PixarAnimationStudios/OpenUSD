@@ -38,6 +38,7 @@ const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->extComputation,
     HdPrimTypeTokens->cylinderLight,
     HdPrimTypeTokens->diskLight,
+    HdPrimTypeTokens->domeLight,
     HdPrimTypeTokens->rectLight,
     HdPrimTypeTokens->sphereLight,
 };
@@ -341,6 +342,7 @@ HdEmbreeRenderDelegate::CreateSprim(TfToken const& typeId,
         return new HdExtComputation(sprimId);
     } else if (typeId == HdPrimTypeTokens->light ||
                typeId == HdPrimTypeTokens->diskLight ||
+               typeId == HdPrimTypeTokens->domeLight ||
                typeId == HdPrimTypeTokens->rectLight ||
                typeId == HdPrimTypeTokens->sphereLight ||
                typeId == HdPrimTypeTokens->cylinderLight) {
@@ -363,6 +365,7 @@ HdEmbreeRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
         return new HdExtComputation(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->light ||
                typeId == HdPrimTypeTokens->diskLight ||
+               typeId == HdPrimTypeTokens->domeLight ||
                typeId == HdPrimTypeTokens->rectLight ||
                typeId == HdPrimTypeTokens->sphereLight ||
                typeId == HdPrimTypeTokens->cylinderLight) {
