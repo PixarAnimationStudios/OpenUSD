@@ -34,6 +34,7 @@ TF_WRAP_MODULE
     TF_WRAP( PredicateFunctionResult );
     TF_WRAP( Reference );
     TF_WRAP( TimeCode );
+    TF_WRAP( TranscodeUtils );
     TF_WRAP( Types );
     TF_WRAP( ValueType );
     TF_WRAP( VariableExpression );
