@@ -141,6 +141,8 @@ HdEmbree_Light::Sync(HdSceneDelegate *sceneDelegate,
     // Store luminance parameters
     _lightData.intensity = sceneDelegate->GetLightParamValue(
         id, HdLightTokens->intensity).GetWithDefault(1.0f);
+    _lightData.diffuse = sceneDelegate->GetLightParamValue(
+        id, HdLightTokens->diffuse).GetWithDefault(1.0f);
     _lightData.exposure = sceneDelegate->GetLightParamValue(
         id, HdLightTokens->exposure).GetWithDefault(0.0f);
     _lightData.color = sceneDelegate->GetLightParamValue(

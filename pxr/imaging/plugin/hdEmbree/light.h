@@ -97,6 +97,7 @@ struct HdEmbree_LightData
     GfVec3f color;
     HdEmbree_LightTexture texture;
     float intensity = 1.0f;
+    float diffuse = 1.0f;
     float exposure = 0.0f;
     float colorTemperature = 6500.0f;
     bool enableColorTemperature = false;

@@ -383,7 +383,9 @@ _EvalIES(HdEmbree_LightData const& light, GfVec3f const& wI)
 GfVec3f
 _EvalLightBasic(HdEmbree_LightData const& light)
 {
-    GfVec3f Le = light.color * light.intensity * powf(2.0f, light.exposure);
+    // Our current material model is always 100% diffuse, so diffuse parameter
+    // is a stright multiplier
+    GfVec3f Le = light.color * light.intensity * light.diffuse * powf(2.0f, light.exposure);
     if (light.enableColorTemperature) {
         Le = GfCompMult(Le,
             _BlackbodyTemperatureAsRgb(light.colorTemperature));
