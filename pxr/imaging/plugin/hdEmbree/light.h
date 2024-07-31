@@ -68,6 +68,7 @@ struct HdEmbree_LightData
     GfMatrix4f xformWorldToLight;
     GfVec3f color;
     float intensity = 1.0f;
+    float diffuse = 1.0f;
     float exposure = 0.0f;
     float colorTemperature = 6500.0f;
     bool enableColorTemperature = false;
