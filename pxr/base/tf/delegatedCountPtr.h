@@ -150,7 +150,7 @@ public:
     /// `nullptr`.
     TfDelegatedCountPtr& operator=(const TfDelegatedCountPtr& ptr)
     noexcept(IncrementAndDecrementAreNoExcept()) {
-        // Implement copy assigment in terms of move assignment
+        // Implement copy assignment in terms of move assignment
         return (*this = TfDelegatedCountPtr{ptr});
     }
 
@@ -162,7 +162,7 @@ public:
         const TfDelegatedCountPtr<OtherType>& ptr)
     noexcept(IncrementAndDecrementAreNoExcept()) {
         static_assert(_IsPtrConvertible<OtherType>::value);
-        // Implement copy assigment in terms of move assignment
+        // Implement copy assignment in terms of move assignment
         return (*this = TfDelegatedCountPtr{ptr});
     }
 
