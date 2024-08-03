@@ -48,14 +48,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using std::pair;
 using std::string;
+using std::basic_string;
 using std::set;
 
 namespace { // Helpers for ArchNormPath.
 
 enum TokenType { Dot, DotDot, Elem };
 
-typedef pair<string::const_iterator, string::const_iterator> Token;
-typedef pair<string::reverse_iterator, string::reverse_iterator> RToken;
+template<typename C>
+using Token = pair<typename basic_string<C>::const_iterator, typename basic_string<C>::const_iterator>;
+template<typename C>
+using RToken = pair<typename basic_string<C>::reverse_iterator, typename basic_string<C>::reverse_iterator>;
 
 template <class Iter>
 inline pair<Iter, Iter>
@@ -80,8 +83,9 @@ _GetTokenType(pair<Iter, Iter> t) {
     return Elem;
 }
 
-string
-_NormPath(string const &inPath)
+template<typename C>
+basic_string<C>
+_NormPath(basic_string<C> const &inPath)
 {
     // We take one pass through the string, transforming it into a normalized
     // path in-place.  This works since the normalized path never grows, except
@@ -127,10 +131,10 @@ _NormPath(string const &inPath)
     // and deep copy so we want to avoid that in the common case where the input
     // path is already normalized.
 
-    string path(inPath);
+    basic_string<C> path(inPath);
 
     // Find the first path token.
-    Token t = _NextToken(inPath.begin(), inPath.end());
+    Token<C> t = _NextToken(inPath.begin(), inPath.end());
 
     // Allow zero, one, or two leading slashes, per POSIX.  Three or more get
     // collapsed to one.
@@ -167,12 +171,12 @@ _NormPath(string const &inPath)
         case DotDot: {
             // Here we are very likely to be modifying the string, so we use
             // non-const iterators and mutate.
-            string::reverse_iterator
+            typename basic_string<C>::reverse_iterator
                 rstart(path.begin() + firstWriteIdx),
                 rwrite(path.begin() + writeIdx);
             // Find the last token of the output by finding the next token in
             // reverse.
-            RToken backToken = _NextToken(rwrite, rstart);
+            RToken<C> backToken = _NextToken(rwrite, rstart);
             // If there are no more Elems to consume with DotDots and this is a
             // relative path, or this token is already a DotDot, then copy it to
             // the output.
@@ -204,7 +208,7 @@ _NormPath(string const &inPath)
 
     // If the resulting path is empty, return "."
     if (path.empty())
-        path.assign(".");
+        path.assign(1, '.');
 
     return path;
 }
