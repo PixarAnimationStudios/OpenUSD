@@ -34,9 +34,9 @@ _PackageEncapsulationValidator(const SdfLayerHandle& layer) {
 
 
 
-    std::function<pxrInternal_v0_24__pxrReserved__::UsdUtilsDependencyInfo(
-            const pxrInternal_v0_24__pxrReserved__::SdfLayerHandle &,
-            const pxrInternal_v0_24__pxrReserved__::UsdUtilsDependencyInfo &)> processingFunc = [](const pxr::TfWeakPtr<pxr::SdfLayer>& layer, const pxr::UsdUtilsDependencyInfo& info) {
+    std::function<UsdUtilsDependencyInfo(
+            const SdfLayerHandle &,
+            const UsdUtilsDependencyInfo &)> processingFunc = [](const pxr::TfWeakPtr<pxr::SdfLayer>& layer, const pxr::UsdUtilsDependencyInfo& info) {
         // Define your processing function here
         return pxr::UsdUtilsDependencyInfo();
     };
