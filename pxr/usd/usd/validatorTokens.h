@@ -17,11 +17,12 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define USD_VALIDATOR_NAME_TOKENS                   \
-    ((compositionErrorTest, "usd:CompositionErrorTest"))
+    ((compositionErrorTest, "usd:CompositionErrorTest")) \
+    ((usdzPackageEncapsulationValidator, "usd:UsdzPackageEncapsulationValidator"))
 
 #define USD_VALIDATOR_KEYWORD_TOKENS                \
-    (UsdCoreValidators)
-
+    (UsdCoreValidators)                             \
+    (UsdUsdzValidators)
 /// Tokens representing validator names. Note that for plugin provided
 /// validators, the names must be prefixed by usd:, which is the name of
 /// the usd plugin.

@@ -110,6 +110,7 @@ pxr_library(usd
 
     CPPFILES
         coreValidators.cpp
+        usdzValidators.cpp
 
     PYTHON_CPPFILES
         moduleDeps.cpp
@@ -493,6 +494,18 @@ pxr_build_test(testUsdZipFile_CPP
         usd
     CPPFILES
         testenv/testUsdZipFile.cpp
+)
+
+pxr_build_test(testUsdUsdzValidators
+    LIBRARIES
+        ar
+        arch
+        tf
+        sdf
+        usd
+        usdUtils
+    CPPFILES
+        testenv/testUsdUsdzValidators.cpp
 )
 
 pxr_install_test_dir(
@@ -1318,5 +1331,10 @@ pxr_register_test(testUsdUsdzResolver
 pxr_register_test(testUsdOpaqueAttributes
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdOpaqueAttributes"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUsdzValidators
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUsdzValidators"
     EXPECTED_RETURN_CODE 0
 )
