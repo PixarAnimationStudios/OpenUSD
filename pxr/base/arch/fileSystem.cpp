@@ -235,7 +235,8 @@ std::wstring _ArchHandleLongWindowsPaths(const std::wstring& path)
     // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createdirectoryw
     // ARCH_PATH_MAX counts the null terminator as well
     if (path.size() >= ARCH_PATH_MAX - 12 - 1) {
-        std::wstring longPath = path;
+        // the \\?\ prefix requires removal of any dotdot and dot, need to normalize
+        std::wstring longPath = _NormPath(path);
 
         // the \\?\ prefix requires strict backslash separators:
         // see https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation
