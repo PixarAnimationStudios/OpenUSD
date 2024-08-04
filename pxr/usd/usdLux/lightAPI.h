@@ -79,7 +79,7 @@ class SdfAssetPath;
 /// standard illuminant. Because we do not define the method of uplift beyond
 /// the round-tripping requirement, we discourage the use of such color spaces
 /// as the rendering color space, and instead encourage the use of color spaces
-/// that are naturally conducive to physical colorimetry.
+/// whose white point has a well-defined spectral representation, such as D65.
 /// 
 /// <b>Linking</b>
 /// 
@@ -563,10 +563,11 @@ public:
     /// L<sub>Color</sub> = L<sub>Scalar</sub> ⋅ color
     /// </b></center>
     /// 
-    /// In the case of a spectral renderer, we recommend the use of rendering
-    /// color spaces well defined in terms of a Illuminant D illuminant to
-    /// avoid the need to rely on unspecified uplift behavior.  See:
-    /// ef usdLux_quantities
+    /// In the case of a spectral renderer, this color should be uplifted such
+    /// that it round-trips to within the limit of numerical accuracy under the
+    /// rendering illuminant.  We recommend the use of a rendering color space
+    /// well defined in terms of a Illuminant D illuminant.  See:
+    /// \ref usdLux_quantities
     /// 
     ///
     /// | ||
@@ -623,6 +624,9 @@ public:
     /// regardless of the rendering color space, normalized such that the
     /// default value of 6500 will always result in white, and then should be
     /// transformed to the rendering color space.
+    /// 
+    /// Spectral renderers should do the same and then uplift the resulting
+    /// color after multiplying with the `color` attribute.
     /// 
     ///
     /// | ||

@@ -132,8 +132,8 @@ Note that some color spaces, most notably ACES, define their white points by
 chromaticity coordinates that do not exactly line up to any value of a standard
 illuminant. Because we do not define the method of uplift beyond the round-
 tripping requirement, we discourage the use of such color spaces as the
-rendering color space, and instead encourage the use of color spaces that are
-naturally conducive to physical colorimetry.
+rendering color space, and instead encourage the use of color spaces whose white
+point has a well-defined spectral representation, such as D65.
 
 \subsubsection usdLux_quantities_exposure Exposure
 
