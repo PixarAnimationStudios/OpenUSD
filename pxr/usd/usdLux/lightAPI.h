@@ -57,7 +57,7 @@ class SdfAssetPath;
 /// radiance" or "tristimulus weight".
 /// 
 /// The emission of a default light with `intensity` 1 and `color` [1, 1, 1] is
-/// an Illuminant D spectral power distribution with chromaticity matching the
+/// an Illuminant D spectral distribution with chromaticity matching the
 /// rendering color space white point, normalized such that a ray normally
 /// incident upon the sensor with EV0 exposure settings will generate a pixel
 /// value of [1, 1, 1] in the rendering color space.
@@ -425,7 +425,7 @@ public:
     /// remains constant while altering the size of the light, by dividing the
     /// luminance by the world-space surface area of the light.
     /// 
-    /// This makes it easier to independently adjust the power and shape
+    /// This makes it easier to independently adjust the brightness and size
     /// of the light, by causing the total illumination provided by a light to
     /// not vary with the area or angular size of the light.
     /// 

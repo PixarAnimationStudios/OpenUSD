@@ -111,10 +111,10 @@ e.g. CIE 1931 𝓍̅. Thus the main quantity in an RGB renderer is neither radia
 nor luminance, but "integrated radiance" or "tristimulus weight".
 
 The emission of a default light with `intensity` 1 and `color` [1, 1, 1] is an
-Illuminant D spectral power distribution with chromaticity matching the
-rendering color space white point, normalized such that a ray normally incident
-upon the sensor with EV0 exposure settings will generate a pixel value of [1, 1,
-1] in the rendering color space.
+Illuminant D spectral distribution with chromaticity matching the rendering
+color space white point, normalized such that a ray normally incident upon the
+sensor with EV0 exposure settings will generate a pixel value of [1, 1, 1] in
+the rendering color space.
 
 Given the above definition, that means that the luminance of said default light
 will be 1 *nit (cd∕m²)* and its emission spectral radiance distribution is
