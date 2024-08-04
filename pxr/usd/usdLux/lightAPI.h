@@ -56,7 +56,7 @@ class SdfAssetPath;
 /// in an RGB renderer is neither radiance nor luminance, but "integrated
 /// radiance" or "tristimulus weight".
 /// 
-/// The emision of a default light with `intensity` 1 and `color` [1, 1, 1] is
+/// The emission of a default light with `intensity` 1 and `color` [1, 1, 1] is
 /// an Illuminant D spectral power distribution with chromaticity matching the
 /// rendering color space white point, normalized such that a ray normally
 /// incident upon the sensor with EV0 exposure settings will generate a pixel
@@ -70,15 +70,16 @@ class SdfAssetPath;
 /// "emitted spectral radiance" or "emitted integrated radiance/tristimulus
 /// weight", as appropriate.
 /// 
+/// The method of "uplifting" an RGB color to a spectral distribution is
+/// unspecified other than that it should round-trip under the rendering
+/// illuminant to the limits of numerical accuracy.
+/// 
 /// Note that some color spaces, most notably ACES, define their white points
 /// by chromaticity coordinates that do not exactly line up to any value of a
-/// standard illuminant. In these cases, a spectral renderer should choose the
-/// closest Illuminant D spectrum for the lights' emission (the *rendering
-/// illuminant*) and perform chromatic adaptation to transform the rendered
-/// image to the rendering color space. The method of "uplifting" an RGB color
-/// to a spectral distribution is unspecified other than that it should
-/// round-trip under the rendering illuminant to the limits of numerical
-/// accuracy.
+/// standard illuminant. Because we do not define the method of uplift beyond
+/// the round-tripping requirement, we discourage the use of such color spaces
+/// as the rendering color space, and instead encourage the use of color spaces
+/// that are naturally conducive to physical colorimetry.
 /// 
 /// <b>Linking</b>
 /// 
@@ -310,7 +311,7 @@ public:
     /// L<sub>Scalar</sub> = intensity
     /// </b></center>
     /// 
-    /// More precisely, the lights' emission is in units of spectral radiance
+    /// Normatively, the lights' emission is in units of spectral radiance
     /// normalized such that a directly visible light with `intensity` 1 and
     /// `exposure` 0 normally incident upon the sensor plane will generate a
     /// pixel value of [1, 1, 1] in an RGB renderer, and thus have a luminance
@@ -346,7 +347,7 @@ public:
     /// L<sub>Scalar</sub> = L<sub>Scalar</sub> ⋅ 2<sup>exposure</sup>
     /// </b></center>
     /// 
-    /// More precisely, the lights' emission is in units of spectral radiance
+    /// Normatively, the lights' emission is in units of spectral radiance
     /// normalized such that a directly visible light with `intensity` 1 and
     /// `exposure` 0 normally incident upon the sensor plane will generate a
     /// pixel value of [1, 1, 1] in an RGB renderer, and thus have a luminance
@@ -428,14 +429,12 @@ public:
     /// of the light, by causing the total illumination provided by a light to
     /// not vary with the area or angular size of the light.
     /// 
-    /// More precisely, this means that the luminance of the light will be
+    /// Mathematically, this means that the luminance of the light will be
     /// divided by a factor representing the "size" of the light:
-    /// 
     /// 
     /// <center><b>
     /// L<sub>Scalar</sub> = L<sub>Scalar</sub> / sizeFactor
     /// </b></center>
-    /// 
     /// 
     /// ...where `sizeFactor` = 1 if `normalize` is off, and is calculated
     /// depending on the family of the light as described below if `normalize`
@@ -443,7 +442,7 @@ public:
     /// 
     /// ### DomeLight / PortalLight:
     /// 
-    /// For a dome light (and it's henchman, the PortalLight), this attribute is
+    /// For a dome light (and its henchman, the PortalLight), this attribute is
     /// ignored:
     /// 
     /// <center><b>
@@ -455,7 +454,7 @@ public:
     /// For an area light, the `sizeFactor` is the surface area (in world
     /// space) of the shape of the light, including any scaling applied to the
     /// light by its transform stack. This includes the boundable light types
-    /// which can have a calculable surface area, such as:
+    /// which have a calculable surface area:
     /// 
     /// - MeshLightAPI
     /// - DiskLight
@@ -500,6 +499,7 @@ public:
     /// on a surface normal to the light's primary direction is held constant
     /// when angle changes, and the "intensity" property becomes a measure of
     /// the illuminance, expressed in lux, for a light with 0 exposure.
+    /// 
     /// 2. If we assume that our distant light is an approximation for a "very
     /// far" sphere light (like the sun), then (for
     /// *0 < 𝛳<sub>max</sub> ≤ 𝜋/2*) this definition agrees with the
@@ -520,13 +520,13 @@ public:
     /// - Lights that either inherit from or are strongly associated with one of
     /// the built-in types should follow the behavior of the built-in type
     /// they inherit/resemble; ie, a renderer-specific "MyRendererRectLight"
-    /// should have it's size factor be it's world-space surface area
+    /// should have its size factor be its world-space surface area
     /// - Lights that are boundable and have a calcuable surface area should
-    /// generally follow the rules for an Area Light, and have their
-    /// sizeFactor be their world-space surface area
-    /// - Lights that are non-boundable and/or have no way to "intuitively"
-    /// associate them with a "size" will generally ignore this attribe (ie,
-    /// sizeFactor = 1)
+    /// follow the rules for an Area Light, and have their sizeFactor be their
+    /// world-space surface area
+    /// - Lights that are non-boundable and/or have no way to concretely or even
+    /// "intuitively" associate them with a "size" will ignore this attribe
+    /// (and always set sizeFactor = 1)
     /// 
     /// Lights that don't clearly meet any of the above criteria may either
     /// ignore the normalize attribute or try to implement support using
@@ -557,14 +557,16 @@ public:
     // --------------------------------------------------------------------- //
     /// The color of emitted light, in the rendering color space.
     /// 
-    /// This color is just multiplied with the emission. In the case of a
-    /// spectral renderer, this color should be uplifted such that it round-
-    /// trips to within the limit of numerical accuracy under the rendering
-    /// illuminant.
+    /// This color is just multiplied with the emission:
     /// 
     /// <center><b>
     /// L<sub>Color</sub> = L<sub>Scalar</sub> ⋅ color
     /// </b></center>
+    /// 
+    /// In the case of a spectral renderer, we recommend the use of rendering
+    /// color spaces well defined in terms of a Illuminant D illuminant to
+    /// avoid the need to rely on unspecified uplift behavior.  See:
+    /// ef usdLux_quantities
     /// 
     ///
     /// | ||
@@ -621,9 +623,6 @@ public:
     /// regardless of the rendering color space, normalized such that the
     /// default value of 6500 will always result in white, and then should be
     /// transformed to the rendering color space.
-    /// 
-    /// Spectral renderers should do the same and then uplift the resulting
-    /// color after multiplying with the `color` attribute.
     /// 
     ///
     /// | ||

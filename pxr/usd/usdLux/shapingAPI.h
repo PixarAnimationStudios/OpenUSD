@@ -282,7 +282,7 @@ public:
     /// 
     /// For coneSoftness in the range (0, 1], it defines the proportion of the
     /// non-cutoff angles over which the luminance is smoothly interpolated from
-    /// 0 to 1.  More precisely:
+    /// 0 to 1.  Mathematically:
     /// 
     /// <center><b>
     /// 𝛳<sub>offAxis</sub> = acos(lightAxis • emissionDir)
