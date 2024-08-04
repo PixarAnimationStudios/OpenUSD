@@ -560,18 +560,18 @@ function(_pxr_enable_precompiled_header TARGET_NAME)
                 COMMAND ${CMAKE_COMMAND} -E touch ${abs_output_source_path}
             )
 
-            # The trigger file gets a special compile flag (/Yc).
-            set_source_files_properties(${abs_output_source_path} PROPERTIES
-                COMPILE_FLAGS "/Yc\"${rel_output_header_path}\" /FI\"${rel_output_header_path}\" /Fp\"${abs_precompiled_path}\""
-                OBJECT_OUTPUTS "${abs_precompiled_path}"
-                OBJECT_DEPENDS "${abs_output_header_path}"
-            )
-
             # Add the header file to the target.
             target_sources(${TARGET_NAME} PRIVATE "${abs_output_header_path}")
 
             # Add the trigger file to the target.
             target_sources(${TARGET_NAME} PRIVATE "${abs_output_source_path}")
+
+            # The trigger file gets a special compile flag (/Yc).
+            set_source_files_properties(${abs_output_source_path} PROPERTIES
+                    COMPILE_FLAGS "/Yc\"${rel_output_header_path}\" /FI\"${rel_output_header_path}\" /Fp\"${abs_precompiled_path}\""
+                    OBJECT_OUTPUTS "${abs_precompiled_path}"
+                    OBJECT_DEPENDS "${abs_output_header_path}"
+            )
 
             # Exclude the trigger.
             list(APPEND pch_EXCLUDE ${abs_output_source_path})
