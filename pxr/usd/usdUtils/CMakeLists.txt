@@ -34,6 +34,7 @@ pxr_library(usdUtils
         stitch
         stitchClips
         timeCodeRange
+        validatorTokens
         usdzPackage
 
     PRIVATE_CLASSES
@@ -44,6 +45,9 @@ pxr_library(usdUtils
     PUBLIC_HEADERS
         api.h
         userProcessingFunc.h
+
+    CPPFILES
+        validators.cpp
 
     PYTHON_CPPFILES
         moduleDeps.cpp
@@ -74,6 +78,9 @@ pxr_library(usdUtils
         toolPaths.py
         updateSchemaWithSdrNode.py
         usdzUtils.py
+
+    RESOURCE_FILES
+        plugInfo.json
 
     DOXYGEN_FILES
         overview.dox
@@ -142,6 +149,18 @@ pxr_build_test(testUsdUtilsTimeCodeRangeCpp
         usdUtils
     CPPFILES
         testenv/testUsdUtilsTimeCodeRange.cpp
+)
+
+pxr_build_test(testUsdUtilsValidators
+    LIBRARIES
+        ar
+        arch
+        tf
+        sdf
+        usd
+        usdUtils
+    CPPFILES
+        testenv/testUsdUtilsValidators.cpp
 )
 
 pxr_install_test_dir(
@@ -288,6 +307,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsUserProcessingFunc
     DEST testUsdUtilsUserProcessingFunc
+)
+
+pxr_install_test_dir(
+        SRC testenv/testUsdUtilsPackageEncapsulation
+        DEST testUsdUtilsPackageEncapsulation
 )
 
 pxr_register_test(testUsdUtilsAuthoring
@@ -685,5 +709,10 @@ pxr_register_test(testUsdUtilsVarSelsSessionLayer
 pxr_register_test(testUsdUtilsUsdzUtils
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsUsdzUtils"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsValidators
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsValidators"
     EXPECTED_RETURN_CODE 0
 )
