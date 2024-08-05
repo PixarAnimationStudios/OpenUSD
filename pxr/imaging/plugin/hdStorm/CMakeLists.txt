@@ -26,7 +26,6 @@ pxr_plugin(hdStorm
         hd
         hdSt
         ${OPENSUBDIV_LIBRARIES}
-        TBB::tbb
 
     INCLUDE_DIRS
         ${OPENSUBDIV_INCLUDE_DIR}

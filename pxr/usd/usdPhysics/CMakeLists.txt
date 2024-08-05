@@ -13,7 +13,6 @@ pxr_library(usdPhysics
         usdShade
         work
         ${Boost_PYTHON_LIBRARY}
-        TBB::tbb
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}

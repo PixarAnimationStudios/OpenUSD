@@ -19,7 +19,6 @@ pxr_library(usdRiPxrImaging
         usdImaging
         usdVol
         ar
-        TBB::tbb
 
     PUBLIC_CLASSES
         pxrCameraAPIAdapter

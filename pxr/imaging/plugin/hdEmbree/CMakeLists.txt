@@ -21,7 +21,6 @@ pxr_plugin(hdEmbree
         hf
         hd
         hdx
-        TBB::tbb
         ${EMBREE_LIBRARY}
 
     INCLUDE_DIRS

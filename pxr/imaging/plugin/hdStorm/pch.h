@@ -75,10 +75,6 @@
 #undef toupper
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-#include <tbb/cache_aligned_allocator.h>
-#include <tbb/concurrent_hash_map.h>
-#include <tbb/concurrent_queue.h>
-#include <tbb/spin_mutex.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED
