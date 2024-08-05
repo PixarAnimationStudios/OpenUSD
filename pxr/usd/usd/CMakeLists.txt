@@ -410,6 +410,7 @@ pxr_build_test(testUsdThreadedAuthoring
         work
         sdf
         usd
+        TBB::tbb
     CPPFILES
         testenv/testUsdThreadedAuthoring.cpp
 )
