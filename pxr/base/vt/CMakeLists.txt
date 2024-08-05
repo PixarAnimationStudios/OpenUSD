@@ -7,10 +7,7 @@ pxr_library(vt
         tf
         gf
         trace
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
+        TBB::tbb
 
     PUBLIC_CLASSES
         array

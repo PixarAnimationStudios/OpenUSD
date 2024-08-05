@@ -22,10 +22,7 @@ pxr_library(usdImaging
         usdShade
         usdVol
         ar
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
+        TBB::tbb
 
     PUBLIC_CLASSES
         adapterRegistry

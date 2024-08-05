@@ -8,10 +8,7 @@ pxr_library(ar
         tf
         plug
         vt
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
+        TBB::tbb
 
     PUBLIC_CLASSES
         asset

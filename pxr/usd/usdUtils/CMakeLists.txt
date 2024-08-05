@@ -10,10 +10,7 @@ pxr_library(usdUtils
         usd
         usdGeom
         usdShade
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
+        TBB::tbb
 
     PUBLIC_CLASSES
         authoring

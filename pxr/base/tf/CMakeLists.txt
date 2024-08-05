@@ -114,10 +114,7 @@ pxr_library(tf
     LIBRARIES
         arch
         ${WINLIBS}
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
+        TBB::tbb
 
     PUBLIC_CLASSES
         anyUniquePtr

@@ -31,10 +31,6 @@ pxr_library(usdImagingGL
         usdShade
         usdImaging
         ar
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
         engine
