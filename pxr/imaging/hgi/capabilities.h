@@ -36,6 +36,11 @@ public:
     virtual int GetShaderVersion() const = 0;
 
     HGI_API
+    virtual bool GetCoreProfile() const {
+        return false;
+    }
+
+    HGI_API
     size_t GetMaxUniformBlockSize() const {
         return _maxUniformBlockSize;
     }

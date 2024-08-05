@@ -15,6 +15,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HgiCapabilities;
 
 /// \class HgiGLScopedStateHolder
 ///
@@ -33,7 +34,7 @@ class HgiGL_ScopedStateHolder final
 {
 public:
     HGIGL_API
-    HgiGL_ScopedStateHolder();
+    HgiGL_ScopedStateHolder(HgiCapabilities const& capabilities);
 
     HGIGL_API
     ~HgiGL_ScopedStateHolder();
@@ -41,6 +42,8 @@ public:
 private:
     HgiGL_ScopedStateHolder& operator=(const HgiGL_ScopedStateHolder&) = delete;
     HgiGL_ScopedStateHolder(const HgiGL_ScopedStateHolder&) = delete;
+
+    bool _coreProfile;
 
     int32_t _restoreRenderBuffer;
     int32_t _restoreVao;
