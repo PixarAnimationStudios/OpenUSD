@@ -75,6 +75,7 @@
 #include "pxr/base/tf/span.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/ts/spline.h"
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/utils.h"
@@ -1818,6 +1819,94 @@ _SetMappedValueForEditTarget(UsdObject const &obj,
     return setValueImpl(in);
 }
 
+class Usd_TypeQueryAccess
+{
+public:
+    static TfType GetAttributeValueType(
+        const UsdAttribute &attr)
+    {
+        return attr.GetStage()->_GetAttributeValueType(attr);
+    }
+};
+
+// Set handler for splines.  Verifies that value types match, then applies layer
+// offsets to knot times, tangent widths, and (for timecode-valued attributes)
+// values.  Of these two jobs, type validation is unusual for a SetMappedValue
+// handler, but this is a convenient place for it.
+//
+template <typename Fn>
+static bool
+_SetMappedValueForEditTarget(UsdObject const &obj,
+                             const TsSpline &spline,
+                             const UsdEditTarget &editTarget,
+                             const Fn &setValueImpl)
+{
+    if (!obj.Is<UsdAttribute>()) {
+        TF_CODING_ERROR("Splines can only be set in attributes");
+        return false;
+    }
+
+    static const TfType doubleType = TfType::Find<double>();
+    static const TfType timecodeType = TfType::Find<SdfTimeCode>();
+
+    // Find the attribute's value type.
+    const UsdAttribute attr = obj.As<UsdAttribute>();
+    const TfType attrType = Usd_TypeQueryAccess::GetAttributeValueType(attr);
+    if (!attrType) {
+        return false;
+    }
+    const bool attrIsTimeValued = (attrType == timecodeType);
+
+    // Verify splines are supported for this value type.
+    if (!TsSpline::IsSupportedValueType(attrType)
+            && attrType != timecodeType) {
+        TF_CODING_ERROR("Can't set spline on <%s>: splines are only "
+                        "supported on scalar floating-point attributes",
+                        attr.GetPath().GetText());
+        return false;
+    }
+
+    // Verify a spline of the correct value type has been provided.
+    const TfType expectedSplineValueType =
+        (attrIsTimeValued ? doubleType : attrType);
+    if (spline.GetValueType() != expectedSplineValueType) {
+        TF_CODING_ERROR("Can't set spline of type '%s' on <%s>, "
+                        "which requires splines of type '%s'",
+                        spline.GetValueType().GetTypeName().c_str(),
+                        attr.GetPath().GetText(),
+                        expectedSplineValueType.GetTypeName().c_str());
+        return false;
+    }
+
+    // Verify we don't have a mismatch in time-valued-ness.
+    if (attrIsTimeValued && !spline.IsTimeValued()) {
+        TF_CODING_ERROR("Can't set non-time-valued spline on <%s>, "
+                        "which is time-valued",
+                        attr.GetPath().GetText());
+        return false;
+    }
+    if (!attrIsTimeValued && spline.IsTimeValued()) {
+        TF_CODING_ERROR("Can't non-time-valued spline on <%s>, "
+                        "which is not time-valued",
+                        attr.GetPath().GetText());
+        return false;
+    }
+
+    // Make a copy of the spline to modify.
+    TsSpline mappedSpline = spline;
+
+    // Apply layer offset.
+    const SdfLayerOffset &layerOffset =
+        editTarget.GetMapFunction().GetTimeOffset();
+    if (!layerOffset.IsIdentity()) {
+        Usd_ApplyLayerOffsetToValue(&mappedSpline, layerOffset.GetInverse());
+    }
+
+    // Pass to setter.
+    SdfAbstractDataConstTypedValue<TsSpline> splineValue(&mappedSpline);
+    return setValueImpl(splineValue);
+}
+
 template <class T>
 bool UsdStage::_SetEditTargetMappedMetadata(
     const UsdObject &obj, const TfToken& fieldName,
@@ -2084,6 +2173,7 @@ _IsPrivateFieldKey(const TfToken& fieldKey)
         // Value keys.
         ignoredKeys.insert(SdfFieldKeys->Default);
         ignoredKeys.insert(SdfFieldKeys->TimeSamples);
+        ignoredKeys.insert(SdfFieldKeys->Spline);
     });
 
     // First look-up the field in the exclude/ignore table.
@@ -6362,6 +6452,8 @@ protected:
             // types.
             _TryApplyLayerOffsetToValue<SdfTimeSampleMap>(
                 this->_value, layerOffsetAccess) ||
+            _TryApplyLayerOffsetToValue<TsSpline>(
+                this->_value, layerOffsetAccess) ||
             _TryResolveAssetPaths(
                 this->_value, context,
                 { &stage, layer, specPath, node },
@@ -6541,6 +6633,18 @@ TypeSpecificValueComposer<SdfTimeSampleMap>::_ResolveValue(
     _UncheckedApplyLayerOffsetToValue<SdfTimeSampleMap>(_value, offset);
 }
 
+template <>
+void 
+TypeSpecificValueComposer<TsSpline>::_ResolveValue(
+    const UsdStage &stage,
+    const PcpNodeRef &node,
+    const SdfLayerRefPtr &layer,
+    const SdfPath &specPath)
+{
+    SdfLayerOffset offset = _GetLayerToStageOffset(node, layer);
+    _UncheckedApplyLayerOffsetToValue<TsSpline>(_value, offset);
+}
+
 // The TypeSpecificValueComposer for SdfPathExpression has additional
 // specialization for consuming values as it merges in weaker values unlike most
 // types that only consume the strongest value.
@@ -6701,6 +6805,34 @@ protected:
 
 }
 
+TfType
+UsdStage::_GetAttributeValueType(
+    const UsdAttribute &attr) const
+{
+    // Obtain typeName.
+    TfToken typeName;
+    SdfAbstractDataTypedValue<TfToken> abstrToken(&typeName);
+    TypeSpecificValueComposer<TfToken> composer(&abstrToken, attr);
+    _GetMetadataImpl(attr, SdfFieldKeys->TypeName, TfToken(),
+                     /*useFallbacks=*/true, &composer);
+
+    if (typeName.IsEmpty()) {
+        TF_RUNTIME_ERROR("Empty typeName for <%s>",
+                         attr.GetPath().GetText());
+        return TfType();
+    }
+
+    // Emit an error if this typeName is not known to our schema.
+    const TfType valType =
+        SdfSchema::GetInstance().FindType(typeName).GetType();
+    if (valType.IsUnknown()) {
+        TF_RUNTIME_ERROR("Unknown typename for <%s>: '%s'",
+                         typeName.GetText(), attr.GetPath().GetText());
+    }
+
+    return valType;
+}
+
 template <class T>
 bool
 UsdStage::_SetValueImpl(
@@ -6708,30 +6840,16 @@ UsdStage::_SetValueImpl(
 {
     // if we are setting a value block, we don't want type checking
     if (!Usd_ValueContainsBlock(&newValue)) {
-        // Do a type check.  Obtain typeName.
-        TfToken typeName;
-        SdfAbstractDataTypedValue<TfToken> abstrToken(&typeName);
-        TypeSpecificValueComposer<TfToken> composer(&abstrToken, attr);
-        _GetMetadataImpl(attr, SdfFieldKeys->TypeName, TfToken(), 
-                         /*useFallbacks=*/true, &composer);
-
-        if (typeName.IsEmpty()) {
-                TF_RUNTIME_ERROR("Empty typeName for <%s>", 
-                                 attr.GetPath().GetText());
-            return false;
-        }
-        // Ensure this typeName is known to our schema.
-        TfType valType = SdfSchema::GetInstance().FindType(typeName).GetType();
-        if (valType.IsUnknown()) {
-            TF_RUNTIME_ERROR("Unknown typename for <%s>: '%s'",
-                             typeName.GetText(), attr.GetPath().GetText());
+        // Find the attribute's value type.
+        const TfType valType = _GetAttributeValueType(attr);
+        if (!valType) {
             return false;
         }
         static const TfType opaqueType = TfType::Find<SdfOpaqueValue>();
         if (valType == opaqueType) {
-            TF_CODING_ERROR("Can't set value on <%s>: %s-typed attributes "
+            TF_CODING_ERROR("Can't set value on <%s>: opaque-typed attributes "
                             "cannot have an authored default value",
-                            attr.GetPath().GetText(), typeName.GetText());
+                            attr.GetPath().GetText());
             return false;
         }
         // Check that the passed value is the expected type.
@@ -9787,6 +9905,7 @@ INSTANTIATE_GET_TYPE_RESOLVED_AND_SET_MAPPED_METADATA(
 // SdfTimeSampleMap because we provide a specialization instead.
 INSTANTIATE_SET_MAPPED_METADATA(SdfTimeSampleMap);
 INSTANTIATE_GET_TYPE_RESOLVED_AND_SET_MAPPED_METADATA(VtDictionary);
+INSTANTIATE_GET_TYPE_RESOLVED_AND_SET_MAPPED_METADATA(TsSpline);
 
 #undef INSTANTIATE_GET_TYPE_RESOLVED_AND_SET_MAPPED_METADATA
 #undef INSTANTIATE_GET_TYPE_RESOLVED_METADATA

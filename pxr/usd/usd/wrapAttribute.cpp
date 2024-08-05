@@ -9,6 +9,7 @@
 #include "pxr/usd/usd/wrapUtils.h"
 
 #include "pxr/usd/usd/pyConversions.h"
+#include "pxr/base/ts/spline.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -153,6 +154,10 @@ void wrapUsdAttribute()
 
         .def("Get", _Get, arg("time")=UsdTimeCode::Default())
         .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
+
+        .def("HasSpline", &UsdAttribute::HasSpline)
+        .def("GetSpline", &UsdAttribute::GetSpline)
+        .def("SetSpline", &UsdAttribute::SetSpline)
 
         .def("GetResolveInfo", 
              (UsdResolveInfo (UsdAttribute::*)(UsdTimeCode) const) 

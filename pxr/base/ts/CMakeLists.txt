@@ -2,12 +2,9 @@ set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE ts)
 
 set(libs
-    arch
-    gf
-    plug
-    tf
-    trace
     vt
+    gf
+    tf
     ${Boost_PYTHON_LIBRARY}
 )
 
@@ -16,50 +13,64 @@ set(include
 )
 
 set(classes
-    data
-    diff
-    evalCache
-    keyFrame
-    keyFrameMap
-    keyFrameUtils
-    loopParams
-    mathUtils
-    simplify
+    binary
+    debugCodes
+    eval
+    knot
+    knotData
+    knotMap
+    raii
+    regressionPreventer
     spline
-    spline_KeyFrames
-    tsTest_Evaluator
-    tsTest_Museum
-    tsTest_SampleBezier
-    tsTest_SampleTimes
-    tsTest_SplineData
-    tsTest_TsEvaluator
-    tsTest_Types
+    splineData
+    typeHelpers
     types
-    typeRegistry
+)
+
+set(headers
+    api.h
+    valueTypeDispatch.h
 )
 
 set(pyfiles
     __init__.py
-    TsTest_Comparator.py
-    TsTest_CompareBaseline.py
-    TsTest_Grapher.py
 )
 
 set(pycpp
     module.cpp
-    wrapKeyFrame.cpp
-    wrapLoopParams.cpp
-    wrapSimplify.cpp
+    wrapKnot.cpp
+    wrapKnotMap.cpp
+    wrapRaii.cpp
+    wrapRegressionPreventer.cpp
     wrapSpline.cpp
-    wrapTsTest_Evaluator.cpp
-    wrapTsTest_Museum.cpp
-    wrapTsTest_SampleBezier.cpp
-    wrapTsTest_SampleTimes.cpp
-    wrapTsTest_SplineData.cpp
-    wrapTsTest_TsEvaluator.cpp
-    wrapTsTest_Types.cpp
     wrapTypes.cpp
 )
+
+if (${PXR_BUILD_TESTS})
+    list(APPEND classes
+        tsTest_Museum
+        tsTest_SampleBezier
+        tsTest_SampleTimes
+        tsTest_SplineData
+        tsTest_TsEvaluator
+    )
+    list(APPEND headers
+        tsTest_Types.h
+    )
+    list(APPEND pycpp
+        wrapTsTest_Museum.cpp
+        wrapTsTest_SampleBezier.cpp
+        wrapTsTest_SampleTimes.cpp
+        wrapTsTest_SplineData.cpp
+        wrapTsTest_TsEvaluator.cpp
+        wrapTsTest_Types.cpp
+    )
+    list(APPEND pyfiles
+        TsTest_Comparator.py
+        TsTest_Baseliner.py
+        TsTest_Grapher.py
+    )
+endif()
 
 if (${PXR_BUILD_MAYAPY_TESTS})
     list(APPEND pyfiles
@@ -86,14 +97,7 @@ pxr_library(ts
         ${classes}
 
     PUBLIC_HEADERS
-        api.h
-        evaluator.h
-
-    PRIVATE_HEADERS
-        wrapUtils.h
-
-    PRIVATE_CLASSES
-        evalUtils
+        ${headers}
 
     PYTHON_CPPFILES
         moduleDeps.cpp
@@ -105,23 +109,43 @@ pxr_library(ts
         ${pyfiles}
 
     DOXYGEN_FILES
-        tsTest.dox
+        doxygen/overview.md
+        doxygen/status.md
+        doxygen/regression.md
+        doxygen/tsTest.dox
+        doxygen/images/boldS.png
+        doxygen/images/centerVertical.png
+        doxygen/images/endVert.png
+        doxygen/images/fourThirdOneThird.png
+        doxygen/images/keepRatio.png
+        doxygen/images/keepStart.png
+        doxygen/images/nearVertical.png
+        doxygen/images/oneThirdFourThird.png
+        doxygen/images/regressiveS.png
+        doxygen/images/regressiveSStandard.png
+        doxygen/images/startVert.png
+        doxygen/images/tanLens.png
 )
 
-if (${PXR_BUILD_ANIMX_TESTS})
-    target_compile_definitions(ts PRIVATE PXR_BUILD_ANIMX_TESTS)
-    target_compile_definitions(_ts PRIVATE PXR_BUILD_ANIMX_TESTS)
+if (${PXR_BUILD_TESTS})
+    target_compile_definitions(ts PRIVATE TS_BUILD_TEST_FRAMEWORK)
+    if (TARGET _ts)
+        target_compile_definitions(_ts PRIVATE TS_BUILD_TEST_FRAMEWORK)
+    endif()
 endif()
 
-pxr_build_test(
-    testTs_HardToReach
-    CPPFILES
-        testenv/testTs_HardToReach.cpp
-    LIBRARIES
-        ts
-        gf
-        tf
-)
+if (${PXR_BUILD_ANIMX_TESTS})
+    target_compile_definitions(ts PRIVATE TS_BUILD_ANIMX_TEST_FRAMEWORK)
+    if (TARGET _ts)
+        target_compile_definitions(_ts PRIVATE TS_BUILD_ANIMX_TEST_FRAMEWORK)
+    endif()
+endif()
+
+if (PXR_TS_DEFAULT_ANTI_REGRESSION_AUTHORING_MODE)
+    set(val "${PXR_TS_DEFAULT_ANTI_REGRESSION_AUTHORING_MODE}")
+    target_compile_definitions(
+        ts PRIVATE "-DPXR_TS_DEFAULT_ANTI_REGRESSION_AUTHORING_MODE=${val}")
+endif()
 
 pxr_build_test(
     testTsThreadedCOW
@@ -130,16 +154,23 @@ pxr_build_test(
     LIBRARIES
         ts
         tf
+)
+
+pxr_build_test(
+    testTsSplineAPI
+    CPPFILES
+        testenv/testTsSplineAPI.cpp
+    LIBRARIES
+        ts
         vt
+        tf
 )
 
 pxr_test_scripts(
-    testenv/testTsSpline.py
-    testenv/testTsSplineAPI.py
-    testenv/testTsKeyFrame.py
-    testenv/testTsSimplify.py
     testenv/testTsDerivatives.py
+    testenv/testTsRegressionPreventer.py
     testenv/tsTest_TsFramework.py
+    testenv/tsTest_TsVsBezier.py
 )
 
 pxr_install_test_dir(
@@ -147,28 +178,9 @@ pxr_install_test_dir(
     DEST tsTest_TsFramework
 )
 
-pxr_register_test(
-    testTsSpline
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTsSpline"
-)
-
-pxr_register_test(
-    testTsSplineAPI
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTsSplineAPI"
-)
-
-pxr_register_test(
-    testTsKeyFrame
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTsKeyFrame"
-)
-
-pxr_register_test(
-    testTsSimplify
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTsSimplify"
+pxr_install_test_dir(
+    SRC testenv/testTsRegressionPreventer.testenv
+    DEST testTsRegressionPreventer
 )
 
 pxr_register_test(
@@ -178,8 +190,9 @@ pxr_register_test(
 )
 
 pxr_register_test(
-    testTs_HardToReach
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTs_HardToReach"
+    testTsRegressionPreventer
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTsRegressionPreventer"
 )
 
 pxr_register_test(
@@ -188,9 +201,20 @@ pxr_register_test(
 )
 
 pxr_register_test(
+    testTsSplineAPI
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTsSplineAPI"
+)
+
+pxr_register_test(
     tsTest_TsFramework
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/tsTest_TsFramework"
+)
+
+pxr_register_test(
+    tsTest_TsVsBezier
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/tsTest_TsVsBezier"
 )
 
 if (${PXR_BUILD_MAYAPY_TESTS})

@@ -949,6 +949,19 @@ def InstallBoost(context, force, buildArgs):
 BOOST = Dependency("boost", InstallBoost, *BOOST_VERSION_FILES)
 
 ############################################################
+# Intel oneTBB
+
+ONETBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.9.0.zip"
+
+def InstallOneTBB(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(ONETBB_URL, context, force)):
+        RunCMake(context, force, 
+                 ['-DTBB_TEST=OFF',
+                  '-DTBB_STRICT=OFF'] + buildArgs)
+
+ONETBB = Dependency("oneTBB", InstallOneTBB, "include/oneapi/tbb.h")
+
+############################################################
 # Intel TBB
 
 if Windows():
@@ -2097,6 +2110,14 @@ subgroup.add_argument("--materialx", dest="build_materialx", action="store_true"
 subgroup.add_argument("--no-materialx", dest="build_materialx", action="store_false",
                       help="Disable MaterialX support")
 
+group = parser.add_argument_group(title="TBB Options")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--onetbb", dest="build_onetbb", action="store_true",
+                      default=False,
+                      help="Build using oneTBB instead of TBB")
+subgroup.add_argument("--no-onetbb", dest="build_onetbb", action="store_false",
+                      help="Build using TBB (default)")
+
 group = parser.add_argument_group(title="Spline Test Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--mayapy-tests",
@@ -2267,6 +2288,9 @@ class InstallContext:
         # - MaterialX
         self.buildMaterialX = args.build_materialx
 
+        # - TBB
+        self.buildOneTBB = args.build_onetbb
+
         # - Spline Tests
         self.buildMayapyTests = args.build_mayapy_tests
         self.mayapyLocation = args.mayapy_location
@@ -2308,6 +2332,9 @@ if extraPythonPaths:
 
 # Determine list of dependencies that are required based on options
 # user has selected.
+if context.buildOneTBB:
+    TBB = ONETBB
+
 requiredDependencies = [ZLIB, TBB]
 
 if context.buildPython:
@@ -2359,6 +2386,11 @@ if Linux():
 # enabled. This currently results in missing symbols.
 if context.buildDraco and context.buildMonolithic and Windows():
     PrintError("Draco plugin can not be enabled for monolithic build on Windows")
+    sys.exit(1)
+
+# The versions of Embree we currently support do not support oneTBB.
+if context.buildOneTBB and context.buildEmbree:
+    PrintError("Embree support cannot be enabled when building against oneTBB")
     sys.exit(1)
 
 # Error out if user explicitly enabled components which aren't

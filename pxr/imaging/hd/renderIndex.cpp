@@ -53,6 +53,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_ENV_SETTING(HD_ENABLE_SCENE_INDEX_EMULATION, true,
                       "Enable scene index emulation in the render index.");
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _noticeBatchingTokens,
+    ((postEmulation, "Post-Emulation Notice Batching Scene Index"))
+    ((postMerging, "Post-Merging Notice Batching Scene Index"))
+);
+
+
 static bool
 _IsEnabledSceneIndexEmulation()
 {
@@ -60,6 +67,68 @@ _IsEnabledSceneIndexEmulation()
         (TfGetEnvSetting(HD_ENABLE_SCENE_INDEX_EMULATION) == true);
     return enabled;
 }
+
+// -------------------------------------------------------------------------- //
+
+/// Object that manages a notice batching scene index with support for nested
+/// calls to BeginBatching/EndBatching.
+///
+class HdRenderIndex::_NoticeBatchingContext
+{
+public:
+    _NoticeBatchingContext(const TfToken &displayName)
+    : _displayName(displayName) {}
+
+    ~_NoticeBatchingContext()
+    {
+        if (_batchingDepth != 0) {
+            TF_CODING_ERROR("Imbalanced batch begin/end calls for %s.\n",
+                _displayName.GetText());
+        }
+    }
+
+    /// Creates and returns a notice batching scene index that takes \p inputSi
+    /// as its input.
+    HdSceneIndexBaseRefPtr Append(
+        HdSceneIndexBaseRefPtr const &inputSi)
+    {
+        _nbSi = HdNoticeBatchingSceneIndex::New(inputSi);
+        _nbSi->SetDisplayName(_displayName.GetString());
+        return _nbSi;
+    }
+
+    void BeginBatching()
+    {
+        if (_nbSi) {
+            if (_batchingDepth == 0) {
+                _nbSi->SetBatchingEnabled(true);
+            }
+            ++_batchingDepth;
+        }
+    }
+
+    void EndBatching()
+    {
+        if (_nbSi) {
+            if (_batchingDepth > 0) {
+                --_batchingDepth;
+
+                if (_batchingDepth == 0) {
+                    _nbSi->SetBatchingEnabled(false);
+                }
+            } else {
+                TF_CODING_ERROR("Imbalanced batch begin/end calls for %s.\n",
+                    _displayName.GetText());
+            }
+        }
+    }
+private:
+    HdNoticeBatchingSceneIndexRefPtr _nbSi;
+    unsigned int _batchingDepth = 0;
+    const TfToken _displayName;
+};
+
+// -------------------------------------------------------------------------- //
 
 bool
 HdRenderIndex::IsSceneIndexEmulationEnabled()
@@ -71,7 +140,10 @@ HdRenderIndex::HdRenderIndex(
     HdRenderDelegate *renderDelegate,
     HdDriverVector const& drivers,
     const std::string &instanceName)
-    : _noticeBatchingDepth(0)
+    : _emulationBatchingCtx(std::make_unique<_NoticeBatchingContext>(
+        _noticeBatchingTokens->postEmulation))
+    , _mergingBatchingCtx(std::make_unique<_NoticeBatchingContext>(
+        _noticeBatchingTokens->postMerging))
     , _renderDelegate(renderDelegate)
     , _drivers(drivers)
     , _instanceName(instanceName)
@@ -102,13 +174,14 @@ HdRenderIndex::HdRenderIndex(
     // data structures now.
     if (_IsEnabledSceneIndexEmulation()) {
         _emulationSceneIndex = HdLegacyPrimSceneIndex::New();
-        _emulationNoticeBatchingSceneIndex =
-            HdNoticeBatchingSceneIndex::New(_emulationSceneIndex);
+
         _mergingSceneIndex = HdMergingSceneIndex::New();
         _mergingSceneIndex->AddInputScene(
-            _emulationNoticeBatchingSceneIndex, SdfPath::AbsoluteRootPath());
+            _emulationBatchingCtx->Append(_emulationSceneIndex),
+            SdfPath::AbsoluteRootPath());
 
-        _terminalSceneIndex = _mergingSceneIndex;
+        _terminalSceneIndex =
+            _mergingBatchingCtx->Append(_mergingSceneIndex);
         
         _terminalSceneIndex = HdLegacyGeomSubsetSceneIndex::New(
             _terminalSceneIndex);
@@ -153,10 +226,6 @@ HdRenderIndex::~HdRenderIndex()
     }
 
     _DestroyFallbackPrims();
-
-    if (_noticeBatchingDepth != 0) {
-        TF_CODING_ERROR("Imbalanced batch begin/end calls");
-    }
 }
 
 HdRenderIndex*
@@ -755,28 +824,25 @@ HdRenderIndex::GetResourceRegistry() const
 void
 HdRenderIndex::SceneIndexEmulationNoticeBatchBegin()
 {
-    if (_emulationNoticeBatchingSceneIndex) {
-        if (_noticeBatchingDepth == 0) {
-            _emulationNoticeBatchingSceneIndex->SetBatchingEnabled(true);
-        }
-        ++_noticeBatchingDepth;
-    }
+    _emulationBatchingCtx->BeginBatching();
 }
 
 void
 HdRenderIndex::SceneIndexEmulationNoticeBatchEnd()
 {
-    if (_emulationNoticeBatchingSceneIndex) {
-        if (_noticeBatchingDepth > 0) {
-            --_noticeBatchingDepth;
+    _emulationBatchingCtx->EndBatching();
+}
 
-            if (_noticeBatchingDepth == 0) {
-                _emulationNoticeBatchingSceneIndex->SetBatchingEnabled(false);
-            }
-        } else {
-            TF_CODING_ERROR("Imbalanced batch begin/end calls");
-        }
-    }
+void
+HdRenderIndex::MergingSceneIndexNoticeBatchBegin()
+{
+    _mergingBatchingCtx->BeginBatching();
+}
+
+void
+HdRenderIndex::MergingSceneIndexNoticeBatchEnd()
+{
+    _mergingBatchingCtx->EndBatching();
 }
 
 std::string

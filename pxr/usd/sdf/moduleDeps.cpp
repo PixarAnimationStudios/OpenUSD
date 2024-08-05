@@ -25,6 +25,7 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
         TfToken("plug"),
         TfToken("tf"),
         TfToken("trace"),
+        TfToken("ts"),
         TfToken("vt"),
         TfToken("work")
     };

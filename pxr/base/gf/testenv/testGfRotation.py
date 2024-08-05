@@ -88,9 +88,13 @@ class TestGfRotation(unittest.TestCase):
     def test_TransformDir(self):
         r = Gf.Rotation(Gf.Vec3d(1,1,1), 30)
         dirf = Gf.Vec3f(3, 4, 5)
-        dird = Gf.Vec3f(5, 4, 3)
-        self.assertTrue(r.TransformDir(dirf) == Gf.Matrix4d().SetRotate(r).TransformDir(dirf) and
-            r.TransformDir(dird) == Gf.Matrix4d().SetRotate(r).TransformDir(dird))
+        dird = Gf.Vec3d(5, 4, 3)
+        self.assertEqual(
+            r.TransformDir(dirf),
+            Gf.Matrix4d().SetRotate(r).TransformDir(dirf))
+        self.assertEqual(
+            r.TransformDir(dird),
+            Gf.Matrix4d().SetRotate(r).TransformDir(dird))
 
         self.assertEqual(r, eval(repr(r)))
         self.assertTrue(len(str(r)))

@@ -4,12 +4,20 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_FILTER_H
-#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_FILTER_H
+#ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_FILTER_H
+#define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_FILTER_H
+
+#include "pxr/imaging/hd/sprim.h"
+#include "pxr/imaging/hd/types.h"
+
+#include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/tf/token.h"
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/sprim.h"
-#include "Riley.h"
+
+#include <Riley.h>
+#include <RileyIds.h>
 
 #include <mutex>
 
@@ -68,4 +76,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_FILTER_H
+#endif  // EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_FILTER_H

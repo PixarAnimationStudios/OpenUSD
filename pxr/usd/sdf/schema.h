@@ -613,6 +613,7 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
     ((SessionOwner, "sessionOwner"))                         \
     ((Specializes, "specializes"))                           \
     ((Specifier, "specifier"))                               \
+    ((Spline, "spline"))                                     \
     ((StartTimeCode, "startTimeCode"))                       \
     ((SubLayers, "subLayers"))                               \
     ((SubLayerOffsets, "subLayerOffsets"))                   \

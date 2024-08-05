@@ -15,6 +15,22 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// Checks whether t0 and t1 are equal when interpreted as time codes (similar
+// to UsdTimeCode), that is the default time is encoded as NaN.
+static
+bool _IsEqualTimeCode(const double t0, const double t1)
+{
+    // a == NaN is always false. So catch the case where both
+    // are NaN first.
+    if (std::isnan(t0) && std::isnan(t1)) {
+        return true;
+    }
+
+    // Normal comparison. Note that if only one is NaN, this still
+    // returns false.
+    return t0 == t1;
+}
+
 // -----------------------------------------------------------------------------
 // _SceneGlobalsDataSource
 // -----------------------------------------------------------------------------
@@ -121,7 +137,7 @@ HdsiSceneGlobalsSceneIndex::SetCurrentFrame(const double &time)
 {
     // XXX We might need to add a flag to force dirtying of the Frame locator 
     // even if the time has not changed 
-    if (_time == time) {
+    if (_IsEqualTimeCode(_time, time)) {
         return;
     }
 

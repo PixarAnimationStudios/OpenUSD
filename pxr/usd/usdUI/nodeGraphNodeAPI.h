@@ -334,6 +334,32 @@ public:
     UsdAttribute CreateSizeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
+    // --------------------------------------------------------------------- //
+    // DOCURI 
+    // --------------------------------------------------------------------- //
+    /// 
+    /// A URI pointing to additional detailed documentation for this 
+    /// node or node type.
+    /// 
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform string ui:nodegraph:node:docURI` |
+    /// | C++ Type | std::string |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->String |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    USDUI_API
+    UsdAttribute GetDocURIAttr() const;
+
+    /// See GetDocURIAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDUI_API
+    UsdAttribute CreateDocURIAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 

@@ -159,9 +159,15 @@ _LogReport(
     std::string const &rootName)
 {
     string tmpFile;
-    ArchMakeTmpFile(std::string("callSiteReport") +
+    int fd = ArchMakeTmpFile(std::string("callSiteReport") +
         (rootName.empty() ? "" : "_") + rootName, &tmpFile);
+    if (fd == -1) {
+        TF_RUNTIME_ERROR(
+            "Failed to make temporary file '%s'.", tmpFile.c_str());
+        return std::string();
+    }
 
+    ArchCloseFile(fd);
     _ReportToFile(self, tmpFile, rootName);
     return tmpFile;
 }

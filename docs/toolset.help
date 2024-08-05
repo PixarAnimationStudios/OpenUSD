@@ -89,32 +89,31 @@ optional arguments:
 
 ==== usdview start ====
 usage: usdview [-h] [--renderer {GL}]
-                                                      [--select PRIMPATH]
-                                                      [--camera CAMERA]
-                                                      [--mask PRIMPATH[,PRIMPATH...]]
-                                                      [--clearsettings]
-                                                      [--config {}]
-                                                      [--defaultsettings]
-                                                      [--norender]
-                                                      [--noplugins]
-                                                      [--unloaded] [--timing]
-                                                      [--allow-async]
-                                                      [--traceToFile TRACETOFILE]
-                                                      [--traceFormat {chrome,trace}]
-                                                      [--tracePython]
-                                                      [--memstats {none,stage,stageAndImaging}]
-                                                      [--numThreads NUMTHREADS]
-                                                      [--ff FIRSTFRAME]
-                                                      [--lf LASTFRAME]
-                                                      [--cf CURRENTFRAME]
-                                                      [--complexity {low,medium,high,veryhigh}]
-                                                      [--quitAfterStartup]
-                                                      [--sessionLayer SESSIONLAYER]
-                                                      [--mute MUTELAYERSRE]
-                                                      [--detachLayers]
-                                                      [--detachLayersInclude PATTERN[,PATTERN...]]
-                                                      [--detachLayersExclude PATTERN[,PATTERN,...]]
-                                                      usdFile
+                                                [--select PRIMPATH]
+                                                [--camera CAMERA]
+                                                [--mask PRIMPATH[,PRIMPATH...]]
+                                                [--clearsettings]
+                                                [--config {}]
+                                                [--defaultsettings]
+                                                [--norender] [--noplugins]
+                                                [--unloaded] [--bboxStandin]
+                                                [--timing] [--allow-async]
+                                                [--traceToFile TRACETOFILE]
+                                                [--traceFormat {chrome,trace}]
+                                                [--tracePython]
+                                                [--memstats {none,stage,stageAndImaging}]
+                                                [--numThreads NUMTHREADS]
+                                                [--ff FIRSTFRAME]
+                                                [--lf LASTFRAME]
+                                                [--cf CURRENTFRAME]
+                                                [--complexity {low,medium,high,veryhigh}]
+                                                [--quitAfterStartup]
+                                                [--sessionLayer SESSIONLAYER]
+                                                [--mute MUTELAYERSRE]
+                                                [--detachLayers]
+                                                [--detachLayersInclude PATTERN[,PATTERN...]]
+                                                [--detachLayersExclude PATTERN[,PATTERN,...]]
+                                                usdFile
 
 View a usd file
 
@@ -148,6 +147,7 @@ optional arguments:
   --norender            Display only hierarchy browser
   --noplugins           Do not load plugins
   --unloaded            Do not load payloads
+  --bboxStandin         Display unloaded prims with bounding boxes
   --timing              Echo timing stats to console. NOTE: timings will be
                         unreliable when the --memstats option is also in use
   --allow-async         Enable asynchronous hydra scene processing
@@ -216,6 +216,7 @@ usage: usdrecord [-h] [--mask PRIMPATH[,PRIMPATH...]]
                  [--complexity {low,medium,high,veryhigh}]
                  [--colorCorrectionMode {disabled,sRGB,openColorIO}]
                  [--renderer {GL}] [--imageWidth IMAGEWIDTH]
+                 [--enableDomeLightVisibility]
                  [--renderPassPrimPath RPPRIMPATH]
                  [--renderSettingsPrimPath RSPRIMPATH]
                  usdFilePath outputImagePath
@@ -263,8 +264,8 @@ optional arguments:
                         with that name, which one is used will effectively be
                         random (default=main_cam)
   --defaultTime, -d     explicitly operate at the Default time code (the
-                        default behavior is to operate at the Earliest time
-                        code)
+                        default behavior is to operate at the startTimeCode
+                        authored on the UsdStage which defaults to 0.0)
   --frames FRAMESPEC[,FRAMESPEC...], -f FRAMESPEC[,FRAMESPEC...]
                         specify FrameSpec(s) of the time codes to operate on -
                         A FrameSpec consists of up to three floating point
@@ -288,6 +289,11 @@ optional arguments:
                         Width of the output image. The height will be computed
                         from this value and the camera's aspect ratio
                         (default=960)
+  --enableDomeLightVisibility
+                        Show the dome light background in the rendered output.
+                        If this option is not included and there is a dome
+                        light in the stage, the IBL from it will be used for
+                        lighting but not drawn into the background.
   --renderPassPrimPath RPPRIMPATH, -rp RPPRIMPATH
                         Specify the Render Pass Prim to use to render the
                         given usdFile. Note that if a renderSettingsPrimPath
@@ -482,8 +488,7 @@ optional arguments:
 
 ==== usdstitch start ====
 usage: usdstitch [-h] [-o OUT]
-                                                        usdFiles
-                                                        [usdFiles ...]
+                                                  usdFiles [usdFiles ...]
 
 Stitch multiple usd file(s) together into one. Opinion strength is determined
 by the order in which the file is given, with the first file getting the

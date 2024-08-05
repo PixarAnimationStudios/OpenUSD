@@ -9,7 +9,7 @@
 
 from pxr.Ts import TsTest_Museum as Museum
 from pxr.Ts import TsTest_AnimXEvaluator as Evaluator
-from pxr.Ts import TsTest_CompareBaseline as CompareBaseline
+from pxr.Ts import TsTest_Baseliner as Baseliner
 from pxr.Ts import TsTest_SampleTimes as STimes
 from pxr.Ts import TsTest_Grapher as Grapher
 from pxr.Ts import TsTest_Comparator as Comparator
@@ -58,13 +58,14 @@ class TsTest_AnimXFramework(unittest.TestCase):
         comparator.AddSpline("Bezier", data1, samples1)
         comparator.AddSpline("Linear", data2, samples2)
 
-        self.assertTrue(comparator.GetMaxDiff() < 1.0)
         if Comparator.Init():
             comparator.Write("test_Comparator.png")
 
+        self.assertTrue(comparator.GetMaxDiff() < 1.0)
+
     def test_Baseline(self):
         """
-        Verify that AnimXEvaluator and CompareBaseline are working.
+        Verify that AnimXEvaluator and Baseliner are working.
         """
         data = Museum.GetData(Museum.TwoKnotBezier)
 
@@ -73,7 +74,9 @@ class TsTest_AnimXFramework(unittest.TestCase):
 
         samples = Evaluator().Eval(data, times)
 
-        self.assertTrue(CompareBaseline("test_Baseline", data, samples))
+        baseliner = Baseliner.CreateForEvalCompare(
+            "test_Baseline", data, samples)
+        self.assertTrue(baseliner.Validate())
 
 
 if __name__ == "__main__":

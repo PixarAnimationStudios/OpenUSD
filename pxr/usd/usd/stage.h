@@ -22,6 +22,7 @@
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/hashmap.h"
+#include "pxr/base/tf/type.h"
 #include "pxr/base/tf/weakBase.h"
 
 #include "pxr/usd/ar/ar.h"
@@ -51,6 +52,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class ArResolverContext;
 class GfInterval;
 class SdfAbstractDataValue;
+class TsSpline;
 class Usd_AssetPathContext;
 class Usd_ClipCache;
 class Usd_InstanceCache;
@@ -1730,6 +1732,7 @@ private:
             std::is_same<T, SdfPathExpression>::value ||
             std::is_same<T, VtArray<SdfPathExpression>>::value ||
             std::is_same<T, SdfTimeSampleMap>::value ||
+            std::is_same<T, TsSpline>::value ||
             std::is_same<T, VtDictionary>::value;
     };
 
@@ -1753,6 +1756,9 @@ private:
     template <class T>
     bool _SetEditTargetMappedValue(
         UsdTimeCode time, const UsdAttribute &attr, const T &newValue);
+
+    TfType _GetAttributeValueType(
+        const UsdAttribute &attr) const;
 
     template <class T>
     bool _SetValueImpl(
@@ -2015,6 +2021,7 @@ public:
             std::is_same<T, SdfPathExpression>::value ||
             std::is_same<T, VtArray<SdfPathExpression>>::value ||
             std::is_same<T, SdfTimeSampleMap>::value ||
+            std::is_same<T, TsSpline>::value ||
             std::is_same<T, VtDictionary>::value;
     };
 
@@ -2362,6 +2369,7 @@ private:
     friend class Usd_PcpCacheAccess;
     friend class Usd_PrimData;
     friend class Usd_StageOpenRequest;
+    friend class Usd_TypeQueryAccess;
     template <class T> friend struct Usd_AttrGetValueHelper;
     friend struct Usd_AttrGetUntypedValueHelper;
     template <class RefsOrPayloadsEditorType, class RefsOrPayloadsProxyType> 

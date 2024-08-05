@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -17,11 +17,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
     // List of direct dependencies for this library.
     const std::vector<TfToken> reqs = {
-        TfToken("arch"),
         TfToken("gf"),
-        TfToken("plug"),
         TfToken("tf"),
-        TfToken("trace"),
         TfToken("vt")
     };
     TfScriptModuleLoader::GetInstance().
@@ -29,5 +26,3 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-

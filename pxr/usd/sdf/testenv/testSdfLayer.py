@@ -114,6 +114,21 @@ class TestSdfLayer(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             l = Sdf.Layer.OpenAsAnonymous('foo.invalid')
 
+    def test_OpenWithThrownException(self):
+        fileFormat = Sdf.FileFormat.FindByExtension(".testexception")
+        self.assertTrue(fileFormat)
+
+        layer = Sdf.Layer.CreateAnonymous()
+        layer.Export("test.testexception")
+
+        with self.assertRaises(Tf.ErrorException):
+            l = Sdf.Layer.FindOrOpen('test.testexception')
+            self.assertIsNone(l)
+        
+        with self.assertRaises(Tf.ErrorException):
+            l = Sdf.Layer.OpenAsAnonymous('test.testexception')
+            self.assertIsNone(l)
+
     def test_FindWithAnonymousIdentifier(self):
         def _TestWithTag(tag):
             layer = Sdf.Layer.CreateAnonymous(tag)

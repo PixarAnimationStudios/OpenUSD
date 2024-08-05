@@ -30,7 +30,7 @@ struct NcColorSpace {
 
 static void _NcInitColorSpace(NcColorSpace* cs);
 
-static float nc_ToLinear(const NcColorSpace* cs, float t) {
+static float nc_FromLinear(const NcColorSpace* cs, float t) {
     const float gamma = cs->desc.gamma;
     if (t < cs->K0 / cs->phi)
         return t * cs->phi;
@@ -38,7 +38,7 @@ static float nc_ToLinear(const NcColorSpace* cs, float t) {
     return (1.f + a) * powf(t, 1.f / gamma) - a;
 }
 
-static float nc_FromLinear(const NcColorSpace* cs, float t) {
+static float nc_ToLinear(const NcColorSpace* cs, float t) {
     const float gamma = cs->desc.gamma;
     if (t < cs->K0)
         return t / cs->phi;

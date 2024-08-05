@@ -1,0 +1,27 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "TestSdfExceptionHandlingFileFormat": {
+                        "bases": [
+                            "SdfTextFileFormat"
+                        ],
+                        "displayName": "File format that throws exceptions when opened",
+                        "extensions": [
+                            "testexception"
+                        ],
+                        "formatId": "TestSdfExceptionHandlingFileFormatPlugin",
+                        "primary": true,
+                        "target": "sdf"
+                    }
+                }
+            },
+            "LibraryPath": "@TEST_PLUG_INFO_LIBRARY_PATH@",
+            "Name": "TestSdfExceptionHandlingFileFormatPlugin",
+            "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@TEST_PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

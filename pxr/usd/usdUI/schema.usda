@@ -106,6 +106,20 @@ class "NodeGraphNodeAPI"(
             string apiName = "size"
         }
     )
+
+    uniform string ui:nodegraph:node:docURI (
+        doc = """ 
+        A URI pointing to additional detailed documentation for this 
+        node or node type.
+        """
+        displayName = "Doc Link"
+
+        displayGroup = "Help"
+
+        customData = {
+            string apiName = "docURI"
+        }
+    )
 }
 
 

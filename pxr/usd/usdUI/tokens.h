@@ -73,6 +73,10 @@ struct UsdUITokensType {
     /// 
     /// UsdUINodeGraphNodeAPI
     const TfToken uiNodegraphNodeDisplayColor;
+    /// \brief "ui:nodegraph:node:docURI"
+    /// 
+    /// UsdUINodeGraphNodeAPI
+    const TfToken uiNodegraphNodeDocURI;
     /// \brief "ui:nodegraph:node:expansionState"
     /// 
     /// UsdUINodeGraphNodeAPI

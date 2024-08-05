@@ -20,9 +20,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include <boost/python/class.hpp>
 #include <boost/python/handle.hpp>
-#include <boost/python/object.hpp>
 
 #include "pxr/base/tf/hashmap.h"
 
@@ -120,38 +118,22 @@ struct Tf_PyOwnershipHelper<Ptr,
         std::is_same<TfRefPtr<typename Ptr::DataType>, Ptr>::value &&
         std::is_base_of<TfRefBase, typename Ptr::DataType>::value>>
 {
-    struct _RefPtrHolder {
-        static boost::python::object
-        Get(Ptr const &refptr) {
-            TfPyLock pyLock;
-            _WrapIfNecessary();
-            return boost::python::object(_RefPtrHolder(refptr));
-        }
-        static void _WrapIfNecessary() {
-            TfPyLock pyLock;
-            if (TfPyIsNone(TfPyGetClassObject<_RefPtrHolder>())) {
-                std::string name =
-                    "__" + ArchGetDemangled(typeid(typename Ptr::DataType)) +
-                    "__RefPtrHolder";
-                name = TfStringReplace(name, "<", "_");
-                name = TfStringReplace(name, ">", "_");
-                name = TfStringReplace(name, "::", "_");
-                boost::python::class_<_RefPtrHolder>(name.c_str(),
-                                                     boost::python::no_init);
-            }
-        }
-      private:
-        explicit _RefPtrHolder(Ptr const &refptr) : _refptr(refptr) {}
-        Ptr _refptr;
-    };
-    
     static void Add(Ptr ptr, const void *uniqueId, PyObject *self) {
 
         TfPyLock pyLock;
 
-        // Make the python object keep the c++ object alive.
-        int ret = PyObject_SetAttrString(self, "__owner",
-                                         _RefPtrHolder::Get(ptr).ptr());
+        // Create a capsule to hold on to a heap-allocated instance of
+        // Ptr. We'll set this as an attribute on the Python object so
+        // it keeps the C++ object alive.
+        boost::python::handle<> capsule(
+            PyCapsule_New(
+                new Ptr(ptr), "refptr",
+                +[](PyObject* capsule) {
+                    void* heldPtr = PyCapsule_GetPointer(capsule, "refptr");
+                    delete static_cast<Ptr*>(heldPtr);
+                }));
+
+        int ret = PyObject_SetAttrString(self, "__owner", capsule.get());
         if (ret == -1) {
             // CODE_COVERAGE_OFF
             TF_WARN("Could not set __owner attribute on python object!");

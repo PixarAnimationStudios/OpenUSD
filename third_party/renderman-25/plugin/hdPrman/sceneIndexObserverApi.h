@@ -19,7 +19,7 @@
 // HdsiPrimManagingSceneIndexObserver and other new API for the implementation
 // as a scene index observer.
 //
-// We can only use for late enough versions of USD.
+// We can only use for late enough versions of USD (that is 24.03 or later).
 //
 #if HDSI_API_VERSION >= 12
 #define HDPRMAN_USE_SCENE_INDEX_OBSERVER

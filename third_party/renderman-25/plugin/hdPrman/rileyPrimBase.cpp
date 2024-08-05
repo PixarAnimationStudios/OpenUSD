@@ -31,6 +31,23 @@ HdPrman_RileyPrimBase::_GetShutterInterval()
     return _renderParam->GetShutterInterval();
 }
 
+void
+HdPrman_RileyPrimBase::_SetRileyOptions(const RtParamList &params)
+{
+    // Ideally, all riley options are managed by scene indices and
+    // this would just do:
+    // _AcquireRiley()->SetOptions(options.rileyObject);
+
+    // But we also need to respect various legacy options in render
+    // param:
+    _renderParam->SetRileySceneIndexObserverOptions(params);
+
+    // Initialize legacy options from the render settings map.
+    _renderParam->UpdateLegacyOptions();
+
+    _renderParam->SetRileyOptions();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER

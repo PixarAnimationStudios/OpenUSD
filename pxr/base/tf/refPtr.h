@@ -448,11 +448,17 @@ template <template <class> class X, class Y>
 class TfWeakPtrFacade;
 
 // Functions used for tracking.  Do not implement these.
-inline void Tf_RefPtrTracker_FirstRef(const void*, const void*) { }
-inline void Tf_RefPtrTracker_LastRef(const void*, const void*) { }
-inline void Tf_RefPtrTracker_New(const void*, const void*) { }
-inline void Tf_RefPtrTracker_Delete(const void*, const void*) { }
-inline void Tf_RefPtrTracker_Assign(const void*, const void*, const void*) { }
+inline void
+Tf_RefPtrTracker_FirstRef(const void*, const TfRefBase *, const void*) { }
+inline void
+Tf_RefPtrTracker_LastRef(const void*, const TfRefBase *, const void*) { }
+inline void
+Tf_RefPtrTracker_New(const void*, const TfRefBase *, const void*) { }
+inline void
+Tf_RefPtrTracker_Delete(const void*, const TfRefBase *, const void*) { }
+inline void
+Tf_RefPtrTracker_Assign(const void*, const TfRefBase *,
+                        const TfRefBase *, const void*) { }
 
 // This code is used to increment and decrement ref counts in the common case.
 // It may lock and invoke the unique changed listener, if the reference count
@@ -588,6 +594,8 @@ class TfRefPtr {
         !std::is_convertible<T*, TfSimpleRefBase*>::value,
         Tf_RefPtr_UniqueChangedCounter,
         Tf_RefPtr_Counter>::type;
+
+    static constexpr T *_NullT = nullptr;
     
 public:
     /// Convenience type accessor to underlying type \c T for template code.
@@ -604,7 +612,7 @@ public:
     /// NULL object. Attempts to use the \c -> operator will cause an abort
     /// until the pointer is given a value.
     TfRefPtr() : _refBase(nullptr) {
-        Tf_RefPtrTracker_New(this, _GetObjectForTracking());
+        Tf_RefPtrTracker_New(this, _refBase, _NullT);
     }
 
     /// Moves the pointer managed by \p p to \c *this.
@@ -615,9 +623,8 @@ public:
     /// change.
     TfRefPtr(TfRefPtr<T>&& p) : _refBase(p._refBase) {
         p._refBase = nullptr;
-        Tf_RefPtrTracker_New(this, _GetObjectForTracking());
-        Tf_RefPtrTracker_Assign(&p, p._GetObjectForTracking(),
-                                _GetObjectForTracking());
+        Tf_RefPtrTracker_New(this, _refBase, _NullT);
+        Tf_RefPtrTracker_Assign(&p, p._refBase, _refBase, _NullT);
     }
 
     /// Initializes \c *this to point at \p p's object.
@@ -625,7 +632,7 @@ public:
     /// Increments \p p's object's reference count.
     TfRefPtr(const TfRefPtr<T>& p) : _refBase(p._refBase) {
         _AddRef();
-        Tf_RefPtrTracker_New(this, _GetObjectForTracking());
+        Tf_RefPtrTracker_New(this, _refBase, _NullT);
     }
 
     /// Initializes \c *this to point at \p gp's object.
@@ -689,19 +696,19 @@ public:
         _refBase(ptr)
     {
         _AddRef();
-        Tf_RefPtrTracker_New(this, _GetObjectForTracking());
+        Tf_RefPtrTracker_New(this, _refBase, _NullT);
     }
 
     /// Implicit conversion from \a TfNullPtr to TfRefPtr.
     TfRefPtr(TfNullPtrType) : _refBase(nullptr)
     {
-        Tf_RefPtrTracker_New(this, _GetObjectForTracking());
+        Tf_RefPtrTracker_New(this, _refBase, _NullT);
     }
 
     /// Implicit conversion from \a nullptr to TfRefPtr.
     TfRefPtr(std::nullptr_t) : _refBase(nullptr)
     {
-        Tf_RefPtrTracker_New(this, _GetObjectForTracking());
+        Tf_RefPtrTracker_New(this, _refBase, _NullT);
     }
 
     /// Assigns pointer to point at \c p's object, and increments reference
@@ -733,8 +740,7 @@ public:
         // local variables to help us out.
         //
 
-        Tf_RefPtrTracker_Assign(this, p._GetObjectForTracking(),
-                                _GetObjectForTracking());
+        Tf_RefPtrTracker_Assign(this, p._refBase, _refBase, _NullT);
 
         const TfRefBase* tmp = _refBase;
         _refBase = p._refBase;
@@ -752,10 +758,8 @@ public:
     /// object newly pointed at is not changed.
     TfRefPtr<T>& operator=(TfRefPtr<T>&& p) {
         // See comment in assignment operator.
-        Tf_RefPtrTracker_Assign(this, p._GetObjectForTracking(),
-                                _GetObjectForTracking());
-        Tf_RefPtrTracker_Assign(&p, nullptr,
-                                p._GetObjectForTracking());
+        Tf_RefPtrTracker_Assign(this, p._refBase, _refBase, _NullT);
+        Tf_RefPtrTracker_Assign(&p, nullptr, p._refBase, _NullT);
 
         const TfRefBase* tmp = _refBase;
         _refBase = p._refBase;
@@ -770,7 +774,7 @@ public:
     /// If the reference count of the object (if any) that was just pointed at
     /// reaches zero, the object will typically be destroyed at this point.
     ~TfRefPtr() {
-        Tf_RefPtrTracker_Delete(this, _GetObjectForTracking());
+        Tf_RefPtrTracker_Delete(this, _refBase, _NullT);
         _RemoveRef(_refBase);
     }
 
@@ -788,7 +792,7 @@ public:
     TfRefPtr(const TfRefPtr<U>& p) : _refBase(p._refBase) {
         static_assert(std::is_convertible<U*, T*>::value, "");
         _AddRef();
-        Tf_RefPtrTracker_New(this, _GetObjectForTracking());
+        Tf_RefPtrTracker_New(this, _refBase, _NullT);
     }
 
     /// Moves the pointer managed by \p p to \c *this and leaves \p p
@@ -807,9 +811,8 @@ public:
     TfRefPtr(TfRefPtr<U>&& p) : _refBase(p._refBase) {
         static_assert(std::is_convertible<U*, T*>::value, "");
         p._refBase = nullptr;
-        Tf_RefPtrTracker_New(this, _GetObjectForTracking());
-        Tf_RefPtrTracker_Assign(&p, p._GetObjectForTracking(),
-                                _GetObjectForTracking());
+        Tf_RefPtrTracker_New(this, _refBase, _NullT);
+        Tf_RefPtrTracker_Assign(&p, p._refBase, _refBase, _NullT);
     }
 
     /// Assigns pointer to point at \c p's object, and increments reference
@@ -828,9 +831,7 @@ public:
     TfRefPtr<T>& operator=(const TfRefPtr<U>& p) {
         static_assert(std::is_convertible<U*, T*>::value, "");
 
-        Tf_RefPtrTracker_Assign(this,
-                                reinterpret_cast<T*>(p._GetObjectForTracking()),
-                                _GetObjectForTracking());
+        Tf_RefPtrTracker_Assign(this, p._refBase, _refBase, _NullT);
         const TfRefBase* tmp = _refBase;
         _refBase = p._GetData();
         p._AddRef();            // first!
@@ -855,12 +856,8 @@ public:
     TfRefPtr<T>& operator=(TfRefPtr<U>&& p) {
         static_assert(std::is_convertible<U*, T*>::value, "");
 
-        Tf_RefPtrTracker_Assign(this,
-                                reinterpret_cast<T*>(p._GetObjectForTracking()),
-                                _GetObjectForTracking());
-        Tf_RefPtrTracker_Assign(&p,
-                                nullptr,
-                                reinterpret_cast<T*>(p._GetObjectForTracking()));
+        Tf_RefPtrTracker_Assign(this, p._refBase, _refBase, _NullT);
+        Tf_RefPtrTracker_Assign(&p, nullptr, p._refBase, _NullT);
         const TfRefBase* tmp = _refBase;
         _refBase = p._GetData();
         p._refBase = nullptr;
@@ -960,10 +957,8 @@ public:
     /// formerly pointed to, and \a other will point to what this pointer
     /// formerly pointed to.
     void swap(TfRefPtr &other) {
-        Tf_RefPtrTracker_Assign(this, other._GetObjectForTracking(),
-                                _GetObjectForTracking());
-        Tf_RefPtrTracker_Assign(&other, _GetObjectForTracking(),
-                                other._GetObjectForTracking());
+        Tf_RefPtrTracker_Assign(this, other._refBase, _refBase, _NullT);
+        Tf_RefPtrTracker_Assign(&other, _refBase, other._refBase, _NullT);
         std::swap(_refBase, other._refBase);
     }
 
@@ -993,8 +988,8 @@ private:
         : _refBase(ptr)
     {
         /* reference count is NOT bumped */
-        Tf_RefPtrTracker_FirstRef(this, _GetObjectForTracking());
-        Tf_RefPtrTracker_New(this, _GetObjectForTracking());
+        Tf_RefPtrTracker_FirstRef(this, _refBase, _NullT);
+        Tf_RefPtrTracker_New(this, _refBase, _NullT);
     }
 
     // Hide confusing internals of actual C++ definition (e.g. DataType)
@@ -1080,16 +1075,6 @@ private:
     T* _GetData() const {
         return static_cast<T*>(const_cast<TfRefBase*>(_refBase));
     }
-    
-    // This method is only used when calling the hook functions for
-    // tracking.  We reinterpret_cast instead of static_cast so that
-    // we don't need the definition of T.  However, if TfRefBase is
-    // not the first base class of T then the resulting pointer may
-    // not point to a T.  Nevertheless, it should be consistent to
-    // all calls to the tracking functions.
-    T* _GetObjectForTracking() const {
-        return reinterpret_cast<T*>(const_cast<TfRefBase*>(_refBase));
-    }
 
     /// Call \c typeid on the object pointed to by a \c TfRefPtr.
     ///
@@ -1107,8 +1092,7 @@ private:
 
     void _RemoveRef(const TfRefBase* ptr) const {
         if (_Counter::RemoveRef(ptr)) {
-            Tf_RefPtrTracker_LastRef(this,
-                reinterpret_cast<T*>(const_cast<TfRefBase*>(ptr)));
+            Tf_RefPtrTracker_LastRef(this, ptr, _NullT);
             delete ptr;
         }
     }

@@ -5,16 +5,35 @@
 // https://openusd.org/license.
 //
 #include "hdPrman/lightFilter.h"
+
 #include "hdPrman/renderParam.h"
-#include "hdPrman/debugCodes.h"
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/utils.h"
-#include "pxr/usd/sdf/types.h"
-#include "pxr/base/tf/staticTokens.h"
+
+#include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/light.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/sprim.h"
+#include "pxr/imaging/hd/timeSampleArray.h"
+#include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hf/diagnostic.h"
+
+#include "pxr/usd/sdf/types.h"
+
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/smallVector.h"
+
+#include "pxr/pxr.h"
+
+#include <Riley.h>
+#include <RileyIds.h>
+#include <RiTypesHelper.h>
+#include <stats/Roz.h>
+
+#include <cstddef>
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -27,7 +46,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // currently is no HdLightFilter class.
 
 HdPrmanLightFilter::HdPrmanLightFilter(SdfPath const& id,
-                                       TfToken const& lightFilterType)
+                                       TfToken const& /*lightFilterType*/)
     : HdSprim(id)
     , _coordSysId(riley::CoordinateSystemId::InvalidId())
     , _rileyIsInSync(false)
@@ -42,8 +61,7 @@ void
 HdPrmanLightFilter::Finalize(HdRenderParam *renderParam)
 {
     std::lock_guard<std::mutex> lock(_syncToRileyMutex);
-    HdPrman_RenderParam *param =
-        static_cast<HdPrman_RenderParam*>(renderParam);
+    auto* param = static_cast<HdPrman_RenderParam*>(renderParam);
     riley::Riley *riley = param->AcquireRiley();
     if (_coordSysId != riley::CoordinateSystemId::InvalidId()) {
         riley->DeleteCoordinateSystem(_coordSysId);
@@ -51,14 +69,12 @@ HdPrmanLightFilter::Finalize(HdRenderParam *renderParam)
     }
 }
 
-/* virtual */
 void
 HdPrmanLightFilter::Sync(HdSceneDelegate *sceneDelegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits)
 {
-    HdPrman_RenderParam *param =
-        static_cast<HdPrman_RenderParam*>(renderParam);
+    auto* param = static_cast<HdPrman_RenderParam*>(renderParam);
 
 #if HD_API_VERSION >= 70
     if (*dirtyBits & HdLight::DirtyTransform) {

@@ -1,5 +1,5 @@
 #
-# Copyright 2023 Pixar
+# Copyright 2024 Pixar
 #
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
@@ -11,7 +11,6 @@ import os, subprocess, threading, queue, selectors
 
 class TsTest_MayapyEvaluator(object):
     """
-    An implementation of TsTest_Evaluator, though not formally derived.
     Evaluates spline data using mayapy.  Creates a child process that runs in
     mayapy, and communicates with it.
     """

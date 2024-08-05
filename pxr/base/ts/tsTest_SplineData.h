@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -65,7 +65,7 @@ public:
     using Features = unsigned int;
 
     // One knot in a spline.
-    struct TS_API Knot
+    struct Knot
     {
         double time = 0;
         InterpMethod nextSegInterpMethod = InterpHeld;
@@ -80,15 +80,15 @@ public:
         bool postAuto = false;
 
     public:
-        Knot();
-        Knot(
-            const Knot &other);
-        Knot& operator=(
-            const Knot &other);
+        TS_API
         bool operator==(
             const Knot &other) const;
+
+        TS_API
         bool operator!=(
             const Knot &other) const;
+
+        TS_API
         bool operator<(
             const Knot &other) const;
     };
@@ -96,22 +96,12 @@ public:
 
     // Inner-loop parameters.
     //
-    // The pre-looping interval is times [preLoopStart, protoStart).
-    // The prototype interval is times [protoStart, protoEnd).
-    // The post-looping interval is times [protoEnd, postLoopEnd],
-    //   or, if closedEnd is false, the same interval, but open at the end.
-    // To decline pre-looping or post-looping, make that interval empty.
+    // The prototype interval [protoStart, protoEnd) is duplicated before and/or
+    // after where it occurs.
     //
-    // The value offset specifies the difference between the value at the starts
-    // of consecutive iterations.
-    //
-    // It is common, but not required, to use a subset of functionality:
-    // - Knots at the start and end of the prototype interval
-    // - Whole numbers of loop iterations
-    //     (sizes of looping intervals are multiples of size of proto interval)
-    // - Value offset initially set to original value difference
-    //     between ends of prototype interval
-    // - closedEnd true
+    // There must always be a knot exactly at protoStart.  The start knot is
+    // copied to the end of the prototype, and to the end of every loop
+    // iteration.
     //
     // A knot exactly at the end of the prototype interval is not part of the
     // prototype.  If there is post-looping, a knot at the end of the prototype
@@ -123,68 +113,55 @@ public:
     // last.  Inner looping does not aim to make copies of an existing shape; it
     // aims to set up for continuity at loop joins.
     //
-    // If closedEnd is true, and there is a whole number of post-iterations, and
-    // there is a knot at the prototype start time, then a final copy of the
-    // first prototype knot will be echoed at the end of the last
-    // post-iteration.
+    // The value offset specifies the difference between the value at the starts
+    // of consecutive iterations.
     //
-    struct TS_API InnerLoopParams
+    struct InnerLoopParams
     {
         bool enabled = false;
         double protoStart = 0;
         double protoEnd = 0;
-        double preLoopStart = 0;
-        double postLoopEnd = 0;
-        bool closedEnd = true;
+        int numPreLoops = 0;
+        int numPostLoops = 0;
         double valueOffset = 0;
 
     public:
-        InnerLoopParams();
-        InnerLoopParams(
-            const InnerLoopParams &other);
-        InnerLoopParams& operator=(
-            const InnerLoopParams &other);
+        TS_API
         bool operator==(
             const InnerLoopParams &other) const;
+
+        TS_API
         bool operator!=(
             const InnerLoopParams &other) const;
 
+        TS_API
         bool IsValid() const;
     };
 
     // Extrapolation parameters for the ends of a spline beyond the knots.
-    struct TS_API Extrapolation
+    struct Extrapolation
     {
         ExtrapMethod method = ExtrapHeld;
         double slope = 0;
         LoopMode loopMode = LoopNone;
 
     public:
+        TS_API
         Extrapolation();
+
+        TS_API
         Extrapolation(ExtrapMethod method);
-        Extrapolation(
-            const Extrapolation &other);
-        Extrapolation& operator=(
-            const Extrapolation &other);
+
+        TS_API
         bool operator==(
             const Extrapolation &other) const;
+
+        TS_API
         bool operator!=(
             const Extrapolation &other) const;
     };
 
 public:
-    TS_API
-    TsTest_SplineData();
-
-    TS_API
-    TsTest_SplineData(
-        const TsTest_SplineData &other);
-
-    TS_API
-    TsTest_SplineData&
-    operator=(
-        const TsTest_SplineData &other);
-
     TS_API
     bool operator==(
         const TsTest_SplineData &other) const;
@@ -239,7 +216,7 @@ public:
     Features GetRequiredFeatures() const;
 
     TS_API
-    std::string GetDebugDescription() const;
+    std::string GetDebugDescription(int precision = 6) const;
 
 private:
     bool _isHermite = false;

@@ -11,6 +11,7 @@
 #include "pxr/imaging/hd/systemMessages.h"
 
 #include "pxr/base/tf/denseHashSet.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/withScopedParallelism.h"
 
@@ -100,6 +101,7 @@ SdfPathVector
 HdGpGenerativeProceduralResolvingSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
+    TRACE_FUNCTION();
 
     // Always incorporate the input's children even if we are beneath a
     // resolved procedural. This allows a procedural to mask the type or data
@@ -157,16 +159,17 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     // Added/removed/dirtied notices which result from cooking or recooking
     // a procedural.
     _Notices notices;
-
 
     TfDenseHashSet<SdfPath, TfHash> proceduralsToCook;
 
     bool entriesCopied = false;
 
-    { // _dependencies and _procedural lock aquire
+    { // _dependencies and _procedural lock acquire
     // hold lock for longer but don't try to acquire it per iteration
     _MapLock procsLock(_proceduralsMutex);
     _MapLock depsLock(_dependenciesMutex);
@@ -191,6 +194,12 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
             proceduralsToCook.insert(entry.primPath);
 
         } else {
+            if (_procedurals.find(entry.primPath) != _procedurals.end()) {
+                // This was a procedural that we previously cooked that is no
+                // longer the target type.  We "cook" it primarily to make sure
+                // it gets removed.
+                proceduralsToCook.insert(entry.primPath);
+            }
             if (entriesCopied) {
                 notices.added.emplace_back(entry.primPath, entry.primType);
             }
@@ -299,6 +308,8 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     using _PathSetMap =
          TfDenseHashMap<SdfPath, TfDenseHashSet<SdfPath, TfHash>, TfHash>;
 
@@ -493,6 +504,8 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     TfDenseHashMap<SdfPath, HdGpGenerativeProcedural::DependencyMap, TfHash>
         invalidatedProceduralDependencies;
 
@@ -598,16 +611,15 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsDirtied(
     }
 }
 
-
 HdGpGenerativeProceduralResolvingSceneIndex::_ProcEntry *
 HdGpGenerativeProceduralResolvingSceneIndex::_UpdateProceduralDependencies(
-    const SdfPath &proceduralPrimPath) const
+    const SdfPath& proceduralPrimPath, _Notices* outputNotices) const
 {
     HdSceneIndexPrim procPrim =
         _GetInputSceneIndex()->GetPrim(proceduralPrimPath);
 
     if (procPrim.primType != _targetPrimTypeName) {
-        _RemoveProcedural(proceduralPrimPath);
+        _RemoveProcedural(proceduralPrimPath, outputNotices);
         return nullptr;
     }
 
@@ -728,6 +740,8 @@ HdGpGenerativeProceduralResolvingSceneIndex::_UpdateProcedural(
     _Notices *outputNotices,
     const HdGpGenerativeProcedural::DependencyMap *dirtiedDependencies) const
 {
+    TRACE_FUNCTION();
+
     _ProcEntry *procEntryPtr;
     {
         _MapLock procsLock(_proceduralsMutex);
@@ -740,7 +754,7 @@ HdGpGenerativeProceduralResolvingSceneIndex::_UpdateProcedural(
     }
 
     if (procEntry.state.load() < _ProcEntry::StateDependenciesCooked) {
-        if (!_UpdateProceduralDependencies(proceduralPrimPath)) {
+        if (!_UpdateProceduralDependencies(proceduralPrimPath, outputNotices)) {
             return nullptr;
         }
     }
@@ -798,6 +812,21 @@ HdGpGenerativeProceduralResolvingSceneIndex::_RemoveProcedural(
     }
 
     const _ProcEntry &procEntry = it->second;
+
+    // 0) Before we clear things out, record the children that we'll need to
+    // notify that are being removed.
+    if (outputNotices) {
+        // Record the removal the children of the procedural.
+        size_t procPathLen = proceduralPrimPath.GetPathElementCount();
+        for (const auto& pathPathSetPair : procEntry.childHierarchy) {
+            const SdfPath& childPrimPath = pathPathSetPair.first;
+            const bool isImmediateChild
+                = childPrimPath.GetPathElementCount() == procPathLen + 1;
+            if (isImmediateChild) {
+                outputNotices->removed.push_back(childPrimPath);
+            }
+        }
+    }
 
     // 1) remove existing dependencies
     if (!procEntry.dependencies.empty()) {
@@ -870,6 +899,8 @@ HdGpGenerativeProceduralResolvingSceneIndex::_SystemMessage(
     const TfToken &messageType,
     const HdDataSourceBaseHandle &args)
 {
+    TRACE_FUNCTION();
+
     if (!_attemptAsync) {
         if (messageType == HdSystemMessageTokens->asyncAllow) {
             _attemptAsync = true;
@@ -881,13 +912,8 @@ HdGpGenerativeProceduralResolvingSceneIndex::_SystemMessage(
         }
     }
 
-
-
-
     _Notices notices;
     HdGpGenerativeProcedural::ChildPrimTypeMap primTypes;
-
-
     TfSmallVector<SdfPath, 8> removedEntries;
 
     for (auto &pathEntryPair : _activeSyncProcedurals) {

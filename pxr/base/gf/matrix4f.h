@@ -52,9 +52,9 @@ class GfMatrix3f;
 ///
 /// The following methods interpret a GfMatrix4f as a 3D
 /// transformation: SetRotate(), SetScale(), SetTranslate(), SetLookAt(),
-/// Factor(), ExtractTranslation(), ExtractRotation(), Transform(), TransformDir().
-/// By convention, vectors are treated primarily as row vectors,
-/// implying the following:
+/// Factor(), ExtractTranslation(), ExtractRotation(), Transform(),
+/// TransformDir(). By convention, vectors are treated primarily as row
+/// vectors, implying the following:
 /// \li Transformation matrices are organized to deal with row
 ///        vectors, not column vectors. For example, the last row of a matrix
 ///        contains the translation amounts.

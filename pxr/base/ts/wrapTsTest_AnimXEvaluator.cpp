@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -7,10 +7,13 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/ts/tsTest_AnimXEvaluator.h"
-
+#include "pxr/base/ts/tsTest_SplineData.h"
+#include "pxr/base/ts/tsTest_SampleTimes.h"
+#include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyEnum.h"
 
-#include <boost/python.hpp>
+#include <boost/python/class.hpp>
+#include <boost/python/make_constructor.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -30,8 +33,8 @@ _ConstructEvaluator(
 void wrapTsTest_AnimXEvaluator()
 {
     // First the class object, so we can create a scope for it...
-    class_<This, bases<TsTest_Evaluator>>
-        classObj("TsTest_AnimXEvaluator", no_init);
+    class_<This> classObj("TsTest_AnimXEvaluator", no_init);
+    scope classScope(classObj);
 
     // ...then the nested type wrappings, which require the scope...
     TfPyWrapEnum<This::AutoTanType>();
@@ -44,6 +47,10 @@ void wrapTsTest_AnimXEvaluator()
                 &_ConstructEvaluator, default_call_policies(),
                 (arg("autoTanType") = This::AutoTanAuto)))
 
-        // Wrapping for Eval is inherited from TsTest_Evaluator.
+        .def("Eval", &This::Eval,
+            (arg("splineData"),
+             arg("sampleTimes")),
+            return_value_policy<TfPySequenceToList>())
+
         ;
 }

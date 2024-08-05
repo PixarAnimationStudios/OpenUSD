@@ -1453,5 +1453,151 @@ class TestPcpChanges(unittest.TestCase):
             refNode2Map = { '/Model': '/Ref' }
         )
 
+    def test_NestedRelocatesChanges(self):
+        """Regression test for a bug where the changes to relocate would not
+        invalidate prim indexes that were affected by nested relocates of the
+        changed relocate. In this particular test example, the /GrandChild
+        prim index was previously not being invalidated for the relocates 
+        changes made here. This case particularly makes sure that it is now
+        correctly invalidated."""
+
+        # First a layer with prims /World/Foo and /World/FooBar each with the 
+        # same Child and GrandChild prims.
+        layer1 = Sdf.Layer.CreateAnonymous("layer1.sdf")
+        layer1.ImportFromString('''#sdf 1.4.32
+        def "World" {
+            def "Foo" {
+                def "Child" {
+                    def "GrandChild" {           
+                    }
+                }    
+            }
+        
+            def "FooBar" {
+                def "Child" {
+                    def "GrandChild" {           
+                    }
+                }    
+            }   
+        }
+        ''')
+        
+        # Second a layer that has a prim that references /World and then 
+        # relocates that flatten the "Foo" hierarchy to individual root prims
+        layer2 = Sdf.Layer.CreateAnonymous("layer2.sdf")
+        layer2.ImportFromString('''#sdf 1.4.32
+        (
+            relocates = {
+                </Prim/Foo> : </Foo>,
+                </Foo/Child> : </Child>,
+                </Child/GrandChild> : </GrandChild>
+            }
+        )
+        
+        
+        def "Prim" (
+            references = @''' + layer1.identifier + '''@</World>
+        ) {
+        }
+        
+        
+        ''') 
+
+        # Create a cache with layer2 root
+        layerStackId = Pcp.LayerStackIdentifier(layer2)
+        cache = Pcp.Cache(layerStackId, usd=True)
+
+        # Compute the prim indexes for the flattened relocated prims.
+        # The prim stacks for each contains the correct spec under /World/Foo
+        # for each relocated reference prim.
+        foo, _ = cache.ComputePrimIndex('/Foo')
+        child, _ = cache.ComputePrimIndex('/Child')
+        grandChild, _ = cache.ComputePrimIndex('/GrandChild')
+
+        self.assertEqual(foo.primStack, 
+                         [layer1.GetPrimAtPath('/World/Foo')])
+        self.assertEqual(child.primStack, 
+                         [layer1.GetPrimAtPath('/World/Foo/Child')])
+        self.assertEqual(grandChild.primStack, 
+                         [layer1.GetPrimAtPath('/World/Foo/Child/GrandChild')])
+        
+        # Update the relocates so that /Foo is relocated from /Prim/FooBar 
+        # instead of /Prim/Foo.
+        with Pcp._TestChangeProcessor(cache):
+            layer2.relocates = [
+                ('/Prim/FooBar', '/Foo'), 
+                ('/Foo/Child', '/Child'), 
+                ('/Child/GrandChild', '/GrandChild')]
+
+        # Verify the prim index for each relocated prim has been invalidated.
+        self.assertFalse(cache.FindPrimIndex('/Foo'))
+        self.assertFalse(cache.FindPrimIndex('/Child'))
+        self.assertFalse(cache.FindPrimIndex('/GrandChild'))
+
+        # Compute the prim indexes for the flattened relocated prims.
+        # The prim stacks for each now contains the new correct spec under 
+        # /World/FooBar for each relocated reference prim.
+        foo, _ = cache.ComputePrimIndex('/Foo')
+        child, _ = cache.ComputePrimIndex('/Child')
+        grandChild, _ = cache.ComputePrimIndex('/GrandChild')
+
+        self.assertEqual(foo.primStack, 
+                         [layer1.GetPrimAtPath('/World/FooBar')])
+        self.assertEqual(child.primStack, 
+                         [layer1.GetPrimAtPath('/World/FooBar/Child')])
+        self.assertEqual(grandChild.primStack, 
+                         [layer1.GetPrimAtPath('/World/FooBar/Child/GrandChild')])
+        
+        # Update the relocates so that /Foo is relocated from /Prim/Bogus 
+        # which does not exist..
+        with Pcp._TestChangeProcessor(cache):
+            layer2.relocates = [
+                ('/Prim/Bogus', '/Foo'), 
+                ('/Foo/Child', '/Child'), 
+                ('/Child/GrandChild', '/GrandChild')]
+
+        # Verify the prim index for each relocated prim has been invalidated.
+        self.assertFalse(cache.FindPrimIndex('/Foo'))
+        self.assertFalse(cache.FindPrimIndex('/Child'))
+        self.assertFalse(cache.FindPrimIndex('/GrandChild'))
+
+        # Compute the prim indexes for the flattened relocated prims.
+        # The prim stacks for each are now all empty because of the bogus
+        # relocates.
+        foo, _ = cache.ComputePrimIndex('/Foo')
+        child, _ = cache.ComputePrimIndex('/Child')
+        grandChild, _ = cache.ComputePrimIndex('/GrandChild')
+
+        self.assertEqual(foo.primStack, [])
+        self.assertEqual(child.primStack, [])
+        self.assertEqual(grandChild.primStack, [])
+        
+        # Update the relocates so that /Foo is relocated from /Prim/Foo again 
+        # like at the start
+        with Pcp._TestChangeProcessor(cache):
+            layer2.relocates = [
+                ('/Prim/Foo', '/Foo'), 
+                ('/Foo/Child', '/Child'), 
+                ('/Child/GrandChild', '/GrandChild')]
+
+        # Verify the prim index for each relocated prim has been invalidated.
+        self.assertFalse(cache.FindPrimIndex('/Foo'))
+        self.assertFalse(cache.FindPrimIndex('/Child'))
+        self.assertFalse(cache.FindPrimIndex('/GrandChild'))
+
+        # Compute the prim indexes for the flattened relocated prims.
+        # The prim stacks for each contains the correct spec under /World/Foo
+        # again for each relocated reference prim.
+        foo, _ = cache.ComputePrimIndex('/Foo')
+        child, _ = cache.ComputePrimIndex('/Child')
+        grandChild, _ = cache.ComputePrimIndex('/GrandChild')
+
+        self.assertEqual(foo.primStack, 
+                         [layer1.GetPrimAtPath('/World/Foo')])
+        self.assertEqual(child.primStack, 
+                         [layer1.GetPrimAtPath('/World/Foo/Child')])
+        self.assertEqual(grandChild.primStack, 
+                         [layer1.GetPrimAtPath('/World/Foo/Child/GrandChild')])
+
 if __name__ == "__main__":
     unittest.main()

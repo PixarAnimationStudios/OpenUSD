@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -10,592 +10,533 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/ts/api.h"
-#include "pxr/base/ts/keyFrame.h"
-#include "pxr/base/ts/keyFrameMap.h"
+#include "pxr/base/ts/splineData.h"
+#include "pxr/base/ts/knotMap.h"
+#include "pxr/base/ts/knot.h"
 #include "pxr/base/ts/types.h"
-#include "pxr/base/ts/loopParams.h"
+#include "pxr/base/ts/typeHelpers.h"
+#include "pxr/base/ts/eval.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/base/gf/interval.h"
+#include "pxr/base/tf/type.h"
 
-#include <vector>
-#include <limits>
-#include <map>
-#include <typeinfo>
-#include <iostream>
-#include <optional>
+#include <string>
+#include <memory>
+#include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class TsSpline_KeyFrames;
+class VtDictionary;
 
-/// \class TsSpline 
+
+/// A mathematical description of a curved function from time to value.
 ///
-/// Represents a spline value object.  
+/// This class is <b>STILL IN DEVELOPMENT.</b>
 ///
-/// The TsSpline class defines spline representations.  Use this class to 
-/// define and manipulate avars over time.  An TsSpline object is an 
-/// anonymous value that can be freely passed around.  It has no owning object.
+/// Splines are are supported only for floating-point scalar value types.
+/// This class is non-templated, but can hold data for varying value types
+/// (double, float, and half).  All knots in a spline must have the same value
+/// type.
 ///
-/// Internally TsSpline is copy-on-write. This means that making a copy
-/// of an TsSpline is nearly free in both time and memory, but making an
-/// edit to a copy of an TsSpline may incur the cost of copying all the
-/// data.
+/// Splines are defined by <i>knots</i>.  The curve passes through each knot,
+/// and in between, the shape of the curve is controlled by <i>tangents</i>
+/// specified at the knots.
 ///
-/// TsSpline provides the basic thread safety guarantee: Multiple threads
-/// may read and copy an TsSpline object concurrently, but it's not safe
-/// to read from an TsSpline which another thread is concurrently writing
-/// to. Internally that means that any data which may be mutated by a const
-/// accessor must be protected by a mutex. Currently TsSpline has an immutable
-/// lock-free implementation.
+/// Splines typically have Bezier or Hermite curve segments with controllable
+/// tangents; linear and <i>held</i> (flat) interpolation are also supported.
+/// Outside of the time span of knots, the <i>extrapolation</i> of the curve can
+/// be specified.
 ///
-class TsSpline final
+/// The main service provided by splines is <i>evaluation</i>: determining the
+/// curve's value at a given time.
+///
+/// Splines are copy-on-write.  Copying a spline object is cheap; the copy will
+/// point to the same data on the heap.  Copying, and then modifying one of the
+/// copies, will incur the cost of duplicating the data, including all the
+/// knots.
+///
+class TsSpline
 {
 public:
-    /// Constructs a spline with no key frames and held extrapolation.
+    /// \name Construction and value semantics
+    ///
+    /// This is a lightweight class that wraps a shared pointer.  It is intended
+    /// to be used as a value type, and copied freely.  Move semantics are not
+    /// implemented; there would be no benefit.
+    ///
+    /// @{
+
+    /// Default constructor creates a spline without a value type.  The value
+    /// type becomes established when the first knot is added.
     TS_API
     TsSpline();
 
-    /// Copy construct.
+    /// Creates a spline with a specified value type.
+    TS_API
+    TsSpline(TfType valueType);
+
     TS_API
     TsSpline(const TsSpline &other);
 
-    /// Constructs a spline with the key frames \e keyFrames,
-    /// and optionally given extrapolation and looping parameters.
     TS_API
-    explicit TsSpline( const TsKeyFrameMap & keyFrames,
-             TsExtrapolationType leftExtrapolation = TsExtrapolationHeld,
-             TsExtrapolationType rightExtrapolation = TsExtrapolationHeld,
-             const TsLoopParams &loopParams = TsLoopParams());
+    TsSpline& operator=(const TsSpline &other);
 
-    /// Constructs a spline with the key frames \e keyFrames,
-    /// and optionally given extrapolation and looping parameters.
     TS_API
-    explicit TsSpline( const std::vector<TsKeyFrame> & keyFrames,
-             TsExtrapolationType leftExtrapolation = TsExtrapolationHeld,
-             TsExtrapolationType rightExtrapolation = TsExtrapolationHeld,
-             const TsLoopParams &loopParams = TsLoopParams());
+    bool operator==(const TsSpline &other) const;
 
-    /// Equality operator.
     TS_API
-    bool operator==(const TsSpline &rhs) const;
+    bool operator!=(const TsSpline &other) const;
 
-    /// Inequality operator.
+    /// @}
+    /// \name Value types
+    /// @{
+
     TS_API
-    bool operator!=(const TsSpline &rhs) const;
+    static bool IsSupportedValueType(TfType valueType);
 
-    /// Returns whether there are any keyframes.
+    TS_API
+    TfType GetValueType() const;
+
+    template <typename T>
+    bool IsHolding() const;
+
+    TS_API
+    void SetTimeValued(bool timeValued);
+
+    TS_API
+    bool IsTimeValued() const;
+
+    /// @}
+    /// \name Curve types
+    /// @{
+
+    TS_API
+    void SetCurveType(TsCurveType curveType);
+
+    TS_API
+    TsCurveType GetCurveType() const;
+
+    /// @}
+    /// \name Extrapolation
+    /// @{
+
+    TS_API
+    void SetPreExtrapolation(
+        const TsExtrapolation &extrap);
+
+    TS_API
+    TsExtrapolation GetPreExtrapolation() const;
+
+    TS_API
+    void SetPostExtrapolation(
+        const TsExtrapolation &extrap);
+
+    TS_API
+    TsExtrapolation GetPostExtrapolation() const;
+
+    /// @}
+    /// \name Inner loops
+    ///
+    /// Loop params are only valid when all of the following are true:
+    ///
+    /// - protoEnd > protoStart.
+    /// - At least one of numPreLoops or numPostLoops is nonzero and positive.
+    /// - There is a knot at protoStart.
+    ///
+    /// Any loop params may be set, and will be stored.  Whenever the above
+    /// conditions are not met, the stored params will be ignored.
+    ///
+    /// To determine if loop params are currently valid, call HasInnerLoops.
+    ///
+    /// To disable inner loops, call
+    /// <code>SetInnerLoopParams(TsLoopParams())</code>.
+    ///
+    /// @{
+
+    TS_API
+    void SetInnerLoopParams(
+        const TsLoopParams &params);
+
+    TS_API
+    TsLoopParams GetInnerLoopParams() const;
+
+    /// @}
+    /// \name Knots
+    /// @{
+
+    TS_API
+    void SetKnots(
+        const TsKnotMap &knots);
+
+    TS_API
+    bool CanSetKnot(
+        const TsKnot &knot,
+        std::string *reasonOut = nullptr) const;
+
+    /// <b>Incompletely implemented</b>; \p affectedIntervalOut is not yet
+    /// populated.
+    TS_API
+    bool SetKnot(
+        const TsKnot &knot,
+        GfInterval *affectedIntervalOut = nullptr);
+
+    /// Returns the spline's knots.  These are the original knots; if inner or
+    /// extrapolating loops are present, this set of knots does not reflect
+    /// that.
+    TS_API
+    TsKnotMap GetKnots() const;
+
+    /// Retrieves a copy of the knot at the specified time, if one exists.  This
+    /// must be an original knot, not a knot that is echoed due to looping.
+    /// Returns true on success, false if there is no such knot.
+    TS_API
+    bool GetKnot(
+        TsTime time,
+        TsKnot *knotOut) const;
+
+    /// @}
+    /// \name Removing knots
+    /// @{
+
+    TS_API
+    void ClearKnots();
+
+    /// <b>Incompletely implemented</b>; \p affectedIntervalOut is not yet
+    /// populated.
+    TS_API
+    void RemoveKnot(
+        TsTime time,
+        GfInterval *affectedIntervalOut = nullptr);
+
+    /// <b>Not yet implemented.</b>
+    TS_API
+    bool ClearRedundantKnots(
+        VtValue defaultValue = VtValue(),
+        const GfInterval &interval = GfInterval::GetFullInterval());
+
+    /// @}
+    /// \name Loop baking
+    /// @{
+
+    /// <b>Not yet implemented.</b>
+    TS_API
+    bool BakeLoops(
+        const GfInterval &interval);
+
+    /// <b>Not yet implemented.</b>
+    //
+    // Result cached
+    TS_API
+    const TsKnotMap& GetKnotsWithInnerLoopsBaked() const;
+
+    /// <b>Not yet implemented.</b>
+    //
+    // Bakes inner loops (finite) and extrapolating loops (infinite)
+    // Result cached, but only for last specified interval
+    TS_API
+    const TsKnotMap& GetKnotsWithLoopsBaked(
+        const GfInterval &interval) const;
+
+    /// @}
+    /// \name Splitting
+    /// @{
+
+    /// <b>Not yet implemented.</b>
+    ///
+    /// Adds a knot at the specified time.  The new knot is arranged so that the
+    /// shape of the curve is as unchanged as possible.
+    TS_API
+    bool Split(
+        TsTime time,
+        GfInterval *affectedIntervalOut = nullptr);
+
+    /// @}
+    /// \name Anti-regression
+    ///
+    /// See \ref page_ts_regression for a general introduction to regression and
+    /// anti-regression.
+    ///
+    /// \sa TsAntiRegressionAuthoringSelector
+    /// \sa TsRegressionPreventer
+    /// @{
+
+    /// Returns the current effective anti-regression authoring mode.  This may
+    /// come from the overall default of Keep Ratio; the build-configured
+    /// default defined by \c PXR_TS_DEFAULT_ANTI_REGRESSION_AUTHORING_MODE; or
+    /// a TsAntiRegressionAuthoringSelector.
+    TS_API
+    static TsAntiRegressionMode GetAntiRegressionAuthoringMode();
+
+    /// Returns whether this spline has any tangents long enough to cause
+    /// regression; or, if the current authoring mode is Contain, whether this
+    /// spline has any tangents that exceed their segment interval.
+    TS_API
+    bool HasRegressiveTangents() const;
+
+    /// Shorten any regressive tangents; or, if the current authoring mode is
+    /// Contain, any tangents that exceed their segment interval.  Return
+    /// whether anything was changed.
+    TS_API
+    bool AdjustRegressiveTangents();
+
+    /// @}
+    /// \name Evaluation
+    /// @{
+    ///
+    /// In all of these templated methods, the T parameter may be the value type
+    /// of the spline (double/float/GfHalf), or VtValue.
+
+    template <typename T>
+    bool Eval(
+        TsTime time,
+        T *valueOut) const;
+
+    template <typename T>
+    bool EvalPreValue(
+        TsTime time,
+        T *valueOut) const;
+
+    template <typename T>
+    bool EvalDerivative(
+        TsTime time,
+        T *valueOut) const;
+
+    template <typename T>
+    bool EvalPreDerivative(
+        TsTime time,
+        T *valueOut) const;
+
+    template <typename T>
+    bool EvalHeld(
+        TsTime time,
+        T *valueOut) const;
+
+    template <typename T>
+    bool EvalPreValueHeld(
+        TsTime time,
+        T *valueOut) const;
+
+    TS_API
+    bool DoSidesDiffer(
+        TsTime time) const;
+
+    /// @}
+    /// \name Whole-spline queries
+    /// @{
+
     TS_API
     bool IsEmpty() const;
 
-    /// Replaces the KeyFrames in this TsSpline with those in
-    /// swapInto, and puts the KeyFrames in this TsSpline into
-    /// swapInto.  Requires that the vectors in swapInto are sorted
-    /// in ascending order according to their time.
     TS_API
-    void SwapKeyFrames(std::vector<TsKeyFrame>* swapInto);
+    bool HasValueBlocks() const;
 
-    /// Removes redundant keyframes from the spline in the specified
-    /// multi-interval.
-    /// \return True if the spline was changed, false if not.
-    /// \param defaultValue Used only to decide whether to remove the final
-    /// keyframe.  The final keyframe is removed if defaultValue is specified
-    /// and the final keyframe has this value.
-    /// \param intervals Only keyframes in the given multiInterval will be
-    /// removed, although all keyframes will be considered in computing what
-    /// is redundant.
+    /// <b>Not yet implemented.</b>
     TS_API
-    bool ClearRedundantKeyFrames( const VtValue &defaultValue = VtValue(),
-                                  const GfMultiInterval &intervals =
-                                        GfMultiInterval(GfInterval(
-                                    -std::numeric_limits<double>::infinity(),
-                                    std::numeric_limits<double>::infinity())));
+    bool IsVarying() const;
 
-
-    /// Returns the keyframes in this spline.
-    ///
-    /// Note that any non-const method invalidates the reference to
-    /// the KeyFrameMap. Do not hold on to the KeyFrameMap reference,
-    /// make a modification to the spline, and then use the original
-    /// KeyFrameMap reference.
+    /// Convenience for HasInnerLoops() || HasExtrapolatingLoops().
     TS_API
-    const TsKeyFrameMap& GetKeyFrames() const;
-
-    /// Returns the "raw" keyframes in this spline whether or not this
-    /// spline is looping.  Note that this method is the sole exception to the
-    /// rule that the API presents the looped view of the spline when it is 
-    /// a looping spline.
-    ///
-    /// Note that any non-const method invalidates the reference to
-    /// the KeyFrameMap. Do not hold on to the KeyFrameMap reference,
-    /// make a modification to the spline, and then use the original
-    /// KeyFrameMap reference.
-    TS_API
-    const TsKeyFrameMap& GetRawKeyFrames() const;
-
-    /// Returns the keyframes contained in the given GfMultiInterval.
-    TS_API
-    std::vector<TsKeyFrame>
-    GetKeyFramesInMultiInterval(const GfMultiInterval &) const;
-
-    /// Returns the minimum and maximum keyframe frames in the spline.  If there
-    /// are no keyframes, the returned range will be empty.
-    TS_API
-    GfInterval GetFrameRange() const;
-
-    /// Sets a keyframe, optionally returning the time range affected.
-    /// If a keyframe already exists at the specified time, it will be
-    /// replaced.  If the keyframe is not a valid type to set, an error
-    /// will be emitted; to avoid this, call CanSetKeyFrame() first.
-    TS_API
-    void SetKeyFrame(
-        TsKeyFrame kf, GfInterval *intervalAffected=nullptr );
-
-    /// Checks if the given keyframe is a valid candidate to set,
-    /// optionally returning the reason if it cannot.
-    TS_API
-    bool CanSetKeyFrame(
-        const TsKeyFrame & kf, std::string *reason=nullptr ) const;
-
-    /// \brief Breakdown at time \e x.
-    ///
-    /// If a key frame exists at \e x then this does nothing, otherwise it
-    /// inserts a key frame of type \e type at \e x. If the provided \e value is
-    /// empty (the default), the new key frame's value is chosen such that the
-    /// value at \e x doesn't change. If \e value is not empty, the new keyframe
-    /// is always given that value.
-    ///
-    /// If \e flatTangents is \c false and \e x is between the first and last
-    /// key frames then it will also try to preserve the shape of the spline as
-    /// much as possible.  Otherwise, if the key frame type and value type
-    /// support tangents, the key frame will have tangents with zero slope and
-    /// length \e tangentLength.
-    ///
-    /// The return value is either the newly broken down keyframe, or the
-    /// existing keyframe at the given time. If an error has occurred, an
-    /// empty value may be returned.
-    TS_API
-    std::optional<TsKeyFrame>
-    Breakdown( double x, TsKnotType type,
-               bool flatTangents, double tangentLength,
-               const VtValue &value = VtValue(),
-               GfInterval *intervalAffected=nullptr );
-
-    /// Breaks down simultaneously at several times.
-    ///
-    /// When creating knots with flat tangents, the shape of the spline may
-    /// change between the new knot and its adjacent knots. Simply breaking
-    /// down a spline several times in a loop may result in key frame values
-    /// that drift away from their original values. This function samples the
-    /// spline first, ensuring that each new key frame will preserve the value
-    /// at that time.
-    ///
-    /// If \e value is not empty, \e value is used instead of sampling the
-    /// spline. For each time, if there is already a key frame at that time, the
-    /// value and type of that keyframe will not be changed.
-    ///
-    /// The arguments are the same as Breakdown(). If \p keyFramesAtTimes is
-    /// given, it will be populated with the newly broken down or previously 
-    /// existing key frames at the given times.
-    TS_API
-    void
-    Breakdown( const std::set<double> & times, TsKnotType type,
-               bool flatTangents, double tangentLength,
-               const VtValue &value = VtValue(), 
-               GfInterval *intervalAffected=nullptr,
-               TsKeyFrameMap *keyFramesAtTimes=nullptr);
-
-    /// Breaks down simultaneously at several times.
-    ///
-    /// Caller can provide a value for each time. If a value is not provided
-    /// at a given time (it is empty), this function will sample the spline.
-    /// If a knot already exists at a given time, its value is not modified.
-    ///
-    /// The arguments are the same as Breakdown(). If \p keyFramesAtTimes is
-    /// given, it will be populated with the newly broken down or previously 
-    /// existing key frames at the given times.
-    TS_API
-    void
-    Breakdown( const std::vector<double> & times, TsKnotType type,
-               bool flatTangents, double tangentLength,
-               const std::vector<VtValue> & values,
-               GfInterval *intervalAffected=nullptr,
-               TsKeyFrameMap *keyFramesAtTimes=nullptr);
-
-    /// Breaks down simultaneously at several times with knot types specified 
-    /// for each time.
-    ///
-    /// A knot type for each time must be provided, else it is a coding error.
-    ///
-    /// Caller can provide a value for each time. If a value is not provided
-    /// at a given time (it is empty), this function will sample the spline.
-    /// If a knot already exists at a given time, its value is not modified.
-    ///
-    /// The arguments are the same as Breakdown(). If \p keyFramesAtTimes is
-    /// given, it will be populated with the newly broken down or previously 
-    /// existing key frames at the given times.
-    TS_API
-    void
-    Breakdown( const std::vector<double> & times, 
-               const std::vector<TsKnotType> & types,
-               bool flatTangents, double tangentLength,
-               const std::vector<VtValue> & values,
-               GfInterval *intervalAffected=nullptr,
-               TsKeyFrameMap *keyFramesAtTimes=nullptr);
-
-    /// Removes the keyframe at the given time, optionally returning the
-    /// time range affected.
-    TS_API
-    void RemoveKeyFrame(
-        TsTime time, GfInterval *intervalAffected=nullptr);
-
-    /// Removes all keyframes.  This does not affect extrapolation.  If this
-    /// spline is looping, knots hidden under the loop echos will not be
-    /// removed.
-    TS_API
-    void Clear();
-
-    /// \brief Finds the keyframe closest to the given time.
-    /// Returns an empty value if there are no keyframes.
-    TS_API
-    std::optional<TsKeyFrame>
-    GetClosestKeyFrame( TsTime targetTime ) const;
-
-    /// \brief Finds the closest keyframe before the given time.
-    /// Returns an empty value if no such keyframe exists.
-    TS_API
-    std::optional<TsKeyFrame>
-    GetClosestKeyFrameBefore( TsTime targetTime )const;
-
-    /// \brief Finds the closest keyframe after the given time.
-    /// Returns an empty value if no such keyframe exists.
-    TS_API
-    std::optional<TsKeyFrame>
-    GetClosestKeyFrameAfter( TsTime targetTime ) const;
-
-    /// \brief Returns true if the given key frame is redundant.
-    ///
-    /// A key frame is redundant if it can be removed without affecting the
-    /// value of the spline at any time. If a spline has only one key frame
-    /// and that key frame has the same value as this spline's default
-    /// value, then that key frame is considered redundant.  If a 
-    /// \c defaultValue parameter is not supplied, the last knot on a spline
-    /// is never considered redundant.
-    TS_API
-    bool IsKeyFrameRedundant( const TsKeyFrame &keyFrame,
-                              const VtValue &defaultValue = VtValue() ) const;
-
-    /// \brief Returns true if the key frame at the given time is redundant.
-    ///
-    /// This is a convenience function for the version that takes a
-    /// TsKeyFrame.  If there is no key frame at the indicated time a
-    /// TF_CODING_ERROR will occur and false is returned.
-    TS_API
-    bool IsKeyFrameRedundant( TsTime keyFrameTime,
-                              const VtValue &defaultValue = VtValue() ) const;
-
-    /// \brief Returns true if any of this spline's key frames are redundant.
-    TS_API
-    bool HasRedundantKeyFrames( const VtValue &defaultValue = VtValue() ) const;
-
-    /// \brief Returns true if the segment between the given (adjacent) key 
-    /// frames is flat.
-    TS_API
-    bool IsSegmentFlat( const TsKeyFrame &kf1, 
-                        const TsKeyFrame &kf2 ) const;
-
-    /// \brief Returns true if the segment between the given (adjacent) key
-    /// frames is flat.
-    ///
-    /// This function will log a TF_CODING_ERROR if there is no key frame at
-    /// either of the indicated times.
-    TS_API
-    bool IsSegmentFlat( TsTime startTime, TsTime endTime ) const;
-                         
-    /// \brief Returns true if the segment between the given (adjacent) key 
-    /// frames is monotonic (i.e. no extremes).
-    ///
-    /// This function will log a TF_CODING_ERROR if kf1 >= kf2 
-    /// TODO describe the preconditions
-    /// 
-    TS_API
-    bool
-    IsSegmentValueMonotonic( const TsKeyFrame &kf1, 
-                             const TsKeyFrame &kf2 ) const;
-
-    /// \brief Returns true if the segment between the given (adjacent) key
-    /// frames is monotonic (i.e. no extremes).
-    ///
-    /// Given times must correspond to key frames.
-    /// see also IsSegmentValueMonotonic(kf1, kf2)
-    TS_API
-    bool 
-    IsSegmentValueMonotonic( TsTime startTime, TsTime endTime ) const;
-
-    /// \brief Returns true if the value of the spline changes over time,
-    /// whether due to differing values among keyframes or knot sides, 
-    /// or value changes via non-flat tangents.  If allowEpsilonDifferences is
-    /// true, then if the spline is of type double, then knot value
-    /// differences that are tiny will count as 0.
-    TS_API
-    bool
-    IsVarying() const;
-
-    /// \brief Like IsVarying(), but for splines of type double, allows tiny
-    /// value differences.
-    TS_API
-    bool
-    IsVaryingSignificantly() const;
-
-    /// Sets the spline's extrapolation type on each side.
-    TS_API
-    void SetExtrapolation(
-            TsExtrapolationType left, TsExtrapolationType right);
-
-    /// Returns the spline's extrapolation type on each side (\c first
-    /// is the left side).
-    TS_API
-    std::pair<TsExtrapolationType, TsExtrapolationType>
-    GetExtrapolation() const;
-
-    /// Returns the typeid of the value type for keyframes in this spline.
-    /// If no keyframes have been set, this will return typeid(void).
-    TS_API
-    const std::type_info &
-    GetTypeid() const;
-
-    /// Returns the TfType of the value type for keyframes in this spline.
-    /// If no keyframes have been set, this will return unknown type
-    TS_API
-    TfType
-    GetType() const;
-
-    /// Returns the typename of the value type for keyframes in this spline,
-    /// If no keyframes have been set, this will return "void".
-    TS_API
-    std::string GetTypeName() const;
-    
-    /// Evaluates the value of the spline at the given time, interpolating the
-    /// keyframes.  If there are no keyframes, an empty VtValue is returned.
-    TS_API
-    VtValue Eval(
-        TsTime time, TsSide side=TsRight ) const;
-
-    /// Evaluates the value of the spline at the given time without any
-    /// interpolation, as if all keyframes and extrapolation modes were of
-    /// type "held".
-    ///
-    /// If there are no keyframes, an empty VtValue is returned.
-    TS_API
-    VtValue EvalHeld( TsTime time, TsSide side=TsRight ) const;
-
-    /// Evaluates the derivative of the spline at the given time, interpolating
-    /// the keyframes.  If there are no keyframes, an empty VtValue is returned.
-    TS_API
-    VtValue EvalDerivative(
-        TsTime time, TsSide side=TsRight ) const;
-
-    /// Returns whether the left-side value and the right-side value at the
-    /// specified time are different.  This is always false for a time where
-    /// there is no keyframe.  For a keyframe time, the sides differ if (1)
-    /// there is a dual-valued keyframe with different values on the left and
-    /// right side; or (2) the keyframe follows a held segment whose value does
-    /// not match the keyframe's right-side value.  Contrast this method with
-    /// TsKeyFrame::GetIsDualValued, which only reports whether a keyframe is
-    /// configured to have dual values.
-    TS_API
-    bool DoSidesDiffer(TsTime time) const;
-
-    /// \brief Evaluates the value of the spline over the given time interval.
-    /// When the returned samples are scaled by \e timeScale and 
-    /// \e valueScale and linearly interpolated, the reconstructed curve
-    /// will nowhere have an error greater than \e tolerance.
-    ///
-    /// Samples may be point samples or "blur" samples.  A blur sample
-    /// covers a finite time domain and a value range.  It indicates that
-    /// the value varies very quickly in the domain and that,  to the given
-    /// tolerance, only the minimum and maximum values are of interest.
-    /// Blur domains are always half-open on the right.
-    ///
-    /// Samples are returned in non-decreasing time order.  Two samples
-    /// may have equal time in two cases.  First, if both are point samples
-    /// then the first is the left side evaluation of the value at time
-    /// and the second is the right side evaluation.  Second, if the first
-    /// sample is a point sample and second is a blur sample then the point
-    /// sample is the left side evaluation of time.  Blur domains will not
-    /// overlap and point samples, with the above exception, will not be
-    /// inside any blur domain.
-    ///
-    /// Samples may be returned outside the given time interval.
-    TS_API
-    TsSamples Sample(
-        TsTime startTime, TsTime endTime,
-        double timeScale, double valueScale,
-        double tolerance ) const;
+    bool HasLoops() const;
 
     TS_API
-    std::pair<VtValue, VtValue>
-    GetRange( TsTime startTime, TsTime endTime ) const;
+    bool HasInnerLoops() const;
 
-    /// Returns whether spline represents a simple linear relationship.
+    TS_API
+    bool HasExtrapolatingLoops() const;
+
+    /// <b>Not yet implemented.</b>
     TS_API
     bool IsLinear() const;
 
-    /// Returns whether the given key frame is in the looped interval, but
-    /// not in the master interval.
+    /// <b>Not yet implemented.</b>
     TS_API
-    bool KeyFrameIsInLoopedRange(const TsKeyFrame & kf);
+    bool IsC0Continuous() const;
 
-    /// \brief Return an object describing all the looping parameters for
-    /// this spline.
+    /// <b>Not yet implemented.</b>
     TS_API
-    TsLoopParams GetLoopParams() const;
+    bool IsG1Continuous() const;
 
-    /// \brief Set the looping parameters for this spline.
+    /// <b>Not yet implemented.</b>
     TS_API
-    void SetLoopParams(const TsLoopParams&);
+    bool IsC1Continuous() const;
 
-    // If this spline is a looping spline, bakes the looped key frames
-    // out and turns looping off.  Hidden keyframes will be lost.
+    /// <b>Not yet implemented.</b>
     TS_API
-    void BakeSplineLoops();
+    bool GetValueRange(
+        const GfInterval &timeSpan,
+        std::pair<VtValue, VtValue> *rangeOut) const;
 
-    /// \brief Is the given time in the "unrolled" region of a spline that is
-    /// looping; i.e. not in the master region
-    TS_API
-    bool IsTimeLooped(TsTime time) const;
+    /// <b>Not yet implemented.</b>
+    template <typename T>
+    bool GetValueRange(
+        const GfInterval &timeSpan,
+        std::pair<T, T> *rangeOut) const;
 
-    /// Our iterators are simply iterators into the contained TsKeyFrameMap
-    /// We only expose const iterators because when a KeyFrame changes we
-    /// need to update other internal state.
-    typedef TsKeyFrameMap::const_iterator const_iterator;
-    typedef TsKeyFrameMap::const_reverse_iterator const_reverse_iterator;
-
-    /// Some utilities (such as TfIterator) expect a class named 'iterator'.
-    /// We provide that as a typdef to const_iterator in order to avoid exposing
-    /// real non-const iterators.
-    typedef const_iterator iterator;
-    typedef const_reverse_iterator reverse_iterator;
-
-    /// \group Container API
-    ///
-    /// Provide STL container compliant API.
-    ///
-    /// Some of these methods are inlined because they are often called
-    /// as part of looping constructions where the cost of function calls
-    /// could be high.
+    /// @}
+    /// \name Within-spline queries
     /// @{
 
-    /// Returns the number of KeyFrames in this spline.
     TS_API
-    size_t size() const {
-        return GetKeyFrames().size();
-    }
+    bool HasValueBlockAtTime(
+        TsTime time) const;
 
-    /// Return true if this spline has no KeyFrames.
+    /// <b>Not yet implemented.</b>
     TS_API
-    bool empty() const {
-        return GetKeyFrames().empty();
-    }
-    
-    /// Return a const_iterator pointing to the beginning of the spline.
-    TS_API
-    const_iterator begin() const {
-        return const_iterator(GetKeyFrames().begin());
-    }
+    bool IsSegmentFlat(
+        TsTime startTime) const;
 
-    /// Returns a const_iterator pointing to the end of the spline. (one past
-    /// the last KeyFrame)
+    /// <b>Not yet implemented.</b>
     TS_API
-    const_iterator end() const {
-        return const_iterator(GetKeyFrames().end());
-    }
+    bool IsSegmentMonotonic(
+        TsTime startTime) const;
 
-    /// Return a const_reverse_iterator pointing to the end of the spline.
+    /// <b>Not yet implemented.</b>
     TS_API
-    const_reverse_iterator rbegin() const {
-        return const_reverse_iterator(GetKeyFrames().rbegin());
-    }
-
-    /// Returns a const_reverse_iterator pointing to the beginning of the 
-    /// spline. (one before the first KeyFrame)
-    TS_API
-    const_reverse_iterator rend() const {
-        return const_reverse_iterator(GetKeyFrames().rend());
-    }
-
-
-    /// Returns a const_iterator to the KeyFrame at time \p t. This
-    /// will return end() if no KeyFrame exists at that time.
-    TS_API
-    const_iterator find(const TsTime &t) const;
-
-    /// Returns a const_iterator to the first KeyFrame with a time
-    /// that is not less than \p t.
-    TS_API
-    const_iterator lower_bound(const TsTime &t) const;
-
-    /// Returns a const_iterator to the first KeyFrame with a time
-    /// that is greater than \p t.
-    TS_API
-    const_iterator upper_bound(const TsTime &t) const;
-
-    /// Returns the number (either 0 or 1) of KeyFrames with time
-    /// \p t.
-    TS_API
-    size_t count(const TsTime &t) const {
-        return GetKeyFrames().find(t) != GetKeyFrames().end();
-    }
+    bool IsKnotRedundant(
+        TsTime time,
+        VtValue defaultValue = VtValue()) const;
 
     /// @}
 
-private:
-
-    void _BreakdownMultipleValues( const std::vector<double> &times,
-       TsKnotType type, bool flatTangents, double tangentLength,
-       const std::vector<VtValue> &values,
-       GfInterval *intervalAffected,
-       TsKeyFrameMap *keyFramesAtTimes);
-
-    void _BreakdownMultipleKnotTypes( const std::vector<double> &times,
-       const std::vector<TsKnotType> &types,
-       bool flatTangents, double tangentLength,
-       const std::vector<VtValue> &values,
-       GfInterval *intervalAffected,
-       TsKeyFrameMap *keyFramesAtTimes);
-
-    // Fills \p keyframes with the new keyframes to effect a breakdown
-    // at \p x.  Subclasses can use this to implement \c Breakdown();
-    // they'll call this then set each key frame in \p keyframes.
-    void
-    _GetBreakdown( TsKeyFrameMap* newKeyframes, double x, TsKnotType type,
-                   bool flatTangents, double tangentLength,
-                   const VtValue &value ) const;
-
-    typedef std::vector<std::pair<TsTime, VtValue>> _Samples;
-
-    // Helper for _BreakdownMultipleKnotTypes. Performs the Breakdown on the 
-    // given list of samples, i.e. time/value pairs.
-    void _BreakdownSamples(
-        const _Samples &samples,
-        TsKnotType type, 
-        bool flatTangents,
-        double tangentLength,
-        GfInterval *intervalAffected,
-        TsKeyFrameMap *keyFramesAtTimes);
-
-    // Helper for the forms of IsVarying*; allows subseqent keyframes to vary
-    // by 'tolerance'.
-    bool _IsVarying(double tolerance) const;
-
-    /// Ensure that _data is not shared with any other spline.
-    /// If it is, make our own copy and drop our reference to the shared one.
-    void _Detach();
+public:
+    // Hash function.  For now this is cheap, and only hashes by data pointer.
+    // If there are two identical but independent splines, they will hash
+    // unequal.
+    template <typename HashState>
+    friend void TfHashAppend(
+        HashState &h,
+        const TsSpline &spline)
+    {
+        h.Append(spline._data.get());
+    }
 
 private:
-    std::shared_ptr<TsSpline_KeyFrames> _data;
+    friend class TsRegressionPreventer;
+    void _SetKnotUnchecked(const TsKnot & knot);
+
+    // External helpers provide direct data access for Ts implementation.
+    friend Ts_SplineData* Ts_GetSplineData(TsSpline &spline);
+    friend const Ts_SplineData* Ts_GetSplineData(const TsSpline &spline);
+
+    friend struct Ts_BinaryDataAccess;
+    friend struct Ts_SplineOffsetAccess;
+
+private:
+    // Get data to read from.  Will be either actual data or default data.
+    TS_API
+    const Ts_SplineData* _GetData() const;
+
+    // Ensure we have our own independent data, in preparation for writing.  If
+    // a value type is passed, and we don't yet have typed data, ensure we have
+    // data of the specified type.
+    void _PrepareForWrite(TfType valueType = TfType());
+
+    template <typename T>
+    bool _Eval(
+        TsTime time,
+        T *valueOut,
+        Ts_EvalAspect aspect,
+        Ts_EvalLocation location) const;
+
+private:
+    // Our parameter data.  Copy-on-write.  Null only if we are in the default
+    // state, with no knots, and all overall parameters set to defaults.  To
+    // deal with the possibility of null data, call _GetData for reading, and
+    // _PrepareForWrite before writing.
+    std::shared_ptr<Ts_SplineData> _data;
 };
 
+/// Output a text representation of a spline to a stream.
 TS_API
-std::ostream& operator<<(std::ostream &out, const TsSpline &val);
+std::ostream& operator<<(std::ostream& out, const TsSpline &spline);
+
+// XXX: This should not be necessary.  All it does is call std::swap.  This is
+// here as a workaround for a downstream library that tries to call swap on
+// splines, with a "using namespace std" that doesn't appear to work when pxr
+// namespaces are in use.
+TS_API
+void swap(TsSpline &lhs, TsSpline &rhs);
+
+// For applying layer offsets.
+struct Ts_SplineOffsetAccess
+{
+    TS_API
+    static void ApplyOffsetAndScale(
+        TsSpline *spline,
+        const TsTime offset,
+        const double scale);
+};
+
+
+////////////////////////////////////////////////////////////////////////////////
+// TEMPLATE IMPLEMENTATIONS
+
+template <typename T>
+bool TsSpline::IsHolding() const
+{
+    if constexpr (!Ts_IsSupportedValueType<T>::value)
+    {
+        return false;
+    }
+
+    return GetValueType() == Ts_GetType<T>();
+}
+
+template <typename T>
+bool TsSpline::_Eval(
+    const TsTime time,
+    T* const valueOut,
+    const Ts_EvalAspect aspect,
+    const Ts_EvalLocation location) const
+{
+    const std::optional<double> result =
+        Ts_Eval(_GetData(), time, aspect, location);
+
+    if (!result)
+    {
+        return false;
+    }
+
+    *valueOut = T(*result);
+    return true;
+}
+
+template <typename T>
+bool TsSpline::Eval(const TsTime time, T* const valueOut) const
+{
+    return _Eval(time, valueOut, Ts_EvalValue, Ts_EvalAtTime);
+}
+
+template <typename T>
+bool TsSpline::EvalPreValue(const TsTime time, T* const valueOut) const
+{
+    return _Eval(time, valueOut, Ts_EvalValue, Ts_EvalPre);
+}
+
+template <typename T>
+bool TsSpline::EvalDerivative(const TsTime time, T* const valueOut) const
+{
+    return _Eval(time, valueOut, Ts_EvalDerivative, Ts_EvalAtTime);
+}
+
+template <typename T>
+bool TsSpline::EvalPreDerivative(const TsTime time, T* const valueOut) const
+{
+    return _Eval(time, valueOut, Ts_EvalDerivative, Ts_EvalPre);
+}
+
+template <typename T>
+bool TsSpline::EvalHeld(const TsTime time, T* const valueOut) const
+{
+    return _Eval(time, valueOut, Ts_EvalHeldValue, Ts_EvalAtTime);
+}
+
+template <typename T>
+bool TsSpline::EvalPreValueHeld(const TsTime time, T* const valueOut) const
+{
+    return _Eval(time, valueOut, Ts_EvalHeldValue, Ts_EvalPre);
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

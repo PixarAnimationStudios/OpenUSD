@@ -142,6 +142,12 @@ HdPrman_RenderParam::HdPrman_RenderParam(
     
     // Register RenderMan display driver
     HdPrmanFramebuffer::Register(_rix);
+
+    // Calling these before
+    // RixSymbolResolver::ResolvePredefinedStrings (which is in _CreateRiley)
+    // causes a crash.
+    _envOptions = HdPrman_Utils::GetRileyOptionsFromEnvironment();
+    _fallbackOptions = HdPrman_Utils::GetDefaultRileyOptions();
 }
 
 HdPrman_RenderParam::~HdPrman_RenderParam()
@@ -2182,8 +2188,6 @@ HdPrman_RenderParam::IsValid() const
 void 
 HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
 {
-    _envOptions = HdPrman_Utils::GetRileyOptionsFromEnvironment();
-    _fallbackOptions = HdPrman_Utils::GetDefaultRileyOptions();
     // Initialize legacy options from the render settings map.
     UpdateLegacyOptions();
     
@@ -2291,6 +2295,13 @@ HdPrman_RenderParam::_DeleteInternalPrims()
 }
 
 void
+HdPrman_RenderParam::SetRileySceneIndexObserverOptions(
+    RtParamList const &params)
+{
+    _rileySceneIndexObserverOptions = params;
+}
+
+void
 HdPrman_RenderParam::SetRenderSettingsPrimOptions(
     RtParamList const &params)
 {
@@ -2341,7 +2352,8 @@ HdPrman_RenderParam::SetRileyOptions()
     //
     {
         // Compose scene options with the precedence:
-        //     env > render settings prim > legacy settings map > fallback
+        //   env > scene index observer > render settings prim >
+        //                                    legacy settings map > fallback
         //
         // XXX: Some riley clients require certain options to be present
         // on every SetOptions call (e.g. XPU currently needs
@@ -2351,6 +2363,7 @@ HdPrman_RenderParam::SetRileyOptions()
 
         RtParamList composedParams = HdPrman_Utils::Compose(
             _envOptions,
+            _rileySceneIndexObserverOptions,
             _renderSettingsPrimOptions, 
             GetLegacyOptions(),
             _fallbackOptions);

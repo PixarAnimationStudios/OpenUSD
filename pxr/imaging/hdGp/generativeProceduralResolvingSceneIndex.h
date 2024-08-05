@@ -188,7 +188,8 @@ private:
     // MEMBER FUNCTIONS ///////////////////////////////////////////////////////
 
     _ProcEntry * _UpdateProceduralDependencies(
-        const SdfPath &proceduralPrimPath) const;
+        const SdfPath &proceduralPrimPath,
+        _Notices* outputNotices) const;
 
     _ProcEntry * _UpdateProcedural(
         const SdfPath &proceduralPrimPath,

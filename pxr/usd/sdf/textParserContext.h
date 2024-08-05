@@ -18,6 +18,11 @@
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/types.h"
 
+#include "pxr/base/ts/spline.h"
+#include "pxr/base/ts/knotMap.h"
+#include "pxr/base/ts/knot.h"
+#include "pxr/base/ts/types.h"
+
 #include "pxr/base/vt/dictionary.h"
 
 #include "pxr/base/tf/token.h"
@@ -137,6 +142,15 @@ public:
 
     // Stack of names of variants for the variant sets being built
     std::vector<std::vector<std::string> > currentVariantNames;
+
+    // Working state for splines.
+    bool splineValid;
+    TsSpline spline;
+    TsExtrapolation splineExtrap;
+    TsKnotMap splineKnotMap;
+    TsKnot splineKnot;
+    bool splineTanIsPre;
+    TsInterpMode splineInterp;
 
     unsigned int sdfLineNo;
 

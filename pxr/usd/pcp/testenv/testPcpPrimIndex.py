@@ -984,6 +984,39 @@ class TestPcpPrimIndex(unittest.TestCase):
         nullPcpNodeRef =  Pcp._GetInvalidPcpNode()
         self.assertFalse(bool(nullPcpNodeRef))
 
+    def test_UnresolvedPrimPathError_Variants(self):
+        """Test to ensure unresolved prim path errors are handles correctly
+            when the node path includes a variant selection"""
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootLayer.ImportFromString('''
+        #sdf 1.4.32
+
+        def "scene" (
+            prepend variantSets = "MatVars1"
+            variants = {
+                string "MatVars1" = "red"
+            }
+        )
+        {
+            variantSet "MatVars1" = {
+                "red" {
+                    over "Cubes_materials"
+                    {
+                        over "TexTarget" (
+                            prepend references = </scene/Cubes_materials/red>
+                        )
+                        {
+                        }
+                    }
+                }
+            }
+        }
+        '''.strip())
+
+        pcp = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
+        _, errs = pcp.ComputePrimIndex('/scene/Cubes_materials/TexTarget')
+        self.assertEqual(len(errs), 1)
+        self.assertTrue('Unresolved reference prim path' in str(errs[0]))
 
 if __name__ == "__main__":
     unittest.main()

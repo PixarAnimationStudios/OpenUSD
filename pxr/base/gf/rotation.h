@@ -194,15 +194,6 @@ class GfRotation {
         double *thetaTw, double *thetaFB, double *thetaLR, double *thetaSw);
 
     /// Transforms row vector \p vec by the rotation, returning the result. 
-    ///
-    /// \deprecated
-    /// This method is deprecated, as it can result in unintentional loss of
-    /// precision. Call GfVec3d TransformDir(const GfVec3d &) instead and
-    /// explicitly convert the result to GfVec3f, if necessary.
-    GF_API
-    GfVec3f TransformDir( const GfVec3f &vec ) const;
-
-    /// \overload
     GF_API
     GfVec3d TransformDir( const GfVec3d &vec ) const;
 

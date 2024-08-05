@@ -8,6 +8,7 @@ pxr_library(sdf
         gf
         pegtl
         trace
+        ts
         vt
         work
         ar
@@ -245,6 +246,16 @@ pxr_build_test_shared_lib(TestSdfFileFormatCapabilities
 
     CPPFILES
         testenv/TestSdfFileFormatCapabilities.cpp
+)
+
+pxr_build_test_shared_lib(TestSdfLayerExceptionHandling
+    INSTALL_PREFIX SdfPlugins
+    LIBRARIES
+        sdf
+        tf
+
+    CPPFILES
+        testenv/TestSdfLayerExceptionHandling.cpp
 )
 
 pxr_build_test_shared_lib(TestSdfNoAssetFileFormat

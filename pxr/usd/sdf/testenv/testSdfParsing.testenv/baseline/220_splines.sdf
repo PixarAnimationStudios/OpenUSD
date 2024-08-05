@@ -1,0 +1,69 @@
+#sdf 1.4.32
+
+def Xform "Prim1"
+{
+    double xformOp:rotateX.spline = {
+        1: 5; pre ws(0, 0); post held,
+        2: 18; post held,
+    }
+    float xformOp:rotateY.spline = {
+        10: 55; pre ws(0, 0); post linear,
+        20: 185; post linear,
+    }
+    half xformOp:rotateZ.spline = {
+        -15.75: -1; pre ws(0, 0); post none,
+        88.88: -40; post linear,
+    }
+    timecode ziggurat.spline = {
+        14: 44; pre ws(0, 0); post linear,
+        18: 27; post linear,
+    }
+}
+
+def Xform "Prim2"
+{
+    custom double myAttr = 17.12
+    double myAttr.spline = {
+        bezier,
+        pre: linear,
+        post: sloped(0.57),
+        loop: (15, 25, 0, 2, 11.7),
+        7: 5.5 & 7.21; pre ws(0, 0); post held,
+        15: 8.18; post curve ws(2.49, 1.17); { string comment = "climb!" },
+        20: 14.72; pre ws(3.77, -1.4); post curve ws(1.1, -1.4),
+    }
+}
+
+def Xform "Prim3"
+{
+    double mayaAttr.spline = {
+        bezier,
+        -14.7: 11.30752; pre ws(0, 0); post curve wh(1.4, 7.7),
+        -1.2: 22.994037; pre wh(0.9, -4.01); post curve wh(7, 40),
+    }
+    float mixedStandardAndMaya.spline = {
+        bezier,
+        1: 8; pre ws(0, 0); post curve wh(4, 0.5),
+        6: 20; pre wh(2, 0.4); post curve ws(2, 0.3),
+        40: -44; pre ws(1, 0); post curve wh(22, -0),
+    }
+    float quetzalcoatl.spline = {
+        hermite,
+        1: 8; pre s(0); post curve s(4),
+        6: 20; pre s(2); post curve s(2),
+    }
+    float tlaxcoco.spline = {
+        hermite,
+        1: 8; pre s(0); post curve h(4),
+        6: 20; pre h(2); post curve h(2),
+    }
+}
+
+def Xform "Prim4"
+{
+    double arfArf.spline = {
+        0: 6; pre ws(0, 0); post linear; { string a = "yes"; int b = 4; dictionary c = { string d = "ugh" } },
+        1: 6; post held,
+    }
+}
+

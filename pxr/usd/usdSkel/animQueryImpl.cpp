@@ -156,7 +156,9 @@ UsdSkel_SkelAnimationQueryImpl::ComputeJointLocalTransformComponents(
     UsdTimeCode time) const
 {
     TRACE_FUNCTION();
-
+    if (!_translations || !_rotations || !_scales) {
+        return false;
+    }
     return _translations.Get(translations, time) &&
            _rotations.Get(rotations, time) &&
            _scales.Get(scales, time);

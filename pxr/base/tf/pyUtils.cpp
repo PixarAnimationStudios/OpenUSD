@@ -304,39 +304,6 @@ vector<string> TfPyGetTraceback()
     return result;
 }
 
-void
-TfPyGetStackFrames(vector<uintptr_t> *frames)
-{
-    if (!TfPyIsInitialized())
-        return;
-
-    TfPyLock lock;
-    try {
-        object tbModule(handle<>(PyImport_ImportModule("traceback")));
-        object stack = tbModule.attr("format_stack")();
-        size_t size = len(stack);
-        frames->reserve(size);
-        // Reverse the order of stack frames so that the stack is ordered 
-        // like the output of ArchGetStackFrames() (deepest function call at 
-        // the top of stack).
-        for (long i = static_cast<long>(size)-1; i >= 0; --i) {
-            string *s = new string(extract<string>(stack[i]));
-            frames->push_back((uintptr_t)s);
-        }
-    } catch (boost::python::error_already_set const &) {
-        TfPyConvertPythonExceptionToTfErrors();
-        PyErr_Clear();
-    }
-}
-
-void TfPyDumpTraceback() {
-    printf("Traceback (most recent call last):\n");
-    vector<string> tb = TfPyGetTraceback();
-    TF_FOR_ALL(i, tb)
-        printf("%s", i->c_str());
-}
-
-
 static object
 _GetOsEnviron()
 {

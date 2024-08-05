@@ -20,6 +20,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/tf.h"
 
+#include "pxr/base/arch/align.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/debugger.h"
 #include "pxr/base/arch/hash.h"
@@ -556,19 +557,24 @@ public:
     static
     TfMallocTag::_ThreadData &Find() {
 #if defined(ARCH_HAS_THREAD_LOCAL)
+        // This thread_local must be placed in static TLS to prevent re-entry.
+        // Starting in glibc 2.25, dynamic TLS allocation uses malloc.  Making
+        // this allocation after malloc tags have been initialized results in
+        // infinite recursion.
         static thread_local _ThreadData* data = nullptr;
         if (ARCH_LIKELY(data)) {
             return *data;
         }
-        // This weirdness is so we don't use the heap and we don't call the
+        // This weirdness is so we don't re-enter malloc tags and don't call the
         // destructor of _ThreadData when the thread is exiting.  We can't do
         // the latter because we don't know in what order objects will be
         // destroyed and objects destroyed after the _ThreadData may do heap
         // (de)allocation, which requires the _ThreadData object.  We leak the
         // heap allocated blocks in the _ThreadData.
-        static thread_local std::aligned_storage<
-            sizeof(_ThreadData), alignof(_ThreadData)>::type dataBuffer;
-        data = new (&dataBuffer) _ThreadData();
+        void *dataBuffer = _mallocHook.IsInitialized()
+            ? _mallocHook.Memalign(alignof(_ThreadData), sizeof(_ThreadData))
+            : ArchAlignedAlloc(alignof(_ThreadData), sizeof(_ThreadData));
+        data = new (dataBuffer) _ThreadData();
         return *data;
 #else
         TF_FATAL_ERROR("TfMallocTag not supported on platforms "

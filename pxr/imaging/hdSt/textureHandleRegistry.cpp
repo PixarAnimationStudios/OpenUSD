@@ -304,7 +304,7 @@ HdSt_TextureHandleRegistry::_GarbageCollectHandlesAndComputeTargetMemory()
 }
 
 void
-HdSt_TextureHandleRegistry::_GarbageCollectAndComputeTargetMemory()
+HdSt_TextureHandleRegistry::GarbageCollect()
 {
     TRACE_FUNCTION();
 
@@ -392,7 +392,7 @@ HdSt_TextureHandleRegistry::Commit()
     // Garbage collect texture handles and textures and compute
     // target memory for the textures before calling the commit
     // on the texture registry.
-    _GarbageCollectAndComputeTargetMemory();
+    GarbageCollect();
 
     // Commit textures, update samplers associated with the
     // corresponding texture handles. Return all affected shaders.

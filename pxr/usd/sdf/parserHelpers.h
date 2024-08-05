@@ -252,11 +252,7 @@ struct Value
     // std::bad_variant_access.
     template <class T>
     typename _GetImpl<T>::ResultType Get() const {
-        try {
-            return _GetImpl<T>().Visit(_variant);
-        } catch (std::bad_variant_access& e) {
-            throw std::bad_variant_access();
-        }
+        return _GetImpl<T>().Visit(_variant);
     }
 
     // Hopefully short-lived API that applies an external visitor to the held

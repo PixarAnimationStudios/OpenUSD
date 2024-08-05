@@ -815,7 +815,7 @@ UsdSkelComputeJointsExtent(TfSpan<const Matrix4> xforms,
     for (size_t i = 0; i < xforms.size(); ++i) {
         const GfVec3f pivot(xforms[i].ExtractTranslation());
         extent->UnionWith(rootXform ?
-                          rootXform->TransformAffine(pivot) : pivot);
+                          GfVec3f(rootXform->TransformAffine(pivot)) : pivot);
     }
     const GfVec3f padVec(pad);
     extent->SetMin(extent->GetMin()-padVec);
@@ -1353,7 +1353,7 @@ _SkinPointsLBS(const Matrix4& geomBindTransform,
         {
             for (size_t pi = start; pi < end; ++pi) {
 
-                const GfVec3f initialP = geomBindTransform.Transform(points[pi]);
+                const GfVec3f initialP(geomBindTransform.Transform(points[pi]));
                 GfVec3f p(0,0,0);
                 
                 for (int wi = 0; wi < numInfluencesPerPoint; ++wi) {
@@ -1370,8 +1370,8 @@ _SkinPointsLBS(const Matrix4& geomBindTransform,
                             // encode non-affine transforms, except for the rest
                             // pose (which, according to the schema, should
                             // be affine!). Safe to assume affine transforms.
-                            p += jointXforms[jointIdx].TransformAffine(
-                                initialP)*w;
+                            p += GfVec3f(jointXforms[jointIdx].TransformAffine(
+                                             initialP))*w;
                         }
 
                         // XXX: Possible optimization at this point:
@@ -1442,7 +1442,7 @@ _SkinPointsDQS(const Matrix4& geomBindTransform,
         {
             for (size_t pi = start; pi < end; ++pi) {
 
-                const GfVec3f initialP = geomBindTransform.Transform(points[pi]);
+                const GfVec3f initialP(geomBindTransform.Transform(points[pi]));
                 GfVec3f scaledP(0, 0, 0);
 
                 GfQuatd pivotQuat(0.0);
@@ -2443,7 +2443,8 @@ UsdSkel_SkinTransformLBS(const Matrix4& geomBindTransform,
                 if (w != 0.0f) {
                     // XXX: See the notes from _SkinPointsLBS():
                     // affine transforms should be okay.
-                    p += jointXforms[jointIdx].TransformAffine(initialP)*w;
+                    p += GfVec3f(
+                        jointXforms[jointIdx].TransformAffine(initialP))*w;
                 }
             } else {
                 TF_WARN("Out of range joint index %d at index %zu"

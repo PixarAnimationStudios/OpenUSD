@@ -27,6 +27,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class UsdAttribute;
+class TsSpline;
 
 /// A std::vector of UsdAttributes.
 typedef std::vector<UsdAttribute> UsdAttributeVector;
@@ -473,6 +474,18 @@ public:
     /// \overload 
     USD_API
     bool Set(const VtValue& value, UsdTimeCode time = UsdTimeCode::Default()) const;
+
+    /// IN DEVELOPMENT.
+    USD_API
+    bool HasSpline() const;
+
+    /// IN DEVELOPMENT.
+    USD_API
+    TsSpline GetSpline() const;
+
+    /// IN DEVELOPMENT.
+    USD_API
+    bool SetSpline(const TsSpline &spline);
 
     /// Clears the authored default value and all time samples for this
     /// attribute at the current EditTarget and returns true on success.

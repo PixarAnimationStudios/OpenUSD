@@ -236,11 +236,8 @@ protected:
 
     std::shared_ptr<class HdPrman_RenderParam> _renderParam;
 
-#if HD_API_VERSION >= 55
-    std::unique_ptr<class HdPrman_TerminalSceneIndexObserver>
-        _terminalObserver;
-#endif
-
+    // _rileySceneIndices holds on to _renderParam, so it needs to
+    // be after _renderParam so that we destroy it before _renderParam.
     struct _RileySceneIndices;
     std::unique_ptr<_RileySceneIndices> _rileySceneIndices;
 

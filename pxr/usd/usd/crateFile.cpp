@@ -49,6 +49,8 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/ts/binary.h"
+#include "pxr/base/ts/spline.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
@@ -324,6 +326,7 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
+// 0.12.0: Added support for splines.
 // 0.11.0: Added support for relocates in layer metadata.
 // 0.10.0: Added support for the pathExpression value type.
 //  0.9.0: Added support for the timecode and timecode[] value types.
@@ -340,7 +343,7 @@ using std::vector;
 //         See _PathItemHeader_0_0_1.
 //  0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 11;
+constexpr uint8_t USDC_MINOR = 12;
 constexpr uint8_t USDC_PATCH = 0;
 
 CrateFile::Version
@@ -1297,6 +1300,14 @@ public:
 
             return ret;
         }
+        else if constexpr (std::is_same_v<T, TsSpline>) {
+            // Splines are a data blob plus a customData map.
+            vector<uint8_t> splineData = Read<vector<uint8_t>>();
+            std::unordered_map<double, VtDictionary> customData =
+                ReadMap<std::unordered_map<double, VtDictionary>>();
+            return Ts_BinaryDataAccess::CreateSplineFromBinaryData(
+                splineData, std::move(customData));
+        }
         else {
             // Otherwise read partial-specialized stuff.
             return this->_Read(static_cast<T *>(nullptr));
@@ -1513,6 +1524,24 @@ public:
         // Write size and contiguous reps.
         WriteAs<uint64_t>(reps.size());
         WriteContiguous(reps.data(), reps.size());
+    }
+
+    void Write(const TsSpline &spline) {
+        // Make sure our output format is compatible with splines.  If the
+        // spline binary format is updated, we must rev the required version
+        // here as well; the static_assert is here to remind us.
+        static_assert(Ts_BinaryDataAccess::GetBinaryFormatVersion() == 1);
+        crate->_packCtx->RequestWriteVersionUpgrade(
+            Version(0,12,0),
+            "A spline was detected which requires crate "
+            "version 0.12.0.");
+
+        // Splines are a data blob plus a customData map.
+        vector<uint8_t> splineData;
+        const std::unordered_map<double, VtDictionary> *customData = nullptr;
+        Ts_BinaryDataAccess::GetBinaryData(spline, &splineData, &customData);
+        Write(splineData);
+        WriteMap(*customData);
     }
 
     template <class T>
@@ -2734,6 +2763,10 @@ CrateFile::_AddSpec(const SdfPath &path, SdfSpecType type,
             // format instead of having a mix of formats depending on the order 
             // we wrote our payload values in.
             versionUpgradePendingFields.push_back(p);
+        } else if (p.second.IsHolding<TsSpline>()
+            && p.second.UncheckedGet<TsSpline>().IsEmpty()) {
+            // Don't serialize empty splines, because they don't affect
+            // anything.
         } else {
             ordinaryFields.push_back(_AddField(p));
         }

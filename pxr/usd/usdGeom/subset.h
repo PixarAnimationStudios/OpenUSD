@@ -20,6 +20,7 @@
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/tetMesh.h"
+#include "pxr/usd/usdGeom/basisCurves.h"
 
 
 #include "pxr/base/vt/value.h"
@@ -43,7 +44,7 @@ class SdfAssetPath;
 ///
 /// Encodes a subset of a piece of geometry (i.e. a UsdGeomImageable) 
 /// as a set of indices. Currently supports encoding subsets of faces, 
-/// points, edges, and tetrahedrons.
+/// points, edges, segments, and tetrahedrons.
 /// 
 /// To apply to a geometric prim, a GeomSubset prim must be the prim's direct 
 /// child in namespace, and possess a concrete defining specifier (i.e. def). 
@@ -181,6 +182,11 @@ public:
     /// attribute. Edges are not currently defined for a UsdGeomTetMesh, but
     /// could be derived from all tetrahedron edges or surface face edges only 
     /// if a specific use-case arises.</li>
+    /// <li><b>segment</b>: for any Curve, each pair of elements 
+    /// in the _indices_ attribute would refer to a pair of indices 
+    /// (_curveIndex_, _segmentIndex_) where _curveIndex_ is the position of 
+    /// the specified curve in the Curve's _curveVertexCounts_ attribute, and 
+    /// _segmentIndex_ is the index of the segment within that curve.</li>
     /// <li><b>tetrahedron</b>: for any UsdGeomTetMesh, each element of the 
     /// _indices_ attribute would refer to an element of the TetMesh's 
     /// _tetVertexIndices_ attribute.
@@ -192,7 +198,7 @@ public:
     /// | C++ Type | TfToken |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    /// | \ref UsdGeomTokens "Allowed Values" | face, point, edge, tetrahedron |
+    /// | \ref UsdGeomTokens "Allowed Values" | face, point, edge, segment, tetrahedron |
     USDGEOM_API
     UsdAttribute GetElementTypeAttr() const;
 
@@ -457,11 +463,13 @@ public:
         std::string * const reason);
 
 private:
-    /// Utility to get edges at time \p t from the indices attribute 
-    /// where every sequential pair of indices is interpreted as an edge.
-    /// Returned edges are stored in the order (lowIndex, highIndex).
-    /// Assumes the elementType is edge.
-    VtVec2iArray _GetEdges(const UsdTimeCode t) const;
+    /// Utility to get index pairs at time \p t from the indices attribute 
+    /// where every sequential pair of indices is interpreted as an edge or segment.
+    /// If \p preserveOrder is true (used for segments), the pairs are directly 
+    /// interpreted from the indices attribute with no order modification. If 
+    /// \p preserveOrder is false (used for edges), returned pairs are stored in
+    /// the order (lowIndex, highIndex). Assumes the elementType is edge or segment.
+    VtVec2iArray _GetIndexPairs(const UsdTimeCode t, bool preserveOrder) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

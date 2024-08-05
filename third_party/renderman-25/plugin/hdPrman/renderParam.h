@@ -349,6 +349,10 @@ public:
     // Instancer by id
     HdPrmanInstancer* GetInstancer(const SdfPath& id);
 
+    // Cache riley options coming from the scene index observer observing
+    // the riley:globals prim.
+    void SetRileySceneIndexObserverOptions(RtParamList const &params);
+
     // Cache scene options from the render settings prim.
     void SetRenderSettingsPrimOptions(RtParamList const &params);
 
@@ -510,6 +514,7 @@ private:
 
     SdfPath _drivingRenderSettingsPrimPath;
 
+    RtParamList _rileySceneIndexObserverOptions;
     RtParamList _renderSettingsPrimOptions;
 
     // Render terminals

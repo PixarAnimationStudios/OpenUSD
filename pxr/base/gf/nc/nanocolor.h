@@ -67,8 +67,9 @@ typedef struct {
 } NcRGB;
 
 // NcM33f is a 3x3 matrix of floats used for color space conversions.
-// It's stored in column major order, such that multiplying an NcRGB
-// by an NcM33f will yield another NcRGB transformed by that matrix.
+// It's stored in row major order, such that posting multiplying an NcRGB
+// as a column vector by an NcM33f will yield another NcRGB column
+// transformed by that matrix.
 typedef struct {
     float m[9];
 } NcM33f;

@@ -51,8 +51,8 @@ HdPrman_RileyGlobalsPrim::_SetOptions(
 {
     if (HdPrmanRileyParamListSchema schema = globalsSchema.GetOptions()) {
         HdPrman_RileyParamList options = HdPrman_RileyParamList(schema);
-        _AcquireRiley()->SetOptions(
-            options.rileyObject);
+        _SetRileyOptions(options.rileyObject);
+        
     }
 }
 

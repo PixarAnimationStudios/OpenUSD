@@ -259,7 +259,8 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
                 GfVec4f lightPos = glfl.GetPosition();
                 glfl.SetPosition(lightPos * viewInverseMatrix);
                 GfVec3f lightDir = glfl.GetSpotDirection();
-                glfl.SetSpotDirection(viewInverseMatrix.TransformDir(lightDir));
+                glfl.SetSpotDirection(
+                    GfVec3f(viewInverseMatrix.TransformDir(lightDir)));
 
                 // Since the light position has been transformed to world space,
                 // record that it's no longer a camera-space light for any

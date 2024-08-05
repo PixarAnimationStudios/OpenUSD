@@ -693,6 +693,53 @@ models.
 Build and Runtime Issues
 ========================
 
+How do I use the ``TF_DEBUG`` mechanism?
+####################################
+
+The ``TF_DEBUG`` mechanism is a powerful tool for debugging USD applications. It
+allows you to enable and disable debugging output at runtime, and to control
+which debug output is generated. The ``TF_DEBUG`` mechanism is controlled by an
+environment variable, :envvar:``TF_DEBUG``. The value of the variable is a 
+space-separated list of debug categories.
+
+Searching the OpenUSD source code for the ``TF_DEBUG`` macro reveals all the 
+possible debug categories.
+
+For example, searching the code base, we discover ``HD_VARYING_STATE`` is a debug
+category that can be enabled to print out the varying state of Hydra prims.
+
+.. code-block:: cpp
+
+  TF_DEBUG(HD_VARYING_STATE).Msg("New Varying State %s: %s\n", ...
+
+We can enable that debug output by setting :envvar:``TF_DEBUG`` to include that
+category:
+
+.. code-block:: sh
+
+  $ export TF_DEBUG="HD_VARYING_STATE"
+
+Simple wildcards are supported, but only at the end of a category name. For
+example, to enable all debug output from the ``HD`` category, you can use:
+
+.. code-block:: sh
+
+  $ export TF_DEBUG="HD*"
+
+Categories may be suppressed with a leading `-` character. This example
+
+.. code-block:: sh
+
+  $ export TF_DEBUG="FOO_* BAR_* -BAR_VERY_NOISY HD_VARYING_STATE"
+
+enables everything in the ``FOO_`` and ``BAR_`` categories, adds 
+``HD_VARYING_STATE`` and specifically disables ``BAR_VERY_NOISY`` from the
+``BAR`` category.
+
+It is also possible to control the debug output from C++ or Python code using
+the ``TfDebug`` API; please refer to the header file, :file:`pxr/base/tf/debug.h` 
+for more information.
+
 Why Isn't Python Finding USD Modules?
 #####################################
 
@@ -723,6 +770,30 @@ The plugins included in the USD distribution are disabled by default.
 See `Advanced Build Configuration
 <https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md>`_ for
 instructions on how to enable these plugins.
+
+Why doesn't the OpenUSD runtime recognize the USD file format?
+##############################################################
+
+If you get an error message like this:
+
+.. code-block:: sh
+
+   ERROR: USD format not recognized: <filename>.usd
+
+A common cause of this issue is that the plugins usd requires to read specific
+formats were not found. The runtime looks for the plugins in a particular set 
+of directories, which are revealed by setting up the ``PXR_PLUGINPATH_NAME`` 
+variable. The following example shows a developer debugging accordingly. 
+
+.. code-block:: sh
+
+  set PXR_PLUGINPATH_NAME=S:/dev/libs/OpenUSD/plugin/usd
+  set TF_DEBUG=PLUG_INFO_SEARCH
+  yourMain.exe
+
+Assuming the plugins really are at that path, usd files will load. Note that the
+hydra plugins may exist a different location, and that location must also be
+specified via the environment variable.
 
 Why Isn't My App Finding USD DLLs and Plugins on Windows?
 #########################################################

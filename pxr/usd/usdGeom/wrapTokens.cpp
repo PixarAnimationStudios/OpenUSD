@@ -171,6 +171,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "right", UsdGeomTokens->right);
     _AddToken(cls, "rightHanded", UsdGeomTokens->rightHanded);
     _AddToken(cls, "scales", UsdGeomTokens->scales);
+    _AddToken(cls, "segment", UsdGeomTokens->segment);
     _AddToken(cls, "shutterClose", UsdGeomTokens->shutterClose);
     _AddToken(cls, "shutterOpen", UsdGeomTokens->shutterOpen);
     _AddToken(cls, "size", UsdGeomTokens->size);

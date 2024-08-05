@@ -1621,7 +1621,7 @@ _SkinningAdapter::_DeformPointsWithSkinning(const GfMatrix4d& skelToGprimXf)
     WorkParallelForEach(
         _points.value.begin(), _points.value.end(),
         [&skelToGprimXf](GfVec3f& pt) {
-            pt = skelToGprimXf.Transform(pt);
+            pt = GfVec3f(skelToGprimXf.Transform(pt));
         });
 }
 

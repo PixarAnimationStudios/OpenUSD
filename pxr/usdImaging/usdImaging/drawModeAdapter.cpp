@@ -1284,7 +1284,7 @@ UsdImagingDrawModeAdapter::_GenerateCardsFromTextureGeometry(
         arr_assign[i] = faces[i].second;
         for (size_t j = 0; j < 4; ++j) {
             faceIndices[i*4+j] = i*4+j;
-            arr_pt[i*4+j] = screenToWorld.Transform(corners[j]);
+            arr_pt[i*4+j] = GfVec3f(screenToWorld.Transform(corners[j]));
             arr_uv[i*4+j] = std_uvs[j];
         }
 

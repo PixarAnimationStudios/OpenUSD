@@ -28,9 +28,9 @@ class GfMatrix3{{ SCL[0] }};
 ///
 /// The following methods interpret a {{ MAT }} as a 3D
 /// transformation: SetRotate(), SetScale(), SetTranslate(), SetLookAt(),
-/// Factor(), ExtractTranslation(), ExtractRotation(), Transform(), TransformDir().
-/// By convention, vectors are treated primarily as row vectors,
-/// implying the following:
+/// Factor(), ExtractTranslation(), ExtractRotation(), Transform(),
+/// TransformDir(). By convention, vectors are treated primarily as row
+/// vectors, implying the following:
 /// \li Transformation matrices are organized to deal with row
 ///        vectors, not column vectors. For example, the last row of a matrix
 ///        contains the translation amounts.
@@ -303,29 +303,20 @@ class GfMatrix3{{ SCL[0] }};
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][2]", sep=" + ", num=3) }} + _mtx[3][2],
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][3]", sep=" + ", num=3) }} + _mtx[3][3]));
     }
+{% if SCL == 'float' %}
 
     /// Transforms the row vector \e vec by the matrix, returning the result.
     /// This treats the vector as a 4-component vector whose fourth component
     /// is 1. This is an overloaded method; it differs from the other version
     /// in that it returns a different value type.
-{% if SCL == 'double' %}
-    ///
-    /// \deprecated
-    /// This method is deprecated, as it can result in unintentional loss of
-    /// precision. Call GfVec3d Transform(const GfVec3d &) instead and
-    /// explicitly convert the result to GfVec3f, if necessary.
-{% endif %}
     GfVec3f Transform(const GfVec3f &vec) const {
-{% if SCL == 'float' %}
         return (GfProject(GfVec4f(
-{% else %}
-        return GfVec3f(GfProject(GfVec4d(
-{% endif %}
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][0]", sep=" + ", num=3) }} + _mtx[3][0],
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][1]", sep=" + ", num=3) }} + _mtx[3][1],
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][2]", sep=" + ", num=3) }} + _mtx[3][2],
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][3]", sep=" + ", num=3) }} + _mtx[3][3])));
     }
+{% endif %}
 
     /// Transforms row vector \e vec by the matrix, returning the result. This
     /// treats the vector as a direction vector, so the translation
@@ -337,6 +328,7 @@ class GfMatrix3{{ SCL[0] }};
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][1]", sep=" + ", num=3) }},
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][2]", sep=" + ", num=3) }});
     }
+{% if SCL == 'float' %}
 
     /// Transforms row vector \e vec by the matrix, returning the result. This
     /// treats the vector as a direction vector, so the translation
@@ -344,19 +336,13 @@ class GfMatrix3{{ SCL[0] }};
     /// a 4-component vector whose fourth component is 0.  This is an
     /// overloaded method; it differs from the other version in that it
     /// returns a different value type.
-{% if SCL == 'double' %}
-    ///
-    /// \deprecated
-    /// This method is deprecated, as it can result in unintentional loss of
-    /// precision. Call GfVec3d TransformDir(const GfVec3d &) instead and
-    /// explicitly convert the result to GfVec3f, if necessary.
-{% endif %}
     GfVec3f TransformDir(const GfVec3f &vec) const {
         return GfVec3f(
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][0]", sep=" + ", num=3) }},
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][1]", sep=" + ", num=3) }},
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][2]", sep=" + ", num=3) }});
     }
+{% endif %}
 
     /// Transforms the row vector \e vec by the matrix, returning the result.
     /// This treats the vector as a 4-component vector whose fourth component
@@ -368,24 +354,19 @@ class GfMatrix3{{ SCL[0] }};
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][1]", sep=" + ", num=3) }} + _mtx[3][1],
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][2]", sep=" + ", num=3) }} + _mtx[3][2]);
     }
+{% if SCL == 'float' %}
 
     /// Transforms the row vector \e vec by the matrix, returning the result.
     /// This treats the vector as a 4-component vector whose fourth component
     /// is 1 and ignores the fourth column of the matrix (i.e. assumes it is
     /// (0, 0, 0, 1)).
-{% if SCL == 'double' %}
-    ///
-    /// \deprecated
-    /// This method is deprecated, as it can result in unintentional loss of
-    /// precision. Call GfVec3d TransformAffine(const GfVec3d &) instead and
-    /// explicitly convert the result to GfVec3f, if necessary.
-{% endif %}
     GfVec3f TransformAffine(const GfVec3f &vec) const {
         return GfVec3f(
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][0]", sep=" + ", num=3) }} + _mtx[3][0],
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][1]", sep=" + ", num=3) }} + _mtx[3][1],
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][2]", sep=" + ", num=3) }} + _mtx[3][2]);
     }
+{% endif %}
     /// @}
 
 private:

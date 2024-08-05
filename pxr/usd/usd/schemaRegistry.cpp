@@ -1601,6 +1601,7 @@ UsdSchemaRegistry::IsDisallowedField(const TfToken &fieldName)
         disallowedFields->insert(SdfFieldKeys->Active);
         disallowedFields->insert(SdfFieldKeys->Instanceable);
         disallowedFields->insert(SdfFieldKeys->TimeSamples);
+        disallowedFields->insert(SdfFieldKeys->Spline);
         disallowedFields->insert(SdfFieldKeys->ConnectionPaths);
         disallowedFields->insert(SdfFieldKeys->TargetPaths);
 

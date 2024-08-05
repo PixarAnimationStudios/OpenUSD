@@ -15,6 +15,7 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/base/ts/spline.h"
 
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/token.h"
@@ -76,6 +77,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ((SdfFieldKeys->Relocates,               SdfRelocatesMap))               \
 ((SdfFieldKeys->Specializes,             SdfPathListOp))                 \
 ((SdfFieldKeys->Specifier,               SdfSpecifier))                  \
+((SdfFieldKeys->Spline,                  TsSpline))                      \
 ((SdfFieldKeys->StartFrame,              double))                        \
 ((SdfFieldKeys->StartTimeCode,           double))                        \
 ((SdfFieldKeys->SubLayers,               std::vector<std::string>))      \

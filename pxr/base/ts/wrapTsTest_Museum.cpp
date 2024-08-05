@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -9,8 +9,9 @@
 #include "pxr/base/ts/tsTest_Museum.h"
 
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python.hpp>
+#include <boost/python/class.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -31,7 +32,12 @@ void wrapTsTest_Museum()
     // ...then the defs, which must occur after the nested type wrappings.
     classObj
 
+        .def("GetAllNames", &This::GetAllNames,
+            return_value_policy<TfPySequenceToList>())
+
         .def("GetData", &This::GetData)
+
+        .def("GetDataByName", &This::GetDataByName)
 
         ;
 }

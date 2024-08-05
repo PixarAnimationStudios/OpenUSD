@@ -26,7 +26,6 @@
 #include "hdPrman/mesh.h"
 #include "hdPrman/points.h"
 #include "hdPrman/resourceRegistry.h"
-#include "hdPrman/terminalSceneIndexObserver.h"
 #include "hdPrman/tokens.h"
 #include "hdPrman/volume.h"
 #include "hdPrman/sceneIndexObserverApi.h"
@@ -53,17 +52,6 @@
 #include "pxr/base/tf/getenv.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-#ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
-
-TF_DEFINE_ENV_SETTING(HD_PRMAN_EXPERIMENTAL_RILEY_SCENE_INDEX_OBSERVER, false,
-                      "Enable scene index observer calling the Riley API for "
-                      "the prims in the terminal scene index. This is scene "
-                      "index observer is the first step towards a future "
-                      "Hydra 2.0 implementation. "
-                      "See HdPrmanRenderDelegate::_RileySceneIndices for more.");
-
-#endif
 
 // \class HdPrmanRenderDelegate::_RileySceneIndices.
 //
@@ -371,10 +359,7 @@ HdPrmanRenderDelegate::_Initialize()
         _renderParam);
 }
 
-HdPrmanRenderDelegate::~HdPrmanRenderDelegate()
-{
-    _renderParam.reset();
-}
+HdPrmanRenderDelegate::~HdPrmanRenderDelegate() = default;
 
 HdRenderSettingsMap
 HdPrmanRenderDelegate::GetRenderSettingsMap() const
@@ -785,20 +770,12 @@ void
 HdPrmanRenderDelegate::SetTerminalSceneIndex(
     const HdSceneIndexBaseRefPtr &terminalSceneIndex)
 {
-    if (!_terminalObserver) {
-        _terminalObserver =
-            std::make_unique<HdPrman_TerminalSceneIndexObserver>(
-                _renderParam, terminalSceneIndex);
-    }
-
 #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
     if (terminalSceneIndex) {
-        if (TfGetEnvSetting(HD_PRMAN_EXPERIMENTAL_RILEY_SCENE_INDEX_OBSERVER)) {
-            if (!_rileySceneIndices) {
-                _rileySceneIndices =
-                    std::make_unique<_RileySceneIndices>(
-                        terminalSceneIndex, _renderParam.get());
-            }
+        if (!_rileySceneIndices) {
+            _rileySceneIndices =
+                std::make_unique<_RileySceneIndices>(
+                    terminalSceneIndex, _renderParam.get());
         }
     }
 #endif
@@ -809,24 +786,9 @@ HdPrmanRenderDelegate::Update()
 {
 #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
     if (_rileySceneIndices) {
-        // We need to set some paths before any riley Create call can
-        // be issued - otherwise, we get a crash.
-        //
-        // TODO: There should be a designated prim in the scene index
-        // to communicate the global riley options.
-        //
-        _renderParam->SetRileyOptions();
-
         _rileySceneIndices->Update();
     }
 #endif
-
-    if (!_terminalObserver) {
-        TF_CODING_ERROR("Invalid terminal scene index observer.");
-        return;
-    }
-
-    _terminalObserver->Update();
 }
 
 #endif

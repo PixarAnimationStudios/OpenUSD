@@ -78,7 +78,7 @@ main(int argc, char *argv[])
 
     {
         // fetch basic information about the avif
-        std::string path = rootPath + csGrayAvif;
+        std::string path = csGrayAvif;
         HioImageSharedPtr image = HioImage::OpenForReading(path);
         TF_VERIFY(image);
         TF_VERIFY(image->GetWidth() == width);

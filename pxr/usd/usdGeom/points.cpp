@@ -232,7 +232,7 @@ _ComputeExtent(const VtVec3fArray& points, const VtFloatArray& widths,
                 return false;
             }
 
-            GfVec3f transformedPoint = transform->Transform(*pointsItr);
+            GfVec3f transformedPoint(transform->Transform(*pointsItr));
             bbox.UnionWith(transformedPoint + sphereExtent[0]);
             bbox.UnionWith(transformedPoint + sphereExtent[1]);
         } else {

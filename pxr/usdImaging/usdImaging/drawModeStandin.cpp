@@ -1374,7 +1374,7 @@ _CardsDataCache::_CardsData::_ComputePoints(const _SchemaValues &values)
                 if (values.hasFace[k]) {
                     const GfMatrix4d transform = values.worldToScreen[k].GetInverse();
                     for (size_t l = 0; l < 4; l++) {
-                        points.push_back(transform.Transform(pts[l]));
+                        points.push_back(GfVec3f(transform.Transform(pts[l])));
                     }
                 }
             }

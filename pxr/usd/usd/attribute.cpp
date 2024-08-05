@@ -24,6 +24,7 @@
 // NOTE: this is not actually used, but AttributeSpec requires it
 #include "pxr/usd/sdf/relationshipSpec.h"
 
+#include "pxr/base/ts/spline.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 
 #include <vector>
@@ -239,6 +240,39 @@ bool
 UsdAttribute::Set(const VtValue& value, UsdTimeCode time) const 
 { 
     return _GetStage()->_SetValue(time, *this, value);
+}
+
+bool
+UsdAttribute::HasSpline() const
+{
+    return _GetStage()->_HasMetadata(
+        *this,                 // find a field in our attribute spec
+        SdfFieldKeys->Spline,  // find the Spline field
+        TfToken(),             // not a dict field, so no dict key
+        false);                // want authored opinions only
+}
+
+TsSpline
+UsdAttribute::GetSpline() const
+{
+    TsSpline spline;
+    _GetStage()->_GetMetadata(
+        *this,                 // read a field in our attribute spec
+        SdfFieldKeys->Spline,  // read the Spline field
+        TfToken(),             // not a dict field, so no dict key
+        false,                 // want authored opinions only
+        &spline);              // read into this variable
+    return spline;
+}
+
+bool
+UsdAttribute::SetSpline(const TsSpline &spline)
+{
+    return _GetStage()->_SetMetadata(
+        *this,                 // write a field in our attribute spec
+        SdfFieldKeys->Spline,  // write the Spline field
+        TfToken(),             // not a dict field, so no dict key
+        spline);               // write this value
 }
 
 bool

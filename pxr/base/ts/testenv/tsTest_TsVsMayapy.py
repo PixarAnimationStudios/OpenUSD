@@ -10,9 +10,7 @@
 from pxr.Ts import TsTest_Museum as Museum
 from pxr.Ts import TsTest_MayapyEvaluator as MayapyEvaluator
 from pxr.Ts import TsTest_TsEvaluator as TsEvaluator
-from pxr.Ts import TsTest_SampleBezier as SampleBezier
 from pxr.Ts import TsTest_SampleTimes as STimes
-from pxr.Ts import TsTest_Grapher as Grapher
 from pxr.Ts import TsTest_Comparator as Comparator
 
 import sys, unittest
@@ -22,12 +20,11 @@ g_mayapyEvaluator = None
 
 class TsTest_TsVsMayapy(unittest.TestCase):
 
-    def test_Basic(self):
+    def _DoTest(self, case, dataId, tolerance):
         """
-        Verify Ts and mayapy evaluation are close in one simple case.
-        To really be sure, inspect the graph image output.
+        Illustrate the differences between Ts and mayapy.
         """
-        data = Museum.GetData(Museum.TwoKnotBezier)
+        data = Museum.GetData(dataId)
 
         times = STimes(data)
         times.AddStandardTimes()
@@ -35,69 +32,45 @@ class TsTest_TsVsMayapy(unittest.TestCase):
         tsSamples = TsEvaluator().Eval(data, times)
         mayapySamples = g_mayapyEvaluator.Eval(data, times)
 
-        comparator = Comparator("test_Basic")
+        comparator = Comparator(title = case)
         comparator.AddSpline("Ts", data, tsSamples)
         comparator.AddSpline("mayapy", data, mayapySamples)
 
-        self.assertTrue(comparator.GetMaxDiff() < 1e-7)
-        if Comparator.Init():
-            comparator.Write("test_Basic.png")
+        if comparator.Init():
+            comparator.Write(f"{case}.png")
 
-    def test_Recurve(self):
-        """
-        Illustrate the differences among Ts, mayapy, and a pure Bezier in a
-        recurve case (time-regressive curve).
-        """
-        data = Museum.GetData(Museum.Recurve)
+        self.assertTrue(comparator.GetMaxDiff() < tolerance)
 
-        times = STimes(data)
-        times.AddStandardTimes()
+    def test_Basic(self):
+        self._DoTest("test_Basic", Museum.TwoKnotBezier, 1e-7)
 
-        tsSamples = TsEvaluator().Eval(data, times)
-        mayapySamples = g_mayapyEvaluator.Eval(data, times)
-        bezSamples = SampleBezier(data, numSamples = 200)
+    def test_BoldS(self):
+        self._DoTest("test_BoldS", Museum.BoldS, 1e-4)
 
-        grapher = Grapher("test_Recurve")
-        grapher.AddSpline("Ts", data, tsSamples)
-        grapher.AddSpline("mayapy", data, mayapySamples)
-        grapher.AddSpline("Bezier", data, bezSamples)
+    def test_Cusp(self):
+        self._DoTest("test_Cusp", Museum.Cusp, 1e-6)
 
-        if Grapher.Init():
-            grapher.Write("test_Recurve.png")
 
-    def test_Crossover(self):
-        """
-        Illustrate the differences among Ts, mayapy, and a pure Bezier in a
-        crossover case (time-regressive curve).
-        """
-        data = Museum.GetData(Museum.Crossover)
+def setUpModule():
+    """
+    Called before any test classes are instantiated.
+    Set up a single instance of MayapyEvaluator, which is expensive to start.
+    """
+    global g_mayapyEvaluator
+    g_mayapyEvaluator = MayapyEvaluator(g_mayapyPath)
 
-        times = STimes(data)
-        times.AddStandardTimes()
-
-        tsSamples = TsEvaluator().Eval(data, times)
-        mayapySamples = g_mayapyEvaluator.Eval(data, times)
-        bezSamples = SampleBezier(data, numSamples = 200)
-
-        grapher = Grapher("test_Crossover")
-        grapher.AddSpline("Ts", data, tsSamples)
-        grapher.AddSpline("mayapy", data, mayapySamples)
-        grapher.AddSpline("Bezier", data, bezSamples)
-
-        if Grapher.Init():
-            grapher.Write("test_Crossover.png")
-
-    @classmethod
-    def tearDownClass(cls):
-        """
-        Clean up after all tests have run.
-        """
-        g_mayapyEvaluator.Shutdown()
+def tearDownModule():
+    """
+    Called after all test classes have been run.
+    Shut down MayapyEvaluator cleanly; otherwise it will hang on exit.
+    """
+    g_mayapyEvaluator.Shutdown()
 
 
 if __name__ == "__main__":
 
-    mayapyPath = sys.argv.pop()
-    g_mayapyEvaluator = MayapyEvaluator(mayapyPath)
+    # Grab the path to mayapy from the command line.
+    # Prevent unittest from seeing that arg, which it won't understand.
+    g_mayapyPath = sys.argv.pop()
 
     unittest.main()

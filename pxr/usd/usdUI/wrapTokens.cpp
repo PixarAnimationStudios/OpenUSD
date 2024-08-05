@@ -54,6 +54,7 @@ void wrapUsdUITokens()
     _AddToken(cls, "uiDisplayGroup", UsdUITokens->uiDisplayGroup);
     _AddToken(cls, "uiDisplayName", UsdUITokens->uiDisplayName);
     _AddToken(cls, "uiNodegraphNodeDisplayColor", UsdUITokens->uiNodegraphNodeDisplayColor);
+    _AddToken(cls, "uiNodegraphNodeDocURI", UsdUITokens->uiNodegraphNodeDocURI);
     _AddToken(cls, "uiNodegraphNodeExpansionState", UsdUITokens->uiNodegraphNodeExpansionState);
     _AddToken(cls, "uiNodegraphNodeIcon", UsdUITokens->uiNodegraphNodeIcon);
     _AddToken(cls, "uiNodegraphNodePos", UsdUITokens->uiNodegraphNodePos);
