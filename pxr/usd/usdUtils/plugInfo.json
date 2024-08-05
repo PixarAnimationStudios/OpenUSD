@@ -7,8 +7,7 @@
                         "doc": "If the root layer is a package, then the composed stage must not contain references to files outside the package. The package must be self-contained."
                     },
                     "keywords": [
-                        "UsdUtilsValidators",
-                        "UsdzValidators"
+                        "UsdUtilsValidators"
                     ]
                 }
             },
