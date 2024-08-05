@@ -41,10 +41,10 @@ PXR_NAMESPACE_OPEN_SCOPE
                                         ArSplitPackageRelativePathOuter(realPath).first :
                                         realPath;
 
-        if (packagePath.length() > 0){
-            for(const SdfLayerRefPtr& subLayer : layers){
+        if (packagePath.length() > 0) {
+            for (const SdfLayerRefPtr& subLayer : layers) {
                 const std::string& realPath = subLayer->GetRealPath();
-                if (!TfStringStartsWith(realPath, packagePath)){
+                if (!TfStringStartsWith(realPath, packagePath)) {
                     errors.emplace_back(
                             UsdValidationErrorType::Error,
                             UsdValidationErrorSites{
@@ -58,8 +58,8 @@ PXR_NAMESPACE_OPEN_SCOPE
                 }
             }
 
-            for(const std::string& asset : assets){
-                if (!TfStringStartsWith(asset, packagePath)){
+            for (const std::string& asset : assets) {
+                if (!TfStringStartsWith(asset, packagePath)) {
                     errors.emplace_back(
                             UsdValidationErrorType::Error,
                             UsdValidationErrorSites{

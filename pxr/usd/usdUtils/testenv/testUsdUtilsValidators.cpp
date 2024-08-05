@@ -67,7 +67,7 @@ TestPackageEncapsulationValidator()
                            errorAsset.c_str(), rootLayer.c_str())
     };
 
-    for(size_t i = 0; i < errors.size(); ++i)
+    for (size_t i = 0; i < errors.size(); ++i)
     {
         TF_AXIOM(errors[i].GetType() == UsdValidationErrorType::Error);
         TF_AXIOM(errors[i].GetSites().size() == 1);
