@@ -33,12 +33,11 @@ pxr_library(usdImagingGL
         ar
         ${Boost_PYTHON_LIBRARY}
         ${PYTHON_LIBRARIES}
-        ${TBB_tbb_LIBRARY}
+        TBB::tbb
 
     INCLUDE_DIRS
         ${PYTHON_INCLUDE_PATH}
         ${PYTHON_INCLUDE_DIRS}
-        ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
         engine

@@ -13,11 +13,10 @@ pxr_library(usdPhysics
         usdShade
         work
         ${Boost_PYTHON_LIBRARY}
-        ${TBB_tbb_LIBRARY}
+        TBB::tbb
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
-        ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
         articulationRootAPI

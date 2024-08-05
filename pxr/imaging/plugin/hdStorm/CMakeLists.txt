@@ -26,10 +26,9 @@ pxr_plugin(hdStorm
         hd
         hdSt
         ${OPENSUBDIV_LIBRARIES}
-        ${TBB_tbb_LIBRARY}
+        TBB::tbb
 
     INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
         ${OPENSUBDIV_INCLUDE_DIR}
 
     PUBLIC_CLASSES

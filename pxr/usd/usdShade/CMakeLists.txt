@@ -11,11 +11,8 @@ pxr_library(usdShade
         sdr
         usd
         usdGeom
-        ${TBB_tbb_LIBRARY}
+        TBB::tbb
     
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
-
     PUBLIC_CLASSES
         connectableAPI
         connectableAPIBehavior
