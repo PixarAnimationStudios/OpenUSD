@@ -32,7 +32,8 @@ TestUsdSkelValidators()
     }
 
     const std::set<TfToken> expectedValidatorNames =
-            {UsdSkelValidatorNameTokens->skelBindingApiAppliedValidator};
+            {UsdSkelValidatorNameTokens->skelBindingApiAppliedValidator,
+             UsdSkelValidatorNameTokens->skelBindingApiValidator};
 
     TF_AXIOM(std::includes(validatorMetadataNameSet.begin(),
                            validatorMetadataNameSet.end(),
@@ -77,8 +78,14 @@ TestUsdSkelBindingApiAppliedValidator()
 
     // Apply the SkelBindingAPI.
     UsdSkelBindingAPI skelBindingApi = UsdSkelBindingAPI::Apply(mesh.GetPrim());
-
     errors = validator->Validate(mesh.GetPrim());
+    // Verify all errors are gone
+    TF_AXIOM(errors.size() == 0);
+
+    const UsdValidator *skelBindingApiValidator = 
+        registry.GetOrLoadValidatorByName(
+            UsdSkelValidatorNameTokens->skelBindingApiValidator);
+    errors = skelBindingApiValidator->Validate(mesh.GetPrim());
 
     // Verify the error for not having a SkelRoot parenting a prim with the 
     // SkelBindingAPI applied.
@@ -97,7 +104,7 @@ TestUsdSkelBindingApiAppliedValidator()
 
     // Add SkelRoot as a parent to the mesh.
     UsdSkelRoot skelRoot = UsdSkelRoot::Define(usdStage, SdfPath("/SkelRoot"));
-    errors = validator->Validate(mesh.GetPrim());
+    errors = skelBindingApiValidator->Validate(mesh.GetPrim());
 
     // Verify all errors are gone
     TF_AXIOM(errors.size() == 0);

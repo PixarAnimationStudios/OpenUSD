@@ -13,7 +13,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define USD_SKEL_VALIDATOR_NAME_TOKENS                   \
-     ((skelBindingApiAppliedValidator, "usdSkel:SkelBindingApiAppliedValidator"))
+     ((skelBindingApiAppliedValidator, "usdSkel:SkelBindingApiAppliedValidator")) \
+     ((skelBindingApiValidator, "usdSkel:SkelBindingApiValidator"))
 #define USD_SKEL_VALIDATOR_KEYWORD_TOKENS                \
      (UsdSkelValidators)
 

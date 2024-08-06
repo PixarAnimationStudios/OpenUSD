@@ -59,31 +59,42 @@ _SkelBindingApiAppliedValidator(const UsdPrim &usdPrim)
             break;
         }
     }
-    else {
-        if (usdPrim.GetTypeName() != UsdSkelTokens->SkelRoot) {
-            UsdPrim parentPrim = usdPrim.GetParent();
-            while (parentPrim && !parentPrim.IsPseudoRoot()) {
-                if (parentPrim.GetTypeName() != UsdSkelTokens->SkelRoot) {
-                    parentPrim = parentPrim.GetParent();
-                }
-                else {
-                    return errors;
-                }
-            }
-            errors.emplace_back(
-                    UsdValidationErrorType::Error,
-                    UsdValidationErrorSites{
-                            UsdValidationErrorSite(usdPrim.GetStage(),
-                                                   usdPrim.GetPath())
-                    },
-                    TfStringPrintf(("UsdSkelBindingAPI applied on prim: <%s>, "
-                                    "which is not of type SkelRoot or is not "
-                                    "rooted at a prim of type SkelRoot, as "
-                                    "required by the UsdSkel schema."), 
-                                    usdPrim.GetPath().GetText()));
-        }
+
+    return errors;
+}
+
+static
+UsdValidationErrorVector
+_SkelBindingApiValidator(const UsdPrim &usdPrim)
+{
+    UsdValidationErrorVector errors;
+
+    if (!usdPrim.HasAPIInFamily(UsdSkelTokens->SkelBindingAPI)) {
+        return {};
     }
 
+    if (usdPrim.GetTypeName() != UsdSkelTokens->SkelRoot) {
+        UsdPrim parentPrim = usdPrim.GetParent();
+        while (parentPrim && !parentPrim.IsPseudoRoot()) {
+            if (parentPrim.GetTypeName() != UsdSkelTokens->SkelRoot) {
+                parentPrim = parentPrim.GetParent();
+            }
+            else {
+                return errors;
+            }
+        }
+        errors.emplace_back(
+                UsdValidationErrorType::Error,
+                UsdValidationErrorSites{
+                        UsdValidationErrorSite(usdPrim.GetStage(),
+                                               usdPrim.GetPath())
+                },
+                TfStringPrintf(("UsdSkelBindingAPI applied on prim: <%s>, "
+                                "which is not of type SkelRoot or is not "
+                                "rooted at a prim of type SkelRoot, as "
+                                "required by the UsdSkel schema."), 
+                                usdPrim.GetPath().GetText()));
+    }
     return errors;
 }
 
@@ -94,6 +105,10 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     registry.RegisterPluginValidator(
             UsdSkelValidatorNameTokens->skelBindingApiAppliedValidator,
             _SkelBindingApiAppliedValidator);
+
+    registry.RegisterPluginValidator(
+            UsdSkelValidatorNameTokens->skelBindingApiValidator,
+            _SkelBindingApiValidator);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
