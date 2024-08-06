@@ -69,6 +69,14 @@
                         "implementsComputeExtent": true, 
                         "schemaKind": "concreteTyped"
                     }
+                }, 
+                "Validators": {
+                    "SkelBindingApiAppliedValidator": {
+                        "doc": "Verify a prim has the SkelBindingAPI applied if it has a UsdSkelBinding property. If a prim has the SkelBindingAPI applied, make sure it's of type SkelRoot or parented by a SkelRoot."
+                    }, 
+                    "keywords": [
+                        "UsdSkelValidators"
+                    ]
                 }
             }, 
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@", 
