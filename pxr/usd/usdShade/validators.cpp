@@ -12,7 +12,6 @@
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/validationError.h"
 #include "pxr/usd/usd/validationRegistry.h"
-#include "pxr/usd/usd/validator.h"
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -23,12 +22,49 @@
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/usdShade/validatorTokens.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
 
 #include <algorithm>
 #include <unordered_map>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+static
+UsdValidationErrorVector
+_MaterialBindingApiAppliedValidator(const UsdPrim &usdPrim)
+{
+    UsdValidationErrorVector errors;
+
+    auto hasMaterialBindingRelationship = [](const UsdPrim& usdPrim) {
+        const std::vector<UsdRelationship> relationships = 
+            usdPrim.GetRelationships();
+        static const std::string materialBindingString = 
+            (UsdShadeTokens->materialBinding).GetString();
+
+        return std::any_of(relationships.begin(), 
+                           relationships.end(), 
+                           [&](const UsdRelationship &rel) {
+                               return TfStringStartsWith(rel.GetName(), 
+                                                         materialBindingString);
+});
+    };
+
+    if (!usdPrim.HasAPI<UsdShadeMaterialBindingAPI>() &&
+        hasMaterialBindingRelationship(usdPrim)) {
+        errors.emplace_back(
+                UsdValidationErrorType::Error,
+                UsdValidationErrorSites{
+                        UsdValidationErrorSite(usdPrim.GetStage(),
+                                               usdPrim.GetPath())
+                },
+                TfStringPrintf("Found material bindings but no " \
+                    "MaterialBindingAPI applied on the prim <%s>.",
+                               usdPrim.GetPath().GetText()));
+    }
+
+    return errors;
+}
 
 static
 UsdValidationErrorVector
@@ -355,6 +391,10 @@ _SubsetsMaterialBindFamily(const UsdPrim& usdPrim)
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+
+    registry.RegisterPluginValidator(
+        UsdShadeValidatorNameTokens->materialBindingApiAppliedValidator,
+        _MaterialBindingApiAppliedValidator);
 
     registry.RegisterPluginValidator(
         UsdShadeValidatorNameTokens->materialBindingRelationships,

@@ -20,6 +20,10 @@
 #include "pxr/usd/usdShade/shaderDefUtils.h"
 #include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/usdShade/validatorTokens.h"
+#include <pxr/usd/usdShade/material.h>
+#include <pxr/usd/usdShade/materialBindingAPI.h>
+#include <pxr/usd/usd/relationship.h>
+#include <pxr/usd/usd/prim.h>
 
 #include <algorithm>
 #include <set>
@@ -33,6 +37,7 @@ TestUsdShadeValidators()
     // This should be updated with every new validator added with the
     // UsdShadeValidators keyword.
     const std::set<TfToken> expectedUsdShadeValidatorNames = {
+        UsdShadeValidatorNameTokens->materialBindingApiAppliedValidator,
         UsdShadeValidatorNameTokens->materialBindingRelationships,
         UsdShadeValidatorNameTokens->shaderSdrCompliance,
         UsdShadeValidatorNameTokens->subsetMaterialBindFamilyName,
@@ -363,14 +368,56 @@ TestUsdShadeSubsetsMaterialBindFamily()
     }
 }
 
+void
+TestUsdShadeMaterialBindingAPIAppliedValidator()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const UsdValidator *validator = registry.GetOrLoadValidatorByName(
+        UsdShadeValidatorNameTokens->materialBindingApiAppliedValidator);
+    TF_AXIOM(validator);
+
+    UsdStageRefPtr usdStage = UsdStage::CreateInMemory();
+    const UsdPrim usdPrim = usdStage->DefinePrim(SdfPath("/Test"));
+    UsdShadeMaterial material = 
+        UsdShadeMaterial::Define(usdStage, SdfPath("/Test/Material"));
+
+    // Create the material binding relationship manually
+    UsdRelationship materialBinding = usdPrim.CreateRelationship(
+        TfToken("material:binding"));
+    materialBinding.AddTarget(material.GetPath());
+
+    UsdValidationErrorVector errors = validator->Validate(usdPrim);
+
+    TF_AXIOM(errors.size() == 1);
+    TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+    TF_AXIOM(errors[0].GetSites().size() == 1);
+    TF_AXIOM(errors[0].GetSites()[0].IsValid());
+    TF_AXIOM(errors[0].GetSites()[0].IsPrim());
+    TF_AXIOM(errors[0].GetSites()[0].GetPrim().GetPath() == SdfPath("/Test"));
+    const std::string expectedErrorMsg = 
+        "Found material bindings but no MaterialBindingAPI applied on the prim "
+        "</Test>.";
+    TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
+
+    // Apply the material binding API to the prim and bind the material
+    UsdShadeMaterialBindingAPI bindingAPI = 
+        UsdShadeMaterialBindingAPI::Apply(usdPrim);
+    bindingAPI.Bind(material);
+
+    errors = validator->Validate(usdPrim);
+
+    // Verify the errors are fixed
+    TF_AXIOM(errors.size() == 0);
+}
+
 int
 main()
 {
     TestUsdShadeValidators();
+    TestUsdShadeMaterialBindingAPIAppliedValidator();
     TestUsdShadeMaterialBindingRelationships();
     TestUsdShadeShaderPropertyCompliance();
     TestUsdShadeSubsetMaterialBindFamilyName();
     TestUsdShadeSubsetsMaterialBindFamily();
-    printf("OK\n");
     return EXIT_SUCCESS;
 };
