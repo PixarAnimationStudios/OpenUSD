@@ -16,10 +16,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define USD_GEOM_VALIDATOR_NAME_TOKENS                   \
-    ((stageMetadataChecker, "usdGeom:StageMetadataChecker"))
+#define USD_GEOM_VALIDATOR_NAME_TOKENS                              \
+    ((stageMetadataChecker, "usdGeom:StageMetadataChecker"))        \
+    ((subsetFamilies, "usdGeom:SubsetFamilies"))                    \
+    ((subsetParentIsImageable, "usdGeom:SubsetParentIsImageable"))
 
-#define USD_GEOM_VALIDATOR_KEYWORD_TOKENS                \
+#define USD_GEOM_VALIDATOR_KEYWORD_TOKENS                           \
+    (UsdGeomSubset)                                                 \
     (UsdGeomValidators)
 
 ///\def
