@@ -357,44 +357,48 @@ mulitple apply schema is provided.
 
 \subsection Usd_APISchemaStrengthOrdering Property conflicts, composition, and API schema strength ordering
 
-Given that we encourage (or even require in the case of multi apply schemas) the
-use of namespace prefixes for API schema property names, we expect most 
-properties defined in API schemas will be unique to the schema. However, there 
-will always be the possibility that properties with the same name may be defined 
-in multiple API schemas applied to the same prim. To account for this, there is 
-a strength ordering for applied API schemas that we use to determine which 
-property definition "wins" when more than one API schema can define it. 
+Given that we encourage (or even require in the case of multiple-apply schemas)
+the use of namespace prefixes for API schema property names, we expect most
+properties defined in API schemas will be unique to the schema. However, there
+will always be the possibility that properties with the same name may be defined
+in multiple API schemas applied to the same prim. To account for this, there is
+a strength ordering for applied API schemas that determines which property
+definition "wins" when more than one API schema defines a property of the same
+name.
 
-Firstly, the strongest opinion for all aspects of a built-in property in an IsA 
-schema's \ref UsdPrimDefinition "prim definition" will always come from the IsA
-schema itself. 
+In defining schema strength ordering, it is helpful to talk about a schema order
+where **the first schema is the strongest and the last schema is the
+weakest**. The strength order of schemas is as follows:
 
-Next, any auto applied API schemas, whether defined in the 
-\ref Usd_AutoAppliedAPISchemas "API schema's definition" or in a 
-\ref Usd_PluginAutoAppliedAPISchemas "plugin's metadata", will be appended to 
-the end of the list of built-in applied API schemas for the IsA or single-apply 
-API they apply to. Since the built-in schema list is ordered strongest to 
-weakest for application, this also means that <b> auto applied schemas will 
-always be weaker relative to the built-in API schemas defined in the schema they
-are auto applied to</b>. When more than one API schema is auto applied to the 
-same schema type, they are always sorted into reverse dictionary order by schema name 
-before they are appended to the built-in schemas. The dictionary ordering is 
-arbitrary but deterministic as there is no provided way to indicate strength 
-ordering between auto applied API schemas.
- 
-Lastly, the \ref Usd_SchemaDefinedBuiltinAPIs "built-in schemas" that are 
-defined in the apiSchemas metadata of the IsA schema are applied in the order 
-they appear in the composed list operation of the apiSchemas field, using a 
-depth first expansion of any API schema that itself has included built-in API
-schemas. This list order is strongest to weakest, so property name conflicts 
-will prefer a property definition from an API schema earlier in the list.
+The strongest opinion for all aspects of a built-in property in the IsA schema's
+\ref UsdPrimDefinition "prim definition". I.e., the IsA schema comes first in
+the schema order.
 
-Any API schemas that are applied to a prim instance in scene description (which
-we'll refer to as "authored API schemas") are appended to the prim type's API 
-schemas and will therefore have a weaker opinion on any properties they define 
-that are also present in the prim type's schema definition, including all of its built-in
-and auto-applied API schemas. In other words, authored API schemas cannnot override any
-properties in the prim type's definition.
+The strength order of applied API schemas is determined by adding them to the
+schema order, after the IsA schema, as follows:
+
+1. Any \ref Usd_SchemaDefinedBuiltinAPIs "built-in schemas" that are defined in
+   `apiSchemas` metadata are added to the schema order, immediately after the
+   schema that introduces them, in the order they appear in the composed
+   `apiSchemas` field.
+
+2. Any auto applied API schemas (whether defined in the \ref
+   Usd_AutoAppliedAPISchemas "API schema's definition" or in a \ref
+   Usd_PluginAutoAppliedAPISchemas "plugin's metadata") come immediately after
+   the schema to which they apply. When more than one API schema is auto applied
+   to the same schema type, they are sorted in reverse dictionary order by
+   schema name before they are appended to the schema order.  Reverse dictionary
+   ordering ensures that the newest version of a versioned schema is the
+   strongest if multiple versions are applied. Otherwise, this ordering is
+   arbitrary but deterministic as there is no provided way to indicate strength
+   ordering between auto applied API schemas.
+
+3. Authored API schemas, API schemas that are applied to a prim instance in
+   scene description, are added last.
+
+This applied API strength order is invoked recursively, in a depth first
+expansion, because **all schema types can introduce built-in schemas and can
+cause additional auto applied schemas to be applied**.
 
 For properties that are defined by more than one of the included schema,
 fields for which the strongest property definition does *not* express an opinion, 
