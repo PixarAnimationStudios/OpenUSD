@@ -27,6 +27,18 @@ TF_CONDITIONALLY_COMPILE_TIME_ENABLED_DEBUG_CODES(
 #define DEBUG_MSG(...) \
     TF_DEBUG_MSG(SDF_PATH_EXPRESSION_EVAL, __VA_ARGS__)
 
+void
+Sdf_PathExpressionEvalBase::_PatternIncrSearchState::Pop(int newDepth)
+{
+    while (!_segmentMatchDepths.empty() &&
+           _segmentMatchDepths.back() >= newDepth) {
+        _segmentMatchDepths.pop_back();
+    }
+    if (newDepth <= _constantDepth) {
+        _constantDepth = -1;
+    }
+}
+
 SdfPredicateFunctionResult
 Sdf_PathExpressionEvalBase::_EvalExpr(
     TfFunctionRef<
@@ -509,7 +521,7 @@ Sdf_PathExpressionEvalBase
             // The pattern allows arbitrary elements following the prefix. 
             DEBUG_MSG("_Next(<%s>) covered by stretch -> constant true\n",
                       path.GetAsString().c_str());
-            search._constantDepth = 0;
+            search._constantDepth = prefixElemCount;
             search._constantValue = true;
             return Result::MakeConstant(search._constantValue);
         }
@@ -520,7 +532,7 @@ Sdf_PathExpressionEvalBase
                       "constant false\n",
                       path.GetAsString().c_str(),
                       _prefix.GetAsString().c_str());
-            search._constantDepth = 0;
+            search._constantDepth = prefixElemCount;
             search._constantValue = false;
             return Result::MakeConstant(search._constantValue);
         }
