@@ -13,6 +13,7 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/payload.h"
+#include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/reference.h"
 
 #include "pxr/base/tf/token.h"
@@ -61,30 +62,48 @@ namespace {
 
 } // end anonymous namespace
 
-// Returns lists of value and children field names to be handled during
+// Helper to get sorted, filtered field names.
+template <class SchemaPred>
+static TfTokenVector
+_GetFilteredFieldNames(const SdfLayerHandle &layer,
+                       const SdfPath &path,
+                       SchemaPred const &pred)
+{
+    const SdfSchemaBase &schema = layer->GetSchema();
+    std::vector<TfToken> fieldNames = layer->ListFields(path);
+    fieldNames.erase(std::remove_if(fieldNames.begin(), fieldNames.end(),
+                                    [&](const TfToken &fieldName) {
+                                        return !pred(schema, fieldName);
+                                    }), fieldNames.end());
+    TfTokenFastArbitraryLessThan lessThan;
+    std::sort(fieldNames.begin(), fieldNames.end(), lessThan);
+    return fieldNames;
+}
+
+// Returns lists of value field names to be handled during
 // the copy process. The returned lists are sorted using the
 // TfTokenFastArbitraryLessThan comparator.
-static
-void
-_GetFieldNames(
-    const SdfLayerHandle& layer, const SdfPath& path, 
-    std::vector<TfToken>* valueFields, 
-    std::vector<TfToken>* childrenFields)
+static TfTokenVector
+_GetValueFieldNames(const SdfLayerHandle& layer, const SdfPath& path)
 {
-    const SdfSchemaBase& schema = layer->GetSchema();
-    const std::vector<TfToken> allFields = layer->ListFields(path);
-    for (const TfToken& field : allFields) {
-        if (schema.HoldsChildren(field)) {
-            childrenFields->push_back(field);
-        }
-        else {
-            valueFields->push_back(field);
-        }
-    }
+    return _GetFilteredFieldNames(
+        layer, path,
+        [](const SdfSchemaBase &schema, const TfToken &fieldName) {
+            return !schema.HoldsChildren(fieldName);
+        });
+}
 
-    TfTokenFastArbitraryLessThan lessThan;
-    std::sort(valueFields->begin(), valueFields->end(), lessThan);
-    std::sort(childrenFields->begin(), childrenFields->end(), lessThan);
+// Returns lists of children field names to be handled during
+// the copy process. The returned lists are sorted using the
+// TfTokenFastArbitraryLessThan comparator.
+static TfTokenVector
+_GetChildrenFieldNames(const SdfLayerHandle& layer, const SdfPath& path)
+{
+    return _GetFilteredFieldNames(
+        layer, path,
+        [](const SdfSchemaBase &schema, const TfToken &fieldName) {
+            return schema.HoldsChildren(fieldName);
+        });
 }
 
 // Process the given children and add any children specs that are indicated by
@@ -513,6 +532,39 @@ SdfCopySpec(
         return false;
     }
 
+    // If we're copying within a single layer and either srcPath or dstPath is a
+    // prefix of the other, first copy the src scene description to a temporary
+    // anonymous layer, then copy from _that_ temporary src to dstPath.  This
+    // way we avoid mutating the src as we're copying.
+    if (srcLayer == dstLayer && (srcPath.HasPrefix(dstPath) ||
+                                 dstPath.HasPrefix(srcPath))) {
+        // Create an anon layer with the same format & args as the src layer.
+        SdfLayerRefPtr tmpSrcLayer =
+            SdfLayer::CreateAnonymous("SdfCopySpec_tmp_src_layer",
+                                      srcLayer->GetFileFormat(),
+                                      srcLayer->GetFileFormatArguments());
+        // Get the nearest prim path and copy that to the tmpSrc.  Note that
+        // this in general copies more than necessary.  With more complicated
+        // logic to create stub ancestors for all spec types we could narrow the
+        // copying to just the src spec itself but we leave that to the future.
+        SdfPath srcPrimPath = srcPath.GetPrimPath();
+        SdfCreatePrimInLayer(tmpSrcLayer, srcPrimPath);
+
+        if (!SdfCopySpec(srcLayer, srcPrimPath,
+                         tmpSrcLayer, srcPrimPath)) {
+            TF_RUNTIME_ERROR("Failed to create temporary source for overlapped "
+                             "SdfCopySpec <%s> -> <%s>",
+                             srcPath.GetAsString().c_str(),
+                             dstPath.GetAsString().c_str());
+            return false;
+        }
+
+        // Now copy the temporary src to the dst.
+        return SdfCopySpec(tmpSrcLayer, srcPath,
+                           dstLayer, dstPath,
+                           shouldCopyValueFn, shouldCopyChildrenFn);
+    }
+    
     SdfChangeBlock block;
 
     // Create a stack of source/dest copy requests, initially populated with
@@ -542,17 +594,11 @@ SdfCopySpec(
         _SpecDataEntry copyEntry(toCopy.dstPath, specType);
 
         // Determine what data is present for the current source and dest specs
-        // and what needs to be copied. Divide the present fields into those
-        // that contain values and those that index children specs.
-        std::vector<TfToken> dstValueFields;
-        std::vector<TfToken> dstChildrenFields;
-        _GetFieldNames(
-            dstLayer, toCopy.dstPath, &dstValueFields, &dstChildrenFields);
-
-        std::vector<TfToken> srcValueFields;
-        std::vector<TfToken> srcChildrenFields;
-        _GetFieldNames(
-            srcLayer, toCopy.srcPath, &srcValueFields, &srcChildrenFields);
+        // and what needs to be copied.
+        const TfTokenVector
+            dstValueFields = _GetValueFieldNames(dstLayer, toCopy.dstPath);
+        const TfTokenVector
+            srcValueFields = _GetValueFieldNames(srcLayer, toCopy.srcPath);
 
         // From the list of value fields, retrieve all values that the copy
         // policy says we need to copy over to the destination.
@@ -639,6 +685,16 @@ SdfCopySpec(
                     copyEntry.dstPath, fieldValue.first, fieldValue.second);
             }
         }
+
+        // Retrieve the children fields to be copied. Don't retrieve them before
+        // value fields are copied as children fields may be modified during
+        // copying value fields.  This is mainly due to abstract data
+        // implementations that "procedurally" present children fields based on
+        // other fields.
+        const TfTokenVector dstChildrenFields =
+            _GetChildrenFieldNames(dstLayer, toCopy.dstPath);
+        const TfTokenVector srcChildrenFields =
+            _GetChildrenFieldNames(srcLayer, toCopy.srcPath);
 
         // Now add any children specs that need to be copied to our
         // copy stack.

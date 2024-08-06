@@ -53,6 +53,12 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// and internal sub-root references that target an object beneath \p srcPath 
 /// will be remapped to target objects beneath \p dstPath.
 ///
+/// If \p srcLayer and \p dstLayer are the same, and either \p srcPath or \p
+/// dstPath is a prefix of the other (see SdfPath::HasPrefix()), then the source
+/// and destination overlap.  In this case, to avoid modifying the source during
+/// the copy operation, SdfCopySpec() first creates a temporary anonymous layer
+/// and copies the source to it.  Then it copies that temporary to the
+/// destination.
 SDF_API
 bool
 SdfCopySpec(
@@ -196,6 +202,15 @@ SdfShouldCopyChildren(
 /// made; client code should arrange for relationship targets and connections to
 /// be specified as prepended, appended, deleted, and/or ordered, as needed.
 ///
+/// If \p srcLayer and \p dstLayer are the same, and either \p srcPath or \p
+/// dstPath is a prefix of the other (see SdfPath::HasPrefix()), then the source
+/// and destination overlap.  In this case, to avoid modifying the source during
+/// the copy operation, SdfCopySpec() first creates a temporary anonymous layer
+/// and copies the source to it using the SdfCopySpec() overload that does not
+/// take "shouldCopy" functions.  Then it copies that temporary to the
+/// destination.  In this case the \p shouldCopyValueFn and \p
+/// shouldCopyChildrenFn will be called with the temporary source layer rather
+/// than the original source layer, but the source paths will be the same.
 SDF_API
 bool 
 SdfCopySpec(
