@@ -224,13 +224,13 @@ if(NOT TBB_FOUND)
   endif()
 
   if(TBB_VERSION VERSION_LESS 4.3)
-    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc tbb)
+    set(TBB_SEARCH_COMPONENTS tbb_preview tbbmalloc tbb)
   else()
-    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc_proxy tbbmalloc tbb)
+    set(TBB_SEARCH_COMPONENTS tbb_preview tbbmalloc_proxy tbbmalloc tbb)
   endif()
 
   # Find each component
-  foreach(_comp ${TBB_SEARCH_COMPOMPONENTS})
+  foreach(_comp ${TBB_SEARCH_COMPONENTS})
     if(";${TBB_FIND_COMPONENTS};tbb" MATCHES ";${_comp};")
 
       if(${_comp} STREQUAL tbb)
