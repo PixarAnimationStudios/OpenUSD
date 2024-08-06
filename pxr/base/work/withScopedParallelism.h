@@ -85,6 +85,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     }
 ///     return *accessor.first;
 /// }
+/// \endcode
 ///
 /// This limits parallelism by only a small degree.  It's only the waiting
 /// thread that restricts the tasks it can take to the protected scope: all

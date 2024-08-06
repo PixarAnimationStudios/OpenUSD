@@ -710,8 +710,6 @@ public:
             _buckets.size(), lambda);
     }
 
-    /// @}
-
 private:
 
     // Helper to get parent paths.

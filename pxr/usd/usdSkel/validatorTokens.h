@@ -17,13 +17,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define USD_SKEL_VALIDATOR_KEYWORD_TOKENS                \
      (UsdSkelValidators)
 
-///\def
+/// \def USD_SKEL_VALIDATOR_NAME_TOKENS
 /// Tokens representing validator names. Note that for plugin provided
 /// validators, the names must be prefixed by usdSkel:, which is the name of
 /// the usdSkel plugin.
 TF_DECLARE_PUBLIC_TOKENS(UsdSkelValidatorNameTokens, USDSKEL_API,
                          USD_SKEL_VALIDATOR_NAME_TOKENS);
-///\def
+/// \def USD_SKEL_VALIDATOR_KEYWORD_TOKENS
 /// Tokens representing keywords associated with any validator in the usdShade
 /// plugin. Clients can use this to inspect validators contained within a
 /// specific keywords, or use these to be added as keywords to any new

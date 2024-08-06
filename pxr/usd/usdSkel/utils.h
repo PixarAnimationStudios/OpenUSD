@@ -47,7 +47,7 @@ class UsdSkelRoot;
 class UsdSkelTopology;
 
 
-/// \defgroup UsdSkel_Utils Utilities
+/// \defgroup UsdSkel_Utils UsdSkel Utilities
 /// @{
 
 
@@ -878,6 +878,9 @@ UsdSkelApplyBlendShape(const float weight,
                        const TfSpan<const int> indices,
                        TfSpan<GfVec3f> points);
 
+/// @}
+
+/// @}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
