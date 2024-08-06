@@ -43,6 +43,37 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialNetworkSchemaTokens, HD_API,
 
 //-----------------------------------------------------------------------------
 
+// The MaterialNetwork schema is a container schema that defines a material
+// for a specific render context. A network is composed of nodes, terminals,
+// and interface mappings.
+//
+// Interface mappings define the material's public UI. For example, the
+// following data sources define a public UI "globalVal" that maps to two
+// different node parameters:
+//
+// ds at: material/<renderContext>/interfaceMappings/globalVal/[0]/ nodePath =
+// Color_Manipulate
+//
+// ds at: material/<renderContext>/interfaceMappings/globalVal/[0]/ inputName
+// = adjustVal
+//
+// ds at: material/<renderContext>/interfaceMappings/globalVal/[1]/ nodePath =
+// Color_RetargetLayer
+//
+// ds at: material/<renderContext>/interfaceMappings/globalVal/[1]/ inputName
+// = valRemapAmount
+//
+// The above means that the "globalVal" public UI name maps to the following
+// parameter data sources at:
+//
+// ds at: material/<renderContext>/nodes/Color_Manipulate/parameters/
+// adjustVal
+//
+// ds at: material/<renderContext>/nodes/Color_RetargetLayer/
+// parameters/valRemapAmount
+//
+// See also the Material schema documentation for ASCII art diagram.
+//
 
 class HdMaterialNetworkSchema : public HdSchema
 {
@@ -61,12 +92,20 @@ public:
     /// \name Member accessor
     /// @{
 
+    /// Maps node names to material nodes. Each material node is a container
+    /// that is defined by the MaterialNode schema. The topology of the
+    /// network is expressed by the connections found on each material node.
     HD_API
     HdMaterialNodeContainerSchema GetNodes() const;
 
+    /// Maps terminal names to material connections. Each connection is a
+    /// container defined by the MaterialConnection schema.
     HD_API
     HdMaterialConnectionContainerSchema GetTerminals() const;
 
+    /// Maps interface names (public UI names) to vectors of material node
+    /// parameters. Each mapped material node parameter is a container defined
+    /// by the InterfaceMappings schema.
     HD_API
     HdMaterialInterfaceMappingsContainerSchema GetInterfaceMappings() const; 
 

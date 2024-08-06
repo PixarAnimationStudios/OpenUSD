@@ -371,10 +371,38 @@
     # materialNode
     dict(
         SCHEMA_NAME = 'MaterialNode',
+        DOC = '''
+            The MaterialNode schema is a container schema that defines a 
+            particular node in a material network.
+
+            A material node defines its connections to other nodes via the
+            "inputConnections" member. For example, "albedo" would define that 
+            it receives its value from its connection to the node 
+            "Color_UnPreMult" and the output "resultRGB" with the following data
+            sources:
+                
+            ds at: material/<renderContext>/nodes/MaterialLayer/inputConnections
+                /albedo/[0]/upstreamNodePath = Color_UnPreMult
+
+            ds at: material/<renderContext>/nodes/MaterialLayer/inputConnections
+                /albedo/[0]/upstreamNodeOutputName = resultRGB
+            ''',
         SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/schemaTypeDefs'],
         MEMBERS = [
-            ('parameters', 'HdMaterialNodeParameterContainerSchema', {}),
-            ('inputConnections', 'HdMaterialConnectionVectorContainerSchema', {}),
+            ('parameters', 'HdMaterialNodeParameterContainerSchema', 
+             dict(DOC = '''
+                Maps parameter names to node parameters. Each node parameter
+                is a container that is defined by the MaterialNodeParameter
+                schema. Note that parameters are inputs that supply their value 
+                directly.
+                ''')),
+            ('inputConnections', 'HdMaterialConnectionVectorContainerSchema', 
+             dict(DOC = '''
+                Maps input names to vectors of connections. Each connection is
+                defined by the MaterialConnection schema. Note that 
+                inputConnections are inputs that get their value from data flow 
+                over the connection.  
+                ''')),
             ('nodeIdentifier', T_TOKEN,
              dict(DOC = '''
                 This identifies the shader the node represents. The
@@ -405,6 +433,10 @@
     # materialNodeParameter
     dict(
         SCHEMA_NAME = 'MaterialNodeParameter',
+        DOC = '''
+            The MaterialNodeParameter schema defines the value data source for 
+            the parameter.
+            ''',
         MEMBERS = [
             ('value', T_SAMPLED, {}),
             # Parameter Metadata
@@ -416,6 +448,13 @@
     # materialConnection
     dict(
         SCHEMA_NAME = 'MaterialConnection',
+        DOC = '''
+            The MaterialConnection schema defines an upstream connected node and
+            output.
+
+            See MaterialNode schema's documentation on its
+            'inputConnections' member for an example.
+            ''',
         MEMBERS = [
             ('upstreamNodePath', T_TOKEN, {}),
             ('upstreamNodeOutputName', T_TOKEN, {}),
@@ -426,6 +465,13 @@
     # materialInterfaceMapping
     dict(
         SCHEMA_NAME = 'MaterialInterfaceMapping',
+        DOC = '''
+            The MaterialInterfaceMapping schema identifies a material node
+            parameter using its two members 'nodePath' and 'inputName'.  
+            
+            See MaterialNetwork schema's documentation on its 
+            'interfaceMappings' member for an example.
+            ''',
         MEMBERS = [
             ('nodePath', T_TOKEN, {}),
             ('inputName', T_TOKEN, {})
@@ -436,12 +482,58 @@
     # materialNetwork
     dict(
         SCHEMA_NAME = 'MaterialNetwork',
+        DOC = '''
+            The MaterialNetwork schema is a container schema that defines a
+            material for a specific render context. A network is composed of 
+            nodes, terminals, and interface mappings.    
+
+            Interface mappings define the material's public UI. For example, the
+            following data sources define a public UI "globalVal" that maps to 
+            two different node parameters:
+                
+            ds at: material/<renderContext>/interfaceMappings/globalVal/[0]/
+                nodePath = Color_Manipulate
+
+            ds at: material/<renderContext>/interfaceMappings/globalVal/[0]/
+                inputName = adjustVal
+
+            ds at: material/<renderContext>/interfaceMappings/globalVal/[1]/
+                nodePath = Color_RetargetLayer
+
+            ds at: material/<renderContext>/interfaceMappings/globalVal/[1]/
+                inputName = valRemapAmount
+                
+            The above means that the "globalVal" public UI name maps to the
+            following parameter data sources at:
+                
+            ds at: material/<renderContext>/nodes/Color_Manipulate/parameters/
+                adjustVal 
+                
+            ds at: material/<renderContext>/nodes/Color_RetargetLayer/
+                parameters/valRemapAmount
+
+            See also the Material schema documentation for ASCII art diagram.
+            ''',
         SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/schemaTypeDefs'],
         MEMBERS = [
-            ('nodes', 'HdMaterialNodeContainerSchema', {}),
-            ('terminals', 'HdMaterialConnectionContainerSchema', {}),
-            ('interfaceMappings',
-                'HdMaterialInterfaceMappingsContainerSchema', {}),
+            ('nodes', 'HdMaterialNodeContainerSchema', 
+             dict(DOC = '''
+                Maps node names to material nodes. Each material node is a
+                container that is defined by the MaterialNode schema. The
+                topology of the network is expressed by the connections found on
+                each material node.
+                ''')),
+            ('terminals', 'HdMaterialConnectionContainerSchema', 
+             dict(DOC = '''
+                Maps terminal names to material connections. Each connection
+                is a container defined by the MaterialConnection schema.
+                ''')),
+            ('interfaceMappings', 'HdMaterialInterfaceMappingsContainerSchema', 
+             dict(DOC = '''
+                Maps interface names (public UI names) to vectors of material 
+                node parameters. Each mapped material node parameter is a 
+                container defined by the InterfaceMappings schema.
+                ''')),
         ],
     ),
 
@@ -449,6 +541,19 @@
     # material
     dict(
         SCHEMA_NAME = 'Material',
+        DOC = '''
+            The Material schema is a container schema that provides the correct
+            material definition per render context.
+
+            For example, a material may specify several render contexts
+            like the universalRenderContext (""), Renderman ("ri"), 
+            Storm ("glslfx"), etc. Each render context will then provide the 
+            specific definition for the renderer, which is defined by the
+            MaterialNetwork schema. The universalRenderContext applies to all
+            renderers.
+
+            See "Custom Code: Schema Methods" section for ASCII art diagram.
+            ''',
         SCHEMA_TOKEN = 'material',
         EXTRA_TOKENS = [
             '(universalRenderContext, "")',
@@ -462,6 +567,67 @@
             # We provide a custom getter for the material network
             # to fallback to the universalRenderContext.
             dict(GETTER = False))
+    ),
+
+    #--------------------------------------------------------------------------
+    # materialOverride
+    dict(
+        SCHEMA_NAME = 'MaterialOverride',
+        DOC = '''
+            The MaterialOverride schema allows overrides to be made to the 
+            material's public UI. Overrides can be applied to both material or 
+            geometry scene index prim locations.
+
+            The following is an example of a material override. The data
+            source to author an override on the public UI name 
+            "globalSpecularKface" would look like this:
+
+            ds at: materialOverride/interfaceValues/globalSpecularKface/value =
+                0.666
+
+            There needs to be an interface mapping defined for 
+            "globalSpecularKface", which could look like this:
+
+            ds at: material/<renderContext>/interfaceMappings/
+                globalSpecularKface/[0]/nodePath = MaterialLayer
+                
+            ds at: material/<renderContext>/interfaceMappings/
+                globalSpecularKface/[0]/inputName = specularKface
+
+            The above means that the "globalSpecularKface" public UI name will 
+            map to the node parameter "specularKface", and for example, this 
+            node parameter may already have a data source for its value:
+
+            ds at: material/<renderContext>/nodes/MaterialLayer/parameters/
+                specularKface/value = 0.222
+
+            After resolving the material override, the data source of the 
+            node parameter's value is replaced by the overriding value data
+            source.
+
+            ds at: material/<renderContext>/nodes/MaterialLayer/parameters/
+                specularKface/value = 0.666
+
+            Note that the MaterialOverride schema does not specify a render 
+            context token because material overrides are high-level and do not 
+            need to know about implementation details--they just need to specify
+            an overriding data source. By contrast, the contents of a material 
+            network do specify a render context token in order to define the 
+            material nodes and interface mappings--you can imagine that a 
+            Renderman vs Storm implementation of a material network would be 
+            quite different.    
+
+            See also the Material schema documentation for ASCII art diagram.
+            ''',
+        SCHEMA_TOKEN = 'materialOverride',
+        SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/schemaTypeDefs'],
+        MEMBERS = [
+            ('interfaceValues', 'HdMaterialNodeParameterContainerSchema', 
+             dict(DOC = '''
+                Maps interface names (ie. public UI names) to overriding
+                data sources that follow the MaterialNodeParameter schema.
+                ''')),
+        ],
     ),
 
     #--------------------------------------------------------------------------

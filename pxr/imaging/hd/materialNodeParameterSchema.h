@@ -41,6 +41,9 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialNodeParameterSchemaTokens, HD_API,
 
 //-----------------------------------------------------------------------------
 
+// The MaterialNodeParameter schema defines the value data source for the
+// parameter.
+//
 
 class HdMaterialNodeParameterSchema : public HdSchema
 {

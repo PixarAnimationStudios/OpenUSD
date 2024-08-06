@@ -45,6 +45,20 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialNodeSchemaTokens, HD_API,
 
 //-----------------------------------------------------------------------------
 
+// The MaterialNode schema is a container schema that defines a particular
+// node in a material network.
+//
+// A material node defines its connections to other nodes via the
+// "inputConnections" member. For example, "albedo" would define that it
+// receives its value from its connection to the node "Color_UnPreMult" and
+// the output "resultRGB" with the following data sources:
+//
+// ds at: material/<renderContext>/nodes/MaterialLayer/inputConnections
+// /albedo/[0]/upstreamNodePath = Color_UnPreMult
+//
+// ds at: material/<renderContext>/nodes/MaterialLayer/inputConnections
+// /albedo/[0]/upstreamNodeOutputName = resultRGB
+//
 
 class HdMaterialNodeSchema : public HdSchema
 {
@@ -63,9 +77,15 @@ public:
     /// \name Member accessor
     /// @{
 
+    /// Maps parameter names to node parameters. Each node parameter is a
+    /// container that is defined by the MaterialNodeParameter schema. Note
+    /// that parameters are inputs that supply their value directly.
     HD_API
     HdMaterialNodeParameterContainerSchema GetParameters() const;
 
+    /// Maps input names to vectors of connections. Each connection is defined
+    /// by the MaterialConnection schema. Note that inputConnections are
+    /// inputs that get their value from data flow over the connection.
     HD_API
     HdMaterialConnectionVectorContainerSchema GetInputConnections() const;
 
