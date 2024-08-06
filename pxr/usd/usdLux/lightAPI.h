@@ -566,8 +566,8 @@ public:
     /// In the case of a spectral renderer, this color should be uplifted such
     /// that it round-trips to within the limit of numerical accuracy under the
     /// rendering illuminant.  We recommend the use of a rendering color space
-    /// well defined in terms of a Illuminant D illuminant.  See:
-    /// \ref usdLux_quantities
+    /// well defined in terms of a Illuminant D illuminant, to avoid unspecified
+    /// uplift.  See: \ref usdLux_quantities
     /// 
     ///
     /// | ||
@@ -626,7 +626,9 @@ public:
     /// transformed to the rendering color space.
     /// 
     /// Spectral renderers should do the same and then uplift the resulting
-    /// color after multiplying with the `color` attribute.
+    /// color after multiplying with the `color` attribute.  We recommend the
+    /// use of a rendering color space well defined in terms of a Illuminant D
+    /// illuminant, to avoid unspecified uplift.  See: \ref usdLux_quantities
     /// 
     ///
     /// | ||
