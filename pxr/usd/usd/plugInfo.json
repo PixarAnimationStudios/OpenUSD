@@ -149,6 +149,9 @@
                     "CompositionErrorTest": {
                         "doc": "Validator aims at providing all composition errors, which were generated while composing the stage."
                     }, 
+                    "StageMetadataChecker": {
+                        "doc": "Stages that can be consumed as referencable assets must have a valid 'defaultPrim' specified."
+                    }, 
                     "keywords": [
                         "UsdCoreValidators"
                     ]

@@ -223,22 +223,6 @@ void TestUsdValidationRegistry()
         TF_AXIOM(!suite);
     }
     {
-        // The following test keeps track of all the available validators within
-        // UsdCoreValidators keyword, hence as new validators are added under
-        // this keyword this unit test will have to be updated.
-        const UsdValidatorMetadataVector coreValidatorMetadata =
-            registry.GetValidatorMetadataForKeyword(
-                UsdValidatorKeywordTokens->UsdCoreValidators);
-        TF_AXIOM(coreValidatorMetadata.size() == 1);
-        const std::vector<TfToken> expectedValidatorNames = 
-            {UsdValidatorNameTokens->compositionErrorTest};
-
-        for (size_t index = 0; index < coreValidatorMetadata.size(); ++index) {
-            TF_AXIOM(coreValidatorMetadata[index].name == 
-                 expectedValidatorNames[index]);
-        }
-    }
-    {
         // test to make sure CompositionErrorTest validator provided in the core
         // usd plugin works correctly by reporting all the composition errors,
         // error sites and appropriate messages pertaining to these errors.
@@ -312,6 +296,33 @@ void TestUsdValidationRegistry()
     }
 }
 
+void
+TestUsdValidators()
+{
+    UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
+
+    // The following test keeps track of all the available validators within
+    // UsdCoreValidators keyword, hence as new validators are added under
+    // this keyword this unit test will have to be updated.
+    const UsdValidatorMetadataVector coreValidatorMetadata =
+            registry.GetValidatorMetadataForKeyword(
+                    UsdValidatorKeywordTokens->UsdCoreValidators);
+    TF_AXIOM(coreValidatorMetadata.size() == 2);
+
+    std::set<TfToken> validatorMetadataNameSet;
+    for (const UsdValidatorMetadata &metadata : coreValidatorMetadata) {
+        validatorMetadataNameSet.insert(metadata.name);
+    }
+
+    const std::set<TfToken> expectedValidatorNames =
+            {UsdValidatorNameTokens->compositionErrorTest,
+             UsdValidatorNameTokens->stageMetadataChecker};
+
+    TF_AXIOM(std::includes(validatorMetadataNameSet.begin(),
+                           validatorMetadataNameSet.end(),
+                           expectedValidatorNames.begin(),
+                           expectedValidatorNames.end()));
+}
 int 
 main()
 {
@@ -320,6 +331,7 @@ main()
     TF_AXIOM(!PlugRegistry::GetInstance().RegisterPlugins(testDir).empty());
     
     TestUsdValidationRegistry();
+    TestUsdValidators();
 
     printf("OK\n");
 }

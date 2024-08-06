@@ -12,26 +12,44 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static
+UsdValidationErrorVector
+_GetCompositionErrors(const UsdStagePtr &usdStage)
+{
+    UsdValidationErrorVector errors;
+    const PcpErrorVector pcpErrors = usdStage->GetCompositionErrors();
+    errors.reserve(pcpErrors.size());
+    for (const PcpErrorBasePtr &pcpError : pcpErrors) {
+        UsdValidationErrorSites errorSites = {
+                UsdValidationErrorSite(usdStage, pcpError->rootSite.path)};
+        errors.emplace_back(UsdValidationErrorType::Error,
+                            std::move(errorSites),
+                            pcpError->ToString());
+    }
+    return errors;
+}
+
+static
+UsdValidationErrorVector
+_GetStageMetadataErrors(const UsdStagePtr &usdStage)
+{
+    UsdValidationErrorVector errors;
+    if (!usdStage->GetDefaultPrim()) {
+        errors.emplace_back(UsdValidationErrorType::Error,
+                            UsdValidationErrorSites{UsdValidationErrorSite(usdStage, SdfPath("/"))},
+                            TfStringPrintf("Stage with root layer <%s> has an invalid or missing defaultPrim.", usdStage->GetRootLayer()->GetIdentifier().c_str()));
+    }
+
+    return errors;
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
-    const UsdValidateStageTaskFn stageTaskFn = 
-        [](const UsdStagePtr &usdStage) {
-            UsdValidationErrorVector errors;
-            const PcpErrorVector pcpErrors = usdStage->GetCompositionErrors();
-            errors.reserve(pcpErrors.size());
-            for (const PcpErrorBasePtr &pcpError : pcpErrors) {
-                UsdValidationErrorSites errorSites = {
-                    UsdValidationErrorSite(usdStage, pcpError->rootSite.path)};
-                errors.emplace_back(UsdValidationErrorType::Error, 
-                                    std::move(errorSites), 
-                                    pcpError->ToString());
-            }
-            return errors;
-        };
-
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
     registry.RegisterPluginValidator(
-        UsdValidatorNameTokens->compositionErrorTest, stageTaskFn);
+        UsdValidatorNameTokens->compositionErrorTest, _GetCompositionErrors);
+    registry.RegisterPluginValidator(
+            UsdValidatorNameTokens->stageMetadataChecker, _GetStageMetadataErrors);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
