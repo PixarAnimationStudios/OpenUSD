@@ -1896,7 +1896,7 @@ _SkinNormalsLBS(const Matrix3& geomBindTransform,
             
             for (size_t ni = start; ni < end; ++ni) {
                 
-                const GfVec3f initialN = normals[ni]*geomBindTransform;
+                const GfVec3f initialN(normals[ni]*geomBindTransform);
                 // Determine the point to read the influences from. This is not
                 // the same as the normal's index if there is faceVarying
                 // interpolation.
@@ -1913,7 +1913,7 @@ _SkinNormalsLBS(const Matrix3& geomBindTransform,
 
                         const float w = influenceFn.GetWeight(influenceIdx);
                         if (w != 0.0f) {
-                            n += (initialN*jointXforms[jointIdx])*w;
+                            n += GfVec3f(initialN*jointXforms[jointIdx])*w;
                         }
                     } else {
                         // XXX: Generally, if one joint index is bad, an asset
@@ -1977,7 +1977,7 @@ _SkinNormalsDQS(const Matrix3& geomBindTransform,
 
             for (size_t ni = start; ni < end; ++ni) {
 
-                const GfVec3f initialN = normals[ni]*geomBindTransform;
+                const GfVec3f initialN(normals[ni]*geomBindTransform);
                 // Determine the point to read the influences from. This is not
                 // the same as the normal's index if there is faceVarying
                 // interpolation.
@@ -2005,7 +2005,8 @@ _SkinNormalsDQS(const Matrix3& geomBindTransform,
                         if (w != 0.0f) {
                             // Apply scale using LBS, if any of jointScales is not identity
                             if (hasJointScale) {
-                                scaledN += (initialN*jointScales[jointIdx])*w;
+                                scaledN +=
+                                    GfVec3f(initialN*jointScales[jointIdx])*w;
                             }
 
                             // Apply rotation using DQS

@@ -234,25 +234,6 @@ GfMatrix2d::operator*=(const GfMatrix2d &m)
     return *this;
 }
 
-/*
- * Define multiplication between floating vector and double matrix.
- */
-GfVec2f
-operator *(const GfVec2f &vec, const GfMatrix2d &m)
-{
-    return GfVec2f(
-        float(vec[0] * m._mtx[0][0] + vec[1] * m._mtx[1][0]),
-        float(vec[0] * m._mtx[0][1] + vec[1] * m._mtx[1][1]));
-}
-
-GfVec2f
-operator *(const GfMatrix2d& m, const GfVec2f &vec)
-{
-    return GfVec2f(
-        float(vec[0] * m._mtx[0][0] + vec[1] * m._mtx[0][1]),
-        float(vec[0] * m._mtx[1][0] + vec[1] * m._mtx[1][1]));
-}
-
 
 bool
 GfIsClose(GfMatrix2d const &m1, GfMatrix2d const &m2, double tolerance)

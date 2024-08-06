@@ -329,26 +329,6 @@ public:
                        vec[0] * m._mtx[0][1] + vec[1] * m._mtx[1][1]);
     }
 
-    /// Returns the product of a matrix \e m and a column vector \e vec.
-    /// Note that the return type is a \c GfVec2f.
-    ///
-    /// \deprecated
-    /// This function is deprecated, as it can result in unintentional loss of
-    /// precision. Call GfVec2d operator *(const GfMatrix2d&, const GfVec2d &)
-    /// instead and explicitly convert the result to GfVec3f, if necessary.
-    GF_API
-    friend GfVec2f operator *(const GfMatrix2d& m, const GfVec2f& vec);
-
-    /// Returns the product of row vector \e vec and a matrix \e m.
-    /// Note that the return type is a \c GfVec2f.
-    ///
-    /// \deprecated
-    /// This function is deprecated, as it can result in unintentional loss of
-    /// precision. Call GfVec2d operator *(const GfVec2d &, const GfMatrix2d&)
-    /// instead and explicitly convert the result to GfVec3f, if necessary.
-    GF_API
-    friend GfVec2f operator *(const GfVec2f &vec, const GfMatrix2d& m);
-
 
 private:
     /// Matrix storage, in row-major order.

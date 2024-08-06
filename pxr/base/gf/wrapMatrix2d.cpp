@@ -296,6 +296,10 @@ void wrapMatrix2d()
         .def( self / self )
         .def( self * GfVec2d() )
         .def( GfVec2d() * self )
+
+        // Provide wrapping that makes up for the fact that, in Python, we
+        // don't allow implicit conversion from GfVec3f to GfVec3d (which we
+        // do in C++).
         .def( self * GfVec2f() )
         .def( GfVec2f() * self )
 

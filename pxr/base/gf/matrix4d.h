@@ -488,26 +488,6 @@ public:
                        vec[0] * m._mtx[0][3] + vec[1] * m._mtx[1][3] + vec[2] * m._mtx[2][3] + vec[3] * m._mtx[3][3]);
     }
 
-    /// Returns the product of a matrix \e m and a column vector \e vec.
-    /// Note that the return type is a \c GfVec4f.
-    ///
-    /// \deprecated
-    /// This function is deprecated, as it can result in unintentional loss of
-    /// precision. Call GfVec4d operator *(const GfMatrix4d&, const GfVec4d &)
-    /// instead and explicitly convert the result to GfVec3f, if necessary.
-    GF_API
-    friend GfVec4f operator *(const GfMatrix4d& m, const GfVec4f& vec);
-
-    /// Returns the product of row vector \e vec and a matrix \e m.
-    /// Note that the return type is a \c GfVec4f.
-    ///
-    /// \deprecated
-    /// This function is deprecated, as it can result in unintentional loss of
-    /// precision. Call GfVec4d operator *(const GfVec4d &, const GfMatrix4d&)
-    /// instead and explicitly convert the result to GfVec3f, if necessary.
-    GF_API
-    friend GfVec4f operator *(const GfVec4f &vec, const GfMatrix4d& m);
-
     /// Sets matrix to specify a uniform scaling by \e scaleFactor.
     GF_API
     GfMatrix4d& SetScale(double scaleFactor);
