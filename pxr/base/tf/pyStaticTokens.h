@@ -64,7 +64,8 @@ private:
 
 #define _TF_PY_TOKENS_WRAP_MEMBER(r, key, name)                             \
     .add_static_property(TF_PP_STRINGIZE(name),                             \
-        boost::python::make_function(_TfPyWrapStaticToken((&key->name)),    \
+        boost::python::make_function(                                       \
+            PXR_NS::_TfPyWrapStaticToken((&key->name)),                     \
             boost::python::return_value_policy<                             \
                 boost::python::return_by_value>(),                          \
             boost::mpl::vector1<std::string>()))
