@@ -155,6 +155,36 @@ _SubsetParentIsImageable(const UsdPrim& usdPrim)
     };
 }
 
+static
+UsdValidationErrorVector
+_GetGPrimParentingErrors(const UsdPrim& usdPrim)
+{
+    UsdValidationErrorVector errors;
+
+    if (usdPrim.IsA<UsdGeomBoundable>()){
+        UsdPrim parentPrim = usdPrim.GetParent();
+        while (parentPrim && !parentPrim.IsPseudoRoot()) {
+            if (parentPrim.IsA<UsdGeomGprim>()) {
+                errors.emplace_back(
+                    UsdValidationErrorType::Error,
+                    UsdValidationErrorSites{
+                            UsdValidationErrorSite(usdPrim.GetStage(),
+                                                   usdPrim.GetPath())
+                    },
+                    TfStringPrintf("Gprim <%s> has an ancestor prim that is also a Gprim,"
+                                   " which is not allowed.", usdPrim.GetPath().GetText())
+                );
+                break;
+            }
+            else {
+                parentPrim = parentPrim.GetParent();
+            }
+        }
+    }
+
+    return errors;
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
@@ -168,8 +198,12 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
         _SubsetFamilies);
 
     registry.RegisterPluginValidator(
-        UsdGeomValidatorNameTokens->subsetParentIsImageable,
-        _SubsetParentIsImageable);
+            UsdGeomValidatorNameTokens->subsetParentIsImageable,
+            _SubsetParentIsImageable);
+
+    registry.RegisterPluginValidator(
+            UsdGeomValidatorNameTokens->gPrimParentingValidator,
+            _GetGPrimParentingErrors);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

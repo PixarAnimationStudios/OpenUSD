@@ -11,6 +11,7 @@
 #include "pxr/usd/usd/validationRegistry.h"
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/tokens.h"
+#include <pxr/usd/usdGeom/cube.h>
 
 #include <iostream>
 
@@ -24,7 +25,8 @@ TestUsdGeomValidators()
     const std::set<TfToken> expectedUsdGeomValidatorNames = {
         UsdGeomValidatorNameTokens->subsetFamilies,
         UsdGeomValidatorNameTokens->subsetParentIsImageable,
-        UsdGeomValidatorNameTokens->stageMetadataChecker
+        UsdGeomValidatorNameTokens->stageMetadataChecker,
+        UsdGeomValidatorNameTokens->gPrimParentingValidator
     };
 
     // This should be updated with every new validator added with the
@@ -350,7 +352,7 @@ void TestUsdStageMetadata()
     UsdValidationErrorVector errors = validator->Validate(usdStage);
 
     // Verify both metersPerUnit and upAxis errors are present
-    TF_AXIOM(errors.size() == 2);
+    TF_AXIOM(errors.size() == 2u);
     auto rootLayerIdentifier = rootLayer->GetIdentifier().c_str();
     const std::vector<std::string> expectedErrorMessages = {
         TfStringPrintf("Stage with root layer <%s> does not specify its linear "
@@ -383,6 +385,46 @@ void TestUsdStageMetadata()
     TF_AXIOM(errors.empty());
 }
 
+static
+void TestUsdGeomGPrimParentingValidator()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const UsdValidator *validator = registry.GetOrLoadValidatorByName(
+            UsdGeomValidatorNameTokens->gPrimParentingValidator);
+
+    TF_AXIOM(validator);
+
+    // Create a stage with mesh
+    const UsdStageRefPtr &stage = UsdStage::CreateInMemory();
+
+    // Add a cube to the stage
+    const UsdGeomCube &topCube = UsdGeomCube::Define(stage, SdfPath("/Top"));
+    const UsdPrim &topCubePrim = topCube.GetPrim();
+
+    // Verify this is valid
+    UsdValidationErrorVector errors = validator->Validate(topCubePrim);
+    TF_AXIOM(errors.empty());
+
+    // Parent the cube to another cube
+    const UsdGeomCube &innerCube = UsdGeomCube::Define(stage, SdfPath("/Top/Inner"));
+    const UsdPrim &innerCubePrim = innerCube.GetPrim();
+
+    // Verify the correct error occurs
+    errors = validator->Validate(innerCubePrim);
+    TF_AXIOM(errors.size() == 1u);
+    const UsdValidationError& error = errors[0u];
+    TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
+    TF_AXIOM(error.GetSites().size() == 1u);
+    const UsdValidationErrorSite& errorSite = error.GetSites()[0u];
+    TF_AXIOM(errorSite.IsValid());
+    TF_AXIOM(errorSite.IsPrim());
+    TF_AXIOM(errorSite.GetPrim().GetPath() == innerCubePrim.GetPath());
+    const std::string expectedErrorMsg =
+        "Gprim </Top/Inner> has an ancestor prim that "
+        "is also a Gprim, which is not allowed.";
+    TF_AXIOM(error.GetMessage() == expectedErrorMsg);
+}
+
 int
 main()
 {
@@ -390,7 +432,7 @@ main()
     TestUsdGeomSubsetFamilies();
     TestUsdGeomSubsetParentIsImageable();
     TestUsdStageMetadata();
-
-    std::cout << "OK\n";
+    TestUsdGeomGPrimParentingValidator();
+    
     return EXIT_SUCCESS;
 }
