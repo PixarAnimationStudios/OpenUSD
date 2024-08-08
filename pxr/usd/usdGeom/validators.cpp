@@ -161,18 +161,19 @@ _GetGPrimParentingErrors(const UsdPrim& usdPrim)
 {
     UsdValidationErrorVector errors;
 
-    if (usdPrim.IsA<UsdGeomBoundable>()){
+    if (usdPrim.IsA<UsdGeomBoundable>() || usdPrim.IsA<UsdGeomXformable>()){
         UsdPrim parentPrim = usdPrim.GetParent();
         while (parentPrim && !parentPrim.IsPseudoRoot()) {
             if (parentPrim.IsA<UsdGeomGprim>()) {
+                const std::string& errorType = usdPrim.IsA<UsdGeomBoundable>() ? "Boundable" : "Xformable";
                 errors.emplace_back(
                     UsdValidationErrorType::Error,
                     UsdValidationErrorSites{
                             UsdValidationErrorSite(usdPrim.GetStage(),
                                                    usdPrim.GetPath())
                     },
-                    TfStringPrintf("Gprim <%s> has an ancestor prim that is also a Gprim,"
-                                   " which is not allowed.", usdPrim.GetPath().GetText())
+                    TfStringPrintf("%s <%s> has an ancestor Gprim,"
+                                   " which is not allowed.", errorType.c_str(), usdPrim.GetPath().GetText())
                 );
                 break;
             }

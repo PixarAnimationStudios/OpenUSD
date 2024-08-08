@@ -12,6 +12,7 @@
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include <pxr/usd/usdGeom/cube.h>
+#include <pxr/usd/usdGeom/subset.h>
 
 #include <iostream>
 
@@ -398,7 +399,7 @@ void TestUsdGeomGPrimParentingValidator()
     const UsdStageRefPtr &stage = UsdStage::CreateInMemory();
 
     // Add a cube to the stage
-    const UsdGeomCube &topCube = UsdGeomCube::Define(stage, SdfPath("/Top"));
+    const UsdGeomCube &topCube = UsdGeomCube::Define(stage, SdfPath("/TopCube"));
     const UsdPrim &topCubePrim = topCube.GetPrim();
 
     // Verify this is valid
@@ -406,23 +407,51 @@ void TestUsdGeomGPrimParentingValidator()
     TF_AXIOM(errors.empty());
 
     // Parent the cube to another cube
-    const UsdGeomCube &innerCube = UsdGeomCube::Define(stage, SdfPath("/Top/Inner"));
+    const UsdGeomCube &innerCube = UsdGeomCube::Define(stage, SdfPath("/TopCube/InnerCube"));
     const UsdPrim &innerCubePrim = innerCube.GetPrim();
 
-    // Verify the correct error occurs
-    errors = validator->Validate(innerCubePrim);
+    // Verify the correct boundable error occurs
+    UsdValidationErrorVector errors = validator->Validate(innerCubePrim);
     TF_AXIOM(errors.size() == 1u);
-    const UsdValidationError& error = errors[0u];
+    UsdValidationError error = errors[0u];
     TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
     TF_AXIOM(error.GetSites().size() == 1u);
-    const UsdValidationErrorSite& errorSite = error.GetSites()[0u];
+    UsdValidationErrorSite errorSite = error.GetSites()[0u];
     TF_AXIOM(errorSite.IsValid());
     TF_AXIOM(errorSite.IsPrim());
     TF_AXIOM(errorSite.GetPrim().GetPath() == innerCubePrim.GetPath());
-    const std::string expectedErrorMsg =
-        "Gprim </Top/Inner> has an ancestor prim that "
-        "is also a Gprim, which is not allowed.";
+    std::string expectedErrorMsg =
+        "Boundable </TopCube/InnerCube> has an ancestor Gprim"
+        ", which is not allowed.";
     TF_AXIOM(error.GetMessage() == expectedErrorMsg);
+
+    const UsdPrim& xformPrim = stage->DefinePrim(SdfPath("/TopCube/InnerXform"), TfToken("Xform"));
+
+    // Verify the correct Xformable error occurs
+    errors = validator->Validate(xformPrim);
+    TF_AXIOM(errors.size() == 1u);
+    error = errors[0u];
+    TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
+    TF_AXIOM(error.GetSites().size() == 1u);
+    errorSite = error.GetSites()[0u];
+    TF_AXIOM(errorSite.IsValid());
+    TF_AXIOM(errorSite.IsPrim());
+    TF_AXIOM(errorSite.GetPrim().GetPath() == xformPrim.GetPath());
+    expectedErrorMsg =
+            "Xformable </TopCube/InnerXform> has an ancestor Gprim"
+            ", which is not allowed.";
+    TF_AXIOM(error.GetMessage() == expectedErrorMsg);
+
+    // Create a geomsubset under the topCube
+    const UsdGeomSubset& geomSubset = UsdGeomSubset::Define(stage, SdfPath("/TopCube/GeomSubset"));
+
+    // Verify the geomsubset prim is valid
+    errors = validator->Validate(geomSubset.GetPrim());
+    TF_AXIOM(errors.size() == 0u);
+
+    // Verify the top level cube is valid
+    errors = validator->Validate( topCube.GetPrim());
+    TF_AXIOM(errors.size() == 0u);
 }
 
 int
@@ -433,6 +462,6 @@ main()
     TestUsdGeomSubsetParentIsImageable();
     TestUsdStageMetadata();
     TestUsdGeomGPrimParentingValidator();
-    
+
     return EXIT_SUCCESS;
 }
