@@ -9,9 +9,13 @@
 
 #include "pxr/imaging/garch/glApi.h"
 
-#include <Metal/Metal.h>
-#include <AppKit/AppKit.h>
 
+#include <Metal/Metal.h>
+#if defined(ARCH_OS_OSX)
+#include <AppKit/AppKit.h>
+#else
+#include <UIKit/UIKit.h>
+#endif
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgi/texture.h"

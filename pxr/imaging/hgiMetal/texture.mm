@@ -24,11 +24,15 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
     MTLTextureUsage usage = MTLTextureUsageShaderRead;
 
     if (desc.initialData && desc.pixelsByteSize > 0) {
-#if defined(ARCH_OS_OSX)
-        resourceOptions = MTLResourceStorageModeManaged;
-#else
-        resourceOptions = MTLResourceStorageModeShared;
-#endif
+        #if defined(ARCH_OS_OSX)
+        id<MTLDevice> device = hgi->GetPrimaryDevice();
+        if (![device hasUnifiedMemory]) {
+            resourceOptions = MTLResourceStorageModeManaged;
+        } else
+        #endif
+        {
+            resourceOptions = MTLResourceStorageModeShared;
+        }
     }
 
     MTLPixelFormat mtlFormat = HgiMetalConversions::GetPixelFormat(
