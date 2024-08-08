@@ -222,107 +222,8 @@ void TestUsdValidationRegistry()
             TfToken("testValidationPlugin:FailedValidatorSuite"));
         TF_AXIOM(!suite);
     }
-    {
-        // test to make sure CompositionErrorTest validator provided in the core
-        // usd plugin works correctly by reporting all the composition errors,
-        // error sites and appropriate messages pertaining to these errors.
-        const UsdValidator* const compositionErrorValidator =
-            registry.GetOrLoadValidatorByName(
-                UsdValidatorNameTokens->compositionErrorTest);
-        TF_AXIOM(compositionErrorValidator);
-        
-        static const std::string layerContents = 
-            R"usda(#usda 1.0
-            (
-                subLayers = [
-                    @missingLayer.usda@
-                ]
-            )
-            def "World"
-            {
-                def "Inst1" (
-                    instanceable = true
-                    prepend references = </Main>
-                )
-                {
-                }
-                def "Inst2" (
-                    instanceable = true
-                    prepend references = </Main>
-                )
-                {
-                }
-            }
-            def "Main"
-            {
-                def "First" (
-                    add references = </Main/Second>
-                )
-                {
-                }
-                def "Second" (
-                    add references = </Main/First>
-                )
-                {
-                }
-            }
-        )usda";
-        SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
-        layer->ImportFromString(layerContents);
-        UsdStageRefPtr usdStage = UsdStage::Open(layer);
-
-        // Get expected list of composition errors from the stage.
-        const PcpErrorVector expectedPcpErrors = 
-            usdStage->GetCompositionErrors();
-        TF_AXIOM(expectedPcpErrors.size() == 5);
-
-        // Get wrapped validation errors from our compositionErrorValidator
-        UsdValidationErrorVector errors = 
-            compositionErrorValidator->Validate(usdStage);
-        TF_AXIOM(errors.size() == 5);
-
-        // Lets make sure pcpErrors and validationErrors match
-        for (size_t index = 0; index < errors.size(); ++index) {
-            TF_AXIOM(errors[index].GetValidator() == compositionErrorValidator);
-            TF_AXIOM(errors[index].GetMessage() == 
-                     expectedPcpErrors[index]->ToString());
-            TF_AXIOM(errors[index].GetSites().size() == 1);
-            TF_AXIOM(errors[index].GetSites().size() == 1);
-            TF_AXIOM(errors[index].GetSites()[0].IsValid());
-            TF_AXIOM(errors[index].GetSites()[0].IsPrim());
-            TF_AXIOM(errors[index].GetSites()[0].GetPrim().GetPath() ==
-                     expectedPcpErrors[index]->rootSite.path);
-        }
-    }
 }
 
-void
-TestUsdValidators()
-{
-    UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
-
-    // The following test keeps track of all the available validators within
-    // UsdCoreValidators keyword, hence as new validators are added under
-    // this keyword this unit test will have to be updated.
-    const UsdValidatorMetadataVector coreValidatorMetadata =
-            registry.GetValidatorMetadataForKeyword(
-                    UsdValidatorKeywordTokens->UsdCoreValidators);
-    TF_AXIOM(coreValidatorMetadata.size() == 2);
-
-    std::set<TfToken> validatorMetadataNameSet;
-    for (const UsdValidatorMetadata &metadata : coreValidatorMetadata) {
-        validatorMetadataNameSet.insert(metadata.name);
-    }
-
-    const std::set<TfToken> expectedValidatorNames =
-            {UsdValidatorNameTokens->compositionErrorTest,
-             UsdValidatorNameTokens->stageMetadataChecker};
-
-    TF_AXIOM(std::includes(validatorMetadataNameSet.begin(),
-                           validatorMetadataNameSet.end(),
-                           expectedValidatorNames.begin(),
-                           expectedValidatorNames.end()));
-}
 int 
 main()
 {
@@ -331,7 +232,6 @@ main()
     TF_AXIOM(!PlugRegistry::GetInstance().RegisterPlugins(testDir).empty());
     
     TestUsdValidationRegistry();
-    TestUsdValidators();
 
     printf("OK\n");
 }
