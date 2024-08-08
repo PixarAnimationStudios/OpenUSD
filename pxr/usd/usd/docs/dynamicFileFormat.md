@@ -1,8 +1,6 @@
-/*!
+# Dynamic File Formats {#Usd_Page_DynamicFileFormat}
 
-\page Usd_Page_DynamicFileFormat Dynamic File Formats
-
-\section Usd_DynamicFileFormat_Overview Overview
+## Overview {#Usd_DynamicFileFormat_Overview}
 
 A dynamic file format is an SdfFileFormat that allows the contents of its 
 layers to be generated dynamically, when
@@ -21,7 +19,7 @@ layer will be included. When the values of any of the composed fields or
 attribute defaults change, the prim automatically regenerates the file format 
 arguments and creates new layer contents.
 
-\section Usd_DynamicFileFormat_Creation Creating a Dynamic File Format
+## Creating a Dynamic File Format {#Usd_DynamicFileFormat_Creation}
 
 To create a dynamic file format, we first create a plugin library that
 implements a new derived subclass of SdfFileFormat, just like we would for any
@@ -333,7 +331,7 @@ The resolved payload layer path is now:
 We have new layer with a different identity and contents from the same payload 
 field without changing the payload declaration itself.
 
-\subsection Usd_DynamicFileFormat_Attributes Using Attributes To Compute Arguments
+### Using Attributes To Compute Arguments {#Usd_DynamicFileFormat_Attributes}
 
 Your dynamic file format plugin can also use uniform attribute defaults instead
 of metadata fields to compute file format arguments. Unlike metadata fields, 
@@ -407,7 +405,7 @@ def "Params" (
 }
 \endcode 
 
-\section Usd_DynamicFileFormat_Examples Advanced Examples
+## Advanced Examples {#Usd_DynamicFileFormat_Examples}
 
 We include two examples of dynamic file format plugins in pxr/extras/usd/examples.
 One ot the major differences between these examples that's worth highlighting is
@@ -433,7 +431,7 @@ spec data on the fly when requested. This example greatly benefits from a
 customized SdfAbstractData implementation as it avoids having to precompute 
 every time sample for every prim when the layer is opened.
 
-\section Usd_DynamicFileFormat_DynamicPayloads Dynamic Payloads
+## Dynamic Payloads {#Usd_DynamicFileFormat_DynamicPayloads}
 
 As mentioned above, the composition of prim fields or attribute defaults into 
 file format arguments only occurs when a dynamic asset is included as a payload. 
@@ -453,7 +451,7 @@ A prim index can have multiple payload arcs with any number of them being
 dynamic. Opinions from stronger payloads are included in the context for weaker 
 dynamic payloads when computing file format arguments.
 
-\section Usd_DynamicFileFormat_ChangeManagement Dependencies and Change Management
+## Dependencies and Change Management {#Usd_DynamicFileFormat_ChangeManagement}
 
 When the PcpDynamicFileFormatContext is used to compute a field value in 
 \ref PcpDynamicFileFormatInterface::ComposeFieldsForFileFormatArguments "ComposeFieldsForFileFormatArguments"
@@ -523,5 +521,3 @@ value change is relevant. The \p dependencyContextData is stored and passed back
 when processing a field change within the same prim index context. See
 \ref Usd_DynamicFileFormat_Examples "usdRecursivePayloadsExample" for a very 
 basic example of how this can be used.
-
-*/

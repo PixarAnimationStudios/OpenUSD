@@ -1,8 +1,6 @@
-/*!
+# Basic Datatypes for Scene Description Provided by Sdf {#Usd_Page_Datatypes}
 
-\page Usd_Page_Datatypes Basic Datatypes for Scene Description Provided by Sdf
-
-\section Usd_Datatypes Attribute value types
+## Attribute value types {#Usd_Datatypes}
 
 USD supports a variety of data types for attribute values. 
 These types are encoded in an SdfValueTypeName object that corresponds to an 
@@ -28,7 +26,7 @@ else:
    # error creating the attribute
 \endcode
 
-\section Usd_Basic_Datatypes Basic data types
+## Basic data types {#Usd_Basic_Datatypes}
 
 This table lists the fundamental data types supported by USD.
 
@@ -70,7 +68,7 @@ This table lists the fundamental data types supported by USD.
 Note that opaque-valued attributes cannot be authored, and are used for cases
 where the value can't be represented in USD, such as shader outputs. 
 
-\section Usd_Roles Roles
+## Roles {#Usd_Roles}
 
 Value types may also be specified by one of a set of special type names. 
 These names correspond to the basic data types listed above but provide 
@@ -115,7 +113,7 @@ and the role name and meaning.
 A Group attribute is an opaque attribute used to represent a group of other 
 properties. It behaves like a connectable/targetable property namespace.
 
-\section Usd_Array_Datatypes Array data types
+## Array data types {#Usd_Array_Datatypes}
 
 USD also supports arrays of the above data types. The value type 
 name for these arrays is simply the name of the underlying value type 
@@ -124,7 +122,7 @@ SdfValueTypeNames with a "Array" suffix on the basic datatype
 (e.g. SdfValueTypeNames->FloatArray provides "float[]"). 
 The corresponding C++ type is VtArray, e.g. VtArray<bool>, VtArray<float>, etc.
 
-\section Usd_Dictionary_Type Dictionary-valued Metadata
+## Dictionary-valued Metadata {#Usd_Dictionary_Type}
 
 Metadata in USD (See \ref Usd_OM_Metadata) can take on several other datatypes.  
 Most of these are highly-specialized, pertaining to composition, 
@@ -148,5 +146,3 @@ You can use the builtin customData for your truly ad-hoc user-data needs,
 but you can also add new dictionary-valued metadata by defining it in a 
 module plugInfo.json file - 
 see \ref sdf_plugin_metadata for details on how to do so.
-
-*/

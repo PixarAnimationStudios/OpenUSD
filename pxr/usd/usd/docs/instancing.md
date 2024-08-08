@@ -1,8 +1,6 @@
-/*!
+# Scenegraph Instancing {#Usd_Page_ScenegraphInstancing}
 
-\page Usd_Page_ScenegraphInstancing Scenegraph Instancing
-
-\section Usd_ScenegraphInstancing_Overview Overview
+## Overview {#Usd_ScenegraphInstancing_Overview}
 
 USD's instancing functionality allows prims that bring in common scene 
 description via <a href="https://openusd.org/release/glossary.html#usdglossary-compositionarcs">composition arcs</a> 
@@ -35,7 +33,7 @@ provide higher degrees of scalability; the benefits become more and more
 significant as the number of Car prims increases, or as the number of prims 
 beneath the referenced Car model grows.
 
-\section Usd_ScenegraphInstancing_Instancing Explicit Instances, Implicit Prototypes
+## Explicit Instances, Implicit Prototypes {#Usd_ScenegraphInstancing_Instancing}
 
 Prims that share parts of the scenegraph through instancing are called
 "instance" prims.  Each of these instance prims are associated with a
@@ -138,7 +136,7 @@ run-to-run. Consumers should not save or hard-code the paths to prims in
 prototypes, but can use the API described below if they need to determine an
 instance's prototype at runtime.
 
-\section Usd_ScenegraphInstancing_Querying Working with Instancing
+## Working with Instancing {#Usd_ScenegraphInstancing_Querying}
 
 This section goes into more detail about instance and prototype prims and the
 API for working with them.  The following example will be used throughout:
@@ -207,7 +205,7 @@ def "Car"
 </table>
 </center>
 
-\subsection Usd_ScenegraphInstancing_Instanceable Making Prims Instanceable
+### Making Prims Instanceable {#Usd_ScenegraphInstancing_Instanceable}
 
 UsdStage can only create prototype prims for portions of the scenegraph
 that are brought into a scene via a composition arc.  Because of this,
@@ -224,7 +222,7 @@ layers.  For example, a user could author their "instanceable" metadata in a
 session layer to see the effects of enabling (or disabling) instancing on prims 
 in a scene without editing that scene directly.
 
-\subsection Usd_ScenegraphInstancing_Instances Classifying Prims with Instancing
+### Classifying Prims with Instancing {#Usd_ScenegraphInstancing_Instances}
 
 Consumers can check if a UsdPrim is an instance with an associated prototype
 using the following API.
@@ -233,7 +231,7 @@ using the following API.
 | -------- | ------- | ------- |
 | UsdPrim::IsInstance | Check if prim is an instance. | Returns true for Car_1 and Car_2 since they are instances, but returns false for Car_3. |
 
-\subsection Usd_ScenegraphInstancing_Prototypes Finding and Traversing Prototypes
+### Finding and Traversing Prototypes {#Usd_ScenegraphInstancing_Prototypes}
 
 A prototype prim is a special UsdPrim whose sole purpose is to serve as the 
 parent for the scenegraph shared by its associated instance prims.  The
@@ -308,7 +306,7 @@ False
 
 \endcode
 
-\subsection Usd_ScenegraphInstancing_InstanceProxies Traversing Into Instances with Instance Proxies
+### Traversing Into Instances with Instance Proxies {#Usd_ScenegraphInstancing_InstanceProxies}
 
 An instance proxy is a UsdPrim that represents a descendant prim beneath an 
 instance, even though no such prim actually exists in the scenegraph.  Instance
@@ -381,7 +379,7 @@ Gf.Matrix4d(...)
 
 \endcode
 
-\subsection Usd_ScenegraphInstancing_Editing Editing Instances and Prototypes
+### Editing Instances and Prototypes {#Usd_ScenegraphInstancing_Editing}
 
 Properties and metadata (e.g., variant selections) on instance prims can be 
 edited and overridden like any other prim.  However, properties and metadata 
@@ -432,7 +430,7 @@ to achieve many of the same effects.  For example, a consumer could add inherit
 or specializes arcs to instances, then make edits to the class targeted by those
 arcs.  Those edits would then affect all of the specified instances.
 
-\subsection Usd_ScenegraphInstancing_TargetsAndConnections Relationship Targets and Attribute Connections
+### Relationship Targets and Attribute Connections {#Usd_ScenegraphInstancing_TargetsAndConnections}
 
 Relationships and attributes may have authored target and connection paths that
 point to objects beneath an instance prim.  In these cases, the API for 
@@ -560,9 +558,9 @@ Sdf.Path('/ParkingLot/Car_2/Body.doorRel')
 [Sdf.Path('/ParkingLot/Car_2/Door')]
 \endcode
 
-\section Usd_ScenegraphInstancing_Issues Common Issues
+## Common Issues {#Usd_ScenegraphInstancing_Issues}
 
-\subsection Usd_ScenegraphInstancing_IssuesSinglePrim Instancing Single Prims
+### Instancing Single Prims {#Usd_ScenegraphInstancing_IssuesSinglePrim}
 
 Since instancing shares the scenegraph hierarchy beneath instance prims,
 instancing a single prim that has no descendants provides no benefits.  In the
@@ -603,9 +601,9 @@ def "Model"
 }
 \endcode
 
-\section Usd_ScenegraphInstancing_Advanced Advanced Topics
+## Advanced Topics {#Usd_ScenegraphInstancing_Advanced}
 
-\subsection Usd_ScenegraphInstancing_PrototypeSelection How USD Generates Prototype Prims
+### How USD Generates Prototype Prims {#Usd_ScenegraphInstancing_PrototypeSelection}
 
 To determine the set of prototype prims needed, UsdStage analyzes each prim
 marked as instanceable and computes an "instancing key" that consists of:
@@ -637,7 +635,7 @@ if an instance prim's variant selection is changed, UsdStage will recompute
 its key and either assign that instance to an already-existing prototype if
 there are existing instances with the same key, or create a new prototype.
 
-\subsection Usd_ScenegraphInstancing_NestedInstancing Nested Instancing
+### Nested Instancing {#Usd_ScenegraphInstancing_NestedInstancing}
 
 An instanceable prim may have children that are themselves instanceable.  This
 "nested instancing" allows consumers to build up large aggregate assets from
@@ -740,11 +738,9 @@ When \ref Usd_ScenegraphInstancing_InstanceProxies "working with instance proxie
 nested instancing will be taken into account and resolved as if instancing were
 not being used on the stage.
 
-\subsection Usd_ScenegraphInstancing_Flattening Flattening
+### Flattening {#Usd_ScenegraphInstancing_Flattening}
 
 When flattening a UsdStage into a single layer via its various \ref Usd_stageSerialization "serialization methods",
 each prototype prim in the scenegraph will be written out to specially-named
 root prim.  These prims will be referenced by the flattened instance prims that
 were associated with that prototype.
-
-*/

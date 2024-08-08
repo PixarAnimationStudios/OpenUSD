@@ -1,6 +1,4 @@
-/*!
-
-\page Usd_Page_AdvancedFeatures Advanced Scenegraph Scalability Features
+# Advanced Scenegraph Scalability Features {#Usd_Page_AdvancedFeatures}
 
 The pages in this section document advanced features provided by USD:
 
@@ -9,5 +7,3 @@ The pages in this section document advanced features provided by USD:
 <li>\subpage Usd_Page_ScenegraphInstancing</li>
 <li>\subpage Usd_Page_ValueClips</li>
 </ul>
-
-*/

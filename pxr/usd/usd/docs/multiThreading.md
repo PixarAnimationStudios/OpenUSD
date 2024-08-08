@@ -1,6 +1,4 @@
-/*!
-
-\page Usd_Page_MultiThreading Threading Model and Performance Considerations
+# Threading Model and Performance Considerations {#Usd_Page_MultiThreading}
 
 stl threading model : multiple readers *or* a single writer
 
@@ -9,7 +7,7 @@ own exclusive sections for writing to the same stage from multiple threads,
 what *all* clients get in exchange is a thread-efficient USD core, in which
 nearly all read access to USD data is lockless.
 
-\section Usd_ThreadSafetyModel Thread-safety Guarantee
+## Thread-safety Guarantee {#Usd_ThreadSafetyModel}
 
 Any UsdStage-mutating or SdfLayer-mutating operation considered a write.  
 UsdStage::Load() and UsdPrim::Load() (and unload) are considered write 
@@ -27,6 +25,4 @@ thread, therefore, is mutating C.usd, then **no other thread
 can mutate A.usd or B.usd** because either would cause simultaneous changes
 to either stage A or stage B.
 
-\section Usd_InternalMultiThreading Usd's Internal Use of Multi-threading
-
-*/
+## Usd's Internal Use of Multi-threading {#Usd_InternalMultiThreading}

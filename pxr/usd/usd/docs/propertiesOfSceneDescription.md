@@ -1,16 +1,14 @@
-/*!
+# Important Properties of Scene Description {#Usd_Page_PropertiesOfSceneDescription}
 
-\page Usd_Page_PropertiesOfSceneDescription Important Properties of Scene Description
+## Names, Namespace Ordering, and Property Namespaces {#Usd_Ordering}
 
-\section Usd_Ordering Names, Namespace Ordering, and Property Namespaces
+## TimeSamples, Defaults, and Value Resolution {#Usd_ValueResolution}
 
-\section Usd_ValueResolution TimeSamples, Defaults, and Value Resolution
-
-\section Usd_PrimSpecifiers Defs, Overs, Classes, and Prim Types
+## Defs, Overs, Classes, and Prim Types {#Usd_PrimSpecifiers}
 
 \sa <A HREF="https://openusd.org/release/usdfaq.html#what-s-the-difference-between-an-over-and-a-typeless-def">What's the difference between an "over" and a "typeless def"? </A>
 
-\section Usd_ModelHierarchy Model Hierarchy: Meaning and Purpose
+## Model Hierarchy: Meaning and Purpose {#Usd_ModelHierarchy}
 
 Borrowing from \ref kind_coreKinds, we review the primary \em kinds we use
 to create the model hierarchy.
@@ -49,7 +47,7 @@ UsdPrimRange and UsdStage::Traverse() that will visit all models on a stage,
 and no "sub-model" prims.  UsdPrim::IsModel() and UsdPrim::IsGroup() answer
 the corresponding questions. 
 
-\section Usd_ActiveInactive How "active" Affects Prims on a UsdStage
+## How "active" Affects Prims on a UsdStage {#Usd_ActiveInactive}
 
 How does one "delete a prim" in USD?  Considering that any given UsdPrim on a
 UsdStage may be comprised of SdfPrimSpec's from numerous layers, and that one
@@ -76,8 +74,6 @@ consider the prim to be *deactivated*, which has two important consequences:
   scene complexity and cost.
 
 
-\section Usd_Filetypes Text, Binary, and Plugin Filetypes
+## Text, Binary, and Plugin Filetypes {#Usd_Filetypes}
      
-\section Usd_AssetResolution Resolving Asset References
-
-*/
+## Resolving Asset References {#Usd_AssetResolution}

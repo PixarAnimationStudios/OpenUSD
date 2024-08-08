@@ -1,6 +1,4 @@
-/*!
-
-\page Usd_Page_GeneratingSchemas Creating New Schema Classes with usdGenSchema
+# Creating New Schema Classes with usdGenSchema {#Usd_Page_GeneratingSchemas}
 
 USD provides a code generator script 'usdGenSchema' for creating new schema 
 classes. The script is driven by a USD layer (typically named schema.usda) and 
@@ -38,7 +36,7 @@ to compile and work with USD Core successfully.
 
 See pxr/usd/lib/usdGeom/schema.usda for an example.
 
-\section Usd_IsAVsAPISchemas IsA Vs. API Schemas
+## IsA Vs. API Schemas {#Usd_IsAVsAPISchemas}
 
 Schema classes can be classified into the following two types:
 
@@ -141,7 +139,7 @@ class declaration in a schema.usda file.
 
 See \ref Usd_ExampleSchema for examples of each type of schema class.
 
-\section Usd_BuiltinAPISchemas Built-in applied API schemas
+## Built-in applied API schemas {#Usd_BuiltinAPISchemas}
 
 In some cases an IsA schema may want to have certain API schemas always applied 
 to prims of its schema type. To avoid having to manually apply these API schemas
@@ -188,7 +186,7 @@ and can be specified in two ways:
    apply it using the instance name "foo", then, OtherMultiApplyAPI would also 
    be applied using the suffixed instance name "foo:someName"
 
-\subsection Usd_SchemaDefinedBuiltinAPIs Schema defined built-in APIs
+### Schema defined built-in APIs {#Usd_SchemaDefinedBuiltinAPIs}
 
 The first and most straightforward way an IsA or applied API schema author
 can specify which applied API schemas it wants built-in is by prepending them 
@@ -268,7 +266,7 @@ itself (like changing the property's type) and is typically used for changing
 the default value for the property.
 \sa \ref Usd_APISchemaStrengthOrdering
 
-\subsection Usd_AutoAppliedAPISchemas Auto applied API schemas
+### Auto applied API schemas {#Usd_AutoAppliedAPISchemas}
 
 In addition to schemas being able to declare built-in applied API schemas,
 an applied API schema can specify that it should be automatically applied to 
@@ -311,7 +309,7 @@ listed types. Note that this customData field is only supported for single apply
 API schemas as multiple apply API schemas cannot be applied without an instance 
 name.
 
-\subsection Usd_PluginAutoAppliedAPISchemas Plugin defined auto applied API schemas
+### Plugin defined auto applied API schemas {#Usd_PluginAutoAppliedAPISchemas}
 
 Lastly, it is also possible for plugins to specify additional built-in API 
 schemas for other schema types outside of schema generation. This is useful if a
@@ -355,7 +353,7 @@ Multiple apply schemas (in addition to single apply) can also be auto applied
 using this plugin metadata as long as the fully qualified instance name for the 
 mulitple apply schema is provided.
 
-\subsection Usd_APISchemaStrengthOrdering Property conflicts, composition, and API schema strength ordering
+### Property conflicts, composition, and API schema strength ordering {#Usd_APISchemaStrengthOrdering}
 
 Given that we encourage (or even require in the case of multiple-apply schemas)
 the use of namespace prefixes for API schema property names, we expect most
@@ -410,7 +408,7 @@ conditions are met:
 - The field is in the set of _allowed composable fields_ which currently includes only
   _default_ and _hidden_. We may expand the set of allowed composable fields in the future.
 
-\subsection Usd_APISchemaPropertyOverride API schema property overrides
+### API schema property overrides {#Usd_APISchemaPropertyOverride}
 
 Sometimes when an IsA or an API schema includes another API schema as a
 built-in, it may also want to alter one or more of the built-in schema's
@@ -496,7 +494,7 @@ from built-in API schemas and do not apply to overriding properties via schema
 inheritance. This is because schema properties always sparsely compose via 
 class inheritance during schema generation so no specification is necessary.
 
-\section Usd_SchemaCodeGeneration Schema Code Generation
+## Schema Code Generation {#Usd_SchemaCodeGeneration}
 
 Simply run the ```usdGenSchema``` command to generate code in the current 
 directory for the schema classes defined in the file named 'schema.usda'. 
@@ -541,7 +539,7 @@ add them to these files yourself.
 Various command-line options are available for customizing the code generation 
 process. Run ```usdGenSchema --help``` for more details.
 
-\section Usd_NameSpacedPropertiesInCodeGen Namespaced Properties in Code Generation
+## Namespaced Properties in Code Generation {#Usd_NameSpacedPropertiesInCodeGen}
 
 usdGenSchema also supports the use of namespaced properties for code generation.  
 For example, float  foo:bar will generate UsdMyClass::GetFooBarAttr() and 
@@ -567,7 +565,7 @@ class MyClass "MyClass" {
 }
 \endcode 
 
-\section Usd_GlobalSchemaProperties Global Schema Properties
+## Global Schema Properties {#Usd_GlobalSchemaProperties}
 
 Each schema.usda file can contain a \em GLOBAL section like the following to
 provide customizations that apply to all the classes in the module:
@@ -634,7 +632,7 @@ Here's a short description of each datum in the global customData dictionary:
  	will be camelCased to "namespacePrefixAttrName" irrespective of
  	useLiteralIdentifier being set or not.
  
-\section Codeless_Schemas Codeless Schemas
+## Codeless Schemas {#Codeless_Schemas}
 
 By default ```usdGenSchema``` generates C++ and Python code, providing
 appropriate APIs. Clients also have an option of not generating any code by
@@ -656,7 +654,7 @@ definitions (args files) using the Sdr library. ```usdgenschemafromsdr``` is the
 utility which generates schema.usda, generatedSchema.usda and plugInfo.json for
 the usdRiPxr schema domain.
 
-\section Usd_PerClassProperties Customizing Per-Class Properties
+## Customizing Per-Class Properties {#Usd_PerClassProperties}
 
 \code
 class PxHairman "PxHairman" (
@@ -766,7 +764,7 @@ Here's a short description of each datum in the per-class customData dictionary:
     versions which lack this schema will use to choose a suitable alternative 
     schema type.
 
-\section Usd_CustomizingPerProperty Customizing Per-Property 
+## Customizing Per-Property  {#Usd_CustomizingPerProperty}
 
 \code
 ColorFloat[] primvars:displayColor (
@@ -799,7 +797,7 @@ dictionary:
     accessor API will be generated for this property, as if the property had
     set 'apiName' to the empty string. 
 
-\section Usd_ExampleSchema Example Schema Classes
+## Example Schema Classes {#Usd_ExampleSchema}
 
 \code
 #usda 1.0
@@ -1010,15 +1008,13 @@ class "GridCrittersAPI" (
 
 See \ref Usd_Page_Datatypes for the list of all data types provided by Sdf.
 
-\section Usd_GeneratedSchemaCustomCode Adding Custom Code To Generated Schemas
+## Adding Custom Code To Generated Schemas {#Usd_GeneratedSchemaCustomCode}
 
 Custom code written after the "// --(BEGIN CUSTOM CODE)--" delimiter in the 
 generated schema files will be preserved between successive usdGenSchema runs. 
 Typically, this will include additional API you may want to provide on your
 schema classes.
 
-\section Usd_SchemaExtensionPhilosophy Impact on Interchange of Creating and Extending Schemas
+## Impact on Interchange of Creating and Extending Schemas {#Usd_SchemaExtensionPhilosophy}
 
 Coming soon!
-
-*/

@@ -179,24 +179,24 @@ pxr_library(usd
         codegenTemplates/wrapTokens.cpp
 
     DOXYGEN_FILES
-        doxygen/advancedFeatures.dox
-        doxygen/authoringEditing.dox
-        doxygen/bestPractices.dox
-        doxygen/commonIdioms.dox
-        doxygen/datatypes.dox
-        doxygen/dynamicFileFormat.dox
-        doxygen/front.dox
-        doxygen/generatingSchemas.dox
-        doxygen/instancing.dox
-        doxygen/multiThreading.dox
-        doxygen/objectModel.dox
-        doxygen/propertiesOfSceneDescription.dox 
-        doxygen/utf8Overview.dox
-        doxygen/valueClips.dox
-        doxygen/images/instancing/Instancing_Example.png
-        doxygen/images/instancing/Nested_Instancing_Example.png
-        doxygen/images/instancing/Relationship_Example.png
-        doxygen/images/instancing/Uninstanced_vs_Instanced.png
+        docs/advancedFeatures.md
+        docs/authoringEditing.md
+        docs/bestPractices.md
+        docs/commonIdioms.md
+        docs/datatypes.md
+        docs/dynamicFileFormat.md
+        docs/front.md
+        docs/generatingSchemas.md
+        docs/instancing.md
+        docs/multiThreading.md
+        docs/objectModel.md
+        docs/propertiesOfSceneDescription.md 
+        docs/utf8Overview.md
+        docs/valueClips.md
+        docs/images/instancing/Instancing_Example.png
+        docs/images/instancing/Nested_Instancing_Example.png
+        docs/images/instancing/Relationship_Example.png
+        docs/images/instancing/Uninstanced_vs_Instanced.png
         examples_usd.cpp
 )
 

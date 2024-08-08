@@ -1,8 +1,6 @@
-/*!
+# Sequencable, Re-timable Animated "Value Clips" {#Usd_Page_ValueClips}
 
-\page Usd_Page_ValueClips Sequencable, Re-timable Animated "Value Clips"
-
-\section Usd_ValueClips_Overview Overview
+## Overview {#Usd_ValueClips_Overview}
 
 USD's <a HREF="http://openusd.org/docs/USD-Glossary.html#USDGlossary-CompositionArcs">composition arcs</a> 
 allow timeSampled animation to be assembled from a variety of sources into
@@ -33,7 +31,7 @@ indicating:
 - the intervals over which each clip is active
 - how "stage time" maps into each clip
 
-\section Usd_ValueClips_Terminology  Terminology
+##  Terminology {#Usd_ValueClips_Terminology}
 
 Before going further, let's establish some terminology:
 
@@ -57,7 +55,7 @@ Before going further, let's establish some terminology:
   given clip set. This determines the strength of clips with respect to
   value resolution, see \ref Usd_ValueClips_ClipValueResolution for details.
 
-\section Usd_ValueClips_ClipSets Clip Sets
+## Clip Sets {#Usd_ValueClips_ClipSets}
 
 A "clip set" is a named group of value clips. The set of value clips
 along with sequencing and timing information and other value resolution
@@ -103,7 +101,7 @@ Users can specify the clip set to author to when using the UsdClipsAPI
 schema to author clip metadata. If no clip set is specified, UsdClipsAPI will
 author to a clip set named "default".
 
-\subsection Usd_ValueClips_ClipSetOrdering Strength Ordering
+### Strength Ordering {#Usd_ValueClips_ClipSetOrdering}
 
 Clip sets authored on multiple prims are ordered by distance from the
 attribute. Clip sets authored on an attribute's owning prim are
@@ -115,7 +113,7 @@ name. However, users can control the strength ordering or even remove
 a clip set from consideration by specifying the ordering/membership
 in the \em clipSets list-op metadata field via \ref UsdClipsAPI::SetClipSets.
 
-\section Usd_ValueClips_Metadata Clip Set Definitions
+## Clip Set Definitions {#Usd_ValueClips_Metadata}
 
 Clip sets may be defined using one of two possible forms: \em template 
 and \em explicit metadata. Explicit metadata
@@ -222,7 +220,7 @@ USD provides schema level support for authoring this metadata via \ref UsdClipsA
 This gives a typesafe way to interact with the relevant metadata as well as 
 various helper functions.
 
-\subsection Usd_ValueClips_Metadata_TemplateClips Template Clip Metadata
+### Template Clip Metadata {#Usd_ValueClips_Metadata_TemplateClips}
 
 If a clip set is defined using template clip metadata, USD will use that data
 to derive the explicit clip metadata with the following logic:
@@ -240,7 +238,7 @@ to derive the explicit clip metadata with the following logic:
   applied to the \em times and \em active derivation as described in the
   previous section.
 
-\section Usd_ValueClips_ActiveClips Active Clips
+## Active Clips {#Usd_ValueClips_ActiveClips}
 
 The entries in the \em active metadata determine when a particular clip is
 active. Value resolution will retrieve values from the active clip at a given
@@ -262,7 +260,7 @@ Clip "foo.usd" is considered active in the time range [-inf, 105), "bar.usd" is
 active in the time range [105, 110), and baz.usd is active in the time range
 [110, +inf).
 
-\section Usd_ValueClips_TimeMapping Stage Times and Clip Times
+## Stage Times and Clip Times {#Usd_ValueClips_TimeMapping}
 
 Conceptually, the (stageTime, clipTime) entries in the \em times metadata
 define a timing curve that specifies the time in the active clip to retrieve 
@@ -287,7 +285,7 @@ value authored at time 8 in the active clip.
 The \em times metadata can be used to offset and scale animation from clips,
 providing flexibility in how they are applied to the stage.
 
-\subsection Usd_ValueClips_Discontinuities Jump Discontinuities
+### Jump Discontinuities {#Usd_ValueClips_Discontinuities}
 
 Jump discontinuities in the timing curve can be represented in the \em times
 metadata by authoring two entries with the same stage time, but different
@@ -313,7 +311,7 @@ the second clip at times [25, 35].
 See \ref Usd_ValueClips_ClipBehaviorsLooping for a common use-case for this
 functionality.
 
-\subsection Usd_ValueClips_TimeOrdering Ordering
+### Ordering {#Usd_ValueClips_TimeOrdering}
 
 A given stageTime may appear at most twice in the \em times metadata. In the
 typical case, a stageTime will only appear once; the only time it may appear
@@ -325,7 +323,7 @@ authored in \em times does not matter, except for jump discontinuities: the
 left-most entry with a given stageTime represents the left side of the
 discontinuity and the right-most entry represents the right side. 
 
-\section Usd_ValueClips_ClipManifest Clip Manifest
+## Clip Manifest {#Usd_ValueClips_ClipManifest}
 
 The clip manifest is a \ref SdfLayer "layer" that declares the attributes
 that have time samples in the value clips for the associated clip set.
@@ -341,7 +339,7 @@ Each clip set has one manifest which may be specified via the
 generate one automatically at runtime. See \ref Usd_ValueClips_GeneratingManifest
 for more details.
 
-\subsection Usd_ValueClips_ManifestFormat What Data Is In a Manifest?
+### What Data Is In a Manifest? {#Usd_ValueClips_ManifestFormat}
 
 In its simplest form, the clip manifest just contains declarations for
 attributes. For example,
@@ -419,7 +417,7 @@ are ignored. Attributes in the manifest may have default values or time samples
 containing value blocks. See \ref Usd_ValueClips_ClipValueResolution for how
 these values may be used.
 
-\subsection Usd_ValueClips_GeneratingManifest Generating a Manifest
+### Generating a Manifest {#Usd_ValueClips_GeneratingManifest}
 
 The Usd and Sdf authoring APIs can be used to manually create a manifest.
 For convenience, clients can use \ref UsdClipsAPI::GenerateClipManifest or
@@ -434,7 +432,7 @@ use the UsdClipsAPI methods above to generate a clip manifest, save it
 out, and then set that as the clip set's manifest via
 \ref UsdClipsAPI::SetManifestAssetPath.
 
-\section Usd_ValueClips_ClipValueResolution Value Resolution Semantics
+## Value Resolution Semantics {#Usd_ValueClips_ClipValueResolution}
 
 A clip set may provide values for attributes on the prim on which the clip
 set is defined and any attributes on descendants of that prim. It is
@@ -485,7 +483,7 @@ owning prim or any ancestors, USD will do the following:
   the behavior when the active clip does not have any authored time
   samples.
 
-\subsection Usd_ValueClips_ClipValueResolution_Gaps Missing Values in Clip Set
+### Missing Values in Clip Set {#Usd_ValueClips_ClipValueResolution_Gaps}
 
 A clip set has "gaps" if some of the value clips in the set do not contain
 authored time samples for an attribute that has been declared in the manifest.
@@ -591,7 +589,7 @@ def "TestModel" (
   </tr>
 </table>
 
-\subsection Usd_ValueClips_ClipValueResolution_InterpolatingGaps Interpolating Missing Values in Clip Set
+### Interpolating Missing Values in Clip Set {#Usd_ValueClips_ClipValueResolution_InterpolatingGaps}
 
 The above behavior allows USD to avoid opening an arbitrary number of clips if
 a gap is encountered in the clip set and can be useful in some situations. For
@@ -706,7 +704,7 @@ def "TestModel" (
   </tr>
 </table>
 
-\subsection Usd_ValueClips_ClipValueResolution_LayerOffsets Layer Offsets
+### Layer Offsets {#Usd_ValueClips_ClipValueResolution_LayerOffsets}
 
 Layer offsets affect value clips in the following ways:
 
@@ -721,13 +719,13 @@ Layer offsets affect value clips in the following ways:
     to the strongest layer in which they were authored. Note that this layer 
     may be different from the \ref Usd_ValueClips_AnchorPoint "anchor point".
 
-\section Usd_ValueClips_AdditionalNotes Additional Notes
+## Additional Notes {#Usd_ValueClips_AdditionalNotes}
 
 The flexibility and reuse of animated data that clips provides does come with
 some performance characteristics with which pipeline builders may want to
 be familiar.
 
-\subsection Usd_ValueClips_ClipDeferredLoading Clip Layers Opened On-Demand
+### Clip Layers Opened On-Demand {#Usd_ValueClips_ClipDeferredLoading}
 
 In Pixar use of clips, it is not uncommon for a single UsdStage to consume
 thousands to tens of thousands of clip layers.  If the act of opening a stage
@@ -752,7 +750,7 @@ clients (renderers) are generally unaffected, and the applications that do
 want to stream through time generally prioritize highest performance over
 memory consumption, we are satisfied with the caching strategy for now.
 
-\subsection Usd_ValueClips_Flattening Flattening
+### Flattening {#Usd_ValueClips_Flattening}
 
 Flattening a UsdStage with value clips will merge the appropriate time
 samples from the value clips into the time samples on the attribute on
@@ -760,7 +758,7 @@ the flattened stage and remove the clip set definitions. Querying for
 time samples and values on the flattened stage should always give the
 same result as on the unflattened stage.
 
-\subsection Usd_ValueClips_usdview usdview
+### usdview {#Usd_ValueClips_usdview}
 
 - Usdview supports value clip debugging through the layer stack viewer(lower left).
 When a particular attribute(who's value is held in a clip layer) is highlighted,
@@ -769,7 +767,7 @@ the layer stack viewer will show which clip the value is coming from.
 - The metadata tab will display the value of each piece of metadata authored
 on the prim introducing clips.
 
-\subsection Usd_ValueClips_usdstitchclips usdstitchclips
+### usdstitchclips {#Usd_ValueClips_usdstitchclips}
 
 The usdstitchclips utility will generate a stage that uses value clips to
 stitch together the time samples in a given set of clip layers. This
@@ -873,14 +871,14 @@ def "World"
 }
 \endcode
 
-\subsection Usd_ValueClips_UsdUtils UsdUtils Utility Functions
+### UsdUtils Utility Functions {#Usd_ValueClips_UsdUtils}
 
 The UsdUtils library contains several utility functions for stitching together
 multiple layers using value clips in usdUtils/stitchClips.h.
 
-\section Usd_ValueClips_Examples Examples
+## Examples {#Usd_ValueClips_Examples}
 
-\subsection Usd_ValueClips_ClipBehaviorsLooping Looping
+### Looping {#Usd_ValueClips_ClipBehaviorsLooping}
 
 A common use case is to loop over animation authored in a clip or set of clips.
 For example, at Pixar clips containing a handful of frames of keep-alive 
@@ -931,7 +929,7 @@ additional asset loads or restructuring needed to happen.
 \warning Note that this supposes that the final frame and the first frame of the
 clip transitions smoothly.
 
-\subsection Usd_ValueClips_AnimatedVisibility Animated Visibility
+### Animated Visibility {#Usd_ValueClips_AnimatedVisibility}
 
 Value clips are used at Pixar to stitch together the results of simulators
 or procedural generation tools like Houdini that are run in parallel for
@@ -953,5 +951,3 @@ attribute making the prim visible at that time. If they do not write
 out geometry, they don't write out the "visibility" attribute. This
 makes value resolution use the "invisible" value for "visibility" at
 times when the clips have no geometry.
-
-*/

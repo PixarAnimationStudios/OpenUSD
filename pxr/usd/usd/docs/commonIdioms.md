@@ -1,8 +1,6 @@
-/*!
+# Common Idioms and Examples {#Usd_Page_CommonIdioms}
 
-\page Usd_Page_CommonIdioms Common Idioms and Examples
-
-\section Usd_StageTraversal Traversing a Stage
+## Traversing a Stage {#Usd_StageTraversal}
 
 The Usd API provides a number of methods for fast, configurable
 traversal of a stage or sub-trees of prims on a stage.  The two categories
@@ -13,7 +11,7 @@ conjunctions, disjunctions, and negations of a set of tests of core properties
 of UsdPrim that are cached for speedy access during stage population.  See
 \ref Usd_PrimFlags "Prim Flags" for more detail and examples.
 
-\subsection Usd_StageTraversal_Recursion Traversing with Recursion
+### Traversing with Recursion {#Usd_StageTraversal_Recursion}
 
 UsdPrim provides a number of methods for accessing its direct children via
 a "range", with which one can construct very efficient recursive functions.
@@ -21,7 +19,7 @@ The standard UsdPrim::GetChildren() uses the "canonical traversal predicate,"
 which implies all active, loaded, defined, non-abstract children.
 UsdPrim::GetFilteredChildren() allows specification of a custom predicate.
 
-\subsection Usd_StageTraversal_Ieration Traversing with Iteration
+### Traversing with Iteration {#Usd_StageTraversal_Ieration}
 
 UsdPrim::GetDescendants() returns a range for all of a prim's "canonical"
 decendants, and UsdPrim::GetFilteredDescendants() allows the range's
@@ -33,11 +31,11 @@ The convenience method UsdStage::Traverse() returns a UsdPrimRange
 that visits all descendants of the pseudo-root, but not the
 pseudo-root itself.
 
-\section Usd_WorkingWithSchemas Working With Schema Classes
+## Working With Schema Classes {#Usd_WorkingWithSchemas}
 
 Later we'll talk about how to create new schema classes...
 
-\subsection Usd_Create_Or_Get_Property Create vs Get Property Methods
+### Create vs Get Property Methods {#Usd_Create_Or_Get_Property}
 
 For a UsdAttribute named "points" defined in a schema class, you will
 find two access methods in the schema class in C++ and python:
@@ -103,9 +101,6 @@ However, code that consistently uses CreateXXXAttr() for authoring will be
 easier to maintain since it will help distinguish reader sections from
 writer sections.
 
-\section Usd_BoolReturns Bool Return Values and Safe Operator Bool
+## Bool Return Values and Safe Operator Bool {#Usd_BoolReturns}
 
-\section Usd_ErrorReporting Error Reporting Policy and Control
-
-
-*/
+## Error Reporting Policy and Control {#Usd_ErrorReporting}

@@ -1,8 +1,6 @@
-/*!
+# Object Model and How the Classes Work Together {#Usd_Page_ObjectModel}
 
-\page Usd_Page_ObjectModel Object Model and How the Classes Work Together
-
-\section Usd_OM_SdfLayer SdfLayer: Shared Data Files
+## SdfLayer: Shared Data Files {#Usd_OM_SdfLayer}
 
 An SdfLayer provides the interface to a persistent (in a file) or in-memory
 only (via "anonymous" layers) container of scene description.  The scene
@@ -32,7 +30,7 @@ Resolution plugin API to resolve layer identifiers to external (e.g. file)
 assets.  The Ar plugin API lets USD clients provide customized behavior for 
 resolving "asset identifiers" and querying asset metadata.
 
-\section Usd_OM_UsdStage UsdStage: Composed View of an SdfLayer
+## UsdStage: Composed View of an SdfLayer {#Usd_OM_UsdStage}
 
 As described in its class documentation, a UsdStage is the interface to a
 specific SdfLayer (known as its \em rootLayer), interpreting the data it
@@ -67,7 +65,7 @@ response to mutations of SdfLayer 's that are composed into the stage.  Thus,
 a UsdStage will remain accurate even if one uses the lower-level Sdf API's to
 mutate layers, rather than the USD object API's.
 
-\subsection Usd_OM_UsdStage_Management UsdStage Lifetime and Management
+### UsdStage Lifetime and Management {#Usd_OM_UsdStage_Management}
 
 SdfLayer and UsdStage are the only objects in USD whose lifetime matters. 
 SdfLayer is the true data container in USD, and if a layer is destroyed before
@@ -92,7 +90,7 @@ be perturbed to pass a UsdStagePtr back and forth.
 collects, and the cache can be explicitly cleared.
 
 
-\section Usd_OM_UsdPrim UsdPrim: Nestable Namespace Containers
+## UsdPrim: Nestable Namespace Containers {#Usd_OM_UsdPrim}
 
 UsdPrim is the primary object used to interact with composed scene description,
 and has the largest API of any of the core objects.  A UsdPrim represents a 
@@ -132,12 +130,12 @@ possible "prim specifiers" that inform USD of the intended purpose of the
 data authored for a prim in a particular layer.  For a deeper explanation,
 please see \ref Usd_PrimSpecifiers .
 
-\subsection Usd_OM_UsdPrim_Retention Retaining and Using UsdPrims Safely
+### Retaining and Using UsdPrims Safely {#Usd_OM_UsdPrim_Retention}
 
 \todo contents/caching, then , etc
 
 <!-- Not ready yet, so commenting out for now.
-\subsection Usd_OM_UsdPrim_Proxy UsdPrim is a Proxy for Composed PrimSpecs
+### UsdPrim is a Proxy for Composed PrimSpecs {#Usd_OM_UsdPrim_Proxy}
 
 Let us consider an extension of the example above that adds a (intra-layer)
 reference to the \</World/Fx\>  prim:
@@ -171,15 +169,15 @@ def "Effects"
 \endcode
 -->
 
-\section Usd_OM_UsdProperty UsdProperty: Common Interface for Attributes and Relationships
+## UsdProperty: Common Interface for Attributes and Relationships {#Usd_OM_UsdProperty}
 
-\section Usd_OM_UsdAttribute UsdAttribute: Typed, Sampled, Data 
+## UsdAttribute: Typed, Sampled, Data  {#Usd_OM_UsdAttribute}
 
-\subsection Usd_OM_UsdTimeCode Time and Timing in USD
+### Time and Timing in USD {#Usd_OM_UsdTimeCode}
 
-\section Usd_OM_UsdRelationship UsdRelationship: Targetting Namespace Objects
+## UsdRelationship: Targetting Namespace Objects {#Usd_OM_UsdRelationship}
 
-\section Usd_OM_Metadata General Metadata in USD
+## General Metadata in USD {#Usd_OM_Metadata}
 
 All of the objects we have described so far, SdfLayer, UsdStage, UsdPrim, and
 both subclasses of UsdProperty, can possess \em metadata.  In USD, metadata 
@@ -219,7 +217,7 @@ not be changed for extension metadata,* however - all extension metadata will
 be resolved based on its datatype: strongest wins for primitive datatypes,
 element-wise strongest wins for dictionaries.
 
-\section Usd_OM_SchemaDefinitionRegistry Schema and Prim Definition Registry
+## Schema and Prim Definition Registry {#Usd_OM_SchemaDefinitionRegistry}
 
 The singleton class UsdSchemaRegistry exists to provide access to all available 
 schemas. It queries plugins to find all registered schema types and generates
@@ -241,7 +239,7 @@ combination of its type name and the list of any applied API schemas applied to
 the prim and is generally what we are referring to when we talk about a 
 UsdPrim's "prim definition".
 
-\section Usd_OM_FallbackPrimTypes Fallback Prim Types
+## Fallback Prim Types {#Usd_OM_FallbackPrimTypes}
 
 When you create a new "IsA" schema to use as a prim type, there may be an 
 expectation that stages containing prims of your new type will be opened using 
@@ -271,8 +269,6 @@ of the first recognized type in the list.
 
 \sa UsdPrim::GetPrimTypeInfo, UsdPrim::IsA, UsdSchemaRegistry::GetFallbackPrimTypes
 
-\section Usd_OM_OtherObjects Composition Operator Interfaces: UsdReferences, UsdInherits, UsdVariantSets
+## Composition Operator Interfaces: UsdReferences, UsdInherits, UsdVariantSets {#Usd_OM_OtherObjects}
 
-\subsection Usd_OM_ListOps ListOps and List Editing
-
-*/
+### ListOps and List Editing {#Usd_OM_ListOps}

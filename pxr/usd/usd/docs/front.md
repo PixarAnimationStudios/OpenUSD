@@ -1,6 +1,4 @@
-/*!
-
-\page usd_page_front Usd : Universal Scene Description (Core)
+# Usd : Universal Scene Description (Core) {#usd_page_front}
 \if ( PIXAR_MFB_BUILD )
 \mainpage Usd : Universal Scene Description
 \endif
@@ -11,7 +9,7 @@ hierarchically organized, static and time-sampled data, for the primary
 purpose of interchanging and augmenting the data between cooperating Digital 
 Content Creation applications. 
 
-\section Usd_ManualDesc Core API Manual
+## Core API Manual {#Usd_ManualDesc}
 
 This manual contains the API documentation for the core Usd module, prefaced
 with an introduction to the key concepts behind the API, and including a
@@ -126,5 +124,5 @@ import/export.
 
 </tr>
 </table>
-*/
+
 

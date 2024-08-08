@@ -1,20 +1,18 @@
-/*!
+# Best Practices and Common Questions {#Usd_Page_BestPractices}
 
-\page Usd_Page_BestPractices Best Practices and Common Questions
+## Object Parameters as Const-Ref {#Usd_SharedConstRef}
 
-\section Usd_SharedConstRef Object Parameters as Const-Ref
-
-\section Usd_DataStreaming Reading Data Efficiently
+## Reading Data Efficiently {#Usd_DataStreaming}
 
 Processing different subtrees of a stage in different threads to reduce
 contention for prims and paths.
 
 Converting datatypes (VtValue::Cast) and potentially reading native datatypes. 
 
-\section Usd_Payloads Payloads: Impact of Using and Not Using
+## Payloads: Impact of Using and Not Using {#Usd_Payloads}
 
 
-\section Usd_Misc_Dos_Donts Miscellaneous Do's and Dont's
+## Miscellaneous Do's and Dont's {#Usd_Misc_Dos_Donts}
 
 SdfPath::GetString() gives a fully unrolled, representation of any location
 in namespace, and is very useful for debugging.  However, it is rather 
@@ -22,5 +20,3 @@ expensive, and may cause a globally-shared cache to be populated.  Don't call
 it (or SdfPath::GetText()) in any performance-critical loops, and in general,
 if using it for diagnostics, only call it inside a block that is guarded by
 your debug flag.
-
-*/
