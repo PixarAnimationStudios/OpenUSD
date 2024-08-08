@@ -395,8 +395,8 @@
                     "StageMetadataChecker": {
                         "doc": "All stages must declare their 'upAxis' and 'metersPerUnit'."
                     },
-                    "GPrimParentingValidator": {
-                        "doc": "Boundables may not be nested under Gprims."
+                    "GPrimDescendantValidator": {
+                        "doc": "Gprims must only have GeomSubsets as descendants."
                     },
                     "SubsetFamilies": {
                         "doc": "Validates all of the geom subset families authored beneath an Imageable prim.", 

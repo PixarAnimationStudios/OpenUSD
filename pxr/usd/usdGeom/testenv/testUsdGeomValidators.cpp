@@ -27,7 +27,7 @@ TestUsdGeomValidators()
         UsdGeomValidatorNameTokens->subsetFamilies,
         UsdGeomValidatorNameTokens->subsetParentIsImageable,
         UsdGeomValidatorNameTokens->stageMetadataChecker,
-        UsdGeomValidatorNameTokens->gPrimParentingValidator
+        UsdGeomValidatorNameTokens->gPrimDescendantValidator
     };
 
     // This should be updated with every new validator added with the
@@ -387,11 +387,11 @@ void TestUsdStageMetadata()
 }
 
 static
-void TestUsdGeomGPrimParentingValidator()
+void TestUsdGeomGPrimDescendantValidator()
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
     const UsdValidator *validator = registry.GetOrLoadValidatorByName(
-            UsdGeomValidatorNameTokens->gPrimParentingValidator);
+            UsdGeomValidatorNameTokens->gPrimDescendantValidator);
 
     TF_AXIOM(validator);
 
@@ -463,7 +463,7 @@ main()
     TestUsdGeomSubsetFamilies();
     TestUsdGeomSubsetParentIsImageable();
     TestUsdStageMetadata();
-    TestUsdGeomGPrimParentingValidator();
+    TestUsdGeomGPrimDescendantValidator();
 
     return EXIT_SUCCESS;
 }

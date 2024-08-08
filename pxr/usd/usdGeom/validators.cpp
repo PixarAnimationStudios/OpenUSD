@@ -158,7 +158,7 @@ _SubsetParentIsImageable(const UsdPrim& usdPrim)
 
 static
 UsdValidationErrorVector
-_GetGPrimParentingErrors(const UsdPrim& usdPrim)
+_GetGPrimDescendantErrors(const UsdPrim& usdPrim)
 {
     UsdValidationErrorVector errors;
 
@@ -222,8 +222,8 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
             _SubsetParentIsImageable);
 
     registry.RegisterPluginValidator(
-            UsdGeomValidatorNameTokens->gPrimParentingValidator,
-            _GetGPrimParentingErrors);
+            UsdGeomValidatorNameTokens->gPrimDescendantValidator,
+            _GetGPrimDescendantErrors);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

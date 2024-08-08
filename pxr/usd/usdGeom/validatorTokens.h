@@ -20,7 +20,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((stageMetadataChecker, "usdGeom:StageMetadataChecker"))        \
     ((subsetFamilies, "usdGeom:SubsetFamilies"))                    \
     ((subsetParentIsImageable, "usdGeom:SubsetParentIsImageable"))  \
-    ((gPrimParentingValidator, "usdGeom:GPrimParentingValidator"))
+    ((gPrimDescendantValidator, "usdGeom:GPrimDescendantValidator"))
 
 #define USD_GEOM_VALIDATOR_KEYWORD_TOKENS                           \
     (UsdGeomSubset)                                                 \
