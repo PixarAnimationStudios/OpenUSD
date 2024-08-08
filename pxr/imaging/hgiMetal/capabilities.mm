@@ -32,7 +32,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     bool barycentrics = false;
     bool hasAppleSilicon = false;
     bool icbSupported = false;
-    bool hasIos = false;
+    bool hasIPhone = false;
     if (@available(macOS 100.100, ios 12.0, *)) {
         unifiedMemory = true;
     } else if (@available(macOS 10.15, ios 13.0, *)) {
@@ -54,8 +54,8 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     }
 
 
-#if defined(ARCH_OS_IOS)
-    hasIos = true;
+#if defined(ARCH_OS_IPHONE)
+    hasIPhone = true;
 #endif
 
     if (hasAppleSilicon) {
@@ -67,6 +67,9 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
         }
     } else if (hasIntelGPU) {
         // Indirect command buffers not currently supported on Intel GPUs.
+        icbSupported = false;
+    }
+    if (hasIPhone) {
         icbSupported = false;
     }
 
@@ -98,7 +101,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     // if we are on MacOS 14 or less
     //bool isMacOs13OrLess = NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 13
     //bool requireBasePrimitiveOffset = hasAppleSilicon && isMacOs13OrLess;
-    bool requiresBasePrimitiveOffset = hasAppleSilicon || hasIntelGPU;
+    bool requiresBasePrimitiveOffset = hasAppleSilicon || hasIntelGPU || hasIPhone;
     _SetFlag(HgiDeviceCapabilitiesBitsBasePrimitiveOffset,
              requiresBasePrimitiveOffset);
 
@@ -106,7 +109,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     if (hasIntelGPU) {
         _SetFlag(HgiDeviceCapabilitiesBitsPrimitiveIdEmulation, true);
     }
-    if (hasIos && !barycentrics) {
+    if (hasIPhone && !barycentrics) {
         _SetFlag(HgiDeviceCapabilitiesBitsPrimitiveIdEmulation, true);
     }
 #if defined(ARCH_OS_OSX)

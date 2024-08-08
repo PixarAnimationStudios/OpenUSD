@@ -10,6 +10,9 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgiMetal/api.h"
 #include "pxr/imaging/hgi/blitCmds.h"
+#include <MetalKit/MetalKit.h>
+#include <Metal/Metal.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 

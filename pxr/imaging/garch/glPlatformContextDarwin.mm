@@ -9,12 +9,16 @@
 #include "pxr/pxr.h"
 #include "glPlatformContextDarwin.h"
 
-#ifdef ARCH_OS_IPHONE
-#import <UIKit/UIKit.h>
-typedef EAGLContext NSGLContext;
-#else
+#if defined(PXR_OPENGL_SUPPORT_ENABLED)
+#ifdef ARCH_OS_OSX
 #import <AppKit/NSOpenGL.h>
 typedef NSOpenGLContext NSGLContext;
+#elif defined ARCH_OS_IPHONE
+#import <UIKit/UIKit.h>
+typedef EAGLContext NSGLContext;
+#endif
+#else
+typedef void* NSGLContext;
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -23,7 +27,11 @@ class GarchNSGLContextState::Detail
 {
 public:
     Detail() {
+#if defined(PXR_OPENGL_SUPPORT_ENABLED)
         context = [NSGLContext currentContext];
+#else
+        context = nil;
+#endif
     }
     Detail(NullState) {
         context = nil;
@@ -74,10 +82,12 @@ GarchNSGLContextState::IsValid() const
 void
 GarchNSGLContextState::MakeCurrent()
 {
-#if ARCH_OS_IPHONE
+#if defined(PXR_OPENGL_SUPPORT_ENABLED)
+#if defined(ARCH_OS_IPHONE)
     [EAGLContext setCurrentContext:_detail->context];
 #else
     [_detail->context makeCurrentContext];
+#endif
 #endif
 }
 
@@ -85,10 +95,12 @@ GarchNSGLContextState::MakeCurrent()
 void
 GarchNSGLContextState::DoneCurrent()
 {
+#if defined(PXR_OPENGL_SUPPORT_ENABLED)
 #if defined(ARCH_OS_IPHONE)
-  [EAGLContext setCurrentContext:nil];
+    [EAGLContext setCurrentContext:nil];
 #else
-  [NSGLContext clearCurrentContext];
+    [NSGLContext clearCurrentContext];
+#endif
 #endif
 }
 
@@ -101,9 +113,7 @@ GarchGetNullGLPlatformContextState()
 void *
 GarchSelectCoreProfileMacVisual()
 {
-#if defined(ARCH_OS_IPHONE)
-return NULL
-#else
+#if defined(ARCH_OS_OSX)
     NSOpenGLPixelFormatAttribute attribs[10];
     int c = 0;
 
@@ -113,6 +123,8 @@ return NULL
     attribs[c++] = 0;
 
     return [[NSOpenGLPixelFormat alloc] initWithAttributes:attribs];
+#else // ARCH_OS_MACOS
+    return NULL;
 #endif
 }
 

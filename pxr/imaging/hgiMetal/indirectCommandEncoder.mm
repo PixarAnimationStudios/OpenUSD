@@ -114,6 +114,11 @@ HgiMetalIndirectCommandEncoder::HgiMetalIndirectCommandEncoder(Hgi* hgi)
     }
 }
 
+HgiMetalIndirectCommandEncoder::~HgiMetalIndirectCommandEncoder() {
+    [_triangleTessFactors release];
+    [_quadTessFactors release];
+}
+
 std::string
 _ArgId(ArgIndex index)
 {

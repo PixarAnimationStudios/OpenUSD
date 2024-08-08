@@ -37,6 +37,8 @@ public:
     HGIMETAL_API
     HgiMetalIndirectCommandEncoder(Hgi *hgi);
     
+    HGIMETAL_API ~HgiMetalIndirectCommandEncoder() override;
+
     HGIMETAL_API
     HgiIndirectCommandsUniquePtr EncodeDraw(
         HgiComputeCmds * computeCmds,

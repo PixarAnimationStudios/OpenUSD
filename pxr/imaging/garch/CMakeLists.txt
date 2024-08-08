@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE garch)
 
-if (NOT ${PXR_ENABLE_GL_SUPPORT})
+if ((NOT ${PXR_ENABLE_GL_SUPPORT}) AND (NOT PXR_APPLE_EMBEDDED))
     message(STATUS
         "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
     return()
@@ -27,12 +27,16 @@ elseif(WIN32)
     set(GARCH_SOURCE_EXTENSION        cpp)
 endif()
 
+if (TARGET OpenGL::GL)
+    list(APPEND optionalLibs OpenGL::GL)
+endif()
+
 pxr_library(garch
     LIBRARIES
         arch
         tf
         ${X11_LIBRARIES}
-        OpenGL::GL
+        ${optionalLibs}
         ${GARCH_PLATFORM_LIBRARIES}
 
     INCLUDE_DIRS

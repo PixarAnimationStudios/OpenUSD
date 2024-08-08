@@ -467,13 +467,29 @@ _HgiTextureCanBeFiltered(HgiTextureDesc const &descriptor)
     return false;
 }
 
+
+static const std::set<MTLPixelFormat> unfilterableIosFormats =
+{
+        {MTLPixelFormatRGBA32Float}
+};
+
+bool
+IsFilterable(MTLPixelFormat format)
+{
+#if defined(ARCH_OS_IPHONE)
+    return unfilterableIosFormats.find(format) == unfilterableIosFormats.end();
+#else
+    return true;
+#endif
+}
+
 void
 HgiMetalBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 {
     HgiMetalTexture* metalTex = static_cast<HgiMetalTexture*>(texture.Get());
 
     if (metalTex) {
-        if (_HgiTextureCanBeFiltered(metalTex->GetDescriptor())) {
+        if (_HgiTextureCanBeFiltered(metalTex->GetDescriptor()) && IsFilterable(metalTex->GetTextureId().pixelFormat)) {
             _CreateEncoder();
             [_blitEncoder generateMipmapsForTexture:metalTex->GetTextureId()];
         }

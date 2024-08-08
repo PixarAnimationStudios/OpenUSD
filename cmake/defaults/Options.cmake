@@ -52,7 +52,6 @@ if(APPLE)
             MESSAGE(STATUS "Setting PXR_BUILD_USD_TOOLS=OFF because they are not supported on Apple embedded platforms")
             set(PXR_BUILD_USD_TOOLS OFF)
         endif()
-        set(PXR_ENABLE_GL_SUPPORT OFF)
     endif ()
 endif()
 
