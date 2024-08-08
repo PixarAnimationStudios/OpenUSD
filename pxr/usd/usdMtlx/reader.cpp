@@ -9,6 +9,7 @@
 #include "pxr/usd/usdMtlx/reader.h"
 #include "pxr/usd/usdMtlx/utils.h"
 
+#include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/usd/usdShade/material.h"
@@ -769,7 +770,7 @@ _NodeGraphBuilder::Build(ShaderNamesByOutputName* outputs)
         }
     }
     else {
-        usdPrim = _usdStage->DefinePrim(_usdPath);
+        usdPrim = UsdShadeNodeGraph::Define(_usdStage, _usdPath).GetPrim();
     }
 
     // Build the graph of nodes.
@@ -2630,6 +2631,13 @@ UsdMtlxRead(
 
     // Translate all materials.
     ReadMaterials(mtlxDoc, context);
+
+    // Set layer metadata before potential early exit, note this won't survive
+    // composition across a reference, but is required to pass usdchecker
+    UsdGeomSetStageUpAxis(stage, UsdGeomGetFallbackUpAxis());
+    UsdGeomSetStageMetersPerUnit(stage, UsdGeomLinearUnits::centimeters);
+    stage->SetDefaultPrim(stage->GetPrimAtPath(internalPath));
+
 
     // If there are no looks then we're done.
     if (mtlxDoc->getLooks().empty()) {
