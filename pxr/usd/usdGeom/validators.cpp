@@ -17,6 +17,7 @@
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/validatorTokens.h"
+#include <pxr/usd/sdf/path.h>
 
 #include <algorithm>
 #include <string>
@@ -161,25 +162,43 @@ _GetGPrimParentingErrors(const UsdPrim& usdPrim)
 {
     UsdValidationErrorVector errors;
 
-    if (usdPrim.IsA<UsdGeomBoundable>() || usdPrim.IsA<UsdGeomXformable>()){
-        UsdPrim parentPrim = usdPrim.GetParent();
-        while (parentPrim && !parentPrim.IsPseudoRoot()) {
-            if (parentPrim.IsA<UsdGeomGprim>()) {
-                const std::string& errorType = usdPrim.IsA<UsdGeomBoundable>() ? "Boundable" : "Xformable";
-                errors.emplace_back(
+    if (usdPrim.IsA<UsdGeomGprim>()){
+
+        const TfType geomSubsetType = TfType::Find<UsdGeomSubset>();
+        const std::string& validGprimDescendantTypeNames = geomSubsetType.GetTypeName();
+
+        const std::vector<TfType> validGprimDescendantTypes = {geomSubsetType};
+
+        const auto isValidGprimDescendant = [&validGprimDescendantTypes](const UsdPrim& prim) -> bool {
+            for (const TfType& validGprimDescendantType : validGprimDescendantTypes) {
+                if (prim.IsA(validGprimDescendantType)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        const UsdPrimSubtreeRange& children = usdPrim.GetAllDescendants();
+        for (UsdPrimSubtreeRange::iterator it = children.begin(); it != children.end(); ++it) {
+            const UsdPrim& currentPrim = *it;
+
+            if (isValidGprimDescendant(currentPrim)){
+                continue;
+            }
+
+            errors.emplace_back(
                     UsdValidationErrorType::Error,
                     UsdValidationErrorSites{
                             UsdValidationErrorSite(usdPrim.GetStage(),
-                                                   usdPrim.GetPath())
+                                                   currentPrim.GetPath())
                     },
-                    TfStringPrintf("%s <%s> has an ancestor Gprim,"
-                                   " which is not allowed.", errorType.c_str(), usdPrim.GetPath().GetText())
-                );
-                break;
-            }
-            else {
-                parentPrim = parentPrim.GetParent();
-            }
+                    TfStringPrintf("Prim <%s> is a Gprim with an invalid descendant <%s> which is of type %s. Only prims of types (%s) may be descendants of Gprims.",
+                                   usdPrim.GetPath().GetText(),
+                                   currentPrim.GetPath().GetText(),
+                                   currentPrim.GetTypeName().GetText(),
+                                   validGprimDescendantTypeNames.c_str())
+            );
+            break;
         }
     }
 
