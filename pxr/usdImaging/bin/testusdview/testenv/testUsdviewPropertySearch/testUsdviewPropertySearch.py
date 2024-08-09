@@ -38,7 +38,7 @@ def _search(appController, searchTerm, expectedItems):
 def _testSearchBasic(appController):
     _search(appController, 'a', 
             ['Local to World Xform', 'Resolved Preview Material',
-             'Resolved Full Material', 'a'])
+             'Resolved Full Material', 'Resolved Labels', 'a'])
     _search(appController, 'myR', ['myRel'])
     _search(appController, 'y', 
             ['myRel', 'proxyPrim', 'visibility', 'y'])
