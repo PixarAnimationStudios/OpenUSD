@@ -67,3 +67,12 @@ def Xform "Prim4"
     }
 }
 
+def Xform "BadLoopParams"
+{
+    double kwerb.spline = {
+        loop: (5, 5, 1, 1, 0),
+        1: 14; pre ws(0, 0); post held,
+        2: 22; post held,
+    }
+}
+
