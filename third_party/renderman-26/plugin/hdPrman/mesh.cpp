@@ -300,7 +300,8 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
 
     HdPrman_ConvertPrimvars(
         sceneDelegate, id, primvars, nverts.size(), npoints, npoints,
-        verts.size());
+        verts.size(),
+        renderParam->GetShutterInterval());
 
     return primvars;
 }

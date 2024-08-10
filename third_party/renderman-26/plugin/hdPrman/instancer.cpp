@@ -315,7 +315,7 @@ HdPrmanInstancer::Sync(
     _SyncPrimvars(dirtyBits);
 
     // cache the instancer and instance transforms
-    _SyncTransforms(dirtyBits);
+    _SyncTransforms(dirtyBits, param);
     
     // cache the instancer and instance categories
     _SyncCategories(dirtyBits);
@@ -578,7 +578,8 @@ _ValidateSamplesTimes(HdTimeSampleArray<T, HDPRMAN_MAX_TIME_SAMPLES>& samples)
 }
 
 void
-HdPrmanInstancer::_SyncTransforms(const HdDirtyBits* dirtyBits)
+HdPrmanInstancer::_SyncTransforms(const HdDirtyBits* dirtyBits,
+                                  HdPrman_RenderParam * param)
 {
     HdSceneDelegate* delegate = GetDelegate();
     const SdfPath& id = GetId();
@@ -629,15 +630,37 @@ HdPrmanInstancer::_SyncTransforms(const HdDirtyBits* dirtyBits)
         HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedRotates;
         HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedScales;
         if (includeInstancerXform) {
-            delegate->SampleInstancerTransform(id, &instancerXform);
+            delegate->SampleInstancerTransform(id,
+#if HD_API_VERSION >= 68
+                                               param->GetShutterInterval()[0],
+                                               param->GetShutterInterval()[1],
+#endif
+                                               &instancerXform);
         }
         delegate->SamplePrimvar(id, instanceTransformsToken,
+#if HD_API_VERSION >= 68
+                                param->GetShutterInterval()[0],
+                                param->GetShutterInterval()[1],
+#endif
+                                
                                 &boxedInstanceXforms);
         delegate->SamplePrimvar(id, instanceTranslationsToken,
+#if HD_API_VERSION >= 68
+                                param->GetShutterInterval()[0],
+                                param->GetShutterInterval()[1],
+#endif
                                 &boxedTranslates);
         delegate->SamplePrimvar(id, instanceScalesToken,
+#if HD_API_VERSION >= 68
+                                param->GetShutterInterval()[0],
+                                param->GetShutterInterval()[1],
+#endif
                                 &boxedScales);
         delegate->SamplePrimvar(id, instanceRotationsToken,
+#if HD_API_VERSION >= 68
+                                param->GetShutterInterval()[0],
+                                param->GetShutterInterval()[1],
+#endif
                                 &boxedRotates);
 
         // Unbox samples held as VtValues
@@ -1080,7 +1103,13 @@ HdPrmanInstancer::_PopulateInstances(
         // include it. We must multiply the instance transforms by this
         // instancer's transform.
         HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
-        delegate->SampleInstancerTransform(instancerId, &xf);
+        delegate->SampleInstancerTransform(instancerId,
+#if HD_API_VERSION >= 68
+                                           param->GetShutterInterval()[0],
+                                           param->GetShutterInterval()[1],
+#endif
+                                           &xf);
+        
         for (_InstanceData& instance : instances) {
             instance.transform = _MultiplyTransforms<GfMatrix4d>(
                 instance.transform, xf);
@@ -1339,7 +1368,12 @@ HdPrmanInstancer::_PopulateInstances(
         // include it. The parent instancer will instead include it on the
         // instances it makes of this instancer's prototype groups.
         HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
-        delegate->SampleInstancerTransform(instancerId, &xf);
+        delegate->SampleInstancerTransform(instancerId,
+#if HD_API_VERSION >= 68
+                                           param->GetShutterInterval()[0],
+                                           param->GetShutterInterval()[1],
+#endif
+                                           &xf);
 
         // Get this instancer's params
         const RtParamList instancerParams = param->ConvertAttributes(

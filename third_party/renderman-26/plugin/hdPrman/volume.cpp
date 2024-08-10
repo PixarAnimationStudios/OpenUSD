@@ -472,7 +472,8 @@ HdPrman_Volume::_ConvertGeometry(HdPrman_RenderParam *renderParam,
         /* numUniform = */ 1,
         /* numVertex = */ 0,
         /* numVarying = */ 0,
-        /* numFaceVarying = */ 0);
+        /* numFaceVarying = */ 0,
+        renderParam->GetShutterInterval());
 
     // Setup the volume for Prman with the appropriate DSO and its parameters
     HdVolumeFieldDescriptorVector fields =

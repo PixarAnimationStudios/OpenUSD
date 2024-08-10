@@ -52,6 +52,7 @@ public:
     /// Make sure this material has been updated in Riley.
     void SyncToRiley(
         HdSceneDelegate *sceneDelegate,
+        HdPrman_RenderParam *param,
         riley::Riley *riley);
 
     /// Returns the minimal set of dirty bits to place in the
@@ -66,6 +67,7 @@ public:
 private:
     void _SyncToRileyWithLock(
         HdSceneDelegate *sceneDelegate,
+        HdPrman_RenderParam *param,
         riley::Riley *riley);
 
     riley::CoordinateSystemId _coordSysId;

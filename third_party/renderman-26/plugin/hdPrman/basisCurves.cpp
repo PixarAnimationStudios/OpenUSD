@@ -142,7 +142,8 @@ HdPrman_BasisCurves::_ConvertGeometry(HdPrman_RenderParam *renderParam,
 
     HdPrman_ConvertPrimvars(
         sceneDelegate, id, primvars, numCurves, vertexPrimvarCount,
-        varyingPrimvarCount, facevaryingPrimvarCount);
+        varyingPrimvarCount, facevaryingPrimvarCount,
+        renderParam->GetShutterInterval());
 
     return primvars;
 }

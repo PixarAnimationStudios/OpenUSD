@@ -65,7 +65,9 @@ HdPrman_Sphere::_ConvertGeometry(HdPrman_RenderParam *renderParam,
 
     primvars.SetFloat(RixStr.k_Ri_radius, radius);
 
-    HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, 1, 0, 0, 0);
+    HdPrman_ConvertPrimvars(
+        sceneDelegate, id, primvars, 1, 0, 0, 0,
+        renderParam->GetShutterInterval());
     return primvars;
 }
 
