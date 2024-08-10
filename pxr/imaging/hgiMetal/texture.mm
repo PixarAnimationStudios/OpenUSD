@@ -211,7 +211,9 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
                                  levelCount:mipLevels];
         [blitCommandEncoder endEncoding];
         [commandBuffer commit];
+#if !__has_feature(objc_arc)
         [tempTextureId release];
+#endif // !__has_feature(objc_arc)
     }
     
     if (!(usage & MTLTextureUsageRenderTarget)) {
@@ -254,7 +256,9 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureViewDesc const & desc)
 HgiMetalTexture::~HgiMetalTexture()
 {
     if (_textureId != nil) {
+#if !__has_feature(objc_arc)
         [_textureId release];
+#endif // !__has_feature(objc_arc)
         _textureId = nil;
     }
 }

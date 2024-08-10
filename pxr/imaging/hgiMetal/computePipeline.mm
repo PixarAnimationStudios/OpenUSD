@@ -39,7 +39,9 @@ HgiMetalComputePipeline::HgiMetalComputePipeline(
                                       options:MTLPipelineOptionNone
                                    reflection:nil
                                         error:&error];
+#if !__has_feature(objc_arc)
     [stateDesc release];
+#endif // !__has_feature(objc_arc)
 
     if (!_computePipelineState) {
         NSString *err = [error localizedDescription];

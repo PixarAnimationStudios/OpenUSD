@@ -46,7 +46,9 @@ HgiMetalBuffer::HgiMetalBuffer(HgiMetal *hgi, HgiBufferDesc const & desc)
 HgiMetalBuffer::~HgiMetalBuffer()
 {
     if (_bufferId != nil) {
+#if !__has_feature(objc_arc)
         [_bufferId release];
+#endif // !__has_feature(objc_arc)
         _bufferId = nil;
     }
 }

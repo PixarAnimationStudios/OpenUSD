@@ -239,11 +239,13 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
 HgiMetalGraphicsCmds::~HgiMetalGraphicsCmds()
 {
     TF_VERIFY(_encoders.empty(), "Encoder created, but never commited.");
-    
+
+#if !__has_feature(objc_arc)
     [_renderPassDescriptor release];
     if (_debugLabel) {
         [_debugLabel release];
     }
+#endif // !__has_feature(objc_arc)
 }
 
 void
@@ -355,7 +357,9 @@ HgiMetalGraphicsCmds::_SetNumberParallelEncoders(uint32_t numEncoders)
     }
     
     if (_debugLabel) {
+#if !__has_feature(objc_arc)
         [_debugLabel release];
+#endif // !__has_feature(objc_arc)
         _debugLabel = nil;
     }
 }
@@ -793,7 +797,9 @@ HgiMetalGraphicsCmds::PopDebugGroup()
         HGIMETAL_DEBUG_POP_GROUP(GetEncoder());
     }
     if (_debugLabel) {
+#if !__has_feature(objc_arc)
         [_debugLabel release];
+#endif // !__has_feature(objc_arc)
         _debugLabel = nil;
     }
 }

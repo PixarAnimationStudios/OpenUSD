@@ -36,6 +36,7 @@ HgiMetalGraphicsPipeline::HgiMetalGraphicsPipeline(
 
 HgiMetalGraphicsPipeline::~HgiMetalGraphicsPipeline()
 {
+#if !__has_feature(objc_arc)
     if (_renderPipelineState) {
         [_renderPipelineState release];
     }
@@ -48,6 +49,7 @@ HgiMetalGraphicsPipeline::~HgiMetalGraphicsPipeline()
     if (_constantTessFactors) {
         [_constantTessFactors release];
     }
+#endif // !__has_feature(objc_arc)
 }
 
 void
@@ -314,7 +316,9 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
     _renderPipelineState = [device
         newRenderPipelineStateWithDescriptor:stateDesc
         error:&error];
+#if !__has_feature(objc_arc)
     [stateDesc release];
+#endif // !__has_feature(objc_arc) 
     
     if (!_renderPipelineState) {
         NSString *err = [error localizedDescription];
@@ -381,7 +385,9 @@ HgiMetalGraphicsPipeline::_CreateDepthStencilState(HgiMetal *hgi)
     id<MTLDevice> device = hgi->GetPrimaryDevice();
     _depthStencilState = [device
         newDepthStencilStateWithDescriptor:depthStencilStateDescriptor];
+#if !__has_feature(objc_arc)
     [depthStencilStateDescriptor release];
+#endif // !__has_feature(objc_arc)
 
     TF_VERIFY(_depthStencilState,
         "Failed to created depth stencil state");
