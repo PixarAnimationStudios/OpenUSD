@@ -62,3 +62,12 @@ pxr_library(garch
     PYMODULE_FILES
         __init__.py
 )
+
+if(APPLE)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        if (TARGET garch)
+            # Build garch with ObjC ARC (Automatic Reference Counting) enabled.
+            target_compile_options(garch PUBLIC "-fobjc-arc")
+        endif()
+    endif()
+endif()

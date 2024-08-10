@@ -388,7 +388,9 @@ HgiMetalIndirectCommandEncoder::_GetFunction(
                                            error:&error];
         
         _functions.resize(6);
+#if !__has_feature(objc_arc)
         [options release];
+#endif // !__has_feature(objc_arc)
         options = nil;
         
         if (!_library) {
@@ -490,7 +492,9 @@ HgiMetalIndirectCommandEncoder::_AllocateCommandBuffer(uint32_t drawCount)
             [_device newIndirectCommandBufferWithDescriptor:descriptor
                                             maxCommandCount:roundedSize
                                                     options:MTLResourceStorageModePrivate];
+#if !__has_feature(objc_arc)
         [descriptor release];
+#endif // !__has_feature(objc_arc)
         descriptor = nil;
     }
 

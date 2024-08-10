@@ -75,7 +75,9 @@ Garch_GetModifierKeys(NSUInteger flags)
 
     _callback->OnInitializeGL();
 
+#if !__has_feature(objc_arc)
     [pf release];
+#endif // !__has_feature(objc_arc)
 
     return self;
 }
