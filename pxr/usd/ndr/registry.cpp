@@ -63,7 +63,7 @@ NdrRegistry_ValidateProperty(
 {
     const VtValue& defaultValue = property->GetDefaultValueAsSdfType();
     const NdrSdfTypeIndicator sdfTypeIndicator = property->GetTypeAsSdfType();
-    const SdfValueTypeName sdfType = sdfTypeIndicator.first;
+    const SdfValueTypeName sdfType = sdfTypeIndicator.GetSdfType();
 
     // We allow default values to be unspecified, but if they aren't empty, then
     // we want to error if the value's type is different from the specified type

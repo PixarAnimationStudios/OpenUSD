@@ -47,7 +47,7 @@ class TestShaderNode(unittest.TestCase):
         cls.tpp2Type = Tf.Type.FindByName('_NdrOslTestParserPlugin')
 
         # We don't check for all the derived types of NdrDiscoveryPlugin
-        # because this test only uses the discovery and parser plugins 
+        # because this test only uses the discovery and parser plugins
         # that are defined in this testenv
         assert {cls.tdpType, cls.tdp2Type}.issubset(
             set(cls.pr.GetAllDerivedTypes('NdrDiscoveryPlugin')))
@@ -55,9 +55,9 @@ class TestShaderNode(unittest.TestCase):
             set(cls.pr.GetAllDerivedTypes('NdrParserPlugin')))
 
             # Instantiating the registry will kick off the discovery process.
-        # This test assumes the PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY 
-        # and PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY has been set prior to 
-        # being run to ensure built-in plugins are not found. Instead 
+        # This test assumes the PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY
+        # and PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY has been set prior to
+        # being run to ensure built-in plugins are not found. Instead
         # we'll list the plugins we want explicitly.
 
         # Setting this from within the script does not work on Windows.
@@ -199,7 +199,7 @@ class TestShaderNode(unittest.TestCase):
             for inputName in node.GetInputNames():
                 prop = node.GetInput(inputName)
                 sdrType = prop.GetType()
-                sdfType, sdfHint = prop.GetTypeAsSdfType()
+                sdfType = prop.GetTypeAsSdfType().GetSdfType()
                 expectedSdrType, expectedSdfType = expectedTypes[prop.GetName()]
                 print("  ", prop.GetName(), sdrType, str(sdfType), 'vs expected', \
                       expectedSdrType, str(expectedSdfType))

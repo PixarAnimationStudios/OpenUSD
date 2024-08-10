@@ -62,12 +62,9 @@ NdrProperty::CanConnectTo(const NdrProperty& other) const
     return _type == other.GetType();
 }
 
-const NdrSdfTypeIndicator
+NdrSdfTypeIndicator
 NdrProperty::GetTypeAsSdfType() const {
-    return std::make_pair(
-        SdfValueTypeNames->Token,
-        _type
-    );
+    return NdrSdfTypeIndicator(SdfValueTypeNames->Token, _type, false);
 }
 
 const VtValue&

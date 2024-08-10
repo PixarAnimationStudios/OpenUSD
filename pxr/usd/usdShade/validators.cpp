@@ -247,7 +247,8 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
     const auto sdrPropnameToSdfType = [&propNameToPropertyMap]() {
         std::unordered_map<TfToken, SdfValueTypeName, TfToken::HashFunctor> map;
         for (const auto& prop : propNameToPropertyMap) {
-            map.emplace(prop.first, prop.second->GetTypeAsSdfType().first);
+            map.emplace(prop.first,
+                        prop.second->GetTypeAsSdfType().GetSdfType());
         }
         return map;
     }();
