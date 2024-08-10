@@ -108,4 +108,61 @@ HdResampleNeighbors(float alpha, const VtValue& v0, const VtValue& v1)
     return result;
 }
 
+bool
+HdGetContributingSampleTimesForInterval(
+    const size_t count,
+    const float * const sampleTimes,
+    const float startTime,
+    const float endTime,
+    std::vector<float> * const outSampleTimes)
+{
+    size_t numOutSamples = 0;
+    
+    for (size_t i = 0; i < count; ++i) {
+        const float t = sampleTimes[i];
+        if (numOutSamples == 0) {
+            if (t > startTime && i > 0) {
+                numOutSamples++;
+                // Include sample just before the start time.
+                if (outSampleTimes) {
+                    outSampleTimes->push_back(sampleTimes[i - 1]);
+                }
+            }
+            if (t >= startTime) {
+                // Include sample at start time or the first sample
+                // after the start time.
+                numOutSamples++;
+                if (outSampleTimes) {
+                    outSampleTimes->push_back(t);
+                } else {
+                    if (numOutSamples >= 2) {
+                        return true;
+                    }
+                }
+            }
+        } else {
+            numOutSamples++;
+            if (outSampleTimes) {
+                outSampleTimes->push_back(t);
+            } else {
+                return true;
+            }
+        }
+        if (t >= endTime) {
+            // We have sound the sample at the end time or beyond
+            // the end time. We are done.
+            break;
+        }
+    }
+
+    if (numOutSamples == 0) {
+        if (outSampleTimes && count > 0) {
+            outSampleTimes->push_back(sampleTimes[0]);
+        }
+        return false;
+    }
+
+    return numOutSamples > 1;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
