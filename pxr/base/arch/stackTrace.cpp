@@ -94,7 +94,7 @@ using namespace std;
 typedef int (*ForkFunc)(void);
 ForkFunc Arch_nonLockingFork =
 #if defined(ARCH_OS_LINUX)
-    (ForkFunc)dlsym(RTLD_NEXT, "_Fork");
+    (ForkFunc)dlsym(RTLD_DEFAULT, "_Fork");
 #elif defined(ARCH_OS_DARWIN)
     NULL;
 #else
