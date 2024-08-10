@@ -96,6 +96,15 @@ _TestSdfLayerTimeSampleValueType()
     TF_AXIOM(layer->QueryTimeSample(attr->GetPath(), 4.0, &vtValue));
     TF_AXIOM(vtValue.IsHolding<double>());
     TF_AXIOM(vtValue.UncheckedGet<double>() == 4.0);
+
+    // Ensure time samples can be set and retrieved directly on
+    // attributes themselves.
+    attr->SetTimeSample(5.0, 5.0);
+    TF_AXIOM(attr->QueryTimeSample(5.0, &value));
+    TF_AXIOM(value == 5.0);
+    TF_AXIOM(attr->GetNumTimeSamples() == 5);
+    TF_AXIOM(attr->QueryTimeSample(4.0, &value));
+    TF_AXIOM(value == 4.0);
 }
 
 static void
