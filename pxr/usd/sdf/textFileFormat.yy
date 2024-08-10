@@ -3220,18 +3220,6 @@ prim_relationship_type :
         context->variability = VtValue(SdfVariabilityVarying);
     }
     ;
-    
-prim_relationship_time_samples:
-    prim_relationship_type namespaced_name '.' TOK_TIME_SAMPLES '=' {
-            _PrimInitRelationship($2, context); 
-        } 
-    time_samples_rhs {
-            _SetField(
-                context->path, SdfFieldKeys->TimeSamples,
-                context->timeSamples, context);
-            _PrimEndRelationship(context);
-        }
-    ;
 
 prim_relationship_default:
     prim_relationship_type namespaced_name '.' TOK_DEFAULT '=' TOK_PATHREF { 
@@ -3307,7 +3295,6 @@ prim_relationship:
             _RelationshipInitTarget(context->relParsingTargetPaths->back(),
                                     context);
         }
-    | prim_relationship_time_samples
     | prim_relationship_default
     ;
 

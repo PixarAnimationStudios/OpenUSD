@@ -1248,21 +1248,16 @@ _GetExpectedTimeSampleValueType(
                         "not exist", path.GetText());
         return TfType();
     }
-    else if (specType != SdfSpecTypeAttribute &&
-             specType != SdfSpecTypeRelationship) {
+    else if (specType != SdfSpecTypeAttribute) {
         TF_CODING_ERROR("Cannot set time sample at <%s> because spec "
-                        "is not an attribute or relationship",
+                        "is not an attribute",
                         path.GetText());
         return TfType();
     }
 
     TfType valueType;
     TfToken valueTypeName;
-    if (specType == SdfSpecTypeRelationship) {
-        static const TfType pathType = TfType::Find<SdfPath>();
-        valueType = pathType;
-    }
-    else if (layer.HasField(path, SdfFieldKeys->TypeName, &valueTypeName)) {
+    if (layer.HasField(path, SdfFieldKeys->TypeName, &valueTypeName)) {
         valueType = layer.GetSchema().FindType(valueTypeName).GetType();
     }
 

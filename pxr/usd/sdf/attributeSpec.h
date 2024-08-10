@@ -83,6 +83,10 @@ public:
     /// \name Attribute value API
     /// @{
 
+    /// Returns the entire set of time samples.
+    SDF_API
+    SdfTimeSampleMap GetTimeSampleMap() const;
+
     /// Returns the allowed tokens metadata for this attribute.
     /// Consumers may use this metadata to define a set of predefined
     /// options for this attribute's value. However, this metadata is

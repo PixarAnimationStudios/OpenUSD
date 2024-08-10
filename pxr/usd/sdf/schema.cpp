@@ -921,7 +921,6 @@ SdfSchemaBase::_RegisterStandardFields()
 
         .Field(SdfFieldKeys->Comment)
         .Field(SdfFieldKeys->Default)
-        .Field(SdfFieldKeys->TimeSamples)
 
         .MetadataField(SdfFieldKeys->AssetInfo,
                        SdfMetadataDisplayGroupTokens->core)
@@ -957,6 +956,7 @@ SdfSchemaBase::_RegisterStandardFields()
         .Field(SdfChildrenKeys->ConnectionChildren)
         .Field(SdfFieldKeys->ConnectionPaths)
         .Field(SdfFieldKeys->DisplayUnit)
+        .Field(SdfFieldKeys->TimeSamples)
 
         .MetadataField(SdfFieldKeys->AllowedTokens,
                        SdfMetadataDisplayGroupTokens->core)
