@@ -8,6 +8,7 @@ pxr_docs_only_dir(${PXR_PACKAGE}
         hydra_prim_schemas.dox
         examples_hydra_getting_started.cpp
         app_renderer_filters.png
+        HdSceneIndexPrimMaterialDiagram.drawio.svg
         hdschema.png
         legacy_scene_delegate_emulation.png
         nested_datasources.png
