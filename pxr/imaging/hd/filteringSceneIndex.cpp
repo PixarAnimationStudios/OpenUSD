@@ -15,7 +15,7 @@ HdEncapsulatingSceneIndexBase::Cast(const HdSceneIndexBaseRefPtr &scene)
 {
     return
         dynamic_cast<HdEncapsulatingSceneIndexBase *>(
-            boost::get_pointer(scene));
+            get_pointer(scene));
 }
 
 // This is a fallback scene index that we use in case an invalid sceneIndex is
