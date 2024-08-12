@@ -32,6 +32,7 @@ public:
     int GetShaderVersion() const override;
 
     MTLResourceOptions defaultStorageMode;
+    MTLResourceOptions preferredStorageMode;
     bool hasVertexMemoryBarrier;
     bool useParallelEncoder;
     bool requiresIndirectDrawFix;

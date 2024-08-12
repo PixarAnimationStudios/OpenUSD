@@ -26,7 +26,13 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     bool hasIntelGPU = false;
 #if defined(ARCH_OS_OSX)
     hasIntelGPU = [device isLowPower];
+    if (![device hasUnifiedMemory]) {
+        preferredStorageMode = MTLResourceStorageModeManaged;
+    } else
 #endif
+    {
+        preferredStorageMode = MTLResourceStorageModeShared;
+    }
     defaultStorageMode = MTLResourceStorageModeShared;
     bool unifiedMemory = false;
     bool barycentrics = false;
