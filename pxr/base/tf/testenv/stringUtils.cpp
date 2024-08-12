@@ -15,6 +15,7 @@
 #include <vector>
 #include <sstream>
 #include <stdio.h>
+#include <locale>
 
 using namespace std;
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -264,6 +265,14 @@ DoPrintfStr(const char *fmt, ...)
     return ret;
 }
 
+template <typename T>
+bool
+_RoundtripStringifyLimits()
+{
+    return (TfUnstringify<T>(TfStringify(std::numeric_limits<T>::min())) == std::numeric_limits<T>::min()) &&
+        (TfUnstringify<T>(TfStringify(std::numeric_limits<T>::max())) == std::numeric_limits<T>::max());
+}
+
 static bool
 TestStrings()
 {
@@ -386,6 +395,35 @@ TestStrings()
     TF_AXIOM(TfUnstringify<char>("a") == 'a');
     TF_AXIOM(TfStringify("string") == "string");
     TF_AXIOM(TfUnstringify<string>("string") == "string");
+    TF_AXIOM(TfStringify(1000) == "1000");
+    
+    // make sure we can represent the min and max of each type
+    TF_AXIOM(_RoundtripStringifyLimits<short>());
+    TF_AXIOM(_RoundtripStringifyLimits<int>());
+    TF_AXIOM(_RoundtripStringifyLimits<long>());
+    TF_AXIOM(_RoundtripStringifyLimits<long long>());
+    TF_AXIOM(_RoundtripStringifyLimits<unsigned short>());
+    TF_AXIOM(_RoundtripStringifyLimits<unsigned int>());
+    TF_AXIOM(_RoundtripStringifyLimits<unsigned long>());
+    TF_AXIOM(_RoundtripStringifyLimits<unsigned long long>());
+    
+    // verify that TfStringify is agnostic to locale for
+    // numerical values
+    std::locale originalLocale;
+    std::locale::global(std::locale(""));
+    try
+    {
+        TF_AXIOM(TfStringify(1000.56) == "1000.56");
+        TF_AXIOM(TfStringify(1000) == "1000");
+        std::locale::global(originalLocale);
+    }
+    catch(...)
+    {
+        std::locale::global(originalLocale);
+        throw;
+    }
+    TF_AXIOM(TfStringify(1000) == "1000");
+    TF_AXIOM(TfStringify(1000.56) == "1000.56");
 
     bool unstringRet = true;
     TfUnstringify<int>("this ain't no int", &unstringRet);
