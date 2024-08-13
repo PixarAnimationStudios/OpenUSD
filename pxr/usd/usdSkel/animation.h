@@ -240,7 +240,8 @@ public:
     /// Array of tokens identifying which blend shapes this
     /// animation's data applies to. The tokens for blendShapes correspond to
     /// the tokens set in the *skel:blendShapes* binding property of the
-    /// UsdSkelBindingAPI.
+    /// UsdSkelBindingAPI. Note that blendShapes does not accept time-sampled
+    /// values.
     ///
     /// | ||
     /// | -- | -- |
