@@ -915,7 +915,7 @@ TfStringify(std::string const& s)
 
 template <typename T>
 std::string
-_TfStringifyIntegralImpl(const T& value)
+_TfStringifyIntegralImpl(const T value)
 {
     // plus one because for signed values, digits10 will give one less
     // than what is actually needed in cases where the amount of characters
