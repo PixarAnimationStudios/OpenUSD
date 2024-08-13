@@ -1,7 +1,10 @@
-//
 //  adapted from bind_stdcall_test.cpp - test for bind.hpp + __stdcall (free functions)
 //   The purpose of this simple test is to determine if a function can be
 //   called from Python with the various existing calling conventions 
+//
+// Copyright 2024 Pixar
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 //  Copyright (c) 2001 Peter Dimov and Multi Media Ltd.
 //

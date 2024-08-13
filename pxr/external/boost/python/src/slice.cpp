@@ -1,5 +1,10 @@
 #include "boost/python/slice.hpp"
 
+//
+// Copyright 2024 Pixar
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
 // Copyright (c) 2004 Jonathan Brandmeyer
 //  Use, modification and distribution are subject to the
 //  Boost Software License, Version 1.0. (See accompanying file
