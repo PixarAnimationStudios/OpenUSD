@@ -283,5 +283,7 @@ GitHub PRs are not landed directly into the GitHub dev branch, but rather into
 Pixar's internal development tree. We do this to facilitate the automated 
 correctness and performance testing using production assets prior to merging the 
 change. The open source branch is then extracted from Pixar's internal 
-development tree and pushed to the OpenUSD GitHub dev branch on a 
-:ref:`regular cadence <release_schedule>`.
+development tree and pushed to the OpenUSD GitHub **dev** branch on a 
+:ref:`regular cadence <release_schedule>`. Once your PR has been incorporated
+internally and the OpenUSD repo dev branch has been updated, Pixar will 
+automatically close your PR.
