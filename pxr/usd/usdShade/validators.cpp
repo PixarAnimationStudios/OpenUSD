@@ -32,6 +32,70 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static
 UsdValidationErrorVector
+_ConnectableValidator(const UsdPrim& usdPrim)
+{
+    UsdValidationErrorVector errors;
+
+    const UsdShadeConnectableAPI& connectable = UsdShadeConnectableAPI(usdPrim);
+
+    if (!usdPrim.GetTypeName().IsEmpty() && connectable) {
+        const UsdPrim& parentPrim = usdPrim.GetParent();
+
+        if (parentPrim && !parentPrim.IsPseudoRoot()) {
+            UsdShadeConnectableAPI parentConnectable = UsdShadeConnectableAPI(parentPrim);
+            if (parentPrim.GetTypeName().IsEmpty()){
+                parentConnectable = UsdShadeConnectableAPI();
+            }
+
+            if (parentConnectable && !parentConnectable.IsContainer()) {
+                errors.emplace_back(
+                        UsdValidationErrorType::Error,
+                        UsdValidationErrorSites{
+                                UsdValidationErrorSite(usdPrim.GetStage(),
+                                                       usdPrim.GetPath())
+                        },
+                        TfStringPrintf("Connectable %s <%s> cannot reside "
+                                       "under a non-Container Connectable %s",
+                                       usdPrim.GetTypeName().GetText(),
+                                       usdPrim.GetPath().GetText(),
+                                       parentPrim.GetTypeName().GetText()));
+            }
+            else if (!parentConnectable) {
+                UsdPrim currentAncestor = parentPrim.GetParent();
+                while(currentAncestor && !currentAncestor.IsPseudoRoot()) {
+                    if (!currentAncestor.GetTypeName().IsEmpty()) {
+                        const UsdShadeConnectableAPI& ancestorConnectable = UsdShadeConnectableAPI(currentAncestor);
+                        if (ancestorConnectable) {
+                            errors.emplace_back(
+                                    UsdValidationErrorType::Error,
+                                    UsdValidationErrorSites {
+                                            UsdValidationErrorSite(usdPrim.GetStage(),
+                                                                   usdPrim.GetPath())
+                                    },
+                                    TfStringPrintf("Connectable %s <%s> can only have"
+                                                   " Connectable Container ancestors"
+                                                   " up to %s ancestor <%s>, but its"
+                                                   " parent %s is a %s.",
+                                                   usdPrim.GetTypeName().GetText(),
+                                                   usdPrim.GetPath().GetText(),
+                                                   currentAncestor.GetTypeName().GetText(),
+                                                   currentAncestor.GetPath().GetText(),
+                                                   parentPrim.GetName().GetText(),
+                                                   parentPrim.GetTypeName().GetText()));
+                            break;
+                        }
+                    }
+                    currentAncestor = currentAncestor.GetParent();
+                }
+            }
+        }
+    }
+
+    return errors;
+}
+
+static
+UsdValidationErrorVector
 _MaterialBindingApiAppliedValidator(const UsdPrim &usdPrim)
 {
     UsdValidationErrorVector errors;
@@ -411,6 +475,10 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     registry.RegisterPluginValidator(
         UsdShadeValidatorNameTokens->subsetsMaterialBindFamily,
         _SubsetsMaterialBindFamily);
+
+    registry.RegisterPluginValidator(
+            UsdShadeValidatorNameTokens->connectableValidator,
+            _ConnectableValidator);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
