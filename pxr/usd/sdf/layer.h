@@ -41,6 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_WEAK_PTRS(SdfFileFormat);
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerStateDelegateBase);
 
+class SdfChangeList;
 struct Sdf_AssetInfo;
 
 /// \class SdfLayer 
@@ -1634,6 +1635,18 @@ public:
 
     // @}
 
+    /// Returns a \ref SdfChangeList containing the minimal edits that would be
+    /// needed to transform this layer to match the contents of the given
+    /// \p layer parameter. If \p processPropertyFields is false, property 
+    /// fields will be ignored during the diff computation. Any differences in 
+    /// fields between properties with the same path in this layer and \p layer
+    /// will not be captured in the returned SdfChangeList.  This can, however,
+    /// avoid potentially expensive data retrieval operations.
+    SDF_API
+    SdfChangeList CreateDiff(
+        const SdfLayerHandle& layer,
+        bool processPropertyFields = true) const;
+
 protected:
     // Private constructor -- use New(), FindOrCreate(), etc.
     // Precondition: _layerRegistryMutex must be locked.
@@ -1879,6 +1892,21 @@ private:
     // Set _data to \p newData and send coarse DidReplaceLayerContent
     // invalidation notice.
     void _AdoptData(const SdfAbstractDataRefPtr &newData);
+
+    // Helper function which will process incoming data to this layer in a
+    // generic way. 
+    // If \p processPropertyFields is false, this method will not
+    // consider property spec fields. In some cases, this can avoid expensive
+    // operations which would pull large amounts of data.
+    template<typename DeleteSpecFunc, typename CreateSpecFunc, 
+            typename SetFieldFunc, typename ErrorFunc>
+    void _ProcessIncomingData(const SdfAbstractDataPtr &newData,
+                              const SdfSchemaBase *newDataSchema,
+                              bool processPropertyFields,
+                              const DeleteSpecFunc &deleteSpecFunc,
+                              const CreateSpecFunc &createSpecFunc,
+                              const SetFieldFunc &setFieldFunc,
+                              const ErrorFunc &errorFunc) const;
 
     // Set _data to match data, calling other primitive setter methods to
     // provide fine-grained inverses and notification.  If \p data might adhere
