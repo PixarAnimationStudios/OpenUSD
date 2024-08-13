@@ -38,8 +38,6 @@
 #include <stringapiset.h>
 #endif
 
-PXR_NAMESPACE_OPEN_SCOPE
-
 /// \addtogroup group_arch_SystemFunctions
 ///@{
 #if !defined(ARCH_OS_WINDOWS)
@@ -59,6 +57,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     #define W_OK    2       // Test for write permission.
     #define R_OK    4       // Test for read permission.
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #if defined(ARCH_OS_WINDOWS)
     #define ARCH_GLOB_NOCHECK   1
