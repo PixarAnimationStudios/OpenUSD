@@ -2730,6 +2730,7 @@ summaryMsg += """\
       OpenVDB support:          {enableOpenVDB}
       OpenImageIO support:      {buildOIIO} 
       OpenColorIO support:      {buildOCIO} 
+      Embree support:           {buildEmbree}
       PRMan support:            {buildPrman}
       Vulkan support:           {enableVulkan}
     UsdImaging                  {buildUsdImaging}
@@ -2794,6 +2795,7 @@ summaryMsg = summaryMsg.format(
     enableOpenVDB=("On" if context.enableOpenVDB else "Off"),
     buildOIIO=("On" if context.buildOIIO else "Off"),
     buildOCIO=("On" if context.buildOCIO else "Off"),
+    buildEmbree=("On" if context.buildEmbree else "Off"),
     buildPrman=("On" if context.buildPrman else "Off"),
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
     buildUsdview=("On" if context.buildUsdview else "Off"),
