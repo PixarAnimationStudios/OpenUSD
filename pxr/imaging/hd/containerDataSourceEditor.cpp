@@ -147,6 +147,9 @@ HdContainerDataSourceEditor::Finish()
                 _initialContainer);
         }
 
+    } else if (!_root) {
+        // If no initial container and no edits, return nullptr.
+        return nullptr;
     } else {
         return _FinishWithNoInitialContainer();
     }

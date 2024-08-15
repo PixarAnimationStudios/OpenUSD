@@ -37,8 +37,12 @@ void wrapUsdEditTarget()
              &UsdEditTarget::GetPrimSpecForScenePath, arg("scenePath"))
         .def("GetPropertySpecForScenePath",
              &UsdEditTarget::GetPropertySpecForScenePath, arg("scenePath"))
+        .def("GetAttributeSpecForScenePath",
+             &UsdEditTarget::GetAttributeSpecForScenePath, arg("scenePath"))
+        .def("GetRelationshipSpecForScenePath",
+             &UsdEditTarget::GetRelationshipSpecForScenePath, arg("scenePath"))
         .def("GetSpecForScenePath",
-             &UsdEditTarget::GetPrimSpecForScenePath, arg("scenePath"))
+             &UsdEditTarget::GetSpecForScenePath, arg("scenePath"))
         .def("ComposeOver", &UsdEditTarget::ComposeOver, arg("weaker"))
         ;
 

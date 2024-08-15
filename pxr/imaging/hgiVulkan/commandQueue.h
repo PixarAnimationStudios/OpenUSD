@@ -18,6 +18,7 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -105,13 +106,15 @@ private:
         std::thread::id const& threadId);
 
     // Returns an id-bit that uniquely identifies the cmd buffer amongst all
-    // in-flight cmd buffers.
+    // in-flight cmd buffers. Returns an empty result if all bits have been
+    // acquired, in which case the existing buffers must have their bit released
+    // if no longer in flight.
     // Thread safety: This call is thread safe..
-    uint8_t _AcquireInflightIdBit();
+    std::optional<uint8_t> _AcquireInflightIdBit();
 
-    // Set if a command buffer is in-flight (enabled=true) or not.
+    // Set a command buffer as not in-flight.
     // Thread safety: This call is thread safe.
-    void _SetInflightBit(uint8_t inflightId, bool enabled);
+    void _ReleaseInflightBit(uint8_t inflightId);
 
     HgiVulkanDevice* _device;
     VkQueue _vkGfxQueue;

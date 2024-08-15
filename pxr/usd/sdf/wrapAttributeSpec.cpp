@@ -17,6 +17,7 @@
 #include "pxr/usd/sdf/pySpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyResultConversions.h"
 
 #include <boost/python.hpp>
 
@@ -43,6 +44,53 @@ _WrapSetAllowedTokens(
     VtTokenArray tokenArray;
     tokenArray.assign(tokens.begin(), tokens.end());
     spec.SetAllowedTokens(tokenArray);
+}
+
+static
+std::set<double>
+_ListTimeSamples(SdfAttributeSpec const &self)
+{
+    return self.ListTimeSamples();
+}
+
+static
+size_t
+_GetNumTimeSamples(SdfAttributeSpec const &self)
+{
+    return self.GetNumTimeSamples();
+}
+
+static
+VtValue
+_QueryTimeSample(SdfAttributeSpec const &self, double time)
+{
+    VtValue value;
+    self.QueryTimeSample(time, &value);
+    return value;
+}
+
+static
+tuple
+_GetBracketingTimeSamples(SdfAttributeSpec const &self, double time)
+{
+    double tLower = 0, tUpper = 0;
+    bool found = self.GetBracketingTimeSamples(time, &tLower, &tUpper);
+    return boost::python::make_tuple(found, tLower, tUpper);
+}
+
+static
+void
+_SetTimeSample(SdfAttributeSpec &self,
+               double time, const VtValue& value)
+{
+    self.SetTimeSample(time, value);
+}
+
+static
+void
+_EraseTimeSample(SdfAttributeSpec &self, double time)
+{
+    self.EraseTimeSample(time);
 }
 
 } // anonymous namespace 
@@ -129,6 +177,16 @@ void wrapAttributeSpec()
 
         .def("HasColorSpace", &This::HasColorSpace)
         .def("ClearColorSpace", &This::ClearColorSpace)
+
+        .def("ListTimeSamples", &_ListTimeSamples,
+             return_value_policy<TfPySequenceToList>())
+        .def("GetNumTimeSamples", &_GetNumTimeSamples)
+        .def("GetBracketingTimeSamples",
+             &_GetBracketingTimeSamples)
+        .def("QueryTimeSample",
+             &_QueryTimeSample)
+        .def("SetTimeSample", &_SetTimeSample)
+        .def("EraseTimeSample", &_EraseTimeSample)
 
         // property keys
         // XXX DefaultValueKey are actually

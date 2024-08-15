@@ -547,7 +547,7 @@ class TestUsdRelationships(unittest.TestCase):
 
             prim = stage.DefinePrim("/Test")
             rel = prim.CreateRelationship("rel")
-            relSpec = stage.GetEditTarget().GetPropertySpecForScenePath(
+            relSpec = stage.GetEditTarget().GetRelationshipSpecForScenePath(
                 rel.GetPath())
 
             rel.SetTargets(["/Test/A", "/Test/B"])

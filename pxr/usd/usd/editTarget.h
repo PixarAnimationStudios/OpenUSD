@@ -12,9 +12,11 @@
 #include "pxr/usd/pcp/layerStackIdentifier.h"
 #include "pxr/usd/pcp/mapFunction.h"
 #include "pxr/usd/pcp/node.h"
+#include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/primSpec.h"
+#include "pxr/usd/sdf/relationshipSpec.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -140,10 +142,43 @@ public:
     SdfPrimSpecHandle
     GetPrimSpecForScenePath(const SdfPath &scenePath) const;
 
+    /// Convenience function for getting the PropertySpec in the edit
+    /// target's layer for \a scenePath.  This is equivalent to
+    /// target.GetLayer()->GetPropertyAtPath(target.MapToSpecPath(scenePath))
+    /// if target has a valid layer.  If this target IsNull or there is no
+    /// valid mapping from \a scenePath to a SdfPropertySpec path in the layer,
+    /// return null.
     USD_API
     SdfPropertySpecHandle
     GetPropertySpecForScenePath(const SdfPath &scenePath) const;
 
+    /// Convenience function for getting the AttributeSpec in the edit
+    /// target's layer for \a scenePath.  This is equivalent to
+    /// target.GetLayer()->GetAttributeAtPath(target.MapToSpecPath(scenePath))
+    /// if target has a valid layer.  If this target IsNull or there is no
+    /// valid mapping from \a scenePath to a SdfAttributeSpec path
+    /// in the layer, return null.
+    USD_API
+    SdfAttributeSpecHandle
+    GetAttributeSpecForScenePath(const SdfPath &scenePath) const;
+
+    /// Convenience function for getting the RelationshipSpec in the edit
+    /// target's layer for \a scenePath.  This is equivalent to
+    /// target.GetLayer()->GetRelationshipAtPath(
+    ///     target.MapToSpecPath(scenePath))
+    /// if target has a valid layer.  If this target IsNull or there is no
+    /// valid mapping from \a scenePath to a SdfRelationshipSpec path
+    /// in the layer, return null.
+    USD_API
+    SdfRelationshipSpecHandle
+    GetRelationshipSpecForScenePath(const SdfPath &scenePath) const;
+
+    /// Convenience function for getting the Spec in the edit
+    /// target's layer for \a scenePath.  This is equivalent to
+    /// target.GetLayer()->GetObjectAtPath(target.MapToSpecPath(scenePath)) if
+    /// target has a valid layer.  If this target IsNull or there is no valid
+    /// mapping from \a scenePath to a SdfSpec path in the layer, return
+    /// null.
     USD_API
     SdfSpecHandle
     GetSpecForScenePath(const SdfPath &scenePath) const;

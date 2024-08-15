@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+#include "pxr/imaging/hd/version.h"
 
 #include "pxr/usd/sdf/path.h"
 
@@ -230,13 +231,21 @@ _ConvertPointsPrimvar(
     {
         HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedPoints;
         if (compPrimvar.empty()) {
-            sceneDelegate->SamplePrimvar(id, HdTokens->points, &boxedPoints);
+            sceneDelegate->SamplePrimvar(id, HdTokens->points,
+#if HD_API_VERSION >= 68
+                                         shutterInterval[0],
+                                         shutterInterval[1],
+#endif                                         
+                                         &boxedPoints);
         } else {
             HdExtComputationUtils::SampledValueStore<HDPRMAN_MAX_TIME_SAMPLES>
                 compSamples;
             HdExtComputationUtils::SampleComputedPrimvarValues<
                 HDPRMAN_MAX_TIME_SAMPLES>(
                     compPrimvar, sceneDelegate, HDPRMAN_MAX_TIME_SAMPLES,
+#if HD_API_VERSION >= 73
+                    shutterInterval[0], shutterInterval[1],
+#endif
                     &compSamples);
             boxedPoints = compSamples[HdTokens->points];
         }
@@ -435,6 +444,7 @@ template <typename T>
 static void
 _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
          HdInterpolation hdInterp, T& params, int expectedSize,
+         const GfVec2d &shutterInterval,
          float time = 0.f)
 {
     static_assert(std::disjunction<
@@ -620,7 +630,12 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
         }
 
         HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> samples;
-        sceneDelegate->SamplePrimvar(id, primvar.name, &samples);
+        sceneDelegate->SamplePrimvar(id, primvar.name,
+#if HD_API_VERSION >= 68
+                                     shutterInterval[0],
+                                     shutterInterval[1],
+#endif
+                                     &samples);
         // XXX: The motion blur scene index plugin ensures that only a single
         // sample at offset 0 is returned for any primvar on which Prman does
         // not support motion samples. Currently, that's all primvars except P.
@@ -677,7 +692,9 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
 void
 HdPrman_ConvertPrimvars(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                         RtPrimVarList& primvars, int numUniform, int numVertex,
-                        int numVarying, int numFaceVarying, float time)
+                        int numVarying, int numFaceVarying,
+                        const GfVec2d &shutterInterval,
+                        float time)
 {
     const HdInterpolation hdInterpValues[] = {
         HdInterpolationConstant,
@@ -698,7 +715,9 @@ HdPrman_ConvertPrimvars(HdSceneDelegate *sceneDelegate, SdfPath const& id,
     const int modeCount = 5;
     for (size_t i = 0; i < modeCount; ++i) {
         _Convert(sceneDelegate, id, hdInterpValues[i], primvars,
-                 primvarSizes[i], time);
+                 primvarSizes[i],
+                 shutterInterval,
+                 time);
     }
 }
 
@@ -737,7 +756,7 @@ HdPrman_TransferMaterialPrimvarOpinions(HdSceneDelegate *sceneDelegate,
 
 RtParamList
 HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
-                                   SdfPath const& id, bool isGeometry)
+                                       SdfPath const& id, bool isGeometry)
 {
     RtParamList attrs;
 
@@ -747,7 +766,7 @@ HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
         HdInterpolationConstant,
     };
     for (HdInterpolation hdInterp: hdInterpValues) {
-        _Convert(sceneDelegate, id, hdInterp, attrs, 1);
+        _Convert(sceneDelegate, id, hdInterp, attrs, 1, GetShutterInterval());
     }
 
     // Hydra id -> Riley Rix::k_identifier_name

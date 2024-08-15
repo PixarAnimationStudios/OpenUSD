@@ -23,10 +23,6 @@ def Scope "Prim"
         2: 4,
     }
     rel argle:bargle = </Prim/Child>
-    rel a:b:c.timeSamples = {
-        1: </Prim>,
-        2: </Prim/Child>,
-    }
     delete varying rel a:b:d = </Prim/Child>
     add varying rel a:b:d = [
         </Prim>,

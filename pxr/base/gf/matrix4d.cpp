@@ -652,29 +652,6 @@ GfMatrix4d::operator*=(const GfMatrix4d &m)
 
     return *this;
 }
-
-/*
- * Define multiplication between floating vector and double matrix.
- */
-GfVec4f
-operator *(const GfVec4f &vec, const GfMatrix4d &m)
-{
-    return GfVec4f(
-        float(vec[0] * m._mtx[0][0] + vec[1] * m._mtx[1][0] + vec[2] * m._mtx[2][0] + vec[3] * m._mtx[3][0]),
-        float(vec[0] * m._mtx[0][1] + vec[1] * m._mtx[1][1] + vec[2] * m._mtx[2][1] + vec[3] * m._mtx[3][1]),
-        float(vec[0] * m._mtx[0][2] + vec[1] * m._mtx[1][2] + vec[2] * m._mtx[2][2] + vec[3] * m._mtx[3][2]),
-        float(vec[0] * m._mtx[0][3] + vec[1] * m._mtx[1][3] + vec[2] * m._mtx[2][3] + vec[3] * m._mtx[3][3]));
-}
-
-GfVec4f
-operator *(const GfMatrix4d& m, const GfVec4f &vec)
-{
-    return GfVec4f(
-        float(vec[0] * m._mtx[0][0] + vec[1] * m._mtx[0][1] + vec[2] * m._mtx[0][2] + vec[3] * m._mtx[0][3]),
-        float(vec[0] * m._mtx[1][0] + vec[1] * m._mtx[1][1] + vec[2] * m._mtx[1][2] + vec[3] * m._mtx[1][3]),
-        float(vec[0] * m._mtx[2][0] + vec[1] * m._mtx[2][1] + vec[2] * m._mtx[2][2] + vec[3] * m._mtx[2][3]),
-        float(vec[0] * m._mtx[3][0] + vec[1] * m._mtx[3][1] + vec[2] * m._mtx[3][2] + vec[3] * m._mtx[3][3]));
-}
 // Leaves the [3][3] element as 1
 GfMatrix4d &
 GfMatrix4d::SetScale(double s)

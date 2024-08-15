@@ -16,20 +16,23 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define USD_GEOM_VALIDATOR_NAME_TOKENS                   \
-    ((stageMetadataChecker, "usdGeom:StageMetadataChecker"))
+#define USD_GEOM_VALIDATOR_NAME_TOKENS                              \
+    ((stageMetadataChecker, "usdGeom:StageMetadataChecker"))        \
+    ((subsetFamilies, "usdGeom:SubsetFamilies"))                    \
+    ((subsetParentIsImageable, "usdGeom:SubsetParentIsImageable"))
 
-#define USD_GEOM_VALIDATOR_KEYWORD_TOKENS                \
+#define USD_GEOM_VALIDATOR_KEYWORD_TOKENS                           \
+    (UsdGeomSubset)                                                 \
     (UsdGeomValidators)
 
-///\def
+/// \def USD_GEOM_VALIDATOR_NAME_TOKENS
 /// Tokens representing validator names. Note that for plugin provided
 /// validators, the names must be prefixed by usdGeom:, which is the name of
 /// the usdGeom plugin.
     TF_DECLARE_PUBLIC_TOKENS(UsdGeomValidatorNameTokens, USDGEOM_API,
                              USD_GEOM_VALIDATOR_NAME_TOKENS);
 
-///\def
+/// \def USD_GEOM_VALIDATOR_KEYWORD_TOKENS
 /// Tokens representing keywords associated with any validator in the usdGeom
 /// plugin. Clients can use this to inspect validators contained within a
 /// specific keywords, or use these to be added as keywords to any new

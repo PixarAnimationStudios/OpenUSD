@@ -148,7 +148,7 @@ void Ts_BinaryDataAccess::GetBinaryData(
 
     const Ts_SplineData &data = *(spline._data.get());
     const TfType valueType = spline.GetValueType();
-    const bool hasLoops = spline.HasInnerLoops();
+    const bool hasLoops = (spline.GetInnerLoopParams() != TsLoopParams());
     const bool isHermite = (spline.GetCurveType() == TsCurveTypeHermite);
 
     // Buffer size:

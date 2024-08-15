@@ -24,6 +24,7 @@ pxr_library(ndr
         parserPlugin
         property
         registry
+        sdfTypeIndicator
 
     PUBLIC_HEADERS
         api.h
@@ -42,6 +43,7 @@ pxr_library(ndr
         wrapNodeDiscoveryResult.cpp
         wrapProperty.cpp
         wrapRegistry.cpp
+        wrapSdfTypeIndicator.cpp
 
     PYMODULE_FILES
         __init__.py

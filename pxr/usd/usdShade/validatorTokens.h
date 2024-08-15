@@ -17,19 +17,23 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define USD_SHADE_VALIDATOR_NAME_TOKENS                   \
-    ((shaderSdrCompliance, "usdShade:ShaderSdrCompliance"))
+    ((materialBindingApiAppliedValidator, "usdShade:MaterialBindingApiAppliedValidator")) \
+    ((materialBindingRelationships, "usdShade:MaterialBindingRelationships")) \
+    ((shaderSdrCompliance, "usdShade:ShaderSdrCompliance"))                   \
+    ((subsetMaterialBindFamilyName, "usdShade:SubsetMaterialBindFamilyName")) \
+    ((subsetsMaterialBindFamily, "usdShade:SubsetsMaterialBindFamily"))
 
-#define USD_SHADE_VALIDATOR_KEYWORD_TOKENS                \
+#define USD_SHADE_VALIDATOR_KEYWORD_TOKENS                                    \
     (UsdShadeValidators)
 
-///\def 
+/// \def USD_SHADE_VALIDATOR_NAME_TOKENS
 /// Tokens representing validator names. Note that for plugin provided
 /// validators, the names must be prefixed by usdShade:, which is the name of
 /// the usdShade plugin.
 TF_DECLARE_PUBLIC_TOKENS(UsdShadeValidatorNameTokens, USDSHADE_API, 
                          USD_SHADE_VALIDATOR_NAME_TOKENS);
 
-///\def 
+/// \def USD_SHADE_VALIDATOR_KEYWORD_TOKENS
 /// Tokens representing keywords associated with any validator in the usdShade
 /// plugin. Cliends can use this to inspect validators contained within a
 /// specific keywords, or use these to be added as keywords to any new

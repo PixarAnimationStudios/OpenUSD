@@ -8,6 +8,7 @@
 #include "hdPrman/cameraContext.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/version.h"
 
 #include <cmath>
 
@@ -94,7 +95,13 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
     const HdDirtyBits bits = *dirtyBits;
 
     if (bits & DirtyTransform) {
-        sceneDelegate->SampleTransform(id, &_sampleXforms);
+        sceneDelegate->SampleTransform(
+            id,
+#if HD_API_VERSION >= 68
+            param->GetShutterInterval()[0],
+            param->GetShutterInterval()[1],
+#endif
+            &_sampleXforms);
     }
 
     if (bits & AllDirty) {

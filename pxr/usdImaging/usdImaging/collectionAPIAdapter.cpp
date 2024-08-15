@@ -145,7 +145,7 @@ UsdImagingCollectionAPIAdapter::InvalidateImagingSubprim(
     }
 
     std::string prefix = TfStringPrintf(
-        "collections:%s:", appliedInstanceName.data());
+        "collection:%s:", appliedInstanceName.data());
 
     for (const TfToken &propertyName : properties) {
         if (TfStringStartsWith(propertyName.GetString(), prefix)) {

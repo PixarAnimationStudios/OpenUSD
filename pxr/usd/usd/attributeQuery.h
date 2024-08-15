@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// the attribute \em is affected by Value Clips, the performance gain will
 /// just be less.
 ///
-/// \section Resolve_targets Resolve targets
+/// \section UsdAttributeQuery_Resolve_targets Resolve targets
 /// An attribute query can also be constructed for an attribute along with a 
 /// UsdResolveTarget. A resolve target allows value resolution to consider only
 /// a subrange of the prim stack instead of the entirety of it. All of the methods 
@@ -45,11 +45,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// value of an attribute resolved up to a particular layer or for determining
 /// if a value authored on layer would be overridden by a stronger opinion.
 ///
-/// \section Thread_safety Thread safety
+/// \section UsdAttributeQuery_Thread_safety Thread safety
 /// This object provides the basic thread-safety guarantee.  Multiple threads
 /// may call the value accessor functions simultaneously.
 ///
-/// \section Invalidation
+/// \section UsdAttributeQuery_Invalidation Invalidation
 /// This object does not listen for change notification.  If a consumer is
 /// holding on to a UsdAttributeQuery, it is their responsibility to dispose
 /// of it in response to a resync change to the associated attribute. 

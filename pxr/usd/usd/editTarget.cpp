@@ -169,6 +169,22 @@ UsdEditTarget::GetPropertySpecForScenePath(const SdfPath &scenePath) const
     return TfNullPtr;
 }
 
+SdfAttributeSpecHandle
+UsdEditTarget::GetAttributeSpecForScenePath(const SdfPath &scenePath) const
+{
+    if (const SdfLayerHandle &layer = GetLayer())
+        return layer->GetAttributeAtPath(MapToSpecPath(scenePath));
+    return TfNullPtr;
+}
+
+SdfRelationshipSpecHandle
+UsdEditTarget::GetRelationshipSpecForScenePath(const SdfPath &scenePath) const
+{
+    if (const SdfLayerHandle &layer = GetLayer())
+        return layer->GetRelationshipAtPath(MapToSpecPath(scenePath));
+    return TfNullPtr;
+}
+
 SdfSpecHandle
 UsdEditTarget::GetSpecForScenePath(const SdfPath &scenePath) const
 {

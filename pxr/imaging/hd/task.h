@@ -34,6 +34,12 @@ using HdTaskSharedPtrVector = std::vector<HdTaskSharedPtr>;
 using HdTaskContext = 
     std::unordered_map<TfToken, VtValue, TfToken::HashFunctor>;
 
+/// \class HdTask
+///
+/// HdTask represents a unit of work to perform during a Hydra render.
+/// Developers can subclass HdTask to prepare resources, run 3d renderpasses, 
+/// run 2d renderpasses such as compositing or color correction, or coordinate 
+/// integration with the application or other renderers.
 class HdTask {
 public:
     /// Construct a new task.

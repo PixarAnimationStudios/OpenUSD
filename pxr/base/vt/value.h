@@ -1103,7 +1103,8 @@ public:
     template <class T>
     T const &UncheckedGet() const & { return _Get<T>(); }
 
-    /// \overload In case *this is an rvalue, move the held value out and return
+    /// \overload 
+    /// In case *this is an rvalue, move the held value out and return
     /// by value.
     template <class T>
     T UncheckedGet() && { return UncheckedRemove<T>(); }
@@ -1130,7 +1131,8 @@ public:
         return _Get<T>();
     }
 
-    /// \overload In case *this is an rvalue, move the held value out and return
+    /// \overload 
+    /// In case *this is an rvalue, move the held value out and return
     /// by value.
     template <class T>
     T Get() && {

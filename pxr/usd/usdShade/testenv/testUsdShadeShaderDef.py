@@ -178,7 +178,7 @@ class TestUsdShadeShaderDef(unittest.TestCase):
         attr = shaderDef.GetPrim(). \
                 GetAttribute('inputs:actualBool')
         self.assertEqual(attr.GetTypeName(), Sdf.ValueTypeNames.Bool)
-        self.assertEqual(actualBoolInput.GetTypeAsSdfType()[0], 
+        self.assertEqual(actualBoolInput.GetTypeAsSdfType().GetSdfType(),
                 Sdf.ValueTypeNames.Bool) 
         self.assertEqual(actualBoolInput.GetType(), Sdf.ValueTypeNames.Int)
 

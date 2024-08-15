@@ -67,18 +67,10 @@ protected:
     class _PatternIncrSearchState {
         friend class _PatternImplBase;
     public:
-        void Pop(int newDepth) {
-            while (!_segmentMatchDepths.empty() &&
-                   _segmentMatchDepths.back() >= newDepth) {
-                _segmentMatchDepths.pop_back();
-            }
-            if (newDepth <= _constantDepth) {
-                _constantDepth = -1;
-            }
-        }
+        SDF_API void Pop(int newDepth);
     private:
         std::vector<int> _segmentMatchDepths;
-        int _constantDepth = -1; // 0 means constant at the _prefix level.
+        int _constantDepth = -1;
         bool _constantValue = false;
     };
 
@@ -279,16 +271,17 @@ public:
         Next(SdfPath const &objPath) {
             auto patternImplIter = _eval->_patternImpls.begin();
             auto stateIter = _incrSearchStates.begin();
-            int newDepth = objPath.GetPathElementCount();
-            const int popLevel = (newDepth <= _lastPathDepth) ? newDepth : 0;
+            const int newDepth = objPath.GetPathElementCount();
+            const bool pop = newDepth <= _lastPathDepth;
             auto patternStateNext = [&](bool skip) {
-                if (popLevel) {
-                    stateIter->Pop(popLevel);
+                if (pop) {
+                    stateIter->Pop(newDepth);
                 }
+                auto const &patternImpl = *patternImplIter++;
+                auto &state = *stateIter++;
                 return skip
-                    ? (++patternImplIter, SdfPredicateFunctionResult())
-                    : (*patternImplIter++).Next(objPath, *stateIter++,
-                                                _pathToObj);
+                    ? SdfPredicateFunctionResult {}
+                    : patternImpl.Next(objPath, state, _pathToObj);
             };
             _lastPathDepth = newDepth;
             return _eval->_EvalExpr(patternStateNext);

@@ -17,7 +17,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define USD_VALIDATOR_NAME_TOKENS                   \
-    ((compositionErrorTest, "usd:CompositionErrorTest"))
+    ((compositionErrorTest, "usd:CompositionErrorTest")) \
+    ((stageMetadataChecker, "usd:StageMetadataChecker"))
 
 #define USD_VALIDATOR_KEYWORD_TOKENS                \
     (UsdCoreValidators)

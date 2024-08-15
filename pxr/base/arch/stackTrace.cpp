@@ -94,7 +94,7 @@ using namespace std;
 typedef int (*ForkFunc)(void);
 ForkFunc Arch_nonLockingFork =
 #if defined(ARCH_OS_LINUX)
-    (ForkFunc)dlsym(RTLD_NEXT, "__libc_fork");
+    (ForkFunc)dlsym(RTLD_DEFAULT, "_Fork");
 #elif defined(ARCH_OS_DARWIN)
     NULL;
 #else
@@ -579,7 +579,7 @@ nonLockingLinux__execve (const char *file,
     /*
      * We make a direct system call here, because we can't find an
      * execve which corresponds with the non-locking fork we call
-     * (__libc_fork().)
+     * (_Fork().)
      *
      * This code doesn't mess with other threads, and avoids the bug
      * that calling regular execv after the nonLockingFork() causes

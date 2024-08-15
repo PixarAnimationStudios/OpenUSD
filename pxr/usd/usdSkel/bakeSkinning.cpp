@@ -1688,7 +1688,7 @@ _SkinningAdapter::_DeformNormalsWithSkinning(const GfMatrix4d& skelToGprimXf)
     WorkParallelForEach(
         _normals.value.begin(), _normals.value.end(),
         [&skelToGprimInvTransposeXform](GfVec3f& n) {
-            n = n * skelToGprimInvTransposeXform;
+            n = GfVec3f(n * skelToGprimInvTransposeXform);
         });
 }
 

@@ -147,6 +147,63 @@ SdfAttributeSpec::ClearConnectionPaths()
 
 // Attribute Value API
 
+SdfTimeSampleMap
+SdfAttributeSpec::GetTimeSampleMap() const
+{
+    return GetFieldAs<SdfTimeSampleMap>(SdfFieldKeys->TimeSamples);
+}
+
+std::set<double>
+SdfAttributeSpec::ListTimeSamples() const
+{
+    return GetLayer()->ListTimeSamplesForPath(GetPath());
+}
+
+size_t
+SdfAttributeSpec::GetNumTimeSamples() const
+{
+    return GetLayer()->GetNumTimeSamplesForPath(GetPath());
+}
+
+bool
+SdfAttributeSpec::GetBracketingTimeSamples(double time, double* tLower,
+                                          double* tUpper) const
+{
+    return GetLayer()->GetBracketingTimeSamplesForPath(GetPath(), time,
+                                                       tLower, tUpper);
+}
+
+bool
+SdfAttributeSpec::QueryTimeSample(double time, VtValue* value) const
+{
+    return GetLayer()->QueryTimeSample(GetPath(), time, value);
+}
+
+bool
+SdfAttributeSpec::QueryTimeSample(double time, SdfAbstractDataValue* value) const
+{
+    return GetLayer()->QueryTimeSample(GetPath(), time, value);
+}
+
+void
+SdfAttributeSpec::SetTimeSample(double time, const VtValue& value)
+{
+    GetLayer()->SetTimeSample(GetPath(), time, value);
+}
+
+void
+SdfAttributeSpec::SetTimeSample(double time,
+                               const SdfAbstractDataConstValue& value)
+{
+    GetLayer()->SetTimeSample(GetPath(), time, value);
+}
+
+void
+SdfAttributeSpec::EraseTimeSample(double time)
+{
+    GetLayer()->EraseTimeSample(GetPath(), time);
+}
+
 SDF_DEFINE_GET_SET_HAS_CLEAR(AllowedTokens, SdfFieldKeys->AllowedTokens, VtTokenArray)
 
 SDF_DEFINE_GET_SET_HAS_CLEAR(ColorSpace, SdfFieldKeys->ColorSpace, TfToken)

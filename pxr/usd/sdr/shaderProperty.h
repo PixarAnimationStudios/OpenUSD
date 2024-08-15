@@ -17,6 +17,7 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/ndr/property.h"
+#include "pxr/usd/ndr/sdfTypeIndicator.h"
 #include "pxr/usd/sdr/shaderNode.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -213,18 +214,18 @@ public:
     /// \name Utilities
     /// @{
 
-    /// Converts the property's type from `GetType()` into a `SdfValueTypeName`.
+    /// Converts the property's type from `GetType()` into a
+    /// `NdrSdfTypeIndicator`.
     ///
     /// Two scenarios can result: an exact mapping from property type to Sdf
-    /// type, and an inexact mapping. In the first scenario, the first element
-    /// in the pair will be the cleanly-mapped Sdf type, and the second element,
-    /// a TfToken, will be empty. In the second scenario, the Sdf type will be
-    /// set to `Token` to indicate an unclean mapping, and the second element
-    /// will be set to the original type returned by `GetType()`.
-    ///
-    /// \sa GetDefaultValueAsSdfType
+    /// type, and an inexact mapping. In the first scenario,
+    /// NdrSdfTypeIndicator will contain a cleanly-mapped Sdf type. In the
+    /// second scenario, the NdrSdfTypeIndicator will contain an Sdf type
+    /// set to `Token` to indicate an unclean mapping, and
+    /// NdrSdfTypeIndicator::GetNdrType will be set to the original type
+    /// returned by `GetType()`.
     SDR_API
-    const NdrSdfTypeIndicator GetTypeAsSdfType() const override;
+    NdrSdfTypeIndicator GetTypeAsSdfType() const override;
 
     /// Accessor for default value corresponding to the SdfValueTypeName
     /// returned by GetTypeAsSdfType. Note that this is different than 

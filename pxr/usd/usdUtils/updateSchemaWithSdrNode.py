@@ -73,7 +73,7 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, primDefForAttrPruning,
             "shader nodes' outputs to not have the \"outputs\" namespace " \
             "prefix." %(propName, propertyNSPrefixOverride))
 
-    attrType = prop.GetTypeAsSdfType()[0]
+    attrType = prop.GetTypeAsSdfType().GetSdfType()
     
     if not Sdf.Path.IsValidNamespacedIdentifier(propName):
         Tf.RaiseRuntimeError("Property name (%s) for schema (%s) is an " \

@@ -41,7 +41,7 @@ _TransformPoints(GfVec3f *pointsOut, GfVec3f *pointsIn, size_t numPoints,
     for (size_t i = 0; i < numPoints; ++ i) {
         GfVec4f point = GfVec4f(pointsIn[i][0], pointsIn[i][1],
                                 pointsIn[i][2], 1.0f);
-        point = point *  mat;
+        point = GfVec4f(point *  mat);
         pointsOut[i] = GfVec3f(point[0], point[1], point[2]);
     }
 }

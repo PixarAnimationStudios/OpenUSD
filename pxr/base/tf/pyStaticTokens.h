@@ -40,34 +40,21 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define TF_PY_WRAP_PUBLIC_TOKENS_IN_CURRENT_SCOPE(key, seq)                 \
     _TF_PY_TOKENS_WRAP_ATTR_SEQ(key, seq)
 
-// Helper to return a static token as a string.  We wrap tokens as Python
-// strings and for some reason simply wrapping the token using def_readonly
-// bypasses to-Python conversion, leading to the error that there's no
-// Python type for the C++ TfToken type.  So we wrap this functor instead.
-class _TfPyWrapStaticToken {
-public:
-    _TfPyWrapStaticToken(const TfToken* token) : _token(token) { }
-
-    std::string operator()() const
-    {
-        return _token->GetString();
-    }
-
-private:
-    const TfToken* _token;
-};
-
 // Private macros to add a single data member.
 #define _TF_PY_TOKENS_WRAP_ATTR_MEMBER(r, key, name)                        \
     boost::python::scope().attr(                                            \
         TF_PP_STRINGIZE(name)) = key->name.GetString();
 
+// We wrap tokens as Python strings, but simply wrapping the token using 
+// def_readonly bypasses to-Python conversion, leading to the error
+// that there's no Python type for the C++ TfToken type. See:
+// https://www.boost.org/doc/libs/release/libs/python/doc/html/faq/why_is_my_automatic_to_python_co.html
+//
+// So we use add_static_property and wrap a function that performs the
+// conversion instead.
 #define _TF_PY_TOKENS_WRAP_MEMBER(r, key, name)                             \
     .add_static_property(TF_PP_STRINGIZE(name),                             \
-        boost::python::make_function(_TfPyWrapStaticToken((&key->name)),    \
-            boost::python::return_value_policy<                             \
-                boost::python::return_by_value>(),                          \
-            boost::mpl::vector1<std::string>()))
+        +[]() { return key->name.GetString(); })                            \
 
 // Private macros to wrap a single element in a sequence.
 #define _TF_PY_TOKENS_WRAP_ELEMENT(key, elem)                               \

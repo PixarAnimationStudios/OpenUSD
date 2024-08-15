@@ -745,7 +745,7 @@ Sdf_FileIOUtility::WriteSpline(
         out, indent, "post", spline.GetPostExtrapolation());
 
     // Inner loop params, if present.
-    if (spline.HasInnerLoops()) {
+    if (spline.GetInnerLoopParams() != TsLoopParams()) {
         const TsLoopParams lp = spline.GetInnerLoopParams();
         Write(out, indent + 1, "loop: (%s, %s, %d, %d, %s),\n",
             TfStringify(lp.protoStart).c_str(),

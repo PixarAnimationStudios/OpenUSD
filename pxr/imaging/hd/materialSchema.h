@@ -42,6 +42,17 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialSchemaTokens, HD_API,
 
 //-----------------------------------------------------------------------------
 
+// The Material schema is a container schema that provides the correct
+// material definition per render context.
+//
+// For example, a material may specify several render contexts like the
+// universalRenderContext (""), Renderman ("ri"), Storm ("glslfx"), etc. Each
+// render context will then provide the specific definition for the renderer,
+// which is defined by the MaterialNetwork schema. The universalRenderContext
+// applies to all renderers.
+//
+// See "Custom Code: Schema Methods" section for ASCII art diagram.
+//
 
 class HdMaterialSchema : public HdSchema
 {
@@ -64,6 +75,71 @@ public:
     /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
+
+    /// \name ASCII Art Diagram
+    /// @{
+
+    /// The following diagram depicts an example scene index prim 
+    /// "Plastic_Material". "Plastic_Material" is a scene index prim that has 
+    /// multiple container data sources, like 'material' (HdMaterialSchema) and 
+    /// 'materialOverride' (HdMaterialOverrideSchema). "Plastic_Material" as a 
+    /// scene index prim also has a scene index prim type, which is type 
+    /// 'material'.  (See HdPrimTypeTokens).
+
+    /// Note the following:
+    /// 1. The data flows from left to right.
+    /// 2. The lines between "materialOverride" and "interfaceMappings" 
+    ///     are not true connections and are not backed by the 
+    ///     MaterialConnection schema. Each item within "materialOverride"
+    ///     and "interfaceMappings" is loosely coupled by their matching 
+    ///     names.
+    /// 3. The connections in the diagram are drawn with an 'o' to indicate
+    ///     the source where the connection was authored, and these 
+    ///     connections are backed by the MaterialConnection schema. 
+        
+    /// +----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+    /// |                                                                                                                                                                                                          |
+    /// |  "Plastic_Material" [scene index prim name]                                                                                                                                                              |
+    /// |                                                                                                                                                                                                          |
+    /// | +-----------------------------------+      +--------------------------------------------------------------------------------------------------------------------------------------------------------+    |
+    /// | | materialOverride                  |      | material                                                                                                                                               |    |
+    /// | |  +------------------------------+ |      |  +--------------------------------------------------------------------------------------------------------------------------------------------------+  |    |
+    /// | |  | interfaceValues              | |      |  | ri [materialNetwork for Renderman render context]                                                                                                |  |    |
+    /// | |  |                              | |      |  |    +-----------------------+       +--------------------------------------------------------------------------------+   +-------------------+    |  |    |
+    /// | |  | *globalVal = 0.2-------------+-+----+ |  |    |interfaceMappings      |       | nodes                                                                          |   |terminals          |    |  |    |
+    /// | |  |                              | |    | |  |    |                       |       | +--------------------+                                                         |   |                   |    |  |    |
+    /// | |  | *globalSpecularKface = 0.666-+-+-+  +-+--+--+-+*globalVal o-----------+---+   | |"Color_Manipulate"  |                                                         | +-+-o*surface         |    |  |    |
+    /// | |  |                              | | |    |  |    |                       |   |   | |[materialNode]      |                                                         | | |                   |    |  |    |
+    /// | |  +------------------------------+ | +--+-+--+--+-+*globalSpecularKface o-+-+ |   | |                    |                                                         | | |                   |    |  |    |
+    /// | |                                   |      |  |    |                       | | +---+-+-*adjustVal     *out+----+                                                    | | +-------------------+    |  |    |
+    /// | +-----------------------------------+      |  |    +-----------------------+ | |   | |                    |    |                                                    | |                          |  |    |
+    /// |                                            |  |                              | |   | +--------------------+    |  +-----------------------+  +--------------------+ | |                          |  |    |
+    /// |                                            |  |                              | |   |                           |  |"MaterialLayer"        |  |"PxrSurface"        | | |                          |  |    |
+    /// |                                            |  |                              | |   |                           |  |[materialNode]         |  |[materialNode]      | | |                          |  |    |
+    /// |                                            |  |                              | |   |                           |  |                       |  |                    | | |                          |  |    |
+    /// |                                            |  |                              +-+---+---------------------------+--+--*specularKface   *out+--+-o*materialIn   *out+-+-+                          |  |    |
+    /// |                                            |  |                                |   |                           |  |                       |  |                    | |                            |  |    |
+    /// |                                            |  |                                |   |                           |  |  *diffuseK = 0.12     |  |                    | |                            |  |    |
+    /// |                                            |  |                                |   | +----------------------+  |  |                       |  +--------------------+ |                            |  |    |
+    /// |                                            |  |                                |   | |"Color_RetargetLayer" |  |  |                       |                         |                            |  |    |
+    /// |                                            |  |                                |   | |[materialNode]        |  +--+-o*someInput_A         |                         |                            |  |    |
+    /// |                                            |  |                                |   | |                      |     |                       |                         |                            |  |    |
+    /// |                                            |  |                                +---+-+-*valRemapAmount  *out+-----+-o*someInput_B         |                         |                            |  |    |
+    /// |                                            |  |                                    | |                      |     |                       |                         |                            |  |    |
+    /// |                                            |  |                                    | +----------------------+     +-----------------------+                         |                            |  |    |
+    /// |                                            |  |                                    |                                                                                |                            |  |    |
+    /// |                                            |  |                                    |                                                                                |                            |  |    |
+    /// |                                            |  |                                    |                                                                                |                            |  |    |
+    /// |                                            |  |                                    |                                                                                |                            |  |    |
+    /// |                                            |  |                                    +--------------------------------------------------------------------------------+                            |  |    |
+    /// |                                            |  |                                                                                                                                                  |  |    |
+    /// |                                            |  +--------------------------------------------------------------------------------------------------------------------------------------------------+  |    |
+    /// |                                            |                                                                                                                                                        |    |
+    /// |                                            +--------------------------------------------------------------------------------------------------------------------------------------------------------+    |
+    /// |                                                                                                                                                                                                          |
+    /// +----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+    
+    /// @}
 
     HD_API
     HdMaterialNetworkSchema GetMaterialNetwork();

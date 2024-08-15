@@ -6,6 +6,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/attributeSpec.h"
+#include "pxr/usd/sdf/changeManager.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/notice.h"
 #include "pxr/usd/sdf/path.h"
@@ -16,9 +17,168 @@
 #include "pxr/usd/sdf/schema.h"
 
 #include <map>
+#include <sstream>
 #include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+static void
+_TestSdfLayerCreateDiffChangelist()
+{
+    // Create layers to diff
+    SdfLayerRefPtr actualLayer = SdfLayer::CreateAnonymous();
+    actualLayer->ImportFromString(    
+        R"(#sdf 1.4.32
+            over "a"{}
+            def "b"{}
+            over "c"{
+                int propC = 1
+            }
+            def "r" {
+                int propR = 1
+            }
+            def "p" {
+                int propP = 1
+            }
+            )"
+    );
+
+    SdfLayerRefPtr diffLayer = SdfLayer::CreateAnonymous();
+    diffLayer->ImportFromString(
+        R"(#sdf 1.4.32
+            def "z"{}
+            def "b"{}
+            over "c"{
+                int propC = 2
+            }
+            def "n" {
+                int propN = 1
+            }
+            def "p" {}
+    )");
+
+    const auto createTestChangelist = [](bool compareValues) {
+        VtValue value;
+        SdfChangeList changeList;
+
+        
+        changeList.DidRemoveProperty(SdfPath("/r.propR"), false);
+        changeList.DidRemovePrim(SdfPath("/r"), false);
+        changeList.DidRemoveProperty(SdfPath("/p.propP"), false);
+        changeList.DidRemovePrim(SdfPath("/a"), true);
+        changeList.DidAddPrim(SdfPath("/n"), false);
+        changeList.DidChangeInfo(SdfPath("/n"), SdfFieldKeys->Specifier, 
+            std::move(value), VtValue(SdfSpecifierDef));
+        changeList.DidAddProperty(SdfPath("/n.propN"), true);
+        changeList.DidAddPrim(SdfPath("/z"), false);
+        changeList.DidChangeInfo(SdfPath("/z"), SdfFieldKeys->Specifier, 
+            std::move(value), VtValue(SdfSpecifierDef));
+
+        if (compareValues) {
+            VtValue oldValue(1);
+            changeList.DidChangeInfo(SdfPath("/r.propR"), SdfFieldKeys->Default, 
+                std::move(oldValue), VtValue());
+            changeList.DidChangeInfo(SdfPath("/n.propN"), 
+                SdfFieldKeys->TypeName, std::move(oldValue), VtValue("int"));
+            changeList.DidChangeInfo(SdfPath("/n.propN"), SdfFieldKeys->Default, 
+                std::move(oldValue), VtValue(1));
+            changeList.DidChangeInfo(SdfPath("/n.propN"), SdfFieldKeys->Custom, 
+                std::move(oldValue), VtValue(0));
+            changeList.DidChangeInfo(SdfPath("/n.propN"), 
+                SdfFieldKeys->Variability, std::move(oldValue), 
+                VtValue(SdfVariabilityVarying));
+            oldValue = VtValue(1);
+            changeList.DidChangeInfo(SdfPath("/p.propP"), SdfFieldKeys->Default, 
+                std::move(oldValue), VtValue());
+            oldValue = VtValue(1);
+            changeList.DidChangeInfo(SdfPath("/c.propC"), SdfFieldKeys->Default, 
+                std::move(oldValue), VtValue(2));
+        }
+
+        return changeList;
+    };
+
+    // Copy the layer so we can verify it does not change during the operation
+    SdfLayerRefPtr expectedLayer = SdfLayer::CreateAnonymous();
+    expectedLayer->TransferContent(actualLayer);
+
+    // build the changelist we expect to see when not comparing values
+    SdfChangeList expectedCl = createTestChangelist(false);
+    SdfChangeList expectedClValues = createTestChangelist(true);
+
+
+    // Ensure that the layer remains unchanged during the process
+    std::string actualLayerStr, expectedLayerStr;
+    TF_AXIOM(actualLayer->ExportToString(&actualLayerStr));
+    TF_AXIOM(expectedLayer->ExportToString(&expectedLayerStr));
+    TF_AXIOM(actualLayerStr == expectedLayerStr);
+
+    SdfChangeList actualCl = actualLayer->CreateDiff(diffLayer, 
+            /*compareFieldValues*/ false);
+
+    SdfChangeList actualClValues = actualLayer->CreateDiff(
+        diffLayer, /*compareFieldValues*/ true);
+    
+    // Ensure that a reasonable changelist is generated
+    std::ostringstream actualClStr, expectedClStr;
+    std::ostringstream actualClValuesStr, expectedClValuesStr;
+    actualClStr << actualCl;
+    expectedClStr << expectedCl;
+    actualClValuesStr << actualClValues;
+    expectedClValuesStr << expectedClValues;
+
+    TF_AXIOM(actualClStr.str() == expectedClStr.str());
+    TF_AXIOM(actualClValuesStr.str() == expectedClValuesStr.str());
+}
+
+static void _TestSdfChangeManagerExtractLocalChanges()
+{
+    struct Listener : public TfWeakBase
+    {
+        void LayersDidChange(const SdfNotice::LayersDidChange& change)
+        {
+            invocations += 1;
+        }
+
+        Listener()
+        {
+            _key = TfNotice::Register(
+                TfCreateWeakPtr(this), &Listener::LayersDidChange );
+        }
+
+        ~Listener()
+        {
+            TfNotice::Revoke(_key);
+        }
+
+        TfNotice::Key _key;
+        size_t invocations = 0;
+    };
+
+    SdfLayerRefPtr testLayer = SdfLayer::CreateAnonymous();
+    Listener listener;
+
+    // This block should trigger an invocation of the listener
+    {
+        SdfChangeBlock block;
+        SdfCreatePrimInLayer(testLayer, SdfPath("/test1"));
+    }
+
+    TF_AXIOM(listener.invocations == 1);
+
+    // There should be no additional invocation of the the listener once the
+    // the block goes out of scope because the changes for the layer have been
+    // extracted.
+    {
+        SdfChangeBlock block;
+        SdfCreatePrimInLayer(testLayer, SdfPath("/test2"));
+        SdfChangeList changes = 
+            Sdf_ChangeManager::Get().ExtractLocalChanges(testLayer);
+        TF_AXIOM(!changes.GetEntryList().empty());
+    }
+
+    TF_AXIOM(listener.invocations == 1);
+}
 
 static void
 _TestSdfLayerDictKeyOps()
@@ -96,6 +256,15 @@ _TestSdfLayerTimeSampleValueType()
     TF_AXIOM(layer->QueryTimeSample(attr->GetPath(), 4.0, &vtValue));
     TF_AXIOM(vtValue.IsHolding<double>());
     TF_AXIOM(vtValue.UncheckedGet<double>() == 4.0);
+
+    // Ensure time samples can be set and retrieved directly on
+    // attributes themselves.
+    attr->SetTimeSample(5.0, 5.0);
+    TF_AXIOM(attr->QueryTimeSample(5.0, &value));
+    TF_AXIOM(value == 5.0);
+    TF_AXIOM(attr->GetNumTimeSamples() == 5);
+    TF_AXIOM(attr->QueryTimeSample(4.0, &value));
+    TF_AXIOM(value == 4.0);
 }
 
 static void
@@ -545,6 +714,8 @@ _TestSdfMapEditorProxyOperators()
 int
 main(int argc, char **argv)
 {
+    _TestSdfChangeManagerExtractLocalChanges();
+    _TestSdfLayerCreateDiffChangelist();
     _TestSdfLayerDictKeyOps();
     _TestSdfLayerTimeSampleValueType();
     _TestSdfLayerTransferContents();

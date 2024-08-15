@@ -190,34 +190,6 @@ operator -(const {{ MAT }}& m)
 
     return *this;
 }
-{% if SCL == 'double' %}
-
-/*
- * Define multiplication between floating vector and double matrix.
- */
-GfVec{{ DIM }}f
-operator *(const GfVec{{ DIM }}f &vec, const {{ MAT }} &m)
-{
-    return GfVec{{ DIM }}f(
-{% for COL in range(DIM) %}
-        float({{ LIST("vec[%%(i)s] * m._mtx[%%(i)s][%(COL)s]" % {'COL':COL},
-                        sep=" + ") }})
-{%- if not loop.last %}{{ ",\n" }}{% endif %}
-{% endfor %});
-}
-
-GfVec{{ DIM }}f
-operator *(const {{ MAT }}& m, const GfVec{{ DIM }}f &vec)
-{
-    return GfVec{{ DIM }}f(
-{% for ROW in range(DIM) %}
-        float({{ LIST("vec[%%(i)s] * m._mtx[%(ROW)s][%%(i)s]" % {'ROW':ROW},
-                        sep=" + ") }})
-{%- if not loop.last %}{{ ",\n" }}{% endif %}
-{% endfor %});
-}
-{% endif -%}
-
 {% block customXformFunctions %}
 {% endblock customXformFunctions %}
 

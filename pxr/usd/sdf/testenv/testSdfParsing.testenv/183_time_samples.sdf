@@ -23,9 +23,4 @@ def GprimSphere "Sphere"
         3: None,
     }
     varying rel constraint
-    varying rel constraint.timeSamples = {
-        1: </Sphere/scope1>,
-        10: </Sphere/scope2>,
-        20: None,
-    }
 }

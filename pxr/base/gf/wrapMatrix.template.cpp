@@ -312,6 +312,10 @@ void wrapMatrix{{ SUFFIX }}()
         .def( self * GfVec{{ SUFFIX }}() )
         .def( GfVec{{ SUFFIX }}() * self )
 {% if SCL == 'double' %}
+
+        // Provide wrapping that makes up for the fact that, in Python, we
+        // don't allow implicit conversion from GfVec3f to GfVec3d (which we
+        // do in C++).
         .def( self * GfVec{{ DIM }}f() )
         .def( GfVec{{ DIM }}f() * self )
 {% endif %}

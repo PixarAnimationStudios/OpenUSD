@@ -584,6 +584,7 @@ HdPrman_ConvertPrimvars(
     int numVertex,
     int numVarying,
     int numFaceVarying,
+    const GfVec2d &shutterInterval,
     float time = 0.f);
 
 /// Check for any primvar opinions on the material that should be Riley primvars.

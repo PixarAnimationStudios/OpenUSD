@@ -429,6 +429,17 @@ TestSearch()
                  "/World/anim/chars/Sully/geom/body_sbdv",
                  "/World/anim/chars/Sully/geom/body_sbdv.points" });
 
+    testSearch("/World/anim/chars//",
+               { "/World/anim/chars",
+                 "/World/anim/chars/Mike",
+                 "/World/anim/chars/Mike/geom",
+                 "/World/anim/chars/Mike/geom/body_sbdv",
+                 "/World/anim/chars/Mike/geom/body_sbdv.points",
+                 "/World/anim/chars/Sully",
+                 "/World/anim/chars/Sully/geom",
+                 "/World/anim/chars/Sully/geom/body_sbdv",
+                 "/World/anim/chars/Sully/geom/body_sbdv.points" });
+    
     testSearch("//{isPropertyPath}",
                { "/World/anim/chars/Mike/geom/body_sbdv.points",
                  "/World/anim/chars/Sully/geom/body_sbdv.points" });

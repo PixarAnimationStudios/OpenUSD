@@ -146,6 +146,21 @@ std::pair<T, VtIntArray> HdResampleRawTimeSamples(
     }
 }
 
+// Returns contributing sample times for the interval from startTime to endTime.
+//
+// If there is no sample at the startTime, this will include the sample times
+// just before the start time if it exists. Similarly for the endTime.
+//
+// Return true if the value is changing on the interval from startTime to
+// endTime - or equivalently if we return two times.
+bool
+HdGetContributingSampleTimesForInterval(
+    size_t count,
+    const float * sampleTimes,
+    float startTime,
+    float endTime,
+    std::vector<float> * outSampleTimes);
+
 /// An array of a value sampled over time, in struct-of-arrays layout.
 /// This is provided as a convenience for time-sampling attributes.
 /// This type has static capacity but dynamic size, providing
@@ -204,6 +219,15 @@ struct HdTimeSampleArray
             }
         }
         return ret;
+    }
+
+    /// See HdGetContributingSampleTimesForInterval.
+    bool GetContributingSampleTimesForInterval(
+        const float startTime, const float endTime,
+        std::vector<float> * const outSampleTimes) const
+    {
+        return HdGetContributingSampleTimesForInterval(
+            count, times.data(), startTime, endTime, outSampleTimes);
     }
 
     size_t count;

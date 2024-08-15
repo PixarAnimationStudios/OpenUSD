@@ -257,7 +257,7 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
             // HdStSimpleLightingShader.
             if (glfl.IsCameraSpaceLight()) {
                 GfVec4f lightPos = glfl.GetPosition();
-                glfl.SetPosition(lightPos * viewInverseMatrix);
+                glfl.SetPosition(GfVec4f(lightPos * viewInverseMatrix));
                 GfVec3f lightDir = glfl.GetSpotDirection();
                 glfl.SetSpotDirection(
                     GfVec3f(viewInverseMatrix.TransformDir(lightDir)));

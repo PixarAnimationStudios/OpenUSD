@@ -168,7 +168,7 @@ HgiVulkanCommandQueue::AcquireCommandBuffer()
     // Grab one of the available command buffers.
     HgiVulkanCommandBuffer* cmdBuf = nullptr;
     for (HgiVulkanCommandBuffer* cb : pool->commandBuffers) {
-        if (!cb->IsInFlight()) {
+        if (cb->IsReset()) {
             cmdBuf = cb;
             break;
         }
@@ -181,11 +181,33 @@ HgiVulkanCommandQueue::AcquireCommandBuffer()
     }
 
     // Acquire an unique id for this cmd buffer amongst inflight cmd buffers.
-    uint8_t inflightId = _AcquireInflightIdBit();
-    _SetInflightBit(inflightId, /*enabled*/ true);
+    std::optional<uint8_t> inflightId = _AcquireInflightIdBit();
+
+    // No id available: check if any command buffers are no longer in-flight,
+    // and release their bit. Spin until we can acquire a bit.
+    if (!inflightId) {
+        do {
+            // To avoid a hot loop with high CPU usage, sleep a bit.
+            // We want to sleep as little as possible, but the actual
+            // sleep time is system dependent. This is unfortunate and
+            // will cause framerate hitches, but if we got here in the
+            // first place it's because the device is overloaded and things
+            // are not going well.
+            std::this_thread::sleep_for(std::chrono::microseconds(1));
+            for (HgiVulkanCommandBuffer* cb : pool->commandBuffers) {
+                if (cb->UpdateInFlightStatus(HgiSubmitWaitTypeNoWait) ==
+                    HgiVulkanCommandBuffer::InFlightUpdateResultFinishedFlight)
+                {
+                    _ReleaseInflightBit(cb->GetInflightId());
+                }
+            }
+
+            inflightId = _AcquireInflightIdBit();
+        } while (!inflightId);
+    }
 
     // Begin recording to ensure the caller has exclusive access to cmd buffer.
-    cmdBuf->BeginCommandBuffer(inflightId);
+    cmdBuf->BeginCommandBuffer(*inflightId);
     return cmdBuf;
 }
 
@@ -209,7 +231,8 @@ HgiVulkanCommandQueue::AcquireResourceCommandBuffer()
 uint64_t
 HgiVulkanCommandQueue::GetInflightCommandBuffersBits()
 {
-    return _inflightBits.load();
+    // See _AcquireInflightIdBit for explanation of memory order.
+    return _inflightBits.load(std::memory_order_relaxed);
 }
 
 /* Multi threaded */
@@ -231,7 +254,7 @@ HgiVulkanCommandQueue::ResetConsumedCommandBuffers(HgiSubmitWaitType wait)
         HgiVulkan_CommandPool* pool = it.second;
         for (HgiVulkanCommandBuffer* cb : pool->commandBuffers) {
             if (cb->ResetIfConsumedByGPU(wait)) {
-                _SetInflightBit(cb->GetInflightId(), /*enabled*/ false);
+                _ReleaseInflightBit(cb->GetInflightId());
             }
         }
     }
@@ -256,40 +279,70 @@ HgiVulkanCommandQueue::_AcquireThreadCommandPool(
 }
 
 /* Multi threaded */
-uint8_t
+std::optional<uint8_t>
 HgiVulkanCommandQueue::_AcquireInflightIdBit()
 {
-    // Command buffers can be acquired by threads, so we need to do an
-    // increment that is thread safe. We circle back to the first bit after
-    // all bits have been used once. These means we can track the in-flight
-    // status of up to 64 consecutive command buffer usages.
-    // This becomes important in garbage collection and is explained more there.
-    return _inflightCounter.fetch_add(1) % 64;
+    // Command buffers can be acquired by threads, so we need to do an id
+    // acquire that is thread safe. We search for the next zero bit in a
+    // 64bit word. This means we can track the in-flight status of up to 64
+    // consecutive command buffer usages. This becomes important in garbage
+    // collection and is explained more there.
+    const uint8_t nextBitIndex = 0x3F & _inflightCounter.fetch_add(1,
+        std::memory_order_relaxed);
+    const uint64_t previousBits =
+        (static_cast<uint64_t>(1) << nextBitIndex) - 1;
+
+    // We need to set the bit atomically since this function can be called by
+    // multiple threads. Try to set the value and if it fails (another thread
+    // may have updated the `expected` value!), we re-apply our bit and try
+    // again. Relaxed memory order since this isn't used to order read/writes.
+    // If no bits are available, then exit with nothing. The caller will try
+    // to free some bits by updating the in-flight status of the existing 
+    // buffers.
+    uint64_t freeBit;
+    uint64_t expected = _inflightBits.load(std::memory_order_relaxed);
+    uint64_t desired;
+    do {
+        // Don't re-use lower bits if possible: mask them as used.
+        // _inflightCounter will wrap around when we run out.
+        const uint64_t usedBits = expected | previousBits;
+        freeBit = ~usedBits & (usedBits + 1);
+        if (freeBit == 0) {
+            return std::nullopt;
+        }
+
+        expected &= ~freeBit;
+        desired = expected | freeBit;
+    } while (!_inflightBits.compare_exchange_weak(expected, desired,
+        std::memory_order_relaxed));
+
+    // Based on: https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightParallel
+    // C++20: use std::countr_zero instead
+    uint8_t id = 63;
+    if (freeBit & 0x00000000FFFFFFFF) id -= 32;
+    if (freeBit & 0x0000FFFF0000FFFF) id -= 16;
+    if (freeBit & 0x00FF00FF00FF00FF) id -= 8;
+    if (freeBit & 0x0F0F0F0F0F0F0F0F) id -= 4;
+    if (freeBit & 0x3333333333333333) id -= 2;
+    if (freeBit & 0x5555555555555555) id -= 1;
+
+    return id;
 }
 
 /* Multi threaded */
 void
-HgiVulkanCommandQueue::_SetInflightBit(uint8_t id, bool enabled)
+HgiVulkanCommandQueue::_ReleaseInflightBit(uint8_t id)
 {
     // We need to set the bit atomically since this function can be called by
     // multiple threads. Try to set the value and if it fails (another thread
-    // may have updated the `expected` value!), we re-apply our bit and
-    // try again.
-    uint64_t expect = _inflightBits.load();
-
-    if (enabled) {
-        // Spin if bit was already enabled. This means we have reached our max
-        // of 64 command buffers and must wait until it becomes available.
-        expect &= ~(1ULL<<id);
-        while (!_inflightBits.compare_exchange_weak(
-            expect, expect | (1ULL<<id))) 
-        {
-            expect &= ~(1ULL<<id);
-        }
-    } else {
-        while (!_inflightBits.compare_exchange_weak(
-            expect, expect & ~(1ULL<<id)));
-    }
+    // may have updated the `expected` value!), we re-apply our bit and try
+    // again. Relaxed memory order since this isn't used to order read/writes.
+    uint64_t expected = _inflightBits.load(std::memory_order_relaxed);
+    uint64_t desired;
+    do {
+        desired = expected & ~(1ULL << id);
+    } while (!_inflightBits.compare_exchange_weak( expected, desired,
+        std::memory_order_relaxed));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

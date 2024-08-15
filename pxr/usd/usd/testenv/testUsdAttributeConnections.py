@@ -396,7 +396,7 @@ class TestUsdAttributeConnections(unittest.TestCase):
 
             prim = stage.DefinePrim("/Test")
             attr = prim.CreateAttribute("attr", Sdf.ValueTypeNames.Int)
-            attrSpec = stage.GetEditTarget().GetPropertySpecForScenePath(
+            attrSpec = stage.GetEditTarget().GetAttributeSpecForScenePath(
                 attr.GetPath())
 
             attr.SetConnections(["/Test.A", "/Test.B"])

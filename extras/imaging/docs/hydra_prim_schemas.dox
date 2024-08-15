@@ -136,7 +136,38 @@ have these.
               node output providing the material terminal <name>
                 - upstreamNodePath (TfToken)
                 - upstreamNodeOutputName (TfToken)
+        - interfaceMappings (HdContainerDataSource)
+            - <name> (HdVectorDataSource) 
+                - <index> (HdMaterialInterfaceMappingsSchema) 
+                    - nodePath (TfToken)
+                    - inputName (TfToken)
+- materialOverride (HdMaterialOverrideSchema)
+    - interfaceValues (HdContainerDataSource)
+        - <name> (HdMaterialNodeParameterSchema)
+            - value (HdSampledDataSource)
+            - _Optional_ - colorSpace (TfToken)
 - primvars (HdPrimvarsSchema)
+
+The following diagram depicts an example scene index prim "Plastic_Material".
+"Plastic_Material" is a scene index prim that has multiple container data 
+sources, like 'material' (HdMaterialSchema) and 'materialOverride' 
+(HdMaterialOverrideSchema). "Plastic_Material" as a scene index prim also has
+a scene index prim type, which is type 'material'. (See HdPrimTypeTokens).
+
+The diagram intends to show how the two sibling container data sources 
+"materialOverride" and "material" relate to each other.
+
+Note the following:
+1. The data flows from left to right.
+2. The dotted lines between "materialOverride" and "interfaceMappings" are not 
+true connections and are not backed by the MaterialConnection schema. Each item 
+within "materialOverride" and "interfaceMappings" is loosely coupled by their 
+matching names.
+3. The connections in the diagram are drawn with an 'o' to indicate the source 
+where the connection was authored, and these connections are backed by the 
+MaterialConnection schema.
+
+\image html HdSceneIndexPrimMaterialDiagram.drawio.svg
 
 <b>Light</b>
 

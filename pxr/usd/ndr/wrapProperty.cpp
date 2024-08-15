@@ -38,7 +38,6 @@ void wrapProperty()
             return_value_policy<TfPyMapToDictionary>())
         .def("IsConnectable", &This::IsConnectable)
         .def("CanConnectTo", &This::CanConnectTo)
-        .def("GetTypeAsSdfType", &This::GetTypeAsSdfType,
-            return_value_policy<TfPyPairToTuple>())
+        .def("GetTypeAsSdfType", &This::GetTypeAsSdfType)
         ;
 }

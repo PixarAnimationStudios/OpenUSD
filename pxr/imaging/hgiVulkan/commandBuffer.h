@@ -27,9 +27,35 @@ using HgiVulkanCompletedHandlerVector = std::vector<HgiVulkanCompletedHandler>;
 /// Represents a primary command buffer in Vulkan.
 /// Command buffers are managed by the CommandQueue.
 ///
+/// It has the following lifecycle:
+///   +-> Initial: Reset=T, InFlight=F, Submitted=F
+///   |            \/
+///   |   BeginCommandBuffer(): Reset=F, InFlight=T, Submitted=F
+///   |            \/
+///   |   EndCommandBuffer(): Reset=F, InFlight=T, Submitted=T
+///   |            \/
+///   |   *UpdateInFlightStatus(): Reset=F, InFlight=F, Submitted=T
+///   |            \/
+///   +-- *†ResetIfConsumedByGPU(): Reset=T, InFlight=F, Submitted=F
+///
+/// *Only if execution finished or waited on.
+/// †Also internally called by ResetIfConsumedByGPU().
+///
 class HgiVulkanCommandBuffer final
 {
 public:
+    /// \enum InFlightUpdateResult
+    ///
+    /// The result from calling UpdateInFlightStatus().
+    /// This captures the state transition from in-flight
+    /// to not in-flight as "FinishedFlight".
+    ///
+    enum InFlightUpdateResult {
+        InFlightUpdateResultNotInFlight,
+        InFlightUpdateResultStillInFlight,
+        InFlightUpdateResultFinishedFlight
+    };
+
     HGIVULKAN_API
     HgiVulkanCommandBuffer(HgiVulkanDevice* device, VkCommandPool pool);
 
@@ -48,8 +74,14 @@ public:
     HGIVULKAN_API
     void EndCommandBuffer();
 
+    /// Returns true if the command buffer was reset and is ready for re-use,
+    /// otherwise false. The initial state is true.
+    HGIVULKAN_API
+    bool IsReset() const;
+
     /// Returns true if the command buffer is recording commands or being
-    /// consumed by the GPU. Returns false if command buffer is available.
+    /// consumed by the GPU. Returns false if command buffer is ready for reset,
+    /// using ResetIfConsumedByGPU()
     HGIVULKAN_API
     bool IsInFlight() const;
 
@@ -70,6 +102,14 @@ public:
     /// has been completed in the queue.
     HGIVULKAN_API
     VkSemaphore GetVulkanSemaphore() const;
+
+    /// Update the command buffer in-flight status. If the status was 
+    /// StillInFlight on the last update, the result will be FinishedFlight if 
+    /// the device has finished consuming the buffer. Otherwise if not 
+    /// consumed, it will be StillInFlight. Finally if the buffer had finished 
+    /// flight or was not in flight, it will be NotInFlight.
+    HGIVULKAN_API
+    InFlightUpdateResult UpdateInFlightStatus(HgiSubmitWaitType wait);
 
     /// Resets the cmd buffer if it has been consumed by the GPU.
     /// Returns true if the command buffer was reset, false if it was not reset.
@@ -120,6 +160,7 @@ private:
 
     HgiVulkanCompletedHandlerVector _completedHandlers;
 
+    bool _isReset;
     bool _isInFlight;
     bool _isSubmitted;
     uint8_t _inflightId;

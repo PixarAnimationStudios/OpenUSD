@@ -92,7 +92,7 @@ class UsdPrimSubtreeRange;
 /// optionally making use of the \ref primFlags.h "prim predicates facility" 
 /// (GetChildren(), GetAllChildren(), GetFilteredChildren()).
 ///
-/// \section Lifetime Management
+/// \section UsdPrim_Lifetime_Management Lifetime Management
 ///
 /// Clients acquire UsdPrim objects, which act like weak/guarded pointers
 /// to persistent objects owned and managed by their originating UsdStage.

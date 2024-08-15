@@ -1003,6 +1003,8 @@ HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
 
     // The MSAA on renderPipelineState has to match the render target.
     desc.multiSampleState.sampleCount = aovTexture->GetDescriptor().sampleCount;
+    desc.multiSampleState.multiSampleEnable =
+        desc.multiSampleState.sampleCount > 1;
 
     // Setup rasterization state
     desc.rasterizationState.cullMode = HgiCullModeBack;

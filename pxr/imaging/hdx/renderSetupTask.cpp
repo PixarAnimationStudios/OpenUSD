@@ -172,6 +172,9 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
             !params.enableIdRender &&
             !TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE));
 
+        renderPassState->SetMultiSampleEnabled(
+            params.useAovMultiSample && !params.enableIdRender);
+
         if (HdStRenderPassState * const hdStRenderPassState =
                     dynamic_cast<HdStRenderPassState*>(renderPassState.get())) {
 

@@ -33,7 +33,7 @@ def GetType(property):
     Given a property (SdrShaderProperty), return the SdfValueTypeName type.
     """
     sdfTypeIndicator = property.GetTypeAsSdfType()
-    sdfValueTypeName = sdfTypeIndicator[0]
+    sdfValueTypeName = sdfTypeIndicator.GetSdfType()
     tfType = sdfValueTypeName.type
 
     return tfType
@@ -190,21 +190,31 @@ def TestShadingProperties(node):
     # --------------------------------------------------------------------------
     # Check clean and unclean mappings to Sdf types
     # --------------------------------------------------------------------------
-    assert properties["inputB"].GetTypeAsSdfType() == (SdfTypes.Int, "")
-    assert properties["inputF2"].GetTypeAsSdfType() == (SdfTypes.Float2, "")
-    assert properties["inputF3"].GetTypeAsSdfType() == (SdfTypes.Float3, "")
-    assert properties["inputF4"].GetTypeAsSdfType() == (SdfTypes.Float4, "")
-    assert properties["inputF5"].GetTypeAsSdfType() == (SdfTypes.FloatArray, "")
-    assert properties["inputStruct"].GetTypeAsSdfType() == \
-           (SdfTypes.Token, Sdr.PropertyTypes.Struct)
+    expected_mappings = {"inputB": (SdfTypes.Int, "int"),
+                         "inputF2": (SdfTypes.Float2,
+                                     Sdr.PropertyTypes.Float),
+                         "inputF3": (SdfTypes.Float3,
+                                     Sdr.PropertyTypes.Float),
+                         "inputF4": (SdfTypes.Float4,
+                                     Sdr.PropertyTypes.Float),
+                         "inputF5": (SdfTypes.FloatArray,
+                                     Sdr.PropertyTypes.Float),
+                         "inputStruct": (SdfTypes.Token,
+                                         Sdr.PropertyTypes.Struct)}
+    
+    for prop, expected in expected_mappings.items():
+        indicator = properties[prop].GetTypeAsSdfType()
+        assert indicator.GetSdfType() == expected[0]
+        assert indicator.GetNdrType() == expected[1]
 
     # --------------------------------------------------------------------------
     # Ensure asset identifiers are detected correctly
     # --------------------------------------------------------------------------
     assert properties["inputAssetIdentifier"].IsAssetIdentifier()
     assert not properties["inputOptions"].IsAssetIdentifier()
-    assert properties["inputAssetIdentifier"].GetTypeAsSdfType() == \
-           (SdfTypes.Asset, "")
+    indicator = properties["inputAssetIdentifier"].GetTypeAsSdfType()
+    assert indicator.GetSdfType() == SdfTypes.Asset
+    assert indicator.GetNdrType() == Sdr.PropertyTypes.String
 
     # Nested pages and VStructs are only possible in args files
     if not isOSL:

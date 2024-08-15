@@ -222,7 +222,7 @@ _GetNodeFallbackValue(
 
         // If no default value was registered with Sdr for
         // the output, fallback to the type's default.
-        return output->GetTypeAsSdfType().first.GetDefaultValue();
+        return output->GetTypeAsSdfType().GetSdfType().GetDefaultValue();
     }
 
     return VtValue();
@@ -280,7 +280,7 @@ _GetParamFallbackValue(
             // If not default value was registered with Sdr for
             // the output, fallback to the type's default.
             if (out.IsEmpty()) {
-                out = input->GetTypeAsSdfType().first.GetDefaultValue();
+                out = input->GetTypeAsSdfType().GetSdfType().GetDefaultValue();
             }
 
             if (!out.IsEmpty()) return out;

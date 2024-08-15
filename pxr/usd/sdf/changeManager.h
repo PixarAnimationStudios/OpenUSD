@@ -45,6 +45,16 @@ public:
         return TfSingleton<Sdf_ChangeManager>::GetInstance();
     }
 
+    /// Returns the current set of thread local changes that have been
+    /// collected by the change manager for \p layer. After this
+    /// function returns, the internal collection of changes for the layer
+    /// will be empty and no notifications for changes contained in the vector
+    /// returned by this function will be triggered when the outermost change
+    /// block goes out of scope. If there are no changes for \p layer the
+    /// returned changelist will be empty.
+    SDF_API
+    SdfChangeList ExtractLocalChanges(const SdfLayerHandle &layer);
+
     // Queue notifications.
     void DidReplaceLayerContent(const SdfLayerHandle &layer);
     void DidReloadLayerContent(const SdfLayerHandle &layer);

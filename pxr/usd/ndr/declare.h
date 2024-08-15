@@ -63,7 +63,6 @@ typedef std::vector<std::string> NdrStringVec;
 typedef std::pair<TfToken, TfToken> NdrOption;
 typedef std::vector<NdrOption> NdrOptionVec;
 typedef std::unordered_set<std::string> NdrStringSet;
-typedef std::pair<SdfValueTypeName, TfToken> NdrSdfTypeIndicator;
 
 // Version
 class NdrVersion {

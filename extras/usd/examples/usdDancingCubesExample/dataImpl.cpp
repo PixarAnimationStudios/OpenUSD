@@ -247,7 +247,7 @@ UsdDancingCubesExample_DataImpl::List(const SdfPath &path) const
         const _LeafPrimPropertyInfo *propInfo = 
             TfMapLookupPtr(*_LeafPrimProperties, path.GetNameToken());
         if (propInfo &&_leafPrimDataMap.count(path.GetAbsoluteRootOrPrimPath())) {
-            // Include time sample field in the property is animated.
+            // Include time sample field if the property is animated.
             if (propInfo->isAnimated) {
                 static std::vector<TfToken> animPropFields(
                     {SdfFieldKeys->TypeName,

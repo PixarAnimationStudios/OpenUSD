@@ -8,6 +8,7 @@
 #define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_GPRIM_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/version.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/gf/matrix4d.h"
 
@@ -176,7 +177,12 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
 
     // Sample transform
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
-    sceneDelegate->SampleTransform(id, &xf);
+    sceneDelegate->SampleTransform(id,
+#if HD_API_VERSION >= 68
+                                   param->GetShutterInterval()[0],
+                                   param->GetShutterInterval()[1],
+#endif
+                                   &xf);
 
     // Update visibility so thet rprim->IsVisible() will work in render pass
     if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {

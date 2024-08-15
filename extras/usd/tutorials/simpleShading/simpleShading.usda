@@ -1,0 +1,56 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Xform "TexModel" (
+    kind = "component"
+)
+{
+    def Mesh "card" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        float3[] extent = [(-430, -145, 0), (430, 145, 0)]
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+        rel material:binding = </TexModel/boardMat>
+        point3f[] points = [(-430, -145, 0), (430, -145, 0), (430, 145, 0), (-430, 145, 0)]
+        texCoord2f[] primvars:st = [(0, 0), (2, 0), (2, 2), (0, 2)] (
+            interpolation = "varying"
+        )
+    }
+
+    def Material "boardMat"
+    {
+        token inputs:frame:stPrimvarName = "st"
+        token outputs:surface.connect = </TexModel/boardMat/PBRShader.outputs:surface>
+
+        def Shader "PBRShader"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </TexModel/boardMat/diffuseTexture.outputs:rgb>
+            float inputs:metallic = 0
+            float inputs:roughness = 0.4
+            token outputs:surface
+        }
+
+        def Shader "stReader"
+        {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            string inputs:varname.connect = </TexModel/boardMat.inputs:frame:stPrimvarName>
+            float2 outputs:result
+        }
+
+        def Shader "diffuseTexture"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @USDLogoLrg.png@
+            float2 inputs:st.connect = </TexModel/boardMat/stReader.outputs:result>
+            token inputs:wrapS = "repeat"
+            token inputs:wrapT = "repeat"
+            float3 outputs:rgb
+        }
+    }
+}
+

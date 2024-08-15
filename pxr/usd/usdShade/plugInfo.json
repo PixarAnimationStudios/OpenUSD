@@ -128,10 +128,34 @@
                     }
                 }, 
                 "Validators": {
+                    "MaterialBindingApiAppliedValidator": {
+                        "doc": "Verify a prim has the MaterialBindingAPI applied if it has a material binding relationship."
+                    }, 
+                    "MaterialBindingRelationships": {
+                        "doc": "All properties named 'material:binding' or in that namespace should be relationships."
+                    }, 
                     "ShaderSdrCompliance": {
                         "doc": "Shader prim's input types must be conforming to their appropriate sdf types in the respective sdr shader.", 
                         "schemaTypes": [
                             "UsdShadeShader"
+                        ]
+                    }, 
+                    "SubsetMaterialBindFamilyName": {
+                        "doc": "Geom subsets with authored material bindings should have the 'materialBind' family name.", 
+                        "keywords": [
+                            "UsdGeomSubset"
+                        ], 
+                        "schemaTypes": [
+                            "UsdGeomSubset"
+                        ]
+                    }, 
+                    "SubsetsMaterialBindFamily": {
+                        "doc": "Geom subsets of the 'materialBind' family should have a restricted family type.", 
+                        "keywords": [
+                            "UsdGeomSubset"
+                        ], 
+                        "schemaTypes": [
+                            "UsdGeomImageable"
                         ]
                     }, 
                     "keywords": [
