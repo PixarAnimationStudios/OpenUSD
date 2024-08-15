@@ -1706,7 +1706,7 @@ _AddRenderOutput(RtUString aovName,
 static
 HdPrman_RenderViewDesc
 _ComputeRenderViewDesc(
-    HdRenderSettings::RenderProduct const &product,
+    HdRenderSettings::RenderProducts const &products,
     const riley::CameraId cameraId,
     const riley::IntegratorId integratorId,
     const riley::SampleFilterList &sampleFilterList,
@@ -1717,65 +1717,72 @@ _ComputeRenderViewDesc(
     renderViewDesc.integratorId = integratorId;
     renderViewDesc.sampleFilterList = sampleFilterList;
     renderViewDesc.displayFilterList = displayFilterList;
-    renderViewDesc.resolution = product.resolution;
+    if (!products.empty()) {
+        renderViewDesc.resolution = products[0].resolution;
+    } else {
+        renderViewDesc.resolution = {1024, 768};
+    }
 
     /* RenderProduct */
     int renderVarIndex = 0;
     std::map<SdfPath, int> seenRenderVars;
 
-    // Create a DisplayDesc for this RenderProduct
-    HdPrman_RenderViewDesc::DisplayDesc displayDesc;
-    displayDesc.name = RtUString(product.name.GetText());
-    displayDesc.params = _ToRtParamList(product.namespacedSettings,
-        _tokens->riDisplayDriverNamespace);
-    displayDesc.driver = _GetOutputDisplayDriverType(
-        product.namespacedSettings, product.name, product.type);
 
-    // XXX Temporary; see RMAN-21883
-    _ApplyOpenexrDriverWorkaround(&displayDesc);
+    for (const HdRenderSettings::RenderProduct &product : products) {
+        // Create a DisplayDesc for this RenderProduct
+        HdPrman_RenderViewDesc::DisplayDesc displayDesc;
+        displayDesc.name = RtUString(product.name.GetText());
+        displayDesc.params = _ToRtParamList(product.namespacedSettings,
+            _tokens->riDisplayDriverNamespace);
+        displayDesc.driver = _GetOutputDisplayDriverType(
+            product.namespacedSettings, product.name, product.type);
 
-    /* RenderVar */
-    for (const HdRenderSettings::RenderProduct::RenderVar &renderVar :
-            product.renderVars) {
-        // Store the index to this RenderVar from all the renderOutputDesc's 
-        // saved on this renderViewDesc
-        auto renderVarIt = seenRenderVars.find(renderVar.varPath);
-        if (renderVarIt != seenRenderVars.end()) {
-            displayDesc.renderOutputIndices.push_back(renderVarIt->second);
-            continue;
-        } 
-        seenRenderVars.insert(
-            std::pair<SdfPath, int>(renderVar.varPath, renderVarIndex));
-        displayDesc.renderOutputIndices.push_back(renderVarIndex);
-        renderVarIndex++;
+        // XXX Temporary; see RMAN-21883
+        _ApplyOpenexrDriverWorkaround(&displayDesc);
 
-        // Map renderVar to RenderMan AOV name and source.
-        // For LPE's, we use the name of the prim rather than the LPE,
-        // and include an "lpe:" prefix on the source.
-        std::string aovNameStr = (renderVar.sourceType == _tokens->lpe)
-            ? renderVar.varPath.GetName()
-            : renderVar.sourceName;
-        std::string sourceNameStr = (renderVar.sourceType == _tokens->lpe) 
-            ? "lpe:" + renderVar.sourceName
-            : renderVar.sourceName;
-        const RtUString aovName(aovNameStr.c_str());
-        const RtUString sourceName(sourceNameStr.c_str());
+        /* RenderVar */
+        for (const HdRenderSettings::RenderProduct::RenderVar &renderVar :
+                 product.renderVars) {
+            // Store the index to this RenderVar from all the renderOutputDesc's
+            // saved on this renderViewDesc
+            auto renderVarIt = seenRenderVars.find(renderVar.varPath);
+            if (renderVarIt != seenRenderVars.end()) {
+                displayDesc.renderOutputIndices.push_back(renderVarIt->second);
+                continue;
+            } 
+            seenRenderVars.insert(
+                std::pair<SdfPath, int>(renderVar.varPath, renderVarIndex));
+            displayDesc.renderOutputIndices.push_back(renderVarIndex);
+            renderVarIndex++;
 
-        // Create a RenderOutputDesc for this RenderVar and add it to the 
-        // renderViewDesc.
-        // Note that we are not using the renderOutputIndices passed into 
-        // this function, we are instead relying on the indices stored above
-        std::vector<size_t> renderOutputIndices;
-        _AddRenderOutput(aovName, 
-                        renderVar.dataType, 
-                        HdFormatInvalid, // using renderVar.dataType
-                        sourceName, 
-                        _ToRtParamList(renderVar.namespacedSettings,
-                                       _tokens->riDisplayChannelNamespace),
-                        &renderViewDesc.renderOutputDescs,
-                        &renderOutputIndices);
+            // Map renderVar to RenderMan AOV name and source.
+            // For LPE's, we use the name of the prim rather than the LPE,
+            // and include an "lpe:" prefix on the source.
+            std::string aovNameStr = (renderVar.sourceType == _tokens->lpe)
+                ? renderVar.varPath.GetName()
+                : renderVar.sourceName;
+            std::string sourceNameStr = (renderVar.sourceType == _tokens->lpe) 
+                ? "lpe:" + renderVar.sourceName
+                : renderVar.sourceName;
+            const RtUString aovName(aovNameStr.c_str());
+            const RtUString sourceName(sourceNameStr.c_str());
+
+            // Create a RenderOutputDesc for this RenderVar and add it to the 
+            // renderViewDesc.
+            // Note that we are not using the renderOutputIndices passed into 
+            // this function, we are instead relying on the indices stored above
+            std::vector<size_t> renderOutputIndices;
+            _AddRenderOutput(aovName, 
+                             renderVar.dataType, 
+                             HdFormatInvalid, // using renderVar.dataType
+                             sourceName, 
+                             _ToRtParamList(renderVar.namespacedSettings,
+                                            _tokens->riDisplayChannelNamespace),
+                             &renderViewDesc.renderOutputDescs,
+                             &renderOutputIndices);
+        }
+        renderViewDesc.displayDescs.push_back(displayDesc);
     }
-    renderViewDesc.displayDescs.push_back(displayDesc);
 
     return renderViewDesc;
 }
@@ -1800,15 +1807,15 @@ HdPrman_RenderParam::CreateRenderViewFromRenderSpec(
 
 /// XXX This should eventually replace the above use of the RenderSpec
 void 
-HdPrman_RenderParam::CreateRenderViewFromRenderSettingsProduct(
-    HdRenderSettings::RenderProduct const &product,
+HdPrman_RenderParam::CreateRenderViewFromRenderSettingsProducts(
+    HdRenderSettings::RenderProducts const &products,
     HdPrman_RenderViewContext *renderViewContext)
 {
     // XXX Ideally, the render terminals and camera context are provided as
     //     arguments. They are currently managed by render param.
     const HdPrman_RenderViewDesc renderViewDesc =
         _ComputeRenderViewDesc(
-            product,
+            products,
             GetCameraContext().GetCameraId(), 
             GetActiveIntegratorId(), 
             GetSampleFilterList(),

@@ -41,6 +41,10 @@ TF_DEFINE_ENV_SETTING(HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS, false,
                       "the render settings prim when the render pass has "
                       "AOV bindings.");
 
+TF_DEFINE_ENV_SETTING(HD_PRMAN_RENDER_SETTINGS_BUNDLE_RENDER_PRODUCTS, false,
+                      "If true, all render products for the active render "
+                      "settings are rendered within the same render view.");
+
 TF_DEFINE_PRIVATE_TOKENS(
     _renderTerminalTokens, // properties in PxrRenderTerminalsAPI
     ((outputsRiIntegrator, "outputs:ri:integrator"))
@@ -201,13 +205,13 @@ _UpdateFrame(
 // render product.
 void
 _UpdateRenderViewContext(
-    HdRenderSettings::RenderProduct const &product,
+    HdRenderSettings::RenderProducts const &products,
     HdPrman_RenderParam *param,
     HdPrman_RenderViewContext *renderViewContext)
 {
     // The (lone) render view is managed by render param currently.
-    param->CreateRenderViewFromRenderSettingsProduct(
-        product, renderViewContext);
+    param->CreateRenderViewFromRenderSettingsProducts(
+        products, renderViewContext);
 }
 
 // Factor the product's motion blur opinion and camera's shutter.
@@ -382,9 +386,16 @@ HdPrman_RenderSettings::UpdateAndRender(
 
         // This _cannot_ be moved to Sync either because the render terminal
         // Sprims wouldn't have been updated.
-        _UpdateRenderViewContext(product, param, &renderViewContext);
+
+        if (TfGetEnvSetting(HD_PRMAN_RENDER_SETTINGS_BUNDLE_RENDER_PRODUCTS)) {
+            _UpdateRenderViewContext(
+                GetRenderProducts(), param, &renderViewContext);
+        } else {
+            _UpdateRenderViewContext(
+                {product}, param, &renderViewContext);
+        }
         
-        bool result =
+        const bool result =
             _SetOptionsAndRender(
                 cameraContext,
                 renderViewContext,
@@ -404,6 +415,11 @@ HdPrman_RenderSettings::UpdateAndRender(
         }
 
         success = success && result;
+
+        if (TfGetEnvSetting(HD_PRMAN_RENDER_SETTINGS_BUNDLE_RENDER_PRODUCTS)) {
+            // Done.
+            break;
+        }
     }
 
     return success;
