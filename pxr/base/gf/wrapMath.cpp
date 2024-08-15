@@ -33,6 +33,10 @@ void wrapMath()
     def("RadiansToDegrees", GfRadiansToDegrees);
     def("DegreesToRadians", GfDegreesToRadians);
 
+    def("SmoothStep", GfSmoothStep, 
+        (arg("slope0") = 0.0,
+         arg("slope1") = 0.0));
+
     def("Sqr", GfSqr<double>);
     def("Sqr", GfSqr<int>);
 

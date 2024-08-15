@@ -22,6 +22,14 @@ class TestGfMath(unittest.TestCase):
         for (f,s) in zip(first, second):
             self.assertAlmostEqual(f, s, delta=delta)
 
+    def test_SmoothStep(self):
+        t1 = SmoothStep(0, 1, .25)
+        t2 = SmoothStep(0, 1, .75)
+        self.assertEqual(0, SmoothStep(0, 1, 0))
+        self.assertEqual(1, SmoothStep(0, 1, 1))
+        self.assertEqual(0.5, SmoothStep(0, 1, 0.5))
+        self.assertTrue(t1 > 0 and t1 < .5 and t2 > .5 and t2 < 1)
+
     def test_HalfRoundTrip(self):
         from pxr.Gf import _HalfRoundTrip
         self.assertEqual(1.0, _HalfRoundTrip(1.0))
