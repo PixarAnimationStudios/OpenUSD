@@ -158,6 +158,7 @@ pxr_library(usd
         wrapTyped.cpp
         wrapUsdFileFormat.cpp
         wrapUtils.cpp
+        wrapValidator.cpp
         wrapVariantSets.cpp
         wrapVersion.cpp 
         wrapZipFile.cpp
@@ -272,6 +273,7 @@ pxr_test_scripts(
     testenv/testUsdTimeSamples.py
     testenv/testUsdTimeValueAuthoring.py
     testenv/testUsdUsdzFileFormat.py
+    testenv/testUsdValidatorMetadata.py
     testenv/testUsdValueClips.py
     testenv/testUsdVariantEditing.py
     testenv/testUsdVariantFallbacks.py
@@ -1330,5 +1332,11 @@ pxr_register_test(testUsdUsdzResolver
 pxr_register_test(testUsdOpaqueAttributes
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdOpaqueAttributes"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdValidatorMetadata
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValidatorMetadata"
     EXPECTED_RETURN_CODE 0
 )
