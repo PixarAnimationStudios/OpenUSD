@@ -107,4 +107,38 @@ GeomUtilMeshGeneratorBase::_ComputeNumRadialPoints(
     return closedSweep? numRadial : numRadial + 1;
 }
 
+// static
+size_t
+GeomUtilMeshGeneratorBase::_ComputeNumCappedQuadTopologyPoints(
+    const size_t numRadial,
+    const size_t numQuadStrips,
+    const _CapStyle bottomCapStyle,
+    const _CapStyle topCapStyle,
+    const bool closedSweep)
+{
+    const size_t numRadialPts = _ComputeNumRadialPoints(numRadial, closedSweep);
+
+    size_t result = numRadialPts * (numQuadStrips + 1);
+
+    if (bottomCapStyle != CapStyleNone) {
+        // Add pole point.
+        ++result;
+        if (bottomCapStyle == CapStyleSeparateEdge) {
+            // Add an extra set of radial points.
+            result += numRadialPts;
+        }
+    }
+
+    if (topCapStyle != CapStyleNone) {
+        // Add pole point.
+        ++result;
+        if (topCapStyle == CapStyleSeparateEdge) {
+            // Add an extra set of radial points.
+            result += numRadialPts;
+        }
+    }
+
+    return result;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

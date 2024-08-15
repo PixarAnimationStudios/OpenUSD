@@ -30,10 +30,12 @@ GeomUtilCapsuleMeshGenerator::ComputeNumPoints(
         return 0;
     }
 
-    const size_t numRadialPoints =
-        _ComputeNumRadialPoints(numRadial, closedSweep);
-
-    return ((2 * numCapAxial) * numRadialPoints) + 2;
+    return _ComputeNumCappedQuadTopologyPoints(
+        numRadial,
+        /* numQuadStrips =  */ (2 * (numCapAxial - 1)) + 1,
+        /* bottomCapStyle = */ CapStyleSharedEdge,
+        /* topCapStyle =    */ CapStyleSharedEdge,
+        closedSweep);
 }
 
 // static
@@ -73,23 +75,9 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
         return;
     }
 
-    const ScalarType twoPi = 2.0 * M_PI;
-    const ScalarType sweepRadians =
-        GfClamp((ScalarType) GfDegreesToRadians(sweepDegrees), -twoPi, twoPi);
-    const bool closedSweep = GfIsClose(std::abs(sweepRadians), twoPi, 1e-6);
-
     // Construct a circular arc of unit radius in the XY plane.
-    const size_t numRadialPoints =
-        _ComputeNumRadialPoints(numRadial, closedSweep);
-    std::vector<std::array<ScalarType, 2>> ringXY(numRadialPoints);
-
-    for (size_t radIdx = 0; radIdx < numRadialPoints; ++radIdx) {
-        // Longitude range: [0, sweep]
-        const ScalarType longAngle =
-            (ScalarType(radIdx) / ScalarType(numRadial)) * sweepRadians;
-        ringXY[radIdx][0] = cos(longAngle);
-        ringXY[radIdx][1] = sin(longAngle);
-    }
+    const std::vector<std::array<ScalarType, 2>> ringXY =
+        _GenerateUnitArcXY<ScalarType>(numRadial, sweepDegrees);
 
     ScalarType latitudeRange = 0.0;
     if (bottomRadius != topRadius)
@@ -116,16 +104,11 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
         const ScalarType latAngle = GfLerp(double(axIdx) / double(numCapAxial),
             ScalarType(-0.5 * M_PI), latitudeRange);
 
-        const ScalarType radScale = cos(latAngle);
+        const ScalarType radScale = bottomRadius * cos(latAngle);
         const ScalarType latitude =
             -(0.5 * height) + (bottomRadius * sin(latAngle));
 
-        for (size_t radIdx = 0; radIdx < numRadialPoints; ++radIdx) {
-            ptWriter.Write(
-                PointType(radScale * bottomRadius * ringXY[radIdx][0],
-                          radScale * bottomRadius * ringXY[radIdx][1],
-                          latitude));
-        }
+        ptWriter.WriteArc(radScale, ringXY, latitude);
     }
 
     // Top hemisphere latitude rings:
@@ -134,15 +117,11 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
         const ScalarType latAngle = GfLerp(double(axIdx) / double(numCapAxial),
             latitudeRange, ScalarType(0.5 * M_PI));
 
-        const ScalarType radScale = cos(latAngle);
+        const ScalarType radScale = topRadius * cos(latAngle);
         const ScalarType latitude =
             (0.5 * height) + (topRadius * sin(latAngle));
 
-        for (size_t radIdx = 0; radIdx < numRadialPoints; ++radIdx) {
-            ptWriter.Write(PointType(radScale * topRadius * ringXY[radIdx][0],
-                                     radScale * topRadius * ringXY[radIdx][1],
-                                     latitude));
-        }
+        ptWriter.WriteArc(radScale, ringXY, latitude);
     }
 
     // Top point:

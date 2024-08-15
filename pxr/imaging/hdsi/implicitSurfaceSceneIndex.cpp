@@ -528,7 +528,6 @@ public:
             _GetRadiusBottom(shutterOffset),
             _GetRadiusTop(shutterOffset),
             _GetHeight(shutterOffset),
-            /* sweepDegrees = */ 360.0,
             &basis
         );
 
@@ -916,7 +915,6 @@ public:
             _GetRadiusBottom(shutterOffset),
             _GetRadiusTop(shutterOffset),
             _GetHeight(shutterOffset),
-            /* sweepDegrees = */ 360.0,
             &basis
         );
 

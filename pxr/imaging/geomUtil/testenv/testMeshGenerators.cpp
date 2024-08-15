@@ -228,6 +228,78 @@ static bool TestTopologyAndPointGeneration(
         _LogFooter(out);
     }
 
+    {
+        _LogHeader("7. Tapered Capsule", out);
+
+        using MeshGen = GeomUtilCapsuleMeshGenerator;
+
+        const size_t numRadial = 10, numCapAxial = 4;
+        const float bottomRadius = 0.5, topRadius = 0.3, height = 2;
+
+        out << "bottomRadius = " << bottomRadius
+            << ", topRadius = "  << topRadius
+            << ", height = "     << height
+            << ", sweep = "      << sweep
+            << std::endl << std::endl;
+
+        const PxOsdMeshTopology topology =
+            MeshGen::GenerateTopology(numRadial, numCapAxial, closedSweep);
+
+        const size_t numPoints =
+            MeshGen::ComputeNumPoints(numRadial, numCapAxial, closedSweep);
+        VtVec3fArray points(numPoints);
+        if (closedSweep) {
+            MeshGen::GeneratePoints(
+                points.begin(), numRadial, numCapAxial,
+                bottomRadius, topRadius, height);
+
+        } else {
+            MeshGen::GeneratePoints(
+                points.begin(), numRadial, numCapAxial,
+                bottomRadius, topRadius, height, sweep);
+        }
+
+        _Log(topology, points, out);
+
+        _LogFooter(out);
+    }
+
+    {
+        _LogHeader("8. Tapered Cylinder", out);
+
+        using MeshGen = GeomUtilCylinderMeshGenerator;
+
+        const size_t numRadial = 10;
+        const float bottomRadius = 0.5, topRadius = 0.3, height = 2;
+
+        out << "bottomRadius = " << bottomRadius
+            << ", topRadius = "  << topRadius
+            << ", height = "     << height
+            << ", sweep = "      << sweep
+            << std::endl << std::endl;
+
+        const PxOsdMeshTopology topology =
+            MeshGen::GenerateTopology(numRadial, closedSweep);
+
+        const size_t numPoints =
+            MeshGen::ComputeNumPoints(numRadial, closedSweep);
+        VtVec3fArray points(numPoints);
+        if (closedSweep) {
+            MeshGen::GeneratePoints(
+                points.begin(), numRadial,
+                bottomRadius, topRadius, height);
+
+        } else {
+            MeshGen::GeneratePoints(
+                points.begin(), numRadial,
+                bottomRadius, topRadius, height, sweep);
+        }
+
+        _Log(topology, points, out);
+
+        _LogFooter(out);
+    }
+
     return true;
 }
 

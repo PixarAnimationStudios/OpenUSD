@@ -77,11 +77,28 @@ public:
         const ScalarType height,
         const GfMatrix4d* framePtr = nullptr)
     {
-        constexpr ScalarType sweep = 360;
-
         GeneratePoints(iter, numRadial,
                        /* bottomRadius = */ radius,
                        /* topRadius =    */ radius,
+                       height, framePtr);
+    }
+
+    template<typename PointIterType,
+             typename ScalarType,
+             typename Enabled =
+                typename _EnableIfGfVec3Iterator<PointIterType>::type>
+    static void GeneratePoints(
+        PointIterType iter,
+        const size_t numRadial,
+        const ScalarType bottomRadius,
+        const ScalarType topRadius,
+        const ScalarType height,
+        const GfMatrix4d* framePtr = nullptr)
+    {
+        constexpr ScalarType sweep = 360;
+
+        GeneratePoints(iter, numRadial,
+                       bottomRadius, topRadius,
                        height, sweep, framePtr);
     }
 

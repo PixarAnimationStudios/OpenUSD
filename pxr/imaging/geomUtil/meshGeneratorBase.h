@@ -9,6 +9,8 @@
 
 #include "pxr/imaging/geomUtil/api.h"
 
+#include "pxr/base/arch/math.h"
+#include "pxr/base/gf/math.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
@@ -127,6 +129,17 @@ protected:
             (this->*_writeFnPtr)(pt);
         }
 
+        void WriteArc(
+            const typename PointType::ScalarType scaleXY,
+            const std::vector<std::array<
+                typename PointType::ScalarType, 2>>& arcXY,
+            const typename PointType::ScalarType arcZ) const
+        {
+            for (const auto& xy : arcXY) {
+                Write(PointType(scaleXY * xy[0], scaleXY * xy[1], arcZ));
+            }
+        }
+
     private:
         template<class IterType>
         void _WritePoint(
@@ -202,6 +215,42 @@ protected:
     static size_t _ComputeNumRadialPoints(
         const size_t numRadial,
         const bool closedSweep);
+
+    // Subclasses that use the topology helper method above must generate points
+    // forming circular arcs and this method will compute the total number of
+    // points required for the topology generated using these same parameters.
+    static size_t _ComputeNumCappedQuadTopologyPoints(
+        const size_t numRadial,
+        const size_t numQuadStrips,
+        const _CapStyle bottomCapStyle,
+        const _CapStyle topCapStyle,
+        const bool closedSweep);
+
+    // Subclasses can use this helper method to generate a unit circular arc
+    // in the XY plane that can then be passed into _PointWriter::WriteArc to
+    // write out the points of circular arcs using varying radii.
+    template<typename ScalarType>
+    static std::vector<std::array<ScalarType, 2>> _GenerateUnitArcXY(
+        const size_t numRadial,
+        const ScalarType sweepDegrees)
+    {
+        constexpr ScalarType twoPi = 2.0 * M_PI;
+        const ScalarType sweepRadians = GfDegreesToRadians(sweepDegrees);
+        const ScalarType sweep = GfClamp(sweepRadians, -twoPi, twoPi);
+        const bool closedSweep = GfIsClose(GfAbs(sweep), twoPi, 1e-6);
+        const size_t numPts = _ComputeNumRadialPoints(numRadial, closedSweep);
+
+        // Construct a circular arc of unit radius in the XY plane.
+        std::vector<std::array<ScalarType, 2>> result(numPts);
+        for (size_t radIdx = 0; radIdx < numPts; ++radIdx) {
+            // Longitude range: [0, sweep]
+            const ScalarType longAngle =
+                (ScalarType(radIdx) / ScalarType(numRadial)) * sweep;
+            result[radIdx][0] = cos(longAngle);
+            result[radIdx][1] = sin(longAngle);
+        }
+        return result;
+    }
 
 public:
 
