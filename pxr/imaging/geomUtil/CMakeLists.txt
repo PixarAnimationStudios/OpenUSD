@@ -15,6 +15,7 @@ pxr_library(geomUtil
         cuboidMeshGenerator
         cylinderMeshGenerator
         meshGeneratorBase
+        planeMeshGenerator
         sphereMeshGenerator
 
     PYTHON_CPPFILES
@@ -29,6 +30,7 @@ pxr_library(geomUtil
         wrapConeMeshGenerator.cpp
         wrapCuboidMeshGenerator.cpp
         wrapCylinderMeshGenerator.cpp
+        wrapPlaneMeshGenerator.cpp
         wrapSphereMeshGenerator.cpp
 
     PYMODULE_FILES

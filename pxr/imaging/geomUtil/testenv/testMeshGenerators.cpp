@@ -11,6 +11,7 @@
 #include "pxr/imaging/geomUtil/coneMeshGenerator.h"
 #include "pxr/imaging/geomUtil/cuboidMeshGenerator.h"
 #include "pxr/imaging/geomUtil/cylinderMeshGenerator.h"
+#include "pxr/imaging/geomUtil/planeMeshGenerator.h"
 #include "pxr/imaging/geomUtil/sphereMeshGenerator.h"
 #include "pxr/imaging/pxOsd/meshTopology.h"
 
@@ -199,6 +200,28 @@ static bool TestTopologyAndPointGeneration(
         VtVec3fArray points(numPoints);
         MeshGen::GeneratePoints(
             points.begin(), numRadial, numAxial, radius, sweep);
+        
+        _Log(topology, points, out);
+
+        _LogFooter(out);
+    }
+
+    {
+        _LogHeader("6. Plane", out);
+
+        using MeshGen = GeomUtilPlaneMeshGenerator;
+
+        const float width = 4.0;
+        const float length = 3.0;
+
+        out << "width = " << width << std::endl << std::endl;
+        out << "length = " << length << std::endl << std::endl;
+
+        const PxOsdMeshTopology topology = MeshGen::GenerateTopology();
+
+        const size_t numPoints = MeshGen::ComputeNumPoints();
+        VtVec3fArray points(numPoints);
+        MeshGen::GeneratePoints(points.begin(), width, length);
         
         _Log(topology, points, out);
 

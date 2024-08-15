@@ -58,3 +58,17 @@ Points:
 
 
 
+6. Plane
+--------
+width = 4
+
+length = 3
+
+Topology:
+  (rightHanded, bilinear, ([4]), ([0, 1, 2, 3]), ([]))
+
+Points:
+  [(2, 1.5, 0), (-2, 1.5, 0), (-2, -1.5, 0), (2, -1.5, 0)]
+
+
+
