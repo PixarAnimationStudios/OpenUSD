@@ -7,22 +7,22 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef MAKE_CONSTRUCTOR_DWA20011221_HPP
-# define MAKE_CONSTRUCTOR_DWA20011221_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_MAKE_CONSTRUCTOR_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_MAKE_CONSTRUCTOR_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/default_call_policies.hpp>
-# include <boost/python/args.hpp>
-# include <boost/python/object_fwd.hpp>
+# include "pxr/external/boost/python/default_call_policies.hpp"
+# include "pxr/external/boost/python/args.hpp"
+# include "pxr/external/boost/python/object_fwd.hpp"
 
-# include <boost/python/object/function_object.hpp>
-# include <boost/python/object/make_holder.hpp>
-# include <boost/python/object/pointer_holder.hpp>
-# include <boost/python/converter/context_result_converter.hpp>
+# include "pxr/external/boost/python/object/function_object.hpp"
+# include "pxr/external/boost/python/object/make_holder.hpp"
+# include "pxr/external/boost/python/object/pointer_holder.hpp"
+# include "pxr/external/boost/python/converter/context_result_converter.hpp"
 
-# include <boost/python/detail/caller.hpp>
-# include <boost/python/detail/none.hpp>
+# include "pxr/external/boost/python/detail/caller.hpp"
+# include "pxr/external/boost/python/detail/none.hpp"
 
 # include <boost/mpl/size.hpp>
 # include <boost/mpl/int.hpp>
@@ -148,7 +148,7 @@ namespace detail
   //
   // These helper functions for make_constructor (below) do the raw work
   // of constructing a Python object from some invokable entity. See
-  // <boost/python/detail/caller.hpp> for more information about how
+  // "pxr/external/boost/python/detail/caller.hpp" for more information about how
   // the Sig arguments is used.
   //
   // @group make_constructor_aux {
@@ -292,4 +292,4 @@ object make_constructor(
 }} 
 
 
-#endif // MAKE_CONSTRUCTOR_DWA20011221_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_MAKE_CONSTRUCTOR_HPP

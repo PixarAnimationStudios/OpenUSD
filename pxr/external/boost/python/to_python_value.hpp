@@ -9,24 +9,24 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef boost_python_to_python_value_hpp_
-#define boost_python_to_python_value_hpp_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_VALUE_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_VALUE_HPP
 
-#include <boost/python/detail/prefix.hpp>
+#include "pxr/external/boost/python/detail/prefix.hpp"
 
-#include <boost/python/refcount.hpp>
-#include <boost/python/tag.hpp>
-#include <boost/python/handle.hpp>
+#include "pxr/external/boost/python/refcount.hpp"
+#include "pxr/external/boost/python/tag.hpp"
+#include "pxr/external/boost/python/handle.hpp"
 
-#include <boost/python/converter/registry.hpp>
-#include <boost/python/converter/registered.hpp>
-#include <boost/python/converter/builtin_converters.hpp>
-#include <boost/python/converter/object_manager.hpp>
-#include <boost/python/converter/shared_ptr_to_python.hpp>
+#include "pxr/external/boost/python/converter/registry.hpp"
+#include "pxr/external/boost/python/converter/registered.hpp"
+#include "pxr/external/boost/python/converter/builtin_converters.hpp"
+#include "pxr/external/boost/python/converter/object_manager.hpp"
+#include "pxr/external/boost/python/converter/shared_ptr_to_python.hpp"
 
-#include <boost/python/detail/type_traits.hpp>
-#include <boost/python/detail/value_is_shared_ptr.hpp>
-#include <boost/python/detail/value_arg.hpp>
+#include "pxr/external/boost/python/detail/type_traits.hpp"
+#include "pxr/external/boost/python/detail/value_is_shared_ptr.hpp"
+#include "pxr/external/boost/python/detail/value_arg.hpp"
 
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/or.hpp>

@@ -8,10 +8,10 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef BOOST_PYTHON_SSIZE_T_RWGK20060924_HPP
-# define BOOST_PYTHON_SSIZE_T_RWGK20060924_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_SSIZE_T_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_SSIZE_T_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
 namespace boost { namespace python {
 
@@ -31,4 +31,4 @@ ssize_t const ssize_t_min = INT_MIN;
 
 }} // namespace boost::python
 
-#endif // BOOST_PYTHON_SSIZE_T_RWGK20060924_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_SSIZE_T_HPP

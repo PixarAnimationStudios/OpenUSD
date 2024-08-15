@@ -8,18 +8,18 @@
 //  accompanying file LICENSE_1_0.txt or copy at
 //  http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef INDEXING_SUITE_JDG20036_HPP
-# define INDEXING_SUITE_JDG20036_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_INDEXING_SUITE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_INDEXING_SUITE_HPP
 
-# include <boost/python/class.hpp>
-# include <boost/python/def_visitor.hpp>
-# include <boost/python/register_ptr_to_python.hpp>
-# include <boost/python/suite/indexing/detail/indexing_suite_detail.hpp>
-# include <boost/python/return_internal_reference.hpp>
-# include <boost/python/iterator.hpp>
+# include "pxr/external/boost/python/class.hpp"
+# include "pxr/external/boost/python/def_visitor.hpp"
+# include "pxr/external/boost/python/register_ptr_to_python.hpp"
+# include "pxr/external/boost/python/suite/indexing/detail/indexing_suite_detail.hpp"
+# include "pxr/external/boost/python/return_internal_reference.hpp"
+# include "pxr/external/boost/python/iterator.hpp"
 # include <boost/mpl/or.hpp>
 # include <boost/mpl/not.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 namespace boost { namespace python {
 
@@ -297,4 +297,4 @@ namespace boost { namespace python {
 
 }} // namespace boost::python
 
-#endif // INDEXING_SUITE_JDG20036_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_INDEXING_SUITE_HPP

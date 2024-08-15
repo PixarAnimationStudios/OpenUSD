@@ -7,9 +7,9 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/object/life_support.hpp>
-#include <boost/python/detail/none.hpp>
-#include <boost/python/refcount.hpp>
+#include "pxr/external/boost/python/object/life_support.hpp"
+#include "pxr/external/boost/python/detail/none.hpp"
+#include "pxr/external/boost/python/refcount.hpp"
 
 namespace boost { namespace python { namespace objects { 
 

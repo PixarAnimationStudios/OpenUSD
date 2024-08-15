@@ -12,22 +12,22 @@
 ///////////////////////////////////////////////////////////////////////////////
 #if !defined(BOOST_PP_IS_ITERATING)
 
-# ifndef SIGNATURE_JDG20020813_HPP
-#  define SIGNATURE_JDG20020813_HPP
+# ifndef PXR_EXTERNAL_BOOST_PYTHON_SIGNATURE_HPP
+#  define PXR_EXTERNAL_BOOST_PYTHON_SIGNATURE_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include <boost/mpl/if.hpp>
 
-#  include <boost/python/detail/preprocessor.hpp>
-#  include <boost/python/detail/type_traits.hpp>
+#  include "pxr/external/boost/python/detail/preprocessor.hpp"
+#  include "pxr/external/boost/python/detail/type_traits.hpp"
 #  include <boost/preprocessor/repeat.hpp>
 #  include <boost/preprocessor/enum.hpp>
 #  include <boost/preprocessor/enum_params.hpp>
 #  include <boost/preprocessor/empty.hpp>
 #  include <boost/preprocessor/arithmetic/sub.hpp>
 #  include <boost/preprocessor/iterate.hpp>
-#  include <boost/python/detail/type_list.hpp>
+#  include "pxr/external/boost/python/detail/type_list.hpp"
 
 #  include <boost/preprocessor/debug/line.hpp>
 #  include <boost/preprocessor/arithmetic/sub.hpp>
@@ -117,7 +117,7 @@ struct most_derived
 #  define BOOST_PYTHON_FN_CC
 
 #  define BOOST_PP_ITERATION_PARAMS_1                                   \
-    (3, (0, BOOST_PYTHON_MAX_ARITY, <boost/python/signature.hpp>))
+    (3, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/signature.hpp"))
 
 #  include BOOST_PP_ITERATE()
 
@@ -131,7 +131,7 @@ struct most_derived
 #   define BOOST_PYTHON_FN_CC_IS_CDECL
 
 #   define BOOST_PP_ITERATION_PARAMS_1                                   \
-     (3, (0, BOOST_PYTHON_MAX_ARITY, <boost/python/signature.hpp>))
+     (3, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/signature.hpp"))
 
 #   include BOOST_PP_ITERATE()
 
@@ -147,7 +147,7 @@ struct most_derived
 #   define BOOST_PYTHON_FN_CC __stdcall
 
 #   define BOOST_PP_ITERATION_PARAMS_1                                   \
-     (3, (0, BOOST_PYTHON_MAX_ARITY, <boost/python/signature.hpp>))
+     (3, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/signature.hpp"))
 
 #   include BOOST_PP_ITERATE()
 
@@ -162,7 +162,7 @@ struct most_derived
 #   define BOOST_PYTHON_FN_CC __fastcall
 
 #   define BOOST_PP_ITERATION_PARAMS_1                                   \
-     (3, (0, BOOST_PYTHON_MAX_ARITY, <boost/python/signature.hpp>))
+     (3, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/signature.hpp"))
 
 #   include BOOST_PP_ITERATE()
 
@@ -177,7 +177,7 @@ struct most_derived
 }}} // namespace boost::python::detail
 
 
-# endif // SIGNATURE_JDG20020813_HPP
+# endif // PXR_EXTERNAL_BOOST_PYTHON_SIGNATURE_HPP
 
 // For gcc 4.4 compatability, we must include the
 // BOOST_PP_ITERATION_DEPTH test inside an #else clause.
@@ -207,7 +207,7 @@ get_signature(RT(BOOST_PYTHON_FN_CC *)(BOOST_PP_ENUM_PARAMS_Z(1, N, T)), void* =
 # undef N
 
 # define BOOST_PP_ITERATION_PARAMS_2 \
-    (3, (0, 3, <boost/python/signature.hpp>))
+    (3, (0, 3, "pxr/external/boost/python/signature.hpp"))
 # include BOOST_PP_ITERATE()
 
 #else

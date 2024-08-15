@@ -7,19 +7,19 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef TYPE_ID_DWA2002517_HPP
-# define TYPE_ID_DWA2002517_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_TYPE_ID_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_TYPE_ID_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/detail/msvc_typeinfo.hpp>
+# include "pxr/external/boost/python/detail/msvc_typeinfo.hpp"
 # include <boost/operators.hpp>
 # include <typeinfo>
 # include <cstring>
 # include <ostream>
 # include <boost/static_assert.hpp>
 # include <boost/detail/workaround.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 #  ifndef BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
 #   if defined(__GNUC__)                                                \
@@ -186,4 +186,4 @@ inline type_info type_id<const volatile void>()
 
 }} // namespace boost::python
 
-#endif // TYPE_ID_DWA2002517_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_TYPE_ID_HPP

@@ -7,11 +7,11 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef IS_AUTO_PTR_DWA2003224_HPP
-# define IS_AUTO_PTR_DWA2003224_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IS_AUTO_PTR_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IS_AUTO_PTR_HPP
 
 # ifndef BOOST_NO_AUTO_PTR
-#  include <boost/python/detail/is_xxx.hpp>
+#  include "pxr/external/boost/python/detail/is_xxx.hpp"
 #  include <memory>
 # endif
 
@@ -32,4 +32,4 @@ struct is_auto_ptr : mpl::false_
     
 }}} // namespace boost::python::detail
 
-#endif // IS_AUTO_PTR_DWA2003224_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IS_AUTO_PTR_HPP

@@ -7,12 +7,12 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef UNWIND_TYPE_DWA200222_HPP
-# define UNWIND_TYPE_DWA200222_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWIND_TYPE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWIND_TYPE_HPP
 
-# include <boost/python/detail/cv_category.hpp>
-# include <boost/python/detail/indirect_traits.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/cv_category.hpp"
+# include "pxr/external/boost/python/detail/indirect_traits.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 namespace boost { namespace python { namespace detail {
 
@@ -174,4 +174,4 @@ unwind_type(boost::type<U>*p =0, Generator* =0)
 
 }}} // namespace boost::python::detail
 
-#endif // UNWIND_TYPE_DWA200222_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWIND_TYPE_HPP

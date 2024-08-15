@@ -8,10 +8,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-# ifndef TYPE_LIST_IMPL_DWA2002913_HPP
-#  define TYPE_LIST_IMPL_DWA2002913_HPP
+# ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_LIST_IMPL_HPP
+#  define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_LIST_IMPL_HPP
 
-#  include <boost/python/detail/type_list.hpp>
+#  include "pxr/external/boost/python/detail/type_list.hpp"
 
 #  include <boost/preprocessor/enum_params.hpp>
 #  include <boost/preprocessor/enum_params_with_a_default.hpp>
@@ -30,13 +30,13 @@ struct type_list
 };
 
 #  define BOOST_PP_ITERATION_PARAMS_1                                                                   \
-        (3, (0, BOOST_PP_DEC(BOOST_PYTHON_LIST_SIZE), <boost/python/detail/type_list_impl.hpp>))
+        (3, (0, BOOST_PP_DEC(BOOST_PYTHON_LIST_SIZE), "pxr/external/boost/python/detail/type_list_impl.hpp"))
 #  include BOOST_PP_ITERATE()
 
 
 }}} // namespace boost::python::detail
 
-# endif // TYPE_LIST_IMPL_DWA2002913_HPP
+# endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_LIST_IMPL_HPP
 
 #else // BOOST_PP_IS_ITERATING
 

@@ -14,8 +14,8 @@
 //  Revision History:
 //  15 Feb 17  Initial version
 
-#ifndef CONFIG_NUMPY20170215_H_
-# define CONFIG_NUMPY20170215_H_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_NUMPY_CONFIG_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_CONFIG_HPP
 
 # include <boost/config.hpp>
 
@@ -87,4 +87,4 @@
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
-#endif // CONFIG_NUMPY20170215_H_
+#endif // PXR_EXTERNAL_BOOST_PYTHON_NUMPY_CONFIG_HPP

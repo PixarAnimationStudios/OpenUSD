@@ -10,20 +10,20 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-# ifndef VALUE_HOLDER_DWA20011215_HPP
-#  define VALUE_HOLDER_DWA20011215_HPP 
+# ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_VALUE_HOLDER_HPP
+#  define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_VALUE_HOLDER_HPP 
 
-#  include <boost/python/object/value_holder_fwd.hpp>
+#  include "pxr/external/boost/python/object/value_holder_fwd.hpp"
 
-#  include <boost/python/instance_holder.hpp>
-#  include <boost/python/type_id.hpp>
-#  include <boost/python/wrapper.hpp>
+#  include "pxr/external/boost/python/instance_holder.hpp"
+#  include "pxr/external/boost/python/type_id.hpp"
+#  include "pxr/external/boost/python/wrapper.hpp"
 
-#  include <boost/python/object/inheritance_query.hpp>
-#  include <boost/python/object/forward.hpp>
+#  include "pxr/external/boost/python/object/inheritance_query.hpp"
+#  include "pxr/external/boost/python/object/forward.hpp"
 
-#  include <boost/python/detail/force_instantiate.hpp>
-#  include <boost/python/detail/preprocessor.hpp>
+#  include "pxr/external/boost/python/detail/force_instantiate.hpp"
+#  include "pxr/external/boost/python/detail/preprocessor.hpp"
 
 #  include <boost/preprocessor/comma_if.hpp>
 #  include <boost/preprocessor/enum_params.hpp>
@@ -47,7 +47,7 @@ struct value_holder : instance_holder
     typedef Value value_type;
 
     // Forward construction to the held object
-#  define BOOST_PP_ITERATION_PARAMS_1 (4, (0, BOOST_PYTHON_MAX_ARITY, <boost/python/object/value_holder.hpp>, 1))
+#  define BOOST_PP_ITERATION_PARAMS_1 (4, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/object/value_holder.hpp", 1))
 #  include BOOST_PP_ITERATE()
 
  private: // required holder implementation
@@ -74,7 +74,7 @@ struct value_holder_back_reference : instance_holder
     typedef Value value_type;
     
     // Forward construction to the held object
-#  define BOOST_PP_ITERATION_PARAMS_1 (4, (0, BOOST_PYTHON_MAX_ARITY, <boost/python/object/value_holder.hpp>, 2))
+#  define BOOST_PP_ITERATION_PARAMS_1 (4, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/object/value_holder.hpp", 2))
 #  include BOOST_PP_ITERATE()
 
 private: // required holder implementation
@@ -114,7 +114,7 @@ void* value_holder_back_reference<Value,Held>::holds(
 
 }}} // namespace boost::python::objects
 
-# endif // VALUE_HOLDER_DWA20011215_HPP
+# endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_VALUE_HOLDER_HPP
 
 // --------------- value_holder ---------------
 

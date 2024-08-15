@@ -11,10 +11,10 @@
 //  The author gratefully acknowleges the support of Dragon Systems, Inc., in
 //  producing this work.
 
-#ifndef NONE_DWA_052000_H_
-# define NONE_DWA_052000_H_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_NONE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_NONE_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
 namespace boost { namespace python { namespace detail {
 
@@ -22,4 +22,4 @@ inline PyObject* none() { Py_INCREF(Py_None); return Py_None; }
     
 }}} // namespace boost::python::detail
 
-#endif // NONE_DWA_052000_H_
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_NONE_HPP

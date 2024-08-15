@@ -8,13 +8,13 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/make_function.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/make_function.hpp"
 #include <boost/lexical_cast.hpp>
 #define BOOST_ENABLE_ASSERT_HANDLER
 #include <boost/assert.hpp>

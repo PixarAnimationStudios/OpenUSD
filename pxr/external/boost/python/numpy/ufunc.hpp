@@ -9,18 +9,18 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef boost_python_numpy_ufunc_hpp_
-#define boost_python_numpy_ufunc_hpp_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_NUMPY_UFUNC_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_UFUNC_HPP
 
 /**
  *  @brief Utilities to create ufunc-like broadcasting functions out of C++ functors.
  */
 
-#include <boost/python.hpp>
-#include <boost/python/numpy/numpy_object_mgr_traits.hpp>
-#include <boost/python/numpy/dtype.hpp>
-#include <boost/python/numpy/ndarray.hpp>
-#include <boost/python/numpy/config.hpp>
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/numpy/numpy_object_mgr_traits.hpp"
+#include "pxr/external/boost/python/numpy/dtype.hpp"
+#include "pxr/external/boost/python/numpy/ndarray.hpp"
+#include "pxr/external/boost/python/numpy/config.hpp"
 
 namespace boost { namespace python { namespace numpy {
 

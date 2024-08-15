@@ -12,21 +12,21 @@
 ///////////////////////////////////////////////////////////////////////////////
 #if !defined(BOOST_PP_IS_ITERATING)
 
-#ifndef DEFAULTS_DEF_JDG20020811_HPP
-#define DEFAULTS_DEF_JDG20020811_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_DEF_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_DEF_HPP
 
-#include <boost/python/detail/defaults_gen.hpp>
-#include <boost/python/detail/type_traits.hpp>
+#include "pxr/external/boost/python/detail/defaults_gen.hpp"
+#include "pxr/external/boost/python/detail/type_traits.hpp"
 #include <boost/mpl/front.hpp>
 #include <boost/mpl/size.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/preprocessor/iterate.hpp>
-#include <boost/python/class_fwd.hpp>
-#include <boost/python/scope.hpp>
+#include "pxr/external/boost/python/class_fwd.hpp"
+#include "pxr/external/boost/python/scope.hpp"
 #include <boost/preprocessor/debug/line.hpp>
-#include <boost/python/detail/scope.hpp>
-#include <boost/python/detail/make_keyword_range_fn.hpp>
-#include <boost/python/object/add_to_namespace.hpp>
+#include "pxr/external/boost/python/detail/scope.hpp"
+#include "pxr/external/boost/python/detail/make_keyword_range_fn.hpp"
+#include "pxr/external/boost/python/object/add_to_namespace.hpp"
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace boost { namespace python {
@@ -130,7 +130,7 @@ namespace detail
   struct define_stub_function {};
 
 #define BOOST_PP_ITERATION_PARAMS_1                                             \
-    (3, (0, BOOST_PYTHON_MAX_ARITY, <boost/python/detail/defaults_def.hpp>))
+    (3, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/detail/defaults_def.hpp"))
 
 #include BOOST_PP_ITERATE()
   
@@ -264,7 +264,7 @@ namespace detail
 
 }} // namespace boost::python
 
-#endif // DEFAULTS_DEF_JDG20020811_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_DEF_HPP
 
 #else // defined(BOOST_PP_IS_ITERATING)
 // PP vertical iteration code

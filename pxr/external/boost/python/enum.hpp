@@ -7,14 +7,14 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef ENUM_DWA200298_HPP
-# define ENUM_DWA200298_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_ENUM_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_ENUM_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/object/enum_base.hpp>
-# include <boost/python/converter/rvalue_from_python_data.hpp>
-# include <boost/python/converter/registered.hpp>
+# include "pxr/external/boost/python/object/enum_base.hpp"
+# include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
+# include "pxr/external/boost/python/converter/registered.hpp"
 
 namespace boost { namespace python { 
 
@@ -110,4 +110,4 @@ inline enum_<T>& enum_<T>::export_values()
 
 }} // namespace boost::python
 
-#endif // ENUM_DWA200298_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_ENUM_HPP

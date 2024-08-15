@@ -7,13 +7,13 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef LONG_DWA2002627_HPP
-# define LONG_DWA2002627_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_LONG_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_LONG_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/object.hpp>
-# include <boost/python/converter/pytype_object_mgr_traits.hpp>
+# include "pxr/external/boost/python/object.hpp"
+# include "pxr/external/boost/python/converter/pytype_object_mgr_traits.hpp"
 
 namespace boost { namespace python { 
 
@@ -70,4 +70,4 @@ namespace converter
 
 }} // namespace boost::python
 
-#endif // LONG_DWA2002627_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_LONG_HPP

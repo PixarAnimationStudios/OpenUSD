@@ -8,15 +8,15 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/class.hpp"
 #include <boost/ref.hpp>
-#include <boost/python/ptr.hpp>
-#include <boost/python/return_value_policy.hpp>
-#include <boost/python/reference_existing_object.hpp>
-#include <boost/python/call.hpp>
-#include <boost/python/object.hpp>
+#include "pxr/external/boost/python/ptr.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
+#include "pxr/external/boost/python/reference_existing_object.hpp"
+#include "pxr/external/boost/python/call.hpp"
+#include "pxr/external/boost/python/object.hpp"
 #define BOOST_ENABLE_ASSERT_HANDLER
 #include <boost/assert.hpp>
 

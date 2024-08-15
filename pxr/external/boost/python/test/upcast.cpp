@@ -8,7 +8,7 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/cast.hpp>
+#include "pxr/external/boost/python/cast.hpp"
 #include <boost/detail/lightweight_test.hpp>
 
 struct X { long x; };

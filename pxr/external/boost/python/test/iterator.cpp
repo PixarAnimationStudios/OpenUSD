@@ -7,13 +7,13 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/return_internal_reference.hpp>
-#include <boost/python/copy_non_const_reference.hpp>
-#include <boost/python/return_value_policy.hpp>
-#include <boost/python/iterator.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/return_internal_reference.hpp"
+#include "pxr/external/boost/python/copy_non_const_reference.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
+#include "pxr/external/boost/python/iterator.hpp"
 #include <list>
 #include <utility>
 #include <iterator>

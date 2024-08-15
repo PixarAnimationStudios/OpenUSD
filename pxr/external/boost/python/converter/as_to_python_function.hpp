@@ -7,9 +7,9 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef AS_TO_PYTHON_FUNCTION_DWA2002121_HPP
-# define AS_TO_PYTHON_FUNCTION_DWA2002121_HPP
-# include <boost/python/converter/to_python_function_type.hpp>
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_AS_TO_PYTHON_FUNCTION_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_AS_TO_PYTHON_FUNCTION_HPP
+# include "pxr/external/boost/python/converter/to_python_function_type.hpp"
 
 namespace boost { namespace python { namespace converter { 
 
@@ -51,4 +51,4 @@ struct as_to_python_function
 
 }}} // namespace boost::python::converter
 
-#endif // AS_TO_PYTHON_FUNCTION_DWA2002121_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_AS_TO_PYTHON_FUNCTION_HPP

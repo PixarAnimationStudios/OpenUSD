@@ -7,14 +7,14 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef BACK_REFERENCE_DWA2002510_HPP
-# define BACK_REFERENCE_DWA2002510_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_BACK_REFERENCE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_BACK_REFERENCE_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/object_fwd.hpp>
-# include <boost/python/detail/dependent.hpp>
-# include <boost/python/detail/raw_pyobject.hpp>
+# include "pxr/external/boost/python/object_fwd.hpp"
+# include "pxr/external/boost/python/detail/dependent.hpp"
+# include "pxr/external/boost/python/detail/raw_pyobject.hpp"
 
 namespace boost { namespace python { 
 
@@ -73,4 +73,4 @@ T back_reference<T>::get() const
 
 }} // namespace boost::python
 
-#endif // BACK_REFERENCE_DWA2002510_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_BACK_REFERENCE_HPP

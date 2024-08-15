@@ -7,10 +7,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef POINTEE_DWA2002323_HPP
-# define POINTEE_DWA2002323_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_POINTEE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_POINTEE_HPP
 
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 namespace boost { namespace python { namespace detail { 
 
@@ -37,4 +37,4 @@ struct pointee
 
 }}} // namespace boost::python::detail
 
-#endif // POINTEE_DWA2002323_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_POINTEE_HPP

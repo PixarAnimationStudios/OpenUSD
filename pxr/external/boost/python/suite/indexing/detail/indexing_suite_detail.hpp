@@ -8,15 +8,15 @@
 //  accompanying file LICENSE_1_0.txt or copy at
 //  http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef INDEXING_SUITE_DETAIL_JDG20036_HPP
-# define INDEXING_SUITE_DETAIL_JDG20036_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_DETAIL_INDEXING_SUITE_DETAIL_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_DETAIL_INDEXING_SUITE_DETAIL_HPP
 
-# include <boost/python/extract.hpp>
+# include "pxr/external/boost/python/extract.hpp"
 # include <boost/scoped_ptr.hpp>
 # include <boost/get_pointer.hpp>
 # include <boost/detail/binary_search.hpp>
 # include <boost/numeric/conversion/cast.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <vector>
 # include <map>
 #include <iostream>
@@ -761,4 +761,4 @@ namespace boost { namespace python { namespace detail {
 
 } // namespace boost
 
-#endif // INDEXING_SUITE_DETAIL_JDG20036_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_DETAIL_INDEXING_SUITE_DETAIL_HPP

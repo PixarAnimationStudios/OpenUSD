@@ -10,14 +10,14 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-# ifndef SIGNATURE_DWA20021121_HPP
-#  define SIGNATURE_DWA20021121_HPP
+# ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SIGNATURE_HPP
+#  define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SIGNATURE_HPP
 
-#  include <boost/python/type_id.hpp>
+#  include "pxr/external/boost/python/type_id.hpp"
 
-#  include <boost/python/detail/preprocessor.hpp>
-#  include <boost/python/detail/indirect_traits.hpp>
-#  include <boost/python/converter/pytype_function.hpp>
+#  include "pxr/external/boost/python/detail/preprocessor.hpp"
+#  include "pxr/external/boost/python/detail/indirect_traits.hpp"
+#  include "pxr/external/boost/python/converter/pytype_function.hpp"
 
 #  include <boost/preprocessor/iterate.hpp>
 #  include <boost/preprocessor/iteration/local.hpp>
@@ -43,7 +43,7 @@ struct py_func_sig_info
 template <unsigned> struct signature_arity;
 
 #  define BOOST_PP_ITERATION_PARAMS_1                                            \
-        (3, (0, BOOST_PYTHON_MAX_ARITY + 1, <boost/python/detail/signature.hpp>))
+        (3, (0, BOOST_PYTHON_MAX_ARITY + 1, "pxr/external/boost/python/detail/signature.hpp"))
 #  include BOOST_PP_ITERATE()
 
 // A metafunction returning the base class used for
@@ -65,7 +65,7 @@ struct signature
 
 }}} // namespace boost::python::detail
 
-# endif // SIGNATURE_DWA20021121_HPP
+# endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SIGNATURE_HPP
 
 #else
 

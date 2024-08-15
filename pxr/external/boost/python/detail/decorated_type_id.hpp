@@ -7,12 +7,12 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef DECORATED_TYPE_ID_DWA2002517_HPP
-# define DECORATED_TYPE_ID_DWA2002517_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DECORATED_TYPE_ID_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DECORATED_TYPE_ID_HPP
 
-# include <boost/python/type_id.hpp>
-# include <boost/python/detail/indirect_traits.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/type_id.hpp"
+# include "pxr/external/boost/python/detail/indirect_traits.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 namespace boost { namespace python { namespace detail { 
 
@@ -78,4 +78,4 @@ BOOST_PYTHON_DECL std::ostream& operator<<(std::ostream&, decorated_type_info co
 
 }}} // namespace boost::python::detail
 
-#endif // DECORATED_TYPE_ID_DWA2002517_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DECORATED_TYPE_ID_HPP

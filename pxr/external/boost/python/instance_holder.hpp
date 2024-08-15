@@ -7,13 +7,13 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef INSTANCE_HOLDER_DWA2002517_HPP
-# define INSTANCE_HOLDER_DWA2002517_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_INSTANCE_HOLDER_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_INSTANCE_HOLDER_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include <boost/noncopyable.hpp>
-# include <boost/python/type_id.hpp>
+# include "pxr/external/boost/python/type_id.hpp"
 # include <cstddef>
 
 namespace boost { namespace python { 
@@ -65,4 +65,4 @@ inline instance_holder* instance_holder::next() const
 
 }} // namespace boost::python
 
-#endif // INSTANCE_HOLDER_DWA2002517_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_INSTANCE_HOLDER_HPP

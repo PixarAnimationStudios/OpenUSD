@@ -7,8 +7,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef MAP_ENTRY_DWA2002118_HPP
-# define MAP_ENTRY_DWA2002118_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MAP_ENTRY_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MAP_ENTRY_HPP
 
 namespace boost { namespace python { namespace detail { 
 
@@ -45,4 +45,4 @@ bool operator<(Key const& k, map_entry<Key,Value> const& e)
 
 }}} // namespace boost::python::detail
 
-#endif // MAP_ENTRY_DWA2002118_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MAP_ENTRY_HPP

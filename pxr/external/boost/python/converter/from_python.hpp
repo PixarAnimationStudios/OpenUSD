@@ -7,11 +7,11 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef FIND_FROM_PYTHON_DWA2002223_HPP
-# define FIND_FROM_PYTHON_DWA2002223_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_FROM_PYTHON_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_FROM_PYTHON_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/converter/rvalue_from_python_data.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
 
 namespace boost { namespace python { namespace converter { 
 
@@ -43,4 +43,4 @@ BOOST_PYTHON_DECL void throw_no_reference_from_python(PyObject*, registration co
 
 }}} // namespace boost::python::converter
 
-#endif // FIND_FROM_PYTHON_DWA2002223_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_FROM_PYTHON_HPP

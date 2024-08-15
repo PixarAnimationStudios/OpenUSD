@@ -9,11 +9,11 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef boost_python_converter_shared_ptr_to_python_hpp_
-#define boost_python_converter_shared_ptr_to_python_hpp_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_SHARED_PTR_TO_PYTHON_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_SHARED_PTR_TO_PYTHON_HPP
 
-#include <boost/python/refcount.hpp>
-#include <boost/python/converter/shared_ptr_deleter.hpp>
+#include "pxr/external/boost/python/refcount.hpp"
+#include "pxr/external/boost/python/converter/shared_ptr_deleter.hpp"
 #include <boost/shared_ptr.hpp>
 #include <boost/get_pointer.hpp>
 

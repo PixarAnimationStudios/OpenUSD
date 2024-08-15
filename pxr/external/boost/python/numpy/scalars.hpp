@@ -9,16 +9,16 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef boost_python_numpy_scalars_hpp_
-#define boost_python_numpy_scalars_hpp_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_NUMPY_SCALARS_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_SCALARS_HPP
 
 /**
  *  @brief Object managers for array scalars (currently only numpy.void is implemented).
  */
 
-#include <boost/python.hpp>
-#include <boost/python/numpy/numpy_object_mgr_traits.hpp>
-#include <boost/python/numpy/dtype.hpp>
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/numpy/numpy_object_mgr_traits.hpp"
+#include "pxr/external/boost/python/numpy/dtype.hpp"
 
 namespace boost { namespace python { namespace numpy {
 

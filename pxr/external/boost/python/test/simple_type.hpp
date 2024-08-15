@@ -7,12 +7,12 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef SIMPLE_TYPE_DWA2001128_HPP
-# define SIMPLE_TYPE_DWA2001128_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_TEST_SIMPLE_TYPE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_TEST_SIMPLE_TYPE_HPP
 
 struct simple
 {
     char* s;
 };
 
-#endif // SIMPLE_TYPE_DWA2001128_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_TEST_SIMPLE_TYPE_HPP

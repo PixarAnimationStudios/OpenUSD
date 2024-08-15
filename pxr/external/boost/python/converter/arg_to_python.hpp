@@ -7,29 +7,29 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef ARG_TO_PYTHON_DWA200265_HPP
-# define ARG_TO_PYTHON_DWA200265_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_TO_PYTHON_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_TO_PYTHON_HPP
 
-# include <boost/python/ptr.hpp>
-# include <boost/python/tag.hpp>
-# include <boost/python/to_python_indirect.hpp>
+# include "pxr/external/boost/python/ptr.hpp"
+# include "pxr/external/boost/python/tag.hpp"
+# include "pxr/external/boost/python/to_python_indirect.hpp"
 
-# include <boost/python/converter/registered.hpp>
-# include <boost/python/converter/registered_pointee.hpp>
-# include <boost/python/converter/arg_to_python_base.hpp>
-# include <boost/python/converter/shared_ptr_to_python.hpp>
+# include "pxr/external/boost/python/converter/registered.hpp"
+# include "pxr/external/boost/python/converter/registered_pointee.hpp"
+# include "pxr/external/boost/python/converter/arg_to_python_base.hpp"
+# include "pxr/external/boost/python/converter/shared_ptr_to_python.hpp"
 // Bring in specializations
-# include <boost/python/converter/builtin_converters.hpp>
+# include "pxr/external/boost/python/converter/builtin_converters.hpp"
 
-# include <boost/python/object/function_handle.hpp>
+# include "pxr/external/boost/python/object/function_handle.hpp"
 
-# include <boost/python/base_type_traits.hpp>
+# include "pxr/external/boost/python/base_type_traits.hpp"
 
-# include <boost/python/detail/indirect_traits.hpp>
-# include <boost/python/detail/convertible.hpp>
-# include <boost/python/detail/string_literal.hpp>
-# include <boost/python/detail/value_is_shared_ptr.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/indirect_traits.hpp"
+# include "pxr/external/boost/python/detail/convertible.hpp"
+# include "pxr/external/boost/python/detail/string_literal.hpp"
+# include "pxr/external/boost/python/detail/value_is_shared_ptr.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 # include <boost/mpl/or.hpp>
 
@@ -259,4 +259,4 @@ inline arg_to_python<T>::arg_to_python(T const& x)
 
 }}} // namespace boost::python::converter
 
-#endif // ARG_TO_PYTHON_DWA200265_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_TO_PYTHON_HPP

@@ -11,10 +11,10 @@
 //  The author gratefully acknowleges the support of Dragon Systems, Inc., in
 //  producing this work.
 
-#ifndef ERRORS_DWA052500_H_
-# define ERRORS_DWA052500_H_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_ERRORS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_ERRORS_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 # include <boost/function/function0.hpp>
 
 namespace boost { namespace python {
@@ -57,4 +57,4 @@ BOOST_PYTHON_DECL PyObject* pytype_check(PyTypeObject* pytype, PyObject* source)
 
 }} // namespace boost::python
 
-#endif // ERRORS_DWA052500_H_
+#endif // PXR_EXTERNAL_BOOST_PYTHON_ERRORS_HPP

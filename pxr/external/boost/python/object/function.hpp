@@ -7,15 +7,15 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef FUNCTION_DWA20011214_HPP
-# define FUNCTION_DWA20011214_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/args_fwd.hpp>
-# include <boost/python/handle.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/args_fwd.hpp"
+# include "pxr/external/boost/python/handle.hpp"
 # include <boost/function/function2.hpp>
-# include <boost/python/object_core.hpp>
-# include <boost/python/object/py_function.hpp>
+# include "pxr/external/boost/python/object_core.hpp"
+# include "pxr/external/boost/python/object/py_function.hpp"
 
 namespace boost { namespace python { namespace objects { 
 
@@ -84,4 +84,4 @@ inline object const& function::name() const
   
 }}} // namespace boost::python::objects
 
-#endif // FUNCTION_DWA20011214_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HPP

@@ -7,24 +7,24 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef DATA_MEMBERS_DWA2002328_HPP
-# define DATA_MEMBERS_DWA2002328_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DATA_MEMBERS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DATA_MEMBERS_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/handle.hpp>
+# include "pxr/external/boost/python/handle.hpp"
 
-# include <boost/python/return_value_policy.hpp>
-# include <boost/python/return_by_value.hpp>
-# include <boost/python/return_internal_reference.hpp>
-# include <boost/python/make_function.hpp>
+# include "pxr/external/boost/python/return_value_policy.hpp"
+# include "pxr/external/boost/python/return_by_value.hpp"
+# include "pxr/external/boost/python/return_internal_reference.hpp"
+# include "pxr/external/boost/python/make_function.hpp"
 
-# include <boost/python/converter/builtin_converters.hpp>
+# include "pxr/external/boost/python/converter/builtin_converters.hpp"
 
-# include <boost/python/detail/indirect_traits.hpp>
-# include <boost/python/detail/not_specified.hpp>
-# include <boost/python/detail/value_arg.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/indirect_traits.hpp"
+# include "pxr/external/boost/python/detail/not_specified.hpp"
+# include "pxr/external/boost/python/detail/value_arg.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 # include <boost/mpl/eval_if.hpp>
 # include <boost/mpl/if.hpp>
@@ -313,4 +313,4 @@ inline object make_setter(D const& x)
 
 }} // namespace boost::python
 
-#endif // DATA_MEMBERS_DWA2002328_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DATA_MEMBERS_HPP

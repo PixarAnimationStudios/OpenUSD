@@ -7,14 +7,14 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef ARG_FROM_PYTHON_DWA2002128_HPP
-# define ARG_FROM_PYTHON_DWA2002128_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_ARG_FROM_PYTHON_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_ARG_FROM_PYTHON_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/converter/arg_from_python.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/converter/arg_from_python.hpp"
 # if BOOST_WORKAROUND(BOOST_MSVC, BOOST_TESTED_AT(1400)) \
     || BOOST_WORKAROUND(BOOST_INTEL_WIN, BOOST_TESTED_AT(800))
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 #endif
 
 namespace boost { namespace python { 
@@ -78,4 +78,4 @@ inline arg_from_python<T>::arg_from_python(PyObject* source)
 
 }} // namespace boost::python
 
-#endif // ARG_FROM_PYTHON_DWA2002128_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_ARG_FROM_PYTHON_HPP

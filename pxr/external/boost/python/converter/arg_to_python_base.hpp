@@ -7,9 +7,9 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef ARG_TO_PYTHON_BASE_DWA200237_HPP
-# define ARG_TO_PYTHON_BASE_DWA200237_HPP
-# include <boost/python/handle.hpp>
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_TO_PYTHON_BASE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_TO_PYTHON_BASE_HPP
+# include "pxr/external/boost/python/handle.hpp"
 
 namespace boost { namespace python { namespace converter {
 
@@ -26,4 +26,4 @@ namespace detail
 
 }}} // namespace boost::python::converter
 
-#endif // ARG_TO_PYTHON_BASE_DWA200237_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_TO_PYTHON_BASE_HPP

@@ -8,13 +8,13 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/module.hpp>
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/class.hpp"
 #include "test_class.hpp"
 #include <memory>
 #include <boost/shared_ptr.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/args.hpp>
+#include "pxr/external/boost/python/make_constructor.hpp"
+#include "pxr/external/boost/python/args.hpp"
 
 using namespace boost::python;
 

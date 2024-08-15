@@ -17,10 +17,10 @@
     For more information refer to boost/libs/python/doc/pickle.html.
  */
 
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include <string>
 

@@ -7,11 +7,11 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef TYPE_LIST_DWA2002913_HPP
-# define TYPE_LIST_DWA2002913_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_LIST_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_LIST_HPP
 
 # include <boost/config.hpp>
-# include <boost/python/detail/preprocessor.hpp>
+# include "pxr/external/boost/python/detail/preprocessor.hpp"
 # include <boost/preprocessor/arithmetic/inc.hpp>
 
 # if BOOST_PYTHON_MAX_ARITY + 2 > BOOST_PYTHON_MAX_BASES
@@ -35,6 +35,6 @@
 #  include <boost/mpl/vector/vector10.hpp>
 # endif
 
-#  include <boost/python/detail/type_list_impl.hpp>
+#  include "pxr/external/boost/python/detail/type_list_impl.hpp"
 
-#endif // TYPE_LIST_DWA2002913_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_LIST_HPP

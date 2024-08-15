@@ -7,8 +7,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef COMPLICATED_DWA20011215_HPP
-# define COMPLICATED_DWA20011215_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_TEST_COMPLICATED_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_TEST_COMPLICATED_HPP
 # include <iostream>
 
 # include "simple_type.hpp"
@@ -40,4 +40,4 @@ inline int complicated::get_n() const
     return n;
 }
 
-#endif // COMPLICATED_DWA20011215_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_TEST_COMPLICATED_HPP

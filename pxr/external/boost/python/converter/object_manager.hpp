@@ -7,15 +7,15 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef OBJECT_MANAGER_DWA2002614_HPP
-# define OBJECT_MANAGER_DWA2002614_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_OBJECT_MANAGER_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_OBJECT_MANAGER_HPP
 
-# include <boost/python/handle.hpp>
-# include <boost/python/cast.hpp>
-# include <boost/python/converter/pyobject_traits.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/handle.hpp"
+# include "pxr/external/boost/python/cast.hpp"
+# include "pxr/external/boost/python/converter/pyobject_traits.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <boost/mpl/if.hpp>
-# include <boost/python/detail/indirect_traits.hpp>
+# include "pxr/external/boost/python/detail/indirect_traits.hpp"
 # include <boost/mpl/bool.hpp>
 
 // Facilities for dealing with types which always manage Python
@@ -158,4 +158,4 @@ struct is_reference_to_object_manager<T const volatile&>
 
 }}} // namespace boost::python::converter
 
-#endif // OBJECT_MANAGER_DWA2002614_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_OBJECT_MANAGER_HPP

@@ -7,12 +7,12 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef STL_ITERATOR_EAN20051028_HPP
-# define STL_ITERATOR_EAN20051028_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_STL_ITERATOR_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_STL_ITERATOR_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/object/stl_iterator_core.hpp>
+# include "pxr/external/boost/python/object/stl_iterator_core.hpp"
 
 # include <boost/iterator/iterator_facade.hpp>
 
@@ -63,4 +63,4 @@ private:
 
 }} // namespace boost::python
 
-#endif // STL_ITERATOR_EAN20051028_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_STL_ITERATOR_HPP

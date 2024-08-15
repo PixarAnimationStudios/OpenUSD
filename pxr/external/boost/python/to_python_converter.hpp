@@ -7,17 +7,17 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef TO_PYTHON_CONVERTER_DWA200221_HPP
-# define TO_PYTHON_CONVERTER_DWA200221_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_CONVERTER_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_CONVERTER_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/converter/registry.hpp>
-# include <boost/python/converter/as_to_python_function.hpp>
+# include "pxr/external/boost/python/converter/registry.hpp"
+# include "pxr/external/boost/python/converter/as_to_python_function.hpp"
 #ifndef BOOST_PYTHON_NO_PY_SIGNATURES
-# include <boost/python/converter/pytype_function.hpp>
+# include "pxr/external/boost/python/converter/pytype_function.hpp"
 #endif
-# include <boost/python/type_id.hpp>
+# include "pxr/external/boost/python/type_id.hpp"
 
 namespace boost { namespace python { 
 
@@ -95,5 +95,5 @@ to_python_converter<T,Conversion, has_get_pytype>::to_python_converter()
 
 }} // namespace boost::python
 
-#endif // TO_PYTHON_CONVERTER_DWA200221_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_CONVERTER_HPP
 

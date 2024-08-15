@@ -10,13 +10,13 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-# ifndef RESULT_DWA2002521_HPP
-#  define RESULT_DWA2002521_HPP
+# ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_RESULT_HPP
+#  define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_RESULT_HPP
 
 #  include <boost/type.hpp>
 
-#  include <boost/python/detail/preprocessor.hpp>
-#  include <boost/python/detail/type_traits.hpp>
+#  include "pxr/external/boost/python/detail/preprocessor.hpp"
+#  include "pxr/external/boost/python/detail/type_traits.hpp"
 
 #  include <boost/mpl/if.hpp>
 
@@ -38,11 +38,11 @@ namespace boost { namespace python { namespace detail {
 // to get this to work portably.
 
 #  define BOOST_PP_ITERATION_PARAMS_1                                                                   \
-    (4, (0, BOOST_PYTHON_MAX_ARITY, <boost/python/detail/result.hpp>, BOOST_PYTHON_FUNCTION_POINTER))
+    (4, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/detail/result.hpp", BOOST_PYTHON_FUNCTION_POINTER))
 #  include BOOST_PP_ITERATE()
 
 #  define BOOST_PP_ITERATION_PARAMS_1                                                                     \
-    (4, (0, BOOST_PYTHON_CV_COUNT - 1, <boost/python/detail/result.hpp>, BOOST_PYTHON_POINTER_TO_MEMBER))
+    (4, (0, BOOST_PYTHON_CV_COUNT - 1, "pxr/external/boost/python/detail/result.hpp", BOOST_PYTHON_POINTER_TO_MEMBER))
 #  include BOOST_PP_ITERATE()
 
 template <class R, class T>
@@ -86,7 +86,7 @@ result(X const&, short = 0) { return 0; }
 
 }}} // namespace boost::python::detail
 
-# endif // RESULT_DWA2002521_HPP
+# endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_RESULT_HPP
 
 /* --------------- function pointers --------------- */
 // For gcc 4.4 compatability, we must include the
@@ -112,7 +112,7 @@ boost::type<R>* result(R (*)(BOOST_PP_ENUM_PARAMS_Z(1, N, A)), int = 0)
 #elif BOOST_PP_ITERATION_DEPTH() == 1 && BOOST_PP_ITERATION_FLAGS() == BOOST_PYTHON_POINTER_TO_MEMBER
 // Outer over cv-qualifiers
 
-# define BOOST_PP_ITERATION_PARAMS_2 (3, (0, BOOST_PYTHON_MAX_ARITY, <boost/python/detail/result.hpp>))
+# define BOOST_PP_ITERATION_PARAMS_2 (3, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/detail/result.hpp"))
 # include BOOST_PP_ITERATE()
 
 #elif BOOST_PP_ITERATION_DEPTH() == 2

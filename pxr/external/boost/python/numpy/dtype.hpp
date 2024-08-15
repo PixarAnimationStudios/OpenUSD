@@ -9,19 +9,19 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef boost_python_numpy_dtype_hpp_
-#define boost_python_numpy_dtype_hpp_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_NUMPY_DTYPE_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_DTYPE_HPP
 
 /**
  *  @file boost/python/numpy/dtype.hpp
  *  @brief Object manager for Python's numpy.dtype class.
  */
 
-#include <boost/python.hpp>
-#include <boost/python/numpy/config.hpp>
-#include <boost/python/numpy/numpy_object_mgr_traits.hpp>
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/numpy/config.hpp"
+#include "pxr/external/boost/python/numpy/numpy_object_mgr_traits.hpp"
 #include <boost/mpl/for_each.hpp>
-#include <boost/python/detail/type_traits.hpp>
+#include "pxr/external/boost/python/detail/type_traits.hpp"
 
 namespace boost { namespace python { namespace numpy {
 

@@ -22,13 +22,13 @@
     For more information refer to boost/libs/python/doc/pickle.html.
  */
 
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/back_reference.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/back_reference.hpp"
 
 namespace boost_python_test {
 

@@ -7,14 +7,14 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef RETURN_INTERNAL_REFERENCE_DWA2002131_HPP
-# define RETURN_INTERNAL_REFERENCE_DWA2002131_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_RETURN_INTERNAL_REFERENCE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_RETURN_INTERNAL_REFERENCE_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/default_call_policies.hpp>
-# include <boost/python/reference_existing_object.hpp>
-# include <boost/python/with_custodian_and_ward.hpp>
+# include "pxr/external/boost/python/default_call_policies.hpp"
+# include "pxr/external/boost/python/reference_existing_object.hpp"
+# include "pxr/external/boost/python/with_custodian_and_ward.hpp"
 # include <boost/mpl/if.hpp>
 
 namespace boost { namespace python { 
@@ -45,4 +45,4 @@ struct return_internal_reference
 
 }} // namespace boost::python
 
-#endif // RETURN_INTERNAL_REFERENCE_DWA2002131_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_RETURN_INTERNAL_REFERENCE_HPP

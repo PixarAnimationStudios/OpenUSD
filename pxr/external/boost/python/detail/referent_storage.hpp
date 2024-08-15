@@ -7,8 +7,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef REFERENT_STORAGE_DWA200278_HPP
-# define REFERENT_STORAGE_DWA200278_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_REFERENT_STORAGE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_REFERENT_STORAGE_HPP
 # include <boost/mpl/if.hpp>
 # include <boost/type_traits/aligned_storage.hpp>
 # include <cstddef>
@@ -47,4 +47,4 @@ struct referent_storage
 
 }}} // namespace boost::python::detail
 
-#endif // REFERENT_STORAGE_DWA200278_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_REFERENT_STORAGE_HPP

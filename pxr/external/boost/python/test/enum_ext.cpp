@@ -7,12 +7,12 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/enum.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/module.hpp>
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/enum.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/class.hpp"
 #if BOOST_WORKAROUND(__MWERKS__, <= 0x2407)
-#include <boost/python/detail/type_traits.hpp>
+#include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <boost/mpl/bool.hpp>
 #endif 
 using namespace boost::python;

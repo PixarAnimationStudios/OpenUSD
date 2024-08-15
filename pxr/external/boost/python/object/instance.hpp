@@ -7,11 +7,11 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef INSTANCE_DWA200295_HPP
-# define INSTANCE_DWA200295_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_INSTANCE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_INSTANCE_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <cstddef>
 
 namespace boost { namespace python
@@ -54,4 +54,4 @@ struct additional_instance_size
 
 }}} // namespace boost::python::object
 
-#endif // INSTANCE_DWA200295_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_INSTANCE_HPP

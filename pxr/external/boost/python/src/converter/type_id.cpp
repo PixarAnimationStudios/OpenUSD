@@ -8,8 +8,8 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/type_id.hpp>
-#include <boost/python/detail/decorated_type_id.hpp>
+#include "pxr/external/boost/python/type_id.hpp"
+#include "pxr/external/boost/python/detail/decorated_type_id.hpp"
 #include <utility>
 #include <vector>
 #include <algorithm>

@@ -8,10 +8,10 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-# include <boost/python/return_opaque_pointer.hpp>
-# include <boost/python/def.hpp>
-# include <boost/python/module.hpp>
-# include <boost/python/return_value_policy.hpp>
+# include "pxr/external/boost/python/return_opaque_pointer.hpp"
+# include "pxr/external/boost/python/def.hpp"
+# include "pxr/external/boost/python/module.hpp"
+# include "pxr/external/boost/python/return_value_policy.hpp"
 
 static void *test=(void *) 78;
 

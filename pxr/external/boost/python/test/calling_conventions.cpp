@@ -27,7 +27,7 @@
 #endif
 #include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/stringize.hpp>
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 using namespace boost::python;
 
 // first define test functions for every calling convention

@@ -7,8 +7,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef MSVC_TYPEINFO_DWA200222_HPP
-# define MSVC_TYPEINFO_DWA200222_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MSVC_TYPEINFO_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MSVC_TYPEINFO_HPP
 
 #include <typeinfo>
 #include <boost/type.hpp>
@@ -86,4 +86,4 @@ inline typeinfo assert_array_typeid_compiles()
 }}} // namespace boost::python::detail
 
 # endif // BOOST_INTEL_CXX_VERSION
-#endif // MSVC_TYPEINFO_DWA200222_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MSVC_TYPEINFO_HPP

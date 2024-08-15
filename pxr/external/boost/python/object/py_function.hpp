@@ -7,10 +7,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef PY_FUNCTION_DWA200286_HPP
-# define PY_FUNCTION_DWA200286_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_PY_FUNCTION_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_PY_FUNCTION_HPP
 
-# include <boost/python/detail/signature.hpp>
+# include "pxr/external/boost/python/detail/signature.hpp"
 # include <boost/detail/workaround.hpp>
 # include <boost/mpl/size.hpp>
 # include <memory>
@@ -182,4 +182,4 @@ struct py_function
 
 }}} // namespace boost::python::objects
 
-#endif // PY_FUNCTION_DWA200286_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_PY_FUNCTION_HPP

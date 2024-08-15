@@ -7,8 +7,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef CONTEXT_RESULT_CONVERTER_DWA2003917_HPP
-# define CONTEXT_RESULT_CONVERTER_DWA2003917_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_CONTEXT_RESULT_CONVERTER_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_CONTEXT_RESULT_CONVERTER_HPP
 
 namespace boost { namespace python { namespace converter { 
 
@@ -19,4 +19,4 @@ struct context_result_converter {};
 
 }}} // namespace boost::python::converter
 
-#endif // CONTEXT_RESULT_CONVERTER_DWA2003917_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_CONTEXT_RESULT_CONVERTER_HPP

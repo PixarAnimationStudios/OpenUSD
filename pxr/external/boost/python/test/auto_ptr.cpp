@@ -8,12 +8,12 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/module.hpp>
+#include "pxr/external/boost/python/module.hpp"
 #include "test_class.hpp"
-#include <boost/python/class.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/implicit.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/implicit.hpp"
 
 #include <boost/detail/workaround.hpp>
 

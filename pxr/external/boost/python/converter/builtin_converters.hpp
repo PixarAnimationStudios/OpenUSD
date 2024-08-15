@@ -7,12 +7,12 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef BUILTIN_CONVERTERS_DWA2002124_HPP
-# define BUILTIN_CONVERTERS_DWA2002124_HPP
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/detail/none.hpp>
-# include <boost/python/handle.hpp>
-# include <boost/python/ssize_t.hpp>
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_BUILTIN_CONVERTERS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_BUILTIN_CONVERTERS_HPP
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/detail/none.hpp"
+# include "pxr/external/boost/python/handle.hpp"
+# include "pxr/external/boost/python/ssize_t.hpp"
 # include <boost/implicit_cast.hpp>
 # include <string>
 # include <complex>
@@ -192,4 +192,4 @@ namespace converter
 
 }} // namespace boost::python::converter
 
-#endif // BUILTIN_CONVERTERS_DWA2002124_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_BUILTIN_CONVERTERS_HPP

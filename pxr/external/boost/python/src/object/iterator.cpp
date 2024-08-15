@@ -8,8 +8,8 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/object/iterator_core.hpp>
-#include <boost/python/object/function_object.hpp>
+#include "pxr/external/boost/python/object/iterator_core.hpp"
+#include "pxr/external/boost/python/object/function_object.hpp"
 #include <boost/bind/bind.hpp>
 #include <boost/mpl/vector/vector10.hpp>
 

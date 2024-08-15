@@ -7,12 +7,12 @@
 // Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/class.hpp>
-#include <boost/python/raw_function.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python/module.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/raw_function.hpp"
+#include "pxr/external/boost/python/make_constructor.hpp"
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/external/boost/python/module.hpp"
 
 using namespace boost::python;
 

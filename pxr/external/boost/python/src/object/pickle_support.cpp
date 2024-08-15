@@ -8,12 +8,12 @@
 //  accompanying file LICENSE_1_0.txt or copy at
 //  http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/make_function.hpp>
-#include <boost/python/object/class.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/str.hpp>
+#include "pxr/external/boost/python/make_function.hpp"
+#include "pxr/external/boost/python/object/class.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/str.hpp"
 
 namespace boost { namespace python {
 

@@ -1,4 +1,4 @@
-#include "boost/python/slice.hpp"
+#include "pxr/external/boost/python/slice.hpp"
 
 //
 // Copyright 2024 Pixar

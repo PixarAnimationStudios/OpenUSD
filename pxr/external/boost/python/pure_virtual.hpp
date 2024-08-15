@@ -7,15 +7,15 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef PURE_VIRTUAL_DWA2003810_HPP
-# define PURE_VIRTUAL_DWA2003810_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_PURE_VIRTUAL_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_PURE_VIRTUAL_HPP
 
-# include <boost/python/def_visitor.hpp>
-# include <boost/python/default_call_policies.hpp>
+# include "pxr/external/boost/python/def_visitor.hpp"
+# include "pxr/external/boost/python/default_call_policies.hpp"
 # include <boost/mpl/push_front.hpp>
 # include <boost/mpl/pop_front.hpp>
 
-# include <boost/python/detail/nullary_function_adaptor.hpp>
+# include "pxr/external/boost/python/detail/nullary_function_adaptor.hpp"
 
 namespace boost { namespace python { 
 
@@ -126,4 +126,4 @@ pure_virtual(PointerToMemberFunction pmf)
 
 }} // namespace boost::python
 
-#endif // PURE_VIRTUAL_DWA2003810_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_PURE_VIRTUAL_HPP

@@ -8,7 +8,7 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 namespace python = boost::python;
 

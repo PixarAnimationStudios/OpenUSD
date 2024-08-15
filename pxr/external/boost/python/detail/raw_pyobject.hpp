@@ -7,8 +7,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef RAW_PYOBJECT_DWA2002628_HPP
-# define RAW_PYOBJECT_DWA2002628_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_RAW_PYOBJECT_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_RAW_PYOBJECT_HPP
 
 namespace boost { namespace python { namespace detail { 
 
@@ -34,4 +34,4 @@ typedef new_non_null_reference_t* new_non_null_reference;
 
 }}} // namespace boost::python::detail
 
-#endif // RAW_PYOBJECT_DWA2002628_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_RAW_PYOBJECT_HPP

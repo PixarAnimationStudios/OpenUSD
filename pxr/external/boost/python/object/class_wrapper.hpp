@@ -7,12 +7,12 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef CLASS_WRAPPER_DWA20011221_HPP
-# define CLASS_WRAPPER_DWA20011221_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CLASS_WRAPPER_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CLASS_WRAPPER_HPP
 
-# include <boost/python/to_python_converter.hpp>
+# include "pxr/external/boost/python/to_python_converter.hpp"
 #ifndef BOOST_PYTHON_NO_PY_SIGNATURES
-# include <boost/python/converter/pytype_function.hpp>
+# include "pxr/external/boost/python/converter/pytype_function.hpp"
 #endif
 # include <boost/ref.hpp>
 
@@ -53,4 +53,4 @@ struct class_value_wrapper
 
 }}} // namespace boost::python::objects
 
-#endif // CLASS_WRAPPER_DWA20011221_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CLASS_WRAPPER_HPP

@@ -10,14 +10,14 @@
 /*
  * Generic Return value converter generator for opaque C++-pointers
  */
-# ifndef RETURN_OPAQUE_POINTER_HPP_
-# define RETURN_OPAQUE_POINTER_HPP_
+# ifndef PXR_EXTERNAL_BOOST_PYTHON_RETURN_OPAQUE_POINTER_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_RETURN_OPAQUE_POINTER_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/opaque_pointer_converter.hpp>
-# include <boost/python/detail/force_instantiate.hpp>
-# include <boost/python/to_python_value.hpp>
-# include <boost/python/detail/value_arg.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/opaque_pointer_converter.hpp"
+# include "pxr/external/boost/python/detail/force_instantiate.hpp"
+# include "pxr/external/boost/python/to_python_value.hpp"
+# include "pxr/external/boost/python/detail/value_arg.hpp"
 # include <boost/mpl/assert.hpp>
 
 namespace boost { namespace python {
@@ -49,4 +49,4 @@ struct return_opaque_pointer
 };
 
 }} // namespace boost::python
-# endif // RETURN_OPAQUE_POINTER_HPP_
+# endif // PXR_EXTERNAL_BOOST_PYTHON_RETURN_OPAQUE_POINTER_HPP

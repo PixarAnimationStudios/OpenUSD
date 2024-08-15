@@ -7,18 +7,18 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/class.hpp>
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/has_back_reference.hpp>
-#include <boost/python/back_reference.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/has_back_reference.hpp"
+#include "pxr/external/boost/python/back_reference.hpp"
 #include <boost/ref.hpp>
 #include <boost/utility.hpp>
 #include <memory>
 #define BOOST_ENABLE_ASSERT_HANDLER
 #include <boost/assert.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/return_value_policy.hpp>
+#include "pxr/external/boost/python/copy_const_reference.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
 #include <boost/mpl/bool.hpp>
 
 // This test shows that a class can be wrapped "as itself" but also

@@ -7,15 +7,15 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef ITERATOR_DWA2002512_HPP
-# define ITERATOR_DWA2002512_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_ITERATOR_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_ITERATOR_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/detail/target.hpp>
-# include <boost/python/detail/type_traits.hpp>
-# include <boost/python/object/iterator.hpp>
-# include <boost/python/object_core.hpp>
+# include "pxr/external/boost/python/detail/target.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
+# include "pxr/external/boost/python/object/iterator.hpp"
+# include "pxr/external/boost/python/object_core.hpp"
 
 # if defined(BOOST_MSVC) && (BOOST_MSVC == 1400) /*
 > warning C4180: qualifier applied to function type has no meaning; ignored
@@ -138,4 +138,4 @@ struct iterator : object
 
 }} // namespace boost::python
 
-#endif // ITERATOR_DWA2002512_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_ITERATOR_HPP

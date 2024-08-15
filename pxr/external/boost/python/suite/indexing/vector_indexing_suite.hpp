@@ -8,12 +8,12 @@
 //  accompanying file LICENSE_1_0.txt or copy at
 //  http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef VECTOR_INDEXING_SUITE_JDG20036_HPP
-# define VECTOR_INDEXING_SUITE_JDG20036_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_VECTOR_INDEXING_SUITE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_VECTOR_INDEXING_SUITE_HPP
 
-# include <boost/python/suite/indexing/indexing_suite.hpp>
-# include <boost/python/suite/indexing/container_utils.hpp>
-# include <boost/python/iterator.hpp>
+# include "pxr/external/boost/python/suite/indexing/indexing_suite.hpp"
+# include "pxr/external/boost/python/suite/indexing/container_utils.hpp"
+# include "pxr/external/boost/python/iterator.hpp"
 
 namespace boost { namespace python {
             
@@ -244,4 +244,4 @@ namespace boost { namespace python {
        
 }} // namespace boost::python 
 
-#endif // VECTOR_INDEXING_SUITE_JDG20036_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_VECTOR_INDEXING_SUITE_HPP

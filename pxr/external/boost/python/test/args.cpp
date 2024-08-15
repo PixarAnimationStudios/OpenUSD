@@ -7,15 +7,15 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/module.hpp>
+#include "pxr/external/boost/python/module.hpp"
 #include "test_class.hpp"
-#include <boost/python/def.hpp>
-#include <boost/python/args.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/overloads.hpp>
-#include <boost/python/raw_function.hpp>
-#include <boost/python/return_internal_reference.hpp>
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/args.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/overloads.hpp"
+#include "pxr/external/boost/python/raw_function.hpp"
+#include "pxr/external/boost/python/return_internal_reference.hpp"
 
 using namespace boost::python;
 

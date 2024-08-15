@@ -9,10 +9,10 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef boost_python_numpy_numpy_object_mgr_traits_hpp_
-#define boost_python_numpy_numpy_object_mgr_traits_hpp_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_NUMPY_NUMPY_OBJECT_MGR_TRAITS_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_NUMPY_OBJECT_MGR_TRAITS_HPP
 
-#include <boost/python/numpy/config.hpp>
+#include "pxr/external/boost/python/numpy/config.hpp"
 
 /**
  *  @brief Macro that specializes object_manager_traits by requiring a 

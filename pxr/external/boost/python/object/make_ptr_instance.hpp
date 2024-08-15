@@ -7,12 +7,12 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef MAKE_PTR_INSTANCE_DWA200296_HPP
-# define MAKE_PTR_INSTANCE_DWA200296_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_PTR_INSTANCE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_PTR_INSTANCE_HPP
 
-# include <boost/python/object/make_instance.hpp>
-# include <boost/python/converter/registry.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/object/make_instance.hpp"
+# include "pxr/external/boost/python/converter/registry.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <boost/get_pointer.hpp>
 # include <boost/detail/workaround.hpp>
 # include <typeinfo>
@@ -78,4 +78,4 @@ struct make_ptr_instance
 
 }}} // namespace boost::python::object
 
-#endif // MAKE_PTR_INSTANCE_DWA200296_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_PTR_INSTANCE_HPP

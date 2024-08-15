@@ -8,15 +8,15 @@
 // Copyright David Abrahams 2004. Distributed under the Boost
 // Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-#ifndef OVERRIDE_DWA2004721_HPP
-# define OVERRIDE_DWA2004721_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OVERRIDE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OVERRIDE_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/converter/return_from_python.hpp>
+# include "pxr/external/boost/python/converter/return_from_python.hpp"
 
-# include <boost/python/extract.hpp>
-# include <boost/python/handle.hpp>
+# include "pxr/external/boost/python/extract.hpp"
+# include "pxr/external/boost/python/handle.hpp"
 
 #  include <boost/preprocessor/iterate.hpp>
 #  include <boost/preprocessor/repeat.hpp>
@@ -112,7 +112,7 @@ class override : public object
 # define BOOST_PYTHON_fast_arg_to_python_get(z, n, _)   \
     , converter::arg_to_python<A##n>(a##n).get()
 
-# define BOOST_PP_ITERATION_PARAMS_1 (3, (1, BOOST_PYTHON_MAX_ARITY, <boost/python/override.hpp>))
+# define BOOST_PP_ITERATION_PARAMS_1 (3, (1, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/override.hpp"))
 # include BOOST_PP_ITERATE()
 
 # undef BOOST_PYTHON_fast_arg_to_python_get
@@ -120,7 +120,7 @@ class override : public object
 
 }} // namespace boost::python
 
-#endif // OVERRIDE_DWA2004721_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OVERRIDE_HPP
 
 #else
 # if !(BOOST_WORKAROUND(__MWERKS__, > 0x3100)                      \

@@ -7,26 +7,26 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef ITERATOR_DWA2002510_HPP
-# define ITERATOR_DWA2002510_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ITERATOR_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ITERATOR_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
-# include <boost/python/class.hpp>
-# include <boost/python/return_value_policy.hpp>
-# include <boost/python/return_by_value.hpp>
-# include <boost/python/handle.hpp>
-# include <boost/python/make_function.hpp>
+# include "pxr/external/boost/python/class.hpp"
+# include "pxr/external/boost/python/return_value_policy.hpp"
+# include "pxr/external/boost/python/return_by_value.hpp"
+# include "pxr/external/boost/python/handle.hpp"
+# include "pxr/external/boost/python/make_function.hpp"
 
-# include <boost/python/object/iterator_core.hpp>
-# include <boost/python/object/class_detail.hpp>
-# include <boost/python/object/function_object.hpp>
+# include "pxr/external/boost/python/object/iterator_core.hpp"
+# include "pxr/external/boost/python/object/class_detail.hpp"
+# include "pxr/external/boost/python/object/function_object.hpp"
 
 # include <boost/mpl/vector/vector10.hpp>
 # include <boost/mpl/if.hpp>
 
-# include <boost/python/detail/raw_pyobject.hpp>
+# include "pxr/external/boost/python/detail/raw_pyobject.hpp"
 
 # include <boost/type.hpp>
 
@@ -229,4 +229,4 @@ inline iterator_range<NextPolicies,Iterator>::iterator_range(
 
 }}} // namespace boost::python::objects
 
-#endif // ITERATOR_DWA2002510_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ITERATOR_HPP

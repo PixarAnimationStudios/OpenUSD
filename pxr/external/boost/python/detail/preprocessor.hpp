@@ -7,8 +7,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef PREPROCESSOR_DWA200247_HPP
-# define PREPROCESSOR_DWA200247_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_PREPROCESSOR_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_PREPROCESSOR_HPP
 
 # include <boost/preprocessor/cat.hpp>
 # include <boost/preprocessor/comma_if.hpp>
@@ -68,4 +68,4 @@
 # define BOOST_PYTHON_FUNCTION_POINTER 0x0001
 # define BOOST_PYTHON_POINTER_TO_MEMBER 0x0002
 
-#endif // PREPROCESSOR_DWA200247_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_PREPROCESSOR_HPP

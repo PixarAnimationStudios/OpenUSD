@@ -8,8 +8,8 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef BOOST_PYTHON_DETAIL_TYPE_TRAITS_HPP
-# define BOOST_PYTHON_DETAIL_TYPE_TRAITS_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_TRAITS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_TRAITS_HPP
 
 
 #include <boost/config.hpp>

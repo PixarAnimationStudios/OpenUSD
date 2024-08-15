@@ -7,10 +7,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef DEF_VISITOR_DWA2003810_HPP
-# define DEF_VISITOR_DWA2003810_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DEF_VISITOR_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DEF_VISITOR_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 # include <boost/detail/workaround.hpp>
 
 namespace boost { namespace python { 
@@ -88,4 +88,4 @@ class def_visitor
 
 }} // namespace boost::python
 
-#endif // DEF_VISITOR_DWA2003810_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DEF_VISITOR_HPP

@@ -8,10 +8,10 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/object_protocol.hpp>
-#include <boost/python/errors.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/ssize_t.hpp>
+#include "pxr/external/boost/python/object_protocol.hpp"
+#include "pxr/external/boost/python/errors.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/ssize_t.hpp"
 
 namespace boost { namespace python { namespace api {
 

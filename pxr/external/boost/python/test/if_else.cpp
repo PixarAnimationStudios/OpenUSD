@@ -8,8 +8,8 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 #include <boost/static_assert.hpp>
-#include <boost/python/detail/if_else.hpp>
-#include <boost/python/detail/type_traits.hpp>
+#include "pxr/external/boost/python/detail/if_else.hpp"
+#include "pxr/external/boost/python/detail/type_traits.hpp"
 
     typedef char c1;
     typedef char c2[2];

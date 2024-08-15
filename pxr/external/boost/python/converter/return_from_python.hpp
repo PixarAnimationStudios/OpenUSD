@@ -7,19 +7,19 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef RETURN_FROM_PYTHON_DWA200265_HPP
-# define RETURN_FROM_PYTHON_DWA200265_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_RETURN_FROM_PYTHON_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_RETURN_FROM_PYTHON_HPP
 
-# include <boost/python/converter/from_python.hpp>
-# include <boost/python/converter/rvalue_from_python_data.hpp>
-# include <boost/python/converter/registered.hpp>
-# include <boost/python/converter/registered_pointee.hpp>
-# include <boost/python/converter/object_manager.hpp>
-# include <boost/python/detail/void_ptr.hpp>
-# include <boost/python/detail/void_return.hpp>
-# include <boost/python/errors.hpp>
-# include <boost/python/handle.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/converter/from_python.hpp"
+# include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
+# include "pxr/external/boost/python/converter/registered.hpp"
+# include "pxr/external/boost/python/converter/registered_pointee.hpp"
+# include "pxr/external/boost/python/converter/object_manager.hpp"
+# include "pxr/external/boost/python/detail/void_ptr.hpp"
+# include "pxr/external/boost/python/detail/void_return.hpp"
+# include "pxr/external/boost/python/errors.hpp"
+# include "pxr/external/boost/python/handle.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <boost/mpl/and.hpp>
 # include <boost/mpl/bool.hpp>
 
@@ -164,4 +164,4 @@ namespace detail
   
 }}} // namespace boost::python::converter
 
-#endif // RETURN_FROM_PYTHON_DWA200265_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_RETURN_FROM_PYTHON_HPP

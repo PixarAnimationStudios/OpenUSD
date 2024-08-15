@@ -10,17 +10,17 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-# ifndef CALL_DWA2002411_HPP
-#  define CALL_DWA2002411_HPP
+# ifndef PXR_EXTERNAL_BOOST_PYTHON_CALL_HPP
+#  define PXR_EXTERNAL_BOOST_PYTHON_CALL_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
 #  include <boost/type.hpp>
 
-#  include <boost/python/converter/arg_to_python.hpp>
-#  include <boost/python/converter/return_from_python.hpp>
-#  include <boost/python/detail/preprocessor.hpp>
-#  include <boost/python/detail/void_return.hpp>
+#  include "pxr/external/boost/python/converter/arg_to_python.hpp"
+#  include "pxr/external/boost/python/converter/return_from_python.hpp"
+#  include "pxr/external/boost/python/detail/preprocessor.hpp"
+#  include "pxr/external/boost/python/detail/void_return.hpp"
 
 #  include <boost/preprocessor/comma_if.hpp>
 #  include <boost/preprocessor/iterate.hpp>
@@ -34,14 +34,14 @@ namespace boost { namespace python {
 # define BOOST_PYTHON_FAST_ARG_TO_PYTHON_GET(z, n, _) \
     , converter::arg_to_python<A##n>(a##n).get()
 
-#  define BOOST_PP_ITERATION_PARAMS_1 (3, (0, BOOST_PYTHON_MAX_ARITY, <boost/python/call.hpp>))
+#  define BOOST_PP_ITERATION_PARAMS_1 (3, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/call.hpp"))
 #  include BOOST_PP_ITERATE()
 
 #  undef BOOST_PYTHON_FAST_ARG_TO_PYTHON_GET
 
 }} // namespace boost::python
 
-# endif // CALL_DWA2002411_HPP
+# endif // PXR_EXTERNAL_BOOST_PYTHON_CALL_HPP
 
 // For gcc 4.4 compatability, we must include the
 // BOOST_PP_ITERATION_DEPTH test inside an #else clause.

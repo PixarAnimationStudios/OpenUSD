@@ -7,10 +7,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef TAG_DWA2002720_HPP
-# define TAG_DWA2002720_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_TAG_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_TAG_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
 namespace boost { namespace python { 
 
@@ -20,4 +20,4 @@ enum tag_t { tag };
 
 }} // namespace boost::python
 
-#endif // TAG_DWA2002720_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_TAG_HPP

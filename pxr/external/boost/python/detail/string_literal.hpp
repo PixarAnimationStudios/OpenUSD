@@ -7,12 +7,12 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef STRING_LITERAL_DWA2002629_HPP
-# define STRING_LITERAL_DWA2002629_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_STRING_LITERAL_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_STRING_LITERAL_HPP
 
 # include <cstddef>
 # include <boost/type.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <boost/mpl/bool.hpp>
 # include <boost/detail/workaround.hpp>
 
@@ -51,4 +51,4 @@ struct is_string_literal<T[n]>
 
 }}} // namespace boost::python::detail
 
-#endif // STRING_LITERAL_DWA2002629_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_STRING_LITERAL_HPP

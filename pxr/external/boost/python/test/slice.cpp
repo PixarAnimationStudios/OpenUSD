@@ -1,6 +1,6 @@
-#include <boost/python.hpp>
-#include <boost/python/slice.hpp>
-#include <boost/python/str.hpp>
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/slice.hpp"
+#include "pxr/external/boost/python/str.hpp"
 #include <vector>
 
 //

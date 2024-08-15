@@ -7,9 +7,9 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/converter/registry.hpp>
-#include <boost/python/converter/registrations.hpp>
-#include <boost/python/converter/builtin_converters.hpp>
+#include "pxr/external/boost/python/converter/registry.hpp"
+#include "pxr/external/boost/python/converter/registrations.hpp"
+#include "pxr/external/boost/python/converter/builtin_converters.hpp"
 
 #include <set>
 #include <stdexcept>

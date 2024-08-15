@@ -7,14 +7,14 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef PYTYPE_OBJECT_MANAGER_TRAITS_DWA2002716_HPP
-# define PYTYPE_OBJECT_MANAGER_TRAITS_DWA2002716_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYTYPE_OBJECT_MGR_TRAITS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYTYPE_OBJECT_MGR_TRAITS_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/detail/raw_pyobject.hpp>
-# include <boost/python/cast.hpp>
-# include <boost/python/converter/pyobject_type.hpp>
-# include <boost/python/errors.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/detail/raw_pyobject.hpp"
+# include "pxr/external/boost/python/cast.hpp"
+# include "pxr/external/boost/python/converter/pyobject_type.hpp"
+# include "pxr/external/boost/python/errors.hpp"
 
 namespace boost { namespace python { namespace converter { 
 
@@ -44,4 +44,4 @@ inline python::detail::new_reference pytype_object_manager_traits<pytype,T>::ado
 
 }}} // namespace boost::python::converter
 
-#endif // PYTYPE_OBJECT_MANAGER_TRAITS_DWA2002716_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYTYPE_OBJECT_MGR_TRAITS_HPP

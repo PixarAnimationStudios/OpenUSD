@@ -1,5 +1,5 @@
-#ifndef BOOST_PYTHON_SLICE_JDB20040105_HPP
-#define BOOST_PYTHON_SLICE_JDB20040105_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_SLICE_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_SLICE_HPP
 
 //
 // Copyright 2024 Pixar
@@ -11,11 +11,11 @@
 //  Boost Software License, Version 1.0. (See accompanying file 
 //  LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/detail/prefix.hpp>
+#include "pxr/external/boost/python/detail/prefix.hpp"
 #include <boost/config.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/converter/pytype_object_mgr_traits.hpp>
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/converter/pytype_object_mgr_traits.hpp"
 
 #include <boost/iterator/iterator_traits.hpp>
 
@@ -278,4 +278,4 @@ struct object_manager_traits<slice>
 } } // !namespace ::boost::python
 
 
-#endif // !defined BOOST_PYTHON_SLICE_JDB20040105_HPP
+#endif // !defined PXR_EXTERNAL_BOOST_PYTHON_SLICE_HPP

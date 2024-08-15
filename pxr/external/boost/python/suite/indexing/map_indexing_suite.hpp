@@ -8,13 +8,13 @@
 //  accompanying file LICENSE_1_0.txt or copy at
 //  http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef MAP_INDEXING_SUITE_JDG20038_HPP
-# define MAP_INDEXING_SUITE_JDG20038_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_MAP_INDEXING_SUITE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_MAP_INDEXING_SUITE_HPP
 
-# include <boost/python/suite/indexing/indexing_suite.hpp>
-# include <boost/python/iterator.hpp>
-# include <boost/python/call_method.hpp>
-# include <boost/python/tuple.hpp>
+# include "pxr/external/boost/python/suite/indexing/indexing_suite.hpp"
+# include "pxr/external/boost/python/iterator.hpp"
+# include "pxr/external/boost/python/call_method.hpp"
+# include "pxr/external/boost/python/tuple.hpp"
 
 namespace boost { namespace python {
 
@@ -183,4 +183,4 @@ namespace boost { namespace python {
 
 }} // namespace boost::python
 
-#endif // MAP_INDEXING_SUITE_JDG20038_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_MAP_INDEXING_SUITE_HPP

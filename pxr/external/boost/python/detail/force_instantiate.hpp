@@ -7,8 +7,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef FORCE_INSTANTIATE_DWA200265_HPP
-# define FORCE_INSTANTIATE_DWA200265_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_FORCE_INSTANTIATE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_FORCE_INSTANTIATE_HPP
 
 namespace boost { namespace python { namespace detail { 
 
@@ -20,4 +20,4 @@ inline void force_instantiate(T const&) {}
 
 }}} // namespace boost::python::detail
 
-#endif // FORCE_INSTANTIATE_DWA200265_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_FORCE_INSTANTIATE_HPP

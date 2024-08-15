@@ -9,19 +9,19 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef boost_python_numpy_ndarray_hpp_
-#define boost_python_numpy_ndarray_hpp_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_NUMPY_NDARRAY_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_NDARRAY_HPP
 
 /**
  *  @brief Object manager and various utilities for numpy.ndarray.
  */
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 #include <boost/utility/enable_if.hpp>
-#include <boost/python/detail/type_traits.hpp>
-#include <boost/python/numpy/numpy_object_mgr_traits.hpp>
-#include <boost/python/numpy/dtype.hpp>
-#include <boost/python/numpy/config.hpp>
+#include "pxr/external/boost/python/detail/type_traits.hpp"
+#include "pxr/external/boost/python/numpy/numpy_object_mgr_traits.hpp"
+#include "pxr/external/boost/python/numpy/dtype.hpp"
+#include "pxr/external/boost/python/numpy/config.hpp"
 
 #include <vector>
 

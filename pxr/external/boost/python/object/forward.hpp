@@ -7,14 +7,14 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef FORWARD_DWA20011215_HPP
-# define FORWARD_DWA20011215_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FORWARD_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FORWARD_HPP
 
 # include <boost/mpl/if.hpp>
 # include <boost/ref.hpp>
-# include <boost/python/detail/value_arg.hpp>
-# include <boost/python/detail/type_traits.hpp>
-# include <boost/python/detail/copy_ctor_mutates_rhs.hpp>
+# include "pxr/external/boost/python/detail/value_arg.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
+# include "pxr/external/boost/python/detail/copy_ctor_mutates_rhs.hpp"
 # include <boost/mpl/or.hpp>
 
 namespace boost { namespace python { namespace objects { 
@@ -96,4 +96,4 @@ T const& do_unforward(T const& x, ...)
 
 }}} // namespace boost::python::objects
 
-#endif // FORWARD_DWA20011215_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FORWARD_HPP

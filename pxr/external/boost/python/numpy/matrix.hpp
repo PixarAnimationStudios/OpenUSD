@@ -9,17 +9,17 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef boost_python_numpy_matrix_hpp_
-#define boost_python_numpy_matrix_hpp_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_NUMPY_MATRIX_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_MATRIX_HPP
 
 /**
  *  @brief Object manager for numpy.matrix.
  */
 
-#include <boost/python.hpp>
-#include <boost/python/numpy/numpy_object_mgr_traits.hpp>
-#include <boost/python/numpy/ndarray.hpp>
-#include <boost/python/numpy/config.hpp>
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/numpy/numpy_object_mgr_traits.hpp"
+#include "pxr/external/boost/python/numpy/ndarray.hpp"
+#include "pxr/external/boost/python/numpy/config.hpp"
 
 
 namespace boost { namespace python { namespace numpy {

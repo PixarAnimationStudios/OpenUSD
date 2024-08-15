@@ -7,10 +7,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef FIND_INSTANCE_DWA2002312_HPP
-# define FIND_INSTANCE_DWA2002312_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FIND_INSTANCE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FIND_INSTANCE_HPP
 
-# include <boost/python/type_id.hpp>
+# include "pxr/external/boost/python/type_id.hpp"
 
 namespace boost { namespace python { namespace objects { 
 
@@ -23,4 +23,4 @@ BOOST_PYTHON_DECL void* find_instance_impl(PyObject*, type_info, bool null_share
 
 }}} // namespace boost::python::objects
 
-#endif // FIND_INSTANCE_DWA2002312_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FIND_INSTANCE_HPP

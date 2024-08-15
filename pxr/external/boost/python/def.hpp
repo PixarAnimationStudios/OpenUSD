@@ -7,18 +7,18 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef DEF_DWA200292_HPP
-# define DEF_DWA200292_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DEF_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DEF_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/object_fwd.hpp>
-# include <boost/python/make_function.hpp>
-# include <boost/python/detail/def_helper.hpp>
-# include <boost/python/detail/overloads_fwd.hpp>
-# include <boost/python/scope.hpp>
-# include <boost/python/signature.hpp>
-# include <boost/python/detail/scope.hpp>
+# include "pxr/external/boost/python/object_fwd.hpp"
+# include "pxr/external/boost/python/make_function.hpp"
+# include "pxr/external/boost/python/detail/def_helper.hpp"
+# include "pxr/external/boost/python/detail/overloads_fwd.hpp"
+# include "pxr/external/boost/python/scope.hpp"
+# include "pxr/external/boost/python/signature.hpp"
+# include "pxr/external/boost/python/detail/scope.hpp"
 
 namespace boost { namespace python {
 
@@ -116,4 +116,4 @@ void def(char const* name, F f, A1 const& a1, A2 const& a2, A3 const& a3)
 
 }} // namespace boost::python
 
-#endif // DEF_DWA200292_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DEF_HPP

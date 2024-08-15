@@ -7,8 +7,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef IF_ELSE_DWA2002322_HPP
-# define IF_ELSE_DWA2002322_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IF_ELSE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IF_ELSE_HPP
 # include <boost/config.hpp>
 
 namespace boost { namespace python { namespace detail { 
@@ -83,4 +83,4 @@ struct if_<false>
 
 }}} // namespace boost::python::detail
 
-#endif // IF_ELSE_DWA2002322_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IF_ELSE_HPP

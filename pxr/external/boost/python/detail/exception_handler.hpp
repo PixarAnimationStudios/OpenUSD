@@ -7,10 +7,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef EXCEPTION_HANDLER_DWA2002810_HPP
-# define EXCEPTION_HANDLER_DWA2002810_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_EXCEPTION_HANDLER_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_EXCEPTION_HANDLER_HPP
 
-# include <boost/python/detail/config.hpp>
+# include "pxr/external/boost/python/detail/config.hpp"
 # include <boost/function/function0.hpp>
 # include <boost/function/function2.hpp>
 
@@ -50,4 +50,4 @@ BOOST_PYTHON_DECL void register_exception_handler(handler_function const& f);
 
 }}} // namespace boost::python::detail
 
-#endif // EXCEPTION_HANDLER_DWA2002810_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_EXCEPTION_HANDLER_HPP

@@ -13,7 +13,7 @@
  * presence of a prototype without the cv-qualifier will work around the
  * compiler's bug.
  */
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 using namespace boost::python;
 
 

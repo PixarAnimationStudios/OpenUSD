@@ -8,8 +8,8 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-# ifndef BOOST_PYTHON_DETAIL_DEALLOC_HPP_
-# define BOOST_PYTHON_DETAIL_DEALLOC_HPP_
+# ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEALLOC_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEALLOC_HPP
 namespace boost { namespace python { namespace detail {
     extern "C"
     {
@@ -19,4 +19,4 @@ namespace boost { namespace python { namespace detail {
         }
     }
 }}} // namespace boost::python::detail
-# endif    // BOOST_PYTHON_DETAIL_DEALLOC_HPP_
+# endif    // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEALLOC_HPP

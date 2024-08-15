@@ -7,13 +7,13 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef FUNCTION_HANDLE_DWA2002725_HPP
-# define FUNCTION_HANDLE_DWA2002725_HPP
-# include <boost/python/handle.hpp>
-# include <boost/python/detail/caller.hpp>
-# include <boost/python/default_call_policies.hpp>
-# include <boost/python/object/py_function.hpp>
-# include <boost/python/signature.hpp>
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HANDLE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HANDLE_HPP
+# include "pxr/external/boost/python/handle.hpp"
+# include "pxr/external/boost/python/detail/caller.hpp"
+# include "pxr/external/boost/python/default_call_policies.hpp"
+# include "pxr/external/boost/python/object/py_function.hpp"
+# include "pxr/external/boost/python/signature.hpp"
 
 namespace boost { namespace python { namespace objects { 
 
@@ -46,4 +46,4 @@ handle<> make_function_handle(F f)
 
 }}} // namespace boost::python::objects
 
-#endif // FUNCTION_HANDLE_DWA2002725_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HANDLE_HPP

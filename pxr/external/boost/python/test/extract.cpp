@@ -8,14 +8,14 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/extract.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/reference_existing_object.hpp>
-#include <boost/python/return_value_policy.hpp>
-#include <boost/python/implicit.hpp>
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/reference_existing_object.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
+#include "pxr/external/boost/python/implicit.hpp"
 #include <string>
 #include <boost/lexical_cast.hpp>
 #define BOOST_ENABLE_ASSERT_HANDLER

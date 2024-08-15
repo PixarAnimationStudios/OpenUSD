@@ -8,11 +8,11 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/converter/arg_to_python_base.hpp>
-#include <boost/python/errors.hpp>
-#include <boost/python/converter/registrations.hpp>
-#include <boost/python/handle.hpp>
-#include <boost/python/refcount.hpp>
+#include "pxr/external/boost/python/converter/arg_to_python_base.hpp"
+#include "pxr/external/boost/python/errors.hpp"
+#include "pxr/external/boost/python/converter/registrations.hpp"
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/refcount.hpp"
 
 namespace boost { namespace python { namespace converter { 
 

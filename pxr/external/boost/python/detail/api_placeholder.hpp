@@ -12,9 +12,9 @@
 // Provided only for backward compatibility.
 // The boost::python::len() function is now defined in object.hpp.
 
-#ifndef BOOST_PYTHON_API_PLACE_HOLDER_HPP
-#define BOOST_PYTHON_API_PLACE_HOLDER_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_API_PLACEHOLDER_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_API_PLACEHOLDER_HPP
 
-#include <boost/python/object.hpp>
+#include "pxr/external/boost/python/object.hpp"
 
-#endif // BOOST_PYTHON_API_PLACE_HOLDER_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_API_PLACEHOLDER_HPP

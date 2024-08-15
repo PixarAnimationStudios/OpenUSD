@@ -7,15 +7,15 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef FUNCTION_SIGNATURE_20070531_HPP
-# define FUNCTION_SIGNATURE_20070531_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_DOC_SIGNATURE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_DOC_SIGNATURE_HPP
 
-#include <boost/python/object/function.hpp>
-#include <boost/python/converter/registrations.hpp>
-#include <boost/python/str.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/object/function.hpp"
+#include "pxr/external/boost/python/converter/registrations.hpp"
+#include "pxr/external/boost/python/str.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
-#include <boost/python/detail/signature.hpp>
+#include "pxr/external/boost/python/detail/signature.hpp"
 
 
 #include <vector>
@@ -38,4 +38,4 @@ public:
 
 }}}//end of namespace boost::python::objects
 
-#endif //FUNCTION_SIGNATURE_20070531_HPP
+#endif //PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_DOC_SIGNATURE_HPP

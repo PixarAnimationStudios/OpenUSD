@@ -7,16 +7,16 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef REGISTRATIONS_DWA2002223_HPP
-# define REGISTRATIONS_DWA2002223_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTRATIONS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTRATIONS_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/type_id.hpp>
+# include "pxr/external/boost/python/type_id.hpp"
 
-# include <boost/python/converter/convertible_function.hpp>
-# include <boost/python/converter/constructor_function.hpp>
-# include <boost/python/converter/to_python_function_type.hpp>
+# include "pxr/external/boost/python/converter/convertible_function.hpp"
+# include "pxr/external/boost/python/converter/constructor_function.hpp"
+# include "pxr/external/boost/python/converter/to_python_function_type.hpp"
 
 # include <boost/detail/workaround.hpp>
 
@@ -101,4 +101,4 @@ inline bool operator<(registration const& lhs, registration const& rhs)
 
 }}} // namespace boost::python::converter
 
-#endif // REGISTRATIONS_DWA2002223_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTRATIONS_HPP

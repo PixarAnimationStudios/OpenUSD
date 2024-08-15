@@ -6,13 +6,13 @@
 // Copyright David Abrahams 2004. Distributed under the Boost
 // Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-#ifndef SFINAE_DWA2004723_HPP
-# define SFINAE_DWA2004723_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SFINAE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SFINAE_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
 # if defined(BOOST_NO_SFINAE) && !defined(BOOST_MSVC)
 #  define BOOST_PYTHON_NO_SFINAE
 # endif
 
-#endif // SFINAE_DWA2004723_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SFINAE_HPP

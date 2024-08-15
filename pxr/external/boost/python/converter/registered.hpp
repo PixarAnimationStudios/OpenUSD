@@ -9,13 +9,13 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef boost_python_converter_registered_hpp_
-#define boost_python_converter_registered_hpp_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTERED_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTERED_HPP
 
-#include <boost/python/type_id.hpp>
-#include <boost/python/converter/registry.hpp>
-#include <boost/python/converter/registrations.hpp>
-#include <boost/python/detail/type_traits.hpp>
+#include "pxr/external/boost/python/type_id.hpp"
+#include "pxr/external/boost/python/converter/registry.hpp"
+#include "pxr/external/boost/python/converter/registrations.hpp"
+#include "pxr/external/boost/python/detail/type_traits.hpp"
 #include <boost/detail/workaround.hpp>
 #include <boost/type.hpp>
 #include <memory>

@@ -10,10 +10,10 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //
 ///////////////////////////////////////////////////////////////////////////////
-#ifndef DEFAULTS_GEN_JDG20020807_HPP
-#define DEFAULTS_GEN_JDG20020807_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_GEN_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_GEN_HPP
 
-#include <boost/python/detail/preprocessor.hpp>
+#include "pxr/external/boost/python/detail/preprocessor.hpp"
 #include <boost/preprocessor/repeat.hpp>
 #include <boost/preprocessor/repeat_from_to.hpp>
 #include <boost/preprocessor/enum.hpp>
@@ -387,6 +387,6 @@ namespace detail
 #define BOOST_PYTHON_MEM_FUN_GENERATOR BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS
 
 ///////////////////////////////////////////////////////////////////////////////
-#endif // DEFAULTS_GEN_JDG20020807_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_GEN_HPP
 
 

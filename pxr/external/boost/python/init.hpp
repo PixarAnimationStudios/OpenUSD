@@ -10,15 +10,15 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //
 ///////////////////////////////////////////////////////////////////////////////
-#ifndef INIT_JDG20020820_HPP
-#define INIT_JDG20020820_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_INIT_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_INIT_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-#include <boost/python/detail/type_list.hpp>
-#include <boost/python/args_fwd.hpp>
-#include <boost/python/detail/make_keyword_range_fn.hpp>
-#include <boost/python/def_visitor.hpp>
+#include "pxr/external/boost/python/detail/type_list.hpp"
+#include "pxr/external/boost/python/args_fwd.hpp"
+#include "pxr/external/boost/python/detail/make_keyword_range_fn.hpp"
+#include "pxr/external/boost/python/def_visitor.hpp"
 
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/eval_if.hpp>
@@ -31,7 +31,7 @@
 #include <boost/mpl/joint_view.hpp>
 #include <boost/mpl/back.hpp>
 
-#include <boost/python/detail/type_traits.hpp>
+#include "pxr/external/boost/python/detail/type_traits.hpp"
 
 #include <boost/preprocessor/enum_params_with_a_default.hpp>
 #include <boost/preprocessor/enum_params.hpp>
@@ -392,7 +392,7 @@ namespace detail
 #undef BOOST_PYTHON_APPEND_TO_INIT
 
 ///////////////////////////////////////////////////////////////////////////////
-#endif // INIT_JDG20020820_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_INIT_HPP
 
 
 

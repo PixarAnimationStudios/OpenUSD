@@ -8,10 +8,10 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/import.hpp>
-#include <boost/python/borrowed.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/handle.hpp>
+#include "pxr/external/boost/python/import.hpp"
+#include "pxr/external/boost/python/borrowed.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/handle.hpp"
 
 namespace boost 
 { 

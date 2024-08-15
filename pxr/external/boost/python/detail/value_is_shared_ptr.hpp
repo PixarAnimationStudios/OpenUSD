@@ -9,11 +9,11 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef boost_python_detail_value_is_shared_ptr_hpp_
-#define boost_python_detail_value_is_shared_ptr_hpp_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VALUE_IS_SHARED_PTR_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VALUE_IS_SHARED_PTR_HPP
 
-#include <boost/python/detail/value_is_xxx.hpp>
-#include <boost/python/detail/is_shared_ptr.hpp>
+#include "pxr/external/boost/python/detail/value_is_xxx.hpp"
+#include "pxr/external/boost/python/detail/is_shared_ptr.hpp"
 
 namespace boost { namespace python { namespace detail { 
 

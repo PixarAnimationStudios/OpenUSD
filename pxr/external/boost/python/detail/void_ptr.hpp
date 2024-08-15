@@ -7,10 +7,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef VOID_PTR_DWA200239_HPP
-# define VOID_PTR_DWA200239_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VOID_PTR_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VOID_PTR_HPP
 
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 namespace boost { namespace python { namespace detail { 
 
@@ -37,4 +37,4 @@ inline void write_void_ptr_reference(void const volatile* storage, void* ptr, U&
 
 }}} // namespace boost::python::detail
 
-#endif // VOID_PTR_DWA200239_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VOID_PTR_HPP

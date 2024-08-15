@@ -7,14 +7,14 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef RAW_FUNCTION_DWA200336_HPP
-# define RAW_FUNCTION_DWA200336_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_RAW_FUNCTION_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_RAW_FUNCTION_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/tuple.hpp>
-# include <boost/python/dict.hpp>
-# include <boost/python/object/py_function.hpp>
+# include "pxr/external/boost/python/tuple.hpp"
+# include "pxr/external/boost/python/dict.hpp"
+# include "pxr/external/boost/python/object/py_function.hpp"
 # include <boost/mpl/vector/vector10.hpp>
 
 # include <boost/limits.hpp>
@@ -63,4 +63,4 @@ object raw_function(F f, std::size_t min_args = 0)
     
 }} // namespace boost::python
 
-#endif // RAW_FUNCTION_DWA200336_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_RAW_FUNCTION_HPP

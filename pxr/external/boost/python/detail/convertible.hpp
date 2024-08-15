@@ -7,12 +7,12 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef CONVERTIBLE_DWA2002614_HPP
-# define CONVERTIBLE_DWA2002614_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CONVERTIBLE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CONVERTIBLE_HPP
 
 # if defined(__EDG_VERSION__) && __EDG_VERSION__ <= 241
 #  include <boost/mpl/if.hpp>
-#  include <boost/python/detail/type_traits.hpp>
+#  include "pxr/external/boost/python/detail/type_traits.hpp"
 # endif 
 
 // Supplies a runtime is_convertible check which can be used with tag
@@ -40,4 +40,4 @@ struct convertible
 
 }}} // namespace boost::python::detail
 
-#endif // CONVERTIBLE_DWA2002614_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CONVERTIBLE_HPP

@@ -7,11 +7,11 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef TRANSLATE_EXCEPTION_TDS20091020_HPP
-# define TRANSLATE_EXCEPTION_TDS20091020_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TRANSLATE_EXCEPTION_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TRANSLATE_EXCEPTION_HPP
 
-# include <boost/python/detail/exception_handler.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/exception_handler.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 # include <boost/call_traits.hpp>
 

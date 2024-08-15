@@ -7,10 +7,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef NULLARY_FUNCTION_ADAPTOR_DWA2003824_HPP
-# define NULLARY_FUNCTION_ADAPTOR_DWA2003824_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_NULLARY_FUNCTION_ADAPTOR_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_NULLARY_FUNCTION_ADAPTOR_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 # include <boost/preprocessor/iteration/local.hpp>
 # include <boost/preprocessor/facilities/intercept.hpp>
 # include <boost/preprocessor/repetition/enum_params.hpp>
@@ -48,4 +48,4 @@ struct nullary_function_adaptor
 
 }}} // namespace boost::python::detail
 
-#endif // NULLARY_FUNCTION_ADAPTOR_DWA2003824_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_NULLARY_FUNCTION_ADAPTOR_HPP

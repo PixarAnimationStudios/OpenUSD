@@ -7,16 +7,16 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef OBJ_MGR_ARG_FROM_PYTHON_DWA2002628_HPP
-# define OBJ_MGR_ARG_FROM_PYTHON_DWA2002628_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_OBJ_MGR_ARG_FROM_PYTHON_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_OBJ_MGR_ARG_FROM_PYTHON_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/detail/referent_storage.hpp>
-# include <boost/python/detail/destroy.hpp>
-# include <boost/python/detail/construct.hpp>
-# include <boost/python/converter/object_manager.hpp>
-# include <boost/python/detail/raw_pyobject.hpp>
-# include <boost/python/tag.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/detail/referent_storage.hpp"
+# include "pxr/external/boost/python/detail/destroy.hpp"
+# include "pxr/external/boost/python/detail/construct.hpp"
+# include "pxr/external/boost/python/converter/object_manager.hpp"
+# include "pxr/external/boost/python/detail/raw_pyobject.hpp"
+# include "pxr/external/boost/python/tag.hpp"
 
 //
 // arg_from_python converters for Python type wrappers, to be used as
@@ -123,4 +123,4 @@ inline Ref object_manager_ref_arg_from_python<Ref>::operator()() const
 
 }}} // namespace boost::python::converter
 
-#endif // OBJ_MGR_ARG_FROM_PYTHON_DWA2002628_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_OBJ_MGR_ARG_FROM_PYTHON_HPP

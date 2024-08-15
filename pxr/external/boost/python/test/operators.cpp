@@ -7,16 +7,16 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/operators.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
 #include "test_class.hpp"
-#include <boost/python/module.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/operators.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/operators.hpp"
 #include <boost/operators.hpp>
-//#include <boost/python/str.hpp>
+//#include "pxr/external/boost/python/str.hpp"
 // Just use math.h here; trying to use std::pow() causes too much
 // trouble for non-conforming compilers and libraries.
 #include <math.h>

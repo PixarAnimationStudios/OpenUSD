@@ -7,12 +7,12 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef REGISTERED_POINTEE_DWA2002710_HPP
-# define REGISTERED_POINTEE_DWA2002710_HPP
-# include <boost/python/converter/registered.hpp>
-# include <boost/python/converter/pointer_type_id.hpp>
-# include <boost/python/converter/registry.hpp>
-# include <boost/python/detail/type_traits.hpp>
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTERED_POINTEE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTERED_POINTEE_HPP
+# include "pxr/external/boost/python/converter/registered.hpp"
+# include "pxr/external/boost/python/converter/pointer_type_id.hpp"
+# include "pxr/external/boost/python/converter/registry.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 namespace boost { namespace python { namespace converter { 
 
@@ -31,4 +31,4 @@ struct registered_pointee
 };
 }}} // namespace boost::python::converter
 
-#endif // REGISTERED_POINTEE_DWA2002710_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTERED_POINTEE_HPP

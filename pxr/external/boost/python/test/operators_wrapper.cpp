@@ -3,7 +3,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "boost/python.hpp"
+#include "pxr/external/boost/python.hpp"
 #include <memory>
 
 struct vector

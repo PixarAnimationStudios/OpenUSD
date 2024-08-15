@@ -14,8 +14,8 @@
 //  Revision History:
 //  04 Mar 01  Some fixes so it will compile with Intel C++ (Dave Abrahams)
 
-#ifndef CONFIG_DWA052200_H_
-# define CONFIG_DWA052200_H_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CONFIG_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CONFIG_HPP
 
 # include <boost/config.hpp>
 # include <boost/detail/workaround.hpp>
@@ -136,4 +136,4 @@
 #  define BOOST_ATTRIBUTE_UNUSED __attribute__((unused))
 #endif
 
-#endif // CONFIG_DWA052200_H_
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CONFIG_HPP

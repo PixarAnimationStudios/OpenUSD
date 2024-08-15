@@ -7,10 +7,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef OBJECT_FWD_DWA2002724_HPP
-# define OBJECT_FWD_DWA2002724_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FWD_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FWD_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
 namespace boost { namespace python { 
 namespace api
@@ -20,4 +20,4 @@ namespace api
 using api::object;
 }} // namespace boost::python
 
-#endif // OBJECT_FWD_DWA2002724_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FWD_HPP

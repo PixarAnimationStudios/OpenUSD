@@ -7,24 +7,24 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef KEYWORDS_DWA2002323_HPP
-# define KEYWORDS_DWA2002323_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_ARGS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_ARGS_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/args_fwd.hpp>
+# include "pxr/external/boost/python/args_fwd.hpp"
 # include <boost/config.hpp>
-# include <boost/python/detail/preprocessor.hpp>
-# include <boost/python/detail/type_list.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/preprocessor.hpp"
+# include "pxr/external/boost/python/detail/type_list.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 # include <boost/preprocessor/enum_params.hpp>
 # include <boost/preprocessor/repeat.hpp>
 # include <boost/preprocessor/facilities/intercept.hpp>
 # include <boost/preprocessor/iteration/local.hpp>
 
-# include <boost/python/detail/mpl_lambda.hpp>
-# include <boost/python/object_core.hpp>
+# include "pxr/external/boost/python/detail/mpl_lambda.hpp"
+# include "pxr/external/boost/python/object_core.hpp"
 
 # include <boost/mpl/bool.hpp>
 
@@ -148,4 +148,4 @@ inline detail::keywords<n> args(BOOST_PP_ENUM_PARAMS_Z(1, n, char const* name)) 
 }} // namespace boost::python
 
 
-# endif // KEYWORDS_DWA2002323_HPP
+# endif // PXR_EXTERNAL_BOOST_PYTHON_ARGS_HPP

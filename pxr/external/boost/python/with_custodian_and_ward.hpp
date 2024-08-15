@@ -7,13 +7,13 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef WITH_CUSTODIAN_AND_WARD_DWA2002131_HPP
-# define WITH_CUSTODIAN_AND_WARD_DWA2002131_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_WITH_CUSTODIAN_AND_WARD_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_WITH_CUSTODIAN_AND_WARD_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/default_call_policies.hpp>
-# include <boost/python/object/life_support.hpp>
+# include "pxr/external/boost/python/default_call_policies.hpp"
+# include "pxr/external/boost/python/object/life_support.hpp"
 # include <algorithm>
 
 namespace boost { namespace python { 
@@ -123,4 +123,4 @@ struct with_custodian_and_ward_postcall : BasePolicy_
 
 }} // namespace boost::python
 
-#endif // WITH_CUSTODIAN_AND_WARD_DWA2002131_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_WITH_CUSTODIAN_AND_WARD_HPP

@@ -7,14 +7,14 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef IMPLICIT_DWA2002326_HPP
-# define IMPLICIT_DWA2002326_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_IMPLICIT_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_IMPLICIT_HPP
 
-# include <boost/python/converter/rvalue_from_python_data.hpp>
-# include <boost/python/converter/registrations.hpp>
-# include <boost/python/converter/registered.hpp>
+# include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
+# include "pxr/external/boost/python/converter/registrations.hpp"
+# include "pxr/external/boost/python/converter/registered.hpp"
 
-# include <boost/python/extract.hpp>
+# include "pxr/external/boost/python/extract.hpp"
 
 namespace boost { namespace python { namespace converter { 
 
@@ -48,4 +48,4 @@ struct implicit
 
 }}} // namespace boost::python::converter
 
-#endif // IMPLICIT_DWA2002326_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_IMPLICIT_HPP

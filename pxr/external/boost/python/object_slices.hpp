@@ -7,15 +7,15 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef OBJECT_SLICES_DWA2002615_HPP
-# define OBJECT_SLICES_DWA2002615_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_SLICES_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_SLICES_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/proxy.hpp>
-# include <boost/python/object_core.hpp>
-# include <boost/python/object_protocol.hpp>
-# include <boost/python/handle.hpp>
+# include "pxr/external/boost/python/proxy.hpp"
+# include "pxr/external/boost/python/object_core.hpp"
+# include "pxr/external/boost/python/object_protocol.hpp"
+# include "pxr/external/boost/python/handle.hpp"
 # include <utility>
 
 namespace boost { namespace python { namespace api {
@@ -148,4 +148,4 @@ inline void slice_policies::del(
 
 }}} // namespace boost::python::api
 
-#endif // OBJECT_SLICES_DWA2002615_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_SLICES_HPP

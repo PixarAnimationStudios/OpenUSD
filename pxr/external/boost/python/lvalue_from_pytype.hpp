@@ -7,18 +7,18 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef LVALUE_FROM_PYTYPE_DWA2002130_HPP
-# define LVALUE_FROM_PYTYPE_DWA2002130_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_LVALUE_FROM_PYTYPE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_LVALUE_FROM_PYTYPE_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 #ifndef BOOST_PYTHON_NO_PY_SIGNATURES
-# include <boost/python/converter/pytype_function.hpp>
+# include "pxr/external/boost/python/converter/pytype_function.hpp"
 #endif
 
-# include <boost/python/type_id.hpp>
-# include <boost/python/converter/registry.hpp>
-# include <boost/python/detail/void_ptr.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/type_id.hpp"
+# include "pxr/external/boost/python/converter/registry.hpp"
+# include "pxr/external/boost/python/detail/void_ptr.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 namespace boost { namespace python {
 
@@ -119,4 +119,4 @@ struct lvalue_from_pytype
 
 }} // namespace boost::python
 
-#endif // LVALUE_FROM_PYTYPE_DWA2002130_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_LVALUE_FROM_PYTYPE_HPP

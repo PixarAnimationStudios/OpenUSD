@@ -7,15 +7,15 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef CAST_DWA200269_HPP
-# define CAST_DWA200269_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CAST_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CAST_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 # include <boost/type.hpp>
-# include <boost/python/base_type_traits.hpp>
-# include <boost/python/detail/convertible.hpp>
+# include "pxr/external/boost/python/base_type_traits.hpp"
+# include "pxr/external/boost/python/detail/convertible.hpp"
 
 namespace boost { namespace python { 
 
@@ -107,4 +107,4 @@ inline Target* downcast(Source* x, Target* = 0)
 
 }} // namespace boost::python
 
-#endif // CAST_DWA200269_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CAST_HPP

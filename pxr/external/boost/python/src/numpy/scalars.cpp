@@ -10,7 +10,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #define BOOST_PYTHON_NUMPY_INTERNAL
-#include <boost/python/numpy/internal.hpp>
+#include "pxr/external/boost/python/numpy/internal.hpp"
 
 namespace boost { namespace python {
 namespace converter 

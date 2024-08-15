@@ -7,8 +7,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef VOID_RETURN_DWA200274_HPP
-# define VOID_RETURN_DWA200274_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VOID_RETURN_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VOID_RETURN_HPP
 
 # include <boost/config.hpp>
 
@@ -44,4 +44,4 @@ template <> struct returnable<const volatile void> : returnable<void> {};
 
 }}} // namespace boost::python::detail
 
-#endif // VOID_RETURN_DWA200274_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VOID_RETURN_HPP

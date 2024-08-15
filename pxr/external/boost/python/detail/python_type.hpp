@@ -7,10 +7,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef BOOST_PYTHON_OBJECT_PYTHON_TYPE_H
-#define BOOST_PYTHON_OBJECT_PYTHON_TYPE_H
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_PYTHON_TYPE_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_PYTHON_TYPE_HPP
 
-#include <boost/python/converter/registered.hpp>
+#include "pxr/external/boost/python/converter/registered.hpp"
 
 namespace boost {namespace python {namespace detail{
 
@@ -39,4 +39,4 @@ template <class T> struct python_class : PyObject
 
 }}} //namespace boost :: python :: detail
 
-#endif //BOOST_PYTHON_OBJECT_PYTHON_TYPE_H
+#endif //PXR_EXTERNAL_BOOST_PYTHON_DETAIL_PYTHON_TYPE_HPP

@@ -8,8 +8,8 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/object_operators.hpp>
-#include <boost/python/detail/raw_pyobject.hpp>
+#include "pxr/external/boost/python/object_operators.hpp"
+#include "pxr/external/boost/python/detail/raw_pyobject.hpp"
 
 namespace boost { namespace python { namespace api {
 

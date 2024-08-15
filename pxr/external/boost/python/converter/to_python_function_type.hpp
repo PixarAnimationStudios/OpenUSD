@@ -7,9 +7,9 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef TO_PYTHON_FUNCTION_TYPE_DWA200236_HPP
-# define TO_PYTHON_FUNCTION_TYPE_DWA200236_HPP
-# include <boost/python/detail/prefix.hpp>
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_TO_PYTHON_FUNCTION_TYPE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_TO_PYTHON_FUNCTION_TYPE_HPP
+# include "pxr/external/boost/python/detail/prefix.hpp"
 # include <boost/static_assert.hpp>
 
 namespace boost { namespace python { namespace converter { 
@@ -21,4 +21,4 @@ typedef PyObject* (*to_python_function_t)(void const*);
 
 }}} // namespace boost::python::converter
 
-#endif // TO_PYTHON_FUNCTION_TYPE_DWA200236_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_TO_PYTHON_FUNCTION_TYPE_HPP

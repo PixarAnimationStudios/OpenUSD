@@ -7,8 +7,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/object/inheritance.hpp>
-#include <boost/python/type_id.hpp>
+#include "pxr/external/boost/python/object/inheritance.hpp"
+#include "pxr/external/boost/python/type_id.hpp"
 #include <boost/graph/breadth_first_search.hpp>
 #if _MSC_FULL_VER >= 13102171 && _MSC_FULL_VER <= 13102179
 # include <boost/graph/reverse_graph.hpp>

@@ -7,13 +7,13 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef REGISTRY_DWA20011127_HPP
-# define REGISTRY_DWA20011127_HPP
-# include <boost/python/type_id.hpp>
-# include <boost/python/converter/to_python_function_type.hpp>
-# include <boost/python/converter/rvalue_from_python_data.hpp>
-# include <boost/python/converter/constructor_function.hpp>
-# include <boost/python/converter/convertible_function.hpp>
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTRY_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTRY_HPP
+# include "pxr/external/boost/python/type_id.hpp"
+# include "pxr/external/boost/python/converter/to_python_function_type.hpp"
+# include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
+# include "pxr/external/boost/python/converter/constructor_function.hpp"
+# include "pxr/external/boost/python/converter/convertible_function.hpp"
 
 namespace boost { namespace python { namespace converter {
 
@@ -57,4 +57,4 @@ namespace registry
 
 }}} // namespace boost::python::converter
 
-#endif // REGISTRY_DWA20011127_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTRY_HPP

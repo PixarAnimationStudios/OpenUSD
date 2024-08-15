@@ -10,23 +10,23 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-# ifndef POINTER_HOLDER_DWA20011215_HPP
-#  define POINTER_HOLDER_DWA20011215_HPP 
+# ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_POINTER_HOLDER_HPP
+#  define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_POINTER_HOLDER_HPP 
 
 # include <boost/get_pointer.hpp>
 #  include <boost/type.hpp>
 
-#  include <boost/python/instance_holder.hpp>
-#  include <boost/python/object/inheritance_query.hpp>
-#  include <boost/python/object/forward.hpp>
+#  include "pxr/external/boost/python/instance_holder.hpp"
+#  include "pxr/external/boost/python/object/inheritance_query.hpp"
+#  include "pxr/external/boost/python/object/forward.hpp"
 
-#  include <boost/python/pointee.hpp>
-#  include <boost/python/type_id.hpp>
+#  include "pxr/external/boost/python/pointee.hpp"
+#  include "pxr/external/boost/python/type_id.hpp"
 
-#  include <boost/python/detail/wrapper_base.hpp>
-#  include <boost/python/detail/force_instantiate.hpp>
-#  include <boost/python/detail/preprocessor.hpp>
-# include <boost/python/detail/type_traits.hpp>
+#  include "pxr/external/boost/python/detail/wrapper_base.hpp"
+#  include "pxr/external/boost/python/detail/force_instantiate.hpp"
+#  include "pxr/external/boost/python/detail/preprocessor.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 
 #  include <boost/mpl/if.hpp>
@@ -61,7 +61,7 @@ struct pointer_holder : instance_holder
 
     // Forward construction to the held object
 
-#  define BOOST_PP_ITERATION_PARAMS_1 (4, (0, BOOST_PYTHON_MAX_ARITY, <boost/python/object/pointer_holder.hpp>, 1))
+#  define BOOST_PP_ITERATION_PARAMS_1 (4, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/object/pointer_holder.hpp", 1))
 #  include BOOST_PP_ITERATE()
 
  private: // types
@@ -97,7 +97,7 @@ struct pointer_holder_back_reference : instance_holder
     pointer_holder_back_reference(Pointer);
 
     // Forward construction to the held object
-#  define BOOST_PP_ITERATION_PARAMS_1 (4, (0, BOOST_PYTHON_MAX_ARITY, <boost/python/object/pointer_holder.hpp>, 2))
+#  define BOOST_PP_ITERATION_PARAMS_1 (4, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/object/pointer_holder.hpp", 2))
 #  include BOOST_PP_ITERATE()
 
  private: // required holder implementation
@@ -180,7 +180,7 @@ void* pointer_holder_back_reference<Pointer, Value>::holds(type_info dst_t, bool
 
 }}} // namespace boost::python::objects
 
-# endif // POINTER_HOLDER_DWA20011215_HPP
+# endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_POINTER_HOLDER_HPP
 
 /* --------------- pointer_holder --------------- */
 // For gcc 4.4 compatability, we must include the

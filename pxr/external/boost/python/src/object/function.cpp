@@ -8,22 +8,22 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/docstring_options.hpp>
-#include <boost/python/object/function_object.hpp>
-#include <boost/python/object/function_handle.hpp>
-#include <boost/python/object/function_doc_signature.hpp>
-#include <boost/python/errors.hpp>
-#include <boost/python/str.hpp>
-#include <boost/python/object_attributes.hpp>
-#include <boost/python/args.hpp>
-#include <boost/python/refcount.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/ssize_t.hpp>
+#include "pxr/external/boost/python/docstring_options.hpp"
+#include "pxr/external/boost/python/object/function_object.hpp"
+#include "pxr/external/boost/python/object/function_handle.hpp"
+#include "pxr/external/boost/python/object/function_doc_signature.hpp"
+#include "pxr/external/boost/python/errors.hpp"
+#include "pxr/external/boost/python/str.hpp"
+#include "pxr/external/boost/python/object_attributes.hpp"
+#include "pxr/external/boost/python/args.hpp"
+#include "pxr/external/boost/python/refcount.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/ssize_t.hpp"
 
-#include <boost/python/detail/signature.hpp>
-#include <boost/python/detail/none.hpp>
+#include "pxr/external/boost/python/detail/signature.hpp"
+#include "pxr/external/boost/python/detail/none.hpp"
 #include <boost/mpl/vector/vector10.hpp>
 
 #include <boost/bind/bind.hpp>

@@ -15,8 +15,8 @@
     For more information refer to boost/libs/python/doc/pickle.html.
  */
 
-#include <boost/python/module.hpp>
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/class.hpp"
 
 #include <string>
 

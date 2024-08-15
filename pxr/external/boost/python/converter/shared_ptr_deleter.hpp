@@ -7,8 +7,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef SHARED_PTR_DELETER_DWA2002121_HPP
-# define SHARED_PTR_DELETER_DWA2002121_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_SHARED_PTR_DELETER_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_SHARED_PTR_DELETER_HPP
 
 namespace boost { namespace python { namespace converter { 
 
@@ -24,4 +24,4 @@ struct BOOST_PYTHON_DECL shared_ptr_deleter
 
 }}} // namespace boost::python::converter
 
-#endif // SHARED_PTR_DELETER_DWA2002121_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_SHARED_PTR_DELETER_HPP

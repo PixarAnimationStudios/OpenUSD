@@ -7,10 +7,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef HAS_BACK_REFERENCE_DWA2002323_HPP
-# define HAS_BACK_REFERENCE_DWA2002323_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_HAS_BACK_REFERENCE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_HAS_BACK_REFERENCE_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 # include <boost/mpl/bool.hpp>
 
 namespace boost { namespace python { 
@@ -26,4 +26,4 @@ struct has_back_reference
 
 }} // namespace boost::python
 
-#endif // HAS_BACK_REFERENCE_DWA2002323_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_HAS_BACK_REFERENCE_HPP

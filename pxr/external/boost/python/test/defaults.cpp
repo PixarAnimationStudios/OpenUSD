@@ -8,13 +8,13 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/def.hpp>
-#include <boost/python/module.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/overloads.hpp>
-#include <boost/python/return_internal_reference.hpp>
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/overloads.hpp"
+#include "pxr/external/boost/python/return_internal_reference.hpp"
 
 #if defined(_AIX) && defined(__EDG_VERSION__) && __EDG_VERSION__ < 245
 # include <iostream> // works around a KCC intermediate code generation bug

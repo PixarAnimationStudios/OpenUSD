@@ -10,8 +10,8 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #define BOOST_PYTHON_NUMPY_INTERNAL_MAIN
-#include <boost/python/numpy/internal.hpp>
-#include <boost/python/numpy/dtype.hpp>
+#include "pxr/external/boost/python/numpy/internal.hpp"
+#include "pxr/external/boost/python/numpy/dtype.hpp"
 
 namespace boost { namespace python { namespace numpy {
 

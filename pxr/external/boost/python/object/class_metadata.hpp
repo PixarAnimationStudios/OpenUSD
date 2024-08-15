@@ -9,23 +9,23 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef boost_python_object_class_metadata_hpp_
-#define boost_python_object_class_metadata_hpp_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CLASS_METADATA_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CLASS_METADATA_HPP
 
-#include <boost/python/converter/shared_ptr_from_python.hpp>
-#include <boost/python/object/inheritance.hpp>
-#include <boost/python/object/class_wrapper.hpp>
-#include <boost/python/object/make_instance.hpp>
-#include <boost/python/object/value_holder.hpp>
-#include <boost/python/object/pointer_holder.hpp>
-#include <boost/python/object/make_ptr_instance.hpp>
+#include "pxr/external/boost/python/converter/shared_ptr_from_python.hpp"
+#include "pxr/external/boost/python/object/inheritance.hpp"
+#include "pxr/external/boost/python/object/class_wrapper.hpp"
+#include "pxr/external/boost/python/object/make_instance.hpp"
+#include "pxr/external/boost/python/object/value_holder.hpp"
+#include "pxr/external/boost/python/object/pointer_holder.hpp"
+#include "pxr/external/boost/python/object/make_ptr_instance.hpp"
 
-#include <boost/python/detail/force_instantiate.hpp>
-#include <boost/python/detail/not_specified.hpp>
-#include <boost/python/detail/type_traits.hpp>
+#include "pxr/external/boost/python/detail/force_instantiate.hpp"
+#include "pxr/external/boost/python/detail/not_specified.hpp"
+#include "pxr/external/boost/python/detail/type_traits.hpp"
 
-#include <boost/python/has_back_reference.hpp>
-#include <boost/python/bases.hpp>
+#include "pxr/external/boost/python/has_back_reference.hpp"
+#include "pxr/external/boost/python/bases.hpp"
 
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/eval_if.hpp>

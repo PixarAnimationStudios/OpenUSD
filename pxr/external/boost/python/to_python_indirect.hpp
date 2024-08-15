@@ -7,23 +7,23 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef TO_PYTHON_INDIRECT_DWA200221_HPP
-# define TO_PYTHON_INDIRECT_DWA200221_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_INDIRECT_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_INDIRECT_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/object/pointer_holder.hpp>
-# include <boost/python/object/make_ptr_instance.hpp>
+# include "pxr/external/boost/python/object/pointer_holder.hpp"
+# include "pxr/external/boost/python/object/make_ptr_instance.hpp"
 
-# include <boost/python/detail/none.hpp>
+# include "pxr/external/boost/python/detail/none.hpp"
 
 #ifndef BOOST_PYTHON_NO_PY_SIGNATURES
-# include <boost/python/converter/pytype_function.hpp>
+# include "pxr/external/boost/python/converter/pytype_function.hpp"
 #endif
 
-# include <boost/python/refcount.hpp>
+# include "pxr/external/boost/python/refcount.hpp"
 
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 # if defined(__ICL) && __ICL < 600 
 #  include <boost/shared_ptr.hpp>
@@ -114,4 +114,4 @@ namespace detail
 
 }} // namespace boost::python
 
-#endif // TO_PYTHON_INDIRECT_DWA200221_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_INDIRECT_HPP

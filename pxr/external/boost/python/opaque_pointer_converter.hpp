@@ -10,18 +10,18 @@
 /*
  * Generic Conversion of opaque C++-pointers to a Python-Wrapper.
  */
-# ifndef OPAQUE_POINTER_CONVERTER_HPP_
-# define OPAQUE_POINTER_CONVERTER_HPP_
+# ifndef PXR_EXTERNAL_BOOST_PYTHON_OPAQUE_POINTER_CONVERTER_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OPAQUE_POINTER_CONVERTER_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/lvalue_from_pytype.hpp>
-# include <boost/python/to_python_converter.hpp>
-# include <boost/python/converter/registrations.hpp>
-# include <boost/python/detail/dealloc.hpp>
-# include <boost/python/detail/type_traits.hpp>
-# include <boost/python/detail/none.hpp>
-# include <boost/python/type_id.hpp>
-# include <boost/python/errors.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/lvalue_from_pytype.hpp"
+# include "pxr/external/boost/python/to_python_converter.hpp"
+# include "pxr/external/boost/python/converter/registrations.hpp"
+# include "pxr/external/boost/python/detail/dealloc.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
+# include "pxr/external/boost/python/detail/none.hpp"
+# include "pxr/external/boost/python/type_id.hpp"
+# include "pxr/external/boost/python/errors.hpp"
 
 # include <boost/implicit_cast.hpp>
 
@@ -189,4 +189,4 @@ PyTypeObject opaque<Pointee>::type_object =
     }                                                                           \
     }}
 
-# endif    // OPAQUE_POINTER_CONVERTER_HPP_
+# endif    // PXR_EXTERNAL_BOOST_PYTHON_OPAQUE_POINTER_CONVERTER_HPP

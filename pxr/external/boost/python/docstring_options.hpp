@@ -7,10 +7,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef DOCSTRING_OPTIONS_RWGK20060111_HPP
-# define DOCSTRING_OPTIONS_RWGK20060111_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DOCSTRING_OPTIONS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DOCSTRING_OPTIONS_HPP
 
-#include <boost/python/object/function.hpp>
+#include "pxr/external/boost/python/object/function.hpp"
 
 namespace boost { namespace python {
 
@@ -129,4 +129,4 @@ class BOOST_PYTHON_DECL docstring_options : boost::noncopyable
 
 }} // namespace boost::python
 
-#endif // DOCSTRING_OPTIONS_RWGK20060111_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DOCSTRING_OPTIONS_HPP

@@ -9,19 +9,19 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-# ifndef INVOKE_DWA20021122_HPP
-#  define INVOKE_DWA20021122_HPP
+# ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_INVOKE_HPP
+#  define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_INVOKE_HPP
 
-#  include <boost/python/detail/prefix.hpp>
-#  include <boost/python/detail/preprocessor.hpp>
-#  include <boost/python/detail/none.hpp>
+#  include "pxr/external/boost/python/detail/prefix.hpp"
+#  include "pxr/external/boost/python/detail/preprocessor.hpp"
+#  include "pxr/external/boost/python/detail/none.hpp"
 
 #  include <boost/preprocessor/iterate.hpp>
 #  include <boost/preprocessor/facilities/intercept.hpp>
 #  include <boost/preprocessor/repetition/enum_trailing_params.hpp>
 #  include <boost/preprocessor/repetition/enum_trailing_binary_params.hpp>
 #  include <boost/preprocessor/repetition/enum_binary_params.hpp>
-#  include <boost/python/to_python_value.hpp>
+#  include "pxr/external/boost/python/to_python_value.hpp"
 
 // This file declares a series of overloaded invoke(...)  functions,
 // used to invoke wrapped C++ function (object)s from Python. Each one
@@ -62,12 +62,12 @@ struct invoke_tag
 };
 
 #  define BOOST_PP_ITERATION_PARAMS_1                                            \
-        (3, (0, BOOST_PYTHON_MAX_ARITY, <boost/python/detail/invoke.hpp>))
+        (3, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/detail/invoke.hpp"))
 #  include BOOST_PP_ITERATE()
 
 }}} // namespace boost::python::detail
 
-# endif // INVOKE_DWA20021122_HPP
+# endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_INVOKE_HPP
 #else 
 
 # define N BOOST_PP_ITERATION()

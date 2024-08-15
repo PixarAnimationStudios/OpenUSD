@@ -7,11 +7,11 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef RETURN_VALUE_POLICY_DWA2002131_HPP
-# define RETURN_VALUE_POLICY_DWA2002131_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_RETURN_VALUE_POLICY_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_RETURN_VALUE_POLICY_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/default_call_policies.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/default_call_policies.hpp"
 
 namespace boost { namespace python { 
 
@@ -23,4 +23,4 @@ struct return_value_policy : BasePolicy_
 
 }} // namespace boost::python
 
-#endif // RETURN_VALUE_POLICY_DWA2002131_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_RETURN_VALUE_POLICY_HPP

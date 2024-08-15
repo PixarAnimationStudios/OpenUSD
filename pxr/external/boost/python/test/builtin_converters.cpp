@@ -7,13 +7,13 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
 #include <complex>
-#include <boost/python/handle.hpp>
-#include <boost/python/cast.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/detail/wrap_python.hpp>
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/cast.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/detail/wrap_python.hpp"
 
 template <class T>
 struct by_value

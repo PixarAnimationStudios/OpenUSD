@@ -9,16 +9,16 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 
-#include <boost/python/def.hpp>
-#include <boost/python/module.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/lvalue_from_pytype.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/return_value_policy.hpp>
-#include <boost/python/to_python_converter.hpp>
-#include <boost/python/errors.hpp>
-#include <boost/python/manage_new_object.hpp>
-#include <boost/python/converter/pytype_function.hpp>
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/lvalue_from_pytype.hpp"
+#include "pxr/external/boost/python/copy_const_reference.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
+#include "pxr/external/boost/python/to_python_converter.hpp"
+#include "pxr/external/boost/python/errors.hpp"
+#include "pxr/external/boost/python/manage_new_object.hpp"
+#include "pxr/external/boost/python/converter/pytype_function.hpp"
 #include <string.h>
 #include "simple_type.hpp"
 #include "complicated.hpp"

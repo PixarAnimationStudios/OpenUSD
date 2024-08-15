@@ -7,13 +7,13 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef FROM_PYTHON_AUX_DATA_DWA2002128_HPP
-# define FROM_PYTHON_AUX_DATA_DWA2002128_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_RVALUE_FROM_PYTHON_DATA_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_RVALUE_FROM_PYTHON_DATA_HPP
 
-# include <boost/python/converter/constructor_function.hpp>
-# include <boost/python/detail/referent_storage.hpp>
-# include <boost/python/detail/destroy.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/converter/constructor_function.hpp"
+# include "pxr/external/boost/python/detail/referent_storage.hpp"
+# include "pxr/external/boost/python/detail/destroy.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <boost/align/align.hpp>
 # include <boost/static_assert.hpp>
 # include <cstddef>
@@ -149,4 +149,4 @@ inline rvalue_from_python_data<T>::~rvalue_from_python_data()
 
 }}} // namespace boost::python::converter
 
-#endif // FROM_PYTHON_AUX_DATA_DWA2002128_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_RVALUE_FROM_PYTHON_DATA_HPP

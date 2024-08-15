@@ -10,22 +10,22 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-# ifndef CALLER_DWA20021121_HPP
-#  define CALLER_DWA20021121_HPP
+# ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CALLER_HPP
+#  define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CALLER_HPP
 
-#  include <boost/python/type_id.hpp>
-#  include <boost/python/handle.hpp>
+#  include "pxr/external/boost/python/type_id.hpp"
+#  include "pxr/external/boost/python/handle.hpp"
 
 #  include <boost/detail/indirect_traits.hpp>
 
-#  include <boost/python/detail/invoke.hpp>
-#  include <boost/python/detail/signature.hpp>
-#  include <boost/python/detail/preprocessor.hpp>
-#  include <boost/python/detail/type_traits.hpp>
+#  include "pxr/external/boost/python/detail/invoke.hpp"
+#  include "pxr/external/boost/python/detail/signature.hpp"
+#  include "pxr/external/boost/python/detail/preprocessor.hpp"
+#  include "pxr/external/boost/python/detail/type_traits.hpp"
 
-#  include <boost/python/arg_from_python.hpp>
-#  include <boost/python/converter/context_result_converter.hpp>
-#  include <boost/python/converter/builtin_converters.hpp>
+#  include "pxr/external/boost/python/arg_from_python.hpp"
+#  include "pxr/external/boost/python/converter/context_result_converter.hpp"
+#  include "pxr/external/boost/python/converter/builtin_converters.hpp"
 
 #  include <boost/preprocessor/iterate.hpp>
 #  include <boost/preprocessor/cat.hpp>
@@ -150,7 +150,7 @@ struct caller;
           return 0;
 
 #  define BOOST_PP_ITERATION_PARAMS_1                                            \
-        (3, (0, BOOST_PYTHON_MAX_ARITY + 1, <boost/python/detail/caller.hpp>))
+        (3, (0, BOOST_PYTHON_MAX_ARITY + 1, "pxr/external/boost/python/detail/caller.hpp"))
 #  include BOOST_PP_ITERATE()
 
 #  undef BOOST_PYTHON_ARG_CONVERTER
@@ -199,7 +199,7 @@ struct caller
 
 }}} // namespace boost::python::detail
 
-# endif // CALLER_DWA20021121_HPP
+# endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CALLER_HPP
 
 #else
 

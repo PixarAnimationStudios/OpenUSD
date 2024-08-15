@@ -13,7 +13,7 @@
 #include <boost/cstdint.hpp>
 #endif
 #define BOOST_PYTHON_NUMPY_INTERNAL
-#include <boost/python/numpy/internal.hpp>
+#include "pxr/external/boost/python/numpy/internal.hpp"
 
 #define DTYPE_FROM_CODE(code) \
   dtype(python::detail::new_reference(reinterpret_cast<PyObject*>(PyArray_DescrFromType(code))))

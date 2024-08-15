@@ -7,13 +7,13 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef WRAP_PYTYPE_NM20070606_HPP
-# define WRAP_PYTYPE_NM20070606_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYTYPE_FUNCTION_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYTYPE_FUNCTION_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/converter/registered.hpp>
-#  include <boost/python/detail/unwind_type.hpp>
-#  include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/converter/registered.hpp"
+#  include "pxr/external/boost/python/detail/unwind_type.hpp"
+#  include "pxr/external/boost/python/detail/type_traits.hpp"
 
 
 namespace boost { namespace python {
@@ -135,4 +135,4 @@ struct to_python_target_type_direct
 
 }}} // namespace boost::python
 
-#endif // WRAP_PYTYPE_NM20070606_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYTYPE_FUNCTION_HPP

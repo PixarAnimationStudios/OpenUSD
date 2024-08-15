@@ -7,11 +7,11 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef POINTER_TYPE_ID_DWA2002222_HPP
-# define POINTER_TYPE_ID_DWA2002222_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_POINTER_TYPE_ID_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_POINTER_TYPE_ID_HPP
 
-# include <boost/python/type_id.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/type_id.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 namespace boost { namespace python { namespace converter { 
 
@@ -70,4 +70,4 @@ type_info pointer_type_id(T(*)() = 0)
 
 }}} // namespace boost::python::converter
 
-#endif // POINTER_TYPE_ID_DWA2002222_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_POINTER_TYPE_ID_HPP

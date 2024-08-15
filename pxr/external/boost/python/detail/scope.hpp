@@ -7,10 +7,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef SCOPE_DWA2002927_HPP
-# define SCOPE_DWA2002927_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SCOPE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SCOPE_HPP
 
-# include <boost/python/detail/config.hpp>
+# include "pxr/external/boost/python/detail/config.hpp"
 
 namespace boost { namespace python { namespace detail {
 
@@ -18,4 +18,4 @@ void BOOST_PYTHON_DECL scope_setattr_doc(char const* name, object const& obj, ch
 
 }}} // namespace boost::python::detail
 
-#endif // SCOPE_DWA2002927_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SCOPE_HPP

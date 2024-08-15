@@ -10,7 +10,7 @@
 #define BOOST_ENABLE_ASSERT_HANDLER
 #include <boost/assert.hpp>
 #include <boost/mpl/assert.hpp>
-#include <boost/python/detail/indirect_traits.hpp>
+#include "pxr/external/boost/python/detail/indirect_traits.hpp"
 #include <boost/mpl/assert.hpp>
 
 //#define print(expr) printf("%s ==> %s\n", #expr, expr)

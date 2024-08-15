@@ -7,11 +7,11 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef EXEC_SS20050616_HPP
-# define EXEC_SS20050616_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_EXEC_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_EXEC_HPP
 
-# include <boost/python/object.hpp>
-# include <boost/python/str.hpp>
+# include "pxr/external/boost/python/object.hpp"
+# include "pxr/external/boost/python/str.hpp"
 
 namespace boost 
 { 

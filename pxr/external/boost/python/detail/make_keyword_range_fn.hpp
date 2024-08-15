@@ -7,13 +7,13 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef MAKE_KEYWORD_RANGE_FN_DWA2002927_HPP
-# define MAKE_KEYWORD_RANGE_FN_DWA2002927_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MAKE_KEYWORD_RANGE_FN_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MAKE_KEYWORD_RANGE_FN_HPP
 
-# include <boost/python/make_function.hpp>
-# include <boost/python/args_fwd.hpp>
+# include "pxr/external/boost/python/make_function.hpp"
+# include "pxr/external/boost/python/args_fwd.hpp"
 
-# include <boost/python/object/make_holder.hpp>
+# include "pxr/external/boost/python/object/make_holder.hpp"
 
 # include <boost/mpl/size.hpp>
 
@@ -74,4 +74,4 @@ object make_keyword_range_constructor(
 
 }}} // namespace boost::python::detail
 
-#endif // MAKE_KEYWORD_RANGE_FN_DWA2002927_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MAKE_KEYWORD_RANGE_FN_HPP

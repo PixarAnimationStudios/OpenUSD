@@ -9,15 +9,15 @@
 //  accompanying file LICENSE_1_0.txt or copy at
 //  http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef PY_CONTAINER_UTILS_JDG20038_HPP
-# define PY_CONTAINER_UTILS_JDG20038_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_CONTAINER_UTILS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_CONTAINER_UTILS_HPP
 
 # include <utility>
 # include <boost/foreach.hpp>
-# include <boost/python/object.hpp>
-# include <boost/python/handle.hpp>
-# include <boost/python/extract.hpp>
-# include <boost/python/stl_iterator.hpp>
+# include "pxr/external/boost/python/object.hpp"
+# include "pxr/external/boost/python/handle.hpp"
+# include "pxr/external/boost/python/extract.hpp"
+# include "pxr/external/boost/python/stl_iterator.hpp"
 
 namespace boost { namespace python { namespace container_utils {
         

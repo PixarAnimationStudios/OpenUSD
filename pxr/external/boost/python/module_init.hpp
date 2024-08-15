@@ -7,10 +7,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef MODULE_INIT_DWA20020722_HPP
-# define MODULE_INIT_DWA20020722_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_MODULE_INIT_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_MODULE_INIT_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 # include <boost/preprocessor/cat.hpp>
 # include <boost/preprocessor/stringize.hpp>
 
@@ -77,4 +77,4 @@ extern "C" BOOST_SYMBOL_EXPORT _BOOST_PYTHON_MODULE_INIT(name)
 
 # endif
 
-#endif // MODULE_INIT_DWA20020722_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_MODULE_INIT_HPP

@@ -9,8 +9,8 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/numpy.hpp>
-#include <boost/python/slice.hpp>
+#include "pxr/external/boost/python/numpy.hpp"
+#include "pxr/external/boost/python/slice.hpp"
 
 namespace p = boost::python;
 namespace np = boost::python::numpy;

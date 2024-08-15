@@ -7,8 +7,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef TEST_CLASS_DWA2002326_HPP
-# define TEST_CLASS_DWA2002326_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_TEST_TEST_CLASS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_TEST_TEST_CLASS_HPP
 # include <boost/assert.hpp>
 
 template <int n = 0>
@@ -34,4 +34,4 @@ struct test_class
 template <int n>
 int test_class<n>::counter;
 
-#endif // TEST_CLASS_DWA2002326_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_TEST_TEST_CLASS_HPP

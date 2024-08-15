@@ -9,15 +9,15 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef boost_python_numpy_invoke_matching_hpp_
-#define boost_python_numpy_invoke_matching_hpp_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_NUMPY_INVOKE_MATCHING_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_INVOKE_MATCHING_HPP
 
 /**
  *  @brief Template invocation based on dtype matching.
  */
 
-#include <boost/python/numpy/dtype.hpp>
-#include <boost/python/numpy/ndarray.hpp>
+#include "pxr/external/boost/python/numpy/dtype.hpp"
+#include "pxr/external/boost/python/numpy/ndarray.hpp"
 #include <boost/mpl/integral_c.hpp>
 
 namespace boost { namespace python { namespace numpy {

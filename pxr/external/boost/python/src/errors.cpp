@@ -12,9 +12,9 @@
 # define BOOST_PYTHON_SOURCE
 #endif
 
-#include <boost/python/errors.hpp>
+#include "pxr/external/boost/python/errors.hpp"
 #include <boost/cast.hpp>
-#include <boost/python/detail/exception_handler.hpp>
+#include "pxr/external/boost/python/detail/exception_handler.hpp"
 
 namespace boost { namespace python {
 

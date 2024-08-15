@@ -6,10 +6,10 @@
 // Copyright David Abrahams 2004. Distributed under the Boost
 // Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-#ifndef UNWRAP_TYPE_ID_DWA2004722_HPP
-# define UNWRAP_TYPE_ID_DWA2004722_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWRAP_TYPE_ID_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWRAP_TYPE_ID_HPP
 
-# include <boost/python/type_id.hpp>
+# include "pxr/external/boost/python/type_id.hpp"
 
 # include <boost/mpl/bool.hpp>
 
@@ -33,4 +33,4 @@ inline type_info unwrap_type_id(U*, wrapper<T>*)
 
 }}} // namespace boost::python::detail
 
-#endif // UNWRAP_TYPE_ID_DWA2004722_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWRAP_TYPE_ID_HPP

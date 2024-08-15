@@ -7,35 +7,35 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef CLASS_DWA200216_HPP
-# define CLASS_DWA200216_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CLASS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CLASS_HPP
 
-# include <boost/python/detail/prefix.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include <boost/noncopyable.hpp>
 
-# include <boost/python/class_fwd.hpp>
-# include <boost/python/object/class.hpp>
+# include "pxr/external/boost/python/class_fwd.hpp"
+# include "pxr/external/boost/python/object/class.hpp"
 
-# include <boost/python/object.hpp>
-# include <boost/python/type_id.hpp>
-# include <boost/python/data_members.hpp>
-# include <boost/python/make_function.hpp>
-# include <boost/python/signature.hpp>
-# include <boost/python/init.hpp>
-# include <boost/python/args_fwd.hpp>
+# include "pxr/external/boost/python/object.hpp"
+# include "pxr/external/boost/python/type_id.hpp"
+# include "pxr/external/boost/python/data_members.hpp"
+# include "pxr/external/boost/python/make_function.hpp"
+# include "pxr/external/boost/python/signature.hpp"
+# include "pxr/external/boost/python/init.hpp"
+# include "pxr/external/boost/python/args_fwd.hpp"
 
-# include <boost/python/object/class_metadata.hpp>
-# include <boost/python/object/pickle_support.hpp>
-# include <boost/python/object/add_to_namespace.hpp>
+# include "pxr/external/boost/python/object/class_metadata.hpp"
+# include "pxr/external/boost/python/object/pickle_support.hpp"
+# include "pxr/external/boost/python/object/add_to_namespace.hpp"
 
-# include <boost/python/detail/overloads_fwd.hpp>
-# include <boost/python/detail/operator_id.hpp>
-# include <boost/python/detail/def_helper.hpp>
-# include <boost/python/detail/force_instantiate.hpp>
-# include <boost/python/detail/type_traits.hpp>
-# include <boost/python/detail/unwrap_type_id.hpp>
-# include <boost/python/detail/unwrap_wrapper.hpp>
+# include "pxr/external/boost/python/detail/overloads_fwd.hpp"
+# include "pxr/external/boost/python/detail/operator_id.hpp"
+# include "pxr/external/boost/python/detail/def_helper.hpp"
+# include "pxr/external/boost/python/detail/force_instantiate.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
+# include "pxr/external/boost/python/detail/unwrap_type_id.hpp"
+# include "pxr/external/boost/python/detail/unwrap_wrapper.hpp"
 
 # include <boost/mpl/size.hpp>
 # include <boost/mpl/for_each.hpp>
@@ -610,4 +610,4 @@ inline class_<W,X1,X2,X3>::class_(char const* name, char const* doc, no_init_t)
 # undef BOOST_PYTHON_NO_DATA_MEMBER
 # undef BOOST_PYTHON_NO_MEMBER_POINTER_ORDERING
 
-#endif // CLASS_DWA200216_HPP
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CLASS_HPP
