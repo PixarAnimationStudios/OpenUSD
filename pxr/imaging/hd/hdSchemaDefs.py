@@ -621,6 +621,8 @@
             ''',
         SCHEMA_TOKEN = 'materialOverride',
         SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/schemaTypeDefs'],
+        ADD_DEFAULT_LOCATOR = True,
+        
         MEMBERS = [
             ('interfaceValues', 'HdMaterialNodeParameterContainerSchema', 
              dict(DOC = '''
