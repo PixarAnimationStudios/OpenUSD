@@ -25,6 +25,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// If \p resolveSymlinks is false (default), the path is checked using
 /// lstat(). if \p resolveSymlinks is true, the path is checked using stat(),
 /// which resolves all symbolic links in the path.
+///
+/// On Windows, if the path points to a reparse point symlink on a network
+/// share, even if resolveSymlinks is true we are unable to follow the
+/// symlink, and so will return true even if the destination of the symlink
+/// does not exist.
 TF_API
 bool TfPathExists(std::string const& path, bool resolveSymlinks = false);
 
@@ -33,6 +38,11 @@ bool TfPathExists(std::string const& path, bool resolveSymlinks = false);
 /// If \p resolveSymlinks is false (default), the path is checked using
 /// lstat(). if \p resolveSymlinks is true, the path is checked using stat(),
 /// which resolves all symbolic links in the path.
+///
+/// On Windows, if the path points to a reparse point symlink on a network
+/// share, even if resolveSymlinks is true we are unable to follow the
+/// symlink, and so will return true even if the destination of the symlink
+/// does not exist.
 TF_API
 bool TfIsDir(std::string const& path, bool resolveSymlinks = false);
 
@@ -41,10 +51,21 @@ bool TfIsDir(std::string const& path, bool resolveSymlinks = false);
 /// If \p resolveSymlinks is false (default), the path is checked using
 /// lstat(). if \p resolveSymlinks is true, the path is checked using stat(),
 /// which resolves all symbolic links in the path.
+///
+/// On Windows, if the path points to a reparse point symlink on a network
+/// share, even if resolveSymlinks is true we are unable to follow the
+/// symlink, and so will return true even if the destination of the symlink
+/// does not exist.
 TF_API
 bool TfIsFile(std::string const& path, bool resolveSymlinks = false);
 
 /// Returns true if the path exists and is a symbolic link.
+///
+/// On Windows, if the path points to a reparse point symlink on a network
+/// share, we are unable to follow the symlink, so we will return false for
+/// this directory even though it is a link. This is because any attempt to
+/// actually follow this link will fail, so it is safer to pretend it is not
+/// actually a link.
 TF_API
 bool TfIsLink(std::string const& path);
 

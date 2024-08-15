@@ -66,8 +66,8 @@ Tf_HasAttribute(
     if (path.back() == '/' || path.back() == '\\')
         resolveSymlinks = true;
 
-    const DWORD attribs =
-        GetFileAttributesW(ArchWindowsUtf8ToUtf16(path).c_str());
+    std::wstring pathW = ArchWindowsUtf8ToUtf16(path);
+    DWORD attribs = GetFileAttributesW(pathW.c_str());
     if (attribs == INVALID_FILE_ATTRIBUTES) {
         if (attribute == 0 &&
             (GetLastError() == ERROR_FILE_NOT_FOUND ||
@@ -77,6 +77,30 @@ Tf_HasAttribute(
         }
         return false;
     }
+
+    // Ignore reparse points on network volumes. They can't be resolved
+    // properly, so simply remove the reparse point attribute and treat
+    // it like a regular file/directory.
+    if ((attribs & FILE_ATTRIBUTE_REPARSE_POINT) != 0) {
+        // Calling PathIsNetworkPath sometimes sets the "last error" to an
+        // error code indicating an incomplete overlapped I/O function. We
+        // want to ignore this error.
+        DWORD olderr = GetLastError();
+        if (PathIsNetworkPathW(pathW.c_str())) {
+            attribs &= ~FILE_ATTRIBUTE_REPARSE_POINT;
+        }
+        SetLastError(olderr);
+    }
+
+    // Because we remove the REPARSE_POINT attribute above for reparse points
+    // on network shares, the behavior of this bit of code will be slightly
+    // different than for reparse points on non-network volumes. We will not
+    // try to follow the link and get the attributes of the destination. This
+    // will result in a link to an invalid destination directory claiming that
+    // the directory exists. It might be possible to use some other function
+    // to test for the existence of the destination directory in this case
+    // (such as FindFirstFile), but doing this doesn't seem to be relevent
+    // to how USD uses this method.
     if (!resolveSymlinks || (attribs & FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
         return attribute == 0 || (attribs & attribute) == expected;
     }
