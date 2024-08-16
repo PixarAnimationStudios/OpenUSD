@@ -6,6 +6,7 @@
 //
 #include "pxr/imaging/hdSt/drawTarget.h"
 
+#include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -45,6 +46,9 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
 
         // Optional attribute.
         _enabled = vtValue.GetWithDefault<bool>(true);
+
+        static_cast<HdStRenderParam*>(renderParam)
+            ->MarkActiveDrawTargetSetDirty();
     }
 
     if (bits & DirtyDTCamera) {
@@ -140,6 +144,12 @@ HdStDrawTarget::GetDrawTargets(HdRenderIndex* const renderIndex,
             drawTargets->push_back(static_cast<HdStDrawTarget *>(drawTarget));
         }
     }
+}
+
+void
+HdStDrawTarget::Finalize(HdRenderParam * const renderParam)
+{
+    static_cast<HdStRenderParam*>(renderParam)->MarkActiveDrawTargetSetDirty();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

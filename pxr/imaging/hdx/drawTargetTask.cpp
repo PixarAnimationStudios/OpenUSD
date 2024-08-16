@@ -13,6 +13,7 @@
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/debugCodes.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
+#include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/simpleLightingShader.h"
@@ -441,14 +442,16 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
     }
 
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
-    const HdChangeTracker& changeTracker = renderIndex.GetChangeTracker();
 
-    const unsigned drawTargetVersion
-        = changeTracker.GetStateVersion(HdStDrawTargetTokens->drawTargetSet);
+    const HdStRenderParam * const renderParam =
+        static_cast<const HdStRenderParam*>(
+            renderIndex.GetRenderDelegate()->GetRenderParam());
+    const unsigned int drawTargetSetVersion =
+        renderParam->GetActiveDrawTargetSetVersion();
 
-    if (_currentDrawTargetSetVersion != drawTargetVersion) {
+    if (_currentDrawTargetSetVersion != drawTargetSetVersion) {
         _renderPassesInfo = _ComputeRenderPassInfos(&renderIndex);
-        _currentDrawTargetSetVersion = drawTargetVersion;
+        _currentDrawTargetSetVersion = drawTargetSetVersion;
     }
 
     ///----------------------

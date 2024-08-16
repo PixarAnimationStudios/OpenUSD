@@ -93,6 +93,17 @@ public:
     void DecreaseRenderTagCount(const TfToken &renderTag);
 
     // ---------------------------------------------------------------------- //
+    /// Draw targets.
+    // ---------------------------------------------------------------------- //
+    /// Marks all draw targets dirty, meaning that clients that keep track of
+    /// the set of active draw targets needs to refresh that set.
+    HDST_API
+    void MarkActiveDrawTargetSetDirty();
+
+    HDST_API
+    unsigned int GetActiveDrawTargetSetVersion() const;
+
+    // ---------------------------------------------------------------------- //
     /// Garbage collection tracking
     // ---------------------------------------------------------------------- //
     void SetGarbageCollectionNeeded() {
@@ -124,6 +135,7 @@ private:
     std::atomic_uint _drawBatchesVersion;
     std::atomic_uint _materialTagsVersion;
     std::atomic_uint _geomSubsetDrawItemsVersion;
+    std::atomic_uint _activeDrawTargetSetVersion;
     bool _needsGarbageCollection; // Doesn't need to be atomic since parallel
                                   // sync might only set it (and not clear).
 

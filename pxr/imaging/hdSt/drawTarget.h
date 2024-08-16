@@ -25,7 +25,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDST_DRAW_TARGET_TOKENS                 \
     (camera)                                    \
     (collection)                                \
-    (drawTargetSet)                             \
     (enable)                                    \
     (resolution)                                \
     (aovBindings)                               \
@@ -112,6 +111,8 @@ public:
         return _resolution;
     }
 
+    void Finalize(HdRenderParam *) override;
+    
 private:
     bool                    _enabled;
     GfVec2i                 _resolution;
