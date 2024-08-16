@@ -104,19 +104,38 @@ Tf_AtomicRenameFileOver(std::string const &srcFileName,
     // newly created files (ie, Anti-Virus, Windows File Indexing), which can make
     // that file inaccessible, and make the move fail.  The duration of the lock
     // is usually brief, though, so add a short-ish retry period if it's locked.
+    auto GetClampedEnvSetting = [](TfEnvSetting<int>& env_setting, int min_val, int max_val) {
+        int val = TfGetEnvSetting(env_setting);
+        if (val < min_val) {
+            TF_WARN("Env setting '%s' was below minimum value - was '%d', clamping to minimum '%d'",
+                env_setting._name, val, min_val);
+            val = min_val;
+        }
+        if (val > max_val) {
+            TF_WARN("Env setting '%s' was above maximum value - was '%d', clamping to maximum '%d'",
+                env_setting._name, val, max_val);
+            val = max_val;
+        }
+        return val;
+    };
 
-    static const int numRetries = std::max(TfGetEnvSetting(TF_FILE_LOCK_NUM_RETRIES), 0);
-    static const int waitMS = std::max(TfGetEnvSetting(TF_FILE_LOCK_RETRY_WAIT_MS), 0);
+    // With default values for TF_FILE_LOCK_NUM_RETRIES + TF_FILE_LOCK_RETRY_WAIT_MS, will wait at most
+    // 15 * .020s = .3s
+    // Enforce maximums on env var values, so even if set to crazy values, it will wait at most
+    // 100 * .300s = 30s
+    static const int numRetries = GetClampedEnvSetting(
+        TF_FILE_LOCK_NUM_RETRIES, 0, 100);
+    static const int waitMS = GetClampedEnvSetting(
+        TF_FILE_LOCK_RETRY_WAIT_MS, 0, 300);
 
     bool moved = false;
-    DWORD lastError = 0;
 
     for (int i = 0; i <= numRetries; i++) {
         moved = TryMove(wsrc, wdst);
         if (moved) {
             break;
         }
-        lastError = ::GetLastError();
+        DWORD lastError = ::GetLastError();
         // Only check file perms the first time as an optimization - it's a
         // filesystem operation, and possibly slow
         if (i == 0 && !HaveMovePermissions(srcFileName, dstFileName)) {
@@ -136,7 +155,7 @@ Tf_AtomicRenameFileOver(std::string const &srcFileName,
             "Failed to rename temporary file '%s' to '%s': %s",
             srcFileName.c_str(),
             dstFileName.c_str(),
-            ArchStrSysError(lastError).c_str());
+            ArchStrSysError(::GetLastError()).c_str());
         result = false;
     }
 #else
