@@ -4317,6 +4317,14 @@ class AppController(QtCore.QObject):
                else "Unknown"
         populateMetadataTable("[object type]", object_type, rowIndex)
         rowIndex += 1
+
+        # Represent applied API schemas
+        if type(obj) is Usd.Prim:
+            populateMetadataTable("[applied API schemas]",
+                                  str(obj.GetAppliedSchemas()),
+                                  rowIndex)
+            rowIndex += 1
+
         populateMetadataTable("[path]", str(obj.GetPath()), rowIndex)
         rowIndex += 1
 
