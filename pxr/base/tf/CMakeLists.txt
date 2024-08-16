@@ -18,7 +18,7 @@ function(add_py_dll_link_test)
 
     # early return if python target is not built! (No python build enabled or
     # doing a static build, etc)
-    if (NOT TARGET python)
+    if (NOT TARGET python_modules)
         return()
     endif()
 
@@ -60,7 +60,7 @@ function(add_py_dll_link_test)
     add_library(testTfPyDllLinkModule SHARED
         "testenv/testTfPyDllLinkModule.c"
     )
-    add_dependencies(python testTfPyDllLinkModule)
+    add_dependencies(python_modules testTfPyDllLinkModule)
 
     set(module_name testTfPyDllLinkModule)
     if (PXR_USE_DEBUG_PYTHON)

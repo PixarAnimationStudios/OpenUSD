@@ -76,7 +76,7 @@ function(pxr_python_bin BIN_NAME)
     )
 
     # If we can't build Python modules then do nothing.
-    if(NOT TARGET python)
+    if(NOT TARGET python_modules)
         message(STATUS "Skipping Python program ${BIN_NAME}, Python modules required")
         return()
     endif()
@@ -141,7 +141,7 @@ function(pxr_python_bin BIN_NAME)
     add_custom_target(${BIN_NAME}_script
         DEPENDS ${outputs} ${pb_DEPENDENCIES}
     )
-    add_dependencies(python ${BIN_NAME}_script)
+    add_dependencies(python_modules ${BIN_NAME}_script)
 
     _get_folder("" folder)
     set_target_properties(${BIN_NAME}_script
@@ -388,7 +388,7 @@ endfunction() # pxr_setup_python
 
 function (pxr_create_test_module MODULE_NAME)
     # If we can't build Python modules then do nothing.
-    if(NOT TARGET python)
+    if(NOT TARGET python_modules)
         return()
     endif()
 
@@ -573,7 +573,7 @@ endfunction() # pxr_build_test
 
 function(pxr_test_scripts)
     # If we can't build Python modules then do nothing.
-    if(NOT TARGET python)
+    if(NOT TARGET python_modules)
         return()
     endif()
 
@@ -666,7 +666,7 @@ function(pxr_register_test TEST_NAME)
         endif()
     endif()
 
-    if(NOT TARGET python)
+    if(NOT TARGET python_modules)
         # Implicit requirement.  Python modules require shared USD
         # libraries.  If the test runs python it's certainly going
         # to load USD modules.  If the test uses C++ to load USD
@@ -1030,9 +1030,9 @@ function(pxr_toplevel_prologue)
     endif()
 
     # Create a target for targets that require Python.  Each should add
-    # itself as a dependency to the "python" target.
+    # itself as a dependency to the "python_modules" target.
     if(TARGET shared_libs AND PXR_ENABLE_PYTHON_SUPPORT)
-        add_custom_target(python ALL)
+        add_custom_target(python_modules ALL)
     endif()
 endfunction() # pxr_toplevel_prologue
 

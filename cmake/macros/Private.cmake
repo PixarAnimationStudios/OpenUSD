@@ -224,7 +224,7 @@ function(_install_python LIBRARY_NAME)
     add_custom_target(${LIBRARY_NAME}_pythonfiles
         DEPENDS ${files_copied}
     )
-    add_dependencies(python ${LIBRARY_NAME}_pythonfiles)
+    add_dependencies(python_modules ${LIBRARY_NAME}_pythonfiles)
 
     _get_folder("_python" folder)
     set_target_properties(${LIBRARY_NAME}_pythonfiles
@@ -330,7 +330,7 @@ function(_install_pyside_ui_files LIBRARY_NAME)
     add_custom_target(${LIBRARY_NAME}_pysideuifiles
         DEPENDS ${uiFiles}
     )
-    add_dependencies(python ${LIBRARY_NAME}_pythonfiles)
+    add_dependencies(python_modules ${LIBRARY_NAME}_pythonfiles)
 
     _get_folder("_pysideuifiles" folder)
     set_target_properties(
@@ -991,7 +991,7 @@ function(_pxr_python_module NAME)
         SHARED
         ${args_CPPFILES}
     )
-    add_dependencies(python ${LIBRARY_NAME})
+    add_dependencies(python_modules ${LIBRARY_NAME})
     if(args_PYTHON_FILES)
         add_dependencies(${LIBRARY_NAME} ${LIBRARY_NAME}_pythonfiles)
     endif()
