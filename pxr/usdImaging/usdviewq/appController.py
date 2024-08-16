@@ -2147,6 +2147,7 @@ class AppController(QtCore.QObject):
 
     def _stepSizeChanged(self):
         value = float(self._ui.stepSize.text())
+        self._dataModel.viewSettings.stepSize = value
         if value != self.step:
             self.step = value
             self._UpdateTimeSamples(resetStageDataOnly=False)
@@ -5274,6 +5275,7 @@ class AppController(QtCore.QObject):
         self._refreshHUDMenu()
         self._refreshShowPrimMenu()
         self._refreshRedrawOnScrub()
+        self._refreshStepSize()
         self._refreshRolloverPrimInfoMenu()
         self._refreshSelectionHighlightingMenu()
         self._refreshSelectionHighlightColorMenu()
@@ -5410,6 +5412,10 @@ class AppController(QtCore.QObject):
     def _refreshRedrawOnScrub(self):
         self._ui.redrawOnScrub.setChecked(
             self._dataModel.viewSettings.redrawOnScrub)
+
+    def _refreshStepSize(self):
+        stepSize = self._dataModel.viewSettings.stepSize
+        self._ui.stepSize.setText(str(stepSize))
 
     def _refreshRolloverPrimInfoMenu(self):
         self._ui.actionRollover_Prim_Info.setChecked(
