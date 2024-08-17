@@ -13,12 +13,12 @@ void
 TestUsdUsdzValidators()
 {
     // This should be updated with every new validator added with
-    // UsdUsdzValidators keyword.
+    // UsdUtilsValidators keyword.
     UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
     UsdValidatorMetadataVector metadata =
             registry.GetValidatorMetadataForKeyword(
                     UsdUtilsValidatorKeywordTokens->UsdUtilsValidators);
-    // Since other validators can be registered with a UsdUsdzValidators
+    // Since other validators can be registered with a UsdUtilsValidators
     // keyword, our validators registered in usd are a subset of the entire
     // set.
     std::set<TfToken> validatorMetadataNameSet;
@@ -90,5 +90,5 @@ main()
     TestUsdUsdzValidators();
     TestPackageEncapsulationValidator();
 
-    std::cout << "OK\n";
+    return EXIT_SUCCESS;
 }
