@@ -26,8 +26,9 @@ TARGET_ARM64 = "arm64"
 TARGET_UNIVERSAL = "universal"
 TARGET_IOS = "iOS"
 TARGET_VISIONOS = "visionOS"
+TARGET_IPHONE_SIMULATOR= "iPhoneSimulator"
 
-EMBEDDED_PLATFORMS = [TARGET_IOS, TARGET_VISIONOS]
+EMBEDDED_PLATFORMS = [TARGET_IOS, TARGET_VISIONOS, TARGET_IPHONE_SIMULATOR]
 
 def GetBuildTargets():
     return [TARGET_NATIVE,
@@ -35,7 +36,8 @@ def GetBuildTargets():
             TARGET_ARM64,
             TARGET_UNIVERSAL,
             TARGET_IOS,
-            TARGET_VISIONOS]
+            TARGET_VISIONOS,
+            TARGET_IPHONE_SIMULATOR]
 
 def GetBuildTargetDefault():
     return TARGET_NATIVE
@@ -126,6 +128,8 @@ def GetSDKRoot(context) -> Optional[str]:
         sdk = "iphoneos"
     elif context.buildTarget == TARGET_VISIONOS:
         sdk = "xros"
+    elif context.buildTarget == TARGET_IPHONE_SIMULATOR:
+        sdk = "iphonesimulator"
 
     for arg in (context.cmakeBuildArgs or '').split():
         if "CMAKE_OSX_SYSROOT" in arg:
@@ -141,6 +145,7 @@ def SetTarget(context, targetName):
     context.targetUniversal = (targetName == TARGET_UNIVERSAL)
     context.targetIOS = (targetName == TARGET_IOS)
     context.targetVisionOS = (targetName == TARGET_VISIONOS)
+    context.targetIPhoneSimulator = (targetName == TARGET_IPHONE_SIMULATOR)
     if context.targetUniversal and not SupportsMacOSUniversalBinaries():
         context.targetUniversal = False
         raise ValueError(
@@ -235,6 +240,8 @@ def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
     system_name = None
     if TargetEmbeddedOS(context):
         system_name = context.buildTarget
+        if system_name == TARGET_IPHONE_SIMULATOR:
+            system_name = TARGET_IOS
 
     if system_name:
         args.append(f"-DCMAKE_SYSTEM_NAME={system_name}")
