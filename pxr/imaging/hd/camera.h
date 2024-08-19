@@ -57,6 +57,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     (shutterOpen)                                                 \
     (shutterClose)                                                \
     (exposure)                                                    \
+    (exposureTime)                                                \
+    (exposureIso)                                                 \
+    (exposureFStop)                                               \
+    (exposureResponsivity)                                        \
+    (exposureCompensation)                                        \
                                                                   \
     /* how to match window with different aspect */               \
     (windowPolicy)                                                \
@@ -236,6 +241,11 @@ public:
         return _shutterClose;
     }
 
+    /// Get the computed exposure scale from the underlying camera.
+    ///
+    /// Scaling the image brightness by this value will cause the various exposure
+    /// controls on \ref UsdGeomCamera to behave like those of a real camera to 
+    /// control the exposure of the image.
     float GetExposure() const {
         return _exposure;
     }
@@ -313,10 +323,17 @@ protected:
     float                   _splitDiopterWidth2;
     float                   _splitDiopterFocusDistance2;
 
-    // shutter/lighting
+    // shutter
     double                  _shutterOpen;
     double                  _shutterClose;
+
+    // exposure
     float                   _exposure;
+    float                   _exposureCompensation;
+    float                   _exposureTime;
+    float                   _exposureIso;
+    float                   _exposureFStop;
+    float                   _exposureResponsivity;
 
     // lens distortion
     TfToken                 _lensDistortionType;
