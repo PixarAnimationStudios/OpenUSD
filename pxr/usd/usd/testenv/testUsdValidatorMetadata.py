@@ -23,8 +23,8 @@ class TestUsdValidatorMetadata(unittest.TestCase):
     ):
         self.assertEqual(metadata.name, name)
         self.assertEqual(metadata.doc, doc)
-        self.assertEqual(metadata.keywords, keywords)
-        self.assertEqual(metadata.schemaTypes, schemaTypes)
+        self.assertEqual(metadata.GetKeywords(), keywords)
+        self.assertEqual(metadata.GetSchemaTypes(), schemaTypes)
         self.assertEqual(metadata.plugin, plugin)
         self.assertEqual(metadata.isSuite, isSuite)
 
@@ -112,26 +112,26 @@ class TestUsdValidatorMetadata(unittest.TestCase):
     def test_metadata_keywords_getter_and_setter(self):
         metadata = Usd.ValidatorMetadata()
         for keywords in [["keyword1"], ["keyword2"]]:
-            metadata.keywords = keywords
-            self.assertEqual(metadata.keywords, keywords)
+            metadata.SetKeywords(keywords)
+            self.assertEqual(metadata.GetKeywords(), keywords)
 
         # Invalid type
         with self.assertRaises(Exception):
-            metadata.keywords = 123
+            metadata.SetKeywords(123)
         with self.assertRaises(Exception):
-            metadata.keywords = "123"
+            metadata.SetKeywords("123")
 
     def test_metadata_schemaTypes_getter_and_setter(self):
         metadata = Usd.ValidatorMetadata()
         for schema_types in [["PrimType1"], ["PrimType2"]]:
-            metadata.schemaTypes = schema_types
-            self.assertEqual(metadata.schemaTypes, schema_types)
+            metadata.SetSchemaTypes(schema_types)
+            self.assertEqual(metadata.GetSchemaTypes(), schema_types)
 
         # Invalid type
         with self.assertRaises(Exception):
-            metadata.keywords = 123
+            metadata.SetKeywords(123)
         with self.assertRaises(Exception):
-            metadata.keywords = "123"
+            metadata.SetKeywords("123")
 
     def test_metadata_plugin_getter_and_setter(self):
         all_plugins = Plug.Registry().GetAllPlugins()
@@ -142,7 +142,7 @@ class TestUsdValidatorMetadata(unittest.TestCase):
 
         # Invalid type
         with self.assertRaises(Exception):
-            metadata.keywords = 123
+            metadata.SetKeywords(123)
 
     def test_metadata_is_suite_getter_and_setter(self):
         metadata = Usd.ValidatorMetadata()
@@ -152,7 +152,7 @@ class TestUsdValidatorMetadata(unittest.TestCase):
 
         # Invalid type
         with self.assertRaises(Exception):
-            metadata.keywords = "123"
+            metadata.SetKeywords("123")
 
 
 if __name__ == "__main__":

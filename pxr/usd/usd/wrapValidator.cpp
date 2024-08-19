@@ -97,10 +97,10 @@ void wrapUsdValidator()
                                            arg("isSuite") = false)))
         .add_property("name", &_GetMetadataName, &_SetMetadataName)
         .add_property("plugin", &_GetMetadataPlugin, &_SetMetadataPlugin)
-        .add_property("keywords", make_function(
-            &_GetMetadataKeywords, return_value_policy<TfPySequenceToList>()), _SetMetadataKeywords)
+        .def("GetKeywords", &_GetMetadataKeywords, return_value_policy<TfPySequenceToList>())
+        .def("SetKeywords", &_SetMetadataKeywords)
         .def_readwrite("doc", &UsdValidatorMetadata::doc)
-        .add_property("schemaTypes", make_function(
-            &_GetMetadataSchemaTypes, return_value_policy<TfPySequenceToList>()), _SetMetadataSchemaTypes)
+        .def("GetSchemaTypes", &_GetMetadataSchemaTypes, return_value_policy<TfPySequenceToList>())
+        .def("SetSchemaTypes", &_SetMetadataSchemaTypes)
         .def_readwrite("isSuite", &UsdValidatorMetadata::isSuite);
 }
