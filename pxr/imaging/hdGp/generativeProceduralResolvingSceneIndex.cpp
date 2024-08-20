@@ -33,6 +33,8 @@ HdGpGenerativeProceduralResolvingSceneIndex::
 , _targetPrimTypeName(HdGpGenerativeProceduralTokens->generativeProcedural)
 , _attemptAsync(false)
 {
+    // XXX The input scene may not be empty. We should traverse it to find any
+    //     targeted procedurals and cook them.
 }
 
 HdGpGenerativeProceduralResolvingSceneIndex::
@@ -43,6 +45,8 @@ HdGpGenerativeProceduralResolvingSceneIndex::
 , _targetPrimTypeName(targetPrimTypeName)
 , _attemptAsync(false)
 {
+    // XXX The input scene may not be empty. We should traverse it to find any
+    //     targeted procedurals and cook them.
 }
 
 /* virtual */
@@ -50,14 +54,14 @@ HdSceneIndexPrim
 HdGpGenerativeProceduralResolvingSceneIndex::GetPrim(
     const SdfPath &primPath) const
 {
-
+    // Cooking of procedurals is driven by notices.
+    // Don't cook the procedural in response to scene queries.
+    //  
     const auto it = _generatedPrims.find(primPath);
     if (it != _generatedPrims.end()) {
         if (_ProcEntry *procEntry = it->second.responsibleProc.load()) {
             
             // need to exclude prim-level deal itself from the returned value
-
-
             if (std::shared_ptr<HdGpGenerativeProcedural> proc =
                     procEntry->proc) {
                 return proc->GetChildPrim(
@@ -68,10 +72,7 @@ HdGpGenerativeProceduralResolvingSceneIndex::GetPrim(
 
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
     if (prim.primType == _targetPrimTypeName) {
-        // TODO? confirm it's cooked?
-        //_Notices notices; 
-        //_UpdateProcedural(primPath, false, &notices);
-
+        // XXX Add schema to reflect status of the procedural (cooked/uncooked)?
         prim.primType = HdGpGenerativeProceduralTokens->resolvedGenerativeProcedural;
     }
 
@@ -110,43 +111,35 @@ HdGpGenerativeProceduralResolvingSceneIndex::GetChildPrimPaths(
     SdfPathVector inputResult =
         _GetInputSceneIndex()->GetChildPrimPaths(primPath);
 
-    // Check to see if the requested path already exists as a prim managed by
-    // a procedural. Look up what the procedural added and potentially combine
-    // with what might be present on the input scene.
+    // Cooking of procedurals is driven by notices.
+    // Don't cook the procedural in response to scene queries.
     //
-    // XXX: This doesn't cause a procedural to be run at an ancestor path --
-    //      so we'd expect a notice-less traversal case to have already called
-    //      GetChildPrimPaths with the parent procedural. The overhead of
-    //      ensuring that happens for every scope outweighs the unlikely
-    //      possibility of incorrect results for a speculative query without
-    //      hitting any of the existing triggers.
+    // First, check if this is a procedural prim that we've cooked.
+    //
+    _ProcEntryMap::iterator procIt = _procedurals.find(primPath);
+    if (procIt != _procedurals.end()) {
+        _ProcEntry &procEntry = procIt->second;
+        std::unique_lock<std::mutex> cookLock(procEntry.cookMutex);
+        const auto chIt = procEntry.childHierarchy.find(primPath);
+        if (chIt != procEntry.childHierarchy.end()) {
+            _CombinePathArrays(chIt->second, &inputResult);
+        }
+        return inputResult;
+    }
+
+    // Check to see if the requested path already exists as a generated 
+    // prim managed by a procedural. Look up what the procedural added and
+    // potentially combine with what might be present on the input scene.
+    //
     const auto it = _generatedPrims.find(primPath);
     if (it != _generatedPrims.end()) {
         if (_ProcEntry *procEntry = it->second.responsibleProc.load()) {
             std::unique_lock<std::mutex> cookLock(procEntry->cookMutex);
             const auto chIt = procEntry->childHierarchy.find(primPath);
             if (chIt != procEntry->childHierarchy.end()) {
-
                 _CombinePathArrays(chIt->second, &inputResult);
-                return inputResult;
             }
-        }
-    }
-
-    HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
-    if (prim.primType == _targetPrimTypeName) {
-        _Notices notices;
-
-        // cook if necessary to find child prim paths. Do not forward notices
-        // as use of this API implies a non-notice-driven traversal.
-        if (_ProcEntry *procEntry =
-                _UpdateProcedural(primPath, false, &notices)) {
-
-            std::unique_lock<std::mutex> cookLock(procEntry->cookMutex);
-            const auto hIt = procEntry->childHierarchy.find(primPath);
-            if (hIt != procEntry->childHierarchy.end()) {
-                _CombinePathArrays(hIt->second, &inputResult);
-            }
+            return inputResult;
         }
     }
 
@@ -906,10 +899,10 @@ HdGpGenerativeProceduralResolvingSceneIndex::_SystemMessage(
             _attemptAsync = true;
         }
         return;
-    } else {
-        if (messageType != HdSystemMessageTokens->asyncPoll) {
-            return;
-        }
+    }
+
+    if (messageType != HdSystemMessageTokens->asyncPoll) {
+        return;
     }
 
     _Notices notices;
