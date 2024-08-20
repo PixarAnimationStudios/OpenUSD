@@ -679,7 +679,7 @@ def AnyPythonDependencies(deps):
 ############################################################
 # zlib
 
-ZLIB_URL = "https://github.com/madler/zlib/archive/v1.2.13.zip"
+ZLIB_URL = "https://github.com/madler/zlib/archive/v1.3.1.zip"
 
 def InstallZlib(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ZLIB_URL, context, force)):
@@ -1139,7 +1139,7 @@ TBB = Dependency("TBB", InstallTBB, "include/tbb/tbb.h")
 ############################################################
 # JPEG
 
-JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/2.0.1.zip"
+JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/3.0.2.zip"
 
 def InstallJPEG(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(JPEG_URL, context, force)):
@@ -1155,21 +1155,10 @@ JPEG = Dependency("JPEG", InstallJPEG, "include/jpeglib.h")
 ############################################################
 # TIFF
 
-TIFF_URL = "https://gitlab.com/libtiff/libtiff/-/archive/v4.0.7/libtiff-v4.0.7.zip"
+TIFF_URL = "https://gitlab.com/libtiff/libtiff/-/archive/v4.6.0/libtiff-v4.6.0.zip"
 
 def InstallTIFF(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(TIFF_URL, context, force)):
-        # libTIFF has a build issue on Windows where tools/tiffgt.c
-        # unconditionally includes unistd.h, which does not exist.
-        # To avoid this, we patch the CMakeLists.txt to skip building
-        # the tools entirely. We do this on Linux and MacOS as well
-        # to avoid requiring some GL and X dependencies.
-        #
-        # We also need to skip building tests, since they rely on 
-        # the tools we've just elided.
-        PatchFile("CMakeLists.txt", 
-                   [("add_subdirectory(tools)", "# add_subdirectory(tools)"),
-                    ("add_subdirectory(test)", "# add_subdirectory(test)")])
 
         # The libTIFF CMakeScript says the ld-version-script 
         # functionality is only for compilers using GNU ld on 
@@ -1179,6 +1168,19 @@ def InstallTIFF(context, force, buildArgs):
             extraArgs = ["-Dld-version-script=OFF"]
         else:
             extraArgs = []
+
+        # libTIFF has a build issue on Windows where tools/tiffgt.c
+        # unconditionally includes unistd.h, which does not exist.
+        # To avoid this, we patch the CMakeLists.txt to skip building
+        # the tools entirely. We do this on Linux and MacOS as well
+        # to avoid requiring some GL and X dependencies.
+        #
+        # We also need to skip building tests, since they rely on 
+        # the tools we've just elided.
+        extraArgs.extend([
+            "-Dtiff-tools=OFF",
+            "-Dtiff-tests=OFF"
+        ])
         extraArgs += buildArgs
         RunCMake(context, force, extraArgs)
 
@@ -1187,7 +1189,7 @@ TIFF = Dependency("TIFF", InstallTIFF, "include/tiff.h")
 ############################################################
 # PNG
 
-PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.38.zip"
+PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.43.zip"
 
 def InstallPNG(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(PNG_URL, context, force)):
