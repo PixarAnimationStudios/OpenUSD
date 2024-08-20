@@ -10,124 +10,94 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
-
-// Helper to return a static token as a string.  We wrap tokens as Python
-// strings and for some reason simply wrapping the token using def_readonly
-// bypasses to-Python conversion, leading to the error that there's no
-// Python type for the C++ TfToken type.  So we wrap this functor instead.
-class _WrapStaticToken {
-public:
-    _WrapStaticToken(const TfToken* token) : _token(token) { }
-
-    std::string operator()() const
-    {
-        return _token->GetString();
-    }
-
-private:
-    const TfToken* _token;
-};
-
-template <typename T>
-void
-_AddToken(T& cls, const char* name, const TfToken& token)
-{
-    cls.add_static_property(name,
-                            boost::python::make_function(
-                                _WrapStaticToken(&token),
-                                boost::python::return_value_policy<
-                                    boost::python::return_by_value>(),
-                                boost::mpl::vector1<std::string>()));
-}
-
-} // anonymous
+#define _ADD_TOKEN(cls, name) \
+    cls.add_static_property(#name, +[]() { return UsdLuxTokens->name.GetString(); });
 
 void wrapUsdLuxTokens()
 {
     boost::python::class_<UsdLuxTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
-    _AddToken(cls, "angular", UsdLuxTokens->angular);
-    _AddToken(cls, "automatic", UsdLuxTokens->automatic);
-    _AddToken(cls, "collectionFilterLinkIncludeRoot", UsdLuxTokens->collectionFilterLinkIncludeRoot);
-    _AddToken(cls, "collectionLightLinkIncludeRoot", UsdLuxTokens->collectionLightLinkIncludeRoot);
-    _AddToken(cls, "collectionShadowLinkIncludeRoot", UsdLuxTokens->collectionShadowLinkIncludeRoot);
-    _AddToken(cls, "consumeAndContinue", UsdLuxTokens->consumeAndContinue);
-    _AddToken(cls, "consumeAndHalt", UsdLuxTokens->consumeAndHalt);
-    _AddToken(cls, "cubeMapVerticalCross", UsdLuxTokens->cubeMapVerticalCross);
-    _AddToken(cls, "filterLink", UsdLuxTokens->filterLink);
-    _AddToken(cls, "geometry", UsdLuxTokens->geometry);
-    _AddToken(cls, "guideRadius", UsdLuxTokens->guideRadius);
-    _AddToken(cls, "ignore", UsdLuxTokens->ignore);
-    _AddToken(cls, "independent", UsdLuxTokens->independent);
-    _AddToken(cls, "inputsAngle", UsdLuxTokens->inputsAngle);
-    _AddToken(cls, "inputsColor", UsdLuxTokens->inputsColor);
-    _AddToken(cls, "inputsColorTemperature", UsdLuxTokens->inputsColorTemperature);
-    _AddToken(cls, "inputsDiffuse", UsdLuxTokens->inputsDiffuse);
-    _AddToken(cls, "inputsEnableColorTemperature", UsdLuxTokens->inputsEnableColorTemperature);
-    _AddToken(cls, "inputsExposure", UsdLuxTokens->inputsExposure);
-    _AddToken(cls, "inputsHeight", UsdLuxTokens->inputsHeight);
-    _AddToken(cls, "inputsIntensity", UsdLuxTokens->inputsIntensity);
-    _AddToken(cls, "inputsLength", UsdLuxTokens->inputsLength);
-    _AddToken(cls, "inputsNormalize", UsdLuxTokens->inputsNormalize);
-    _AddToken(cls, "inputsRadius", UsdLuxTokens->inputsRadius);
-    _AddToken(cls, "inputsShadowColor", UsdLuxTokens->inputsShadowColor);
-    _AddToken(cls, "inputsShadowDistance", UsdLuxTokens->inputsShadowDistance);
-    _AddToken(cls, "inputsShadowEnable", UsdLuxTokens->inputsShadowEnable);
-    _AddToken(cls, "inputsShadowFalloff", UsdLuxTokens->inputsShadowFalloff);
-    _AddToken(cls, "inputsShadowFalloffGamma", UsdLuxTokens->inputsShadowFalloffGamma);
-    _AddToken(cls, "inputsShapingConeAngle", UsdLuxTokens->inputsShapingConeAngle);
-    _AddToken(cls, "inputsShapingConeSoftness", UsdLuxTokens->inputsShapingConeSoftness);
-    _AddToken(cls, "inputsShapingFocus", UsdLuxTokens->inputsShapingFocus);
-    _AddToken(cls, "inputsShapingFocusTint", UsdLuxTokens->inputsShapingFocusTint);
-    _AddToken(cls, "inputsShapingIesAngleScale", UsdLuxTokens->inputsShapingIesAngleScale);
-    _AddToken(cls, "inputsShapingIesFile", UsdLuxTokens->inputsShapingIesFile);
-    _AddToken(cls, "inputsShapingIesNormalize", UsdLuxTokens->inputsShapingIesNormalize);
-    _AddToken(cls, "inputsSpecular", UsdLuxTokens->inputsSpecular);
-    _AddToken(cls, "inputsTextureFile", UsdLuxTokens->inputsTextureFile);
-    _AddToken(cls, "inputsTextureFormat", UsdLuxTokens->inputsTextureFormat);
-    _AddToken(cls, "inputsWidth", UsdLuxTokens->inputsWidth);
-    _AddToken(cls, "latlong", UsdLuxTokens->latlong);
-    _AddToken(cls, "lightFilters", UsdLuxTokens->lightFilters);
-    _AddToken(cls, "lightFilterShaderId", UsdLuxTokens->lightFilterShaderId);
-    _AddToken(cls, "lightLink", UsdLuxTokens->lightLink);
-    _AddToken(cls, "lightList", UsdLuxTokens->lightList);
-    _AddToken(cls, "lightListCacheBehavior", UsdLuxTokens->lightListCacheBehavior);
-    _AddToken(cls, "lightMaterialSyncMode", UsdLuxTokens->lightMaterialSyncMode);
-    _AddToken(cls, "lightShaderId", UsdLuxTokens->lightShaderId);
-    _AddToken(cls, "materialGlowTintsLight", UsdLuxTokens->materialGlowTintsLight);
-    _AddToken(cls, "MeshLight", UsdLuxTokens->MeshLight);
-    _AddToken(cls, "mirroredBall", UsdLuxTokens->mirroredBall);
-    _AddToken(cls, "noMaterialResponse", UsdLuxTokens->noMaterialResponse);
-    _AddToken(cls, "orientToStageUpAxis", UsdLuxTokens->orientToStageUpAxis);
-    _AddToken(cls, "poleAxis", UsdLuxTokens->poleAxis);
-    _AddToken(cls, "portals", UsdLuxTokens->portals);
-    _AddToken(cls, "scene", UsdLuxTokens->scene);
-    _AddToken(cls, "shadowLink", UsdLuxTokens->shadowLink);
-    _AddToken(cls, "treatAsLine", UsdLuxTokens->treatAsLine);
-    _AddToken(cls, "treatAsPoint", UsdLuxTokens->treatAsPoint);
-    _AddToken(cls, "VolumeLight", UsdLuxTokens->VolumeLight);
-    _AddToken(cls, "Y", UsdLuxTokens->Y);
-    _AddToken(cls, "Z", UsdLuxTokens->Z);
-    _AddToken(cls, "BoundableLightBase", UsdLuxTokens->BoundableLightBase);
-    _AddToken(cls, "CylinderLight", UsdLuxTokens->CylinderLight);
-    _AddToken(cls, "DiskLight", UsdLuxTokens->DiskLight);
-    _AddToken(cls, "DistantLight", UsdLuxTokens->DistantLight);
-    _AddToken(cls, "DomeLight", UsdLuxTokens->DomeLight);
-    _AddToken(cls, "DomeLight_1", UsdLuxTokens->DomeLight_1);
-    _AddToken(cls, "GeometryLight", UsdLuxTokens->GeometryLight);
-    _AddToken(cls, "LightAPI", UsdLuxTokens->LightAPI);
-    _AddToken(cls, "LightFilter", UsdLuxTokens->LightFilter);
-    _AddToken(cls, "LightListAPI", UsdLuxTokens->LightListAPI);
-    _AddToken(cls, "ListAPI", UsdLuxTokens->ListAPI);
-    _AddToken(cls, "MeshLightAPI", UsdLuxTokens->MeshLightAPI);
-    _AddToken(cls, "NonboundableLightBase", UsdLuxTokens->NonboundableLightBase);
-    _AddToken(cls, "PluginLight", UsdLuxTokens->PluginLight);
-    _AddToken(cls, "PluginLightFilter", UsdLuxTokens->PluginLightFilter);
-    _AddToken(cls, "PortalLight", UsdLuxTokens->PortalLight);
-    _AddToken(cls, "RectLight", UsdLuxTokens->RectLight);
-    _AddToken(cls, "ShadowAPI", UsdLuxTokens->ShadowAPI);
-    _AddToken(cls, "ShapingAPI", UsdLuxTokens->ShapingAPI);
-    _AddToken(cls, "SphereLight", UsdLuxTokens->SphereLight);
-    _AddToken(cls, "VolumeLightAPI", UsdLuxTokens->VolumeLightAPI);
+    _ADD_TOKEN(cls, angular);
+    _ADD_TOKEN(cls, automatic);
+    _ADD_TOKEN(cls, collectionFilterLinkIncludeRoot);
+    _ADD_TOKEN(cls, collectionLightLinkIncludeRoot);
+    _ADD_TOKEN(cls, collectionShadowLinkIncludeRoot);
+    _ADD_TOKEN(cls, consumeAndContinue);
+    _ADD_TOKEN(cls, consumeAndHalt);
+    _ADD_TOKEN(cls, cubeMapVerticalCross);
+    _ADD_TOKEN(cls, filterLink);
+    _ADD_TOKEN(cls, geometry);
+    _ADD_TOKEN(cls, guideRadius);
+    _ADD_TOKEN(cls, ignore);
+    _ADD_TOKEN(cls, independent);
+    _ADD_TOKEN(cls, inputsAngle);
+    _ADD_TOKEN(cls, inputsColor);
+    _ADD_TOKEN(cls, inputsColorTemperature);
+    _ADD_TOKEN(cls, inputsDiffuse);
+    _ADD_TOKEN(cls, inputsEnableColorTemperature);
+    _ADD_TOKEN(cls, inputsExposure);
+    _ADD_TOKEN(cls, inputsHeight);
+    _ADD_TOKEN(cls, inputsIntensity);
+    _ADD_TOKEN(cls, inputsLength);
+    _ADD_TOKEN(cls, inputsNormalize);
+    _ADD_TOKEN(cls, inputsRadius);
+    _ADD_TOKEN(cls, inputsShadowColor);
+    _ADD_TOKEN(cls, inputsShadowDistance);
+    _ADD_TOKEN(cls, inputsShadowEnable);
+    _ADD_TOKEN(cls, inputsShadowFalloff);
+    _ADD_TOKEN(cls, inputsShadowFalloffGamma);
+    _ADD_TOKEN(cls, inputsShapingConeAngle);
+    _ADD_TOKEN(cls, inputsShapingConeSoftness);
+    _ADD_TOKEN(cls, inputsShapingFocus);
+    _ADD_TOKEN(cls, inputsShapingFocusTint);
+    _ADD_TOKEN(cls, inputsShapingIesAngleScale);
+    _ADD_TOKEN(cls, inputsShapingIesFile);
+    _ADD_TOKEN(cls, inputsShapingIesNormalize);
+    _ADD_TOKEN(cls, inputsSpecular);
+    _ADD_TOKEN(cls, inputsTextureFile);
+    _ADD_TOKEN(cls, inputsTextureFormat);
+    _ADD_TOKEN(cls, inputsWidth);
+    _ADD_TOKEN(cls, latlong);
+    _ADD_TOKEN(cls, lightFilters);
+    _ADD_TOKEN(cls, lightFilterShaderId);
+    _ADD_TOKEN(cls, lightLink);
+    _ADD_TOKEN(cls, lightList);
+    _ADD_TOKEN(cls, lightListCacheBehavior);
+    _ADD_TOKEN(cls, lightMaterialSyncMode);
+    _ADD_TOKEN(cls, lightShaderId);
+    _ADD_TOKEN(cls, materialGlowTintsLight);
+    _ADD_TOKEN(cls, MeshLight);
+    _ADD_TOKEN(cls, mirroredBall);
+    _ADD_TOKEN(cls, noMaterialResponse);
+    _ADD_TOKEN(cls, orientToStageUpAxis);
+    _ADD_TOKEN(cls, poleAxis);
+    _ADD_TOKEN(cls, portals);
+    _ADD_TOKEN(cls, scene);
+    _ADD_TOKEN(cls, shadowLink);
+    _ADD_TOKEN(cls, treatAsLine);
+    _ADD_TOKEN(cls, treatAsPoint);
+    _ADD_TOKEN(cls, VolumeLight);
+    _ADD_TOKEN(cls, Y);
+    _ADD_TOKEN(cls, Z);
+    _ADD_TOKEN(cls, BoundableLightBase);
+    _ADD_TOKEN(cls, CylinderLight);
+    _ADD_TOKEN(cls, DiskLight);
+    _ADD_TOKEN(cls, DistantLight);
+    _ADD_TOKEN(cls, DomeLight);
+    _ADD_TOKEN(cls, DomeLight_1);
+    _ADD_TOKEN(cls, GeometryLight);
+    _ADD_TOKEN(cls, LightAPI);
+    _ADD_TOKEN(cls, LightFilter);
+    _ADD_TOKEN(cls, LightListAPI);
+    _ADD_TOKEN(cls, ListAPI);
+    _ADD_TOKEN(cls, MeshLightAPI);
+    _ADD_TOKEN(cls, NonboundableLightBase);
+    _ADD_TOKEN(cls, PluginLight);
+    _ADD_TOKEN(cls, PluginLightFilter);
+    _ADD_TOKEN(cls, PortalLight);
+    _ADD_TOKEN(cls, RectLight);
+    _ADD_TOKEN(cls, ShadowAPI);
+    _ADD_TOKEN(cls, ShapingAPI);
+    _ADD_TOKEN(cls, SphereLight);
+    _ADD_TOKEN(cls, VolumeLightAPI);
 }
