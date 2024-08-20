@@ -21,11 +21,9 @@ pxr_plugin(hdEmbree
         hf
         hd
         hdx
-        ${TBB_tbb_LIBRARY}
         ${EMBREE_LIBRARY}
 
     INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
         ${EMBREE_INCLUDE_DIR}
 
     PUBLIC_CLASSES

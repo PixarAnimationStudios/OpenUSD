@@ -137,8 +137,10 @@ endif()
 
 
 # --TBB
-find_package(TBB REQUIRED COMPONENTS tbb)
-add_definitions(${TBB_DEFINITIONS})
+find_package(TBB CONFIG COMPONENTS tbb)
+if(NOT TBB_FOUND)
+    find_package(TBB REQUIRED COMPONENTS tbb)
+endif()
 
 # --math
 if(WIN32)

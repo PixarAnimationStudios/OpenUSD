@@ -16,6 +16,10 @@ set(PXR_MINOR_VERSION "@PXR_MINOR_VERSION@")
 set(PXR_PATCH_VERSION "@PXR_PATCH_VERSION@")
 set(PXR_VERSION "@PXR_VERSION@")
 
+include(CMakeFindDependencyMacro)
+
+find_dependency(TBB)
+
 # If Python support was enabled for this USD build, find the import
 # targets by invoking the appropriate FindPython module. Use the same
 # LIBRARY and INCLUDE_DIR settings from the original build if they

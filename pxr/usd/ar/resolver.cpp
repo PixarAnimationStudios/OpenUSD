@@ -35,6 +35,7 @@
 #include "pxr/base/tf/unicodeUtils.h"
 
 #include <tbb/concurrent_hash_map.h>
+#include <tbb/enumerable_thread_specific.h>
 
 #include <memory>
 #include <mutex>

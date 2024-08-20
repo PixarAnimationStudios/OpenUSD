@@ -116,12 +116,11 @@ pxr_library(tf
         ${WINLIBS}
         ${PYTHON_LIBRARIES}
         ${Boost_PYTHON_LIBRARY}
-        ${TBB_tbb_LIBRARY}
+        TBB::tbb
 
     INCLUDE_DIRS
         ${PYTHON_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIRS}
-        ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
         anyUniquePtr

@@ -75,6 +75,7 @@ pxr_plugin(${PXR_PACKAGE}
         usdRi
         usdVol
         usdVolImaging
+        TBB::tbb
         ${optionalLibs}
 
     INCLUDE_DIRS
