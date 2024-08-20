@@ -7,8 +7,14 @@
 // Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+// If BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
+// boost::python will generate simplified docstrings that break the associated
+// test unless we undefine it before including any headers.
+#undef BOOST_PYTHON_NO_PY_SIGNATURES
+
 #include "pxr/external/boost/python/module.hpp"
 #include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/docstring_options.hpp"
 #include "pxr/external/boost/python/extract.hpp"
 #include "pxr/external/boost/python/to_python_converter.hpp"
 #include "pxr/external/boost/python/class.hpp"
@@ -78,6 +84,12 @@ B func(const B& b) { return b ; }
 
 BOOST_PYTHON_MODULE(pytype_function_ext)
 {
+  // Explicitly enable Python signatures in docstrings in case boost::python
+  // was built with BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
+  // signatures by default.
+  docstring_options doc_options;
+  doc_options.enable_py_signatures();
+
   to_python_converter< B , BToPython,true >(); //has get_pytype
   BFromPython();
 

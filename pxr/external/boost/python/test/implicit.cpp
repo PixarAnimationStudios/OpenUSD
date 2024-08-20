@@ -7,7 +7,14 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
+
+// If BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
+// boost::python will generate simplified docstrings that break the associated
+// test unless we undefine it before including any headers.
+#undef BOOST_PYTHON_NO_PY_SIGNATURES
+
 #include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/docstring_options.hpp"
 #include "pxr/external/boost/python/implicit.hpp"
 #include "pxr/external/boost/python/module.hpp"
 #include "pxr/external/boost/python/def.hpp"
@@ -36,6 +43,12 @@ struct foo
 
 BOOST_PYTHON_MODULE(implicit_ext)
 {
+    // Explicitly enable Python signatures in docstrings in case boost::python
+    // was built with BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
+    // signatures by default.
+    docstring_options doc_options;
+    doc_options.enable_py_signatures();
+
     implicitly_convertible<foo,bar>();
     implicitly_convertible<int,X>();
     
