@@ -124,7 +124,9 @@ pxr_library(tf
         anyWeakPtr
         atomicOfstreamWrapper
         bigRWMutex
+        bits
         bitUtils
+        compressedBits
         debug
         debugNotice
         denseHashMap
@@ -439,7 +441,9 @@ pxr_build_test(testTf
         testenv/main.cpp
         testenv/anyUniquePtr.cpp
         testenv/atomicOfstreamWrapper.cpp
+        testenv/bits.cpp
         testenv/bitUtils.cpp
+        testenv/compressedBits.cpp
         testenv/debug.cpp
         testenv/denseHashMap.cpp
         testenv/delegate.cpp
@@ -542,8 +546,14 @@ pxr_register_test(TfAnyUniquePtr
 pxr_register_test(TfAtomicOfstreamWrapper
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfAtomicOfstreamWrapper"
 )
+pxr_register_test(TfBits
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfBits"
+)
 pxr_register_test(TfBitUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfBitUtils"
+)
+pxr_register_test(TfCompressedBits
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfCompressedBits"
 )
 pxr_register_test(TfDl
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDl"
