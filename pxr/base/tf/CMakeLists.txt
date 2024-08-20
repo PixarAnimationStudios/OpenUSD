@@ -114,13 +114,9 @@ pxr_library(tf
     LIBRARIES
         arch
         ${WINLIBS}
-        ${PYTHON_LIBRARIES}
-        ${Boost_PYTHON_LIBRARY}
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
-        ${PYTHON_INCLUDE_DIRS}
-        ${Boost_INCLUDE_DIRS}
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
@@ -361,7 +357,6 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     pxr_build_test(testTfPyFunction
         LIBRARIES
             tf
-            ${Boost_PYTHON_LIBRARY}
         CPPFILES
             testenv/testTfPyFunction.cpp
     ) 
@@ -383,7 +378,6 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     pxr_build_test(testTfPyLock
         LIBRARIES
             tf
-            ${Boost_PYTHON_LIBRARY}
         CPPFILES
             testenv/testTfPyLock.cpp
     )
@@ -391,7 +385,6 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     pxr_build_test(testTfPyResultConversions
         LIBRARIES
             tf
-            ${Boost_PYTHON_LIBRARY}
         CPPFILES
             testenv/testTfPyResultConversions.cpp
     )

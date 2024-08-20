@@ -8,10 +8,6 @@ pxr_library(sdr
         ar
         ndr
         sdf
-        ${Boost_PYTHON_LIBRARY}
-
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
 
     PUBLIC_HEADERS
         api.h

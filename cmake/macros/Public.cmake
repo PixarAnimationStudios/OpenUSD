@@ -242,20 +242,31 @@ function(pxr_library NAME)
     # If python support is enabled, merge the python specific categories
     # with the more general before setting up compilation.
     if(PXR_ENABLE_PYTHON_SUPPORT)
+        set(libraryRequiresPython 0)
         if(args_PYTHON_PUBLIC_CLASSES)
             list(APPEND args_PUBLIC_CLASSES ${args_PYTHON_PUBLIC_CLASSES})
+            set(libraryRequiresPython 1)
         endif()
         if(args_PYTHON_PUBLIC_HEADERS)
             list(APPEND args_PUBLIC_HEADERS ${args_PYTHON_PUBLIC_HEADERS})
+            set(libraryRequiresPython 1)
         endif()
         if(args_PYTHON_PRIVATE_CLASSES)
             list(APPEND args_PRIVATE_CLASSES ${args_PYTHON_PRIVATE_CLASSES})
+            set(libraryRequiresPython 1)
         endif()
         if(args_PYTHON_PRIVATE_HEADERS)
             list(APPEND args_PRIVATE_HEADERS ${args_PYTHON_PRIVATE_HEADERS})
+            set(libraryRequiresPython 1)
         endif()
         if(args_PYTHON_CPPFILES)
             list(APPEND args_CPPFILES ${args_PYTHON_CPPFILES})
+            set(libraryRequiresPython 1)
+        endif()
+
+        if(libraryRequiresPython)
+            list(APPEND args_LIBRARIES ${PYTHON_LIBRARIES} ${Boost_PYTHON_LIBRARY})
+            list(APPEND args_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
         endif()
     endif()
 
@@ -336,13 +347,15 @@ function(pxr_library NAME)
     )
 
     if(PXR_ENABLE_PYTHON_SUPPORT AND (args_PYMODULE_CPPFILES OR args_PYMODULE_FILES OR args_PYSIDE_UI_FILES))
+        list(APPEND pythonModuleIncludeDirs ${PYTHON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+
         _pxr_python_module(
             ${NAME}
             WRAPPED_LIB_INSTALL_PREFIX "${libInstallPrefix}"
             PYTHON_FILES ${args_PYMODULE_FILES}
             PYSIDE_UI_FILES ${args_PYSIDE_UI_FILES}
             CPPFILES ${args_PYMODULE_CPPFILES}
-            INCLUDE_DIRS ${args_INCLUDE_DIRS}
+            INCLUDE_DIRS "${args_INCLUDE_DIRS};${pythonModuleIncludeDirs}"
             PRECOMPILED_HEADERS ${pch}
             PRECOMPILED_HEADER_NAME ${args_PRECOMPILED_HEADER_NAME}
         )

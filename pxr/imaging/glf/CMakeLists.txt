@@ -12,9 +12,6 @@ if (X11_FOUND)
     list(APPEND optionalPublicClasses testGLContext)
 endif()
 
-set(optionalLibs "")
-set(optionalIncludeDirs "")
-
 pxr_library(glf
     LIBRARIES
         ar
@@ -27,14 +24,8 @@ pxr_library(glf
         tf
         trace
         sdf
-        ${Boost_PYTHON_LIBRARY}
         OpenGL::GL
         ${X11_LIBRARIES}
-        ${optionalLibs}
-
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
-        ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
         bindingMap
@@ -59,9 +50,6 @@ pxr_library(glf
 
     PUBLIC_HEADERS
         api.h
-
-    CPPFILES
-        ${optionalCppFiles}
 
     PYTHON_CPPFILES
         moduleDeps.cpp
