@@ -16,6 +16,7 @@
 #include "pxr/base/tf/iterator.h"
 
 #include <atomic>
+#include <cstdint>
 #include <cstring>
 #include <iosfwd>
 #include <type_traits>
@@ -353,7 +354,7 @@ public:
     {
         TF_AXIOM(index < _num);
 
-        uint64_t mask = 1UL << (index & 63);
+        uint64_t mask = UINT64_C(1) << (index & 63);
 
         if (_bits[index >> 6] & mask)
         {
@@ -377,7 +378,7 @@ public:
     {
         TF_AXIOM(index < _num);
 
-        uint64_t mask = 1UL << (index & 63);
+        uint64_t mask = UINT64_C(1) << (index & 63);
 
         if (!(_bits[index >> 6] & mask))
         {
@@ -412,7 +413,7 @@ public:
     {
         TF_AXIOM(index < _num);
 
-        return _bits[index >> 6] & (1UL << (index & 63));
+        return _bits[index >> 6] & (UINT64_C(1) << (index & 63));
     }
 
     /// Finds the next set bit that has a higher or equal index than index.
@@ -427,7 +428,7 @@ public:
         size_t startBit = index & 63;
 
         // Early out for bit set...
-        if (_bits[index >> 6] & (1UL << startBit))
+        if (_bits[index >> 6] & (UINT64_C(1) << startBit))
             return index;
 
         return _FindNextSet(index, startBit);
@@ -445,7 +446,7 @@ public:
         size_t startBit = index & 63;
 
         // Early out for bit set...
-        if (_bits[index >> 6] & (1UL << startBit))
+        if (_bits[index >> 6] & (UINT64_C(1) << startBit))
             return index;
 
         return _FindPrevSet(index, startBit);
@@ -463,7 +464,7 @@ public:
         size_t startBit = index & 63;
 
         // Early out for bit set...
-        if (!(_bits[index >> 6] & (1UL << startBit)))
+        if (!(_bits[index >> 6] & (UINT64_C(1) << startBit)))
             return index;
 
         return _FindNextUnset(index, startBit);

@@ -493,6 +493,10 @@ Test_TfCompressedBits()
                 b = TfBits(sz);
                 ca = TfCompressedBits(sz);
                 cb = TfCompressedBits(sz);
+
+                verifyEqual("clear1", a, ca);
+                verifyEqual("clear2", b, cb);
+
                 for (int i = 0; i != nSets; ++i) {
                     int index = rand() % sz;
                     a.Set(index);
@@ -550,6 +554,9 @@ Test_TfCompressedBits()
                               "b = %s, cb = %s",
                               b.GetAsStringLeftToRight().c_str(),
                               cb.GetAsStringLeftToRight().c_str());
+
+                    verifyEqual("equal1", a, ca);
+                    verifyEqual("equal2", b, cb);
                 }
             };
 

@@ -57,7 +57,7 @@ TfBits::_FindNextSet(size_t index, size_t startBit) const
     {
         if (uint64_t bits = _bits[w])
             for(size_t i=startBit; i<64; i++)
-                if (bits & (1UL << i))
+                if (bits & (UINT64_C(1) << i))
                 {
                     // Note: Since we round up the # bits to fit an 
                     //       integer # of words, we need to check if we 
@@ -81,7 +81,7 @@ TfBits::_FindPrevSet(size_t index, size_t startBit) const
     {
         if (uint64_t bits = _bits[w])
             for(int i=startBit; i>=0; i--)
-                if (bits & (1UL << i))
+                if (bits & (UINT64_C(1) << i))
                 {
                     // Note: Since we round up the # bits to fit an 
                     //       integer # of words, we need to check if we 
@@ -104,7 +104,7 @@ TfBits::_FindNextUnset(size_t index, size_t startBit) const
         // Note: We're operating on the flipped bits here...
         if (uint64_t bits = ~_bits[w])
             for(size_t i=startBit; i<64; i++)
-                if (bits & (1UL << i))
+                if (bits & (UINT64_C(1) << i))
                 {
                     // Note: Since we round up the # bits to fit an 
                     //       integer # of words, we need to check if we 
@@ -423,7 +423,7 @@ TfBits::_ClearTrailingBits()
         TF_AXIOM(numUsedBitsInLastWord > 0 && numUsedBitsInLastWord <= 63);
     
         // Zero out the unused bits so that they don't show up in the counts.
-        _bits[_numWords - 1] &= (1UL << numUsedBitsInLastWord) - 1;
+        _bits[_numWords - 1] &= (UINT64_C(1) << numUsedBitsInLastWord) - 1;
     }
 }
 

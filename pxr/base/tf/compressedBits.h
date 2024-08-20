@@ -15,7 +15,7 @@
 #include "pxr/base/tf/staticData.h"
 
 #include <algorithm>
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -450,7 +450,8 @@ public:
 
         // Grow
         if (_num < num) {
-            if ((1u - _runningBit) == (_platforms.GetNum() & 1u)) {
+            if ((UINT32_C(1) - _runningBit) == 
+                    (_platforms.GetNum() & UINT32_C(1))) {
                 _platforms.Back() += (num - _num);
             } else {
                 _platforms.PushBack(num - _num);
@@ -652,7 +653,8 @@ public:
 
         // Extend on the right, by adding zeros, if the last platform
         // is zeros ...
-        if ((1u - _runningBit) == (_platforms.GetNum() & 1u)) {
+        if ((UINT32_C(1) - _runningBit) ==
+                (_platforms.GetNum() & UINT32_C(1))) {
             _platforms.Back() += bits;
             return;
         }
