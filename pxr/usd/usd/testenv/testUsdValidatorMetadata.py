@@ -23,8 +23,8 @@ class TestUsdValidatorMetadata(unittest.TestCase):
     ):
         self.assertEqual(metadata.name, name)
         self.assertEqual(metadata.doc, doc)
-        self.assertEqual(metadata.GetKeywords(), keywords)
-        self.assertEqual(metadata.GetSchemaTypes(), schemaTypes)
+        self.assertEqual(metadata.keywords, keywords)
+        self.assertEqual(metadata.schemaTypes, schemaTypes)
         self.assertEqual(metadata.plugin, plugin)
         self.assertEqual(metadata.isSuite, isSuite)
 
@@ -89,70 +89,37 @@ class TestUsdValidatorMetadata(unittest.TestCase):
                 with self.assertRaises(Exception):
                     Usd.ValidatorMetadata(**args)
 
-    def test_metadata_name_getter_and_setter(self):
+    def test_metadata_name_immutable(self):
         metadata = Usd.ValidatorMetadata()
-        for name in ["validator1", "validator2"]:
-            metadata.name = name
-            self.assertEqual(metadata.name, name)
-
-        # Invalid type
         with self.assertRaises(Exception):
-            metadata.name = 123
+            metadata.name = "test"
 
-    def test_metadata_doc_getter_and_setter(self):
+    def test_metadata_doc_immutable(self):
         metadata = Usd.ValidatorMetadata()
-        for doc in ["doc1", "doc2"]:
-            metadata.doc = doc
-            self.assertEqual(metadata.doc, doc)
-
-        # Invalid type
         with self.assertRaises(Exception):
-            metadata.doc = 123
+            metadata.doc = "doc"
 
-    def test_metadata_keywords_getter_and_setter(self):
+    def test_metadata_keywords_immutable(self):
         metadata = Usd.ValidatorMetadata()
-        for keywords in [["keyword1"], ["keyword2"]]:
-            metadata.SetKeywords(keywords)
-            self.assertEqual(metadata.GetKeywords(), keywords)
-
-        # Invalid type
         with self.assertRaises(Exception):
-            metadata.SetKeywords(123)
-        with self.assertRaises(Exception):
-            metadata.SetKeywords("123")
+            metadata.keywords = ["keywords"]
 
-    def test_metadata_schemaTypes_getter_and_setter(self):
+    def test_metadata_schemaTypes_immutable(self):
         metadata = Usd.ValidatorMetadata()
-        for schema_types in [["PrimType1"], ["PrimType2"]]:
-            metadata.SetSchemaTypes(schema_types)
-            self.assertEqual(metadata.GetSchemaTypes(), schema_types)
-
-        # Invalid type
         with self.assertRaises(Exception):
-            metadata.SetKeywords(123)
-        with self.assertRaises(Exception):
-            metadata.SetKeywords("123")
+            metadata.schemaTypes = "PrimType1"
 
-    def test_metadata_plugin_getter_and_setter(self):
+    def test_metadata_plugin_immutable(self):
         all_plugins = Plug.Registry().GetAllPlugins()
         expected_plugin = all_plugins[0] if all_plugins else None
         metadata = Usd.ValidatorMetadata()
-        metadata.plugin = expected_plugin
-        self.assertEqual(metadata.plugin, expected_plugin)
-
-        # Invalid type
         with self.assertRaises(Exception):
-            metadata.SetKeywords(123)
+            metadata.plugin = expected_plugin
 
-    def test_metadata_is_suite_getter_and_setter(self):
+    def test_metadata_is_suite_immutable(self):
         metadata = Usd.ValidatorMetadata()
-        for suite in [True, False]:
-            metadata.isSuite = suite
-            self.assertEqual(metadata.isSuite, suite)
-
-        # Invalid type
         with self.assertRaises(Exception):
-            metadata.SetKeywords("123")
+            metadata.isSuite = True
 
 
 if __name__ == "__main__":

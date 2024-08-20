@@ -35,54 +35,6 @@ namespace
         return new UsdValidatorMetadata{name, plugin, keywords, doc, schemaTypes, isSuite};
     }
 
-    TfToken
-    _GetMetadataName(const UsdValidatorMetadata &metadata)
-    {
-        return metadata.name;
-    }
-
-    void
-    _SetMetadataName(UsdValidatorMetadata &metadata, const TfToken &name)
-    {
-        metadata.name = name;
-    }
-
-    TfTokenVector
-    _GetMetadataKeywords(const UsdValidatorMetadata &metadata)
-    {
-        return metadata.keywords;
-    }
-
-    void
-    _SetMetadataKeywords(UsdValidatorMetadata &metadata, const TfTokenVector &keywords)
-    {
-        metadata.keywords = keywords;
-    }
-
-    TfTokenVector
-    _GetMetadataSchemaTypes(const UsdValidatorMetadata &metadata)
-    {
-        return metadata.schemaTypes;
-    }
-
-    void
-    _SetMetadataSchemaTypes(UsdValidatorMetadata &metadata, const TfTokenVector &schemaTypes)
-    {
-        metadata.schemaTypes = schemaTypes;
-    }
-
-    PlugPluginPtr
-    _GetMetadataPlugin(const UsdValidatorMetadata &metadata)
-    {
-        return metadata.pluginPtr;
-    }
-
-    void
-    _SetMetadataPlugin(UsdValidatorMetadata &metadata, const PlugPluginPtr &plugin)
-    {
-        metadata.pluginPtr = plugin;
-    }
-
 } // anonymous namespace
 
 void wrapUsdValidator()
@@ -95,12 +47,14 @@ void wrapUsdValidator()
                                            arg("doc") = TfToken(),
                                            arg("schemaTypes") = TfTokenVector(),
                                            arg("isSuite") = false)))
-        .add_property("name", &_GetMetadataName, &_SetMetadataName)
-        .add_property("plugin", &_GetMetadataPlugin, &_SetMetadataPlugin)
-        .def("GetKeywords", &_GetMetadataKeywords, return_value_policy<TfPySequenceToList>())
-        .def("SetKeywords", &_SetMetadataKeywords)
-        .def_readwrite("doc", &UsdValidatorMetadata::doc)
-        .def("GetSchemaTypes", &_GetMetadataSchemaTypes, return_value_policy<TfPySequenceToList>())
-        .def("SetSchemaTypes", &_SetMetadataSchemaTypes)
-        .def_readwrite("isSuite", &UsdValidatorMetadata::isSuite);
+        .add_property("name", make_getter(
+            &UsdValidatorMetadata::name, return_value_policy<return_by_value>()))
+        .add_property("plugin", make_getter(
+            &UsdValidatorMetadata::pluginPtr, return_value_policy<return_by_value>()))
+        .add_property("keywords", make_getter(
+            &UsdValidatorMetadata::keywords, return_value_policy<TfPySequenceToList>()))
+        .def_readonly("doc", &UsdValidatorMetadata::doc)
+        .add_property("schemaTypes", make_getter(
+            &UsdValidatorMetadata::schemaTypes, return_value_policy<TfPySequenceToList>()))
+        .def_readonly("isSuite", &UsdValidatorMetadata::isSuite);
 }
