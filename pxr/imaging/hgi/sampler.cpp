@@ -8,6 +8,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_ENV_SETTING(HGI_MAX_ANISOTROPY, 16,
+                      "Maximum anisotropic filtering ratio for all samplers");
+
 HgiSampler::HgiSampler(HgiSamplerDesc const& desc)
     : _descriptor(desc)
 {
@@ -30,7 +33,8 @@ bool operator==(const HgiSamplerDesc& lhs,
             lhs.mipFilter == rhs.mipFilter &&
             lhs.addressModeU == rhs.addressModeU &&
             lhs.addressModeV == rhs.addressModeV &&
-            lhs.addressModeW == rhs.addressModeW
+            lhs.addressModeW == rhs.addressModeW &&
+            lhs.maxAnisotropy == rhs.maxAnisotropy
     ;
 }
 

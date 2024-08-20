@@ -6,6 +6,7 @@
 //
 #include "pxr/imaging/garch/glApi.h"
 
+#include "pxr/imaging/hgi/sampler.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/texture.h"
@@ -254,7 +255,9 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
             glTextureParameterf(
                 _textureId,
                 GL_TEXTURE_MAX_ANISOTROPY_EXT,
-                aniso);
+                std::min<float>(
+                    aniso,
+                    static_cast<float>(TfGetEnvSetting(HGI_MAX_ANISOTROPY))));
         }
 
         const uint16_t mips = desc.mipLevels;

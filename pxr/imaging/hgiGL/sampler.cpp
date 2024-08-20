@@ -14,6 +14,8 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/diagnostic.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -68,11 +70,15 @@ HgiGLSampler::HgiGLSampler(HgiSamplerDesc const& desc)
     // when the filters are "nearest" to ensure those filters are used.
     if (minFilter != GL_NEAREST && minFilter != GL_NEAREST_MIPMAP_NEAREST &&
         magFilter != GL_NEAREST) {
-        static const float maxAnisotropy = 16.0;
+        float aniso = 2.0f;
+        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
         glSamplerParameterf(
             _samplerId,
             GL_TEXTURE_MAX_ANISOTROPY_EXT,
-            maxAnisotropy);
+            std::min<float>({
+                aniso,
+                static_cast<float>(desc.maxAnisotropy),
+                static_cast<float>(TfGetEnvSetting(HGI_MAX_ANISOTROPY))}));
     }
 
     glSamplerParameteri(

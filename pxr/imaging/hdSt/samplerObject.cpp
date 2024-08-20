@@ -67,6 +67,7 @@ _ToHgiSamplerDesc(HdSamplerParameters const &samplerParameters)
         HdStHgiConversions::GetHgiSamplerAddressMode(samplerParameters.wrapT);
     desc.addressModeW =
         HdStHgiConversions::GetHgiSamplerAddressMode(samplerParameters.wrapR);
+    desc.maxAnisotropy = samplerParameters.maxAnisotropy;
     desc.borderColor =
         HdStHgiConversions::GetHgiBorderColor(samplerParameters.borderColor);
     desc.enableCompare = samplerParameters.enableCompare;
@@ -200,7 +201,8 @@ HdSamplerParameters PTEX_SAMPLER_PARAMETERS(
     HdMagFilterLinear,
     HdBorderColorTransparentBlack, 
     /*enableCompare*/false, 
-    HdCmpFuncNever);
+    HdCmpFuncNever,
+    /*maxAnisotropy*/16);
 
 static
 HdSamplerParameters LAYOUT_SAMPLER_PARAMETERS(
@@ -211,7 +213,8 @@ HdSamplerParameters LAYOUT_SAMPLER_PARAMETERS(
     HdMagFilterNearest,
     HdBorderColorTransparentBlack, 
     /*enableCompare*/false, 
-    HdCmpFuncNever);
+    HdCmpFuncNever,
+    /*maxAnisotropy*/1);
 
 HdStPtexSamplerObject::HdStPtexSamplerObject(
     HdStPtexTextureObject const &ptexTexture,
@@ -257,7 +260,8 @@ HdSamplerParameters UDIM_SAMPLER_PARAMETERS(
     HdMagFilterLinear,
     HdBorderColorTransparentBlack, 
     /*enableCompare*/false, 
-    HdCmpFuncNever);
+    HdCmpFuncNever,
+    /*maxAnisotropy*/16);
 
 HdStUdimSamplerObject::HdStUdimSamplerObject(
     HdStUdimTextureObject const &udimTexture,
