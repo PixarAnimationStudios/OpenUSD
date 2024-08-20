@@ -38,6 +38,11 @@
 # include "pxr/external/boost/python/detail/def_helper_fwd.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
+// XXX: Workaround for distcc issues with BOOST_PP_ITERATE
+# define BOOST_PYTHON_SYNOPSIS
+# include "pxr/external/boost/python/object_call.hpp"
+# undef BOOST_PYTHON_SYNOPSIS
+
 namespace boost { namespace python { 
 
 namespace detail

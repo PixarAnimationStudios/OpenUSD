@@ -17,6 +17,11 @@
 #include <boost/preprocessor/enum_params.hpp>
 #include <boost/preprocessor/repetition/enum_binary_params.hpp>
 
+// XXX: Workaround for distcc issues with BOOST_PP_ITERATE
+# define BOOST_PYTHON_SYNOPSIS
+# include "pxr/external/boost/python/detail/make_tuple.hpp"
+# undef BOOST_PYTHON_SYNOPSIS
+
 namespace boost { namespace python {
 
 namespace detail
