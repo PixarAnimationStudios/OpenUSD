@@ -4,6 +4,9 @@
     customLayerData = {
         string colorSpace = "acescg"
     }
+    defaultPrim = "MaterialX"
+    metersPerUnit = 0.01
+    upAxis = "Y"
 )
 
 def "MaterialX"
