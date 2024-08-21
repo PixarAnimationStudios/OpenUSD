@@ -692,7 +692,7 @@ _AddStrippedSurfaceNode(
                 _AddStrippedSurfaceNode(mxDocument, hdConnectedPath.GetName(),
                                         hdConnectedNode, hdNetwork);
             mx::InputPtr mxInput =
-                mxNode->addInput(mxInput->getName(), mxInput->getType());
+                mxNode->addInput(mxInputDef->getName(), mxInputDef->getType());
             mxInput->setConnectedNode(mxConnectedNode);
         }
         // Add the connection as an input with each component set to 0.5
