@@ -23,7 +23,11 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
         _SetFlag(HgiDeviceCapabilitiesBitsConcurrentDispatch, true);
     }
 
+#if defined(ARCH_OS_OSX)
     bool const hasIntelGPU = [device isLowPower];
+#else
+    bool const hasIntelGPU = false;
+#endif
 
     defaultStorageMode = MTLResourceStorageModeShared;
     bool unifiedMemory = false;
@@ -45,7 +49,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
                     || [device areBarycentricCoordsSupported])
                     && !hasIntelGPU;
         
-        hasAppleSilicon = [device hasUnifiedMemory] && ![device isLowPower];
+        hasAppleSilicon = [device hasUnifiedMemory] && !hasIntelGPU;
         
     }
     
@@ -98,9 +102,11 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
         _SetFlag(HgiDeviceCapabilitiesBitsPrimitiveIdEmulation, true);
     }
 
+#if defined(ARCH_OS_OSX)
     if (!unifiedMemory) {
         defaultStorageMode = MTLResourceStorageModeManaged;
     }
+#endif
 
     _maxUniformBlockSize          = 64 * 1024;
     _maxShaderStorageBlockSize    = 1 * 1024 * 1024 * 1024;
@@ -108,6 +114,8 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     _maxClipDistances             = 8;
     _pageSizeAlignment            = 4096;
 
+    // TODO: [VG]
+    
     // Apple Silicon only support memory barriers between vertex stages after
     // macOS 12.3.
     hasVertexMemoryBarrier = !hasAppleSilicon;

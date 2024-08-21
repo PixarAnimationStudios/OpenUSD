@@ -392,6 +392,7 @@ void
 HgiMetalGraphicsCmds::_SyncArgumentBuffer()
 {
     if (_argumentBuffer) {
+#if defined(ARCH_OS_OSX)
         if (_argumentBuffer.storageMode != MTLStorageModeShared &&
             [_argumentBuffer respondsToSelector:@selector(didModifyRange:)]) {
 
@@ -400,6 +401,7 @@ HgiMetalGraphicsCmds::_SyncArgumentBuffer()
             [_argumentBuffer didModifyRange:{0, _argumentBuffer.length}];
             ARCH_PRAGMA_POP
         }
+#endif
         _argumentBuffer = nil;
     }
 }

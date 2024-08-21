@@ -203,7 +203,11 @@ HgiMetalBlitCmds::CopyTextureCpuToGpu(
     
     mtlDesc.mipmapLevelCount = dstTexDesc.mipLevels;
     mtlDesc.arrayLength = dstTexDesc.layerCount;
+#if defined(ARCH_OS_OSX)
     mtlDesc.resourceOptions = MTLResourceStorageModeManaged;
+#else
+    mtlDesc.resourceOptions = MTLResourceStorageModeShared;
+#endif
     mtlDesc.sampleCount = 1;
     if (dstTexDesc.type == HgiTextureType3D) {
         mtlDesc.depth = depth;
@@ -381,10 +385,12 @@ HgiMetalBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
 
     _CreateEncoder();
 
+#if defined(ARCH_OS_OSX)
     if ([metalBuffer->GetBufferId() storageMode] == MTLStorageModeManaged) {
         [_blitEncoder performSelector:@selector(synchronizeResource:)
                            withObject:metalBuffer->GetBufferId()];
     }
+#endif
 
     // Offset into the dst buffer
     char* dst = ((char*) copyOp.cpuDestinationBuffer) +

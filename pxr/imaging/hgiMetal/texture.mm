@@ -95,7 +95,11 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
         // to our original, private texture.
 
         // Modify texture descriptor to describe the temp texture.
+#if defined(ARCH_OS_OSX)
         texDesc.resourceOptions = MTLResourceStorageModeManaged;
+#else
+        texDesc.resourceOptions = MTLResourceStorageModeShared;
+#endif
         texDesc.sampleCount = 1;
         if (desc.type == HgiTextureType3D) {
             texDesc.textureType = MTLTextureType3D;

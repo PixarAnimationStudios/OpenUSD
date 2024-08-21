@@ -124,10 +124,12 @@ HgiMetalComputeCmds::Dispatch(int dimX, int dimY)
         [_argumentBuffer respondsToSelector:@selector(didModifyRange:)]) {
         NSRange range = NSMakeRange(0, _argumentBuffer.length);
 
+#if defined(ARCH_OS_OSX)
         ARCH_PRAGMA_PUSH
         ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND
         [_argumentBuffer didModifyRange:range];
         ARCH_PRAGMA_POP
+#endif
     }
 
     [_encoder dispatchThreads:MTLSizeMake(dimX, dimY, 1)

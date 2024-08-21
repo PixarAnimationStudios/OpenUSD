@@ -87,10 +87,12 @@ HgiMetalIndirectCommandEncoder::HgiMetalIndirectCommandEncoder(Hgi* hgi)
             newBufferWithBytes:&triangleFactors
                         length:sizeof(triangleFactors)
                        options:_bufferStorageMode];
+#if defined(ARCH_OS_OSX)
     if (_bufferStorageMode != MTLStorageModeShared &&
         [_triangleTessFactors respondsToSelector:@selector(didModifyRange:)]) {
         [_triangleTessFactors didModifyRange:{0, _triangleTessFactors.length}];
     }
+#endif
 
     MTLQuadTessellationFactorsHalf quadFactors;
     quadFactors.insideTessellationFactor[0] = factorZero;
@@ -104,10 +106,12 @@ HgiMetalIndirectCommandEncoder::HgiMetalIndirectCommandEncoder(Hgi* hgi)
             newBufferWithBytes:&quadFactors
                         length:sizeof(quadFactors)
                        options:_bufferStorageMode];
+#if defined(ARCH_OS_OSX)
     if (_bufferStorageMode != MTLStorageModeShared &&
         [_quadTessFactors respondsToSelector:@selector(didModifyRange:)]) {
         [_quadTessFactors didModifyRange:{0, _quadTessFactors.length}];
     }
+#endif
 }
 
 std::string
@@ -663,12 +667,14 @@ HgiMetalIndirectCommandEncoder::_EncodeDraw(
         index++;
     }
 
+#if defined(ARCH_OS_OSX)
     if (_bufferStorageMode != MTLStorageModeShared &&
         [commands->indirectArgumentBuffer
             respondsToSelector:@selector(didModifyRange:)]) {
         [commands->indirectArgumentBuffer
             didModifyRange:{0, commands->indirectArgumentBuffer.length}];
     }
+#endif
 
     // Set pipeline state on the encoder and dispatch to populate the ICB
     [encoder setComputePipelineState:function.pipelineState];
@@ -710,12 +716,14 @@ HgiMetalIndirectCommandEncoder::ExecuteDraw(
                                     encoder,
                                     mainArgumentBuffer);
     
+#if defined(ARCH_OS_OSX)
     // Ensure the the main argument buffer is updated on managed hardware.
     if (mainArgumentBuffer.storageMode != MTLStorageModeShared &&
         [mainArgumentBuffer respondsToSelector:@selector(didModifyRange:)]) {
 
         [mainArgumentBuffer didModifyRange:{0, mainArgumentBuffer.length}];
     }
+#endif
     
     id<MTLIndirectCommandBuffer> indirectCommandBuffer =
         metalCommands->indirectCommandBuffer;

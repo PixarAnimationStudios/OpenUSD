@@ -2281,7 +2281,7 @@ class InstallContext:
 
         # - Imaging
         self.buildImaging = (args.build_imaging == IMAGING or
-                             args.build_imaging == USD_IMAGING) and not embedded
+                             args.build_imaging == USD_IMAGING)
         self.enablePtex = self.buildImaging and args.enable_ptex
         self.enableOpenVDB = self.buildImaging and args.enable_openvdb
 
@@ -2436,9 +2436,6 @@ if MacOSTargetEmbedded(context):
         sys.exit(1)
     if "--tools" in sys.argv:
         PrintError("Cannot build tools for embedded build targets")
-        sys.exit(1)
-    if "--imaging" in sys.argv:
-        PrintError("Cannot build imaging for embedded build targets")
         sys.exit(1)
 
 # Error out if user explicitly specified building usdview without required
