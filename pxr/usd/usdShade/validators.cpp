@@ -34,61 +34,75 @@ static
 UsdValidationErrorVector
 _ConnectableValidator(const UsdPrim& usdPrim)
 {
+    const UsdShadeConnectableAPI& connectable =
+            UsdShadeConnectableAPI(usdPrim);
+
+    if (!connectable){
+        return {};
+    }
+
+    const UsdPrim& parentPrim = usdPrim.GetParent();
+
+    if (!parentPrim || parentPrim.IsPseudoRoot()){
+        return {};
+    }
+
+    UsdShadeConnectableAPI parentConnectable =
+            UsdShadeConnectableAPI(parentPrim);
     UsdValidationErrorVector errors;
-
-    const UsdShadeConnectableAPI& connectable = UsdShadeConnectableAPI(usdPrim);
-
-    if (!usdPrim.GetTypeName().IsEmpty() && connectable) {
-        const UsdPrim& parentPrim = usdPrim.GetParent();
-
-        if (parentPrim && !parentPrim.IsPseudoRoot()) {
-            UsdShadeConnectableAPI parentConnectable = UsdShadeConnectableAPI(parentPrim);
-            if (parentPrim.GetTypeName().IsEmpty()){
-                parentConnectable = UsdShadeConnectableAPI();
+    if (parentConnectable && !parentConnectable.IsContainer()) {
+        // It is a violation of the UsdShade OM which enforces
+        // encapsulation of connectable prims under a Container-type
+        // connectable prim.
+        errors.emplace_back(
+                UsdValidationErrorType::Error,
+                UsdValidationErrorSites{
+                        UsdValidationErrorSite(usdPrim.GetStage(),
+                                                usdPrim.GetPath())
+                },
+                TfStringPrintf("Connectable %s <%s> cannot reside "
+                                "under a non-Container Connectable %s",
+                                usdPrim.GetTypeName().GetText(),
+                                usdPrim.GetPath().GetText(),
+                                parentPrim.GetTypeName().GetText()));
+    }
+    else if (!parentConnectable) {
+        std::function<void(const UsdPrim&)> verifyValidAncestor =
+                [&](const UsdPrim& currentAncestor) -> void {
+            if (!currentAncestor || currentAncestor.IsPseudoRoot()) {
+                return;
             }
-
-            if (parentConnectable && !parentConnectable.IsContainer()) {
+            const UsdShadeConnectableAPI& ancestorConnectable =
+                    UsdShadeConnectableAPI(currentAncestor);
+            if (ancestorConnectable) {
+                // it's only OK to have a non-connectable parent if all
+                // the rest of your ancestors are also non-connectable.
+                // The error message we give is targeted at the most common
+                // infraction, using Scope or other grouping prims inside
+                // a Container like a Material
                 errors.emplace_back(
                         UsdValidationErrorType::Error,
-                        UsdValidationErrorSites{
+                        UsdValidationErrorSites {
                                 UsdValidationErrorSite(usdPrim.GetStage(),
-                                                       usdPrim.GetPath())
+                                                        usdPrim.GetPath())
                         },
-                        TfStringPrintf("Connectable %s <%s> cannot reside "
-                                       "under a non-Container Connectable %s",
-                                       usdPrim.GetTypeName().GetText(),
-                                       usdPrim.GetPath().GetText(),
-                                       parentPrim.GetTypeName().GetText()));
+                        TfStringPrintf("Connectable %s <%s> can only have"
+                                        " Connectable Container ancestors"
+                                        " up to %s ancestor <%s>, but its"
+                                        " parent %s is a %s.",
+                                        usdPrim.GetTypeName().GetText(),
+                                        usdPrim.GetPath().GetText(),
+                                        currentAncestor.GetTypeName().GetText(),
+                                        currentAncestor.GetPath().GetText(),
+                                        parentPrim.GetName().GetText(),
+                                        parentPrim.GetTypeName().GetText()));
+                return;
             }
-            else if (!parentConnectable) {
-                UsdPrim currentAncestor = parentPrim.GetParent();
-                while(currentAncestor && !currentAncestor.IsPseudoRoot()) {
-                    if (!currentAncestor.GetTypeName().IsEmpty()) {
-                        const UsdShadeConnectableAPI& ancestorConnectable = UsdShadeConnectableAPI(currentAncestor);
-                        if (ancestorConnectable) {
-                            errors.emplace_back(
-                                    UsdValidationErrorType::Error,
-                                    UsdValidationErrorSites {
-                                            UsdValidationErrorSite(usdPrim.GetStage(),
-                                                                   usdPrim.GetPath())
-                                    },
-                                    TfStringPrintf("Connectable %s <%s> can only have"
-                                                   " Connectable Container ancestors"
-                                                   " up to %s ancestor <%s>, but its"
-                                                   " parent %s is a %s.",
-                                                   usdPrim.GetTypeName().GetText(),
-                                                   usdPrim.GetPath().GetText(),
-                                                   currentAncestor.GetTypeName().GetText(),
-                                                   currentAncestor.GetPath().GetText(),
-                                                   parentPrim.GetName().GetText(),
-                                                   parentPrim.GetTypeName().GetText()));
-                            break;
-                        }
-                    }
-                    currentAncestor = currentAncestor.GetParent();
-                }
-            }
-        }
+
+            verifyValidAncestor(currentAncestor.GetParent());
+        };
+
+        verifyValidAncestor(parentPrim.GetParent());
     }
 
     return errors;

@@ -424,7 +424,7 @@ TestUsdShadeConnectableValidator()
 
     // Create a Material > Shader > Shader hierarchy
     UsdShadeMaterial::Define(usdStage, SdfPath("/RootMaterial"));
-    UsdShadeShader::Define(usdStage, SdfPath("/RootMaterial/Shader"));
+    const UsdShadeShader& topShader = UsdShadeShader::Define(usdStage, SdfPath("/RootMaterial/Shader"));
     const UsdShadeShader& insideShader = UsdShadeShader::Define(usdStage, SdfPath("/RootMaterial/Shader/InsideShader"));
 
     // Verify error that does not allow a connectable to be parented by non-container connectable
@@ -439,6 +439,10 @@ TestUsdShadeConnectableValidator()
     std::string expectedErrorMsg =
             "Connectable Shader </RootMaterial/Shader/InsideShader> cannot reside under a non-Container Connectable Shader";
     TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
+
+    // Verify the first Shader is valid
+    errors = validator->Validate(topShader.GetPrim());
+    TF_AXIOM(errors.size() == 0);
 
     // Create a Material > Scope > Shader hierarchy
     usdStage->RemovePrim(SdfPath("/RootMaterial/Shader/InsideShader"));
