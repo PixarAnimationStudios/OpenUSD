@@ -45,8 +45,13 @@ _PackageEncapsulationValidator(const UsdStagePtr& usdStage) {
         for (const SdfLayerRefPtr& subLayer : layers) {
             const std::string& realPath = subLayer->GetRealPath();
 
-            // Make sure the realPath exists, as the validator should not consider in-memory layers
-            if (!realPath.empty() && !TfStringStartsWith(realPath, packagePath)) {
+            // We don't want to validate in-memory or session layers
+            // since these layers will not have a real path, we skip here
+            if (realPath.empty()){
+                continue;
+            }
+
+            if (!TfStringStartsWith(realPath, packagePath)) {
                 errors.emplace_back(
                         UsdValidationErrorType::Error,
                         UsdValidationErrorSites{
