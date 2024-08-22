@@ -7,12 +7,12 @@
 
 def Xform "Root" (
     kind = "group"
-    references = @0/layer.usda@</Layer>
+    references = @includedDirectory/layer.usda@</Layer>
 )
 {
     def Cube "MyCube"
     {
     }
 
-    asset file = @0/image.jpg@
+    asset file = @includedDirectory/image.jpg@
 }

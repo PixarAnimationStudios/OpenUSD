@@ -47,24 +47,25 @@ TestPackageEncapsulationValidator()
 
     TF_AXIOM(validator);
 
-    const std::string testAssetDirectory = ArchGetCwd() + "/ctest/testUsdUtilsPackageEncapsulation/";
-
-    // Load the pre-created usdz stage with fully qualified paths to both a reference and an asset
-    const UsdStageRefPtr& stage = UsdStage::Open(testAssetDirectory + "fail.usdz");
+    // Load the pre-created usdz stage with paths to a layer and asset that are not included in the package, but exist
+    const UsdStageRefPtr& stage = UsdStage::Open("testUsdUtilsPackageEncapsulation/fail.usdz");
 
     UsdValidationErrorVector errors = validator->Validate(stage);
 
     // Verify both the layer & asset errors are present
     TF_AXIOM(errors.size() == 2);
-    const std::string& errorLayer = (testAssetDirectory + "0/layer.usda");
-    const std::string& rootLayer = testAssetDirectory + "fail.usdz";
-    const std::string& errorAsset = testAssetDirectory + "0/image.jpg";
+
+    const std::string& realRootPath = stage->GetRootLayer()->GetRealPath();
+    const std::string& rootDirectory = realRootPath.substr(0, realRootPath.find_last_of("/") + 1);
+
+    const std::string& errorLayer = rootDirectory + "excludedDirectory/layer.usda";
+    const std::string& errorAsset = rootDirectory + "excludedDirectory/image.jpg";
 
     std::vector<std::string> expectedErrorMessages = {
-            TfStringPrintf(("Found loaded layer '%s' that does not belong to the package '%s'."),
-                           errorLayer.c_str(), rootLayer.c_str()),
+            TfStringPrintf(("Found layer '%s' that does not belong to the package '%s'."),
+                           errorLayer.c_str(), realRootPath.c_str()),
             TfStringPrintf(("Found asset reference '%s' that does not belong to the package '%s'."),
-                           errorAsset.c_str(), rootLayer.c_str())
+                           errorAsset.c_str(), realRootPath.c_str())
     };
 
     for (size_t i = 0; i < errors.size(); ++i)
@@ -75,8 +76,8 @@ TestPackageEncapsulationValidator()
         TF_AXIOM(errors[i].GetMessage() == expectedErrorMessages[i]);
     }
 
-    // Load the pre-created usdz stage with relative paths to both a reference and an asset.
-    const UsdStageRefPtr &passStage = UsdStage::Open(testAssetDirectory + "pass.usdz");
+    // Load the pre-created usdz stage with relative paths to both a reference and an asset that are included in the package.
+    const UsdStageRefPtr& passStage = UsdStage::Open("testUsdUtilsPackageEncapsulation/pass.usdz");
     
     errors = validator->Validate(passStage);
 

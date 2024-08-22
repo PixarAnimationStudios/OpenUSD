@@ -29,7 +29,7 @@ _PackageEncapsulationValidator(const UsdStagePtr& usdStage) {
         return errors;
     }
 
-    std::vector<TfRefPtr<SdfLayer>> layers;
+    SdfLayerRefPtrVector layers;
     std::vector<std::basic_string<char>> assets, unresolvedPaths;
     const SdfAssetPath& path = SdfAssetPath(rootLayer->GetIdentifier());
 
@@ -51,7 +51,7 @@ _PackageEncapsulationValidator(const UsdStagePtr& usdStage) {
                                 UsdValidationErrorSite(rootLayer,
                                                        subLayer->GetDefaultPrimAsPath())
                         },
-                        TfStringPrintf(("Found loaded layer '%s' that "
+                        TfStringPrintf(("Found layer '%s' that "
                                         "does not belong to the package '%s'."),
                                        subLayer->GetIdentifier().c_str(), packagePath.c_str())
                 );
