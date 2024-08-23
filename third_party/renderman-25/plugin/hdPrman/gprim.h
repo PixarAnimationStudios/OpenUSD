@@ -218,7 +218,8 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
         HdChangeTracker::DirtyPoints |
         HdChangeTracker::DirtyNormals |
         HdChangeTracker::DirtyWidths |
-        HdChangeTracker::DirtyTopology;
+        HdChangeTracker::DirtyTopology |
+        HdChangeTracker::DirtyPrimvar;
 
     // Hydra dirty bits corresponding to prman instance attributes. See prman
     // docs at https://rmanwiki.pixar.com/display/REN24/Instance+Attributes.
@@ -231,6 +232,11 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
         HdChangeTracker::DirtyVolumeField |
         HdChangeTracker::DirtyCategories |
         HdChangeTracker::DirtyPrimvar;
+
+    // These two bitmasks intersect, so we check them against dirtyBits
+    // prior to clearing either mask.
+    const bool prmanProtoAttrBitsWereSet(*dirtyBits & prmanProtoAttrBits);
+    const bool prmanInstAttrBitsWereSet(*dirtyBits & prmanInstAttrBits);
 
     //
     // Create or modify Riley geometry prototype(s).
@@ -273,7 +279,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                     riley::UserId(
                         stats::AddDataLocation(primPath.GetText()).GetValue()),
                     primType, dispId, primvars);
-            } else if (*dirtyBits & prmanProtoAttrBits) {
+            } else if (prmanProtoAttrBitsWereSet) {
                 TRACE_SCOPE("riley::ModifyGeometryPrototype");
                 riley->ModifyGeometryPrototype(primType, _prototypeIds[0],
                                                &dispId, &primvars);
@@ -321,7 +327,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                             riley::UserId(
                                 stats::AddDataLocation(subsetPath.GetText()).GetValue()),
                             primType, dispId, primvars);
-                } else if (*dirtyBits & prmanProtoAttrBits) {
+                } else if (prmanProtoAttrBitsWereSet) {
                     TRACE_SCOPE("riley::ModifyGeometryPrototype");
                     riley->ModifyGeometryPrototype(primType, prototypeId,
                                                 &subsetDispId, &primvars);
@@ -415,7 +421,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                         stats::AddDataLocation(subsetPath->GetText()).GetValue()),
                     riley::GeometryPrototypeId::InvalidId(), prototypeId,
                     instanceMaterialId, coordSysList, xform, finalAttrs);
-            } else if (*dirtyBits & prmanInstAttrBits) {
+            } else if (prmanInstAttrBitsWereSet) {
                 TRACE_SCOPE("riley::ModifyGeometryInstance");
                 riley->ModifyGeometryInstance(
                     riley::GeometryPrototypeId::InvalidId(),
@@ -424,7 +430,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
             }
         }
         *dirtyBits &= ~prmanInstAttrBits;
-    } else if ((*dirtyBits & prmanInstAttrBits)
+    } else if (prmanInstAttrBitsWereSet
         || HdChangeTracker::IsInstancerDirty(*dirtyBits, instancerId)) {
         // This gprim is a prototype of a hydra instancer. (It is not itself an 
         // instancer because it is a gprim.) The riley geometry prototypes have
