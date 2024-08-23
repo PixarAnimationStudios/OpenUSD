@@ -82,7 +82,7 @@ int check_slice_get_indices(
     try {
         bounds = index.get_indices(coll.begin(), coll.end());
     }
-    catch (std::invalid_argument) {
+    catch (std::invalid_argument const&) {
         return 0;
     }
     int sum = 0;
