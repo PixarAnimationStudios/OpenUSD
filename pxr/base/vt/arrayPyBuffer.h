@@ -12,7 +12,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 
-#include <boost/optional.hpp>
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -23,7 +23,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// explanatory message in case of conversion failure.  This function may be
 /// invoked for VtArray<T> where T is one of VT_ARRAY_PYBUFFER_TYPES.
 template <class T>
-boost::optional<VtArray<T> >
+std::optional<VtArray<T> >
 VtArrayFromPyBuffer(TfPyObjWrapper const &obj, std::string *err=nullptr);
 
 /// The set of types for which it's valid to call VtArrayFromPyBuffer().

@@ -519,18 +519,18 @@ Vt_WrapArrayFromBuffer(TfPyObjWrapper const &obj)
 } // anon
 
 template <class T>
-boost::optional<VtArray<T> >
+std::optional<VtArray<T> >
 VtArrayFromPyBuffer(TfPyObjWrapper const &obj, std::string *err)
 {
     VtArray<T> array;
-    boost::optional<VtArray<T> > result;
+    std::optional<VtArray<T> > result;
     if (Vt_ArrayFromBuffer(obj, &array, err))
         result = array;
     return result;
 }
 
 #define INSTANTIATE(unused, elem)                                          \
-template boost::optional<VtArray<VT_TYPE(elem)> >                          \
+template std::optional<VtArray<VT_TYPE(elem)> >                            \
 VtArrayFromPyBuffer<VT_TYPE(elem)>(TfPyObjWrapper const &obj, string *err);
 TF_PP_SEQ_FOR_EACH(INSTANTIATE, ~, VT_ARRAY_PYBUFFER_TYPES)
 #undef INSTANTIATE
