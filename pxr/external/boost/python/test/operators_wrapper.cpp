@@ -41,7 +41,7 @@ BOOST_PYTHON_MODULE( operators_wrapper_ext )
         ;
     
     scope().attr("v") = vector();
-    std::auto_ptr<vector> dp(new dvector);
-    register_ptr_to_python< std::auto_ptr<vector> >();
+    std::shared_ptr<vector> dp(new dvector);
+    register_ptr_to_python< std::shared_ptr<vector> >();
     scope().attr("d") = dp;
 }

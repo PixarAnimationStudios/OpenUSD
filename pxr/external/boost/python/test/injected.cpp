@@ -22,7 +22,7 @@ typedef test_class<> X;
 
 X* empty() { return new X(1000); }
 
-std::auto_ptr<X> sum(int a, int b) { return std::auto_ptr<X>(new X(a+b)); }
+std::shared_ptr<X> sum(int a, int b) { return std::shared_ptr<X>(new X(a+b)); }
 
 boost::shared_ptr<X> product(int a, int b, int c)
 {

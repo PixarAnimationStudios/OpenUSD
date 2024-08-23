@@ -67,15 +67,6 @@ int test_main(int, char * [])
     assert_holder<Base,Derived
         ,value_holder_back_reference<Base,Derived> >();
 
-    assert_holder<Base,std::auto_ptr<Base>
-        ,pointer_holder<std::auto_ptr<Base>,Base> >();
-    
-    assert_holder<Base,std::auto_ptr<Derived>
-        ,pointer_holder_back_reference<std::auto_ptr<Derived>,Base> >();
-
-    assert_holder<BR,std::auto_ptr<BR>
-        ,pointer_holder_back_reference<std::auto_ptr<BR>,BR> > ();
-
     return 0;
 }
 

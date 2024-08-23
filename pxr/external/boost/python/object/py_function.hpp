@@ -173,11 +173,7 @@ struct py_function
     }
     
  private:
-#if defined(BOOST_NO_CXX11_SMART_PTR)
-    mutable std::auto_ptr<py_function_impl_base> m_impl;
-#else
     mutable std::unique_ptr<py_function_impl_base> m_impl;
-#endif
 };
 
 }}} // namespace boost::python::objects

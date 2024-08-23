@@ -50,13 +50,8 @@ namespace detail
       template <class U>
       void dispatch(U* x, detail::true_) const
       {
-#if defined(BOOST_NO_CXX11_SMART_PTR)
-	std::auto_ptr<U> owner(x);
-	dispatch(owner, detail::false_());
-#else
 	std::unique_ptr<U> owner(x);
 	dispatch(std::move(owner), detail::false_());
-#endif
       }
       
       template <class Ptr>
@@ -68,11 +63,7 @@ namespace detail
 
           void* memory = holder::allocate(this->m_self, offsetof(instance_t, storage), sizeof(holder));
           try {
-#if defined(BOOST_NO_CXX11_SMART_PTR)
-              (new (memory) holder(x))->install(this->m_self);
-#else
               (new (memory) holder(std::move(x)))->install(this->m_self);
-#endif
           }
           catch(...) {
               holder::deallocate(this->m_self, memory);
