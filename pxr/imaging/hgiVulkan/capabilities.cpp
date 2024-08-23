@@ -94,11 +94,9 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     TF_VERIFY(
         vkVulkan11Features.shaderDrawParameters);
 
-    #if !defined(VK_USE_PLATFORM_MACOS_MVK)
-        TF_VERIFY(
-            vkIndexingFeatures.shaderSampledImageArrayNonUniformIndexing &&
-            vkIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing);
-    #endif
+    TF_VERIFY(
+        vkIndexingFeatures.shaderSampledImageArrayNonUniformIndexing &&
+        vkIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing);
 
     TF_VERIFY(
         vkVertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor);

@@ -243,10 +243,7 @@ if (PXR_BUILD_IMAGING)
             endforeach()
 
             # Find the OS specific libs we need
-            if (APPLE)
-                find_library(MVK_LIBRARIES NAMES MoltenVK PATHS $ENV{VULKAN_SDK}/lib)
-                list(APPEND VULKAN_LIBS ${MVK_LIBRARIES})
-            elseif (UNIX AND NOT APPLE)
+            if (UNIX AND NOT APPLE)
                 find_package(X11 REQUIRED)
                 list(APPEND VULKAN_LIBS ${X11_LIBRARIES})
             elseif (WIN32)
