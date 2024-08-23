@@ -466,6 +466,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ElidedAncestralRelocates.testenv
+    DEST testPcpMuseum_ElidedAncestralRelocates
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_ExpressionsInPayloads.testenv
     DEST testPcpMuseum_ExpressionsInPayloads
 )
@@ -1209,6 +1214,13 @@ pxr_register_test(testPcpMuseum_BasicSpecializesAndVariants
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd BasicSpecializesAndVariants/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicSpecializesAndVariants.txt
     DIFF_COMPARE compositionResults_BasicSpecializesAndVariants.txt 
+)
+
+pxr_register_test(testPcpMuseum_ElidedAncestralRelocates
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd ElidedAncestralRelocates/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ElidedAncestralRelocates.txt
+    DIFF_COMPARE compositionResults_ElidedAncestralRelocates.txt
 )
 
 pxr_register_test(testPcpMuseum_ExpressionsInPayloads
