@@ -12,7 +12,6 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/pyUtils.h"
-#include <boost/optional.hpp>
 #include <boost/python/converter/from_python.hpp>
 #include <boost/python/extract.hpp>
 #include <boost/python/to_python_converter.hpp>
@@ -101,10 +100,6 @@ struct python_optional
             std::optional<T>,
             optional_to_python<std::optional<T>>, 
             optional_from_python<std::optional<T>>>();
-        register_python_conversion<
-            boost::optional<T>,
-            optional_to_python<boost::optional<T>>, 
-            optional_from_python<boost::optional<T>>>();
     }
 };
 
