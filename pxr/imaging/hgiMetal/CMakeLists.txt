@@ -66,10 +66,3 @@ pxr_library(hgiMetal
 
     DISABLE_PRECOMPILED_HEADERS
 )
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    if (TARGET hgiMetal)
-        # Build hgiMetal with ObjC ARC (Automatic Reference Counting) enabled.
-        target_compile_options(hgiMetal PUBLIC "-fobjc-arc")
-    endif()
-endif()
