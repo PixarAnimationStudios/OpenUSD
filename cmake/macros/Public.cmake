@@ -207,6 +207,7 @@ endfunction()
 function(pxr_library NAME)
     set(options
         DISABLE_PRECOMPILED_HEADERS
+        IS_SCHEMA_LIBRARY
     )
     set(oneValueArgs
         TYPE
@@ -268,6 +269,36 @@ function(pxr_library NAME)
             list(APPEND args_LIBRARIES ${PYTHON_LIBRARIES} ${Boost_PYTHON_LIBRARY})
             list(APPEND args_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
         endif()
+    endif()
+
+    # If this is a schema library, add schema classes
+    if (args_IS_SCHEMA_LIBRARY)
+        set(filePath "generatedClasses.txt")
+
+        # Register a dependency so that cmake will regenerate the build
+        # system if generatedClasses.txt changes
+        set_property(
+            DIRECTORY 
+            APPEND 
+            PROPERTY CMAKE_CONFIGURE_DEPENDS 
+            ${filePath}
+        )
+
+        # Read public classes
+        file(STRINGS ${filePath} publicClasses REGEX "^[^#]")
+        list(FILTER publicClasses EXCLUDE REGEX "(\.cpp)+")
+
+        # Read wrapClasses
+        file (STRINGS ${filePath} wrapClasses REGEX "(\.cpp)+")    
+
+        # Append schema classes and wrap files
+        list(APPEND args_PUBLIC_CLASSES ${publicClasses})
+        list(APPEND args_PYMODULE_CPPFILES ${wrapClasses})
+
+        # Add schema resource files
+        list(APPEND args_RESOURCE_FILES "generatedSchema.usda")
+        list(APPEND args_RESOURCE_FILES "schema.usda:${NAME}/schema.usda")
+        list(APPEND args_RESOURCE_FILES "plugInfo.json")
     endif()
 
     # Collect libraries.
@@ -1331,3 +1362,21 @@ function(pxr_docs_only_dir NAME)
         )
     endif()
 endfunction() # pxr_docs_only_dir
+
+# Sets rpaths for the specified TARGET to the given RPATHS. The target's
+# runtime destination directory is given by ORIGIN. If ORIGIN is not
+# absolute it is assumed to be relative to CMAKE_INSTALL_PREFIX.
+function(pxr_set_rpaths_for_target TARGET)
+    set(oneValueArgs ORIGIN)
+    set(multiValueArgs RPATHS)
+    cmake_parse_arguments(args "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    _pxr_init_rpath(rpath ${args_ORIGIN})
+
+    foreach(path IN LISTS args_RPATHS)
+        _pxr_add_rpath(rpath ${path})
+    endforeach()
+
+    _pxr_install_rpath(rpath ${TARGET})
+
+endfunction() # pxr_set_rpaths_for_target
