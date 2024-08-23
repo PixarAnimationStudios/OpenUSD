@@ -150,3 +150,23 @@ def MfScope "cleared_out_reference"
 {
 }
 
+over "Prototype"
+{
+    rel someRel = </P1>
+}
+
+def Xform "Inst" (
+    add inherits = </Prototype>
+)
+{
+    rel someRel = </P2>
+}
+
+def Scope "P1"
+{
+}
+
+def Scope "P2"
+{
+}
+
