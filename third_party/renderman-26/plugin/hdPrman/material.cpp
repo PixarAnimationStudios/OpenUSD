@@ -11,6 +11,7 @@
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/scopeDescription.h"
@@ -26,7 +27,6 @@
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 #include "pxr/usd/sdr/registry.h"
-#include <boost/functional/hash.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -60,29 +60,22 @@ TF_MAKE_STATIC_DATA(NdrTokenVec, _sourceTypes) {
 struct _HashMaterial {
     size_t operator()(const HdMaterialNetwork2 &mat) const
     {
-        size_t v=0;
-        for (TfToken const& primvarName: mat.primvars) {
-            boost::hash_combine(v, primvarName.Hash());
-        }
+        size_t v = TfHash()(mat.primvars);
         for (auto const& node: mat.nodes) {
-            boost::hash_combine(v, node.first.GetHash());
-            boost::hash_combine(v, node.second.nodeTypeId.Hash());
-            for (auto const& param: node.second.parameters) {
-                boost::hash_combine(v, param.first.Hash());
-                boost::hash_combine(v, param.second.GetHash());
-            }
+            v = TfHash::Combine(v, 
+                node.first, node.second.nodeTypeId, node.second.parameters);
             for (auto const& input: node.second.inputConnections) {
-                boost::hash_combine(v, input.first.Hash());
+                v = TfHash::Combine(v, input.first);
                 for (auto const& conn: input.second) {
-                    boost::hash_combine(v, conn.upstreamNode.GetHash());
-                    boost::hash_combine(v, conn.upstreamOutputName.Hash());
+                    v = TfHash::Combine(
+                        v, conn.upstreamNode, conn.upstreamOutputName);
                 }
             }
         }
         for (auto const& term: mat.terminals) {
-            boost::hash_combine(v, term.first.Hash());
-            boost::hash_combine(v, term.second.upstreamNode.GetHash());
-            boost::hash_combine(v, term.second.upstreamOutputName.Hash());
+            v = TfHash::Combine(v, 
+                term.first, 
+                term.second.upstreamNode, term.second.upstreamOutputName);
         }
         return v;
     }
