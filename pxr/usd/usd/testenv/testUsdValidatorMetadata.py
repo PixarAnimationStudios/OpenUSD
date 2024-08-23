@@ -9,9 +9,8 @@ import unittest
 
 from pxr import Plug, Sdf, Usd
 
-
 class TestUsdValidatorMetadata(unittest.TestCase):
-    def _verify_metadata(
+    def _VerifyMetadata(
         self,
         metadata: Usd.ValidatorMetadata,
         name="",
@@ -28,11 +27,11 @@ class TestUsdValidatorMetadata(unittest.TestCase):
         self.assertEqual(metadata.plugin, plugin)
         self.assertEqual(metadata.isSuite, isSuite)
 
-    def test_create_default_metadata(self):
+    def test_CreateDefaultMetadata(self):
         metadata = Usd.ValidatorMetadata()
-        self._verify_metadata(metadata)
+        self._VerifyMetadata(metadata)
 
-    def test_create_metadata_with_valid_keyword_args(self):
+    def test_CreateMetadataWithValidKeywordArgs(self):
         all_plugins = Plug.Registry().GetAllPlugins()
         expected_plugin = all_plugins[0] if all_plugins else None
         valid_metadatas = [
@@ -60,9 +59,9 @@ class TestUsdValidatorMetadata(unittest.TestCase):
         for args in valid_metadatas:
             with self.subTest(name=args["name"]):
                 metadata = Usd.ValidatorMetadata(**args)
-                self._verify_metadata(metadata, **args)
+                self._VerifyMetadata(metadata, **args)
 
-    def test_create_metadata_with_invalid_keyword_args(self):
+    def test_CreateMetadataWithInvalidKeywordArgs(self):
         invalid_metadatas = {
             "Wrong Name Type": {
                 "name": 123
@@ -89,34 +88,34 @@ class TestUsdValidatorMetadata(unittest.TestCase):
                 with self.assertRaises(Exception):
                     Usd.ValidatorMetadata(**args)
 
-    def test_metadata_name_immutable(self):
+    def test_MetadataNameImmutable(self):
         metadata = Usd.ValidatorMetadata()
         with self.assertRaises(Exception):
             metadata.name = "test"
 
-    def test_metadata_doc_immutable(self):
+    def test_MetadataDocImmutable(self):
         metadata = Usd.ValidatorMetadata()
         with self.assertRaises(Exception):
             metadata.doc = "doc"
 
-    def test_metadata_keywords_immutable(self):
+    def test_MetadataKeywordsImmutable(self):
         metadata = Usd.ValidatorMetadata()
         with self.assertRaises(Exception):
             metadata.keywords = ["keywords"]
 
-    def test_metadata_schemaTypes_immutable(self):
+    def test_MetadataSchemaTypesImmutable(self):
         metadata = Usd.ValidatorMetadata()
         with self.assertRaises(Exception):
             metadata.schemaTypes = "PrimType1"
 
-    def test_metadata_plugin_immutable(self):
+    def test_MetadataPluginImmutable(self):
         all_plugins = Plug.Registry().GetAllPlugins()
         expected_plugin = all_plugins[0] if all_plugins else None
         metadata = Usd.ValidatorMetadata()
         with self.assertRaises(Exception):
             metadata.plugin = expected_plugin
 
-    def test_metadata_is_suite_immutable(self):
+    def test_MetadataIsSuiteImmutable(self):
         metadata = Usd.ValidatorMetadata()
         with self.assertRaises(Exception):
             metadata.isSuite = True
