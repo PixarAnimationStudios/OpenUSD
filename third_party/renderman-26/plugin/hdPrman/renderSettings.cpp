@@ -366,6 +366,12 @@ HdPrman_RenderSettings::UpdateAndRender(
     for (size_t prodIdx = 0; prodIdx < numProducts; prodIdx++) {
         auto const &product = GetRenderProducts().at(prodIdx);
 
+        if (product.renderVars.empty()) {
+            TF_WARN("--- Skipping empty render product %s ...\n",
+                    product.name.GetText());
+            continue;
+        }
+
         TF_DEBUG(HDPRMAN_RENDER_PASS).Msg(
             "--- Processing render product %s ...\n", product.name.GetText()); 
 
