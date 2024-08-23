@@ -77,7 +77,9 @@ R"(#if NUM_LIGHTS > 0
             // Note: in Storm, diffuse = lightColor * intensity;
             float intensity = max( max(light.diffuse.r, light.diffuse.g), 
                                    light.diffuse.b);
-            $lightData[u_numActiveLightSources].color = light.diffuse.rgb/intensity;
+            vec3 lightColor = (intensity == 0.0) 
+                ? light.diffuse.rgb : light.diffuse.rgb/intensity;
+            $lightData[u_numActiveLightSources].color = lightColor;
             $lightData[u_numActiveLightSources].intensity = intensity;
             
             // Attenuation 
