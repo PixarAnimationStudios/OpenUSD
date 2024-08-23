@@ -23,21 +23,26 @@
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/trace/trace.h"
 
+#include <optional>
 #include <unordered_map>
+#include <unordered_set>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEBUG_CODES(
     HDSI_LIGHT_LINK_COLLECTION_CACHE,
+    HDSI_LIGHT_LINK_INVALIDATION,
     HDSI_LIGHT_LINK_VERBOSE
 );
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDSI_LIGHT_LINK_COLLECTION_CACHE,
-        "Log cache update operations and invalidations.");
+        "Log cache update operations.");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDSI_LIGHT_LINK_INVALIDATION,
+        "Log invalidation of prims.");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDSI_LIGHT_LINK_VERBOSE,
-        "Log notice processing for lights and light filters.");
+        "Enable additional logging.");
 }
 
 TF_DEFINE_PUBLIC_TOKENS(HdsiLightLinkingSceneIndexTokens,
@@ -48,12 +53,29 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((groupPrefix, "group_"))
 );
 
-static bool
-_LogDebugMsg()
+namespace {
+
+// A collection is identified by the prim path and the collection name token.
+// Since the prim path is unique, we're guaranteed a unique ID for each
+// collection.
+using _CollectionId = std::pair<SdfPath, TfToken>;
+using _CollectionIdSet =
+    std::unordered_set<_CollectionId, TfHash>;
+
+inline _CollectionId
+_MakeCollectionId(const SdfPath &primPath, const TfToken &colName)
 {
-    return TfDebug::IsEnabled(HDSI_LIGHT_LINK_COLLECTION_CACHE) ||
-           TfDebug::IsEnabled(HDSI_LIGHT_LINK_VERBOSE);
+    return {primPath, colName};
 }
+
+std::string
+_ToStr(const _CollectionId &id)
+{
+    const auto &[path, token] = id;
+    return path.GetString() + "." + token.GetString();
+}
+
+} // anon
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -64,14 +86,14 @@ _LogDebugMsg()
 namespace HdsiLightLinkingSceneIndex_Impl
 {
 
-// Cache of light linking collections discovered on light and light filter
-// prims that tracks the correspondence of collection paths, their membership
-// expressions and the category ID assigned to each unique expression.
-//
-// Collections that have the same membership expression are assigned the same
-// category ID. For efficiency, trivial expressions that include
-// all prims in the scene are not tracked by the cache.
-//
+/// Cache of light linking collections discovered on light and light filter
+/// prims that tracks the correspondence of collection paths, their membership
+/// expressions and the category ID assigned to each unique expression.
+///
+/// Collections that have the same membership expression are assigned the same
+/// category ID. For efficiency, trivial expressions that include
+/// all prims in the scene are not tracked by the cache.
+///
 struct _Cache
 {
 public:
@@ -83,134 +105,106 @@ public:
     : _si(inputSceneIndex)
     {}
 
-    // Updates tables and adds invalidation notices when processing a new
-    // collection or when its expression has changed.
-    // 
-    void UpdateCollection(
+    /// Updates tables and dirty state for the provided collection and
+    /// expression.
+    /// 
+    void ProcessCollection(
         const SdfPath &primPath,
         const TfToken &collectionName,
-        const SdfPathExpression &expr,
-        HdSceneIndexObserver::DirtiedPrimEntries *dirtiedEntries)
+        const SdfPathExpression &expr)
     {
         TRACE_FUNCTION();
 
-        const SdfPath collectionPath =
-            _MakeCollectionPath(primPath, collectionName);
+        const _CollectionId collectionId = 
+            _MakeCollectionId(primPath, collectionName);
 
-        // Have we seen this collection before?
-        const auto pathIdEntry = _collectionPathToId.find(collectionPath);
+        const auto colIdEntry = _collectionIdToCategoryId.find(collectionId);
         const bool collectionExists =
-            (pathIdEntry != _collectionPathToId.end());
-        
+            (colIdEntry != _collectionIdToCategoryId.end());
+
         if (collectionExists) {
             // Yes, we have. Has the expression changed?
-            const auto &id = pathIdEntry->second;
-            if (!TF_VERIFY(!id.IsEmpty())) {
+            const auto &categoryId = colIdEntry->second;
+            if (!TF_VERIFY(!categoryId.IsEmpty())) {
                 return;
             }
 
-            const auto idExprEntry = _idToExpr.find(id);
-            if (!TF_VERIFY(idExprEntry != _idToExpr.end())) {
+            const auto idExprEntry = _categoryIdToExpr.find(categoryId);
+            if (!TF_VERIFY(idExprEntry != _categoryIdToExpr.end())) {
                 return;
             }
-            const auto &curExpr = idExprEntry->second;
+            const auto &oldExpr = idExprEntry->second;
 
-            if (curExpr == expr) {
+            if (oldExpr == expr) {
                 TF_DEBUG(HDSI_LIGHT_LINK_VERBOSE).Msg(
-                    "* UpdateCollection -- Membership expression for %s has "
+                    "* ProcessCollection -- Membership expression for %s has "
                     "not changed (%s).\n",
-                    collectionPath.GetText(), expr.GetText().c_str());
+                    _ToStr(collectionId).c_str(), expr.GetText().c_str());
 
                 return;
             }
-        }
 
-        // Two possibilities here:
-        // 1. Collection exists and expression has changed. The new expression
-        //    may be trivial.
-        //
-        // 2. We're processing the collection for the first time. It may be
-        //    trivial. While _PrimsAdded short circuits trivial expressions,
-        //    _PrimsDirtied doesn't.
-        //
-        if (collectionExists) {
-            // Remove the collection from all tables. This in turn adds
-            // invalidation notices for affected targets.
-            _RemoveCollection(collectionPath, dirtiedEntries);
+            // Expression has changed.Remove table entries for the existing 
+            // collection and queue invalidation.
+            _RemoveCollection(
+                collectionId, _InvalidationType::DirtyTargetsAndCollection);
 
-            // Notify the light to re-query its category ID.
-            _InvalidateLight(primPath, collectionName, dirtiedEntries);
+            _dirtyState.push_back({oldExpr, collectionId});
+
         }
 
         if (IsTrivial(expr)) {
-            // Nothing more to do. Trivial collection's are not tracked.
             TF_DEBUG(HDSI_LIGHT_LINK_VERBOSE).Msg(
-                "* UpdateCollection -- Expression for %s is trivial.\n",
-                collectionPath.GetText());
+                "* ProcessCollection -- Expression for %s is trivial.\n",
+                _ToStr(collectionId).c_str());
 
             return;
         }
 
         // Have we seen this expression before?
-        auto & [id, eval] = _exprToIdAndEval[expr];
-        const bool isNewExpr = id.IsEmpty();
+        auto & [categoryId, eval] = _exprToCategoryIdAndEval[expr];
+        const bool isNewExpr = categoryId.IsEmpty();
         if (isNewExpr) {
             // Nope. Assign a category ID and ...
-            id = _GetNewCategoryId();
-            _idToExpr[id] = expr;
+            categoryId = _GetNewCategoryId();
+            _categoryIdToExpr[categoryId] = expr;
 
-            if (_LogDebugMsg()) {
-                TfDebug::Helper().Msg(
-                "* UpdateCollection -- Assigned ID %s for collection %s "
-                "(expression = %s).\n",
-                id.GetText(), collectionPath.GetText(), expr.GetText().c_str());
-            }
+            TF_DEBUG(HDSI_LIGHT_LINK_COLLECTION_CACHE).Msg(
+                "* ProcessCollection -- Assigned ID %s for collection %s"
+                "(expression = %s).\n", categoryId.GetText(),
+                 _ToStr(collectionId).c_str(), expr.GetText().c_str());
 
             // ... create evaluator.
             eval = _MakePathExpressionEvaluator(expr);
 
         } else {
-            if (_LogDebugMsg()) {
-                TfDebug::Helper().Msg(
-                "* UpdateCollection -- Using shared ID %s for collection %s.\n",
-                id.GetText(), collectionPath.GetText());
-            }
+            TF_DEBUG(HDSI_LIGHT_LINK_COLLECTION_CACHE).Msg(
+                "* ProcessCollection -- Using shared ID %s for collection %s."
+                "\n", categoryId.GetText(), _ToStr(collectionId).c_str());
         }
 
-        _collectionPathToId[collectionPath] = id;
-        _idToCollectionPaths[id].insert(collectionPath);
-        
-        // The categories on the targets don't change when using a shared ID.
-        // We still conservatively invalidate the targets to give them a chance
-        // to process any changes to internal lighting state.
-        // This is necessary for e.g. in hdPrman to update the
-        // lighting_subset & lightfilter_subset attributes on geometry.
-        // We do a similar conservative invalidation in _RemoveCollection.
-        const SdfPathVector targets = _ComputeAllMatches(eval);
-        _InvalidateCategoriesOnTargets(targets, dirtiedEntries);
+        _collectionIdToCategoryId[collectionId] = categoryId;
+        _categoryIdToCollectionIds[categoryId].insert(collectionId);
 
-        // If the collection existed, we pushed a dirty notice for the light
-        // above.
-        if (!collectionExists) {
-            _InvalidateLight(primPath, collectionName, dirtiedEntries);
-        }
+        _dirtyState.push_back({expr, collectionId});
     }
 
-    // See _RemoveCollection.
+    /// Updates the various tables to remove any reference to \p collectionId.
+    /// Updates dirty state to invalidate the targets for the removed
+    /// collection.
+    ///
     void RemoveCollection(
         const SdfPath &primPath,
-        const TfToken &collectionName,
-        HdSceneIndexObserver::DirtiedPrimEntries *dirtiedEntries)
+        const TfToken &collectionName)
     {
-        const SdfPath collectionPath =
-            _MakeCollectionPath(primPath, collectionName);
-
-        _RemoveCollection(collectionPath, dirtiedEntries);
+        _RemoveCollection(
+            _MakeCollectionId(primPath, collectionName),
+            _InvalidationType::DirtyTargets);
     }
 
-    // Returns the categories that `primPath` belongs to.
-    // XXX Support is currently limited to non-instanced geometry prims.
-    //
+    /// Returns the categories that \p primPath belongs to.
+    /// XXX Support is currently limited to non-instanced geometry prims.
+    ///
     TfTokenVector
     ComputeCategoriesForPrimPath(
         const SdfPath &primPath) const
@@ -224,37 +218,114 @@ public:
         // waterfall results).
         //
         TfTokenVector categories;
-        for (const auto & [expr, idAndEval] : _exprToIdAndEval) {
-            if (idAndEval.eval.Match(primPath)) {
-                categories.push_back(idAndEval.id);
+        for (const auto & [expr, idAndEval] : _exprToCategoryIdAndEval) {
+            const auto &[categoryId, eval] = idAndEval;
+            if (eval.Match(primPath)) {
+                categories.push_back(categoryId);
             }
         }
 
         return categories;
     }
 
-    // Returns true and updates `id` if the cache has an entry for the given
-    // collection on the light or light filter prim.
-    // Returns false otherwise (trivial collections).
-    //
+    /// Returns true and updates \p categoryId if the cache has an entry for 
+    /// the provided collection.
+    /// Returns false otherwise (for trivial or untracked collections).
+    ///
     bool
     GetCategoryIdForLightLinkingCollection(
         const SdfPath &primPath,
         const TfToken &collectionName,
-        TfToken *id)
+        TfToken *categoryId)
     {
-        const SdfPath colPath = _MakeCollectionPath(primPath, collectionName);
-        const auto pathIdEntry = _collectionPathToId.find(colPath);
-        if (pathIdEntry != _collectionPathToId.end()) {
-            *id = pathIdEntry->second;
+        const auto entry = _collectionIdToCategoryId.find(
+            _MakeCollectionId(primPath, collectionName));
+
+        if (entry != _collectionIdToCategoryId.end()) {
+            *categoryId = entry->second;
             return true;
         }
 
-        // Collection entry doesn't exist. This is likely because the collection
-        // is trivial, but also the case when the collection doesn't exist.
         return false;
     }
 
+    /// Processes the queued dirty state and updates \p dirtiedEntries to
+    /// invalidate targeted prims and/or lights.
+    ///
+    void
+    InvalidatePrimsAndClearDirtyState(
+        HdSceneIndexObserver::DirtiedPrimEntries *dirtiedEntries)
+    {
+        if (!dirtiedEntries) {
+            TF_CODING_ERROR("Null dirty notice vector provided\n");
+            return;
+        }
+
+        if (_dirtyState.empty()) {
+            return;
+        }
+
+        TRACE_FUNCTION();
+
+        // Gather the set of unique expressions and collections to invalidate.
+        // XXX For now, we conservatively invalidate the union of all queued 
+        //     expressions.
+        //     We can consult the tables to skip expressions in certain 
+        //     scenarios. 
+        //     - The lightLink collection on N lights have the same category
+        //       id. We edit the lightLink expression on one of the lights to
+        //       the trivial expression '//'.
+        //       We don't need to evaluate the expression to invalidate the 
+        //       targets in this scenario since their categories are unaffected.
+        //
+        //     - The lightLink collection on light A shares the same category
+        //       id as the shadowLink collection on light B. If we edit the
+        //       lightLink expression, we shouldn't need to invalidate the
+        //       targets since the category id is still relevant to them.
+        //
+        //       However, geometry prims in PRMan use a dedicated attribute
+        //       "lighting:subset", which needs to be updated in this scenario.
+        //       So, it is possibly renderer dependent and should perhaps be
+        //       a configurable thing on the scene index at some point.
+        //         
+        using _ExprSet = std::unordered_set<_Expr, TfHash>;
+        _ExprSet exprs;
+        _CollectionIdSet collectionIds;
+
+        for (const auto &[expr, optColId] : _dirtyState) {
+            exprs.insert(expr);
+
+            if (optColId) {
+                collectionIds.insert(*optColId);
+            }
+        }
+
+        // Evaluating an expression over a scene index can be expensive if
+        // several prims need to be traversed.
+        // Compute the unioned expression to evaluate (and thus traverse) 
+        // just the once.
+        //
+        SdfPathExpression combinedExpr;
+        for (const auto &expr : exprs) {
+            combinedExpr = SdfPathExpression::MakeOp(
+                SdfPathExpression::Union, combinedExpr, expr);
+        }
+        TF_DEBUG(HDSI_LIGHT_LINK_INVALIDATION).Msg(
+                "Combined expression from %zu dirty expressions: %s\n",
+                exprs.size(), combinedExpr.GetText().c_str());
+
+        const auto eval = _MakePathExpressionEvaluator(combinedExpr);
+        SdfPathVector targets = _ComputeAllMatches(eval);
+        _InvalidateCategoriesOnTargets(targets, dirtiedEntries);
+        _InvalidateLights(collectionIds, dirtiedEntries);
+
+        _dirtyState.clear();
+    }
+    
+    /// Returns whether the provided expression is trivial meaning that all
+    /// prims in the scene are targeted (illumniated or cast shadows for
+    /// light linking).
+    ///
     static bool
     IsTrivial(const SdfPathExpression &expr)
     {
@@ -268,21 +339,20 @@ public:
     }
 
 private:
-    // Updates the various tables to remove any reference to `collectionPath`.
-    // Adds notices to `dirtiedEntries` to invalidate the categories on
-    // prims targeted by the collection.
-    //
-    // Note: The light/light filter isn't invalidated here. We do this
-    //       only in UpdateCollection if necessary.
-    //       For prim removals, we don't need to invalidate the prim since it
-    //       is being removed.
-    //
+    enum class _InvalidationType {
+        DirtyTargets,
+        DirtyTargetsAndCollection
+    };
+
+    /// Updates the various tables to remove any reference to \p collectionId.
+    /// Updates the dirty state if \p invalidateTargets is true.
+    ///
     void _RemoveCollection(
-        const SdfPath &collectionPath,
-        HdSceneIndexObserver::DirtiedPrimEntries *dirtiedEntries)
+        const _CollectionId &collectionId,
+        _InvalidationType invalidationType)
     {
-        const auto pathIdEntry = _collectionPathToId.find(collectionPath);
-        if (pathIdEntry == _collectionPathToId.end()) {
+        const auto colIdEntry = _collectionIdToCategoryId.find(collectionId);
+        if (colIdEntry == _collectionIdToCategoryId.end()) {
             // Nothing to do. The collection was never added, either because
             // it didn't exist, or because it was trivial.
             return;
@@ -290,65 +360,63 @@ private:
 
         TRACE_FUNCTION();
 
-        if (_LogDebugMsg()) {
-            TfDebug::Helper().Msg(
+        TF_DEBUG(HDSI_LIGHT_LINK_COLLECTION_CACHE).Msg(
             "* RemoveCollection %s -- \n"
             "   * Removing cache entries referencing the collection.\n",
-            collectionPath.GetText());
-        }
+            _ToStr(collectionId).c_str());
 
-        TfToken id = pathIdEntry->second;
-        if (!TF_VERIFY(!id.IsEmpty())) {
+        TfToken categoryId = colIdEntry->second;
+        if (!TF_VERIFY(!categoryId.IsEmpty())) {
             return;
         }
-        _collectionPathToId.erase(pathIdEntry);
+        _collectionIdToCategoryId.erase(colIdEntry);
 
-        auto idPathsEntry = _idToCollectionPaths.find(id);
-        if (!TF_VERIFY(idPathsEntry != _idToCollectionPaths.end())) {
+        auto idPathsEntry = _categoryIdToCollectionIds.find(categoryId);
+        if (!TF_VERIFY(idPathsEntry != _categoryIdToCollectionIds.end())) {
             return;
         }
         auto &collectionsUsingId = idPathsEntry->second;
-        collectionsUsingId.erase(collectionPath);
+        collectionsUsingId.erase(collectionId);
 
         // Check if the category ID is being shared by other collections.
         const bool sharingId = !collectionsUsingId.empty();
 
-        // XXX If the ID is being shared, the categories on targeted prims
-        //     don't change, but we invalidate them nonetheless.
-        //     See note in _UpdateCollection.
-        const auto idExprEntry = _idToExpr.find(id);
-        if (!TF_VERIFY(idExprEntry != _idToExpr.end())) {
+        const auto idExprEntry = _categoryIdToExpr.find(categoryId);
+        if (!TF_VERIFY(idExprEntry != _categoryIdToExpr.end())) {
             return;
         }
         const auto expr = idExprEntry->second;
 
-        const auto exprIdEvalEntry = _exprToIdAndEval.find(expr);
-        if (!TF_VERIFY(exprIdEvalEntry != _exprToIdAndEval.end())) {
+        const auto exprIdEvalEntry = _exprToCategoryIdAndEval.find(expr);
+        if (!TF_VERIFY(exprIdEvalEntry != _exprToCategoryIdAndEval.end())) {
             return;
         }
-
-        auto &eval = exprIdEvalEntry->second.eval;
-        const SdfPathVector targets = _ComputeAllMatches(eval);
-        _InvalidateCategoriesOnTargets(targets, dirtiedEntries);
 
         if (sharingId) {
             TF_DEBUG(HDSI_LIGHT_LINK_VERBOSE).Msg(
                 "   * Id (%s) for collection %s is still being used by %zu "
-                "other collections.\n", id.GetText(), collectionPath.GetText(), 
-                collectionsUsingId.size());
+                "other collections.\n", categoryId.GetText(),
+                _ToStr(collectionId).c_str(), collectionsUsingId.size());
 
         } else {
-            // Remove reference to `id` from tables.
-            //
-            if (_LogDebugMsg()) {
-                TfDebug::Helper().Msg(
+            // Remove reference to the categoryId from tables.
+            TF_DEBUG(HDSI_LIGHT_LINK_COLLECTION_CACHE).Msg(
                 "   * Removing cache entries referencing Id (%s).\n",
-                id.GetText());
-            }
+                categoryId.GetText());
 
-            _idToCollectionPaths.erase(idPathsEntry);
-            _idToExpr.erase(idExprEntry);
-            _exprToIdAndEval.erase(exprIdEvalEntry);
+            _categoryIdToCollectionIds.erase(idPathsEntry);
+            _categoryIdToExpr.erase(idExprEntry);
+            _exprToCategoryIdAndEval.erase(exprIdEvalEntry);
+        }
+
+        switch (invalidationType) {
+        case _InvalidationType::DirtyTargets:
+            _dirtyState.push_back({expr, {}});
+            break;
+        case _InvalidationType::DirtyTargetsAndCollection:
+            _dirtyState.push_back({expr, collectionId});
+            break;
+        // Skip default case to get a compile-time error for unhandled values.
         }
     }
 
@@ -372,11 +440,9 @@ private:
         const SdfPathVector &targets,
         HdSceneIndexObserver::DirtiedPrimEntries *dirtiedEntries)
     {
-        if (_LogDebugMsg()) {
-            TfDebug::Helper().Msg(
+        TF_DEBUG(HDSI_LIGHT_LINK_INVALIDATION).Msg(
             "   * Invalidating categories on %zu targets ....\n",
             targets.size());
-        }
 
         for (const auto targetPath : targets) {
             dirtiedEntries->push_back(
@@ -386,24 +452,32 @@ private:
     }
 
     void
-    _InvalidateLight(
-        const SdfPath &primPath,
-        const TfToken &collectionName,
+    _InvalidateLights(
+        const _CollectionIdSet &collectionIds,
         HdSceneIndexObserver::DirtiedPrimEntries *dirtiedEntries)
     {
-        if (_LogDebugMsg()) {
-            TfDebug::Helper().Msg(
-            "   * Invalidating category ID for %s:%s....\n",
-            primPath.GetText(), collectionName.GetText());
-        }
+        TF_DEBUG(HDSI_LIGHT_LINK_INVALIDATION).Msg(
+            "   * Invalidating category ID for %zu collections...\n",
+            collectionIds.size());
 
-        dirtiedEntries->push_back(
-            HdSceneIndexObserver::DirtiedPrimEntry(
-                primPath,
-                HdLightSchema::GetDefaultLocator().Append(collectionName)));
+        for (const auto &collectionId : collectionIds) {
+            const auto &[primPath, collectionName] = collectionId;
+
+            // XXX Currently, light linking collections are bundled under
+            //     HdLightSchema with the collection name as the key
+            //     and categoryId as value.
+            dirtiedEntries->push_back(
+                HdSceneIndexObserver::DirtiedPrimEntry(
+                    primPath,
+                    HdLightSchema::GetDefaultLocator().Append(collectionName)));
+
+            TF_DEBUG(HDSI_LIGHT_LINK_VERBOSE).Msg(
+                "       - Invalidating category ID for %s.\n",
+                _ToStr(collectionId).c_str());
+        }
     }
 
-    SdfPathVector
+    static SdfPathVector
     _ComputeAllMatches(const _Eval &eval)
     {
         constexpr auto matchKind =
@@ -430,22 +504,13 @@ private:
             _si, expr, HdGetCollectionPredicateLibrary());
     }
 
-    static SdfPath
-    _MakeCollectionPath(
-        const SdfPath &primPath,
-        const TfToken &collectionName)
-    {
-        return primPath.AppendProperty(collectionName);
-    }
-
 private:
     const HdSceneIndexBaseRefPtr _si;
 
-    struct _CategoryIdAndEval
-    {
-        _CategoryId id;
-        _Eval eval;
-    };
+    // -------------------------------------------------------------------------
+    // Tables
+    //
+    using _CategoryIdAndEval = std::pair<_CategoryId, _Eval>;
 
     // Lookup the category ID and evaluator for a given expression.
     //
@@ -462,19 +527,30 @@ private:
     // For each collection path (of the form primPath.collectionName), lookup
     // the assigned category ID.
     //
-    using _CollectionPathToCategoryIdMap =
-        std::unordered_map<SdfPath, _CategoryId, TfHash>;
+    using _CollectionIdToCategoryIdMap =
+        std::unordered_map<_CollectionId, _CategoryId, TfHash>;
 
     // If several collections have the same membership expression, we share
     // the assigned category ID amongst them. This map tracks that association.
     //
-    using _CategoryIdToCollectionPathsMap
-        = std::unordered_map<_CategoryId, SdfPathSet, TfHash>;
+    using _CategoryIdToCollectionIds
+        = std::unordered_map<_CategoryId, _CollectionIdSet, TfHash>;
 
-    _ExprToCategoryIdAndEvalMap _exprToIdAndEval;
-    _CategoryIdToExprMap _idToExpr;
-    _CollectionPathToCategoryIdMap _collectionPathToId;
-    _CategoryIdToCollectionPathsMap _idToCollectionPaths;
+    _ExprToCategoryIdAndEvalMap _exprToCategoryIdAndEval;
+    _CategoryIdToExprMap _categoryIdToExpr;
+    _CollectionIdToCategoryIdMap _collectionIdToCategoryId;
+    _CategoryIdToCollectionIds _categoryIdToCollectionIds;
+
+    // -------------------------------------------------------------------------
+    // Dirty state
+    //
+    using _OptionalCollectionId = std::optional<_CollectionId>;
+    using _DirtyEntry = std::pair<_Expr, _OptionalCollectionId>;
+    using _DirtyState = std::vector<_DirtyEntry>;
+
+    _DirtyState _dirtyState;
+
+    // -------------------------------------------------------------------------
 
     // Suffix used when computing the next group (category) ID.
     size_t _groupIdx = 0;
@@ -821,9 +897,6 @@ static const VtArray<TfToken> GEOMETRY_PRIM_TYPES = {
     HdRprimTypeTokens->allTokens.end()
 };
 
-// XXX hd/tokens.h doesn't have a separate list of light types.
-//     Perhaps, we should add one and reference that here?
-//
 static const VtArray<TfToken> LIGHT_PRIM_TYPES = {
     HdLightTypeTokens->allTokens.begin(),
     HdLightTypeTokens->allTokens.end(),
@@ -941,13 +1014,14 @@ HdsiLightLinkingSceneIndex::_PrimsAdded(
 
             // The prim is no longer a light/light filter.
             for (const TfToken &colName : _GetAllLinkingCollectionNames()) {
-                _cache->RemoveCollection(
-                    entry.primPath, colName, &dirtiedEntries);
+                _cache->RemoveCollection(entry.primPath, colName);
             }
 
             _lightAndFilterPrimPaths.erase(it);
         }
     }
+
+    _cache->InvalidatePrimsAndClearDirtyState(&dirtiedEntries);
 
     _SendPrimsAdded(entries);
     _SendPrimsDirtied(dirtiedEntries);
@@ -986,11 +1060,7 @@ HdsiLightLinkingSceneIndex::_ProcessAddedLightOrFilter(
                 continue;
             }
 
-            _cache->UpdateCollection(
-                entry.primPath,
-                colName,
-                expr,
-                dirtiedEntries);
+            _cache->ProcessCollection(entry.primPath, colName, expr);
         }
     }
 }
@@ -1029,13 +1099,14 @@ HdsiLightLinkingSceneIndex::_PrimsRemoved(
             // loop over only the relevant collections.
             //
             for (const TfToken &colName : _GetAllLinkingCollectionNames()) {
-                _cache->RemoveCollection(
-                    trackedPrimPath, colName, &dirtiedEntries);
+                _cache->RemoveCollection(trackedPrimPath, colName);
             }
         }
 
         _lightAndFilterPrimPaths.erase(begin, end);
     }
+
+    _cache->InvalidatePrimsAndClearDirtyState(&dirtiedEntries);
 
     _SendPrimsRemoved(entries);
     _SendPrimsDirtied(dirtiedEntries);
@@ -1112,11 +1183,7 @@ HdsiLightLinkingSceneIndex::_PrimsDirtied(
                 const SdfPathExpression expr =
                     exprDs->GetTypedValue(0.0);
 
-                _cache->UpdateCollection(
-                    primPath,
-                    collectionName,
-                    expr,
-                    &newEntries);
+                _cache->ProcessCollection(primPath, collectionName, expr);
                 
             } else {
                 // XXX Issue warning? We do always expect a value
@@ -1125,6 +1192,8 @@ HdsiLightLinkingSceneIndex::_PrimsDirtied(
             }
         }
     }
+
+    _cache->InvalidatePrimsAndClearDirtyState(&newEntries);
 
     _SendPrimsDirtied(entries);
     _SendPrimsDirtied(newEntries);
