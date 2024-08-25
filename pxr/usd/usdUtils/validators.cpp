@@ -42,8 +42,8 @@ _PackageEncapsulationValidator(const UsdStagePtr& usdStage) {
                                     realPath;
 
     if (!packagePath.empty()) {
-        for (const SdfLayerRefPtr& subLayer : layers) {
-            const std::string& realPath = subLayer->GetRealPath();
+        for (const SdfLayerRefPtr& referencedLayer : layers) {
+            const std::string& realPath = referencedLayer->GetRealPath();
 
             // We don't want to validate in-memory or session layers
             // since these layers will not have a real path, we skip here
@@ -56,11 +56,11 @@ _PackageEncapsulationValidator(const UsdStagePtr& usdStage) {
                         UsdValidationErrorType::Error,
                         UsdValidationErrorSites{
                                 UsdValidationErrorSite(rootLayer,
-                                                       subLayer->GetDefaultPrimAsPath())
+                                                       referencedLayer->GetDefaultPrimAsPath())
                         },
-                        TfStringPrintf(("Found layer '%s' that "
+                        TfStringPrintf(("Found referenced layer '%s' that "
                                         "does not belong to the package '%s'."),
-                                       subLayer->GetIdentifier().c_str(), packagePath.c_str())
+                                       referencedLayer->GetIdentifier().c_str(), packagePath.c_str())
                 );
             }
         }

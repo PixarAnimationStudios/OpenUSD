@@ -4,6 +4,7 @@
 #include "pxr/usd/usd/validationRegistry.h"
 #include "pxr/base/arch/systemInfo.h"
 
+#include <filesystem>
 PXR_NAMESPACE_USING_DIRECTIVE
 
 static
@@ -47,8 +48,7 @@ TestPackageEncapsulationValidator()
 
     // Load the pre-created usdz stage with paths to a layer and asset
     // that are not included in the package, but exist
-    const UsdStageRefPtr& stage = UsdStage::Open(
-            "testUsdUtilsPackageEncapsulation/fail.usdz");
+    const UsdStageRefPtr& stage = UsdStage::Open("fail.usdz");
 
     UsdValidationErrorVector errors = validator->Validate(stage);
 
@@ -56,16 +56,18 @@ TestPackageEncapsulationValidator()
     TF_AXIOM(errors.size() == 2);
 
     const std::string& realRootPath = stage->GetRootLayer()->GetRealPath();
-    const std::string& rootDirectory = realRootPath
-            .substr(0, realRootPath.find_last_of("/") + 1);
 
-    const std::string& errorLayer = rootDirectory + "excludedDirectory"
-                                                    "/layer.usda";
-    const std::string& errorAsset = rootDirectory + "excludedDirectory"
-                                                    "/image.jpg";
+    std::filesystem::path rootPath(realRootPath);
+
+    const std::string& errorLayer = rootPath.parent_path()
+            .append("excludedDirectory")
+            .append("layer.usda");
+    const std::string& errorAsset = rootPath.parent_path()
+            .append("excludedDirectory")
+            .append("image.jpg");
 
     std::vector<std::string> expectedErrorMessages = {
-            TfStringPrintf(("Found layer '%s' that does not belong to the"
+            TfStringPrintf(("Found referenced layer '%s' that does not belong to the"
                             " package '%s'."),
                            errorLayer.c_str(), realRootPath.c_str()),
             TfStringPrintf(("Found asset reference '%s' that does not belong"
@@ -83,8 +85,7 @@ TestPackageEncapsulationValidator()
 
     // Load the pre-created usdz stage with relative paths to both a reference
     // and an asset that are included in the package.
-    const UsdStageRefPtr& passStage = UsdStage::Open(
-            "testUsdUtilsPackageEncapsulation/pass.usdz");
+    const UsdStageRefPtr& passStage = UsdStage::Open("pass.usdz");
     
     errors = validator->Validate(passStage);
 

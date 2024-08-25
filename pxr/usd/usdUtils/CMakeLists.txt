@@ -310,8 +310,8 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdUtilsPackageEncapsulation
-    DEST testUsdUtilsPackageEncapsulation
+    SRC testenv/testUsdUtilsValidators
+    DEST testUsdUtilsValidators
 )
 
 pxr_register_test(testUsdUtilsAuthoring
