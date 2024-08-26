@@ -180,14 +180,6 @@ if (PXR_BUILD_DOCUMENTATION)
     endif()
 endif()
 
-if (PXR_VALIDATE_GENERATED_CODE)
-    find_package(BISON 2.4.1 EXACT)
-    # Flex 2.5.39+ is required, generated API is generated incorrectly in
-    # 2.5.35, at least. scan_bytes generates with (..., int len, ...) instead of
-    # the correct (..., yy_size_t len, ...).  Lower at your own peril.
-    find_package(FLEX 2.5.39 EXACT)
-endif()
-
 # Imaging Components Package Requirements
 # ----------------------------------------------
 

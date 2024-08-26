@@ -87,10 +87,6 @@ _add_define("_SCL_SECURE_NO_WARNINGS")
 # will conflict with std::min() and std::max().
 _add_define("NOMINMAX")
 
-# Needed to prevent YY files trying to include unistd.h
-# (which doesn't exist on Windows)
-_add_define("YY_NO_UNISTD_H")
-
 # Forces all libraries that have separate source to be linked as
 # DLL's rather than static libraries on Microsoft Windows, unless
 # explicitly told otherwise.

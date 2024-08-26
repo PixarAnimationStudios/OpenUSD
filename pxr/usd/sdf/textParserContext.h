@@ -32,9 +32,6 @@
 #include <string>
 #include <vector>
 
-// Lexical scanner type.
-typedef void *yyscan_t;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
