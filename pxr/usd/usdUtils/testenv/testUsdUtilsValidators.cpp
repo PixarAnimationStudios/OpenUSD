@@ -55,12 +55,12 @@ TestPackageEncapsulationValidator()
     // Verify both the layer & asset errors are present
     TF_AXIOM(errors.size() == 2);
 
-    const std::string& absoluteUsdzPath = TfAbsPath(
+    const std::string absoluteUsdzPath = TfAbsPath(
             stage->GetRootLayer()->GetIdentifier());
-    const std::string& usdzRootDirectory = TfGetPathName(absoluteUsdzPath);
-    const std::string& errorLayer = TfStringCatPaths(
+    const std::string usdzRootDirectory = TfGetPathName(absoluteUsdzPath);
+    const std::string errorLayer = TfStringCatPaths(
             usdzRootDirectory, "excludedDirectory/layer.usda");
-    const std::string& errorAsset = TfStringCatPaths(
+    const std::string errorAsset = TfStringCatPaths(
             usdzRootDirectory, "excludedDirectory/image.jpg");
 
     std::vector<std::string> expectedErrorMessages = {
