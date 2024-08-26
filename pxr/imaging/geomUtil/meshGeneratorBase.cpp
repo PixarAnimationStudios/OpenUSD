@@ -24,11 +24,6 @@ GeomUtilMeshGeneratorBase::_GenerateCappedQuadTopology(
     const GeomUtilMeshGeneratorBase::_CapStyle topCapStyle,
     const bool closedSweep)
 {
-    if (numRadial < 3) {
-        TF_CODING_ERROR("Invalid topology requested.");
-        return PxOsdMeshTopology();
-    }
-
     const size_t numTriStrips =
         (bottomCapStyle != CapStyleNone) + (topCapStyle != CapStyleNone);
     const size_t numTris = numTriStrips * numRadial;
