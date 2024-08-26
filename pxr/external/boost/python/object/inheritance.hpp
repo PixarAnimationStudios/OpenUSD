@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_INHERITANCE_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_INHERITANCE_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/inheritance.hpp>
+#else
+
 # include "pxr/external/boost/python/type_id.hpp"
 # include <boost/shared_ptr.hpp>
 # include <boost/mpl/if.hpp>
@@ -133,4 +139,5 @@ inline void register_conversion(
 
 }}} // namespace boost::python::object
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_INHERITANCE_HPP

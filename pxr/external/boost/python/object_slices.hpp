@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_SLICES_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_SLICES_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object_slices.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/proxy.hpp"
@@ -148,4 +154,5 @@ inline void slice_policies::del(
 
 }}} // namespace boost::python::api
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_SLICES_HPP

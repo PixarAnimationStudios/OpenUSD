@@ -12,6 +12,12 @@
 # ifndef PXR_EXTERNAL_BOOST_PYTHON_CALL_METHOD_HPP
 #  define PXR_EXTERNAL_BOOST_PYTHON_CALL_METHOD_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/call_method.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 #  include <boost/type.hpp>
@@ -40,6 +46,7 @@ namespace boost { namespace python {
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_CALL_METHOD_HPP
 
 // For gcc 4.4 compatability, we must include the

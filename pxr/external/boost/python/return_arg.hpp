@@ -9,6 +9,12 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_RETURN_ARG_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_RETURN_ARG_HPP
+
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/return_arg.hpp>
+#else
 # include "pxr/external/boost/python/default_call_policies.hpp"
 # include "pxr/external/boost/python/detail/none.hpp"
 # include "pxr/external/boost/python/detail/value_arg.hpp"
@@ -111,4 +117,5 @@ struct return_self
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_RETURN_ARG_HPP

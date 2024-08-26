@@ -13,6 +13,12 @@
 # ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_VALUE_HOLDER_HPP
 #  define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_VALUE_HOLDER_HPP 
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/value_holder.hpp>
+#else
+
 #  include "pxr/external/boost/python/object/value_holder_fwd.hpp"
 
 #  include "pxr/external/boost/python/instance_holder.hpp"
@@ -114,6 +120,7 @@ void* value_holder_back_reference<Value,Held>::holds(
 
 }}} // namespace boost::python::objects
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_VALUE_HOLDER_HPP
 
 // --------------- value_holder ---------------

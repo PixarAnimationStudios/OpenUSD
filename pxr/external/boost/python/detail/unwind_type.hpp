@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWIND_TYPE_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWIND_TYPE_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/unwind_type.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/cv_category.hpp"
 # include "pxr/external/boost/python/detail/indirect_traits.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
@@ -174,4 +180,5 @@ unwind_type(boost::type<U>*p =0, Generator* =0)
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWIND_TYPE_HPP

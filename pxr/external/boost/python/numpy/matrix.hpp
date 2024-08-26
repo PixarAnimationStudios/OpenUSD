@@ -12,6 +12,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_NUMPY_MATRIX_HPP
 #define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_MATRIX_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/numpy/matrix.hpp>
+#else
+
 /**
  *  @brief Object manager for numpy.matrix.
  */
@@ -86,4 +92,5 @@ NUMPY_OBJECT_MANAGER_TRAITS(numpy::matrix);
 
 }}} // namespace boost::python::converter
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

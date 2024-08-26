@@ -13,6 +13,12 @@
 # ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_RESULT_HPP
 #  define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_RESULT_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/result.hpp>
+#else
+
 #  include <boost/type.hpp>
 
 #  include "pxr/external/boost/python/detail/preprocessor.hpp"
@@ -86,6 +92,7 @@ result(X const&, short = 0) { return 0; }
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_RESULT_HPP
 
 /* --------------- function pointers --------------- */

@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MAP_ENTRY_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MAP_ENTRY_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/map_entry.hpp>
+#else
+
 namespace boost { namespace python { namespace detail { 
 
 // A trivial type that works well as the value_type of associative
@@ -45,4 +51,5 @@ bool operator<(Key const& k, map_entry<Key,Value> const& e)
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MAP_ENTRY_HPP

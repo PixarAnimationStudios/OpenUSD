@@ -9,6 +9,12 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_PROXY_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_PROXY_HPP
+
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/proxy.hpp>
+#else
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/object_core.hpp"
 # include "pxr/external/boost/python/object_operators.hpp"
@@ -99,4 +105,5 @@ inline void proxy<Policies>::del() const
 
 }}} // namespace boost::python::api
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_PROXY_HPP

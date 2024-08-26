@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYTYPE_OBJECT_MGR_TRAITS_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYTYPE_OBJECT_MGR_TRAITS_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/converter/pytype_object_mgr_traits.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/detail/raw_pyobject.hpp"
 # include "pxr/external/boost/python/cast.hpp"
@@ -44,4 +50,5 @@ inline python::detail::new_reference pytype_object_manager_traits<pytype,T>::ado
 
 }}} // namespace boost::python::converter
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYTYPE_OBJECT_MGR_TRAITS_HPP

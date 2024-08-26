@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_INDIRECT_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_INDIRECT_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/to_python_indirect.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/object/pointer_holder.hpp"
@@ -105,4 +111,5 @@ namespace detail
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_INDIRECT_HPP

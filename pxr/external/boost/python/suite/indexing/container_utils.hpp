@@ -12,6 +12,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_CONTAINER_UTILS_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_CONTAINER_UTILS_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/suite/indexing/container_utils.hpp>
+#else
+
 # include <utility>
 # include <boost/foreach.hpp>
 # include "pxr/external/boost/python/object.hpp"
@@ -59,4 +65,5 @@ namespace boost { namespace python { namespace container_utils {
 
 }}} // namespace boost::python::container_utils
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

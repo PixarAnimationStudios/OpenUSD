@@ -10,6 +10,11 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IS_AUTO_PTR_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IS_AUTO_PTR_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/is_auto_ptr.hpp>
+#else
 #include <type_traits>
 
 namespace boost { namespace python { namespace detail { 
@@ -21,4 +26,5 @@ struct is_auto_ptr : std::false_type
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IS_AUTO_PTR_HPP

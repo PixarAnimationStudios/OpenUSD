@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ITERATOR_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ITERATOR_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/iterator.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
@@ -229,4 +235,5 @@ inline iterator_range<NextPolicies,Iterator>::iterator_range(
 
 }}} // namespace boost::python::objects
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ITERATOR_HPP

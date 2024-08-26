@@ -17,6 +17,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CONFIG_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CONFIG_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/config.hpp>
+#else
+
 # include <boost/config.hpp>
 # include <boost/detail/workaround.hpp>
 
@@ -136,4 +142,5 @@
 #  define BOOST_ATTRIBUTE_UNUSED __attribute__((unused))
 #endif
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CONFIG_HPP

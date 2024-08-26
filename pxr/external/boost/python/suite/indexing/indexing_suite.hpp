@@ -11,6 +11,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_INDEXING_SUITE_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_INDEXING_SUITE_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/suite/indexing/indexing_suite.hpp>
+#else
+
 # include "pxr/external/boost/python/class.hpp"
 # include "pxr/external/boost/python/def_visitor.hpp"
 # include "pxr/external/boost/python/register_ptr_to_python.hpp"
@@ -297,4 +303,5 @@ namespace boost { namespace python {
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_INDEXING_SUITE_HPP

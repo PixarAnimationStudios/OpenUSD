@@ -9,6 +9,12 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IF_ELSE_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IF_ELSE_HPP
+
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/if_else.hpp>
+#else
 # include <boost/config.hpp>
 
 namespace boost { namespace python { namespace detail { 
@@ -83,4 +89,5 @@ struct if_<false>
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IF_ELSE_HPP

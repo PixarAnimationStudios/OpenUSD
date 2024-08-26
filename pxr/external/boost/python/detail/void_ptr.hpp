@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VOID_PTR_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VOID_PTR_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/void_ptr.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
 namespace boost { namespace python { namespace detail { 
@@ -37,4 +43,5 @@ inline void write_void_ptr_reference(void const volatile* storage, void* ptr, U&
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VOID_PTR_HPP

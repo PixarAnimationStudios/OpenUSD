@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_NULLARY_FUNCTION_ADAPTOR_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_NULLARY_FUNCTION_ADAPTOR_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/nullary_function_adaptor.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include <boost/preprocessor/iteration/local.hpp>
 # include <boost/preprocessor/facilities/intercept.hpp>
@@ -48,4 +54,5 @@ struct nullary_function_adaptor
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_NULLARY_FUNCTION_ADAPTOR_HPP

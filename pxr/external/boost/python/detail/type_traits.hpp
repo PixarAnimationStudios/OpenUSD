@@ -11,6 +11,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_TRAITS_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_TRAITS_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/type_traits.hpp>
+#else
+
 
 #include <boost/config.hpp>
 #ifdef BOOST_NO_CXX11_HDR_TYPE_TRAITS
@@ -113,4 +119,5 @@ namespace boost { namespace python { namespace detail {
 }}} // namespace boost::python::detail
 
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif //BOOST_DETAIL_TYPE_TRAITS_HPP

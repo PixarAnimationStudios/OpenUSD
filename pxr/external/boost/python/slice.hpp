@@ -1,6 +1,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_SLICE_HPP
 #define PXR_EXTERNAL_BOOST_PYTHON_SLICE_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/slice.hpp>
+#else
+
 //
 // Copyright 2024 Pixar
 // Licensed under the terms set forth in the LICENSE.txt file available at
@@ -278,4 +284,5 @@ struct object_manager_traits<slice>
 } } // !namespace ::boost::python
 
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // !defined PXR_EXTERNAL_BOOST_PYTHON_SLICE_HPP

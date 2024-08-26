@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_ARG_FROM_PYTHON_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_ARG_FROM_PYTHON_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/arg_from_python.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/converter/arg_from_python.hpp"
 # if BOOST_WORKAROUND(BOOST_MSVC, BOOST_TESTED_AT(1400)) \
@@ -78,4 +84,5 @@ inline arg_from_python<T>::arg_from_python(PyObject* source)
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_ARG_FROM_PYTHON_HPP

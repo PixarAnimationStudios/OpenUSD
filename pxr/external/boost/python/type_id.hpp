@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_TYPE_ID_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_TYPE_ID_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/type_id.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/detail/msvc_typeinfo.hpp"
@@ -186,4 +192,5 @@ inline type_info type_id<const volatile void>()
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_TYPE_ID_HPP

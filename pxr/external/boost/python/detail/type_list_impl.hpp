@@ -11,6 +11,12 @@
 # ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_LIST_IMPL_HPP
 #  define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_LIST_IMPL_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/type_list_impl.hpp>
+#else
+
 #  include "pxr/external/boost/python/detail/type_list.hpp"
 
 #  include <boost/preprocessor/enum_params.hpp>
@@ -36,6 +42,7 @@ struct type_list
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_LIST_IMPL_HPP
 
 #else // BOOST_PP_IS_ITERATING

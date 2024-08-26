@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FWD_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FWD_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object_fwd.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 namespace boost { namespace python { 
@@ -20,4 +26,5 @@ namespace api
 using api::object;
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FWD_HPP

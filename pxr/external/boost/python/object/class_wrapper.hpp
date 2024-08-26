@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CLASS_WRAPPER_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CLASS_WRAPPER_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/class_wrapper.hpp>
+#else
+
 # include "pxr/external/boost/python/to_python_converter.hpp"
 #ifndef BOOST_PYTHON_NO_PY_SIGNATURES
 # include "pxr/external/boost/python/converter/pytype_function.hpp"
@@ -53,4 +59,5 @@ struct class_value_wrapper
 
 }}} // namespace boost::python::objects
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CLASS_WRAPPER_HPP

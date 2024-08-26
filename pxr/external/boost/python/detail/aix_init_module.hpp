@@ -9,6 +9,12 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_AIX_INIT_MODULE_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_AIX_INIT_MODULE_HPP
+
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/aix_init_module.hpp>
+#else
 # ifdef _AIX
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include <cstdio>
@@ -28,4 +34,5 @@ void aix_init_module(so_load_function, char const* name, void (*init_module)());
 }}} // namespace boost::python::detail
 # endif
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_AIX_INIT_MODULE_HPP

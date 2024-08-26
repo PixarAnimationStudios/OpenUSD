@@ -9,6 +9,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_ENABLE_IF_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_ENABLE_IF_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/enable_if.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/sfinae.hpp"
 # include <boost/detail/workaround.hpp>
 
@@ -41,4 +47,5 @@ struct disable_if_ret
 
 # endif
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_ENABLE_IF_HPP

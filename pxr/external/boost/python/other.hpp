@@ -1,6 +1,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_OTHER_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_OTHER_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/other.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 //
 // Copyright 2024 Pixar
@@ -54,4 +60,5 @@ namespace detail
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

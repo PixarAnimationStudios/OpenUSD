@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_MAKE_CONSTRUCTOR_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_MAKE_CONSTRUCTOR_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/make_constructor.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/default_call_policies.hpp"
@@ -283,4 +289,5 @@ object make_constructor(
 }} 
 
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_MAKE_CONSTRUCTOR_HPP

@@ -12,6 +12,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTERED_HPP
 #define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTERED_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/converter/registered.hpp>
+#else
+
 #include "pxr/external/boost/python/type_id.hpp"
 #include "pxr/external/boost/python/converter/registry.hpp"
 #include "pxr/external/boost/python/converter/registrations.hpp"
@@ -126,4 +132,5 @@ namespace detail
 
 }}} // namespace boost::python::converter
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

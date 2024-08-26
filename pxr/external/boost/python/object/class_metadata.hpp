@@ -12,6 +12,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CLASS_METADATA_HPP
 #define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CLASS_METADATA_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/class_metadata.hpp>
+#else
+
 #include "pxr/external/boost/python/converter/shared_ptr_from_python.hpp"
 #include "pxr/external/boost/python/object/inheritance.hpp"
 #include "pxr/external/boost/python/object/class_wrapper.hpp"
@@ -296,4 +302,5 @@ struct class_metadata
 
 }}} // namespace boost::python::object
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

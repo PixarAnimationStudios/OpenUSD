@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_PREPROCESSOR_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_PREPROCESSOR_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/preprocessor.hpp>
+#else
+
 # include <boost/preprocessor/cat.hpp>
 # include <boost/preprocessor/comma_if.hpp>
 # include <boost/preprocessor/repeat.hpp>
@@ -68,4 +74,5 @@
 # define BOOST_PYTHON_FUNCTION_POINTER 0x0001
 # define BOOST_PYTHON_POINTER_TO_MEMBER 0x0002
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_PREPROCESSOR_HPP

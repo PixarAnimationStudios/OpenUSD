@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VOID_RETURN_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VOID_RETURN_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/void_return.hpp>
+#else
+
 # include <boost/config.hpp>
 
 namespace boost { namespace python { namespace detail { 
@@ -44,4 +50,5 @@ template <> struct returnable<const volatile void> : returnable<void> {};
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VOID_RETURN_HPP

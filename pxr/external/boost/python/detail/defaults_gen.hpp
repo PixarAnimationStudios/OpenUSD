@@ -13,6 +13,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_GEN_HPP
 #define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_GEN_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/defaults_gen.hpp>
+#else
+
 #include "pxr/external/boost/python/detail/preprocessor.hpp"
 #include <boost/preprocessor/repeat.hpp>
 #include <boost/preprocessor/repeat_from_to.hpp>
@@ -387,6 +393,7 @@ namespace detail
 #define BOOST_PYTHON_MEM_FUN_GENERATOR BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS
 
 ///////////////////////////////////////////////////////////////////////////////
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_GEN_HPP
 
 

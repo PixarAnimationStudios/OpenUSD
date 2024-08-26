@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_RETURN_VALUE_POLICY_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_RETURN_VALUE_POLICY_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/return_value_policy.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/default_call_policies.hpp"
 
@@ -23,4 +29,5 @@ struct return_value_policy : BasePolicy_
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_RETURN_VALUE_POLICY_HPP

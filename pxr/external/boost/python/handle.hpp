@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_HANDLE_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_HANDLE_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/handle.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/cast.hpp"
@@ -239,4 +245,5 @@ inline PyObject* get_managed_object(handle<T> const& h, tag_t)
 }} // namespace boost::python
 
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_HANDLE_HPP

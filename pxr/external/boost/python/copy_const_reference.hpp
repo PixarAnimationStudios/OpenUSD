@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_COPY_CONST_REFERENCE_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_COPY_CONST_REFERENCE_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/copy_const_reference.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/detail/indirect_traits.hpp"
 # include <boost/mpl/if.hpp>
@@ -45,4 +51,5 @@ struct copy_const_reference
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_COPY_CONST_REFERENCE_HPP

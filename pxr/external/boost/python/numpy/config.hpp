@@ -17,6 +17,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_NUMPY_CONFIG_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_CONFIG_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/numpy/config.hpp>
+#else
+
 # include <boost/config.hpp>
 
 /*****************************************************************************
@@ -87,4 +93,5 @@
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_NUMPY_CONFIG_HPP

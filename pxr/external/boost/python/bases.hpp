@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_BASES_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_BASES_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/bases.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/detail/type_list.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
@@ -52,4 +58,5 @@ namespace boost { namespace python {
 # undef BOOST_PYTHON_BASE_PARAMS
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_BASES_HPP

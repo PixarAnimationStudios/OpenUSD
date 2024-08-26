@@ -9,10 +9,17 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SFINAE_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SFINAE_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/sfinae.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # if defined(BOOST_NO_SFINAE) && !defined(BOOST_MSVC)
 #  define BOOST_PYTHON_NO_SFINAE
 # endif
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SFINAE_HPP

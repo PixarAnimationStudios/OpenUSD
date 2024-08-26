@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_EXCEPTION_HANDLER_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_EXCEPTION_HANDLER_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/exception_handler.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/config.hpp"
 # include <boost/function/function0.hpp>
 # include <boost/function/function2.hpp>
@@ -50,4 +56,5 @@ BOOST_PYTHON_DECL void register_exception_handler(handler_function const& f);
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_EXCEPTION_HANDLER_HPP

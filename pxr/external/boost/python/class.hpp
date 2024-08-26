@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_CLASS_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_CLASS_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/class.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include <boost/noncopyable.hpp>
@@ -610,4 +616,5 @@ inline class_<W,X1,X2,X3>::class_(char const* name, char const* doc, no_init_t)
 # undef BOOST_PYTHON_NO_DATA_MEMBER
 # undef BOOST_PYTHON_NO_MEMBER_POINTER_ORDERING
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CLASS_HPP

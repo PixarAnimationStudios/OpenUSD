@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_IMPLICIT_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_IMPLICIT_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/converter/implicit.hpp>
+#else
+
 # include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
 # include "pxr/external/boost/python/converter/registrations.hpp"
 # include "pxr/external/boost/python/converter/registered.hpp"
@@ -48,4 +54,5 @@ struct implicit
 
 }}} // namespace boost::python::converter
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_IMPLICIT_HPP

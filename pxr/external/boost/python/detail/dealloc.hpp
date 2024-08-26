@@ -10,6 +10,12 @@
 
 # ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEALLOC_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEALLOC_HPP
+
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/dealloc.hpp>
+#else
 namespace boost { namespace python { namespace detail {
     extern "C"
     {
@@ -19,4 +25,5 @@ namespace boost { namespace python { namespace detail {
         }
     }
 }}} // namespace boost::python::detail
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif    // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEALLOC_HPP

@@ -9,6 +9,12 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_TO_PYTHON_BASE_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_TO_PYTHON_BASE_HPP
+
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/converter/arg_to_python_base.hpp>
+#else
 # include "pxr/external/boost/python/handle.hpp"
 
 namespace boost { namespace python { namespace converter {
@@ -26,4 +32,5 @@ namespace detail
 
 }}} // namespace boost::python::converter
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_TO_PYTHON_BASE_HPP

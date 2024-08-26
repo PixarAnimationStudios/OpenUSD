@@ -13,6 +13,12 @@
 # ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CALLER_HPP
 #  define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CALLER_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/caller.hpp>
+#else
+
 #  include "pxr/external/boost/python/type_id.hpp"
 #  include "pxr/external/boost/python/handle.hpp"
 
@@ -199,6 +205,7 @@ struct caller
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CALLER_HPP
 
 #else

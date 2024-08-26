@@ -10,8 +10,15 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MPL_LAMBDA_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MPL_LAMBDA_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/mpl_lambda.hpp>
+#else
+
 // this header should go away soon
 # include <boost/mpl/aux_/lambda_support.hpp>
 # define BOOST_PYTHON_MPL_LAMBDA_SUPPORT BOOST_MPL_AUX_LAMBDA_SUPPORT
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MPL_LAMBDA_HPP

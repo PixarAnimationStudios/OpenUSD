@@ -9,6 +9,12 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_REFERENT_STORAGE_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_REFERENT_STORAGE_HPP
+
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/referent_storage.hpp>
+#else
 # include <boost/mpl/if.hpp>
 # include <boost/type_traits/aligned_storage.hpp>
 # include <cstddef>
@@ -47,4 +53,5 @@ struct referent_storage
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_REFERENT_STORAGE_HPP

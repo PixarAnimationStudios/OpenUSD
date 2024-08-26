@@ -12,6 +12,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_NUMPY_HPP
 #define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/numpy.hpp>
+#else
+
 #include "pxr/external/boost/python/numpy/dtype.hpp"
 #include "pxr/external/boost/python/numpy/ndarray.hpp"
 #include "pxr/external/boost/python/numpy/scalars.hpp"
@@ -36,4 +42,5 @@ BOOST_NUMPY_DECL void initialize(bool register_scalar_converters=true);
 
 }}} // namespace boost::python::numpy
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

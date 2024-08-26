@@ -9,6 +9,12 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_TO_PYTHON_FUNCTION_TYPE_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_TO_PYTHON_FUNCTION_TYPE_HPP
+
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/converter/to_python_function_type.hpp>
+#else
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include <boost/static_assert.hpp>
 
@@ -21,4 +27,5 @@ typedef PyObject* (*to_python_function_t)(void const*);
 
 }}} // namespace boost::python::converter
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_TO_PYTHON_FUNCTION_TYPE_HPP

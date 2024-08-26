@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_LIST_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_LIST_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/type_list.hpp>
+#else
+
 # include <boost/config.hpp>
 # include "pxr/external/boost/python/detail/preprocessor.hpp"
 # include <boost/preprocessor/arithmetic/inc.hpp>
@@ -37,4 +43,5 @@
 
 #  include "pxr/external/boost/python/detail/type_list_impl.hpp"
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_LIST_HPP

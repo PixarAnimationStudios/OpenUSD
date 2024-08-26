@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_MAKE_FUNCTION_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_MAKE_FUNCTION_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/make_function.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/default_call_policies.hpp"
@@ -155,4 +161,5 @@ object make_function(
 }} 
 
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_MAKE_FUNCTION_HPP

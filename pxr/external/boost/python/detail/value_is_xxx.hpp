@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VALUE_IS_XXX_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VALUE_IS_XXX_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/value_is_xxx.hpp>
+#else
+
 # include <boost/config.hpp>
 # include <boost/mpl/bool.hpp>
 # include <boost/preprocessor/enum_params.hpp>
@@ -35,4 +41,5 @@ struct value_is_##name                                                  \
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VALUE_IS_XXX_HPP

@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ENUM_BASE_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ENUM_BASE_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/enum_base.hpp>
+#else
+
 # include "pxr/external/boost/python/object_core.hpp"
 # include "pxr/external/boost/python/type_id.hpp"
 # include "pxr/external/boost/python/converter/to_python_function_type.hpp"
@@ -38,4 +44,5 @@ struct BOOST_PYTHON_DECL enum_base : python::api::object
 
 }}} // namespace boost::python::object
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ENUM_BASE_HPP

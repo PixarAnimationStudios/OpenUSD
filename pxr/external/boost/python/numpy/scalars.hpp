@@ -12,6 +12,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_NUMPY_SCALARS_HPP
 #define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_SCALARS_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/numpy/scalars.hpp>
+#else
+
 /**
  *  @brief Object managers for array scalars (currently only numpy.void is implemented).
  */
@@ -60,4 +66,5 @@ namespace converter
 NUMPY_OBJECT_MANAGER_TRAITS(numpy::void_);
 }}} // namespace boost::python::converter
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

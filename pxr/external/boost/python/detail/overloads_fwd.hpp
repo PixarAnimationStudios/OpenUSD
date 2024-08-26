@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_OVERLOADS_FWD_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_OVERLOADS_FWD_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/overloads_fwd.hpp>
+#else
+
 namespace boost { namespace python { namespace detail { 
 
 // forward declarations
@@ -20,4 +26,5 @@ inline void define_with_defaults(char const* name, OverloadsT const&, NameSpaceT
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_OVERLOADS_FWD_HPP

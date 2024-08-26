@@ -15,6 +15,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_DEF_HPP
 #define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_DEF_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/defaults_def.hpp>
+#else
+
 #include "pxr/external/boost/python/detail/defaults_gen.hpp"
 #include "pxr/external/boost/python/detail/type_traits.hpp"
 #include <boost/mpl/front.hpp>
@@ -264,6 +270,7 @@ namespace detail
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_DEF_HPP
 
 #else // defined(BOOST_PP_IS_ITERATING)

@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_WITH_CUSTODIAN_AND_WARD_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_WITH_CUSTODIAN_AND_WARD_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/with_custodian_and_ward.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/default_call_policies.hpp"
@@ -123,4 +129,5 @@ struct with_custodian_and_ward_postcall : BasePolicy_
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_WITH_CUSTODIAN_AND_WARD_HPP

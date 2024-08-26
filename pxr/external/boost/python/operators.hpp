@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_OPERATORS_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_OPERATORS_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/operators.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/def_visitor.hpp"
@@ -376,4 +382,5 @@ using boost::python::self_ns::repr;
 using boost::python::self_ns::pow;
 # endif
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OPERATORS_HPP

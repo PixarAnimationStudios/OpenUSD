@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DEF_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DEF_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/def.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/object_fwd.hpp"
@@ -116,4 +122,5 @@ void def(char const* name, F f, A1 const& a1, A2 const& a2, A3 const& a3)
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DEF_HPP

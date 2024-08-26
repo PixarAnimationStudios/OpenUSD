@@ -9,6 +9,12 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_LIFE_SUPPORT_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_LIFE_SUPPORT_HPP
+
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/life_support.hpp>
+#else
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 namespace boost { namespace python { namespace objects { 
@@ -17,4 +23,5 @@ BOOST_PYTHON_DECL PyObject* make_nurse_and_patient(PyObject* nurse, PyObject* pa
 
 }}} // namespace boost::python::object
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_LIFE_SUPPORT_HPP

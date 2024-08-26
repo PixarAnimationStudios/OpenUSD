@@ -295,7 +295,16 @@ pxr_library(python
 # Add BOOST_PYTHON_SOURCE when building this library to ensure symbols
 # decorated with BOOST_PYTHON_DECL are exported.
 target_compile_definitions(python
-    PRIVATE BOOST_PYTHON_SOURCE)
+    PRIVATE BOOST_PYTHON_SOURCE
+)
+
+# XXX:
+# Force this on for now during initial development so we continue to
+# build and test this library. Later there'll be an option to turn
+# this on or off.
+target_compile_definitions(python
+    PUBLIC PXR_USE_INTERNAL_BOOST_PYTHON
+)
 
 ####
 # Helper functions for unit tests

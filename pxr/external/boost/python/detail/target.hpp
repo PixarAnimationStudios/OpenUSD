@@ -13,6 +13,12 @@
 # ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TARGET_HPP
 #  define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TARGET_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/target.hpp>
+#else
+
 #  include "pxr/external/boost/python/detail/preprocessor.hpp"
 
 #  include <boost/type.hpp>
@@ -39,6 +45,7 @@ T& (* target(R (T::*)) )() { return 0; }
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TARGET_HPP
 
 /* --------------- function pointers --------------- */

@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_PURE_VIRTUAL_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_PURE_VIRTUAL_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/pure_virtual.hpp>
+#else
+
 # include "pxr/external/boost/python/def_visitor.hpp"
 # include "pxr/external/boost/python/default_call_policies.hpp"
 # include <boost/mpl/push_front.hpp>
@@ -126,4 +132,5 @@ pure_virtual(PointerToMemberFunction pmf)
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_PURE_VIRTUAL_HPP

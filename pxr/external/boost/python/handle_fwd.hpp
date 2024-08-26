@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_HANDLE_FWD_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_HANDLE_FWD_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/handle_fwd.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 namespace boost { namespace python { 
@@ -18,4 +24,5 @@ template <class T = PyObject> class handle;
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_HANDLE_FWD_HPP

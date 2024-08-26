@@ -9,10 +9,17 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_INDIRECT_TRAITS_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_INDIRECT_TRAITS_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/indirect_traits.hpp>
+#else
+
 # include <boost/detail/indirect_traits.hpp>
 
 namespace boost { namespace python {
 namespace indirect_traits = boost::detail::indirect_traits;
 }} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_INDIRECT_TRAITS_HPP

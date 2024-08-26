@@ -13,6 +13,12 @@
 # ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_HOLDER_HPP
 #  define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_HOLDER_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/make_holder.hpp>
+#else
+
 #  include "pxr/external/boost/python/detail/prefix.hpp"
 
 #  include "pxr/external/boost/python/object/instance.hpp"
@@ -50,6 +56,7 @@ template <int nargs> struct make_holder;
 
 }}} // namespace boost::python::objects
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_HOLDER_HPP
 
 // For gcc 4.4 compatability, we must include the

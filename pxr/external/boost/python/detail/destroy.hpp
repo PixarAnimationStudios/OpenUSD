@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DESTROY_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DESTROY_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/destroy.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <boost/detail/workaround.hpp>
 namespace boost { namespace python { namespace detail { 
@@ -65,4 +71,5 @@ inline void destroy_referent(void* p, T(*)() = 0)
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DESTROY_HPP

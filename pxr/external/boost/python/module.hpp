@@ -10,9 +10,16 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_MODULE_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_MODULE_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/module.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/module_init.hpp"
 # define BOOST_PYTHON_MODULE BOOST_PYTHON_MODULE_INIT
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // MODULE_DWA20011221_HPP

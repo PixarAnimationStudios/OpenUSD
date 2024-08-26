@@ -9,6 +9,12 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HANDLE_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HANDLE_HPP
+
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/function_handle.hpp>
+#else
 # include "pxr/external/boost/python/handle.hpp"
 # include "pxr/external/boost/python/detail/caller.hpp"
 # include "pxr/external/boost/python/default_call_policies.hpp"
@@ -46,4 +52,5 @@ handle<> make_function_handle(F f)
 
 }}} // namespace boost::python::objects
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HANDLE_HPP

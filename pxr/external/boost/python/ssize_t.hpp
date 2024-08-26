@@ -11,6 +11,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_SSIZE_T_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_SSIZE_T_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/ssize_t.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 namespace boost { namespace python {
@@ -31,4 +37,5 @@ ssize_t const ssize_t_min = INT_MIN;
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_SSIZE_T_HPP

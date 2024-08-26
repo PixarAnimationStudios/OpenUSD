@@ -12,6 +12,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_NUMPY_INVOKE_MATCHING_HPP
 #define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_INVOKE_MATCHING_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/numpy/invoke_matching.hpp>
+#else
+
 /**
  *  @brief Template invocation based on dtype matching.
  */
@@ -188,4 +194,5 @@ void invoke_matching_array(ndarray const & array_, Function f)
 
 }}} // namespace boost::python::numpy
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

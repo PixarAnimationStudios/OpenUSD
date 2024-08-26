@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_SELF_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_SELF_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/self.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 namespace boost { namespace python {
@@ -35,4 +41,5 @@ using self_ns::self;
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_SELF_HPP

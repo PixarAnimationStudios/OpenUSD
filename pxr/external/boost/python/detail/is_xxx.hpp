@@ -10,9 +10,16 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IS_XXX_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IS_XXX_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/is_xxx.hpp>
+#else
+
 # include <boost/detail/is_xxx.hpp>
 
 #  define BOOST_PYTHON_IS_XXX_DEF(name, qualified_name, nargs) \
     BOOST_DETAIL_IS_XXX_DEF(name, qualified_name, nargs)
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IS_XXX_HPP

@@ -9,6 +9,12 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_AS_TO_PYTHON_FUNCTION_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_AS_TO_PYTHON_FUNCTION_HPP
+
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/converter/as_to_python_function.hpp>
+#else
 # include "pxr/external/boost/python/converter/to_python_function_type.hpp"
 
 namespace boost { namespace python { namespace converter { 
@@ -51,4 +57,5 @@ struct as_to_python_function
 
 }}} // namespace boost::python::converter
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_AS_TO_PYTHON_FUNCTION_HPP

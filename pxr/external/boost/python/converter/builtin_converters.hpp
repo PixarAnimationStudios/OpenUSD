@@ -9,6 +9,12 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_BUILTIN_CONVERTERS_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_BUILTIN_CONVERTERS_HPP
+
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/converter/builtin_converters.hpp>
+#else
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/detail/none.hpp"
 # include "pxr/external/boost/python/handle.hpp"
@@ -192,4 +198,5 @@ namespace converter
 
 }} // namespace boost::python::converter
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_BUILTIN_CONVERTERS_HPP

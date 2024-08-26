@@ -9,6 +9,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_WRAPPER_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_WRAPPER_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/wrapper.hpp>
+#else
+
 # include "pxr/external/boost/python/detail/wrapper_base.hpp"
 # include "pxr/external/boost/python/override.hpp"
 # include "pxr/external/boost/python/converter/registered.hpp"
@@ -37,4 +43,5 @@ class wrapper : public detail::wrapper_base
 
 }} // namespace boost::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_WRAPPER_HPP

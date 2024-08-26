@@ -12,6 +12,12 @@
 # ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_INVOKE_HPP
 #  define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_INVOKE_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/invoke.hpp>
+#else
+
 #  include "pxr/external/boost/python/detail/prefix.hpp"
 #  include "pxr/external/boost/python/detail/preprocessor.hpp"
 #  include "pxr/external/boost/python/detail/none.hpp"
@@ -67,6 +73,7 @@ struct invoke_tag
 
 }}} // namespace boost::python::detail
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_INVOKE_HPP
 #else 
 

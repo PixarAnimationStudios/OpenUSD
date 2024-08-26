@@ -11,6 +11,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_DETAIL_INDEXING_SUITE_DETAIL_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_DETAIL_INDEXING_SUITE_DETAIL_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/suite/indexing/detail/indexing_suite_detail.hpp>
+#else
+
 # include "pxr/external/boost/python/extract.hpp"
 # include <boost/scoped_ptr.hpp>
 # include <boost/get_pointer.hpp>
@@ -761,4 +767,5 @@ namespace boost { namespace python { namespace detail {
 
 } // namespace boost
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_DETAIL_INDEXING_SUITE_DETAIL_HPP

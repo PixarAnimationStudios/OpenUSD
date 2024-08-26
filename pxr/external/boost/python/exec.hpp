@@ -10,6 +10,12 @@
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_EXEC_HPP
 # define PXR_EXTERNAL_BOOST_PYTHON_EXEC_HPP
 
+#include "pxr/pxr.h"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/exec.hpp>
+#else
+
 # include "pxr/external/boost/python/object.hpp"
 # include "pxr/external/boost/python/str.hpp"
 
@@ -65,4 +71,5 @@ exec_file(char const *filename, object global = object(), object local = object(
 }
 }
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif
