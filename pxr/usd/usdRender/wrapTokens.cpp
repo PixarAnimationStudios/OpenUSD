@@ -30,7 +30,6 @@ void wrapUsdRenderTokens()
     _ADD_TOKEN(cls, dataWindowNDC);
     _ADD_TOKEN(cls, deepRaster);
     _ADD_TOKEN(cls, denoiseEnable);
-    _ADD_TOKEN(cls, denoisePass);
     _ADD_TOKEN(cls, disableDepthOfField);
     _ADD_TOKEN(cls, disableMotionBlur);
     _ADD_TOKEN(cls, expandAperture);
@@ -59,7 +58,6 @@ void wrapUsdRenderTokens()
     _ADD_TOKEN(cls, resolution);
     _ADD_TOKEN(cls, sourceName);
     _ADD_TOKEN(cls, sourceType);
-    _ADD_TOKEN(cls, RenderDenoisePass);
     _ADD_TOKEN(cls, RenderPass);
     _ADD_TOKEN(cls, RenderProduct);
     _ADD_TOKEN(cls, RenderSettings);

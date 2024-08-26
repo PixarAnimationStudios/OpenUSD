@@ -10,7 +10,6 @@ pxr_library(usdRender
         usdShade
 
     PUBLIC_CLASSES
-        denoisePass
         pass
         product
         settings
@@ -27,7 +26,6 @@ pxr_library(usdRender
 
     PYMODULE_CPPFILES
         module.cpp
-        wrapDenoisePass.cpp
         wrapPass.cpp
         wrapProduct.cpp
         wrapSettingsBase.cpp

@@ -140,11 +140,6 @@ void wrapUsdRenderPass()
              &This::GetInputPassesRel)
         .def("CreateInputPassesRel",
              &This::CreateInputPassesRel)
-        
-        .def("GetDenoisePassRel",
-             &This::GetDenoisePassRel)
-        .def("CreateDenoisePassRel",
-             &This::CreateDenoisePassRel)
         .def("__repr__", ::_Repr)
     ;
 
