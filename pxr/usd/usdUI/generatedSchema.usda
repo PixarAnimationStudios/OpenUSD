@@ -130,3 +130,125 @@ class Backdrop "Backdrop" (
     )
 }
 
+class "AccessibilityAPI" (
+    doc = '''
+    This API describes Accessibility information on a Prim that may be surfaced to a given runtimes
+    accessibility frameworks.
+    This information may be used by assistive tooling such as voice controls or screen readers.
+    Accessibility information is provided as a standard triplet of label, description and priority.
+
+    OpenUSD does not provide a accessibility runtime itself, but endeavours to provide the information needed for
+    compatible runtimes to extract and present this information.
+
+    This is a multiple apply schema, and so may have multiple namespaced accessibility triplets, where a instance
+    name may reflect a given purpose for that triplet. For example, you may desire to express different
+    information for different aspects of the prim, such as size or color.
+
+    \\note The API will use default as an instance name if no namespace is specified.
+    When using "default" as the name, the instance name is elided from the attribute name.
+    
+    There are several best practices for using this schema.:
+
+    - Most accessibility runtimes support a single accessibility description. Therefore we recommend placing
+    any critical information in the default instance.
+
+    - A default value should be authored if using time sampled accessibility information. 
+    This helps accessibility runtimes that do not currently support time sampled information.
+
+    - Provide accessibility information of your scene on the default prim of the layer, and any top level prims.
+    This allows accessibility systems to provide concise scene descriptions to a user, but also allows supporting
+    accessibility systems that either do not support hierarchy information or when a user has turned off that level
+    of granularity. Accessibility information may still be provided on other prims in the hierarchy.
+
+    \\note The use of the default prim and top level prims for scene accessibility descriptions is a
+    recommended convention. Outside of that, accessibility information is not implicitly inherited through
+    a prim hierarchy. The inheritance should be left to the accessibility runtime to decide how best to
+    surface information to users.
+    '''
+)
+{
+    string accessibility:__INSTANCE_NAME__:description (
+        doc = """An extended description of the prim to provide more details.
+        If a label attribute is not authored in a given instance name, the description attribute should not be used
+        in it its place. A description is an optional attribute, and some accessibility systems may only use the label.
+
+        Descriptions may be time varying for runtimes that support it. For example, you may describe what a character
+        is doing at a given time.
+        """
+    )
+    string accessibility:__INSTANCE_NAME__:label (
+        doc = """A short label to concisely describe the prim.
+        It is not recommended to time vary the label unless the concise description changes substantially."""
+    )
+    uniform token accessibility:__INSTANCE_NAME__:priority = "standard" (
+        allowedTokens = ["low", "standard", "high"]
+        doc = """A hint to the accessibility runtime of how to prioritize this instances label and description,
+        relative to others. This attribute is optional. Accessibility runtimes may choose to apply their own
+        priority systems that override this.
+
+        Priority may not be time varying.
+        """
+    )
+}
+
+class "LocalizationAPI" (
+    doc = """This API describes em Language localization information for attributes.
+    
+    It may be used to provide alternate language definitions for content like strings and asset paths that are
+    displayed to a user.
+    Runtimes may present the best language for a given users preference with this information.
+
+    OpenUSD leaves it up to the runtime that is consuming it to handle localized presentations.
+    As such, support for localization may vary across runtimes.
+
+    \\important Lookup of localized attributes may be expensive, so are recommended to be used sparingly
+    It is recommended, but not enforced, to only use them for strings and asset paths.
+    Support for localization of different attributes may vary depending on the application runtime that 
+    the data is brought into.
+    
+
+    \\note Language identifiers must use the BCP-47 list of languages. However, since USD cannot currently use
+    hyphens in identifiers, any hyphens are replaced with underscores. This is similar in strategy to other
+    systems that adhere closely to the Unicode Identifier specification. e.g en-ca is en_CA .
+    Take care when converting language identifiers to a systems own formatting.
+
+    A default language is specifiable on a prim. This is the language that is assumed when attributes do
+    not include their own identifier for language. The default language is explicitly inherited by 
+    all prims under the current prims hierarchy.
+
+    \\note Provide default localization information on the default prim of the layer, and any top level prims.
+    It is not recommended to keep declarations of the default localization to a minimum throughout the rest of
+    the hierarchy within a single layer.
+
+    Attributes are suffixed with :lang:<identifier> when expressing languages other than the default.
+    
+    For example, \"string text\" would implicitly be in the default localization language, but you may have
+    \"string text:lang:fr\" for French.
+
+    Runtimes may provide their own logic for choosing which langauge to display, but following BCP-47,
+    a recommended logic set is:
+
+    - If a preferred language is available within the set of declared languages, pick that language exactly.
+    e.g \"en_CA\" should not pick simply \"en\" if \"en_CA\" is available
+
+    - If a preferred language isn't available, check for a more specific version of that language.
+    e.g \"de_DE\" may match to \"de_DE_u_co_phonebk\"
+
+    - If a more specific language is not available, pick a less specific language.
+    e.g \"en_US\" may match to \"en\"
+
+    - If a less specific language choice is not available, pick the attribute without language specification.
+    """
+)
+{
+    uniform token localization:__INSTANCE_NAME__:language (
+        doc = """The default language for this prim hierarchy. This may only be created with the default instance name.
+        
+        \\note If no default localization language is provided, the runtime may optionally try and infer the
+        language of the text.
+        If the runtime does not infer the langauge, it should assume the language is in the users preferred language,
+        which may be derived from the system or current user context.
+        """
+    )
+}
+
