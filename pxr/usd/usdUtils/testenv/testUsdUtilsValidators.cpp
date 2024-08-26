@@ -3,8 +3,8 @@
 #include "pxr/usd/usdUtils/validatorTokens.h"
 #include "pxr/usd/usd/validationRegistry.h"
 #include "pxr/base/arch/systemInfo.h"
+#include "pxr/base/tf/pathUtils.h"
 
-#include <filesystem>
 PXR_NAMESPACE_USING_DIRECTIVE
 
 static
@@ -55,24 +55,21 @@ TestPackageEncapsulationValidator()
     // Verify both the layer & asset errors are present
     TF_AXIOM(errors.size() == 2);
 
-    const std::string& realRootPath = stage->GetRootLayer()->GetRealPath();
-
-    std::filesystem::path rootPath(realRootPath);
-
-    const std::string& errorLayer = rootPath.parent_path()
-            .append("excludedDirectory")
-            .append("layer.usda");
-    const std::string& errorAsset = rootPath.parent_path()
-            .append("excludedDirectory")
-            .append("image.jpg");
+    const std::string& absoluteUsdzPath = TfAbsPath(
+            stage->GetRootLayer()->GetIdentifier());
+    const std::string& usdzRootDirectory = TfGetPathName(absoluteUsdzPath);
+    const std::string& errorLayer = TfStringCatPaths(
+            usdzRootDirectory, "excludedDirectory/layer.usda");
+    const std::string& errorAsset = TfStringCatPaths(
+            usdzRootDirectory, "excludedDirectory/image.jpg");
 
     std::vector<std::string> expectedErrorMessages = {
-            TfStringPrintf(("Found referenced layer '%s' that does not belong to the"
-                            " package '%s'."),
-                           errorLayer.c_str(), realRootPath.c_str()),
+            TfStringPrintf(("Found referenced layer '%s' that does not "
+                            "belong to the package '%s'."),
+                           errorLayer.c_str(), absoluteUsdzPath.c_str()),
             TfStringPrintf(("Found asset reference '%s' that does not belong"
                             " to the package '%s'."),
-                           errorAsset.c_str(), realRootPath.c_str())
+                           errorAsset.c_str(), absoluteUsdzPath.c_str())
     };
 
     for (size_t i = 0; i < errors.size(); ++i)
