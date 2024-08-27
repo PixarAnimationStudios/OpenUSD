@@ -14,6 +14,7 @@
 #include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/hgiConversions.h"
 #include "pxr/imaging/hdSt/fallbackLightingShader.h"
+#include "pxr/imaging/hdSt/simpleLightingShader.h"
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
@@ -487,6 +488,9 @@ HdStRenderPassState::SetLightingShader(HdStLightingShaderSharedPtr const &lighti
     } else {
         _lightingShader = _fallbackLightingShader;
     }
+
+    if (_lightingShader)
+        _lightingShader->SetReceiveShadows(GetReceiveShadows());
 }
 
 void 

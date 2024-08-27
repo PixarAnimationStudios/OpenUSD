@@ -321,6 +321,12 @@ HdSt_TestLightingShader::SetLight(int light,
     }
 }
 
+void
+HdSt_TestLightingShader::SetReceiveShadows(bool enabled)
+{
+
+}
+
 // --------------------------------------------------------------------------
 
 HdSt_TextureTestDriver::HdSt_TextureTestDriver() :

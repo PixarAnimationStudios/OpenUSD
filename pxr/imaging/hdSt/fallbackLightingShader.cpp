@@ -78,5 +78,11 @@ HdSt_FallbackLightingShader::AddBindings(
     // no-op
 }
 
+void 
+HdSt_FallbackLightingShader::SetReceiveShadows(bool enabled)
+{
+    // nothing
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
