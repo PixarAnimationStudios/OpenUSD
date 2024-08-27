@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_OBJECT_MANAGER_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/converter/object_manager.hpp>
@@ -58,7 +59,7 @@
 //    * T(detail::borrowed_reference(p))
 //        Manages p without checking its type
 //
-//    * get_managed_object(x, boost::python::tag)
+//    * get_managed_object(x, PXR_BOOST_NAMESPACE::python::tag)
 //        Convertible to PyObject*
 //
 // Additional requirements if T can be converted from_python:
@@ -73,7 +74,7 @@
 
 // Forward declarations
 //
-namespace boost { namespace python
+namespace PXR_BOOST_NAMESPACE { namespace python
 {
   namespace api
   {
@@ -81,7 +82,7 @@ namespace boost { namespace python
   }
 }}
 
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 
 // Specializations for handle<T>
@@ -162,7 +163,7 @@ struct is_reference_to_object_manager<T const volatile&>
 {
 };
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_OBJECT_MANAGER_HPP

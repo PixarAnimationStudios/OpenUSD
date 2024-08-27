@@ -11,13 +11,14 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CV_CATEGORY_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/cv_category.hpp>
 #else
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-namespace boost { namespace python { namespace detail { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 template <bool is_const_, bool is_volatile_>
 struct cv_tag
@@ -42,7 +43,7 @@ struct cv_category
     > type;
 };
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CV_CATEGORY_HPP

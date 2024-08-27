@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_CAST_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/cast.hpp>
@@ -23,7 +24,7 @@
 # include "pxr/external/boost/python/base_type_traits.hpp"
 # include "pxr/external/boost/python/detail/convertible.hpp"
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 namespace detail
 {
@@ -111,7 +112,7 @@ inline Target* downcast(Source* x, Target* = 0)
     return detail::downcast<Target>(x, detail::convertible<Source*>::check((Target*)0));
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CAST_HPP

@@ -11,8 +11,8 @@
 
 #include "pxr/external/boost/python/numpy.hpp"
 
-namespace p = boost::python;
-namespace np = boost::python::numpy;
+namespace p = PXR_BOOST_NAMESPACE::python;
+namespace np = PXR_BOOST_NAMESPACE::python::numpy;
 
 np::ndarray zeros(p::tuple shape, np::dtype dt) { return np::zeros(shape, dt);}
 np::ndarray array2(p::object obj, np::dtype dt) { return np::array(obj,dt);}
@@ -39,7 +39,7 @@ np::ndarray reshape(np::ndarray arr,p::tuple tup) { return arr.reshape(tup);}
 Py_intptr_t shape_index(np::ndarray arr,int k) { return arr.shape(k); }
 Py_intptr_t strides_index(np::ndarray arr,int k) { return arr.strides(k); }
 
-BOOST_PYTHON_MODULE(ndarray_ext)
+PXR_BOOST_PYTHON_MODULE(ndarray_ext)
 {
   np::initialize();
   p::def("zeros", zeros);

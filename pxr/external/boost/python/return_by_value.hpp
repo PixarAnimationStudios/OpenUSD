@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_RETURN_BY_VALUE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/return_by_value.hpp>
@@ -23,7 +24,7 @@
 
 # include "pxr/external/boost/python/detail/value_arg.hpp"
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 struct return_by_value
 {
@@ -36,7 +37,7 @@ struct return_by_value
     };
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_RETURN_BY_VALUE_HPP

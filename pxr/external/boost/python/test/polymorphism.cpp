@@ -17,7 +17,7 @@
 #include "pxr/external/boost/python/def.hpp"
 #include <boost/utility.hpp>
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 struct Callback
 {
@@ -130,7 +130,7 @@ C& getCCppObj ()
 
 A* pass_a(A* x) { return x; }
 
-BOOST_PYTHON_MODULE_INIT(polymorphism_ext)
+PXR_BOOST_PYTHON_MODULE_INIT(polymorphism_ext)
 {
     class_<A,boost::noncopyable,ACallback>("A")
         .def("f", &A::f, &ACallback::default_f)

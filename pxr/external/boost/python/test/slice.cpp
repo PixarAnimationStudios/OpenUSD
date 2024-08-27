@@ -13,10 +13,10 @@
 //  Boost Software License, Version 1.0. (See accompanying file
 //  LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 #if BOOST_WORKAROUND(__SUNPRO_CC, BOOST_TESTED_AT(0x580)) || BOOST_WORKAROUND(BOOST_MSVC, BOOST_TESTED_AT(1500))
-# define make_tuple boost::python::make_tuple
+# define make_tuple PXR_BOOST_NAMESPACE::python::make_tuple
 #endif 
 
 // These checks are only valid under Python 2.3
@@ -95,7 +95,7 @@ int check_slice_get_indices(
 }
 
 
-BOOST_PYTHON_MODULE(slice_ext)
+PXR_BOOST_PYTHON_MODULE(slice_ext)
 {
     def( "accept_slice", accept_slice);
     def( "check_string_rich_slice", check_string_rich_slice);

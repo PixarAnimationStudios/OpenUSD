@@ -13,14 +13,14 @@
 #include "pxr/external/boost/python/object.hpp"
 #include "pxr/external/boost/python/ssize_t.hpp"
 
-namespace boost { namespace python { namespace api {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace api {
 
-BOOST_PYTHON_DECL object getattr(object const& target, object const& key)
+PXR_BOOST_PYTHON_DECL object getattr(object const& target, object const& key)
 {
     return object(detail::new_reference(PyObject_GetAttr(target.ptr(), key.ptr())));
 }
     
-BOOST_PYTHON_DECL object getattr(object const& target, object const& key, object const& default_)
+PXR_BOOST_PYTHON_DECL object getattr(object const& target, object const& key, object const& default_)
 {
     PyObject* result = PyObject_GetAttr(target.ptr(), key.ptr());
     if (result == NULL && PyErr_ExceptionMatches(PyExc_AttributeError))
@@ -31,19 +31,19 @@ BOOST_PYTHON_DECL object getattr(object const& target, object const& key, object
     return object(detail::new_reference(result));
 }
         
-BOOST_PYTHON_DECL void setattr(object const& target, object const& key, object const& value)
+PXR_BOOST_PYTHON_DECL void setattr(object const& target, object const& key, object const& value)
 {
     if (PyObject_SetAttr(target.ptr(), key.ptr(), value.ptr()) == -1)
         throw_error_already_set();
 }
 
-BOOST_PYTHON_DECL void delattr(object const& target, object const& key)
+PXR_BOOST_PYTHON_DECL void delattr(object const& target, object const& key)
 {
     if (PyObject_DelAttr(target.ptr(), key.ptr()) == -1)
         throw_error_already_set();
 }
 
-BOOST_PYTHON_DECL object getattr(object const& target, char const* key)
+PXR_BOOST_PYTHON_DECL object getattr(object const& target, char const* key)
 {
     return object(
         detail::new_reference(
@@ -51,7 +51,7 @@ BOOST_PYTHON_DECL object getattr(object const& target, char const* key)
         ));
 }
     
-BOOST_PYTHON_DECL object getattr(object const& target, char const* key, object const& default_)
+PXR_BOOST_PYTHON_DECL object getattr(object const& target, char const* key, object const& default_)
 {
     PyObject* result = PyObject_GetAttrString(target.ptr(), const_cast<char*>(key));
     if (result == NULL && PyErr_ExceptionMatches(PyExc_AttributeError))
@@ -62,7 +62,7 @@ BOOST_PYTHON_DECL object getattr(object const& target, char const* key, object c
     return object(detail::new_reference(result));
     
 }
-BOOST_PYTHON_DECL void setattr(object const& target, char const* key, object const& value)
+PXR_BOOST_PYTHON_DECL void setattr(object const& target, char const* key, object const& value)
 {
     if (PyObject_SetAttrString(
             target.ptr(), const_cast<char*>(key), value.ptr()) == -1
@@ -72,7 +72,7 @@ BOOST_PYTHON_DECL void setattr(object const& target, char const* key, object con
     }
 }
 
-BOOST_PYTHON_DECL void delattr(object const& target, char const* key)
+PXR_BOOST_PYTHON_DECL void delattr(object const& target, char const* key)
 {
     if (PyObject_DelAttrString(
             target.ptr(), const_cast<char*>(key)) == -1
@@ -82,19 +82,19 @@ BOOST_PYTHON_DECL void delattr(object const& target, char const* key)
     }
 }
 
-BOOST_PYTHON_DECL object getitem(object const& target, object const& key)
+PXR_BOOST_PYTHON_DECL object getitem(object const& target, object const& key)
 {
     return object(detail::new_reference(
                       PyObject_GetItem(target.ptr(), key.ptr())));
 }
     
-BOOST_PYTHON_DECL void setitem(object const& target, object const& key, object const& value)
+PXR_BOOST_PYTHON_DECL void setitem(object const& target, object const& key, object const& value)
 {
     if (PyObject_SetItem(target.ptr(), key.ptr(), value.ptr()) == -1)
         throw_error_already_set();
 }
     
-BOOST_PYTHON_DECL void delitem(object const& target, object const& key)
+PXR_BOOST_PYTHON_DECL void delitem(object const& target, object const& key)
 {
     if (PyObject_DelItem(target.ptr(), key.ptr()) == -1)
         throw_error_already_set();
@@ -172,14 +172,14 @@ namespace // slicing code copied directly out of the Python implementation
   }
 }
 
-BOOST_PYTHON_DECL object getslice(object const& target, handle<> const& begin, handle<> const& end)
+PXR_BOOST_PYTHON_DECL object getslice(object const& target, handle<> const& begin, handle<> const& end)
 {
     return object(
         detail::new_reference(
             apply_slice(target.ptr(), begin.get(), end.get())));
 }
 
-BOOST_PYTHON_DECL void setslice(object const& target, handle<> const& begin, handle<> const& end, object const& value)
+PXR_BOOST_PYTHON_DECL void setslice(object const& target, handle<> const& begin, handle<> const& end, object const& value)
 {
     if (assign_slice(
             target.ptr(), begin.get(), end.get(), value.ptr()) == -1
@@ -189,7 +189,7 @@ BOOST_PYTHON_DECL void setslice(object const& target, handle<> const& begin, han
     }
 }
 
-BOOST_PYTHON_DECL void delslice(object const& target, handle<> const& begin, handle<> const& end)
+PXR_BOOST_PYTHON_DECL void delslice(object const& target, handle<> const& begin, handle<> const& end)
 {
     if (assign_slice(
             target.ptr(), begin.get(), end.get(), 0) == -1
@@ -199,4 +199,4 @@ BOOST_PYTHON_DECL void delslice(object const& target, handle<> const& begin, han
     }
 }
 
-}}} // namespace boost::python::api
+}}} // namespace PXR_BOOST_NAMESPACE::python::api

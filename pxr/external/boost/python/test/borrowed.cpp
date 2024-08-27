@@ -11,18 +11,18 @@
 #include "pxr/external/boost/python/borrowed.hpp"
 #include <boost/static_assert.hpp>
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 template <class T>
 void assert_borrowed_ptr(T const&)
 {
-    BOOST_STATIC_ASSERT(boost::python::detail::is_borrowed_ptr<T>::value);
+    BOOST_STATIC_ASSERT(PXR_BOOST_NAMESPACE::python::detail::is_borrowed_ptr<T>::value);
 }
     
 template <class T>
 void assert_not_borrowed_ptr(T const&)
 {
-    BOOST_STATIC_ASSERT(!boost::python::detail::is_borrowed_ptr<T>::value);
+    BOOST_STATIC_ASSERT(!PXR_BOOST_NAMESPACE::python::detail::is_borrowed_ptr<T>::value);
 }
     
 int main()

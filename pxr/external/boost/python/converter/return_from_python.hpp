@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_RETURN_FROM_PYTHON_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/converter/return_from_python.hpp>
@@ -29,7 +30,7 @@
 # include <boost/mpl/and.hpp>
 # include <boost/mpl/bool.hpp>
 
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 template <class T> struct is_object_manager;
 
@@ -168,7 +169,7 @@ namespace detail
   }
 }
   
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_RETURN_FROM_PYTHON_HPP

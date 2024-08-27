@@ -14,7 +14,7 @@
 # include <iostream> // works around a KCC intermediate code generation bug
 #endif
 
-BOOST_PYTHON_MODULE(minimal_ext)
+PXR_BOOST_PYTHON_MODULE(minimal_ext)
 {
 }
 

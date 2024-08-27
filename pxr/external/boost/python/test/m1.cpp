@@ -8,10 +8,10 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-// If BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
+// If PXR_BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
 // boost::python will generate simplified docstrings that break the associated
 // test unless we undefine it before including any headers.
-#undef BOOST_PYTHON_NO_PY_SIGNATURES
+#undef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/docstring_options.hpp"
@@ -175,12 +175,12 @@ PyObject* new_simple()
 // Declare some wrappers/unwrappers to test the low-level conversion
 // mechanism. 
 //
-using boost::python::to_python_converter;
+using PXR_BOOST_NAMESPACE::python::to_python_converter;
 
 // Wrap a simple by copying it into a Simple
 struct simple_to_python
     : to_python_converter<simple, simple_to_python, true>
-    //, boost::python::converter::wrap_pytype<&SimpleType>
+    //, PXR_BOOST_NAMESPACE::python::converter::wrap_pytype<&SimpleType>
 {
     static PyObject* convert(simple const& x)
     {
@@ -279,13 +279,13 @@ Unregistered make_unregistered(int) { return Unregistered(); }
 
 Unregistered* make_unregistered2(int) { return new Unregistered; }
 
-BOOST_PYTHON_MODULE(m1)
+PXR_BOOST_PYTHON_MODULE(m1)
 {
-    using namespace boost::python;
+    using namespace PXR_BOOST_NAMESPACE::python;
     using boost::shared_ptr;
 
     // Explicitly enable Python signatures in docstrings in case boost::python
-    // was built with BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
+    // was built with PXR_BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
     // signatures by default.
     docstring_options doc_options;
     doc_options.enable_py_signatures();

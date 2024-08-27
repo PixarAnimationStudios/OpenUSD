@@ -8,20 +8,20 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef BOOST_PYTHON_SOURCE
-# define BOOST_PYTHON_SOURCE
+#ifndef PXR_BOOST_PYTHON_SOURCE
+# define PXR_BOOST_PYTHON_SOURCE
 #endif
 
 #include "pxr/external/boost/python/errors.hpp"
 #include <boost/cast.hpp>
 #include "pxr/external/boost/python/detail/exception_handler.hpp"
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 error_already_set::~error_already_set() {}
 
 // IMPORTANT: this function may only be called from within a catch block!
-BOOST_PYTHON_DECL bool handle_exception_impl(function0<void> f)
+PXR_BOOST_PYTHON_DECL bool handle_exception_impl(function0<void> f)
 {
     try
     {
@@ -30,7 +30,7 @@ BOOST_PYTHON_DECL bool handle_exception_impl(function0<void> f)
         f();
         return false;
     }
-    catch(const boost::python::error_already_set&)
+    catch(const PXR_BOOST_NAMESPACE::python::error_already_set&)
     {
         // The python error reporting has already been handled.
     }
@@ -61,7 +61,7 @@ BOOST_PYTHON_DECL bool handle_exception_impl(function0<void> f)
     return true;
 }
 
-void BOOST_PYTHON_DECL throw_error_already_set()
+void PXR_BOOST_PYTHON_DECL throw_error_already_set()
 {
     throw error_already_set();
 }
@@ -95,7 +95,7 @@ exception_handler::exception_handler(handler_function const& impl)
 exception_handler* exception_handler::chain;
 exception_handler* exception_handler::tail;
 
-BOOST_PYTHON_DECL void register_exception_handler(handler_function const& f)
+PXR_BOOST_PYTHON_DECL void register_exception_handler(handler_function const& f)
 {
     // the constructor links the new object into a handler chain, so
     // this object isn't actaully leaked (until, of course, the
@@ -103,8 +103,8 @@ BOOST_PYTHON_DECL void register_exception_handler(handler_function const& f)
     new exception_handler(f);
 }
 
-} // namespace boost::python::detail
+} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 

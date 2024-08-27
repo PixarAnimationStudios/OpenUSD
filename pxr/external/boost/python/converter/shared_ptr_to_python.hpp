@@ -13,6 +13,7 @@
 #define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_SHARED_PTR_TO_PYTHON_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/converter/shared_ptr_to_python.hpp>
@@ -23,7 +24,11 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/get_pointer.hpp>
 
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE {
+    using boost::get_pointer; // Enable ADL for boost types
+}
+
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 template <class T>
 PyObject* shared_ptr_to_python(shared_ptr<T> const& x)
@@ -49,7 +54,7 @@ PyObject* shared_ptr_to_python(std::shared_ptr<T> const& x)
 }
 #endif
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

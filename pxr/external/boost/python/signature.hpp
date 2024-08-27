@@ -16,6 +16,7 @@
 #  define PXR_EXTERNAL_BOOST_PYTHON_SIGNATURE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/signature.hpp>
@@ -40,11 +41,11 @@
 #  include <boost/preprocessor/arithmetic/inc.hpp>
 #  include <boost/preprocessor/repetition/enum_trailing_params.hpp>
 
-# define BOOST_PYTHON_LIST_INC(n)        \
+# define PXR_BOOST_PYTHON_LIST_INC(n)        \
    BOOST_PP_CAT(mpl::vector, BOOST_PP_INC(n))
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 // A metafunction returning C1 if C1 is derived from C2, and C2
 // otherwise
@@ -62,23 +63,23 @@ struct most_derived
 //
 //      template <class RT, class T0... class TN>
 //      inline mpl::vector<RT, T0...TN>
-//      get_signature(RT(BOOST_PYTHON_FN_CC *)(T0...TN), void* = 0)
+//      get_signature(RT(PXR_BOOST_PYTHON_FN_CC *)(T0...TN), void* = 0)
 //      {
 //          return mpl::list<RT, T0...TN>();
 //      }
 //
-//    where BOOST_PYTHON_FN_CC is a calling convention keyword, can be
+//    where PXR_BOOST_PYTHON_FN_CC is a calling convention keyword, can be
 //
 //        empty, for default calling convention
-//        __cdecl (if BOOST_PYTHON_ENABLE_CDECL is defined)
-//        __stdcall (if BOOST_PYTHON_ENABLE_STDCALL is defined)
-//        __fastcall (if BOOST_PYTHON_ENABLE_FASTCALL is defined)
+//        __cdecl (if PXR_BOOST_PYTHON_ENABLE_CDECL is defined)
+//        __stdcall (if PXR_BOOST_PYTHON_ENABLE_STDCALL is defined)
+//        __fastcall (if PXR_BOOST_PYTHON_ENABLE_FASTCALL is defined)
 //
 //   And, for an appropriate assortment of cv-qualifications::
 //
 //      template <class RT, class ClassT, class T0... class TN>
 //      inline mpl::vector<RT, ClassT&, T0...TN>
-//      get_signature(RT(BOOST_PYTHON_FN_CC ClassT::*)(T0...TN) cv))
+//      get_signature(RT(PXR_BOOST_PYTHON_FN_CC ClassT::*)(T0...TN) cv))
 //      {
 //          return mpl::list<RT, ClassT&, T0...TN>();
 //      }
@@ -89,7 +90,7 @@ struct most_derived
 //        , typename most_derived<Target, ClassT>::type&
 //        , T0...TN
 //      >
-//      get_signature(RT(BOOST_PYTHON_FN_CC ClassT::*)(T0...TN) cv), Target*)
+//      get_signature(RT(PXR_BOOST_PYTHON_FN_CC ClassT::*)(T0...TN) cv), Target*)
 //      {
 //          return mpl::list<RT, ClassT&, T0...TN>();
 //      }
@@ -120,67 +121,67 @@ struct most_derived
 
 // 'default' calling convention
 
-#  define BOOST_PYTHON_FN_CC
+#  define PXR_BOOST_PYTHON_FN_CC
 
 #  define BOOST_PP_ITERATION_PARAMS_1                                   \
-    (3, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/signature.hpp"))
+    (3, (0, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/signature.hpp"))
 
 #  include BOOST_PP_ITERATE()
 
-#  undef BOOST_PYTHON_FN_CC
+#  undef PXR_BOOST_PYTHON_FN_CC
 
 // __cdecl calling convention
 
-#  if defined(BOOST_PYTHON_ENABLE_CDECL)
+#  if defined(PXR_BOOST_PYTHON_ENABLE_CDECL)
 
-#   define BOOST_PYTHON_FN_CC __cdecl
-#   define BOOST_PYTHON_FN_CC_IS_CDECL
+#   define PXR_BOOST_PYTHON_FN_CC __cdecl
+#   define PXR_BOOST_PYTHON_FN_CC_IS_CDECL
 
 #   define BOOST_PP_ITERATION_PARAMS_1                                   \
-     (3, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/signature.hpp"))
+     (3, (0, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/signature.hpp"))
 
 #   include BOOST_PP_ITERATE()
 
-#   undef BOOST_PYTHON_FN_CC
-#   undef BOOST_PYTHON_FN_CC_IS_CDECL
+#   undef PXR_BOOST_PYTHON_FN_CC
+#   undef PXR_BOOST_PYTHON_FN_CC_IS_CDECL
 
-#  endif // defined(BOOST_PYTHON_ENABLE_CDECL)
+#  endif // defined(PXR_BOOST_PYTHON_ENABLE_CDECL)
 
 // __stdcall calling convention
 
-#  if defined(BOOST_PYTHON_ENABLE_STDCALL)
+#  if defined(PXR_BOOST_PYTHON_ENABLE_STDCALL)
 
-#   define BOOST_PYTHON_FN_CC __stdcall
+#   define PXR_BOOST_PYTHON_FN_CC __stdcall
 
 #   define BOOST_PP_ITERATION_PARAMS_1                                   \
-     (3, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/signature.hpp"))
+     (3, (0, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/signature.hpp"))
 
 #   include BOOST_PP_ITERATE()
 
-#   undef BOOST_PYTHON_FN_CC
+#   undef PXR_BOOST_PYTHON_FN_CC
 
-#  endif // defined(BOOST_PYTHON_ENABLE_STDCALL)
+#  endif // defined(PXR_BOOST_PYTHON_ENABLE_STDCALL)
 
 // __fastcall calling convention
 
-#  if defined(BOOST_PYTHON_ENABLE_FASTCALL)
+#  if defined(PXR_BOOST_PYTHON_ENABLE_FASTCALL)
 
-#   define BOOST_PYTHON_FN_CC __fastcall
+#   define PXR_BOOST_PYTHON_FN_CC __fastcall
 
 #   define BOOST_PP_ITERATION_PARAMS_1                                   \
-     (3, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/signature.hpp"))
+     (3, (0, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/signature.hpp"))
 
 #   include BOOST_PP_ITERATE()
 
-#   undef BOOST_PYTHON_FN_CC
+#   undef PXR_BOOST_PYTHON_FN_CC
 
-#  endif // defined(BOOST_PYTHON_ENABLE_FASTCALL)
+#  endif // defined(PXR_BOOST_PYTHON_ENABLE_FASTCALL)
 
-#  undef BOOST_PYTHON_LIST_INC
+#  undef PXR_BOOST_PYTHON_LIST_INC
 
 // }
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
@@ -196,20 +197,20 @@ struct most_derived
    // as 'get_signature(RT(*)(T0...TN), void* = 0)' is the same
    // function as 'get_signature(RT(__cdecl *)(T0...TN), void* = 0)',
    // we don't define it twice
-#  if !defined(BOOST_PYTHON_FN_CC_IS_CDECL)
+#  if !defined(PXR_BOOST_PYTHON_FN_CC_IS_CDECL)
 
 template <
     class RT BOOST_PP_ENUM_TRAILING_PARAMS_Z(1, N, class T)>
-inline BOOST_PYTHON_LIST_INC(N)<
+inline PXR_BOOST_PYTHON_LIST_INC(N)<
     RT BOOST_PP_ENUM_TRAILING_PARAMS_Z(1, N, T)>
-get_signature(RT(BOOST_PYTHON_FN_CC *)(BOOST_PP_ENUM_PARAMS_Z(1, N, T)), void* = 0)
+get_signature(RT(PXR_BOOST_PYTHON_FN_CC *)(BOOST_PP_ENUM_PARAMS_Z(1, N, T)), void* = 0)
 {
-    return BOOST_PYTHON_LIST_INC(N)<
+    return PXR_BOOST_PYTHON_LIST_INC(N)<
             RT BOOST_PP_ENUM_TRAILING_PARAMS_Z(1, N, T)
         >();
 }
 
-#  endif // !defined(BOOST_PYTHON_FN_CC_IS_CDECL)
+#  endif // !defined(PXR_BOOST_PYTHON_FN_CC_IS_CDECL)
 
 # undef N
 
@@ -220,15 +221,15 @@ get_signature(RT(BOOST_PYTHON_FN_CC *)(BOOST_PP_ENUM_PARAMS_Z(1, N, T)), void* =
 #else
 
 # define N BOOST_PP_RELATIVE_ITERATION(1)
-# define Q BOOST_PYTHON_CV_QUALIFIER(BOOST_PP_ITERATION())
+# define Q PXR_BOOST_PYTHON_CV_QUALIFIER(BOOST_PP_ITERATION())
 
 template <
     class RT, class ClassT BOOST_PP_ENUM_TRAILING_PARAMS_Z(1, N, class T)>
-inline BOOST_PYTHON_LIST_INC(BOOST_PP_INC(N))<
+inline PXR_BOOST_PYTHON_LIST_INC(BOOST_PP_INC(N))<
     RT, ClassT& BOOST_PP_ENUM_TRAILING_PARAMS_Z(1, N, T)>
-get_signature(RT(BOOST_PYTHON_FN_CC ClassT::*)(BOOST_PP_ENUM_PARAMS_Z(1, N, T)) Q)
+get_signature(RT(PXR_BOOST_PYTHON_FN_CC ClassT::*)(BOOST_PP_ENUM_PARAMS_Z(1, N, T)) Q)
 {
-    return BOOST_PYTHON_LIST_INC(BOOST_PP_INC(N))<
+    return PXR_BOOST_PYTHON_LIST_INC(BOOST_PP_INC(N))<
             RT, ClassT& BOOST_PP_ENUM_TRAILING_PARAMS_Z(1, N, T)
         >();
 }
@@ -239,17 +240,17 @@ template <
   , class ClassT
     BOOST_PP_ENUM_TRAILING_PARAMS_Z(1, N, class T)
 >
-inline BOOST_PYTHON_LIST_INC(BOOST_PP_INC(N))<
+inline PXR_BOOST_PYTHON_LIST_INC(BOOST_PP_INC(N))<
     RT
   , typename most_derived<Target, ClassT>::type&
     BOOST_PP_ENUM_TRAILING_PARAMS_Z(1, N, T)
 >
 get_signature(
-    RT(BOOST_PYTHON_FN_CC ClassT::*)(BOOST_PP_ENUM_PARAMS_Z(1, N, T)) Q
+    RT(PXR_BOOST_PYTHON_FN_CC ClassT::*)(BOOST_PP_ENUM_PARAMS_Z(1, N, T)) Q
   , Target*
 )
 {
-    return BOOST_PYTHON_LIST_INC(BOOST_PP_INC(N))<
+    return PXR_BOOST_PYTHON_LIST_INC(BOOST_PP_INC(N))<
         RT
       , BOOST_DEDUCED_TYPENAME most_derived<Target, ClassT>::type&
         BOOST_PP_ENUM_TRAILING_PARAMS_Z(1, N, T)

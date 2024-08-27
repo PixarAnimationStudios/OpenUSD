@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_ARGS_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/args.hpp>
@@ -37,7 +38,7 @@
 # include <cstddef>
 # include <algorithm>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 typedef detail::keywords<1> arg;
 typedef arg arg_; // gcc 2.96 workaround
@@ -131,7 +132,7 @@ namespace detail
       BOOST_STATIC_CONSTANT(bool, value = (is_ref & is_key));
       
       typedef mpl::bool_<value> type;
-      BOOST_PYTHON_MPL_LAMBDA_SUPPORT(1,is_reference_to_keywords,(T))
+      PXR_BOOST_PYTHON_MPL_LAMBDA_SUPPORT(1,is_reference_to_keywords,(T))
   };
 }
 
@@ -140,18 +141,18 @@ inline detail::keywords<1> args(char const* name)
     return detail::keywords<1>(name);
 }
 
-#  define BOOST_PYTHON_ASSIGN_NAME(z, n, _) result.elements[n].name = name##n;
+#  define PXR_BOOST_PYTHON_ASSIGN_NAME(z, n, _) result.elements[n].name = name##n;
 #  define BOOST_PP_LOCAL_MACRO(n)                                               \
 inline detail::keywords<n> args(BOOST_PP_ENUM_PARAMS_Z(1, n, char const* name)) \
 {                                                                               \
     detail::keywords<n> result;                                                 \
-    BOOST_PP_REPEAT_1(n, BOOST_PYTHON_ASSIGN_NAME, _)                           \
+    BOOST_PP_REPEAT_1(n, PXR_BOOST_PYTHON_ASSIGN_NAME, _)                           \
     return result;                                                              \
 }
-#  define BOOST_PP_LOCAL_LIMITS (2, BOOST_PYTHON_MAX_ARITY)
+#  define BOOST_PP_LOCAL_LIMITS (2, PXR_BOOST_PYTHON_MAX_ARITY)
 #  include BOOST_PP_LOCAL_ITERATE()
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON

@@ -15,8 +15,8 @@
 // gcc 2.95.x and MIPSpro 7.3.1.3 linker seem to demand this definition
 #if ((defined(__GNUC__) && __GNUC__ < 3)) \
  || (defined(__sgi) && defined(__EDG_VERSION__) && (__EDG_VERSION__ == 238))
-namespace boost { namespace python {
-BOOST_PYTHON_DECL bool handle_exception_impl(function0<void>)
+namespace PXR_BOOST_NAMESPACE { namespace python {
+PXR_BOOST_PYTHON_DECL bool handle_exception_impl(function0<void>)
 {
     return true;
 }
@@ -37,9 +37,9 @@ void assert_same(U* = 0, T* = 0)
 
 int main()
 {
-    using namespace boost::python::converter::detail;
-    using namespace boost::python::converter;
-    using namespace boost::python;
+    using namespace PXR_BOOST_NAMESPACE::python::converter::detail;
+    using namespace PXR_BOOST_NAMESPACE::python::converter;
+    using namespace PXR_BOOST_NAMESPACE::python;
     using namespace boost;
 
 

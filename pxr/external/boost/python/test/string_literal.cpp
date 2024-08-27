@@ -12,7 +12,7 @@
 #include <boost/detail/lightweight_test.hpp>
 #include <boost/static_assert.hpp>
 
-using namespace boost::python::detail;
+using namespace PXR_BOOST_NAMESPACE::python::detail;
     
 
 template <class T>

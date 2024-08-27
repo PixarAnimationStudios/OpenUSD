@@ -20,7 +20,7 @@
 
 #include <memory>
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 struct P
 {
@@ -130,7 +130,7 @@ C& getCCppObj ()
 
 A* pass_a(A* x) { return x; }
 
-BOOST_PYTHON_MODULE_INIT(polymorphism2_ext)
+PXR_BOOST_PYTHON_MODULE_INIT(polymorphism2_ext)
 {
     class_<ACallback,boost::noncopyable>("A")
         .def("f", &A::f, &ACallback::default_f)

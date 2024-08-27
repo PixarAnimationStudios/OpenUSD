@@ -21,7 +21,7 @@
 #include <vector>
 #include <algorithm>
 
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 // rvalue_from_python_stage1 -- do the first stage of a conversion
 // from a Python object to a C++ rvalue.
@@ -40,7 +40,7 @@ namespace boost { namespace python { namespace converter {
 //      x.construct(source, y) constructs an object of type T
 //      in y.storage.bytes and then sets y.convertible == y.storage.bytes,
 //      or else throws an exception and has no effect.
-BOOST_PYTHON_DECL rvalue_from_python_stage1_data rvalue_from_python_stage1(
+PXR_BOOST_PYTHON_DECL rvalue_from_python_stage1_data rvalue_from_python_stage1(
     PyObject* source
     , registration const& converters)
 {
@@ -79,7 +79,7 @@ BOOST_PYTHON_DECL rvalue_from_python_stage1_data rvalue_from_python_stage1(
 //
 // Requires: data.convertible == &registered<T>::converters
 //
-BOOST_PYTHON_DECL void* rvalue_result_from_python(
+PXR_BOOST_PYTHON_DECL void* rvalue_result_from_python(
     PyObject* src, rvalue_from_python_stage1_data& data)
 {
     // Retrieve the registration
@@ -92,7 +92,7 @@ BOOST_PYTHON_DECL void* rvalue_result_from_python(
     return rvalue_from_python_stage2(src, data, converters);
 }
 
-BOOST_PYTHON_DECL void* rvalue_from_python_stage2(
+PXR_BOOST_PYTHON_DECL void* rvalue_from_python_stage2(
     PyObject* source, rvalue_from_python_stage1_data& data, registration const& converters)
 {
     if (!data.convertible)
@@ -122,7 +122,7 @@ BOOST_PYTHON_DECL void* rvalue_from_python_stage2(
     return data.convertible;
 }
 
-BOOST_PYTHON_DECL void* get_lvalue_from_python(
+PXR_BOOST_PYTHON_DECL void* get_lvalue_from_python(
     PyObject* source
     , registration const& converters)
 {
@@ -175,7 +175,7 @@ namespace
 }
 
 
-BOOST_PYTHON_DECL bool implicit_rvalue_convertible_from_python(
+PXR_BOOST_PYTHON_DECL bool implicit_rvalue_convertible_from_python(
     PyObject* source
     , registration const& converters)
 {    
@@ -253,24 +253,24 @@ namespace
   
 }
 
-BOOST_PYTHON_DECL void throw_no_pointer_from_python(PyObject* source, registration const& converters)
+PXR_BOOST_PYTHON_DECL void throw_no_pointer_from_python(PyObject* source, registration const& converters)
 {
     (throw_no_lvalue_from_python)(source, converters, "pointer");
 }
 
-BOOST_PYTHON_DECL void throw_no_reference_from_python(PyObject* source, registration const& converters)
+PXR_BOOST_PYTHON_DECL void throw_no_reference_from_python(PyObject* source, registration const& converters)
 {
     (throw_no_lvalue_from_python)(source, converters, "reference");
 }
 
-BOOST_PYTHON_DECL void* reference_result_from_python(
+PXR_BOOST_PYTHON_DECL void* reference_result_from_python(
     PyObject* source
     , registration const& converters)
 {
     return (lvalue_result_from_python)(source, converters, "reference");
 }
   
-BOOST_PYTHON_DECL void* pointer_result_from_python(
+PXR_BOOST_PYTHON_DECL void* pointer_result_from_python(
     PyObject* source
     , registration const& converters)
 {
@@ -282,14 +282,14 @@ BOOST_PYTHON_DECL void* pointer_result_from_python(
     return (lvalue_result_from_python)(source, converters, "pointer");
 }
   
-BOOST_PYTHON_DECL void void_result_from_python(PyObject* o)
+PXR_BOOST_PYTHON_DECL void void_result_from_python(PyObject* o)
 {
     Py_DECREF(expect_non_null(o));
 }
 
-} // namespace boost::python::converter
+} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-BOOST_PYTHON_DECL PyObject*
+PXR_BOOST_PYTHON_DECL PyObject*
 pytype_check(PyTypeObject* type_, PyObject* source)
 {
     if (!PyObject_IsInstance(source, python::upcast<PyObject>(type_)))
@@ -305,4 +305,4 @@ pytype_check(PyTypeObject* type_, PyObject* source)
     return source;
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python

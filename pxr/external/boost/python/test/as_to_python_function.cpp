@@ -15,4 +15,4 @@ struct hopefully_illegal
     static PyObject* convert(int&);
 };
 
-PyObject* x = boost::python::converter::as_to_python_function<int, hopefully_illegal>::convert(0);
+PyObject* x = PXR_BOOST_NAMESPACE::python::converter::as_to_python_function<int, hopefully_illegal>::convert(0);

@@ -12,7 +12,7 @@
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/implicit.hpp"
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 struct X // a container element
 {
@@ -32,7 +32,7 @@ std::string x_value(X const& x)
 }
 
 
-BOOST_PYTHON_MODULE(map_indexing_suite_ext)
+PXR_BOOST_PYTHON_MODULE(map_indexing_suite_ext)
 {
     class_<X>("X")
         .def(init<>())

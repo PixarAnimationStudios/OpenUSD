@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_CLASS_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/class.hpp>
@@ -55,15 +56,15 @@
     || (BOOST_WORKAROUND(__MWERKS__, > 0x3100)                      \
         && BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3201)))
 
-#  define BOOST_PYTHON_NO_MEMBER_POINTER_ORDERING 1
+#  define PXR_BOOST_PYTHON_NO_MEMBER_POINTER_ORDERING 1
 
 # endif
 
-# ifdef BOOST_PYTHON_NO_MEMBER_POINTER_ORDERING
+# ifdef PXR_BOOST_PYTHON_NO_MEMBER_POINTER_ORDERING
 #  include <boost/mpl/and.hpp>
 # endif
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 template <class DerivedVisitor> class def_visitor;
 
@@ -96,18 +97,18 @@ namespace detail
         >
   {};
   
-# ifdef BOOST_PYTHON_NO_MEMBER_POINTER_ORDERING
-#  define BOOST_PYTHON_DATA_MEMBER_HELPER(D) , detail::is_data_member_pointer<D>()
-#  define BOOST_PYTHON_YES_DATA_MEMBER , mpl::true_
-#  define BOOST_PYTHON_NO_DATA_MEMBER , mpl::false_
+# ifdef PXR_BOOST_PYTHON_NO_MEMBER_POINTER_ORDERING
+#  define PXR_BOOST_PYTHON_DATA_MEMBER_HELPER(D) , detail::is_data_member_pointer<D>()
+#  define PXR_BOOST_PYTHON_YES_DATA_MEMBER , mpl::true_
+#  define PXR_BOOST_PYTHON_NO_DATA_MEMBER , mpl::false_
 # elif defined(BOOST_NO_FUNCTION_TEMPLATE_ORDERING)
-#  define BOOST_PYTHON_DATA_MEMBER_HELPER(D) , 0
-#  define BOOST_PYTHON_YES_DATA_MEMBER , int
-#  define BOOST_PYTHON_NO_DATA_MEMBER , ...
+#  define PXR_BOOST_PYTHON_DATA_MEMBER_HELPER(D) , 0
+#  define PXR_BOOST_PYTHON_YES_DATA_MEMBER , int
+#  define PXR_BOOST_PYTHON_NO_DATA_MEMBER , ...
 # else 
-#  define BOOST_PYTHON_DATA_MEMBER_HELPER(D)
-#  define BOOST_PYTHON_YES_DATA_MEMBER
-#  define BOOST_PYTHON_NO_DATA_MEMBER
+#  define PXR_BOOST_PYTHON_DATA_MEMBER_HELPER(D)
+#  define PXR_BOOST_PYTHON_YES_DATA_MEMBER
+#  define PXR_BOOST_PYTHON_NO_DATA_MEMBER
 # endif
   
   namespace error
@@ -286,25 +287,25 @@ class class_ : public objects::class_base
     template <class D>
     self& def_readonly(char const* name, D const& d, char const* doc=0)
     {
-        return this->def_readonly_impl(name, d, doc BOOST_PYTHON_DATA_MEMBER_HELPER(D));
+        return this->def_readonly_impl(name, d, doc PXR_BOOST_PYTHON_DATA_MEMBER_HELPER(D));
     }
 
     template <class D>
     self& def_readwrite(char const* name, D const& d, char const* doc=0)
     {
-        return this->def_readwrite_impl(name, d, doc BOOST_PYTHON_DATA_MEMBER_HELPER(D));
+        return this->def_readwrite_impl(name, d, doc PXR_BOOST_PYTHON_DATA_MEMBER_HELPER(D));
     }
     
     template <class D>
     self& def_readonly(char const* name, D& d, char const* doc=0)
     {
-        return this->def_readonly_impl(name, d, doc BOOST_PYTHON_DATA_MEMBER_HELPER(D));
+        return this->def_readonly_impl(name, d, doc PXR_BOOST_PYTHON_DATA_MEMBER_HELPER(D));
     }
 
     template <class D>
     self& def_readwrite(char const* name, D& d, char const* doc=0)
     {
-        return this->def_readwrite_impl(name, d, doc BOOST_PYTHON_DATA_MEMBER_HELPER(D));
+        return this->def_readwrite_impl(name, d, doc PXR_BOOST_PYTHON_DATA_MEMBER_HELPER(D));
     }
 
     // Property creation
@@ -429,28 +430,28 @@ class class_ : public objects::class_base
     
     template <class D, class B>
     self& def_readonly_impl(
-        char const* name, D B::*pm_, char const* doc BOOST_PYTHON_YES_DATA_MEMBER)
+        char const* name, D B::*pm_, char const* doc PXR_BOOST_PYTHON_YES_DATA_MEMBER)
     {
         return this->add_property(name, pm_, doc);
     }
 
     template <class D, class B>
     self& def_readwrite_impl(
-        char const* name, D B::*pm_, char const* doc BOOST_PYTHON_YES_DATA_MEMBER)
+        char const* name, D B::*pm_, char const* doc PXR_BOOST_PYTHON_YES_DATA_MEMBER)
     {
         return this->add_property(name, pm_, pm_, doc);
     }
 
     template <class D>
     self& def_readonly_impl(
-        char const* name, D& d, char const* BOOST_PYTHON_NO_DATA_MEMBER)
+        char const* name, D& d, char const* PXR_BOOST_PYTHON_NO_DATA_MEMBER)
     {
         return this->add_static_property(name, python::make_getter(d));
     }
 
     template <class D>
     self& def_readwrite_impl(
-        char const* name, D& d, char const* BOOST_PYTHON_NO_DATA_MEMBER)
+        char const* name, D& d, char const* PXR_BOOST_PYTHON_NO_DATA_MEMBER)
     {
         return this->add_static_property(name, python::make_getter(d), python::make_setter(d));
     }
@@ -545,7 +546,7 @@ class class_ : public objects::class_base
     //
     // These two overloads discriminate between def() as applied to
     // regular functions and def() as applied to the result of
-    // BOOST_PYTHON_FUNCTION_OVERLOADS(). The final argument is used to
+    // PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(). The final argument is used to
     // discriminate.
     //
     // @group def_maybe_overloads {
@@ -609,12 +610,12 @@ inline class_<W,X1,X2,X3>::class_(char const* name, char const* doc, no_init_t)
     this->initialize(no_init);
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-# undef BOOST_PYTHON_DATA_MEMBER_HELPER
-# undef BOOST_PYTHON_YES_DATA_MEMBER
-# undef BOOST_PYTHON_NO_DATA_MEMBER
-# undef BOOST_PYTHON_NO_MEMBER_POINTER_ORDERING
+# undef PXR_BOOST_PYTHON_DATA_MEMBER_HELPER
+# undef PXR_BOOST_PYTHON_YES_DATA_MEMBER
+# undef PXR_BOOST_PYTHON_NO_DATA_MEMBER
+# undef PXR_BOOST_PYTHON_NO_MEMBER_POINTER_ORDERING
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CLASS_HPP

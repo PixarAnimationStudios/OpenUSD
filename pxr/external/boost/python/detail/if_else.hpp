@@ -11,13 +11,14 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IF_ELSE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/if_else.hpp>
 #else
 # include <boost/config.hpp>
 
-namespace boost { namespace python { namespace detail { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 template <class T> struct elif_selected;
 
@@ -87,7 +88,7 @@ struct if_<false>
     };
 };
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IF_ELSE_HPP

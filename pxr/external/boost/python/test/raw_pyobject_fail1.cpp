@@ -11,6 +11,6 @@
 
 int main()
 {
-    boost::python::converter::arg_to_python<PyTypeObject*> x(0);
+    PXR_BOOST_NAMESPACE::python::converter::arg_to_python<PyTypeObject*> x(0);
     return 0;
 }

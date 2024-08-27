@@ -14,6 +14,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_RETURN_OPAQUE_POINTER_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/return_opaque_pointer.hpp>
@@ -26,7 +27,7 @@
 # include "pxr/external/boost/python/detail/value_arg.hpp"
 # include <boost/mpl/assert.hpp>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace detail
 {
@@ -45,7 +46,7 @@ struct return_opaque_pointer
         BOOST_MPL_ASSERT_MSG( is_pointer<R>::value, RETURN_OPAQUE_POINTER_EXPECTS_A_POINTER_TYPE, (R));
         
         struct type :  
-          boost::python::to_python_value<
+          PXR_BOOST_NAMESPACE::python::to_python_value<
               typename detail::value_arg<R>::type
           >
         {
@@ -54,6 +55,6 @@ struct return_opaque_pointer
     };
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_RETURN_OPAQUE_POINTER_HPP

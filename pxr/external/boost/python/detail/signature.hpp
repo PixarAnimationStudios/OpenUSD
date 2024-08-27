@@ -14,6 +14,7 @@
 #  define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SIGNATURE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/signature.hpp>
@@ -31,7 +32,7 @@
 #  include <boost/mpl/at.hpp>
 #  include <boost/mpl/size.hpp>
 
-namespace boost { namespace python { namespace detail { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 struct signature_element
 {
@@ -49,7 +50,7 @@ struct py_func_sig_info
 template <unsigned> struct signature_arity;
 
 #  define BOOST_PP_ITERATION_PARAMS_1                                            \
-        (3, (0, BOOST_PYTHON_MAX_ARITY + 1, "pxr/external/boost/python/detail/signature.hpp"))
+        (3, (0, PXR_BOOST_PYTHON_MAX_ARITY + 1, "pxr/external/boost/python/detail/signature.hpp"))
 #  include BOOST_PP_ITERATE()
 
 // A metafunction returning the base class used for
@@ -69,7 +70,7 @@ struct signature
 {
 };
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SIGNATURE_HPP
@@ -88,7 +89,7 @@ struct signature_arity<N>
         {
             static signature_element const result[N+2] = {
                 
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 # define BOOST_PP_LOCAL_MACRO(i)                                                            \
                 {                                                                           \
                   type_id<BOOST_DEDUCED_TYPENAME mpl::at_c<Sig,i>::type>().name()           \

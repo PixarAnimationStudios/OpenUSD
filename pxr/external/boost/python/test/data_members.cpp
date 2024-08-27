@@ -18,7 +18,7 @@
 #endif
 
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 typedef test_class<> X;
 
@@ -57,7 +57,7 @@ int Var::static1 = 0;
 Y Var::static2(0);
 
 // Compilability regression tests
-namespace boost_python_test
+namespace PXR_BOOST_NAMESPACE_python_test
 {
   struct trivial
   {
@@ -89,9 +89,9 @@ namespace boost_python_test
   }
 }
 
-BOOST_PYTHON_MODULE(data_members_ext)
+PXR_BOOST_PYTHON_MODULE(data_members_ext)
 {
-    using namespace boost_python_test;
+    using namespace PXR_BOOST_NAMESPACE_python_test;
     class_<X>("X", init<int>())
         .def("value", &X::value)
         .def("set", &X::set)

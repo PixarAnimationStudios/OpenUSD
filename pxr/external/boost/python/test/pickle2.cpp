@@ -33,7 +33,7 @@
 #include "pxr/external/boost/python/tuple.hpp"
 #include "pxr/external/boost/python/extract.hpp"
 
-namespace boost_python_test {
+namespace PXR_BOOST_NAMESPACE_python_test {
 
   // A friendly class.
   class world
@@ -51,27 +51,27 @@ namespace boost_python_test {
       int secret_number;
   };
 
-  struct world_pickle_suite : boost::python::pickle_suite
+  struct world_pickle_suite : PXR_BOOST_NAMESPACE::python::pickle_suite
   {
     static
-    boost::python::tuple
+    PXR_BOOST_NAMESPACE::python::tuple
     getinitargs(const world& w)
     {
-        return boost::python::make_tuple(w.get_country());
+        return PXR_BOOST_NAMESPACE::python::make_tuple(w.get_country());
     }
 
     static
-    boost::python::tuple
+    PXR_BOOST_NAMESPACE::python::tuple
     getstate(const world& w)
     {
-        return boost::python::make_tuple(w.get_secret_number());
+        return PXR_BOOST_NAMESPACE::python::make_tuple(w.get_secret_number());
     }
 
     static
     void
-    setstate(world& w, boost::python::tuple state)
+    setstate(world& w, PXR_BOOST_NAMESPACE::python::tuple state)
     {
-        using namespace boost::python;
+        using namespace PXR_BOOST_NAMESPACE::python;
         if (len(state) != 1)
         {
           PyErr_SetObject(PyExc_ValueError,
@@ -89,11 +89,11 @@ namespace boost_python_test {
 
 }
 
-BOOST_PYTHON_MODULE(pickle2_ext)
+PXR_BOOST_PYTHON_MODULE(pickle2_ext)
 {
-    using namespace boost_python_test;
-    boost::python::class_<world>(
-        "world", boost::python::init<const std::string&>())
+    using namespace PXR_BOOST_NAMESPACE_python_test;
+    PXR_BOOST_NAMESPACE::python::class_<world>(
+        "world", PXR_BOOST_NAMESPACE::python::init<const std::string&>())
         .def("greet", &world::greet)
         .def("get_secret_number", &world::get_secret_number)
         .def("set_secret_number", &world::set_secret_number)

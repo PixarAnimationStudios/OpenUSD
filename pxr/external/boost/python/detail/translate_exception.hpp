@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TRANSLATE_EXCEPTION_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/translate_exception.hpp>
@@ -23,7 +24,7 @@
 
 # include <boost/function/function0.hpp>
 
-namespace boost { namespace python { namespace detail { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 // A ternary function object used to translate C++ exceptions of type
 // ExceptionType into Python exceptions by invoking an object of type
@@ -73,7 +74,7 @@ struct translate_exception
     }
 };
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // TRANSLATE_EXCEPTION_DWA2002810_HPP

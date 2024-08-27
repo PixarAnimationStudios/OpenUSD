@@ -10,6 +10,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWRAP_TYPE_ID_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/unwrap_type_id.hpp>
@@ -19,7 +20,7 @@
 
 # include <boost/mpl/bool.hpp>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 template <class T> class wrapper;
 
@@ -37,7 +38,7 @@ inline type_info unwrap_type_id(U*, wrapper<T>*)
     return type_id<T>();
 }
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWRAP_TYPE_ID_HPP

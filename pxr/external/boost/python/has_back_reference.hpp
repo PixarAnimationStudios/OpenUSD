@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_HAS_BACK_REFERENCE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/has_back_reference.hpp>
@@ -19,7 +20,7 @@
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include <boost/mpl/bool.hpp>
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 // traits class which users can specialize to indicate that a class
 // contains a back-reference to its owning PyObject*
@@ -30,7 +31,7 @@ struct has_back_reference
 };
 
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_HAS_BACK_REFERENCE_HPP

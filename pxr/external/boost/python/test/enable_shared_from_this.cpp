@@ -19,7 +19,7 @@
 
 #include <memory>
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 using boost::shared_ptr;
 
 class Test;
@@ -39,7 +39,7 @@ public:
     }
 };
 
-BOOST_PYTHON_MODULE(enable_shared_from_this_ext)
+PXR_BOOST_PYTHON_MODULE(enable_shared_from_this_ext)
 {
     class_<Test, TestPtr, boost::noncopyable>("Test")
         .def("construct", &Test::construct).staticmethod("construct")

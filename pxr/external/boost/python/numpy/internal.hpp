@@ -13,6 +13,7 @@
 #define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_INTERNAL_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/numpy/internal.hpp>
@@ -27,11 +28,11 @@
 
 #include "pxr/external/boost/python.hpp"
 #include "pxr/external/boost/python/numpy/config.hpp"
-#ifdef BOOST_PYTHON_NUMPY_INTERNAL
+#ifdef PXR_BOOST_PYTHON_NUMPY_INTERNAL
 #define NO_IMPORT_ARRAY
 #define NO_IMPORT_UFUNC
 #else
-#ifndef BOOST_PYTHON_NUMPY_INTERNAL_MAIN
+#ifndef PXR_BOOST_PYTHON_NUMPY_INTERNAL_MAIN
 ERROR_internal_hpp_is_for_internal_use_only
 #endif
 #endif

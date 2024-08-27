@@ -12,8 +12,8 @@
 #include "pxr/external/boost/python/numpy.hpp"
 #include "pxr/external/boost/python/slice.hpp"
 
-namespace p = boost::python;
-namespace np = boost::python::numpy;
+namespace p = PXR_BOOST_NAMESPACE::python;
+namespace np = PXR_BOOST_NAMESPACE::python::numpy;
 
 p::object single(np::ndarray ndarr, int i) { return ndarr[i];}
 p::object slice(np::ndarray ndarr, p::slice sl) { return ndarr[sl];}
@@ -21,7 +21,7 @@ p::object indexarray(np::ndarray ndarr, np::ndarray d1) { return ndarr[d1];}
 p::object indexarray_2d(np::ndarray ndarr, np::ndarray d1,np::ndarray d2) { return ndarr[p::make_tuple(d1,d2)];}
 p::object indexslice(np::ndarray ndarr, np::ndarray d1, p::slice sl) { return ndarr[p::make_tuple(d1, sl)];}
 
-BOOST_PYTHON_MODULE(indexing_ext)
+PXR_BOOST_PYTHON_MODULE(indexing_ext)
 {
   np::initialize();
   p::def("single", single);

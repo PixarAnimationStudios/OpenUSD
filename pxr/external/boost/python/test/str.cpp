@@ -15,7 +15,7 @@
 #define BOOST_ENABLE_ASSERT_HANDLER
 #include <boost/assert.hpp>
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 object convert_to_string(object data)
 {
@@ -80,7 +80,7 @@ void work_with_string(object print)
 }
    
 
-BOOST_PYTHON_MODULE(str_ext)
+PXR_BOOST_PYTHON_MODULE(str_ext)
 {
     def("convert_to_string",convert_to_string);
     def("work_with_string",work_with_string);

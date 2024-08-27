@@ -10,6 +10,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_ENABLE_IF_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/enable_if.hpp>
@@ -21,7 +22,7 @@
 #if !defined(BOOST_NO_SFINAE)
 #  include <boost/utility/enable_if.hpp>
 
-namespace boost { namespace python { namespace detail { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 template <class C, class T = int>
 struct enable_if_arg
@@ -43,7 +44,7 @@ struct disable_if_ret
   : disable_if<C,T>
 {};
              
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 # endif
 

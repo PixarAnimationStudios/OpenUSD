@@ -13,6 +13,7 @@
 #define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_NUMPY_OBJECT_MGR_TRAITS_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/numpy/numpy_object_mgr_traits.hpp>

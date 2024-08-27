@@ -16,11 +16,11 @@ struct B;
 
 template <class X, class Y, class Z>
 struct choose_bases
-    : boost::python::detail::select_bases<
+    : PXR_BOOST_NAMESPACE::python::detail::select_bases<
     X
-    , typename boost::python::detail::select_bases<
+    , typename PXR_BOOST_NAMESPACE::python::detail::select_bases<
         Y
-        , typename boost::python::detail::select_bases<Z>::type
+        , typename PXR_BOOST_NAMESPACE::python::detail::select_bases<Z>::type
     >::type>
 {
     
@@ -28,40 +28,40 @@ struct choose_bases
 
 int main()
 {
-    BOOST_STATIC_ASSERT((boost::python::detail::specifies_bases<
-                         boost::python::bases<A,B> >::value));
+    BOOST_STATIC_ASSERT((PXR_BOOST_NAMESPACE::python::detail::specifies_bases<
+                         PXR_BOOST_NAMESPACE::python::bases<A,B> >::value));
 
-    BOOST_STATIC_ASSERT((!boost::python::detail::specifies_bases<
-                         boost::python::bases<A,B>& >::value));
+    BOOST_STATIC_ASSERT((!PXR_BOOST_NAMESPACE::python::detail::specifies_bases<
+                         PXR_BOOST_NAMESPACE::python::bases<A,B>& >::value));
 
-    BOOST_STATIC_ASSERT((!boost::python::detail::specifies_bases<
+    BOOST_STATIC_ASSERT((!PXR_BOOST_NAMESPACE::python::detail::specifies_bases<
                          void* >::value));
 
-    BOOST_STATIC_ASSERT((!boost::python::detail::specifies_bases<
+    BOOST_STATIC_ASSERT((!PXR_BOOST_NAMESPACE::python::detail::specifies_bases<
                          int >::value));
 
-    BOOST_STATIC_ASSERT((!boost::python::detail::specifies_bases<
+    BOOST_STATIC_ASSERT((!PXR_BOOST_NAMESPACE::python::detail::specifies_bases<
                          int[5] >::value));
 
-    typedef boost::python::detail::select_bases<
+    typedef PXR_BOOST_NAMESPACE::python::detail::select_bases<
         int
-        , boost::python::detail::select_bases<char*>::type > collected1;
+        , PXR_BOOST_NAMESPACE::python::detail::select_bases<char*>::type > collected1;
 
-    BOOST_STATIC_ASSERT((boost::python::detail::is_same<collected1::type,boost::python::bases<> >::value));
-    BOOST_STATIC_ASSERT((boost::python::detail::is_same<choose_bases<int,char*,long>::type,boost::python::bases<> >::value));
+    BOOST_STATIC_ASSERT((PXR_BOOST_NAMESPACE::python::detail::is_same<collected1::type,PXR_BOOST_NAMESPACE::python::bases<> >::value));
+    BOOST_STATIC_ASSERT((PXR_BOOST_NAMESPACE::python::detail::is_same<choose_bases<int,char*,long>::type,PXR_BOOST_NAMESPACE::python::bases<> >::value));
     
-    typedef boost::python::detail::select_bases<
+    typedef PXR_BOOST_NAMESPACE::python::detail::select_bases<
         int
-        , boost::python::detail::select_bases<
-                boost::python::bases<A,B>
-                , boost::python::detail::select_bases<
+        , PXR_BOOST_NAMESPACE::python::detail::select_bases<
+                PXR_BOOST_NAMESPACE::python::bases<A,B>
+                , PXR_BOOST_NAMESPACE::python::detail::select_bases<
                         A
             >::type
          >::type
      > collected2;
 
-    BOOST_STATIC_ASSERT((boost::python::detail::is_same<collected2::type,boost::python::bases<A,B> >::value));
-    BOOST_STATIC_ASSERT((boost::python::detail::is_same<choose_bases<int,boost::python::bases<A,B>,long>::type,boost::python::bases<A,B> >::value));
+    BOOST_STATIC_ASSERT((PXR_BOOST_NAMESPACE::python::detail::is_same<collected2::type,PXR_BOOST_NAMESPACE::python::bases<A,B> >::value));
+    BOOST_STATIC_ASSERT((PXR_BOOST_NAMESPACE::python::detail::is_same<choose_bases<int,PXR_BOOST_NAMESPACE::python::bases<A,B>,long>::type,PXR_BOOST_NAMESPACE::python::bases<A,B> >::value));
     
     return 0;
 }

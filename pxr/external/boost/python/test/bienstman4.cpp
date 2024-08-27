@@ -20,9 +20,9 @@ struct Term {Term(Type1 const&) {} };
 
 struct Expression {void add(Term const&) {} };
 
-BOOST_PYTHON_MODULE(bienstman4_ext)
+PXR_BOOST_PYTHON_MODULE(bienstman4_ext)
 {
-  using namespace boost::python;
+  using namespace PXR_BOOST_NAMESPACE::python;
   using boost::mpl::list;
 
   implicitly_convertible<Type1,Term>();

@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_OBJECT_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/object/function_object.hpp>
@@ -21,32 +22,32 @@
 # include "pxr/external/boost/python/args_fwd.hpp"
 # include "pxr/external/boost/python/object/py_function.hpp"
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace objects
 { 
-  BOOST_PYTHON_DECL api::object function_object(
+  PXR_BOOST_PYTHON_DECL api::object function_object(
       py_function const& f
       , python::detail::keyword_range const&);
 
-  BOOST_PYTHON_DECL api::object function_object(
+  PXR_BOOST_PYTHON_DECL api::object function_object(
       py_function const& f
       , python::detail::keyword_range const&);
 
-  BOOST_PYTHON_DECL api::object function_object(py_function const& f);
+  PXR_BOOST_PYTHON_DECL api::object function_object(py_function const& f);
 
   // Add an attribute to the name_space with the given name. If it is
   // a Boost.Python function object
   // (boost/python/object/function.hpp), and an existing function is
   // already there, add it as an overload.
-  BOOST_PYTHON_DECL void add_to_namespace(
+  PXR_BOOST_PYTHON_DECL void add_to_namespace(
       object const& name_space, char const* name, object const& attribute);
 
-  BOOST_PYTHON_DECL void add_to_namespace(
+  PXR_BOOST_PYTHON_DECL void add_to_namespace(
       object const& name_space, char const* name, object const& attribute, char const* doc);
 }
 
-}} // namespace boost::python::objects
+}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_OBJECT_HPP

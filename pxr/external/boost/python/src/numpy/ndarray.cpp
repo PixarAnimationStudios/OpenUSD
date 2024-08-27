@@ -9,15 +9,15 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#define BOOST_PYTHON_NUMPY_INTERNAL
+#define PXR_BOOST_PYTHON_NUMPY_INTERNAL
 #include "pxr/external/boost/python/numpy/internal.hpp"
 #include <boost/scoped_array.hpp>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 namespace converter 
 {
 NUMPY_OBJECT_MANAGER_TRAITS_IMPL(PyArray_Type, numpy::ndarray)
-} // namespace boost::python::converter
+} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 namespace numpy 
 {
@@ -303,4 +303,4 @@ ndarray from_object(python::object const & obj, int nd_min, int nd_max, ndarray:
 		     NULL)));
 }
 
-}}} // namespace boost::python::numpy
+}}} // namespace PXR_BOOST_NAMESPACE::python::numpy

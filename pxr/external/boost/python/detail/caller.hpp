@@ -14,6 +14,7 @@
 #  define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CALLER_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/caller.hpp>
@@ -51,7 +52,7 @@
 #  include <boost/mpl/int.hpp>
 #  include <boost/mpl/next.hpp>
 
-namespace boost { namespace python { namespace detail { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 template <int N>
 inline PyObject* get(mpl::int_<N>, PyObject* const& args_)
@@ -102,7 +103,7 @@ inline ResultConverter create_result_converter(
     return ResultConverter();
 }
 
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 template <class ResultConverter>
 struct converter_target_type 
 {
@@ -145,22 +146,22 @@ template <unsigned> struct caller_arity;
 template <class F, class CallPolicies, class Sig>
 struct caller;
 
-#  define BOOST_PYTHON_NEXT(init,name,n)                                                        \
+#  define PXR_BOOST_PYTHON_NEXT(init,name,n)                                                        \
     typedef BOOST_PP_IF(n,typename mpl::next< BOOST_PP_CAT(name,BOOST_PP_DEC(n)) >::type, init) name##n;
 
-#  define BOOST_PYTHON_ARG_CONVERTER(n)                                         \
-     BOOST_PYTHON_NEXT(typename mpl::next<first>::type, arg_iter,n)             \
+#  define PXR_BOOST_PYTHON_ARG_CONVERTER(n)                                         \
+     PXR_BOOST_PYTHON_NEXT(typename mpl::next<first>::type, arg_iter,n)             \
      typedef arg_from_python<BOOST_DEDUCED_TYPENAME arg_iter##n::type> c_t##n;  \
      c_t##n c##n(get(mpl::int_<n>(), inner_args));                              \
      if (!c##n.convertible())                                                   \
           return 0;
 
 #  define BOOST_PP_ITERATION_PARAMS_1                                            \
-        (3, (0, BOOST_PYTHON_MAX_ARITY + 1, "pxr/external/boost/python/detail/caller.hpp"))
+        (3, (0, PXR_BOOST_PYTHON_MAX_ARITY + 1, "pxr/external/boost/python/detail/caller.hpp"))
 #  include BOOST_PP_ITERATE()
 
-#  undef BOOST_PYTHON_ARG_CONVERTER
-#  undef BOOST_PYTHON_NEXT
+#  undef PXR_BOOST_PYTHON_ARG_CONVERTER
+#  undef PXR_BOOST_PYTHON_NEXT
 
 // A metafunction returning the base class used for caller<class F,
 // class ConverterGenerators, class CallPolicies, class Sig>.
@@ -203,7 +204,7 @@ struct caller
 
 };
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CALLER_HPP
@@ -233,7 +234,7 @@ struct caller_arity<N>
             argument_package inner_args(args_);
 
 # if N
-#  define BOOST_PP_LOCAL_MACRO(i) BOOST_PYTHON_ARG_CONVERTER(i)
+#  define BOOST_PP_LOCAL_MACRO(i) PXR_BOOST_PYTHON_ARG_CONVERTER(i)
 #  define BOOST_PP_LOCAL_LIMITS (0, N-1)
 #  include BOOST_PP_LOCAL_ITERATE()
 # endif 
@@ -257,7 +258,7 @@ struct caller_arity<N>
         static py_func_sig_info  signature()
         {
             const signature_element * sig = detail::signature<Sig>::elements();
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
             // MSVC 15.7.2, when compiling to /O2 left the static const signature_element ret, 
             // originally defined here, uninitialized. This in turn led to SegFault in Python interpreter.
             // Issue is resolved by moving the generation of ret to separate function in detail namespace (see above).

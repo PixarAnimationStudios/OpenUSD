@@ -15,7 +15,7 @@
 #include "pxr/external/boost/python/dict.hpp"
 #include "pxr/external/boost/python/str.hpp"
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace {
 
@@ -80,4 +80,4 @@ object const& make_instance_reduce_function()
     return result;
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python

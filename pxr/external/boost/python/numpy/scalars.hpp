@@ -13,6 +13,7 @@
 #define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_SCALARS_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/numpy/scalars.hpp>
@@ -26,7 +27,7 @@
 #include "pxr/external/boost/python/numpy/numpy_object_mgr_traits.hpp"
 #include "pxr/external/boost/python/numpy/dtype.hpp"
 
-namespace boost { namespace python { namespace numpy {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
 
 /**
  *  @brief A boost.python "object manager" (subclass of object) for numpy.void.
@@ -49,7 +50,7 @@ public:
    */
   explicit void_(Py_ssize_t size);
 
-  BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(void_, object);
+  PXR_BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(void_, object);
 
   /// @brief Return a view of the scalar with the given dtype.
   void_ view(dtype const & dt) const;
@@ -59,12 +60,12 @@ public:
 
 };
 
-} // namespace boost::python::numpy
+} // namespace PXR_BOOST_NAMESPACE::python::numpy
 
 namespace converter 
 {
 NUMPY_OBJECT_MANAGER_TRAITS(numpy::void_);
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

@@ -33,9 +33,9 @@
 #include <new>
 #include <structmember.h>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
-# ifdef BOOST_PYTHON_SELF_IS_CLASS
+# ifdef PXR_BOOST_PYTHON_SELF_IS_CLASS
 namespace self_ns
 {
   self_t self;
@@ -210,7 +210,7 @@ namespace objects
   }
 #endif
 
-  BOOST_PYTHON_DECL PyObject* static_data()
+  PXR_BOOST_PYTHON_DECL PyObject* static_data()
   {
       if (static_data_object.tp_dict == 0)
       {
@@ -318,7 +318,7 @@ void instance_holder::install(PyObject* self) throw()
 namespace objects
 {
 // Get the metatype object for all extension classes.
-  BOOST_PYTHON_DECL type_handle class_metatype()
+  PXR_BOOST_PYTHON_DECL type_handle class_metatype()
   {
       if (class_metatype_object.tp_dict == 0)
       {
@@ -467,7 +467,7 @@ namespace objects
 #endif
   };
 
-  BOOST_PYTHON_DECL type_handle class_type()
+  PXR_BOOST_PYTHON_DECL type_handle class_type()
   {
       if (class_type_object.tp_dict == 0)
       {
@@ -480,7 +480,7 @@ namespace objects
       return type_handle(borrowed(&class_type_object));
   }
 
-  BOOST_PYTHON_DECL void*
+  PXR_BOOST_PYTHON_DECL void*
   find_instance_impl(PyObject* inst, type_info type, bool null_shared_ptr_only)
   {
       if (!Py_TYPE(Py_TYPE(inst)) ||
@@ -599,7 +599,7 @@ namespace objects
       converters.m_class_object = (PyTypeObject*)incref(this->ptr());
   }
 
-  BOOST_PYTHON_DECL void copy_class_object(type_info const& src, type_info const& dst)
+  PXR_BOOST_PYTHON_DECL void copy_class_object(type_info const& src, type_info const& dst)
   {
       converter::registration& dst_converters
           = const_cast<converter::registration&>(converter::registry::lookup(dst));
@@ -720,7 +720,7 @@ namespace objects
               ));
   }
 
-  BOOST_PYTHON_DECL type_handle registered_class_object(type_info id)
+  PXR_BOOST_PYTHON_DECL type_handle registered_class_object(type_info id)
   {
       return query_class(id);
   }
@@ -783,4 +783,4 @@ void instance_holder::deallocate(PyObject* self_, void* storage) throw()
     }
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python

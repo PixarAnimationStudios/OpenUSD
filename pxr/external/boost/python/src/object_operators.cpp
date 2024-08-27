@@ -11,10 +11,10 @@
 #include "pxr/external/boost/python/object_operators.hpp"
 #include "pxr/external/boost/python/detail/raw_pyobject.hpp"
 
-namespace boost { namespace python { namespace api {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace api {
 
-# define BOOST_PYTHON_COMPARE_OP(op, opid)                              \
-BOOST_PYTHON_DECL object operator op(object const& l, object const& r)  \
+# define PXR_BOOST_PYTHON_COMPARE_OP(op, opid)                              \
+PXR_BOOST_PYTHON_DECL object operator op(object const& l, object const& r)  \
 {                                                                       \
     return object(                                                      \
         detail::new_reference(                                          \
@@ -22,17 +22,17 @@ BOOST_PYTHON_DECL object operator op(object const& l, object const& r)  \
                 l.ptr(), r.ptr(), opid))                                \
             );                                                          \
 }
-BOOST_PYTHON_COMPARE_OP(>, Py_GT)
-BOOST_PYTHON_COMPARE_OP(>=, Py_GE)
-BOOST_PYTHON_COMPARE_OP(<, Py_LT)
-BOOST_PYTHON_COMPARE_OP(<=, Py_LE)
-BOOST_PYTHON_COMPARE_OP(==, Py_EQ)
-BOOST_PYTHON_COMPARE_OP(!=, Py_NE)
-# undef BOOST_PYTHON_COMPARE_OP
+PXR_BOOST_PYTHON_COMPARE_OP(>, Py_GT)
+PXR_BOOST_PYTHON_COMPARE_OP(>=, Py_GE)
+PXR_BOOST_PYTHON_COMPARE_OP(<, Py_LT)
+PXR_BOOST_PYTHON_COMPARE_OP(<=, Py_LE)
+PXR_BOOST_PYTHON_COMPARE_OP(==, Py_EQ)
+PXR_BOOST_PYTHON_COMPARE_OP(!=, Py_NE)
+# undef PXR_BOOST_PYTHON_COMPARE_OP
     
 
-#define BOOST_PYTHON_BINARY_OPERATOR(op, name)                          \
-BOOST_PYTHON_DECL object operator op(object const& l, object const& r)  \
+#define PXR_BOOST_PYTHON_BINARY_OPERATOR(op, name)                          \
+PXR_BOOST_PYTHON_DECL object operator op(object const& l, object const& r)  \
 {                                                                       \
     return object(                                                      \
         detail::new_reference(                                          \
@@ -40,51 +40,51 @@ BOOST_PYTHON_DECL object operator op(object const& l, object const& r)  \
         );                                                              \
 }
 
-BOOST_PYTHON_BINARY_OPERATOR(+, Add)
-BOOST_PYTHON_BINARY_OPERATOR(-, Subtract)
-BOOST_PYTHON_BINARY_OPERATOR(*, Multiply)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(+, Add)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(-, Subtract)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(*, Multiply)
 #if PY_VERSION_HEX >= 0x03000000
 // We choose FloorDivide instead of TrueDivide to keep the semantic
 // conform with C/C++'s '/' operator
-BOOST_PYTHON_BINARY_OPERATOR(/, FloorDivide)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(/, FloorDivide)
 #else
-BOOST_PYTHON_BINARY_OPERATOR(/, Divide)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(/, Divide)
 #endif
-BOOST_PYTHON_BINARY_OPERATOR(%, Remainder)
-BOOST_PYTHON_BINARY_OPERATOR(<<, Lshift)
-BOOST_PYTHON_BINARY_OPERATOR(>>, Rshift)
-BOOST_PYTHON_BINARY_OPERATOR(&, And)
-BOOST_PYTHON_BINARY_OPERATOR(^, Xor)
-BOOST_PYTHON_BINARY_OPERATOR(|, Or)
-#undef BOOST_PYTHON_BINARY_OPERATOR
+PXR_BOOST_PYTHON_BINARY_OPERATOR(%, Remainder)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(<<, Lshift)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(>>, Rshift)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(&, And)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(^, Xor)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(|, Or)
+#undef PXR_BOOST_PYTHON_BINARY_OPERATOR
 
-#define BOOST_PYTHON_INPLACE_OPERATOR(op, name)                         \
-BOOST_PYTHON_DECL object& operator op##=(object& l, object const& r)    \
+#define PXR_BOOST_PYTHON_INPLACE_OPERATOR(op, name)                         \
+PXR_BOOST_PYTHON_DECL object& operator op##=(object& l, object const& r)    \
 {                                                                       \
     return l = object(                                                  \
         (detail::new_reference)                                         \
             PyNumber_InPlace##name(l.ptr(), r.ptr()));                  \
 }
     
-BOOST_PYTHON_INPLACE_OPERATOR(+, Add)
-BOOST_PYTHON_INPLACE_OPERATOR(-, Subtract)
-BOOST_PYTHON_INPLACE_OPERATOR(*, Multiply)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(+, Add)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(-, Subtract)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(*, Multiply)
 #if PY_VERSION_HEX >= 0x03000000
 // Same reason as above for choosing FloorDivide instead of TrueDivide
-BOOST_PYTHON_INPLACE_OPERATOR(/, FloorDivide)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(/, FloorDivide)
 #else
-BOOST_PYTHON_INPLACE_OPERATOR(/, Divide)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(/, Divide)
 #endif
-BOOST_PYTHON_INPLACE_OPERATOR(%, Remainder)
-BOOST_PYTHON_INPLACE_OPERATOR(<<, Lshift)
-BOOST_PYTHON_INPLACE_OPERATOR(>>, Rshift)
-BOOST_PYTHON_INPLACE_OPERATOR(&, And)
-BOOST_PYTHON_INPLACE_OPERATOR(^, Xor)
-BOOST_PYTHON_INPLACE_OPERATOR(|, Or)
-#undef BOOST_PYTHON_INPLACE_OPERATOR
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(%, Remainder)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(<<, Lshift)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(>>, Rshift)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(&, And)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(^, Xor)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(|, Or)
+#undef PXR_BOOST_PYTHON_INPLACE_OPERATOR
 
 object::object(handle<> const& x)
      : object_base(python::incref(python::expect_non_null(x.get())))
 {}
 
-}}} // namespace boost::python
+}}} // namespace PXR_BOOST_NAMESPACE::python

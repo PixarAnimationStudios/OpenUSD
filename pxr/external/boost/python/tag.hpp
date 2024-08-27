@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_TAG_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/tag.hpp>
@@ -18,13 +19,13 @@
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 // used only to prevent argument-dependent lookup from finding the
 // wrong function in some cases. Cheaper than qualification.
 enum tag_t { tag };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_TAG_HPP

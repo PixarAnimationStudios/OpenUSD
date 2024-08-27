@@ -9,7 +9,7 @@
 
 #include "pxr/external/boost/python/wrapper.hpp"
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace detail
 {
@@ -50,7 +50,7 @@ namespace detail
 #if 0
 namespace converter
 {
-  PyObject* BOOST_PYTHON_DECL do_polymorphic_ref_to_python(
+  PyObject* PXR_BOOST_PYTHON_DECL do_polymorphic_ref_to_python(
       python::detail::wrapper_base const volatile* x, type_info src
   )
   {
@@ -68,4 +68,4 @@ namespace converter
 }
 #endif 
 
-}} // namespace boost::python::detail
+}} // namespace PXR_BOOST_NAMESPACE::python::detail

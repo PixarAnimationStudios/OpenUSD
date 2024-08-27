@@ -32,9 +32,9 @@ std::ostream& operator<<(std::ostream& s, Y const& x)
 }
 
 
-BOOST_PYTHON_MODULE(nested_ext)
+PXR_BOOST_PYTHON_MODULE(nested_ext)
 {
-    using namespace boost::python;
+    using namespace PXR_BOOST_NAMESPACE::python;
 
     // Establish X as the current scope.
     scope x_class

@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_PURE_VIRTUAL_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/pure_virtual.hpp>
@@ -23,7 +24,7 @@
 
 # include "pxr/external/boost/python/detail/nullary_function_adaptor.hpp"
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 namespace detail
 {
@@ -33,7 +34,7 @@ namespace detail
   
   // Raises a Python RuntimeError reporting that a pure virtual
   // function was called.
-  void BOOST_PYTHON_DECL pure_virtual_called();
+  void PXR_BOOST_PYTHON_DECL pure_virtual_called();
 
   // Replace the two front elements of S with T1 and T2
   template <class S, class T1, class T2>
@@ -130,7 +131,7 @@ pure_virtual(PointerToMemberFunction pmf)
     return detail::pure_virtual_visitor<PointerToMemberFunction>(pmf);
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_PURE_VIRTUAL_HPP

@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_OVERLOADS_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/overloads.hpp>

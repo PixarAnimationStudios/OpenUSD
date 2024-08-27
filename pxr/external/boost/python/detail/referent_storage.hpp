@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_REFERENT_STORAGE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/referent_storage.hpp>
@@ -19,7 +20,7 @@
 # include <boost/type_traits/aligned_storage.hpp>
 # include <cstddef>
 
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 template <std::size_t size, std::size_t alignment = std::size_t(-1)>
 struct aligned_storage
@@ -48,10 +49,13 @@ struct aligned_storage
 template <class T>
 struct referent_storage
 {
-    typedef typename aligned_storage<referent_size<T>::value, alignment_of<T>::value>::type type;
+    typedef typename aligned_storage<
+        ::PXR_BOOST_NAMESPACE::python::detail::referent_size<T>::value, 
+        alignment_of<T>::value
+    >::type type;
 };
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_REFERENT_STORAGE_HPP

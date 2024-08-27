@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_POINTER_TYPE_ID_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/converter/pointer_type_id.hpp>
@@ -19,7 +20,7 @@
 # include "pxr/external/boost/python/type_id.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 namespace detail
 {
@@ -70,11 +71,11 @@ template <class T>
 type_info pointer_type_id(T(*)() = 0)
 {
     return detail::pointer_typeid_select<
-          boost::python::detail::is_lvalue_reference<T>::value
+          PXR_BOOST_NAMESPACE::python::detail::is_lvalue_reference<T>::value
         >::execute((T(*)())0);
 }
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_POINTER_TYPE_ID_HPP

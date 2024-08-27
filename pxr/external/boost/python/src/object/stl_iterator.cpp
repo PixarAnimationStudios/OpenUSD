@@ -16,7 +16,7 @@
 #include "pxr/external/boost/python/handle.hpp"
 #include "pxr/external/boost/python/object/stl_iterator_core.hpp"
 
-namespace boost { namespace python { namespace objects
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects
 { 
 
 stl_input_iterator_impl::stl_input_iterator_impl()
@@ -25,7 +25,7 @@ stl_input_iterator_impl::stl_input_iterator_impl()
 {
 }
 
-stl_input_iterator_impl::stl_input_iterator_impl(boost::python::object const &ob)
+stl_input_iterator_impl::stl_input_iterator_impl(PXR_BOOST_NAMESPACE::python::object const &ob)
   : it_(ob.attr("__iter__")())
   , ob_()
 {
@@ -34,10 +34,10 @@ stl_input_iterator_impl::stl_input_iterator_impl(boost::python::object const &ob
 
 void stl_input_iterator_impl::increment()
 {
-    this->ob_ = boost::python::handle<>(
-        boost::python::allow_null(PyIter_Next(this->it_.ptr())));
+    this->ob_ = PXR_BOOST_NAMESPACE::python::handle<>(
+        PXR_BOOST_NAMESPACE::python::allow_null(PyIter_Next(this->it_.ptr())));
     if (PyErr_Occurred())
-        throw boost::python::error_already_set();
+        throw PXR_BOOST_NAMESPACE::python::error_already_set();
 }
 
 bool stl_input_iterator_impl::equal(stl_input_iterator_impl const &that) const
@@ -45,9 +45,9 @@ bool stl_input_iterator_impl::equal(stl_input_iterator_impl const &that) const
     return !this->ob_ == !that.ob_;
 }
 
-boost::python::handle<> const &stl_input_iterator_impl::current() const
+PXR_BOOST_NAMESPACE::python::handle<> const &stl_input_iterator_impl::current() const
 {
     return this->ob_;
 }
 
-}}} // namespace boost::python::objects
+}}} // namespace PXR_BOOST_NAMESPACE::python::objects

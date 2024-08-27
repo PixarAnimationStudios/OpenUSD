@@ -13,7 +13,7 @@
 #include "pxr/external/boost/python/stl_iterator.hpp"
 #include <list>
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 typedef std::list<int> list_int;
 
@@ -25,9 +25,9 @@ void assign(list_int& x, object const& y)
         x.push_back(*begin);
 }
 
-BOOST_PYTHON_MODULE(stl_iterator_ext)
+PXR_BOOST_PYTHON_MODULE(stl_iterator_ext)
 {
-    using boost::python::iterator; // gcc 2.96 bug workaround
+    using PXR_BOOST_NAMESPACE::python::iterator; // gcc 2.96 bug workaround
 
     class_<list_int>("list_int")
         .def("assign", assign)

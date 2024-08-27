@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_ENUM_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/enum.hpp>
@@ -22,7 +23,7 @@
 # include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
 # include "pxr/external/boost/python/converter/registered.hpp"
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 template <class T>
 struct enum_ : public objects::enum_base
@@ -114,7 +115,7 @@ inline enum_<T>& enum_<T>::export_values()
     return *this;
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_ENUM_HPP

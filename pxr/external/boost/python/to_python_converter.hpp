@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_CONVERTER_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/to_python_converter.hpp>
@@ -20,12 +21,12 @@
 
 # include "pxr/external/boost/python/converter/registry.hpp"
 # include "pxr/external/boost/python/converter/as_to_python_function.hpp"
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 # include "pxr/external/boost/python/converter/pytype_function.hpp"
 #endif
 # include "pxr/external/boost/python/type_id.hpp"
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 #if 0 //get_pytype member detection
 namespace detail
@@ -58,7 +59,7 @@ namespace detail
 template < class T, class Conversion, bool has_get_pytype=false >
 struct to_python_converter 
 {
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
     typedef boost::mpl::bool_<has_get_pytype> HasGetPytype;
 
     static PyTypeObject const* get_pytype_1(boost::mpl::true_ *)
@@ -93,13 +94,13 @@ to_python_converter<T,Conversion, has_get_pytype>::to_python_converter()
     converter::registry::insert(
         &normalized::convert
         , type_id<T>()
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
         , &get_pytype_impl
 #endif
         );
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_CONVERTER_HPP

@@ -19,7 +19,7 @@
 #include <iterator>
 #include <algorithm>
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 typedef std::list<int> list_int;
 typedef std::list<list_int> list_list;
@@ -81,9 +81,9 @@ private:
     list_int two;
 };
 
-BOOST_PYTHON_MODULE(iterator_ext)
+PXR_BOOST_PYTHON_MODULE(iterator_ext)
 {
-    using boost::python::iterator; // gcc 2.96 bug workaround
+    using PXR_BOOST_NAMESPACE::python::iterator; // gcc 2.96 bug workaround
     def("range", &::range);
 
     class_<list_int>("list_int")

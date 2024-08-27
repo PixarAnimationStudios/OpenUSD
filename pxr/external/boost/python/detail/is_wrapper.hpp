@@ -10,6 +10,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IS_WRAPPER_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/is_wrapper.hpp>
@@ -18,7 +19,7 @@
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include <boost/mpl/bool.hpp>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 template <class T> class wrapper;
 
@@ -35,7 +36,7 @@ namespace detail
     : mpl::bool_<(sizeof(detail::is_wrapper_helper((T*)0)) == 1)>
   {};
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IS_WRAPPER_HPP

@@ -9,15 +9,15 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#define BOOST_PYTHON_NUMPY_INTERNAL
+#define PXR_BOOST_PYTHON_NUMPY_INTERNAL
 #include "pxr/external/boost/python/numpy/internal.hpp"
 #include "pxr/external/boost/python/numpy/ufunc.hpp"
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 namespace converter 
 {
 NUMPY_OBJECT_MANAGER_TRAITS_IMPL(PyArrayMultiIter_Type, numpy::multi_iter)
-} // namespace boost::python::converter
+} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 namespace numpy 
 {
@@ -67,4 +67,4 @@ Py_intptr_t multi_iter::shape(int n) const
   return reinterpret_cast<PyArrayMultiIterObject*>(ptr())->dimensions[n];
 }
 
-}}} // namespace boost::python::numpy
+}}} // namespace PXR_BOOST_NAMESPACE::python::numpy

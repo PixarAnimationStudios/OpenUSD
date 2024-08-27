@@ -11,6 +11,7 @@
 #define PXR_EXTERNAL_BOOST_PYTHON_STR_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/str.hpp>
@@ -30,13 +31,13 @@
 #undef isalnum
 #undef isupper
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 class str;
 
 namespace detail
 {
-  struct BOOST_PYTHON_DECL str_base : object
+  struct PXR_BOOST_PYTHON_DECL str_base : object
   {
       str capitalize() const;
 
@@ -145,7 +146,7 @@ namespace detail
       
       explicit str_base(object_cref other);
 
-      BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(str_base, object)
+      PXR_BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(str_base, object)
    private:
       static new_reference call(object const&);
   };
@@ -409,7 +410,7 @@ class str : public detail::str_base
     }
     
  public: // implementation detail -- for internal use only
-    BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(str, base)
+    PXR_BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(str, base)
 };
 
 //
@@ -428,7 +429,7 @@ namespace converter
   };
 }
 
-}}  // namespace boost::python
+}}  // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_STR_HPP

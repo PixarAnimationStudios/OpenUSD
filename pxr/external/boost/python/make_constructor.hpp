@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_MAKE_CONSTRUCTOR_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/make_constructor.hpp>
@@ -36,7 +37,7 @@
 # include <boost/mpl/pop_front.hpp>
 # include <boost/mpl/assert.hpp>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace detail
 {

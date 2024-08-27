@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DESTROY_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/destroy.hpp>
@@ -18,7 +19,7 @@
 
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <boost/detail/workaround.hpp>
-namespace boost { namespace python { namespace detail { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 template <bool array> struct value_destroyer;
     
@@ -69,7 +70,7 @@ inline void destroy_referent(void* p, T(*)() = 0)
     destroy_referent_impl(p, (T(*)())0);
 }
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DESTROY_HPP

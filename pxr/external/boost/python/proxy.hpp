@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_PROXY_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/proxy.hpp>
@@ -19,7 +20,7 @@
 # include "pxr/external/boost/python/object_core.hpp"
 # include "pxr/external/boost/python/object_operators.hpp"
 
-namespace boost { namespace python { namespace api {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace api {
 
 template <class Policies>
 class proxy : public object_operators<proxy<Policies> >
@@ -78,24 +79,24 @@ inline proxy<Policies> const& proxy<Policies>::operator=(typename proxy::assignm
     return *this = python::object(rhs);
 }
 
-# define BOOST_PYTHON_PROXY_INPLACE(op)                                         \
+# define PXR_BOOST_PYTHON_PROXY_INPLACE(op)                                         \
 template <class Policies, class R>                                              \
 proxy<Policies> const& operator op(proxy<Policies> const& lhs, R const& rhs)    \
 {                                                                               \
     object old(lhs);                                                            \
     return lhs = (old op rhs);                                                  \
 } 
-BOOST_PYTHON_PROXY_INPLACE(+=)
-BOOST_PYTHON_PROXY_INPLACE(-=)
-BOOST_PYTHON_PROXY_INPLACE(*=)
-BOOST_PYTHON_PROXY_INPLACE(/=)
-BOOST_PYTHON_PROXY_INPLACE(%=)
-BOOST_PYTHON_PROXY_INPLACE(<<=)
-BOOST_PYTHON_PROXY_INPLACE(>>=)
-BOOST_PYTHON_PROXY_INPLACE(&=)
-BOOST_PYTHON_PROXY_INPLACE(^=)
-BOOST_PYTHON_PROXY_INPLACE(|=)
-# undef BOOST_PYTHON_PROXY_INPLACE
+PXR_BOOST_PYTHON_PROXY_INPLACE(+=)
+PXR_BOOST_PYTHON_PROXY_INPLACE(-=)
+PXR_BOOST_PYTHON_PROXY_INPLACE(*=)
+PXR_BOOST_PYTHON_PROXY_INPLACE(/=)
+PXR_BOOST_PYTHON_PROXY_INPLACE(%=)
+PXR_BOOST_PYTHON_PROXY_INPLACE(<<=)
+PXR_BOOST_PYTHON_PROXY_INPLACE(>>=)
+PXR_BOOST_PYTHON_PROXY_INPLACE(&=)
+PXR_BOOST_PYTHON_PROXY_INPLACE(^=)
+PXR_BOOST_PYTHON_PROXY_INPLACE(|=)
+# undef PXR_BOOST_PYTHON_PROXY_INPLACE
 
 template <class Policies>
 inline void proxy<Policies>::del() const
@@ -103,7 +104,7 @@ inline void proxy<Policies>::del() const
     Policies::del(m_target, m_key);
 }
 
-}}} // namespace boost::python::api
+}}} // namespace PXR_BOOST_NAMESPACE::python::api
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_PROXY_HPP

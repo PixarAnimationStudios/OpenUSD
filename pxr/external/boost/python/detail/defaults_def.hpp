@@ -16,6 +16,7 @@
 #define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_DEF_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/defaults_def.hpp>
@@ -35,7 +36,7 @@
 #include "pxr/external/boost/python/object/add_to_namespace.hpp"
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 struct module;
 
@@ -120,7 +121,7 @@ namespace detail
   //          name_space.def(name, &OverloadsT::func_N);
   //      }
   //
-  //  where N runs from 0 to BOOST_PYTHON_MAX_ARITY.
+  //  where N runs from 0 to PXR_BOOST_PYTHON_MAX_ARITY.
   //
   //  The set of overloaded functions (define_stub_function) expects:
   //
@@ -136,7 +137,7 @@ namespace detail
   struct define_stub_function {};
 
 #define BOOST_PP_ITERATION_PARAMS_1                                             \
-    (3, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/detail/defaults_def.hpp"))
+    (3, (0, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/detail/defaults_def.hpp"))
 
 #include BOOST_PP_ITERATE()
   
@@ -268,7 +269,7 @@ namespace detail
 
 } // namespace detail
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_DEF_HPP

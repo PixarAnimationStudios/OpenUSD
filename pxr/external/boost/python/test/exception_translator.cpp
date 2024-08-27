@@ -23,9 +23,9 @@ void throw_error()
     
 }
 
-BOOST_PYTHON_MODULE(exception_translator_ext)
+PXR_BOOST_PYTHON_MODULE(exception_translator_ext)
 {
-  using namespace boost::python;
+  using namespace PXR_BOOST_NAMESPACE::python;
   register_exception_translator<error>(&translate);
   
   def("throw_error", throw_error);

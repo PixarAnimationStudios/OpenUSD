@@ -18,9 +18,9 @@ struct A
         ) {}
 };
 
-BOOST_PYTHON_MODULE(multi_arg_constructor_ext)
+PXR_BOOST_PYTHON_MODULE(multi_arg_constructor_ext)
 {
-  using namespace boost::python;
+  using namespace PXR_BOOST_NAMESPACE::python;
 
   class_<A>(
       "A"

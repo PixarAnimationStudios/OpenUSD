@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_RVALUE_FROM_PYTHON_DATA_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/converter/rvalue_from_python_data.hpp>
@@ -47,7 +48,7 @@
 // references can bind to temporary rvalues, we allow rvalue
 // converters to be chosen when the target type is T const& for some
 // T.
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 // Conversions begin by filling in and returning a copy of this
 // structure. The process looks up a converter in the rvalue converter
@@ -89,7 +90,7 @@ struct rvalue_from_python_storage
 
     // Storage for the result, in case an rvalue must be constructed
     typename python::detail::referent_storage<
-        typename boost::python::detail::add_lvalue_reference<T>::type
+        typename PXR_BOOST_NAMESPACE::python::detail::add_lvalue_reference<T>::type
     >::type storage;
 };
 
@@ -105,9 +106,9 @@ struct rvalue_from_python_data : rvalue_from_python_storage<T>
 # if (!defined(__MWERKS__) || __MWERKS__ >= 0x3000) \
         && (!defined(__EDG_VERSION__) || __EDG_VERSION__ >= 245) \
         && (!defined(__DECCXX_VER) || __DECCXX_VER > 60590014) \
-        && !defined(BOOST_PYTHON_SYNOPSIS) /* Synopsis' OpenCXX has trouble parsing this */
+        && !defined(PXR_BOOST_PYTHON_SYNOPSIS) /* Synopsis' OpenCXX has trouble parsing this */
     // This must always be a POD struct with m_data its first member.
-    BOOST_STATIC_ASSERT(BOOST_PYTHON_OFFSETOF(rvalue_from_python_storage<T>,stage1) == 0);
+    BOOST_STATIC_ASSERT(PXR_BOOST_PYTHON_OFFSETOF(rvalue_from_python_storage<T>,stage1) == 0);
 # endif
     
     // The usual constructor 
@@ -121,8 +122,8 @@ struct rvalue_from_python_data : rvalue_from_python_storage<T>
     // Destroys any object constructed in the storage.
     ~rvalue_from_python_data();
  private:
-    typedef typename boost::python::detail::add_lvalue_reference<
-                typename boost::python::detail::add_cv<T>::type>::type ref_type;
+    typedef typename PXR_BOOST_NAMESPACE::python::detail::add_lvalue_reference<
+                typename PXR_BOOST_NAMESPACE::python::detail::add_cv<T>::type>::type ref_type;
 };
 
 //
@@ -148,12 +149,12 @@ inline rvalue_from_python_data<T>::~rvalue_from_python_data()
         size_t allocated = sizeof(this->storage);
         void *ptr = this->storage.bytes;
         void *aligned_storage =
-            ::boost::alignment::align(boost::python::detail::alignment_of<T>::value, 0, ptr, allocated);
+            ::boost::alignment::align(PXR_BOOST_NAMESPACE::python::detail::alignment_of<T>::value, 0, ptr, allocated);
         python::detail::destroy_referent<ref_type>(aligned_storage);
     }
 }
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_RVALUE_FROM_PYTHON_DATA_HPP

@@ -11,12 +11,13 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MAP_ENTRY_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/map_entry.hpp>
 #else
 
-namespace boost { namespace python { namespace detail { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 // A trivial type that works well as the value_type of associative
 // vector maps
@@ -49,7 +50,7 @@ bool operator<(Key const& k, map_entry<Key,Value> const& e)
 }
 
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MAP_ENTRY_HPP

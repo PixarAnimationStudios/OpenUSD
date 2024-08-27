@@ -11,18 +11,19 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CLASS_WRAPPER_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/object/class_wrapper.hpp>
 #else
 
 # include "pxr/external/boost/python/to_python_converter.hpp"
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 # include "pxr/external/boost/python/converter/pytype_function.hpp"
 #endif
 # include <boost/ref.hpp>
 
-namespace boost { namespace python { namespace objects { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
 //
 // These two classes adapt the static execute function of a class
@@ -39,7 +40,7 @@ struct class_cref_wrapper
     {
         return MakeInstance::execute(boost::ref(x));
     }
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
     static PyTypeObject const *get_pytype() { return converter::registered_pytype_direct<Src>::get_pytype(); }
 #endif
 };
@@ -52,12 +53,12 @@ struct class_value_wrapper
     {
         return MakeInstance::execute(x);
     }
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
     static PyTypeObject const *get_pytype() { return MakeInstance::get_pytype(); }
 #endif
 };
 
-}}} // namespace boost::python::objects
+}}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CLASS_WRAPPER_HPP

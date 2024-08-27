@@ -16,16 +16,16 @@
 
 #if defined(__APPLE__) && defined(__MACH__) && defined(__GNUC__) \
  && __GNUC__ == 3 && __GNUC_MINOR__ <= 4 && !defined(__APPLE_CC__)
-# define BOOST_PYTHON_CONVERTER_REGISTRY_APPLE_MACH_WORKAROUND
+# define PXR_BOOST_PYTHON_CONVERTER_REGISTRY_APPLE_MACH_WORKAROUND
 #endif
 
-#if defined(BOOST_PYTHON_TRACE_REGISTRY) \
- || defined(BOOST_PYTHON_CONVERTER_REGISTRY_APPLE_MACH_WORKAROUND)
+#if defined(PXR_BOOST_PYTHON_TRACE_REGISTRY) \
+ || defined(PXR_BOOST_PYTHON_CONVERTER_REGISTRY_APPLE_MACH_WORKAROUND)
 # include <iostream>
 #endif
 
-namespace boost { namespace python { namespace converter { 
-BOOST_PYTHON_DECL PyTypeObject const* registration::expected_from_python_type() const
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
+PXR_BOOST_PYTHON_DECL PyTypeObject const* registration::expected_from_python_type() const
 {
     if (this->m_class_object != 0)
         return this->m_class_object;
@@ -44,7 +44,7 @@ BOOST_PYTHON_DECL PyTypeObject const* registration::expected_from_python_type() 
 
 }
 
-BOOST_PYTHON_DECL PyTypeObject const* registration::to_python_target_type() const
+PXR_BOOST_PYTHON_DECL PyTypeObject const* registration::to_python_target_type() const
 {
     if (this->m_class_object != 0)
         return this->m_class_object;
@@ -55,7 +55,7 @@ BOOST_PYTHON_DECL PyTypeObject const* registration::to_python_target_type() cons
     return 0;
 }
 
-BOOST_PYTHON_DECL PyTypeObject* registration::get_class_object() const
+PXR_BOOST_PYTHON_DECL PyTypeObject* registration::get_class_object() const
 {
     if (this->m_class_object == 0)
     {
@@ -70,7 +70,7 @@ BOOST_PYTHON_DECL PyTypeObject* registration::get_class_object() const
     return this->m_class_object;
 }
   
-BOOST_PYTHON_DECL PyObject* registration::to_python(void const volatile* source) const
+PXR_BOOST_PYTHON_DECL PyObject* registration::to_python(void const volatile* source) const
 {
     if (this->m_to_python == 0)
     {
@@ -120,12 +120,12 @@ namespace // <unnamed>
   
   typedef std::set<entry> registry_t;
   
-#ifndef BOOST_PYTHON_CONVERTER_REGISTRY_APPLE_MACH_WORKAROUND
+#ifndef PXR_BOOST_PYTHON_CONVERTER_REGISTRY_APPLE_MACH_WORKAROUND
   registry_t& entries()
   {
       static registry_t registry;
 
-# ifndef BOOST_PYTHON_SUPPRESS_REGISTRY_INITIALIZATION
+# ifndef PXR_BOOST_PYTHON_SUPPRESS_REGISTRY_INITIALIZATION
       static bool builtin_converters_initialized = false;
       if (!builtin_converters_initialized)
       {
@@ -135,7 +135,7 @@ namespace // <unnamed>
           
           initialize_builtin_converters();
       }
-#  ifdef BOOST_PYTHON_TRACE_REGISTRY
+#  ifdef PXR_BOOST_PYTHON_TRACE_REGISTRY
       std::cout << "registry: ";
       for (registry_t::iterator p = registry.begin(); p != registry.end(); ++p)
       {
@@ -166,12 +166,12 @@ namespace // <unnamed>
 
   registry_t& entries()
   {
-# ifndef BOOST_PYTHON_SUPPRESS_REGISTRY_INITIALIZATION
+# ifndef PXR_BOOST_PYTHON_SUPPRESS_REGISTRY_INITIALIZATION
       if (!static_builtin_converters_initialized())
       {
           initialize_builtin_converters();
       }
-#  ifdef BOOST_PYTHON_TRACE_REGISTRY
+#  ifdef PXR_BOOST_PYTHON_TRACE_REGISTRY
       std::cout << "registry: ";
       for (registry_t::iterator p = static_registry().begin(); p != static_registry().end(); ++p)
       {
@@ -182,11 +182,11 @@ namespace // <unnamed>
 # endif 
       return static_registry();
   }
-#endif // BOOST_PYTHON_CONVERTER_REGISTRY_APPLE_MACH_WORKAROUND
+#endif // PXR_BOOST_PYTHON_CONVERTER_REGISTRY_APPLE_MACH_WORKAROUND
 
   entry* get(type_info type, bool is_shared_ptr = false)
   {
-#  ifdef BOOST_PYTHON_TRACE_REGISTRY
+#  ifdef PXR_BOOST_PYTHON_TRACE_REGISTRY
       registry_t::iterator p = entries().find(entry(type));
       
       std::cout << "looking up " << type << ": "
@@ -209,7 +209,7 @@ namespace registry
 {
   void insert(to_python_function_t f, type_info source_t, PyTypeObject const* (*to_python_target_type)())
   {
-#  ifdef BOOST_PYTHON_TRACE_REGISTRY
+#  ifdef PXR_BOOST_PYTHON_TRACE_REGISTRY
       std::cout << "inserting to_python " << source_t << "\n";
 #  endif 
       entry* slot = get(source_t);
@@ -235,7 +235,7 @@ namespace registry
   // Insert an lvalue from_python converter
   void insert(convertible_function convert, type_info key, PyTypeObject const* (*exp_pytype)())
   {
-#  ifdef BOOST_PYTHON_TRACE_REGISTRY
+#  ifdef PXR_BOOST_PYTHON_TRACE_REGISTRY
       std::cout << "inserting lvalue from_python " << key << "\n";
 #  endif 
       entry* found = get(key);
@@ -253,7 +253,7 @@ namespace registry
               , type_info key
               , PyTypeObject const* (*exp_pytype)())
   {
-#  ifdef BOOST_PYTHON_TRACE_REGISTRY
+#  ifdef PXR_BOOST_PYTHON_TRACE_REGISTRY
       std::cout << "inserting rvalue from_python " << key << "\n";
 #  endif 
       entry* found = get(key);
@@ -271,7 +271,7 @@ namespace registry
               , type_info key
               , PyTypeObject const* (*exp_pytype)())
   {
-#  ifdef BOOST_PYTHON_TRACE_REGISTRY
+#  ifdef PXR_BOOST_PYTHON_TRACE_REGISTRY
       std::cout << "push_back rvalue from_python " << key << "\n";
 #  endif 
       rvalue_from_python_chain** found = &get(key)->rvalue_chain;
@@ -299,7 +299,7 @@ namespace registry
   registration const* query(type_info type)
   {
       registry_t::iterator p = entries().find(entry(type));
-#  ifdef BOOST_PYTHON_TRACE_REGISTRY
+#  ifdef PXR_BOOST_PYTHON_TRACE_REGISTRY
       std::cout << "querying " << type
                 << (p == entries().end() || p->target_type != type
                     ? "...NOT found\n" : "...found\n");
@@ -308,4 +308,4 @@ namespace registry
   }
 } // namespace registry
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter

@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DOCSTRING_OPTIONS_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/docstring_options.hpp>
@@ -18,11 +19,11 @@
 
 #include "pxr/external/boost/python/object/function.hpp"
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 // Note: the static data members are defined in object/function.cpp
 
-class BOOST_PYTHON_DECL docstring_options : boost::noncopyable
+class PXR_BOOST_PYTHON_DECL docstring_options : boost::noncopyable
 {
   public:
       docstring_options(bool show_all=true)
@@ -133,7 +134,7 @@ class BOOST_PYTHON_DECL docstring_options : boost::noncopyable
       bool previous_show_py_signatures_;
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DOCSTRING_OPTIONS_HPP

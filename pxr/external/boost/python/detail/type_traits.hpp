@@ -12,6 +12,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_TRAITS_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/type_traits.hpp>
@@ -44,7 +45,7 @@
 # include <boost/type_traits/has_trivial_copy.hpp>
 
 
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 #ifdef BOOST_NO_CXX11_HDR_TYPE_TRAITS
     using boost::alignment_of;
@@ -116,7 +117,7 @@ namespace boost { namespace python { namespace detail {
     using boost::is_base_and_derived;
     using boost::type_with_alignment;
     using boost::has_trivial_copy;
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON

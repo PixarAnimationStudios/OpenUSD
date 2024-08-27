@@ -16,7 +16,7 @@
 #include "pxr/external/boost/python/make_constructor.hpp"
 #include "pxr/external/boost/python/args.hpp"
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 typedef test_class<> X;
 
@@ -29,7 +29,7 @@ boost::shared_ptr<X> product(int a, int b, int c)
     return boost::shared_ptr<X>(new X(a*b*c));
 }
 
-BOOST_PYTHON_MODULE(injected_ext)
+PXR_BOOST_PYTHON_MODULE(injected_ext)
 {
     class_<X>("X", init<int>())
         .def("__init__", make_constructor(empty))

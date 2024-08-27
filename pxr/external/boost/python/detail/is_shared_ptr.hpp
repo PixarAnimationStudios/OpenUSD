@@ -13,6 +13,7 @@
 #define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IS_SHARED_PTR_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/is_shared_ptr.hpp>
@@ -21,15 +22,15 @@
 #include "pxr/external/boost/python/detail/is_xxx.hpp"
 #include <boost/shared_ptr.hpp>
 
-namespace boost { namespace python { namespace detail { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
-BOOST_PYTHON_IS_XXX_DEF(shared_ptr, shared_ptr, 1)
+PXR_BOOST_PYTHON_IS_XXX_DEF(shared_ptr, shared_ptr, 1)
 #if !defined(BOOST_NO_CXX11_SMART_PTR)
 template <typename T>
 struct is_shared_ptr<std::shared_ptr<T> > : std::true_type {};
 #endif
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

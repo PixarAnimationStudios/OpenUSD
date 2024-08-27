@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HANDLE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/object/function_handle.hpp>
@@ -21,9 +22,9 @@
 # include "pxr/external/boost/python/object/py_function.hpp"
 # include "pxr/external/boost/python/signature.hpp"
 
-namespace boost { namespace python { namespace objects { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
-BOOST_PYTHON_DECL handle<> function_handle_impl(py_function const& f);
+PXR_BOOST_PYTHON_DECL handle<> function_handle_impl(py_function const& f);
 
 // Just like function_object, but returns a handle<> instead. Using
 // this for arg_to_python<> allows us to break a circular dependency
@@ -50,7 +51,7 @@ handle<> make_function_handle(F f)
     return objects::function_handle(f, python::detail::get_signature(f));
 }
 
-}}} // namespace boost::python::objects
+}}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HANDLE_HPP

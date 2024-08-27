@@ -9,7 +9,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #include "pxr/external/boost/python/object.hpp"
 
-int f(boost::python::object const& x)
+int f(PXR_BOOST_NAMESPACE::python::object const& x)
 {
     x._("hello") = 1;
     return 0;

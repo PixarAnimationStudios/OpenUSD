@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MAKE_KEYWORD_RANGE_FN_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/make_keyword_range_fn.hpp>
@@ -24,7 +25,7 @@
 # include <boost/mpl/size.hpp>
 
 
-namespace boost { namespace python { namespace detail { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 // Think of this as a version of make_function without a compile-time
 // check that the size of kw is no greater than the expected arity of
@@ -68,7 +69,7 @@ object make_keyword_range_constructor(
     , Holder* = 0                       
     , ArgList* = 0, Arity* = 0)
 {
-#if !defined( BOOST_PYTHON_NO_PY_SIGNATURES) && defined( BOOST_PYTHON_PY_SIGNATURES_PROPER_INIT_SELF_TYPE)
+#if !defined( PXR_BOOST_PYTHON_NO_PY_SIGNATURES) && defined( PXR_BOOST_PYTHON_PY_SIGNATURES_PROPER_INIT_SELF_TYPE)
     python_class<BOOST_DEDUCED_TYPENAME Holder::value_type>::register_();
 #endif
     return detail::make_keyword_range_function(
@@ -78,7 +79,7 @@ object make_keyword_range_constructor(
         , kw);
 }
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MAKE_KEYWORD_RANGE_FN_HPP

@@ -8,7 +8,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 #include "pxr/external/boost/python.hpp"
 #include <iostream>
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 using namespace boost;
 
 struct Product {};
@@ -42,7 +42,7 @@ struct CreatorWrap : public Creator
    PyObject* mSelf;
 };
 
-BOOST_PYTHON_MODULE(ben_scott1_ext)
+PXR_BOOST_PYTHON_MODULE(ben_scott1_ext)
 {
    class_<Product, ProductPtr>("Product");
 

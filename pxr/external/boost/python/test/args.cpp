@@ -8,10 +8,10 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-// If BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
+// If PXR_BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
 // boost::python will generate simplified docstrings that break the associated
 // test unless we undefine it before including any headers.
-#undef BOOST_PYTHON_NO_PY_SIGNATURES
+#undef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 
 #include "pxr/external/boost/python/module.hpp"
 #include "test_class.hpp"
@@ -24,10 +24,10 @@
 #include "pxr/external/boost/python/raw_function.hpp"
 #include "pxr/external/boost/python/return_internal_reference.hpp"
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 #if BOOST_WORKAROUND(__SUNPRO_CC, BOOST_TESTED_AT(0x580)) || BOOST_WORKAROUND(BOOST_MSVC, BOOST_TESTED_AT(1500))
-# define make_tuple boost::python::make_tuple
+# define make_tuple PXR_BOOST_NAMESPACE::python::make_tuple
 #endif 
 
 tuple f(int x = 1, double y = 4.25, char const* z = "wow")
@@ -35,7 +35,7 @@ tuple f(int x = 1, double y = 4.25, char const* z = "wow")
     return make_tuple(x, y, z);
 }
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(f_overloads, f, 0, 3)
+PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(f_overloads, f, 0, 3)
     
 typedef test_class<> Y;
 
@@ -53,7 +53,7 @@ struct X
     Y inner1;
 };
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(X_f_overloads, X::f, 0, 3)
+PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(X_f_overloads, X::f, 0, 3)
 
 
 tuple raw_func(tuple args, dict kw)
@@ -61,10 +61,10 @@ tuple raw_func(tuple args, dict kw)
     return make_tuple(args, kw);
 }
 
-BOOST_PYTHON_MODULE(args_ext)
+PXR_BOOST_PYTHON_MODULE(args_ext)
 {
     // Explicitly enable Python signatures in docstrings in case boost::python
-    // was built with BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
+    // was built with PXR_BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
     // signatures by default.
     docstring_options doc_options;
     doc_options.enable_py_signatures();

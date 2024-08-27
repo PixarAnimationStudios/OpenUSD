@@ -27,7 +27,7 @@
 # include <ostream.h>
 #endif 
 
-#  ifdef BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
+#  ifdef PXR_BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
 #   if defined(__GNUC__) &&  __GNUC__ >= 3
 
 // http://lists.debian.org/debian-gcc/2003/09/msg00055.html notes
@@ -42,9 +42,9 @@ class __class_type_info;
 #  endif 
 #endif                      /*  defined(__QNXNTO__) */
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
-#  ifdef BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
+#  ifdef PXR_BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
 
 #   if defined(__QNXNTO__)
 namespace cxxabi {
@@ -112,7 +112,7 @@ bool cxxabi_cxa_demangle_is_broken()
 
 namespace detail
 {
-  BOOST_PYTHON_DECL char const* gcc_demangle(char const* mangled)
+  PXR_BOOST_PYTHON_DECL char const* gcc_demangle(char const* mangled)
   {
       typedef std::vector<
           std::pair<char const*, char const*>
@@ -195,14 +195,14 @@ namespace detail
 }
 #  endif
 
-BOOST_PYTHON_DECL std::ostream& operator<<(std::ostream& os, type_info const& x)
+PXR_BOOST_PYTHON_DECL std::ostream& operator<<(std::ostream& os, type_info const& x)
 {
     return os << x.name();
 }
 
 namespace detail
 {
-  BOOST_PYTHON_DECL std::ostream& operator<<(std::ostream& os, detail::decorated_type_info const& x)
+  PXR_BOOST_PYTHON_DECL std::ostream& operator<<(std::ostream& os, detail::decorated_type_info const& x)
   {
       os << x.m_base_type;
       if (x.m_decoration & decorated_type_info::const_)
@@ -214,4 +214,4 @@ namespace detail
       return os;
   }
 }
-}} // namespace boost::python::converter
+}} // namespace PXR_BOOST_NAMESPACE::python::converter

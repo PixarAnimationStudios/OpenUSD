@@ -23,7 +23,7 @@ struct vector
 struct dvector : vector
 {};
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 struct vector_wrapper
   : vector, wrapper< vector >
@@ -32,7 +32,7 @@ struct vector_wrapper
     vector_wrapper() {}
 };
 
-BOOST_PYTHON_MODULE( operators_wrapper_ext )
+PXR_BOOST_PYTHON_MODULE( operators_wrapper_ext )
 {
     class_< vector_wrapper >( "vector" )
         .def( self + self )

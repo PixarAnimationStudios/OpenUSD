@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DECORATED_TYPE_ID_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/decorated_type_id.hpp>
@@ -20,7 +21,7 @@
 # include "pxr/external/boost/python/detail/indirect_traits.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-namespace boost { namespace python { namespace detail { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 struct decorated_type_info : totally_ordered<decorated_type_info>
 {
@@ -31,7 +32,7 @@ struct decorated_type_info : totally_ordered<decorated_type_info>
     inline bool operator<(decorated_type_info const& rhs) const;
     inline bool operator==(decorated_type_info const& rhs) const;
 
-    friend BOOST_PYTHON_DECL std::ostream& operator<<(std::ostream&, decorated_type_info const&);
+    friend PXR_BOOST_PYTHON_DECL std::ostream& operator<<(std::ostream&, decorated_type_info const&);
 
     operator type_info const&() const;
  private: // type
@@ -80,9 +81,9 @@ inline decorated_type_info::operator type_info const&() const
     return m_base_type;
 }
 
-BOOST_PYTHON_DECL std::ostream& operator<<(std::ostream&, decorated_type_info const&);
+PXR_BOOST_PYTHON_DECL std::ostream& operator<<(std::ostream&, decorated_type_info const&);
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DECORATED_TYPE_ID_HPP

@@ -37,9 +37,9 @@ int useany(void *a)
 }
 
 
-namespace bpl = boost::python;
+namespace bpl = PXR_BOOST_NAMESPACE::python;
 
-BOOST_PYTHON_MODULE(voidptr_ext)
+PXR_BOOST_PYTHON_MODULE(voidptr_ext)
 {
     bpl::def("get", &::get, bpl::return_value_policy<bpl::return_opaque_pointer>());
     bpl::def("getnull", &::getnull, bpl::return_value_policy<bpl::return_opaque_pointer>());

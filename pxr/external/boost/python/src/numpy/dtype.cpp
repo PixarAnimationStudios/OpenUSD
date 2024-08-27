@@ -12,7 +12,7 @@
 #ifdef _MSC_VER
 #include <boost/cstdint.hpp>
 #endif
-#define BOOST_PYTHON_NUMPY_INTERNAL
+#define PXR_BOOST_PYTHON_NUMPY_INTERNAL
 #include "pxr/external/boost/python/numpy/internal.hpp"
 
 #define DTYPE_FROM_CODE(code) \
@@ -44,9 +44,9 @@
   };									\
   template BOOST_NUMPY_DECL dtype get_complex_dtype<bits>()
 
-namespace boost { namespace python { namespace converter {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter {
 NUMPY_OBJECT_MANAGER_TRAITS_IMPL(PyArrayDescr_Type, numpy::dtype)
-} // namespace boost::python::converter
+} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 namespace numpy {
 namespace detail {
@@ -137,7 +137,7 @@ bool equivalent(dtype const & a, dtype const & b) {
 namespace
 {
 
-namespace pyconv = boost::python::converter;
+namespace pyconv = PXR_BOOST_NAMESPACE::python::converter;
 
 template <typename T>
 class array_scalar_converter
@@ -184,7 +184,7 @@ public:
   static void declare()
   {
     pyconv::registry::push_back(&convertible, &convert, python::type_id<T>()
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 				, &get_pytype
 #endif
 				);
@@ -222,4 +222,4 @@ void dtype::register_scalar_converters()
 #endif
 }
 
-}}} // namespace boost::python::numpy
+}}} // namespace PXR_BOOST_NAMESPACE::python::numpy

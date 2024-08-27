@@ -19,7 +19,7 @@
 #include "pxr/external/boost/python/object_protocol.hpp"
 #include <structmember.h>
 
-namespace boost { namespace python { namespace objects {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
 
 struct enum_object
 {
@@ -253,4 +253,4 @@ PyObject* enum_base::to_python(PyTypeObject* type_, long x)
         (v == object() ? type(x) : v).ptr());
 }
 
-}}} // namespace boost::python::object
+}}} // namespace PXR_BOOST_NAMESPACE::python::object

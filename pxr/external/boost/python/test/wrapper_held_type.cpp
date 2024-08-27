@@ -33,7 +33,7 @@ std::shared_ptr<data> create_data()
 void do_nothing( std::shared_ptr<data>& ){}
 
     
-namespace bp = boost::python;
+namespace bp = PXR_BOOST_NAMESPACE::python;
 
 struct data_wrapper : data, bp::wrapper< data >
 {
@@ -62,7 +62,7 @@ struct data_wrapper : data, bp::wrapper< data >
 
 };
 
-BOOST_PYTHON_MODULE(wrapper_held_type_ext)
+PXR_BOOST_PYTHON_MODULE(wrapper_held_type_ext)
 {
     bp::class_< data_wrapper, std::shared_ptr< data > >( "data" )    
         .def( "id", &data::id, &::data_wrapper::default_id );

@@ -14,7 +14,7 @@
 
 int main()
 {
-    using namespace boost::python::detail;
+    using namespace PXR_BOOST_NAMESPACE::python::detail;
     BOOST_STATIC_ASSERT(!copy_ctor_mutates_rhs<int>::value);
     BOOST_STATIC_ASSERT(!copy_ctor_mutates_rhs<std::string>::value);
     return 0;

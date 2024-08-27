@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DEF_VISITOR_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/def_visitor.hpp>
@@ -19,7 +20,7 @@
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include <boost/detail/workaround.hpp>
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 template <class DerivedVisitor> class def_visitor;
 template <class T, class X1, class X2, class X3> class class_;
@@ -92,7 +93,7 @@ class def_visitor
     }
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DEF_VISITOR_HPP

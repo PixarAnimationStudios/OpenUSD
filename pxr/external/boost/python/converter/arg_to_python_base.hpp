@@ -11,26 +11,27 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_TO_PYTHON_BASE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/converter/arg_to_python_base.hpp>
 #else
 # include "pxr/external/boost/python/handle.hpp"
 
-namespace boost { namespace python { namespace converter {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter {
 
 struct registration;
 
 namespace detail
 {
-  struct BOOST_PYTHON_DECL arg_to_python_base
+  struct PXR_BOOST_PYTHON_DECL arg_to_python_base
       : handle<>
   {
       arg_to_python_base(void const volatile* source, registration const&);
   };
 }
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_TO_PYTHON_BASE_HPP

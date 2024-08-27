@@ -12,7 +12,7 @@
 
 void int_map_indexing_suite()
 {
-    using namespace boost::python;
+    using namespace PXR_BOOST_NAMESPACE::python;
     
     // Compile check only...
     class_<std::map<int, int> >("IntMap")

@@ -11,8 +11,8 @@
 
 #include "pxr/external/boost/python/numpy.hpp"
 
-namespace p = boost::python;
-namespace np = boost::python::numpy;
+namespace p = PXR_BOOST_NAMESPACE::python;
+namespace np = PXR_BOOST_NAMESPACE::python::numpy;
 
 np::ndarray reshape(np::ndarray old_array, p::tuple shape)
 {
@@ -20,7 +20,7 @@ np::ndarray reshape(np::ndarray old_array, p::tuple shape)
   return local_shape;
 }
 
-BOOST_PYTHON_MODULE(shapes_ext)
+PXR_BOOST_PYTHON_MODULE(shapes_ext)
 {
   np::initialize();
   p::def("reshape", reshape);

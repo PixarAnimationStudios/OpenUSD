@@ -10,6 +10,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_WRAPPER_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/wrapper.hpp>
@@ -20,7 +21,7 @@
 # include "pxr/external/boost/python/converter/registered.hpp"
 # include "pxr/external/boost/python/detail/sfinae.hpp"
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 template <class T>
 class wrapper : public detail::wrapper_base
@@ -41,7 +42,7 @@ class wrapper : public detail::wrapper_base
     }
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_WRAPPER_HPP

@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DEFAULT_CALL_POLICIES_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/default_call_policies.hpp>
@@ -24,7 +25,7 @@
 # include <boost/mpl/or.hpp>
 # include <boost/mpl/front.hpp>
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 template <class T> struct to_python_value;
 
@@ -75,7 +76,7 @@ struct default_result_converter
         typedef typename mpl::if_<
             mpl::or_<detail::is_pointer<R>, detail::is_reference<R> >
           , detail::specify_a_return_value_policy_to_wrap_functions_returning<R>
-          , boost::python::to_python_value<
+          , PXR_BOOST_NAMESPACE::python::to_python_value<
                 typename detail::value_arg<R>::type
             >
         >::type type;
@@ -86,16 +87,16 @@ struct default_result_converter
 template <>
 struct default_result_converter::apply<char const*>
 {
-    typedef boost::python::to_python_value<char const*const&> type;
+    typedef PXR_BOOST_NAMESPACE::python::to_python_value<char const*const&> type;
 };
 
 template <>
 struct default_result_converter::apply<PyObject*>
 {
-    typedef boost::python::to_python_value<PyObject*const&> type;
+    typedef PXR_BOOST_NAMESPACE::python::to_python_value<PyObject*const&> type;
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DEFAULT_CALL_POLICIES_HPP

@@ -10,7 +10,7 @@
 #include "pxr/external/boost/python.hpp"
 #include <boost/shared_ptr.hpp>
 
-using namespace boost;
+using namespace PXR_BOOST_NAMESPACE;
 using namespace python;
 
 struct A
@@ -48,7 +48,7 @@ struct A_Wrapper: A
     PyObject* self;
 };
 
-BOOST_PYTHON_MODULE(register_ptr)
+PXR_BOOST_PYTHON_MODULE(register_ptr)
 {
     class_<A, A_Wrapper>("A")
         .def("f", &A::f, &A_Wrapper::default_f)

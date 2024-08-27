@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_MANAGE_NEW_OBJECT_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/manage_new_object.hpp>
@@ -22,7 +23,7 @@
 # include <boost/mpl/if.hpp>
 # include "pxr/external/boost/python/to_python_indirect.hpp"
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 namespace detail
 {
@@ -47,7 +48,7 @@ struct manage_new_object
     };
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_MANAGE_NEW_OBJECT_HPP

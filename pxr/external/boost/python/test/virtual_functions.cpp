@@ -19,7 +19,7 @@
 #define BOOST_ENABLE_ASSERT_HANDLER
 #include <boost/assert.hpp>
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 struct X
 {
@@ -103,7 +103,7 @@ struct concrete_callback : concrete
 
 int X::counter;
 
-BOOST_PYTHON_MODULE(virtual_functions_ext)
+PXR_BOOST_PYTHON_MODULE(virtual_functions_ext)
 {
     class_<concrete, concrete_callback>("concrete", init<int>())
         .def("value", &concrete::value)

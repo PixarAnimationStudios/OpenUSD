@@ -18,7 +18,7 @@
 // not all the compilers can handle an incomplete class type here.
 struct X {};
 
-using namespace boost::python::indirect_traits;
+using namespace PXR_BOOST_NAMESPACE::python::indirect_traits;
 
 typedef void (X::*pmf)();
 
@@ -81,7 +81,7 @@ BOOST_MPL_ASSERT_NOT((is_reference_to_volatile<int const volatile>));
 BOOST_MPL_ASSERT_NOT((is_reference_to_volatile<int>));
 BOOST_MPL_ASSERT_NOT((is_reference_to_volatile<int*>));
 
-namespace tt = boost::python::indirect_traits;
+namespace tt = PXR_BOOST_NAMESPACE::python::indirect_traits;
 
 BOOST_MPL_ASSERT_NOT((tt::is_reference_to_class<int>));
 BOOST_MPL_ASSERT_NOT((tt::is_reference_to_class<int&>));

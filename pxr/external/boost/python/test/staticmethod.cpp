@@ -17,7 +17,7 @@
 #define BOOST_ENABLE_ASSERT_HANDLER
 #include <boost/assert.hpp>
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 struct X
 {
@@ -38,7 +38,7 @@ struct X
 int X::counter;
 int getXmagic(){return 7654321;}
 
-BOOST_PYTHON_MODULE(staticmethod_ext)
+PXR_BOOST_PYTHON_MODULE(staticmethod_ext)
 {
     class_<X>("X", init<int>())
         .def("value", &X::value)

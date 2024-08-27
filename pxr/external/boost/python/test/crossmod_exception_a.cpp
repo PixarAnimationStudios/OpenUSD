@@ -10,14 +10,14 @@
 
 #include "pxr/external/boost/python.hpp"
 
-namespace python = boost::python;
+namespace python = PXR_BOOST_NAMESPACE::python;
 
 void tossit(){
   PyErr_SetString(PyExc_IndexError,"a-blah!");
   throw python::error_already_set();
 }
 
-BOOST_PYTHON_MODULE(crossmod_exception_a)
+PXR_BOOST_PYTHON_MODULE(crossmod_exception_a)
 {
     python::def("tossit",tossit);
 }

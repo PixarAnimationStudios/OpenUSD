@@ -11,7 +11,7 @@
 
 #include "test_class.hpp"
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 typedef test_class<> X;
 typedef test_class<1> Y;
@@ -163,7 +163,7 @@ struct Test {
 // ------
 
 
-BOOST_PYTHON_MODULE(MODULE)
+PXR_BOOST_PYTHON_MODULE(MODULE)
 {
   class_<A, shared_ptr<A_Wrapper>, boost::noncopyable>("A")
       .def("call_f", &A::call_f)

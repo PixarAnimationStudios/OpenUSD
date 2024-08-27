@@ -12,6 +12,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_INDEXING_SUITE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/suite/indexing/indexing_suite.hpp>
@@ -27,7 +28,7 @@
 # include <boost/mpl/not.hpp>
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
     // indexing_suite class. This class is the facade class for
     // the management of C++ containers intended to be integrated
@@ -301,7 +302,7 @@ namespace boost { namespace python {
         }
     };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_INDEXING_SUITE_HPP

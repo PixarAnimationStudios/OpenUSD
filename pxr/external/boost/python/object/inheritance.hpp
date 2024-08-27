@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_INHERITANCE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/object/inheritance.hpp>
@@ -22,7 +23,7 @@
 # include <boost/detail/workaround.hpp>
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-namespace boost { namespace python { namespace objects {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
 
 typedef type_info class_id;
 using python::type_id;
@@ -31,10 +32,10 @@ using python::type_id;
 typedef std::pair<void*,class_id> dynamic_id_t;
 typedef dynamic_id_t (*dynamic_id_function)(void*);
 
-BOOST_PYTHON_DECL void register_dynamic_id_aux(
+PXR_BOOST_PYTHON_DECL void register_dynamic_id_aux(
     class_id static_id, dynamic_id_function get_dynamic_id);
 
-BOOST_PYTHON_DECL void add_cast(
+PXR_BOOST_PYTHON_DECL void add_cast(
     class_id src_t, class_id dst_t, void* (*cast)(void*), bool is_downcast);
 
 //
@@ -68,9 +69,9 @@ struct non_polymorphic_id_generator
 template <class T>
 struct dynamic_id_generator
   : mpl::if_<
-        boost::python::detail::is_polymorphic<T>
-        , boost::python::objects::polymorphic_id_generator<T>
-        , boost::python::objects::non_polymorphic_id_generator<T>
+        PXR_BOOST_NAMESPACE::python::detail::is_polymorphic<T>
+        , PXR_BOOST_NAMESPACE::python::objects::polymorphic_id_generator<T>
+        , PXR_BOOST_NAMESPACE::python::objects::non_polymorphic_id_generator<T>
     >
 {};
 
@@ -114,7 +115,7 @@ struct implicit_cast_generator
 template <class Source, class Target>
 struct cast_generator
   : mpl::if_<
-        boost::python::detail::is_base_and_derived<Target,Source>
+        PXR_BOOST_NAMESPACE::python::detail::is_base_and_derived<Target,Source>
       , implicit_cast_generator<Source,Target>
       , dynamic_cast_generator<Source,Target>
     >
@@ -137,7 +138,7 @@ inline void register_conversion(
     );
 }
 
-}}} // namespace boost::python::object
+}}} // namespace PXR_BOOST_NAMESPACE::python::object
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_INHERITANCE_HPP

@@ -27,10 +27,10 @@
 # include <ostream.h>
 #endif
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 struct X : test_class<>
 {
@@ -106,7 +106,7 @@ struct number
    long x;
 };
 
-BOOST_PYTHON_MODULE(operators_ext)
+PXR_BOOST_PYTHON_MODULE(operators_ext)
 {
     class_<X>("X", init<int>())
         .def("value", &X::value)

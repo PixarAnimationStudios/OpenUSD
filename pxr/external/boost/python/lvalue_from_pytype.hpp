@@ -11,13 +11,14 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_LVALUE_FROM_PYTYPE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/lvalue_from_pytype.hpp>
 #else
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 # include "pxr/external/boost/python/converter/pytype_function.hpp"
 #endif
 
@@ -26,7 +27,7 @@
 # include "pxr/external/boost/python/detail/void_ptr.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace detail
 {
@@ -49,7 +50,7 @@ namespace detail
       {
           typedef typename add_lvalue_reference<U>::type param;
           return &Extractor::execute(
-              boost::python::detail::void_ptr_to_reference(
+              PXR_BOOST_NAMESPACE::python::detail::void_ptr_to_reference(
                   op, (param(*)())0 )
               );
       }
@@ -103,7 +104,7 @@ struct lvalue_from_pytype
         converter::registry::insert
             ( &extract
             , detail::extractor_type_id(&Extractor::execute)
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
             , &get_pytype
 #endif
             );
@@ -118,12 +119,12 @@ struct lvalue_from_pytype
             : 0
             ;
     }
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
     static PyTypeObject const*get_pytype() { return python_type; }
 #endif
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_LVALUE_FROM_PYTYPE_HPP

@@ -14,8 +14,8 @@
 #if (defined(__GNUC__) && (__GNUC__ < 3)) \
  || (defined(__sgi) && defined(__EDG_VERSION__) && (__EDG_VERSION__ == 238)) \
  || (defined(__IBMCPP__) && defined(__linux__))
-namespace boost { namespace python {
-BOOST_PYTHON_DECL bool handle_exception_impl(function0<void>)
+namespace PXR_BOOST_NAMESPACE { namespace python {
+PXR_BOOST_PYTHON_DECL bool handle_exception_impl(function0<void>)
 {
     return true;
 }
@@ -34,8 +34,8 @@ int result;
 
 int main()
 {
-    using namespace boost::python::converter;
-    using namespace boost;
+    using namespace PXR_BOOST_NAMESPACE::python::converter;
+    using namespace PXR_BOOST_NAMESPACE;
 
 
     ASSERT_SAME(

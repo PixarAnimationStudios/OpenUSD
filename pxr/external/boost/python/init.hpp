@@ -14,6 +14,7 @@
 #define PXR_EXTERNAL_BOOST_PYTHON_INIT_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/init.hpp>
@@ -45,30 +46,30 @@
 #include <utility>
 
 ///////////////////////////////////////////////////////////////////////////////
-#define BOOST_PYTHON_OVERLOAD_TYPES_WITH_DEFAULT                                \
+#define PXR_BOOST_PYTHON_OVERLOAD_TYPES_WITH_DEFAULT                                \
     BOOST_PP_ENUM_PARAMS_WITH_A_DEFAULT(                                        \
-        BOOST_PYTHON_MAX_ARITY,                                                 \
+        PXR_BOOST_PYTHON_MAX_ARITY,                                                 \
         class T,                                                                \
         mpl::void_)                                                             \
 
-#define BOOST_PYTHON_OVERLOAD_TYPES                                             \
+#define PXR_BOOST_PYTHON_OVERLOAD_TYPES                                             \
     BOOST_PP_ENUM_PARAMS_Z(1,                                                   \
-        BOOST_PYTHON_MAX_ARITY,                                                 \
+        PXR_BOOST_PYTHON_MAX_ARITY,                                                 \
         class T)                                                                \
 
-#define BOOST_PYTHON_OVERLOAD_ARGS                                              \
+#define PXR_BOOST_PYTHON_OVERLOAD_ARGS                                              \
     BOOST_PP_ENUM_PARAMS_Z(1,                                                   \
-        BOOST_PYTHON_MAX_ARITY,                                                 \
+        PXR_BOOST_PYTHON_MAX_ARITY,                                                 \
         T)                                                                      \
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
-template <BOOST_PYTHON_OVERLOAD_TYPES_WITH_DEFAULT>
+template <PXR_BOOST_PYTHON_OVERLOAD_TYPES_WITH_DEFAULT>
 class init; // forward declaration
 
 
-template <BOOST_PYTHON_OVERLOAD_TYPES_WITH_DEFAULT>
+template <PXR_BOOST_PYTHON_OVERLOAD_TYPES_WITH_DEFAULT>
 struct optional; // forward declaration
 
 namespace detail
@@ -92,8 +93,8 @@ namespace detail
       : mpl::false_
     {};
 
-    template <BOOST_PYTHON_OVERLOAD_TYPES>
-    struct is_optional<optional<BOOST_PYTHON_OVERLOAD_ARGS> >
+    template <PXR_BOOST_PYTHON_OVERLOAD_TYPES>
+    struct is_optional<optional<PXR_BOOST_PYTHON_OVERLOAD_ARGS> >
       : mpl::true_
     {};
   
@@ -216,12 +217,12 @@ namespace detail
   {};
 }
 
-template <BOOST_PYTHON_OVERLOAD_TYPES>
-class init : public init_base<init<BOOST_PYTHON_OVERLOAD_ARGS> >
+template <PXR_BOOST_PYTHON_OVERLOAD_TYPES>
+class init : public init_base<init<PXR_BOOST_PYTHON_OVERLOAD_ARGS> >
 {
-    typedef init_base<init<BOOST_PYTHON_OVERLOAD_ARGS> > base;
+    typedef init_base<init<PXR_BOOST_PYTHON_OVERLOAD_ARGS> > base;
  public:
-    typedef init<BOOST_PYTHON_OVERLOAD_ARGS> self_t;
+    typedef init<PXR_BOOST_PYTHON_OVERLOAD_ARGS> self_t;
 
     init(char const* doc_ = 0)
         : base(doc_)
@@ -254,7 +255,7 @@ class init : public init_base<init<BOOST_PYTHON_OVERLOAD_ARGS> >
             policies, this->doc_string(), this->keywords());
     }
 
-    typedef detail::type_list<BOOST_PYTHON_OVERLOAD_ARGS> signature_;
+    typedef detail::type_list<PXR_BOOST_PYTHON_OVERLOAD_ARGS> signature_;
 
     typedef detail::is_optional<
         typename mpl::eval_if<
@@ -297,9 +298,9 @@ class init : public init_base<init<BOOST_PYTHON_OVERLOAD_ARGS> >
 //      optional<T0...TN>::type returns a typelist.
 //
 ///////////////////////////////////////////////////////////////////////////////
-template <BOOST_PYTHON_OVERLOAD_TYPES>
+template <PXR_BOOST_PYTHON_OVERLOAD_TYPES>
 struct optional
-    : detail::type_list<BOOST_PYTHON_OVERLOAD_ARGS>
+    : detail::type_list<PXR_BOOST_PYTHON_OVERLOAD_ARGS>
 {
 };
 
@@ -389,13 +390,13 @@ namespace detail
   };
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#undef BOOST_PYTHON_OVERLOAD_TYPES_WITH_DEFAULT
-#undef BOOST_PYTHON_OVERLOAD_TYPES
-#undef BOOST_PYTHON_OVERLOAD_ARGS
-#undef BOOST_PYTHON_IS_OPTIONAL_VALUE
-#undef BOOST_PYTHON_APPEND_TO_INIT
+#undef PXR_BOOST_PYTHON_OVERLOAD_TYPES_WITH_DEFAULT
+#undef PXR_BOOST_PYTHON_OVERLOAD_TYPES
+#undef PXR_BOOST_PYTHON_OVERLOAD_ARGS
+#undef PXR_BOOST_PYTHON_IS_OPTIONAL_VALUE
+#undef PXR_BOOST_PYTHON_APPEND_TO_INIT
 
 ///////////////////////////////////////////////////////////////////////////////
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON

@@ -14,7 +14,7 @@
 #include "pxr/external/boost/python/return_internal_reference.hpp"
 #include "pxr/external/boost/python/class.hpp"
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 int a_instances = 0;
 
@@ -91,7 +91,7 @@ A* as_A(Base* b)
     return dynamic_cast<A*>(b);
 }
 
-BOOST_PYTHON_MODULE(test_pointer_adoption_ext)
+PXR_BOOST_PYTHON_MODULE(test_pointer_adoption_ext)
 {
     def("num_a_instances", num_a_instances);
 

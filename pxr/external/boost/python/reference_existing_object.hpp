@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_REFERENCE_EXISTING_OBJECT_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/reference_existing_object.hpp>
@@ -22,7 +23,7 @@
 # include "pxr/external/boost/python/to_python_indirect.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 namespace detail
 {
@@ -52,7 +53,7 @@ struct reference_existing_object
     };
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_REFERENCE_EXISTING_OBJECT_HPP

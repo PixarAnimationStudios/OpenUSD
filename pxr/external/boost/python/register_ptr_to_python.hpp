@@ -11,6 +11,7 @@
 #define PXR_EXTERNAL_BOOST_PYTHON_REGISTER_PTR_TO_PYTHON_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/register_ptr_to_python.hpp>
@@ -20,12 +21,12 @@
 #include "pxr/external/boost/python/object.hpp"
 #include "pxr/external/boost/python/object/class_wrapper.hpp"
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
     
 template <class P>
 void register_ptr_to_python()
 {
-    typedef typename boost::python::pointee<P>::type X;
+    typedef typename PXR_BOOST_NAMESPACE::python::pointee<P>::type X;
     objects::class_value_wrapper<
         P
       , objects::make_ptr_instance<
@@ -35,7 +36,7 @@ void register_ptr_to_python()
     >();
 }           
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_REGISTER_PTR_TO_PYTHON_HPP

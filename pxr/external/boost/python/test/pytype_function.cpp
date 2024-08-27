@@ -7,10 +7,10 @@
 // Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-// If BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
+// If PXR_BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
 // boost::python will generate simplified docstrings that break the associated
 // test unless we undefine it before including any headers.
-#undef BOOST_PYTHON_NO_PY_SIGNATURES
+#undef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 
 #include "pxr/external/boost/python/module.hpp"
 #include "pxr/external/boost/python/def.hpp"
@@ -19,7 +19,7 @@
 #include "pxr/external/boost/python/to_python_converter.hpp"
 #include "pxr/external/boost/python/class.hpp"
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 struct A
 {
@@ -33,13 +33,13 @@ struct B
 
 // Converter from A to python int
 struct BToPython
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
  : converter::to_python_target_type<A>  //inherits get_pytype 
 #endif
 {
   static PyObject* convert(const B& b)
   {
-    return boost::python::incref(boost::python::object(b.a).ptr());
+    return PXR_BOOST_NAMESPACE::python::incref(PXR_BOOST_NAMESPACE::python::object(b.a).ptr());
   }
 };
 
@@ -48,11 +48,11 @@ struct BFromPython
 {
   BFromPython()
   {
-    boost::python::converter::registry::push_back(
+    PXR_BOOST_NAMESPACE::python::converter::registry::push_back(
         &convertible,
         &construct,
-        boost::python::type_id< B >()
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+        PXR_BOOST_NAMESPACE::python::type_id< B >()
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
         , &converter::expected_from_python_type<A>::get_pytype//convertible to A can be converted to B
 #endif
         );
@@ -67,10 +67,10 @@ struct BFromPython
 
   static void construct(
       PyObject* obj_ptr,
-      boost::python::converter::rvalue_from_python_stage1_data* data)
+      PXR_BOOST_NAMESPACE::python::converter::rvalue_from_python_stage1_data* data)
   {
     void* storage = (
-        (boost::python::converter::rvalue_from_python_storage< B >*)data)-> storage.bytes;
+        (PXR_BOOST_NAMESPACE::python::converter::rvalue_from_python_storage< B >*)data)-> storage.bytes;
 
     extract<const A&> ex(obj_ptr);
     new (storage) B(ex());
@@ -82,10 +82,10 @@ struct BFromPython
 B func(const B& b) { return b ; }
 
 
-BOOST_PYTHON_MODULE(pytype_function_ext)
+PXR_BOOST_PYTHON_MODULE(pytype_function_ext)
 {
   // Explicitly enable Python signatures in docstrings in case boost::python
-  // was built with BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
+  // was built with PXR_BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
   // signatures by default.
   docstring_options doc_options;
   doc_options.enable_py_signatures();

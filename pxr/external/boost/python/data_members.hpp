@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DATA_MEMBERS_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/data_members.hpp>
@@ -38,7 +39,7 @@
 
 # include <boost/detail/workaround.hpp>
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 //
 // This file defines the make_getter and make_setter function
@@ -148,7 +149,7 @@ namespace detail
 
   //
   // make_getter helper function family -- These helpers to
-  // boost::python::make_getter are used to dispatch behavior.  The
+  // PXR_BOOST_NAMESPACE::python::make_getter are used to dispatch behavior.  The
   // third argument is a workaround for a CWPro8 partial ordering bug
   // with pointers to data members.  It should be convertible to
   // detail::true_ iff the first argument is a pointer-to-member, and
@@ -213,7 +214,7 @@ namespace detail
 
   //
   // make_setter helper function family -- These helpers to
-  // boost::python::make_setter are used to dispatch behavior.  The
+  // PXR_BOOST_NAMESPACE::python::make_setter are used to dispatch behavior.  The
   // third argument is for compilers which don't support partial
   // ordering at all and should always be passed 0.
   //
@@ -317,7 +318,7 @@ inline object make_setter(D const& x)
 }
 # endif
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DATA_MEMBERS_HPP

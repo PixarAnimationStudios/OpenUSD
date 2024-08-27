@@ -13,7 +13,7 @@
 #include <boost/assert.hpp>
 #include <boost/cstdint.hpp>
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 struct BOOST_ALIGNMENT(32) X
 {
@@ -28,7 +28,7 @@ struct BOOST_ALIGNMENT(32) X
 int x_function(X& x) { return x.x;}
 float f_function(X& x) { return x.f;}
 
-BOOST_PYTHON_MODULE(aligned_class_ext)
+PXR_BOOST_PYTHON_MODULE(aligned_class_ext)
 {
     class_<X>("X", init<int, float>());
     def("x_function", x_function);

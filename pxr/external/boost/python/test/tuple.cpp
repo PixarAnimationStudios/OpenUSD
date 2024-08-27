@@ -12,7 +12,7 @@
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/tuple.hpp"
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 object convert_to_tuple(object data)
 {
@@ -28,7 +28,7 @@ tuple mktuple0() { return make_tuple(); }
 tuple mktuple1(int x) { return make_tuple(x); }
 tuple mktuple2(char const* a1, int x) { return make_tuple(a1, x); }
 
-BOOST_PYTHON_MODULE(tuple_ext)
+PXR_BOOST_PYTHON_MODULE(tuple_ext)
 {
     def("convert_to_tuple",convert_to_tuple);
     def("test_operators",test_operators);

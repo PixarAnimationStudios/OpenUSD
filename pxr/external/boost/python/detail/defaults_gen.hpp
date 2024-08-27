@@ -14,6 +14,7 @@
 #define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_GEN_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/defaults_gen.hpp>
@@ -38,7 +39,7 @@
 #include <boost/mpl/deref.hpp>
 #include <cstddef>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace detail
 {
@@ -123,16 +124,16 @@ namespace detail
       }
   };
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 
-#define BOOST_PYTHON_TYPEDEF_GEN(z, index, data)                                \
+#define PXR_BOOST_PYTHON_TYPEDEF_GEN(z, index, data)                                \
     typedef typename ::boost::mpl::next<BOOST_PP_CAT(iter, index)>::type        \
         BOOST_PP_CAT(iter, BOOST_PP_INC(index));                                \
     typedef typename ::boost::mpl::deref<BOOST_PP_CAT(iter, index)>::type       \
         BOOST_PP_CAT(T, index);
 
-#define BOOST_PYTHON_FUNC_WRAPPER_GEN(z, index, data)                   \
+#define PXR_BOOST_PYTHON_FUNC_WRAPPER_GEN(z, index, data)                   \
     static RT BOOST_PP_CAT(func_,                                       \
         BOOST_PP_SUB_D(1, index, BOOST_PP_TUPLE_ELEM(3, 1, data))) (    \
         BOOST_PP_ENUM_BINARY_PARAMS_Z(                                  \
@@ -145,7 +146,7 @@ namespace detail
                 arg));                                                  \
     }
 
-#define BOOST_PYTHON_GEN_FUNCTION(fname, fstubs_name, n_args, n_dflts, ret)     \
+#define PXR_BOOST_PYTHON_GEN_FUNCTION(fname, fstubs_name, n_args, n_dflts, ret)     \
     struct fstubs_name                                                          \
     {                                                                           \
         BOOST_STATIC_CONSTANT(int, n_funcs = BOOST_PP_INC(n_dflts));            \
@@ -160,19 +161,19 @@ namespace detail
                                                                                 \
             BOOST_PP_REPEAT_2ND(                                                \
                 n_args,                                                         \
-                BOOST_PYTHON_TYPEDEF_GEN,                                       \
+                PXR_BOOST_PYTHON_TYPEDEF_GEN,                                       \
                 0)                                                              \
                                                                                 \
             BOOST_PP_REPEAT_FROM_TO_2(                                          \
                 BOOST_PP_SUB_D(1, n_args, n_dflts),                             \
                 BOOST_PP_INC(n_args),                                           \
-                BOOST_PYTHON_FUNC_WRAPPER_GEN,                                  \
+                PXR_BOOST_PYTHON_FUNC_WRAPPER_GEN,                                  \
                 (fname, BOOST_PP_SUB_D(1, n_args, n_dflts), ret))               \
         };                                                                      \
     };                                                                          \
 
 ///////////////////////////////////////////////////////////////////////////////
-#define BOOST_PYTHON_MEM_FUNC_WRAPPER_GEN(z, index, data)                       \
+#define PXR_BOOST_PYTHON_MEM_FUNC_WRAPPER_GEN(z, index, data)                       \
     static RT BOOST_PP_CAT(func_,                                               \
         BOOST_PP_SUB_D(1, index, BOOST_PP_TUPLE_ELEM(3, 1, data))) (            \
             ClassT obj BOOST_PP_COMMA_IF(index)                                 \
@@ -184,7 +185,7 @@ namespace detail
         );                                                                      \
     }
 
-#define BOOST_PYTHON_GEN_MEM_FUNCTION(fname, fstubs_name, n_args, n_dflts, ret) \
+#define PXR_BOOST_PYTHON_GEN_MEM_FUNCTION(fname, fstubs_name, n_args, n_dflts, ret) \
     struct fstubs_name                                                          \
     {                                                                           \
         BOOST_STATIC_CONSTANT(int, n_funcs = BOOST_PP_INC(n_dflts));            \
@@ -202,88 +203,88 @@ namespace detail
                                                                                 \
             BOOST_PP_REPEAT_2ND(                                                \
                 n_args,                                                         \
-                BOOST_PYTHON_TYPEDEF_GEN,                                       \
+                PXR_BOOST_PYTHON_TYPEDEF_GEN,                                       \
                 0)                                                              \
                                                                                 \
             BOOST_PP_REPEAT_FROM_TO_2(                                          \
                 BOOST_PP_SUB_D(1, n_args, n_dflts),                             \
                 BOOST_PP_INC(n_args),                                           \
-                BOOST_PYTHON_MEM_FUNC_WRAPPER_GEN,                              \
+                PXR_BOOST_PYTHON_MEM_FUNC_WRAPPER_GEN,                              \
                 (fname, BOOST_PP_SUB_D(1, n_args, n_dflts), ret))               \
         };                                                                      \
     };
 
-#define BOOST_PYTHON_OVERLOAD_CONSTRUCTORS(fstubs_name, n_args, n_dflts)                    \
+#define PXR_BOOST_PYTHON_OVERLOAD_CONSTRUCTORS(fstubs_name, n_args, n_dflts)                    \
     fstubs_name(char const* doc = 0)                                                        \
-        : ::boost::python::detail::overloads_common<fstubs_name>(doc) {}                    \
+        : ::PXR_BOOST_NAMESPACE::python::detail::overloads_common<fstubs_name>(doc) {}                    \
     template <std::size_t N>                                                                \
-    fstubs_name(char const* doc, ::boost::python::detail::keywords<N> const& keywords)      \
-        : ::boost::python::detail::overloads_common<fstubs_name>(                           \
+    fstubs_name(char const* doc, ::PXR_BOOST_NAMESPACE::python::detail::keywords<N> const& keywords)      \
+        : ::PXR_BOOST_NAMESPACE::python::detail::overloads_common<fstubs_name>(                           \
             doc, keywords.range())                                                          \
     {                                                                                       \
-        typedef typename ::boost::python::detail::                                          \
+        typedef typename ::PXR_BOOST_NAMESPACE::python::detail::                                          \
             error::more_keywords_than_function_arguments<                                   \
                 N,n_args>::too_many_keywords assertion BOOST_ATTRIBUTE_UNUSED;              \
     }                                                                                       \
     template <std::size_t N>                                                                \
-    fstubs_name(::boost::python::detail::keywords<N> const& keywords, char const* doc = 0)  \
-        : ::boost::python::detail::overloads_common<fstubs_name>(                           \
+    fstubs_name(::PXR_BOOST_NAMESPACE::python::detail::keywords<N> const& keywords, char const* doc = 0)  \
+        : ::PXR_BOOST_NAMESPACE::python::detail::overloads_common<fstubs_name>(                           \
             doc, keywords.range())                                                          \
     {                                                                                       \
-        typedef typename ::boost::python::detail::                                          \
+        typedef typename ::PXR_BOOST_NAMESPACE::python::detail::                                          \
             error::more_keywords_than_function_arguments<                                   \
                 N,n_args>::too_many_keywords assertion BOOST_ATTRIBUTE_UNUSED;              \
     }
 
 # if defined(BOOST_NO_VOID_RETURNS)
 
-#  define BOOST_PYTHON_GEN_FUNCTION_STUB(fname, fstubs_name, n_args, n_dflts)   \
+#  define PXR_BOOST_PYTHON_GEN_FUNCTION_STUB(fname, fstubs_name, n_args, n_dflts)   \
     struct fstubs_name                                                          \
-        : public ::boost::python::detail::overloads_common<fstubs_name>         \
+        : public ::PXR_BOOST_NAMESPACE::python::detail::overloads_common<fstubs_name>         \
     {                                                                           \
-        BOOST_PYTHON_GEN_FUNCTION(                                              \
+        PXR_BOOST_PYTHON_GEN_FUNCTION(                                              \
             fname, non_void_return_type, n_args, n_dflts, return)               \
-        BOOST_PYTHON_GEN_FUNCTION(                                              \
+        PXR_BOOST_PYTHON_GEN_FUNCTION(                                              \
             fname, void_return_type, n_args, n_dflts, ;)                        \
                                                                                 \
-        BOOST_PYTHON_OVERLOAD_CONSTRUCTORS(fstubs_name, n_args, n_dflts)        \
+        PXR_BOOST_PYTHON_OVERLOAD_CONSTRUCTORS(fstubs_name, n_args, n_dflts)        \
     };
 
-#  define BOOST_PYTHON_GEN_MEM_FUNCTION_STUB(fname, fstubs_name, n_args, n_dflts)       \
+#  define PXR_BOOST_PYTHON_GEN_MEM_FUNCTION_STUB(fname, fstubs_name, n_args, n_dflts)       \
     struct fstubs_name                                                                  \
-        : public ::boost::python::detail::overloads_common<fstubs_name>                 \
+        : public ::PXR_BOOST_NAMESPACE::python::detail::overloads_common<fstubs_name>                 \
     {                                                                                   \
-        BOOST_PYTHON_GEN_MEM_FUNCTION(                                                  \
+        PXR_BOOST_PYTHON_GEN_MEM_FUNCTION(                                                  \
             fname, non_void_return_type, n_args, n_dflts, return)                       \
-        BOOST_PYTHON_GEN_MEM_FUNCTION(                                                  \
+        PXR_BOOST_PYTHON_GEN_MEM_FUNCTION(                                                  \
             fname, void_return_type, n_args, n_dflts, ;)                                \
                                                                                         \
-        BOOST_PYTHON_OVERLOAD_CONSTRUCTORS(fstubs_name, n_args + 1, n_dflts)            \
+        PXR_BOOST_PYTHON_OVERLOAD_CONSTRUCTORS(fstubs_name, n_args + 1, n_dflts)            \
     };
 
 # else // !defined(BOOST_NO_VOID_RETURNS)
 
-#  define BOOST_PYTHON_GEN_FUNCTION_STUB(fname, fstubs_name, n_args, n_dflts)   \
+#  define PXR_BOOST_PYTHON_GEN_FUNCTION_STUB(fname, fstubs_name, n_args, n_dflts)   \
     struct fstubs_name                                                          \
-        : public ::boost::python::detail::overloads_common<fstubs_name>         \
+        : public ::PXR_BOOST_NAMESPACE::python::detail::overloads_common<fstubs_name>         \
     {                                                                           \
-        BOOST_PYTHON_GEN_FUNCTION(                                              \
+        PXR_BOOST_PYTHON_GEN_FUNCTION(                                              \
             fname, non_void_return_type, n_args, n_dflts, return)               \
                                                                                 \
         typedef non_void_return_type void_return_type;                          \
-        BOOST_PYTHON_OVERLOAD_CONSTRUCTORS(fstubs_name, n_args, n_dflts)        \
+        PXR_BOOST_PYTHON_OVERLOAD_CONSTRUCTORS(fstubs_name, n_args, n_dflts)        \
     };
 
 
-#  define BOOST_PYTHON_GEN_MEM_FUNCTION_STUB(fname, fstubs_name, n_args, n_dflts)       \
+#  define PXR_BOOST_PYTHON_GEN_MEM_FUNCTION_STUB(fname, fstubs_name, n_args, n_dflts)       \
     struct fstubs_name                                                                  \
-        : public ::boost::python::detail::overloads_common<fstubs_name>                 \
+        : public ::PXR_BOOST_NAMESPACE::python::detail::overloads_common<fstubs_name>                 \
     {                                                                                   \
-        BOOST_PYTHON_GEN_MEM_FUNCTION(                                                  \
+        PXR_BOOST_PYTHON_GEN_MEM_FUNCTION(                                                  \
             fname, non_void_return_type, n_args, n_dflts, return)                       \
                                                                                         \
         typedef non_void_return_type void_return_type;                                  \
-        BOOST_PYTHON_OVERLOAD_CONSTRUCTORS(fstubs_name, n_args + 1, n_dflts)            \
+        PXR_BOOST_PYTHON_OVERLOAD_CONSTRUCTORS(fstubs_name, n_args + 1, n_dflts)            \
     };
 
 # endif // !defined(BOOST_NO_VOID_RETURNS)
@@ -300,8 +301,8 @@ namespace detail
 //
 //      There are two versions:
 //
-//          1. BOOST_PYTHON_FUNCTION_OVERLOADS for free functions
-//          2. BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS for member functions.
+//          1. PXR_BOOST_PYTHON_FUNCTION_OVERLOADS for free functions
+//          2. PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS for member functions.
 //
 //      For instance, given a function:
 //
@@ -313,7 +314,7 @@ namespace detail
 //
 //      The macro invocation:
 //
-//          BOOST_PYTHON_FUNCTION_OVERLOADS(foo_stubs, foo, 1, 4)
+//          PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(foo_stubs, foo, 1, 4)
 //
 //      Generates this code:
 //
@@ -352,13 +353,13 @@ namespace detail
 //      };
 //
 //      struct foo_overloads
-//          : public boost::python::detail::overloads_common<foo_overloads>
+//          : public PXR_BOOST_NAMESPACE::python::detail::overloads_common<foo_overloads>
 //      {
 //          typedef foo_overloadsNonVoid    non_void_return_type;
 //          typedef foo_overloadsNonVoid    void_return_type;
 //
 //          foo_overloads(char const* doc = 0)
-//             : boost::python::detail::overloads_common<foo_overloads>(doc) {}
+//             : PXR_BOOST_NAMESPACE::python::detail::overloads_common<foo_overloads>(doc) {}
 //      };
 //
 //      The typedefs non_void_return_type and void_return_type are
@@ -374,23 +375,23 @@ namespace detail
 //      foo_overloads' base class.
 //
 ///////////////////////////////////////////////////////////////////////////////
-#define BOOST_PYTHON_FUNCTION_OVERLOADS(generator_name, fname, min_args, max_args)          \
-    BOOST_PYTHON_GEN_FUNCTION_STUB(                                                         \
+#define PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(generator_name, fname, min_args, max_args)          \
+    PXR_BOOST_PYTHON_GEN_FUNCTION_STUB(                                                         \
         fname,                                                                              \
         generator_name,                                                                     \
         max_args,                                                                           \
         BOOST_PP_SUB_D(1, max_args, min_args))
 
-#define BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(generator_name, fname, min_args, max_args)   \
-    BOOST_PYTHON_GEN_MEM_FUNCTION_STUB(                                                     \
+#define PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(generator_name, fname, min_args, max_args)   \
+    PXR_BOOST_PYTHON_GEN_MEM_FUNCTION_STUB(                                                     \
         fname,                                                                              \
         generator_name,                                                                     \
         max_args,                                                                           \
         BOOST_PP_SUB_D(1, max_args, min_args))
 
 // deprecated macro names (to be removed)
-#define BOOST_PYTHON_FUNCTION_GENERATOR BOOST_PYTHON_FUNCTION_OVERLOADS
-#define BOOST_PYTHON_MEM_FUN_GENERATOR BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS
+#define PXR_BOOST_PYTHON_FUNCTION_GENERATOR PXR_BOOST_PYTHON_FUNCTION_OVERLOADS
+#define PXR_BOOST_PYTHON_MEM_FUN_GENERATOR PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS
 
 ///////////////////////////////////////////////////////////////////////////////
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON

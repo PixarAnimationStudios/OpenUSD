@@ -21,9 +21,9 @@ struct B
     B(const V&) {}    
 };
 
-BOOST_PYTHON_MODULE(bienstman3_ext)
+PXR_BOOST_PYTHON_MODULE(bienstman3_ext)
 {
-  using namespace boost::python;
+  using namespace PXR_BOOST_NAMESPACE::python;
 
   class_<V, boost::noncopyable>("V", no_init);
   class_<B>("B", init<const V&>());

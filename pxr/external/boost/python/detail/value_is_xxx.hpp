@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VALUE_IS_XXX_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/value_is_xxx.hpp>
@@ -23,13 +24,13 @@
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 #  include "pxr/external/boost/python/detail/is_xxx.hpp"
 
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
-#  define BOOST_PYTHON_VALUE_IS_XXX_DEF(name, qualified_name, nargs)    \
+#  define PXR_BOOST_PYTHON_VALUE_IS_XXX_DEF(name, qualified_name, nargs)    \
 template <class X_>                                                     \
 struct value_is_##name                                                  \
 {                                                                       \
-    BOOST_PYTHON_IS_XXX_DEF(name,qualified_name,nargs)                  \
+    PXR_BOOST_PYTHON_IS_XXX_DEF(name,qualified_name,nargs)                  \
     BOOST_STATIC_CONSTANT(bool, value = is_##name<                      \
                                typename remove_cv<                      \
                                   typename remove_reference<X_>::type   \
@@ -39,7 +40,7 @@ struct value_is_##name                                                  \
                                                                         \
 };                                                              
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VALUE_IS_XXX_HPP

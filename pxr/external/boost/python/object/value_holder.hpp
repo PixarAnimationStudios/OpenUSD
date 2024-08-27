@@ -14,6 +14,7 @@
 #  define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_VALUE_HOLDER_HPP 
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/object/value_holder.hpp>
@@ -42,9 +43,9 @@
 
 #  include <boost/utility/addressof.hpp>
 
-namespace boost { namespace python { namespace objects { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
-#define BOOST_PYTHON_UNFORWARD_LOCAL(z, n, _) BOOST_PP_COMMA_IF(n) objects::do_unforward(a##n,0)
+#define PXR_BOOST_PYTHON_UNFORWARD_LOCAL(z, n, _) BOOST_PP_COMMA_IF(n) objects::do_unforward(a##n,0)
 
 template <class Value>
 struct value_holder : instance_holder
@@ -53,7 +54,7 @@ struct value_holder : instance_holder
     typedef Value value_type;
 
     // Forward construction to the held object
-#  define BOOST_PP_ITERATION_PARAMS_1 (4, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/object/value_holder.hpp", 1))
+#  define BOOST_PP_ITERATION_PARAMS_1 (4, (0, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/object/value_holder.hpp", 1))
 #  include BOOST_PP_ITERATE()
 
  private: // required holder implementation
@@ -80,7 +81,7 @@ struct value_holder_back_reference : instance_holder
     typedef Value value_type;
     
     // Forward construction to the held object
-#  define BOOST_PP_ITERATION_PARAMS_1 (4, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/object/value_holder.hpp", 2))
+#  define BOOST_PP_ITERATION_PARAMS_1 (4, (0, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/object/value_holder.hpp", 2))
 #  include BOOST_PP_ITERATE()
 
 private: // required holder implementation
@@ -90,7 +91,7 @@ private: // required holder implementation
     Held m_held;
 };
 
-#  undef BOOST_PYTHON_UNFORWARD_LOCAL
+#  undef PXR_BOOST_PYTHON_UNFORWARD_LOCAL
 
 template <class Value>
 void* value_holder<Value>::holds(type_info dst_t, bool /*null_ptr_only*/)
@@ -118,7 +119,7 @@ void* value_holder_back_reference<Value,Held>::holds(
         return find_static_type(x, src_t, dst_t);
 }
 
-}}} // namespace boost::python::objects
+}}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_VALUE_HOLDER_HPP
@@ -142,7 +143,7 @@ void* value_holder_back_reference<Value,Held>::holds(
     value_holder(
       PyObject* self BOOST_PP_COMMA_IF(N) BOOST_PP_ENUM_BINARY_PARAMS_Z(1, N, A, a))
         : m_held(
-            BOOST_PP_REPEAT_1ST(N, BOOST_PYTHON_UNFORWARD_LOCAL, nil)
+            BOOST_PP_REPEAT_1ST(N, PXR_BOOST_PYTHON_UNFORWARD_LOCAL, nil)
             )
     {
         python::detail::initialize_wrapper(self, boost::addressof(this->m_held));
@@ -167,7 +168,7 @@ void* value_holder_back_reference<Value,Held>::holds(
         PyObject* p BOOST_PP_COMMA_IF(N) BOOST_PP_ENUM_BINARY_PARAMS_Z(1, N, A, a))
         : m_held(
             p BOOST_PP_COMMA_IF(N)
-            BOOST_PP_REPEAT_1ST(N, BOOST_PYTHON_UNFORWARD_LOCAL, nil)
+            BOOST_PP_REPEAT_1ST(N, PXR_BOOST_PYTHON_UNFORWARD_LOCAL, nil)
             )
     {
     }

@@ -17,9 +17,9 @@
 
 struct M {M(const std::complex<double>&) {} };
 
-BOOST_PYTHON_MODULE(bienstman5_ext)
+PXR_BOOST_PYTHON_MODULE(bienstman5_ext)
 {
-  using namespace boost::python;
+  using namespace PXR_BOOST_NAMESPACE::python;
 
   class_<M>("M", init<std::complex<double> const&>())
       ;

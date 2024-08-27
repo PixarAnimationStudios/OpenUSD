@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DEF_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/def.hpp>
@@ -26,7 +27,7 @@
 # include "pxr/external/boost/python/signature.hpp"
 # include "pxr/external/boost/python/detail/scope.hpp"
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace detail
 {
@@ -51,7 +52,7 @@ namespace detail
           >::type assertion BOOST_ATTRIBUTE_UNUSED;
       
       detail::scope_setattr_doc(
-          name, boost::python::make_function(
+          name, PXR_BOOST_NAMESPACE::python::make_function(
               fn
               , helper.policies()
               , helper.keywords())
@@ -62,7 +63,7 @@ namespace detail
   //
   // These two overloads discriminate between def() as applied to
   // regular functions and def() as applied to the result of
-  // BOOST_PYTHON_FUNCTION_OVERLOADS(). The final argument is used to
+  // PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(). The final argument is used to
   // discriminate.
   //
   template <class Fn, class A1>
@@ -120,7 +121,7 @@ void def(char const* name, F f, A1 const& a1, A2 const& a2, A3 const& a3)
     detail::def_from_helper(name, f, detail::def_helper<A1,A2,A3>(a1,a2,a3));
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DEF_HPP

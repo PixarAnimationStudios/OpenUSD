@@ -14,7 +14,7 @@
 #include <iostream>
 
 
-namespace python = boost::python;
+namespace python = PXR_BOOST_NAMESPACE::python;
 
 // An abstract base class
 class Base : public boost::noncopyable
@@ -48,7 +48,7 @@ struct BaseWrap : Base, python::wrapper<Base>
 };
 
 // Pack the Base class wrapper into a module
-BOOST_PYTHON_MODULE(embedded_hello)
+PXR_BOOST_PYTHON_MODULE(embedded_hello)
 {
   python::class_<BaseWrap, boost::noncopyable> base("Base");
 }
@@ -111,7 +111,7 @@ void exec_test_error()
 
 void exercise_embedding_html()
 {
-    using namespace boost::python;
+    using namespace PXR_BOOST_NAMESPACE::python;
     /* code from: libs/python/doc/tutorial/doc/tutorial.qbk
        (generates libs/python/doc/tutorial/doc/html/python/embedding.html)
      */

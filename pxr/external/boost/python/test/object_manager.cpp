@@ -12,8 +12,8 @@
 #include <boost/static_assert.hpp>
 #include "pxr/external/boost/python/handle.hpp"
 
-using namespace boost::python;
-using namespace boost::python::converter;
+using namespace PXR_BOOST_NAMESPACE::python;
+using namespace PXR_BOOST_NAMESPACE::python::converter;
 
 struct X {};
 

@@ -27,17 +27,17 @@
 #include "pxr/external/boost/python/object.hpp"
 #include "pxr/external/boost/python/detail/wrap_python.hpp"
 
-using boost::python::def;
-using boost::python::handle;
-using boost::python::object;
-using boost::python::borrowed;
+using PXR_BOOST_NAMESPACE::python::def;
+using PXR_BOOST_NAMESPACE::python::handle;
+using PXR_BOOST_NAMESPACE::python::object;
+using PXR_BOOST_NAMESPACE::python::borrowed;
 
 std::string takes_bool(bool b) { return "bool"; }
 std::string takes_int(int b) { return "int"; }
 std::string takes_double(double b) { return "double"; }
 
 
-BOOST_PYTHON_MODULE(overload_resolution)
+PXR_BOOST_PYTHON_MODULE(overload_resolution)
 {    
   def("bid", takes_bool);
   def("bid", takes_int);

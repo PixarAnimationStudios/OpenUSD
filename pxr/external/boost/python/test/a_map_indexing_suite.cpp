@@ -12,7 +12,7 @@
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/implicit.hpp"
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 struct A
 {
@@ -36,7 +36,7 @@ struct AToPython
 {
   static PyObject* convert(const A& s)
   {
-    return boost::python::incref(boost::python::object((int)s.value).ptr());
+    return PXR_BOOST_NAMESPACE::python::incref(PXR_BOOST_NAMESPACE::python::object((int)s.value).ptr());
   }
 };
 
@@ -45,10 +45,10 @@ struct AFromPython
 {
   AFromPython()
   {
-    boost::python::converter::registry::push_back(
+    PXR_BOOST_NAMESPACE::python::converter::registry::push_back(
         &convertible,
         &construct,
-        boost::python::type_id< A >());
+        PXR_BOOST_NAMESPACE::python::type_id< A >());
   }
 
   static void* convertible(PyObject* obj_ptr)
@@ -63,10 +63,10 @@ struct AFromPython
 
   static void construct(
       PyObject* obj_ptr,
-      boost::python::converter::rvalue_from_python_stage1_data* data)
+      PXR_BOOST_NAMESPACE::python::converter::rvalue_from_python_stage1_data* data)
   {
     void* storage = (
-        (boost::python::converter::rvalue_from_python_storage< A >*)
+        (PXR_BOOST_NAMESPACE::python::converter::rvalue_from_python_storage< A >*)
         data)-> storage.bytes;
 
 #if PY_VERSION_HEX >= 0x03000000

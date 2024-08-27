@@ -13,6 +13,7 @@
 #define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_INVOKE_MATCHING_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/numpy/invoke_matching.hpp>
@@ -26,7 +27,7 @@
 #include "pxr/external/boost/python/numpy/ndarray.hpp"
 #include <boost/mpl/integral_c.hpp>
 
-namespace boost { namespace python { namespace numpy {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
 namespace detail 
 {
 
@@ -127,7 +128,7 @@ private:
   Function & m_func;
 };
 
-} // namespace boost::python::numpy::detail
+} // namespace PXR_BOOST_NAMESPACE::python::numpy::detail
 
 template <typename Sequence, typename Function>
 void invoke_matching_nd(int nd, Function f) 
@@ -183,7 +184,7 @@ struct array_template_invoker_wrapper_1< DimSequence, boost::reference_wrapper<F
     : array_template_invoker_wrapper_1< DimSequence, Function >(nd, func) {}
 };
 
-} // namespace boost::python::numpy::detail
+} // namespace PXR_BOOST_NAMESPACE::python::numpy::detail
 
 template <typename TypeSequence, typename DimSequence, typename Function>
 void invoke_matching_array(ndarray const & array_, Function f) 
@@ -192,7 +193,7 @@ void invoke_matching_array(ndarray const & array_, Function f)
   invoke_matching_dtype<TypeSequence>(array_.get_dtype(), wrapper);
 }
 
-}}} // namespace boost::python::numpy
+}}} // namespace PXR_BOOST_NAMESPACE::python::numpy
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

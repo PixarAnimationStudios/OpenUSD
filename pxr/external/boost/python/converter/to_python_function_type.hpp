@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_TO_PYTHON_FUNCTION_TYPE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/converter/to_python_function_type.hpp>
@@ -18,14 +19,14 @@
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include <boost/static_assert.hpp>
 
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 // The type of stored function pointers which actually do conversion
 // by-value. The void* points to the object to be converted, and
 // type-safety is preserved through runtime registration.
 typedef PyObject* (*to_python_function_t)(void const*);
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_TO_PYTHON_FUNCTION_TYPE_HPP

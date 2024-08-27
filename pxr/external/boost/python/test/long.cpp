@@ -15,7 +15,7 @@
 #define BOOST_ENABLE_ASSERT_HANDLER
 #include <boost/assert.hpp>
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 object new_long()
 {
@@ -50,10 +50,10 @@ int is_long2(char const*)
 
 struct Y
 {
-    Y(boost::python::long_) {}
+    Y(PXR_BOOST_NAMESPACE::python::long_) {}
 };
 
-BOOST_PYTHON_MODULE(long_ext)
+PXR_BOOST_PYTHON_MODULE(long_ext)
 {
     def("new_long", new_long);
     def("longify", longify);
@@ -61,7 +61,7 @@ BOOST_PYTHON_MODULE(long_ext)
     def("is_long", is_long1);
     def("is_long", is_long2);
     
-    class_< Y >("Y", init< boost::python::long_ >())
+    class_< Y >("Y", init< PXR_BOOST_NAMESPACE::python::long_ >())
         ;
 }
 

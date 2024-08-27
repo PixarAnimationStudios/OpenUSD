@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWIND_TYPE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/unwind_type.hpp>
@@ -20,7 +21,7 @@
 # include "pxr/external/boost/python/detail/indirect_traits.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 #if (!defined(_MSC_VER) || _MSC_VER >= 1915)
 // If forward declared, msvc6.5 does not recognize them as inline.
@@ -178,7 +179,7 @@ unwind_type(boost::type<U>*p =0, Generator* =0)
     return unwind_helper2<indirection>::execute((U(*)())0,(Generator*)0);
 }
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWIND_TYPE_HPP

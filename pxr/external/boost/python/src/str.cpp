@@ -10,7 +10,7 @@
 #include "pxr/external/boost/python/extract.hpp"
 #include "pxr/external/boost/python/ssize_t.hpp"
 
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 detail::new_reference str_base::call(object const& arg_)
 {
@@ -87,10 +87,10 @@ str_base::str_base(object_cref other)
     : object(str_base::call(other))
 {}
 
-#define BOOST_PYTHON_FORMAT_OBJECT(z, n, data) "O"
-#define BOOST_PYTHON_OBJECT_PTR(z, n, data) , x##n .ptr()
+#define PXR_BOOST_PYTHON_FORMAT_OBJECT(z, n, data) "O"
+#define PXR_BOOST_PYTHON_OBJECT_PTR(z, n, data) , x##n .ptr()
 
-#define BOOST_PYTHON_DEFINE_STR_METHOD(name, arity)                             \
+#define PXR_BOOST_PYTHON_DEFINE_STR_METHOD(name, arity)                             \
 str str_base:: name ( BOOST_PP_ENUM_PARAMS(arity, object_cref x) ) const        \
 {                                                                               \
     return str(new_reference(                                                   \
@@ -98,12 +98,12 @@ str str_base:: name ( BOOST_PP_ENUM_PARAMS(arity, object_cref x) ) const        
            PyObject_CallMethod(                                                 \
                this->ptr(), const_cast<char*>( #name ),                         \
                const_cast<char*>(                                               \
-                 "(" BOOST_PP_REPEAT(arity, BOOST_PYTHON_FORMAT_OBJECT, _) ")") \
-               BOOST_PP_REPEAT_1(arity, BOOST_PYTHON_OBJECT_PTR, _)))));        \
+                 "(" BOOST_PP_REPEAT(arity, PXR_BOOST_PYTHON_FORMAT_OBJECT, _) ")") \
+               BOOST_PP_REPEAT_1(arity, PXR_BOOST_PYTHON_OBJECT_PTR, _)))));        \
 }
 
-BOOST_PYTHON_DEFINE_STR_METHOD(capitalize, 0)
-BOOST_PYTHON_DEFINE_STR_METHOD(center, 1)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(capitalize, 0)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(center, 1)
 
 long str_base::count(object_cref sub) const
 {
@@ -154,14 +154,14 @@ object str_base::encode(object_cref encoding, object_cref errors) const
 
 
 #if PY_VERSION_HEX >= 0x03000000
-    #define _BOOST_PYTHON_ASLONG PyLong_AsLong
+    #define _PXR_BOOST_PYTHON_ASLONG PyLong_AsLong
 #else
-    #define _BOOST_PYTHON_ASLONG PyInt_AsLong
+    #define _PXR_BOOST_PYTHON_ASLONG PyInt_AsLong
 #endif
 
 bool str_base::endswith(object_cref suffix) const
 {
-    bool result = _BOOST_PYTHON_ASLONG(this->attr("endswith")(suffix).ptr());
+    bool result = _PXR_BOOST_PYTHON_ASLONG(this->attr("endswith")(suffix).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -169,7 +169,7 @@ bool str_base::endswith(object_cref suffix) const
 
 bool str_base::endswith(object_cref suffix, object_cref start) const
 {
-    bool result = _BOOST_PYTHON_ASLONG(this->attr("endswith")(suffix,start).ptr());
+    bool result = _PXR_BOOST_PYTHON_ASLONG(this->attr("endswith")(suffix,start).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -177,18 +177,18 @@ bool str_base::endswith(object_cref suffix, object_cref start) const
 
 bool str_base::endswith(object_cref suffix, object_cref start, object_cref end) const
 {
-    bool result = _BOOST_PYTHON_ASLONG(this->attr("endswith")(suffix,start,end).ptr());
+    bool result = _PXR_BOOST_PYTHON_ASLONG(this->attr("endswith")(suffix,start,end).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
 }
 
-BOOST_PYTHON_DEFINE_STR_METHOD(expandtabs, 0)
-BOOST_PYTHON_DEFINE_STR_METHOD(expandtabs, 1)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(expandtabs, 0)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(expandtabs, 1)
 
 long str_base::find(object_cref sub) const
 {
-    long result = _BOOST_PYTHON_ASLONG(this->attr("find")(sub).ptr());
+    long result = _PXR_BOOST_PYTHON_ASLONG(this->attr("find")(sub).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -196,7 +196,7 @@ long str_base::find(object_cref sub) const
 
 long str_base::find(object_cref sub, object_cref start) const
 {
-    long result = _BOOST_PYTHON_ASLONG(this->attr("find")(sub,start).ptr());
+    long result = _PXR_BOOST_PYTHON_ASLONG(this->attr("find")(sub,start).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -204,7 +204,7 @@ long str_base::find(object_cref sub, object_cref start) const
 
 long str_base::find(object_cref sub, object_cref start, object_cref end) const
 {
-    long result = _BOOST_PYTHON_ASLONG(this->attr("find")(sub,start,end).ptr());
+    long result = _PXR_BOOST_PYTHON_ASLONG(this->attr("find")(sub,start,end).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -212,7 +212,7 @@ long str_base::find(object_cref sub, object_cref start, object_cref end) const
 
 long str_base::index(object_cref sub) const
 {
-    long result = _BOOST_PYTHON_ASLONG(this->attr("index")(sub).ptr());
+    long result = _PXR_BOOST_PYTHON_ASLONG(this->attr("index")(sub).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -220,7 +220,7 @@ long str_base::index(object_cref sub) const
 
 long str_base::index(object_cref sub, object_cref start) const
 {
-    long result = _BOOST_PYTHON_ASLONG(this->attr("index")(sub,start).ptr());
+    long result = _PXR_BOOST_PYTHON_ASLONG(this->attr("index")(sub,start).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -228,7 +228,7 @@ long str_base::index(object_cref sub, object_cref start) const
 
 long str_base::index(object_cref sub, object_cref start, object_cref end) const
 {
-    long result = _BOOST_PYTHON_ASLONG(this->attr("index")(sub,start,end).ptr());
+    long result = _PXR_BOOST_PYTHON_ASLONG(this->attr("index")(sub,start,end).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -236,7 +236,7 @@ long str_base::index(object_cref sub, object_cref start, object_cref end) const
 
 bool str_base::isalnum() const
 {
-    bool result = _BOOST_PYTHON_ASLONG(this->attr("isalnum")().ptr());
+    bool result = _PXR_BOOST_PYTHON_ASLONG(this->attr("isalnum")().ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -244,7 +244,7 @@ bool str_base::isalnum() const
 
 bool str_base::isalpha() const
 {
-    bool result = _BOOST_PYTHON_ASLONG(this->attr("isalpha")().ptr());
+    bool result = _PXR_BOOST_PYTHON_ASLONG(this->attr("isalpha")().ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -252,7 +252,7 @@ bool str_base::isalpha() const
 
 bool str_base::isdigit() const
 {
-    bool result = _BOOST_PYTHON_ASLONG(this->attr("isdigit")().ptr());
+    bool result = _PXR_BOOST_PYTHON_ASLONG(this->attr("isdigit")().ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -260,7 +260,7 @@ bool str_base::isdigit() const
 
 bool str_base::islower() const
 {
-    bool result = _BOOST_PYTHON_ASLONG(this->attr("islower")().ptr());
+    bool result = _PXR_BOOST_PYTHON_ASLONG(this->attr("islower")().ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -268,7 +268,7 @@ bool str_base::islower() const
 
 bool str_base::isspace() const
 {
-    bool result = _BOOST_PYTHON_ASLONG(this->attr("isspace")().ptr());
+    bool result = _PXR_BOOST_PYTHON_ASLONG(this->attr("isspace")().ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -276,7 +276,7 @@ bool str_base::isspace() const
 
 bool str_base::istitle() const
 {
-    bool result = _BOOST_PYTHON_ASLONG(this->attr("istitle")().ptr());
+    bool result = _PXR_BOOST_PYTHON_ASLONG(this->attr("istitle")().ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -284,22 +284,22 @@ bool str_base::istitle() const
 
 bool str_base::isupper() const
 {
-    bool result = _BOOST_PYTHON_ASLONG(this->attr("isupper")().ptr());
+    bool result = _PXR_BOOST_PYTHON_ASLONG(this->attr("isupper")().ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
 }
 
-BOOST_PYTHON_DEFINE_STR_METHOD(join, 1)
-BOOST_PYTHON_DEFINE_STR_METHOD(ljust, 1)
-BOOST_PYTHON_DEFINE_STR_METHOD(lower, 0)
-BOOST_PYTHON_DEFINE_STR_METHOD(lstrip, 0)
-BOOST_PYTHON_DEFINE_STR_METHOD(replace, 2)
-BOOST_PYTHON_DEFINE_STR_METHOD(replace, 3)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(join, 1)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(ljust, 1)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(lower, 0)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(lstrip, 0)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(replace, 2)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(replace, 3)
 
 long str_base::rfind(object_cref sub) const
 {
-    long result = _BOOST_PYTHON_ASLONG(this->attr("rfind")(sub).ptr());
+    long result = _PXR_BOOST_PYTHON_ASLONG(this->attr("rfind")(sub).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -307,7 +307,7 @@ long str_base::rfind(object_cref sub) const
 
 long str_base::rfind(object_cref sub, object_cref start) const
 {
-    long result = _BOOST_PYTHON_ASLONG(this->attr("rfind")(sub,start).ptr());
+    long result = _PXR_BOOST_PYTHON_ASLONG(this->attr("rfind")(sub,start).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -315,7 +315,7 @@ long str_base::rfind(object_cref sub, object_cref start) const
 
 long str_base::rfind(object_cref sub, object_cref start, object_cref end) const
 {
-    long result = _BOOST_PYTHON_ASLONG(this->attr("rfind")(sub,start,end).ptr());
+    long result = _PXR_BOOST_PYTHON_ASLONG(this->attr("rfind")(sub,start,end).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -323,7 +323,7 @@ long str_base::rfind(object_cref sub, object_cref start, object_cref end) const
 
 long str_base::rindex(object_cref sub) const
 {
-    long result = _BOOST_PYTHON_ASLONG(this->attr("rindex")(sub).ptr());
+    long result = _PXR_BOOST_PYTHON_ASLONG(this->attr("rindex")(sub).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -331,7 +331,7 @@ long str_base::rindex(object_cref sub) const
 
 long str_base::rindex(object_cref sub, object_cref start) const
 {
-    long result = _BOOST_PYTHON_ASLONG(this->attr("rindex")(sub,start).ptr());
+    long result = _PXR_BOOST_PYTHON_ASLONG(this->attr("rindex")(sub,start).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -339,14 +339,14 @@ long str_base::rindex(object_cref sub, object_cref start) const
 
 long str_base::rindex(object_cref sub, object_cref start, object_cref end) const
 {
-    long result = _BOOST_PYTHON_ASLONG(this->attr("rindex")(sub,start,end).ptr());
+    long result = _PXR_BOOST_PYTHON_ASLONG(this->attr("rindex")(sub,start,end).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
 }
 
-BOOST_PYTHON_DEFINE_STR_METHOD(rjust, 1)
-BOOST_PYTHON_DEFINE_STR_METHOD(rstrip, 0)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(rjust, 1)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(rstrip, 0)
 
 list str_base::split() const
 {
@@ -375,7 +375,7 @@ list str_base::splitlines(object_cref keepends) const
 
 bool str_base::startswith(object_cref prefix) const
 {
-    bool result = _BOOST_PYTHON_ASLONG(this->attr("startswith")(prefix).ptr());
+    bool result = _PXR_BOOST_PYTHON_ASLONG(this->attr("startswith")(prefix).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -383,7 +383,7 @@ bool str_base::startswith(object_cref prefix) const
 
 bool str_base::startswith(object_cref prefix, object_cref start) const
 {
-    bool result = _BOOST_PYTHON_ASLONG(this->attr("startswith")(prefix,start).ptr());
+    bool result = _PXR_BOOST_PYTHON_ASLONG(this->attr("startswith")(prefix,start).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
@@ -391,27 +391,27 @@ bool str_base::startswith(object_cref prefix, object_cref start) const
 
 bool str_base::startswith(object_cref prefix, object_cref start, object_cref end) const
 {
-    bool result = _BOOST_PYTHON_ASLONG(this->attr("startswith")(prefix,start,end).ptr());
+    bool result = _PXR_BOOST_PYTHON_ASLONG(this->attr("startswith")(prefix,start,end).ptr());
     if (PyErr_Occurred())
         throw_error_already_set();
     return result;
 }
 
-#undef _BOOST_PYTHON_ASLONG
+#undef _PXR_BOOST_PYTHON_ASLONG
 
-BOOST_PYTHON_DEFINE_STR_METHOD(strip, 0)
-BOOST_PYTHON_DEFINE_STR_METHOD(swapcase, 0)
-BOOST_PYTHON_DEFINE_STR_METHOD(title, 0)
-BOOST_PYTHON_DEFINE_STR_METHOD(translate, 1)
-BOOST_PYTHON_DEFINE_STR_METHOD(translate, 2)
-BOOST_PYTHON_DEFINE_STR_METHOD(upper, 0)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(strip, 0)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(swapcase, 0)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(title, 0)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(translate, 1)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(translate, 2)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD(upper, 0)
 
 static struct register_str_pytype_ptr
 {
     register_str_pytype_ptr()
     {
         const_cast<converter::registration &>(
-            converter::registry::lookup(boost::python::type_id<boost::python::str>())
+            converter::registry::lookup(PXR_BOOST_NAMESPACE::python::type_id<PXR_BOOST_NAMESPACE::python::str>())
             )
 #if PY_VERSION_HEX >= 0x03000000
             .m_class_object = &PyUnicode_Type;
@@ -421,4 +421,4 @@ static struct register_str_pytype_ptr
     }
 }register_str_pytype_ptr_;
     
-}}}  // namespace boost::python
+}}}  // namespace PXR_BOOST_NAMESPACE::python

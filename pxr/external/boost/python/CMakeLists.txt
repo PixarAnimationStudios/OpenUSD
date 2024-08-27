@@ -37,6 +37,7 @@ pxr_library(python
         cast.hpp
         class.hpp
         class_fwd.hpp
+        common.hpp
         converter/arg_from_python.hpp
         converter/arg_to_python.hpp
         converter/arg_to_python_base.hpp
@@ -292,10 +293,10 @@ pxr_library(python
     DISABLE_PRECOMPILED_HEADERS
 )
 
-# Add BOOST_PYTHON_SOURCE when building this library to ensure symbols
-# decorated with BOOST_PYTHON_DECL are exported.
+# Add PXR_BOOST_PYTHON_SOURCE when building this library to ensure symbols
+# decorated with PXR_BOOST_PYTHON_DECL are exported.
 target_compile_definitions(python
-    PRIVATE BOOST_PYTHON_SOURCE
+    PRIVATE PXR_BOOST_PYTHON_SOURCE
 )
 
 # XXX:
@@ -594,7 +595,7 @@ boost_python_cpp_test_lib("select_holder")
 # here, we'll run into duplicate symbol errors at link time.
 #
 # Because we're compiling in this extra source file, we need to set
-# BOOST_PYTHON_STATIC_LIB to ensure the symbols from that file
+# PXR_BOOST_PYTHON_STATIC_LIB to ensure the symbols from that file
 # aren't set to be exported, which will cause conflicts with
 # the header files that say they should be imported.
 if (NOT PXR_BUILD_MONOLITHIC)
@@ -607,6 +608,6 @@ boost_python_cpp_test("select_from_python_test"
         ${extracppfiles}
 )
 target_compile_definitions(select_from_python_test 
-    PRIVATE BOOST_PYTHON_STATIC_LIB)
+    PRIVATE PXR_BOOST_PYTHON_STATIC_LIB)
 
 boost_python_cpp_test_lib("select_arg_to_python_test")

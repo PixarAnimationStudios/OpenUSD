@@ -20,9 +20,9 @@ struct E
    const D fe2(const C&, const C&) {return D();}
 };
 
-BOOST_PYTHON_MODULE(bienstman2_ext)
+PXR_BOOST_PYTHON_MODULE(bienstman2_ext)
 {
-  using namespace boost::python;
+  using namespace PXR_BOOST_NAMESPACE::python;
 
   class_<C>("C");
   class_<D>("D");

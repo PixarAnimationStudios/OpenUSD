@@ -13,6 +13,7 @@
 #define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_UFUNC_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/numpy/ufunc.hpp>
@@ -28,7 +29,7 @@
 #include "pxr/external/boost/python/numpy/ndarray.hpp"
 #include "pxr/external/boost/python/numpy/config.hpp"
 
-namespace boost { namespace python { namespace numpy {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
 
 /**
  *  @brief A boost.python "object manager" (subclass of object) for PyArray_MultiIter.
@@ -50,7 +51,7 @@ class BOOST_NUMPY_DECL multi_iter : public object
 {
 public:
 
-  BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(multi_iter, object);
+  PXR_BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(multi_iter, object);
 
   /// @brief Increment the iterator.
   void next();
@@ -94,7 +95,7 @@ BOOST_NUMPY_DECL multi_iter make_multi_iter(object const & a1, object const & a2
  *    double operator()(double input) const { return input * M_PI; }
  *  };
  *  
- *  BOOST_PYTHON_MODULE(example)
+ *  PXR_BOOST_PYTHON_MODULE(example)
  *  {
  *    class_< TimesPI >("TimesPI")
  *      .def("__call__", unary_ufunc<TimesPI>::make());
@@ -157,7 +158,7 @@ struct unary_ufunc
  *    double operator()(double input1, double input2) const { return std::cos(input1 + input2); }
  *  };
  *  
- *  BOOST_PYTHON_MODULE(example) 
+ *  PXR_BOOST_PYTHON_MODULE(example) 
  *  {
  *    class_< CosSum >("CosSum")
  *      .def("__call__", binary_ufunc<CosSum>::make());
@@ -205,14 +206,14 @@ struct binary_ufunc
 
 };
 
-} // namespace boost::python::numpy
+} // namespace PXR_BOOST_NAMESPACE::python::numpy
 
 namespace converter 
 {
 
 NUMPY_OBJECT_MANAGER_TRAITS(numpy::multi_iter);
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

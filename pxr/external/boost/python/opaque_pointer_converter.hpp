@@ -14,6 +14,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_OPAQUE_POINTER_CONVERTER_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/opaque_pointer_converter.hpp>
@@ -42,11 +43,11 @@
 // Note:
 // In addition you need to define specializations for type_id
 // on the type pointed to by Pointer using
-// BOOST_PYTHON_OPAQUE_SPECIALIZED_TYPE_ID(Pointee)
+// PXR_BOOST_PYTHON_OPAQUE_SPECIALIZED_TYPE_ID(Pointee)
 //
 // For an example see libs/python/test/opaque.cpp
 //
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 template <class Pointee>
 struct opaque
@@ -101,7 +102,7 @@ private:
 
         if ((existing == 0) || (existing->m_to_python == 0))
         {
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
             converter::registry::insert(&extract, type_id<Pointee>(), &get_pytype);
             converter::registry::insert(&wrap, type_id<Pointee*>(), &get_pytype);
 #else
@@ -118,7 +119,7 @@ private:
     };
     
     static PyTypeObject type_object;
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
     static PyTypeObject const *get_pytype(){return  &type_object; }
 #endif
 };
@@ -133,7 +134,7 @@ PyTypeObject opaque<Pointee>::type_object =
     0,
     sizeof( BOOST_DEDUCED_TYPENAME opaque<Pointee>::python_instance ),
     0,
-    ::boost::python::detail::dealloc,
+    ::PXR_BOOST_NAMESPACE::python::detail::dealloc,
     0,          /* tp_print */
     0,          /* tp_getattr */
     0,          /* tp_setattr */
@@ -178,11 +179,11 @@ PyTypeObject opaque<Pointee>::type_object =
     0           /* tp_del */
 #endif
 };
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 // If you change the below, don't forget to alter the end of type_id.hpp
-#   define BOOST_PYTHON_OPAQUE_SPECIALIZED_TYPE_ID(Pointee)                     \
-    namespace boost { namespace python {                                        \
+#   define PXR_BOOST_PYTHON_OPAQUE_SPECIALIZED_TYPE_ID(Pointee)                     \
+    namespace PXR_BOOST_NAMESPACE { namespace python {                                        \
     template<>                                                                  \
     inline type_info type_id<Pointee>()                                         \
     {                                                                           \

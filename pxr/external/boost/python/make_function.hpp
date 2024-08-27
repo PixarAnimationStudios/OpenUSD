@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_MAKE_FUNCTION_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/make_function.hpp>
@@ -27,7 +28,7 @@
 # include <boost/mpl/size.hpp>
 # include <boost/mpl/int.hpp>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace detail
 {

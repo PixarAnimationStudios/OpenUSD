@@ -39,17 +39,17 @@ extern "C" void (*old_translator)(unsigned, EXCEPTION_POINTERS*)
 struct test_failure : std::exception
 {
     test_failure(char const* expr, char const* /*function*/, char const* file, unsigned line)
-      : msg(file + boost::python::str(":%s:") % line + ": Boost.Python assertion failure: " + expr)
+      : msg(file + PXR_BOOST_NAMESPACE::python::str(":%s:") % line + ": Boost.Python assertion failure: " + expr)
     {}
 
     ~test_failure() throw() {}
     
     char const* what() const throw()
     {
-        return boost::python::extract<char const*>(msg)();
+        return PXR_BOOST_NAMESPACE::python::extract<char const*>(msg)();
     }
 
-    boost::python::str msg;
+    PXR_BOOST_NAMESPACE::python::str msg;
 };
 
 namespace boost

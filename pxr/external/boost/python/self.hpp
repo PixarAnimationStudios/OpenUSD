@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_SELF_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/self.hpp>
@@ -18,9 +19,9 @@
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
-#define BOOST_PYTHON_SELF_IS_CLASS
+#define PXR_BOOST_PYTHON_SELF_IS_CLASS
 
 // Sink self_t into its own namespace so that we have a safe place to
 // put the completely general operator templates which operate on
@@ -28,18 +29,18 @@ namespace boost { namespace python {
 // complicated and finally GCC 2.95.2 chokes on it.
 namespace self_ns
 {
-# ifndef BOOST_PYTHON_SELF_IS_CLASS
+# ifndef PXR_BOOST_PYTHON_SELF_IS_CLASS
   enum self_t { self };
 # else 
   struct self_t {};
-  extern BOOST_PYTHON_DECL self_t self;
+  extern PXR_BOOST_PYTHON_DECL self_t self;
 # endif
 }
 
 using self_ns::self_t;
 using self_ns::self;
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_SELF_HPP

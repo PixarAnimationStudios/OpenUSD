@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_BORROWED_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/borrowed.hpp>
@@ -19,7 +20,7 @@
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/detail/borrowed_ptr.hpp"
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 template <class T>
 inline python::detail::borrowed<T>* borrowed(T* p)
@@ -27,7 +28,7 @@ inline python::detail::borrowed<T>* borrowed(T* p)
     return (detail::borrowed<T>*)p;
 }
     
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_BORROWED_HPP

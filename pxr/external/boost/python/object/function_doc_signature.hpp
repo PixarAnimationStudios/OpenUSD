@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_DOC_SIGNATURE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/object/function_doc_signature.hpp>
@@ -26,7 +27,7 @@
 
 #include <vector>
 
-namespace boost { namespace python { namespace objects {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
 
 class function_doc_signature_generator{
     static const  char * py_type_str(const python::detail::signature_element &s);
@@ -42,7 +43,7 @@ public:
     static list function_doc_signatures( function const * f);
 };
 
-}}}//end of namespace boost::python::objects
+}}}//end of namespace PXR_BOOST_NAMESPACE::python::objects
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif //PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_DOC_SIGNATURE_HPP

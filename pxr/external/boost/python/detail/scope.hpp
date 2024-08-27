@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SCOPE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/scope.hpp>
@@ -18,11 +19,11 @@
 
 # include "pxr/external/boost/python/detail/config.hpp"
 
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
-void BOOST_PYTHON_DECL scope_setattr_doc(char const* name, object const& obj, char const* doc);
+void PXR_BOOST_PYTHON_DECL scope_setattr_doc(char const* name, object const& obj, char const* doc);
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SCOPE_HPP

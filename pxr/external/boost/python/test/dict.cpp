@@ -16,7 +16,7 @@
 #include <exception>
 #include <string>
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 object new_dict()
 {
@@ -81,7 +81,7 @@ void test_templates(object print)
     BOOST_ASSERT(!tmp.has_key(key));
 }
 
-BOOST_PYTHON_MODULE(dict_ext)
+PXR_BOOST_PYTHON_MODULE(dict_ext)
 {
     def("new_dict", new_dict);
     def("data_dict", data_dict);

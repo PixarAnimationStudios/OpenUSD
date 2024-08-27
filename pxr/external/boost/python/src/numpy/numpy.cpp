@@ -9,11 +9,11 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#define BOOST_PYTHON_NUMPY_INTERNAL_MAIN
+#define PXR_BOOST_PYTHON_NUMPY_INTERNAL_MAIN
 #include "pxr/external/boost/python/numpy/internal.hpp"
 #include "pxr/external/boost/python/numpy/dtype.hpp"
 
-namespace boost { namespace python { namespace numpy {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
 
 #if PY_MAJOR_VERSION == 2
 static void wrap_import_array()
@@ -36,4 +36,4 @@ void initialize(bool register_scalar_converters)
 	dtype::register_scalar_converters();
 }
 
-}}} // namespace boost::python::numpy
+}}} // namespace PXR_BOOST_NAMESPACE::python::numpy

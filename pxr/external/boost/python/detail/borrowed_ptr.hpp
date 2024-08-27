@@ -2,6 +2,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_BORROWED_PTR_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/borrowed_ptr.hpp>
@@ -22,7 +23,7 @@
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include "pxr/external/boost/python/tag.hpp"
 
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 template<class T> class borrowed
 { 
@@ -86,7 +87,7 @@ inline T* get_managed_object(detail::borrowed<T> const volatile* p, tag_t)
     return (T*)p;
 }
 
-}} // namespace boost::python::detail
+}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_BORROWED_PTR_HPP

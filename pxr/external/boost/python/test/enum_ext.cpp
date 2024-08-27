@@ -15,14 +15,14 @@
 #include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <boost/mpl/bool.hpp>
 #endif 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 enum color { red = 1, green = 2, blue = 4, blood = 1 };
 
 #if BOOST_WORKAROUND(__MWERKS__, <= 0x2407)
-namespace boost  // Pro7 has a hard time detecting enums
+namespace PXR_BOOST_NAMESPACE  // Pro7 has a hard time detecting enums
 {
-  template <> struct boost::python::detail::is_enum<color> : boost::mpl::true_ {};
+  template <> struct PXR_BOOST_NAMESPACE::python::detail::is_enum<color> : boost::mpl::true_ {};
 }
 #endif 
 
@@ -33,7 +33,7 @@ struct colorized {
     color x;
 };
 
-BOOST_PYTHON_MODULE(enum_ext)
+PXR_BOOST_PYTHON_MODULE(enum_ext)
 {
     enum_<color>("color")
         .value("red", red)

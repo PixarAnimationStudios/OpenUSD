@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTERED_POINTEE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/converter/registered_pointee.hpp>
@@ -20,22 +21,22 @@
 # include "pxr/external/boost/python/converter/registry.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 struct registration;
 
 template <class T>
 struct registered_pointee
     : registered<
-        typename boost::python::detail::remove_pointer<
-           typename boost::python::detail::remove_cv<
-              typename boost::python::detail::remove_reference<T>::type
+        typename PXR_BOOST_NAMESPACE::python::detail::remove_pointer<
+           typename PXR_BOOST_NAMESPACE::python::detail::remove_cv<
+              typename PXR_BOOST_NAMESPACE::python::detail::remove_reference<T>::type
            >::type
         >::type
     >
 {
 };
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTERED_POINTEE_HPP

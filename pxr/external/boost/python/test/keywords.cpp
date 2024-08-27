@@ -8,10 +8,10 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-// If BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
+// If PXR_BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
 // boost::python will generate simplified docstrings that break the associated
 // test unless we undefine it before including any headers.
-#undef BOOST_PYTHON_NO_PY_SIGNATURES
+#undef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 
 #include "pxr/external/boost/python.hpp"
 #include <string>
@@ -83,19 +83,19 @@ private:
     std::string n_;
 };
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(bar_set, Bar::set, 0,3)
+PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(bar_set, Bar::set, 0,3)
 
-using namespace boost::python;
-BOOST_PYTHON_MODULE(keywords)
+using namespace PXR_BOOST_NAMESPACE::python;
+PXR_BOOST_PYTHON_MODULE(keywords)
 {
     // Explicitly enable Python signatures in docstrings in case boost::python
-    // was built with BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
+    // was built with PXR_BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
     // signatures by default.
     docstring_options doc_options;
     doc_options.enable_py_signatures();
 
 #if BOOST_WORKAROUND(__GNUC__, == 2)
-    using boost::python::arg;
+    using PXR_BOOST_NAMESPACE::python::arg;
 #endif 
     
     class_<Foo>(

@@ -11,7 +11,7 @@
 #include <boost/type.hpp>
 #include <functional>
 
-using boost::python::detail::result;
+using PXR_BOOST_NAMESPACE::python::detail::result;
 using boost::type;
 
 void expect_int(type<int>*) {}

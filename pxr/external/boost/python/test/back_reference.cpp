@@ -8,10 +8,10 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-// If BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
+// If PXR_BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
 // boost::python will generate simplified docstrings that break the associated
 // test unless we undefine it before including any headers.
-#undef BOOST_PYTHON_NO_PY_SIGNATURES
+#undef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/docstring_options.hpp"
@@ -31,7 +31,7 @@
 // This test shows that a class can be wrapped "as itself" but also
 // acquire a back-reference iff has_back_reference<> is appropriately
 // specialized.
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 struct X
 {
@@ -73,7 +73,7 @@ struct Z : X
 Y const& copy_Y(Y const& y) { return y; }
 Z const& copy_Z(Z const& z) { return z; }
 
-namespace boost { namespace python
+namespace PXR_BOOST_NAMESPACE { namespace python
 {
   template <>
   struct has_back_reference<Y>
@@ -100,10 +100,10 @@ bool y_equality(back_reference<Y const&> y1, Y const& y2)
     return &y1.get() == &y2;
 }
 
-BOOST_PYTHON_MODULE(back_reference_ext)
+PXR_BOOST_PYTHON_MODULE(back_reference_ext)
 {
     // Explicitly enable Python signatures in docstrings in case boost::python
-    // was built with BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
+    // was built with PXR_BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
     // signatures by default.
     docstring_options doc_options;
     doc_options.enable_py_signatures();

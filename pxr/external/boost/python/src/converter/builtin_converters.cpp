@@ -27,7 +27,7 @@
 #include <string>
 #include <complex>
 
-namespace boost { namespace python { namespace converter {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter {
 
 shared_ptr_deleter::shared_ptr_deleter(handle<> owner)
     : owner(owner)
@@ -164,7 +164,7 @@ namespace
               return 0;
 
           return (
-#if PY_VERSION_HEX >= 0x02040000 && defined(BOOST_PYTHON_BOOL_INT_STRICT)
+#if PY_VERSION_HEX >= 0x02040000 && defined(PXR_BOOST_PYTHON_BOOL_INT_STRICT)
           !PyBool_Check(obj) &&
 #endif
           (PyInt_Check(obj) || PyLong_Check(obj)))
@@ -196,7 +196,7 @@ namespace
               return 0;
 
           return (
-#if PY_VERSION_HEX >= 0x02040000 && defined(BOOST_PYTHON_BOOL_INT_STRICT)
+#if PY_VERSION_HEX >= 0x02040000 && defined(PXR_BOOST_PYTHON_BOOL_INT_STRICT)
           !PyBool_Check(obj) &&
 #endif
           (PyInt_Check(obj) || PyLong_Check(obj)))
@@ -268,7 +268,7 @@ namespace
   
   struct long_long_rvalue_from_python : long_long_rvalue_from_python_base
   {
-      static BOOST_PYTHON_LONG_LONG extract(PyObject* intermediate)
+      static PXR_BOOST_PYTHON_LONG_LONG extract(PyObject* intermediate)
       {
 #if PY_VERSION_HEX < 0x03000000
           if (PyInt_Check(intermediate))
@@ -278,7 +278,7 @@ namespace
           else
 #endif
           {
-              BOOST_PYTHON_LONG_LONG result = PyLong_AsLongLong(intermediate);
+              PXR_BOOST_PYTHON_LONG_LONG result = PyLong_AsLongLong(intermediate);
               
               if (PyErr_Occurred())
                   throw_error_already_set();
@@ -290,17 +290,17 @@ namespace
 
   struct unsigned_long_long_rvalue_from_python : long_long_rvalue_from_python_base
   {
-      static unsigned BOOST_PYTHON_LONG_LONG extract(PyObject* intermediate)
+      static unsigned PXR_BOOST_PYTHON_LONG_LONG extract(PyObject* intermediate)
       {
 #if PY_VERSION_HEX < 0x03000000
           if (PyInt_Check(intermediate))
           {
-              return numeric_cast<unsigned BOOST_PYTHON_LONG_LONG>(PyInt_AS_LONG(intermediate));
+              return numeric_cast<unsigned PXR_BOOST_PYTHON_LONG_LONG>(PyInt_AS_LONG(intermediate));
           }
           else
 #endif
           {
-              unsigned BOOST_PYTHON_LONG_LONG result = PyLong_AsUnsignedLongLong(intermediate);
+              unsigned PXR_BOOST_PYTHON_LONG_LONG result = PyLong_AsUnsignedLongLong(intermediate);
               
               if (PyErr_Occurred())
                   throw_error_already_set();
@@ -318,7 +318,7 @@ namespace
       {
 #if PY_VERSION_HEX >= 0x03000000
           return obj == Py_None || PyLong_Check(obj) ? &py_object_identity : 0;
-#elif PY_VERSION_HEX >= 0x02040000 && defined(BOOST_PYTHON_BOOL_INT_STRICT)
+#elif PY_VERSION_HEX >= 0x02040000 && defined(PXR_BOOST_PYTHON_BOOL_INT_STRICT)
           return obj == Py_None || PyBool_Check(obj) ? &py_object_identity : 0;
 #else
           return obj == Py_None || PyInt_Check(obj) ? &py_object_identity : 0;
@@ -451,7 +451,7 @@ namespace
           Py_ssize_t size = 0;
           wchar_t *buf = PyUnicode_AsWideCharString(intermediate, &size);
           if (buf == NULL) {
-              boost::python::throw_error_already_set();
+              PXR_BOOST_NAMESPACE::python::throw_error_already_set();
           }
           std::wstring result(buf, size);
           PyMem_Free(buf);
@@ -510,7 +510,7 @@ namespace
   };
 } 
 
-BOOST_PYTHON_DECL PyObject* do_return_to_python(char x)
+PXR_BOOST_PYTHON_DECL PyObject* do_return_to_python(char x)
 {
 #if PY_VERSION_HEX >= 0x03000000
     return PyUnicode_FromStringAndSize(&x, 1);
@@ -519,24 +519,24 @@ BOOST_PYTHON_DECL PyObject* do_return_to_python(char x)
 #endif
 }
   
-BOOST_PYTHON_DECL PyObject* do_return_to_python(char const* x)
+PXR_BOOST_PYTHON_DECL PyObject* do_return_to_python(char const* x)
 {
 #if PY_VERSION_HEX >= 0x03000000
-    return x ? PyUnicode_FromString(x) : boost::python::detail::none();
+    return x ? PyUnicode_FromString(x) : PXR_BOOST_NAMESPACE::python::detail::none();
 #else
-    return x ? PyString_FromString(x) : boost::python::detail::none();
+    return x ? PyString_FromString(x) : PXR_BOOST_NAMESPACE::python::detail::none();
 #endif
 }
   
-BOOST_PYTHON_DECL PyObject* do_return_to_python(PyObject* x)
+PXR_BOOST_PYTHON_DECL PyObject* do_return_to_python(PyObject* x)
 {
-    return x ? x : boost::python::detail::none();
+    return x ? x : PXR_BOOST_NAMESPACE::python::detail::none();
 }
   
-BOOST_PYTHON_DECL PyObject* do_arg_to_python(PyObject* x)
+PXR_BOOST_PYTHON_DECL PyObject* do_arg_to_python(PyObject* x)
 {
     if (x == 0)
-        return boost::python::detail::none();
+        return PXR_BOOST_NAMESPACE::python::detail::none();
       
     Py_INCREF(x);
     return x;
@@ -566,8 +566,8 @@ void initialize_builtin_converters()
 // using Python's macro instead of Boost's - we don't seem to get the
 // config right all the time.
 # ifdef HAVE_LONG_LONG
-    slot_rvalue_from_python<signed BOOST_PYTHON_LONG_LONG,long_long_rvalue_from_python>();
-    slot_rvalue_from_python<unsigned BOOST_PYTHON_LONG_LONG,unsigned_long_long_rvalue_from_python>();
+    slot_rvalue_from_python<signed PXR_BOOST_PYTHON_LONG_LONG,long_long_rvalue_from_python>();
+    slot_rvalue_from_python<unsigned PXR_BOOST_PYTHON_LONG_LONG,unsigned_long_long_rvalue_from_python>();
 # endif
         
     // floating types
@@ -594,4 +594,4 @@ void initialize_builtin_converters()
 
 }
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter

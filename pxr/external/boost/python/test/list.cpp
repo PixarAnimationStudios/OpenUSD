@@ -20,7 +20,7 @@
 #include <boost/assert.hpp>
 #include "test_class.hpp"
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 object new_list()
 {
@@ -138,7 +138,7 @@ void exercise(list x, object y, object print)
     BOOST_ASSERT(w[3] == 'i');
 }
 
-BOOST_PYTHON_MODULE(list_ext)
+PXR_BOOST_PYTHON_MODULE(list_ext)
 {
     def("new_list", new_list);
     def("listify", listify);

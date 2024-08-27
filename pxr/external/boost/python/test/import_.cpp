@@ -15,7 +15,7 @@
 #include <iostream>
 #include <sstream>
 
-namespace bpl = boost::python;
+namespace bpl = PXR_BOOST_NAMESPACE::python;
 
 void import_test(char const *py_file_path)
 {

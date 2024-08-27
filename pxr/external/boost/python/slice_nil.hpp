@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_SLICE_NIL_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/slice_nil.hpp>
@@ -19,7 +20,7 @@
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/object_core.hpp"
 
-namespace boost { namespace python { namespace api {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace api {
 
 class slice_nil : public object
 {
@@ -50,7 +51,7 @@ using api::slice_nil;
 using api::_;
 # endif 
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_SLICE_NIL_HPP

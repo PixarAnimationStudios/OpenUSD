@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYOBJECT_TYPE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/converter/pyobject_type.hpp>
@@ -18,9 +19,9 @@
 
 # include "pxr/external/boost/python/cast.hpp"
 
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
-BOOST_PYTHON_DECL inline
+PXR_BOOST_PYTHON_DECL inline
 PyObject* checked_downcast_impl(PyObject *obj, PyTypeObject *type)
 {
   return (PyType_IsSubtype(Py_TYPE(obj), type) ? obj : NULL);
@@ -41,12 +42,12 @@ struct pyobject_type
             (checked_downcast_impl)(x, pytype)
             );
     }
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
     static PyTypeObject const* get_pytype() { return pytype; }
 #endif
 };
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYOBJECT_TYPE_HPP

@@ -11,17 +11,18 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_LIFE_SUPPORT_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/object/life_support.hpp>
 #else
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
-namespace boost { namespace python { namespace objects { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
-BOOST_PYTHON_DECL PyObject* make_nurse_and_patient(PyObject* nurse, PyObject* patient);
+PXR_BOOST_PYTHON_DECL PyObject* make_nurse_and_patient(PyObject* nurse, PyObject* patient);
 
-}}} // namespace boost::python::object
+}}} // namespace PXR_BOOST_NAMESPACE::python::object
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_LIFE_SUPPORT_HPP

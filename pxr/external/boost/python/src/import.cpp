@@ -13,12 +13,12 @@
 #include "pxr/external/boost/python/extract.hpp"
 #include "pxr/external/boost/python/handle.hpp"
 
-namespace boost 
+namespace PXR_BOOST_NAMESPACE 
 { 
 namespace python 
 {
 
-object BOOST_PYTHON_DECL import(str name)
+object PXR_BOOST_PYTHON_DECL import(str name)
 {
   // should be 'char const *' but older python versions don't use 'const' yet.
   char *n = python::extract<char *>(name);
@@ -26,5 +26,5 @@ object BOOST_PYTHON_DECL import(str name)
   return python::object(module);
 }
 
-}  // namespace boost::python
-}  // namespace boost
+}  // namespace PXR_BOOST_NAMESPACE::python
+}  // namespace PXR_BOOST_NAMESPACE

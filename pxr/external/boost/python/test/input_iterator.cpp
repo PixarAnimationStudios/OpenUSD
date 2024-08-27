@@ -14,7 +14,7 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <list>
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 typedef std::list<int> list_int;
 
@@ -39,7 +39,7 @@ list_range2 range2(list_int& x)
 // to work around an MSVC6 linker bug, which causes it to complain
 // about a "duplicate comdat" if the input iterator is instantiated in
 // the same module with the others.
-BOOST_PYTHON_MODULE(input_iterator)
+PXR_BOOST_PYTHON_MODULE(input_iterator)
 {
     def("range2", &::range2);
     

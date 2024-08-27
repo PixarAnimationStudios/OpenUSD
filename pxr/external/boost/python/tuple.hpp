@@ -11,6 +11,7 @@
 #define PXR_EXTERNAL_BOOST_PYTHON_TUPLE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/tuple.hpp>
@@ -24,21 +25,21 @@
 #include <boost/preprocessor/repetition/enum_binary_params.hpp>
 
 // XXX: Workaround for distcc issues with BOOST_PP_ITERATE
-# define BOOST_PYTHON_SYNOPSIS
+# define PXR_BOOST_PYTHON_SYNOPSIS
 # include "pxr/external/boost/python/detail/make_tuple.hpp"
-# undef BOOST_PYTHON_SYNOPSIS
+# undef PXR_BOOST_PYTHON_SYNOPSIS
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace detail
 {
-  struct BOOST_PYTHON_DECL tuple_base : object
+  struct PXR_BOOST_PYTHON_DECL tuple_base : object
   {
    protected:
       tuple_base();
       tuple_base(object_cref sequence);
       
-      BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(tuple_base, object)
+      PXR_BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(tuple_base, object)
 
    private:
       static detail::new_reference call(object const&);
@@ -58,7 +59,7 @@ class tuple : public detail::tuple_base
     }
 
  public: // implementation detail -- for internal use only
-    BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(tuple, base)
+    PXR_BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(tuple, base)
 };
 
 //
@@ -77,10 +78,10 @@ namespace converter
 // for completeness
 inline tuple make_tuple() { return tuple(); }
 
-# define BOOST_PP_ITERATION_PARAMS_1 (3, (1, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/detail/make_tuple.hpp"))
+# define BOOST_PP_ITERATION_PARAMS_1 (3, (1, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/detail/make_tuple.hpp"))
 # include BOOST_PP_ITERATE()
 
-}}  // namespace boost::python
+}}  // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

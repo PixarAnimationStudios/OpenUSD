@@ -9,7 +9,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #include "pxr/external/boost/python/long.hpp"
 
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 new_reference long_base::call(object const& arg_)
 {
@@ -41,4 +41,4 @@ long_base::long_base(object_cref arg, object_cref base)
 {}
 
 
-}}} // namespace boost::python
+}}} // namespace PXR_BOOST_NAMESPACE::python

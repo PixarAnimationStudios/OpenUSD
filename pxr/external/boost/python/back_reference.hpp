@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_BACK_REFERENCE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/back_reference.hpp>
@@ -22,7 +23,7 @@
 # include "pxr/external/boost/python/detail/dependent.hpp"
 # include "pxr/external/boost/python/detail/raw_pyobject.hpp"
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 template <class T>
 struct back_reference
@@ -77,7 +78,7 @@ T back_reference<T>::get() const
     return m_value;
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_BACK_REFERENCE_HPP

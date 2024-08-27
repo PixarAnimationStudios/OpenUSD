@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_BUILTIN_CONVERTERS_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/converter/builtin_converters.hpp>
@@ -30,15 +31,15 @@
 // lookups using explicit specializations of arg_to_python and
 // result_to_python.
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace converter
 {
   template <class T> struct arg_to_python;
-  BOOST_PYTHON_DECL PyObject* do_return_to_python(char);
-  BOOST_PYTHON_DECL PyObject* do_return_to_python(char const*);
-  BOOST_PYTHON_DECL PyObject* do_return_to_python(PyObject*);
-  BOOST_PYTHON_DECL PyObject* do_arg_to_python(PyObject*);
+  PXR_BOOST_PYTHON_DECL PyObject* do_return_to_python(char);
+  PXR_BOOST_PYTHON_DECL PyObject* do_return_to_python(char const*);
+  PXR_BOOST_PYTHON_DECL PyObject* do_return_to_python(PyObject*);
+  PXR_BOOST_PYTHON_DECL PyObject* do_arg_to_python(PyObject*);
 }
 
 // Provide specializations of to_python_value
@@ -58,7 +59,7 @@ namespace detail
 }
 
 // Use expr to create the PyObject corresponding to x
-# define BOOST_PYTHON_RETURN_TO_PYTHON_BY_VALUE(T, expr, pytype)\
+# define PXR_BOOST_PYTHON_RETURN_TO_PYTHON_BY_VALUE(T, expr, pytype)\
     template <> struct to_python_value<T&>                      \
         : detail::builtin_to_python                             \
     {                                                           \
@@ -84,7 +85,7 @@ namespace detail
         }                                                       \
     };
 
-# define BOOST_PYTHON_ARG_TO_PYTHON_BY_VALUE(T, expr)   \
+# define PXR_BOOST_PYTHON_ARG_TO_PYTHON_BY_VALUE(T, expr)   \
     namespace converter                                 \
     {                                                   \
       template <> struct arg_to_python< T >             \
@@ -96,22 +97,22 @@ namespace detail
     } 
 
 // Specialize argument and return value converters for T using expr
-# define BOOST_PYTHON_TO_PYTHON_BY_VALUE(T, expr, pytype)  \
-        BOOST_PYTHON_RETURN_TO_PYTHON_BY_VALUE(T,expr, pytype)  \
-        BOOST_PYTHON_ARG_TO_PYTHON_BY_VALUE(T,expr)
+# define PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(T, expr, pytype)  \
+        PXR_BOOST_PYTHON_RETURN_TO_PYTHON_BY_VALUE(T,expr, pytype)  \
+        PXR_BOOST_PYTHON_ARG_TO_PYTHON_BY_VALUE(T,expr)
 
 // Specialize converters for signed and unsigned T to Python Int
 #if PY_VERSION_HEX >= 0x03000000
 
-# define BOOST_PYTHON_TO_INT(T)                                         \
-    BOOST_PYTHON_TO_PYTHON_BY_VALUE(signed T, ::PyLong_FromLong(x), &PyLong_Type)      \
-    BOOST_PYTHON_TO_PYTHON_BY_VALUE(unsigned T, ::PyLong_FromUnsignedLong(x), &PyLong_Type)
+# define PXR_BOOST_PYTHON_TO_INT(T)                                         \
+    PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(signed T, ::PyLong_FromLong(x), &PyLong_Type)      \
+    PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(unsigned T, ::PyLong_FromUnsignedLong(x), &PyLong_Type)
 
 #else
 
-# define BOOST_PYTHON_TO_INT(T)                                         \
-    BOOST_PYTHON_TO_PYTHON_BY_VALUE(signed T, ::PyInt_FromLong(x), &PyInt_Type)      \
-    BOOST_PYTHON_TO_PYTHON_BY_VALUE(                                    \
+# define PXR_BOOST_PYTHON_TO_INT(T)                                         \
+    PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(signed T, ::PyInt_FromLong(x), &PyInt_Type)      \
+    PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(                                    \
         unsigned T                                                      \
         , static_cast<unsigned long>(x) > static_cast<unsigned long>(   \
                 (std::numeric_limits<long>::max)())                     \
@@ -121,17 +122,17 @@ namespace detail
 
 // Bool is not signed.
 #if PY_VERSION_HEX >= 0x02030000
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(bool, ::PyBool_FromLong(x), &PyBool_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(bool, ::PyBool_FromLong(x), &PyBool_Type)
 #else
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(bool, ::PyInt_FromLong(x), &PyInt_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(bool, ::PyInt_FromLong(x), &PyInt_Type)
 #endif
   
 // note: handles signed char and unsigned char, but not char (see below)
-BOOST_PYTHON_TO_INT(char)
+PXR_BOOST_PYTHON_TO_INT(char)
 
-BOOST_PYTHON_TO_INT(short)
-BOOST_PYTHON_TO_INT(int)
-BOOST_PYTHON_TO_INT(long)
+PXR_BOOST_PYTHON_TO_INT(short)
+PXR_BOOST_PYTHON_TO_INT(int)
+PXR_BOOST_PYTHON_TO_INT(long)
 
 # if defined(_MSC_VER) && defined(_WIN64) && PY_VERSION_HEX < 0x03000000
 /* Under 64-bit Windows std::size_t is "unsigned long long". To avoid
@@ -139,17 +140,17 @@ BOOST_PYTHON_TO_INT(long)
    the conversion. A std::size_t is converted to a simple Python int
    if possible; a Python long appears only if the value is too small or
    too large to fit into a simple int. */
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(
-    signed BOOST_PYTHON_LONG_LONG,
-    (   x < static_cast<signed BOOST_PYTHON_LONG_LONG>(
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(
+    signed PXR_BOOST_PYTHON_LONG_LONG,
+    (   x < static_cast<signed PXR_BOOST_PYTHON_LONG_LONG>(
             (std::numeric_limits<long>::min)())
-     || x > static_cast<signed BOOST_PYTHON_LONG_LONG>(
+     || x > static_cast<signed PXR_BOOST_PYTHON_LONG_LONG>(
             (std::numeric_limits<long>::max)()))
     ? ::PyLong_FromLongLong(x)
     : ::PyInt_FromLong(static_cast<long>(x)), &PyInt_Type)
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(
-    unsigned BOOST_PYTHON_LONG_LONG,
-    x > static_cast<unsigned BOOST_PYTHON_LONG_LONG>(
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(
+    unsigned PXR_BOOST_PYTHON_LONG_LONG,
+    x > static_cast<unsigned PXR_BOOST_PYTHON_LONG_LONG>(
       (std::numeric_limits<long>::max)())
     ? ::PyLong_FromUnsignedLongLong(x)
     : ::PyInt_FromLong(static_cast<long>(x)), &PyInt_Type)
@@ -157,37 +158,37 @@ BOOST_PYTHON_TO_PYTHON_BY_VALUE(
 # elif defined(HAVE_LONG_LONG) // using Python's macro instead of Boost's
                                // - we don't seem to get the config right
                                // all the time.
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(signed BOOST_PYTHON_LONG_LONG, ::PyLong_FromLongLong(x), &PyLong_Type)
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(unsigned BOOST_PYTHON_LONG_LONG, ::PyLong_FromUnsignedLongLong(x), &PyLong_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(signed PXR_BOOST_PYTHON_LONG_LONG, ::PyLong_FromLongLong(x), &PyLong_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(unsigned PXR_BOOST_PYTHON_LONG_LONG, ::PyLong_FromUnsignedLongLong(x), &PyLong_Type)
 # endif
     
 # undef BOOST_TO_PYTHON_INT
 
 #if PY_VERSION_HEX >= 0x03000000
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(char, converter::do_return_to_python(x), &PyUnicode_Type)
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(char const*, converter::do_return_to_python(x), &PyUnicode_Type)
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::string, ::PyUnicode_FromStringAndSize(x.data(),implicit_cast<ssize_t>(x.size())), &PyUnicode_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(char, converter::do_return_to_python(x), &PyUnicode_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(char const*, converter::do_return_to_python(x), &PyUnicode_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::string, ::PyUnicode_FromStringAndSize(x.data(),implicit_cast<ssize_t>(x.size())), &PyUnicode_Type)
 #else
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(char, converter::do_return_to_python(x), &PyString_Type)
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(char const*, converter::do_return_to_python(x), &PyString_Type)
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::string, ::PyString_FromStringAndSize(x.data(),implicit_cast<ssize_t>(x.size())), &PyString_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(char, converter::do_return_to_python(x), &PyString_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(char const*, converter::do_return_to_python(x), &PyString_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::string, ::PyString_FromStringAndSize(x.data(),implicit_cast<ssize_t>(x.size())), &PyString_Type)
 #endif
 
 #if defined(Py_USING_UNICODE) && !defined(BOOST_NO_STD_WSTRING)
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::wstring, ::PyUnicode_FromWideChar(x.data(),implicit_cast<ssize_t>(x.size())), &PyUnicode_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::wstring, ::PyUnicode_FromWideChar(x.data(),implicit_cast<ssize_t>(x.size())), &PyUnicode_Type)
 # endif 
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(float, ::PyFloat_FromDouble(x), &PyFloat_Type)
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(double, ::PyFloat_FromDouble(x), &PyFloat_Type)
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(long double, ::PyFloat_FromDouble(x), &PyFloat_Type)
-BOOST_PYTHON_RETURN_TO_PYTHON_BY_VALUE(PyObject*, converter::do_return_to_python(x), 0)
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::complex<float>, ::PyComplex_FromDoubles(x.real(), x.imag()), &PyComplex_Type)
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::complex<double>, ::PyComplex_FromDoubles(x.real(), x.imag()), &PyComplex_Type)
-BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::complex<long double>, ::PyComplex_FromDoubles(x.real(), x.imag()), &PyComplex_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(float, ::PyFloat_FromDouble(x), &PyFloat_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(double, ::PyFloat_FromDouble(x), &PyFloat_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(long double, ::PyFloat_FromDouble(x), &PyFloat_Type)
+PXR_BOOST_PYTHON_RETURN_TO_PYTHON_BY_VALUE(PyObject*, converter::do_return_to_python(x), 0)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::complex<float>, ::PyComplex_FromDoubles(x.real(), x.imag()), &PyComplex_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::complex<double>, ::PyComplex_FromDoubles(x.real(), x.imag()), &PyComplex_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::complex<long double>, ::PyComplex_FromDoubles(x.real(), x.imag()), &PyComplex_Type)
 
-# undef BOOST_PYTHON_RETURN_TO_PYTHON_BY_VALUE
-# undef BOOST_PYTHON_ARG_TO_PYTHON_BY_VALUE
-# undef BOOST_PYTHON_TO_PYTHON_BY_VALUE
-# undef BOOST_PYTHON_TO_INT
+# undef PXR_BOOST_PYTHON_RETURN_TO_PYTHON_BY_VALUE
+# undef PXR_BOOST_PYTHON_ARG_TO_PYTHON_BY_VALUE
+# undef PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE
+# undef PXR_BOOST_PYTHON_TO_INT
     
 namespace converter
 { 
@@ -196,7 +197,7 @@ namespace converter
 
 }
 
-}} // namespace boost::python::converter
+}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_BUILTIN_CONVERTERS_HPP

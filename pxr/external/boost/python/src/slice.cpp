@@ -11,7 +11,7 @@
 //  LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 slice_base::slice_base(PyObject* start, PyObject* stop, PyObject* step)
   : object(detail::new_reference( PySlice_New(start, stop, step)))
@@ -39,4 +39,4 @@ slice_base::step() const
         ((PySliceObject*)this->ptr())->step));
 }
 
-} } } // !namespace boost::python::detail
+} } } // !namespace PXR_BOOST_NAMESPACE::python::detail

@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_TO_PYTHON_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/converter/arg_to_python.hpp>
@@ -39,7 +40,7 @@
 
 # include <boost/mpl/or.hpp>
 
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 template <class T> struct is_object_manager;
 
@@ -123,9 +124,9 @@ namespace detail
       
             , typename mpl::if_<
                 mpl::or_<
-                    boost::python::detail::is_function<T>
+                    PXR_BOOST_NAMESPACE::python::detail::is_function<T>
                   , indirect_traits::is_pointer_to_function<T>
-                  , boost::python::detail::is_member_function_pointer<T>
+                  , PXR_BOOST_NAMESPACE::python::detail::is_member_function_pointer<T>
                 >
                 , function_arg_to_python<T>
 
@@ -134,7 +135,7 @@ namespace detail
                     , object_manager_arg_to_python<T>
 
                     , typename mpl::if_<
-                          boost::python::detail::is_pointer<T>
+                          PXR_BOOST_NAMESPACE::python::detail::is_pointer<T>
                         , pointer_deep_arg_to_python<T>
 
                         , typename mpl::if_<
@@ -263,7 +264,7 @@ inline arg_to_python<T>::arg_to_python(T const& x)
     : base(x)
 {}
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_TO_PYTHON_HPP

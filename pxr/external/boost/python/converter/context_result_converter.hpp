@@ -11,19 +11,20 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_CONTEXT_RESULT_CONVERTER_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/converter/context_result_converter.hpp>
 #else
 
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 // A ResultConverter base class used to indicate that this result
 // converter should be constructed with the original Python argument
 // list.
 struct context_result_converter {};
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_CONTEXT_RESULT_CONVERTER_HPP

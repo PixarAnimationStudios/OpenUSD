@@ -13,6 +13,7 @@
 #  define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_INVOKE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/invoke.hpp>
@@ -47,7 +48,7 @@
 //   - The arg_from_python converters for each of the arguments to be
 //   passed to the function being invoked.
 
-namespace boost { namespace python { namespace detail { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 // This "result converter" is really just used as a dispatch tag to
 // invoke(...), selecting the appropriate implementation
@@ -68,10 +69,10 @@ struct invoke_tag
 };
 
 #  define BOOST_PP_ITERATION_PARAMS_1                                            \
-        (3, (0, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/detail/invoke.hpp"))
+        (3, (0, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/detail/invoke.hpp"))
 #  include BOOST_PP_ITERATE()
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_INVOKE_HPP

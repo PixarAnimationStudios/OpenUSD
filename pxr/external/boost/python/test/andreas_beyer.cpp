@@ -10,6 +10,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 
+using namespace PXR_BOOST_NAMESPACE;
 using namespace boost;
 
 class A : public enable_shared_from_this<A> {
@@ -51,7 +52,7 @@ A::A_ptr get_b_a(shared_ptr<B> b)
     return b->get();
 }
 
-BOOST_PYTHON_MODULE(andreas_beyer_ext) {
+PXR_BOOST_PYTHON_MODULE(andreas_beyer_ext) {
   python::class_<A, noncopyable> ("A")
     .def("self", &A::self)
     .def_readwrite("val", &A::val)

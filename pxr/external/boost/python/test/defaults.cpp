@@ -8,10 +8,10 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-// If BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
+// If PXR_BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
 // boost::python will generate simplified docstrings that break the associated
 // test unless we undefine it before including any headers.
-#undef BOOST_PYTHON_NO_PY_SIGNATURES
+#undef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/module.hpp"
@@ -26,8 +26,8 @@
 # include <iostream> // works around a KCC intermediate code generation bug
 #endif
 
-using namespace boost::python;
-namespace bpl = boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
+namespace bpl = PXR_BOOST_NAMESPACE::python;
 
 char const* const format = "int(%s); char(%s); string(%s); double(%s); ";
 
@@ -60,7 +60,7 @@ bar(int a)
     return format % bpl::make_tuple(a, 'D', "default", 0.0);
 }
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(bar_stubs, bar, 1, 4)
+PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(bar_stubs, bar, 1, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -73,7 +73,7 @@ foo(int a, char b = 'D', std::string c = "default", double d = 0.0)
     return format % bpl::make_tuple(a, b, c, d);
 }
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(foo_stubs, foo, 1, 4)
+PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(foo_stubs, foo, 1, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -151,17 +151,17 @@ struct X {
     object state;
 };
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(X_bar_stubs, bar, 1, 4)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(X_bar_stubs2, bar2, 0, 4)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(X_foo_2_stubs, foo, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(X_foo_3_stubs, foo, 2, 3)
+PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(X_bar_stubs, bar, 1, 4)
+PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(X_bar_stubs2, bar2, 0, 4)
+PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(X_foo_2_stubs, foo, 1, 2)
+PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(X_foo_3_stubs, foo, 2, 3)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BOOST_PYTHON_MODULE(defaults_ext)
+PXR_BOOST_PYTHON_MODULE(defaults_ext)
 {
     // Explicitly enable Python signatures in docstrings in case boost::python
-    // was built with BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
+    // was built with PXR_BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
     // signatures by default.
     docstring_options doc_options;
     doc_options.enable_py_signatures();

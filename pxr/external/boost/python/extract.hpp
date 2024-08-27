@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_EXTRACT_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/extract.hpp>
@@ -38,7 +39,7 @@
 # define BOOST_EXTRACT_WORKAROUND
 #endif
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace api
 {
@@ -265,7 +266,7 @@ namespace converter
   }
 }
   
-}} // namespace boost::python::converter
+}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_EXTRACT_HPP

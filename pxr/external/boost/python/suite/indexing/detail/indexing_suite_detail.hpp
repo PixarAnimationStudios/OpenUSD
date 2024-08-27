@@ -12,6 +12,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_DETAIL_INDEXING_SUITE_DETAIL_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/suite/indexing/detail/indexing_suite_detail.hpp>
@@ -27,12 +28,12 @@
 # include <map>
 #include <iostream>
 
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 #if defined(NDEBUG)
-#define BOOST_PYTHON_INDEXING_CHECK_INVARIANT
+#define PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT
 #else
-#define BOOST_PYTHON_INDEXING_CHECK_INVARIANT check_invariant()
+#define PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT check_invariant()
 #endif
     
     template <class Proxy>
@@ -93,32 +94,32 @@ namespace boost { namespace python { namespace detail {
                     break;
                 }
             }
-            BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
+            PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
         }
 
         void
         add(PyObject* prox)
         {
-            BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
+            PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
             // Add a proxy
             proxies.insert(
                 first_proxy(extract<Proxy&>(prox)().get_index()), prox);
-            BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
+            PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
         }
 
         void
         erase(index_type i, mpl::false_)
         {
-            BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
+            PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
             // Erase the proxy with index i 
             replace(i, i+1, 0);
-            BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
+            PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
         }
 
         void
         erase(index_type i, mpl::true_)
         {
-            BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
+            PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
             // Erase the proxy with index i 
             
             iterator iter = first_proxy(i);
@@ -130,7 +131,7 @@ namespace boost { namespace python { namespace detail {
                 p().detach();
                 proxies.erase(iter);
             }
-            BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
+            PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
         }
 
         void
@@ -138,10 +139,10 @@ namespace boost { namespace python { namespace detail {
         {
             // note: this cannot be called when container is not sliceable
             
-            BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
+            PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
             // Erase all proxies with indexes from..to 
             replace(from, to, 0);
-            BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
+            PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
         }
 
         void
@@ -152,7 +153,7 @@ namespace boost { namespace python { namespace detail {
         {
             // note: this cannot be called when container is not sliceable
 
-            BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
+            PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
             // Erase all proxies with indexes from..to.
             // Adjust the displaced indexes such that the
             // final effect is that we have inserted *len*
@@ -190,13 +191,13 @@ namespace boost { namespace python { namespace detail {
                     
                 ++right;
             }
-            BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
+            PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
         }
         
         PyObject*
         find(index_type i)
         {
-            BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
+            PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
             // Find the proxy with *exact* index i.
             // Return 0 (null) if no proxy with the 
             // given index is found.
@@ -204,17 +205,17 @@ namespace boost { namespace python { namespace detail {
             if (iter != proxies.end()
                 && extract<Proxy&>(*iter)().get_index() == i)
             {
-                BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
+                PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
                 return *iter;
             }
-            BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
+            PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
             return 0;
         }
 
         typename std::vector<PyObject*>::size_type 
         size() const
         {
-            BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
+            PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
             // How many proxies are there so far?
             return proxies.size();
         } 
@@ -760,12 +761,12 @@ namespace boost { namespace python { namespace detail {
 
 #ifndef BOOST_NO_ARGUMENT_DEPENDENT_LOOKUP
     // Don't hide these other get_pointer overloads
-    using boost::python::get_pointer;
+    using PXR_BOOST_NAMESPACE::python::get_pointer;
     using boost::get_pointer;
 }} // namespace python::detail
 #endif
 
-} // namespace boost
+} // namespace PXR_BOOST_NAMESPACE
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_DETAIL_INDEXING_SUITE_DETAIL_HPP

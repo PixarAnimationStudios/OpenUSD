@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTRATIONS_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/converter/registrations.hpp>
@@ -26,7 +27,7 @@
 
 # include <boost/detail/workaround.hpp>
 
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 struct lvalue_from_python_chain
 {
@@ -42,7 +43,7 @@ struct rvalue_from_python_chain
     rvalue_from_python_chain* next;
 };
 
-struct BOOST_PYTHON_DECL registration
+struct PXR_BOOST_PYTHON_DECL registration
 {
  public: // member functions
     explicit registration(type_info target, bool is_shared_ptr = false);
@@ -105,7 +106,7 @@ inline bool operator<(registration const& lhs, registration const& rhs)
     return lhs.target_type < rhs.target_type;
 }
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTRATIONS_HPP

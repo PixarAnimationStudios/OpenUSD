@@ -11,12 +11,13 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_RAW_PYOBJECT_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/raw_pyobject.hpp>
 #else
 
-namespace boost { namespace python { namespace detail { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 //
 // Define some types which we can use to get around the vagaries of
@@ -38,7 +39,7 @@ typedef borrowed_reference_t* borrowed_reference;
 struct new_non_null_reference_t;
 typedef new_non_null_reference_t* new_non_null_reference;
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_RAW_PYOBJECT_HPP

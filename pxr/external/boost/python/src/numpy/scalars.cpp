@@ -9,14 +9,14 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#define BOOST_PYTHON_NUMPY_INTERNAL
+#define PXR_BOOST_PYTHON_NUMPY_INTERNAL
 #include "pxr/external/boost/python/numpy/internal.hpp"
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 namespace converter 
 {
 NUMPY_OBJECT_MANAGER_TRAITS_IMPL(PyVoidArrType_Type, numpy::void_)
-} // namespace boost::python::converter
+} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 namespace numpy 
 {
@@ -38,4 +38,4 @@ void_ void_::copy() const
     (PyObject_CallMethod(this->ptr(), const_cast<char*>("copy"), const_cast<char*>(""))));
 }
 
-}}} // namespace boost::python::numpy
+}}} // namespace PXR_BOOST_NAMESPACE::python::numpy

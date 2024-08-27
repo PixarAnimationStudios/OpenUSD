@@ -26,12 +26,12 @@ struct V
 
 const A* outside(const V& v) {return &v.a;}
 
-BOOST_PYTHON_MODULE(bienstman1_ext)
+PXR_BOOST_PYTHON_MODULE(bienstman1_ext)
 {
-  using namespace boost::python;
+  using namespace PXR_BOOST_NAMESPACE::python;
   using boost::shared_ptr;
-  using boost::python::return_value_policy;
-  using boost::python::reference_existing_object;
+  using PXR_BOOST_NAMESPACE::python::return_value_policy;
+  using PXR_BOOST_NAMESPACE::python::reference_existing_object;
 
   class_<A>("A");
 

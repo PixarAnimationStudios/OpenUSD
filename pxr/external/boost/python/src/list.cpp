@@ -10,7 +10,7 @@
 #include "pxr/external/boost/python/list.hpp"
 #include "pxr/external/boost/python/ssize_t.hpp"
 
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 
 detail::new_non_null_reference list_base::call(object const& arg_)
@@ -167,9 +167,9 @@ static struct register_list_pytype_ptr
     register_list_pytype_ptr()
     {
         const_cast<converter::registration &>(
-            converter::registry::lookup(boost::python::type_id<boost::python::list>())
+            converter::registry::lookup(PXR_BOOST_NAMESPACE::python::type_id<PXR_BOOST_NAMESPACE::python::list>())
             ).m_class_object = &PyList_Type;
     }
 }register_list_pytype_ptr_;
 
-}}} // namespace boost::python
+}}} // namespace PXR_BOOST_NAMESPACE::python

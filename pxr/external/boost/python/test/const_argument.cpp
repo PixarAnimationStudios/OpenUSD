@@ -14,7 +14,7 @@
  * compiler's bug.
  */
 #include "pxr/external/boost/python.hpp"
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 
 #if BOOST_WORKAROUND(BOOST_MSVC, == 1200)
@@ -27,7 +27,7 @@ bool accept_const_arg( const object )
 }
 
 
-BOOST_PYTHON_MODULE( const_argument_ext )
+PXR_BOOST_PYTHON_MODULE( const_argument_ext )
 {
     def( "accept_const_arg", accept_const_arg );
 }

@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_TYPE_ID_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/type_id.hpp>
@@ -27,14 +28,14 @@
 # include <boost/detail/workaround.hpp>
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-#  ifndef BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
+#  ifndef PXR_BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
 #   if defined(__GNUC__)                                                \
     && !defined(__EDG_VERSION__)
-#    define BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
+#    define PXR_BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
 #   endif
 #  endif
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 // for this compiler at least, cross-shared-library type_info
 // comparisons don't work, so use typeid(x).name() instead. It's not
@@ -44,14 +45,14 @@ namespace boost { namespace python {
  || (   defined(__sgi) && defined(__host_mips)) \
  || (defined(__hpux) && defined(__HP_aCC)) \
  || (defined(linux) && defined(__INTEL_COMPILER) && defined(__ICC))
-#  define BOOST_PYTHON_TYPE_ID_NAME
+#  define PXR_BOOST_PYTHON_TYPE_ID_NAME
 # endif 
 
-#ifdef BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
+#ifdef PXR_BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
 // Runtime detection of broken cxxabi::__cxa_demangle versions,
 // to avoid #ifdef clutter.
 bool cxxabi_cxa_demangle_is_broken();
-#define BOOST_PYTHON_HAVE_CXXABI_CXA_DEMANGLE_IS_BROKEN
+#define PXR_BOOST_PYTHON_HAVE_CXXABI_CXA_DEMANGLE_IS_BROKEN
 #endif
 
 // type ids which represent the same information as std::type_info
@@ -65,11 +66,11 @@ struct type_info : private totally_ordered<type_info>
     inline bool operator==(type_info const& rhs) const;
 
     char const* name() const;
-    friend BOOST_PYTHON_DECL std::ostream& operator<<(
+    friend PXR_BOOST_PYTHON_DECL std::ostream& operator<<(
         std::ostream&, type_info const&);
     
  private: // data members
-#  ifdef BOOST_PYTHON_TYPE_ID_NAME
+#  ifdef PXR_BOOST_PYTHON_TYPE_ID_NAME
     typedef char const* base_id_t;
 #  else
     typedef std::type_info const* base_id_t;
@@ -80,7 +81,7 @@ struct type_info : private totally_ordered<type_info>
 
 
 // This macro is obsolete. Port away and remove.
-# define BOOST_PYTHON_EXPLICIT_TT_DEF(T)
+# define PXR_BOOST_PYTHON_EXPLICIT_TT_DEF(T)
 
 template <class T>
 inline type_info type_id()
@@ -103,28 +104,28 @@ inline type_info type_id()
 // down into template instantiations. Explicit specialization stops
 // that from taking hold.
 
-#   define BOOST_PYTHON_SIGNED_INTEGRAL_TYPE_ID(T)              \
+#   define PXR_BOOST_PYTHON_SIGNED_INTEGRAL_TYPE_ID(T)              \
 template <>                                                     \
 inline type_info type_id<T>()                                   \
 {                                                               \
     return type_info(typeid(T));                                \
 }
 
-BOOST_PYTHON_SIGNED_INTEGRAL_TYPE_ID(short)
-BOOST_PYTHON_SIGNED_INTEGRAL_TYPE_ID(int)
-BOOST_PYTHON_SIGNED_INTEGRAL_TYPE_ID(long)
+PXR_BOOST_PYTHON_SIGNED_INTEGRAL_TYPE_ID(short)
+PXR_BOOST_PYTHON_SIGNED_INTEGRAL_TYPE_ID(int)
+PXR_BOOST_PYTHON_SIGNED_INTEGRAL_TYPE_ID(long)
 // using Python's macro instead of Boost's - we don't seem to get the
 // config right all the time.
 #   ifdef HAVE_LONG_LONG
-BOOST_PYTHON_SIGNED_INTEGRAL_TYPE_ID(long long)
+PXR_BOOST_PYTHON_SIGNED_INTEGRAL_TYPE_ID(long long)
 #   endif
-#   undef BOOST_PYTHON_SIGNED_INTEGRAL_TYPE_ID
+#   undef PXR_BOOST_PYTHON_SIGNED_INTEGRAL_TYPE_ID
 #  endif
 
 //
 inline type_info::type_info(std::type_info const& id)
     : m_base_type(
-#  ifdef BOOST_PYTHON_TYPE_ID_NAME
+#  ifdef PXR_BOOST_PYTHON_TYPE_ID_NAME
         id.name()
 #  else
         &id
@@ -135,7 +136,7 @@ inline type_info::type_info(std::type_info const& id)
 
 inline bool type_info::operator<(type_info const& rhs) const
 {
-#  ifdef BOOST_PYTHON_TYPE_ID_NAME
+#  ifdef PXR_BOOST_PYTHON_TYPE_ID_NAME
     return std::strcmp(m_base_type, rhs.m_base_type) < 0;
 #  else
     return m_base_type->before(*rhs.m_base_type);
@@ -144,17 +145,17 @@ inline bool type_info::operator<(type_info const& rhs) const
 
 inline bool type_info::operator==(type_info const& rhs) const
 {
-#  ifdef BOOST_PYTHON_TYPE_ID_NAME
+#  ifdef PXR_BOOST_PYTHON_TYPE_ID_NAME
     return !std::strcmp(m_base_type, rhs.m_base_type);
 #  else
     return *m_base_type == *rhs.m_base_type;
 #  endif 
 }
 
-#  ifdef BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
+#  ifdef PXR_BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
 namespace detail
 {
-  BOOST_PYTHON_DECL char const* gcc_demangle(char const*);
+  PXR_BOOST_PYTHON_DECL char const* gcc_demangle(char const*);
 }
 #  endif
     
@@ -162,12 +163,12 @@ inline char const* type_info::name() const
 {
     char const* raw_name
         = m_base_type
-#  ifndef BOOST_PYTHON_TYPE_ID_NAME
+#  ifndef PXR_BOOST_PYTHON_TYPE_ID_NAME
           ->name()
 #  endif
         ;
     
-#  ifdef BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
+#  ifdef PXR_BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
     return detail::gcc_demangle(raw_name);
 #  else
     return raw_name;
@@ -175,7 +176,7 @@ inline char const* type_info::name() const
 }
 
 
-BOOST_PYTHON_DECL std::ostream& operator<<(std::ostream&, type_info const&);
+PXR_BOOST_PYTHON_DECL std::ostream& operator<<(std::ostream&, type_info const&);
 
 template<>
 inline type_info type_id<void>()
@@ -190,7 +191,7 @@ inline type_info type_id<const volatile void>()
 }
 #  endif
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_TYPE_ID_HPP

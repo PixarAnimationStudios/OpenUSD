@@ -12,6 +12,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_SSIZE_T_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/ssize_t.hpp>
@@ -19,7 +20,7 @@
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 #if PY_VERSION_HEX >= 0x02050000
 
@@ -35,7 +36,7 @@ ssize_t const ssize_t_min = INT_MIN;
 
 #endif
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_SSIZE_T_HPP

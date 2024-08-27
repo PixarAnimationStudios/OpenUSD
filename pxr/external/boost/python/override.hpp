@@ -12,6 +12,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_OVERRIDE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/override.hpp>
@@ -32,7 +33,7 @@
 
 #  include <boost/type.hpp>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 class override;
 
@@ -44,7 +45,7 @@ namespace detail
   class method_result
   {
    private:
-      friend class boost::python::override;
+      friend class PXR_BOOST_NAMESPACE::python::override;
       explicit method_result(PyObject* x)
         : m_obj(x)
       {}
@@ -115,16 +116,16 @@ class override : public object
         return x;
     }
 
-# define BOOST_PYTHON_fast_arg_to_python_get(z, n, _)   \
+# define PXR_BOOST_PYTHON_fast_arg_to_python_get(z, n, _)   \
     , converter::arg_to_python<A##n>(a##n).get()
 
-# define BOOST_PP_ITERATION_PARAMS_1 (3, (1, BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/override.hpp"))
+# define BOOST_PP_ITERATION_PARAMS_1 (3, (1, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/override.hpp"))
 # include BOOST_PP_ITERATE()
 
-# undef BOOST_PYTHON_fast_arg_to_python_get
+# undef PXR_BOOST_PYTHON_fast_arg_to_python_get
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OVERRIDE_HPP
@@ -146,8 +147,8 @@ operator()( BOOST_PP_ENUM_BINARY_PARAMS_Z(1, N, A, const& a) ) const
     detail::method_result x(
         PyObject_CallFunction(
             this->ptr()
-          , const_cast<char*>("(" BOOST_PP_REPEAT_1ST(N, BOOST_PYTHON_FIXED, "O") ")")
-            BOOST_PP_REPEAT_1ST(N, BOOST_PYTHON_fast_arg_to_python_get, nil)
+          , const_cast<char*>("(" BOOST_PP_REPEAT_1ST(N, PXR_BOOST_PYTHON_FIXED, "O") ")")
+            BOOST_PP_REPEAT_1ST(N, PXR_BOOST_PYTHON_fast_arg_to_python_get, nil)
         ));
     return x;
 }

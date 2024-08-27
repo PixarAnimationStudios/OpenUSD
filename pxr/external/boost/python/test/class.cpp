@@ -11,7 +11,7 @@
 #include "pxr/external/boost/python/object.hpp"
 #include "pxr/external/boost/python/class.hpp"
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 struct X
 {
@@ -24,7 +24,7 @@ int x_function(X& x)
 }
 
 
-BOOST_PYTHON_MODULE(class_ext)
+PXR_BOOST_PYTHON_MODULE(class_ext)
 {
     class_<X>("X", init<int>());
     def("x_function", x_function);

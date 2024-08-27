@@ -22,13 +22,13 @@
 #include <boost/assert.hpp>
 #include "test_class.hpp"
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 typedef test_class<> X;
 
 bool extract_bool(object x) { return extract<bool>(x); }
 
-boost::python::list extract_list(object x)
+PXR_BOOST_NAMESPACE::python::list extract_list(object x)
 {
     extract<list> get_list((x));
 
@@ -102,7 +102,7 @@ std::string x_rep(X const& x)
     return "X("  + boost::lexical_cast<std::string>(x.value()) + ")";
 }
 
-BOOST_PYTHON_MODULE(extract_ext)
+PXR_BOOST_PYTHON_MODULE(extract_ext)
 {
     implicitly_convertible<int, X>();
 

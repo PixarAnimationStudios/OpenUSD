@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_SLICES_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/object_slices.hpp>
@@ -24,7 +25,7 @@
 # include "pxr/external/boost/python/handle.hpp"
 # include <utility>
 
-namespace boost { namespace python { namespace api {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace api {
 
 struct const_slice_policies
 {
@@ -152,7 +153,7 @@ inline void slice_policies::del(
     delslice(target, key.first, key.second);
 }
 
-}}} // namespace boost::python::api
+}}} // namespace PXR_BOOST_NAMESPACE::python::api
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_SLICES_HPP

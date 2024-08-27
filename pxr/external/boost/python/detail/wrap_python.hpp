@@ -72,13 +72,13 @@
 //
 #include <limits.h>
 #ifndef ULONG_MAX
-# define BOOST_PYTHON_ULONG_MAX_UNDEFINED
+# define PXR_BOOST_PYTHON_ULONG_MAX_UNDEFINED
 #endif
 #ifndef LONGLONG_MAX
-# define BOOST_PYTHON_LONGLONG_MAX_UNDEFINED
+# define PXR_BOOST_PYTHON_LONGLONG_MAX_UNDEFINED
 #endif
 #ifndef ULONGLONG_MAX
-# define BOOST_PYTHON_ULONGLONG_MAX_UNDEFINED
+# define PXR_BOOST_PYTHON_ULONGLONG_MAX_UNDEFINED
 #endif
 
 //
@@ -160,16 +160,16 @@ typedef int pid_t;
 
 #if defined(__GNUC__)
 # if defined(__has_warning)
-#  define BOOST_PYTHON_GCC_HAS_WREGISTER __has_warning("-Wregister")
+#  define PXR_BOOST_PYTHON_GCC_HAS_WREGISTER __has_warning("-Wregister")
 # else
-#  define BOOST_PYTHON_GCC_HAS_WREGISTER __GNUC__ >= 7
+#  define PXR_BOOST_PYTHON_GCC_HAS_WREGISTER __GNUC__ >= 7
 # endif
 #else
-# define BOOST_PYTHON_GCC_HAS_WREGISTER 0
+# define PXR_BOOST_PYTHON_GCC_HAS_WREGISTER 0
 #endif
 
 // Python.h header uses `register` keyword until Python 3.4
-#if BOOST_PYTHON_GCC_HAS_WREGISTER
+#if PXR_BOOST_PYTHON_GCC_HAS_WREGISTER
 # pragma GCC diagnostic push
 # pragma GCC diagnostic ignored "-Wregister"
 #elif defined(_MSC_VER)
@@ -183,26 +183,26 @@ typedef int pid_t;
 # include <Python.h>
 #endif
 
-#if BOOST_PYTHON_GCC_HAS_WREGISTER
+#if PXR_BOOST_PYTHON_GCC_HAS_WREGISTER
 # pragma GCC diagnostic pop
 #elif defined(_MSC_VER)
 # pragma warning(pop)
 #endif
-#undef BOOST_PYTHON_GCC_HAS_WREGISTER
+#undef PXR_BOOST_PYTHON_GCC_HAS_WREGISTER
 
-#ifdef BOOST_PYTHON_ULONG_MAX_UNDEFINED
+#ifdef PXR_BOOST_PYTHON_ULONG_MAX_UNDEFINED
 # undef ULONG_MAX
-# undef BOOST_PYTHON_ULONG_MAX_UNDEFINED
+# undef PXR_BOOST_PYTHON_ULONG_MAX_UNDEFINED
 #endif
 
-#ifdef BOOST_PYTHON_LONGLONG_MAX_UNDEFINED
+#ifdef PXR_BOOST_PYTHON_LONGLONG_MAX_UNDEFINED
 # undef LONGLONG_MAX
-# undef BOOST_PYTHON_LONGLONG_MAX_UNDEFINED
+# undef PXR_BOOST_PYTHON_LONGLONG_MAX_UNDEFINED
 #endif
 
-#ifdef BOOST_PYTHON_ULONGLONG_MAX_UNDEFINED
+#ifdef PXR_BOOST_PYTHON_ULONGLONG_MAX_UNDEFINED
 # undef ULONGLONG_MAX
-# undef BOOST_PYTHON_ULONGLONG_MAX_UNDEFINED
+# undef PXR_BOOST_PYTHON_ULONGLONG_MAX_UNDEFINED
 #endif
 
 #ifdef PY_MSC_VER_DEFINED_FROM_WRAP_PYTHON_H
@@ -248,9 +248,9 @@ typedef int pid_t;
 
 #if defined(HAVE_LONG_LONG)
 # if defined(PY_LONG_LONG)
-#  define BOOST_PYTHON_LONG_LONG PY_LONG_LONG
+#  define PXR_BOOST_PYTHON_LONG_LONG PY_LONG_LONG
 # elif defined(LONG_LONG)
-#  define BOOST_PYTHON_LONG_LONG LONG_LONG
+#  define PXR_BOOST_PYTHON_LONG_LONG LONG_LONG
 # else
 #  error "HAVE_LONG_LONG defined but not PY_LONG_LONG or LONG_LONG"
 # endif

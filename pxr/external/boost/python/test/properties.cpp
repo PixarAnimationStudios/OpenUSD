@@ -8,7 +8,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 #include "pxr/external/boost/python.hpp"
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 namespace test {
 
@@ -62,7 +62,7 @@ int get_X_instance_count()
 
 
 
-BOOST_PYTHON_MODULE(properties_ext)
+PXR_BOOST_PYTHON_MODULE(properties_ext)
 {
     typedef return_value_policy<return_by_value> return_by_value_t;
     typedef return_internal_reference<> return_by_internal_reference_t;

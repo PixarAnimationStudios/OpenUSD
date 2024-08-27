@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/object/function.hpp>
@@ -23,10 +24,10 @@
 # include "pxr/external/boost/python/object_core.hpp"
 # include "pxr/external/boost/python/object/py_function.hpp"
 
-namespace boost { namespace python { namespace objects { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
 
-struct BOOST_PYTHON_DECL function : PyObject
+struct PXR_BOOST_PYTHON_DECL function : PyObject
 {
     function(
         py_function const&
@@ -88,7 +89,7 @@ inline object const& function::name() const
     return this->m_name;
 }
   
-}}} // namespace boost::python::objects
+}}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HPP

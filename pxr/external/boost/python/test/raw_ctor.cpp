@@ -14,7 +14,7 @@
 #include "pxr/external/boost/python/tuple.hpp"
 #include "pxr/external/boost/python/module.hpp"
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 class Foo
 {
@@ -32,7 +32,7 @@ object init_foo(tuple args, dict kw)
     return args[0].attr("__init__")(rest, kw);
 }
 
-BOOST_PYTHON_MODULE(raw_ctor_ext)
+PXR_BOOST_PYTHON_MODULE(raw_ctor_ext)
 {
     // using no_init postpones defining __init__ function until after
     // raw_function for proper overload resolution order, since later

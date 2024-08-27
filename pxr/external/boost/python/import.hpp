@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_IMPORT_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/import.hpp>
@@ -19,13 +20,13 @@
 # include "pxr/external/boost/python/object.hpp"
 # include "pxr/external/boost/python/str.hpp"
 
-namespace boost 
+namespace PXR_BOOST_NAMESPACE 
 { 
 namespace python 
 {
 
 // Import the named module and return a reference to it.
-object BOOST_PYTHON_DECL import(str name);
+object PXR_BOOST_PYTHON_DECL import(str name);
 
 }
 }

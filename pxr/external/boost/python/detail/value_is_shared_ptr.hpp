@@ -13,6 +13,7 @@
 #define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VALUE_IS_SHARED_PTR_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/value_is_shared_ptr.hpp>
@@ -21,7 +22,7 @@
 #include "pxr/external/boost/python/detail/value_is_xxx.hpp"
 #include "pxr/external/boost/python/detail/is_shared_ptr.hpp"
 
-namespace boost { namespace python { namespace detail { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 template <class X_>
 struct value_is_shared_ptr
@@ -34,7 +35,7 @@ struct value_is_shared_ptr
   typedef mpl::bool_<value> type;
 };
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // VALUE_IS_SHARED_PTR_DWA2003224_HPP

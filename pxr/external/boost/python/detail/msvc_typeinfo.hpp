@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MSVC_TYPEINFO_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/msvc_typeinfo.hpp>
@@ -31,7 +32,7 @@
 
 # if defined(BOOST_INTEL_CXX_VERSION) && BOOST_INTEL_CXX_VERSION <= 700
 
-namespace boost { namespace python { namespace detail { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 typedef std::type_info const& typeinfo;
 
@@ -89,7 +90,7 @@ inline typeinfo assert_array_typeid_compiles()
 }
 #  endif
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 # endif // BOOST_INTEL_CXX_VERSION
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON

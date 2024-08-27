@@ -51,10 +51,10 @@ struct Label : Widget
    std::string label_;
 };
 
-void return_arg_f(boost::python::object) {}
+void return_arg_f(PXR_BOOST_NAMESPACE::python::object) {}
 
-using namespace boost::python;
-BOOST_PYTHON_MODULE(return_arg_ext)
+using namespace PXR_BOOST_NAMESPACE::python;
+PXR_BOOST_PYTHON_MODULE(return_arg_ext)
 {
    class_<Widget>("Widget")
       .def("sensitive", &Widget::get_sensitive)

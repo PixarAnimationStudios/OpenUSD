@@ -9,7 +9,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #include "pxr/external/boost/python/tuple.hpp"
 
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 detail::new_reference tuple_base::call(object const& arg_)
 {
@@ -31,10 +31,10 @@ static struct register_tuple_pytype_ptr
     register_tuple_pytype_ptr()
     {
         const_cast<converter::registration &>(
-            converter::registry::lookup(boost::python::type_id<boost::python::tuple>())
+            converter::registry::lookup(PXR_BOOST_NAMESPACE::python::type_id<PXR_BOOST_NAMESPACE::python::tuple>())
             ).m_class_object = &PyTuple_Type;
     }
 }register_tuple_pytype_ptr_;
 
 
-}}}  // namespace boost::python
+}}}  // namespace PXR_BOOST_NAMESPACE::python

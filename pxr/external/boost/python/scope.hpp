@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_SCOPE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/scope.hpp>
@@ -20,13 +21,13 @@
 # include "pxr/external/boost/python/object.hpp"
 # include "pxr/external/boost/python/refcount.hpp"
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 namespace detail
 {
   // Making this a namespace-scope variable to avoid Cygwin issues.
   // Use a PyObject* to avoid problems with static destruction after Py_Finalize
-  extern BOOST_PYTHON_DECL PyObject* current_scope;
+  extern PXR_BOOST_PYTHON_DECL PyObject* current_scope;
 }
 
 class scope
@@ -83,7 +84,7 @@ inline scope::scope(scope const& new_scope)
     detail::current_scope = python::incref(new_scope.ptr());
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_SCOPE_HPP

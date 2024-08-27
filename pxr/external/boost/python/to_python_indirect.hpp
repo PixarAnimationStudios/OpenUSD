@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_INDIRECT_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/to_python_indirect.hpp>
@@ -23,7 +24,7 @@
 
 # include "pxr/external/boost/python/detail/none.hpp"
 
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 # include "pxr/external/boost/python/converter/pytype_function.hpp"
 #endif
 
@@ -37,7 +38,7 @@
 #  include <memory>
 # endif
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 template <class T, class MakeHolder>
 struct to_python_indirect
@@ -48,7 +49,7 @@ struct to_python_indirect
     {
         return this->execute(const_cast<U&>(ref), detail::is_pointer<U>());
     }
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
     inline PyTypeObject const*
     get_pytype()const
     {
@@ -109,7 +110,7 @@ namespace detail
   };
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_INDIRECT_HPP

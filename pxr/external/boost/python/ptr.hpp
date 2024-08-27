@@ -2,6 +2,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_PTR_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/ptr.hpp>
@@ -25,7 +26,7 @@
 # include <boost/config.hpp>
 # include <boost/mpl/bool.hpp>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 template<class Ptr> class pointer_wrapper
 { 
@@ -71,7 +72,7 @@ class unwrap_pointer<pointer_wrapper<T> >
     typedef T type;
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

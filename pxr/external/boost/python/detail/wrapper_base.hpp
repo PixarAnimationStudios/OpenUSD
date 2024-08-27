@@ -10,6 +10,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_WRAPPER_BASE_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/wrapper_base.hpp>
@@ -18,7 +19,7 @@
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 class override;
 
@@ -48,7 +49,7 @@ namespace detail
     }
   }
   
-  class BOOST_PYTHON_DECL wrapper_base
+  class PXR_BOOST_PYTHON_DECL wrapper_base
   {
       friend void initialize_wrapper(PyObject* self, wrapper_base* w);
       friend PyObject* wrapper_base_::get_owner(wrapper_base const volatile& w);
@@ -95,7 +96,7 @@ namespace detail
   
 } // namespace detail
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_WRAPPER_BASE_HPP

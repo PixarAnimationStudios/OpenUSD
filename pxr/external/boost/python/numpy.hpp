@@ -13,6 +13,7 @@
 #define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/numpy.hpp>
@@ -26,13 +27,13 @@
 #include "pxr/external/boost/python/numpy/invoke_matching.hpp"
 #include "pxr/external/boost/python/numpy/config.hpp"
 
-namespace boost { namespace python { namespace numpy {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
 
 /**
  *  @brief Initialize the Numpy C-API
  *
  *  This must be called before using anything in boost.numpy;
- *  It should probably be the first line inside BOOST_PYTHON_MODULE.
+ *  It should probably be the first line inside PXR_BOOST_PYTHON_MODULE.
  *
  *  @internal This just calls the Numpy C-API functions "import_array()"
  *            and "import_ufunc()", and then calls
@@ -40,7 +41,7 @@ namespace boost { namespace python { namespace numpy {
  */
 BOOST_NUMPY_DECL void initialize(bool register_scalar_converters=true);
 
-}}} // namespace boost::python::numpy
+}}} // namespace PXR_BOOST_NAMESPACE::python::numpy
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

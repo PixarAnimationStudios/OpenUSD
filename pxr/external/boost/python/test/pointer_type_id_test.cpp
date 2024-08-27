@@ -13,10 +13,10 @@
 
 int main()
 {
-    using namespace boost::python::converter;
+    using namespace PXR_BOOST_NAMESPACE::python::converter;
     
-    boost::python::type_info x
-        = boost::python::type_id<int>();
+    PXR_BOOST_NAMESPACE::python::type_info x
+        = PXR_BOOST_NAMESPACE::python::type_id<int>();
     
 
     BOOST_TEST(pointer_type_id<int*>() == x);

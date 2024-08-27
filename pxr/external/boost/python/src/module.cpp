@@ -14,7 +14,7 @@
 #include "pxr/external/boost/python/scope.hpp"
 #include "pxr/external/boost/python/object/add_to_namespace.hpp"
 
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 namespace
 {
@@ -33,7 +33,7 @@ namespace
     }
 }
 
-BOOST_PYTHON_DECL void scope_setattr_doc(char const* name, object const& x, char const* doc)
+PXR_BOOST_PYTHON_DECL void scope_setattr_doc(char const* name, object const& x, char const* doc)
 {
     // Use function::add_to_namespace to achieve overloading if
     // appropriate.
@@ -43,7 +43,7 @@ BOOST_PYTHON_DECL void scope_setattr_doc(char const* name, object const& x, char
 
 #if PY_VERSION_HEX >= 0x03000000
 
-BOOST_PYTHON_DECL PyObject* init_module(PyModuleDef& moduledef, void(*init_function)())
+PXR_BOOST_PYTHON_DECL PyObject* init_module(PyModuleDef& moduledef, void(*init_function)())
 {
     return init_module_in_scope(
         PyModule_Create(&moduledef),
@@ -57,7 +57,7 @@ namespace
     PyMethodDef initial_methods[] = { { 0, 0, 0, 0 } };
 }
 
-BOOST_PYTHON_DECL PyObject* init_module(char const* name, void(*init_function)())
+PXR_BOOST_PYTHON_DECL PyObject* init_module(char const* name, void(*init_function)())
 {
     return init_module_in_scope(
         Py_InitModule(const_cast<char*>(name), initial_methods),
@@ -66,13 +66,13 @@ BOOST_PYTHON_DECL PyObject* init_module(char const* name, void(*init_function)()
 
 #endif
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace detail
 {
-  BOOST_PYTHON_DECL PyObject* current_scope = 0;
+  PXR_BOOST_PYTHON_DECL PyObject* current_scope = 0;
 }
 
 }}

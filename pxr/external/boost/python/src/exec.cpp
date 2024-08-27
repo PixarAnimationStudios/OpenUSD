@@ -14,17 +14,17 @@
 #include "pxr/external/boost/python/extract.hpp"
 #include "pxr/external/boost/python/handle.hpp"
 
-namespace boost 
+namespace PXR_BOOST_NAMESPACE 
 { 
 namespace python 
 {
 
-object BOOST_PYTHON_DECL eval(str string, object global, object local)
+object PXR_BOOST_PYTHON_DECL eval(str string, object global, object local)
 {
     return eval(python::extract<char const *>(string), global, local);
 }
 
-object BOOST_PYTHON_DECL eval(char const *string, object global, object local)
+object PXR_BOOST_PYTHON_DECL eval(char const *string, object global, object local)
 {
   // Set suitable default values for global and local dicts.
   if (global.is_none())
@@ -42,12 +42,12 @@ object BOOST_PYTHON_DECL eval(char const *string, object global, object local)
   return object(detail::new_reference(result));
 }
 
-object BOOST_PYTHON_DECL exec(str string, object global, object local)
+object PXR_BOOST_PYTHON_DECL exec(str string, object global, object local)
 {
     return exec(python::extract<char const *>(string), global, local);
 }
 
-object BOOST_PYTHON_DECL exec(char const *string, object global, object local)
+object PXR_BOOST_PYTHON_DECL exec(char const *string, object global, object local)
 {
   // Set suitable default values for global and local dicts.
   if (global.is_none())
@@ -65,12 +65,12 @@ object BOOST_PYTHON_DECL exec(char const *string, object global, object local)
   return object(detail::new_reference(result));
 }
 
-object BOOST_PYTHON_DECL exec_statement(str string, object global, object local)
+object PXR_BOOST_PYTHON_DECL exec_statement(str string, object global, object local)
 {
     return exec_statement(python::extract<char const *>(string), global, local);
 }
 
-object BOOST_PYTHON_DECL exec_statement(char const *string, object global, object local)
+object PXR_BOOST_PYTHON_DECL exec_statement(char const *string, object global, object local)
 {
   // Set suitable default values for global and local dicts.
   if (global.is_none())
@@ -91,12 +91,12 @@ object BOOST_PYTHON_DECL exec_statement(char const *string, object global, objec
 // Execute python source code from file filename.
 // global and local are the global and local scopes respectively,
 // used during execution.
-object BOOST_PYTHON_DECL exec_file(str filename, object global, object local)
+object PXR_BOOST_PYTHON_DECL exec_file(str filename, object global, object local)
 {
     return exec_file(python::extract<char const *>(filename), global, local);
 }
 
-object BOOST_PYTHON_DECL exec_file(char const *filename, object global, object local)
+object PXR_BOOST_PYTHON_DECL exec_file(char const *filename, object global, object local)
 {
   // Set suitable default values for global and local dicts.
   if (global.is_none())
@@ -139,5 +139,5 @@ object BOOST_PYTHON_DECL exec_file(char const *filename, object global, object l
   return object(detail::new_reference(result));
 }
 
-}  // namespace boost::python
-}  // namespace boost
+}  // namespace PXR_BOOST_NAMESPACE::python
+}  // namespace PXR_BOOST_NAMESPACE

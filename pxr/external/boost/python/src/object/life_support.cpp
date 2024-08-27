@@ -11,7 +11,7 @@
 #include "pxr/external/boost/python/detail/none.hpp"
 #include "pxr/external/boost/python/refcount.hpp"
 
-namespace boost { namespace python { namespace objects { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
 struct life_support
 {
@@ -36,7 +36,7 @@ extern "C"
         ((life_support*)self)->patient = 0;
         // Let the weak reference die. This probably kills us.
         Py_XDECREF(PyTuple_GET_ITEM(arg, 0));
-        return ::boost::python::detail::none();
+        return ::PXR_BOOST_NAMESPACE::python::detail::none();
     }
 }
 
@@ -123,4 +123,4 @@ PyObject* make_nurse_and_patient(PyObject* nurse, PyObject* patient)
     return weakref;
 }
 
-}}} // namespace boost::python::objects
+}}} // namespace PXR_BOOST_NAMESPACE::python::objects

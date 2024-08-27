@@ -31,21 +31,21 @@
 #include <algorithm>
 #include <cstring>
 
-#if BOOST_PYTHON_DEBUG_ERROR_MESSAGES
+#if PXR_BOOST_PYTHON_DEBUG_ERROR_MESSAGES
 # include <cstdio>
 #endif
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
   volatile bool docstring_options::show_user_defined_ = true;
   volatile bool docstring_options::show_cpp_signatures_ = true;
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
   volatile bool docstring_options::show_py_signatures_ = true;
 #else
   volatile bool docstring_options::show_py_signatures_ = false;
 #endif
 }}
 
-namespace boost { namespace python { namespace objects { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
 py_function_impl_base::~py_function_impl_base()
 {
@@ -312,7 +312,7 @@ void function::argument_error(PyObject* args, PyObject* /*keywords*/) const
     message += ")\ndid not match C++ signature:\n    ";
     message += str("\n    ").join(signatures());
 
-#if BOOST_PYTHON_DEBUG_ERROR_MESSAGES
+#if PXR_BOOST_PYTHON_DEBUG_ERROR_MESSAGES
     std::printf("\n--------\n%s\n--------\n", extract<const char*>(message)());
 #endif 
     PyErr_SetObject(exception.get(), message.ptr());
@@ -557,13 +557,13 @@ void function::add_to_namespace(
     }
 }
 
-BOOST_PYTHON_DECL void add_to_namespace(
+PXR_BOOST_PYTHON_DECL void add_to_namespace(
     object const& name_space, char const* name, object const& attribute)
 {
     function::add_to_namespace(name_space, name, attribute, 0);
 }
 
-BOOST_PYTHON_DECL void add_to_namespace(
+PXR_BOOST_PYTHON_DECL void add_to_namespace(
     object const& name_space, char const* name, object const& attribute, char const* doc)
 {
     function::add_to_namespace(name_space, name, attribute, doc);
@@ -775,7 +775,7 @@ handle<> function_handle_impl(py_function const& f)
 
 namespace detail
 {
-  object BOOST_PYTHON_DECL make_raw_function(objects::py_function f)
+  object PXR_BOOST_PYTHON_DECL make_raw_function(objects::py_function f)
   {
       static keyword k;
     
@@ -783,7 +783,7 @@ namespace detail
           f
           , keyword_range(&k,&k));
   }
-  void BOOST_PYTHON_DECL pure_virtual_called()
+  void PXR_BOOST_PYTHON_DECL pure_virtual_called()
   {
       PyErr_SetString(
           PyExc_RuntimeError, const_cast<char*>("Pure virtual function called"));
@@ -791,4 +791,4 @@ namespace detail
   }
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python

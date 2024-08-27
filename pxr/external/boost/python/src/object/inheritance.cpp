@@ -35,16 +35,21 @@
 //      paths. The vertex distance to any goal node is calculated on
 //      demand and outdated by the addition of edges to the graph.
 
-namespace boost {
+namespace PXR_BOOST_NAMESPACE {
 namespace
 {
   enum edge_cast_t { edge_cast = 8010 };
   template <class T> inline void unused_variable(const T&) { }
 }
+}
 
+namespace boost {
+using namespace PXR_BOOST_NAMESPACE;
 // Install properties
 BOOST_INSTALL_PROPERTY(edge, cast);
+}
 
+namespace PXR_BOOST_NAMESPACE {
 namespace
 {
   typedef void*(*cast_function)(void*);
@@ -156,7 +161,7 @@ namespace
   //
   // Our index of class types
   //
-  using boost::python::objects::dynamic_id_function;
+  using PXR_BOOST_NAMESPACE::python::objects::dynamic_id_function;
   typedef tuples::tuple<
       class_id               // static type
       , vertex_t             // corresponding vertex 
@@ -406,7 +411,7 @@ namespace
     
       // Look up the dynamic_id function and call it to get the dynamic
       // info
-      boost::python::objects::dynamic_id_t dynamic_id = polymorphic
+      PXR_BOOST_NAMESPACE::python::objects::dynamic_id_t dynamic_id = polymorphic
           ? tuples::get<kdynamic_id>(*src_p)(p)
           : std::make_pair(p, src_t);
     
@@ -444,17 +449,17 @@ namespace
 
 namespace python { namespace objects {
 
-BOOST_PYTHON_DECL void* find_dynamic_type(void* p, class_id src_t, class_id dst_t)
+PXR_BOOST_PYTHON_DECL void* find_dynamic_type(void* p, class_id src_t, class_id dst_t)
 {
     return convert_type(p, src_t, dst_t, true);
 }
 
-BOOST_PYTHON_DECL void* find_static_type(void* p, class_id src_t, class_id dst_t)
+PXR_BOOST_PYTHON_DECL void* find_static_type(void* p, class_id src_t, class_id dst_t)
 {
     return convert_type(p, src_t, dst_t, false);
 }
 
-BOOST_PYTHON_DECL void add_cast(
+PXR_BOOST_PYTHON_DECL void add_cast(
     class_id src_t, class_id dst_t, cast_function cast, bool is_downcast)
 {
     // adding an edge will invalidate any record of unreachability in
@@ -492,10 +497,10 @@ BOOST_PYTHON_DECL void add_cast(
     }
 }
 
-BOOST_PYTHON_DECL void register_dynamic_id_aux(
+PXR_BOOST_PYTHON_DECL void register_dynamic_id_aux(
     class_id static_id, dynamic_id_function get_dynamic_id)
 {
     tuples::get<kdynamic_id>(*demand_type(static_id)) = get_dynamic_id;
 }
 
-}}} // namespace boost::python::objects
+}}} // namespace PXR_BOOST_NAMESPACE::python::objects

@@ -20,7 +20,7 @@
 #define BOOST_ENABLE_ASSERT_HANDLER
 #include <boost/assert.hpp>
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 BOOST_STATIC_ASSERT(converter::is_object_manager<handle<> >::value);
 
 int apply_int_int(PyObject* f, int x)
@@ -119,7 +119,7 @@ object apply_object_object(PyObject* f, object x)
 
 int X::counter;
 
-BOOST_PYTHON_MODULE(callbacks_ext)
+PXR_BOOST_PYTHON_MODULE(callbacks_ext)
 {
     def("apply_object_object", apply_object_object);
     def("apply_to_own_type", apply_to_own_type);

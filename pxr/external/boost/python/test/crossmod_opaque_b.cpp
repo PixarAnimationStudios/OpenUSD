@@ -18,11 +18,11 @@ opaque the_op   = ((opaque) 0x47110815);
 
 opaque get() { return the_op; }
 
-BOOST_PYTHON_OPAQUE_SPECIALIZED_TYPE_ID(opaque_)
+PXR_BOOST_PYTHON_OPAQUE_SPECIALIZED_TYPE_ID(opaque_)
 
-namespace bpl = boost::python;
+namespace bpl = PXR_BOOST_NAMESPACE::python;
 
-BOOST_PYTHON_MODULE(crossmod_opaque_b)
+PXR_BOOST_PYTHON_MODULE(crossmod_opaque_b)
 {
     bpl::def (
         "get",

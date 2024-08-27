@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/object.hpp>
@@ -24,7 +25,7 @@
 # include "pxr/external/boost/python/object_operators.hpp"
 # include "pxr/external/boost/python/converter/arg_to_python.hpp"
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
     inline ssize_t len(object const& obj)
     {
@@ -33,7 +34,7 @@ namespace boost { namespace python {
         return result;
     }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_HPP

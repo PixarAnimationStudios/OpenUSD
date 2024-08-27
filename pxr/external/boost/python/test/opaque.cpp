@@ -56,12 +56,12 @@ void failuse2 (opaque2 op)
         throw std::runtime_error (std::string ("success"));
 }
 
-BOOST_PYTHON_OPAQUE_SPECIALIZED_TYPE_ID(opaque_)
-BOOST_PYTHON_OPAQUE_SPECIALIZED_TYPE_ID(opaque2_)
+PXR_BOOST_PYTHON_OPAQUE_SPECIALIZED_TYPE_ID(opaque_)
+PXR_BOOST_PYTHON_OPAQUE_SPECIALIZED_TYPE_ID(opaque2_)
 
-namespace bpl = boost::python;
+namespace bpl = PXR_BOOST_NAMESPACE::python;
 
-BOOST_PYTHON_MODULE(opaque_ext)
+PXR_BOOST_PYTHON_MODULE(opaque_ext)
 {
     bpl::def (
         "get", &::get, bpl::return_value_policy<bpl::return_opaque_pointer>());

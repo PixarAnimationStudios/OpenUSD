@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ITERATOR_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/object/iterator.hpp>
@@ -38,7 +39,7 @@
 
 # include <iterator>
 
-namespace boost { namespace python { namespace objects {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
 
 // CallPolicies for the next() method of iterators. We don't want
 // users to have to explicitly specify that the references returned by
@@ -210,8 +211,8 @@ inline object make_iterator_function(
 )
 {
     typedef typename Accessor1::result_type iterator;
-    typedef typename boost::python::detail::add_const<iterator>::type iterator_const;
-    typedef typename boost::python::detail::add_lvalue_reference<iterator_const>::type iterator_cref;
+    typedef typename PXR_BOOST_NAMESPACE::python::detail::add_const<iterator>::type iterator_const;
+    typedef typename PXR_BOOST_NAMESPACE::python::detail::add_lvalue_reference<iterator_const>::type iterator_cref;
       
     return detail::make_iterator_function(
         get_start
@@ -233,7 +234,7 @@ inline iterator_range<NextPolicies,Iterator>::iterator_range(
 {
 }
 
-}}} // namespace boost::python::objects
+}}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ITERATOR_HPP

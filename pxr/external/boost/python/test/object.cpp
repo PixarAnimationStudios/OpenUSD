@@ -12,7 +12,7 @@
 #include "pxr/external/boost/python/object.hpp"
 #include "pxr/external/boost/python/class.hpp"
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 class NotCopyable
 {
@@ -346,7 +346,7 @@ bool check_inplace(object l, object o)
     return true;
 }
 
-BOOST_PYTHON_MODULE(object_ext)
+PXR_BOOST_PYTHON_MODULE(object_ext)
 {
     class_<NotCopyable, boost::noncopyable>("NotCopyable", no_init);
 

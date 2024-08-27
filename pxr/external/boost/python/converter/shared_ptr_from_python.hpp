@@ -13,6 +13,7 @@
 #define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_SHARED_PTR_FROM_PYTHON_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/converter/shared_ptr_from_python.hpp>
@@ -23,13 +24,13 @@
 #include "pxr/external/boost/python/converter/from_python.hpp"
 #include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
 #include "pxr/external/boost/python/converter/registered.hpp"
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 # include "pxr/external/boost/python/converter/pytype_function.hpp"
 #endif
 #include <boost/shared_ptr.hpp>
 #include <memory>
 
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 template <class T, template <typename> class SP>
 struct shared_ptr_from_python
@@ -37,7 +38,7 @@ struct shared_ptr_from_python
   shared_ptr_from_python()
   {
     converter::registry::insert(&convertible, &construct, type_id<SP<T> >()
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 				, &converter::expected_from_python_type_direct<T>::get_pytype
 #endif
 				);
@@ -75,7 +76,7 @@ struct shared_ptr_from_python
   }
 };
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

@@ -14,7 +14,7 @@
 #include "pxr/external/boost/python/handle.hpp"
 #include "pxr/external/boost/python/refcount.hpp"
 
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 namespace detail
 {
@@ -30,4 +30,4 @@ namespace detail
   }
 }
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter

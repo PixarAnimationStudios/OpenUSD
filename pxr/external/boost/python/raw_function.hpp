@@ -11,6 +11,7 @@
 # define PXR_EXTERNAL_BOOST_PYTHON_RAW_FUNCTION_HPP
 
 #include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/raw_function.hpp>
@@ -26,7 +27,7 @@
 # include <boost/limits.hpp>
 # include <cstddef>
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 namespace detail
 {
@@ -51,7 +52,7 @@ namespace detail
       F f;
   };
 
-  object BOOST_PYTHON_DECL make_raw_function(objects::py_function);
+  object PXR_BOOST_PYTHON_DECL make_raw_function(objects::py_function);
 }
 
 template <class F>
@@ -67,7 +68,7 @@ object raw_function(F f, std::size_t min_args = 0)
     );
 }
     
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_RAW_FUNCTION_HPP

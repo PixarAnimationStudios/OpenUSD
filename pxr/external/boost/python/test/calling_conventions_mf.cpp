@@ -22,14 +22,14 @@
 // this section is the main body of the test extension module
 
 #if defined(_WIN32) && !defined(_WIN64)
-# define BOOST_PYTHON_ENABLE_CDECL
-# define BOOST_PYTHON_ENABLE_STDCALL
-# define BOOST_PYTHON_ENABLE_FASTCALL
+# define PXR_BOOST_PYTHON_ENABLE_CDECL
+# define PXR_BOOST_PYTHON_ENABLE_STDCALL
+# define PXR_BOOST_PYTHON_ENABLE_FASTCALL
 #endif
 #include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include "pxr/external/boost/python.hpp"
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 // first define test functions for every calling convention
 
@@ -51,7 +51,7 @@ using namespace boost::python;
 
 // then create a module wrapping the defined functions for every calling convention
 
-BOOST_PYTHON_MODULE( calling_conventions_mf_ext )
+PXR_BOOST_PYTHON_MODULE( calling_conventions_mf_ext )
 {
 
 #define TEST_WRAP_FUNCTIONS
