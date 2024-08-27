@@ -4,7 +4,6 @@
 #include "pxr/usd/usd/validationRegistry.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/tf/pathUtils.h"
-#include "pxr/usd/ar/packageUtils.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -60,9 +59,6 @@ TestPackageEncapsulationValidator()
 
     const std::string absoluteUsdzPath = TfAbsPath(rootLayer->GetIdentifier());
     const std::string realUsdzPath = rootLayer->GetRealPath();
-    const std::string& packagePath = ArIsPackageRelativePath(rootLayer->GetIdentifier()) ?
-                                     ArSplitPackageRelativePathOuter(realUsdzPath).first :
-                                     realUsdzPath;
     const std::string usdzRootDirectory = TfGetPathName(absoluteUsdzPath);
     const std::string errorLayer = TfStringCatPaths(
             usdzRootDirectory, "excludedDirectory/layer.usda");
@@ -72,10 +68,10 @@ TestPackageEncapsulationValidator()
     std::vector<std::string> expectedErrorMessages = {
             TfStringPrintf(("Found referenced layer '%s' that does not "
                             "belong to the package '%s'."),
-                           errorLayer.c_str(), packagePath.c_str()),
+                           errorLayer.c_str(), realUsdzPath.c_str()),
             TfStringPrintf(("Found asset reference '%s' that does not belong"
                             " to the package '%s'."),
-                           errorAsset.c_str(), packagePath.c_str())
+                           errorAsset.c_str(), realUsdzPath.c_str())
     };
 
     for (size_t i = 0; i < errors.size(); ++i)
