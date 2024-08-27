@@ -106,13 +106,6 @@ _GetNumOgawaStreams()
                     static_cast<int>(WorkGetConcurrencyLimit()));
 }
 
-#if PXR_HDF5_SUPPORT_ENABLED && !H5_HAVE_THREADSAFE
-// A global mutex until our HDF5 library is thread safe.  It has to be
-// recursive to handle the case where we write an Alembic file using an
-// UsdAbc_AlembicData as the source.
-static TfStaticData<std::recursive_mutex> _hdf5;
-#endif // PXR_HDF5_SUPPORT_ENABLED
-
 // The SdfAbstractData time samples type.
 // XXX: SdfAbstractData should typedef this.
 typedef std::set<double> UsdAbc_TimeSamples;
@@ -801,26 +794,7 @@ private:
                    const ISampleSelector& selector,
                    const UsdAbc_AlembicDataAny& value) const;
 
-    // Custom auto-lock that safely ignores a NULL pointer.
-    class _Lock {
-    public:
-        _Lock(std::recursive_mutex* mutex) : _mutex(mutex) {
-            if (_mutex) _mutex->lock();
-        }
-        _Lock (const _Lock&) = delete;
-        _Lock& operator= (const _Lock&) = delete;
-
-        ~_Lock() { if (_mutex) _mutex->unlock(); }
-
-    private:
-        std::recursive_mutex* _mutex;
-    };
-
 private:
-    // The mutex to lock when reading the archive.  This is NULL except
-    // for HDF5.
-    mutable std::recursive_mutex* _mutex;
-
     // Conversion options.
     double _timeScale;              // Scale Alembic time by this factor.
     double _timeOffset;             // Offset Alembic->Usd time (after scale).
@@ -864,7 +838,6 @@ _ReadPrimChildren(
     _ReaderContext::Prim& prim);
 
 _ReaderContext::_ReaderContext() :
-    _mutex(NULL),
     _timeScale(24.0),               // Usd is frames, Alembic is seconds.
     _timeOffset(0.0),               // Time 0.0 to frame 0.
     _schema(NULL)
@@ -889,12 +862,6 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog,
     }
     layeredABC.emplace_back(filePath);
 
-#if PXR_HDF5_SUPPORT_ENABLED && !H5_HAVE_THREADSAFE
-    // HDF5 may not be thread-safe.
-    using lock_guard = std::lock_guard<std::recursive_mutex>;
-    std::unique_ptr<std::lock_guard<std::recursive_mutex>> hfd5Lock(new lock_guard(*_hdf5));
-#endif
-
     using IFactory = ::Alembic::AbcCoreFactory::IFactory;
     IFactory factory;
     IFactory::CoreType abcType;
@@ -909,19 +876,8 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog,
 
     IArchive archive = factory.getArchive(layeredABC, abcType);
 
-#if PXR_HDF5_SUPPORT_ENABLED && !H5_HAVE_THREADSAFE
-    if (abcType == IFactory::kHDF5 || abcType == IFactory::kLayer) {
-        // An HDF5, or layered which may have an HDF5 layer
-        _mutex = &*_hdf5;
-    } else {
-        // Don't need the HDF5 lock
-        hfd5Lock.reset();
-    }
-#endif
-
     std::string format;
     switch (abcType) {
-        case IFactory::kHDF5: format = "HDF5"; break;
         case IFactory::kOgawa: format = "Ogawa"; break;
         case IFactory::kLayer: format = "Layer"; break;
         default:
@@ -1099,10 +1055,7 @@ void
 _ReaderContext::Close()
 {
     _Clear();
-
-    _Lock lock(_mutex);
     _archive = IArchive();
-    _mutex = NULL;
 }
 
 void
@@ -1673,7 +1626,6 @@ _ReaderContext::_HasValue(
     }
 
     TRACE_SCOPE("UsdAbc_AlembicDataReader::_HasValue:Conversion");
-    _Lock lock(_mutex);
     return property->converter(value, selector);
 }
 

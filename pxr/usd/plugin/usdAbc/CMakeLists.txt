@@ -9,12 +9,6 @@ endif()
 set(optionalLibs "")
 set(optionalIncludeDirs "")
 
-if (PXR_ENABLE_HDF5_SUPPORT)
-   add_definitions(-DPXR_HDF5_SUPPORT_ENABLED)
-   list(APPEND optionalLibs ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
-   list(APPEND optionalIncludeDirs ${HDF5_INCLUDE_DIRS})
-endif()
-
 # Use the import targets set by Imath's package config
 # Note that the ImathConfig target must also be included to insure the
 # Imath directory is part of the include paths when compiling this

@@ -336,14 +336,7 @@ Alembic library specified in ALEMBIC_DIR.
 
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 
-Support for Alembic files using the HDF5 backend is enabled by default but can be
-disabled by specifying the cmake flag `PXR_ENABLE_HDF5_SUPPORT=FALSE`. HDF5
-support requires the following dependencies:
-
-| Dependency Name    | Description     |
-| ------------------ |---------------- |
-| HDF5_LOCATION      | The location of [HDF5](https://www.hdfgroup.org/HDF5/) |
-
+The Alembic plugin only supports the Ogawa backend, and is no longer compatible with HDF5.
 For further information see the documentation on the Alembic plugin [here](http://openusd.org/docs/Alembic-USD-Plugin.html).
 
 ##### Draco Plugin
