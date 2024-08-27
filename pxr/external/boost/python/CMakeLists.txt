@@ -307,6 +307,12 @@ target_compile_definitions(python
     PUBLIC PXR_USE_INTERNAL_BOOST_PYTHON
 )
 
+# Since we're not going through the normal pxr_build_test macros
+# we need to elide tests here if requested.
+if (NOT PXR_BUILD_TESTS)
+    return()
+endif()
+
 ####
 # Helper functions for unit tests
 ####
