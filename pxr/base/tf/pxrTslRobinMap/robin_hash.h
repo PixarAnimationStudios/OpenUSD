@@ -174,7 +174,7 @@ class bucket_entry : public bucket_entry_hash<StoreHash> {
 
  public:
   using value_type = ValueType;
-  using distance_type = std::int16_t;
+  using distance_type = std::int64_t;
 
   bucket_entry() noexcept
       : bucket_hash(),
