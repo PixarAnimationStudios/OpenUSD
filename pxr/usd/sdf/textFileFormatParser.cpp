@@ -4388,12 +4388,13 @@ Sdf_ParseLayerFromString(
     context.magicIdentifierToken = magicId;
     context.versionString = versionString;
 
-    Sdf_TextFileFormatParser::PEGTL_NS::string_input<> content { 
-        std::move(layerString), ""};
-    context.values.errorReporter =
+    Sdf_TextFileFormatParser::PEGTL_NS::memory_input<> content {
+        layerString.data(), layerString.size(), ""};
+
+    context.values.errorReporter = 
         [&context, capture0 = std::cref(content)](auto && PH1) { 
             return Sdf_TextFileFormatParser::_ReportParseError<
-                Sdf_TextFileFormatParser::PEGTL_NS::string_input<>>(
+                Sdf_TextFileFormatParser::PEGTL_NS::memory_input<>>(
                     context, capture0, std::forward<decltype(PH1)>(PH1)); };
     bool status = false;
     try
