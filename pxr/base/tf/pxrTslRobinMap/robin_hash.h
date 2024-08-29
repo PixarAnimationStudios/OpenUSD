@@ -817,6 +817,10 @@ class robin_hash : private Hash, private KeyEqual, private GrowthPolicy {
     return try_emplace(std::forward<K>(key), std::forward<Args>(args)...).first;
   }
 
+  void erase_fast(iterator pos) {
+    erase_from_bucket(pos);
+  }
+
   /**
    * Here to avoid `template<class K> size_type erase(const K& key)` being used
    * when we use an `iterator` instead of a `const_iterator`.
@@ -832,8 +836,6 @@ class robin_hash : private Hash, private KeyEqual, private GrowthPolicy {
     if (pos.m_bucket->empty()) {
       ++pos;
     }
-
-    m_try_shrink_on_next_insert = true;
 
     return pos;
   }
@@ -913,8 +915,6 @@ class robin_hash : private Hash, private KeyEqual, private GrowthPolicy {
     auto it = find(key, hash);
     if (it != end()) {
       erase_from_bucket(it);
-      m_try_shrink_on_next_insert = true;
-
       return 1;
     } else {
       return 0;
@@ -1207,6 +1207,7 @@ class robin_hash : private Hash, private KeyEqual, private GrowthPolicy {
       previous_ibucket = ibucket;
       ibucket = next_bucket(ibucket);
     }
+    m_try_shrink_on_next_insert = true;
   }
 
   template <class K, class... Args>

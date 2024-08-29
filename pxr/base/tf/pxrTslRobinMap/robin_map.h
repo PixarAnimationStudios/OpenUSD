@@ -339,6 +339,15 @@ class robin_map {
 
   iterator erase(iterator pos) { return m_ht.erase(pos); }
   iterator erase(const_iterator pos) { return m_ht.erase(pos); }
+
+  /**
+   * Erase the element at position 'pos'. In contrast to the regular erase()
+   * function, erase_fast() does not return an iterator. This allows it to be
+   * faster especially in hash tables with a low load factor, where finding the
+   * next nonempty bucket would be costly.
+   */
+  void erase_fast(iterator pos) { return m_ht.erase_fast(pos); }
+
   iterator erase(const_iterator first, const_iterator last) {
     return m_ht.erase(first, last);
   }

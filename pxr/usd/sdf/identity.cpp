@@ -109,7 +109,7 @@ public:
         newIdStatus.first->second->_path = newPath;
         
         // Erase the old identity map entry.
-        _ids.erase(oldIdIt);
+        _ids.erase_fast(oldIdIt);
     }
 
 private:

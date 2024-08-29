@@ -255,7 +255,7 @@ public:
         }
         _lastSet = _data.end();
         auto tmpFields(std::move(oldIter->second));
-        _data.erase(oldIter);
+        _data.erase_fast(oldIter);
         auto iresult = _data.emplace(newPath, std::move(tmpFields));
         TF_VERIFY(iresult.second);
     }
