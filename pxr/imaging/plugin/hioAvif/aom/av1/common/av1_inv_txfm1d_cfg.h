@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -41,7 +41,5 @@ extern const int8_t *av1_inv_txfm_shift_ls[TX_SIZES_ALL];
 // Values in both av1_inv_cos_bit_col and av1_inv_cos_bit_row are always 12
 // for each valid row and col combination
 #define INV_COS_BIT 12
-extern const int8_t av1_inv_cos_bit_col[5 /*row*/][5 /*col*/];
-extern const int8_t av1_inv_cos_bit_row[5 /*row*/][5 /*col*/];
 
 #endif  // AOM_AV1_COMMON_AV1_INV_TXFM1D_CFG_H_

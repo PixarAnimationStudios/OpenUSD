@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2018, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -34,7 +34,7 @@
 extern "C" {
 #endif
 
-#include "pxr/imaging/plugin/hioAvif/aom/aom_dsp/grain_synthesis.h"
+#include "pxr/imaging/plugin/hioAvif/aom/aom_dsp/grain_params.h"
 #include "pxr/imaging/plugin/hioAvif/aom/internal/aom_codec_internal.h"
 
 typedef struct aom_film_grain_table_entry_t {
@@ -52,7 +52,7 @@ typedef struct {
 /*!\brief Add a mapping from [time_stamp, end_time) to the given grain
  * parameters
  *
- * \param[in/out] table      The grain table
+ * \param[in,out] table      The grain table
  * \param[in]     time_stamp The start time stamp
  * \param[in]     end_stamp  The end time_stamp
  * \param[in]     grain      The grain parameters

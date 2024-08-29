@@ -5,7 +5,7 @@ This library implements reading AVIF image files for Hio.
 The AV1 Image Format is a royalty-free open-source picture format, with modern compression, flexible color specification, high dynamic range values, 
 depth images and alpha channels, and support for layered and sequential images.
 
-The supported feature set here is currently restricted to single frame iamges,
+The supported feature set here is currently restricted to single frame images,
 which are decoded to linear Rec709 RGB or RGBA if an alpha channel is present.
 
 Reading is implemented through the use of libaom, and libavif.
@@ -19,7 +19,7 @@ https://github.com/AOMediaCodec/libavif
 
 libyuv was contained within the libavif release tag.
 
-libaom is obtaned from the v3.8.3 tag release found here:
+libaom is obtaned from the v3.10.0 tag release found here:
 https://aomedia.googlesource.com/aom/
 
 Please see AVIF_AOM_LICENSE.txt to learn about the licenses used by these

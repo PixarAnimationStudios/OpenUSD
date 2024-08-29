@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -39,6 +39,8 @@
  */
 
 #if CONFIG_MULTITHREAD && defined(_WIN32)
+#undef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 /* Declare a per-compilation-unit state variable to track the progress
  * of calling func() only once. This must be at global scope because
@@ -58,29 +60,6 @@ static void aom_once(void (*func)(void)) {
   InitOnceComplete(&aom_init_once, 0, NULL);
 }
 
-#elif CONFIG_MULTITHREAD && defined(__OS2__)
-#define INCL_DOS
-#include <os2.h>
-static void aom_once(void (*func)(void)) {
-  static int done;
-
-  /* If the initialization is complete, return early. */
-  if (done) return;
-
-  /* Causes all other threads in the process to block themselves
-   * and give up their time slice.
-   */
-  DosEnterCritSec();
-
-  if (!done) {
-    func();
-    done = 1;
-  }
-
-  /* Restores normal thread dispatching for the current process. */
-  DosExitCritSec();
-}
-
 #elif CONFIG_MULTITHREAD && HAVE_PTHREAD_H
 #include <pthread.h>
 static void aom_once(void (*func)(void)) {
@@ -92,7 +71,7 @@ static void aom_once(void (*func)(void)) {
 /* Default version that performs no synchronization. */
 
 static void aom_once(void (*func)(void)) {
-  static int done;
+  static volatile int done;
 
   if (!done) {
     func();

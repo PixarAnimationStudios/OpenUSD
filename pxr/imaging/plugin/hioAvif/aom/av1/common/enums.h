@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -16,6 +16,7 @@
 
 #include "pxr/imaging/plugin/hioAvif/aom/aom_codec.h"
 #include "pxr/imaging/plugin/hioAvif/aom/aom_integer.h"
+#include "pxr/imaging/plugin/hioAvif/aom/aom_dsp/txfm_common.h"
 #include "pxr/imaging/plugin/hioAvif/aom/aom_ports/mem.h"
 
 #ifdef __cplusplus
@@ -25,8 +26,6 @@ extern "C" {
 /*! @file */
 
 /*!\cond */
-
-#undef MAX_SB_SIZE
 
 // Max superblock size
 #define MAX_SB_SIZE_LOG2 7
@@ -171,33 +170,6 @@ typedef char PARTITION_CONTEXT;
 #define PARTITION_BLOCK_SIZES 5
 #define PARTITION_CONTEXTS (PARTITION_BLOCK_SIZES * PARTITION_PLOFFSET)
 
-// block transform size
-enum {
-  TX_4X4,             // 4x4 transform
-  TX_8X8,             // 8x8 transform
-  TX_16X16,           // 16x16 transform
-  TX_32X32,           // 32x32 transform
-  TX_64X64,           // 64x64 transform
-  TX_4X8,             // 4x8 transform
-  TX_8X4,             // 8x4 transform
-  TX_8X16,            // 8x16 transform
-  TX_16X8,            // 16x8 transform
-  TX_16X32,           // 16x32 transform
-  TX_32X16,           // 32x16 transform
-  TX_32X64,           // 32x64 transform
-  TX_64X32,           // 64x32 transform
-  TX_4X16,            // 4x16 transform
-  TX_16X4,            // 16x4 transform
-  TX_8X32,            // 8x32 transform
-  TX_32X8,            // 32x8 transform
-  TX_16X64,           // 16x64 transform
-  TX_64X16,           // 64x16 transform
-  TX_SIZES_ALL,       // Includes rectangular transforms
-  TX_SIZES = TX_4X8,  // Does NOT include rectangular transforms
-  TX_SIZES_LARGEST = TX_64X64,
-  TX_INVALID = 255  // Invalid transform size
-} UENUM1BYTE(TX_SIZE);
-
 #define TX_SIZE_LUMA_MIN (TX_4X4)
 /* We don't need to code a transform size unless the allowed size is at least
    one more than the minimum. */
@@ -225,7 +197,7 @@ enum {
 #define TX_PAD_END 16
 #define TX_PAD_2D ((32 + TX_PAD_HOR) * (32 + TX_PAD_VER) + TX_PAD_END)
 
-// Number of maxium size transform blocks in the maximum size superblock
+// Number of maximum size transform blocks in the maximum size superblock
 #define MAX_TX_BLOCKS_IN_MAX_SB_LOG2 ((MAX_SB_SIZE_LOG2 - MAX_TX_SIZE_LOG2) * 2)
 #define MAX_TX_BLOCKS_IN_MAX_SB (1 << MAX_TX_BLOCKS_IN_MAX_SB_LOG2)
 
@@ -247,27 +219,6 @@ enum {
 } UENUM1BYTE(TX_TYPE_1D);
 
 enum {
-  DCT_DCT,            // DCT in both horizontal and vertical
-  ADST_DCT,           // ADST in vertical, DCT in horizontal
-  DCT_ADST,           // DCT in vertical, ADST in horizontal
-  ADST_ADST,          // ADST in both directions
-  FLIPADST_DCT,       // FLIPADST in vertical, DCT in horizontal
-  DCT_FLIPADST,       // DCT in vertical, FLIPADST in horizontal
-  FLIPADST_FLIPADST,  // FLIPADST in both directions
-  ADST_FLIPADST,      // ADST in vertical, FLIPADST in horizontal
-  FLIPADST_ADST,      // FLIPADST in vertical, ADST in horizontal
-  IDTX,               // Identity in both directions
-  V_DCT,              // DCT in vertical, identity in horizontal
-  H_DCT,              // Identity in vertical, DCT in horizontal
-  V_ADST,             // ADST in vertical, identity in horizontal
-  H_ADST,             // Identity in vertical, ADST in horizontal
-  V_FLIPADST,         // FLIPADST in vertical, identity in horizontal
-  H_FLIPADST,         // Identity in vertical, FLIPADST in horizontal
-  TX_TYPES,
-  DCT_ADST_TX_MASK = 0x000F,  // Either DCT or ADST in each direction
-} UENUM1BYTE(TX_TYPE);
-
-enum {
   REG_REG,
   REG_SMOOTH,
   REG_SHARP,
@@ -278,22 +229,6 @@ enum {
   SHARP_SMOOTH,
   SHARP_SHARP,
 } UENUM1BYTE(DUAL_FILTER_TYPE);
-
-enum {
-  // DCT only
-  EXT_TX_SET_DCTONLY,
-  // DCT + Identity only
-  EXT_TX_SET_DCT_IDTX,
-  // Discrete Trig transforms w/o flip (4) + Identity (1)
-  EXT_TX_SET_DTT4_IDTX,
-  // Discrete Trig transforms w/o flip (4) + Identity (1) + 1D Hor/vert DCT (2)
-  EXT_TX_SET_DTT4_IDTX_1DDCT,
-  // Discrete Trig transforms w/ flip (9) + Identity (1) + 1D Hor/Ver DCT (2)
-  EXT_TX_SET_DTT9_IDTX_1DDCT,
-  // Discrete Trig transforms w/ flip (9) + Identity (1) + 1D Hor/Ver (6)
-  EXT_TX_SET_ALL16,
-  EXT_TX_SET_TYPES
-} UENUM1BYTE(TxSetType);
 
 #define EXT_TX_SIZES 4       // number of sizes that use extended transforms
 #define EXT_TX_SETS_INTER 4  // Sets of transform selections for INTER
@@ -321,6 +256,7 @@ enum { PLANE_TYPE_Y, PLANE_TYPE_UV, PLANE_TYPES } UENUM1BYTE(PLANE_TYPE);
 #define CFL_ALPHABET_SIZE_LOG2 4
 #define CFL_ALPHABET_SIZE (1 << CFL_ALPHABET_SIZE_LOG2)
 #define CFL_MAGS_SIZE ((2 << CFL_ALPHABET_SIZE_LOG2) + 1)
+#define CFL_INDEX_ZERO CFL_ALPHABET_SIZE
 #define CFL_IDX_U(idx) (idx >> CFL_ALPHABET_SIZE_LOG2)
 #define CFL_IDX_V(idx) (idx & (CFL_ALPHABET_SIZE - 1))
 
@@ -451,6 +387,13 @@ enum {
   UV_MODE_INVALID,  // For uv_mode in inter blocks
 } UENUM1BYTE(UV_PREDICTION_MODE);
 
+// Number of top model rd to store for pruning y modes in intra mode decision
+#define TOP_INTRA_MODEL_COUNT 4
+// Total number of luma intra prediction modes (include both directional and
+// non-directional modes)
+// Because there are 8 directional modes, each has additional 6 delta angles.
+#define LUMA_MODE_COUNT (PAETH_PRED - DC_PRED + 1 + 6 * 8)
+
 enum {
   SIMPLE_TRANSLATION,
   OBMC_CAUSAL,    // 2-sided OBMC
@@ -509,8 +452,13 @@ enum {
   SEQ_LEVEL_7_1,
   SEQ_LEVEL_7_2,
   SEQ_LEVEL_7_3,
+  SEQ_LEVEL_8_0,
+  SEQ_LEVEL_8_1,
+  SEQ_LEVEL_8_2,
+  SEQ_LEVEL_8_3,
   SEQ_LEVELS,
-  SEQ_LEVEL_MAX = 31
+  SEQ_LEVEL_MAX = 31,
+  SEQ_LEVEL_KEEP_STATS = 32,
 } UENUM1BYTE(AV1_LEVEL);
 
 #define LEVEL_BITS 5
@@ -550,6 +498,7 @@ enum {
 #define DELTA_Q_PROBS (DELTA_Q_SMALL)
 #define DEFAULT_DELTA_Q_RES_PERCEPTUAL 4
 #define DEFAULT_DELTA_Q_RES_OBJECTIVE 4
+#define DEFAULT_DELTA_Q_RES_DUCKY_ENCODE 4
 
 #define DELTA_LF_SMALL 3
 #define DELTA_LF_PROBS (DELTA_LF_SMALL)
@@ -607,10 +556,21 @@ enum {
 // REF_FRAMES for the cm->ref_frame_map array, 1 scratch frame for the new
 // frame in cm->cur_frame, INTER_REFS_PER_FRAME for scaled references on the
 // encoder in the cpi->scaled_ref_buf array.
+// The encoder uses FRAME_BUFFERS only in GOOD and REALTIME encoding modes.
+// The decoder also uses FRAME_BUFFERS.
 #define FRAME_BUFFERS (REF_FRAMES + 1 + INTER_REFS_PER_FRAME)
+
+// During allintra encoding, one reference frame buffer is free to be used again
+// only after another frame buffer is stored as the reference frame. Hence, it
+// is necessary and sufficient to maintain only two reference frame buffers in
+// this case.
+#define FRAME_BUFFERS_ALLINTRA 2
 
 #define FWD_RF_OFFSET(ref) (ref - LAST_FRAME)
 #define BWD_RF_OFFSET(ref) (ref - BWDREF_FRAME)
+
+// Select all the decoded frame buffer slots
+#define SELECT_ALL_BUF_SLOTS 0xFF
 
 enum {
   LAST_LAST2_FRAMES,      // { LAST_FRAME, LAST2_FRAME }
@@ -656,7 +616,7 @@ typedef enum {
 } RestorationType;
 
 /*!\cond */
-// Picture prediction structures (0-12 are predefined) in scalability metadata.
+// Picture prediction structures (0-13 are predefined) in scalability metadata.
 enum {
   SCALABILITY_L1T2 = 0,
   SCALABILITY_L1T3 = 1,

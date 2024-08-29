@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -15,7 +15,7 @@
 #include "pxr/imaging/plugin/hioAvif/aom/aom_integer.h"
 #include "pxr/imaging/plugin/hioAvif/aom/config/aom_config.h"
 
-#if (defined(__GNUC__) && __GNUC__) || defined(__SUNPRO_C)
+#if defined(__GNUC__) || defined(__SUNPRO_C)
 #define DECLARE_ALIGNED(n, typ, val) typ val __attribute__((aligned(n)))
 #elif defined(_MSC_VER)
 #define DECLARE_ALIGNED(n, typ, val) __declspec(align(n)) typ val
@@ -24,17 +24,13 @@
 #define DECLARE_ALIGNED(n, typ, val) typ val
 #endif
 
-/* Indicates that the usage of the specified variable has been audited to assure
- * that it's safe to use uninitialized. Silences 'may be used uninitialized'
- * warnings on gcc.
- */
-#if defined(__GNUC__) && __GNUC__
-#define UNINITIALIZED_IS_SAFE(x) x = x
+#if defined(__has_builtin)
+#define AOM_HAS_BUILTIN(x) __has_builtin(x)
 #else
-#define UNINITIALIZED_IS_SAFE(x) x
+#define AOM_HAS_BUILTIN(x) 0
 #endif
 
-#if HAVE_NEON && defined(_MSC_VER)
+#if !AOM_HAS_BUILTIN(__builtin_prefetch) && !defined(__GNUC__)
 #define __builtin_prefetch(x)
 #endif
 
@@ -62,12 +58,17 @@
   (((value) < 0) ? -ROUND_POWER_OF_TWO_64(-(value), (n)) \
                  : ROUND_POWER_OF_TWO_64((value), (n)))
 
+/* Shift down with ceil() for use when n >= 0 and value >= 0.*/
+#define CEIL_POWER_OF_TWO(value, n) (((value) + (1 << (n)) - 1) >> (n))
+
 /* shift right or left depending on sign of n */
 #define RIGHT_SIGNED_SHIFT(value, n) \
   ((n) < 0 ? ((value) << (-(n))) : ((value) >> (n)))
 
 #define ALIGN_POWER_OF_TWO(value, n) \
   (((value) + ((1 << (n)) - 1)) & ~((1 << (n)) - 1))
+#define ALIGN_POWER_OF_TWO_UNSIGNED(value, n) \
+  (((value) + ((1u << (n)) - 1)) & ~((1u << (n)) - 1))
 
 #define DIVIDE_AND_ROUND(x, y) (((x) + ((y) >> 1)) / (y))
 

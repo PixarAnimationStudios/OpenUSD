@@ -14,6 +14,7 @@ pxr_plugin(hioAvif
         aom/aom_codec.h
         aom/aom_decoder.h
         aom/aom_encoder.h
+        aom/aom_external_partition.h
         aom/aom_frame_buffer.h
         aom/aom_image.h
         aom/aom_integer.h
@@ -27,11 +28,15 @@ pxr_plugin(hioAvif
         aom/aom_dsp/entdec.h
         aom/aom_dsp/grain_table.h
         aom/aom_dsp/aom_filter.h
-        aom/aom_dsp/grain_synthesis.h
+        aom/aom_dsp/grain_params.h
         aom/aom_dsp/intrapred_common.h
+        aom/aom_dsp/odintrin.h
         aom/aom_dsp/prob.h
+        aom/aom_dsp/pyramid.h
         aom/aom_dsp/recenter.h
         aom/aom_dsp/txfm_common.h
+        aom/aom_dsp/flow_estimation/corner_detect.h
+        aom/aom_dsp/flow_estimation/flow_estimation.h
         aom/aom_mem/aom_mem.h
         aom/aom_mem/include/aom_mem_intrnl.h
         aom/aom_ports/bitops.h
@@ -39,11 +44,10 @@ pxr_plugin(hioAvif
         aom/aom_ports/mem.h
         aom/aom_ports/mem_ops.h
         aom/aom_ports/mem_ops_aligned.h
-        aom/aom_ports/msvc.h
-        aom/aom_ports/system_state.h
         aom/aom_ports/aom_timer.h
-        aom/aom_scale/aom_scale.h
+        aom/aom_ports/sanitizer.h
         aom/aom_scale/yv12config.h
+        aom/aom_util/aom_pthread.h
         aom/aom_util/aom_thread.h
         aom/av1/av1_iface_common.h
         aom/av1/common/av1_common_int.h
@@ -70,7 +74,6 @@ pxr_plugin(hioAvif
         aom/av1/common/idct.h
         aom/av1/common/obmc.h
         aom/av1/common/obu_util.h
-        aom/av1/common/odintrin.h
         aom/av1/common/pred_common.h
         aom/av1/common/quant_common.h
         aom/av1/common/reconinter.h
@@ -86,12 +89,14 @@ pxr_plugin(hioAvif
         aom/av1/common/token_cdfs.h
         aom/av1/common/txb_common.h
         aom/av1/common/warped_motion.h
+        aom/av1/common/reconinter_template.inc
         aom/av1/decoder/decodeframe.h
         aom/av1/decoder/decoder.h
         aom/av1/decoder/decodemv.h
         aom/av1/decoder/decodetxb.h
         aom/av1/decoder/detokenize.h
         aom/av1/decoder/dthread.h
+        aom/av1/decoder/grain_synthesis.h
         aom/av1/decoder/obu.h
         aom/config/aom_config.h
         aom/config/aom_dsp_rtcd.h
@@ -126,13 +131,11 @@ pxr_plugin(hioAvif
         aom/aom_dsp/blend_a64_mask.c
         aom/aom_dsp/entcode.c
         aom/aom_dsp/entdec.c
-        aom/aom_dsp/grain_synthesis.c
         aom/aom_dsp/intrapred.c
         aom/aom_dsp/loopfilter.c
+        aom/aom_dsp/odintrin.c
         aom/aom_mem/aom_mem.c
         aom/aom_scale/aom_scale_rtcd.c
-        aom/aom_scale/generic/aom_scale.c
-        aom/aom_scale/generic/gen_scalers.c
         aom/aom_scale/generic/yv12config.c
         aom/aom_scale/generic/yv12extend.c
         aom/aom_util/aom_thread.c
@@ -147,6 +150,7 @@ pxr_plugin(hioAvif
         aom/av1/common/cdef.c
         aom/av1/common/cdef_block.c
         aom/av1/common/cfl.c
+        aom/av1/common/common_data.c
         aom/av1/common/convolve.c
         aom/av1/common/entropymode.c 
         aom/av1/common/entropy.c
@@ -174,6 +178,7 @@ pxr_plugin(hioAvif
         aom/av1/decoder/decoder.c
         aom/av1/decoder/decodetxb.c
         aom/av1/decoder/detokenize.c
+        aom/av1/decoder/grain_synthesis.c
         aom/av1/decoder/obu.c
         AVIF/src/alpha.c
         AVIF/src/avif.c
