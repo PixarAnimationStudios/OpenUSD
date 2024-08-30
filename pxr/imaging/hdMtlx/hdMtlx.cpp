@@ -608,8 +608,11 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
         mxShaderNode);
 
     if (TfDebug::IsEnabled(HDMTLX_VERSION_UPGRADE)) {
+      std::string filename = mxMaterial->getName()+"_before.mtlx";
+      TF_DEBUG(HDMTLX_VERSION_UPGRADE).Msg("[%s] : MaterialX document before upgrade: '%s'\n",
+                                           TF_FUNC_NAME().c_str(), filename.c_str());
       writeToXmlFile(
-          mxDoc, mx::FilePath(mxMaterial->getName()+"_before.mtlx"));
+          mxDoc, mx::FilePath(filename));
     }
 
     // Potentially upgrade the MaterialX document to the "current" version using the
@@ -617,9 +620,11 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
     mxDoc->upgradeVersion();
 
     if (TfDebug::IsEnabled(HDMTLX_VERSION_UPGRADE)) {
+      std::string filename = mxMaterial->getName()+"_after.mtlx";
+      TF_DEBUG(HDMTLX_VERSION_UPGRADE).Msg("[%s] : MaterialX document after upgrade: '%s'\n",
+                                           TF_FUNC_NAME().c_str(), filename.c_str());
       writeToXmlFile(
-          mxDoc,
-          mx::FilePath(mxMaterial->getName()+"_after.mtlx"));
+          mxDoc, mx::FilePath(filename));
     }
 
     // Validate the MaterialX Document.
