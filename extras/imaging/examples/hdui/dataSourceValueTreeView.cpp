@@ -185,7 +185,7 @@ public:
             return QVariant();
         }
 
-        return QVariant("(unsuppored type)");
+        return QVariant("(unsupported type)");
     }
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override {
