@@ -137,6 +137,8 @@ HgiGLOps::CopyTextureCpuToGpu(HgiTextureCpuToGpuOp const& copyOp)
         HgiGLTexture* dstTexture = static_cast<HgiGLTexture*>(
             copyOp.gpuDestinationTexture.Get());
 
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
         switch(desc.type) {
         case HgiTextureType2D:
             if (isCompressed) {

@@ -272,6 +272,8 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
             desc.dimensions,
             desc.layerCount);
 
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
         // Upload texel data
         if (desc.initialData && desc.pixelsByteSize > 0) {
             // Upload each (available) mip
