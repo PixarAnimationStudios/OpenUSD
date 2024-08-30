@@ -396,8 +396,28 @@ HdMergingSceneIndex::_PrimsRemoved(
         } else {
             for (const SdfPath& descendantPath : HdSceneIndexPrimView(
                      HdMergingSceneIndexRefPtr(this), entry.primPath)) {
-                addedEntries.emplace_back(
-                    descendantPath, GetPrim(descendantPath).primType);
+                bool descendantFullyRemoved = true;
+
+                for (const _InputEntry &inputEntry : _inputs) {
+                    if (get_pointer(inputEntry.sceneIndex) == &sender) {
+                        continue;
+                    }
+
+                    // another input having a data source of the specified
+                    // prim considers this not a full removal
+                    if (inputEntry.sceneIndex->GetPrim(
+                            descendantPath).dataSource) {
+                        descendantFullyRemoved = false;
+                        break;
+                    }
+                }
+
+                if (descendantFullyRemoved) {
+                    filteredEntries.emplace_back(descendantPath);
+                } else {
+                    addedEntries.emplace_back(
+                        descendantPath, GetPrim(descendantPath).primType);
+                }
             }
         }
     }
