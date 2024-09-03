@@ -1,0 +1,165 @@
+name: BuildUSD
+
+on:
+  push:
+    branches:
+      - dev
+      - release
+  issue_comment:                                     
+    types: [created]
+
+env:
+  PYTHON_VERSION: "3.9"
+  PYTHON_VERSION_MAC: "3.11"
+
+jobs:
+  GetUser:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 5
+    outputs:
+      require-result: ${{ steps.check.outputs.require-result }}
+    steps:
+      - uses: actions-cool/check-user-permission@v2
+        id: check
+        with:
+          require: 'write'
+          username: ${{ github.event.comment.user.login }}
+  Linux:
+    needs: [GetUser]
+    if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/AzurePipelines run') && needs.GetUser.outputs.require-result == 'true' ) || github.event_name == 'push' }}
+    runs-on: ubuntu-20.04
+    timeout-minutes: 120
+    steps:
+      - run: echo ${{ needs.GetUser.outputs.require-result }}
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Restore cached artifacts
+        id: cache-usd-build-dependency
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            USDinst
+          key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION }}-${{ hashFiles('build_scripts/**/*') }}
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          check-latest: false
+      - name: Install dependencies
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get install -y python3-setuptools libglew-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev
+          pip install --upgrade pip
+          pip install PySide2 PyOpenGL
+      - name: Build USD
+        run: |
+          python3 build_scripts/build_usd.py --no-materialx --build USDgen/build --src USDgen/src USDinst -v
+      - name: Save build artifacts to cache
+        if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            USDinst
+          key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION }}-${{ hashFiles('build_scripts/**/*') }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: usd-linux
+          path: USDinst
+
+  macOS:
+    needs: [GetUser]
+    if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/AzurePipelines run') && needs.GetUser.outputs.require-result == 'true' ) || github.event_name == 'push' }}
+    runs-on: macos-12
+    timeout-minutes: 120
+    steps:
+      - run: echo ${{ needs.GetUser.outputs.require-result }}
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Restore cached artifacts
+        id: cache-usd-build-dependency
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            USDinst
+          key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION_MAC }}-${{ hashFiles('build_scripts/**/*') }}
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION_MAC }}
+          check-latest: false
+      - name: Install dependencies
+        run: |
+          export PATH=/Applications/CMake.app/Contents/bin:$PATH
+          sudo xcode-select -s /Applications/Xcode_13.3.app/Contents/Developer
+          # Set SYSTEM_VERSION_COMPAT while installing Python packages to
+          # accommodate the macOS version numbering change from 10.x to 11
+          export SYSTEM_VERSION_COMPAT=1
+          pip install PySide6 PyOpenGL setuptools
+          export -n SYSTEM_VERSION_COMPAT
+      - name: Build USD
+        run: |
+          export PATH=/Applications/CMake.app/Contents/bin:$PATH
+          python3 build_scripts/build_usd.py --no-materialx --generator Xcode --build USDgen/build --src USDgen/src USDinst -v
+      - name: Save build artifacts to cache
+        if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            USDinst
+          key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION_MAC }}-${{ hashFiles('build_scripts/**/*') }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: usd-macOS
+          path: USDinst
+
+  Windows:
+    needs: [GetUser]
+    if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/AzurePipelines run') && needs.GetUser.outputs.require-result == 'true' ) || github.event_name == 'push' }}
+    runs-on: windows-2019
+    timeout-minutes: 120
+    steps:
+      - run: echo ${{ needs.GetUser.outputs.require-result }}
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Restore cached artifacts
+        id: cache-usd-build-dependency
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            USDinst
+          key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION }}-${{ hashFiles('build_scripts/**/*') }}
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          check-latest: false
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install PyOpenGL PySide2
+      - name: Build USD
+        run: |
+          REM Unset BOOST_ROOT on Windows. The VS2017-Win2016 image
+          REM sets this env var to a pre-installed boost which causes
+          REM the USD build to favor this over the boost built by
+          REM build_usd.py. This causes the build to fail, because
+          REM the pre-installed boost does not include boost_python27
+          call set BOOST_ROOT=
+          python build_scripts/build_usd.py --no-materialx --generator "Visual Studio 16 2019" --build USDgen/build --src USDgen/src USDinst --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF" -v
+        shell: cmd          
+      - name: Save build artifacts to cache
+        if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            USDinst
+          key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION }}-${{ hashFiles('build_scripts/**/*') }}
+      - name: Upload artifacts
+        # use v3 because actions/upload-artifact@v4 fails
+        # see https://github.com/actions/upload-artifact/issues/485
+        uses: actions/upload-artifact@v3
+        with:
+          name: usd-win64
+          path: USDinst
