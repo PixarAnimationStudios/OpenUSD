@@ -5,7 +5,9 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/validator.h"
+#include "pxr/usd/usd/validationError.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
@@ -35,6 +37,39 @@ namespace
         return new UsdValidatorMetadata{name, plugin, keywords, doc, schemaTypes, isSuite};
     }
 
+    const UsdValidatorMetadata &
+    _GetValidatorMetadata(const UsdValidator &validator)
+    {
+        return validator.GetMetadata();
+    }
+
+    const UsdValidatorMetadata &
+    _GetValidatorSuiteMetadata(const UsdValidatorSuite &validatorSuite)
+    {
+        return validatorSuite.GetMetadata();
+    }
+
+    list
+    _GetContainedValidators(const UsdValidatorSuite &validatorSuite)
+    {
+        list result;
+        for (const auto *validator : validatorSuite.GetContainedValidators())
+        {
+            result.append(pointer_wrapper(validator));
+        }
+        return result;
+    }
+
+    bool _ValidatorEqual(const UsdValidator *left, const UsdValidator *right)
+    {
+        return left == right;
+    }
+
+    bool _ValidatorSuiteEqual(const UsdValidatorSuite *left, const UsdValidatorSuite *right)
+    {
+        return left == right;
+    }
+
 } // anonymous namespace
 
 void wrapUsdValidator()
@@ -57,4 +92,28 @@ void wrapUsdValidator()
         .add_property("schemaTypes", make_getter(
             &UsdValidatorMetadata::schemaTypes, return_value_policy<TfPySequenceToList>()))
         .def_readonly("isSuite", &UsdValidatorMetadata::isSuite);
+
+    TfPyRegisterStlSequencesFromPython<UsdValidationError>();
+    UsdValidationErrorVector (UsdValidator::*_ValidateLayer)(
+        const SdfLayerHandle &layer) const = &UsdValidator::Validate;
+    UsdValidationErrorVector (UsdValidator::*_ValidateStage)(
+        const UsdStagePtr &stage) const = &UsdValidator::Validate;
+    UsdValidationErrorVector (UsdValidator::*_ValidatePrim)(const UsdPrim &prim)
+        const = &UsdValidator::Validate;
+    class_<UsdValidator, boost::noncopyable>("Validator", no_init)
+        .def("GetMetadata", &_GetValidatorMetadata,
+             return_value_policy<return_by_value>())
+        .def("ValidateLayer", _ValidateLayer,
+             return_value_policy<TfPySequenceToList>())
+        .def("ValidatePrim", _ValidatePrim,
+             return_value_policy<TfPySequenceToList>())
+        .def("ValidateStage", _ValidateStage,
+             return_value_policy<TfPySequenceToList>())
+        .def("__eq__", &_ValidatorEqual);
+
+    class_<UsdValidatorSuite, boost::noncopyable>("ValidatorSuite", no_init)
+        .def("GetMetadata", &_GetValidatorSuiteMetadata,
+             return_value_policy<return_by_value>())
+        .def("GetContainedValidators", &_GetContainedValidators)
+        .def("__eq__", &_ValidatorSuiteEqual);
 }
