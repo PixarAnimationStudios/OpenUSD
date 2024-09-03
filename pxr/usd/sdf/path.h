@@ -1022,10 +1022,6 @@ private:
     friend class Sdfext_PathAccess;
     friend class SdfPathAncestorsRange;
 
-    // converts elements to a string for parsing (unfortunate)
-    static std::string
-    _ElementsToString(bool absolute, const std::vector<std::string> &elements);
-
     SdfPath _ReplacePrimPrefix(SdfPath const &oldPrefix,
                                SdfPath const &newPrefix) const;
 
