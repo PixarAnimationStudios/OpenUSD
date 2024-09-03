@@ -29,6 +29,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 // The environment variable used to limit the number of threads the application
 // may spawn:
 //           0 - no change, i.e. defaults to maximum physical concurrency
@@ -47,8 +49,6 @@ TF_DEFINE_ENV_SETTING(
     "cores, or the process's affinity mask, whichever is smaller. Note that "
     "the environment variable (if set to a non-zero value) will override any "
     "value passed to Work thread-limiting API calls.");
-
-PXR_NAMESPACE_OPEN_SCOPE
 
 // We create a global_control or task_scheduler_init instance at static
 // initialization time if PXR_WORK_THREAD_LIMIT is set to a nonzero value.
