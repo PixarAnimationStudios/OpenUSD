@@ -12,7 +12,7 @@ Tf -- Tools Foundation
 # and newer. These interpreters don't search for DLLs in the path anymore, you
 # have to provide a path explicitly. This re-enables path searching for USD 
 # dependency libraries
-import platform, sys
+import os, platform, sys
 if sys.version_info >= (3, 8) and platform.system() == "Windows":
     import contextlib
 
@@ -92,15 +92,16 @@ def PreparePythonModule(moduleName=None):
         except KeyError:
             pass
 
-        try:
-            module = importlib.import_module(".__DOC", f_locals["__name__"])
-            module.Execute(f_locals)
+        if os.environ.get("PXR_USD_PYTHON_DISABLE_DOCS", "false").lower() not in ("1", "true", "yes"):
             try:
-                del f_locals["__DOC"]
-            except KeyError:
+                module = importlib.import_module(".__DOC", f_locals["__name__"])
+                module.Execute(f_locals)
+                try:
+                    del f_locals["__DOC"]
+                except KeyError:
+                    pass
+            except Exception:
                 pass
-        except Exception:
-            pass
 
     finally:
         del frame

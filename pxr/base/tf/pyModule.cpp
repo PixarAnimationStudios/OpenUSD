@@ -225,9 +225,12 @@ public:
 
     inline object ReplaceFunctionOnOwner(char const *name, object owner, object fn)
     {
+        object fnDocstring = fn.attr("__doc__");
         object newFn = DecorateForErrorHandling(name, owner, fn);
         PyObject_DelAttrString(owner.ptr(), name);
         objects::function::add_to_namespace(owner, name, newFn);
+        // add_to_namespace removes docstrings, so we restore them here
+        newFn.attr("__doc__") = fnDocstring;
         return newFn;
     }
     
@@ -414,7 +417,8 @@ void Tf_PyInitWrapModule(
 
     // Disable docstring auto signatures.
     boost::python::docstring_options docOpts(true /*show user-defined*/,
-                                             false /*show signatures*/);
+                                             true /*show py signatures*/,
+                                             false /*show cpp signatures*/);
 
     // Do the wrapping.
     wrapModule();
