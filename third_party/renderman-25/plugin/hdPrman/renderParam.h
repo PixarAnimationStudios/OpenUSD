@@ -269,7 +269,8 @@ public:
     // with HdPrmanFramebuffer to transfer the result between the
     // render thread and the hydra render buffers.
     void CreateFramebufferAndRenderViewFromAovs(
-        const HdRenderPassAovBindingVector& aovBindings);
+        const HdRenderPassAovBindingVector& aovBindings,
+        const HdPrman_RenderSettings* renderSettings);
 
     // Deletes HdPrmanFramebuffer (created with
     // CreateRenderViewFromAovs). Can be called if there is no frame

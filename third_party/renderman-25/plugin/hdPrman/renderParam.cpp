@@ -96,6 +96,17 @@ TF_DEFINE_ENV_SETTING(HD_PRMAN_DISABLE_HIDER_JITTER, false,
 TF_DEFINE_ENV_SETTING(HD_PRMAN_DEFER_SET_OPTIONS, true,
                       "Defer first SetOptions call to render settings prim sync.");
 
+// We now have two env setting related to driving hdPrman rendering using the
+// render settings prim. HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS ignores the
+// task's AOV bindings and creates the render view using solely the render
+// settings' products; this is limited to batch (non-interactive) rendering.
+// The new setting HD_PRMAN_INTERACTIVE_RENDER_WITH_RENDER_SETTINGS creates the
+// render view using both the task's AOV bindings and the render settings'
+// products. The Hydra framebuffer is limited to displaying only the AOVs in
+// the task bindings. This will be improved in a future change.
+TF_DEFINE_ENV_SETTING(HD_PRMAN_INTERACTIVE_RENDER_WITH_RENDER_SETTINGS, false,
+                      "Add render settings outputs to interactive renders");
+
 extern TfEnvSetting<bool> HD_PRMAN_ENABLE_QUICKINTEGRATE;
 
 static bool _enableQuickIntegrate =
@@ -3021,7 +3032,8 @@ _GetAsRtUString(const HdAovSettingsMap & m, const TfToken & key)
 
 void
 HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
-    const HdRenderPassAovBindingVector& aovBindings)
+    const HdRenderPassAovBindingVector& aovBindings,
+    const HdPrman_RenderSettings* renderSettings)
 {
     if (!_framebuffer) {
         _framebuffer = std::make_unique<HdPrmanFramebuffer>();
@@ -3069,6 +3081,41 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
     renderViewDesc.sampleFilterList = GetSampleFilterList();
     renderViewDesc.displayFilterList = GetDisplayFilterList();
     renderViewDesc.resolution = GetResolution();
+
+    if (TfGetEnvSetting(HD_PRMAN_INTERACTIVE_RENDER_WITH_RENDER_SETTINGS) &&
+            renderSettings) {
+        // Get the descriptors for the render settings products.
+        // N.B. this overrides the camera opinion on the product.  That
+        // isn't the intent in case it becomes a problem.
+        auto rsrvd =
+            _ComputeRenderViewDesc(renderSettings->GetRenderProducts(),
+                                   renderViewDesc.cameraId, 
+                                   renderViewDesc.integratorId, 
+                                   renderViewDesc.sampleFilterList,
+                                   renderViewDesc.displayFilterList);
+
+        // Adjust indices to account for the ones we already have.  The
+        // entries in rsrvd.renderOutputIndices index into
+        // rsrvd.renderOutputDescs.  Since we're moving the latter's
+        // entries to the end of renderViewDesc.renderOutputDescs we must
+        // adjust the indices to reflect their new positions.
+        const auto base = renderViewDesc.renderOutputDescs.size();
+        for (auto& displayDesc: rsrvd.displayDescs) {
+            for (auto& index: displayDesc.renderOutputIndices) {
+                index += base;
+            }
+        }
+
+        // Add to final lists.
+        renderViewDesc.renderOutputDescs.insert(
+            renderViewDesc.renderOutputDescs.end(),
+            std::make_move_iterator(rsrvd.renderOutputDescs.begin()),
+            std::make_move_iterator(rsrvd.renderOutputDescs.end()));
+        renderViewDesc.displayDescs.insert(
+            renderViewDesc.displayDescs.end(),
+            std::make_move_iterator(rsrvd.displayDescs.begin()),
+            std::make_move_iterator(rsrvd.displayDescs.end()));
+    }
 
     TF_DEBUG(HDPRMAN_RENDER_PASS)
         .Msg("Create Riley RenderView from AOV bindings.\n");
