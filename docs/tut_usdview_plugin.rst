@@ -135,7 +135,7 @@ the Interpreter window in :program:`usdview`
 
         * :python:`viewSettings` - A collection of settings which only affect 
           the viewport. Most of these settings are normally controlled using 
-          usdview's 'View' menu. Some examples are listed below.
+          usdview's 'Display' menu. Some examples are listed below.
 
             * :python:`complexity` - The scene's subdivision complexity.
 
