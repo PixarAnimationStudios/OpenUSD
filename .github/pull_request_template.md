@@ -6,6 +6,8 @@
 
 ### Checklist
 
+[ ] I have created this PR based on the dev branch
+
 [ ] I have followed the [coding conventions](https://openusd.org/release/api/_page__coding__guidelines.html)
 
 [ ] I have added unit tests that exercise this functionality (Reference: 
