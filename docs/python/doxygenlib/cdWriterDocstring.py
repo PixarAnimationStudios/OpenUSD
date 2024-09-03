@@ -523,6 +523,18 @@ class Writer:
 
         (obj, pypath, jumped) = self.__getPythonObjectByPath(pypath)
 
+        if jumped and overloads[0].isFunction():
+            # We found a module-level function in our module through a permissive
+            # search (jumped=True).  Do some further vetting.
+            if obj and hasattr(obj, "__module__") and \
+                not parentPath[-1].name.startswith(obj.__module__.split(".")[1]):
+                # The doxygen object clearly indicates it's from another module.
+                obj = None
+            elif type(obj).__module__ != 'Boost.Python':
+                # The function we found is not a boost function, so it can't correspond
+                # to our doxygen object
+                obj = None
+
         # check for the property by either possible name (since there
         # are two possible naming conventions for boolean properties)
         ppypath = ppypath1
@@ -687,49 +699,89 @@ class Writer:
         # make the doxy element static if it is tagged as such
         if ATTR_STATIC_METHOD in doxy.doc['tags']:
             doxy.static = 'yes'
-        
+
         lines = self.__getShortDescription(pyname, pyobj, doxy)
         if doxy.isFunction() and type(pyobj) != property:
-            lines += self.__getSignatureDescription(pyname, pyobj, doxy)
-            lines.append('')
+            description = self.__getSignatureDescription(pyname, pyobj, doxy)
+            if description is not None:
+                lines += description
+                lines.append('')
         lines += self.__getDocumentation(pyname, pyobj, doxy)
         lines.append('')
         return lines
 
+    @classmethod
+    def __stripBoostSig(cls, doc):
+        def looksLikeBoostSig(l):
+            return bool(l and (l[0].isalnum() or l[0] == "_") and ' -> ' in l)
+
+        lines = doc.strip().splitlines()
+        if len(lines) and looksLikeBoostSig(lines[0]):
+            # boost signature has been prepended.  that means if there is
+            # an existing description provided in the C++ wrapper it will be
+            # indented.  strip the signature and dedent the description.
+            found = False
+            newLines = []
+            for line in lines:
+                if not found and line.startswith('    '):
+                    found = True
+                if found:
+                    newLines.append(line)
+            return textwrap.dedent('\n'.join(newLines))
+        else:
+            # None indicates that the existing __doc__ attr should be left as-is
+            return None
+
+    def __getDocstring(self, pypath, pyobj, overloads):
+        """Return the docstring."""
+
+        docString = ''
+
+        # boost auto-generates function signatures that can be useful in some
+        # contexts (such as generating pyi type stubs) because they more
+        # accurately reflect changes made to the API within the C++ wrap files,
+        # but for our docstrings we strip them out and replace them with our
+        # own function signatures.  After stripping out the boost signatures,
+        # if there is a custom authored docstring in the C++ wrap files we honor
+        # it.
+        if hasattr(pyobj, '__doc__') and pyobj.__doc__ is not None:
+            doc = pyobj.__doc__.strip()
+            if len(doc) > 0 and not overloads[0].isModule():
+                newDoc = self.__stripBoostSig(doc)
+                if newDoc is None:
+                    # None indicates that the existing __doc__ attr should be
+                    # left as is
+                    Debug("Docstring exists for %s - skipping" % pypath)
+                    return None
+                docString = newDoc
+
+        if not docString.strip():
+            # get the full docstring that we want to output
+            lines = []
+            pyname = pypath.split('.')[-1]
+
+            if len(overloads) == 1:
+                lines += self.__getFullDoc(pyname, pyobj, overloads[0])
+                if overloads[0].isStatic():
+                    docString = LABEL_STATIC # set the return type to static
+            else:
+                for doxy in overloads:
+                    if doxy.isStatic():
+                        docString = LABEL_STATIC # set the return type to static
+
+                    desc = self.__getFullDoc(pyname, pyobj, doxy)
+                    if lines and desc:
+                        lines.append('-'*70)
+                    if desc:
+                        lines += desc
+            docString += '\n'.join(lines)
+
     def __getOutputFormat(self, pypath, pyobj, overloads):
         """Return the line that installs the docstring into the namespace."""
 
-        # is there an existing python docstring? we don't want to overwrite
-        # this because it may be custom authored in the C++ wrap files.
-        # However, we always override the module doc string for now...
-        if hasattr(pyobj, '__doc__') and pyobj.__doc__ is not None:
-            doc = pyobj.__doc__.strip()
-            if len(doc) > 0 and not doc.startswith("C++ signature:") \
-               and not overloads[0].isModule():
-                Debug("Docstring exists for %s - skipping" % pypath)
-                return None
-
-        # get the full docstring that we want to output
-        lines = []
-        pyname = pypath.split('.')[-1]
-        docString = ''
-        
-        if len(overloads) == 1:
-            lines += self.__getFullDoc(pyname, pyobj, overloads[0])
-            if overloads[0].isStatic():
-                docString = LABEL_STATIC # set the return type to static
-        else:
-            for doxy in overloads:
-                if doxy.isStatic():
-                    docString = LABEL_STATIC # set the return type to static
-                    
-                desc = self.__getFullDoc(pyname, pyobj, doxy)
-                if lines and desc:
-                    lines.append('-'*70)
-                if desc:
-                    lines += desc    
-        docString += '\n'.join(lines)
-
+        docString = self.__getDocstring(pypath, pyobj, overloads)
+        if docString is None:
+            return None
         # work out the attribute to set to install this docstring
         words = pypath.split('.')
         cls = words[0]
