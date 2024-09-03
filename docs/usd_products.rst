@@ -111,13 +111,6 @@ Motion
 
 --------
 
-AnimVR
-======
-
-`AnimVR <https://nvrmind.io/features>`_ is a virtual reality animation tool.
-
---------
-
 ArcGIS CityEngine
 =================
 
@@ -286,14 +279,6 @@ Intel OSPRay
 
 `Intel's OSPRay renderer <https://www.ospray.org/>`_ is a path-traced renderer with an `open source Hydra delegate <https://github.com/ospray/hdospray>`_.
 
-
---------
-
-Isotropix Clarisse
-==================
-
-`Clarisse <https://www.isotropix.com/products/clarisse/ifx>`_ is a 3D application for look development, lighting and rendering.
-
 --------
 
 Dreamworks Moonray
@@ -352,8 +337,7 @@ ZBrush
 
 `ZBrush <https://www.maxon.net/en/zbrush>`_ is a 3D sculpting and painting application.
 
-`ZBrush USD documenation <http://docs.pixologic.com/user-guide/zbrush-other-programs/usd-format/>`_
-
+`ZBrush USD documenation <https://help.maxon.net/zbr/en-us/#html/user-guide/zbrush-other-programs/usd-format/usd-format.html>`_
 
 --------
 

@@ -374,7 +374,7 @@ class TestUsdLuxLight(unittest.TestCase):
 
         cylLight.CreateRadiusAttr(4.0)
         cylLight.CreateLengthAttr(10.0)
-        _VerifyExtentAndBBox(cylLight, [(-4.0, -4.0, -5.0), (4.0, 4.0, 5.0)])
+        _VerifyExtentAndBBox(cylLight, [(-5.0, -4.0, -4.0), (5.0, 4.0, 4.0)])
 
         sphereLight.CreateRadiusAttr(3.0)
         _VerifyExtentAndBBox(sphereLight, [(-3.0, -3.0, -3.0), (3.0, 3.0, 3.0)])

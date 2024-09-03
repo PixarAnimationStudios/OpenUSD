@@ -19,25 +19,25 @@
 //
 //  This test isn't called by the cmake/jamfiles.  For future use.
 //
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
 #include <complex>
-#include <boost/python/handle.hpp>
-#include <boost/python/cast.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/detail/wrap_python.hpp>
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/cast.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/detail/wrap_python.hpp"
 
-using boost::python::def;
-using boost::python::handle;
-using boost::python::object;
-using boost::python::borrowed;
+using PXR_BOOST_NAMESPACE::python::def;
+using PXR_BOOST_NAMESPACE::python::handle;
+using PXR_BOOST_NAMESPACE::python::object;
+using PXR_BOOST_NAMESPACE::python::borrowed;
 
 std::string takes_bool(bool b) { return "bool"; }
 std::string takes_int(int b) { return "int"; }
 std::string takes_double(double b) { return "double"; }
 
 
-BOOST_PYTHON_MODULE(overload_resolution)
+PXR_BOOST_PYTHON_MODULE(overload_resolution)
 {    
   def("bid", takes_bool);
   def("bid", takes_int);

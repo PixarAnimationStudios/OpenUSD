@@ -7,15 +7,22 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef OBJECT_MANAGER_DWA2002614_HPP
-# define OBJECT_MANAGER_DWA2002614_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_OBJECT_MANAGER_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_OBJECT_MANAGER_HPP
 
-# include <boost/python/handle.hpp>
-# include <boost/python/cast.hpp>
-# include <boost/python/converter/pyobject_traits.hpp>
-# include <boost/python/detail/type_traits.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/converter/object_manager.hpp>
+#else
+
+# include "pxr/external/boost/python/handle.hpp"
+# include "pxr/external/boost/python/cast.hpp"
+# include "pxr/external/boost/python/converter/pyobject_traits.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <boost/mpl/if.hpp>
-# include <boost/python/detail/indirect_traits.hpp>
+# include "pxr/external/boost/python/detail/indirect_traits.hpp"
 # include <boost/mpl/bool.hpp>
 
 // Facilities for dealing with types which always manage Python
@@ -52,7 +59,7 @@
 //    * T(detail::borrowed_reference(p))
 //        Manages p without checking its type
 //
-//    * get_managed_object(x, boost::python::tag)
+//    * get_managed_object(x, PXR_BOOST_NAMESPACE::python::tag)
 //        Convertible to PyObject*
 //
 // Additional requirements if T can be converted from_python:
@@ -67,7 +74,7 @@
 
 // Forward declarations
 //
-namespace boost { namespace python
+namespace PXR_BOOST_NAMESPACE { namespace python
 {
   namespace api
   {
@@ -75,7 +82,7 @@ namespace boost { namespace python
   }
 }}
 
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 
 // Specializations for handle<T>
@@ -156,6 +163,7 @@ struct is_reference_to_object_manager<T const volatile&>
 {
 };
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // OBJECT_MANAGER_DWA2002614_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_OBJECT_MANAGER_HPP

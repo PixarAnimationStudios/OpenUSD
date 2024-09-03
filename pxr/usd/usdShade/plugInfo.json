@@ -128,6 +128,9 @@
                     }
                 }, 
                 "Validators": {
+                    "EncapsulationRulesValidator": {
+                        "doc": "Connectable prims (e.g. Shader, Material, etc) can only be nested inside other Container-like Connectable prims. Container-like prims include Material, NodeGraph, Light, LightFilter. Shader is not a Container-like prim."
+                    }, 
                     "MaterialBindingApiAppliedValidator": {
                         "doc": "Verify a prim has the MaterialBindingAPI applied if it has a material binding relationship."
                     }, 

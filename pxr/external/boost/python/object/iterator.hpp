@@ -7,32 +7,39 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef ITERATOR_DWA2002510_HPP
-# define ITERATOR_DWA2002510_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ITERATOR_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ITERATOR_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/detail/type_traits.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/class.hpp>
-# include <boost/python/return_value_policy.hpp>
-# include <boost/python/return_by_value.hpp>
-# include <boost/python/handle.hpp>
-# include <boost/python/make_function.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/iterator.hpp>
+#else
 
-# include <boost/python/object/iterator_core.hpp>
-# include <boost/python/object/class_detail.hpp>
-# include <boost/python/object/function_object.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
+
+# include "pxr/external/boost/python/class.hpp"
+# include "pxr/external/boost/python/return_value_policy.hpp"
+# include "pxr/external/boost/python/return_by_value.hpp"
+# include "pxr/external/boost/python/handle.hpp"
+# include "pxr/external/boost/python/make_function.hpp"
+
+# include "pxr/external/boost/python/object/iterator_core.hpp"
+# include "pxr/external/boost/python/object/class_detail.hpp"
+# include "pxr/external/boost/python/object/function_object.hpp"
 
 # include <boost/mpl/vector/vector10.hpp>
 # include <boost/mpl/if.hpp>
 
-# include <boost/python/detail/raw_pyobject.hpp>
+# include "pxr/external/boost/python/detail/raw_pyobject.hpp"
 
 # include <boost/type.hpp>
 
 # include <iterator>
 
-namespace boost { namespace python { namespace objects {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
 
 // CallPolicies for the next() method of iterators. We don't want
 // users to have to explicitly specify that the references returned by
@@ -204,8 +211,8 @@ inline object make_iterator_function(
 )
 {
     typedef typename Accessor1::result_type iterator;
-    typedef typename boost::python::detail::add_const<iterator>::type iterator_const;
-    typedef typename boost::python::detail::add_lvalue_reference<iterator_const>::type iterator_cref;
+    typedef typename PXR_BOOST_NAMESPACE::python::detail::add_const<iterator>::type iterator_const;
+    typedef typename PXR_BOOST_NAMESPACE::python::detail::add_lvalue_reference<iterator_const>::type iterator_cref;
       
     return detail::make_iterator_function(
         get_start
@@ -227,6 +234,7 @@ inline iterator_range<NextPolicies,Iterator>::iterator_range(
 {
 }
 
-}}} // namespace boost::python::objects
+}}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
-#endif // ITERATOR_DWA2002510_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ITERATOR_HPP

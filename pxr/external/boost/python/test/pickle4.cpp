@@ -15,12 +15,12 @@
     For more information refer to boost/libs/python/doc/pickle.html.
  */
 
-#include <boost/python/module.hpp>
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/class.hpp"
 
 #include <string>
 
-namespace boost_python_test {
+namespace PXR_BOOST_NAMESPACE_python_test {
 
   // A friendly class.
   class world
@@ -37,10 +37,10 @@ namespace boost_python_test {
 
 }
 
-BOOST_PYTHON_MODULE(pickle4_ext)
+PXR_BOOST_PYTHON_MODULE(pickle4_ext)
 {
-  using namespace boost::python;
-  using namespace boost_python_test;
+  using namespace PXR_BOOST_NAMESPACE::python;
+  using namespace PXR_BOOST_NAMESPACE_python_test;
   class_<world>("world", init<const std::string&>())
       .enable_pickling()
       .def("greet", &world::greet)

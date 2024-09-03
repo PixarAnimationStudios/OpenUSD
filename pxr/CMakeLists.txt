@@ -1,5 +1,6 @@
 pxr_core_prologue()
 
+add_subdirectory(external)
 add_subdirectory(base)
 add_subdirectory(usd)
 

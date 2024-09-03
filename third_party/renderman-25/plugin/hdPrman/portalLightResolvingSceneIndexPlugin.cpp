@@ -8,6 +8,7 @@
 
 #include "pxr/base/gf/rotation.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceMaterialNetworkInterface.h"
@@ -23,8 +24,6 @@
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
 #include "pxr/usd/sdf/assetPath.h"
-
-#include <boost/functional/hash.hpp>
 
 #include <algorithm>
 #include <iterator>
@@ -163,10 +162,10 @@ _GetPortalName(
     const GfMatrix4d& domeXform,
     const GfMatrix4d& portalXform)
 {
-    size_t hashValue = 0;
-    boost::hash_combine(hashValue, domeColorMap);
-    boost::hash_combine(hashValue, domeXform.ExtractRotation());
-    boost::hash_combine(hashValue, portalXform.ExtractRotation());
+    size_t hashValue = TfHash::Combine(
+        domeColorMap, 
+        domeXform.ExtractRotation(),
+        portalXform.ExtractRotation());
 
     return std::to_string(hashValue);
 }

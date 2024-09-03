@@ -9,21 +9,28 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef boost_python_numpy_dtype_hpp_
-#define boost_python_numpy_dtype_hpp_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_NUMPY_DTYPE_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_DTYPE_HPP
+
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/numpy/dtype.hpp>
+#else
 
 /**
  *  @file boost/python/numpy/dtype.hpp
  *  @brief Object manager for Python's numpy.dtype class.
  */
 
-#include <boost/python.hpp>
-#include <boost/python/numpy/config.hpp>
-#include <boost/python/numpy/numpy_object_mgr_traits.hpp>
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/numpy/config.hpp"
+#include "pxr/external/boost/python/numpy/numpy_object_mgr_traits.hpp"
 #include <boost/mpl/for_each.hpp>
-#include <boost/python/detail/type_traits.hpp>
+#include "pxr/external/boost/python/detail/type_traits.hpp"
 
-namespace boost { namespace python { namespace numpy {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
 
 /**
  *  @brief A boost.python "object manager" (subclass of object) for numpy.dtype.
@@ -70,7 +77,7 @@ public:
    */
   static void register_scalar_converters();
 
-  BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(dtype, object);
+  PXR_BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(dtype, object);
 
 };
 
@@ -113,10 +120,11 @@ struct builtin_dtype< std::complex<T>, false > {
 template <typename T>
 inline dtype dtype::get_builtin() { return detail::builtin_dtype<T>::get(); }
 
-} // namespace boost::python::numpy
+} // namespace PXR_BOOST_NAMESPACE::python::numpy
 
 namespace converter {
 NUMPY_OBJECT_MANAGER_TRAITS(numpy::dtype);
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

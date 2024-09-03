@@ -7,23 +7,30 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef TO_PYTHON_INDIRECT_DWA200221_HPP
-# define TO_PYTHON_INDIRECT_DWA200221_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_INDIRECT_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_INDIRECT_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/object/pointer_holder.hpp>
-# include <boost/python/object/make_ptr_instance.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/to_python_indirect.hpp>
+#else
 
-# include <boost/python/detail/none.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
-# include <boost/python/converter/pytype_function.hpp>
+# include "pxr/external/boost/python/object/pointer_holder.hpp"
+# include "pxr/external/boost/python/object/make_ptr_instance.hpp"
+
+# include "pxr/external/boost/python/detail/none.hpp"
+
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
+# include "pxr/external/boost/python/converter/pytype_function.hpp"
 #endif
 
-# include <boost/python/refcount.hpp>
+# include "pxr/external/boost/python/refcount.hpp"
 
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 # if defined(__ICL) && __ICL < 600 
 #  include <boost/shared_ptr.hpp>
@@ -31,7 +38,7 @@
 #  include <memory>
 # endif
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 template <class T, class MakeHolder>
 struct to_python_indirect
@@ -42,7 +49,7 @@ struct to_python_indirect
     {
         return this->execute(const_cast<U&>(ref), detail::is_pointer<U>());
     }
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
     inline PyTypeObject const*
     get_pytype()const
     {
@@ -83,16 +90,7 @@ namespace detail
       template <class T>
       static PyObject* execute(T* p)
       {
-          // can't use auto_ptr with Intel 5 and VC6 Dinkum library
-          // for some reason. We get link errors against the auto_ptr
-          // copy constructor.
-# if defined(__ICL) && __ICL < 600 
-          typedef boost::shared_ptr<T> smart_pointer;
-# elif defined(BOOST_NO_CXX11_SMART_PTR)
-          typedef std::auto_ptr<T> smart_pointer;
-# else
           typedef std::unique_ptr<T> smart_pointer;
-# endif
           typedef objects::pointer_holder<smart_pointer, T> holder_t;
 
           smart_pointer ptr(const_cast<T*>(p));
@@ -112,6 +110,7 @@ namespace detail
   };
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // TO_PYTHON_INDIRECT_DWA200221_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_TO_PYTHON_INDIRECT_HPP

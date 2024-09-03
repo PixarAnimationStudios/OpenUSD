@@ -8,14 +8,20 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
+// If PXR_BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
+// boost::python will generate simplified docstrings that break the associated
+// test unless we undefine it before including any headers.
+#undef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
+
 // This module exercises the converters exposed in m1 at a low level
 // by exposing raw Python extension functions that use wrap<> and
 // unwrap<> objects.
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/copy_non_const_reference.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/return_value_policy.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/docstring_options.hpp"
+#include "pxr/external/boost/python/copy_non_const_reference.hpp"
+#include "pxr/external/boost/python/copy_const_reference.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
 #include "simple_type.hpp"
 
 #if PY_VERSION_HEX >= 0x03000000
@@ -75,12 +81,19 @@ struct rewrap
     static T f(T x) { return x; }
 };
 
-BOOST_PYTHON_MODULE(m2)
+PXR_BOOST_PYTHON_MODULE(m2)
 {
-    using boost::python::return_value_policy;
-    using boost::python::copy_const_reference;
-    using boost::python::copy_non_const_reference;
-    using boost::python::def;
+    using PXR_BOOST_NAMESPACE::python::return_value_policy;
+    using PXR_BOOST_NAMESPACE::python::copy_const_reference;
+    using PXR_BOOST_NAMESPACE::python::copy_non_const_reference;
+    using PXR_BOOST_NAMESPACE::python::def;
+    using PXR_BOOST_NAMESPACE::python::docstring_options;
+
+    // Explicitly enable Python signatures in docstrings in case boost::python
+    // was built with PXR_BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
+    // signatures by default.
+    docstring_options doc_options;
+    doc_options.enable_py_signatures();
     
     def("unwrap_int", unwrap_int);
     def("unwrap_int_ref", unwrap_int_ref);

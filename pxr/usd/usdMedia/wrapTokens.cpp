@@ -10,62 +10,32 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
-
-// Helper to return a static token as a string.  We wrap tokens as Python
-// strings and for some reason simply wrapping the token using def_readonly
-// bypasses to-Python conversion, leading to the error that there's no
-// Python type for the C++ TfToken type.  So we wrap this functor instead.
-class _WrapStaticToken {
-public:
-    _WrapStaticToken(const TfToken* token) : _token(token) { }
-
-    std::string operator()() const
-    {
-        return _token->GetString();
-    }
-
-private:
-    const TfToken* _token;
-};
-
-template <typename T>
-void
-_AddToken(T& cls, const char* name, const TfToken& token)
-{
-    cls.add_static_property(name,
-                            boost::python::make_function(
-                                _WrapStaticToken(&token),
-                                boost::python::return_value_policy<
-                                    boost::python::return_by_value>(),
-                                boost::mpl::vector1<std::string>()));
-}
-
-} // anonymous
+#define _ADD_TOKEN(cls, name) \
+    cls.add_static_property(#name, +[]() { return UsdMediaTokens->name.GetString(); });
 
 void wrapUsdMediaTokens()
 {
     boost::python::class_<UsdMediaTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
-    _AddToken(cls, "auralMode", UsdMediaTokens->auralMode);
-    _AddToken(cls, "defaultImage", UsdMediaTokens->defaultImage);
-    _AddToken(cls, "endTime", UsdMediaTokens->endTime);
-    _AddToken(cls, "filePath", UsdMediaTokens->filePath);
-    _AddToken(cls, "gain", UsdMediaTokens->gain);
-    _AddToken(cls, "loopFromStage", UsdMediaTokens->loopFromStage);
-    _AddToken(cls, "loopFromStart", UsdMediaTokens->loopFromStart);
-    _AddToken(cls, "loopFromStartToEnd", UsdMediaTokens->loopFromStartToEnd);
-    _AddToken(cls, "mediaOffset", UsdMediaTokens->mediaOffset);
-    _AddToken(cls, "nonSpatial", UsdMediaTokens->nonSpatial);
-    _AddToken(cls, "onceFromStart", UsdMediaTokens->onceFromStart);
-    _AddToken(cls, "onceFromStartToEnd", UsdMediaTokens->onceFromStartToEnd);
-    _AddToken(cls, "playbackMode", UsdMediaTokens->playbackMode);
-    _AddToken(cls, "previews", UsdMediaTokens->previews);
-    _AddToken(cls, "previewThumbnails", UsdMediaTokens->previewThumbnails);
-    _AddToken(cls, "previewThumbnailsDefault", UsdMediaTokens->previewThumbnailsDefault);
-    _AddToken(cls, "spatial", UsdMediaTokens->spatial);
-    _AddToken(cls, "startTime", UsdMediaTokens->startTime);
-    _AddToken(cls, "thumbnails", UsdMediaTokens->thumbnails);
-    _AddToken(cls, "AssetPreviewsAPI", UsdMediaTokens->AssetPreviewsAPI);
-    _AddToken(cls, "SpatialAudio", UsdMediaTokens->SpatialAudio);
+    _ADD_TOKEN(cls, auralMode);
+    _ADD_TOKEN(cls, defaultImage);
+    _ADD_TOKEN(cls, endTime);
+    _ADD_TOKEN(cls, filePath);
+    _ADD_TOKEN(cls, gain);
+    _ADD_TOKEN(cls, loopFromStage);
+    _ADD_TOKEN(cls, loopFromStart);
+    _ADD_TOKEN(cls, loopFromStartToEnd);
+    _ADD_TOKEN(cls, mediaOffset);
+    _ADD_TOKEN(cls, nonSpatial);
+    _ADD_TOKEN(cls, onceFromStart);
+    _ADD_TOKEN(cls, onceFromStartToEnd);
+    _ADD_TOKEN(cls, playbackMode);
+    _ADD_TOKEN(cls, previews);
+    _ADD_TOKEN(cls, previewThumbnails);
+    _ADD_TOKEN(cls, previewThumbnailsDefault);
+    _ADD_TOKEN(cls, spatial);
+    _ADD_TOKEN(cls, startTime);
+    _ADD_TOKEN(cls, thumbnails);
+    _ADD_TOKEN(cls, AssetPreviewsAPI);
+    _ADD_TOKEN(cls, SpatialAudio);
 }

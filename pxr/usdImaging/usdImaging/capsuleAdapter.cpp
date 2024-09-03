@@ -258,7 +258,6 @@ UsdImagingCapsuleAdapter::GetPoints(UsdPrim const& prim,
         GeomUtilCapsuleMeshGenerator::ComputeNumPoints(numRadial, numCapAxial);
 
     VtVec3fArray points(numPoints);
-    const double sweep = 360;
     GeomUtilCapsuleMeshGenerator::GeneratePoints(
         points.begin(),
         numRadial,
@@ -266,7 +265,6 @@ UsdImagingCapsuleAdapter::GetPoints(UsdPrim const& prim,
         radiusBottom,
         radiusTop,
         height,
-        sweep,
         &basis);
 
     return VtValue(points);

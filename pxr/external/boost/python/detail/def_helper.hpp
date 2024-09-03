@@ -7,22 +7,29 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef DEF_HELPER_DWA200287_HPP
-# define DEF_HELPER_DWA200287_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEF_HELPER_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEF_HELPER_HPP
 
-# include <boost/python/args.hpp>
-# include <boost/python/detail/indirect_traits.hpp>
-# include <boost/python/detail/type_traits.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/def_helper.hpp>
+#else
+
+# include "pxr/external/boost/python/args.hpp"
+# include "pxr/external/boost/python/detail/indirect_traits.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <boost/mpl/not.hpp>
 # include <boost/mpl/and.hpp>
 # include <boost/mpl/or.hpp>
 # include <boost/mpl/lambda.hpp>
 # include <boost/mpl/apply.hpp>
 # include <boost/tuple/tuple.hpp>
-# include <boost/python/detail/not_specified.hpp>
-# include <boost/python/detail/def_helper_fwd.hpp>
+# include "pxr/external/boost/python/detail/not_specified.hpp"
+# include "pxr/external/boost/python/detail/def_helper_fwd.hpp"
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 struct default_call_policies;
 
@@ -211,6 +218,7 @@ namespace detail
   };
 }
 
-}} // namespace boost::python::detail
+}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // DEF_HELPER_DWA200287_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEF_HELPER_HPP

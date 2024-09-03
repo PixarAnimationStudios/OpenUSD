@@ -126,6 +126,7 @@ class ViewSettingsDataModel(StateSource, QtCore.QObject):
         self._defaultMaterialAmbient = self.stateProperty("defaultMaterialAmbient", default=DEFAULT_AMBIENT)
         self._defaultMaterialSpecular = self.stateProperty("defaultMaterialSpecular", default=DEFAULT_SPECULAR)
         self._redrawOnScrub = self.stateProperty("redrawOnScrub", default=True)
+        self._stepSize = self.stateProperty("stepSize", default=1.0)
         self._renderMode = self.stateProperty("renderMode", default=RenderModes.SMOOTH_SHADED)
         self._freeCameraFOV = self.stateProperty("freeCameraFOV", default=60.0)
         self._freeCameraAspect = self.stateProperty("freeCameraAspect", default=1.0)
@@ -208,6 +209,7 @@ class ViewSettingsDataModel(StateSource, QtCore.QObject):
         state["defaultMaterialAmbient"] = self._defaultMaterialAmbient
         state["defaultMaterialSpecular"] = self._defaultMaterialSpecular
         state["redrawOnScrub"] = self._redrawOnScrub
+        state["stepSize"] = self._stepSize
         state["renderMode"] = self._renderMode
         state["freeCameraFOV"] = self._freeCameraFOV
         freeCameraOverrideNear = self._freeCameraOverrideNear
@@ -805,6 +807,15 @@ class ViewSettingsDataModel(StateSource, QtCore.QObject):
     @visibleViewSetting
     def redrawOnScrub(self, value):
         self._redrawOnScrub = value
+
+    @property
+    def stepSize(self):
+        return self._stepSize
+
+    @stepSize.setter
+    @visibleViewSetting
+    def stepSize(self, value):
+        self._stepSize = value
 
     @property
     def freeCamera(self):

@@ -7,12 +7,12 @@
 // Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/class.hpp>
-#include <boost/python/suite/indexing/map_indexing_suite.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/suite/indexing/map_indexing_suite.hpp"
 
 void int_map_indexing_suite()
 {
-    using namespace boost::python;
+    using namespace PXR_BOOST_NAMESPACE::python;
     
     // Compile check only...
     class_<std::map<int, int> >("IntMap")

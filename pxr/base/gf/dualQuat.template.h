@@ -47,7 +47,7 @@ struct GfIsGfDualQuat<class {{ DUALQUAT }}> { static const bool value = true; };
 ///
 /// References:
 ///    https://www.cs.utah.edu/~ladislav/kavan06dual/kavan06dual.pdf
-///    http://web.cs.iastate.edu/~cs577/handouts/dual-quaternion.pdf
+///    https://faculty.sites.iastate.edu/jia/files/inline-files/dual-quaternion.pdf
 ///
 class {{ DUALQUAT }} final
 {

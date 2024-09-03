@@ -7,13 +7,20 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef SLICE_NIL_DWA2002620_HPP
-# define SLICE_NIL_DWA2002620_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_SLICE_NIL_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_SLICE_NIL_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/object_core.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-namespace boost { namespace python { namespace api {
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/slice_nil.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/object_core.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace api {
 
 class slice_nil : public object
 {
@@ -44,6 +51,7 @@ using api::slice_nil;
 using api::_;
 # endif 
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // SLICE_NIL_DWA2002620_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_SLICE_NIL_HPP

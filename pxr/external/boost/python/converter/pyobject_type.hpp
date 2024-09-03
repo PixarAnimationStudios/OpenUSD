@@ -7,14 +7,21 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef PYOBJECT_TYPE_DWA2002720_HPP
-# define PYOBJECT_TYPE_DWA2002720_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYOBJECT_TYPE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYOBJECT_TYPE_HPP
 
-# include <boost/python/cast.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-namespace boost { namespace python { namespace converter { 
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/converter/pyobject_type.hpp>
+#else
 
-BOOST_PYTHON_DECL inline
+# include "pxr/external/boost/python/cast.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
+
+PXR_BOOST_PYTHON_DECL inline
 PyObject* checked_downcast_impl(PyObject *obj, PyTypeObject *type)
 {
   return (PyType_IsSubtype(Py_TYPE(obj), type) ? obj : NULL);
@@ -35,11 +42,12 @@ struct pyobject_type
             (checked_downcast_impl)(x, pytype)
             );
     }
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
     static PyTypeObject const* get_pytype() { return pytype; }
 #endif
 };
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // PYOBJECT_TYPE_DWA2002720_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYOBJECT_TYPE_HPP

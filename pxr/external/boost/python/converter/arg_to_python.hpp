@@ -7,33 +7,40 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef ARG_TO_PYTHON_DWA200265_HPP
-# define ARG_TO_PYTHON_DWA200265_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_TO_PYTHON_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_TO_PYTHON_HPP
 
-# include <boost/python/ptr.hpp>
-# include <boost/python/tag.hpp>
-# include <boost/python/to_python_indirect.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/converter/registered.hpp>
-# include <boost/python/converter/registered_pointee.hpp>
-# include <boost/python/converter/arg_to_python_base.hpp>
-# include <boost/python/converter/shared_ptr_to_python.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/converter/arg_to_python.hpp>
+#else
+
+# include "pxr/external/boost/python/ptr.hpp"
+# include "pxr/external/boost/python/tag.hpp"
+# include "pxr/external/boost/python/to_python_indirect.hpp"
+
+# include "pxr/external/boost/python/converter/registered.hpp"
+# include "pxr/external/boost/python/converter/registered_pointee.hpp"
+# include "pxr/external/boost/python/converter/arg_to_python_base.hpp"
+# include "pxr/external/boost/python/converter/shared_ptr_to_python.hpp"
 // Bring in specializations
-# include <boost/python/converter/builtin_converters.hpp>
+# include "pxr/external/boost/python/converter/builtin_converters.hpp"
 
-# include <boost/python/object/function_handle.hpp>
+# include "pxr/external/boost/python/object/function_handle.hpp"
 
-# include <boost/python/base_type_traits.hpp>
+# include "pxr/external/boost/python/base_type_traits.hpp"
 
-# include <boost/python/detail/indirect_traits.hpp>
-# include <boost/python/detail/convertible.hpp>
-# include <boost/python/detail/string_literal.hpp>
-# include <boost/python/detail/value_is_shared_ptr.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/indirect_traits.hpp"
+# include "pxr/external/boost/python/detail/convertible.hpp"
+# include "pxr/external/boost/python/detail/string_literal.hpp"
+# include "pxr/external/boost/python/detail/value_is_shared_ptr.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 # include <boost/mpl/or.hpp>
 
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 template <class T> struct is_object_manager;
 
@@ -117,9 +124,9 @@ namespace detail
       
             , typename mpl::if_<
                 mpl::or_<
-                    boost::python::detail::is_function<T>
+                    PXR_BOOST_NAMESPACE::python::detail::is_function<T>
                   , indirect_traits::is_pointer_to_function<T>
-                  , boost::python::detail::is_member_function_pointer<T>
+                  , PXR_BOOST_NAMESPACE::python::detail::is_member_function_pointer<T>
                 >
                 , function_arg_to_python<T>
 
@@ -128,7 +135,7 @@ namespace detail
                     , object_manager_arg_to_python<T>
 
                     , typename mpl::if_<
-                          boost::python::detail::is_pointer<T>
+                          PXR_BOOST_NAMESPACE::python::detail::is_pointer<T>
                         , pointer_deep_arg_to_python<T>
 
                         , typename mpl::if_<
@@ -257,6 +264,7 @@ inline arg_to_python<T>::arg_to_python(T const& x)
     : base(x)
 {}
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // ARG_TO_PYTHON_DWA200265_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_TO_PYTHON_HPP

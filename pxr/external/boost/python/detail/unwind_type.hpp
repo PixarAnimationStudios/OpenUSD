@@ -7,14 +7,21 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef UNWIND_TYPE_DWA200222_HPP
-# define UNWIND_TYPE_DWA200222_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWIND_TYPE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWIND_TYPE_HPP
 
-# include <boost/python/detail/cv_category.hpp>
-# include <boost/python/detail/indirect_traits.hpp>
-# include <boost/python/detail/type_traits.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-namespace boost { namespace python { namespace detail {
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/unwind_type.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/cv_category.hpp"
+# include "pxr/external/boost/python/detail/indirect_traits.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 #if (!defined(_MSC_VER) || _MSC_VER >= 1915)
 // If forward declared, msvc6.5 does not recognize them as inline.
@@ -172,6 +179,7 @@ unwind_type(boost::type<U>*p =0, Generator* =0)
     return unwind_helper2<indirection>::execute((U(*)())0,(Generator*)0);
 }
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // UNWIND_TYPE_DWA200222_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWIND_TYPE_HPP

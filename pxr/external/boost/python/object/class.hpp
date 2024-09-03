@@ -7,19 +7,26 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef CLASS_DWA20011214_HPP
-# define CLASS_DWA20011214_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CLASS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CLASS_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/object_core.hpp>
-# include <boost/python/type_id.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/class.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/object_core.hpp"
+# include "pxr/external/boost/python/type_id.hpp"
 # include <cstddef>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace objects { 
 
-struct BOOST_PYTHON_DECL class_base : python::api::object
+struct PXR_BOOST_PYTHON_DECL class_base : python::api::object
 {
     // constructor
     class_base(
@@ -63,6 +70,7 @@ struct BOOST_PYTHON_DECL class_base : python::api::object
     void make_method_static(const char *method_name);
 };
 
-}}} // namespace boost::python::objects
+}}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
-#endif // CLASS_DWA20011214_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CLASS_HPP

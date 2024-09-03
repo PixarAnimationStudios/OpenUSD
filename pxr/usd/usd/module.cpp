@@ -38,6 +38,8 @@ TF_WRAP_MODULE
     TF_WRAP(UsdSpecializes);
     TF_WRAP(UsdPrimRange);
     TF_WRAP(UsdVariantSets);
+    TF_WRAP(UsdValidationError);
+    TF_WRAP(UsdValidator);
 
     // SchemaBase, APISchemaBase and subclasses.
     TF_WRAP(UsdSchemaBase);

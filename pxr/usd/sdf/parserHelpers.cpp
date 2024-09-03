@@ -35,6 +35,7 @@
 #include "pxr/base/vt/value.h"
 
 #include <algorithm>
+#include <array>
 #include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE

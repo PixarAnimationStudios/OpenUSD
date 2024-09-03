@@ -7,29 +7,36 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef ARG_FROM_PYTHON_DWA2002127_HPP
-# define ARG_FROM_PYTHON_DWA2002127_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_FROM_PYTHON_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_FROM_PYTHON_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/converter/from_python.hpp>
-# include <boost/python/detail/indirect_traits.hpp>
-# include <boost/python/detail/type_traits.hpp>
-# include <boost/python/converter/rvalue_from_python_data.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/converter/arg_from_python.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/converter/from_python.hpp"
+# include "pxr/external/boost/python/detail/indirect_traits.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
+# include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
 # include <boost/mpl/eval_if.hpp>
 # include <boost/mpl/if.hpp>
 # include <boost/mpl/identity.hpp>
 # include <boost/mpl/and.hpp>
 # include <boost/mpl/or.hpp>
 # include <boost/mpl/not.hpp>
-# include <boost/python/converter/registry.hpp>
-# include <boost/python/converter/registered.hpp>
-# include <boost/python/converter/registered_pointee.hpp>
-# include <boost/python/detail/void_ptr.hpp>
-# include <boost/python/back_reference.hpp>
-# include <boost/python/detail/referent_storage.hpp>
-# include <boost/python/converter/obj_mgr_arg_from_python.hpp>
+# include "pxr/external/boost/python/converter/registry.hpp"
+# include "pxr/external/boost/python/converter/registered.hpp"
+# include "pxr/external/boost/python/converter/registered_pointee.hpp"
+# include "pxr/external/boost/python/detail/void_ptr.hpp"
+# include "pxr/external/boost/python/back_reference.hpp"
+# include "pxr/external/boost/python/detail/referent_storage.hpp"
+# include "pxr/external/boost/python/converter/obj_mgr_arg_from_python.hpp"
 
-namespace boost { namespace python
+namespace PXR_BOOST_NAMESPACE { namespace python
 {
   template <class T> struct arg_from_python;
 }}
@@ -37,7 +44,7 @@ namespace boost { namespace python
 // This header defines Python->C++ function argument converters,
 // parametrized on the argument type.
 
-namespace boost { namespace python { namespace converter {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter {
 
 //
 // lvalue converters
@@ -110,7 +117,7 @@ struct reference_arg_from_python : arg_lvalue_from_python_base
 template <class T>
 struct arg_rvalue_from_python
 {
-    typedef typename boost::python::detail::add_lvalue_reference<
+    typedef typename PXR_BOOST_NAMESPACE::python::detail::add_lvalue_reference<
         T
         // We can't add_const here, or it would be impossible to pass
         // auto_ptr<U> args from Python to C++
@@ -136,14 +143,14 @@ struct arg_rvalue_from_python
 // back to the Python object
 template <class T>
 struct back_reference_arg_from_python
-    : boost::python::arg_from_python<typename T::type>
+    : PXR_BOOST_NAMESPACE::python::arg_from_python<typename T::type>
 {
     typedef T result_type;
     
     back_reference_arg_from_python(PyObject*);
     T operator()();
  private:
-    typedef boost::python::arg_from_python<typename T::type> base;
+    typedef PXR_BOOST_NAMESPACE::python::arg_from_python<typename T::type> base;
     PyObject* m_source;
 };
 
@@ -184,7 +191,7 @@ struct select_arg_from_python
                         >
                       , reference_arg_from_python<T>
                       , mpl::if_<
-                            boost::python::is_back_reference<T>
+                            PXR_BOOST_NAMESPACE::python::is_back_reference<T>
                           , back_reference_arg_from_python<T>
                           , arg_rvalue_from_python<T>
                         >
@@ -335,6 +342,7 @@ back_reference_arg_from_python<T>::operator()()
     return T(m_source, base::operator()());
 }
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // ARG_FROM_PYTHON_DWA2002127_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_ARG_FROM_PYTHON_HPP

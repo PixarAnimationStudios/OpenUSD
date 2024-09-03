@@ -60,6 +60,7 @@ void wrapMeshTopology()
              return_value_policy<copy_const_reference>())
         .def("GetOrientation", &This::GetOrientation,
              return_value_policy<copy_const_reference>())
+        .def("WithOrientation", &This::WithOrientation)
         .def("GetHoleIndices", &This::GetHoleIndices,
              return_value_policy<copy_const_reference>())
         .def("WithHoleIndices", &This::WithHoleIndices)

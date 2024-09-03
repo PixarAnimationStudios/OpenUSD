@@ -7,12 +7,12 @@
 // Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/register_ptr_to_python.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/wrapper.hpp>
-#include <boost/python/module.hpp>
-#include <boost/python/implicit.hpp>
+#include "pxr/external/boost/python/register_ptr_to_python.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/wrapper.hpp"
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/implicit.hpp"
 
 #include <memory>
 
@@ -25,15 +25,15 @@ struct data
     }
 };
     
-std::auto_ptr<data> create_data()
+std::shared_ptr<data> create_data()
 { 
-    return std::auto_ptr<data>( new data ); 
+    return std::shared_ptr<data>( new data ); 
 }
 
-void do_nothing( std::auto_ptr<data>& ){}
+void do_nothing( std::shared_ptr<data>& ){}
 
     
-namespace bp = boost::python;
+namespace bp = PXR_BOOST_NAMESPACE::python;
 
 struct data_wrapper : data, bp::wrapper< data >
 {
@@ -62,9 +62,9 @@ struct data_wrapper : data, bp::wrapper< data >
 
 };
 
-BOOST_PYTHON_MODULE(wrapper_held_type_ext)
+PXR_BOOST_PYTHON_MODULE(wrapper_held_type_ext)
 {
-    bp::class_< data_wrapper, std::auto_ptr< data > >( "data" )    
+    bp::class_< data_wrapper, std::shared_ptr< data > >( "data" )    
         .def( "id", &data::id, &::data_wrapper::default_id );
 
     bp::def( "do_nothing", &do_nothing );

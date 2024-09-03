@@ -398,15 +398,20 @@ This applied API strength order is invoked recursively, in a depth first
 expansion, because **all schema types can introduce built-in schemas and can
 cause additional auto applied schemas to be applied**.
 
-For properties that are defined by more than one of the included schema,
-fields for which the strongest property definition does *not* express an opinion, 
-**may** be composed from weaker API schema definitions if the following 
-conditions are met:
-- The property type of the stronger and weaker property definitions match. Specifically,
-  the property definitions must both be attributes or both be relationships, and if they
-  are attributes, their type names must be exactly the same.
-- The field is in the set of _allowed composable fields_ which currently includes only
-  _default_ and _hidden_. We may expand the set of allowed composable fields in the future.
+### API schema property underrides {#Usd_APISchemaPropertyUnderride}
+
+For properties that are defined by more than one of the included schemas, fields
+for which the strongest property definition does *not* express an opinion,
+**may** be composed from weaker API schema definitions (i.e., the weaker
+definition may act as an _API schema underride_) if the following conditions are
+met:
+- The property types of the stronger and weaker property definitions
+  match. Specifically, the property definitions must both be attributes or both
+  be relationships, and if they are attributes, their type names must be exactly
+  the same.
+- The field is in the set of _allowed composable fields_, which currently
+  includes only _default_ and _hidden_. We may expand the set of allowed
+  composable fields in the future.
 
 ### API schema property overrides {#Usd_APISchemaPropertyOverride}
 
@@ -471,13 +476,14 @@ There are some limitations to how API schema override properties can be used:
    is an attribute, the type name (int, float, color3f, etc.) of the attribute. 
    Any API schema property overrides that do not conform to the underlying 
    property type are ignored. Note that the variability of an API schema override
-   property is allowed to be different than the defined property but the override's
-   variability will be ignored.
+   property is allowed to be different than the defined property but the
+   override's variability will be ignored.
 
-2. API schema override properties are currently only resolved when generating the
-   static \ref UsdPrimDefinition "prim definitions" for registered IsA and applied
-   API schema types in the schema registry. "Dangling overrides" are not retained
-   which means they cannot be used by an IsA schema to provide overrides to 
+2. API schema property overrides are currently only resolved when generating the
+   static \ref UsdPrimDefinition "prim definitions" for registered IsA and
+   applied API schema types in the schema registry. "Dangling overrides" are not
+   retained which means they cannot be used by an IsA schema (or by builtin or
+   auto-apply schemas included by an IsA schema) to provide overrides to
    properties from authored API schemas applied in scene description.
 
 3. API schema property overrides only apply to the properties defined by API 
@@ -490,9 +496,10 @@ There are some limitations to how API schema override properties can be used:
    included by "C") and vice versa.
 
 Note that API schema property overrides are specific to overriding properties
-from built-in API schemas and do not apply to overriding properties via schema
-inheritance. This is because schema properties always sparsely compose via 
-class inheritance during schema generation so no specification is necessary.
+from built-in API schemas and do not apply to overriding properties via typed
+schema inheritance. This is because schema properties always sparsely compose
+via class inheritance during schema generation so no override specification is
+necessary.
 
 ## Schema Code Generation {#Usd_SchemaCodeGeneration}
 

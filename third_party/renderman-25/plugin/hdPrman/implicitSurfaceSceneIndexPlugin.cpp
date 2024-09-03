@@ -61,16 +61,18 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
                 HdPrimTypeTokens->cube, toMeshSrc,
                 HdPrimTypeTokens->cone, toMeshSrc,
                 HdPrimTypeTokens->cylinder, toMeshSrc,
-                HdPrimTypeTokens->capsule, toMeshSrc);
+                HdPrimTypeTokens->capsule, toMeshSrc,
+                HdPrimTypeTokens->plane, toMeshSrc);
     } else {
-        // Cone and cylinder need transforms updated, and cube and capsule still
-        // need to be tessellated.
+        // Cone and cylinder need transforms updated, and cube and capsule
+        // and plane still need to be tessellated.
         inputArgs =
             HdRetainedContainerDataSource::New(
                 HdPrimTypeTokens->cone, axisToTransformSrc,
                 HdPrimTypeTokens->cylinder, axisToTransformSrc,
                 HdPrimTypeTokens->cube, toMeshSrc,
-                HdPrimTypeTokens->capsule, toMeshSrc);
+                HdPrimTypeTokens->capsule, toMeshSrc,
+                HdPrimTypeTokens->plane, toMeshSrc);
     }
 
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(

@@ -236,8 +236,8 @@ public:
 
     void CreateRenderViewFromRenderSpec(const VtDictionary &renderSpec);
 
-    void CreateRenderViewFromRenderSettingsProduct(
-        HdRenderSettings::RenderProduct const &product,
+    void CreateRenderViewFromRenderSettingsProducts(
+        HdRenderSettings::RenderProducts const &products,
         HdPrman_RenderViewContext *renderViewContext);
 
     // Starts the render thread (if needed), and tells the render thread to

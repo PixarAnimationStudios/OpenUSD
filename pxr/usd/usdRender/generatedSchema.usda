@@ -487,11 +487,6 @@ class RenderPass "RenderPass" (
     uniform bool denoise:enable = 0 (
         doc = "When True, this Pass pass should be denoised."
     )
-    rel denoise:pass (
-        doc = """The The UsdRenderDenoisePass prim from which to 
-        source denoise settings.
-        """
-    )
     uniform asset fileName (
         doc = """The asset that contains the rendering prims or other 
         information needed to render this pass.
@@ -542,20 +537,5 @@ class RenderPass "RenderPass" (
         a write node.
         """
     )
-}
-
-class RenderDenoisePass "RenderDenoisePass" (
-    doc = """A RenderDenoisePass generates renders via a denoising process.
-    This may be the same renderer that a pipeline uses for UsdRender, 
-    or may be a separate one.  Notably, a RenderDenoisePass requires
-    another Pass to be present for it to operate.  The denoising process 
-    itself is not generative, and requires images inputs to operate.
- 
-    As denoising integration varies so widely across pipelines, all
-    implementation details are left to pipeline-specific prims
-    that inherit from RenderDenoisePass.
-    """
-)
-{
 }
 

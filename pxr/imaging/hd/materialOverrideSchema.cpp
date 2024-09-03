@@ -90,6 +90,14 @@ const TfToken &
 HdMaterialOverrideSchema::GetSchemaToken()
 {
     return HdMaterialOverrideSchemaTokens->materialOverride;
+}
+
+/*static*/
+const HdDataSourceLocator &
+HdMaterialOverrideSchema::GetDefaultLocator()
+{
+    static const HdDataSourceLocator locator(GetSchemaToken());
+    return locator;
 } 
 
 PXR_NAMESPACE_CLOSE_SCOPE

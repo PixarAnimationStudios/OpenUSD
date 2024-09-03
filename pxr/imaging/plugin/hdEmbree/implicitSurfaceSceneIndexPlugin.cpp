@@ -41,7 +41,8 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
             HdPrimTypeTokens->cube, toMeshSrc,
             HdPrimTypeTokens->cone, toMeshSrc,
             HdPrimTypeTokens->cylinder, toMeshSrc,
-            HdPrimTypeTokens->capsule, toMeshSrc);
+            HdPrimTypeTokens->capsule, toMeshSrc,
+            HdPrimTypeTokens->plane, toMeshSrc);
 
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
         _pluginDisplayName,

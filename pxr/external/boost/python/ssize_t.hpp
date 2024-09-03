@@ -8,12 +8,19 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef BOOST_PYTHON_SSIZE_T_RWGK20060924_HPP
-# define BOOST_PYTHON_SSIZE_T_RWGK20060924_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_SSIZE_T_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_SSIZE_T_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-namespace boost { namespace python {
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/ssize_t.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/prefix.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 #if PY_VERSION_HEX >= 0x02050000
 
@@ -29,6 +36,7 @@ ssize_t const ssize_t_min = INT_MIN;
 
 #endif
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // BOOST_PYTHON_SSIZE_T_RWGK20060924_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_SSIZE_T_HPP

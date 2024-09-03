@@ -7,14 +7,14 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/return_value_policy.hpp>
-#include <boost/python/manage_new_object.hpp>
-#include <boost/python/return_internal_reference.hpp>
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
+#include "pxr/external/boost/python/manage_new_object.hpp"
+#include "pxr/external/boost/python/return_internal_reference.hpp"
+#include "pxr/external/boost/python/class.hpp"
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 int a_instances = 0;
 
@@ -91,7 +91,7 @@ A* as_A(Base* b)
     return dynamic_cast<A*>(b);
 }
 
-BOOST_PYTHON_MODULE(test_pointer_adoption_ext)
+PXR_BOOST_PYTHON_MODULE(test_pointer_adoption_ext)
 {
     def("num_a_instances", num_a_instances);
 

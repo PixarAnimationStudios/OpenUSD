@@ -7,22 +7,29 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef PY_FUNCTION_DWA200286_HPP
-# define PY_FUNCTION_DWA200286_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_PY_FUNCTION_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_PY_FUNCTION_HPP
 
-# include <boost/python/detail/signature.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/py_function.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/signature.hpp"
 # include <boost/detail/workaround.hpp>
 # include <boost/mpl/size.hpp>
 # include <memory>
 
-namespace boost { namespace python { namespace objects {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
 
 // This type is used as a "generalized Python callback", wrapping the
 // function signature:
 //
 //      PyObject* (PyObject* args, PyObject* keywords)
 
-struct BOOST_PYTHON_DECL py_function_impl_base
+struct PXR_BOOST_PYTHON_DECL py_function_impl_base
 {
     virtual ~py_function_impl_base();
     virtual PyObject* operator()(PyObject*, PyObject*) = 0;
@@ -173,13 +180,10 @@ struct py_function
     }
     
  private:
-#if defined(BOOST_NO_CXX11_SMART_PTR)
-    mutable std::auto_ptr<py_function_impl_base> m_impl;
-#else
     mutable std::unique_ptr<py_function_impl_base> m_impl;
-#endif
 };
 
-}}} // namespace boost::python::objects
+}}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
-#endif // PY_FUNCTION_DWA200286_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_PY_FUNCTION_HPP

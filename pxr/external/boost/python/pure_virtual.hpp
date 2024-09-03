@@ -7,17 +7,24 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef PURE_VIRTUAL_DWA2003810_HPP
-# define PURE_VIRTUAL_DWA2003810_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_PURE_VIRTUAL_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_PURE_VIRTUAL_HPP
 
-# include <boost/python/def_visitor.hpp>
-# include <boost/python/default_call_policies.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/pure_virtual.hpp>
+#else
+
+# include "pxr/external/boost/python/def_visitor.hpp"
+# include "pxr/external/boost/python/default_call_policies.hpp"
 # include <boost/mpl/push_front.hpp>
 # include <boost/mpl/pop_front.hpp>
 
-# include <boost/python/detail/nullary_function_adaptor.hpp>
+# include "pxr/external/boost/python/detail/nullary_function_adaptor.hpp"
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 namespace detail
 {
@@ -27,7 +34,7 @@ namespace detail
   
   // Raises a Python RuntimeError reporting that a pure virtual
   // function was called.
-  void BOOST_PYTHON_DECL pure_virtual_called();
+  void PXR_BOOST_PYTHON_DECL pure_virtual_called();
 
   // Replace the two front elements of S with T1 and T2
   template <class S, class T1, class T2>
@@ -124,6 +131,7 @@ pure_virtual(PointerToMemberFunction pmf)
     return detail::pure_virtual_visitor<PointerToMemberFunction>(pmf);
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // PURE_VIRTUAL_DWA2003810_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_PURE_VIRTUAL_HPP

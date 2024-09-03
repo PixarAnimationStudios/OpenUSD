@@ -7,11 +7,18 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef AS_TO_PYTHON_FUNCTION_DWA2002121_HPP
-# define AS_TO_PYTHON_FUNCTION_DWA2002121_HPP
-# include <boost/python/converter/to_python_function_type.hpp>
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_AS_TO_PYTHON_FUNCTION_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_AS_TO_PYTHON_FUNCTION_HPP
 
-namespace boost { namespace python { namespace converter { 
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/converter/as_to_python_function.hpp>
+#else
+# include "pxr/external/boost/python/converter/to_python_function_type.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 // Given a typesafe to_python conversion function, produces a
 // to_python_function_t which can be registered in the usual way.
@@ -44,11 +51,12 @@ struct as_to_python_function
         // but c'est la vie.
         return ToPython::convert(*const_cast<T*>(static_cast<T const*>(x)));
     }
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
     static PyTypeObject const * get_pytype() { return ToPython::get_pytype(); }
 #endif
 };
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // AS_TO_PYTHON_FUNCTION_DWA2002121_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_AS_TO_PYTHON_FUNCTION_HPP

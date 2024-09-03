@@ -10,23 +10,30 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-# ifndef POINTER_HOLDER_DWA20011215_HPP
-#  define POINTER_HOLDER_DWA20011215_HPP 
+# ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_POINTER_HOLDER_HPP
+#  define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_POINTER_HOLDER_HPP 
+
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/pointer_holder.hpp>
+#else
 
 # include <boost/get_pointer.hpp>
 #  include <boost/type.hpp>
 
-#  include <boost/python/instance_holder.hpp>
-#  include <boost/python/object/inheritance_query.hpp>
-#  include <boost/python/object/forward.hpp>
+#  include "pxr/external/boost/python/instance_holder.hpp"
+#  include "pxr/external/boost/python/object/inheritance_query.hpp"
+#  include "pxr/external/boost/python/object/forward.hpp"
 
-#  include <boost/python/pointee.hpp>
-#  include <boost/python/type_id.hpp>
+#  include "pxr/external/boost/python/pointee.hpp"
+#  include "pxr/external/boost/python/type_id.hpp"
 
-#  include <boost/python/detail/wrapper_base.hpp>
-#  include <boost/python/detail/force_instantiate.hpp>
-#  include <boost/python/detail/preprocessor.hpp>
-# include <boost/python/detail/type_traits.hpp>
+#  include "pxr/external/boost/python/detail/wrapper_base.hpp"
+#  include "pxr/external/boost/python/detail/force_instantiate.hpp"
+#  include "pxr/external/boost/python/detail/preprocessor.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 
 #  include <boost/mpl/if.hpp>
@@ -41,16 +48,20 @@
 
 #  include <boost/detail/workaround.hpp>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE {
+    using boost::get_pointer; // Enable ADL for boost types
+}
+
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 template <class T> class wrapper;
 
 }}
 
 
-namespace boost { namespace python { namespace objects {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
 
-#define BOOST_PYTHON_UNFORWARD_LOCAL(z, n, _) BOOST_PP_COMMA_IF(n) objects::do_unforward(a##n,0)
+#define PXR_BOOST_PYTHON_UNFORWARD_LOCAL(z, n, _) BOOST_PP_COMMA_IF(n) objects::do_unforward(a##n,0)
 
 template <class Pointer, class Value>
 struct pointer_holder : instance_holder
@@ -61,7 +72,7 @@ struct pointer_holder : instance_holder
 
     // Forward construction to the held object
 
-#  define BOOST_PP_ITERATION_PARAMS_1 (4, (0, BOOST_PYTHON_MAX_ARITY, <boost/python/object/pointer_holder.hpp>, 1))
+#  define BOOST_PP_ITERATION_PARAMS_1 (4, (0, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/object/pointer_holder.hpp", 1))
 #  include BOOST_PP_ITERATE()
 
  private: // types
@@ -97,7 +108,7 @@ struct pointer_holder_back_reference : instance_holder
     pointer_holder_back_reference(Pointer);
 
     // Forward construction to the held object
-#  define BOOST_PP_ITERATION_PARAMS_1 (4, (0, BOOST_PYTHON_MAX_ARITY, <boost/python/object/pointer_holder.hpp>, 2))
+#  define BOOST_PP_ITERATION_PARAMS_1 (4, (0, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/object/pointer_holder.hpp", 2))
 #  include BOOST_PP_ITERATE()
 
  private: // required holder implementation
@@ -107,7 +118,7 @@ struct pointer_holder_back_reference : instance_holder
     Pointer m_p;
 };
 
-#  undef BOOST_PYTHON_UNFORWARD_LOCAL
+#  undef PXR_BOOST_PYTHON_UNFORWARD_LOCAL
 
 template <class Pointer, class Value>
 inline pointer_holder<Pointer,Value>::pointer_holder(Pointer p)
@@ -132,7 +143,7 @@ inline pointer_holder_back_reference<Pointer,Value>::pointer_holder_back_referen
 template <class Pointer, class Value>
 void* pointer_holder<Pointer, Value>::holds(type_info dst_t, bool null_ptr_only)
 {
-    typedef typename boost::python::detail::remove_const< Value >::type non_const_value;
+    typedef typename PXR_BOOST_NAMESPACE::python::detail::remove_const< Value >::type non_const_value;
 
     if (dst_t == python::type_id<Pointer>()
         && !(null_ptr_only && get_pointer(this->m_p))
@@ -178,9 +189,10 @@ void* pointer_holder_back_reference<Pointer, Value>::holds(type_info dst_t, bool
     return src_t == dst_t ? p : find_dynamic_type(p, src_t, dst_t);
 }
 
-}}} // namespace boost::python::objects
+}}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
-# endif // POINTER_HOLDER_DWA20011215_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+# endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_POINTER_HOLDER_HPP
 
 /* --------------- pointer_holder --------------- */
 // For gcc 4.4 compatability, we must include the
@@ -199,7 +211,7 @@ void* pointer_holder_back_reference<Pointer, Value>::holds(type_info dst_t, bool
 # endif
     pointer_holder(PyObject* self BOOST_PP_COMMA_IF(N) BOOST_PP_ENUM_BINARY_PARAMS_Z(1, N, A, a))
         : m_p(new Value(
-                BOOST_PP_REPEAT_1ST(N, BOOST_PYTHON_UNFORWARD_LOCAL, nil)
+                BOOST_PP_REPEAT_1ST(N, PXR_BOOST_PYTHON_UNFORWARD_LOCAL, nil)
             ))
     {
         python::detail::initialize_wrapper(self, get_pointer(this->m_p));
@@ -222,7 +234,7 @@ void* pointer_holder_back_reference<Pointer, Value>::holds(type_info dst_t, bool
     pointer_holder_back_reference(
         PyObject* p BOOST_PP_COMMA_IF(N) BOOST_PP_ENUM_BINARY_PARAMS_Z(1, N, A, a))
         : m_p(new held_type(
-                    p BOOST_PP_COMMA_IF(N) BOOST_PP_REPEAT_1ST(N, BOOST_PYTHON_UNFORWARD_LOCAL, nil)
+                    p BOOST_PP_COMMA_IF(N) BOOST_PP_REPEAT_1ST(N, PXR_BOOST_PYTHON_UNFORWARD_LOCAL, nil)
             ))
     {}
 

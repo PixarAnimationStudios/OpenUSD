@@ -7,15 +7,22 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef COPY_NON_CONST_REFERENCE_DWA2002131_HPP
-# define COPY_NON_CONST_REFERENCE_DWA2002131_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_COPY_NON_CONST_REFERENCE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_COPY_NON_CONST_REFERENCE_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/detail/indirect_traits.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/copy_non_const_reference.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/detail/indirect_traits.hpp"
 # include <boost/mpl/if.hpp>
-# include <boost/python/to_python_value.hpp>
+# include "pxr/external/boost/python/to_python_value.hpp"
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 namespace detail
 {
@@ -43,6 +50,7 @@ struct copy_non_const_reference
 };
 
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // COPY_NON_CONST_REFERENCE_DWA2002131_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_COPY_NON_CONST_REFERENCE_HPP

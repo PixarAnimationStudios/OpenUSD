@@ -7,14 +7,21 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef STR_20020703_HPP
-#define STR_20020703_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_STR_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_STR_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-#include <boost/python/object.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/converter/pytype_object_mgr_traits.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/str.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/prefix.hpp"
+
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/converter/pytype_object_mgr_traits.hpp"
 
 // disable defines in <cctype> provided by some system libraries
 #undef isspace
@@ -24,13 +31,13 @@
 #undef isalnum
 #undef isupper
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 class str;
 
 namespace detail
 {
-  struct BOOST_PYTHON_DECL str_base : object
+  struct PXR_BOOST_PYTHON_DECL str_base : object
   {
       str capitalize() const;
 
@@ -139,7 +146,7 @@ namespace detail
       
       explicit str_base(object_cref other);
 
-      BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(str_base, object)
+      PXR_BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(str_base, object)
    private:
       static new_reference call(object const&);
   };
@@ -403,7 +410,7 @@ class str : public detail::str_base
     }
     
  public: // implementation detail -- for internal use only
-    BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(str, base)
+    PXR_BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(str, base)
 };
 
 //
@@ -422,6 +429,7 @@ namespace converter
   };
 }
 
-}}  // namespace boost::python
+}}  // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // STR_20020703_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_STR_HPP

@@ -7,21 +7,28 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef MAKE_FUNCTION_DWA20011221_HPP
-# define MAKE_FUNCTION_DWA20011221_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_MAKE_FUNCTION_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_MAKE_FUNCTION_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/default_call_policies.hpp>
-# include <boost/python/args.hpp>
-# include <boost/python/detail/caller.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/make_function.hpp>
+#else
 
-# include <boost/python/object/function_object.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
+
+# include "pxr/external/boost/python/default_call_policies.hpp"
+# include "pxr/external/boost/python/args.hpp"
+# include "pxr/external/boost/python/detail/caller.hpp"
+
+# include "pxr/external/boost/python/object/function_object.hpp"
 
 # include <boost/mpl/size.hpp>
 # include <boost/mpl/int.hpp>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace detail
 {
@@ -29,7 +36,7 @@ namespace detail
   //
   // These helper functions for make_function (below) do the raw work
   // of constructing a Python object from some invokable entity. See
-  // <boost/python/detail/caller.hpp> for more information about how
+  // "pxr/external/boost/python/detail/caller.hpp" for more information about how
   // the Sig arguments is used.
   template <class F, class CallPolicies, class Sig>
   object make_function_aux(
@@ -155,4 +162,5 @@ object make_function(
 }} 
 
 
-#endif // MAKE_FUNCTION_DWA20011221_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_MAKE_FUNCTION_HPP

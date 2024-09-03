@@ -7,16 +7,24 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef DEF_HELPER_FWD_DWA2003810_HPP
-# define DEF_HELPER_FWD_DWA2003810_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEF_HELPER_FWD_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEF_HELPER_FWD_HPP
 
-# include <boost/python/detail/not_specified.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-namespace boost { namespace python { namespace detail { 
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/def_helper_fwd.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/not_specified.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 template <class T1, class T2 = not_specified, class T3 = not_specified, class T4 = not_specified>
 struct def_helper;
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // DEF_HELPER_FWD_DWA2003810_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEF_HELPER_FWD_HPP

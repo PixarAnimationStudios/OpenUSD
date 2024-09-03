@@ -1,7 +1,14 @@
-#ifndef BOOST_PYTHON_PTR_HPP
-# define BOOST_PYTHON_PTR_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_PTR_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_PTR_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/ptr.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/prefix.hpp"
 //
 // Copyright 2024 Pixar
 // Licensed under the terms set forth in the LICENSE.txt file available at
@@ -19,7 +26,7 @@
 # include <boost/config.hpp>
 # include <boost/mpl/bool.hpp>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 template<class Ptr> class pointer_wrapper
 { 
@@ -65,6 +72,7 @@ class unwrap_pointer<pointer_wrapper<T> >
     typedef T type;
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

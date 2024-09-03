@@ -9,10 +9,10 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/numpy.hpp>
+#include "pxr/external/boost/python/numpy.hpp"
 
-namespace p = boost::python;
-namespace np = boost::python::numpy;
+namespace p = PXR_BOOST_NAMESPACE::python;
+namespace np = PXR_BOOST_NAMESPACE::python::numpy;
 
 struct UnaryCallable
 {
@@ -31,7 +31,7 @@ struct BinaryCallable
   double operator()(double a, double b) const { return a * 2 + b * 3;}
 };
 
-BOOST_PYTHON_MODULE(ufunc_ext)
+PXR_BOOST_PYTHON_MODULE(ufunc_ext)
 {
   np::initialize();
   p::class_<UnaryCallable>("UnaryCallable")

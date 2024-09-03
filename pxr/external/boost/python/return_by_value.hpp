@@ -7,17 +7,24 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef BY_VALUE_DWA20021015_HPP
-# define BY_VALUE_DWA20021015_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_RETURN_BY_VALUE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_RETURN_BY_VALUE_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/to_python_value.hpp>
-# include <boost/python/detail/type_traits.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/return_by_value.hpp>
+#else
 
-# include <boost/python/detail/value_arg.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-namespace boost { namespace python { 
+# include "pxr/external/boost/python/to_python_value.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
+
+# include "pxr/external/boost/python/detail/value_arg.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 struct return_by_value
 {
@@ -30,6 +37,7 @@ struct return_by_value
     };
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // BY_VALUE_DWA20021015_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_RETURN_BY_VALUE_HPP

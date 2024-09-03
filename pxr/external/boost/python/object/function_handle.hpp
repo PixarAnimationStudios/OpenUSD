@@ -7,17 +7,24 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef FUNCTION_HANDLE_DWA2002725_HPP
-# define FUNCTION_HANDLE_DWA2002725_HPP
-# include <boost/python/handle.hpp>
-# include <boost/python/detail/caller.hpp>
-# include <boost/python/default_call_policies.hpp>
-# include <boost/python/object/py_function.hpp>
-# include <boost/python/signature.hpp>
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HANDLE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HANDLE_HPP
 
-namespace boost { namespace python { namespace objects { 
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-BOOST_PYTHON_DECL handle<> function_handle_impl(py_function const& f);
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/function_handle.hpp>
+#else
+# include "pxr/external/boost/python/handle.hpp"
+# include "pxr/external/boost/python/detail/caller.hpp"
+# include "pxr/external/boost/python/default_call_policies.hpp"
+# include "pxr/external/boost/python/object/py_function.hpp"
+# include "pxr/external/boost/python/signature.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
+
+PXR_BOOST_PYTHON_DECL handle<> function_handle_impl(py_function const& f);
 
 // Just like function_object, but returns a handle<> instead. Using
 // this for arg_to_python<> allows us to break a circular dependency
@@ -44,6 +51,7 @@ handle<> make_function_handle(F f)
     return objects::function_handle(f, python::detail::get_signature(f));
 }
 
-}}} // namespace boost::python::objects
+}}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
-#endif // FUNCTION_HANDLE_DWA2002725_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HANDLE_HPP

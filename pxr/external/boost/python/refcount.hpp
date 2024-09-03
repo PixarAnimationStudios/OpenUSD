@@ -7,13 +7,20 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef REFCOUNT_DWA2002615_HPP
-# define REFCOUNT_DWA2002615_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_REFCOUNT_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_REFCOUNT_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/cast.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-namespace boost { namespace python { 
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/refcount.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/cast.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 template <class T>
 inline T* incref(T* p)
@@ -43,6 +50,7 @@ inline void xdecref(T* p)
     Py_XDECREF(python::upcast<PyObject>(p));
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // REFCOUNT_DWA2002615_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_REFCOUNT_HPP

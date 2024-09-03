@@ -7,16 +7,23 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef DOCSTRING_OPTIONS_RWGK20060111_HPP
-# define DOCSTRING_OPTIONS_RWGK20060111_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DOCSTRING_OPTIONS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DOCSTRING_OPTIONS_HPP
 
-#include <boost/python/object/function.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-namespace boost { namespace python {
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/docstring_options.hpp>
+#else
+
+#include "pxr/external/boost/python/object/function.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 // Note: the static data members are defined in object/function.cpp
 
-class BOOST_PYTHON_DECL docstring_options : boost::noncopyable
+class PXR_BOOST_PYTHON_DECL docstring_options : boost::noncopyable
 {
   public:
       docstring_options(bool show_all=true)
@@ -127,6 +134,7 @@ class BOOST_PYTHON_DECL docstring_options : boost::noncopyable
       bool previous_show_py_signatures_;
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // DOCSTRING_OPTIONS_RWGK20060111_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DOCSTRING_OPTIONS_HPP

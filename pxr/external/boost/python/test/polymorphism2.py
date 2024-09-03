@@ -89,11 +89,7 @@ def test():
    sys.argv = [ x for x in sys.argv if x != '--broken-auto-ptr' ]
    unittest.main()
 
-# This nasty hack basically says that if we're loaded by another module, we'll
-# be testing polymorphism2_auto_ptr_ext instead of polymorphism2_ext.
 if __name__ == "__main__":
    from polymorphism2_ext import *
    test()
-else:
-   from polymorphism2_auto_ptr_ext import *
    

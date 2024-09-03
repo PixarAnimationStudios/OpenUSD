@@ -7,16 +7,23 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef PYTYPE_OBJECT_MANAGER_TRAITS_DWA2002716_HPP
-# define PYTYPE_OBJECT_MANAGER_TRAITS_DWA2002716_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYTYPE_OBJECT_MGR_TRAITS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYTYPE_OBJECT_MGR_TRAITS_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/detail/raw_pyobject.hpp>
-# include <boost/python/cast.hpp>
-# include <boost/python/converter/pyobject_type.hpp>
-# include <boost/python/errors.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-namespace boost { namespace python { namespace converter { 
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/converter/pytype_object_mgr_traits.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/detail/raw_pyobject.hpp"
+# include "pxr/external/boost/python/cast.hpp"
+# include "pxr/external/boost/python/converter/pyobject_type.hpp"
+# include "pxr/external/boost/python/errors.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 // Provide a forward declaration as a convenience for clients, who all
 // need it.
@@ -42,6 +49,7 @@ inline python::detail::new_reference pytype_object_manager_traits<pytype,T>::ado
     return python::detail::new_reference(python::pytype_check(pytype, x));
 }
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // PYTYPE_OBJECT_MANAGER_TRAITS_DWA2002716_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYTYPE_OBJECT_MGR_TRAITS_HPP

@@ -1,0 +1,53 @@
+#sdf 1.4.32
+
+def Scope "Rigs" {
+    def Scope "CharRig" (
+    	doc = """This rig scope is here to introduce an ancestral variant arc to 
+    	the Collision and Colliders prims that will be relocated in the root layer.
+    	Ancestral variant arcs, and how the prim indexing implementation processes
+    	them is important to the providing the condition that caused the prim 
+    	indexing failures that this museum case is demonstrating the fix for."""
+
+        prepend variantSets = ["rigVariant"]
+        variants = {
+            string rigVariant = "default"
+        }
+    ) {
+        variantSet "rigVariant" = {
+            "default" {
+                def "CollisionRig" {
+                    def "Collision" {
+                    }
+
+                    def "Colliders" {                       
+                    }
+                }
+            }
+        }
+    }
+
+    def Scope "CharBaseRig" (
+    	doc = """This rig scope is an exact copy of the above CharRig scope and
+    	is used to prove that relocates on nodes that were elided due to a stronger
+    	relocates node do not get added to prim index."""
+    	
+        prepend variantSets = ["rigVariant"]
+        variants = {
+            string rigVariant = "default"
+        }
+    ) {
+        variantSet "rigVariant" = {
+            "default" {
+                def "CollisionRig" {
+                    def "Collision" {
+                    }
+
+                    def "Colliders" {                       
+                    }
+                }
+            }
+        }
+    }
+    
+    over "Anim" {}
+}

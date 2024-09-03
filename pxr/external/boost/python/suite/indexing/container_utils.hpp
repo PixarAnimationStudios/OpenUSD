@@ -9,17 +9,24 @@
 //  accompanying file LICENSE_1_0.txt or copy at
 //  http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef PY_CONTAINER_UTILS_JDG20038_HPP
-# define PY_CONTAINER_UTILS_JDG20038_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_CONTAINER_UTILS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_CONTAINER_UTILS_HPP
+
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/suite/indexing/container_utils.hpp>
+#else
 
 # include <utility>
 # include <boost/foreach.hpp>
-# include <boost/python/object.hpp>
-# include <boost/python/handle.hpp>
-# include <boost/python/extract.hpp>
-# include <boost/python/stl_iterator.hpp>
+# include "pxr/external/boost/python/object.hpp"
+# include "pxr/external/boost/python/handle.hpp"
+# include "pxr/external/boost/python/extract.hpp"
+# include "pxr/external/boost/python/stl_iterator.hpp"
 
-namespace boost { namespace python { namespace container_utils {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace container_utils {
         
     template <typename Container>
     void
@@ -30,8 +37,8 @@ namespace boost { namespace python { namespace container_utils {
         //  l must be iterable
         BOOST_FOREACH(object elem,
             std::make_pair(
-              boost::python::stl_input_iterator<object>(l),
-              boost::python::stl_input_iterator<object>()
+              PXR_BOOST_NAMESPACE::python::stl_input_iterator<object>(l),
+              PXR_BOOST_NAMESPACE::python::stl_input_iterator<object>()
               ))
         {
             extract<data_type const&> x(elem);
@@ -57,6 +64,7 @@ namespace boost { namespace python { namespace container_utils {
         }          
     }
 
-}}} // namespace boost::python::container_utils
+}}} // namespace PXR_BOOST_NAMESPACE::python::container_utils
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

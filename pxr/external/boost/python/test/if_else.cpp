@@ -8,8 +8,8 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 #include <boost/static_assert.hpp>
-#include <boost/python/detail/if_else.hpp>
-#include <boost/python/detail/type_traits.hpp>
+#include "pxr/external/boost/python/detail/if_else.hpp"
+#include "pxr/external/boost/python/detail/type_traits.hpp"
 
     typedef char c1;
     typedef char c2[2];
@@ -19,7 +19,7 @@
 template <unsigned size>
 struct choose
 {
-    typedef typename boost::python::detail::if_<
+    typedef typename PXR_BOOST_NAMESPACE::python::detail::if_<
         (sizeof(c1) == size)
     >::template then<
         c1
@@ -40,10 +40,10 @@ struct choose
 
 int main()
 {
-    BOOST_STATIC_ASSERT((boost::python::detail::is_same<choose<1>::type,c1>::value));
-    BOOST_STATIC_ASSERT((boost::python::detail::is_same<choose<2>::type,c2>::value));
-    BOOST_STATIC_ASSERT((boost::python::detail::is_same<choose<3>::type,c3>::value));
-    BOOST_STATIC_ASSERT((boost::python::detail::is_same<choose<4>::type,c4>::value));
-    BOOST_STATIC_ASSERT((boost::python::detail::is_same<choose<5>::type,void*>::value));
+    BOOST_STATIC_ASSERT((PXR_BOOST_NAMESPACE::python::detail::is_same<choose<1>::type,c1>::value));
+    BOOST_STATIC_ASSERT((PXR_BOOST_NAMESPACE::python::detail::is_same<choose<2>::type,c2>::value));
+    BOOST_STATIC_ASSERT((PXR_BOOST_NAMESPACE::python::detail::is_same<choose<3>::type,c3>::value));
+    BOOST_STATIC_ASSERT((PXR_BOOST_NAMESPACE::python::detail::is_same<choose<4>::type,c4>::value));
+    BOOST_STATIC_ASSERT((PXR_BOOST_NAMESPACE::python::detail::is_same<choose<5>::type,void*>::value));
     return 0;
 }

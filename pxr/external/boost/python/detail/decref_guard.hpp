@@ -7,10 +7,17 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef DECREF_GUARD_DWA20021220_HPP
-# define DECREF_GUARD_DWA20021220_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DECREF_GUARD_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DECREF_GUARD_HPP
 
-namespace boost { namespace python { namespace detail { 
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/decref_guard.hpp>
+#else
+
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 struct decref_guard
 {
@@ -21,6 +28,7 @@ struct decref_guard
     PyObject* obj;
 };
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // DECREF_GUARD_DWA20021220_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DECREF_GUARD_HPP

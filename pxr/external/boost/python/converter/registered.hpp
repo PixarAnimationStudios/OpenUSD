@@ -9,18 +9,25 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef boost_python_converter_registered_hpp_
-#define boost_python_converter_registered_hpp_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTERED_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTERED_HPP
 
-#include <boost/python/type_id.hpp>
-#include <boost/python/converter/registry.hpp>
-#include <boost/python/converter/registrations.hpp>
-#include <boost/python/detail/type_traits.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/converter/registered.hpp>
+#else
+
+#include "pxr/external/boost/python/type_id.hpp"
+#include "pxr/external/boost/python/converter/registry.hpp"
+#include "pxr/external/boost/python/converter/registrations.hpp"
+#include "pxr/external/boost/python/detail/type_traits.hpp"
 #include <boost/detail/workaround.hpp>
 #include <boost/type.hpp>
 #include <memory>
-#if defined(BOOST_PYTHON_TRACE_REGISTRY) \
- || defined(BOOST_PYTHON_CONVERTER_REGISTRY_APPLE_MACH_WORKAROUND)
+#if defined(PXR_BOOST_PYTHON_TRACE_REGISTRY) \
+ || defined(PXR_BOOST_PYTHON_CONVERTER_REGISTRY_APPLE_MACH_WORKAROUND)
 # include <iostream>
 #endif
 
@@ -30,6 +37,10 @@ namespace boost {
 // note which types are shared_ptrs in their registrations, to
 // implement special shared_ptr handling for rvalue conversions.
 template <class T> class shared_ptr;
+
+}
+
+namespace PXR_BOOST_NAMESPACE {
 
 namespace python { namespace converter { 
 
@@ -47,8 +58,8 @@ namespace detail
 template <class T>
 struct registered
   : detail::registered_base<
-        typename boost::python::detail::add_lvalue_reference<
-            typename boost::python::detail::add_cv<T>::type
+        typename PXR_BOOST_NAMESPACE::python::detail::add_lvalue_reference<
+            typename PXR_BOOST_NAMESPACE::python::detail::add_cv<T>::type
         >::type
     >
 {
@@ -124,6 +135,7 @@ namespace detail
 
 }
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

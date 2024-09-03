@@ -7,10 +7,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/module.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/scope.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/scope.hpp"
 #include "test_class.hpp"
 #if __GNUC__ != 2
 # include <ostream>
@@ -32,9 +32,9 @@ std::ostream& operator<<(std::ostream& s, Y const& x)
 }
 
 
-BOOST_PYTHON_MODULE(nested_ext)
+PXR_BOOST_PYTHON_MODULE(nested_ext)
 {
-    using namespace boost::python;
+    using namespace PXR_BOOST_NAMESPACE::python;
 
     // Establish X as the current scope.
     scope x_class

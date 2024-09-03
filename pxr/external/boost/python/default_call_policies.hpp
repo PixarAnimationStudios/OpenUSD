@@ -7,18 +7,25 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef DEFAULT_CALL_POLICIES_DWA2002131_HPP
-# define DEFAULT_CALL_POLICIES_DWA2002131_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DEFAULT_CALL_POLICIES_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DEFAULT_CALL_POLICIES_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/default_call_policies.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/prefix.hpp"
 # include <boost/mpl/if.hpp>
-# include <boost/python/to_python_value.hpp>
-# include <boost/python/detail/type_traits.hpp>
-# include <boost/python/detail/value_arg.hpp>
+# include "pxr/external/boost/python/to_python_value.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
+# include "pxr/external/boost/python/detail/value_arg.hpp"
 # include <boost/mpl/or.hpp>
 # include <boost/mpl/front.hpp>
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 template <class T> struct to_python_value;
 
@@ -69,7 +76,7 @@ struct default_result_converter
         typedef typename mpl::if_<
             mpl::or_<detail::is_pointer<R>, detail::is_reference<R> >
           , detail::specify_a_return_value_policy_to_wrap_functions_returning<R>
-          , boost::python::to_python_value<
+          , PXR_BOOST_NAMESPACE::python::to_python_value<
                 typename detail::value_arg<R>::type
             >
         >::type type;
@@ -80,15 +87,16 @@ struct default_result_converter
 template <>
 struct default_result_converter::apply<char const*>
 {
-    typedef boost::python::to_python_value<char const*const&> type;
+    typedef PXR_BOOST_NAMESPACE::python::to_python_value<char const*const&> type;
 };
 
 template <>
 struct default_result_converter::apply<PyObject*>
 {
-    typedef boost::python::to_python_value<PyObject*const&> type;
+    typedef PXR_BOOST_NAMESPACE::python::to_python_value<PyObject*const&> type;
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // DEFAULT_CALL_POLICIES_DWA2002131_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DEFAULT_CALL_POLICIES_HPP

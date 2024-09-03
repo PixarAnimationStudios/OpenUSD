@@ -30,10 +30,12 @@ GeomUtilCylinderMeshGenerator::ComputeNumPoints(
         return 0;
     }
 
-    const size_t numRadialPoints =
-        _ComputeNumRadialPoints(numRadial, closedSweep);
-
-    return (4 * numRadialPoints) + 2;
+    return _ComputeNumCappedQuadTopologyPoints(
+        numRadial,
+        /* numQuadStrips =  */ 1,
+        /* bottomCapStyle = */ CapStyleSeparateEdge,
+        /* topCapStyle =    */ CapStyleSeparateEdge,
+        closedSweep);
 }
 
 // static
@@ -71,23 +73,9 @@ GeomUtilCylinderMeshGenerator::_GeneratePointsImpl(
         return;
     }
 
-    const ScalarType twoPi = 2.0 * M_PI;
-    const ScalarType sweepRadians =
-        GfClamp((ScalarType) GfDegreesToRadians(sweepDegrees), -twoPi, twoPi);
-    const bool closedSweep = GfIsClose(std::abs(sweepRadians), twoPi, 1e-6);
-    
     // Construct a circular arc of unit radius in the XY plane.
-    const size_t numRadialPoints =
-        _ComputeNumRadialPoints(numRadial, closedSweep);
-    std::vector<std::array<ScalarType, 2>> ringXY(numRadialPoints);
-
-    for (size_t radIdx = 0; radIdx < numRadialPoints; ++radIdx) {
-        // Longitude range: [0, sweep]
-        const ScalarType longAngle =
-            (ScalarType(radIdx) / ScalarType(numRadial)) * (sweepRadians);
-        ringXY[radIdx][0] = cos(longAngle);
-        ringXY[radIdx][1] = sin(longAngle);
-    }
+    const std::vector<std::array<ScalarType, 2>> ringXY =
+        _GenerateUnitArcXY<ScalarType>(numRadial, sweepDegrees);
 
     const ScalarType zMax = 0.5 * height;
     const ScalarType zMin = -zMax;
@@ -98,22 +86,12 @@ GeomUtilCylinderMeshGenerator::_GeneratePointsImpl(
     // Bottom rings; two consecutive rings at the same point locations, the
     // first for the bottom triangle fan and the second for the main
     // cylinder quads (for normals reasons the bottom "edge" is not shared):
-    for (size_t ringIdx = 0; ringIdx < 2; ++ringIdx) {
-        for (size_t radIdx = 0; radIdx < numRadialPoints; ++radIdx) {
-            ptWriter.Write(PointType(bottomRadius * ringXY[radIdx][0],
-                                     bottomRadius * ringXY[radIdx][1],
-                                     zMin));
-        }
-    }
+    ptWriter.WriteArc(bottomRadius, ringXY, zMin);
+    ptWriter.WriteArc(bottomRadius, ringXY, zMin);
 
     // And another two rings, for the top edge.
-    for (size_t ringIdx = 0; ringIdx < 2; ++ringIdx) {
-        for (size_t radIdx = 0; radIdx < numRadialPoints; ++radIdx) {
-            ptWriter.Write(PointType(topRadius * ringXY[radIdx][0],
-                                     topRadius * ringXY[radIdx][1],
-                                     zMax));
-        }
-    }
+    ptWriter.WriteArc(topRadius, ringXY, zMax);
+    ptWriter.WriteArc(topRadius, ringXY, zMax);
 
     // Top point:
     ptWriter.Write(PointType(0.0, 0.0, zMax));

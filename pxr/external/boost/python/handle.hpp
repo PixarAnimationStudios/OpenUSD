@@ -7,20 +7,27 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef HANDLE_DWA200269_HPP
-# define HANDLE_DWA200269_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_HANDLE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_HANDLE_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/cast.hpp>
-# include <boost/python/errors.hpp>
-# include <boost/python/borrowed.hpp>
-# include <boost/python/handle_fwd.hpp>
-# include <boost/python/refcount.hpp>
-# include <boost/python/tag.hpp>
-# include <boost/python/detail/raw_pyobject.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/handle.hpp>
+#else
 
-namespace boost { namespace python { 
+# include "pxr/external/boost/python/detail/prefix.hpp"
+
+# include "pxr/external/boost/python/cast.hpp"
+# include "pxr/external/boost/python/errors.hpp"
+# include "pxr/external/boost/python/borrowed.hpp"
+# include "pxr/external/boost/python/handle_fwd.hpp"
+# include "pxr/external/boost/python/refcount.hpp"
+# include "pxr/external/boost/python/tag.hpp"
+# include "pxr/external/boost/python/detail/raw_pyobject.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 template <class T> struct null_ok;
 
@@ -236,7 +243,8 @@ inline PyObject* get_managed_object(handle<T> const& h, tag_t)
     return h.get() ? python::upcast<PyObject>(h.get()) : Py_None;
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 
-#endif // HANDLE_DWA200269_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_HANDLE_HPP

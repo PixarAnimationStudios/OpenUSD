@@ -990,11 +990,32 @@ NdrRegistry::_InstantiateParserPlugins(
 void
 NdrRegistry::_RunDiscoveryPlugins(const DiscoveryPluginRefPtrVec& discoveryPlugins)
 {
-    std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+    size_t num_plugins = discoveryPlugins.size();
+    std::vector<NdrNodeDiscoveryResultVec> results_vec(num_plugins);
 
-    for (const NdrDiscoveryPluginRefPtr& dp : discoveryPlugins) {
-        NdrNodeDiscoveryResultVec results =
-            dp->DiscoverNodes(_DiscoveryContext(*this));
+    // Discover nodes in parallel. Following the pattern in GetNodesByFamily,
+    // pre-emptively release the Python GIL here to avoid
+    // deadlocks since the code running in the worker threads may call into
+    // Python and try to take the GIL when discovering nodes. We also need
+    // to use scoped parallelism to ensure we don't pick up other tasks
+    // during the call to WorkParallelForN that may reenter this function
+    // and also deadlock.
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+
+    WorkWithScopedParallelism([&]() {
+        WorkParallelForN(
+            num_plugins,
+            [&](size_t start, size_t end) {
+                for (size_t i = start; i < end; i++) {
+                    results_vec[i] = discoveryPlugins[i]->DiscoverNodes(
+                        _DiscoveryContext(*this));
+                }
+            });
+        }
+    );
+
+    std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+    for (NdrNodeDiscoveryResultVec &results : results_vec) {
         for (NdrNodeDiscoveryResult &dr : results) {
             _AddDiscoveryResultNoLock(std::move(dr));
         }

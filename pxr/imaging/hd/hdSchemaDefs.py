@@ -621,6 +621,8 @@
             ''',
         SCHEMA_TOKEN = 'materialOverride',
         SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/schemaTypeDefs'],
+        ADD_DEFAULT_LOCATOR = True,
+        
         MEMBERS = [
             ('interfaceValues', 'HdMaterialNodeParameterContainerSchema', 
              dict(DOC = '''
@@ -1260,6 +1262,24 @@
             ('axis', ['X', 'Y', 'Z']),
         ],
 
+    ),
+    
+    #--------------------------------------------------------------------------
+    # plane
+    dict(
+        SCHEMA_NAME = 'Plane',
+        SCHEMA_TOKEN = 'plane',
+        ADD_DEFAULT_LOCATOR = True,
+        MEMBERS = [
+            ('doubleSided', T_BOOL, {}),
+            ('axis', T_TOKEN, {}),
+            ('length', T_DOUBLE, {}),
+            ('width', T_DOUBLE, {}),
+        ],
+
+        STATIC_TOKEN_DATASOURCE_BUILDERS = [
+            ('axis', ['X', 'Y', 'Z']),
+        ],
     ),
 
     #--------------------------------------------------------------------------

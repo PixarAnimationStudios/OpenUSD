@@ -7,19 +7,26 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef MAKE_INSTANCE_DWA200296_HPP
-# define MAKE_INSTANCE_DWA200296_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_INSTANCE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_INSTANCE_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/object/instance.hpp>
-# include <boost/python/converter/registered.hpp>
-# include <boost/python/detail/decref_guard.hpp>
-# include <boost/python/detail/type_traits.hpp>
-# include <boost/python/detail/none.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/make_instance.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/object/instance.hpp"
+# include "pxr/external/boost/python/converter/registered.hpp"
+# include "pxr/external/boost/python/detail/decref_guard.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
+# include "pxr/external/boost/python/detail/none.hpp"
 # include <boost/mpl/assert.hpp>
 # include <boost/mpl/or.hpp>
 
-namespace boost { namespace python { namespace objects { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
 template <class T, class Holder, class Derived>
 struct make_instance_impl
@@ -29,8 +36,8 @@ struct make_instance_impl
     template <class Arg>
     static inline PyObject* execute(Arg& x)
     {
-        BOOST_MPL_ASSERT((mpl::or_<boost::python::detail::is_class<T>,
-                boost::python::detail::is_union<T> >));
+        BOOST_MPL_ASSERT((mpl::or_<PXR_BOOST_NAMESPACE::python::detail::is_class<T>,
+                PXR_BOOST_NAMESPACE::python::detail::is_union<T> >));
 
         PyTypeObject* type = Derived::get_class_object(x);
 
@@ -78,13 +85,14 @@ struct make_instance
     static inline Holder* construct(void* storage, PyObject* instance, reference_wrapper<T const> x)
     {
         size_t allocated = objects::additional_instance_size<Holder>::value;
-        void* aligned_storage = ::boost::alignment::align(boost::python::detail::alignment_of<Holder>::value,
+        void* aligned_storage = ::boost::alignment::align(PXR_BOOST_NAMESPACE::python::detail::alignment_of<Holder>::value,
                                                           sizeof(Holder), storage, allocated);
         return new (aligned_storage) Holder(instance, x);
     }
 };
   
 
-}}} // namespace boost::python::object
+}}} // namespace PXR_BOOST_NAMESPACE::python::object
 
-#endif // MAKE_INSTANCE_DWA200296_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_INSTANCE_HPP

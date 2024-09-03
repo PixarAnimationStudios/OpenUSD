@@ -7,20 +7,27 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef REGISTRATIONS_DWA2002223_HPP
-# define REGISTRATIONS_DWA2002223_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTRATIONS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTRATIONS_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/type_id.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/converter/registrations.hpp>
+#else
 
-# include <boost/python/converter/convertible_function.hpp>
-# include <boost/python/converter/constructor_function.hpp>
-# include <boost/python/converter/to_python_function_type.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
+
+# include "pxr/external/boost/python/type_id.hpp"
+
+# include "pxr/external/boost/python/converter/convertible_function.hpp"
+# include "pxr/external/boost/python/converter/constructor_function.hpp"
+# include "pxr/external/boost/python/converter/to_python_function_type.hpp"
 
 # include <boost/detail/workaround.hpp>
 
-namespace boost { namespace python { namespace converter { 
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 struct lvalue_from_python_chain
 {
@@ -36,7 +43,7 @@ struct rvalue_from_python_chain
     rvalue_from_python_chain* next;
 };
 
-struct BOOST_PYTHON_DECL registration
+struct PXR_BOOST_PYTHON_DECL registration
 {
  public: // member functions
     explicit registration(type_info target, bool is_shared_ptr = false);
@@ -99,6 +106,7 @@ inline bool operator<(registration const& lhs, registration const& rhs)
     return lhs.target_type < rhs.target_type;
 }
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // REGISTRATIONS_DWA2002223_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTRATIONS_HPP

@@ -7,20 +7,27 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef SCOPE_DWA2002724_HPP
-# define SCOPE_DWA2002724_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_SCOPE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_SCOPE_HPP
 
-# include <boost/python/detail/prefix.hpp>
-# include <boost/python/object.hpp>
-# include <boost/python/refcount.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-namespace boost { namespace python { 
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/scope.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/prefix.hpp"
+# include "pxr/external/boost/python/object.hpp"
+# include "pxr/external/boost/python/refcount.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 namespace detail
 {
   // Making this a namespace-scope variable to avoid Cygwin issues.
   // Use a PyObject* to avoid problems with static destruction after Py_Finalize
-  extern BOOST_PYTHON_DECL PyObject* current_scope;
+  extern PXR_BOOST_PYTHON_DECL PyObject* current_scope;
 }
 
 class scope
@@ -77,6 +84,7 @@ inline scope::scope(scope const& new_scope)
     detail::current_scope = python::incref(new_scope.ptr());
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // SCOPE_DWA2002724_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_SCOPE_HPP

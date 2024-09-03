@@ -15,12 +15,12 @@
 #elif defined(ARCH_OS_LINUX)
     #define VK_USE_PLATFORM_XLIB_KHR
 #elif defined(ARCH_OS_OSX)
-    #define VK_USE_PLATFORM_MACOS_MVK
+    #define VK_USE_PLATFORM_METAL_EXT
 #else
     #error Unsupported Platform
 #endif
 
-#include "pxr/imaging/hgiVulkan/volk.h"
+#include <vulkan/vulkan.h>
 
 #include "pxr/imaging/hgiVulkan/vk_mem_alloc.h"
 

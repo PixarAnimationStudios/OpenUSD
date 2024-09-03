@@ -7,24 +7,31 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef DATA_MEMBERS_DWA2002328_HPP
-# define DATA_MEMBERS_DWA2002328_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DATA_MEMBERS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DATA_MEMBERS_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/handle.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/data_members.hpp>
+#else
 
-# include <boost/python/return_value_policy.hpp>
-# include <boost/python/return_by_value.hpp>
-# include <boost/python/return_internal_reference.hpp>
-# include <boost/python/make_function.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/converter/builtin_converters.hpp>
+# include "pxr/external/boost/python/handle.hpp"
 
-# include <boost/python/detail/indirect_traits.hpp>
-# include <boost/python/detail/not_specified.hpp>
-# include <boost/python/detail/value_arg.hpp>
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/return_value_policy.hpp"
+# include "pxr/external/boost/python/return_by_value.hpp"
+# include "pxr/external/boost/python/return_internal_reference.hpp"
+# include "pxr/external/boost/python/make_function.hpp"
+
+# include "pxr/external/boost/python/converter/builtin_converters.hpp"
+
+# include "pxr/external/boost/python/detail/indirect_traits.hpp"
+# include "pxr/external/boost/python/detail/not_specified.hpp"
+# include "pxr/external/boost/python/detail/value_arg.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 # include <boost/mpl/eval_if.hpp>
 # include <boost/mpl/if.hpp>
@@ -32,7 +39,7 @@
 
 # include <boost/detail/workaround.hpp>
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 //
 // This file defines the make_getter and make_setter function
@@ -142,7 +149,7 @@ namespace detail
 
   //
   // make_getter helper function family -- These helpers to
-  // boost::python::make_getter are used to dispatch behavior.  The
+  // PXR_BOOST_NAMESPACE::python::make_getter are used to dispatch behavior.  The
   // third argument is a workaround for a CWPro8 partial ordering bug
   // with pointers to data members.  It should be convertible to
   // detail::true_ iff the first argument is a pointer-to-member, and
@@ -207,7 +214,7 @@ namespace detail
 
   //
   // make_setter helper function family -- These helpers to
-  // boost::python::make_setter are used to dispatch behavior.  The
+  // PXR_BOOST_NAMESPACE::python::make_setter are used to dispatch behavior.  The
   // third argument is for compilers which don't support partial
   // ordering at all and should always be passed 0.
   //
@@ -311,6 +318,7 @@ inline object make_setter(D const& x)
 }
 # endif
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // DATA_MEMBERS_DWA2002328_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DATA_MEMBERS_HPP

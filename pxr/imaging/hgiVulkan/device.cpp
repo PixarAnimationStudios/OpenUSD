@@ -11,6 +11,7 @@
 #include "pxr/imaging/hgiVulkan/hgi.h"
 #include "pxr/imaging/hgiVulkan/instance.h"
 #include "pxr/imaging/hgiVulkan/pipelineCache.h"
+#include "pxr/imaging/hgiVulkan/vk_mem_alloc.h"
 
 #include "pxr/base/tf/diagnostic.h"
 
@@ -41,37 +42,19 @@ _GetGraphicsQueueFamilyIndex(VkPhysicalDevice physicalDevice)
 
 static bool
 _SupportsPresentation(
-    HgiVulkanInstance* instance,
     VkPhysicalDevice physicalDevice,
     uint32_t familyIndex)
 {
-    // XXX With volk, these functions weren't loaded correctly for me (would 
-    // crash when called). Loading them like this seems to work. Unsure why.
     #if defined(VK_USE_PLATFORM_WIN32_KHR)
-        VkInstance vkInstance = instance->GetVulkanInstance();
-        PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR
-            vkGetPhysicalDeviceWin32PresentationSupportKHR = 
-                (PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR)
-                vkGetInstanceProcAddr(
-                    vkInstance,
-                    "vkGetPhysicalDeviceWin32PresentationSupportKHR");
         return vkGetPhysicalDeviceWin32PresentationSupportKHR(
                     physicalDevice, familyIndex);
     #elif defined(VK_USE_PLATFORM_XLIB_KHR)
         Display* dsp = XOpenDisplay(nullptr);
         VisualID visualID = XVisualIDFromVisual(
             DefaultVisual(dsp, DefaultScreen(dsp)));
-        
-        VkInstance vkInstance = instance->GetVulkanInstance();
-        PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR
-            vkGetPhysicalDeviceXlibPresentationSupportKHR = 
-                (PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR)
-                vkGetInstanceProcAddr(
-                    vkInstance,
-                    "vkGetPhysicalDeviceXlibPresentationSupportKHR");
         return vkGetPhysicalDeviceXlibPresentationSupportKHR(
                     physicalDevice, familyIndex, dsp, visualID);
-    #elif defined(VK_USE_PLATFORM_MACOS_MVK)
+    #elif defined(VK_USE_PLATFORM_METAL_EXT)
         // Presentation currently always supported on Metal / MoltenVk
         return true;
     #else
@@ -111,7 +94,7 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         if (familyIndex == VK_QUEUE_FAMILY_IGNORED) continue;
 
         // Assume we always want a presentation capable device for now.
-        if (!_SupportsPresentation(instance, physicalDevices[i], familyIndex)) {
+        if (!_SupportsPresentation(physicalDevices[i], familyIndex)) {
             continue;
         }
 
@@ -170,9 +153,12 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     queueInfo.queueCount = 1;
     queueInfo.pQueuePriorities = queuePriorities;
 
-    std::vector<const char*> extensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
+    std::vector<const char*> extensions;
+
+    // Not available if we're surfaceless (minimal Lavapipe build for example).
+    if (IsSupportedExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
+        extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    }
 
     // Allow certain buffers/images to have dedicated memory allocations to
     // improve performance on some GPUs.
@@ -282,15 +268,12 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     // Needed to write to storage buffers from fragment shader (eg. OIT).
     features.features.fragmentStoresAndAtomics =
         _capabilities->vkDeviceFeatures.fragmentStoresAndAtomics;
-
-    #if !defined(VK_USE_PLATFORM_MACOS_MVK)
-        // Needed for buffer address feature
-        features.features.shaderInt64 =
-            _capabilities->vkDeviceFeatures.shaderInt64;
-        // Needed for gl_primtiveID
-        features.features.geometryShader =
-            _capabilities->vkDeviceFeatures.geometryShader;
-    #endif
+    // Needed for buffer address feature
+    features.features.shaderInt64 =
+        _capabilities->vkDeviceFeatures.shaderInt64;
+    // Needed for gl_primtiveID
+    features.features.geometryShader =
+        _capabilities->vkDeviceFeatures.geometryShader;
 
     VkDeviceCreateInfo createInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
     createInfo.queueCreateInfoCount = 1;
@@ -306,8 +289,6 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
             HgiVulkanAllocator(),
             &_vkDevice) == VK_SUCCESS
     );
-
-    volkLoadDevice(_vkDevice);
 
     HgiVulkanSetupDeviceDebug(instance, this);
 
@@ -333,35 +314,6 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     if (supportsMemExtension) {
         allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
     }
-
-    // If we ever wish to use functions from Vulkan 1.1+ (i.e. use a later 
-    // version of VMA), we'll need to add those functions here.
-    VmaVulkanFunctions vmaVulkanFunctions = {};
-    vmaVulkanFunctions.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
-    vmaVulkanFunctions.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
-    vmaVulkanFunctions.vkAllocateMemory = vkAllocateMemory;
-    vmaVulkanFunctions.vkBindBufferMemory = vkBindBufferMemory;
-    vmaVulkanFunctions.vkBindImageMemory = vkBindImageMemory;
-    vmaVulkanFunctions.vkCreateBuffer = vkCreateBuffer;
-    vmaVulkanFunctions.vkCreateImage = vkCreateImage;
-    vmaVulkanFunctions.vkDestroyBuffer = vkDestroyBuffer;
-    vmaVulkanFunctions.vkDestroyImage = vkDestroyImage;
-    vmaVulkanFunctions.vkFlushMappedMemoryRanges = vkFlushMappedMemoryRanges;
-    vmaVulkanFunctions.vkFreeMemory = vkFreeMemory;
-    vmaVulkanFunctions.vkGetBufferMemoryRequirements =
-        vkGetBufferMemoryRequirements;
-    vmaVulkanFunctions.vkGetImageMemoryRequirements =
-        vkGetImageMemoryRequirements;
-    vmaVulkanFunctions.vkGetPhysicalDeviceMemoryProperties =
-        vkGetPhysicalDeviceMemoryProperties;
-    vmaVulkanFunctions.vkGetPhysicalDeviceProperties =
-        vkGetPhysicalDeviceProperties;
-    vmaVulkanFunctions.vkInvalidateMappedMemoryRanges =
-        vkInvalidateMappedMemoryRanges;
-    vmaVulkanFunctions.vkMapMemory = vkMapMemory;
-    vmaVulkanFunctions.vkUnmapMemory = vkUnmapMemory;
-    vmaVulkanFunctions.vkCmdCopyBuffer = vkCmdCopyBuffer;
-    allocatorInfo.pVulkanFunctions = &vmaVulkanFunctions;
 
     TF_VERIFY(
         vmaCreateAllocator(&allocatorInfo, &_vmaAllocator) == VK_SUCCESS

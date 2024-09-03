@@ -17,5 +17,4 @@ TF_WRAP_MODULE
     TF_WRAP(UsdRenderVar);
     TF_WRAP(UsdRenderTokens);
     TF_WRAP(UsdRenderPass);
-    TF_WRAP(UsdRenderDenoisePass);
 }

@@ -7,26 +7,34 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef STL_ITERATOR_CORE_EAN20051028_HPP
-# define STL_ITERATOR_CORE_EAN20051028_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_STL_ITERATOR_CORE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_STL_ITERATOR_CORE_HPP
 
-# include <boost/python/object_fwd.hpp>
-# include <boost/python/handle_fwd.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-namespace boost { namespace python { namespace objects {
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/stl_iterator_core.hpp>
+#else
 
-struct BOOST_PYTHON_DECL stl_input_iterator_impl
+# include "pxr/external/boost/python/object_fwd.hpp"
+# include "pxr/external/boost/python/handle_fwd.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
+
+struct PXR_BOOST_PYTHON_DECL stl_input_iterator_impl
 {
     stl_input_iterator_impl();
-    stl_input_iterator_impl(boost::python::object const &ob);
+    stl_input_iterator_impl(PXR_BOOST_NAMESPACE::python::object const &ob);
     void increment();
     bool equal(stl_input_iterator_impl const &that) const;
-    boost::python::handle<> const &current() const;
+    PXR_BOOST_NAMESPACE::python::handle<> const &current() const;
 private:
-    boost::python::object it_;
-    boost::python::handle<> ob_;
+    PXR_BOOST_NAMESPACE::python::object it_;
+    PXR_BOOST_NAMESPACE::python::handle<> ob_;
 };
 
-}}} // namespace boost::python::object
+}}} // namespace PXR_BOOST_NAMESPACE::python::object
 
-#endif // STL_ITERATOR_CORE_EAN20051028_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_STL_ITERATOR_CORE_HPP

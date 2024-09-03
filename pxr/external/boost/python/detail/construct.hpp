@@ -7,10 +7,17 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef CONSTRUCT_REFERENCE_DWA2002716_HPP
-# define CONSTRUCT_REFERENCE_DWA2002716_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CONSTRUCT_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CONSTRUCT_HPP
 
-namespace boost { namespace python { namespace detail { 
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/construct.hpp>
+#else
+
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 template <class T, class Arg>
 void construct_pointee(void* storage, Arg& x, T const volatile*)
@@ -36,6 +43,7 @@ void construct_referent(void* storage, Arg& x, T(*tag)() = 0)
     construct_referent_impl(storage, x, tag);
 }
 
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // CONSTRUCT_REFERENCE_DWA2002716_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CONSTRUCT_HPP

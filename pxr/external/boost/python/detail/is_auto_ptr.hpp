@@ -7,29 +7,25 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef IS_AUTO_PTR_DWA2003224_HPP
-# define IS_AUTO_PTR_DWA2003224_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IS_AUTO_PTR_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IS_AUTO_PTR_HPP
 
-# ifndef BOOST_NO_AUTO_PTR
-#  include <boost/python/detail/is_xxx.hpp>
-#  include <memory>
-# endif
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-namespace boost { namespace python { namespace detail { 
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/is_auto_ptr.hpp>
+#else
+#include <type_traits>
 
-# if !defined(BOOST_NO_AUTO_PTR)
-
-BOOST_PYTHON_IS_XXX_DEF(auto_ptr, std::auto_ptr, 1)
-
-# else
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 template <class T>
-struct is_auto_ptr : mpl::false_
+struct is_auto_ptr : std::false_type
 {
 };
-
-# endif
     
-}}} // namespace boost::python::detail
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // IS_AUTO_PTR_DWA2003224_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IS_AUTO_PTR_HPP

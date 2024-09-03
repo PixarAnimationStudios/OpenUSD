@@ -1,4 +1,4 @@
-# if !defined(BOOST_PYTHON_SYNOPSIS)
+# if !defined(PXR_BOOST_PYTHON_SYNOPSIS)
 # //
 # // Copyright 2024 Pixar
 # // Licensed under the terms set forth in the LICENSE.txt file available at
@@ -25,4 +25,4 @@
     }
 
 #  undef N
-# endif // BOOST_PYTHON_SYNOPSIS 
+# endif // PXR_BOOST_PYTHON_SYNOPSIS 

@@ -31,13 +31,9 @@ pxr_library(usdImagingGL
         usdShade
         usdImaging
         ar
-        ${Boost_PYTHON_LIBRARY}
-        ${PYTHON_LIBRARIES}
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
-        ${PYTHON_INCLUDE_PATH}
-        ${PYTHON_INCLUDE_DIRS}
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES

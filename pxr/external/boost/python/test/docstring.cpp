@@ -7,20 +7,26 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/operators.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/docstring_options.hpp>
-#include <boost/python/scope.hpp>
-#include <boost/python/manage_new_object.hpp>
+
+// If PXR_BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
+// boost::python will generate simplified docstrings that break the associated
+// test unless we undefine it before including any headers.
+#undef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
+
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/docstring_options.hpp"
+#include "pxr/external/boost/python/scope.hpp"
+#include "pxr/external/boost/python/manage_new_object.hpp"
 #include "test_class.hpp"
 
 // Just use math.h here; trying to use std::pow() causes too much
 // trouble for non-conforming compilers and libraries.
 #include <math.h>
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 typedef test_class<> X;
 
@@ -34,8 +40,14 @@ unsigned long fact(unsigned long n)
     return n <= 1 ? n : n * fact(n - 1);
 }
 
-BOOST_PYTHON_MODULE(docstring_ext)
+PXR_BOOST_PYTHON_MODULE(docstring_ext)
 {
+    // Explicitly enable Python signatures in docstrings in case boost::python
+    // was built with PXR_BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
+    // signatures by default.
+    docstring_options doc_options;
+    doc_options.enable_py_signatures();
+
     scope().attr("__doc__") =
         "A simple test module for documentation strings\n"
         "Exercised by docstring.py"

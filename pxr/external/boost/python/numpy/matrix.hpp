@@ -9,20 +9,27 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef boost_python_numpy_matrix_hpp_
-#define boost_python_numpy_matrix_hpp_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_NUMPY_MATRIX_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_MATRIX_HPP
+
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/numpy/matrix.hpp>
+#else
 
 /**
  *  @brief Object manager for numpy.matrix.
  */
 
-#include <boost/python.hpp>
-#include <boost/python/numpy/numpy_object_mgr_traits.hpp>
-#include <boost/python/numpy/ndarray.hpp>
-#include <boost/python/numpy/config.hpp>
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/numpy/numpy_object_mgr_traits.hpp"
+#include "pxr/external/boost/python/numpy/ndarray.hpp"
+#include "pxr/external/boost/python/numpy/config.hpp"
 
 
-namespace boost { namespace python { namespace numpy {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
 
 /**
  *  @brief A boost.python "object manager" (subclass of object) for numpy.matrix.
@@ -30,7 +37,7 @@ namespace boost { namespace python { namespace numpy {
  *  @internal numpy.matrix is defined in Python, so object_manager_traits<matrix>::get_pytype()
  *            is implemented by importing numpy and getting the "matrix" attribute of the module.
  *            We then just hope that doesn't get destroyed while we need it, because if we put
- *            a dynamic python object in a static-allocated boost::python::object or handle<>,
+ *            a dynamic python object in a static-allocated PXR_BOOST_NAMESPACE::python::object or handle<>,
  *            bad things happen when Python shuts down.  I think this solution is safe, but I'd
  *            love to get that confirmed.
  */
@@ -40,7 +47,7 @@ class BOOST_NUMPY_DECL matrix : public ndarray
   static object construct(object_cref obj, bool copy);
 public:
 
-  BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(matrix, ndarray);
+  PXR_BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(matrix, ndarray);
 
   /// @brief Equivalent to "numpy.matrix(obj,dt,copy)" in Python.
   explicit matrix(object const & obj, dtype const & dt, bool copy=true)
@@ -77,13 +84,14 @@ struct as_matrix : Base
   }
 };
 
-} // namespace boost::python::numpy
+} // namespace PXR_BOOST_NAMESPACE::python::numpy
 
 namespace converter 
 {
 
 NUMPY_OBJECT_MANAGER_TRAITS(numpy::matrix);
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

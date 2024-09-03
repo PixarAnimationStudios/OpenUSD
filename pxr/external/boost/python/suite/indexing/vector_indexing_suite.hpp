@@ -8,14 +8,21 @@
 //  accompanying file LICENSE_1_0.txt or copy at
 //  http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef VECTOR_INDEXING_SUITE_JDG20036_HPP
-# define VECTOR_INDEXING_SUITE_JDG20036_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_VECTOR_INDEXING_SUITE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_VECTOR_INDEXING_SUITE_HPP
 
-# include <boost/python/suite/indexing/indexing_suite.hpp>
-# include <boost/python/suite/indexing/container_utils.hpp>
-# include <boost/python/iterator.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-namespace boost { namespace python {
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#else
+
+# include "pxr/external/boost/python/suite/indexing/indexing_suite.hpp"
+# include "pxr/external/boost/python/suite/indexing/container_utils.hpp"
+# include "pxr/external/boost/python/iterator.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python {
             
     // Forward declaration
     template <class Container, bool NoProxy, class DerivedPolicies>
@@ -242,6 +249,7 @@ namespace boost { namespace python {
         }
     };
        
-}} // namespace boost::python 
+}} // namespace PXR_BOOST_NAMESPACE::python 
 
-#endif // VECTOR_INDEXING_SUITE_JDG20036_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_SUITE_INDEXING_VECTOR_INDEXING_SUITE_HPP

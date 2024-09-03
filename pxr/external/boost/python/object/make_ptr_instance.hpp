@@ -7,17 +7,28 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef MAKE_PTR_INSTANCE_DWA200296_HPP
-# define MAKE_PTR_INSTANCE_DWA200296_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_PTR_INSTANCE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_PTR_INSTANCE_HPP
 
-# include <boost/python/object/make_instance.hpp>
-# include <boost/python/converter/registry.hpp>
-# include <boost/python/detail/type_traits.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/make_ptr_instance.hpp>
+#else
+
+# include "pxr/external/boost/python/object/make_instance.hpp"
+# include "pxr/external/boost/python/converter/registry.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <boost/get_pointer.hpp>
 # include <boost/detail/workaround.hpp>
 # include <typeinfo>
 
-namespace boost { namespace python { namespace objects { 
+namespace PXR_BOOST_NAMESPACE {
+    using boost::get_pointer; // Enable ADL for boost types
+}
+
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
 template <class T, class Holder>
 struct make_ptr_instance
@@ -38,7 +49,7 @@ struct make_ptr_instance
     {
         return get_class_object_impl(get_pointer(x));
     }
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
     static inline PyTypeObject const* get_pytype()
     {
         return converter::registered<T>::converters.get_class_object();
@@ -52,7 +63,7 @@ struct make_ptr_instance
             return 0; // means "return None".
 
         PyTypeObject* derived = get_derived_class_object(
-            BOOST_DEDUCED_TYPENAME boost::python::detail::is_polymorphic<U>::type(), p);
+            BOOST_DEDUCED_TYPENAME PXR_BOOST_NAMESPACE::python::detail::is_polymorphic<U>::type(), p);
         
         if (derived)
             return derived;
@@ -60,7 +71,7 @@ struct make_ptr_instance
     }
     
     template <class U>
-    static inline PyTypeObject* get_derived_class_object(boost::python::detail::true_, U const volatile* x)
+    static inline PyTypeObject* get_derived_class_object(PXR_BOOST_NAMESPACE::python::detail::true_, U const volatile* x)
     {
         converter::registration const* r = converter::registry::query(
             type_info(typeid(*x))
@@ -69,13 +80,14 @@ struct make_ptr_instance
     }
     
     template <class U>
-    static inline PyTypeObject* get_derived_class_object(boost::python::detail::false_, U*)
+    static inline PyTypeObject* get_derived_class_object(PXR_BOOST_NAMESPACE::python::detail::false_, U*)
     {
         return 0;
     }
 };
   
 
-}}} // namespace boost::python::object
+}}} // namespace PXR_BOOST_NAMESPACE::python::object
 
-#endif // MAKE_PTR_INSTANCE_DWA200296_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_PTR_INSTANCE_HPP

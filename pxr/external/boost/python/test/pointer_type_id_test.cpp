@@ -6,17 +6,17 @@
 // Copyright David Abrahams 2004. Distributed under the Boost
 // Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/type_id.hpp>
+#include "pxr/external/boost/python/type_id.hpp"
 
 #include <boost/detail/lightweight_test.hpp>
-#include <boost/python/converter/pointer_type_id.hpp>
+#include "pxr/external/boost/python/converter/pointer_type_id.hpp"
 
 int main()
 {
-    using namespace boost::python::converter;
+    using namespace PXR_BOOST_NAMESPACE::python::converter;
     
-    boost::python::type_info x
-        = boost::python::type_id<int>();
+    PXR_BOOST_NAMESPACE::python::type_info x
+        = PXR_BOOST_NAMESPACE::python::type_id<int>();
     
 
     BOOST_TEST(pointer_type_id<int*>() == x);

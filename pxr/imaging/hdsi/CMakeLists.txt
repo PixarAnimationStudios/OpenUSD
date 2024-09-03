@@ -23,6 +23,7 @@ pxr_library(hdsi
         legacyDisplayStyleOverrideSceneIndex
         lightLinkingSceneIndex
         materialBindingResolvingSceneIndex
+        materialOverrideResolvingSceneIndex
         materialPrimvarTransferSceneIndex
         nurbsApproximatingSceneIndex
         pinnedCurveExpandingSceneIndex

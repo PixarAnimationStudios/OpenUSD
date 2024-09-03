@@ -345,7 +345,7 @@ public:
     ///
     /// \see Barrett, Cassels, Haahr, Moon, Playford, Withington.
     ///   "A Monotonic Superclass Linearization for Dylan."  OOPSLA 96.
-    ///   http://www.webcom.com/haahr/dylan/linearization-oopsla96.html
+    ///   https://opendylan.org/_static/c3-linearization.pdf
     ///
     TF_API
     void GetAllAncestorTypes(std::vector<TfType> *result) const;

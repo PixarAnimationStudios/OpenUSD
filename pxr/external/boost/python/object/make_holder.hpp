@@ -10,19 +10,26 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-# ifndef MAKE_HOLDER_DWA20011215_HPP
-#  define MAKE_HOLDER_DWA20011215_HPP
+# ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_HOLDER_HPP
+#  define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_HOLDER_HPP
 
-#  include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-#  include <boost/python/object/instance.hpp>
-#  include <boost/python/converter/registry.hpp>
-#if !defined( BOOST_PYTHON_NO_PY_SIGNATURES) && defined( BOOST_PYTHON_PY_SIGNATURES_PROPER_INIT_SELF_TYPE)
-#  include <boost/python/detail/python_type.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/make_holder.hpp>
+#else
+
+#  include "pxr/external/boost/python/detail/prefix.hpp"
+
+#  include "pxr/external/boost/python/object/instance.hpp"
+#  include "pxr/external/boost/python/converter/registry.hpp"
+#if !defined( PXR_BOOST_PYTHON_NO_PY_SIGNATURES) && defined( PXR_BOOST_PYTHON_PY_SIGNATURES_PROPER_INIT_SELF_TYPE)
+#  include "pxr/external/boost/python/detail/python_type.hpp"
 #endif
 
-#  include <boost/python/object/forward.hpp>
-#  include <boost/python/detail/preprocessor.hpp>
+#  include "pxr/external/boost/python/object/forward.hpp"
+#  include "pxr/external/boost/python/detail/preprocessor.hpp"
 
 #  include <boost/mpl/next.hpp>
 #  include <boost/mpl/begin_end.hpp>
@@ -36,21 +43,22 @@
 
 #  include <cstddef>
 
-namespace boost { namespace python { namespace objects {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
 
 template <int nargs> struct make_holder;
 
-#  define BOOST_PYTHON_DO_FORWARD_ARG(z, index, _) , f##index(a##index)
+#  define PXR_BOOST_PYTHON_DO_FORWARD_ARG(z, index, _) , f##index(a##index)
 
 // specializations...
-#  define BOOST_PP_ITERATION_PARAMS_1 (3, (0, BOOST_PYTHON_MAX_ARITY, <boost/python/object/make_holder.hpp>))
+#  define BOOST_PP_ITERATION_PARAMS_1 (3, (0, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/object/make_holder.hpp"))
 #  include BOOST_PP_ITERATE()
 
-#  undef BOOST_PYTHON_DO_FORWARD_ARG
+#  undef PXR_BOOST_PYTHON_DO_FORWARD_ARG
 
-}}} // namespace boost::python::objects
+}}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
-# endif // MAKE_HOLDER_DWA20011215_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+# endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_HOLDER_HPP
 
 // For gcc 4.4 compatability, we must include the
 // BOOST_PP_ITERATION_DEPTH test inside an #else clause.
@@ -86,8 +94,8 @@ struct make_holder<N>
 # endif 
         
         static void execute(
-#if !defined( BOOST_PYTHON_NO_PY_SIGNATURES) && defined( BOOST_PYTHON_PY_SIGNATURES_PROPER_INIT_SELF_TYPE)
-            boost::python::detail::python_class<BOOST_DEDUCED_TYPENAME Holder::value_type> *p
+#if !defined( PXR_BOOST_PYTHON_NO_PY_SIGNATURES) && defined( PXR_BOOST_PYTHON_PY_SIGNATURES_PROPER_INIT_SELF_TYPE)
+            PXR_BOOST_NAMESPACE::python::detail::python_class<BOOST_DEDUCED_TYPENAME Holder::value_type> *p
 #else
             PyObject *p
 #endif
@@ -96,10 +104,10 @@ struct make_holder<N>
             typedef instance<Holder> instance_t;
 
             void* memory = Holder::allocate(p, offsetof(instance_t, storage), sizeof(Holder),
-                                            boost::python::detail::alignment_of<Holder>::value);
+                                            PXR_BOOST_NAMESPACE::python::detail::alignment_of<Holder>::value);
             try {
                 (new (memory) Holder(
-                    p BOOST_PP_REPEAT_1ST(N, BOOST_PYTHON_DO_FORWARD_ARG, nil)))->install(p);
+                    p BOOST_PP_REPEAT_1ST(N, PXR_BOOST_PYTHON_DO_FORWARD_ARG, nil)))->install(p);
             }
             catch(...) {
                 Holder::deallocate(p, memory);

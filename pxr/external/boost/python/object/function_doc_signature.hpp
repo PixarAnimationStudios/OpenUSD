@@ -7,20 +7,27 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef FUNCTION_SIGNATURE_20070531_HPP
-# define FUNCTION_SIGNATURE_20070531_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_DOC_SIGNATURE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_DOC_SIGNATURE_HPP
 
-#include <boost/python/object/function.hpp>
-#include <boost/python/converter/registrations.hpp>
-#include <boost/python/str.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-#include <boost/python/detail/signature.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/function_doc_signature.hpp>
+#else
+
+#include "pxr/external/boost/python/object/function.hpp"
+#include "pxr/external/boost/python/converter/registrations.hpp"
+#include "pxr/external/boost/python/str.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
+
+#include "pxr/external/boost/python/detail/signature.hpp"
 
 
 #include <vector>
 
-namespace boost { namespace python { namespace objects {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
 
 class function_doc_signature_generator{
     static const  char * py_type_str(const python::detail::signature_element &s);
@@ -36,6 +43,7 @@ public:
     static list function_doc_signatures( function const * f);
 };
 
-}}}//end of namespace boost::python::objects
+}}}//end of namespace PXR_BOOST_NAMESPACE::python::objects
 
-#endif //FUNCTION_SIGNATURE_20070531_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif //PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_DOC_SIGNATURE_HPP

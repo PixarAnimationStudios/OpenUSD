@@ -7,27 +7,34 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef RETURN_ARG_DWA2003719_HPP
-# define RETURN_ARG_DWA2003719_HPP
-# include <boost/python/default_call_policies.hpp>
-# include <boost/python/detail/none.hpp>
-# include <boost/python/detail/value_arg.hpp>
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_RETURN_ARG_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_RETURN_ARG_HPP
 
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
-# include <boost/python/converter/pytype_function.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/return_arg.hpp>
+#else
+# include "pxr/external/boost/python/default_call_policies.hpp"
+# include "pxr/external/boost/python/detail/none.hpp"
+# include "pxr/external/boost/python/detail/value_arg.hpp"
+
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
+# include "pxr/external/boost/python/converter/pytype_function.hpp"
 #endif
 
-# include <boost/python/detail/type_traits.hpp>
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 # include <boost/mpl/int.hpp>
 # include <boost/mpl/at.hpp>
 
 # include <boost/static_assert.hpp>
-# include <boost/python/refcount.hpp>
+# include "pxr/external/boost/python/refcount.hpp"
 
 # include <cstddef>
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 namespace detail
 {
@@ -53,7 +60,7 @@ namespace detail
               {
                   return none();
               }
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
+#ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
               PyTypeObject const *get_pytype() const { return converter::expected_pytype_for_arg<T>::get_pytype() ; }
 #endif
           };
@@ -109,6 +116,7 @@ struct return_self
   : return_arg<1,Base>
 {};
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // RETURN_ARG_DWA2003719_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_RETURN_ARG_HPP

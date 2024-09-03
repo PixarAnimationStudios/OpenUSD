@@ -10,6 +10,7 @@
 #include "pxr/imaging/geomUtil/coneMeshGenerator.h"
 #include "pxr/imaging/geomUtil/cuboidMeshGenerator.h"
 #include "pxr/imaging/geomUtil/cylinderMeshGenerator.h"
+#include "pxr/imaging/geomUtil/planeMeshGenerator.h"
 #include "pxr/imaging/geomUtil/sphereMeshGenerator.h"
 
 #include "pxr/imaging/pxOsd/meshTopology.h"
@@ -24,6 +25,7 @@
 #include "pxr/imaging/hd/meshSchema.h"
 #include "pxr/imaging/hd/meshTopologySchema.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/planeSchema.h"
 #include "pxr/imaging/hd/primvarSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
@@ -526,7 +528,6 @@ public:
             _GetRadiusBottom(shutterOffset),
             _GetRadiusTop(shutterOffset),
             _GetHeight(shutterOffset),
-            /* sweepDegrees = */ 360.0,
             &basis
         );
 
@@ -914,7 +915,6 @@ public:
             _GetRadiusBottom(shutterOffset),
             _GetRadiusTop(shutterOffset),
             _GetHeight(shutterOffset),
-            /* sweepDegrees = */ 360.0,
             &basis
         );
 
@@ -1323,6 +1323,193 @@ _ComputePrimDataSource(
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+// Plane
+
+namespace _PlaneToMesh
+{
+
+HdContainerDataSourceHandle
+_ComputeMeshDataSource(const HdContainerDataSourceHandle &primDataSource)
+{
+    const PxOsdMeshTopology topology = 
+        GeomUtilPlaneMeshGenerator::GenerateTopology();
+
+    const HdDataSourceLocator doubleSidedLocator =
+        HdPlaneSchema::GetDefaultLocator().Append(
+            HdPlaneSchemaTokens->doubleSided);
+    HdBoolDataSourceHandle doubleSidedDs =
+        HdBoolDataSource::Cast(
+            HdContainerDataSource::Get(primDataSource, doubleSidedLocator));
+
+    return
+        HdMeshSchema::Builder()
+            .SetTopology(
+                HdMeshTopologySchema::Builder()
+                    .SetFaceVertexCounts(
+                        HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                            topology.GetFaceVertexCounts()))
+                    .SetFaceVertexIndices(
+                        HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                            topology.GetFaceVertexIndices()))
+                    .SetOrientation(
+                        HdRetainedTypedSampledDataSource<TfToken>::New(
+                            HdMeshTopologySchemaTokens->rightHanded))
+                    .Build())
+            .SetSubdivisionScheme(
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    topology.GetScheme()))
+            .SetDoubleSided(doubleSidedDs)
+            .Build();
+}
+
+class _PointsDataSource : public HdVec3fArrayDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_PointsDataSource);
+
+    VtValue GetValue(const Time shutterOffset) override {
+        return VtValue(GetTypedValue(shutterOffset));
+    }
+
+    VtVec3fArray GetTypedValue(const Time shutterOffset) override {
+        const GfMatrix4d basis = _GetBasis(_GetAxis(shutterOffset));
+        const size_t numPoints =
+            GeomUtilPlaneMeshGenerator::ComputeNumPoints();
+        VtVec3fArray points(numPoints);
+
+        GeomUtilPlaneMeshGenerator::GeneratePoints(
+            points.begin(),
+            _GetWidth(shutterOffset),
+            _GetLength(shutterOffset),
+            &basis
+        );
+        
+        return points;
+    }
+
+    bool GetContributingSampleTimesForInterval(
+                            const Time startTime,
+                            const Time endTime,
+                            std::vector<Time> * const outSampleTimes) override {
+        HdSampledDataSourceHandle sources[] = {
+            _GetWidthSource(), _GetLengthSource(), _GetAxisSource() };
+        return HdGetMergedContributingSampleTimesForInterval(
+            TfArraySize(sources), sources, startTime, endTime, outSampleTimes);
+    }
+
+private:
+    _PointsDataSource(const HdContainerDataSourceHandle &primDataSource)
+      : _primDataSource(primDataSource)
+    {
+    }
+
+    HdDoubleDataSourceHandle _GetWidthSource() const {
+        static const HdDataSourceLocator widthLocator =
+            HdPlaneSchema::GetDefaultLocator().Append(
+                HdPlaneSchemaTokens->width);
+        return HdDoubleDataSource::Cast(
+            HdContainerDataSource::Get(_primDataSource, widthLocator));
+    }
+
+    double _GetWidth(const Time shutterOffset) const {
+        if (HdDoubleDataSourceHandle const s = _GetWidthSource()) {
+            return s->GetTypedValue(shutterOffset);
+        }
+        return 1.0;
+    }
+
+    HdDoubleDataSourceHandle _GetLengthSource() const {
+        static const HdDataSourceLocator sizeLocator =
+            HdPlaneSchema::GetDefaultLocator().Append(
+                HdPlaneSchemaTokens->length);
+        return HdDoubleDataSource::Cast(
+            HdContainerDataSource::Get(_primDataSource, sizeLocator));
+    }
+
+    double _GetLength(const Time shutterOffset) const {
+        if (HdDoubleDataSourceHandle const s = _GetLengthSource()) {
+            return s->GetTypedValue(shutterOffset);
+        }
+        return 1.0;
+    }
+
+    HdTokenDataSourceHandle _GetAxisSource() const {
+        static const HdDataSourceLocator locator =
+            HdPlaneSchema::GetDefaultLocator().Append(
+                HdPlaneSchemaTokens->axis);
+        return HdTokenDataSource::Cast(
+            HdContainerDataSource::Get(_primDataSource, locator));
+    }
+
+    TfToken _GetAxis(const Time shutterOffset) const {
+        if (HdTokenDataSourceHandle const s = _GetAxisSource()) {
+            return s->GetTypedValue(shutterOffset);
+        }
+        return HdPlaneSchemaTokens->X;
+    }
+
+    HdContainerDataSourceHandle _primDataSource;
+};
+
+HdContainerDataSourceHandle
+_ComputePointsPrimvarDataSource(
+    const HdContainerDataSourceHandle &primDataSource)
+{
+    static HdTokenDataSourceHandle const roleDataSource =
+        HdPrimvarSchema::BuildRoleDataSource(
+            HdPrimvarSchemaTokens->point);
+    static HdTokenDataSourceHandle const interpolationDataSource =
+        HdPrimvarSchema::BuildInterpolationDataSource(
+            HdPrimvarSchemaTokens->vertex);
+
+    return
+        HdPrimvarSchema::Builder()
+            .SetRole(roleDataSource)
+            .SetInterpolation(interpolationDataSource)
+            .SetPrimvarValue(_PointsDataSource::New(primDataSource))
+            .Build();
+}
+
+HdContainerDataSourceHandle
+_ComputePrimvarsDataSource(const HdContainerDataSourceHandle &primDataSource)
+{
+    return
+        HdRetainedContainerDataSource::New(
+            HdPrimvarsSchemaTokens->points,
+                    _ComputePointsPrimvarDataSource(primDataSource));
+}
+
+HdContainerDataSourceHandle
+_ComputePrimDataSource(
+    const SdfPath &primPath,
+    const HdContainerDataSourceHandle &primDataSource)
+{
+    static HdDataSourceBaseHandle const planeDataSource =
+        HdBlockDataSource::New();
+    HdDataSourceBaseHandle const meshDataSource =
+        _ComputeMeshDataSource(primDataSource);
+    HdDataSourceBaseHandle const primvarsDataSource =
+        _ComputePrimvarsDataSource(primDataSource);
+    HdDataSourceBaseHandle const dependenciesDataSource =
+        _ComputePointsDependenciesDataSource<HdPlaneSchema>(primPath);
+
+    HdContainerDataSourceHandle sources[] = {
+        HdRetainedContainerDataSource::New(
+            HdPlaneSchema::GetSchemaToken(), planeDataSource,
+            HdMeshSchema::GetSchemaToken(), meshDataSource,
+            HdPrimvarsSchema::GetSchemaToken(), primvarsDataSource,
+            HdDependenciesSchema::GetSchemaToken(), dependenciesDataSource),
+        primDataSource
+    };
+
+    return HdOverlayContainerDataSource::New(TfArraySize(sources), sources);
+}
+
+} // namespace _PlaneToMesh
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 // Scene index implementation
 
 TfToken
@@ -1362,6 +1549,7 @@ HdsiImplicitSurfaceSceneIndex::HdsiImplicitSurfaceSceneIndex(
   , _coneMode(_GetMode(inputArgs, HdPrimTypeTokens->cone))
   , _cubeMode(_GetMode(inputArgs, HdPrimTypeTokens->cube))
   , _cylinderMode(_GetMode(inputArgs, HdPrimTypeTokens->cylinder))
+  , _planeMode(_GetMode(inputArgs, HdPrimTypeTokens->plane))
   , _sphereMode(_GetMode(inputArgs, HdPrimTypeTokens->sphere))
 {
 
@@ -1427,6 +1615,14 @@ HdsiImplicitSurfaceSceneIndex::GetPrim(const SdfPath &primPath) const
                     primPath, prim.dataSource) };
         }
     }
+    if (prim.primType == HdPrimTypeTokens->plane) {
+        if (_planeMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) {
+            return {
+                HdPrimTypeTokens->mesh,
+                _PlaneToMesh::_ComputePrimDataSource(
+                    primPath, prim.dataSource) };
+        }
+    }
     return prim;
 }
 
@@ -1458,7 +1654,9 @@ HdsiImplicitSurfaceSceneIndex::_PrimsAdded(
             (entries[i].primType == HdPrimTypeTokens->sphere &&
              _sphereMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) ||
             (entries[i].primType == HdPrimTypeTokens->capsule &&
-             _capsuleMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh)) {
+             _capsuleMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) ||
+            (entries[i].primType == HdPrimTypeTokens->plane &&
+             _planeMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh)) {
             indices.push_back(i);
         }
     }

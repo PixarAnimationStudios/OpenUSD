@@ -9,18 +9,18 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/numpy.hpp>
+#include "pxr/external/boost/python/numpy.hpp"
 #include <boost/cstdint.hpp>
 
-namespace p = boost::python;
-namespace np = boost::python::numpy;
+namespace p = PXR_BOOST_NAMESPACE::python;
+namespace np = PXR_BOOST_NAMESPACE::python::numpy;
 
 template <typename T>
 np::dtype accept(T) {
   return np::dtype::get_builtin<T>();
 }
 
-BOOST_PYTHON_MODULE(dtype_ext)
+PXR_BOOST_PYTHON_MODULE(dtype_ext)
 {
   np::initialize();
   // wrap dtype equivalence test, since it isn't available in Python API.

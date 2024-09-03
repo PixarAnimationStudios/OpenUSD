@@ -7,22 +7,29 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef MAKE_CONSTRUCTOR_DWA20011221_HPP
-# define MAKE_CONSTRUCTOR_DWA20011221_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_MAKE_CONSTRUCTOR_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_MAKE_CONSTRUCTOR_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/default_call_policies.hpp>
-# include <boost/python/args.hpp>
-# include <boost/python/object_fwd.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/make_constructor.hpp>
+#else
 
-# include <boost/python/object/function_object.hpp>
-# include <boost/python/object/make_holder.hpp>
-# include <boost/python/object/pointer_holder.hpp>
-# include <boost/python/converter/context_result_converter.hpp>
+# include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/python/detail/caller.hpp>
-# include <boost/python/detail/none.hpp>
+# include "pxr/external/boost/python/default_call_policies.hpp"
+# include "pxr/external/boost/python/args.hpp"
+# include "pxr/external/boost/python/object_fwd.hpp"
+
+# include "pxr/external/boost/python/object/function_object.hpp"
+# include "pxr/external/boost/python/object/make_holder.hpp"
+# include "pxr/external/boost/python/object/pointer_holder.hpp"
+# include "pxr/external/boost/python/converter/context_result_converter.hpp"
+
+# include "pxr/external/boost/python/detail/caller.hpp"
+# include "pxr/external/boost/python/detail/none.hpp"
 
 # include <boost/mpl/size.hpp>
 # include <boost/mpl/int.hpp>
@@ -30,7 +37,7 @@
 # include <boost/mpl/pop_front.hpp>
 # include <boost/mpl/assert.hpp>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace detail
 {
@@ -50,13 +57,8 @@ namespace detail
       template <class U>
       void dispatch(U* x, detail::true_) const
       {
-#if defined(BOOST_NO_CXX11_SMART_PTR)
-	std::auto_ptr<U> owner(x);
-	dispatch(owner, detail::false_());
-#else
 	std::unique_ptr<U> owner(x);
 	dispatch(std::move(owner), detail::false_());
-#endif
       }
       
       template <class Ptr>
@@ -68,11 +70,7 @@ namespace detail
 
           void* memory = holder::allocate(this->m_self, offsetof(instance_t, storage), sizeof(holder));
           try {
-#if defined(BOOST_NO_CXX11_SMART_PTR)
-              (new (memory) holder(x))->install(this->m_self);
-#else
               (new (memory) holder(std::move(x)))->install(this->m_self);
-#endif
           }
           catch(...) {
               holder::deallocate(this->m_self, memory);
@@ -148,7 +146,7 @@ namespace detail
   //
   // These helper functions for make_constructor (below) do the raw work
   // of constructing a Python object from some invokable entity. See
-  // <boost/python/detail/caller.hpp> for more information about how
+  // "pxr/external/boost/python/detail/caller.hpp" for more information about how
   // the Sig arguments is used.
   //
   // @group make_constructor_aux {
@@ -292,4 +290,5 @@ object make_constructor(
 }} 
 
 
-#endif // MAKE_CONSTRUCTOR_DWA20011221_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_MAKE_CONSTRUCTOR_HPP

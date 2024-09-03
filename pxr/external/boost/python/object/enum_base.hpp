@@ -7,18 +7,25 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef ENUM_BASE_DWA200298_HPP
-# define ENUM_BASE_DWA200298_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ENUM_BASE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ENUM_BASE_HPP
 
-# include <boost/python/object_core.hpp>
-# include <boost/python/type_id.hpp>
-# include <boost/python/converter/to_python_function_type.hpp>
-# include <boost/python/converter/convertible_function.hpp>
-# include <boost/python/converter/constructor_function.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-namespace boost { namespace python { namespace objects { 
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/enum_base.hpp>
+#else
 
-struct BOOST_PYTHON_DECL enum_base : python::api::object
+# include "pxr/external/boost/python/object_core.hpp"
+# include "pxr/external/boost/python/type_id.hpp"
+# include "pxr/external/boost/python/converter/to_python_function_type.hpp"
+# include "pxr/external/boost/python/converter/convertible_function.hpp"
+# include "pxr/external/boost/python/converter/constructor_function.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
+
+struct PXR_BOOST_PYTHON_DECL enum_base : python::api::object
 {
  protected:
     enum_base(
@@ -36,6 +43,7 @@ struct BOOST_PYTHON_DECL enum_base : python::api::object
     static PyObject* to_python(PyTypeObject* type, long x);
 };
 
-}}} // namespace boost::python::object
+}}} // namespace PXR_BOOST_NAMESPACE::python::object
 
-#endif // ENUM_BASE_DWA200298_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ENUM_BASE_HPP

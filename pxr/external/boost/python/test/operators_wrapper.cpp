@@ -3,7 +3,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "boost/python.hpp"
+#include "pxr/external/boost/python.hpp"
 #include <memory>
 
 struct vector
@@ -23,7 +23,7 @@ struct vector
 struct dvector : vector
 {};
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 struct vector_wrapper
   : vector, wrapper< vector >
@@ -32,7 +32,7 @@ struct vector_wrapper
     vector_wrapper() {}
 };
 
-BOOST_PYTHON_MODULE( operators_wrapper_ext )
+PXR_BOOST_PYTHON_MODULE( operators_wrapper_ext )
 {
     class_< vector_wrapper >( "vector" )
         .def( self + self )
@@ -41,7 +41,7 @@ BOOST_PYTHON_MODULE( operators_wrapper_ext )
         ;
     
     scope().attr("v") = vector();
-    std::auto_ptr<vector> dp(new dvector);
-    register_ptr_to_python< std::auto_ptr<vector> >();
+    std::shared_ptr<vector> dp(new dvector);
+    register_ptr_to_python< std::shared_ptr<vector> >();
     scope().attr("d") = dp;
 }

@@ -6,10 +6,10 @@
 // Copyright David Abrahams 2004. Distributed under the Boost
 // Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/dict.hpp>
-#include <boost/python/extract.hpp>
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/extract.hpp"
 
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 namespace
 {
   // When returning list objects from methods, it may turn out that the
@@ -181,9 +181,9 @@ static struct register_dict_pytype_ptr
     register_dict_pytype_ptr()
     {
         const_cast<converter::registration &>(
-            converter::registry::lookup(boost::python::type_id<boost::python::dict>())
+            converter::registry::lookup(PXR_BOOST_NAMESPACE::python::type_id<PXR_BOOST_NAMESPACE::python::dict>())
             ).m_class_object = &PyDict_Type;
     }
 }register_dict_pytype_ptr_;
 
-}}}  // namespace boost::python
+}}}  // namespace PXR_BOOST_NAMESPACE::python

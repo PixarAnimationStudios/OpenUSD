@@ -8,10 +8,10 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/module.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/return_arg.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
 
 struct Widget
 {
@@ -51,10 +51,10 @@ struct Label : Widget
    std::string label_;
 };
 
-void return_arg_f(boost::python::object) {}
+void return_arg_f(PXR_BOOST_NAMESPACE::python::object) {}
 
-using namespace boost::python;
-BOOST_PYTHON_MODULE(return_arg_ext)
+using namespace PXR_BOOST_NAMESPACE::python;
+PXR_BOOST_PYTHON_MODULE(return_arg_ext)
 {
    class_<Widget>("Widget")
       .def("sensitive", &Widget::get_sensitive)

@@ -7,16 +7,24 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef ITERATOR_CORE_DWA2002512_HPP
-# define ITERATOR_CORE_DWA2002512_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ITERATOR_CORE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ITERATOR_CORE_HPP
 
-# include <boost/python/object_fwd.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-namespace boost { namespace python { namespace objects {
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object/iterator_core.hpp>
+#else
 
-BOOST_PYTHON_DECL object const& identity_function();
-BOOST_PYTHON_DECL void stop_iteration_error();
+# include "pxr/external/boost/python/object_fwd.hpp"
 
-}}} // namespace boost::python::object
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
 
-#endif // ITERATOR_CORE_DWA2002512_HPP
+PXR_BOOST_PYTHON_DECL object const& identity_function();
+PXR_BOOST_PYTHON_DECL void stop_iteration_error();
+
+}}} // namespace PXR_BOOST_NAMESPACE::python::object
+
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ITERATOR_CORE_HPP

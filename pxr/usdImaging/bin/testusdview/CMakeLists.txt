@@ -441,7 +441,7 @@ pxr_register_test(testUsdviewFileArguments4
 pxr_register_test(testUsdviewFileArguments5
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testInvalidFileArg.py invalidSyntax.usda"
-    CLEAN_OUTPUT "(?:[A-Za-z]:)?/(?!refSphere2).*/"
+    CLEAN_OUTPUT "(?:[A-Za-z]:)?/.*(?=invalidSyntax)"
     STDERR_REDIRECT invalidSyntax_test_out
     DIFF_COMPARE invalidSyntax_test_out
     EXPECTED_RETURN_CODE 1

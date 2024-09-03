@@ -1,4 +1,4 @@
-# ifndef BOOST_PYTHON_SYNOPSIS 
+# ifndef PXR_BOOST_PYTHON_SYNOPSIS 
 # //
 # // Copyright 2024 Pixar
 # // Licensed under the terms set forth in the LICENSE.txt file available at
@@ -15,7 +15,7 @@
 
 #  define N BOOST_PP_ITERATION()
 
-#  define BOOST_PYTHON_MAKE_TUPLE_ARG(z, N, ignored)    \
+#  define PXR_BOOST_PYTHON_MAKE_TUPLE_ARG(z, N, ignored)    \
     PyTuple_SET_ITEM(                                   \
         result.ptr()                                    \
         , N                                             \
@@ -27,11 +27,11 @@
     make_tuple(BOOST_PP_ENUM_BINARY_PARAMS_Z(1, N, A, const& a))
     {
         tuple result((detail::new_reference)::PyTuple_New(N));
-        BOOST_PP_REPEAT_1ST(N, BOOST_PYTHON_MAKE_TUPLE_ARG, _)
+        BOOST_PP_REPEAT_1ST(N, PXR_BOOST_PYTHON_MAKE_TUPLE_ARG, _)
         return result;
     }
 
-#  undef BOOST_PYTHON_MAKE_TUPLE_ARG
+#  undef PXR_BOOST_PYTHON_MAKE_TUPLE_ARG
 
 #  undef N
-# endif // BOOST_PYTHON_SYNOPSIS 
+# endif // PXR_BOOST_PYTHON_SYNOPSIS 

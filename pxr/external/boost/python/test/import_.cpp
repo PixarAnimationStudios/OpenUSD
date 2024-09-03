@@ -8,14 +8,14 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <boost/detail/lightweight_test.hpp>
 #include <boost/bind/bind.hpp>
 #include <iostream>
 #include <sstream>
 
-namespace bpl = boost::python;
+namespace bpl = PXR_BOOST_NAMESPACE::python;
 
 void import_test(char const *py_file_path)
 {

@@ -7,20 +7,27 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef LIST_DWA2002627_HPP
-# define LIST_DWA2002627_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_LIST_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_LIST_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/object.hpp>
-# include <boost/python/converter/pytype_object_mgr_traits.hpp>
-# include <boost/python/ssize_t.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/list.hpp>
+#else
 
-namespace boost { namespace python { 
+# include "pxr/external/boost/python/detail/prefix.hpp"
+
+# include "pxr/external/boost/python/object.hpp"
+# include "pxr/external/boost/python/converter/pytype_object_mgr_traits.hpp"
+# include "pxr/external/boost/python/ssize_t.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 namespace detail
 {
-  struct BOOST_PYTHON_DECL list_base : object
+  struct PXR_BOOST_PYTHON_DECL list_base : object
   {
       void append(object_cref); // append object to end
 
@@ -53,7 +60,7 @@ namespace detail
       list_base(); // new list
       explicit list_base(object_cref sequence); // new list initialized from sequence's items
 
-      BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(list_base, object)
+      PXR_BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(list_base, object)
    private:    
       static detail::new_non_null_reference call(object const&);
   };
@@ -133,7 +140,7 @@ class list : public detail::list_base
 #endif
     
  public: // implementation detail -- for internal use only
-    BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(list, base)
+    PXR_BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(list, base)
 };
 
 //
@@ -148,6 +155,7 @@ namespace converter
   };
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // LIST_DWA2002627_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_LIST_HPP

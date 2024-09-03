@@ -7,20 +7,27 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef DEF_DWA200292_HPP
-# define DEF_DWA200292_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DEF_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DEF_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/object_fwd.hpp>
-# include <boost/python/make_function.hpp>
-# include <boost/python/detail/def_helper.hpp>
-# include <boost/python/detail/overloads_fwd.hpp>
-# include <boost/python/scope.hpp>
-# include <boost/python/signature.hpp>
-# include <boost/python/detail/scope.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/def.hpp>
+#else
 
-namespace boost { namespace python {
+# include "pxr/external/boost/python/detail/prefix.hpp"
+
+# include "pxr/external/boost/python/object_fwd.hpp"
+# include "pxr/external/boost/python/make_function.hpp"
+# include "pxr/external/boost/python/detail/def_helper.hpp"
+# include "pxr/external/boost/python/detail/overloads_fwd.hpp"
+# include "pxr/external/boost/python/scope.hpp"
+# include "pxr/external/boost/python/signature.hpp"
+# include "pxr/external/boost/python/detail/scope.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace detail
 {
@@ -45,7 +52,7 @@ namespace detail
           >::type assertion BOOST_ATTRIBUTE_UNUSED;
       
       detail::scope_setattr_doc(
-          name, boost::python::make_function(
+          name, PXR_BOOST_NAMESPACE::python::make_function(
               fn
               , helper.policies()
               , helper.keywords())
@@ -56,7 +63,7 @@ namespace detail
   //
   // These two overloads discriminate between def() as applied to
   // regular functions and def() as applied to the result of
-  // BOOST_PYTHON_FUNCTION_OVERLOADS(). The final argument is used to
+  // PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(). The final argument is used to
   // discriminate.
   //
   template <class Fn, class A1>
@@ -114,6 +121,7 @@ void def(char const* name, F f, A1 const& a1, A2 const& a2, A3 const& a3)
     detail::def_from_helper(name, f, detail::def_helper<A1,A2,A3>(a1,a2,a3));
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // DEF_DWA200292_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DEF_HPP

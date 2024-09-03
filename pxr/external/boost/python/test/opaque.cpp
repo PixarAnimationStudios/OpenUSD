@@ -7,10 +7,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-# include <boost/python/return_opaque_pointer.hpp>
-# include <boost/python/def.hpp>
-# include <boost/python/module.hpp>
-# include <boost/python/return_value_policy.hpp>
+# include "pxr/external/boost/python/return_opaque_pointer.hpp"
+# include "pxr/external/boost/python/def.hpp"
+# include "pxr/external/boost/python/module.hpp"
+# include "pxr/external/boost/python/return_value_policy.hpp"
 
 typedef struct opaque_ *opaque;
 typedef struct opaque2_ *opaque2;
@@ -56,12 +56,12 @@ void failuse2 (opaque2 op)
         throw std::runtime_error (std::string ("success"));
 }
 
-BOOST_PYTHON_OPAQUE_SPECIALIZED_TYPE_ID(opaque_)
-BOOST_PYTHON_OPAQUE_SPECIALIZED_TYPE_ID(opaque2_)
+PXR_BOOST_PYTHON_OPAQUE_SPECIALIZED_TYPE_ID(opaque_)
+PXR_BOOST_PYTHON_OPAQUE_SPECIALIZED_TYPE_ID(opaque2_)
 
-namespace bpl = boost::python;
+namespace bpl = PXR_BOOST_NAMESPACE::python;
 
-BOOST_PYTHON_MODULE(opaque_ext)
+PXR_BOOST_PYTHON_MODULE(opaque_ext)
 {
     bpl::def (
         "get", &::get, bpl::return_value_policy<bpl::return_opaque_pointer>());

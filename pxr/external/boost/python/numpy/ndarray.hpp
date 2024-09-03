@@ -9,28 +9,35 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef boost_python_numpy_ndarray_hpp_
-#define boost_python_numpy_ndarray_hpp_
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_NUMPY_NDARRAY_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_NUMPY_NDARRAY_HPP
+
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/numpy/ndarray.hpp>
+#else
 
 /**
  *  @brief Object manager and various utilities for numpy.ndarray.
  */
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 #include <boost/utility/enable_if.hpp>
-#include <boost/python/detail/type_traits.hpp>
-#include <boost/python/numpy/numpy_object_mgr_traits.hpp>
-#include <boost/python/numpy/dtype.hpp>
-#include <boost/python/numpy/config.hpp>
+#include "pxr/external/boost/python/detail/type_traits.hpp"
+#include "pxr/external/boost/python/numpy/numpy_object_mgr_traits.hpp"
+#include "pxr/external/boost/python/numpy/dtype.hpp"
+#include "pxr/external/boost/python/numpy/config.hpp"
 
 #include <vector>
 
-namespace boost { namespace python { namespace numpy {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
 
 /**
  *  @brief A boost.python "object manager" (subclass of object) for numpy.ndarray.
  *
- *  @todo This could have a lot more functionality (like boost::python::numeric::array).
+ *  @todo This could have a lot more functionality (like PXR_BOOST_NAMESPACE::python::numeric::array).
  *        Right now all that exists is what was needed to move raw data between C++ and Python.
  */
  
@@ -80,7 +87,7 @@ public:
     UPDATE_ALL=0x1|0x2|0x4, VARRAY=0x1|0x2|0x8, ALL=0x1|0x2|0x4|0x8
   };
 
-  BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(ndarray, object);
+  PXR_BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(ndarray, object);
 
   /// @brief Return a view of the scalar with the given dtype.
   ndarray view(dtype const & dt) const;
@@ -181,7 +188,7 @@ ndarray from_data_impl(void * data,
 		       Container strides,
 		       object const & owner,
 		       bool writeable,
-		       typename boost::enable_if< boost::python::detail::is_integral<typename Container::value_type> >::type * enabled = NULL)
+		       typename boost::enable_if< PXR_BOOST_NAMESPACE::python::detail::is_integral<typename Container::value_type> >::type * enabled = NULL)
 {
   std::vector<Py_intptr_t> shape_(shape.begin(),shape.end());
   std::vector<Py_intptr_t> strides_(strides.begin(), strides.end());
@@ -195,7 +202,7 @@ BOOST_NUMPY_DECL ndarray from_data_impl(void * data,
 					object const & owner,
 					bool writeable);
 
-} // namespace boost::python::numpy::detail
+} // namespace PXR_BOOST_NAMESPACE::python::numpy::detail
 
 /**
  *  @brief Construct a new ndarray object from a raw pointer.
@@ -306,13 +313,14 @@ BOOST_NUMPY_DECL inline ndarray::bitflag operator&(ndarray::bitflag a,
   return ndarray::bitflag(int(a) & int(b));
 }
 
-} // namespace boost::python::numpy
+} // namespace PXR_BOOST_NAMESPACE::python::numpy
 
 namespace converter 
 {
 
 NUMPY_OBJECT_MANAGER_TRAITS(numpy::ndarray);
 
-}}} // namespace boost::python::converter
+}}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

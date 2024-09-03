@@ -7,11 +7,11 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/detail/result.hpp>
+#include "pxr/external/boost/python/detail/result.hpp"
 #include <boost/type.hpp>
 #include <functional>
 
-using boost::python::detail::result;
+using PXR_BOOST_NAMESPACE::python::detail::result;
 using boost::type;
 
 void expect_int(type<int>*) {}

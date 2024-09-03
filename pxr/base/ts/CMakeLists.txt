@@ -5,11 +5,10 @@ set(libs
     vt
     gf
     tf
-    ${Boost_PYTHON_LIBRARY}
 )
 
 set(include
-    ${Boost_INCLUDE_DIRS}
+    ""
 )
 
 set(classes

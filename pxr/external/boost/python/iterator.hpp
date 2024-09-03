@@ -7,15 +7,22 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef ITERATOR_DWA2002512_HPP
-# define ITERATOR_DWA2002512_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_ITERATOR_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_ITERATOR_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/detail/target.hpp>
-# include <boost/python/detail/type_traits.hpp>
-# include <boost/python/object/iterator.hpp>
-# include <boost/python/object_core.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/iterator.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/prefix.hpp"
+
+# include "pxr/external/boost/python/detail/target.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
+# include "pxr/external/boost/python/object/iterator.hpp"
+# include "pxr/external/boost/python/object_core.hpp"
 
 # if defined(BOOST_MSVC) && (BOOST_MSVC == 1400) /*
 > warning C4180: qualifier applied to function type has no meaning; ignored
@@ -30,7 +37,7 @@ works correctly. */
 # include <boost/bind/bind.hpp>
 # include <boost/bind/protect.hpp>
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 namespace detail
 {
@@ -136,6 +143,7 @@ struct iterator : object
     }
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // ITERATOR_DWA2002512_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_ITERATOR_HPP

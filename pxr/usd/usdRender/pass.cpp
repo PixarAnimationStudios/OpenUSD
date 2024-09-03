@@ -180,19 +180,6 @@ UsdRenderPass::CreateInputPassesRel() const
                        /* custom = */ false);
 }
 
-UsdRelationship
-UsdRenderPass::GetDenoisePassRel() const
-{
-    return GetPrim().GetRelationship(UsdRenderTokens->denoisePass);
-}
-
-UsdRelationship
-UsdRenderPass::CreateDenoisePassRel() const
-{
-    return GetPrim().CreateRelationship(UsdRenderTokens->denoisePass,
-                       /* custom = */ false);
-}
-
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)

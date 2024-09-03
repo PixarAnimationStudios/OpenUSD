@@ -10,11 +10,19 @@
 
 // DEPRECATED HEADER (2006 Jan 12)
 // Provided only for backward compatibility.
-// The boost::python::len() function is now defined in object.hpp.
+// The PXR_BOOST_NAMESPACE::python::len() function is now defined in object.hpp.
 
-#ifndef BOOST_PYTHON_API_PLACE_HOLDER_HPP
-#define BOOST_PYTHON_API_PLACE_HOLDER_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_API_PLACEHOLDER_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_API_PLACEHOLDER_HPP
 
-#include <boost/python/object.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-#endif // BOOST_PYTHON_API_PLACE_HOLDER_HPP
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/api_placeholder.hpp>
+#else
+
+#include "pxr/external/boost/python/object.hpp"
+
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_API_PLACEHOLDER_HPP

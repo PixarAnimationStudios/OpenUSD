@@ -37,9 +37,6 @@ public:
     PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = 0;
     PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = 0;
 
-    HGIVULKAN_API
-    PFN_vkGetInstanceProcAddr GetPFNInstancProcAddr();
-
 private:
     VkInstance _vkInstance;
 };

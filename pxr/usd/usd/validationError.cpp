@@ -5,9 +5,18 @@
 // https://openusd.org/license.
 //
 
+#include "pxr/base/tf/enum.h"
 #include "pxr/usd/usd/validationError.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfEnum)
+{
+    TF_ADD_ENUM_NAME(UsdValidationErrorType::None, "None");
+    TF_ADD_ENUM_NAME(UsdValidationErrorType::Error, "Error");
+    TF_ADD_ENUM_NAME(UsdValidationErrorType::Warn, "Warn");
+    TF_ADD_ENUM_NAME(UsdValidationErrorType::Info, "Info");
+}
 
 UsdValidationErrorSite::UsdValidationErrorSite(
     const SdfLayerHandle &layer, const SdfPath &objectPath) :
@@ -39,24 +48,8 @@ UsdValidationError::UsdValidationError(const UsdValidationErrorType &type,
 std::string
 UsdValidationError::GetErrorAsString() const
 {
-    std::string errorTypeAsString;
-    switch(_errorType) {
-        case UsdValidationErrorType::None:
-            return _errorMsg;
-            break;
-        case UsdValidationErrorType::Error:
-            errorTypeAsString = "Error";
-            break;
-        case UsdValidationErrorType::Warn:
-            errorTypeAsString = "Warn";
-            break;
-        case UsdValidationErrorType::Info:
-            errorTypeAsString = "Info";
-            break;
-    }
-
-    const std::string separator = ": ";
-    return errorTypeAsString + separator + _errorMsg;
+    return _errorType == UsdValidationErrorType::None ? _errorMsg : TfStringPrintf(
+        "%s: %s", TfEnum::GetDisplayName(_errorType).c_str(), _errorMsg.c_str());
 }
 
 void

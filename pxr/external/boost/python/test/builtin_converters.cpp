@@ -7,13 +7,13 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
 #include <complex>
-#include <boost/python/handle.hpp>
-#include <boost/python/cast.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/detail/wrap_python.hpp>
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/cast.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/detail/wrap_python.hpp"
 
 template <class T>
 struct by_value
@@ -46,10 +46,10 @@ struct by_reference
     }
 };
 
-using boost::python::def;
-using boost::python::handle;
-using boost::python::object;
-using boost::python::borrowed;
+using PXR_BOOST_NAMESPACE::python::def;
+using PXR_BOOST_NAMESPACE::python::handle;
+using PXR_BOOST_NAMESPACE::python::object;
+using PXR_BOOST_NAMESPACE::python::borrowed;
 
 // Used to test that arbitrary handle<>s can be returned
 handle<PyTypeObject> get_type(handle<> x)
@@ -66,7 +66,7 @@ char const* rewrap_value_mutable_cstring(char* x) { return x; }
 
 object identity_(object x) { return x; }
 
-BOOST_PYTHON_MODULE(builtin_converters_ext)
+PXR_BOOST_PYTHON_MODULE(builtin_converters_ext)
 {    
     def("get_type", get_type);
     def("return_null_handle", return_null_handle);
@@ -78,7 +78,7 @@ BOOST_PYTHON_MODULE(builtin_converters_ext)
     def("short_size", by_value<short>::size);
     def("long_size", by_value<long>::size);
 #ifdef HAVE_LONG_LONG
-    def("long_long_size", by_value<BOOST_PYTHON_LONG_LONG>::size);
+    def("long_long_size", by_value<PXR_BOOST_PYTHON_LONG_LONG>::size);
 #endif
 
     def("rewrap_value_bool", by_value<bool>::rewrap);
@@ -94,8 +94,8 @@ BOOST_PYTHON_MODULE(builtin_converters_ext)
 // using Python's macro instead of Boost's - we don't seem to get the
 // config right all the time.
 #ifdef HAVE_LONG_LONG
-    def("rewrap_value_long_long", by_value<BOOST_PYTHON_LONG_LONG>::rewrap);
-    def("rewrap_value_unsigned_long_long", by_value<unsigned BOOST_PYTHON_LONG_LONG>::rewrap);
+    def("rewrap_value_long_long", by_value<PXR_BOOST_PYTHON_LONG_LONG>::rewrap);
+    def("rewrap_value_unsigned_long_long", by_value<unsigned PXR_BOOST_PYTHON_LONG_LONG>::rewrap);
 # endif 
     def("rewrap_value_float", by_value<float>::rewrap);
     def("rewrap_value_double", by_value<double>::rewrap);
@@ -139,8 +139,8 @@ BOOST_PYTHON_MODULE(builtin_converters_ext)
 // using Python's macro instead of Boost's - we don't seem to get the
 // config right all the time.
 # ifdef HAVE_LONG_LONG
-    def("rewrap_const_reference_long_long", by_const_reference<BOOST_PYTHON_LONG_LONG>::rewrap);
-    def("rewrap_const_reference_unsigned_long_long", by_const_reference<unsigned BOOST_PYTHON_LONG_LONG>::rewrap);
+    def("rewrap_const_reference_long_long", by_const_reference<PXR_BOOST_PYTHON_LONG_LONG>::rewrap);
+    def("rewrap_const_reference_unsigned_long_long", by_const_reference<unsigned PXR_BOOST_PYTHON_LONG_LONG>::rewrap);
 # endif
     def("rewrap_const_reference_float", by_const_reference<float>::rewrap);
     def("rewrap_const_reference_double", by_const_reference<double>::rewrap);

@@ -7,12 +7,12 @@
 // Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/suite/indexing/map_indexing_suite.hpp>
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/implicit.hpp>
+#include "pxr/external/boost/python/suite/indexing/map_indexing_suite.hpp"
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/implicit.hpp"
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 struct X // a container element
 {
@@ -32,7 +32,7 @@ std::string x_value(X const& x)
 }
 
 
-BOOST_PYTHON_MODULE(map_indexing_suite_ext)
+PXR_BOOST_PYTHON_MODULE(map_indexing_suite_ext)
 {
     class_<X>("X")
         .def(init<>())

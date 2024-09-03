@@ -16,6 +16,7 @@
 #include "pxr/usd/usd/validationRegistry.h"
 #include "pxr/usd/usd/validator.h"
 #include "pxr/usd/usdGeom/validatorTokens.h"
+#include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/shaderDefUtils.h"
 #include "pxr/usd/usdShade/tokens.h"
@@ -41,7 +42,8 @@ TestUsdShadeValidators()
         UsdShadeValidatorNameTokens->materialBindingRelationships,
         UsdShadeValidatorNameTokens->shaderSdrCompliance,
         UsdShadeValidatorNameTokens->subsetMaterialBindFamilyName,
-        UsdShadeValidatorNameTokens->subsetsMaterialBindFamily
+        UsdShadeValidatorNameTokens->subsetsMaterialBindFamily,
+        UsdShadeValidatorNameTokens->connectableValidator
     };
 
     // This should be updated with every new validator added with the
@@ -410,6 +412,59 @@ TestUsdShadeMaterialBindingAPIAppliedValidator()
     TF_AXIOM(errors.size() == 0);
 }
 
+void
+TestUsdShadeEncapsulationRulesValidator()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const UsdValidator *validator = registry.GetOrLoadValidatorByName(
+            UsdShadeValidatorNameTokens->connectableValidator);
+    TF_AXIOM(validator);
+
+    UsdStageRefPtr usdStage = UsdStage::CreateInMemory();
+
+    // Create a Material > Shader > Shader hierarchy
+    UsdShadeMaterial::Define(usdStage, SdfPath("/RootMaterial"));
+    const UsdShadeShader& topShader = UsdShadeShader::Define(usdStage, SdfPath("/RootMaterial/Shader"));
+    const UsdShadeShader& insideShader = UsdShadeShader::Define(usdStage, SdfPath("/RootMaterial/Shader/InsideShader"));
+
+    // Verify error that does not allow a connectable to be parented by non-container connectable
+    UsdValidationErrorVector errors = validator->Validate(insideShader.GetPrim());
+
+    TF_AXIOM(errors.size() == 1);
+    TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+    TF_AXIOM(errors[0].GetSites().size() == 1);
+    TF_AXIOM(errors[0].GetSites()[0].IsValid());
+    TF_AXIOM(errors[0].GetSites()[0].IsPrim());
+    TF_AXIOM(errors[0].GetSites()[0].GetPrim().GetPath() == SdfPath("/RootMaterial/Shader/InsideShader"));
+    std::string expectedErrorMsg =
+            "Connectable Shader </RootMaterial/Shader/InsideShader> cannot reside under a non-Container Connectable Shader";
+    TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
+
+    // Verify the first Shader is valid
+    errors = validator->Validate(topShader.GetPrim());
+    TF_AXIOM(errors.size() == 0);
+
+    // Create a Material > Scope > Shader hierarchy
+    usdStage->RemovePrim(SdfPath("/RootMaterial/Shader/InsideShader"));
+    usdStage->RemovePrim(SdfPath("/RootMaterial/Shader"));
+    UsdGeomScope::Define(usdStage, SdfPath("/RootMaterial/Scope"));
+    const UsdShadeShader& insideScopeShader = UsdShadeShader::Define(usdStage, SdfPath("/RootMaterial/Scope/InsideShader"));
+
+    // Verify error that does not allow a connectable to have any non-connectable container ancestors
+    errors = validator->Validate(insideScopeShader.GetPrim());
+    TF_AXIOM(errors.size() == 1);
+    TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+    TF_AXIOM(errors[0].GetSites().size() == 1);
+    TF_AXIOM(errors[0].GetSites()[0].IsValid());
+    TF_AXIOM(errors[0].GetSites()[0].IsPrim());
+    TF_AXIOM(errors[0].GetSites()[0].GetPrim().GetPath() == SdfPath("/RootMaterial/Scope/InsideShader"));
+    expectedErrorMsg =
+            "Connectable Shader </RootMaterial/Scope/InsideShader> can only have Connectable Container ancestors up to "
+            "Material ancestor </RootMaterial>, but its parent Scope is a Scope.";
+    std::string message = errors[0].GetMessage();
+    TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
+}
+
 int
 main()
 {
@@ -419,5 +474,7 @@ main()
     TestUsdShadeShaderPropertyCompliance();
     TestUsdShadeSubsetMaterialBindFamilyName();
     TestUsdShadeSubsetsMaterialBindFamily();
+    TestUsdShadeEncapsulationRulesValidator();
+
     return EXIT_SUCCESS;
 };

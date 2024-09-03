@@ -8,10 +8,10 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/implicit.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/implicit.hpp"
 #include <boost/mpl/list.hpp>
 
 struct Type1 {};
@@ -20,9 +20,9 @@ struct Term {Term(Type1 const&) {} };
 
 struct Expression {void add(Term const&) {} };
 
-BOOST_PYTHON_MODULE(bienstman4_ext)
+PXR_BOOST_PYTHON_MODULE(bienstman4_ext)
 {
-  using namespace boost::python;
+  using namespace PXR_BOOST_NAMESPACE::python;
   using boost::mpl::list;
 
   implicitly_convertible<Type1,Term>();

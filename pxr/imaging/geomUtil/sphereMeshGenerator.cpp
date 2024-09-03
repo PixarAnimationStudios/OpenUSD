@@ -31,10 +31,12 @@ GeomUtilSphereMeshGenerator::ComputeNumPoints(
         return 0;
     }
 
-    const size_t numRadialPoints =
-        _ComputeNumRadialPoints(numRadial, closedSweep);
-
-    return((numAxial - 1) * numRadialPoints) + 2;
+    return _ComputeNumCappedQuadTopologyPoints(
+        numRadial,
+        /* numQuadStrips =  */ numAxial - 2,
+        /* bottomCapStyle = */ CapStyleSharedEdge,
+        /* topCapStyle =    */ CapStyleSharedEdge,
+        closedSweep);
 }
 
 // static
@@ -72,23 +74,9 @@ GeomUtilSphereMeshGenerator::_GeneratePointsImpl(
         return;
     }
 
-    const ScalarType twoPi = 2.0 * M_PI;
-    const ScalarType sweepRadians =
-        GfClamp((ScalarType) GfDegreesToRadians(sweepDegrees), -twoPi, twoPi);
-    const bool closedSweep = GfIsClose(std::abs(sweepRadians), twoPi, 1e-6);
-    
     // Construct a circular arc/ring of the specified radius in the XY plane.
-    const size_t numRadialPoints =
-        _ComputeNumRadialPoints(numRadial, closedSweep);
-    std::vector<std::array<ScalarType, 2>> ringXY(numRadialPoints);
-
-    for (size_t radIdx = 0; radIdx < numRadialPoints; ++radIdx) {
-        // Longitude range: [0, sweep]
-        const ScalarType longAngle =
-            (ScalarType(radIdx) / ScalarType(numRadial)) * sweepRadians;
-        ringXY[radIdx][0] = radius * cos(longAngle);
-        ringXY[radIdx][1] = radius * sin(longAngle);
-    }
+    const std::vector<std::array<ScalarType, 2>> ringXY =
+        _GenerateUnitArcXY<ScalarType>(numRadial, sweepDegrees);
 
     // Bottom point:
     ptWriter.Write(PointType(0.0, 0.0, -radius));
@@ -99,14 +87,10 @@ GeomUtilSphereMeshGenerator::_GeneratePointsImpl(
         const ScalarType latAngle =
             ((ScalarType(axIdx) / ScalarType(numAxial)) - 0.5) * M_PI;
 
-        const ScalarType radScale = cos(latAngle);
+        const ScalarType radScale = radius * cos(latAngle);
         const ScalarType latitude = radius * sin(latAngle);
 
-        for (size_t radIdx = 0; radIdx < numRadialPoints; ++radIdx) {
-            ptWriter.Write(PointType(radScale * ringXY[radIdx][0],
-                                     radScale * ringXY[radIdx][1],
-                                     latitude));
-        }
+        ptWriter.WriteArc(radScale, ringXY, latitude);
     }
 
     // Top point:

@@ -6,14 +6,14 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/module.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/class.hpp"
 #include <boost/assert.hpp>
 #include <boost/cstdint.hpp>
 
-using namespace boost::python;
+using namespace PXR_BOOST_NAMESPACE::python;
 
 struct BOOST_ALIGNMENT(32) X
 {
@@ -28,7 +28,7 @@ struct BOOST_ALIGNMENT(32) X
 int x_function(X& x) { return x.x;}
 float f_function(X& x) { return x.f;}
 
-BOOST_PYTHON_MODULE(aligned_class_ext)
+PXR_BOOST_PYTHON_MODULE(aligned_class_ext)
 {
     class_<X>("X", init<int, float>());
     def("x_function", x_function);

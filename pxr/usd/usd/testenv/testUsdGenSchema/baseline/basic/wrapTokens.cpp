@@ -10,195 +10,165 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
-
-// Helper to return a static token as a string.  We wrap tokens as Python
-// strings and for some reason simply wrapping the token using def_readonly
-// bypasses to-Python conversion, leading to the error that there's no
-// Python type for the C++ TfToken type.  So we wrap this functor instead.
-class _WrapStaticToken {
-public:
-    _WrapStaticToken(const TfToken* token) : _token(token) { }
-
-    std::string operator()() const
-    {
-        return _token->GetString();
-    }
-
-private:
-    const TfToken* _token;
-};
-
-template <typename T>
-void
-_AddToken(T& cls, const char* name, const TfToken& token)
-{
-    cls.add_static_property(name,
-                            boost::python::make_function(
-                                _WrapStaticToken(&token),
-                                boost::python::return_value_policy<
-                                    boost::python::return_by_value>(),
-                                boost::mpl::vector1<std::string>()));
-}
-
-} // anonymous
+#define _ADD_TOKEN(cls, name) \
+    cls.add_static_property(#name, +[]() { return UsdContrivedTokens->name.GetString(); });
 
 void wrapUsdContrivedTokens()
 {
     boost::python::class_<UsdContrivedTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
-    _AddToken(cls, "asset", UsdContrivedTokens->asset);
-    _AddToken(cls, "assetArray", UsdContrivedTokens->assetArray);
-    _AddToken(cls, "attrWithoutGeneratedAccessorAPI", UsdContrivedTokens->attrWithoutGeneratedAccessorAPI);
-    _AddToken(cls, "binding", UsdContrivedTokens->binding);
-    _AddToken(cls, "bool_", UsdContrivedTokens->bool_);
-    _AddToken(cls, "boolArray", UsdContrivedTokens->boolArray);
-    _AddToken(cls, "color3d", UsdContrivedTokens->color3d);
-    _AddToken(cls, "color3dArray", UsdContrivedTokens->color3dArray);
-    _AddToken(cls, "color3f", UsdContrivedTokens->color3f);
-    _AddToken(cls, "color3fArray", UsdContrivedTokens->color3fArray);
-    _AddToken(cls, "color3h", UsdContrivedTokens->color3h);
-    _AddToken(cls, "color3hArray", UsdContrivedTokens->color3hArray);
-    _AddToken(cls, "color4d", UsdContrivedTokens->color4d);
-    _AddToken(cls, "color4dArray", UsdContrivedTokens->color4dArray);
-    _AddToken(cls, "color4f", UsdContrivedTokens->color4f);
-    _AddToken(cls, "color4fArray", UsdContrivedTokens->color4fArray);
-    _AddToken(cls, "color4h", UsdContrivedTokens->color4h);
-    _AddToken(cls, "color4hArray", UsdContrivedTokens->color4hArray);
-    _AddToken(cls, "cornerIndices", UsdContrivedTokens->cornerIndices);
-    _AddToken(cls, "cornerSharpnesses", UsdContrivedTokens->cornerSharpnesses);
-    _AddToken(cls, "creaseLengths", UsdContrivedTokens->creaseLengths);
-    _AddToken(cls, "double2", UsdContrivedTokens->double2);
-    _AddToken(cls, "double2Array", UsdContrivedTokens->double2Array);
-    _AddToken(cls, "double3", UsdContrivedTokens->double3);
-    _AddToken(cls, "double3Array", UsdContrivedTokens->double3Array);
-    _AddToken(cls, "double4", UsdContrivedTokens->double4);
-    _AddToken(cls, "double4Array", UsdContrivedTokens->double4Array);
-    _AddToken(cls, "double_", UsdContrivedTokens->double_);
-    _AddToken(cls, "doubleArray", UsdContrivedTokens->doubleArray);
-    _AddToken(cls, "float2", UsdContrivedTokens->float2);
-    _AddToken(cls, "float2Array", UsdContrivedTokens->float2Array);
-    _AddToken(cls, "float3", UsdContrivedTokens->float3);
-    _AddToken(cls, "float3Array", UsdContrivedTokens->float3Array);
-    _AddToken(cls, "float4", UsdContrivedTokens->float4);
-    _AddToken(cls, "float4Array", UsdContrivedTokens->float4Array);
-    _AddToken(cls, "float_", UsdContrivedTokens->float_);
-    _AddToken(cls, "floatArray", UsdContrivedTokens->floatArray);
-    _AddToken(cls, "frame4d", UsdContrivedTokens->frame4d);
-    _AddToken(cls, "frame4dArray", UsdContrivedTokens->frame4dArray);
-    _AddToken(cls, "half", UsdContrivedTokens->half);
-    _AddToken(cls, "half2", UsdContrivedTokens->half2);
-    _AddToken(cls, "half2Array", UsdContrivedTokens->half2Array);
-    _AddToken(cls, "half3", UsdContrivedTokens->half3);
-    _AddToken(cls, "half3Array", UsdContrivedTokens->half3Array);
-    _AddToken(cls, "half4", UsdContrivedTokens->half4);
-    _AddToken(cls, "half4Array", UsdContrivedTokens->half4Array);
-    _AddToken(cls, "halfArray", UsdContrivedTokens->halfArray);
-    _AddToken(cls, "holeIndices", UsdContrivedTokens->holeIndices);
-    _AddToken(cls, "int2", UsdContrivedTokens->int2);
-    _AddToken(cls, "int2Array", UsdContrivedTokens->int2Array);
-    _AddToken(cls, "int3", UsdContrivedTokens->int3);
-    _AddToken(cls, "int3Array", UsdContrivedTokens->int3Array);
-    _AddToken(cls, "int4", UsdContrivedTokens->int4);
-    _AddToken(cls, "int4Array", UsdContrivedTokens->int4Array);
-    _AddToken(cls, "int64", UsdContrivedTokens->int64);
-    _AddToken(cls, "int64Array", UsdContrivedTokens->int64Array);
-    _AddToken(cls, "int_", UsdContrivedTokens->int_);
-    _AddToken(cls, "intArray", UsdContrivedTokens->intArray);
-    _AddToken(cls, "justDefault", UsdContrivedTokens->justDefault);
-    _AddToken(cls, "libraryToken1", UsdContrivedTokens->libraryToken1);
-    _AddToken(cls, "libraryToken2", UsdContrivedTokens->libraryToken2);
-    _AddToken(cls, "matrix2d", UsdContrivedTokens->matrix2d);
-    _AddToken(cls, "matrix2dArray", UsdContrivedTokens->matrix2dArray);
-    _AddToken(cls, "matrix3d", UsdContrivedTokens->matrix3d);
-    _AddToken(cls, "matrix3dArray", UsdContrivedTokens->matrix3dArray);
-    _AddToken(cls, "matrix4d", UsdContrivedTokens->matrix4d);
-    _AddToken(cls, "matrix4dArray", UsdContrivedTokens->matrix4dArray);
-    _AddToken(cls, "myDouble", UsdContrivedTokens->myDouble);
-    _AddToken(cls, "myUniformBool", UsdContrivedTokens->myUniformBool);
-    _AddToken(cls, "myVaryingToken", UsdContrivedTokens->myVaryingToken);
-    _AddToken(cls, "myVaryingTokenArray", UsdContrivedTokens->myVaryingTokenArray);
-    _AddToken(cls, "myVecfArray", UsdContrivedTokens->myVecfArray);
-    _AddToken(cls, "namespacedProperty", UsdContrivedTokens->namespacedProperty);
-    _AddToken(cls, "newToken", UsdContrivedTokens->newToken);
-    _AddToken(cls, "normal3d", UsdContrivedTokens->normal3d);
-    _AddToken(cls, "normal3dArray", UsdContrivedTokens->normal3dArray);
-    _AddToken(cls, "normal3f", UsdContrivedTokens->normal3f);
-    _AddToken(cls, "normal3fArray", UsdContrivedTokens->normal3fArray);
-    _AddToken(cls, "normal3h", UsdContrivedTokens->normal3h);
-    _AddToken(cls, "normal3hArray", UsdContrivedTokens->normal3hArray);
-    _AddToken(cls, "overrideBaseFalseDerivedFalse", UsdContrivedTokens->overrideBaseFalseDerivedFalse);
-    _AddToken(cls, "overrideBaseFalseDerivedNone", UsdContrivedTokens->overrideBaseFalseDerivedNone);
-    _AddToken(cls, "overrideBaseNoneDerivedFalse", UsdContrivedTokens->overrideBaseNoneDerivedFalse);
-    _AddToken(cls, "overrideBaseTrueDerivedFalse", UsdContrivedTokens->overrideBaseTrueDerivedFalse);
-    _AddToken(cls, "overrideBaseTrueDerivedNone", UsdContrivedTokens->overrideBaseTrueDerivedNone);
-    _AddToken(cls, "overrideBaseTrueDerivedTrue", UsdContrivedTokens->overrideBaseTrueDerivedTrue);
-    _AddToken(cls, "pivotPosition", UsdContrivedTokens->pivotPosition);
-    _AddToken(cls, "point3d", UsdContrivedTokens->point3d);
-    _AddToken(cls, "point3dArray", UsdContrivedTokens->point3dArray);
-    _AddToken(cls, "point3f", UsdContrivedTokens->point3f);
-    _AddToken(cls, "point3fArray", UsdContrivedTokens->point3fArray);
-    _AddToken(cls, "point3h", UsdContrivedTokens->point3h);
-    _AddToken(cls, "point3hArray", UsdContrivedTokens->point3hArray);
-    _AddToken(cls, "quatd", UsdContrivedTokens->quatd);
-    _AddToken(cls, "quatdArray", UsdContrivedTokens->quatdArray);
-    _AddToken(cls, "quatf", UsdContrivedTokens->quatf);
-    _AddToken(cls, "quatfArray", UsdContrivedTokens->quatfArray);
-    _AddToken(cls, "quath", UsdContrivedTokens->quath);
-    _AddToken(cls, "quathArray", UsdContrivedTokens->quathArray);
-    _AddToken(cls, "relCanShareApiNameWithAttr", UsdContrivedTokens->relCanShareApiNameWithAttr);
-    _AddToken(cls, "riStatementsAttributesUserGofur_GeomOnHairdensity", UsdContrivedTokens->riStatementsAttributesUserGofur_GeomOnHairdensity);
-    _AddToken(cls, "schemaToken1", UsdContrivedTokens->schemaToken1);
-    _AddToken(cls, "schemaToken2", UsdContrivedTokens->schemaToken2);
-    _AddToken(cls, "string", UsdContrivedTokens->string);
-    _AddToken(cls, "stringArray", UsdContrivedTokens->stringArray);
-    _AddToken(cls, "temp", UsdContrivedTokens->temp);
-    _AddToken(cls, "test", UsdContrivedTokens->test);
-    _AddToken(cls, "test_MultipleApplyTemplate_", UsdContrivedTokens->test_MultipleApplyTemplate_);
-    _AddToken(cls, "test_MultipleApplyTemplate_TestAttrOne", UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrOne);
-    _AddToken(cls, "test_MultipleApplyTemplate_TestAttrTwo", UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrTwo);
-    _AddToken(cls, "testingAsset", UsdContrivedTokens->testingAsset);
-    _AddToken(cls, "testNewVersion", UsdContrivedTokens->testNewVersion);
-    _AddToken(cls, "testNewVersion_MultipleApplyTemplate_TestAttrOne", UsdContrivedTokens->testNewVersion_MultipleApplyTemplate_TestAttrOne);
-    _AddToken(cls, "testNewVersion_MultipleApplyTemplate_TestAttrTwo", UsdContrivedTokens->testNewVersion_MultipleApplyTemplate_TestAttrTwo);
-    _AddToken(cls, "testo", UsdContrivedTokens->testo);
-    _AddToken(cls, "testo_MultipleApplyTemplate_", UsdContrivedTokens->testo_MultipleApplyTemplate_);
-    _AddToken(cls, "testo_MultipleApplyTemplate_TestAttrOne", UsdContrivedTokens->testo_MultipleApplyTemplate_TestAttrOne);
-    _AddToken(cls, "testo_MultipleApplyTemplate_TestAttrTwo", UsdContrivedTokens->testo_MultipleApplyTemplate_TestAttrTwo);
-    _AddToken(cls, "token", UsdContrivedTokens->token);
-    _AddToken(cls, "tokenArray", UsdContrivedTokens->tokenArray);
-    _AddToken(cls, "transform", UsdContrivedTokens->transform);
-    _AddToken(cls, "uchar", UsdContrivedTokens->uchar);
-    _AddToken(cls, "ucharArray", UsdContrivedTokens->ucharArray);
-    _AddToken(cls, "uint", UsdContrivedTokens->uint);
-    _AddToken(cls, "uint64", UsdContrivedTokens->uint64);
-    _AddToken(cls, "uint64Array", UsdContrivedTokens->uint64Array);
-    _AddToken(cls, "uintArray", UsdContrivedTokens->uintArray);
-    _AddToken(cls, "VariableTokenAllowed1", UsdContrivedTokens->VariableTokenAllowed1);
-    _AddToken(cls, "VariableTokenAllowed2", UsdContrivedTokens->VariableTokenAllowed2);
-    _AddToken(cls, "VariableTokenAllowed_3_", UsdContrivedTokens->VariableTokenAllowed_3_);
-    _AddToken(cls, "VariableTokenArrayAllowed1", UsdContrivedTokens->VariableTokenArrayAllowed1);
-    _AddToken(cls, "VariableTokenArrayAllowed2", UsdContrivedTokens->VariableTokenArrayAllowed2);
-    _AddToken(cls, "VariableTokenArrayAllowed_3_", UsdContrivedTokens->VariableTokenArrayAllowed_3_);
-    _AddToken(cls, "VariableTokenDefault", UsdContrivedTokens->VariableTokenDefault);
-    _AddToken(cls, "vector3d", UsdContrivedTokens->vector3d);
-    _AddToken(cls, "vector3dArray", UsdContrivedTokens->vector3dArray);
-    _AddToken(cls, "vector3f", UsdContrivedTokens->vector3f);
-    _AddToken(cls, "vector3fArray", UsdContrivedTokens->vector3fArray);
-    _AddToken(cls, "vector3h", UsdContrivedTokens->vector3h);
-    _AddToken(cls, "vector3hArray", UsdContrivedTokens->vector3hArray);
-    _AddToken(cls, "Base", UsdContrivedTokens->Base);
-    _AddToken(cls, "Derived", UsdContrivedTokens->Derived);
-    _AddToken(cls, "DerivedNonAppliedAPI", UsdContrivedTokens->DerivedNonAppliedAPI);
-    _AddToken(cls, "EmptyMultipleApplyAPI", UsdContrivedTokens->EmptyMultipleApplyAPI);
-    _AddToken(cls, "MultipleApplyAPI", UsdContrivedTokens->MultipleApplyAPI);
-    _AddToken(cls, "MultipleApplyAPI_1", UsdContrivedTokens->MultipleApplyAPI_1);
-    _AddToken(cls, "NonAppliedAPI", UsdContrivedTokens->NonAppliedAPI);
-    _AddToken(cls, "PublicMultipleApplyAPI", UsdContrivedTokens->PublicMultipleApplyAPI);
-    _AddToken(cls, "SingleApplyAPI", UsdContrivedTokens->SingleApplyAPI);
-    _AddToken(cls, "SingleApplyAPI_1", UsdContrivedTokens->SingleApplyAPI_1);
-    _AddToken(cls, "TestNoVersion0", UsdContrivedTokens->TestNoVersion0);
-    _AddToken(cls, "TestNoVersion0_2", UsdContrivedTokens->TestNoVersion0_2);
-    _AddToken(cls, "TestPxHairman", UsdContrivedTokens->TestPxHairman);
-    _AddToken(cls, "TestPxHairman_1", UsdContrivedTokens->TestPxHairman_1);
+    _ADD_TOKEN(cls, asset);
+    _ADD_TOKEN(cls, assetArray);
+    _ADD_TOKEN(cls, attrWithoutGeneratedAccessorAPI);
+    _ADD_TOKEN(cls, binding);
+    _ADD_TOKEN(cls, bool_);
+    _ADD_TOKEN(cls, boolArray);
+    _ADD_TOKEN(cls, color3d);
+    _ADD_TOKEN(cls, color3dArray);
+    _ADD_TOKEN(cls, color3f);
+    _ADD_TOKEN(cls, color3fArray);
+    _ADD_TOKEN(cls, color3h);
+    _ADD_TOKEN(cls, color3hArray);
+    _ADD_TOKEN(cls, color4d);
+    _ADD_TOKEN(cls, color4dArray);
+    _ADD_TOKEN(cls, color4f);
+    _ADD_TOKEN(cls, color4fArray);
+    _ADD_TOKEN(cls, color4h);
+    _ADD_TOKEN(cls, color4hArray);
+    _ADD_TOKEN(cls, cornerIndices);
+    _ADD_TOKEN(cls, cornerSharpnesses);
+    _ADD_TOKEN(cls, creaseLengths);
+    _ADD_TOKEN(cls, double2);
+    _ADD_TOKEN(cls, double2Array);
+    _ADD_TOKEN(cls, double3);
+    _ADD_TOKEN(cls, double3Array);
+    _ADD_TOKEN(cls, double4);
+    _ADD_TOKEN(cls, double4Array);
+    _ADD_TOKEN(cls, double_);
+    _ADD_TOKEN(cls, doubleArray);
+    _ADD_TOKEN(cls, float2);
+    _ADD_TOKEN(cls, float2Array);
+    _ADD_TOKEN(cls, float3);
+    _ADD_TOKEN(cls, float3Array);
+    _ADD_TOKEN(cls, float4);
+    _ADD_TOKEN(cls, float4Array);
+    _ADD_TOKEN(cls, float_);
+    _ADD_TOKEN(cls, floatArray);
+    _ADD_TOKEN(cls, frame4d);
+    _ADD_TOKEN(cls, frame4dArray);
+    _ADD_TOKEN(cls, half);
+    _ADD_TOKEN(cls, half2);
+    _ADD_TOKEN(cls, half2Array);
+    _ADD_TOKEN(cls, half3);
+    _ADD_TOKEN(cls, half3Array);
+    _ADD_TOKEN(cls, half4);
+    _ADD_TOKEN(cls, half4Array);
+    _ADD_TOKEN(cls, halfArray);
+    _ADD_TOKEN(cls, holeIndices);
+    _ADD_TOKEN(cls, int2);
+    _ADD_TOKEN(cls, int2Array);
+    _ADD_TOKEN(cls, int3);
+    _ADD_TOKEN(cls, int3Array);
+    _ADD_TOKEN(cls, int4);
+    _ADD_TOKEN(cls, int4Array);
+    _ADD_TOKEN(cls, int64);
+    _ADD_TOKEN(cls, int64Array);
+    _ADD_TOKEN(cls, int_);
+    _ADD_TOKEN(cls, intArray);
+    _ADD_TOKEN(cls, justDefault);
+    _ADD_TOKEN(cls, libraryToken1);
+    _ADD_TOKEN(cls, libraryToken2);
+    _ADD_TOKEN(cls, matrix2d);
+    _ADD_TOKEN(cls, matrix2dArray);
+    _ADD_TOKEN(cls, matrix3d);
+    _ADD_TOKEN(cls, matrix3dArray);
+    _ADD_TOKEN(cls, matrix4d);
+    _ADD_TOKEN(cls, matrix4dArray);
+    _ADD_TOKEN(cls, myDouble);
+    _ADD_TOKEN(cls, myUniformBool);
+    _ADD_TOKEN(cls, myVaryingToken);
+    _ADD_TOKEN(cls, myVaryingTokenArray);
+    _ADD_TOKEN(cls, myVecfArray);
+    _ADD_TOKEN(cls, namespacedProperty);
+    _ADD_TOKEN(cls, newToken);
+    _ADD_TOKEN(cls, normal3d);
+    _ADD_TOKEN(cls, normal3dArray);
+    _ADD_TOKEN(cls, normal3f);
+    _ADD_TOKEN(cls, normal3fArray);
+    _ADD_TOKEN(cls, normal3h);
+    _ADD_TOKEN(cls, normal3hArray);
+    _ADD_TOKEN(cls, overrideBaseFalseDerivedFalse);
+    _ADD_TOKEN(cls, overrideBaseFalseDerivedNone);
+    _ADD_TOKEN(cls, overrideBaseNoneDerivedFalse);
+    _ADD_TOKEN(cls, overrideBaseTrueDerivedFalse);
+    _ADD_TOKEN(cls, overrideBaseTrueDerivedNone);
+    _ADD_TOKEN(cls, overrideBaseTrueDerivedTrue);
+    _ADD_TOKEN(cls, pivotPosition);
+    _ADD_TOKEN(cls, point3d);
+    _ADD_TOKEN(cls, point3dArray);
+    _ADD_TOKEN(cls, point3f);
+    _ADD_TOKEN(cls, point3fArray);
+    _ADD_TOKEN(cls, point3h);
+    _ADD_TOKEN(cls, point3hArray);
+    _ADD_TOKEN(cls, quatd);
+    _ADD_TOKEN(cls, quatdArray);
+    _ADD_TOKEN(cls, quatf);
+    _ADD_TOKEN(cls, quatfArray);
+    _ADD_TOKEN(cls, quath);
+    _ADD_TOKEN(cls, quathArray);
+    _ADD_TOKEN(cls, relCanShareApiNameWithAttr);
+    _ADD_TOKEN(cls, riStatementsAttributesUserGofur_GeomOnHairdensity);
+    _ADD_TOKEN(cls, schemaToken1);
+    _ADD_TOKEN(cls, schemaToken2);
+    _ADD_TOKEN(cls, string);
+    _ADD_TOKEN(cls, stringArray);
+    _ADD_TOKEN(cls, temp);
+    _ADD_TOKEN(cls, test);
+    _ADD_TOKEN(cls, test_MultipleApplyTemplate_);
+    _ADD_TOKEN(cls, test_MultipleApplyTemplate_TestAttrOne);
+    _ADD_TOKEN(cls, test_MultipleApplyTemplate_TestAttrTwo);
+    _ADD_TOKEN(cls, testingAsset);
+    _ADD_TOKEN(cls, testNewVersion);
+    _ADD_TOKEN(cls, testNewVersion_MultipleApplyTemplate_TestAttrOne);
+    _ADD_TOKEN(cls, testNewVersion_MultipleApplyTemplate_TestAttrTwo);
+    _ADD_TOKEN(cls, testo);
+    _ADD_TOKEN(cls, testo_MultipleApplyTemplate_);
+    _ADD_TOKEN(cls, testo_MultipleApplyTemplate_TestAttrOne);
+    _ADD_TOKEN(cls, testo_MultipleApplyTemplate_TestAttrTwo);
+    _ADD_TOKEN(cls, token);
+    _ADD_TOKEN(cls, tokenArray);
+    _ADD_TOKEN(cls, transform);
+    _ADD_TOKEN(cls, uchar);
+    _ADD_TOKEN(cls, ucharArray);
+    _ADD_TOKEN(cls, uint);
+    _ADD_TOKEN(cls, uint64);
+    _ADD_TOKEN(cls, uint64Array);
+    _ADD_TOKEN(cls, uintArray);
+    _ADD_TOKEN(cls, VariableTokenAllowed1);
+    _ADD_TOKEN(cls, VariableTokenAllowed2);
+    _ADD_TOKEN(cls, VariableTokenAllowed_3_);
+    _ADD_TOKEN(cls, VariableTokenArrayAllowed1);
+    _ADD_TOKEN(cls, VariableTokenArrayAllowed2);
+    _ADD_TOKEN(cls, VariableTokenArrayAllowed_3_);
+    _ADD_TOKEN(cls, VariableTokenDefault);
+    _ADD_TOKEN(cls, vector3d);
+    _ADD_TOKEN(cls, vector3dArray);
+    _ADD_TOKEN(cls, vector3f);
+    _ADD_TOKEN(cls, vector3fArray);
+    _ADD_TOKEN(cls, vector3h);
+    _ADD_TOKEN(cls, vector3hArray);
+    _ADD_TOKEN(cls, Base);
+    _ADD_TOKEN(cls, Derived);
+    _ADD_TOKEN(cls, DerivedNonAppliedAPI);
+    _ADD_TOKEN(cls, EmptyMultipleApplyAPI);
+    _ADD_TOKEN(cls, MultipleApplyAPI);
+    _ADD_TOKEN(cls, MultipleApplyAPI_1);
+    _ADD_TOKEN(cls, NonAppliedAPI);
+    _ADD_TOKEN(cls, PublicMultipleApplyAPI);
+    _ADD_TOKEN(cls, SingleApplyAPI);
+    _ADD_TOKEN(cls, SingleApplyAPI_1);
+    _ADD_TOKEN(cls, TestNoVersion0);
+    _ADD_TOKEN(cls, TestNoVersion0_2);
+    _ADD_TOKEN(cls, TestPxHairman);
+    _ADD_TOKEN(cls, TestPxHairman_1);
 }

@@ -1,5 +1,12 @@
-#ifndef BORROWED_PTR_DWA20020601_HPP
-# define BORROWED_PTR_DWA20020601_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_BORROWED_PTR_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_BORROWED_PTR_HPP
+
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/detail/borrowed_ptr.hpp>
+#else
 //
 // Copyright 2024 Pixar
 // Licensed under the terms set forth in the LICENSE.txt file available at
@@ -13,10 +20,10 @@
 # include <boost/config.hpp>
 # include <boost/type.hpp>
 # include <boost/mpl/if.hpp>
-# include <boost/python/detail/type_traits.hpp>
-# include <boost/python/tag.hpp>
+# include "pxr/external/boost/python/detail/type_traits.hpp"
+# include "pxr/external/boost/python/tag.hpp"
 
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 template<class T> class borrowed
 { 
@@ -80,6 +87,7 @@ inline T* get_managed_object(detail::borrowed<T> const volatile* p, tag_t)
     return (T*)p;
 }
 
-}} // namespace boost::python::detail
+}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // #ifndef BORROWED_PTR_DWA20020601_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_BORROWED_PTR_HPP

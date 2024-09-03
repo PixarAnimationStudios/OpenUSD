@@ -116,10 +116,6 @@ Hdx_UnitTestDelegate::Hdx_UnitTestDelegate(HdRenderIndex *index,
     GfFrustum frustum;
     frustum.SetPosition(GfVec3d(0, 0, 3));
     SetCamera(frustum.ComputeViewMatrix(), frustum.ComputeProjectionMatrix());
-
-    // Add draw target state tracking support.
-    GetRenderIndex().GetChangeTracker().AddState(
-            HdStDrawTargetTokens->drawTargetSet);
 }
 
 void
@@ -354,9 +350,6 @@ Hdx_UnitTestDelegate::AddDrawTarget(SdfPath const &id)
     cache[HdStDrawTargetTokens->collection]      =
         VtValue(HdRprimCollection(HdTokens->geometry, 
             HdReprSelector(HdReprTokens->hull)));
-
-    GetRenderIndex().GetChangeTracker().MarkStateDirty(
-        HdStDrawTargetTokens->drawTargetSet);
 }
 
 void

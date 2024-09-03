@@ -1,5 +1,12 @@
-#ifndef BOOST_PYTHON_SLICE_JDB20040105_HPP
-#define BOOST_PYTHON_SLICE_JDB20040105_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_SLICE_HPP
+#define PXR_EXTERNAL_BOOST_PYTHON_SLICE_HPP
+
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
+
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/slice.hpp>
+#else
 
 //
 // Copyright 2024 Pixar
@@ -11,29 +18,29 @@
 //  Boost Software License, Version 1.0. (See accompanying file 
 //  LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/python/detail/prefix.hpp>
+#include "pxr/external/boost/python/detail/prefix.hpp"
 #include <boost/config.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/converter/pytype_object_mgr_traits.hpp>
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/converter/pytype_object_mgr_traits.hpp"
 
 #include <boost/iterator/iterator_traits.hpp>
 
 #include <iterator>
 #include <algorithm>
 
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 namespace detail
 {
-  class BOOST_PYTHON_DECL slice_base : public object
+  class PXR_BOOST_PYTHON_DECL slice_base : public object
   {
    public:
       // Get the Python objects associated with the slice.  In principle, these 
       // may be any arbitrary Python type, but in practice they are usually 
       // integers.  If one or more parameter is ommited in the Python expression 
       // that created this slice, than that parameter is None here, and compares 
-      // equal to a default-constructed boost::python::object.
+      // equal to a default-constructed PXR_BOOST_NAMESPACE::python::object.
       // If a user-defined type wishes to support slicing, then support for the 
       // special meaning associated with negative indices is up to the user.
       object start() const;
@@ -43,7 +50,7 @@ namespace detail
    protected:
       explicit slice_base(PyObject*, PyObject*, PyObject*);
 
-      BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(slice_base, object)
+      PXR_BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(slice_base, object)
   };
 }
 
@@ -261,7 +268,7 @@ class slice : public detail::slice_base
     // object_manager_traits<> below, allows C++ functions accepting slice 
     // arguments to be called from from Python.  These constructors should never
     // be used in client code.
-    BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(slice, detail::slice_base)
+    PXR_BOOST_PYTHON_FORWARD_OBJECT_CONSTRUCTORS(slice, detail::slice_base)
 };
 
 
@@ -275,7 +282,8 @@ struct object_manager_traits<slice>
     
 } // !namesapce converter
 
-} } // !namespace ::boost::python
+} } // !namespace ::PXR_BOOST_NAMESPACE::python
 
 
-#endif // !defined BOOST_PYTHON_SLICE_JDB20040105_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // !defined PXR_EXTERNAL_BOOST_PYTHON_SLICE_HPP

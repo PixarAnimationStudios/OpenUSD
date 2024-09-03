@@ -190,7 +190,7 @@ _ComputeLocalExtent(const float radius,
                     VtVec3fArray *extent)
 {
     extent->resize(2);
-    (*extent)[1] = GfVec3f(radius, radius, length * 0.5f);
+    (*extent)[1] = GfVec3f(length * 0.5f, radius, radius);
     (*extent)[0] = -(*extent)[1];
     return true;
 }

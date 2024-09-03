@@ -6,6 +6,7 @@
 //
 #include "pxr/usdImaging/usdImaging/planeAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourceImplicits-Impl.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/implicitSurfaceMeshUtils.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
@@ -14,6 +15,7 @@
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/planeSchema.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/usd/usdGeom/plane.h"
@@ -23,6 +25,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+using _PrimSource = UsdImagingDataSourceImplicitsPrim<UsdGeomPlane, HdPlaneSchema>;
+}
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -34,6 +39,54 @@ TF_REGISTRY_FUNCTION(TfType)
 UsdImagingPlaneAdapter::~UsdImagingPlaneAdapter() 
 {
 }
+
+TfTokenVector
+UsdImagingPlaneAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingPlaneAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->plane;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingPlaneAdapter::GetImagingSubprimData(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return _PrimSource::New(
+            prim.GetPath(),
+            prim,
+            stageGlobals);
+    }
+    return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingPlaneAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
+{
+    if (subprim.IsEmpty()) {
+        return _PrimSource::Invalidate(
+            prim, subprim, properties, invalidationType);
+    }
+    
+    return HdDataSourceLocatorSet();
+}
+
 
 bool
 UsdImagingPlaneAdapter::IsSupported(UsdImagingIndexProxy const* index) const

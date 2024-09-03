@@ -7,16 +7,23 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef OBJECT_ATTRIBUTES_DWA2002615_HPP
-# define OBJECT_ATTRIBUTES_DWA2002615_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ATTRIBUTES_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ATTRIBUTES_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/proxy.hpp>
-# include <boost/python/object_core.hpp>
-# include <boost/python/object_protocol.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/object_attributes.hpp>
+#else
 
-namespace boost { namespace python { namespace api {
+# include "pxr/external/boost/python/detail/prefix.hpp"
+
+# include "pxr/external/boost/python/proxy.hpp"
+# include "pxr/external/boost/python/object_core.hpp"
+# include "pxr/external/boost/python/object_protocol.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace api {
 
 struct const_attribute_policies
 {
@@ -116,6 +123,7 @@ inline void objattribute_policies::del(
     python::delattr(target, key);
 }
 
-}}} // namespace boost::python::api
+}}} // namespace PXR_BOOST_NAMESPACE::python::api
 
-#endif // OBJECT_ATTRIBUTES_DWA2002615_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ATTRIBUTES_HPP

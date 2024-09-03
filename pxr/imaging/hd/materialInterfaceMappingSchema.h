@@ -60,7 +60,12 @@ public:
     /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
+
+    /// Returns the data source locator relative to the material network for the
+    /// material node parameter indicated by the interface mapping.
+    /// Ie. Returns locator: nodes/<nodePath>/parameters/<inputName>
     HdDataSourceLocator BuildNetworkRelativeLocator();
+    
 // --(END CUSTOM CODE: Schema Methods)--
 
     /// \name Member accessor

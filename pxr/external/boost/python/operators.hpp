@@ -7,27 +7,34 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef OPERATORS_DWA2002530_HPP
-# define OPERATORS_DWA2002530_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_OPERATORS_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_OPERATORS_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/def_visitor.hpp>
-# include <boost/python/converter/arg_to_python.hpp>
-# include <boost/python/detail/operator_id.hpp>
-# include <boost/python/detail/not_specified.hpp>
-# include <boost/python/back_reference.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/operators.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/prefix.hpp"
+
+# include "pxr/external/boost/python/def_visitor.hpp"
+# include "pxr/external/boost/python/converter/arg_to_python.hpp"
+# include "pxr/external/boost/python/detail/operator_id.hpp"
+# include "pxr/external/boost/python/detail/not_specified.hpp"
+# include "pxr/external/boost/python/back_reference.hpp"
 # include <boost/mpl/if.hpp>
 # include <boost/mpl/eval_if.hpp>
-# include <boost/python/self.hpp>
-# include <boost/python/other.hpp>
+# include "pxr/external/boost/python/self.hpp"
+# include "pxr/external/boost/python/other.hpp"
 # include <boost/lexical_cast.hpp>
-# include <boost/python/refcount.hpp>
-# include <boost/python/detail/unwrap_wrapper.hpp>
+# include "pxr/external/boost/python/refcount.hpp"
+# include "pxr/external/boost/python/detail/unwrap_wrapper.hpp"
 # include <string>
 # include <complex>
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 namespace detail
 {
@@ -166,7 +173,7 @@ namespace detail
   };
 }
 
-# define BOOST_PYTHON_BINARY_OPERATION(id, rid, expr)       \
+# define PXR_BOOST_PYTHON_BINARY_OPERATION(id, rid, expr)       \
 namespace detail                                            \
 {                                                           \
   template <>                                               \
@@ -202,8 +209,8 @@ namespace detail                                            \
   };                                                        \
 } 
 
-# define BOOST_PYTHON_BINARY_OPERATOR(id, rid, op)      \
-BOOST_PYTHON_BINARY_OPERATION(id, rid, l op r)          \
+# define PXR_BOOST_PYTHON_BINARY_OPERATOR(id, rid, op)      \
+PXR_BOOST_PYTHON_BINARY_OPERATION(id, rid, l op r)          \
 namespace self_ns                                       \
 {                                                       \
   template <class L, class R>                           \
@@ -214,31 +221,31 @@ namespace self_ns                                       \
   }                                                     \
 }
   
-BOOST_PYTHON_BINARY_OPERATOR(add, radd, +)
-BOOST_PYTHON_BINARY_OPERATOR(sub, rsub, -)
-BOOST_PYTHON_BINARY_OPERATOR(mul, rmul, *)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(add, radd, +)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(sub, rsub, -)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(mul, rmul, *)
 #if PY_VERSION_HEX >= 0x03000000
-    BOOST_PYTHON_BINARY_OPERATOR(truediv, rtruediv, /)
+    PXR_BOOST_PYTHON_BINARY_OPERATOR(truediv, rtruediv, /)
 #else
-    BOOST_PYTHON_BINARY_OPERATOR(div, rdiv, /)
+    PXR_BOOST_PYTHON_BINARY_OPERATOR(div, rdiv, /)
 #endif
-BOOST_PYTHON_BINARY_OPERATOR(mod, rmod, %)
-BOOST_PYTHON_BINARY_OPERATOR(lshift, rlshift, <<)
-BOOST_PYTHON_BINARY_OPERATOR(rshift, rrshift, >>)
-BOOST_PYTHON_BINARY_OPERATOR(and, rand, &)
-BOOST_PYTHON_BINARY_OPERATOR(xor, rxor, ^)
-BOOST_PYTHON_BINARY_OPERATOR(or, ror, |)
-BOOST_PYTHON_BINARY_OPERATOR(gt, lt, >)
-BOOST_PYTHON_BINARY_OPERATOR(ge, le, >=)
-BOOST_PYTHON_BINARY_OPERATOR(lt, gt, <)
-BOOST_PYTHON_BINARY_OPERATOR(le, ge, <=)
-BOOST_PYTHON_BINARY_OPERATOR(eq, eq, ==)
-BOOST_PYTHON_BINARY_OPERATOR(ne, ne, !=)
-# undef BOOST_PYTHON_BINARY_OPERATOR
+PXR_BOOST_PYTHON_BINARY_OPERATOR(mod, rmod, %)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(lshift, rlshift, <<)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(rshift, rrshift, >>)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(and, rand, &)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(xor, rxor, ^)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(or, ror, |)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(gt, lt, >)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(ge, le, >=)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(lt, gt, <)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(le, ge, <=)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(eq, eq, ==)
+PXR_BOOST_PYTHON_BINARY_OPERATOR(ne, ne, !=)
+# undef PXR_BOOST_PYTHON_BINARY_OPERATOR
     
 // pow isn't an operator in C++; handle it specially.
-BOOST_PYTHON_BINARY_OPERATION(pow, rpow, pow(l,r))
-# undef BOOST_PYTHON_BINARY_OPERATION
+PXR_BOOST_PYTHON_BINARY_OPERATION(pow, rpow, pow(l,r))
+# undef PXR_BOOST_PYTHON_BINARY_OPERATION
     
 namespace self_ns
 {
@@ -276,7 +283,7 @@ namespace self_ns
 }
 
 
-# define BOOST_PYTHON_INPLACE_OPERATOR(id, op)                  \
+# define PXR_BOOST_PYTHON_INPLACE_OPERATOR(id, op)                  \
 namespace detail                                                \
 {                                                               \
   template <>                                                   \
@@ -307,18 +314,18 @@ namespace self_ns                                               \
   }                                                             \
 }
 
-BOOST_PYTHON_INPLACE_OPERATOR(iadd,+=)
-BOOST_PYTHON_INPLACE_OPERATOR(isub,-=)
-BOOST_PYTHON_INPLACE_OPERATOR(imul,*=)
-BOOST_PYTHON_INPLACE_OPERATOR(idiv,/=)
-BOOST_PYTHON_INPLACE_OPERATOR(imod,%=)
-BOOST_PYTHON_INPLACE_OPERATOR(ilshift,<<=)
-BOOST_PYTHON_INPLACE_OPERATOR(irshift,>>=)
-BOOST_PYTHON_INPLACE_OPERATOR(iand,&=)
-BOOST_PYTHON_INPLACE_OPERATOR(ixor,^=)
-BOOST_PYTHON_INPLACE_OPERATOR(ior,|=)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(iadd,+=)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(isub,-=)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(imul,*=)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(idiv,/=)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(imod,%=)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(ilshift,<<=)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(irshift,>>=)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(iand,&=)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(ixor,^=)
+PXR_BOOST_PYTHON_INPLACE_OPERATOR(ior,|=)
     
-# define BOOST_PYTHON_UNARY_OPERATOR(id, op, func_name)         \
+# define PXR_BOOST_PYTHON_UNARY_OPERATOR(id, op, func_name)         \
 namespace detail                                                \
 {                                                               \
   template <>                                                   \
@@ -344,36 +351,37 @@ namespace self_ns                                               \
       return detail::operator_<detail::op_##id>();              \
   }                                                             \
 }
-# undef BOOST_PYTHON_INPLACE_OPERATOR
+# undef PXR_BOOST_PYTHON_INPLACE_OPERATOR
 
-BOOST_PYTHON_UNARY_OPERATOR(neg, -, operator-)
-BOOST_PYTHON_UNARY_OPERATOR(pos, +, operator+)
-BOOST_PYTHON_UNARY_OPERATOR(abs, abs, abs)
-BOOST_PYTHON_UNARY_OPERATOR(invert, ~, operator~)
+PXR_BOOST_PYTHON_UNARY_OPERATOR(neg, -, operator-)
+PXR_BOOST_PYTHON_UNARY_OPERATOR(pos, +, operator+)
+PXR_BOOST_PYTHON_UNARY_OPERATOR(abs, abs, abs)
+PXR_BOOST_PYTHON_UNARY_OPERATOR(invert, ~, operator~)
 #if PY_VERSION_HEX >= 0x03000000
-BOOST_PYTHON_UNARY_OPERATOR(bool, !!, operator!)
+PXR_BOOST_PYTHON_UNARY_OPERATOR(bool, !!, operator!)
 #else
-BOOST_PYTHON_UNARY_OPERATOR(nonzero, !!, operator!)
+PXR_BOOST_PYTHON_UNARY_OPERATOR(nonzero, !!, operator!)
 #endif
-BOOST_PYTHON_UNARY_OPERATOR(int, long, int_)
-BOOST_PYTHON_UNARY_OPERATOR(long, PyLong_FromLong, long_)
-BOOST_PYTHON_UNARY_OPERATOR(float, double, float_)
-BOOST_PYTHON_UNARY_OPERATOR(complex, std::complex<double>, complex_)
-BOOST_PYTHON_UNARY_OPERATOR(str, lexical_cast<std::string>, str)
-BOOST_PYTHON_UNARY_OPERATOR(repr, lexical_cast<std::string>, repr)
-# undef BOOST_PYTHON_UNARY_OPERATOR
+PXR_BOOST_PYTHON_UNARY_OPERATOR(int, long, int_)
+PXR_BOOST_PYTHON_UNARY_OPERATOR(long, PyLong_FromLong, long_)
+PXR_BOOST_PYTHON_UNARY_OPERATOR(float, double, float_)
+PXR_BOOST_PYTHON_UNARY_OPERATOR(complex, std::complex<double>, complex_)
+PXR_BOOST_PYTHON_UNARY_OPERATOR(str, lexical_cast<std::string>, str)
+PXR_BOOST_PYTHON_UNARY_OPERATOR(repr, lexical_cast<std::string>, repr)
+# undef PXR_BOOST_PYTHON_UNARY_OPERATOR
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
 # ifdef BOOST_NO_ARGUMENT_DEPENDENT_LOOKUP
-using boost::python::self_ns::abs;
-using boost::python::self_ns::int_;
-using boost::python::self_ns::long_;
-using boost::python::self_ns::float_;
-using boost::python::self_ns::complex_;
-using boost::python::self_ns::str;
-using boost::python::self_ns::repr;
-using boost::python::self_ns::pow;
+using PXR_BOOST_NAMESPACE::python::self_ns::abs;
+using PXR_BOOST_NAMESPACE::python::self_ns::int_;
+using PXR_BOOST_NAMESPACE::python::self_ns::long_;
+using PXR_BOOST_NAMESPACE::python::self_ns::float_;
+using PXR_BOOST_NAMESPACE::python::self_ns::complex_;
+using PXR_BOOST_NAMESPACE::python::self_ns::str;
+using PXR_BOOST_NAMESPACE::python::self_ns::repr;
+using PXR_BOOST_NAMESPACE::python::self_ns::pow;
 # endif
 
-#endif // OPERATORS_DWA2002530_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_OPERATORS_HPP

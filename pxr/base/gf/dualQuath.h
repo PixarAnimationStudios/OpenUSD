@@ -45,7 +45,7 @@ GfHalf GfDot(const GfDualQuath& dq1, const GfDualQuath& dq2);
 ///
 /// References:
 ///    https://www.cs.utah.edu/~ladislav/kavan06dual/kavan06dual.pdf
-///    http://web.cs.iastate.edu/~cs577/handouts/dual-quaternion.pdf
+///    https://faculty.sites.iastate.edu/jia/files/inline-files/dual-quaternion.pdf
 ///
 class GfDualQuath final
 {

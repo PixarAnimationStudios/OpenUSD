@@ -7,16 +7,23 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef STL_ITERATOR_EAN20051028_HPP
-# define STL_ITERATOR_EAN20051028_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_STL_ITERATOR_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_STL_ITERATOR_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/object/stl_iterator_core.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/stl_iterator.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/prefix.hpp"
+
+# include "pxr/external/boost/python/object/stl_iterator_core.hpp"
 
 # include <boost/iterator/iterator_facade.hpp>
 
-namespace boost { namespace python
+namespace PXR_BOOST_NAMESPACE { namespace python
 { 
 
 // An STL input iterator over a python sequence
@@ -35,7 +42,7 @@ struct stl_input_iterator
     }
 
     // ob is the python sequence
-    stl_input_iterator(boost::python::object const &ob)
+    stl_input_iterator(PXR_BOOST_NAMESPACE::python::object const &ob)
       : impl_(ob)
     {
     }
@@ -61,6 +68,7 @@ private:
     objects::stl_input_iterator_impl impl_;
 };
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // STL_ITERATOR_EAN20051028_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_STL_ITERATOR_HPP

@@ -7,17 +7,24 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef ARGS_FWD_DWA2002927_HPP
-# define ARGS_FWD_DWA2002927_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_ARGS_FWD_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_ARGS_FWD_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/handle.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/args_fwd.hpp>
+#else
+
+# include "pxr/external/boost/python/detail/prefix.hpp"
+
+# include "pxr/external/boost/python/handle.hpp"
 # include <boost/config.hpp>
 # include <cstddef>
 # include <utility>
 
-namespace boost { namespace python { 
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 namespace detail
 {
@@ -52,6 +59,7 @@ namespace detail
   }
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // ARGS_FWD_DWA2002927_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_ARGS_FWD_HPP

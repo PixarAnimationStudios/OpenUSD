@@ -7,16 +7,23 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef BACK_REFERENCE_DWA2002510_HPP
-# define BACK_REFERENCE_DWA2002510_HPP
+#ifndef PXR_EXTERNAL_BOOST_PYTHON_BACK_REFERENCE_HPP
+# define PXR_EXTERNAL_BOOST_PYTHON_BACK_REFERENCE_HPP
 
-# include <boost/python/detail/prefix.hpp>
+#include "pxr/pxr.h"
+#include "pxr/external/boost/python/common.hpp"
 
-# include <boost/python/object_fwd.hpp>
-# include <boost/python/detail/dependent.hpp>
-# include <boost/python/detail/raw_pyobject.hpp>
+#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include <boost/python/back_reference.hpp>
+#else
 
-namespace boost { namespace python { 
+# include "pxr/external/boost/python/detail/prefix.hpp"
+
+# include "pxr/external/boost/python/object_fwd.hpp"
+# include "pxr/external/boost/python/detail/dependent.hpp"
+# include "pxr/external/boost/python/detail/raw_pyobject.hpp"
+
+namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 template <class T>
 struct back_reference
@@ -71,6 +78,7 @@ T back_reference<T>::get() const
     return m_value;
 }
 
-}} // namespace boost::python
+}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // BACK_REFERENCE_DWA2002510_HPP
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+#endif // PXR_EXTERNAL_BOOST_PYTHON_BACK_REFERENCE_HPP

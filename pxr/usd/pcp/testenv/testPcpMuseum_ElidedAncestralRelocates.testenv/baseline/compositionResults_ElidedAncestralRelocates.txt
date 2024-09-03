@@ -1,0 +1,180 @@
+Loading @ElidedAncestralRelocates/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </CharBase>
+
+Prim Stack:
+    root.sdf             /CharBase
+    base.sdf             /Rigs
+
+Child names:
+     ['CharRig', 'CharBaseRig', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </CharBase/CharRig>
+
+Prim Stack:
+    base.sdf             /Rigs/CharRig
+    base.sdf             /Rigs/CharRig{rigVariant=default}
+
+Variant Selections:
+    {rigVariant = default}
+
+Child names:
+     ['CollisionRig']
+
+------------------------------------------------------------------------
+Results for composing </CharBase/CharRig/CollisionRig>
+
+Prim Stack:
+    base.sdf             /Rigs/CharRig{rigVariant=default}CollisionRig
+
+Child names:
+     ['Collision', 'Colliders']
+
+------------------------------------------------------------------------
+Results for composing </CharBase/CharRig/CollisionRig/Collision>
+
+Prim Stack:
+    base.sdf             /Rigs/CharRig{rigVariant=default}CollisionRig/Collision
+
+------------------------------------------------------------------------
+Results for composing </CharBase/CharRig/CollisionRig/Colliders>
+
+Prim Stack:
+    base.sdf             /Rigs/CharRig{rigVariant=default}CollisionRig/Colliders
+
+------------------------------------------------------------------------
+Results for composing </CharBase/CharBaseRig>
+
+Prim Stack:
+    base.sdf             /Rigs/CharBaseRig
+    base.sdf             /Rigs/CharBaseRig{rigVariant=default}
+
+Variant Selections:
+    {rigVariant = default}
+
+Child names:
+     ['CollisionRig']
+
+------------------------------------------------------------------------
+Results for composing </CharBase/CharBaseRig/CollisionRig>
+
+Prim Stack:
+    base.sdf             /Rigs/CharBaseRig{rigVariant=default}CollisionRig
+
+Prohibited child names:
+     ['Colliders', 'Collision']
+
+------------------------------------------------------------------------
+Results for composing </CharBase/Anim>
+
+Prim Stack:
+    root.sdf             /CharBase/Anim
+    base.sdf             /Rigs/Anim
+
+Child names:
+     ['Collision']
+
+------------------------------------------------------------------------
+Results for composing </CharBase/Anim/Collision>
+
+Prim Stack:
+    root.sdf             /CharBase/Anim/Collision
+    base.sdf             /Rigs/CharBaseRig{rigVariant=default}CollisionRig/Collision
+
+Child names:
+     ['Colliders']
+
+------------------------------------------------------------------------
+Results for composing </CharBase/Anim/Collision/Colliders>
+
+Prim Stack:
+    base.sdf             /Rigs/CharBaseRig{rigVariant=default}CollisionRig/Colliders
+
+------------------------------------------------------------------------
+Results for composing </Char>
+
+Prim Stack:
+    root.sdf             /Char
+    root.sdf             /CharBase
+    base.sdf             /Rigs
+
+Child names:
+     ['CharRig', 'CharBaseRig', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </Char/CharRig>
+
+Prim Stack:
+    base.sdf             /Rigs/CharRig
+    base.sdf             /Rigs/CharRig{rigVariant=default}
+
+Variant Selections:
+    {rigVariant = default}
+
+Child names:
+     ['CollisionRig']
+
+------------------------------------------------------------------------
+Results for composing </Char/CharRig/CollisionRig>
+
+Prim Stack:
+    base.sdf             /Rigs/CharRig{rigVariant=default}CollisionRig
+
+Prohibited child names:
+     ['Colliders', 'Collision']
+
+------------------------------------------------------------------------
+Results for composing </Char/CharBaseRig>
+
+Prim Stack:
+    base.sdf             /Rigs/CharBaseRig
+    base.sdf             /Rigs/CharBaseRig{rigVariant=default}
+
+Variant Selections:
+    {rigVariant = default}
+
+Child names:
+     ['CollisionRig']
+
+------------------------------------------------------------------------
+Results for composing </Char/CharBaseRig/CollisionRig>
+
+Prim Stack:
+    base.sdf             /Rigs/CharBaseRig{rigVariant=default}CollisionRig
+
+Prohibited child names:
+     ['Colliders', 'Collision']
+
+------------------------------------------------------------------------
+Results for composing </Char/Anim>
+
+Prim Stack:
+    root.sdf             /Char/Anim
+    root.sdf             /CharBase/Anim
+    base.sdf             /Rigs/Anim
+
+Child names:
+     ['Collision']
+
+------------------------------------------------------------------------
+Results for composing </Char/Anim/Collision>
+
+Prim Stack:
+    root.sdf             /Char/Anim/Collision
+    base.sdf             /Rigs/CharRig{rigVariant=default}CollisionRig/Collision
+
+Child names:
+     ['Colliders']
+
+------------------------------------------------------------------------
+Results for composing </Char/Anim/Collision/Colliders>
+
+Prim Stack:
+    base.sdf             /Rigs/CharRig{rigVariant=default}CollisionRig/Colliders
+
