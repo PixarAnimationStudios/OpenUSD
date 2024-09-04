@@ -25,6 +25,13 @@ using namespace pxr_boost::python;
 namespace
 {
 
+    std::string _Repr(const UsdValidator &self)
+    {
+        return TfStringPrintf(
+            "%sValidationRegistry().GetOrLoadValidatorByName('%s')",
+            TF_PY_REPR_PREFIX.c_str(), self.GetMetadata().name.GetText());
+    }
+    
     UsdValidatorMetadata *
     _NewMetadata(
         const TfToken &name,
@@ -109,7 +116,8 @@ void wrapUsdValidator()
              return_value_policy<TfPySequenceToList>())
         .def("ValidateStage", _ValidateStage,
              return_value_policy<TfPySequenceToList>())
-        .def("__eq__", &_ValidatorEqual);
+        .def("__eq__", &_ValidatorEqual)
+        .def("__repr__", &_Repr);
 
     class_<UsdValidatorSuite, boost::noncopyable>("ValidatorSuite", no_init)
         .def("GetMetadata", &_GetValidatorSuiteMetadata,

@@ -20,8 +20,10 @@ class TestUsdValidationRegistryPy(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         Plug.Registry().RegisterPlugins(
-            os.path.dirname(__file__)
-            + "/UsdPlugins/lib/TestUsdValidationRegistryPy/Resources/"
+            os.path.join(
+                os.path.dirname(__file__),
+                "UsdPlugins/lib/TestUsdValidationRegistryPy/Resources/",
+            )
         )
 
         validationRegistry = Usd.ValidationRegistry()
@@ -38,6 +40,7 @@ class TestUsdValidationRegistryPy(unittest.TestCase):
             self.VALIDATOR1_NAME
         )
         self.assertTrue(validator)
+        self.assertEqual(eval(repr(validator)), validator)
 
         validators = validationRegistry.GetOrLoadValidatorsByName(
             [self.VALIDATOR1_NAME, self.VALIDATOR2_NAME]
