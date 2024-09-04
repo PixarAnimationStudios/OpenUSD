@@ -336,6 +336,17 @@ HdxEffectsShader::_CreateAndSubmitGraphicsCmds(
     _gfxCmds.reset();
 }
 
+
+void
+HdxEffectsShader::_DrawWithoutVertexBuffer(
+    uint32_t vertexCount,
+    uint32_t baseVertex,
+    uint32_t instanceCount,
+    uint32_t baseInstance)
+{
+    _gfxCmds->Draw(vertexCount, baseVertex, instanceCount, baseInstance);
+}
+
 void
 HdxEffectsShader::_DrawNonIndexed(
     const HgiBufferHandle& vertexBuffer,
@@ -345,7 +356,6 @@ HdxEffectsShader::_DrawNonIndexed(
     uint32_t baseInstance)
 {
     _gfxCmds->BindVertexBuffers({{vertexBuffer, 0, 0}});
-
     _gfxCmds->Draw(vertexCount, baseVertex, instanceCount, baseInstance);
 }
 
@@ -360,7 +370,6 @@ HdxEffectsShader::_DrawIndexed(
     uint32_t baseInstance)
 {
     _gfxCmds->BindVertexBuffers({{vertexBuffer, 0, 0}});
-
     _gfxCmds->DrawIndexed(indexBuffer, indexCount, indexBufferByteOffset,
                           baseVertex, instanceCount, baseInstance);
 }

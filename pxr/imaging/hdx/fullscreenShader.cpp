@@ -35,9 +35,6 @@ HdxFullscreenShader::HdxFullscreenShader(
     const std::string& debugName)
   : HdxEffectsShader(hgi, debugName.empty() ? "HdxFullscreenShader" : debugName)
 {
-    // Create descriptor for vertex pos and uvs
-    _SetVertexBufferDescriptor();
-
     // Depth test and write must be on since we may want to transfer depth.
     // Depth test must be on because when off it also disables depth writes.
     // Instead we set the compare function to always.
@@ -73,14 +70,6 @@ HdxFullscreenShader::~HdxFullscreenShader()
     Hgi* hgi = _GetHgi();
     if (!hgi) {
         return;
-    }
-
-    if (_vertexBuffer) {
-        hgi->DestroyBuffer(&_vertexBuffer);
-    }
-
-    if (_indexBuffer) {
-        hgi->DestroyBuffer(&_indexBuffer);
     }
 
     if (_shaderProgram) {
@@ -141,11 +130,9 @@ HdxFullscreenShader::SetProgram(
     HgiShaderFunctionDesc vertDesc;
     vertDesc.debugName = _tokens->fullscreenVertex;
     vertDesc.shaderStage = HgiShaderStageVertex;
-    
     HgiShaderFunctionAddStageInput(
-        &vertDesc, "position", "vec4", "position");
-    HgiShaderFunctionAddStageInput(
-        &vertDesc, "uvIn", "vec2");
+            &vertDesc, "hd_VertexID", "uint",
+            HgiShaderKeywordTokens->hdVertexID);
     HgiShaderFunctionAddStageOutput(
         &vertDesc, "gl_Position", "vec4", "position");
     HgiShaderFunctionAddStageOutput(
@@ -226,64 +213,6 @@ HdxFullscreenShader::SetShaderConstants(
 }
 
 void
-HdxFullscreenShader::_CreateBufferResources()
-{
-    if (_vertexBuffer) {
-        return;
-    }
-
-    /* For the fullscreen pass, we draw a triangle:
-     *
-     * |\
-     * |_\
-     * | |\
-     * |_|_\
-     *
-     * The vertices are at (-1, 3) [top left]; (-1, -1) [bottom left];
-     * and (3, -1) [bottom right]; UVs are assigned so that the bottom left
-     * is (0,0) and the clipped vertices are 2 on their axis, so that:
-     * x=-1 => s = 0; x = 3 => s = 2, which means x = 1 => s = 1.
-     *
-     * This maps the texture space [0,1]^2 to the clip space XY [-1,1]^2.
-     * The parts of the triangle extending past NDC space are clipped before
-     * rasterization.
-     *
-     * This has the advantage (over rendering a quad) that we don't render
-     * the diagonal twice.
-     *
-     * Note that we're passing in NDC positions, and we don't expect the vertex
-     * shader to transform them.  Also note: the fragment shader can optionally
-     * read depth from a texture, but otherwise the depth is -1, meaning near
-     * plane.
-     */
-    constexpr size_t elementsPerVertex = 6;
-    constexpr size_t vertDataCount = elementsPerVertex * 3;
-    constexpr float vertData[vertDataCount] =
-            { -1,  3, 0, 1,     0, 2,
-              -1, -1, 0, 1,     0, 0,
-               3, -1, 0, 1,     2, 0};
-
-    HgiBufferDesc vboDesc;
-    vboDesc.debugName = "HdxFullscreenShader VertexBuffer";
-    vboDesc.usage = HgiBufferUsageVertex;
-    vboDesc.initialData = vertData;
-    vboDesc.byteSize = sizeof(vertData);
-    vboDesc.vertexStride = elementsPerVertex * sizeof(vertData[0]);
-    _vertexBuffer = _GetHgi()->CreateBuffer(vboDesc);
-
-    constexpr int32_t indices[3] = {0,1,2};
-
-    HgiBufferDesc iboDesc;
-    iboDesc.debugName = "HdxFullscreenShader IndexBuffer";
-    iboDesc.usage = HgiBufferUsageIndex32;
-    iboDesc.initialData = indices;
-    iboDesc.byteSize = sizeof(indices);
-    _indexBuffer = _GetHgi()->CreateBuffer(iboDesc);
-
-    _SetPrimitiveType(HgiPrimitiveTypeTriangleList);
-}
-
-void
 HdxFullscreenShader::BindTextures(
     HgiTextureHandleVector const& textures,
     HgiSamplerHandleVector const& samplers)
@@ -346,28 +275,6 @@ HdxFullscreenShader::_SetResourceBindings()
     _SetBufferBindings(bufferBindings);
 }
 
-void
-HdxFullscreenShader::_SetVertexBufferDescriptor()
-{
-    // Describe the vertex buffer
-    HgiVertexAttributeDesc posAttr;
-    posAttr.format = HgiFormatFloat32Vec4;
-    posAttr.offset = 0;
-    posAttr.shaderBindLocation = 0;
-
-    HgiVertexAttributeDesc uvAttr;
-    uvAttr.format = HgiFormatFloat32Vec2;
-    uvAttr.offset = sizeof(float) * 4; // after posAttr
-    uvAttr.shaderBindLocation = 1;
-
-    HgiVertexBufferDescVector vboDescs(1);
-    vboDescs[0].bindingIndex = 0;
-    vboDescs[0].vertexStride = sizeof(float) * 6; // pos, uv
-    vboDescs[0].vertexAttributes = { posAttr, uvAttr };
-
-    _SetVertexBufferDescs(vboDescs);
-}
-
 HgiSamplerHandle
 HdxFullscreenShader::_GetDefaultSampler()
 {
@@ -427,6 +334,7 @@ HdxFullscreenShader::_SetDefaultProgram(
     HgiShaderFunctionAddTexture(
         &fragDesc, "colorIn", /*bindIndex = */0);
 
+
     if (writeDepth) {
         HgiShaderFunctionAddStageOutput(
             &fragDesc, "gl_FragDepth", "float", "depth(any)");
@@ -452,10 +360,7 @@ HdxFullscreenShader::_Draw(
         _SetDefaultProgram(writeDepth);
     }
 
-    // Create draw buffers if they haven't been created yet.
-    if (!_vertexBuffer) {
-        _CreateBufferResources();
-    }
+    _SetPrimitiveType(HgiPrimitiveTypeTriangleList);
 
     // Set or update the resource bindings (textures may have changed)
     _SetResourceBindings();
@@ -485,7 +390,7 @@ HdxFullscreenShader::_Draw(
 void
 HdxFullscreenShader::_RecordDrawCmds()
 {
-    _DrawIndexed(_vertexBuffer, _indexBuffer, 3, 0, 0, 1, 0);
+    _DrawWithoutVertexBuffer(3, 0, 1, 0);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

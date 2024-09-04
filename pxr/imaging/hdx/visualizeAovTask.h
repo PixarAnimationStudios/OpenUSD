@@ -127,8 +127,6 @@ private:
     HgiGraphicsPipelineHandle _pipeline;
 
     // Kernel independent resources
-    HgiBufferHandle _indexBuffer;
-    HgiBufferHandle _vertexBuffer;
     HgiSamplerHandle _sampler;
 
     float _screenSize[2];

@@ -130,6 +130,14 @@ protected:
     HDX_API
     virtual void _RecordDrawCmds() = 0;
 
+    // Invokes HgiGraphicsCmds::Draw.
+    HDX_API
+    void _DrawWithoutVertexBuffer(
+        uint32_t vertexCount,
+        uint32_t baseVertex,
+        uint32_t instanceCount,
+        uint32_t baseInstance);
+
     // Sets the vertex buffer and invokes HgiGraphicsCmds::Draw.
     HDX_API
     void _DrawNonIndexed(
