@@ -26,9 +26,9 @@
                         "supportsWriting": false, 
                         "target": "usd"
                     }, 
-                    "UsdMtlxMaterialXInfoAPI": {
+                    "UsdMtlxMaterialXConfigAPI": {
                         "alias": {
-                            "UsdSchemaBase": "MaterialXInfoAPI"
+                            "UsdSchemaBase": "MaterialXConfigAPI"
                         }, 
                         "apiSchemaCanOnlyApplyTo": [
                             "UsdShadeMaterial"

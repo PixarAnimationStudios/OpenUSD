@@ -1144,15 +1144,15 @@ _ToMaterialNetworkMap(
         netSchema.GetTerminals();
     const TfTokenVector names = terminalsSchema.GetNames();
 
-    if (auto info = HdSampledDataSourceContainerSchema(netSchema.GetInfo())) {
+    if (auto config = HdSampledDataSourceContainerSchema(netSchema.GetConfig())) {
         // Taken from _ToDictionary() below - maybe we can share the code if we refactor this file a bit?
         VtDictionary dict;
-        for (const TfToken& name : info.GetNames()) {
-            if (HdSampledDataSourceHandle valueDs = info.Get(name)) {
+        for (const TfToken& name : config.GetNames()) {
+            if (HdSampledDataSourceHandle valueDs = config.Get(name)) {
                 dict[name.GetString()] = valueDs->GetValue(0);
             }
         }
-        matHd.info = dict;
+        matHd.config = dict;
     }
 
     for (const auto & name : names) {

@@ -380,16 +380,16 @@ UsdImagingMaterialAdapter::GetMaterialResource(UsdPrim const &prim,
     }
 
     // finally collect any 'info' on the Material prim
-    VtDictionary infoDict;
-    for (const auto& prop : prim.GetPropertiesInNamespace("info")) {
-        const auto attr = prop.As<UsdAttribute>();
-        if (attr.IsValid()) {
-            VtValue value;
-            attr.Get(&value);
-            infoDict.SetValueAtPath(attr.GetName().GetString().substr(5), value);
-        }
+    VtDictionary configDict;
+    for (const auto& prop : prim.GetPropertiesInNamespace("config")) {
+      const auto attr = prop.As<UsdAttribute>();
+      if (attr.IsValid()) {
+        VtValue value;
+        attr.Get(&value);
+        configDict.SetValueAtPath(attr.GetName().GetString().substr(5), value);
+      }
     }
-    networkMap.info = infoDict;
+    networkMap.config = configDict;
 
     return VtValue(networkMap);
 }

@@ -21,25 +21,25 @@ TF_DEFINE_PRIVATE_TOKENS(
     );
 
 TfTokenVector
-HdDataSourceMaterialNetworkInterface::GetMaterialInfoKeys() const
+HdDataSourceMaterialNetworkInterface::GetMaterialConfigKeys() const
 {
-    HdContainerDataSourceHandle const info = _networkSchema.GetInfo();
-    if (!info) {
+    HdContainerDataSourceHandle const config = _networkSchema.GetConfig();
+    if (!config) {
       return {};
     }
-    return info->GetNames();
+    return config->GetNames();
 }
 
 VtValue
-HdDataSourceMaterialNetworkInterface::GetMaterialInfoValue(
+HdDataSourceMaterialNetworkInterface::GetMaterialConfigValue(
     const TfToken& key) const
 {
-    HdContainerDataSourceHandle const info = _networkSchema.GetInfo();
-    if (!info) {
+    HdContainerDataSourceHandle const config = _networkSchema.GetConfig();
+    if (!config) {
       return {};
     }
     HdSampledDataSourceHandle const ds =
-        HdSampledDataSource::Cast(info->Get(key));
+        HdSampledDataSource::Cast(config->Get(key));
     if (!ds) {
       return {};
     }

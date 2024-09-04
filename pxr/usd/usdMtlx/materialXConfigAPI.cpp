@@ -1,10 +1,10 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2016 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdMtlx/materialXInfoAPI.h"
+#include "pxr/usd/usdMtlx/materialXConfigAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -16,63 +16,63 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdMtlxMaterialXInfoAPI,
+    TfType::Define<UsdMtlxMaterialXConfigAPI,
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
 
 /* virtual */
-UsdMtlxMaterialXInfoAPI::~UsdMtlxMaterialXInfoAPI()
+UsdMtlxMaterialXConfigAPI::~UsdMtlxMaterialXConfigAPI()
 {
 }
 
 /* static */
-UsdMtlxMaterialXInfoAPI
-UsdMtlxMaterialXInfoAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdMtlxMaterialXConfigAPI
+UsdMtlxMaterialXConfigAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdMtlxMaterialXInfoAPI();
+        return UsdMtlxMaterialXConfigAPI();
     }
-    return UsdMtlxMaterialXInfoAPI(stage->GetPrimAtPath(path));
+    return UsdMtlxMaterialXConfigAPI(stage->GetPrimAtPath(path));
 }
 
 
 /* virtual */
-UsdSchemaKind UsdMtlxMaterialXInfoAPI::_GetSchemaKind() const
+UsdSchemaKind UsdMtlxMaterialXConfigAPI::_GetSchemaKind() const
 {
-    return UsdMtlxMaterialXInfoAPI::schemaKind;
+    return UsdMtlxMaterialXConfigAPI::schemaKind;
 }
 
 /* static */
 bool
-UsdMtlxMaterialXInfoAPI::CanApply(
+UsdMtlxMaterialXConfigAPI::CanApply(
     const UsdPrim &prim, std::string *whyNot)
 {
-    return prim.CanApplyAPI<UsdMtlxMaterialXInfoAPI>(whyNot);
+    return prim.CanApplyAPI<UsdMtlxMaterialXConfigAPI>(whyNot);
 }
 
 /* static */
-UsdMtlxMaterialXInfoAPI
-UsdMtlxMaterialXInfoAPI::Apply(const UsdPrim &prim)
+UsdMtlxMaterialXConfigAPI
+UsdMtlxMaterialXConfigAPI::Apply(const UsdPrim &prim)
 {
-    if (prim.ApplyAPI<UsdMtlxMaterialXInfoAPI>()) {
-        return UsdMtlxMaterialXInfoAPI(prim);
+    if (prim.ApplyAPI<UsdMtlxMaterialXConfigAPI>()) {
+        return UsdMtlxMaterialXConfigAPI(prim);
     }
-    return UsdMtlxMaterialXInfoAPI();
+    return UsdMtlxMaterialXConfigAPI();
 }
 
 /* static */
 const TfType &
-UsdMtlxMaterialXInfoAPI::_GetStaticTfType()
+UsdMtlxMaterialXConfigAPI::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdMtlxMaterialXInfoAPI>();
+    static TfType tfType = TfType::Find<UsdMtlxMaterialXConfigAPI>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdMtlxMaterialXInfoAPI::_IsTypedSchema()
+UsdMtlxMaterialXConfigAPI::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -80,21 +80,21 @@ UsdMtlxMaterialXInfoAPI::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdMtlxMaterialXInfoAPI::_GetTfType() const
+UsdMtlxMaterialXConfigAPI::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 UsdAttribute
-UsdMtlxMaterialXInfoAPI::GetInfoMtlxVersionAttr() const
+UsdMtlxMaterialXConfigAPI::GetConfigMtlxVersionAttr() const
 {
-    return GetPrim().GetAttribute(UsdMtlxTokens->infoMtlxVersion);
+    return GetPrim().GetAttribute(UsdMtlxTokens->configMtlxVersion);
 }
 
 UsdAttribute
-UsdMtlxMaterialXInfoAPI::CreateInfoMtlxVersionAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdMtlxMaterialXConfigAPI::CreateConfigMtlxVersionAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdMtlxTokens->infoMtlxVersion,
+    return UsdSchemaBase::_CreateAttr(UsdMtlxTokens->configMtlxVersion,
                        SdfValueTypeNames->String,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -116,10 +116,10 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 
 /*static*/
 const TfTokenVector&
-UsdMtlxMaterialXInfoAPI::GetSchemaAttributeNames(bool includeInherited)
+UsdMtlxMaterialXConfigAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdMtlxTokens->infoMtlxVersion,
+        UsdMtlxTokens->configMtlxVersion,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

@@ -572,7 +572,7 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
     // a reasonable default.
     std::string materialXVersionString = "1.38";
 
-    VtValue materialXVersionValue = netInterface->GetMaterialInfoValue(_tokens->mtlx_version);
+    VtValue materialXVersionValue = netInterface->GetMaterialConfigValue(_tokens->mtlx_version);
     if (materialXVersionValue.IsHolding<std::string>()) {
         materialXVersionString = materialXVersionValue.Get<std::string>();
         TF_DEBUG(HDMTLX_VERSION_UPGRADE).Msg("[%s] : MaterialX document version : '%s'\n",

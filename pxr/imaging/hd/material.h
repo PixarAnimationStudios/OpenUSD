@@ -113,7 +113,7 @@ struct HdMaterialNetworkMap
 {
     std::map<TfToken, HdMaterialNetwork> map;
     std::vector<SdfPath> terminals;
-    VtDictionary info;
+    VtDictionary config;
 };
 
 
@@ -164,13 +164,13 @@ struct HdMaterialNetwork2
     std::map<SdfPath, HdMaterialNode2> nodes;
     std::map<TfToken, HdMaterialConnection2> terminals;
     TfTokenVector primvars;
-    VtDictionary info;
+    VtDictionary config;
 
     bool operator==(const HdMaterialNetwork2 & rhs) const {
         return nodes == rhs.nodes 
             && terminals == rhs.terminals
             && primvars == rhs.primvars
-            && info == rhs.info;
+            && config == rhs.config;
     }
 };
 

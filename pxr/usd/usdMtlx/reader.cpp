@@ -8,7 +8,7 @@
 #include "pxr/usd/usdMtlx/debugCodes.h"
 #include "pxr/usd/usdMtlx/reader.h"
 #include "pxr/usd/usdMtlx/utils.h"
-#include "pxr/usd/usdMtlx/materialXInfoAPI.h"
+#include "pxr/usd/usdMtlx/materialXConfigAPI.h"
 #include "pxr/usd/usdMtlx/tokens.h"
 
 #include "pxr/usd/usdGeom/primvar.h"
@@ -1463,9 +1463,9 @@ _Context::BeginMaterial(const mx::ConstNodePtr& mtlxMaterial)
         auto materialPath =
             _materialsPath.AppendChild(_MakeName(mtlxMaterial));
         if (auto usdMaterial = UsdShadeMaterial::Define(_stage, materialPath)) {
-            auto mtlxInfoAPI = UsdMtlxMaterialXInfoAPI::Apply(usdMaterial.GetPrim());
+            auto mtlxConfigAPI = UsdMtlxMaterialXConfigAPI::Apply(usdMaterial.GetPrim());
             auto mtlxVersionValue = VtValue(mtlxMaterial->getDocument()->getVersionString());
-            mtlxInfoAPI.CreateInfoMtlxVersionAttr(mtlxVersionValue);
+            mtlxConfigAPI.CreateConfigMtlxVersionAttr(mtlxVersionValue);
 
             _SetCoreUIAttributes(usdMaterial.GetPrim(), mtlxMaterial);
 

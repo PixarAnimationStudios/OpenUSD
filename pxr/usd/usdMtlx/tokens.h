@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2016 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -41,22 +41,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Use UsdMtlxTokens like so:
 ///
 /// \code
-///     gprim.GetMyTokenValuedAttr().Set(UsdMtlxTokens->DefaultOutputName);
+///     gprim.GetMyTokenValuedAttr().Set(UsdMtlxTokens->configMtlxVersion);
 /// \endcode
 struct UsdMtlxTokensType {
     USDMTLX_API UsdMtlxTokensType();
+    /// \brief "config:mtlx:version"
+    ///
+    /// UsdMtlxMaterialXConfigAPI
+    const TfToken configMtlxVersion;
     /// \brief "out"
     /// 
     /// Special token for the usdMtlx library.
     const TfToken DefaultOutputName;
-    /// \brief "info:mtlx:version"
+    /// \brief "MaterialXConfigAPI"
     ///
-    /// UsdMtlxMaterialXInfoAPI
-    const TfToken infoMtlxVersion;
-    /// \brief "MaterialXInfoAPI"
-    /// 
-    /// Schema identifer and family for UsdMtlxMaterialXInfoAPI
-    const TfToken MaterialXInfoAPI;
+    /// Schema identifer and family for UsdMtlxMaterialXConfigAPI
+    const TfToken MaterialXConfigAPI;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

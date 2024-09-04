@@ -20,9 +20,9 @@ over "GLOBAL" (
 {
 }
 
-class "MaterialXInfoAPI" (
+class "MaterialXConfigAPI" (
     inherits = </APISchemaBase>
-    doc = """MaterialXInfoAPI is an API schema that provides an interface for
+    doc = """MaterialXConfigAPI is an API schema that provides an interface for
     storing information about the MaterialX environment.
 
     Initially, it only exposed an interface to record the MaterialX library version
@@ -33,7 +33,7 @@ class "MaterialXInfoAPI" (
         token[] apiSchemaCanOnlyApplyTo = ["UsdShadeMaterial"]
     }
 ) {
-    string info:mtlx:version = "1.38" (
+    string config:mtlx:version = "1.38" (
         doc = """MaterialX library version that the data has been authored against.
         Defaults to 1.38 to allow correct verisoning of old files."""
     )

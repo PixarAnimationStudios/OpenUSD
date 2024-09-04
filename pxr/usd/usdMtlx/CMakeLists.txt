@@ -35,7 +35,7 @@ pxr_library(usdMtlx
     PUBLIC_CLASSES
         reader
         utils
-        MaterialXInfoAPI
+        MaterialXConfigAPI
 
     PRIVATE_HEADERS
         debugCodes.h
@@ -50,7 +50,7 @@ pxr_library(usdMtlx
     PYMODULE_CPPFILES
         module.cpp
         wrapBackdoor.cpp
-        wrapMaterialXInfoAPI.cpp
+        wrapMaterialXConfigAPI.cpp
 
     PYMODULE_FILES
         __init__.py
