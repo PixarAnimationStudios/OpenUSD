@@ -534,7 +534,7 @@
                 node parameters. Each mapped material node parameter is a 
                 container defined by the InterfaceMappings schema.
                 ''')),
-            ('info', T_CONTAINER, {}),
+            ('config', T_CONTAINER, {}),
         ],
     ),
 

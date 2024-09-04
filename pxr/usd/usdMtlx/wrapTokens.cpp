@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2016 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -47,7 +47,7 @@ void wrapUsdMtlxTokens()
 {
     boost::python::class_<UsdMtlxTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
+    _AddToken(cls, "configMtlxVersion", UsdMtlxTokens->configMtlxVersion);
     _AddToken(cls, "DefaultOutputName", UsdMtlxTokens->DefaultOutputName);
-    _AddToken(cls, "infoMtlxVersion", UsdMtlxTokens->infoMtlxVersion);
-    _AddToken(cls, "MaterialXInfoAPI", UsdMtlxTokens->MaterialXInfoAPI);
+    _AddToken(cls, "MaterialXConfigAPI", UsdMtlxTokens->MaterialXConfigAPI);
 }

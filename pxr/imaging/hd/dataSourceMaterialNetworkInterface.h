@@ -50,9 +50,9 @@ public:
     }
 
     HD_API
-    TfTokenVector GetMaterialInfoKeys() const override;
+    TfTokenVector GetMaterialConfigKeys() const override;
     HD_API
-    VtValue GetMaterialInfoValue(const TfToken& key) const override;
+    VtValue GetMaterialConfigValue(const TfToken& key) const override;
 
     HD_API
     std::string GetModelAssetName() const override;

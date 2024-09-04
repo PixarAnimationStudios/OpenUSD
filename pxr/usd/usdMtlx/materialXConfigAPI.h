@@ -4,10 +4,10 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef USDMTLX_GENERATED_MATERIALXINFOAPI_H
-#define USDMTLX_GENERATED_MATERIALXINFOAPI_H
+#ifndef USDMTLX_GENERATED_MATERIALXCONFIGAPI_H
+#define USDMTLX_GENERATED_MATERIALXCONFIGAPI_H
 
-/// \file usdMtlx/materialXInfoAPI.h
+/// \file usdMtlx/materialXConfigAPI.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdMtlx/api.h"
@@ -30,12 +30,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// MATERIALXINFOAPI                                                           //
+// MATERIALXCONFIGAPI                                                         //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdMtlxMaterialXInfoAPI
+/// \class UsdMtlxMaterialXConfigAPI
 ///
-/// MaterialXInfoAPI is an API schema that provides an interface for
+/// MaterialXConfigAPI is an API schema that provides an interface for
 /// storing information about the MaterialX environment.
 /// 
 /// Initially, it only exposed an interface to record the MaterialX library version
@@ -43,7 +43,7 @@ class SdfAssetPath;
 /// the MaterialX library to perform upgrades on data from prior MaterialX versions.
 /// 
 ///
-class UsdMtlxMaterialXInfoAPI : public UsdAPISchemaBase
+class UsdMtlxMaterialXConfigAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -51,26 +51,26 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::SingleApplyAPI;
 
-    /// Construct a UsdMtlxMaterialXInfoAPI on UsdPrim \p prim .
-    /// Equivalent to UsdMtlxMaterialXInfoAPI::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdMtlxMaterialXConfigAPI on UsdPrim \p prim .
+    /// Equivalent to UsdMtlxMaterialXConfigAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdMtlxMaterialXInfoAPI(const UsdPrim& prim=UsdPrim())
+    explicit UsdMtlxMaterialXConfigAPI(const UsdPrim& prim=UsdPrim())
         : UsdAPISchemaBase(prim)
     {
     }
 
-    /// Construct a UsdMtlxMaterialXInfoAPI on the prim held by \p schemaObj .
-    /// Should be preferred over UsdMtlxMaterialXInfoAPI(schemaObj.GetPrim()),
+    /// Construct a UsdMtlxMaterialXConfigAPI on the prim held by \p schemaObj .
+    /// Should be preferred over UsdMtlxMaterialXConfigAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdMtlxMaterialXInfoAPI(const UsdSchemaBase& schemaObj)
+    explicit UsdMtlxMaterialXConfigAPI(const UsdSchemaBase& schemaObj)
         : UsdAPISchemaBase(schemaObj)
     {
     }
 
     /// Destructor.
     USDMTLX_API
-    virtual ~UsdMtlxMaterialXInfoAPI();
+    virtual ~UsdMtlxMaterialXConfigAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -79,17 +79,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdMtlxMaterialXInfoAPI holding the prim adhering to this
+    /// Return a UsdMtlxMaterialXConfigAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdMtlxMaterialXInfoAPI(stage->GetPrimAtPath(path));
+    /// UsdMtlxMaterialXConfigAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDMTLX_API
-    static UsdMtlxMaterialXInfoAPI
+    static UsdMtlxMaterialXConfigAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
@@ -114,11 +114,11 @@ public:
     CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "MaterialXInfoAPI" to the 
+    /// This information is stored by adding "MaterialXConfigAPI" to the
     /// token-valued, listOp metadata \em apiSchemas on the prim.
     /// 
-    /// \return A valid UsdMtlxMaterialXInfoAPI object is returned upon success. 
-    /// An invalid (or empty) UsdMtlxMaterialXInfoAPI object is returned upon 
+    /// \return A valid UsdMtlxMaterialXConfigAPI object is returned upon success.
+    /// An invalid (or empty) UsdMtlxMaterialXConfigAPI object is returned upon
     /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
     /// resulting in failure. 
     /// 
@@ -129,7 +129,7 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDMTLX_API
-    static UsdMtlxMaterialXInfoAPI 
+    static UsdMtlxMaterialXConfigAPI
     Apply(const UsdPrim &prim);
 
 protected:
@@ -153,26 +153,26 @@ private:
 
 public:
     // --------------------------------------------------------------------- //
-    // INFOMTLXVERSION
+    // CONFIGMTLXVERSION
     // --------------------------------------------------------------------- //
     /// MaterialX library version that the data has been authored against.
     /// Defaults to 1.38 to allow correct verisoning of old files.
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `string info:mtlx:version = "1.38"` |
+    /// | Declaration | `string config:mtlx:version = "1.38"` |
     /// | C++ Type | std::string |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->String |
     USDMTLX_API
-    UsdAttribute GetInfoMtlxVersionAttr() const;
+    UsdAttribute GetConfigMtlxVersionAttr() const;
 
-    /// See GetInfoMtlxVersionAttr(), and also
+    /// See GetConfigMtlxVersionAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDMTLX_API
-    UsdAttribute CreateInfoMtlxVersionAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateConfigMtlxVersionAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

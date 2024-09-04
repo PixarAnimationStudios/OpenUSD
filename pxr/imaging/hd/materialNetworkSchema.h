@@ -37,7 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (nodes) \
     (terminals) \
     (interfaceMappings) \
-    (info) \
+    (config) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdMaterialNetworkSchemaTokens, HD_API,
     HD_MATERIAL_NETWORK_SCHEMA_TOKENS);
@@ -111,7 +111,7 @@ public:
     HdMaterialInterfaceMappingsContainerSchema GetInterfaceMappings() const;
 
     HD_API
-    HdContainerDataSourceHandle GetInfo() const; 
+    HdContainerDataSourceHandle GetConfig() const; 
 
     /// @} 
 
@@ -131,7 +131,7 @@ public:
         const HdContainerDataSourceHandle &nodes,
         const HdContainerDataSourceHandle &terminals,
         const HdContainerDataSourceHandle &interfaceMappings,
-        const HdContainerDataSourceHandle &info
+        const HdContainerDataSourceHandle &config
     );
 
     /// \class HdMaterialNetworkSchema::Builder
@@ -153,8 +153,8 @@ public:
         Builder &SetInterfaceMappings(
             const HdContainerDataSourceHandle &interfaceMappings);
         HD_API
-        Builder &SetInfo(
-            const HdContainerDataSourceHandle &info);
+        Builder &SetConfig(
+            const HdContainerDataSourceHandle &config);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -164,7 +164,7 @@ public:
         HdContainerDataSourceHandle _nodes;
         HdContainerDataSourceHandle _terminals;
         HdContainerDataSourceHandle _interfaceMappings;
-        HdContainerDataSourceHandle _info;
+        HdContainerDataSourceHandle _config;
 
     };
 

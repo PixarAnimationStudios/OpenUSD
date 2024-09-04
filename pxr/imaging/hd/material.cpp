@@ -107,7 +107,7 @@ HdConvertToHdMaterialNetwork2(
     }
 
     // Transfer info dictionary
-    result.info = hdNetworkMap.info;
+    result.config = hdNetworkMap.config;
 
     return result;
 }
@@ -359,7 +359,7 @@ bool operator==(const HdMaterialNetworkMap& lhs,
 {
     return lhs.map == rhs.map &&
            lhs.terminals == rhs.terminals &&
-           lhs.info == rhs.info;
+           lhs.config == rhs.config;
 }
 
 bool operator!=(const HdMaterialNetworkMap& lhs,

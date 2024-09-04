@@ -1,10 +1,10 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2016 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdMtlx/materialXInfoAPI.h"
+#include "pxr/usd/usdMtlx/materialXConfigAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -34,47 +34,47 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
-_CreateInfoMtlxVersionAttr(UsdMtlxMaterialXInfoAPI &self,
+_CreateConfigMtlxVersionAttr(UsdMtlxMaterialXConfigAPI &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateInfoMtlxVersionAttr(
+    return self.CreateConfigMtlxVersionAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->String), writeSparsely);
 }
 
 static std::string
-_Repr(const UsdMtlxMaterialXInfoAPI &self)
+_Repr(const UsdMtlxMaterialXConfigAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdMtlx.MaterialXInfoAPI(%s)",
+        "UsdMtlx.MaterialXConfigAPI(%s)",
         primRepr.c_str());
 }
 
-struct UsdMtlxMaterialXInfoAPI_CanApplyResult : 
+struct UsdMtlxMaterialXConfigAPI_CanApplyResult : 
     public TfPyAnnotatedBoolResult<std::string>
 {
-    UsdMtlxMaterialXInfoAPI_CanApplyResult(bool val, std::string const &msg) :
+    UsdMtlxMaterialXConfigAPI_CanApplyResult(bool val, std::string const &msg) :
         TfPyAnnotatedBoolResult<std::string>(val, msg) {}
 };
 
-static UsdMtlxMaterialXInfoAPI_CanApplyResult
+static UsdMtlxMaterialXConfigAPI_CanApplyResult
 _WrapCanApply(const UsdPrim& prim)
 {
     std::string whyNot;
-    bool result = UsdMtlxMaterialXInfoAPI::CanApply(prim, &whyNot);
-    return UsdMtlxMaterialXInfoAPI_CanApplyResult(result, whyNot);
+    bool result = UsdMtlxMaterialXConfigAPI::CanApply(prim, &whyNot);
+    return UsdMtlxMaterialXConfigAPI_CanApplyResult(result, whyNot);
 }
 
 } // anonymous namespace
 
-void wrapUsdMtlxMaterialXInfoAPI()
+void wrapUsdMtlxMaterialXConfigAPI()
 {
-    typedef UsdMtlxMaterialXInfoAPI This;
+    typedef UsdMtlxMaterialXConfigAPI This;
 
-    UsdMtlxMaterialXInfoAPI_CanApplyResult::Wrap<UsdMtlxMaterialXInfoAPI_CanApplyResult>(
+    UsdMtlxMaterialXConfigAPI_CanApplyResult::Wrap<UsdMtlxMaterialXConfigAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
-        cls("MaterialXInfoAPI");
+        cls("MaterialXConfigAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -103,10 +103,10 @@ void wrapUsdMtlxMaterialXInfoAPI()
         .def(!self)
 
         
-        .def("GetInfoMtlxVersionAttr",
-             &This::GetInfoMtlxVersionAttr)
-        .def("CreateInfoMtlxVersionAttr",
-             &_CreateInfoMtlxVersionAttr,
+        .def("GetConfigMtlxVersionAttr",
+             &This::GetConfigMtlxVersionAttr)
+        .def("CreateConfigMtlxVersionAttr",
+             &_CreateConfigMtlxVersionAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

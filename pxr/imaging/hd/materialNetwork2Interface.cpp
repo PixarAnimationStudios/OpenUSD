@@ -73,16 +73,16 @@ TfTokenVector _GetKeysFromVtDictionary(const VtDictionary& dict, const std::stri
 }
 
 TfTokenVector
-HdMaterialNetwork2Interface::GetMaterialInfoKeys() const
+HdMaterialNetwork2Interface::GetMaterialConfigKeys() const
 {
-  return _GetKeysFromVtDictionary(_materialNetwork->info);
+  return _GetKeysFromVtDictionary(_materialNetwork->config);
 }
 
 VtValue
-HdMaterialNetwork2Interface::GetMaterialInfoValue(
+HdMaterialNetwork2Interface::GetMaterialConfigValue(
     const TfToken& key) const
 {
-    if (auto result = _materialNetwork->info.GetValueAtPath(key.GetString())) {
+    if (auto result = _materialNetwork->config.GetValueAtPath(key.GetString())) {
         return *result;
     }
     return VtValue();
