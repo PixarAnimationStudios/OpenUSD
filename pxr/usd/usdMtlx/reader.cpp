@@ -434,8 +434,12 @@ _TypeSupportsColorSpace(const mx::ConstValueElementPtr& mxElem)
     bool colorImageNode = false;
     if (type == "filename") {
         // verify the output is color3 or color4
-        mx::ConstNodeDefPtr parentNodeDef =
-            _GetNodeDef(mxElem->getParent()->asA<mx::Node>());
+        mx::ConstNodeDefPtr parentNodeDef;
+        if (mxElem->getParent()->isA<mx::Node>()) {
+            parentNodeDef = _GetNodeDef(mxElem->getParent()->asA<mx::Node>());
+        } else if (mxElem->getParent()->isA<mx::NodeDef>()) {
+            parentNodeDef = mxElem->getParent()->asA<mx::NodeDef>();
+        }
         if (parentNodeDef) {
             for (const mx::OutputPtr& output : parentNodeDef->getOutputs()) {
                 const std::string &type = output->getType();
