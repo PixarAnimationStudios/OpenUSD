@@ -163,12 +163,7 @@ HdStMaterialXShaderGen<Base>::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
                 TF_WARN("MaterialX geomprop '%s' has unknown type '%s'",
                         primvarPair.first.c_str(), primvarPair.second.c_str());
             }
-
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION==38
-            const std::string type = (!mxTypeIsNone(mxType)) ? Base::_syntax->getTypeName(&mxType) : "vec2";
-#else
-            const std::string type = (!mxTypeIsNone(mxType)) ? Base::_syntax->getTypeName(mxType) : "vec2";
-#endif
+            const std::string type = mxGetTypeString(mxType, Base::_syntax);
 
             line += "        \"" + primvarPair.first + "\": {\n";
             line += "            \"type\": \"" + type + "\"\n";
@@ -291,7 +286,7 @@ HdStMaterialXShaderGen<Base>::_EmitMxSurfaceShader(
         if (outputConnection) {
 
             std::string finalOutput = outputConnection->getVariable();
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION==38
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
             // channels feature removed in MaterialX 1.39
             const std::string& channels = outputSocket->getChannels();
             if (!channels.empty()) {
@@ -1360,49 +1355,58 @@ HdStMaterialXShaderGenMsl::_EmitMxFunctions(
 
 bool mxTypeIsNone(mx::TypeDesc typeDesc)
 {
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION==38
-  return typeDesc == *mx::Type::NONE;
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    return typeDesc == *mx::Type::NONE;
 #else
-  return typeDesc == mx::Type::NONE;
+    return typeDesc == mx::Type::NONE;
 #endif
 }
 
 bool mxTypeIsSurfaceShader(mx::TypeDesc typeDesc)
 {
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION==38
-  return typeDesc == *mx::Type::SURFACESHADER;
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    return typeDesc == *mx::Type::SURFACESHADER;
 #else
-  return typeDesc == mx::Type::SURFACESHADER;
+    return typeDesc == mx::Type::SURFACESHADER;
 #endif
 }
 
 bool mxTypeDescIsFilename(const mx::TypeDesc typeDesc)
 {
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION==38
-  return typeDesc == *mx::Type::FILENAME;
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    return typeDesc == *mx::Type::FILENAME;
 #else
-  return typeDesc == mx::Type::FILENAME;
+    return typeDesc == mx::Type::FILENAME;
 #endif
 }
 
 mx::TypeDesc getMxTypeDesc(const std::string& typeName)
 {
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION==38
-  const mx::TypeDesc* mxType = mx::TypeDesc::get(typeName);
-  if (mxType)
-    return *mxType;
-  return *mx::Type::NONE;
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    const mx::TypeDesc* mxType = mx::TypeDesc::get(typeName);
+    if (mxType)
+        return *mxType;
+    return *mx::Type::NONE;
 #else
-  return mx::TypeDesc::get(typeName);
+    return mx::TypeDesc::get(typeName);
 #endif
 }
 
 const MaterialX::TypeDesc getMxTypeDesc(const mx::ShaderPort* port)
 {
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION==38
-  return port->getType() ? *(port->getType()) : *mx::Type::NONE;
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    return port->getType() ? *(port->getType()) : *mx::Type::NONE;
 #else
-  return port->getType();
+    return port->getType();
+#endif
+}
+
+const std::string mxGetTypeString(const mx::TypeDesc mxType, mx::SyntaxPtr syntax)
+{
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    return (!mxTypeIsNone(mxType)) ? syntax->getTypeName(&mxType) : "vec2";
+#else
+    return (!mxTypeIsNone(mxType)) ? syntax->getTypeName(mxType) : "vec2";
 #endif
 }
 

@@ -637,10 +637,15 @@ _GetGlTFSurfaceMaterialTag(HdMaterialNode2 const& terminal)
 static const mx::TypeDesc
 _GetMxTypeDescription(std::string const& typeName)
 {
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION==38
-  // Add whatever is necessary for current codebase:
-  static const auto _typeLibrary =
-      std::map<std::string, const mx::TypeDesc*>{
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    using MxTypeDesc = const mx::TypeDesc*;
+#else
+    using MxTypeDesc = const mx::TypeDesc;
+#endif
+
+    // Add whatever is necessary for current codebase:
+    static const auto _typeLibrary =
+      std::map<std::string, MxTypeDesc>{
           {"float", mx::Type::FLOAT},
           {"color3", mx::Type::COLOR3},
           {"color4", mx::Type::COLOR4},
@@ -650,30 +655,18 @@ _GetMxTypeDescription(std::string const& typeName)
           {"surfaceshader", mx::Type::SURFACESHADER}
       };
 
-      const auto typeDescIt = _typeLibrary.find(typeName);
-      if (typeDescIt != _typeLibrary.end()) {
-        return *(typeDescIt->second);
-      }
-
-      return *mx::Type::NONE;
-#else
-    // Add whatever is necessary for current codebase:
-    static const auto _typeLibrary =
-    std::map<std::string, const mx::TypeDesc>{
-          {"float", mx::Type::FLOAT},
-          {"color3", mx::Type::COLOR3},
-          {"color4", mx::Type::COLOR4},
-          {"vector2", mx::Type::VECTOR2},
-          {"vector3", mx::Type::VECTOR3},
-          {"vector4", mx::Type::VECTOR4},
-          {"surfaceshader", mx::Type::SURFACESHADER}
-        };
-
     const auto typeDescIt = _typeLibrary.find(typeName);
     if (typeDescIt != _typeLibrary.end()) {
-        return typeDescIt->second;
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+      return *typeDescIt->second;
+#else
+      return typeDescIt->second;
+#endif
     }
 
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    return *mx::Type::NONE;
+#else
     return mx::Type::NONE;
 #endif
 }
