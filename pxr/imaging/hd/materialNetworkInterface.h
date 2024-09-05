@@ -39,7 +39,7 @@ public:
     /// initially introduced to track MaterialX document version.
     ///
     /// Similarly to GetNodeTypeInfoXXX() below, only getters are provided, as
-    /// we don't intent mutating this information.
+    /// we don't intent mutating this config data.
     virtual TfTokenVector
     GetMaterialConfigKeys() const = 0;
     virtual VtValue
