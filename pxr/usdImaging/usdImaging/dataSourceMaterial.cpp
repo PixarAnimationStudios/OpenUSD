@@ -800,7 +800,7 @@ _BuildMaterial(
 
 
 
-    // finally collect any 'info' on the Material prim
+    // finally collect any 'config' on the Material prim
     // Collect in to a VtDictionary to take advantage of
     // SetValueAtPath for nested namespaces in the attribute
     // names.

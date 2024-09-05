@@ -106,7 +106,7 @@ HdConvertToHdMaterialNetwork2(
         result.primvars = hdNetwork.primvars;
     }
 
-    // Transfer info dictionary
+    // Transfer config dictionary
     result.config = hdNetworkMap.config;
 
     return result;

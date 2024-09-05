@@ -379,7 +379,7 @@ UsdImagingMaterialAdapter::GetMaterialResource(UsdPrim const &prim,
             time);
     }
 
-    // finally collect any 'info' on the Material prim
+    // finally collect any 'config' on the Material prim
     VtDictionary configDict;
     for (const auto& prop : prim.GetPropertiesInNamespace("config")) {
       const auto attr = prop.As<UsdAttribute>();
