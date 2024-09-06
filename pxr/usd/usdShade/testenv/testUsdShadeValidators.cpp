@@ -43,7 +43,7 @@ TestUsdShadeValidators()
         UsdShadeValidatorNameTokens->shaderSdrCompliance,
         UsdShadeValidatorNameTokens->subsetMaterialBindFamilyName,
         UsdShadeValidatorNameTokens->subsetsMaterialBindFamily,
-        UsdShadeValidatorNameTokens->connectableValidator
+        UsdShadeValidatorNameTokens->encapsulationValidator
     };
 
     // This should be updated with every new validator added with the
@@ -417,7 +417,7 @@ TestUsdShadeEncapsulationRulesValidator()
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
     const UsdValidator *validator = registry.GetOrLoadValidatorByName(
-            UsdShadeValidatorNameTokens->connectableValidator);
+            UsdShadeValidatorNameTokens->encapsulationValidator);
     TF_AXIOM(validator);
 
     UsdStageRefPtr usdStage = UsdStage::CreateInMemory();

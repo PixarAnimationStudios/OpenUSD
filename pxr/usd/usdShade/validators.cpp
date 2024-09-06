@@ -32,7 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static
 UsdValidationErrorVector
-_ConnectableValidator(const UsdPrim& usdPrim)
+_EncapsulationValidator(const UsdPrim& usdPrim)
 {
     const UsdShadeConnectableAPI& connectable =
             UsdShadeConnectableAPI(usdPrim);
@@ -488,8 +488,8 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
         _SubsetsMaterialBindFamily);
 
     registry.RegisterPluginValidator(
-            UsdShadeValidatorNameTokens->connectableValidator,
-            _ConnectableValidator);
+            UsdShadeValidatorNameTokens->encapsulationValidator,
+            _EncapsulationValidator);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

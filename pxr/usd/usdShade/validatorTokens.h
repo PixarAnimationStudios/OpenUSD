@@ -17,7 +17,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define USD_SHADE_VALIDATOR_NAME_TOKENS \
-    ((connectableValidator, "usdShade:EncapsulationRulesValidator")) \
+    ((encapsulationValidator, "usdShade:EncapsulationRulesValidator")) \
     ((materialBindingApiAppliedValidator, "usdShade:MaterialBindingApiAppliedValidator")) \
     ((materialBindingRelationships, "usdShade:MaterialBindingRelationships")) \
     ((shaderSdrCompliance, "usdShade:ShaderSdrCompliance"))                   \
