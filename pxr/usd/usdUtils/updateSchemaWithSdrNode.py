@@ -481,23 +481,29 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
     if (schemaBaseProvidesConnectability or \
             schemaPropertyNSPrefixOverride is None or \
             _IsNSPrefixConnectableAPICompliant(schemaPropertyNSPrefixOverride)):
-        shaderIdAttrName = Sdf.Path.JoinIdentifier( \
-                [renderContext, sdrNode.GetContext(), 
-                    PropertyDefiningKeys.SHADER_ID])
-        shaderIdAttrSpec = Sdf.AttributeSpec(primSpec, shaderIdAttrName,
-                Sdf.ValueTypeNames.Token, Sdf.VariabilityUniform)
+        # We must add shaderId for all shaderNodes with the same identifier
+        # across all sourceTypes, so that we get appropriate
+        # renderContext:sourceType:shaderId attribute.
+        sdrRegistry = Sdr.Registry()
+        shaderNodesForShaderIdAttrs = [
+            node for node in sdrRegistry.GetShaderNodesByIdentifier(
+                sdrNode.GetIdentifier())]
+        for node in shaderNodesForShaderIdAttrs:
+            shaderIdAttrName = Sdf.Path.JoinIdentifier( \
+                    [renderContext, node.GetContext(), 
+                        PropertyDefiningKeys.SHADER_ID])
+            shaderIdAttrSpec = Sdf.AttributeSpec(primSpec, shaderIdAttrName,
+                    Sdf.ValueTypeNames.Token, Sdf.VariabilityUniform)
 
-        # Since users shouldn't need to be aware of shaderId attribute, we put 
-        # this in "Internal" displayGroup.
-        shaderIdAttrSpec.displayGroup = \
-                PropertyDefiningKeys.INTERNAL_DISPLAY_GROUP
+            # Since users shouldn't need to be aware of shaderId attribute, we 
+            # put this in "Internal" displayGroup.
+            shaderIdAttrSpec.displayGroup = \
+                    PropertyDefiningKeys.INTERNAL_DISPLAY_GROUP
 
-        # Use the identifier if explicitly provided, (it could be a shader node
-        # queried using an explicit path), else use sdrNode's registered 
-        # identifier.
-        nodeIdentifier = overrideIdentifier if overrideIdentifier else \
-                sdrNode.GetIdentifier()
-        shaderIdAttrSpec.default = nodeIdentifier
+            # We are iterating on sdrNodes which are guaranteed to be registered
+            # with sdrRegistry and it only makes sense to add shaderId for these
+            # shader nodes, so directly get the identifier from the node itself.
+            shaderIdAttrSpec.default = node.GetIdentifier()
 
     # Extra attrSpec
     schemaBasePrimDefinition = \

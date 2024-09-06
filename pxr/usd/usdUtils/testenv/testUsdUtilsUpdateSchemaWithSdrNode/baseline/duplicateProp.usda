@@ -17,9 +17,6 @@ class "TestDuplicatePropsAPI" (
                 uniform color mapping for gamma.
                 """
     )
-    uniform token myRenderContext:usda:shaderId = "TestDuplicatePropsAPI" (
-        displayGroup = "Internal"
-    )
     color3f outputs:resultRGB
 }
 
