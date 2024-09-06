@@ -2295,9 +2295,9 @@ class Camera "Camera" (
     \\section UsdGeom_CameraExposure Camera Exposure Model
 
     UsdGeomCamera models exposure by a camera in terms of exposure time, ISO,
-    f-number, and exposure compensation, mirroring the controls on a real camera.
+    f-stop, and exposure compensation, mirroring the controls on a real camera.
     These parameters are provided by \\ref UsdGeomCamera::GetExposureTimeAttr(),
-    \\ref UsdGeomCamera::GetExposureIsoAttr(), \\ref UsdGeomCamera::GetExposureFNumberAttr(), 
+    \\ref UsdGeomCamera::GetExposureIsoAttr(), \\ref UsdGeomCamera::GetExposureFStopAttr(), 
     and \\ref UsdGeomCamera::GetExposureAttr(), respectively. 
     \\ref UsdGeomCamera::GetExposureResponsivityAttr() provides an additional scaling
     factor to model the overall responsivity of the system, including response of 
