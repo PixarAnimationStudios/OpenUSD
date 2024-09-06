@@ -102,9 +102,9 @@ class SdfAssetPath;
 /// \section UsdGeom_CameraExposure Camera Exposure Model
 /// 
 /// UsdGeomCamera models exposure by a camera in terms of exposure time, ISO,
-/// f-number, and exposure compensation, mirroring the controls on a real camera.
+/// f-stop, and exposure compensation, mirroring the controls on a real camera.
 /// These parameters are provided by \ref UsdGeomCamera::GetExposureTimeAttr(),
-/// \ref UsdGeomCamera::GetExposureIsoAttr(), \ref UsdGeomCamera::GetExposureFNumberAttr(), 
+/// \ref UsdGeomCamera::GetExposureIsoAttr(), \ref UsdGeomCamera::GetExposureFStopAttr(), 
 /// and \ref UsdGeomCamera::GetExposureAttr(), respectively. 
 /// \ref UsdGeomCamera::GetExposureResponsivityAttr() provides an additional scaling
 /// factor to model the overall responsivity of the system, including response of 
@@ -125,6 +125,11 @@ class SdfAssetPath;
 /// in _lux-second_. The second, `exposureResponsivity` 
 /// (in _inverse lux-second_), converts from photometric exposure at the sensor, in _lux-second_,
 /// to a unitless output signal.
+/// 
+/// For a thorough treatment of this topic, see https://github.com/wetadigital/physlight/blob/main/docs/physLight-v1.3-1bdb6ec3-20230805.pdf,
+/// Section 2.2. Note that we are essentially implementing Equation 2.7, but are 
+/// choosing C such that it exactly cancels with the factor of pi in the numerator,
+/// replacing it with a responsivity factor that defaults to 1.
 /// 
 /// Renderers should simply multiply the brightness of the image by the exposure 
 /// scale. The default values for the exposure-related attributes combine to give
