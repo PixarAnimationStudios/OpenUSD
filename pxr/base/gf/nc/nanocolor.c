@@ -587,7 +587,7 @@ NcM33f NcGetXYZToRGBMatrix(const NcColorSpace* cs) {
     return NcM3ffInvert(NcGetRGBToXYZMatrix(cs));
 }
 
-NcM33f GetRGBtoRGBMatrix(const NcColorSpace* src, const NcColorSpace* dst) {
+static NcM33f GetRGBtoRGBMatrix(const NcColorSpace* src, const NcColorSpace* dst) {
     NcM33f t = NcM33fMultiply(NcM3ffInvert(NcGetRGBToXYZMatrix(src)),
                                  NcGetXYZToRGBMatrix(dst));
     return t;
@@ -803,7 +803,7 @@ void NcTransformColorsWithAlpha(const NcColorSpace* dst, const NcColorSpace* src
     }
 }
 
-NcRGB NcNormalizeLuminance(const NcColorSpace* cs, NcRGB rgb, float luminance) {
+static NcRGB NcNormalizeLuminance(const NcColorSpace* cs, NcRGB rgb, float luminance) {
     if (!cs)
         return rgb;
     
@@ -945,7 +945,7 @@ typedef struct {
     float v;
 } NcYuvPrime;
 
-NcYxy _NcYuv2Yxy(NcYuvPrime c) {
+static NcYxy _NcYuv2Yxy(NcYuvPrime c) {
     float d = 6.f * c.u - 16.f * c.v + 12.f;
     return (NcYxy) {
         c.Y,
@@ -969,7 +969,7 @@ NcYxy NcKelvinToYxy(float T, float luminance) {
     return _NcYuv2Yxy((NcYuvPrime) {luminance, u, 3.f * v / 2.f });
 }
 
-NcYxy NcNormalizeYxy(NcYxy c) {
+static NcYxy NcNormalizeYxy(NcYxy c) {
     return (NcYxy) {
         c.Y,
         c.Y * c.x / c.y,

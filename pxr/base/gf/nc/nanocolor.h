@@ -10,15 +10,14 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "pxr/pxr.h"
+
 // NCNAMESPACE is allows the introduction of a namespace to the symbols so that 
 // multiple libraries can include the nanocolor library without symbol 
 // conflicts. The default is nc_1_0_ to indicate the 1.0 version of Nanocolor.
 //
-// pxr: note that the PXR namespace macros are in pxr/pxr.h which
-// is a C++ only header; so the generated namespace prefixes can't be
-// used here.
 #ifndef NCNAMESPACE
-#define NCNAMESPACE pxr_nc_1_0_
+#define NCNAMESPACE PXR_NS
 #endif
 
 // The NCCONCAT macro is used to apply a namespace to the symbols in the public

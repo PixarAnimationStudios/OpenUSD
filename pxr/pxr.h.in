@@ -40,12 +40,16 @@
 #define PXR_INTERNAL_NS @PXR_INTERNAL_NAMESPACE@__pxrReserved__
 #define PXR_NS_GLOBAL ::PXR_NS
 
+#ifdef __cplusplus
+
 namespace PXR_INTERNAL_NS { }
 
 // The root level namespace for all source in the USD distribution.
 namespace PXR_NS {
     using namespace PXR_INTERNAL_NS;
 }
+
+#endif
 
 #define PXR_NAMESPACE_OPEN_SCOPE   namespace PXR_INTERNAL_NS {
 #define PXR_NAMESPACE_CLOSE_SCOPE  }  
