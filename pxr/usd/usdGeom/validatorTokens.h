@@ -25,6 +25,12 @@ PXR_NAMESPACE_OPEN_SCOPE
     (UsdGeomSubset)                                                 \
     (UsdGeomValidators)
 
+#define USD_GEOM_VALIDATION_ERROR_NAME_TOKENS                     \
+    ((missingMetersPerUnitMetadata, "MissingMetersPerUnitMetadata"))    \
+    ((missingUpAxisMetadata, "MissingUpAxisMetadata"))                  \
+    ((invalidSubsetFamily,  "InvalidSubsetFamily"))                     \
+    ((notImageableSubsetParent, "NotImageableSubsetParent"))
+
 /// \def USD_GEOM_VALIDATOR_NAME_TOKENS
 /// Tokens representing validator names. Note that for plugin provided
 /// validators, the names must be prefixed by usdGeom:, which is the name of
@@ -39,6 +45,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// validator.
     TF_DECLARE_PUBLIC_TOKENS(UsdGeomValidatorKeywordTokens, USDGEOM_API,
                              USD_GEOM_VALIDATOR_KEYWORD_TOKENS);
+
+/// \def USD_GEOM_VALIDATION_ERROR_NAME_TOKENS
+/// Tokens representing validation error identifier.
+TF_DECLARE_PUBLIC_TOKENS(UsdGeomValidationErrorNameTokens, USDGEOM_API, 
+                         USD_GEOM_VALIDATION_ERROR_NAME_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

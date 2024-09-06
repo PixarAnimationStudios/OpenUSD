@@ -55,16 +55,17 @@ _EncapsulationValidator(const UsdPrim& usdPrim)
         // encapsulation of connectable prims under a Container-type
         // connectable prim.
         errors.emplace_back(
-                UsdValidationErrorType::Error,
-                UsdValidationErrorSites{
-                        UsdValidationErrorSite(usdPrim.GetStage(),
-                                                usdPrim.GetPath())
-                },
-                TfStringPrintf("Connectable %s <%s> cannot reside "
-                                "under a non-Container Connectable %s",
-                                usdPrim.GetTypeName().GetText(),
-                                usdPrim.GetPath().GetText(),
-                                parentPrim.GetTypeName().GetText()));
+            UsdShadeValidationErrorNameTokens->connectableInNonContainer,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites{
+                    UsdValidationErrorSite(usdPrim.GetStage(),
+                                           usdPrim.GetPath())
+            },
+            TfStringPrintf("Connectable %s <%s> cannot reside "
+                           "under a non-Container Connectable %s",
+                           usdPrim.GetTypeName().GetText(),
+                           usdPrim.GetPath().GetText(),
+                           parentPrim.GetTypeName().GetText()));
     }
     else if (!parentConnectable) {
         std::function<void(const UsdPrim&)> _VerifyValidAncestor =
@@ -81,6 +82,8 @@ _EncapsulationValidator(const UsdPrim& usdPrim)
                 // infraction, using Scope or other grouping prims inside
                 // a Container like a Material
                 errors.emplace_back(
+                    UsdShadeValidationErrorNameTokens->
+                        invalidConnectableHierarchy,
                     UsdValidationErrorType::Error,
                     UsdValidationErrorSites {
                         UsdValidationErrorSite(usdPrim.GetStage(),
@@ -127,14 +130,15 @@ _MaterialBindingApiAppliedValidator(const UsdPrim &usdPrim)
     if (!usdPrim.HasAPI<UsdShadeMaterialBindingAPI>() &&
         hasMaterialBindingRelationship(usdPrim)) {
         errors.emplace_back(
-                UsdValidationErrorType::Error,
-                UsdValidationErrorSites{
-                        UsdValidationErrorSite(usdPrim.GetStage(),
-                                               usdPrim.GetPath())
-                },
-                TfStringPrintf("Found material bindings but no " \
-                    "MaterialBindingAPI applied on the prim <%s>.",
-                               usdPrim.GetPath().GetText()));
+            UsdShadeValidationErrorNameTokens->missingMaterialBindingAPI,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites{
+                    UsdValidationErrorSite(usdPrim.GetStage(),
+                                           usdPrim.GetPath())
+            },
+            TfStringPrintf("Found material bindings but no MaterialBindingAPI "
+                           "applied on the prim <%s>.", 
+                           usdPrim.GetPath().GetText()));
     }
 
     return errors;
@@ -170,6 +174,7 @@ _MaterialBindingRelationships(const UsdPrim& usdPrim)
         };
 
         errors.emplace_back(
+            UsdShadeValidationErrorNameTokens->materialBindingPropNotARel,
             UsdValidationErrorType::Error,
             propertyErrorSites,
             TfStringPrintf(
@@ -207,12 +212,12 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
             UsdValidationErrorSite(
                 usdPrim.GetStage(), 
                 shader.GetImplementationSourceAttr().GetPath()) };
-        return {UsdValidationError(UsdValidationErrorType::Error, 
-                            implSourceErrorSite,
-                            TfStringPrintf("Shader <%s> has invalid "
-                                           "implementation source '%s'.", 
-                                           usdPrim.GetPath().GetText(), 
-                                           implSource.GetText()))};
+        return {UsdValidationError(
+            UsdShadeValidationErrorNameTokens->invalidImplSource,
+            UsdValidationErrorType::Error, implSourceErrorSite,
+            TfStringPrintf("Shader <%s> has invalid implementation source "
+                           "'%s'.", usdPrim.GetPath().GetText(), 
+                           implSource.GetText()))};
     }
 
     const std::vector<std::string> sourceTypes = shader.GetSourceTypes();
@@ -221,6 +226,7 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
             UsdValidationErrorSite(usdPrim.GetStage(), 
                                    usdPrim.GetPath()) };
         return {UsdValidationError(
+            UsdShadeValidationErrorNameTokens->missingSourceType,
             UsdValidationErrorType::Error, 
             primErrorSite, 
             TfStringPrintf("Shader <%s> has no sourceType.", 
@@ -249,6 +255,8 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
                     UsdValidationErrorSite(usdPrim.GetStage(), 
                                            shader.GetIdAttr().GetPath()) };
                 return {UsdValidationError(
+                    UsdShadeValidationErrorNameTokens->
+                        missingShaderIdInRegistry,
                     UsdValidationErrorType::Error,
                     shaderIdErrorSite,
                     TfStringPrintf("shaderId '%s' specified on shader prim "
@@ -289,6 +297,8 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
                                                  sourceTypeProp.GetPath());
                 }
                 errors.emplace_back(
+                    UsdShadeValidationErrorNameTokens->
+                        missingSourceTypeInRegistry,
                     UsdValidationErrorType::Error,
                     sourceTypeSites,
                     TfStringPrintf("sourceType '%s' specified on shader prim "
@@ -310,6 +320,8 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
                 shaderNames.push_back(shaderName.GetString());
             }
             errors.emplace_back(
+                UsdShadeValidationErrorNameTokens->
+                    incompatShaderPropertyWarning,
                 UsdValidationErrorType::Warn, sdrWarnSite,
                 TfStringPrintf("Shader nodes '%s' have incompatible property "
                                "'%s'.", TfStringJoin(shaderNames).c_str(), 
@@ -341,6 +353,7 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
                                                input.GetAttr().GetPath())
                     };
                 errors.emplace_back(
+                    UsdShadeValidationErrorNameTokens->mismatchPropertyType,
                     UsdValidationErrorType::Error,
                     inputErrorSite,
                     TfStringPrintf("Incorrect type for %s. "
@@ -397,6 +410,7 @@ _SubsetMaterialBindFamilyName(const UsdPrim& usdPrim)
 
     return {
         UsdValidationError(
+            UsdShadeValidationErrorNameTokens->missingFamilyNameOnGeomSubset,
             UsdValidationErrorType::Error,
             primErrorSites,
             TfStringPrintf(
@@ -446,6 +460,7 @@ _SubsetsMaterialBindFamily(const UsdPrim& usdPrim)
         };
 
         errors.emplace_back(
+            UsdShadeValidationErrorNameTokens->invalidFamilyType,
             UsdValidationErrorType::Error,
             primErrorSites,
             TfStringPrintf(

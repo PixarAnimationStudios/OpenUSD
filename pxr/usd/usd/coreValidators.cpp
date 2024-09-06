@@ -22,9 +22,11 @@ _GetCompositionErrors(const UsdStagePtr &usdStage)
     for (const PcpErrorBasePtr &pcpError : pcpErrors) {
         UsdValidationErrorSites errorSites = {
                 UsdValidationErrorSite(usdStage, pcpError->rootSite.path)};
-        errors.emplace_back(UsdValidationErrorType::Error,
-                            std::move(errorSites),
-                            pcpError->ToString());
+        errors.emplace_back(
+            UsdValidationErrorNameTokens->compositionError,
+            UsdValidationErrorType::Error,
+            std::move(errorSites),
+            pcpError->ToString());
     }
     return errors;
 }
@@ -35,9 +37,14 @@ _GetStageMetadataErrors(const UsdStagePtr &usdStage)
 {
     UsdValidationErrorVector errors;
     if (!usdStage->GetDefaultPrim()) {
-        errors.emplace_back(UsdValidationErrorType::Error,
-                            UsdValidationErrorSites{UsdValidationErrorSite(usdStage, SdfPath("/"))},
-                            TfStringPrintf("Stage with root layer <%s> has an invalid or missing defaultPrim.", usdStage->GetRootLayer()->GetIdentifier().c_str()));
+        errors.emplace_back(
+            UsdValidationErrorNameTokens->missingDefaultPrim,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites{UsdValidationErrorSite(
+                usdStage, SdfPath::AbsoluteRootPath())}, 
+            TfStringPrintf("Stage with root layer <%s> has an invalid or "
+                           "missing defaultPrim.", 
+                           usdStage->GetRootLayer()->GetIdentifier().c_str()));
     }
 
     return errors;
@@ -49,7 +56,7 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     registry.RegisterPluginValidator(
         UsdValidatorNameTokens->compositionErrorTest, _GetCompositionErrors);
     registry.RegisterPluginValidator(
-            UsdValidatorNameTokens->stageMetadataChecker, _GetStageMetadataErrors);
+        UsdValidatorNameTokens->stageMetadataChecker, _GetStageMetadataErrors);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

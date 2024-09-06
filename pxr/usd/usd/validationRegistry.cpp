@@ -133,10 +133,10 @@ UsdValidationRegistry::_PopulateMetadataFromPlugInfo()
             metadata.pluginPtr = plugin;
             // prefix pluginName to validatorName to make these plugin
             // validator's metadata.name unique
-            metadata.name = TfToken(TfStringJoin(
-                std::vector<std::string>{pluginName.GetString(), 
-                                         validatorName.GetString()},
-                _tokens->PluginValidatorNameDelimiter.GetText()));
+            metadata.name = TfToken(
+                pluginName.GetString() + 
+                _tokens->PluginValidatorNameDelimiter.GetString() +
+                validatorName.GetString());
             validatorNames.push_back(metadata.name);
 
             metadata.doc = doc->GetString();

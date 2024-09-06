@@ -27,10 +27,12 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
         const UsdValidateStageTaskFn stageTaskFn = [](
             const UsdStagePtr & usdStage)
         {
+            const TfToken validationErrorId("ErrorId");
             return UsdValidationErrorVector{
-                    UsdValidationError(UsdValidationErrorType::Error, 
-                                      {UsdValidationErrorSite(usdStage, 
-                                                              SdfPath("/"))},
+                    UsdValidationError(validationErrorId, 
+                                       UsdValidationErrorType::Error, 
+                                      {UsdValidationErrorSite(
+                                        usdStage, SdfPath::AbsoluteRootPath())},
                                       "This is an error on the stage")};
         };
 
@@ -133,6 +135,8 @@ void TestUsdValidationRegistry()
         const UsdValidationErrorVector errors = validator->Validate(usdStage);
         TF_AXIOM(errors.size() == 1);
         TF_AXIOM(!errors[0].HasNoError());
+        TF_AXIOM(errors[0].GetIdentifier() == 
+                 TfToken("testValidationPlugin:TestValidator1.ErrorId"));
         TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
         TF_AXIOM(errors[0].GetValidator() == validator);
         const UsdValidationErrorSites &errorSites = errors[0].GetSites();

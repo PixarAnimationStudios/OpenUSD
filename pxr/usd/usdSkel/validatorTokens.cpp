@@ -13,5 +13,7 @@ TF_DEFINE_PUBLIC_TOKENS(UsdSkelValidatorNameTokens,
                         USD_SKEL_VALIDATOR_NAME_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(UsdSkelValidatorKeywordTokens,
                         USD_SKEL_VALIDATOR_KEYWORD_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(UsdSkelValidationErrorNameTokens,
+                        USD_SKEL_VALIDATION_ERROR_NAME_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE

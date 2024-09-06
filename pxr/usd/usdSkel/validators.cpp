@@ -47,6 +47,7 @@ _SkelBindingApiAppliedValidator(const UsdPrim &usdPrim)
                 continue;
             }
             errors.emplace_back(
+                    UsdSkelValidationErrorNameTokens->missingSkelBindingAPI,
                     UsdValidationErrorType::Error,
                     UsdValidationErrorSites{
                             UsdValidationErrorSite(usdPrim.GetStage(),
@@ -84,6 +85,7 @@ _SkelBindingApiValidator(const UsdPrim &usdPrim)
             }
         }
         errors.emplace_back(
+                UsdSkelValidationErrorNameTokens->invalidSkelBindingAPIApply,
                 UsdValidationErrorType::Error,
                 UsdValidationErrorSites{
                         UsdValidationErrorSite(usdPrim.GetStage(),
