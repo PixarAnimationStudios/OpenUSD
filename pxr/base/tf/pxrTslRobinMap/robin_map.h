@@ -102,8 +102,8 @@ class robin_map {
    public:
     using key_type = Key;
 
-    const key_type& operator()(const std::pair<Key, T>& key_value) const
-        noexcept {
+    const key_type& operator()(
+        const std::pair<Key, T>& key_value) const noexcept {
       return key_value.first;
     }
 
@@ -116,8 +116,8 @@ class robin_map {
    public:
     using value_type = T;
 
-    const value_type& operator()(const std::pair<Key, T>& key_value) const
-        noexcept {
+    const value_type& operator()(
+        const std::pair<Key, T>& key_value) const noexcept {
       return key_value.second;
     }
 
@@ -343,6 +343,14 @@ class robin_map {
     return m_ht.erase(first, last);
   }
   size_type erase(const key_type& key) { return m_ht.erase(key); }
+
+  /**
+   * Erase the element at position 'pos'. In contrast to the regular erase()
+   * function, erase_fast() does not return an iterator. This allows it to be
+   * faster especially in hash tables with a low load factor, where finding the
+   * next nonempty bucket would be costly.
+   */
+  void erase_fast(iterator pos) { return m_ht.erase_fast(pos); }
 
   /**
    * Use the hash value 'precalculated_hash' instead of hashing the key. The
