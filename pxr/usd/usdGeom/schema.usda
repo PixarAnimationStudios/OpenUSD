@@ -2319,6 +2319,11 @@ class Camera "Camera" (
     (in _inverse lux-second_), converts from photometric exposure at the sensor, in _lux-second_,
     to a unitless output signal.
 
+    For a thorough treatment of this topic, see https://github.com/wetadigital/physlight/blob/main/docs/physLight-v1.3-1bdb6ec3-20230805.pdf,
+    Section 2.2. Note that we are essentially implementing Equation 2.7, but are 
+    adding in ISO and responsivity factors and choosing C such that it exactly 
+    cancels with the factor of pi in the numerator. 
+
     Renderers should simply multiply the brightness of the image by the exposure 
     scale. The default values for the exposure-related attributes combine to give
     a scale of 1.0.
