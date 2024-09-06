@@ -64,10 +64,9 @@ TF_DECLARE_REF_PTRS(HdsiLightLinkingSceneIndex);
 ///   c'tor argument by providing a HdTokenArrayDataSourceHandle for
 ///   \p geometryPrimTypes.
 ///
-/// \note Current support does *not* handle instanced prims (be it natively
-///       instanced, or prototype prims under point instancers) due to
-///       limitations in the HdCollectionExpressionEvaluator.
-///       This will be addressed in a future change.
+/// \note Current support for instancing is limited to linking non-nested
+///       instance prims. Linking to instance proxy prims, nested instances and
+///       point instancers is not yet supported.
 ///
 /// \note For legacy scene delegates that implement light linking (e.g.
 ///       UsdImagingDelegate) and don't transport the light linking collections,
