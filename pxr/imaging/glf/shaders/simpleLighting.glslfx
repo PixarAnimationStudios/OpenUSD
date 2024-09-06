@@ -446,9 +446,11 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 #else
             float shadow = 1.0;
 #endif
+
+            const float PI = 3.1415;
             result.ambient += atten * light.ambient.rgb;
-            result.diffuse += atten * shadow * d * light.diffuse.rgb;
-            result.specular += atten * shadow * s * light.specular.rgb;
+            result.diffuse += atten * shadow * d * light.diffuse.rgb / PI;
+            result.specular += atten * shadow * s * light.specular.rgb / PI;
         }
     }
 
