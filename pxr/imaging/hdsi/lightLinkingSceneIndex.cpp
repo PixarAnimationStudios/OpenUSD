@@ -207,7 +207,6 @@ public:
     }
 
     /// Returns the categories that \p primPath belongs to.
-    /// XXX Support is currently limited to non-instanced geometry prims.
     ///
     TfTokenVector
     ComputeCategoriesForPrimPath(
@@ -488,7 +487,7 @@ private:
             HdCollectionExpressionEvaluator::MatchAll;
 
         SdfPathVector resultVec;
-        // XXX This doesn't support instancing.
+        // XXX This doesn't support instance proxy traversal.
         eval.PopulateMatches(
             SdfPath::AbsoluteRootPath(), matchKind, &resultVec);
         
@@ -679,7 +678,6 @@ _BuildCategoriesDataSource(
 // It does not support linking to
 // - instance proxy prims
 // - nested instances
-// - point instancers
 //
 HdContainerDataSourceHandle
 _BuildInstanceCategoriesDataSource(
@@ -715,8 +713,9 @@ _BuildInstanceCategoriesDataSource(
         // support this because the prototypes may exist anywhere in the
         // scene namespace.
         //
-        // A follow-up change will add support for linking to point instancers
-        // using the categories data source (rather than instanceCategories).
+        // Linking to point instancers uses the categories data source
+        // (rather than instanceCategories). The categories returned apply
+        // to all its instances.
         //
         return nullptr;
     }
@@ -863,8 +862,17 @@ public:
     TfTokenVector GetNames() override
     {
         TfTokenVector names = _inputPrimDs->GetNames();
+        // instanceCategories is relevant for (hydra) instancer prims that 
+        // implement native instancing USD semantics.
         _AddIfAbsent(
             HdInstanceCategoriesSchemaTokens->instanceCategories, &names);
+
+        // categories is relevant for (hydra) instancer prims that correspond to
+        // point instancer prims; the categories returned apply to all its
+        // instances.
+        _AddIfAbsent(
+            HdCategoriesSchemaTokens->categories, &names);
+
         _AddIfAbsent(
             HdDependenciesSchemaTokens->__dependencies, &names);
         return names;
@@ -878,6 +886,25 @@ public:
                     _cache, _primPath, _inputPrimDs)) {
 
                 return instanceCategoriesContainer;
+            }
+        }
+
+        if (name == HdCategoriesSchemaTokens->categories) {
+            const HdInstancerTopologySchema topologySchema =
+                HdInstancerTopologySchema::GetFromParent(_inputPrimDs);
+            
+            const HdPathArrayDataSourceHandle instancePathsDs =
+                topologySchema.GetInstanceLocations();
+    
+            const bool isPointInstancer =
+                !instancePathsDs || instancePathsDs->GetTypedValue(0.0).empty();
+
+            if (isPointInstancer) {
+                if (HdContainerDataSourceHandle categoriesContainer =
+                    _BuildCategoriesDataSource(_cache, _primPath)) {
+
+                    return categoriesContainer;
+                }
             }
         }
 

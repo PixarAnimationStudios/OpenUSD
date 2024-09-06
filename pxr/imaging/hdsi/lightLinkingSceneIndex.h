@@ -65,8 +65,9 @@ TF_DECLARE_REF_PTRS(HdsiLightLinkingSceneIndex);
 ///   \p geometryPrimTypes.
 ///
 /// \note Current support for instancing is limited to linking non-nested
-///       instance prims. Linking to instance proxy prims, nested instances and
-///       point instancers is not yet supported.
+///       instance prims and non-nested point instancer prims.
+//        Linking to instance proxy prims, nested instances and
+///       nested point instancers is not yet supported.
 ///
 /// \note For legacy scene delegates that implement light linking (e.g.
 ///       UsdImagingDelegate) and don't transport the light linking collections,
