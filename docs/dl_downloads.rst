@@ -4,6 +4,11 @@
 Downloads and Videos
 ====================
 
+SIGGRAPH 2024 Notes
+===================
+
+| `SIGGRAPH 2024 USD, Hydra, and OpenSubdiv Birds of a Feather Notes <https://openusd.org/files/BOFSiggraph2024.pdf>`__ 
+
 SIGGRAPH 2023 Notes
 ===================
 
