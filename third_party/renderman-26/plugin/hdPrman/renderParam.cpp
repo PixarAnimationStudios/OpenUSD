@@ -565,18 +565,21 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
         RtUString name;
         if (hdInterp == HdInterpolationConstant) {
             static const char *userAttrPrefix = "user:";
+            static const char *riPrefix = "ri:";
             static const char *riAttrPrefix = "ri:attributes:";
             static const char *primvarsPrefix = "primvars:";
-            bool hasUserPrefix =
+            const bool hasUserPrefix =
                 TfStringStartsWith(primvar.name.GetString(), userAttrPrefix);
+            const bool hasRiPrefix =
+                TfStringStartsWith(primvar.name.GetString(), riPrefix);
             bool hasRiAttributesPrefix =
                 TfStringStartsWith(primvar.name.GetString(), riAttrPrefix);
-            const bool hasPrimvarRiAttributesPrefix =
+            const bool hasPrimvarsPrefix =
                     TfStringStartsWith(primvar.name.GetString(),primvarsPrefix);
 
             // Strip "primvars:" from the name
             TfToken primvarName = primvar.name;
-            if (hasPrimvarRiAttributesPrefix) {
+            if (hasPrimvarsPrefix) {
                 const char *strippedName = primvar.name.GetText();
                 strippedName += strlen(primvarsPrefix);
                 primvarName = TfToken(strippedName);
@@ -623,16 +626,33 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                 const char *strippedName = primvarName.GetText();
                 strippedName += strlen(riAttrPrefix);
                 name = _GetPrmanPrimvarName(TfToken(strippedName), detail);
+            } else if (hasRiPrefix) {
+                // For example, coming from USD:
+                // "primvars:ri:dice:micropolygonlength".
+                // See the USD PxrPrimvarsAPI schema for more examples.
+                const char *strippedName = primvarName.GetText();
+                strippedName += strlen(riPrefix);
+                name = _GetPrmanPrimvarName(TfToken(strippedName), detail);
             } else {
                 name = _GetPrmanPrimvarName(primvarName, detail);
             }
 
-            // ri:attributes and primvars:ri:attributes primvars end up having
-            // the same name, potentially causing collisions in the primvar list.
+            // As HdPrman and USD have evolved over time, there have been
+            // multiple representations allowed for RenderMan primvars:
+            //
+            //   1. "ri:FOO"
+            //   2. "primvars:ri:attributes:FOO"
+            //   3. "ri:atrtibutes:FOO"
+            //
+            // Warn if we encounter the same primvar multiple times:
+            if (params.HasParam(name)) {
+                TF_WARN("<%s> provided multiple representations of the primvar "
+                        "'%s'", id.GetText(), name.CStr());
+            }
             // When both ri:attributes and primvar:ri:attributes versions of 
             // the same primvars exist, the primvar:ri:attributes version should
             // win out.
-            if (hasRiAttributesPrefix && !hasPrimvarRiAttributesPrefix &&
+            if (hasRiAttributesPrefix && !hasPrimvarsPrefix &&
                 params.HasParam(name)) {
                 continue;
             }
