@@ -180,12 +180,10 @@ class TestUsdValidationError(unittest.TestCase):
             error.GetIdentifier();
         except Tf.ErrorException as e:
             expectedErrorStr = \
-            "\n\tError in 'UsdValidationError::GetIdentifier' at line 62 in " \
-            "file pxr/usd/usd/validationError.cpp : 'Validator not set on " \
-            "ValidationError. Possibly this validation error was not created " \
-            "via a call to UsdValidator::Validate(), which is responsible to " \
-            "set the validator on the error.'"
-            self.assertEqual(str(e), expectedErrorStr)
+            "Validator not set on ValidationError. Possibly this validation " \
+            "error was not created via a call to UsdValidator::Validate(), " \
+            "which is responsible to set the validator on the error."
+            self.assertTrue(expectedErrorStr in str(e))
 
     def test_CreateDefaultValidationError(self):
         validationError = Usd.ValidationError()
