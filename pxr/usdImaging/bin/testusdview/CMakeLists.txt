@@ -1149,6 +1149,10 @@ if(OPENCOLORIO_FOUND AND ${PXR_BUILD_OPENCOLORIO_PLUGIN})
             colorCorrectionOCIO_linear.png
             colorCorrectionSRGB.png
             colorCorrectionDisabled.png
+        FAIL 0.02
+        FAIL_PERCENT 0.01
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         ENV
             OCIO=test.ocio
