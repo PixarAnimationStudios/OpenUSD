@@ -411,7 +411,7 @@ void TestUsdGeomGPrimDescendantValidator()
     const UsdPrim innerCubePrim = innerCube.GetPrim();
 
     // Verify the correct boundable error occurs
-    UsdValidationErrorVector errors = validator->Validate(topCubePrim);
+    errors = validator->Validate(topCubePrim);
     TF_AXIOM(errors.size() == 1u);
     UsdValidationError error = errors[0u];
     TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);

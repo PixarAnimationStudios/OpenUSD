@@ -187,6 +187,7 @@ _GetGPrimDescendantErrors(const UsdPrim& usdPrim)
             }
 
             errors.emplace_back(
+                    UsdGeomValidationErrorNameTokens->invalidGPrimDescendant,
                     UsdValidationErrorType::Error,
                     UsdValidationErrorSites{
                             UsdValidationErrorSite(usdPrim.GetStage(),
