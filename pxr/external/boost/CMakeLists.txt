@@ -3,7 +3,7 @@ set(PXR_PACKAGE boost)
 
 # This subdirectory currently only contains Python-related
 # libraries, so skip it entirely if Python support is disabled.
-if (NOT PXR_ENABLE_PYTHON_SUPPORT OR NOT TARGET python_modules)
+if (NOT PXR_ENABLE_PYTHON_SUPPORT AND NOT TARGET python_modules)
     return()
 endif()
 
