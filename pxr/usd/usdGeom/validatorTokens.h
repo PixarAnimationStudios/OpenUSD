@@ -30,8 +30,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((missingMetersPerUnitMetadata, "MissingMetersPerUnitMetadata"))    \
     ((missingUpAxisMetadata, "MissingUpAxisMetadata"))                  \
     ((invalidSubsetFamily,  "InvalidSubsetFamily"))                     \
-    ((notImageableSubsetParent, "NotImageableSubsetParent"))
-
+    ((notImageableSubsetParent, "NotImageableSubsetParent"))            \
+    ((invalidGPrimDescendant, "InvalidGPrimDescendant"))
 /// \def USD_GEOM_VALIDATOR_NAME_TOKENS
 /// Tokens representing validator names. Note that for plugin provided
 /// validators, the names must be prefixed by usdGeom:, which is the name of
