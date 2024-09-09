@@ -9,7 +9,7 @@
 #include "pxr/pxr.h"
 #include "glPlatformContextDarwin.h"
 
-#if defined(PXR_OPENGL_SUPPORT_ENABLED)
+#if defined(PXR_GL_SUPPORT_ENABLED)
 #ifdef ARCH_OS_OSX
 #import <AppKit/NSOpenGL.h>
 typedef NSOpenGLContext NSGLContext;
@@ -27,7 +27,7 @@ class GarchNSGLContextState::Detail
 {
 public:
     Detail() {
-#if defined(PXR_OPENGL_SUPPORT_ENABLED)
+#if defined(PXR_GL_SUPPORT_ENABLED)
         context = [NSGLContext currentContext];
 #else
         context = nil;
@@ -82,7 +82,7 @@ GarchNSGLContextState::IsValid() const
 void
 GarchNSGLContextState::MakeCurrent()
 {
-#if defined(PXR_OPENGL_SUPPORT_ENABLED)
+#if defined(PXR_GL_SUPPORT_ENABLED)
 #if defined(ARCH_OS_IPHONE)
     [EAGLContext setCurrentContext:_detail->context];
 #else
@@ -95,7 +95,7 @@ GarchNSGLContextState::MakeCurrent()
 void
 GarchNSGLContextState::DoneCurrent()
 {
-#if defined(PXR_OPENGL_SUPPORT_ENABLED)
+#if defined(PXR_GL_SUPPORT_ENABLED)
 #if defined(ARCH_OS_IPHONE)
     [EAGLContext setCurrentContext:nil];
 #else

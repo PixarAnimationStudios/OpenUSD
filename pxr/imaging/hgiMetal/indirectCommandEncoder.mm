@@ -115,8 +115,10 @@ HgiMetalIndirectCommandEncoder::HgiMetalIndirectCommandEncoder(Hgi* hgi)
 }
 
 HgiMetalIndirectCommandEncoder::~HgiMetalIndirectCommandEncoder() {
+#if !__has_feature(objc_arc)
     [_triangleTessFactors release];
     [_quadTessFactors release];
+#endif // !__has_feature(objc_arc)
 }
 
 std::string
