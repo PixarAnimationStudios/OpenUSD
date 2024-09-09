@@ -14,7 +14,7 @@
 #include "pxr/base/tf/pyExceptionState.h"
 #include "pxr/base/tf/pyInterpreter.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 #include <iostream>
 #include <string>
 
@@ -71,13 +71,13 @@ static void TestInvokeAndExtract_NoArgs()
 
 static void TestInvokeAndReturn_NoArgs()
 {
-    boost::python::object result;
+    pxr_boost::python::object result;
     const bool ok = TfPyInvokeAndReturn(
         "pxr.Tf.testenv.testTfPyInvoke_callees",
         "_ReturnInt",
         &result);
     TF_AXIOM(ok == true);
-    TF_AXIOM(boost::python::extract<double>(result) == 42);
+    TF_AXIOM(pxr_boost::python::extract<double>(result) == 42);
 }
 
 static void TestInvoke_Simple()

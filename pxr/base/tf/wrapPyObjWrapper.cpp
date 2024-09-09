@@ -9,11 +9,11 @@
 
 #include "pxr/base/tf/pyObjWrapper.h"
 
-#include <boost/python.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -21,7 +21,7 @@ struct Tf_PyObjWrapperFromPython {
     Tf_PyObjWrapperFromPython() {
         converter::registry::
             push_back(&_convertible, &_construct,
-                      boost::python::type_id<TfPyObjWrapper>());
+                      pxr_boost::python::type_id<TfPyObjWrapper>());
     }
 
 private:
@@ -66,7 +66,7 @@ _RoundTripWrapperCallTest(TfPyObjWrapper const &wrapper)
 static TfPyObjWrapper
 _RoundTripWrapperIndexTest(TfPyObjWrapper const &wrapper, int index)
 {
-    return boost::python::object(wrapper[index]);
+    return pxr_boost::python::object(wrapper[index]);
 }
 
 } // anonymous namespace 

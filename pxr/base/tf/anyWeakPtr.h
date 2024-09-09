@@ -138,13 +138,13 @@ public:
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     // This grants friend access to a function in the wrapper file for this
     // class.  This lets the wrapper reach down into an AnyWeakPtr to get a
-    // boost::python wrapped object corresponding to the held type.  This
+    // pxr_boost::python wrapped object corresponding to the held type.  This
     // facility is necessary to get the python API we want.
-    friend boost::python::api::object
+    friend pxr_boost::python::api::object
     Tf_GetPythonObjectFromAnyWeakPtr(This const &self);
 
     TF_API
-    boost::python::api::object _GetPythonObject() const;
+    pxr_boost::python::api::object _GetPythonObject() const;
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
     template <class WeakPtr>

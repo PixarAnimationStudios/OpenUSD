@@ -12,14 +12,14 @@
 #include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/enum.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/scope.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/enum.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/scope.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 struct Usd_UsdNamespaceEditorCanEditResult : 
     public TfPyAnnotatedBoolResult<std::string>

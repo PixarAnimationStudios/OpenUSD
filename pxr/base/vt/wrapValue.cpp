@@ -24,14 +24,14 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/type_id.hpp>
-#include <boost/python/str.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/copy_const_reference.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/external/boost/python/type_id.hpp"
+#include "pxr/external/boost/python/str.hpp"
 
 #include <iostream>
 #include <limits>
@@ -39,12 +39,12 @@
 #include <string>
 #include <vector>
 
-using namespace boost::python;
-
 using std::string;
 using std::map;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 TF_REGISTRY_FUNCTION(VtValue)
 {
@@ -116,7 +116,7 @@ struct Vt_ValueWrapperFromPython {
     Vt_ValueWrapperFromPython() {
         converter::registry::
             push_back(&_convertible, &_construct,
-                      boost::python::type_id<VtValue>());
+                      pxr_boost::python::type_id<VtValue>());
     }
 
   private:
@@ -140,7 +140,7 @@ struct Vt_ValueFromPython {
     Vt_ValueFromPython() {
         converter::registry::
             push_back(&_convertible, &_construct,
-                      boost::python::type_id<VtValue>());
+                      pxr_boost::python::type_id<VtValue>());
     }
 
   private:

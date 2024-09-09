@@ -5,9 +5,9 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
-#include <boost/python/def.hpp>
-#include <boost/python/return_value_policy.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include "pxr/usd/usdUtils/authoring.h"
 
@@ -16,14 +16,14 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 static 
 std::vector<UsdCollectionAPI> 
 _WrapUsdUtilsCreateCollections(
-    const boost::python::list &assignments, 
+    const pxr_boost::python::list &assignments, 
     const UsdPrim &usdPrim, 
     const double minInclusionRatio, 
     const unsigned int maxNumExcludesBelowInclude,
@@ -78,7 +78,7 @@ _WrapUsdUtilsComputeCollectionIncludesAndExcludes(
         maxNumExcludesBelowInclude, minIncludeExcludeCollectionSize,
         pathsToIgnoreSet);
 
-    return boost::python::make_tuple(pathsToInclude, pathsToExclude);
+    return pxr_boost::python::make_tuple(pathsToInclude, pathsToExclude);
 }
 
 void wrapAuthoring()
@@ -100,7 +100,7 @@ void wrapAuthoring()
          arg("pathsToExclude")=SdfPathSet()));
 
     def ("CreateCollections", _WrapUsdUtilsCreateCollections,
-        boost::python::return_value_policy<TfPySequenceToList>(),
+        pxr_boost::python::return_value_policy<TfPySequenceToList>(),
         (arg("assignments"), arg("usdPrim"), 
          arg("minInclusionRatio")=0.75, 
          arg("maxNumExcludesBelowInclude")=5u,

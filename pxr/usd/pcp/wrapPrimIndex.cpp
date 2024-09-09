@@ -10,11 +10,11 @@
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/sdf/siteUtils.h"
 #include "pxr/base/tf/pyResultConversions.h"
-#include <boost/python.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -55,7 +55,7 @@ _GetPrimStack(const PcpPrimIndex& self)
     return primStack;
 }
 
-static boost::python::tuple
+static pxr_boost::python::tuple
 _ComputePrimChildNames( PcpPrimIndex &index )
 {
     TfTokenVector nameOrder;
@@ -63,7 +63,7 @@ _ComputePrimChildNames( PcpPrimIndex &index )
     index.ComputePrimChildNames(&nameOrder, &prohibitedNameSet);
     TfTokenVector prohibitedNamesVector(prohibitedNameSet.begin(),
                                         prohibitedNameSet.end());
-    return boost::python::make_tuple(nameOrder, prohibitedNamesVector);
+    return pxr_boost::python::make_tuple(nameOrder, prohibitedNamesVector);
 }
 
 static TfTokenVector

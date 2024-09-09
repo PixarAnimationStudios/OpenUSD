@@ -10,11 +10,11 @@
 #include "pxr/usd/usd/prim.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
-#include <boost/python.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 static TfPyObjWrapper
 _WrapGetAttributeFallbackValue(const UsdPrimDefinition &self, 

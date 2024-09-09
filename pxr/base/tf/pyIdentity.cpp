@@ -161,7 +161,7 @@ static void _WeakBaseDied(void const *key) {
 };
 
 static std::string _GetTypeName(PyObject *obj) {
-    using namespace boost::python;
+    using namespace pxr_boost::python;
     TfPyLock lock;
     handle<> typeHandle( borrowed<>( PyObject_Type(obj) ) );
     if (typeHandle) {
@@ -274,8 +274,8 @@ PyObject *Tf_PyIdentityHelper::Get(void const *key) {
         return 0;
     }
 
-    // use boost::python::xincref here, because it returns the increfed ptr.
-    return boost::python::xincref(i->second.Ptr());
+    // use pxr_boost::python::xincref here, because it returns the increfed ptr.
+    return pxr_boost::python::xincref(i->second.Ptr());
 }
 
 

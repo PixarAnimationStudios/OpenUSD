@@ -15,7 +15,7 @@
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 
-#include <boost/python/module.hpp>
+#include "pxr/external/boost/python/module.hpp"
 
 // Helper macros for module files.  If you implement your wrappers for classes
 // as functions named wrapClassName(), then you can create your module like
@@ -80,7 +80,7 @@ PyObject* TF_PP_CAT(PyInit__, MFB_PACKAGE_NAME)() {
     };
 
     PXR_NAMESPACE_USING_DIRECTIVE
-    return boost::python::detail::init_module(moduledef,
+    return pxr_boost::python::detail::init_module(moduledef,
                 TF_PP_CAT(init_module_, MFB_PACKAGE_NAME));
 }
 
@@ -113,7 +113,7 @@ PyObject* TF_PP_CAT(PyInit_lib, MFB_PACKAGE_NAME)() {
     };
 
     PXR_NAMESPACE_USING_DIRECTIVE
-    return boost::python::detail::init_module(moduledef, 
+    return pxr_boost::python::detail::init_module(moduledef, 
                 TF_PP_CAT(init_module_, MFB_PACKAGE_NAME));
 }
 

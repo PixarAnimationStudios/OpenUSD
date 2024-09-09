@@ -15,13 +15,13 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -100,7 +100,7 @@ void wrapUsdShadeConnectableAPI()
 
 namespace {
 
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/tuple.hpp"
 
 static object
 _GetConnectedSource(const UsdAttribute &shadingAttr)
@@ -111,7 +111,7 @@ _GetConnectedSource(const UsdAttribute &shadingAttr)
     
     if (UsdShadeConnectableAPI::GetConnectedSource(shadingAttr, 
             &source, &sourceName, &sourceType)){
-        return boost::python::make_tuple(source, sourceName, sourceType);
+        return pxr_boost::python::make_tuple(source, sourceName, sourceType);
     } else {
         return object();
     }
@@ -124,7 +124,7 @@ _GetConnectedSources(const UsdAttribute &shadingAttr)
     UsdShadeSourceInfoVector sources =
         UsdShadeConnectableAPI::GetConnectedSources(shadingAttr,
                                                     &invalidSourcePaths);
-    return boost::python::make_tuple(
+    return pxr_boost::python::make_tuple(
         std::vector<UsdShadeConnectionSourceInfo>(
             sources.begin(), sources.end()),
         invalidSourcePaths);

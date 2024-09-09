@@ -4,11 +4,11 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python.hpp>
-#include <boost/python/converter/from_python.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/converter/from_python.hpp"
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
@@ -20,14 +20,15 @@
 #include "pxr/base/tf/pyResultConversions.h"
 
 using namespace std;
-using namespace boost::python;
 using namespace boost;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+using namespace pxr_boost::python;
+
 namespace {
 
-static boost::python::tuple
+static pxr_boost::python::tuple
 _TestIntersection(
     UsdImagingGLEngine & self, 
     const GfMatrix4d &viewMatrix,
@@ -61,7 +62,7 @@ _TestIntersection(
         topLevelInstanceIndex = hitInstancerContext[0].second;
     }
 
-    return boost::python::make_tuple(hitPoint, hitNormal, hitPrimPath,
+    return pxr_boost::python::make_tuple(hitPoint, hitNormal, hitPrimPath,
             hitInstanceIndex, topLevelPath, topLevelInstanceIndex);
 }
 
@@ -148,8 +149,8 @@ void wrapEngine()
                 return_value_policy< TfPySequenceToList >() )
             .def("InvokeRendererCommand",
                 &UsdImagingGLEngine::InvokeRendererCommand,
-                (boost::python::arg("command"),
-                 boost::python::arg("args") = HdCommandArgs()))
+                (pxr_boost::python::arg("command"),
+                 pxr_boost::python::arg("args") = HdCommandArgs()))
             .def("IsPauseRendererSupported", 
                 &UsdImagingGLEngine::IsPauseRendererSupported)
             .def("PauseRenderer", &UsdImagingGLEngine::PauseRenderer)

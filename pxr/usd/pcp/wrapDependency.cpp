@@ -10,12 +10,13 @@
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/makePyConstructor.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
-using namespace boost::python;
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

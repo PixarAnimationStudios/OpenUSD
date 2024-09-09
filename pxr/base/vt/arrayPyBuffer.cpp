@@ -20,7 +20,7 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <numeric>
 #include <string>
@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Producer side: Implement the buffer protocol on VtArrays.
 namespace {
 
-namespace bp = boost::python;
+namespace bp = pxr_boost::python;
 
 ////////////////////////////////////////////////////////////////////////
 // Element sub-type.  e.g. GfVec3f -> float.
@@ -545,7 +545,7 @@ VT_API void Vt_AddBufferProtocolSupportToVtArrays()
         Vt_CastPyObjToArray<VT_TYPE(elem)>);                         \
     VtValue::RegisterCast<vector<VtValue>, VtArray<VT_TYPE(elem)> >( \
         Vt_CastVectorToArray<VT_TYPE(elem)>);                        \
-    boost::python::def(TF_PP_STRINGIZE(VT_TYPE_NAME(elem))           \
+    pxr_boost::python::def(TF_PP_STRINGIZE(VT_TYPE_NAME(elem))           \
                         "ArrayFromBuffer",                           \
                         Vt_WrapArrayFromBuffer<VT_TYPE(elem)>);
 

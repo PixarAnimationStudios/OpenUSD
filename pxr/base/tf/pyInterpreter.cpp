@@ -19,8 +19,8 @@
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/threads.h"
 
-#include <boost/python.hpp>
-#include <boost/python/detail/api_placeholder.hpp>
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/detail/api_placeholder.hpp"
 #include <atomic>
 #include <mutex>
 #include <string>
@@ -29,9 +29,9 @@
 
 using std::string;
 
-using namespace boost::python;
-
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 void
 TfPyInitialize()
@@ -133,7 +133,7 @@ TfPyRunSimpleString(const std::string & cmd)
     return PyRun_SimpleString(cmd.c_str());
 }
 
-boost::python::handle<>
+pxr_boost::python::handle<>
 TfPyRunString(const std::string &cmd , int start,
               object const &globals, object const &locals)
 {
@@ -159,7 +159,7 @@ TfPyRunString(const std::string &cmd , int start,
     return handle<>();
 }
 
-boost::python::handle<>
+pxr_boost::python::handle<>
 TfPyRunFile(const std::string &filename, int start,
             object const &globals, object const &locals)
 {

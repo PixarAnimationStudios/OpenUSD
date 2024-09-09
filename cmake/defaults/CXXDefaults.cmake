@@ -83,6 +83,12 @@ else()
     set(PXR_PYTHON_SUPPORT_ENABLED "0")
 endif()
 
+if (PXR_USE_BOOST_PYTHON)
+    set(PXR_USE_INTERNAL_BOOST_PYTHON "0")
+else()
+    set(PXR_USE_INTERNAL_BOOST_PYTHON "1")
+endif()
+
 # Set safety/performance configuration
 if (PXR_PREFER_SAFETY_OVER_SPEED)
    set(PXR_PREFER_SAFETY_OVER_SPEED "1")

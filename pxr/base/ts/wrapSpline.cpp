@@ -12,13 +12,13 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/diagnostic.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/operators.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/make_constructor.hpp"
+#include "pxr/external/boost/python/operators.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace boost::python;
+using namespace pxr_boost::python;
 
 
 static TsSpline* _WrapInit(

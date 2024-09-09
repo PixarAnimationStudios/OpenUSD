@@ -12,14 +12,15 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <vector>
 
-using namespace boost::python;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -30,7 +31,7 @@ static tuple
 _GetPrimInfo(UsdPrim const &prim, UsdTimeCode time)
 {
     UsdviewqUtils::PrimInfo info = UsdviewqUtils::GetPrimInfo(prim, time);
-    return boost::python::make_tuple(info.hasCompositionArcs,
+    return pxr_boost::python::make_tuple(info.hasCompositionArcs,
                                      info.isActive,
                                      info.isImageable,
                                      info.isDefined,

@@ -5,7 +5,7 @@
 // https://openusd.org/license.
 //
 // GENERATED FILE.  DO NOT EDIT.
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/class.hpp"
 #include "pxr/usd/usdUI/tokens.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -15,8 +15,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdUITokens()
 {
-    boost::python::class_<UsdUITokensType, boost::noncopyable>
-        cls("Tokens", boost::python::no_init);
+    pxr_boost::python::class_<UsdUITokensType, boost::noncopyable>
+        cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, closed);
     _ADD_TOKEN(cls, minimized);
     _ADD_TOKEN(cls, open);

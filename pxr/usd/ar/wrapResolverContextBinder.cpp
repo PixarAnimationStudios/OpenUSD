@@ -4,17 +4,17 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include <boost/python/class.hpp>
-#include <boost/python/object.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/object.hpp"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
 
 #include <memory>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -33,9 +33,9 @@ public:
     }
 
     bool Exit(
-        boost::python::object& /* exc_type */,
-        boost::python::object& /* exc_val  */,
-        boost::python::object& /* exc_tb   */)
+        pxr_boost::python::object& /* exc_type */,
+        pxr_boost::python::object& /* exc_val  */,
+        pxr_boost::python::object& /* exc_tb   */)
     {
         _binder.reset(0);
         // Re-raise exceptions.

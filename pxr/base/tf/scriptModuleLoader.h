@@ -18,7 +18,7 @@
 // XXX: This include is a hack to avoid build errors due to
 // incompatible macro definitions in pyport.h on macOS.
 #include <locale>
-#include <boost/python/dict.hpp>
+#include "pxr/external/boost/python/dict.hpp"
 
 #include <deque>
 #include "pxr/base/tf/hashmap.h"
@@ -76,7 +76,7 @@ class TfScriptModuleLoader : public TfWeakBase {
     /// Return a python dict containing all currently known modules under
     /// their canonical names.
     TF_API
-    boost::python::dict GetModulesDict() const;
+    pxr_boost::python::dict GetModulesDict() const;
     
     /// Write a graphviz dot-file for the dependency graph of all. currently
     /// known libraries/modules to \a file.

@@ -5,19 +5,19 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
-#include <boost/python/def.hpp>
-#include <boost/python/return_value_policy.hpp>
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
 
 #include "pxr/usd/usdUtils/pipeline.h"
 
 #include "pxr/usd/usd/prim.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
-#include <boost/python/return_by_value.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/return_by_value.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void wrapPipeline()
 {

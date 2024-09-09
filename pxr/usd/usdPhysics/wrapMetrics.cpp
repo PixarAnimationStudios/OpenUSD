@@ -11,12 +11,12 @@
 
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void wrapMetrics()
 {
@@ -29,8 +29,8 @@ void wrapMetrics()
     def("MassUnitsAre", UsdPhysicsMassUnitsAre, 
         (arg("authoredUnits"), arg("standardUnits"), arg("epsilon")=1e-5));
 
-    boost::python::class_<UsdPhysicsMassUnits>
-        cls("MassUnits", boost::python::no_init);
+    pxr_boost::python::class_<UsdPhysicsMassUnits>
+        cls("MassUnits", pxr_boost::python::no_init);
     cls
         .def_readonly("kilograms", UsdPhysicsMassUnits::kilograms)
         .def_readonly("grams", UsdPhysicsMassUnits::grams)

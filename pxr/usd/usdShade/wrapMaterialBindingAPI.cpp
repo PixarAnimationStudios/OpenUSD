@@ -16,13 +16,13 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -121,7 +121,7 @@ void wrapUsdShadeMaterialBindingAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/tuple.hpp"
 
 namespace {
 
@@ -132,7 +132,7 @@ _WrapComputeBoundMaterial(const UsdShadeMaterialBindingAPI &bindingAPI,
     UsdRelationship bindingRel;
     UsdShadeMaterial mat = bindingAPI.ComputeBoundMaterial(materialPurpose,
             &bindingRel, supportLegacyBindings);
-    return boost::python::make_tuple(mat, bindingRel);
+    return pxr_boost::python::make_tuple(mat, bindingRel);
 }
 
 static object
@@ -143,7 +143,7 @@ _WrapComputeBoundMaterials(const std::vector<UsdPrim> &prims,
     std::vector<UsdRelationship> bindingRels; 
     auto materials = UsdShadeMaterialBindingAPI::ComputeBoundMaterials(prims,
         materialPurpose, &bindingRels, supportLegacyBindings);
-    return boost::python::make_tuple(materials, bindingRels);
+    return pxr_boost::python::make_tuple(materials, bindingRels);
 }
 
 WRAP_CUSTOM {

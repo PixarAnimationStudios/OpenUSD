@@ -19,17 +19,18 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/vt/valueFromPython.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <thread>
 #include <atomic>
 
-using namespace boost::python;
 using std::pair;
 using std::string;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

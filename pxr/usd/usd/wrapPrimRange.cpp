@@ -8,17 +8,17 @@
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/to_python_converter.hpp>
-#include <boost/python/converter/from_python.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/external/boost/python/to_python_converter.hpp"
+#include "pxr/external/boost/python/converter/from_python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -90,14 +90,14 @@ public:
         // from-python
         converter::registry::push_back(
             &_convertible, &_construct,
-            boost::python::type_id<UsdPrimRange>());
+            pxr_boost::python::type_id<UsdPrimRange>());
     }
 
     // to-python conversion of UsdPrimRange.
     static PyObject *convert(const UsdPrimRange &primRange) {
         TfPyLock lock;
         // (extra parens to avoid 'most vexing parse')
-        boost::python::object obj((Usd_PyPrimRange(primRange)));
+        pxr_boost::python::object obj((Usd_PyPrimRange(primRange)));
         PyObject *ret = obj.ptr();
         Py_INCREF(ret);
         return ret;

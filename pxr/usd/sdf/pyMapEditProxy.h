@@ -15,7 +15,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -39,32 +39,32 @@ private:
     typedef std::pair<key_type, mapped_type> pair_type;
 
     struct _ExtractItem {
-        static boost::python::object Get(const const_iterator& i)
+        static pxr_boost::python::object Get(const const_iterator& i)
         {
-            return boost::python::make_tuple(i->first, i->second);
+            return pxr_boost::python::make_tuple(i->first, i->second);
         }
     };
 
     struct _ExtractKey {
-        static boost::python::object Get(const const_iterator& i)
+        static pxr_boost::python::object Get(const const_iterator& i)
         {
-            return boost::python::object(i->first);
+            return pxr_boost::python::object(i->first);
         }
     };
 
     struct _ExtractValue {
-        static boost::python::object Get(const const_iterator& i)
+        static pxr_boost::python::object Get(const const_iterator& i)
         {
-            return boost::python::object(i->second);
+            return pxr_boost::python::object(i->second);
         }
     };
 
     template <class E>
     class _Iterator {
     public:
-        _Iterator(const boost::python::object& object) :
+        _Iterator(const pxr_boost::python::object& object) :
             _object(object),
-            _owner(boost::python::extract<const Type&>(object)),
+            _owner(pxr_boost::python::extract<const Type&>(object)),
             _cur(_owner.begin()),
             _end(_owner.end())
         {
@@ -76,18 +76,18 @@ private:
             return *this;
         }
 
-        boost::python::object GetNext()
+        pxr_boost::python::object GetNext()
         {
             if (_cur == _end) {
                 TfPyThrowStopIteration("End of MapEditProxy iteration");
             }
-            boost::python::object result = E::Get(_cur);
+            pxr_boost::python::object result = E::Get(_cur);
             ++_cur;
             return result;
         }
 
     private:
-        boost::python::object _object;
+        pxr_boost::python::object _object;
         const Type& _owner;
         const_iterator _cur;
         const_iterator _end;
@@ -95,7 +95,7 @@ private:
 
     static void _Wrap()
     {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
         std::string name = _GetName();
 
@@ -216,28 +216,28 @@ private:
     }
 
     static _Iterator<_ExtractItem> 
-    _GetItemIterator(const boost::python::object& x)
+    _GetItemIterator(const pxr_boost::python::object& x)
     {
         return _Iterator<_ExtractItem>(x);
     }
 
     static _Iterator<_ExtractKey> 
-    _GetKeyIterator(const boost::python::object& x)
+    _GetKeyIterator(const pxr_boost::python::object& x)
     {
         return _Iterator<_ExtractKey>(x);
     }
 
     static _Iterator<_ExtractValue> 
-    _GetValueIterator(const boost::python::object& x)
+    _GetValueIterator(const pxr_boost::python::object& x)
     {
         return _Iterator<_ExtractValue>(x);
     }
 
-    static boost::python::object _PyGet(const Type& x, const key_type& key)
+    static pxr_boost::python::object _PyGet(const Type& x, const key_type& key)
     {
         const_iterator i = x.find(key);
-        return i == x.end() ? boost::python::object() :
-                              boost::python::object(i->second);
+        return i == x.end() ? pxr_boost::python::object() :
+                              pxr_boost::python::object(i->second);
     }
 
     static mapped_type _PyGetDefault(const Type& x, const key_type& key,
@@ -248,9 +248,9 @@ private:
     }
 
     template <class E>
-    static boost::python::list _Get(const Type& x)
+    static pxr_boost::python::list _Get(const Type& x)
     {
-        boost::python::list result;
+        pxr_boost::python::list result;
         for (const_iterator i = x.begin(), n = x.end(); i != n; ++i) {
             result.append(E::Get(i));
         }
@@ -271,17 +271,17 @@ private:
         }
     }
 
-    static boost::python::tuple _PopItem(Type& x)
+    static pxr_boost::python::tuple _PopItem(Type& x)
     {
         if (x.empty()) {
             TfPyThrowKeyError("MapEditProxy is empty");
-            return boost::python::tuple();
+            return pxr_boost::python::tuple();
         }
         else {
             iterator i = x.begin();
             value_type result = *i;
             x.erase(i);
-            return boost::python::make_tuple(result.first, result.second);
+            return pxr_boost::python::make_tuple(result.first, result.second);
         }
     }
 
@@ -305,14 +305,14 @@ private:
         }
     }
 
-    static void _UpdateDict(Type& x, const boost::python::dict& d)
+    static void _UpdateDict(Type& x, const pxr_boost::python::dict& d)
     {
         _UpdateList(x, d.items());
     }
 
-    static void _UpdateList(Type& x, const boost::python::list& pairs)
+    static void _UpdateList(Type& x, const pxr_boost::python::list& pairs)
     {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
         std::vector<pair_type> values;
         for (int i = 0, n = len(pairs); i != n; ++i) {

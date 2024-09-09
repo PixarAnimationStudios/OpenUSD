@@ -12,9 +12,6 @@ pxr_library(hio
         ar
         hf
 
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
-
     PUBLIC_CLASSES
         fieldTextureData
         glslfx

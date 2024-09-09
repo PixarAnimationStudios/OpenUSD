@@ -17,8 +17,8 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include <boost/python/handle.hpp>
-#include <boost/python/object.hpp>
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/object.hpp"
 
 #include "pxr/base/tf/hashmap.h"
 
@@ -32,14 +32,14 @@ struct Tf_PyWeakObject : public TfWeakBase
 public:
     typedef Tf_PyWeakObject This;
 
-    static Tf_PyWeakObjectPtr GetOrCreate(boost::python::object const &obj);
-    boost::python::object GetObject() const;
+    static Tf_PyWeakObjectPtr GetOrCreate(pxr_boost::python::object const &obj);
+    pxr_boost::python::object GetObject() const;
     void Delete();
     
 private:
-    explicit Tf_PyWeakObject(boost::python::object const &obj);
+    explicit Tf_PyWeakObject(pxr_boost::python::object const &obj);
     
-    boost::python::handle<> _weakRef;
+    pxr_boost::python::handle<> _weakRef;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -12,12 +12,12 @@
 
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -36,7 +36,7 @@ _WrapLocalPropertyStack(const PcpPropertyIndex& propIndex)
     return SdfPropertySpecHandleVector(range.first, range.second);
 }
 
-static boost::python::tuple
+static pxr_boost::python::tuple
 _WrapBuildPrimPropertyIndex(
     const SdfPath &path, const PcpCache &cache, const PcpPrimIndex &primIndex)
 {
@@ -44,8 +44,8 @@ _WrapBuildPrimPropertyIndex(
     PcpPropertyIndex propIndex;
     PcpBuildPrimPropertyIndex(path, cache, primIndex, &propIndex, &errors);
 
-    return boost::python::make_tuple(
-        boost::python::object(propIndex), errors);
+    return pxr_boost::python::make_tuple(
+        pxr_boost::python::object(propIndex), errors);
 }
 
 } // anonymous namespace 

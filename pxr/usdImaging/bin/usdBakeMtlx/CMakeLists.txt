@@ -22,10 +22,6 @@ pxr_library(usdBakeMtlx
         MaterialXFormat
         MaterialXRenderGlsl
 
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
-        ${PYTHON_INCLUDE_DIRS}
-
     PUBLIC_CLASSES
         bakeMaterialX
 

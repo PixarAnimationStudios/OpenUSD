@@ -9,20 +9,20 @@
 
 #include "pxr/pxr.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/def_visitor.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/def_visitor.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Tf_PyClassMethod {
 
-using namespace boost::python;
+using namespace pxr_boost::python;
 
 // Visitor for wrapping functions as Python class methods.
 // See typedef below for docs.
-// This is very similar to the staticmethod() method on boost::python::class,
+// This is very similar to the staticmethod() method on pxr_boost::python::class,
 // except it uses PyClassMethod_New() instead of PyStaticMethod_New().
 struct _TfPyClassMethod : def_visitor<_TfPyClassMethod>
 {
@@ -70,7 +70,7 @@ private:
 /// classmethod()-wrapped one.
 ///
 /// \code
-///    void Foo( boost::python::object & pyClassObject ) { /* ... */ }
+///    void Foo( pxr_boost::python::object & pyClassObject ) { /* ... */ }
 ///    
 ///    class_<...>(...)
 ///         .def("Foo", &Foo)

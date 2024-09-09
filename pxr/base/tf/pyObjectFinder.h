@@ -12,8 +12,8 @@
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/pyIdentity.h"
 
-#include <boost/python/handle.hpp>
-#include <boost/python/object.hpp>
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/object.hpp"
 
 #include <typeinfo>
 
@@ -21,14 +21,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct Tf_PyObjectFinderBase {
     TF_API virtual ~Tf_PyObjectFinderBase();
-    virtual boost::python::object Find(void const *objPtr) const = 0;
+    virtual pxr_boost::python::object Find(void const *objPtr) const = 0;
 };
 
 template <class T, class PtrType>
 struct Tf_PyObjectFinder : public Tf_PyObjectFinderBase {
     virtual ~Tf_PyObjectFinder() {}
-    virtual boost::python::object Find(void const *objPtr) const {
-        using namespace boost::python;
+    virtual pxr_boost::python::object Find(void const *objPtr) const {
+        using namespace pxr_boost::python;
         TfPyLock lock;
         void *p = const_cast<void *>(objPtr);
         PyObject *obj = Tf_PyGetPythonIdentity(PtrType(static_cast<T *>(p)));
@@ -46,7 +46,7 @@ void Tf_RegisterPythonObjectFinder() {
                                           new Tf_PyObjectFinder<T, PtrType>());
 }
 
-TF_API boost::python::object
+TF_API pxr_boost::python::object
 Tf_FindPythonObject(void const *objPtr, std::type_info const &type);
 
 PXR_NAMESPACE_CLOSE_SCOPE

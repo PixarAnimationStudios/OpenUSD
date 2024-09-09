@@ -12,17 +12,17 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 
-#include <boost/python/override.hpp>
+#include "pxr/external/boost/python/override.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfPyMethodResult
 ///
-/// A reimplementation of boost::python::detail::method_result.
+/// A reimplementation of pxr_boost::python::detail::method_result.
 ///
 /// This class is reimplemented from the boost class simply because the
 /// provided class only allows construction from it's friended class
-/// boost::python::override, which we also reimplement below.
+/// pxr_boost::python::override, which we also reimplement below.
 ///
 /// \see TfPyOverride
 class TfPyMethodResult
@@ -48,7 +48,7 @@ public:
     operator T()
     {
         TfPyLock lock;
-        boost::python::converter::return_from_python<T> converter;
+        pxr_boost::python::converter::return_from_python<T> converter;
         return converter(m_obj.release());
     }
 
@@ -56,16 +56,16 @@ public:
     operator T&() const
     {
         TfPyLock lock;
-        boost::python::converter::return_from_python<T&> converter;
+        pxr_boost::python::converter::return_from_python<T&> converter;
         return converter(
-            const_cast<boost::python::handle<>&>(m_obj).release());
+            const_cast<pxr_boost::python::handle<>&>(m_obj).release());
     }
 
     template <class T>
     T as(boost::type<T>* = 0)
     {
         TfPyLock lock;
-        boost::python::converter::return_from_python<T> converter;
+        pxr_boost::python::converter::return_from_python<T> converter;
         return converter(m_obj.release());
     }
 
@@ -73,20 +73,20 @@ public:
     T unchecked(boost::type<T>* = 0)
     {
         TfPyLock lock;
-        return boost::python::extract<T>(m_obj)();
+        return pxr_boost::python::extract<T>(m_obj)();
     }
 
 private:
-    mutable boost::python::handle<> m_obj;
+    mutable pxr_boost::python::handle<> m_obj;
 };
 
 /// \class TfPyOverride
 ///
-/// A reimplementation of boost::python::override.
+/// A reimplementation of pxr_boost::python::override.
 ///
 /// This class is reimplemented from the boost class simply because the
 /// provided class only allows construction from, ultimately,
-/// boost::python::wrapper::get_override(). Unfortunately, that method 
+/// pxr_boost::python::wrapper::get_override(). Unfortunately, that method 
 /// returns the wrong result when the overridden function we are asking about
 /// lives not on the directly wrapped C++ class, but a wrapped ancestor.
 /// So we provide our own version, TfPyOverride, with a public constructor.
@@ -105,8 +105,8 @@ class TfPyOverride : public TfPyObjWrapper
 
 public:
     /// Clients must hold the GIL to construct.
-    TfPyOverride(boost::python::handle<> callable)
-        : TfPyObjWrapper(boost::python::object(callable))
+    TfPyOverride(pxr_boost::python::handle<> callable)
+        : TfPyObjWrapper(pxr_boost::python::object(callable))
     {}
 
     /// Call the override.
@@ -125,7 +125,7 @@ public:
             PyEval_CallFunction(
                 this->ptr(),
                 const_cast<char*>(pyCallFormat),
-                boost::python::converter::arg_to_python<Args>(args).get()...));
+                pxr_boost::python::converter::arg_to_python<Args>(args).get()...));
         return x;
     }
 };

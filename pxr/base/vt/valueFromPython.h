@@ -119,7 +119,7 @@ VT_API_TEMPLATE_CLASS(TfSingleton<Vt_ValueFromPythonRegistry>);
 template <class T>
 VtValue Vt_ValueFromPythonRegistry::
 _Extractor::_ExtractLValue(PyObject *obj) {
-    boost::python::extract<T &> x(obj);
+    pxr_boost::python::extract<T &> x(obj);
     if (x.check())
         return VtValue(x());
     return VtValue();
@@ -128,7 +128,7 @@ _Extractor::_ExtractLValue(PyObject *obj) {
 template <class T>
 VtValue Vt_ValueFromPythonRegistry::
 _Extractor::_ExtractRValue(PyObject *obj) {
-    boost::python::extract<T> x(obj);
+    pxr_boost::python::extract<T> x(obj);
     if (x.check())
         return VtValue(x());
     return VtValue();

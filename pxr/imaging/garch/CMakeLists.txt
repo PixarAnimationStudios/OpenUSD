@@ -30,9 +30,6 @@ pxr_library(garch
         OpenGL::GL
         ${GARCH_PLATFORM_LIBRARIES}
 
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
-
     PUBLIC_CLASSES
         glApi
         glDebugWindow

@@ -11,14 +11,15 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/vt/valueFromPython.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
-using namespace boost::python;
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

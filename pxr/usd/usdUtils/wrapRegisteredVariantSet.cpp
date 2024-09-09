@@ -5,17 +5,17 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
-#include <boost/python/def.hpp>
-#include <boost/python.hpp>
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python.hpp"
 
 #include "pxr/usd/usdUtils/registeredVariantSet.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyEnum.h"
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void wrapRegisteredVariantSet()
 {

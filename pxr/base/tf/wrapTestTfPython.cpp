@@ -26,27 +26,28 @@
 #include "pxr/base/tf/pyArg.h"
 #include "pxr/base/tf/pyPolymorphic.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/manage_new_object.hpp>
-#include <boost/python/pure_virtual.hpp>
-#include <boost/python/register_ptr_to_python.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/make_constructor.hpp"
+#include "pxr/external/boost/python/manage_new_object.hpp"
+#include "pxr/external/boost/python/pure_virtual.hpp"
+#include "pxr/external/boost/python/register_ptr_to_python.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include <functional>
 #include <string>
 #include <vector>
 
-using namespace boost::python;
 using std::string;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 // Base
 typedef TfWeakPtr<class Tf_TestBase> Tf_TestBasePtr;
@@ -113,7 +114,7 @@ static tuple TakesBase(Tf_TestBasePtr base) {
     base->Virtual3("hello from TakesConstBase");
     base->Virtual2();
     bool isDerived = TfDynamic_cast<Tf_TestDerivedPtr>(base);
-    return boost::python::make_tuple(isDerived, base->Virtual());
+    return pxr_boost::python::make_tuple(isDerived, base->Virtual());
 }
 
 static string TakesDerived(Tf_TestDerivedPtr derived) {
@@ -512,7 +513,7 @@ public:
 static tuple
 _TestClassMethod( object & pyClassObj, const object & callable )
 {
-    return boost::python::make_tuple(
+    return pxr_boost::python::make_tuple(
         pyClassObj, TfPyCall<object>(callable)() );
 }
 

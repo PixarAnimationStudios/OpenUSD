@@ -12,10 +12,10 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/pyUtils.h"
-#include <boost/python/converter/from_python.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/to_python_converter.hpp>
-#include <boost/python/to_python_value.hpp>
+#include "pxr/external/boost/python/converter/from_python.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/to_python_converter.hpp"
+#include "pxr/external/boost/python/to_python_value.hpp"
 
 #include <optional>
 
@@ -30,9 +30,9 @@ template <typename T, typename TfromPy>
 struct object_from_python
 {
     object_from_python() {
-        boost::python::converter::registry::push_back
+        pxr_boost::python::converter::registry::push_back
         (&TfromPy::convertible, &TfromPy::construct,
-         boost::python::type_id<T>());
+         pxr_boost::python::type_id<T>());
     }
 };
 
@@ -40,7 +40,7 @@ template <typename T, typename TtoPy, typename TfromPy>
 struct register_python_conversion
 {
     register_python_conversion() {
-        boost::python::to_python_converter<T, TtoPy>();
+        pxr_boost::python::to_python_converter<T, TtoPy>();
         object_from_python<T, TfromPy>();
     }
 };
@@ -56,11 +56,11 @@ struct python_optional
         static PyObject * convert(const Optional& value)
         {
             if (value) {
-                boost::python::object obj = TfPyObject(*value);
+                pxr_boost::python::object obj = TfPyObject(*value);
                 Py_INCREF(obj.ptr());
                 return obj.ptr();
             }
-            return boost::python::detail::none();
+            return pxr_boost::python::detail::none();
         }
     };
 
@@ -69,18 +69,18 @@ struct python_optional
     {
         static void * convertible(PyObject * source)
         {
-            using namespace boost::python::converter;
+            using namespace pxr_boost::python::converter;
 
-            if ((source == Py_None) || boost::python::extract<T>(source).check())
+            if ((source == Py_None) || pxr_boost::python::extract<T>(source).check())
                 return source;
 
             return NULL;
         }
 
         static void construct(PyObject * source,
-                              boost::python::converter::rvalue_from_python_stage1_data * data)
+                              pxr_boost::python::converter::rvalue_from_python_stage1_data * data)
         {
-            using namespace boost::python::converter;
+            using namespace pxr_boost::python::converter;
 
             void * const storage =
                 ((rvalue_from_python_storage<T> *)data)->storage.bytes;
@@ -88,7 +88,7 @@ struct python_optional
             if (data->convertible == Py_None) {
                 new (storage) Optional(); // An uninitialized optional
             } else {
-                new (storage) Optional(boost::python::extract<T>(source));
+                new (storage) Optional(pxr_boost::python::extract<T>(source));
             }
 
             data->convertible = storage;

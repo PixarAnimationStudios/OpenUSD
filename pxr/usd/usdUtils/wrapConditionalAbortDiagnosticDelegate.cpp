@@ -13,14 +13,14 @@
 #include <iostream>
 #include <string>
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace boost::python;
+using namespace pxr_boost::python;
 
 void wrapConditionalAbortDiagnosticDelegate()
 {

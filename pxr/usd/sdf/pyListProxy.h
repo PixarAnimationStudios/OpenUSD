@@ -18,8 +18,8 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/stringUtils.h"
 #include <stdexcept>
-#include <boost/python.hpp>
-#include <boost/python/slice.hpp>
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/slice.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -40,7 +40,7 @@ public:
 private:
     static void _Wrap()
     {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
         class_<Type>(_GetName().c_str(), no_init)
             .def("__str__", &This::_GetStr)
@@ -102,10 +102,10 @@ private:
         return x[TfPyNormalizeIndex(index, x._GetSize(), true)];
     }
 
-    static boost::python::list _GetItemSlice(const Type& x,
-                                             const boost::python::slice& index)
+    static pxr_boost::python::list _GetItemSlice(const Type& x,
+                                             const pxr_boost::python::slice& index)
     {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
         list result;
 
@@ -131,10 +131,10 @@ private:
         x[TfPyNormalizeIndex(index, x._GetSize(), true)] = value;
     }
 
-    static void _SetItemSlice(Type& x, const boost::python::slice& index,
+    static void _SetItemSlice(Type& x, const pxr_boost::python::slice& index,
                               const value_vector_type& values)
     {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
         if (! x._Validate()) {
             return;
@@ -187,9 +187,9 @@ private:
                 1, value_vector_type());
     }
 
-    static void _DelItemSlice(Type& x, const boost::python::slice& index)
+    static void _DelItemSlice(Type& x, const pxr_boost::python::slice& index)
     {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
         if (x._Validate()) {
             try {

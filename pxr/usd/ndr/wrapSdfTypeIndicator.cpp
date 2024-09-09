@@ -9,12 +9,12 @@
 #include "pxr/base/vt/valueFromPython.h"
 #include "pxr/usd/ndr/sdfTypeIndicator.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 #include <iostream>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void wrapSdfTypeIndicator()
 {

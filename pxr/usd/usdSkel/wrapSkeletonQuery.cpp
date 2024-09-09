@@ -17,13 +17,13 @@
 #include "pxr/usd/usdSkel/skeleton.h"
 #include "pxr/usd/usdSkel/topology.h"
 
-#include <boost/python.hpp>
-#include <boost/python/extract.hpp>
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/extract.hpp"
 
-
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 
 namespace {

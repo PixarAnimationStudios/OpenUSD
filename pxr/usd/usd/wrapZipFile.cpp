@@ -10,15 +10,15 @@
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include <boost/noncopyable.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/manage_new_object.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/return_value_policy.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/manage_new_object.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 static object
 _Open(const std::string& filePath)
@@ -54,7 +54,7 @@ _GetFileNames(const UsdZipFile& zipFile)
 }
 
 // XXX: UsdZipFileWriter is a move-only type, but if I return a 
-// UsdZipFileWriter by value from this function, boost::python gives me a
+// UsdZipFileWriter by value from this function, pxr_boost::python gives me a
 // no to-python converter error.
 static UsdZipFileWriter*
 _CreateNew(const std::string& filePath)

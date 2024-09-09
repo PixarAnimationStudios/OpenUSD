@@ -12,15 +12,16 @@
 
 #include <boost/function.hpp>
 
-#include <boost/python/def.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/import.hpp>
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/import.hpp"
 
 #include <functional>
 
-using namespace boost::python;
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 static const char VoidFuncSource[] = "def VoidFunc(): pass\n";
 static const char BoolFuncSource[] = "def BoolFunc(): return True\n";

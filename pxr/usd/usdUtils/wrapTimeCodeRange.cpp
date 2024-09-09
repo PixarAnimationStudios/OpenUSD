@@ -11,23 +11,23 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/usd/usd/timeCode.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/return_value_policy.hpp>
-#include <boost/python/scope.hpp>
-#include <boost/python/with_custodian_and_ward.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
+#include "pxr/external/boost/python/scope.hpp"
+#include "pxr/external/boost/python/with_custodian_and_ward.hpp"
 
 #include <sstream>
 #include <string>
 
 
-using namespace boost::python;
-
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 
 namespace {

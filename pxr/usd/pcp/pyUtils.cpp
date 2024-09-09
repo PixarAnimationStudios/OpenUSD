@@ -8,10 +8,11 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/pyUtils.h"
 
-using namespace boost::python;
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 // Given a python object and a pointer to a variable, 
 // attempts to extract a value of the variable's type out of the object

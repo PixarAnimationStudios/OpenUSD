@@ -19,11 +19,11 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -75,7 +75,7 @@ _GetBracketingTimeSamples(SdfAttributeSpec const &self, double time)
 {
     double tLower = 0, tUpper = 0;
     bool found = self.GetBracketingTimeSamples(time, &tLower, &tUpper);
-    return boost::python::make_tuple(found, tLower, tUpper);
+    return pxr_boost::python::make_tuple(found, tLower, tUpper);
 }
 
 static

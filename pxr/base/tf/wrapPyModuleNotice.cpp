@@ -10,12 +10,12 @@
 #include "pxr/base/tf/pyModuleNotice.h"
 #include "pxr/base/tf/pyNoticeWrapper.h"
 
-#include <boost/python/return_by_value.hpp>
-#include <boost/python/return_value_policy.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/return_by_value.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

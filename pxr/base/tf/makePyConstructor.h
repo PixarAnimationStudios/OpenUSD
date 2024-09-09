@@ -30,14 +30,14 @@
 
 #include "pxr/base/arch/demangle.h"
 
-#include <boost/python/def_visitor.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/errors.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/object/iterator.hpp>
-#include <boost/python/raw_function.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python/type_id.hpp>
+#include "pxr/external/boost/python/def_visitor.hpp"
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/errors.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/object/iterator.hpp"
+#include "pxr/external/boost/python/raw_function.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/external/boost/python/type_id.hpp"
 
 #include <array>
 #include <string>
@@ -65,26 +65,26 @@ PXR_NAMESPACE_OPEN_SCOPE
 // TfMakePyConstructorWithVarArgs may be used to wrap an object so that it
 // may be constructed with a variable number of positional and keyword
 // arguments. The last two arguments of the function being wrapped must
-// be a boost::python::tuple and dict. These will contain the remaining
+// be a pxr_boost::python::tuple and dict. These will contain the remaining
 // positional and keyword args after required arguments are parsed.
 //
 // Example usage:
 //
 // static MyObjectRefPtr MyObjectFactory(
 //     int formalArg1, const std::string& formalArg2,
-//     const boost::python::tuple& args, const boost::python::dict& kwargs);
+//     const pxr_boost::python::tuple& args, const pxr_boost::python::dict& kwargs);
 //
 // class_<MyClass, MyClassPtr>("MyClass", no_init)
 //    .def(TfPyRefAndWeakPtr())
 //    .def(TfMakePyConstructorWithVarArgs(MyObjectFactory))
 //    .def(...)
 //
-// NOTE: The current implementation does not handle boost::python::arg for
+// NOTE: The current implementation does not handle pxr_boost::python::arg for
 //       specifying keywords for required arguments.
 
 namespace Tf_MakePyConstructor {
 
-namespace bp = boost::python;
+namespace bp = pxr_boost::python;
 
 template <typename CTOR>
 struct InitVisitor : bp::def_visitor<InitVisitor<CTOR> > {
@@ -258,8 +258,8 @@ struct _RefPtrFactoryConverter {
     // Required for boost.python signature generator, in play when
     // BOOST_PYTHON_NO_PY_SIGNATURES is undefined.
     PyTypeObject const *get_pytype() const {
-        return boost::python::objects::registered_class_object(
-            boost::python::type_id<typename WeakPtr::DataType>()).get();
+        return pxr_boost::python::objects::registered_class_object(
+            pxr_boost::python::type_id<typename WeakPtr::DataType>()).get();
     }
 };
 
@@ -368,7 +368,7 @@ struct TfPyRefPtrFactory : public Tf_MakePyConstructor::RefPtrFactory<T> {};
 
 template <typename T> struct Tf_PySequenceToListConverterRefPtrFactory;
 
-/// A \c boost::python result converter generator which converts standard
+/// A \c pxr_boost::python result converter generator which converts standard
 /// library sequences to lists of python owned objects.
 struct TfPySequenceToListRefPtrFactory {
     template <typename T>
@@ -385,17 +385,17 @@ struct Tf_PySequenceToListConverterRefPtrFactory {
         return true;
     }
     PyObject *operator()(T seq) const {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
         typedef typename Tf_MakePyConstructor::RefPtrFactory<>::
             apply<typename SeqType::value_type>::type RefPtrFactory;
 
-        boost::python::list l;
+        pxr_boost::python::list l;
         for (typename SeqType::const_iterator i = seq.begin();
              i != seq.end(); ++i) {
             l.append(object(handle<>(RefPtrFactory()(*i))));
         }
-        return boost::python::incref(l.ptr());
+        return pxr_boost::python::incref(l.ptr());
     }
     // Required for boost.python signature generator, in play when
     // BOOST_PYTHON_NO_PY_SIGNATURES is undefined.

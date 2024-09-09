@@ -11,11 +11,11 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/base/tf/makePyConstructor.h"
 
-#include <boost/python/def.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/def.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void wrapUsdBakeMtlx()
 {

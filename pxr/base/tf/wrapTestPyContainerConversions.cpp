@@ -13,13 +13,14 @@
 
 #include "pxr/base/tf/token.h"
 
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/class.hpp"
 
-using namespace boost::python;
 using std::pair;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

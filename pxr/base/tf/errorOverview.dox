@@ -192,10 +192,10 @@ under a scope named Error.
 // wrapOofError.cpp
 #include "pxr/base/tf/pyEnum.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/scope.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/scope.hpp"
 
-using namespace boost::python;
+using namespace pxr_boost::python;
 
 void wrapOofError() {
     typedef OofError This;

@@ -14,9 +14,9 @@
 
 using std::type_info;
 
-using namespace boost::python;
-
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 static TfStaticData<TfTypeInfoMap<Tf_PyObjectFinderBase const *> > _finders;
 

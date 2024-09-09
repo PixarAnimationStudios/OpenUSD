@@ -9,12 +9,12 @@
 
 #include "pxr/base/tf/stopwatch.h"
 
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/class.hpp"
 
-
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void wrapStopwatch() {
 

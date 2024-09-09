@@ -11,10 +11,10 @@
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include <boost/noncopyable.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/return_value_policy.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
 
 #include <memory>
 #include <string>
@@ -22,9 +22,9 @@
 using std::string;
 using std::vector;
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

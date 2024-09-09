@@ -19,20 +19,20 @@
 
 #include "pxr/base/tf/pyErrorInternal.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/errors.hpp>
-#include <boost/python/return_by_value.hpp>
-#include <boost/python/return_value_policy.hpp>
-#include <boost/python/scope.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/errors.hpp"
+#include "pxr/external/boost/python/return_by_value.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
+#include "pxr/external/boost/python/scope.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 using std::string;
 using std::vector;
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -101,7 +101,7 @@ _GetErrors( const TfErrorMark & mark )
 // to continue executing.  This pushes them back on the TfError list for the
 // next client to handle them, or it reports them, if there are no TfErrorMarks.
 static bool
-_RepostErrors(boost::python::object exc)
+_RepostErrors(pxr_boost::python::object exc)
 {
     // XXX: Must use the string-based name until bug XXXXX is fixed.
     const bool TF_ERROR_MARK_TRACKING =

@@ -12,11 +12,11 @@
 #include "pxr/base/ts/tsTest_SampleTimes.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/class.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace boost::python;
+using namespace pxr_boost::python;
 
 
 void wrapTsTest_TsEvaluator()

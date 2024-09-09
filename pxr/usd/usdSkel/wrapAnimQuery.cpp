@@ -16,14 +16,14 @@
 
 #include "pxr/base/gf/interval.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <vector>
 
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 
 namespace {
@@ -38,7 +38,7 @@ _ComputeJointLocalTransforms(const UsdSkelAnimQuery& self, UsdTimeCode time)
 }
 
 
-boost::python::tuple
+pxr_boost::python::tuple
 _ComputeJointLocalTransformComponents(const UsdSkelAnimQuery& self, UsdTimeCode time)
 {
     VtVec3fArray translations;
@@ -46,7 +46,7 @@ _ComputeJointLocalTransformComponents(const UsdSkelAnimQuery& self, UsdTimeCode 
     VtVec3hArray scales;
     self.ComputeJointLocalTransformComponents(&translations, &rotations,
                                               &scales, time);
-    return boost::python::make_tuple(translations, rotations, scales);
+    return pxr_boost::python::make_tuple(translations, rotations, scales);
 }
 
 
