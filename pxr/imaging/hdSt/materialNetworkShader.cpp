@@ -41,7 +41,6 @@ _CollectPrimvarNames(const HdSt_MaterialParamVector &params);
 HdSt_MaterialNetworkShader::HdSt_MaterialNetworkShader()
  : HdStShaderCode()
  , _fragmentSource()
- , _geometrySource()
  , _params()
  , _paramSpec()
  , _paramArray()
@@ -64,9 +63,6 @@ HdSt_MaterialNetworkShader::_SetSource(
     if (shaderStageKey == HdShaderTokens->fragmentShader) {
         _fragmentSource = source;
         _isValidComputedHash = false;
-    } else if (shaderStageKey == HdShaderTokens->geometryShader) {
-        _geometrySource = source;
-        _isValidComputedHash = false;
     } else if (shaderStageKey == HdShaderTokens->displacementShader) {
         _displacementSource = source;
         _isValidComputedHash = false;
@@ -83,8 +79,6 @@ HdSt_MaterialNetworkShader::GetSource(TfToken const &shaderStageKey) const
 {
     if (shaderStageKey == HdShaderTokens->fragmentShader) {
         return _fragmentSource;
-    } else if (shaderStageKey == HdShaderTokens->geometryShader) {
-        return _geometrySource;
     } else if (shaderStageKey == HdShaderTokens->displacementShader) {
         return _displacementSource;
     }
@@ -179,7 +173,6 @@ HdSt_MaterialNetworkShader::_ComputeHash() const
 
     hash = TfHash::Combine(hash, 
         ArchHash(_fragmentSource.c_str(), _fragmentSource.size()),
-        ArchHash(_geometrySource.c_str(), _geometrySource.size()),
         ArchHash(_displacementSource.c_str(), _displacementSource.size())
     );
 
@@ -229,13 +222,6 @@ HdSt_MaterialNetworkShader::SetFragmentSource(const std::string &source)
 }
 
 void
-HdSt_MaterialNetworkShader::SetGeometrySource(const std::string &source)
-{
-    _geometrySource = source;
-    _isValidComputedHash = false;
-}
-
-void
 HdSt_MaterialNetworkShader::SetDisplacementSource(const std::string &source)
 {
     _displacementSource = source;
@@ -245,7 +231,7 @@ HdSt_MaterialNetworkShader::SetDisplacementSource(const std::string &source)
 void
 HdSt_MaterialNetworkShader::SetParams(const HdSt_MaterialParamVector &params)
 {
-    _params = params;
+   _params = params;
     _primvarNames = _CollectPrimvarNames(_params);
     _isValidComputedHash = false;
 }

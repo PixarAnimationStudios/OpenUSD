@@ -88,8 +88,6 @@ public:
     HDST_API
     void SetFragmentSource(const std::string &source);
     HDST_API
-    void SetGeometrySource(const std::string &source);
-    HDST_API
     void SetDisplacementSource(const std::string &source);
     HDST_API
     void SetParams(const HdSt_MaterialParamVector &params);
@@ -139,7 +137,6 @@ protected:
 
 private:
     std::string _fragmentSource;
-    std::string _geometrySource;
     std::string _displacementSource;
 
     // Shader Parameters

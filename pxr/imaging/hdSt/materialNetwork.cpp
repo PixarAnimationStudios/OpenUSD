@@ -1082,7 +1082,6 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
     HD_TRACE_FUNCTION();
 
     _fragmentSource.clear();
-    _geometrySource.clear();
     _displacementSource.clear();
     _materialMetadata.clear();
     _materialParams.clear();
@@ -1153,12 +1152,6 @@ std::string const&
 HdStMaterialNetwork::GetVolumeCode() const
 {
     return _volumeSource;
-}
-
-std::string const&
-HdStMaterialNetwork::GetGeometryCode() const
-{
-    return _geometrySource;
 }
 
 std::string const&
