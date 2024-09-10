@@ -199,7 +199,6 @@ _GetGPrimDescendantErrors(const UsdPrim& usdPrim)
                                    currentPrim.GetTypeName().GetText(),
                                    validGprimDescendantTypeNames.c_str())
             );
-            break;
         }
     }
 
