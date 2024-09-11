@@ -6,10 +6,9 @@ if (NOT ${PXR_ENABLE_GL_SUPPORT})
     message(STATUS
         "Building minimal ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
     if (NOT PXR_APPLE_EMBEDDED)
-        list(APPEND optionalLibs ${OPENGL_gl_LIBRARY})
+        list(APPEND optionalLibs OpenGL::GL)
     endif()
 else ()
-    list(APPEND optionalLibs ${Boost_PYTHON_LIBRARY})
     list(APPEND optionalLibs ${X11_LIBRARIES})
     if (TARGET OpenGL::GL)
         list(APPEND optionalLibs OpenGL::GL)
@@ -20,9 +19,6 @@ set(optionalPublicClasses "")
 if (X11_FOUND)
     list(APPEND optionalPublicClasses testGLContext)
 endif()
-
-set(optionalLibs "")
-set(optionalIncludeDirs "")
 
 pxr_library(glf
     LIBRARIES
@@ -37,10 +33,6 @@ pxr_library(glf
         trace
         sdf
         ${optionalLibs}
-
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
-        ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
         bindingMap
@@ -65,9 +57,6 @@ pxr_library(glf
 
     PUBLIC_HEADERS
         api.h
-
-    CPPFILES
-        ${optionalCppFiles}
 
     PYTHON_CPPFILES
         moduleDeps.cpp
