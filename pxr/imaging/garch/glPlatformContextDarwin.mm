@@ -10,12 +10,12 @@
 #include "glPlatformContextDarwin.h"
 
 #if defined(PXR_GL_SUPPORT_ENABLED)
-#ifdef ARCH_OS_OSX
-#import <AppKit/NSOpenGL.h>
-typedef NSOpenGLContext NSGLContext;
-#elif defined ARCH_OS_IPHONE
+#ifdef ARCH_OS_IPHONE
 #import <UIKit/UIKit.h>
 typedef EAGLContext NSGLContext;
+#else
+#import <AppKit/NSOpenGL.h>
+typedef NSOpenGLContext NSGLContext;
 #endif
 #else
 typedef void* NSGLContext;

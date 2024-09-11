@@ -53,7 +53,6 @@ if(APPLE)
             MESSAGE(STATUS "Setting PXR_BUILD_USD_TOOLS=OFF because they are not supported on Apple embedded platforms")
             set(PXR_BUILD_USD_TOOLS OFF)
         endif()
-        set(PXR_ENABLE_GL_SUPPORT OFF)
     endif ()
 endif()
 
@@ -67,6 +66,10 @@ endif()
 option(PXR_ENABLE_METAL_SUPPORT "Enable Metal based components" "${pxr_enable_metal}")
 option(PXR_ENABLE_VULKAN_SUPPORT "Enable Vulkan based components" OFF)
 option(PXR_ENABLE_GL_SUPPORT "Enable OpenGL based components" ON)
+
+if (PXR_APPLE_EMBEDDED)
+    set(PXR_ENABLE_GL_SUPPORT OFF)
+endif ()
 
 # Precompiled headers are a win on Windows, not on gcc.
 set(pxr_enable_pch "OFF")
