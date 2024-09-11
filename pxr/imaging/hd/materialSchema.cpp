@@ -41,6 +41,20 @@ HdMaterialSchema::GetMaterialNetwork()
 }
 
 HdMaterialNetworkSchema
+HdMaterialSchema::GetMaterialNetwork(TfToken const &context)
+{
+    if (auto b = _GetTypedDataSource<HdContainerDataSource>(context)) {
+        return HdMaterialNetworkSchema(b);
+    }
+
+    // If we can't find the context-specific binding, return the fallback.
+    return
+        HdMaterialNetworkSchema(
+            _GetTypedDataSource<HdContainerDataSource>(
+                HdMaterialSchemaTokens->universalRenderContext));
+}
+
+HdMaterialNetworkSchema
 HdMaterialSchema::GetMaterialNetwork(TfTokenVector const &contexts)
 {
     for (TfToken const &context : contexts) {
