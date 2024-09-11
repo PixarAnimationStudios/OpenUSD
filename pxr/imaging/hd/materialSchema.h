@@ -145,7 +145,7 @@ public:
     HdMaterialNetworkSchema GetMaterialNetwork();
 
     HD_API
-    HdMaterialNetworkSchema GetMaterialNetwork(TfToken const &context);
+    HdMaterialNetworkSchema GetMaterialNetwork(TfTokenVector const &contexts);
 
 // --(END CUSTOM CODE: Schema Methods)--
 
