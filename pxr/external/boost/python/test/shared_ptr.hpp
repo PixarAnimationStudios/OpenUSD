@@ -33,6 +33,13 @@ struct functions
     {
         store(shared_ptr<T>());
     }
+
+    static void release_store_nogil()
+    {
+        Py_BEGIN_ALLOW_THREADS
+        release_store();
+        Py_END_ALLOW_THREADS
+    }
     
     static void modify(shared_ptr<T>& x)
     {
@@ -77,6 +84,8 @@ struct functions
             .staticmethod("count")
             .def("release", &release_store)
             .staticmethod("release")
+            .def("release_nogil", &release_store_nogil)
+            .staticmethod("release_nogil")
             ;
     }
 

@@ -35,8 +35,30 @@ shared_ptr_deleter::shared_ptr_deleter(handle<> owner)
 
 shared_ptr_deleter::~shared_ptr_deleter() {}
 
+namespace
+{
+
+  class scoped_ensure_gil_state
+  {
+  public:
+    scoped_ensure_gil_state()
+        : m_gil_state(PyGILState_Ensure())
+    {}
+
+    ~scoped_ensure_gil_state()
+    {
+        PyGILState_Release(m_gil_state);
+    }
+
+  private:
+      PyGILState_STATE m_gil_state;
+  };
+
+}
+
 void shared_ptr_deleter::operator()(void const*)
 {
+    scoped_ensure_gil_state gil;
     owner.reset();
 }
 

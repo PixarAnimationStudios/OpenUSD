@@ -117,6 +117,22 @@ bye
 >>> Y.release()
 >>> Y.count()
 0
+
+# Test case where C++ receives a shared_ptr-wrapped object from Python
+# and drops the last instance later on in C++ when the GIL is not held.
+# This is simulated by calling release_nogil, which temporarily drops
+# the GIL while calling release.
+
+>>> y = Y(19)
+>>> Y.count()
+1
+>>> store(y)
+>>> del y
+>>> Y.count()
+1
+>>> Y.release_nogil()
+>>> Y.count()
+0
 '''
 
 def run(args = None):
