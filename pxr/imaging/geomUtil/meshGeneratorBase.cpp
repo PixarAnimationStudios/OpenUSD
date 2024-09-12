@@ -73,7 +73,7 @@ GeomUtilMeshGeneratorBase::_GenerateCappedQuadTopology(
     if (topCapStyle != CapStyleNone) {
         // Adjust the point index cursor if the edge isn't to be shared with the
         // preceeding quad strip.
-        if (topCapStyle == CapStyleSeparateEdge) {
+        if (numQuadStrips > 0 && topCapStyle == CapStyleSeparateEdge) {
             ptIdx += numRadialPts;
         }
         size_t topPtIdx = ptIdx + numRadialPts;
@@ -127,7 +127,7 @@ GeomUtilMeshGeneratorBase::_ComputeNumCappedQuadTopologyPoints(
     if (topCapStyle != CapStyleNone) {
         // Add pole point.
         ++result;
-        if (topCapStyle == CapStyleSeparateEdge) {
+        if (numQuadStrips > 0 && topCapStyle == CapStyleSeparateEdge) {
             // Add an extra set of radial points.
             result += numRadialPts;
         }
