@@ -580,12 +580,9 @@ void av1_filter_block_plane_vert_test(const AV1_COMMON *const cm,
                                       const uint32_t mi_col) {
   const uint32_t scale_horz = plane_ptr->subsampling_x;
   const uint32_t scale_vert = plane_ptr->subsampling_y;
-  uint8_t *const dst_ptr = plane_ptr->dst.buf;
-  const int dst_stride = plane_ptr->dst.stride;
   const int y_range = cm->mi_params.mi_rows >> scale_vert;
   const int x_range = cm->mi_params.mi_cols >> scale_horz;
   for (int y = 0; y < y_range; y++) {
-    uint8_t *p = dst_ptr + y * MI_SIZE * dst_stride;
     for (int x = 0; x < x_range;) {
       // inner loop always filter vertical edges in a MI block. If MI size
       // is 8x8, it will filter the vertical edge aligned with a 8x8 block.
@@ -609,7 +606,6 @@ void av1_filter_block_plane_vert_test(const AV1_COMMON *const cm,
       // advance the destination pointer
       advance_units = tx_size_wide_unit[tx_size];
       x += advance_units;
-      p += advance_units * MI_SIZE;
     }
   }
 }
@@ -622,12 +618,9 @@ void av1_filter_block_plane_horz_test(const AV1_COMMON *const cm,
                                       const uint32_t mi_col) {
   const uint32_t scale_horz = plane_ptr->subsampling_x;
   const uint32_t scale_vert = plane_ptr->subsampling_y;
-  uint8_t *const dst_ptr = plane_ptr->dst.buf;
-  const int dst_stride = plane_ptr->dst.stride;
   const int y_range = cm->mi_params.mi_rows >> scale_vert;
   const int x_range = cm->mi_params.mi_cols >> scale_horz;
   for (int x = 0; x < x_range; x++) {
-    uint8_t *p = dst_ptr + x * MI_SIZE;
     for (int y = 0; y < y_range;) {
       // inner loop always filter vertical edges in a MI block. If MI size
       // is 8x8, it will first filter the vertical edge aligned with a 8x8
@@ -651,7 +644,6 @@ void av1_filter_block_plane_horz_test(const AV1_COMMON *const cm,
       // advance the destination pointer
       advance_units = tx_size_high_unit[tx_size];
       y += advance_units;
-      p += advance_units * dst_stride * MI_SIZE;
     }
   }
 }
