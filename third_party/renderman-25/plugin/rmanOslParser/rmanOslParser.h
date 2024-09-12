@@ -108,7 +108,8 @@ private:
     // query object
     NdrPropertyUniquePtrVec _getNodeProperties(
         const RixShaderQuery* sq,
-        const NdrNodeDiscoveryResult& discoveryResult) const;
+        const NdrNodeDiscoveryResult& discoveryResult, 
+        const std::string& fallbackPrefix) const;
 
     // Gets all metadata for the node that's present on the specified OSL
     // query object
