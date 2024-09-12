@@ -43,5 +43,23 @@ class TestUsdCrateSpecific(unittest.TestCase):
                 '/dest.myrel').targetPathList.GetAppliedItems()),
             [])
 
+    def test_SamplesExportScalability(self):
+        """There was a bug (USD-10028) where a hash table in the crate file
+        writer used 'double' as a key and the default hash function, which on
+        clang/libc++ just returns the floating point bit pattern as an integer,
+        and the hash table just masks bits to produce an index.  This led to
+        essentially 100% collisions, and a hang on export of more than about 30k
+        samples.  This test just ensures we can write 100k samples.
+        """
+        stage = Usd.Stage.CreateInMemory()
+        prim = stage.DefinePrim("/test")
+        attr = prim.CreateAttribute("foo", Sdf.ValueTypeNames.Float)
+        numSamples = 100_000
+        for i in range(numSamples):
+            attr.Set(float(i), i)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            usdc = os.path.join(tmpdir, "foo.usdc")
+            stage.Export(usdc)
+
 if __name__ == "__main__":
     unittest.main()
