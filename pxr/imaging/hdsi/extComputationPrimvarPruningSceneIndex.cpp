@@ -166,7 +166,7 @@ private:
         _PathQueue compsQueue = { sourceCompId };
         
         while (!compsQueue.empty()) {
-            const SdfPath& curCompId = compsQueue.front();
+            const SdfPath curCompId = compsQueue.front();
             compsQueue.pop_front();
             
             // Nothing to do since we've already processed this computation
