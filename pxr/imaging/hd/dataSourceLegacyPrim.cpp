@@ -1930,16 +1930,16 @@ public:
             return Hd_DataSourceLegacyExtComputationInputValues::New(
                     _id, _sceneDelegate);
         } else if (name == HdExtComputationSchemaTokens->inputComputations) {
-            HdExtComputationInputDescriptorVector descs =
+            const HdExtComputationInputDescriptorVector descs =
                 _sceneDelegate->GetExtComputationInputDescriptors(_id);
-            std::vector<HdDataSourceBaseHandle> out;
-            out.reserve(descs.size());
+            std::vector<TfToken> names;
+            std::vector<HdDataSourceBaseHandle> dataSources;
+            names.reserve(descs.size());
+            dataSources.reserve(descs.size());
             for (const auto& desc : descs) {
-                out.push_back(
+                names.push_back(desc.name);
+                dataSources.push_back(
                     HdExtComputationInputComputationSchema::Builder()
-                        .SetName(
-                            HdRetainedTypedSampledDataSource<TfToken>::New(
-                                desc.name))
                         .SetSourceComputation(
                             HdRetainedTypedSampledDataSource<SdfPath>::New(
                                 desc.sourceComputationId))
@@ -1948,24 +1948,26 @@ public:
                                 desc.sourceComputationOutputName))
                         .Build());
             }
-            return HdRetainedSmallVectorDataSource::New(out.size(), out.data());
+            return HdRetainedContainerDataSource::New(
+                names.size(), names.data(), dataSources.data());
         } else if (name == HdExtComputationSchemaTokens->outputs) {
-            HdExtComputationOutputDescriptorVector descs =
+            const HdExtComputationOutputDescriptorVector descs =
                 _sceneDelegate->GetExtComputationOutputDescriptors(_id);
-            std::vector<HdDataSourceBaseHandle> out;
-            out.reserve(descs.size());
+            std::vector<TfToken> names;
+            std::vector<HdDataSourceBaseHandle> dataSources;
+            names.reserve(descs.size());
+            dataSources.reserve(descs.size());
             for (const auto& desc : descs) {
-                out.push_back(
+                names.push_back(desc.name);
+                dataSources.push_back(
                     HdExtComputationOutputSchema::Builder()
-                        .SetName(
-                            HdRetainedTypedSampledDataSource<TfToken>::New(
-                                desc.name))
                         .SetValueType(
                             HdRetainedTypedSampledDataSource<HdTupleType>::New(
                                 desc.valueType))
                         .Build());
             }
-            return HdRetainedSmallVectorDataSource::New(out.size(), out.data());
+            return HdRetainedContainerDataSource::New(
+                names.size(), names.data(), dataSources.data());
         } else if (name == HdExtComputationSchemaTokens->glslKernel) {
             std::string kernel = _sceneDelegate->GetExtComputationKernel(_id);
             return HdRetainedTypedSampledDataSource<std::string>::New(kernel);
@@ -1973,21 +1975,15 @@ public:
             return HdExtComputationCallbackDataSource::New(
                 _id, _sceneDelegate);
         } else if (name == HdExtComputationSchemaTokens->dispatchCount) {
-            size_t dispatchCount = 0;
-            VtValue vDispatch = _sceneDelegate->GetExtComputationInput(
+            const VtValue vDispatch = _sceneDelegate->GetExtComputationInput(
                 _id, HdTokens->dispatchCount);
-            if (vDispatch.IsHolding<size_t>()) {
-                dispatchCount = vDispatch.UncheckedGet<size_t>();
-            }
-            return HdRetainedTypedSampledDataSource<size_t>::New(dispatchCount);
+            return HdRetainedTypedSampledDataSource<size_t>::New(
+                vDispatch.GetWithDefault<size_t>(0));
         } else if (name == HdExtComputationSchemaTokens->elementCount) {
-            size_t elementCount = 0;
-            VtValue vElement = _sceneDelegate->GetExtComputationInput(
+            const VtValue vElement = _sceneDelegate->GetExtComputationInput(
                 _id, HdTokens->elementCount);
-            if (vElement.IsHolding<size_t>()) {
-                elementCount = vElement.UncheckedGet<size_t>();
-            }
-            return HdRetainedTypedSampledDataSource<size_t>::New(elementCount);
+            return HdRetainedTypedSampledDataSource<size_t>::New(
+                vElement.GetWithDefault<size_t>(0));
         } else {
             return nullptr;
         }

@@ -46,7 +46,7 @@ public:
     : HdContainerSchema(container)
     {}
 
-    typename T::Handle Get(const TfToken &name) {
+    typename T::Handle Get(const TfToken &name) const {
         return _GetTypedDataSource<T>(name);
     }
 };
@@ -63,7 +63,7 @@ public:
     : HdContainerSchema(container)
     {}
 
-    Schema Get(const TfToken &name) {
+    Schema Get(const TfToken &name) const {
         using DataSource = typename Schema::UnderlyingDataSource;
         return Schema(_GetTypedDataSource<DataSource>(name));
     }

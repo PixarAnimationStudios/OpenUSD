@@ -21,6 +21,7 @@
 /// \file
 
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/schemaTypeDefs.h"
 
 #include "pxr/imaging/hd/schema.h"
 
@@ -75,13 +76,13 @@ public:
     /// @{
 
     HD_API
-    HdContainerDataSourceHandle GetInputValues() const;
+    HdSampledDataSourceContainerSchema GetInputValues() const;
 
     HD_API
-    HdVectorDataSourceHandle GetInputComputations() const;
+    HdExtComputationInputComputationContainerSchema GetInputComputations() const;
 
     HD_API
-    HdVectorDataSourceHandle GetOutputs() const;
+    HdExtComputationOutputContainerSchema GetOutputs() const;
 
     HD_API
     HdStringDataSourceHandle GetGlslKernel() const;
@@ -164,8 +165,8 @@ public:
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdContainerDataSourceHandle &inputValues,
-        const HdVectorDataSourceHandle &inputComputations,
-        const HdVectorDataSourceHandle &outputs,
+        const HdContainerDataSourceHandle &inputComputations,
+        const HdContainerDataSourceHandle &outputs,
         const HdStringDataSourceHandle &glslKernel,
         const HdDataSourceBaseHandle &cpuCallback,
         const HdSizetDataSourceHandle &dispatchCount,
@@ -186,10 +187,10 @@ public:
             const HdContainerDataSourceHandle &inputValues);
         HD_API
         Builder &SetInputComputations(
-            const HdVectorDataSourceHandle &inputComputations);
+            const HdContainerDataSourceHandle &inputComputations);
         HD_API
         Builder &SetOutputs(
-            const HdVectorDataSourceHandle &outputs);
+            const HdContainerDataSourceHandle &outputs);
         HD_API
         Builder &SetGlslKernel(
             const HdStringDataSourceHandle &glslKernel);
@@ -209,8 +210,8 @@ public:
 
     private:
         HdContainerDataSourceHandle _inputValues;
-        HdVectorDataSourceHandle _inputComputations;
-        HdVectorDataSourceHandle _outputs;
+        HdContainerDataSourceHandle _inputComputations;
+        HdContainerDataSourceHandle _outputs;
         HdStringDataSourceHandle _glslKernel;
         HdDataSourceBaseHandle _cpuCallback;
         HdSizetDataSourceHandle _dispatchCount;
