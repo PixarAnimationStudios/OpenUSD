@@ -64,13 +64,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((patchEdgeOnlyFS,             "MeshPatchWire.Fragment.EdgeOnly"))
     ((patchEdgeOnSurfFS,           "MeshPatchWire.Fragment.EdgeOnSurface"))
 
-    ((selWireOffsetGS,             "Selection.Geometry.WireSelOffset"))
-    ((selWireNoOffsetGS,           "Selection.Geometry.WireSelNoOffset"))
-    
     // selection decoding
     ((selDecodeUtils,              "Selection.DecodeUtils"))
     ((selPointSelVS,               "Selection.Vertex.PointSel"))
-    ((selElementSelGS,             "Selection.Geometry.ElementSel"))
 
     // edge id mixins (for edge picking & selection)
     ((edgeIdCommonFS,              "EdgeId.Fragment.Common"))
@@ -381,16 +377,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
    
     GS[gsIndex++] = (normalsSource == NormalSourceFlatGeometric) ?
             _tokens->normalsGeometryFlat : _tokens->normalsGeometryNoFlat;
-
-    // emit "ComputeSelectionOffset" GS function.
-    if (renderWireframe) {
-        // emit necessary selection decoding and helper mixins
-        GS[gsIndex++] = _tokens->selDecodeUtils;
-        GS[gsIndex++] = _tokens->selElementSelGS;
-        GS[gsIndex++] = _tokens->selWireOffsetGS;
-    } else {
-        GS[gsIndex++] = _tokens->selWireNoOffsetGS;
-    }
 
     // Displacement shading can be disabled explicitly, or if the entrypoint
     // doesn't exist (resolved in HdStMesh).

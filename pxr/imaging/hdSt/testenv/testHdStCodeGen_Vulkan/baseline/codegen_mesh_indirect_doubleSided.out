@@ -4,7 +4,7 @@
 -- configuration
 {"techniques": {"default": {
 "vertexShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "PointId.Vertex.None", "Mesh.Vertex"] }
-, "geometryShader" : { "source" : ["Instancing.Transform", "MeshNormal.Flat", "MeshNormal.Geometry.NoFlat", "Selection.Geometry.WireSelNoOffset", "Geometry.NoCustomDisplacement", "Mesh.Geometry.Triangle"] }
+, "geometryShader" : { "source" : ["Instancing.Transform", "MeshNormal.Flat", "MeshNormal.Geometry.NoFlat", "Geometry.NoCustomDisplacement", "Mesh.Geometry.Triangle"] }
 , "fragmentShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "MeshNormal.Fragment.DoubleSided", "MeshFaceCull.Fragment.None", "MeshWire.Fragment.NoEdge", "MeshWire.Fragment.EdgeParam", "Fragment.CommonTerminals", "Fragment.Surface", "Fragment.ScalarOverride", "EdgeId.Fragment.Common", "EdgeId.Fragment.TriangleSurface", "EdgeId.Fragment.TriangleParam", "PointId.Fragment.Fallback", "Visibility.Fragment.Fallback", "Mesh.Fragment.PatchCoord", "Mesh.Fragment"] }
 }}}
 -------------------------------------------------------
@@ -1431,13 +1431,6 @@ vec3 GetQuadGeometryNormal(vec3 Neye,
 
 
 
-vec4 ComputeSelectionOffset()
-{
-    return vec4(0);
-}
-
-
-
 vec4 DisplacementTerminal(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
 {
     return Peye;
@@ -1471,8 +1464,6 @@ void emit(int index, vec4 Peye, vec3 Neye)
     EmitVertex();
 }
 
-FORWARD_DECL(vec4 ComputeSelectionOffset()); // selection.glslfx
-
 void main(void)
 {
     gl_PrimitiveID = gl_PrimitiveIDIn;
@@ -1495,13 +1486,6 @@ void main(void)
         1, inData[1].Peye, Neye1, GetPatchCoord(1));
     vec4 Peye2 = DisplacementTerminal(
         2, inData[2].Peye, Neye2, GetPatchCoord(2));
-
-    // For wireframe, add a polygon offset to selected faces to ensure they
-    // rasterize over unselected faces.
-    vec4 selOffset = ComputeSelectionOffset();
-    Peye0 += selOffset;
-    Peye1 += selOffset;
-    Peye2 += selOffset;
 
     // triangle 0: vertices (0,1,2)
     emit(0, Peye0, Neye0);
@@ -2515,6 +2499,11 @@ vec3 ComputeBaseFaceEdgeDistanceTriangle()
     return GetEdgeDistanceTriangle();
 }
 
+bool SelectWireframeFaceEdges()
+{
+    return false;
+}
+
 
 
 float GetSelectedEdgeOpacity()
@@ -2676,7 +2665,7 @@ void main(void)
 -- configuration
 {"techniques": {"default": {
 "vertexShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "PointId.Vertex.None", "Mesh.Vertex"] }
-, "geometryShader" : { "source" : ["Instancing.Transform", "MeshNormal.Flat", "MeshNormal.Geometry.NoFlat", "Selection.Geometry.WireSelNoOffset", "Geometry.NoCustomDisplacement", "Mesh.Geometry.Quad"] }
+, "geometryShader" : { "source" : ["Instancing.Transform", "MeshNormal.Flat", "MeshNormal.Geometry.NoFlat", "Geometry.NoCustomDisplacement", "Mesh.Geometry.Quad"] }
 , "fragmentShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "MeshNormal.Fragment.DoubleSided", "MeshFaceCull.Fragment.None", "MeshWire.Fragment.NoEdge", "MeshWire.Fragment.EdgeParam", "Fragment.CommonTerminals", "Fragment.Surface", "Fragment.ScalarOverride", "EdgeId.Fragment.Common", "EdgeId.Fragment.QuadSurface", "EdgeId.Fragment.QuadParam", "PointId.Fragment.Fallback", "Visibility.Fragment.Fallback", "Mesh.Fragment.PatchCoord", "Mesh.Fragment"] }
 }}}
 -------------------------------------------------------
@@ -4103,13 +4092,6 @@ vec3 GetQuadGeometryNormal(vec3 Neye,
 
 
 
-vec4 ComputeSelectionOffset()
-{
-    return vec4(0);
-}
-
-
-
 vec4 DisplacementTerminal(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
 {
     return Peye;
@@ -4143,8 +4125,6 @@ void emit(int index, vec4 Peye, vec3 Neye)
 
     EmitVertex();
 }
-
-FORWARD_DECL(vec4 ComputeSelectionOffset()); // selection.glslfx
 
 void main(void)
 {
@@ -4190,14 +4170,6 @@ void main(void)
     // which matters when we use smooth/limit normals.
     // In the case of flat normals, we use the vertex positions, so it doesn't
     // matter.
-
-    // For wireframe, add a polygon offset to selected faces to ensure they
-    // rasterize over unselected faces.
-    vec4 selOffset = ComputeSelectionOffset();
-    Peye0 += selOffset;
-    Peye1 += selOffset;
-    Peye2 += selOffset;
-    Peye3 += selOffset;
 
     // triangle 0: vertices (0,1,2)
     emit(0, Peye0, Neye0);
@@ -5213,6 +5185,11 @@ float SelectedEdgeFalloff(float d) {
 vec4 ComputeBaseFaceEdgeDistanceQuad()
 {
     return GetEdgeDistanceQuad();
+}
+
+bool SelectWireframeFaceEdges()
+{
+    return false;
 }
 
 
