@@ -447,7 +447,7 @@ private:
             "   * Invalidating categories on %zu targets ....\n",
             targets.size());
 
-        for (const auto targetPath : targets) {
+        for (const SdfPath &targetPath : targets) {
             dirtiedEntries->push_back(
                 HdSceneIndexObserver::DirtiedPrimEntry(
                     targetPath, HdCategoriesSchema::GetDefaultLocator()));
