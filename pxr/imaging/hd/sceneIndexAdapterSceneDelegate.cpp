@@ -1796,7 +1796,8 @@ HdSceneIndexAdapterSceneDelegate::_ComputeExtCmpPrimvarDescriptors(
     if (HdExtComputationPrimvarsSchema primvars =
         HdExtComputationPrimvarsSchema::GetFromParent(primDataSource)) {
         for (const TfToken &name : primvars.GetExtComputationPrimvarNames()) {
-            HdExtComputationPrimvarSchema primvar = primvars.GetPrimvar(name);
+            HdExtComputationPrimvarSchema primvar =
+                primvars.GetExtComputationPrimvar(name);
             if (!primvar) {
                 continue;
             }

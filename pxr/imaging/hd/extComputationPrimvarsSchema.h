@@ -63,17 +63,16 @@ public:
     /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
-
-    HD_API
-    TfTokenVector GetExtComputationPrimvarNames();
-
-    HD_API
-    HdExtComputationPrimvarSchema GetPrimvar(const TfToken &name);
-
 // --(END CUSTOM CODE: Schema Methods)--
 
     /// \name Member accessor
-    /// @{ 
+    /// @{
+
+    HD_API
+    TfTokenVector GetExtComputationPrimvarNames() const;
+
+    HD_API
+    HdExtComputationPrimvarSchema GetExtComputationPrimvar(const TfToken &name) const; 
 
     /// @}
 
@@ -94,6 +93,12 @@ public:
 
     /// \name Schema construction
     /// @{
+    HD_API
+    static HdContainerDataSourceHandle
+    BuildRetained(
+        size_t count,
+        const TfToken *names,
+        const HdDataSourceBaseHandle *values);
 
     /// @}
 };

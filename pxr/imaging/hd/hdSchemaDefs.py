@@ -1141,6 +1141,8 @@
         SCHEMA_NAME = 'ExtComputationPrimvars',
         SCHEMA_TOKEN = 'extComputationPrimvars',
         ADD_DEFAULT_LOCATOR = True,
+        GENERIC_MEMBER = ('extComputationPrimvar', 'HdExtComputationPrimvarSchema', {}),
+        
         SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/extComputationPrimvarSchema'],
     ),
 
