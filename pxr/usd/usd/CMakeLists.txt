@@ -212,6 +212,7 @@ pxr_test_scripts(
     testenv/testUsdCollectionAPI.py
     testenv/testUsdCratePayloadConversionFromVersion07.py
     testenv/testUsdCrateRelocates.py
+    testenv/testUsdCrateSpecific.py
     testenv/testUsdCreateProperties.py
     testenv/testUsdDataFormats.py
     testenv/testUsdExternalAssetDependencies.py
@@ -1112,6 +1113,12 @@ pxr_register_test(testUsdCratePayloadConversionFromVersion07
 pxr_register_test(testUsdCrateRelocates
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCrateRelocates"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdCrateSpecific
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCrateSpecific"
     EXPECTED_RETURN_CODE 0
 )
 
