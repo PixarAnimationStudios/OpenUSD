@@ -6,11 +6,11 @@
     }
 )
 
-class "NonAppliedAPI"
+class "DerivedNonAppliedAPI"
 {
 }
 
-class "DerivedNonAppliedAPI"
+class "NonAppliedAPI"
 {
 }
 
