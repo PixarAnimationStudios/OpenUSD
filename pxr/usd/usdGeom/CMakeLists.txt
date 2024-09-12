@@ -2,6 +2,8 @@ set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdGeom)
 
 pxr_library(usdGeom
+    INCLUDE_SCHEMA_FILES
+
     LIBRARIES
         js
         tf
@@ -18,46 +20,14 @@ pxr_library(usdGeom
 
     PUBLIC_CLASSES
         debugCodes
-        tokens
         bboxCache
         constraintTarget
         xformCache
-        basisCurves
-        boundable
         boundableComputeExtent
-        camera
-        capsule
-        capsule_1
-        cone
-        cube
-        curves
-        cylinder
-        cylinder_1
-        hermiteCurves
-        imageable
-        gprim
-        mesh
         metrics
-        modelAPI
-        motionAPI
-        nurbsCurves
-        nurbsPatch
-        plane
-        pointBased
-        pointInstancer
-        points
         primvar
-        primvarsAPI
-        scope
-        sphere
-        subset
-        tetMesh
         validatorTokens
-        visibilityAPI
-        xform
-        xformable
         xformOp
-        xformCommonAPI
         
     PUBLIC_HEADERS
         api.h
@@ -72,53 +42,15 @@ pxr_library(usdGeom
         samplingUtils
 
     PYMODULE_CPPFILES
-        module.cpp
         wrapBBoxCache.cpp
-        wrapBasisCurves.cpp
-        wrapBoundable.cpp
-        wrapCamera.cpp
         wrapConstraintTarget.cpp
-        wrapCapsule.cpp
-        wrapCapsule_1.cpp
-        wrapCone.cpp
-        wrapCube.cpp
-        wrapCurves.cpp
-        wrapCylinder.cpp
-        wrapCylinder_1.cpp
-        wrapGprim.cpp
-        wrapHermiteCurves.cpp
-        wrapImageable.cpp
-        wrapMesh.cpp
         wrapMetrics.cpp
-        wrapModelAPI.cpp
-        wrapMotionAPI.cpp
-        wrapNurbsCurves.cpp
-        wrapNurbsPatch.cpp
-        wrapPlane.cpp
-        wrapPointBased.cpp
-        wrapPointInstancer.cpp
-        wrapPoints.cpp
         wrapPrimvar.cpp
-        wrapPrimvarsAPI.cpp
-        wrapScope.cpp
-        wrapSphere.cpp
-        wrapSubset.cpp
-        wrapTetMesh.cpp
-        wrapTokens.cpp
-        wrapVisibilityAPI.cpp
-        wrapXform.cpp
         wrapXformCache.cpp
-        wrapXformable.cpp
         wrapXformOp.cpp
-        wrapXformCommonAPI.cpp
 
     PYMODULE_FILES
         __init__.py
-
-    RESOURCE_FILES
-        plugInfo.json
-        generatedSchema.usda
-        schema.usda:usdGeom/schema.usda
 
     DOXYGEN_FILES
         overview.dox

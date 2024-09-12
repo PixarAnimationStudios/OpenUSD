@@ -2,6 +2,8 @@ set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdSkel)
 
 pxr_library(usdSkel
+    INCLUDE_SCHEMA_FILES
+
     LIBRARIES
         arch
         gf
@@ -18,21 +20,15 @@ pxr_library(usdSkel
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
-        animation
         animMapper
         animQuery
         bakeSkinning
-        bindingAPI
-        blendShape
         blendShapeQuery
         cache
         debugCodes
         inbetweenShape
-        root
-        skeleton
         skeletonQuery
         skinningQuery
-        tokens
         topology
         utils
         validatorTokens
@@ -56,29 +52,17 @@ pxr_library(usdSkel
         __init__.py
 
     PYMODULE_CPPFILES
-        module.cpp
-        wrapAnimation.cpp
         wrapAnimMapper.cpp
         wrapAnimQuery.cpp
         wrapBakeSkinning.cpp
         wrapBlendShapeQuery.cpp
         wrapBinding.cpp
-        wrapBindingAPI.cpp
-        wrapBlendShape.cpp
         wrapCache.cpp
         wrapInbetweenShape.cpp
-        wrapRoot.cpp
-        wrapSkeleton.cpp
         wrapSkeletonQuery.cpp
         wrapSkinningQuery.cpp
-        wrapTokens.cpp
         wrapTopology.cpp
         wrapUtils.cpp
-
-    RESOURCE_FILES
-        generatedSchema.usda
-        plugInfo.json
-        schema.usda:usdSkel/schema.usda
 
     DOXYGEN_FILES
         overview.dox

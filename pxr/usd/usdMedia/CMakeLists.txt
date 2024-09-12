@@ -2,6 +2,8 @@ set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdMedia)
 
 pxr_library(usdMedia
+    INCLUDE_SCHEMA_FILES
+
     LIBRARIES
         tf
         vt
@@ -9,30 +11,14 @@ pxr_library(usdMedia
         usd
         usdGeom
 
-    PUBLIC_CLASSES
-        assetPreviewsAPI
-        spatialAudio
-        tokens
-
     PUBLIC_HEADERS
         api.h
 
     PYTHON_CPPFILES
         moduleDeps.cpp
 
-    PYMODULE_CPPFILES
-        module.cpp
-        wrapAssetPreviewsAPI.cpp
-        wrapSpatialAudio.cpp
-        wrapTokens.cpp
-
     PYMODULE_FILES 
         __init__.py
-
-    RESOURCE_FILES
-        plugInfo.json
-        generatedSchema.usda
-        schema.usda:usdMedia/schema.usda
 
     DOXYGEN_FILES
         overview.dox

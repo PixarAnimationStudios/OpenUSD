@@ -2,6 +2,8 @@ set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usd)
 
 pxr_library(usd
+    INCLUDE_SCHEMA_FILES
+
     LIBRARIES
         arch
         kind
@@ -20,11 +22,8 @@ pxr_library(usd
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
-        apiSchemaBase
         attribute
-        clipsAPI
         attributeQuery
-        collectionAPI
         collectionMembershipQuery
         collectionPredicateLibrary
         common
@@ -36,7 +35,6 @@ pxr_library(usd
         flattenUtils
         inherits
         interpolation
-        modelAPI
         namespaceEditor
         notice
         object
@@ -64,8 +62,6 @@ pxr_library(usd
         stageLoadRules
         stagePopulationMask
         timeCode
-        tokens
-        typed
         validator
         validatorTokens
         validationError
@@ -113,12 +109,8 @@ pxr_library(usd
         moduleDeps.cpp
 
     PYMODULE_CPPFILES
-        module.cpp
-        wrapAPISchemaBase.cpp
         wrapAttribute.cpp
         wrapAttributeQuery.cpp
-        wrapClipsAPI.cpp
-        wrapCollectionAPI.cpp
         wrapCollectionMembershipQuery.cpp
         wrapCommon.cpp
         wrapCrateInfo.cpp
@@ -127,7 +119,6 @@ pxr_library(usd
         wrapFlattenUtils.cpp
         wrapInherits.cpp
         wrapInterpolation.cpp
-        wrapModelAPI.cpp
         wrapNamespaceEditor.cpp
         wrapNotice.cpp
         wrapObject.cpp
@@ -151,9 +142,7 @@ pxr_library(usd
         wrapStageCacheContext.cpp
         wrapStageLoadRules.cpp
         wrapStagePopulationMask.cpp
-        wrapTokens.cpp
         wrapTimeCode.cpp
-        wrapTyped.cpp
         wrapUsdFileFormat.cpp
         wrapUtils.cpp
         wrapValidationError.cpp
@@ -166,9 +155,6 @@ pxr_library(usd
         __init__.py
 
     RESOURCE_FILES
-        plugInfo.json
-        generatedSchema.usda
-        schema.usda:usd/schema.usda
         codegenTemplates/api.h
         codegenTemplates/plugInfo.json:no_subst
         codegenTemplates/schemaClass.cpp
