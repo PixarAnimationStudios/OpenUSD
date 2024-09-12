@@ -182,6 +182,16 @@ PyObject* function::call(PyObject* args, PyObject* keywords) const
                             // Get the keyword[, value pair] corresponding
                             PyObject* kv = PyTuple_GET_ITEM(f->m_arg_names.ptr(), arg_pos);
 
+                            // If kv is None, this overload does not accept a
+                            // keyword argument in this position, meaning that
+                            // the caller did not supply enough positional
+                            // arguments.  Reject the overload.
+                            if (kv == Py_None) {
+                                PyErr_Clear();
+                                inner_args = handle<>();
+                                break;
+                            }
+
                             // If there were any keyword arguments,
                             // look up the one we need for this
                             // argument position
