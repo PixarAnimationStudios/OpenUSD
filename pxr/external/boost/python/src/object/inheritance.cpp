@@ -9,20 +9,16 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #include "pxr/external/boost/python/object/inheritance.hpp"
 #include "pxr/external/boost/python/type_id.hpp"
-#include <boost/graph/breadth_first_search.hpp>
-#if _MSC_FULL_VER >= 13102171 && _MSC_FULL_VER <= 13102179
-# include <boost/graph/reverse_graph.hpp>
-#endif 
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/reverse_graph.hpp>
-#include <boost/property_map/property_map.hpp>
-#include <boost/bind/bind.hpp>
+#include <boost/bind/mem_fn.hpp>
+#include <boost/functional/hash.hpp>
 #include <boost/integer_traits.hpp>
+#include <boost/scoped_array.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
+#include <algorithm>
+#include <deque>
 #include <queue>
 #include <vector>
-#include <functional>
 
 //
 // Procedure:
@@ -38,20 +34,8 @@
 namespace PXR_BOOST_NAMESPACE {
 namespace
 {
-  enum edge_cast_t { edge_cast = 8010 };
   template <class T> inline void unused_variable(const T&) { }
-}
-}
 
-namespace boost {
-using namespace PXR_BOOST_NAMESPACE;
-// Install properties
-BOOST_INSTALL_PROPERTY(edge, cast);
-}
-
-namespace PXR_BOOST_NAMESPACE {
-namespace
-{
   typedef void*(*cast_function)(void*);
   
   //
@@ -60,74 +44,295 @@ namespace
   //
   typedef python::type_info class_id;
 
+  typedef unsigned int vertex_t;
+  typedef unsigned int distance_t;
+
+  struct edge_t
+  {
+      vertex_t target;
+      cast_function cast;
+  };
+
   // represents a graph of available casts
   
-#if 0
   struct cast_graph
-      :
-#else
-        typedef
-#endif 
-        adjacency_list<vecS,vecS, bidirectionalS, no_property
+  {
+      typedef std::vector<edge_t>::const_iterator out_edge_iterator;
+      typedef std::pair<out_edge_iterator, out_edge_iterator> out_edges_t;
 
-      // edge index property allows us to look up edges in the connectivity matrix
-      , property<edge_index_t,std::size_t
-  
-                 // The function which casts a void* from the edge's source type
-                 // to its destination type.
-                 , property<edge_cast_t,cast_function> > >
-#if 0
-  {};
-#else
-  cast_graph;
-#endif 
+      typedef std::vector<vertex_t>::const_iterator in_edge_iterator;
+      typedef std::pair<in_edge_iterator, in_edge_iterator> in_edges_t;
 
-  typedef cast_graph::vertex_descriptor vertex_t;
-  typedef cast_graph::edge_descriptor edge_t;
+      std::size_t num_vertices() const
+      {
+          return m_out_edges.size();
+      }
+
+      vertex_t add_vertex()
+      {
+          vertex_t v = m_out_edges.size();
+          m_out_edges.push_back(std::vector<edge_t>());
+          m_in_edges.push_back(std::vector<vertex_t>());
+          assert(m_out_edges.size() == m_in_edges.size());
+          return v;
+      }
+
+      void add_edge(vertex_t src, vertex_t target, cast_function cast)
+      {
+          assert(target < m_in_edges.size());
+          edge_t e = { target, cast };
+          m_out_edges[src].push_back(e);
+          m_in_edges[target].push_back(src);
+      }
+
+      bool has_edge(vertex_t src, vertex_t target) const
+      {
+          assert(src < m_out_edges.size());
+          std::vector<edge_t> const& out_edges = m_out_edges[src];
+
+          for (out_edge_iterator p = out_edges.begin()
+                   , finish = out_edges.end()
+                   ; p != finish
+                   ; ++p)
+          {
+              if (p->target == target) {
+                  return true;
+              }
+          }
+          return false;
+      }
+
+      out_edges_t out_edges(vertex_t src) const
+      {
+          assert(src < m_out_edges.size());
+          std::vector<edge_t> const& out_edges = m_out_edges[src];
+          return out_edges_t(out_edges.begin(), out_edges.end());
+      }
+
+      in_edges_t in_edges(vertex_t src) const
+      {
+          assert(src < m_in_edges.size());
+          std::vector<vertex_t> const& in_edges = m_in_edges[src];
+          return in_edges_t(in_edges.begin(), in_edges.end());
+      }
+
+   private:
+      // A pair of adjacency lists to hold the graph of casts as well as its
+      // transpose.
+      std::vector<std::vector<edge_t> > m_out_edges;
+      std::vector<std::vector<vertex_t> > m_in_edges;
+  };
   
+  // Each distance is stored along with the version of the graph used to
+  // compute it.  As the graph expands, the distance can be recomputed in
+  // place.
+  struct path_distance
+  {
+      path_distance(vertex_t source, vertex_t target)
+          : source(source)
+          , target(target)
+          , distance(0)
+          , version(0)
+      {}
+
+      vertex_t source;
+      vertex_t target;
+      distance_t distance;
+      unsigned int version;
+  };
+
+  // Sparse storage of cast_graph distances.
+  //
+  // This is a very simple implementation of a chaining hash map whose number
+  // of buckets is always a power-of-two and load factor is one.  It supports
+  // only insertion and lookup and implements a rudimentary node pool via
+  // std::deque.
+  class all_pairs_distance_map
+  {
+      BOOST_STATIC_CONSTANT(std::size_t, initial_bucket_count = 16);
+
+      struct node
+          : path_distance
+      {
+          node(vertex_t source, vertex_t target, node *next)
+              : path_distance(source, target)
+              , next(next)
+          {}
+
+          node *next;
+      };
+      
+   public:
+      all_pairs_distance_map()
+          : m_buckets(new node*[initial_bucket_count]())
+          , m_size(0)
+          , m_mask(initial_bucket_count-1)
+      {
+      }
+
+      path_distance const* find(vertex_t source, vertex_t target) const
+      {
+          std::size_t idx = compute_hash(source, target) & m_mask;
+          node *nd = m_buckets[idx];
+          for (; nd; nd = nd->next) {
+              if (nd->source == source && nd->target == target) {
+                  return nd;
+              }
+          }
+          return 0;
+      }
+
+      path_distance* insert(vertex_t source, vertex_t target)
+      {
+          std::size_t h = compute_hash(source, target);
+          {
+              std::size_t idx = h & m_mask;
+              node *nd = m_buckets[idx];
+              for (; nd; nd = nd->next) {
+                  if (nd->source == source && nd->target == target) {
+                      return nd;
+                  }
+              }
+          }
+
+          if (m_size == bucket_count()) {
+              rehash();
+          }
+          ++m_size;
+
+          std::size_t idx = h & m_mask;
+          m_node_pool.push_back(node(source, target, m_buckets[idx]));
+          node *nd = &m_node_pool.back();
+          m_buckets[idx] = nd;
+          return nd;
+      }
+
+   private:
+      std::size_t bucket_count() const
+      {
+          return m_mask + 1;
+      }
+
+      void rehash()
+      {
+          std::size_t old_bucket_count = bucket_count();
+          std::size_t new_bucket_count = 2*old_bucket_count;
+          std::size_t new_mask = new_bucket_count - 1;
+          boost::scoped_array<node*> new_buckets(new node*[new_bucket_count]());
+
+          for (std::size_t i=0; i<old_bucket_count; ++i) {
+              node *nd = m_buckets[i];
+              while (nd) {
+                  node *next = nd->next;
+                  size_t new_idx = compute_hash(nd->source, nd->target) & new_mask;
+
+                  nd->next = new_buckets[new_idx];
+                  new_buckets[new_idx] = nd;
+                  nd = next;
+              }
+          }
+
+          m_buckets.swap(new_buckets);
+          m_mask = new_mask;
+      }
+
+      static std::size_t compute_hash(vertex_t source, vertex_t target)
+      {
+          std::size_t h = boost::hash<vertex_t>()(source);
+          boost::hash_combine(h, target);
+          return h;
+      }
+
+      boost::scoped_array<node*> m_buckets;
+      std::size_t m_size;
+      std::size_t m_mask;
+      std::deque<node> m_node_pool;
+  };
+
+  // For a pair of vertices, (outer_key, inner_key), node_distance_map
+  // provides a submap view over the inner_keys for a given outer_key.
+  class node_distance_map
+  {
+   public:
+      node_distance_map(all_pairs_distance_map &full_map, vertex_t outer_key, unsigned int version)
+          : m_all_pairs_map(full_map)
+          , m_outer_key(outer_key)
+          , m_version(version)
+      {}
+
+      bool is_initialized() const
+      {
+          // Check the version of the identity entry (if it exists) to see if
+          // this row needs (re-)initialization.
+          path_distance const *i = m_all_pairs_map.find(m_outer_key, m_outer_key);
+          assert(!i || i->distance == 0);
+          return i && i->version == m_version;
+      }
+
+      distance_t distance(vertex_t inner_key) const
+      {
+          path_distance const *i = m_all_pairs_map.find(m_outer_key, inner_key);
+          return (i && i->version == m_version)
+              ? i->distance : (std::numeric_limits<distance_t>::max)();
+      }
+
+      // Returns true if a new entry was inserted or an older version was
+      // replaced.
+      bool set_distance(vertex_t inner_key, distance_t value)
+      {
+          path_distance *i = m_all_pairs_map.insert(m_outer_key, inner_key);
+          if (i->version != m_version) {
+              i->distance = value;
+              i->version = m_version;
+              return true;
+          }
+          return false;
+      }
+
+   private:
+      all_pairs_distance_map &m_all_pairs_map;
+      vertex_t m_outer_key;
+      unsigned int m_version;
+  };
+
   struct smart_graph
   {
-      typedef std::vector<std::size_t>::const_iterator node_distance_map;
-      
-      typedef std::pair<cast_graph::out_edge_iterator
-                        , cast_graph::out_edge_iterator> out_edges_t;
-      
       // Return a map of the distances from any node to the given
       // target node
       node_distance_map distances_to(vertex_t target) const
       {
-          std::size_t n = num_vertices(m_topology);
-          if (m_distances.size() != n * n)
-          {
-              m_distances.clear();
-              m_distances.resize(n * n, (std::numeric_limits<std::size_t>::max)());
-              m_known_vertices = n;
-          }
-          
-          std::vector<std::size_t>::iterator to_target = m_distances.begin() + n * target;
+          unsigned int version = m_topology.num_vertices();
+
+          node_distance_map to_target(m_distances, target, version);
 
           // this node hasn't been used as a target yet
-          if (to_target[target] != 0)
+          if (!to_target.is_initialized())
           {
-              typedef reverse_graph<cast_graph> reverse_cast_graph;
-              reverse_cast_graph reverse_topology(m_topology);
-              
-              to_target[target] = 0;
-              
-              breadth_first_search(
-                  reverse_topology, target
-                  , visitor(
-                      make_bfs_visitor(
-                          record_distances(
-                              make_iterator_property_map(
-                                  to_target
-                                  , get(vertex_index, reverse_topology)
-# ifdef BOOST_NO_STD_ITERATOR_TRAITS
-                                  , *to_target
-# endif 
-                                  )
-                              , on_tree_edge()
-                              ))));
+              typedef std::pair<vertex_t, distance_t> node_distance;
+              std::queue<node_distance> q;
+
+              q.push(node_distance(target, 0));
+              while (!q.empty())
+              {
+                  node_distance top = q.front();
+                  q.pop();
+
+                  vertex_t v = top.first;
+                  distance_t dist = top.second;
+                  if (!to_target.set_distance(v, dist)) {
+                      continue;
+                  }
+
+                  cast_graph::in_edges_t in_edges = m_topology.in_edges(v);
+                  for (cast_graph::in_edge_iterator p = in_edges.first
+                           , finish = in_edges.second
+                           ; p != finish
+                           ; ++p
+                      )
+                  {
+                      q.push(node_distance(*p, dist + 1));
+                  }
+              }
           }
 
           return to_target;
@@ -135,15 +340,10 @@ namespace
 
       cast_graph& topology() { return m_topology; }
       cast_graph const& topology() const { return m_topology; }
-
-      smart_graph()
-          : m_known_vertices(0)
-      {}
       
    private:
       cast_graph m_topology;
-      mutable std::vector<std::size_t> m_distances;
-      mutable std::size_t m_known_vertices;
+      mutable all_pairs_distance_map m_distances;
   };
   
   smart_graph& full_graph()
@@ -162,15 +362,18 @@ namespace
   // Our index of class types
   //
   using PXR_BOOST_NAMESPACE::python::objects::dynamic_id_function;
-  typedef tuples::tuple<
-      class_id               // static type
-      , vertex_t             // corresponding vertex 
-      , dynamic_id_function  // dynamic_id if polymorphic, or 0
-      >
-  index_entry_interface;
-  typedef index_entry_interface::inherited index_entry;
-  enum { ksrc_static_t, kvertex, kdynamic_id };
-  
+  struct index_entry {
+      index_entry(class_id src_static_type
+                  , vertex_t vertex)
+          : src_static_type(src_static_type)
+          , vertex(vertex)
+          , dynamic_id(0)
+      {}
+
+      class_id src_static_type;       // static type
+      vertex_t vertex;                // corresponding vertex 
+      dynamic_id_function dynamic_id; // dynamic_id if polymorphic, or 0
+  };
   typedef std::vector<index_entry> type_index_t;
 
   
@@ -180,35 +383,25 @@ namespace
       return x;
   }
 
-  template <class Tuple>
-  struct select1st
+  inline bool index_entry_static_type_less_than(index_entry const& entry, class_id type)
   {
-      typedef typename tuples::element<0, Tuple>::type result_type;
-      
-      result_type const& operator()(Tuple const& x) const
-      {
-          return tuples::get<0>(x);
-      }
-  };
-  
+      return entry.src_static_type < type;
+  }
+
   // map a type to a position in the index
   inline type_index_t::iterator type_position(class_id type)
   {
-      using namespace boost::placeholders;
-      typedef index_entry entry;
+      type_index_t &ti = type_index();
       
       return std::lower_bound(
-          type_index().begin(), type_index().end()
-          , boost::make_tuple(type, vertex_t(), dynamic_id_function(0))
-          , boost::bind<bool>(std::less<class_id>()
-               , boost::bind<class_id>(select1st<entry>(), _1)
-               , boost::bind<class_id>(select1st<entry>(), _2)));
+          ti.begin(), ti.end(), type,
+          index_entry_static_type_less_than);
   }
 
   inline index_entry* seek_type(class_id type)
   {
       type_index_t::iterator p = type_position(type);
-      if (p == type_index().end() || tuples::get<ksrc_static_t>(*p) != type)
+      if (p == type_index().end() || p->src_static_type != type)
           return 0;
       else
           return &*p;
@@ -219,14 +412,14 @@ namespace
   {
       type_index_t::iterator p = type_position(type);
 
-      if (p != type_index().end() && tuples::get<ksrc_static_t>(*p) == type)
+      if (p != type_index().end() && p->src_static_type == type)
           return p;
 
-      vertex_t v = add_vertex(full_graph().topology());
-      vertex_t v2 = add_vertex(up_graph().topology());
+      vertex_t v = full_graph().topology().add_vertex();
+      vertex_t v2 = up_graph().topology().add_vertex();
       unused_variable(v2);
       assert(v == v2);
-      return type_index().insert(p, boost::make_tuple(type, v, dynamic_id_function(0)));
+      return type_index().insert(p, index_entry(type, v));
   }
 
   // Map a two types to a vertex in the graph, inserting if necessary
@@ -236,8 +429,13 @@ namespace
   inline type_index_iterator_pair
   demand_types(class_id t1, class_id t2)
   {
-      // be sure there will be no reallocation
-      type_index().reserve(type_index().size() + 2);
+      // be sure there will be no reallocation between the first and second
+      // call to demand_type (but don't thwart geometric growth)
+      type_index_t &ti = type_index();
+      type_index_t::size_type new_size = ti.size() + 2;
+      if (new_size > ti.capacity()) {
+          ti.reserve(new_size + new_size/2);
+      }
       type_index_t::iterator first = demand_type(t1);
       type_index_t::iterator second = demand_type(t2);
       if (first == second)
@@ -247,7 +445,7 @@ namespace
 
   struct q_elt
   {
-      q_elt(std::size_t distance
+      q_elt(distance_t distance
             , void* src_address
             , vertex_t target
             , cast_function cast
@@ -258,7 +456,7 @@ namespace
           , cast(cast)
       {}
       
-      std::size_t distance;
+      distance_t distance;
       void* src_address;
       vertex_t target;
       cast_function cast;
@@ -296,25 +494,20 @@ namespace
 
   void* search(smart_graph const& g, void* p, vertex_t src, vertex_t dst)
   {
-      // I think this test was thoroughly bogus -- dwa
-      // If we know there's no path; bail now.
-      // if (src > g.known_vertices() || dst > g.known_vertices())
-      //    return 0;
-      
-      smart_graph::node_distance_map d(g.distances_to(dst));
+      node_distance_map d(g.distances_to(dst));
 
-      if (d[src] == (std::numeric_limits<std::size_t>::max)())
+      // If we know there's no path; bail now.
+      distance_t const unreachable = (std::numeric_limits<distance_t>::max)();
+      distance_t const src_distance = d.distance(src);
+      if (src_distance == unreachable)
           return 0;
 
-      typedef property_map<cast_graph,edge_cast_t>::const_type cast_map;
-      cast_map casts = get(edge_cast, g.topology());
-      
       typedef std::pair<vertex_t,void*> search_state;
       typedef std::vector<search_state> visited_t;
       visited_t visited;
       std::priority_queue<q_elt> q;
       
-      q.push(q_elt(d[src], p, src, identity_cast));
+      q.push(q_elt(src_distance, p, src, identity_cast));
       while (!q.empty())
       {
           q_elt top = q.top();
@@ -340,7 +533,7 @@ namespace
           visited.insert(pos, s); // mark it
 
           // expand it:
-          smart_graph::out_edges_t edges = out_edges(s.first, g.topology());
+          cast_graph::out_edges_t edges = g.topology().out_edges(s.first);
           for (cast_graph::out_edge_iterator p = edges.first
                    , finish = edges.second
                    ; p != finish
@@ -348,11 +541,14 @@ namespace
               )
           {
               edge_t e = *p;
-              q.push(q_elt(
-                         d[target(e, g.topology())]
-                         , dst_address
-                         , target(e, g.topology())
-                         , boost::get(casts, e)));
+              distance_t dist = d.distance(e.target);
+              if (dist != unreachable) {
+                  q.push(q_elt(
+                             dist
+                             , dst_address
+                             , e.target
+                             , e.cast));
+              }
           }
       }
       return 0;
@@ -389,7 +585,6 @@ namespace
       }
   };
   
-  enum { kdst_t = ksrc_static_t + 1, koffset, ksrc_dynamic_t };
   typedef std::vector<cache_element> cache_t;
 
   cache_t& cache()
@@ -412,7 +607,7 @@ namespace
       // Look up the dynamic_id function and call it to get the dynamic
       // info
       PXR_BOOST_NAMESPACE::python::objects::dynamic_id_t dynamic_id = polymorphic
-          ? tuples::get<kdynamic_id>(*src_p)(p)
+          ? (src_p->dynamic_id)(p)
           : std::make_pair(p, src_t);
     
       // Look in the cache first for a quickie address translation
@@ -435,9 +630,7 @@ namespace
       smart_graph const& g = polymorphic && dynamic_id.second != src_t
           ? full_graph() : up_graph();
     
-      void* result = search(
-          g, p, tuples::get<kvertex>(*src_p)
-          , tuples::get<kvertex>(*dst_p));
+      void* result = search(g, p, src_p->vertex, dst_p->vertex);
 
       // update the cache
       c.insert(cache_pos, seek)->offset
@@ -479,28 +672,22 @@ PXR_BOOST_PYTHON_DECL void add_cast(
     }
     
     type_index_iterator_pair types = demand_types(src_t, dst_t);
-    vertex_t src = tuples::get<kvertex>(*types.first);
-    vertex_t dst = tuples::get<kvertex>(*types.second);
+    vertex_t src = types.first->vertex;
+    vertex_t dst = types.second->vertex;
 
     cast_graph* const g[2] = { &up_graph().topology(), &full_graph().topology() };
     
     for (cast_graph*const* p = g + (is_downcast ? 1 : 0); p < g + 2; ++p)
     {
-        edge_t e;
-        bool added;
-
-        tie(e, added) = add_edge(src, dst, **p);
-        assert(added);
-
-        put(get(edge_cast, **p), e, cast);
-        put(get(edge_index, **p), e, num_edges(full_graph().topology()) - 1);
+        assert(!((*p)->has_edge(src, dst)));
+        (*p)->add_edge(src, dst, cast);
     }
 }
 
 PXR_BOOST_PYTHON_DECL void register_dynamic_id_aux(
     class_id static_id, dynamic_id_function get_dynamic_id)
 {
-    tuples::get<kdynamic_id>(*demand_type(static_id)) = get_dynamic_id;
+    demand_type(static_id)->dynamic_id = get_dynamic_id;
 }
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::objects
