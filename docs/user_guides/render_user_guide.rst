@@ -626,7 +626,7 @@ from RenderMan. These are:
   interpolated over each face of the mesh. Bilinear interpolation is used for 
   interpolation between the four values.
 
-For a graphical illustration of these modes, see `Primvar Interpolation <https://github.com/usd-wg/assets/tree/main/test_assets/PrimvarInterpolation>`__
+For a graphical illustration of these modes, see `Primvar Interpolation <https://github.com/usd-wg/assets/tree/main/docs/PrimvarInterpolation>`__
 
 As :usda:`faceVarying` allows for per-vertex-per-face values, you can use this 
 interpolation to create discontinuous vertex UVs or normals. For example, with 
