@@ -29,12 +29,13 @@
 
 #include "pxr/base/vt/valueFromPython.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
-using namespace boost::python;
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -42,8 +43,8 @@ struct Sdf_TimeSampleMapConverter {
 public:
     static PyObject* convert(SdfTimeSampleMap const &c)
     {
-        boost::python::dict result = TfPyCopyMapToDictionary(c);
-        return boost::python::incref(result.ptr());
+        pxr_boost::python::dict result = TfPyCopyMapToDictionary(c);
+        return pxr_boost::python::incref(result.ptr());
     }
 };
 
@@ -55,10 +56,10 @@ public:
 
     Sdf_MapTypeConverter()
     {
-        boost::python::converter::registry::push_back(
+        pxr_boost::python::converter::registry::push_back(
             &Sdf_MapTypeConverter::convertible,
             &Sdf_MapTypeConverter::construct,
-            boost::python::type_id<MapType>());
+            pxr_boost::python::type_id<MapType>());
         to_python_converter<MapType,
                             Sdf_MapTypeConverter>();
     }
@@ -70,7 +71,7 @@ public:
 
     static void construct(
       PyObject* obj_ptr,
-      boost::python::converter::rvalue_from_python_stage1_data* data)
+      pxr_boost::python::converter::rvalue_from_python_stage1_data* data)
     {
         void* storage = (
             (converter::rvalue_from_python_storage<MapType>*)
@@ -82,8 +83,8 @@ public:
 
     static PyObject* convert(const MapType& c)
     {
-        boost::python::dict result = TfPyCopyMapToDictionary(c);
-        return boost::python::incref(result.ptr());
+        pxr_boost::python::dict result = TfPyCopyMapToDictionary(c);
+        return pxr_boost::python::incref(result.ptr());
     }
 
 private:
@@ -172,12 +173,12 @@ public:
         }
     }
 
-    static void UpdateDict(Type& x, const boost::python::dict& d)
+    static void UpdateDict(Type& x, const pxr_boost::python::dict& d)
     {
         UpdateList(x, d.items());
     }
 
-    static void UpdateList(Type& x, const boost::python::list& pairs)
+    static void UpdateList(Type& x, const pxr_boost::python::list& pairs)
     {
         std::vector<pair_type> values;
         for (int i = 0, n = len(pairs); i != n; ++i) {
@@ -276,12 +277,12 @@ _FindType(const std::string& typeName)
     return SdfSchema::GetInstance().FindType(typeName);
 }
 
-boost::python::tuple
+pxr_boost::python::tuple
 _ConvertToValidMetadataDictionary(VtDictionary dict)
 {
     std::string errMsg;
     bool success = SdfConvertToValidMetadataDictionary(&dict, &errMsg);
-    return boost::python::make_tuple(success, dict, errMsg);
+    return pxr_boost::python::make_tuple(success, dict, errMsg);
 }
 
 } // anonymous namespace 

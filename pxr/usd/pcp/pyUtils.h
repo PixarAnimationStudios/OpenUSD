@@ -7,7 +7,7 @@
 #ifndef PXR_USD_PCP_PY_UTILS_H
 #define PXR_USD_PCP_PY_UTILS_H
 
-#include <boost/python/dict.hpp>
+#include "pxr/external/boost/python/dict.hpp"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/api.h"
@@ -22,7 +22,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 PCP_API
 bool
 PcpVariantFallbackMapFromPython(
-    const boost::python::dict& dict,
+    const pxr_boost::python::dict& dict,
     PcpVariantFallbackMap *result);
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -8,13 +8,13 @@
 #include "pxr/usd/usd/editContext.h"
 #include "pxr/usd/usd/pyEditContext.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <memory>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 struct Usd_PyEditContextAccess {
     static void __enter__(UsdPyEditContext &self) {

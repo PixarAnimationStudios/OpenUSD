@@ -12,13 +12,13 @@
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/tf/pyEnum.h"
 
-#include <boost/python/operators.hpp>
+#include "pxr/external/boost/python/operators.hpp"
 
 #include <vector>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

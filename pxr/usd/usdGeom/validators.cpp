@@ -31,16 +31,25 @@ _GetStageMetadataErrors(const UsdStagePtr &usdStage)
     UsdValidationErrorVector errors;
     if (!usdStage->HasAuthoredMetadata(
             UsdGeomTokens->metersPerUnit)) {
-        errors.emplace_back(UsdValidationErrorType::Error,
-                            UsdValidationErrorSites{UsdValidationErrorSite(usdStage, SdfPath("/"))},
-                            TfStringPrintf("Stage with root layer <%s> does not specify its linear scale in "
-                            "metersPerUnit.", usdStage->GetRootLayer()->GetIdentifier().c_str()));
+        errors.emplace_back(
+            UsdGeomValidationErrorNameTokens->missingMetersPerUnitMetadata,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites{UsdValidationErrorSite(usdStage, 
+                                                           SdfPath("/"))},
+            TfStringPrintf("Stage with root layer <%s> does not specify its "
+                           "linear scale in metersPerUnit.", 
+                           usdStage->GetRootLayer()->GetIdentifier().c_str()));
     }
     if (!usdStage->HasAuthoredMetadata(
             UsdGeomTokens->upAxis)) {
-        errors.emplace_back(UsdValidationErrorType::Error,
-                            UsdValidationErrorSites{UsdValidationErrorSite(usdStage, SdfPath("/"))},
-                            TfStringPrintf("Stage with root layer <%s> does not specify an upAxis.", usdStage->GetRootLayer()->GetIdentifier().c_str()));
+        errors.emplace_back(
+            UsdGeomValidationErrorNameTokens->missingUpAxisMetadata,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites{UsdValidationErrorSite(usdStage, 
+                                                           SdfPath("/"))},
+            TfStringPrintf("Stage with root layer <%s> does not specify an "
+                           "upAxis.", 
+                           usdStage->GetRootLayer()->GetIdentifier().c_str()));
     }
 
     return errors;
@@ -93,6 +102,7 @@ _SubsetFamilies(const UsdPrim& usdPrim)
             };
 
             errors.emplace_back(
+                UsdGeomValidationErrorNameTokens->invalidSubsetFamily,
                 UsdValidationErrorType::Error,
                 primErrorSites,
                 TfStringPrintf(
@@ -133,6 +143,7 @@ _SubsetParentIsImageable(const UsdPrim& usdPrim)
 
     return {
         UsdValidationError(
+            UsdGeomValidationErrorNameTokens->notImageableSubsetParent,
             UsdValidationErrorType::Error,
             primErrorSites,
             TfStringPrintf(

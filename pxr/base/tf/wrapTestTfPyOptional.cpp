@@ -11,17 +11,18 @@
 
 #include "pxr/base/tf/pyOptional.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include <string>
 #include <vector>
 
-using namespace boost::python;
 using std::string;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

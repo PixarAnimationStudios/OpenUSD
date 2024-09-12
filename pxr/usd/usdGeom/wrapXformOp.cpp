@@ -13,13 +13,13 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/implicit.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/implicit.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -187,7 +187,7 @@ void wrapUsdGeomXformOp()
     implicitly_convertible<XformOp, UsdObject>();
 
     // Register to and from vector conversions.
-    boost::python::to_python_converter<std::vector<XformOp >, 
+    pxr_boost::python::to_python_converter<std::vector<XformOp >, 
         TfPySequenceToPython<std::vector<XformOp > > >();
 
     TfPyContainerConversions::from_python_sequence<std::vector<XformOp >,

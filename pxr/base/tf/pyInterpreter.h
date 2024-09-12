@@ -13,8 +13,8 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/api.h"
-#include <boost/python/handle.hpp>
-#include <boost/python/object.hpp>
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/object.hpp"
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -50,14 +50,14 @@ extern int TfPyRunSimpleString(const std::string & cmd);
 /// setup.
 ///
 /// Callers must hold the GIL before calling; see TfPyLock.  This is true for
-/// any boost::python call, including constructing and destroying the default
+/// any pxr_boost::python call, including constructing and destroying the default
 /// values of \p globals and \p locals.  Holding the GIL will also make it safe
-/// to inspect the returned boost::python::handle.
+/// to inspect the returned pxr_boost::python::handle.
 TF_API
-extern boost::python::handle<>
+extern pxr_boost::python::handle<>
 TfPyRunString(const std::string & cmd, int start,
-              boost::python::object const &globals = boost::python::object(),
-              boost::python::object const &locals = boost::python::object()
+              pxr_boost::python::object const &globals = pxr_boost::python::object(),
+              pxr_boost::python::object const &locals = pxr_boost::python::object()
               );
 
 /// Runs the given file using PyRun_File().
@@ -71,14 +71,14 @@ TfPyRunString(const std::string & cmd, int start,
 /// setup.
 ///
 /// Callers must hold the GIL before calling; see TfPyLock.  This is true for
-/// any boost::python call, including constructing and destroying the default
+/// any pxr_boost::python call, including constructing and destroying the default
 /// values of \p globals and \p locals.  Holding the GIL will also make it safe
-/// to inspect the returned boost::python::handle.
+/// to inspect the returned pxr_boost::python::handle.
 TF_API
-extern boost::python::handle<>
+extern pxr_boost::python::handle<>
 TfPyRunFile(const std::string &filename, int start,
-            boost::python::object const &globals = boost::python::object(),
-            boost::python::object const &locals = boost::python::object()
+            pxr_boost::python::object const &globals = pxr_boost::python::object(),
+            pxr_boost::python::object const &locals = pxr_boost::python::object()
             );
 
 PXR_NAMESPACE_CLOSE_SCOPE

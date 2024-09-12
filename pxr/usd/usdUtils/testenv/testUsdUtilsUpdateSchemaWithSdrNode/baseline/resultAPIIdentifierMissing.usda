@@ -16,9 +16,6 @@ class "APIIdentifierMissingAPI" (
                 intensity: Itensity of the flame thrower.
                 """
     )
-    uniform token myRenderContext:usda:shaderId = "APIIdentifierMissing" (
-        displayGroup = "Internal"
-    )
     color3f outputs:resultRGB
 }
 

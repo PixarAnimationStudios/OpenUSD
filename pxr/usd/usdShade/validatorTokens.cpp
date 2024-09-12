@@ -13,5 +13,7 @@ TF_DEFINE_PUBLIC_TOKENS(UsdShadeValidatorNameTokens,
                         USD_SHADE_VALIDATOR_NAME_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(UsdShadeValidatorKeywordTokens, 
                         USD_SHADE_VALIDATOR_KEYWORD_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(UsdShadeValidationErrorNameTokens,
+                        USD_SHADE_VALIDATION_ERROR_NAME_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE

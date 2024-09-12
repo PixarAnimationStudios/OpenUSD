@@ -4,8 +4,8 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include <boost/python/def.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -20,9 +20,9 @@
 
 #include <functional>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace
 {
@@ -30,7 +30,7 @@ namespace
 VtValue
 _GetValueForField(
     const SdfLayerHandle& layer, const TfToken& field, 
-    const boost::python::object& obj)
+    const pxr_boost::python::object& obj)
 {
     // Need to disambiguate certain types from Python.
     //
@@ -49,7 +49,7 @@ _GetValueForField(
 }
 
 using Py_SdfShouldCopyValueSig = 
-    boost::python::object(
+    pxr_boost::python::object(
         SdfSpecType, const TfToken&,
         const SdfLayerHandle&, const SdfPath&, bool,
         const SdfLayerHandle&, const SdfPath&, bool);
@@ -57,7 +57,7 @@ using Py_SdfShouldCopyValueSig =
 using Py_SdfShouldCopyValueFn = std::function<Py_SdfShouldCopyValueSig>;
 
 using Py_SdfShouldCopyChildrenSig =
-    boost::python::object(
+    pxr_boost::python::object(
         const TfToken&,
         const SdfLayerHandle&, const SdfPath&, bool,
         const SdfLayerHandle&, const SdfPath&, bool);

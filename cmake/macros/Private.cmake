@@ -254,6 +254,7 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
         # A resource file may be specified like <src file>:<dst file> to
         # indicate that it should be installed to a different location in
         # the resources area. Check if this is the case.
+        set(plugInfoNoSubstitution)
         string(REPLACE ":" ";" resourceFile "${resourceFile}")
         list(LENGTH resourceFile n)
         if (n EQUAL 1)

@@ -12,18 +12,18 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/init.hpp>
-#include <boost/python/scope.hpp>
-#include <boost/python/str.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/init.hpp"
+#include "pxr/external/boost/python/scope.hpp"
+#include "pxr/external/boost/python/str.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include <functional>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

@@ -11,20 +11,20 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/copy_const_reference.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include <string>
-
-using namespace boost::python;
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -40,7 +40,7 @@ FindClosestPointsHelper1( const GfLine &l1, const GfLineSeg &l2 )
     GfVec3d p1(0), p2(0);
     double t1 = 0, t2 = 0;
     bool result = GfFindClosestPoints( l1, l2, &p1, &p2, &t1, &t2 );
-    return boost::python::make_tuple( result, p1, p2, t1, t2 );
+    return pxr_boost::python::make_tuple( result, p1, p2, t1, t2 );
 }
 
 static tuple
@@ -49,7 +49,7 @@ FindClosestPointsHelper2( const GfLineSeg &l1, const GfLineSeg &l2 )
     GfVec3d p1(0), p2(0);
     double t1 = 0, t2 = 0;
     bool result = GfFindClosestPoints( l1, l2, &p1, &p2, &t1, &t2 );
-    return boost::python::make_tuple( result, p1, p2, t1, t2 );
+    return pxr_boost::python::make_tuple( result, p1, p2, t1, t2 );
 }
 
 static tuple
@@ -57,7 +57,7 @@ FindClosestPointHelper( const GfLineSeg &self, const GfVec3d &point )
 {
     double t;
     GfVec3d p1 = self.FindClosestPoint( point, &t );
-    return boost::python::make_tuple( p1, t );
+    return pxr_boost::python::make_tuple( p1, t );
 }
 
 } // anonymous namespace 

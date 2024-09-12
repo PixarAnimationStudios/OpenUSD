@@ -11,13 +11,13 @@
 #include "pxr/usd/usd/stageCache.h"
 #include "pxr/base/tf/pyEnum.h"
 
-#include <boost/python/def.hpp>
-#include <boost/python/enum.hpp>
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/enum.hpp"
 
-
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void wrapUsdCommon()
 {

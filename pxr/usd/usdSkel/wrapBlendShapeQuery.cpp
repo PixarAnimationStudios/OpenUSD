@@ -10,16 +10,16 @@
 
 #include "pxr/usd/usdSkel/bindingAPI.h"
 
-#include <boost/python.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE;
+
+using namespace pxr_boost::python;
 
 namespace {
 
 
-boost::python::tuple
+pxr_boost::python::tuple
 _ComputeSubShapeWeights(const UsdSkelBlendShapeQuery& self,
                         const VtFloatArray& weights)
 {
@@ -30,7 +30,7 @@ _ComputeSubShapeWeights(const UsdSkelBlendShapeQuery& self,
     self.ComputeSubShapeWeights(weights, &subShapeWeights,
                                 &blendShapeIndices, &subShapeIndices);
 
-    return boost::python::make_tuple(
+    return pxr_boost::python::make_tuple(
         subShapeWeights, blendShapeIndices, subShapeIndices);
 }
 

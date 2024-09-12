@@ -25,6 +25,7 @@ pxr_library(usdRiPxrImaging
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
+        pxrAovLightAdapter
         pxrCameraAPIAdapter
         pxrDisplayFilterAdapter
         pxrIntegratorAdapter

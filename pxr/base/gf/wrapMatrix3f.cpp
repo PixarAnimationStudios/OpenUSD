@@ -23,24 +23,25 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/detail/api_placeholder.hpp>
-#include <boost/python/errors.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/detail/api_placeholder.hpp"
+#include "pxr/external/boost/python/errors.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/make_constructor.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include <string>
 #include <vector>
 
-using namespace boost::python;
 using std::string;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -121,7 +122,7 @@ static void
 throwIndexErr( const char *msg )
 {
     PyErr_SetString(PyExc_IndexError, msg);
-    boost::python::throw_error_already_set();
+    pxr_boost::python::throw_error_already_set();
 }    
 
 static int
@@ -197,11 +198,11 @@ static GfMatrix3f *__init__() {
 // This adds support for python's builtin pickling library
 // This is used by our Shake plugins which need to pickle entire classes
 // (including code), which we don't support in pxml.
-struct GfMatrix3f_Pickle_Suite : boost::python::pickle_suite
+struct GfMatrix3f_Pickle_Suite : pxr_boost::python::pickle_suite
 {
-    static boost::python::tuple getinitargs(const GfMatrix3f &m)
+    static pxr_boost::python::tuple getinitargs(const GfMatrix3f &m)
     {
-        return boost::python::make_tuple(
+        return pxr_boost::python::make_tuple(
             m[0][0], m[0][1], m[0][2], 
             m[1][0], m[1][1], m[1][2], 
             m[2][0], m[2][1], m[2][2]);
@@ -210,7 +211,7 @@ struct GfMatrix3f_Pickle_Suite : boost::python::pickle_suite
 
 static size_t __hash__(GfMatrix3f const &m) { return TfHash{}(m); }
 
-static boost::python::tuple get_dimension()
+static pxr_boost::python::tuple get_dimension()
 {
     // At one time this was a constant static tuple we returned for
     // dimension. With boost building for python 3 that results in

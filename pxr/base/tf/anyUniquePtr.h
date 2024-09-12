@@ -22,7 +22,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// rarely accessed values.  As such, its design prioritizes compile-time
 /// overhead over runtime performance and avoids clever metaprogramming.
 /// Please resist the urge to add functionality to this class (e.g. small
-/// object optimization, boost::python interoperability.)
+/// object optimization, pxr_boost::python interoperability.)
 class TfAnyUniquePtr
 {
 public:

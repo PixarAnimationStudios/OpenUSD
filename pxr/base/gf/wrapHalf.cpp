@@ -8,14 +8,14 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/half.h"
 
-#include <boost/python/def.hpp>
-#include <boost/python/handle.hpp>
-#include <boost/python/to_python_converter.hpp>
-#include <boost/python/converter/from_python.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/to_python_converter.hpp"
+#include "pxr/external/boost/python/converter/from_python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -27,7 +27,7 @@ struct HalfPythonConversions
         to_python_converter<GfHalf, HalfPythonConversions>();
         // from-python
         converter::registry::push_back(&_convertible, &_construct,
-                                       boost::python::type_id<GfHalf>());
+                                       pxr_boost::python::type_id<GfHalf>());
     }
 
     // to-python
@@ -71,5 +71,5 @@ static GfHalf _HalfRoundTrip(GfHalf in) { return in; }
 void wrapHalf()
 {
     HalfPythonConversions::Register();
-    boost::python::def("_HalfRoundTrip", _HalfRoundTrip);
+    pxr_boost::python::def("_HalfRoundTrip", _HalfRoundTrip);
 }

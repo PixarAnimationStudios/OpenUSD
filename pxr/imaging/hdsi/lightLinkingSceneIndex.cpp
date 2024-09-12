@@ -17,7 +17,11 @@
 #include "pxr/imaging/hd/categoriesSchema.h"
 #include "pxr/imaging/hd/collectionSchema.h"
 #include "pxr/imaging/hd/collectionsSchema.h"
+#include "pxr/imaging/hd/dependencySchema.h"
+#include "pxr/imaging/hd/dependenciesSchema.h"
 #include "pxr/imaging/hd/instanceCategoriesSchema.h"
+#include "pxr/imaging/hd/instancerTopologySchema.h"
+#include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/lightSchema.h"
 
 #include "pxr/base/tf/debug.h"
@@ -203,7 +207,6 @@ public:
     }
 
     /// Returns the categories that \p primPath belongs to.
-    /// XXX Support is currently limited to non-instanced geometry prims.
     ///
     TfTokenVector
     ComputeCategoriesForPrimPath(
@@ -484,7 +487,7 @@ private:
             HdCollectionExpressionEvaluator::MatchAll;
 
         SdfPathVector resultVec;
-        // XXX This doesn't support instancing.
+        // XXX This doesn't support instance proxy traversal.
         eval.PopulateMatches(
             SdfPath::AbsoluteRootPath(), matchKind, &resultVec);
         
@@ -628,10 +631,18 @@ _Contains(
     return std::find(tokens.cbegin(), tokens.cend(), key) != tokens.cend();
 }
 
+bool _IsInstanced(
+    const HdContainerDataSourceHandle &primContainer)
+{
+    const auto schema = HdInstancedBySchema::GetFromParent(primContainer);
+    const auto pathArrayDs = schema.GetPaths();
+    return pathArrayDs && !pathArrayDs->GetTypedValue(0.0).empty();
+}
+
 void
-_AddIfNecessary(
+_AddIfAbsent(
     const TfToken &token,
-    TfTokenVector *tokens)
+    TfTokenVector *tokens) 
 {
     if (!_Contains(*tokens, token)) {
         tokens->push_back(token);
@@ -659,12 +670,142 @@ _BuildCategoriesDataSource(
         /*excludedNames = */nullptr);
 }
 
+// Queries the cache to compute the categories for each *direct* instance
+// of the instancer. Returns a container data source with the result.
+//
+// XXX The approach below works only for linking to direct instances of a
+// non-nested instancer.
+// It does not support linking to
+// - instance proxy prims
+// - nested instances
+//
+HdContainerDataSourceHandle
+_BuildInstanceCategoriesDataSource(
+    const _CacheSharedPtr &cache,
+    const SdfPath &instancerPrimPath,
+    const HdContainerDataSourceHandle &instancerPrimDs)
+{
+    // Use the instanceLocations data source under the instancerTopology to
+    // query the instances for the provided instancer.
+    //
+    // XXX This is populated only for native instancing instancer prims,
+    //     so this doesn't handle point instancing instancer prims.
+    //     By using only the instance's path, we don't handle instance proxy
+    //     matches.
+    //     Note that the scene delegate API as well as the instance categories
+    //     schema doesn't cater to specifying categories per instance-prototype
+    //     tuple.
+    //     HdSceneDelegate::GetInstanceCategories returns a 
+    //     std::vector<VtArray<TfToken>> indexed by the instance idx.
+    //
+    const HdInstancerTopologySchema topologySchema =
+            HdInstancerTopologySchema::GetFromParent(instancerPrimDs);
+
+    const HdPathArrayDataSourceHandle instancePathsDs =
+        topologySchema.GetInstanceLocations();
+    
+    if (!instancePathsDs) {
+        // Point instancer.
+        // We can't link to instances of a point instancer (since they
+        // don't exist as prims in the scene description).
+        // While we could link to prototype prims under the point instancer
+        // (thereby linking all instances of that prototype), we don't
+        // support this because the prototypes may exist anywhere in the
+        // scene namespace.
+        //
+        // Linking to point instancers uses the categories data source
+        // (rather than instanceCategories). The categories returned apply
+        // to all its instances.
+        //
+        return nullptr;
+    }
+
+    const VtArray<SdfPath> instancePaths = instancePathsDs->GetTypedValue(0.0);
+    if (instancePaths.empty()) {
+        return nullptr;
+    }
+
+    std::vector<HdDataSourceBaseHandle> dataSources;
+    dataSources.reserve(instancePaths.size());
+
+    // XXX Brute force for now. This can be improved.
+    for (const SdfPath &instancePath : instancePaths) {
+        dataSources.push_back(
+            _BuildCategoriesDataSource(cache, instancePath));
+    }
+
+    return
+        HdInstanceCategoriesSchema::Builder()
+        .SetCategoriesValues(
+            HdRetainedSmallVectorDataSource::New(
+                dataSources.size(), dataSources.data()))
+        .Build();
+}
+
+// Add dependency from the instancer to the instance prims it serves to
+// invalidate its instanceCategories locator. 
+//
+HdContainerDataSourceHandle
+_BuildDependenciesDataSource(
+    const HdContainerDataSourceHandle &instancerPrimContainer)
+{
+    const HdInstancerTopologySchema topologySchema =
+            HdInstancerTopologySchema::GetFromParent(instancerPrimContainer);
+
+    const HdPathArrayDataSourceHandle instancePathsDs =
+        topologySchema.GetInstanceLocations();
+    
+    if (!instancePathsDs) {
+        // XXX Point instancer. Per-instance categories does not make sense for
+        //     point instancers. Should we use categories to reflect that they
+        //     apply to all instances (of all prototypes)?
+        return nullptr;
+    }
+
+    const VtArray<SdfPath> instancePaths = instancePathsDs->GetTypedValue(0.0);
+    const size_t numInstances = instancePaths.size();
+    std::vector<TfToken> names;
+    names.reserve(numInstances);
+    std::vector<HdDataSourceBaseHandle> dataSources;
+    dataSources.reserve(numInstances);
+
+    static const auto categoriesLoc =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            HdCategoriesSchema::GetDefaultLocator());
+    static const auto instanceCategoriesLoc =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            HdInstanceCategoriesSchema::GetDefaultLocator());
+
+    // XXX This is a bit hacky and relies on the invalidation behavior in the
+    //     cache. Specifically, we rely on invalidating the categories
+    //     on all prims targeted by the collection, including instance prims.
+    //     
+    //     We publish categories only for geometry prims and not instance
+    //     prims. See HdsiLightLinkingSceneIndex::GetPrim.
+    //
+    size_t idx = 0;
+    for (const SdfPath &instancePath : instancePaths) {
+        std::string depName = "dep_" + std::to_string(idx++);
+        names.push_back(TfToken(std::move(depName)));
+        dataSources.push_back(
+            HdDependencySchema::Builder()
+            .SetDependedOnPrimPath(
+                HdRetainedTypedSampledDataSource<SdfPath>::New(instancePath))
+            .SetDependedOnDataSourceLocator(categoriesLoc)
+            .SetAffectedDataSourceLocator(instanceCategoriesLoc)
+            .Build());
+    }
+
+    return HdRetainedContainerDataSource::New(
+        names.size(), names.data(), dataSources.data());
+}
+
 // -----------------------------------------------------------------------------
 // Data source overrides.
 // -----------------------------------------------------------------------------
 
-// Prim data source wrapper for geometry prims that provides a container
-// overlay for the 'categories' locator.
+// Prim data source wrapper for geometry prims that provides the data source
+// for the 'categories' locator.
 // 
 class _GprimDataSource : public HdContainerDataSource
 {
@@ -674,7 +815,7 @@ public:
     TfTokenVector GetNames() override
     {
         TfTokenVector names = _inputPrimDs->GetNames();
-        _AddIfNecessary(HdCategoriesSchemaTokens->categories, &names);
+        _AddIfAbsent(HdCategoriesSchemaTokens->categories, &names);
         return names;
     }
 
@@ -683,17 +824,11 @@ public:
         HdDataSourceBaseHandle result = _inputPrimDs->Get(name);
 
         if (name == HdCategoriesSchemaTokens->categories) {
-            // XXX This can result in categories computed upstream showing up
-            //     with scene delegates that implement light linking _and_
-            //     transport the linking collections. Note that this is not
-            //     the case with UsdImagingDelegate.
-            //     Compare with lights and light filters, where we always
-            //     provide a category ID when the collection is transported.
-            //     See _LightDataSource below.
-            //
-            return HdOverlayContainerDataSource::OverlayedContainerDataSources(
-                _BuildCategoriesDataSource(_cache, _primPath),
-                HdContainerDataSource::Cast(result));
+            if (HdContainerDataSourceHandle categoriesContainer =
+                    _BuildCategoriesDataSource(_cache, _primPath)) {
+
+                return categoriesContainer;
+            }
         }
 
         return result;
@@ -727,19 +862,60 @@ public:
     TfTokenVector GetNames() override
     {
         TfTokenVector names = _inputPrimDs->GetNames();
-        _AddIfNecessary(
+        // instanceCategories is relevant for (hydra) instancer prims that 
+        // implement native instancing USD semantics.
+        _AddIfAbsent(
             HdInstanceCategoriesSchemaTokens->instanceCategories, &names);
+
+        // categories is relevant for (hydra) instancer prims that correspond to
+        // point instancer prims; the categories returned apply to all its
+        // instances.
+        _AddIfAbsent(
+            HdCategoriesSchemaTokens->categories, &names);
+
+        _AddIfAbsent(
+            HdDependenciesSchemaTokens->__dependencies, &names);
         return names;
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
     {
+        if (name == HdInstanceCategoriesSchemaTokens->instanceCategories) {
+            if (HdContainerDataSourceHandle instanceCategoriesContainer =
+                _BuildInstanceCategoriesDataSource(
+                    _cache, _primPath, _inputPrimDs)) {
+
+                return instanceCategoriesContainer;
+            }
+        }
+
+        if (name == HdCategoriesSchemaTokens->categories) {
+            const HdInstancerTopologySchema topologySchema =
+                HdInstancerTopologySchema::GetFromParent(_inputPrimDs);
+            
+            const HdPathArrayDataSourceHandle instancePathsDs =
+                topologySchema.GetInstanceLocations();
+    
+            const bool isPointInstancer =
+                !instancePathsDs || instancePathsDs->GetTypedValue(0.0).empty();
+
+            if (isPointInstancer) {
+                if (HdContainerDataSourceHandle categoriesContainer =
+                    _BuildCategoriesDataSource(_cache, _primPath)) {
+
+                    return categoriesContainer;
+                }
+            }
+        }
+
         HdDataSourceBaseHandle result = _inputPrimDs->Get(name);
 
-        // XXX No support for instancing (instanceCategories) yet.
-        // if (name == HdInstanceCategoriesSchemaTokens->instanceCategories) {
-        //     return result;
-        // }
+        if (name == HdDependenciesSchemaTokens->__dependencies) {
+            return
+                HdOverlayContainerDataSource::OverlayedContainerDataSources(
+                    _BuildDependenciesDataSource(_inputPrimDs),
+                    HdContainerDataSource::Cast(result));
+        }
 
         return result;
     }
@@ -770,7 +946,7 @@ public:
         if (_lightDs) {
             TfTokenVector names = _lightDs->GetNames();
             for (const TfToken &name : _GetLightLinkingSchemaTokens()) {
-                _AddIfNecessary(name, &names);
+                _AddIfAbsent(name, &names);
             }
             return names;
         }
@@ -953,7 +1129,7 @@ HdsiLightLinkingSceneIndex::GetPrim(const SdfPath &primPath) const
     // require a valid data source to limit the data source wrapping.
     //
     if (prim.dataSource) {
-        if (_IsGeometry(prim.primType)) {
+        if (_IsGeometry(prim.primType) && !_IsInstanced(prim.dataSource)) {
             prim.dataSource = _GprimDataSource::New(
                 prim.dataSource, primPath, _cache);
 

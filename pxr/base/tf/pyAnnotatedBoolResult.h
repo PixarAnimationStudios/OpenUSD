@@ -12,9 +12,9 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_by_value.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/return_by_value.hpp"
 
 #include <string>
 
@@ -59,10 +59,10 @@ struct TfPyAnnotatedBoolResult
     }
 
     template <class Derived>
-    static boost::python::class_<Derived>
+    static pxr_boost::python::class_<Derived>
     Wrap(char const *name, char const *annotationName) {
         typedef TfPyAnnotatedBoolResult<Annotation> This;
-        using namespace boost::python;
+        using namespace pxr_boost::python;
         TfPyLock lock;
         return class_<Derived>(name, init<bool, Annotation>())
             .def("__bool__", &Derived::GetValue)
@@ -102,19 +102,19 @@ private:
     }
 
     template <class Derived>
-    static boost::python::object _GetItem(const Derived& x, int i)
+    static pxr_boost::python::object _GetItem(const Derived& x, int i)
     {
         if (i == 0) {
-            return boost::python::object(x._val);
+            return pxr_boost::python::object(x._val);
         }
         if (i == 1) {
-            return boost::python::object(x._annotation);
+            return pxr_boost::python::object(x._annotation);
         }
         
         PyErr_SetString(PyExc_IndexError, "Index must be 0 or 1.");
-        boost::python::throw_error_already_set();
+        pxr_boost::python::throw_error_already_set();
 
-        return boost::python::object();
+        return pxr_boost::python::object();
     }
 
 private:

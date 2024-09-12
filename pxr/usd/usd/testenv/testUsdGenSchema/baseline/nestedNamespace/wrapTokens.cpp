@@ -5,7 +5,7 @@
 // https://openusd.org/license.
 //
 // GENERATED FILE.  DO NOT EDIT.
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/class.hpp"
 #include "pxr/usd/usdContrived/tokens.h"
 
 using namespace foo::bar::baz;
@@ -15,8 +15,8 @@ using namespace foo::bar::baz;
 
 void wrapUsdContrivedTokens()
 {
-    boost::python::class_<UsdContrivedTokensType, boost::noncopyable>
-        cls("Tokens", boost::python::no_init);
+    pxr_boost::python::class_<UsdContrivedTokensType, boost::noncopyable>
+        cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, libraryToken1);
     _ADD_TOKEN(cls, libraryToken2);
     _ADD_TOKEN(cls, myColorFloat);

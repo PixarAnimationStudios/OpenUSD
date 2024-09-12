@@ -9,14 +9,14 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/diagnostic.h"
-#include <boost/python/def.hpp>
+#include "pxr/external/boost/python/def.hpp"
 #include <string>
 
 using std::string;
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

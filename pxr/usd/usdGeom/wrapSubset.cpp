@@ -15,13 +15,13 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -141,7 +141,7 @@ void wrapUsdGeomSubset()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/tuple.hpp"
 
 namespace {
 
@@ -153,7 +153,7 @@ _WrapValidateFamily(const UsdGeomImageable &geom,
     std::string reason;
     bool valid = UsdGeomSubset::ValidateFamily(geom, elementType, 
         familyName, &reason);
-    return boost::python::make_tuple(valid, reason);
+    return pxr_boost::python::make_tuple(valid, reason);
 }
 
 static object
@@ -163,14 +163,14 @@ _WrapValidateSubsets(    const std::vector<UsdGeomSubset> &subsets,
     std::string reason;
     bool valid = UsdGeomSubset::ValidateSubsets(subsets, elementCount, 
         familyType, &reason);
-    return boost::python::make_tuple(valid, reason);
+    return pxr_boost::python::make_tuple(valid, reason);
 }
 
 WRAP_CUSTOM {
     typedef UsdGeomSubset This;
 
     // Register to and from vector conversions.
-    boost::python::to_python_converter<std::vector<This>,  
+    pxr_boost::python::to_python_converter<std::vector<This>,  
         TfPySequenceToPython<std::vector<This> > >();
 
     TfPyContainerConversions::from_python_sequence<std::vector<This>,

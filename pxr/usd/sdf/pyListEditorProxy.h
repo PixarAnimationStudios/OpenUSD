@@ -21,7 +21,7 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -30,7 +30,7 @@ public:
     template <class T, class V>
     class ApplyHelper {
     public:
-        ApplyHelper(const T& owner, const boost::python::object& callback) :
+        ApplyHelper(const T& owner, const pxr_boost::python::object& callback) :
             _owner(owner),
             _callback(callback)
         {
@@ -39,7 +39,7 @@ public:
 
         std::optional<V> operator()(SdfListOpType op, const V& value)
         {
-            using namespace boost::python;
+            using namespace pxr_boost::python;
 
             TfPyLock pyLock;
             object result = _callback(_owner, value, op);
@@ -58,13 +58,13 @@ public:
 
     private:
         const T& _owner;
-        TfPyCall<boost::python::object> _callback;
+        TfPyCall<pxr_boost::python::object> _callback;
     };
 
     template <class V>
     class ModifyHelper {
     public:
-        ModifyHelper(const boost::python::object& callback) :
+        ModifyHelper(const pxr_boost::python::object& callback) :
             _callback(callback)
         {
             // Do nothing
@@ -72,7 +72,7 @@ public:
 
         std::optional<V> operator()(const V& value)
         {
-            using namespace boost::python;
+            using namespace pxr_boost::python;
 
             TfPyLock pyLock;
             object result = _callback(value);
@@ -90,7 +90,7 @@ public:
         }
 
     private:
-        TfPyCall<boost::python::object> _callback;
+        TfPyCall<pxr_boost::python::object> _callback;
     };
 };
 
@@ -115,7 +115,7 @@ public:
 private:
     static void _Wrap()
     {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
         class_<Type>(_GetName().c_str(), no_init)
             .def("__str__", &This::_GetStr)
@@ -226,7 +226,7 @@ private:
 
     static value_vector_type _ApplyEditsToList2(const Type& x,
                                                 const value_vector_type& v,
-                                                const boost::python::object& cb)
+                                                const pxr_boost::python::object& cb)
     {
         value_vector_type tmp = v;
         x.ApplyEditsToList(&tmp,
@@ -234,7 +234,7 @@ private:
         return tmp;
     }
 
-    static void _ModifyEdits(Type& x, const boost::python::object& cb)
+    static void _ModifyEdits(Type& x, const pxr_boost::python::object& cb)
     {
         x.ModifyItemEdits(Sdf_PyListEditorUtils::ModifyHelper<value_type>(cb));
     }

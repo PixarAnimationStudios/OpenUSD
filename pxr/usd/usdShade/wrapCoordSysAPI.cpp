@@ -16,13 +16,13 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -162,9 +162,9 @@ namespace {
 struct _BindingToTuple {
     static PyObject*
     convert(UsdShadeCoordSysAPI::Binding const& b) {
-        boost::python::tuple result = boost::python::make_tuple(
+        pxr_boost::python::tuple result = pxr_boost::python::make_tuple(
             b.name, b.bindingRelPath, b.coordSysPrimPath );
-        return boost::python::incref(result.ptr());
+        return pxr_boost::python::incref(result.ptr());
     }
 };
 

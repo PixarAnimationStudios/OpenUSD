@@ -13,11 +13,11 @@
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python/class.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/class.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void wrapUsdValidationError()
 {
@@ -47,13 +47,22 @@ void wrapUsdValidationError()
     TfPyRegisterStlSequencesFromPython<UsdValidationErrorSite>();
     class_<UsdValidationError>("ValidationError")
         .def(init<>())
-        .def(init<const UsdValidationErrorType &, 
+        .def(init<const TfToken &, const UsdValidationErrorType &, 
              const UsdValidationErrorSites &, const std::string &>(
-             args("errorType", "errorSites", "errorMessage")))
+             args("name", "errorType", "errorSites", "errorMessage")))
+        .def("GetName", 
+             +[](const UsdValidationError &validationError) {
+                 return validationError.GetName();
+             }, 
+             return_value_policy<return_by_value>())
+        .def("GetIdentifier", &UsdValidationError::GetIdentifier, 
+             return_value_policy<return_by_value>())
         .def("GetType", &UsdValidationError::GetType)
-        .def("GetSites", make_function(
-            &UsdValidationError::GetSites, 
-            return_value_policy<TfPySequenceToList>()))
+        .def("GetSites", 
+             +[](const UsdValidationError &validationError) {
+                return validationError.GetSites();
+             }, 
+            return_value_policy<TfPySequenceToList>())
         .def("GetMessage", &UsdValidationError::GetMessage, 
              return_value_policy<return_by_value>())
         .def("GetErrorAsString", &UsdValidationError::GetErrorAsString)

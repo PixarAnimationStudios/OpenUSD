@@ -7,7 +7,7 @@
 
 import unittest
 
-from pxr import Plug, Sdf, Usd
+from pxr import Plug, Sdf, Usd, Tf
 
 
 class TestUsdValidationError(unittest.TestCase):
@@ -159,9 +159,12 @@ class TestUsdValidationError(unittest.TestCase):
                 with self.assertRaises(Exception):
                     Usd.ValidationErrorSite(**args)
 
-    def _VerifyValidationError(self, error, 
+    def _VerifyValidationError(self, error, name="",
                                  errorType=Usd.ValidationErrorType.None_, 
-                                 errorSites=[], errorMessage=""):
+                                 errorSites=None, errorMessage=""):
+        if not errorSites:
+            errorSites = []
+        self.assertEqual(error.GetName(), name)
         self.assertEqual(error.GetType(), errorType)
         self.assertEqual(error.GetSites(), errorSites)
         self.assertEqual(error.GetMessage(), errorMessage)
@@ -171,6 +174,16 @@ class TestUsdValidationError(unittest.TestCase):
         else:
             self.assertFalse(error.GetErrorAsString())
             self.assertTrue(error.HasNoError())
+        # check if coding error is raised for these errors when trying to get
+        # its identifier
+        try:
+            error.GetIdentifier();
+        except Tf.ErrorException as e:
+            expectedErrorStr = \
+            "Validator not set on ValidationError. Possibly this validation " \
+            "error was not created via a call to UsdValidator::Validate(), " \
+            "which is responsible to set the validator on the error."
+            self.assertTrue(expectedErrorStr in str(e))
 
     def test_CreateDefaultValidationError(self):
         validationError = Usd.ValidationError()
@@ -179,21 +192,25 @@ class TestUsdValidationError(unittest.TestCase):
     def test_CreateValidationErrorWithKeywordArgs(self):
         errors = [
             {
+                "name": "error1",
                 "errorType": Usd.ValidationErrorType.None_,
                 "errorSites": [],
                 "errorMessage": ""
             },
             {
+                "name": "error2",
                 "errorType": Usd.ValidationErrorType.Error,
                 "errorSites": [Usd.ValidationErrorSite()],
                 "errorMessage": "This is an error."
             },
             {
+                "name": "error3",
                 "errorType": Usd.ValidationErrorType.Warn,
                 "errorSites": [Usd.ValidationErrorSite()],
                 "errorMessage": "This is a warning."
             },
             {
+                "name": "error4",
                 "errorType": Usd.ValidationErrorType.Info,
                 "errorSites": [Usd.ValidationErrorSite(), 
                                Usd.ValidationErrorSite()],
@@ -209,16 +226,19 @@ class TestUsdValidationError(unittest.TestCase):
     def test_CreateValidationErrorWithInvalidArgs(self):
         errors = {
             "Wrong Error Type": {
+                "name": "error1",
                 "errorType": "wrongType",
                 "errorSites": [],
                 "errorMessage": ""
             },
             "Wrong Sites Type": {
+                "name": "error2",
                 "errorType": Usd.ValidationErrorType.None_,
                 "errorSites": "wrongType",
                 "errorMessage": ""
             },
             "Wrong Message Type": {
+                "name": "error3",
                 "errorType": Usd.ValidationErrorType.None_,
                 "errorSites": [],
                 "errorMessage": 123

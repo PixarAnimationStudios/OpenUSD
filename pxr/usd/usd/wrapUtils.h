@@ -10,9 +10,9 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/object.h"
 
-#include <boost/python/def_visitor.hpp>
-#include <boost/python/type_id.hpp>
-#include <boost/python/converter/to_python_function_type.hpp>
+#include "pxr/external/boost/python/def_visitor.hpp"
+#include "pxr/external/boost/python/type_id.hpp"
+#include "pxr/external/boost/python/converter/to_python_function_type.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -22,9 +22,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 // most derived UsdObject subclass.  This way, a wrapped C++ function that
 // returns a UsdObject, for instance, will produce a UsdPrim or a UsdAttribute
 // or a UsdRelationship in python, instead of a UsdObject.
-struct Usd_ObjectSubclass : boost::python::def_visitor<Usd_ObjectSubclass>
+struct Usd_ObjectSubclass : pxr_boost::python::def_visitor<Usd_ObjectSubclass>
 {
-    friend class boost::python::def_visitor_access;
+    friend class pxr_boost::python::def_visitor_access;
 
     // Function pointer type for downcasting UsdObject * to a more-derived type.
     typedef const void *(*DowncastFn)(const UsdObject *);
@@ -36,7 +36,7 @@ struct Usd_ObjectSubclass : boost::python::def_visitor<Usd_ObjectSubclass>
     template <typename CLS>
     void visit(CLS &c) const {
         typedef typename CLS::wrapped_type Type;
-        _ReplaceConverter(boost::python::type_id<Type>(),
+        _ReplaceConverter(pxr_boost::python::type_id<Type>(),
                           _Detail::GetObjType<Type>::Value,
                           _Convert<Type>, _Downcast<Type>);
     }
@@ -57,9 +57,9 @@ private:
     // Internal method that replaces the boost.python to_python converter for
     // the type \p pti.
     static void _ReplaceConverter(
-        boost::python::type_info pti,
+        pxr_boost::python::type_info pti,
         UsdObjType objType,
-        boost::python::converter::to_python_function_t convert,
+        pxr_boost::python::converter::to_python_function_t convert,
         DowncastFn downcast);
 
     // Non-template helper function for _Convert.

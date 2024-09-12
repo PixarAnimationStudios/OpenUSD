@@ -337,6 +337,35 @@ HdStLight::_PrepareDomeLight(
     return l;
 }
 
+static
+GfVec4f
+_ScaleColor(
+    const GfVec4f& color)
+{
+    return GfVec4f(M_PI * color[0], M_PI * color[1], M_PI * color[2], 1.0f);
+}
+
+GlfSimpleLight
+HdStLight::_PrepareSimpleLight(
+    SdfPath const &id,
+    HdSceneDelegate * const sceneDelegate)
+{
+    const VtValue v = sceneDelegate->Get(id, HdLightTokens->params);
+    if (!TF_VERIFY(v.IsHolding<GlfSimpleLight>())) {
+        return GlfSimpleLight();
+    }
+
+    // We assume that the color specified for these "simple" lights means that
+    // it is the expected color a white Lambertian surface would have if one of
+    // these colored "simple" lights was pointed directly at it.  To achieve
+    // this, the light color needs to be scaled appropriately.
+    GlfSimpleLight l = v.Get<GlfSimpleLight>();
+    l.SetDiffuse(_ScaleColor(l.GetDiffuse()));
+    l.SetSpecular(_ScaleColor(l.GetSpecular()));
+
+    return l;
+}
+
 /* virtual */
 void
 HdStLight::Sync(HdSceneDelegate *sceneDelegate,
@@ -383,7 +412,7 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
 
         if (_lightType == HdPrimTypeTokens->simpleLight) {
             _params[HdLightTokens->params] =
-                sceneDelegate->Get(id, HdLightTokens->params);
+                _PrepareSimpleLight(id, sceneDelegate);
         }
         else if (_lightType == HdPrimTypeTokens->domeLight) {
             _params[HdLightTokens->params] = 

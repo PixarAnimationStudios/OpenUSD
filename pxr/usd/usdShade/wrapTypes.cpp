@@ -11,11 +11,11 @@
 
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include <boost/python/enum.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/enum.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void wrapUsdShadeTypes()
 {

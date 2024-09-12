@@ -14,18 +14,19 @@
 #include "pxr/base/tf/pyError.h"
 #include "pxr/base/tf/pyErrorInternal.h"
 
-#include <boost/python/handle.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include <vector>
 
-using namespace boost::python;
 using std::vector;
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 bool TfPyConvertTfErrorsToPythonException(TfErrorMark const &m) {
     // If there is a python exception somewhere in here, restore that, otherwise

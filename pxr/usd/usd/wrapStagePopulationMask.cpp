@@ -5,9 +5,9 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
-#include <boost/python/class.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_arg.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
 
 #include "pxr/usd/usd/stagePopulationMask.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -16,9 +16,9 @@
 
 using std::string;
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

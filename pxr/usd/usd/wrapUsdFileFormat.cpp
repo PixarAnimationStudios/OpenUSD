@@ -10,13 +10,13 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 
-#include <boost/python/bases.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/scope.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/bases.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/scope.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void
 wrapUsdFileFormat()

@@ -15,13 +15,13 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -132,7 +132,7 @@ void wrapUsdPhysicsCollisionGroup()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#include "pxr/external/boost/python/suite/indexing/vector_indexing_suite.hpp"
 
 namespace {
 
@@ -144,31 +144,31 @@ _WrapGetGroups(const UsdPhysicsCollisionGroup::CollisionGroupTable &table)
 
 static bool
 _WrapIsCollisionEnabled(const UsdPhysicsCollisionGroup::CollisionGroupTable &table,
-boost::python::object a, boost::python::object b)
+pxr_boost::python::object a, pxr_boost::python::object b)
 {
-    boost::python::extract<int> extractIntA(a);
-    boost::python::extract<int> extractIntB(b);
+    pxr_boost::python::extract<int> extractIntA(a);
+    pxr_boost::python::extract<int> extractIntB(b);
     if (extractIntA.check() && extractIntB.check())
     {
         return table.IsCollisionEnabled(extractIntA(), extractIntB());
     }
 
-    boost::python::extract<SdfPath> extractPathA(a);
-    boost::python::extract<SdfPath> extractPathB(b);
+    pxr_boost::python::extract<SdfPath> extractPathA(a);
+    pxr_boost::python::extract<SdfPath> extractPathB(b);
     if (extractPathA.check() && extractPathB.check())
     {
         return table.IsCollisionEnabled(extractPathA(), extractPathB());
     }
 
-    boost::python::extract<UsdPhysicsCollisionGroup> extractColGroupA(a);
-    boost::python::extract<UsdPhysicsCollisionGroup> extractColGroupB(b);
+    pxr_boost::python::extract<UsdPhysicsCollisionGroup> extractColGroupA(a);
+    pxr_boost::python::extract<UsdPhysicsCollisionGroup> extractColGroupB(b);
     if (extractColGroupA.check() && extractColGroupB.check())
     {
         return table.IsCollisionEnabled(extractColGroupA().GetPrim().GetPrimPath(), extractColGroupB().GetPrim().GetPrimPath());
     }
 
-    boost::python::extract<UsdPrim> extractPrimA(a);
-    boost::python::extract<UsdPrim> extractPrimB(b);
+    pxr_boost::python::extract<UsdPrim> extractPrimA(a);
+    pxr_boost::python::extract<UsdPrim> extractPrimB(b);
     if (extractPrimA.check() && extractPrimB.check())
     {
         return table.IsCollisionEnabled(extractPrimA().GetPrimPath(), extractPrimB().GetPrimPath());

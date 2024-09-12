@@ -13,12 +13,12 @@
 #include "pxr/base/tf/refPtrTracker.h"
 #include "pxr/base/tf/pySingleton.h"
 
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/class.hpp"
 #include <sstream>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

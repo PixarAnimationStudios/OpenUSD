@@ -7,7 +7,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLux/blackbody.h"
 #include "pxr/base/tf/pyModule.h"
-#include <boost/python/def.hpp>
+#include "pxr/external/boost/python/def.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -15,7 +15,7 @@ TF_WRAP_MODULE
 {
     TF_WRAP(UsdLuxTokens);
 
-    boost::python::def("BlackbodyTemperatureAsRgb",
+    pxr_boost::python::def("BlackbodyTemperatureAsRgb",
                        UsdLuxBlackbodyTemperatureAsRgb);
 
     // Generated schema.  Base classes must precede derived classes.

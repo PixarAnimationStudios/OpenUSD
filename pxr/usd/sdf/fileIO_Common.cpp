@@ -839,7 +839,7 @@ Sdf_FileIOUtility::_WriteDictionary(
             // Put quotes around the keyName if it is not a valid identifier
             string keyName = *(i->first);
             if (!TfIsValidIdentifier(keyName)) {
-                keyName = "\"" + keyName + "\"";
+                keyName = Quote(keyName);
             }
             if (value.IsHolding<VtDictionary>()) {
                 Write(out, multiLine ? indent+1 : 0, "dictionary %s = ",

@@ -7,14 +7,14 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/specializes.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/operators.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/operators.hpp"
 
 using std::string;
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void wrapUsdSpecializes()
 {

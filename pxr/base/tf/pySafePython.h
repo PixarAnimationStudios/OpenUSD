@@ -24,7 +24,7 @@
 ARCH_PRAGMA_PUSH_MACRO(slots)
 #undef slots
 
-#include <boost/python/detail/wrap_python.hpp>
+#include "pxr/external/boost/python/detail/wrap_python.hpp"
 
 ARCH_PRAGMA_POP_MACRO(slots)
 

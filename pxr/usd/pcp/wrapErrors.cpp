@@ -12,11 +12,11 @@
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include "pxr/base/tf/pyEnum.h"
-#include <boost/python.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 // Wrap this with a function so that add_property does not
 // try to return an lvalue (and fail)

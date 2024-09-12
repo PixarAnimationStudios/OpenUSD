@@ -18,17 +18,18 @@
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 #include <memory>
 
-using namespace boost::python;
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+using namespace pxr_boost::python;
+
 namespace {
 
-static boost::python::tuple
+static pxr_boost::python::tuple
 _ComputeLayerStack( PcpCache &cache, 
                     const PcpLayerStackIdentifier &identifier ) 
 {
@@ -39,9 +40,9 @@ _ComputeLayerStack( PcpCache &cache,
     typedef Tf_MakePyConstructor::RefPtrFactory<>::
         apply<PcpLayerStackRefPtr>::type RefPtrFactory;
     
-    return boost::python::make_tuple(
-        boost::python::object(
-            boost::python::handle<>(RefPtrFactory()(result))), 
+    return pxr_boost::python::make_tuple(
+        pxr_boost::python::object(
+            pxr_boost::python::handle<>(RefPtrFactory()(result))), 
         errors);
 }
 
@@ -51,7 +52,7 @@ _WrapPrimIndex(PcpCache&, const PcpPrimIndex& primIndex)
     return primIndex;
 }
 
-static boost::python::tuple
+static pxr_boost::python::tuple
 _ComputePrimIndex( PcpCache& cache, const SdfPath & path )
 {
     // Compute the prim index.
@@ -69,10 +70,10 @@ _ComputePrimIndex( PcpCache& cache, const SdfPath & path )
                                        boost::ref(primIndex)));
 
     // Return the prim index and errors to python.
-    return boost::python::make_tuple(pyPrimIndex, errors);
+    return pxr_boost::python::make_tuple(pyPrimIndex, errors);
 }
 
-static boost::python::object
+static pxr_boost::python::object
 _FindPrimIndex( PcpCache& cache, const SdfPath & path )
 {
     if (const PcpPrimIndex* primIndex = cache.FindPrimIndex(path)) {
@@ -87,17 +88,17 @@ _FindPrimIndex( PcpCache& cache, const SdfPath & path )
                                            boost::ref(*primIndex)));
         return pyPrimIndex;
     }
-    return boost::python::object();
+    return pxr_boost::python::object();
 }
 
-static boost::python::tuple
+static pxr_boost::python::tuple
 _ComputePropertyIndex( PcpCache &cache, const SdfPath &path )
 {
     PcpErrorVector errors;
     const PcpPropertyIndex &result = cache.ComputePropertyIndex(path, &errors);
     return_by_value::apply<PcpPropertyIndex>::type converter;
-    return boost::python::make_tuple(
-        boost::python::object(boost::python::handle<>(converter(result))), 
+    return pxr_boost::python::make_tuple(
+        pxr_boost::python::object(pxr_boost::python::handle<>(converter(result))), 
         errors);
 }
 
@@ -107,7 +108,7 @@ _WrapPropertyIndex(PcpCache&, const PcpPropertyIndex& propertyIndex)
     return propertyIndex;
 }
 
-static boost::python::object
+static pxr_boost::python::object
 _FindPropertyIndex( PcpCache& cache, const SdfPath & path )
 {
     if (const PcpPropertyIndex* propIndex = cache.FindPropertyIndex(path)) {
@@ -122,10 +123,10 @@ _FindPropertyIndex( PcpCache& cache, const SdfPath & path )
                                            boost::ref(*propIndex)));
         return pyPropertyIndex;
     }
-    return boost::python::object();
+    return pxr_boost::python::object();
 }
 
-static boost::python::tuple
+static pxr_boost::python::tuple
 _ComputeRelationshipTargetPaths( PcpCache &cache, const SdfPath & path, 
                                  bool localOnly,
                                   const SdfSpecHandle & stopProperty,
@@ -138,10 +139,10 @@ _ComputeRelationshipTargetPaths( PcpCache &cache, const SdfPath & path,
                                          stopProperty, includeStopProperty,
                                          &deletedPaths,
                                          &errors);
-    return boost::python::make_tuple(result, deletedPaths, errors);
+    return pxr_boost::python::make_tuple(result, deletedPaths, errors);
 }
 
-static boost::python::tuple
+static pxr_boost::python::tuple
 _ComputeAttributeConnectionPaths( PcpCache &cache, const SdfPath & path, 
                                   bool localOnly,
                                   const SdfSpecHandle & stopProperty,
@@ -154,7 +155,7 @@ _ComputeAttributeConnectionPaths( PcpCache &cache, const SdfPath & path,
                                           stopProperty, includeStopProperty,
                                           &deletedPaths,
                                           &errors);
-    return boost::python::make_tuple(result, deletedPaths, errors);
+    return pxr_boost::python::make_tuple(result, deletedPaths, errors);
 }
 
 static void

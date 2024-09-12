@@ -404,7 +404,7 @@ public:
     ///
     /// This is what the C++ sizeof operator returns for the type, so this
     /// value is not very useful for Python types (it will always be
-    /// sizeof(boost::python::object)).
+    /// sizeof(pxr_boost::python::object)).
     ///
     TF_API
     size_t GetSizeof() const;

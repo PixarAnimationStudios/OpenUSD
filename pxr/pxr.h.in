@@ -69,4 +69,8 @@ namespace PXR_NS {
 #define PXR_PREFER_SAFETY_OVER_SPEED
 #endif
 
+#if @PXR_USE_INTERNAL_BOOST_PYTHON@
+#define PXR_USE_INTERNAL_BOOST_PYTHON
+#endif
+
 #endif //PXR_H

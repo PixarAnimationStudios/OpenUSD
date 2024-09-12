@@ -13,17 +13,17 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/enum.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/overloads.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/tuple.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/copy_const_reference.hpp"
+#include "pxr/external/boost/python/enum.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/overloads.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -57,7 +57,7 @@ GetPerspectiveHelper( const GfFrustum &self, bool isFovVertical ) {
     bool result = self.GetPerspective( isFovVertical, 
                                        &fov, &aspect, &nearDist, &farDist );
     return result ?
-        boost::python::make_tuple( fov, aspect, nearDist, farDist ) : object();
+        pxr_boost::python::make_tuple( fov, aspect, nearDist, farDist ) : object();
 }
 
 static tuple
@@ -66,7 +66,7 @@ GetOrthographicHelper( const GfFrustum &self ) {
     bool result =
         self.GetOrthographic( &left, &right, &bottom, &top, &near, &far );
     return result ?
-        boost::python::
+        pxr_boost::python::
         make_tuple( left, right, bottom, top, near, far ) : tuple();
 }
 
@@ -74,11 +74,11 @@ static tuple
 ComputeViewFrameHelper( const GfFrustum &self ) {
     GfVec3d side, up, view;
     self.ComputeViewFrame( &side, &up, &view );
-    return boost::python::make_tuple( side, up, view );
+    return pxr_boost::python::make_tuple( side, up, view );
 }
 
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( FitToSphere_overloads,
+PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( FitToSphere_overloads,
                                         FitToSphere, 2, 3 );
 
 } // anonymous namespace 

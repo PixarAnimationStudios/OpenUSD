@@ -15,13 +15,13 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -111,7 +111,7 @@ _WrapComputeOutputSource(const UsdShadeNodeGraph &self,
     UsdShadeAttributeType sourceType;
     UsdShadeShader source = self.ComputeOutputSource(outputName, &sourceName, 
             &sourceType);
-    return boost::python::make_tuple (source, sourceName, sourceType);
+    return pxr_boost::python::make_tuple (source, sourceName, sourceType);
 }
 
 WRAP_CUSTOM {

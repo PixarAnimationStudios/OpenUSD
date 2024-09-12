@@ -17,19 +17,19 @@
 #include "pxr/usd/usdSkel/cache.h"
 #include "pxr/usd/usdSkel/root.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
-
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 
 namespace {
 
 
 UsdSkelBinding*
-_New(const UsdSkelSkeleton& skel, const boost::python::list& skinningQueries)
+_New(const UsdSkelSkeleton& skel, const pxr_boost::python::list& skinningQueries)
 {
     const size_t numQueries = len(skinningQueries);
     VtArray<UsdSkelSkinningQuery> skinningQueriesArray(numQueries);

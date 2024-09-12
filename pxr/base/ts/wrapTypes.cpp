@@ -9,12 +9,12 @@
 #include "pxr/base/ts/types.h"
 #include "pxr/base/tf/pyEnum.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/operators.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/operators.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace boost::python;
+using namespace pxr_boost::python;
 
 
 void wrapTypes()

@@ -15,7 +15,7 @@
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/errorMark.h"
 
-#include <boost/python/default_call_policies.hpp>
+#include "pxr/external/boost/python/default_call_policies.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -42,7 +42,7 @@ void TfPyConvertPythonExceptionToTfErrors();
 /// required for wrapped functions and methods that do not appear directly in an
 /// extension module.  For instance, the map and sequence proxy objects use
 /// this, since they are created on the fly.
-template <typename Base = boost::python::default_call_policies>
+template <typename Base = pxr_boost::python::default_call_policies>
 struct TfPyRaiseOnError : Base
 {
   public:

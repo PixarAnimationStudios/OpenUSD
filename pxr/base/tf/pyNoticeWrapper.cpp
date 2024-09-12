@@ -9,12 +9,12 @@
 
 #include "pxr/base/tf/pyNoticeWrapper.h"
 
-using namespace boost::python;
-
 using std::map;
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 TfPyNoticeWrapperBase::~TfPyNoticeWrapperBase()
 {

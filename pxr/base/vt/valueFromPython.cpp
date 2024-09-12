@@ -27,7 +27,7 @@ Vt_ValueFromPythonRegistry::Invoke(PyObject *obj) {
 
     // Check to see if we have a cached lvalue extractor for the python type
     // object.
-    boost::python::handle<> h(PyObject_Type(obj));
+    pxr_boost::python::handle<> h(PyObject_Type(obj));
     _LValueExtractorCache::iterator i =
         self._lvalueExtractorCache.find(h.get());
     if (i != self._lvalueExtractorCache.end()) {

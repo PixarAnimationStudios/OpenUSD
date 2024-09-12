@@ -9,13 +9,13 @@
 
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/raw_function.hpp>
-#include <boost/python/tuple.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/raw_function.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

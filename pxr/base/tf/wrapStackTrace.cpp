@@ -11,11 +11,11 @@
 #include "pxr/base/tf/stackTrace.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/python/def.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/def.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

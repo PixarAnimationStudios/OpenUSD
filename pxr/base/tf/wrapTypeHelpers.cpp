@@ -9,17 +9,17 @@
 
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python/extract.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/detail/api_placeholder.hpp>      // for len()
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/detail/api_placeholder.hpp"      // for len()
 
 using namespace std;
-using namespace boost::python;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
+using namespace pxr_boost::python;
+
 TfType
-TfType_DefinePythonTypeAndBases( const boost::python::object & classObj )
+TfType_DefinePythonTypeAndBases( const pxr_boost::python::object & classObj )
 {
     string moduleName = extract<string>(classObj.attr("__module__"));
     string className = extract<string>(classObj.attr("__name__"));
@@ -28,9 +28,9 @@ TfType_DefinePythonTypeAndBases( const boost::python::object & classObj )
     // Extract the bases, and declare them if they have not yet been declared.
     object basesObj = classObj.attr("__bases__");
     vector<TfType> baseTypes;
-    for (boost::python::ssize_t i=0; i < boost::python::len(basesObj); ++i)
+    for (pxr_boost::python::ssize_t i=0; i < pxr_boost::python::len(basesObj); ++i)
     {
-        boost::python::object baseClass = basesObj[i];
+        pxr_boost::python::object baseClass = basesObj[i];
 
         TfType baseType = TfType::FindByPythonClass(baseClass);
 

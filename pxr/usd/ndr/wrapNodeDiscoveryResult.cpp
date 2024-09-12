@@ -11,12 +11,11 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
 
-#include <boost/python.hpp>
-
-namespace bp = boost::python;
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace bp = pxr_boost::python;
 
 namespace {
 
@@ -63,23 +62,23 @@ struct MapConverter
 
     MapConverter()
     {
-        boost::python::type_info info = boost::python::type_id<Map>();
-        boost::python::converter::registry::push_back(&convertible, &construct, 
+        pxr_boost::python::type_info info = pxr_boost::python::type_id<Map>();
+        pxr_boost::python::converter::registry::push_back(&convertible, &construct, 
                                                       info);
 
-        const boost::python::converter::registration* reg =
-                boost::python::converter::registry::query(info);
+        const pxr_boost::python::converter::registration* reg =
+                pxr_boost::python::converter::registry::query(info);
         if (reg == NULL || reg->m_to_python == NULL) {
-            boost::python::to_python_converter<Map, MapConverter<Map>>();
+            pxr_boost::python::to_python_converter<Map, MapConverter<Map>>();
         }
     }
     static PyObject* convert(const Map& map)
     {
-        boost::python::dict result;
+        pxr_boost::python::dict result;
         for (const auto& entry : map) {
             result[entry.first] = entry.second;
         }
-        return boost::python::incref(result.ptr());
+        return pxr_boost::python::incref(result.ptr());
     }
 
     static void* convertible(PyObject* obj_ptr)
@@ -88,19 +87,19 @@ struct MapConverter
             return nullptr;
         }
 
-        boost::python::dict map = boost::python::extract<boost::python::dict>(
+        pxr_boost::python::dict map = pxr_boost::python::extract<pxr_boost::python::dict>(
                 obj_ptr);
-        boost::python::list keys = map.keys();
-        boost::python::list values = map.values();
+        pxr_boost::python::list keys = map.keys();
+        pxr_boost::python::list values = map.values();
         for (int i = 0; i < len(keys); ++i) {
 
-            boost::python::object keyObj = keys[i];
-            if (!boost::python::extract<Key>(keyObj).check()) {
+            pxr_boost::python::object keyObj = keys[i];
+            if (!pxr_boost::python::extract<Key>(keyObj).check()) {
                 return nullptr;
             }
 
-            boost::python::object valueObj = values[i];
-            if (!boost::python::extract<Value>(valueObj).check()) {
+            pxr_boost::python::object valueObj = values[i];
+            if (!pxr_boost::python::extract<Value>(valueObj).check()) {
                 return nullptr;
             }
         }
@@ -108,26 +107,26 @@ struct MapConverter
         return obj_ptr;
     }
     static void construct(PyObject* obj_ptr,
-        boost::python::converter::rvalue_from_python_stage1_data* data)
+        pxr_boost::python::converter::rvalue_from_python_stage1_data* data)
     {
         void* storage = (
-                (boost::python::converter::rvalue_from_python_storage<Map>*)data
+                (pxr_boost::python::converter::rvalue_from_python_storage<Map>*)data
             )->storage.bytes;
         new (storage)Map();
         data->convertible = storage;
 
         Map& result = *((Map*)storage);
 
-        boost::python::dict map = 
-                boost::python::extract<boost::python::dict>(obj_ptr);
-        boost::python::list keys = map.keys();
-        boost::python::list values = map.values();
+        pxr_boost::python::dict map = 
+                pxr_boost::python::extract<pxr_boost::python::dict>(obj_ptr);
+        pxr_boost::python::list keys = map.keys();
+        pxr_boost::python::list values = map.values();
         for (int i = 0; i < len(keys); ++i) {
 
-            boost::python::object keyObj = keys[i];
-            boost::python::object valueObj = values[i];
-            result.emplace(boost::python::extract<Key>(keyObj),
-                           boost::python::extract<Value>(valueObj));
+            pxr_boost::python::object keyObj = keys[i];
+            pxr_boost::python::object valueObj = values[i];
+            result.emplace(pxr_boost::python::extract<Key>(keyObj),
+                           pxr_boost::python::extract<Value>(valueObj));
         }
     }
 };
@@ -138,7 +137,7 @@ void wrapNodeDiscoveryResult()
 {
     MapConverter<NdrTokenMap>();
 
-    using namespace boost::python;
+    using namespace pxr_boost::python;
 
     typedef NdrNodeDiscoveryResult This;
     class_<This>("NodeDiscoveryResult", no_init)
@@ -181,7 +180,7 @@ void wrapNodeDiscoveryResult()
     TfPyContainerConversions::from_python_sequence<
         std::vector<This>,
         TfPyContainerConversions::variable_capacity_policy >();
-    boost::python::to_python_converter<
+    pxr_boost::python::to_python_converter<
         std::vector<This>, 
         TfPySequenceToPython<std::vector<This> > >();
 }

@@ -25,9 +25,9 @@
 #include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/operators.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/operators.hpp"
 
 #include <string>
 #include <vector>
@@ -35,9 +35,9 @@
 using std::string;
 using std::vector;
 
-using namespace boost::python;
-
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 const PcpPrimIndex &
 Usd_PrimGetSourcePrimIndex(const UsdPrim& prim)
@@ -55,13 +55,13 @@ static SdfPathVector
 _FindAllAttributeConnectionPaths(
     UsdPrim const &self,
     Usd_PrimFlagsPredicate const &traversal,
-    boost::python::object pypred,
+    pxr_boost::python::object pypred,
     bool recurseOnSources)
 {
     using Predicate = std::function<bool (UsdAttribute const &)>;
     Predicate pred;
     if (!pypred.is_none()) {
-        pred = boost::python::extract<Predicate>(pypred);
+        pred = pxr_boost::python::extract<Predicate>(pypred);
     }
     return self.FindAllAttributeConnectionPaths(
         traversal, pred, recurseOnSources);
@@ -70,7 +70,7 @@ _FindAllAttributeConnectionPaths(
 static SdfPathVector
 _FindAllAttributeConnectionPathsDefault(
     UsdPrim const &self,
-    boost::python::object pypred,
+    pxr_boost::python::object pypred,
     bool recurseOnSources)
 {
     return _FindAllAttributeConnectionPaths(
@@ -81,13 +81,13 @@ static SdfPathVector
 _FindAllRelationshipTargetPaths(
     UsdPrim const &self,
     Usd_PrimFlagsPredicate const &traversal,
-    boost::python::object pypred,
+    pxr_boost::python::object pypred,
     bool recurseOnTargets)
 {
     using Predicate = std::function<bool (UsdRelationship const &)>;
     Predicate pred;
     if (!pypred.is_none()) {
-        pred = boost::python::extract<Predicate>(pypred);
+        pred = pxr_boost::python::extract<Predicate>(pypred);
     }
     return self.FindAllRelationshipTargetPaths(
         traversal, pred, recurseOnTargets);
@@ -96,7 +96,7 @@ _FindAllRelationshipTargetPaths(
 static SdfPathVector
 _FindAllRelationshipTargetPathsDefault(
     UsdPrim const &self,
-    boost::python::object pypred,
+    pxr_boost::python::object pypred,
     bool recurseOnTargets)
 {
     return _FindAllRelationshipTargetPaths(self, UsdPrimDefaultPredicate,
@@ -116,38 +116,38 @@ __repr__(const UsdPrim &self)
 
 static TfTokenVector _WrapGetPropertyNames(
     const UsdPrim &prim, 
-    boost::python::object predicate)
+    pxr_boost::python::object predicate)
 {
     const auto &pred = predicate ? 
-        boost::python::extract<UsdPrim::PropertyPredicateFunc>(predicate) :
+        pxr_boost::python::extract<UsdPrim::PropertyPredicateFunc>(predicate) :
         UsdPrim::PropertyPredicateFunc();
     return prim.GetPropertyNames(pred);
 }
 
 static TfTokenVector _WrapGetAuthoredPropertyNames(
     const UsdPrim &prim, 
-    boost::python::object predicate)
+    pxr_boost::python::object predicate)
 {
     const auto &pred = predicate ? 
-        boost::python::extract<UsdPrim::PropertyPredicateFunc>(predicate) :
+        pxr_boost::python::extract<UsdPrim::PropertyPredicateFunc>(predicate) :
         UsdPrim::PropertyPredicateFunc();
     return prim.GetAuthoredPropertyNames(pred);
 }
 
 static std::vector<UsdProperty>
-_WrapGetProperties(const UsdPrim &prim, boost::python::object predicate)
+_WrapGetProperties(const UsdPrim &prim, pxr_boost::python::object predicate)
 {
     const auto &pred = predicate ? 
-        boost::python::extract<UsdPrim::PropertyPredicateFunc>(predicate) :
+        pxr_boost::python::extract<UsdPrim::PropertyPredicateFunc>(predicate) :
         UsdPrim::PropertyPredicateFunc();
     return prim.GetProperties(pred);
 }
 
 static std::vector<UsdProperty>
-_WrapGetAuthoredProperties(const UsdPrim &prim, boost::python::object predicate)
+_WrapGetAuthoredProperties(const UsdPrim &prim, pxr_boost::python::object predicate)
 {
     const auto &pred = predicate ? 
-        boost::python::extract<UsdPrim::PropertyPredicateFunc>(predicate) :
+        pxr_boost::python::extract<UsdPrim::PropertyPredicateFunc>(predicate) :
         UsdPrim::PropertyPredicateFunc();
     return prim.GetAuthoredProperties(pred);
 }
@@ -273,18 +273,18 @@ void wrapUsdPrim()
         .def("HasDefiningSpecifier", &UsdPrim::HasDefiningSpecifier)
 
         .def("GetPropertyNames", &_WrapGetPropertyNames,
-             (arg("predicate")=boost::python::object()),
+             (arg("predicate")=pxr_boost::python::object()),
              return_value_policy<TfPySequenceToList>())
         .def("GetAuthoredPropertyNames", &_WrapGetAuthoredPropertyNames,
-             (arg("predicate")=boost::python::object()),
+             (arg("predicate")=pxr_boost::python::object()),
              return_value_policy<TfPySequenceToList>())
         
         .def("GetProperties", &_WrapGetProperties,
-             arg("predicate")=boost::python::object(),
+             arg("predicate")=pxr_boost::python::object(),
              return_value_policy<TfPySequenceToList>())
 
         .def("GetAuthoredProperties", &_WrapGetAuthoredProperties,
-             arg("predicate")=boost::python::object(),
+             arg("predicate")=pxr_boost::python::object(),
              return_value_policy<TfPySequenceToList>())
 
         .def("GetPropertiesInNamespace",
@@ -704,7 +704,7 @@ void wrapUsdPrim()
     // This is wrapped in order to let python call an API that will get through
     // our usual Python API guards to access an invalid prim and throw an
     // exception.
-    boost::python::def(
+    pxr_boost::python::def(
         "_UnsafeGetStageForTesting", &_UnsafeGetStageForTesting);
     
 }

@@ -14,7 +14,7 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/type.h"
 
-#include <boost/python/object.hpp>
+#include "pxr/external/boost/python/object.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -23,32 +23,28 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<TfPyObjWrapper>();
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
-
 namespace {
 
-// A custom deleter for shared_ptr<boost::python::object> that takes the
+// A custom deleter for shared_ptr<pxr_boost::python::object> that takes the
 // python lock before deleting the python object.  This is necessary since it's
 // invalid to decrement the python refcount without holding the lock.
 struct _DeleteObjectWithLock {
-    void operator()(boost::python::object *obj) const {
+    void operator()(pxr_boost::python::object *obj) const {
         PXR_NS::TfPyLock lock;
         delete obj;
     }
 };
 }
 
-PXR_NAMESPACE_OPEN_SCOPE
-
 TfPyObjWrapper::TfPyObjWrapper()
 {
     TfPyLock lock;
-    TfPyObjWrapper none((boost::python::object())); // <- extra parens for "most
+    TfPyObjWrapper none((pxr_boost::python::object())); // <- extra parens for "most
                                                     // vexing parse".
     *this = none;
 }
 
-TfPyObjWrapper::TfPyObjWrapper(boost::python::object obj)
+TfPyObjWrapper::TfPyObjWrapper(pxr_boost::python::object obj)
     : _objectPtr(new object(obj), _DeleteObjectWithLock())
 {
 }

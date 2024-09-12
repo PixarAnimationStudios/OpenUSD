@@ -13,7 +13,7 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -42,12 +42,12 @@ private:
         listOp.ApplyOperations(&result);
         return result;
     }
-    static boost::python::object
+    static pxr_boost::python::object
     _ApplyOperations2(const T& outer, const T& inner) {
         if (std::optional<T> r = outer.ApplyOperations(inner)) {
-            return boost::python::object(*r);
+            return pxr_boost::python::object(*r);
         } else {
-            return boost::python::object();
+            return pxr_boost::python::object();
         }
     }
 
@@ -57,7 +57,7 @@ private:
 
     static void _Wrap(const std::string& name)
     {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
         using ItemVector = typename T::ItemVector;
 

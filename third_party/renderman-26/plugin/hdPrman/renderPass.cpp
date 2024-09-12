@@ -444,7 +444,8 @@ HdPrman_RenderPass::_Execute(
         // Use AOV-bindings to create render view with displays that
         // have drivers writing into the intermediate framebuffer blitted
         // to the AOVs.
-        _renderParam->CreateFramebufferAndRenderViewFromAovs(aovBindings);
+        _renderParam->CreateFramebufferAndRenderViewFromAovs(aovBindings,
+                                                             rsPrim);
     }
 
     HdPrman_RenderViewContext &rvCtx = _renderParam->GetRenderViewContext();

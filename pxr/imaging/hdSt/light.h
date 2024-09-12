@@ -65,7 +65,10 @@ private:
     // the different textures needed for IBL.
     GlfSimpleLight _PrepareDomeLight(SdfPath const &id, 
                                      HdSceneDelegate *sceneDelegate);
-    
+
+    GlfSimpleLight _PrepareSimpleLight(SdfPath const &id, 
+                                       HdSceneDelegate *sceneDelegate);
+
 private:
     // Stores the internal light type of this light.
     TfToken _lightType;

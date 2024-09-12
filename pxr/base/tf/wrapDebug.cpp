@@ -11,12 +11,12 @@
 // incompatible macro definitions in pyport.h on macOS.
 #include <locale>
 
-#include <boost/python/class.hpp>
-#include <boost/python/object.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/object.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

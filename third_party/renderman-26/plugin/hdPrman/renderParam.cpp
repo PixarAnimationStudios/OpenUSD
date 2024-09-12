@@ -96,6 +96,17 @@ TF_DEFINE_ENV_SETTING(HD_PRMAN_DISABLE_HIDER_JITTER, false,
 TF_DEFINE_ENV_SETTING(HD_PRMAN_DEFER_SET_OPTIONS, true,
                       "Defer first SetOptions call to render settings prim sync.");
 
+// We now have two env setting related to driving hdPrman rendering using the
+// render settings prim. HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS ignores the
+// task's AOV bindings and creates the render view using solely the render
+// settings' products; this is limited to batch (non-interactive) rendering.
+// The new setting HD_PRMAN_INTERACTIVE_RENDER_WITH_RENDER_SETTINGS creates the
+// render view using both the task's AOV bindings and the render settings'
+// products. The Hydra framebuffer is limited to displaying only the AOVs in
+// the task bindings. This will be improved in a future change.
+TF_DEFINE_ENV_SETTING(HD_PRMAN_INTERACTIVE_RENDER_WITH_RENDER_SETTINGS, false,
+                      "Add render settings outputs to interactive renders");
+
 extern TfEnvSetting<bool> HD_PRMAN_ENABLE_QUICKINTEGRATE;
 
 static bool _enableQuickIntegrate =
@@ -554,18 +565,21 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
         RtUString name;
         if (hdInterp == HdInterpolationConstant) {
             static const char *userAttrPrefix = "user:";
+            static const char *riPrefix = "ri:";
             static const char *riAttrPrefix = "ri:attributes:";
             static const char *primvarsPrefix = "primvars:";
-            bool hasUserPrefix =
+            const bool hasUserPrefix =
                 TfStringStartsWith(primvar.name.GetString(), userAttrPrefix);
+            const bool hasRiPrefix =
+                TfStringStartsWith(primvar.name.GetString(), riPrefix);
             bool hasRiAttributesPrefix =
                 TfStringStartsWith(primvar.name.GetString(), riAttrPrefix);
-            const bool hasPrimvarRiAttributesPrefix =
+            const bool hasPrimvarsPrefix =
                     TfStringStartsWith(primvar.name.GetString(),primvarsPrefix);
 
             // Strip "primvars:" from the name
             TfToken primvarName = primvar.name;
-            if (hasPrimvarRiAttributesPrefix) {
+            if (hasPrimvarsPrefix) {
                 const char *strippedName = primvar.name.GetText();
                 strippedName += strlen(primvarsPrefix);
                 primvarName = TfToken(strippedName);
@@ -612,16 +626,33 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                 const char *strippedName = primvarName.GetText();
                 strippedName += strlen(riAttrPrefix);
                 name = _GetPrmanPrimvarName(TfToken(strippedName), detail);
+            } else if (hasRiPrefix) {
+                // For example, coming from USD:
+                // "primvars:ri:dice:micropolygonlength".
+                // See the USD PxrPrimvarsAPI schema for more examples.
+                const char *strippedName = primvarName.GetText();
+                strippedName += strlen(riPrefix);
+                name = _GetPrmanPrimvarName(TfToken(strippedName), detail);
             } else {
                 name = _GetPrmanPrimvarName(primvarName, detail);
             }
 
-            // ri:attributes and primvars:ri:attributes primvars end up having
-            // the same name, potentially causing collisions in the primvar list.
+            // As HdPrman and USD have evolved over time, there have been
+            // multiple representations allowed for RenderMan primvars:
+            //
+            //   1. "ri:FOO"
+            //   2. "primvars:ri:attributes:FOO"
+            //   3. "ri:atrtibutes:FOO"
+            //
+            // Warn if we encounter the same primvar multiple times:
+            if (params.HasParam(name)) {
+                TF_WARN("<%s> provided multiple representations of the primvar "
+                        "'%s'", id.GetText(), name.CStr());
+            }
             // When both ri:attributes and primvar:ri:attributes versions of 
             // the same primvars exist, the primvar:ri:attributes version should
             // win out.
-            if (hasRiAttributesPrefix && !hasPrimvarRiAttributesPrefix &&
+            if (hasRiAttributesPrefix && !hasPrimvarsPrefix &&
                 params.HasParam(name)) {
                 continue;
             }
@@ -3021,7 +3052,8 @@ _GetAsRtUString(const HdAovSettingsMap & m, const TfToken & key)
 
 void
 HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
-    const HdRenderPassAovBindingVector& aovBindings)
+    const HdRenderPassAovBindingVector& aovBindings,
+    const HdPrman_RenderSettings* renderSettings)
 {
     if (!_framebuffer) {
         _framebuffer = std::make_unique<HdPrmanFramebuffer>();
@@ -3069,6 +3101,41 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
     renderViewDesc.sampleFilterList = GetSampleFilterList();
     renderViewDesc.displayFilterList = GetDisplayFilterList();
     renderViewDesc.resolution = GetResolution();
+
+    if (TfGetEnvSetting(HD_PRMAN_INTERACTIVE_RENDER_WITH_RENDER_SETTINGS) &&
+            renderSettings) {
+        // Get the descriptors for the render settings products.
+        // N.B. this overrides the camera opinion on the product.  That
+        // isn't the intent in case it becomes a problem.
+        auto rsrvd =
+            _ComputeRenderViewDesc(renderSettings->GetRenderProducts(),
+                                   renderViewDesc.cameraId, 
+                                   renderViewDesc.integratorId, 
+                                   renderViewDesc.sampleFilterList,
+                                   renderViewDesc.displayFilterList);
+
+        // Adjust indices to account for the ones we already have.  The
+        // entries in rsrvd.renderOutputIndices index into
+        // rsrvd.renderOutputDescs.  Since we're moving the latter's
+        // entries to the end of renderViewDesc.renderOutputDescs we must
+        // adjust the indices to reflect their new positions.
+        const auto base = renderViewDesc.renderOutputDescs.size();
+        for (auto& displayDesc: rsrvd.displayDescs) {
+            for (auto& index: displayDesc.renderOutputIndices) {
+                index += base;
+            }
+        }
+
+        // Add to final lists.
+        renderViewDesc.renderOutputDescs.insert(
+            renderViewDesc.renderOutputDescs.end(),
+            std::make_move_iterator(rsrvd.renderOutputDescs.begin()),
+            std::make_move_iterator(rsrvd.renderOutputDescs.end()));
+        renderViewDesc.displayDescs.insert(
+            renderViewDesc.displayDescs.end(),
+            std::make_move_iterator(rsrvd.displayDescs.begin()),
+            std::make_move_iterator(rsrvd.displayDescs.end()));
+    }
 
     TF_DEBUG(HDPRMAN_RENDER_PASS)
         .Msg("Create Riley RenderView from AOV bindings.\n");

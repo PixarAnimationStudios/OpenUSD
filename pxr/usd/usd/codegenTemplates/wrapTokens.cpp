@@ -5,7 +5,7 @@
 // https://openusd.org/license.
 //
 // GENERATED FILE.  DO NOT EDIT.
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/class.hpp"
 #include "{{ libraryPath }}/tokens.h"
 
 {% if useExportAPI %}
@@ -17,8 +17,8 @@
 
 void wrap{{ tokensPrefix }}Tokens()
 {
-    boost::python::class_<{{ tokensPrefix }}TokensType, boost::noncopyable>
-        cls("Tokens", boost::python::no_init);
+    pxr_boost::python::class_<{{ tokensPrefix }}TokensType, boost::noncopyable>
+        cls("Tokens", pxr_boost::python::no_init);
 {% for token in tokens %}
     _ADD_TOKEN(cls, {{ token.id }});
 {% endfor %}

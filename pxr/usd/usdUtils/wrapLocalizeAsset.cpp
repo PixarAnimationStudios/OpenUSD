@@ -12,11 +12,11 @@
 
 #include "pxr/usd/usdUtils/localizeAsset.h"
 
-#include <boost/python/def.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/def.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void wrapLocalizeAsset()
 {

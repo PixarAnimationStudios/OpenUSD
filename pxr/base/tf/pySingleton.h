@@ -16,8 +16,8 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include <boost/python/def_visitor.hpp>
-#include <boost/python/raw_function.hpp>
+#include "pxr/external/boost/python/def_visitor.hpp"
+#include "pxr/external/boost/python/raw_function.hpp"
 
 #include <string>
 
@@ -25,7 +25,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Tf_PySingleton {
 
-namespace bp = boost::python;
+namespace bp = pxr_boost::python;
 
 TF_API
 bp::object _DummyInit(bp::tuple const & /* args */,

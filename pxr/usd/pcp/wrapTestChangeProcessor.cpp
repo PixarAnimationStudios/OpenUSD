@@ -15,11 +15,11 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/weakBase.h"
 #include <boost/noncopyable.hpp>
-#include <boost/python.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

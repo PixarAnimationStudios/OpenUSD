@@ -207,6 +207,7 @@ endfunction()
 function(pxr_library NAME)
     set(options
         DISABLE_PRECOMPILED_HEADERS
+        INCLUDE_SCHEMA_FILES
     )
     set(oneValueArgs
         TYPE
@@ -265,9 +266,65 @@ function(pxr_library NAME)
         endif()
 
         if(libraryRequiresPython)
-            list(APPEND args_LIBRARIES ${PYTHON_LIBRARIES} ${Boost_PYTHON_LIBRARY})
-            list(APPEND args_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+            list(APPEND args_LIBRARIES ${PYTHON_LIBRARIES} python)
+            list(APPEND args_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS})
         endif()
+    endif()
+
+    # If this is a schema library, add schema classes
+    if (args_INCLUDE_SCHEMA_FILES)
+        set(filePath "generatedSchema.classes.txt")
+
+        # Register a dependency so that cmake will regenerate the build
+        # system if generatedSchema.classes.txt changes
+        set_property(
+            DIRECTORY 
+            APPEND 
+            PROPERTY CMAKE_CONFIGURE_DEPENDS 
+            ${filePath}
+        )
+
+        # Read the generated classes
+        file(STRINGS ${filePath} fileContents)
+
+        # fileType potential values:
+        # -1: Skip line
+        # 0: Public Classes
+        # 1: Python Module Files
+        # 2: Resource Files
+        set(fileType -1)
+
+        foreach(line ${fileContents})
+            # Determine which section of the generated file we are in.
+            if (${fileType} EQUAL -1)
+                string(FIND ${line} "# Public Classes" found)
+                if (NOT ${found} EQUAL -1)
+                    set(fileType 0)
+                    continue()
+                endif()
+            elseif(${fileType} EQUAL 0)
+                string(FIND ${line} "# Python Module Files" found)
+                if (NOT ${found} EQUAL -1)
+                    set(fileType 1)
+                    continue()
+                endif()
+            elseif(${fileType} EQUAL 1)
+                string(FIND ${line} "# Resource Files" found)
+                if (NOT ${found} EQUAL -1)
+                    set(fileType 2)
+                    continue()
+                endif()
+            endif()
+
+            # Depending on the file type, append to the appropriate list.
+            if (${fileType} EQUAL 0)
+                list(APPEND args_PUBLIC_CLASSES ${line})
+            elseif(${fileType} EQUAL 1)
+                list(APPEND args_PYMODULE_CPPFILES ${line})
+            elseif(${fileType} EQUAL 2)
+                list(APPEND args_RESOURCE_FILES ${line})
+            endif()
+        endforeach()
     endif()
 
     # Collect libraries.
@@ -347,7 +404,7 @@ function(pxr_library NAME)
     )
 
     if(PXR_ENABLE_PYTHON_SUPPORT AND (args_PYMODULE_CPPFILES OR args_PYMODULE_FILES OR args_PYSIDE_UI_FILES))
-        list(APPEND pythonModuleIncludeDirs ${PYTHON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+        list(APPEND pythonModuleIncludeDirs ${PYTHON_INCLUDE_DIRS})
 
         _pxr_python_module(
             ${NAME}

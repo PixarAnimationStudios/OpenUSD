@@ -7,13 +7,13 @@
 /// \file wrapStitch.cpp
 
 #include "pxr/pxr.h"
-#include <boost/python/def.hpp>
+#include "pxr/external/boost/python/def.hpp"
 
 #include "pxr/usd/usdUtils/stitch.h"
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void 
 wrapStitch()

@@ -35,6 +35,9 @@ void TestSimpleValidator()
     {
         UsdValidationErrorVector errors = layerValidator.Validate(testLayer);
         TF_AXIOM(errors.size() == 1);
+        // Since no ErrorName is provided error identifier is same as the
+        // validator name.
+        TF_AXIOM(errors[0].GetIdentifier() == metadata.name);
         TF_AXIOM(errors[0].HasNoError());
         TF_AXIOM(errors[0].GetSites().empty());
         TF_AXIOM(errors[0].GetValidator() == &layerValidator);
@@ -47,13 +50,17 @@ void TestSimpleValidator()
         TF_AXIOM(layerValidator.Validate(prim).empty());
     }
 
+    const TfToken errorName("ErrorOnStage");
+    const TfToken expectedErrorIdentifier(
+        "TestSimpleStageValidator.ErrorOnStage");
     // Simple StageValidator
     UsdValidateStageTaskFn validateStageTaskFn = 
-        [](const UsdStageRefPtr &usdStage) {
+        [errorName](const UsdStageRefPtr &usdStage) {
             return UsdValidationErrorVector{
-                UsdValidationError(UsdValidationErrorType::Error, 
-                                   {UsdValidationErrorSite(usdStage, 
-                                                           SdfPath("/"))},
+                UsdValidationError(errorName,
+                                   UsdValidationErrorType::Error, 
+                                   {UsdValidationErrorSite(
+                                        usdStage, SdfPath::AbsoluteRootPath())},
                                    "This is an error on the stage")};
     };
     metadata.name = TfToken("TestSimpleStageValidator");
@@ -62,6 +69,7 @@ void TestSimpleValidator()
     {
         UsdValidationErrorVector errors = stageValidator.Validate(usdStage);
         TF_AXIOM(errors.size() == 1);
+        TF_AXIOM(errors[0].GetIdentifier() == expectedErrorIdentifier);
         TF_AXIOM(!errors[0].HasNoError());
         TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
         TF_AXIOM(errors[0].GetValidator() == &stageValidator);
@@ -82,6 +90,7 @@ void TestSimpleValidator()
         UsdValidationErrorVector errors = 
             stageValidator.Validate(usdStageFromLayer);
         TF_AXIOM(errors.size() == 1);
+        TF_AXIOM(errors[0].GetIdentifier() == expectedErrorIdentifier);
         TF_AXIOM(!errors[0].HasNoError());
         TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
         TF_AXIOM(errors[0].GetValidator() == &stageValidator);
@@ -93,20 +102,26 @@ void TestSimpleValidator()
     }
 
     // Simple SchemaTypeValidator
-    UsdValidatePrimTaskFn validatePrimTaskFn = [](const UsdPrim &usdPrim) {
+    const TfToken errorName2("ErrorOnSchemaType");
+    UsdValidatePrimTaskFn validatePrimTaskFn = 
+            [errorName2](const UsdPrim &usdPrim) {
         return UsdValidationErrorVector{
-            UsdValidationError(UsdValidationErrorType::Error, 
+            UsdValidationError(errorName2,
+                               UsdValidationErrorType::Error, 
                                {UsdValidationErrorSite(usdPrim.GetStage(), 
                                                        usdPrim.GetPath())},
                                "This is an error on the stage")};
     };
     metadata.name = TfToken("TestSimplePrimValidator");
     metadata.schemaTypes = {TfToken("MadeUpPrimType")};
+    const TfToken expectedErrorIdentifier2(
+        "TestSimplePrimValidator.ErrorOnSchemaType");
     UsdValidator schemaTypeValidator = UsdValidator(metadata, 
                                                     validatePrimTaskFn);
     {
         UsdValidationErrorVector errors = schemaTypeValidator.Validate(prim);
         TF_AXIOM(errors.size() == 1);
+        TF_AXIOM(errors[0].GetIdentifier() == expectedErrorIdentifier2);
         TF_AXIOM(!errors[0].HasNoError());
         TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
         TF_AXIOM(errors[0].GetValidator() == &schemaTypeValidator);

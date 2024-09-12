@@ -7,14 +7,14 @@
 
 #include "pxr/pxr.h"
 
-#include <boost/python/def.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace boost::python;
+using namespace pxr_boost::python;
 
 static int 
 _GetMajorVersion() {
@@ -31,7 +31,7 @@ _GetPatchVersion() {
     return PXR_PATCH_VERSION;
 }
 
-static boost::python::tuple
+static pxr_boost::python::tuple
 _GetVersion() {
     return make_tuple(PXR_MAJOR_VERSION, 
                       PXR_MINOR_VERSION,

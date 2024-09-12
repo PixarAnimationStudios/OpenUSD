@@ -7,9 +7,9 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/wrapUtils.h"
 
-using namespace boost::python;
-
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 static converter::to_python_function_t originalConverters[Usd_NumObjTypes];
 static Usd_ObjectSubclass::DowncastFn downcastFns[Usd_NumObjTypes];
@@ -25,7 +25,7 @@ Usd_ObjectSubclass::_ConvertHelper(const UsdObject *obj)
 }
 
 void
-Usd_ObjectSubclass::_ReplaceConverter(boost::python::type_info pti,
+Usd_ObjectSubclass::_ReplaceConverter(pxr_boost::python::type_info pti,
                                       UsdObjType objType,
                                       converter::to_python_function_t convert,
                                       DowncastFn downcast)

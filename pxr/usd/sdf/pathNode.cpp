@@ -278,7 +278,7 @@ _Remove(const Sdf_PathNode *pathNode,
     auto iter = mapAndMutex.map.find(pat);
     if (iter != mapAndMutex.map.end() &&
         iter->second.GetPtr() == reinterpret_cast<char const *>(pathNode)) {
-        mapAndMutex.map.erase(iter);
+        mapAndMutex.map.erase_fast(iter);
     }
 }
 

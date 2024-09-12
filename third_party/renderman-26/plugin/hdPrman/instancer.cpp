@@ -959,6 +959,7 @@ HdPrmanInstancer::_PopulateInstances(
         || (*dirtyBits & HdChangeTracker::DirtyPrimvar)
         || (*dirtyBits & HdChangeTracker::DirtyMaterialId)
         || (*dirtyBits & HdChangeTracker::DirtyTransform)
+        || (*dirtyBits & HdChangeTracker::DirtyCategories)
         || (*dirtyBits & HdChangeTracker::DirtyVisibility);
     bool anyGroupIdChanged = false;
     bool isLight = lightShaderId != riley::LightShaderId::InvalidId();

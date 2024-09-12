@@ -20,70 +20,70 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/registryManager.h"
 
-#include <boost/python.hpp>
-#include <boost/python/detail/api_placeholder.hpp>
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/detail/api_placeholder.hpp"
 
 #include <mutex>
 #include <functional>
 #include <vector>
-
-using namespace boost::python;
 
 using std::string;
 using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+using namespace pxr_boost::python;
+
 void
 TfPyThrowIndexError(const char* msg)
 {
     PyErr_SetString(PyExc_IndexError, msg);
-    boost::python::throw_error_already_set();
+    pxr_boost::python::throw_error_already_set();
 }
 
 void
 TfPyThrowRuntimeError(const char *msg)
 {
     PyErr_SetString(PyExc_RuntimeError, msg);
-    boost::python::throw_error_already_set();
+    pxr_boost::python::throw_error_already_set();
 }
 
 void
 TfPyThrowStopIteration(const char *msg)
 {
     PyErr_SetString(PyExc_StopIteration, msg);
-    boost::python::throw_error_already_set();
+    pxr_boost::python::throw_error_already_set();
 }
 
 void
 TfPyThrowKeyError(const char *msg)
 {
     PyErr_SetString(PyExc_KeyError, msg);
-    boost::python::throw_error_already_set();
+    pxr_boost::python::throw_error_already_set();
 }
 
 void
 TfPyThrowValueError(const char *msg)
 {
     PyErr_SetString(PyExc_ValueError, msg);
-    boost::python::throw_error_already_set();
+    pxr_boost::python::throw_error_already_set();
 }
 
 void
 TfPyThrowTypeError(const char *msg)
 {
     PyErr_SetString(PyExc_TypeError, msg);
-    boost::python::throw_error_already_set();
+    pxr_boost::python::throw_error_already_set();
 }
 
 bool
-TfPyIsNone(boost::python::object const &obj)
+TfPyIsNone(pxr_boost::python::object const &obj)
 {
     return obj.ptr() == Py_None;
 }
 
 bool
-TfPyIsNone(boost::python::handle<> const &obj)
+TfPyIsNone(pxr_boost::python::handle<> const &obj)
 {
     return !obj.get() || obj.get() == Py_None;
 }
@@ -116,7 +116,7 @@ TfPyIsInitialized()
 }
 
 string
-TfPyObjectRepr(boost::python::object const &t)
+TfPyObjectRepr(pxr_boost::python::object const &t)
 {
     if (!TfPyIsInitialized()) {
         // CODE_COVERAGE_OFF
@@ -153,7 +153,7 @@ TfPyObjectRepr(boost::python::object const &t)
 }
 
 
-boost::python::object
+pxr_boost::python::object
 TfPyEvaluate(std::string const &expr, dict const& extraGlobals)
 {
     TfPyLock lock;
@@ -170,11 +170,11 @@ TfPyEvaluate(std::string const &expr, dict const& extraGlobals)
         // Eval the expression in that enviornment.
         return object(TfPyRunString(expr, Py_eval_input,
                                     modulesDict, modulesDict));
-    } catch (boost::python::error_already_set const &) {
+    } catch (pxr_boost::python::error_already_set const &) {
         TfPyConvertPythonExceptionToTfErrors();
         PyErr_Clear();
     }
-    return boost::python::object();
+    return pxr_boost::python::object();
 }
 
 
@@ -195,7 +195,7 @@ TfPyNormalizeIndex(int64_t index, uint64_t size, bool throwError)
 
 TF_API void
 Tf_PyWrapOnceImpl(
-    boost::python::type_info const &type,
+    pxr_boost::python::type_info const &type,
     std::function<void()> const &wrapFunc,
     bool * isTypeWrapped)
 {
@@ -218,8 +218,8 @@ Tf_PyWrapOnceImpl(
         return;
     }
 
-    boost::python::type_handle pyType =
-        boost::python::objects::registered_class_object(type);
+    pxr_boost::python::type_handle pyType =
+        pxr_boost::python::objects::registered_class_object(type);
 
     if (!pyType) {
         wrapFunc();
@@ -229,11 +229,11 @@ Tf_PyWrapOnceImpl(
 }
 
 
-boost::python::object
+pxr_boost::python::object
 TfPyGetClassObject(std::type_info const &type) {
     TfPyLock pyLock;
-    return boost::python::object
-        (boost::python::objects::registered_class_object(type));
+    return pxr_boost::python::object
+        (pxr_boost::python::objects::registered_class_object(type));
 }
 
 string TfPyGetClassName(object const &obj)
@@ -256,11 +256,11 @@ string TfPyGetClassName(object const &obj)
     // CODE_COVERAGE_ON
 }
 
-boost::python::object
+pxr_boost::python::object
 TfPyCopyBufferToByteArray(const char* buffer, size_t size)
 {
     TfPyLock lock;
-    boost::python::object result;
+    pxr_boost::python::object result;
 
     try {
         // boost python doesn't include a bytearray object, but we can return
@@ -268,9 +268,9 @@ TfPyCopyBufferToByteArray(const char* buffer, size_t size)
         // and a size, so uses the name FromString, but this is really just
         // a buffer.
         PyObject* buf = PyByteArray_FromStringAndSize(buffer, size);
-        boost::python::handle<> hbuf(buf);
-        result = boost::python::object(hbuf); 
-    } catch (boost::python::error_already_set const &) {
+        pxr_boost::python::handle<> hbuf(buf);
+        result = pxr_boost::python::object(hbuf); 
+    } catch (pxr_boost::python::error_already_set const &) {
         TfPyConvertPythonExceptionToTfErrors();
         PyErr_Clear();
     }
@@ -298,7 +298,7 @@ vector<string> TfPyGetTraceback()
             string s = extract<string>(stack[i]);
             result.push_back(s);
         }
-    } catch (boost::python::error_already_set const &) {
+    } catch (pxr_boost::python::error_already_set const &) {
         TfPyConvertPythonExceptionToTfErrors();
     }
     return result;
@@ -314,9 +314,9 @@ _GetOsEnviron()
     // without importing os.  Rather than check a hardcoded list of potential
     // modules, we always import os if Python is initialized.  If this turns
     // out to be problematic, we may want to consider the other approach.
-    boost::python::object
-        module(boost::python::handle<>(PyImport_ImportModule("os")));
-    boost::python::object environObj(module.attr("environ"));
+    pxr_boost::python::object
+        module(pxr_boost::python::handle<>(PyImport_ImportModule("os")));
+    pxr_boost::python::object environObj(module.attr("environ"));
     return environObj;
 }
 
@@ -335,7 +335,7 @@ TfPySetenv(const std::string & name, const std::string & value)
         environObj[name] = value;
         return true;
     }
-    catch (boost::python::error_already_set&) {
+    catch (pxr_boost::python::error_already_set&) {
         PyErr_Clear();
     }
 
@@ -360,7 +360,7 @@ TfPyUnsetenv(const std::string & name)
         }
         return true;
     }
-    catch (boost::python::error_already_set&) {
+    catch (pxr_boost::python::error_already_set&) {
         PyErr_Clear();
     }
 
@@ -368,7 +368,7 @@ TfPyUnsetenv(const std::string & name)
 }
 
 bool Tf_PyEvaluateWithErrorCheck(
-    const std::string & expr, boost::python::object * obj)
+    const std::string & expr, pxr_boost::python::object * obj)
 {
     TfErrorMark m;
     *obj = TfPyEvaluate(expr);

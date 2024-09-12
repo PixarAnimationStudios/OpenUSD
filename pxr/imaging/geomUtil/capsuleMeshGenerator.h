@@ -34,6 +34,12 @@ class PxOsdMeshTopology;
 /// for the capsule about the +Z axis.  When the sweep is less than 360 degrees,
 /// the generated geometry is not closed.
 ///
+/// When the radii are different, the numCapAxial parameter is doubled and the
+/// number of cross-sections will be divided between the top and bottom
+/// hemispheres relative to the angle that each portion uses.  The topology will
+/// remain the same while the density of the mesh is more even than if the
+/// bottom and top caps used the same number of cross-sections.
+///
 /// Usage:
 /// \code{.cpp}
 ///

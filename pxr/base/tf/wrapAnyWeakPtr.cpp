@@ -9,9 +9,11 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include <boost/python/to_python_converter.hpp>
+#include "pxr/external/boost/python/to_python_converter.hpp"
 
-using namespace boost::python;
+PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -23,8 +25,6 @@ object Tf_GetPythonObjectFromAnyWeakPtr(TfAnyWeakPtr const &self) {
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 

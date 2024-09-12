@@ -2475,6 +2475,9 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdXformSchemaTokens->xform);
         result.push_back(HdInstancerTopologySchemaTokens->instancerTopology);
         result.push_back(HdInstanceCategoriesSchemaTokens->instanceCategories);
+
+        // This is relevant for instancer prims created for point instancers.
+        result.push_back(HdCategoriesSchemaTokens->categories);
     }
 
     if (_IsInstanceable()) {

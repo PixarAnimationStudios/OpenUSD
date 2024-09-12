@@ -11,7 +11,7 @@
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/layer.h"
 
-#include <boost/python/dict.hpp>
+#include "pxr/external/boost/python/dict.hpp"
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -24,7 +24,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// will return true.
 SDF_API bool
 SdfFileFormatArgumentsFromPython(
-    const boost::python::dict& dict,
+    const pxr_boost::python::dict& dict,
     SdfLayer::FileFormatArguments* args,
     std::string* errMsg = NULL);
 

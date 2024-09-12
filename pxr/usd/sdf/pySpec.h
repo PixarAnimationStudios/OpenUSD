@@ -32,7 +32,7 @@
 /// to store a ref pointer in the Python object.  But we do still need
 /// conversion of spec types to yield the most-derived type in python.
 ///
-/// This file introduces a few boost::python::class_ def visitors to make
+/// This file introduces a few pxr_boost::python::class_ def visitors to make
 /// wrapping specs easy.  Spec wrapping should now look like:
 ///
 /// \code
@@ -49,13 +49,13 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
 
-#include <boost/python/def_visitor.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/errors.hpp>
-#include <boost/python/raw_function.hpp>
-#include <boost/python/pointee.hpp>
-#include <boost/python/to_python_converter.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/def_visitor.hpp"
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/errors.hpp"
+#include "pxr/external/boost/python/raw_function.hpp"
+#include "pxr/external/boost/python/pointee.hpp"
+#include "pxr/external/boost/python/to_python_converter.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include "pxr/base/tf/pyError.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -69,13 +69,14 @@
 #include <string>
 #include <type_traits>
 
-namespace boost{
+namespace PXR_BOOST_NAMESPACE {
 namespace python {
 
 template <typename T>
 struct pointee<PXR_NS::SdfHandle<T> > {
     typedef T type;
 };
+
 }
 }
 
@@ -85,7 +86,7 @@ class SdfSpec;
 
 namespace Sdf_PySpecDetail {
 
-namespace bp = boost::python;
+namespace bp = pxr_boost::python;
 
 SDF_API bp::object _DummyInit(bp::tuple const & /* args */, bp::dict const & /* kw */);
 

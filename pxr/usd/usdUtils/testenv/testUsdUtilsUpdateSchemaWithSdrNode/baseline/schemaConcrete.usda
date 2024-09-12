@@ -40,9 +40,6 @@ class TestSchemaConcrete "TestSchemaConcrete" (
               Y component must non-negative.  Ignored if a month is given.
                 """
     )
-    uniform token myRenderContext:usda:shaderId = "TestSchemaConcrete" (
-        displayGroup = "Internal"
-    )
     float propNS:testShaderPropWithNS = 0
 }
 

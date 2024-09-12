@@ -19,20 +19,21 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/weakBase.h"
 
-#include <boost/python/converter/registry.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/has_back_reference.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/overloads.hpp>
+#include "pxr/external/boost/python/converter/registry.hpp"
+#include "pxr/external/boost/python/make_constructor.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/has_back_reference.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/overloads.hpp"
 
 #include <string>
 
-using namespace boost::python;
 using namespace std;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -198,7 +199,7 @@ _GetAllAncestorTypes( TfType & t )
 }
 
 static TfType
-_FindByPythonClass(const boost::python::object & classObj)
+_FindByPythonClass(const pxr_boost::python::object & classObj)
 {
     // Guard against the potentially common mistake of calling Find() with a
     // string typename.  Rather than returning the unknown type (assuming
