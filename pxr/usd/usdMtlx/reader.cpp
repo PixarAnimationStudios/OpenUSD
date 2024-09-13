@@ -26,7 +26,6 @@
 #include "pxr/usd/usd/editContext.h"
 #include "pxr/usd/usd/specializes.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/pathUtils.h"
 
@@ -1512,22 +1511,7 @@ _Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
         return UsdShadeShader();
     }
 
-    // Choose the name of the shader.
-    //
-    // In MaterialX this is just
-    // mtlxShaderNode->getName() and has no meaning other than to uniquely
-    // identify the shader.  In USD to support Material Inheritance
-    // https://github.com/AcademySoftwareFoundation/MaterialX/blob/main/documents/Specification/MaterialX.Specification.md#material-inheritance
-    // we must ensure that shaders have the same name if one should compose over
-    // the other.  MaterialX composes over if a shader node refers to the
-    // same nodedef so in USD we use the nodedef's name.  This name wasn't
-    // ideal since it's just an arbitrary unique name;  the nodedef's
-    // node name was more meaningful.
-    //
-    // However this naming isn't always intuitive for conversions.
-    // Therefore you may toggle between them with this env variable.
-    const auto name = (TfGetenvBool("PXR_MTLX_SUPPORT_MATERIAL_INHERITS", false)) ?
-        _MakeName(mtlxNodeDef) : _MakeName(mtlxShaderNode);
+    const auto name = _MakeName(mtlxShaderNode);
 
     // Create the shader if it doesn't exist and copy node def values.
     auto shaderImplPath = _shadersPath.AppendChild(name);
