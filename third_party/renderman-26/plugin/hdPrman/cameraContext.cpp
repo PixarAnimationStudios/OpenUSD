@@ -283,6 +283,8 @@ _ComputePerspectiveNodeParams(
     static const RtUString us_lensAsymmetryY("lensAsymmetryY");
     static const RtUString us_lensScale("lensScale");
 
+    static const RtUString us_dofMult("dofMult");
+
     result.SetFloat(
         us_radial1,
         camera->GetLensDistortionK1());
@@ -305,6 +307,10 @@ _ComputePerspectiveNodeParams(
     result.SetFloat(
         us_lensScale,
         camera->GetLensDistortionScale());
+
+    result.SetFloat(
+        us_dofMult,
+        camera->GetDofMult());
 
     return result;
 }

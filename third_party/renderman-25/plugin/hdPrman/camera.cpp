@@ -28,13 +28,14 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((shutterOpenTime,   "ri:shutterOpenTime"))
-    ((shutterCloseTime,  "ri:shutterCloseTime"))
-    ((shutteropening,    "ri:shutteropening"))
-    ((apertureAngle,     "ri:apertureAngle"))
-    ((apertureDensity,   "ri:apertureDensity"))
-    ((apertureNSides,    "ri:apertureNSides"))
-    ((apertureRoundness, "ri:apertureRoundness"))
+    ((shutterOpenTime,    "ri:shutterOpenTime"))
+    ((shutterCloseTime,   "ri:shutterCloseTime"))
+    ((shutteropening,     "ri:shutteropening"))
+    ((apertureAngle,      "ri:apertureAngle"))
+    ((apertureDensity,    "ri:apertureDensity"))
+    ((apertureNSides,     "ri:apertureNSides"))
+    ((apertureRoundness,  "ri:apertureRoundness"))
+    ((projection_dofMult, "ri:projection:dofMult"))
 );
 
 static
@@ -69,6 +70,7 @@ HdPrmanCamera::HdPrmanCamera(SdfPath const& id)
   , _apertureDensity(0.0f)
   , _apertureNSides(0)
   , _apertureRoundness(1.0f)
+  , _dofMult(1.0f)
 {
 }
 
@@ -160,7 +162,9 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
         _apertureRoundness =
             sceneDelegate->GetCameraParamValue(id, _tokens->apertureRoundness)
                          .GetWithDefault<float>(1.0f);
-
+        _dofMult =
+            sceneDelegate->GetCameraParamValue(id, _tokens->projection_dofMult)
+                         .GetWithDefault<float>(1.0f);
         if (id == param->GetCameraContext().GetCameraPath()) {
             // Motion blur in Riley only works correctly if the
             // shutter interval is set before any rprims are synced

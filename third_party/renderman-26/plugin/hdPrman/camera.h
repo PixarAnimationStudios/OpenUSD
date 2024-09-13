@@ -140,6 +140,10 @@ public:
         return _apertureRoundness;
     }
 
+    float GetDofMult() const {
+        return _dofMult;
+    }
+
 private:
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> _sampleXforms;
 
@@ -168,6 +172,8 @@ private:
     float _apertureDensity;
     int _apertureNSides;
     float _apertureRoundness;
+
+    float _dofMult;
 };
 
 
