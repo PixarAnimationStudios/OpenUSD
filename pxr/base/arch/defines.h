@@ -79,12 +79,6 @@
 #define ARCH_HAS_GNU_STL_EXTENSIONS
 #endif
 
-// The current version of Apple clang does not support the thread_local
-// keyword.
-#if !(defined(ARCH_OS_DARWIN) && defined(ARCH_COMPILER_CLANG))
-#define ARCH_HAS_THREAD_LOCAL
-#endif
-
 // The MAP_POPULATE flag for mmap calls only exists on Linux platforms.
 #if defined(ARCH_OS_LINUX)
 #define ARCH_HAS_MMAP_MAP_POPULATE
