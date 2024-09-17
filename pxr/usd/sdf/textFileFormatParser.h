@@ -215,29 +215,19 @@ struct MathKeywordNan : PXR_PEGTL_KEYWORD("nan") {};
 // Comment = PythonStyleComment /
 //           CppStyleSingleLineComment /
 //           CppStyleMultiLineComment
-struct CppStyleMultilineOpen :
-    PEGTL_NS::seq<PEGTL_NS::one<'/'>, PEGTL_NS::one<'*'>> {};
-struct CppStyleMultilineClose :
-    PEGTL_NS::seq<PEGTL_NS::one<'*'>, PEGTL_NS::one<'/'>> {};
+struct CppStyleMultilineOpen : PEGTL_NS::string<'/', '*'> {};
+struct CppStyleMultilineClose : PEGTL_NS::string<'*', '/'> {};
 struct SingleLineContents : PEGTL_NS::star<PEGTL_NS::not_at<Eolf>, Utf8> {};
-struct PythonStyleComment :PEGTL_NS::disable<
+struct PythonStyleComment : PEGTL_NS::disable<
     PEGTL_NS::one<'#'>, SingleLineContents> {};
 struct CppStyleSingleLineComment : PEGTL_NS::disable<
     PEGTL_NS::two<'/'>, SingleLineContents> {};
 struct CppStyleMultiLineComment : PEGTL_NS::disable<
     CppStyleMultilineOpen,
     PEGTL_NS::until<CppStyleMultilineClose, Utf8>>{};
-// Use to avoid '/' backtracking
-struct CppStyleComment :
-    PEGTL_NS::seq<
-        PEGTL_NS::one<'/'>,
-        PEGTL_NS::sor<
-            PEGTL_NS::disable<PEGTL_NS::one<'*'>,
-                              PEGTL_NS::until<CppStyleMultilineClose, Utf8>>,
-            PEGTL_NS::disable<PEGTL_NS::one<'/'>, SingleLineContents>
-        >
-    > {};
-struct Comment : PEGTL_NS::sor<PythonStyleComment, CppStyleComment> {};
+struct Comment : PEGTL_NS::sor<PythonStyleComment,
+                               CppStyleSingleLineComment,
+                               CppStyleMultiLineComment> {};
     
 // whitespace rules
 // TokenSeparator represents whitespace between tokens,
