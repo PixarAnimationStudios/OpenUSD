@@ -1127,9 +1127,20 @@ VtIntArray
 HdMeshEdgeIndexTable::CollectFaceEdgeIndices(
     VtIntArray const &faceIndices) const
 {
+    size_t const numMeshFaces = _topology->GetFaceVertexCounts().size();
+
+    if (!TF_VERIFY(numMeshFaces == _firstEdgeIndexForFaces.size())) {
+        return VtIntArray();
+    }
+
     std::vector<int> result;
 
     for (int const face : faceIndices) {
+
+        // Skip invalid face indices.
+        if ((face < 0) || (static_cast<size_t>(face) >= numMeshFaces)) {
+            continue;
+        }
 
         int const firstEdgeIndex = _firstEdgeIndexForFaces[face];
         int const numEdges = _topology->GetFaceVertexCounts()[face];
