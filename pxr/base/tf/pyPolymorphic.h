@@ -216,7 +216,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 namespace PXR_BOOST_NAMESPACE { namespace python {
     template <typename T>
     struct has_back_reference< PXR_NS::TfPyPolymorphic<T> >
-        : mpl::true_ {};
+        : std::true_type {};
 }}
 
 PXR_NAMESPACE_OPEN_SCOPE
