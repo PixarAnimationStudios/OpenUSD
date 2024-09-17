@@ -130,7 +130,7 @@ template<class Policies, class Sig> const signature_element* get_ret()
     typedef typename select_result_converter<Policies, rtype>::type result_converter;
 
     static const signature_element ret = {
-        (is_void<rtype>::value ? "void" : type_id<rtype>().name())
+        (detail::is_void<rtype>::value ? "void" : type_id<rtype>().name())
         , &detail::converter_target_type<result_converter>::get_pytype
         , boost::detail::indirect_traits::is_reference_to_non_const<rtype>::value 
     };

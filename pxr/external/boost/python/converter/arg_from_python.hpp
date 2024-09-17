@@ -175,7 +175,7 @@ struct select_arg_from_python
             is_reference_to_object_manager<T>
           , object_manager_ref_arg_from_python<T>
           , if_2<
-                is_pointer<T>
+                python::detail::is_pointer<T>
               , pointer_arg_from_python<T>
               , if_2<
                     mpl::and_<

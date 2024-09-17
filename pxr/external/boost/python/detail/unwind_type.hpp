@@ -103,7 +103,7 @@ unwind_type(U const& p, Generator*)
 unwind_type(U const& p, Generator* = 0)
 #endif
 {
-    return unwind_helper<is_pointer<U>::value>::execute(p, (Generator*)0);
+    return unwind_helper<detail::is_pointer<U>::value>::execute(p, (Generator*)0);
 }
 
 enum { direct_ = 0, pointer_ = 1, reference_ = 2, reference_to_pointer_ = 3 };
@@ -169,10 +169,10 @@ unwind_type(boost::type<U>*p =0, Generator* =0)
 #endif
 {
     BOOST_STATIC_CONSTANT(int, indirection
-        = (is_pointer<U>::value ? pointer_ : 0)
+        = (detail::is_pointer<U>::value ? pointer_ : 0)
                              + (indirect_traits::is_reference_to_pointer<U>::value
                              ? reference_to_pointer_
-                             : is_lvalue_reference<U>::value
+                             : detail::is_lvalue_reference<U>::value
                              ? reference_
                              : 0));
 

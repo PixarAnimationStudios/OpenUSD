@@ -188,7 +188,7 @@ class class_ : public objects::class_base
 
             // Write the rest of the elements into succeeding positions.
             type_info* p = ids + 1;
-            mpl::for_each(detail::write_type_id(&p), (bases*)0, (add_pointer<mpl::_>*)0);
+            mpl::for_each(detail::write_type_id(&p), (bases*)0, (detail::add_pointer<mpl::_>*)0);
         }
 
         BOOST_STATIC_CONSTANT(

@@ -27,8 +27,8 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 template <class X_>
 struct value_is_shared_ptr
 {
-  static bool const value = is_shared_ptr<typename remove_cv<
-					    typename remove_reference<X_>
+  static bool const value = is_shared_ptr<typename detail::remove_cv<
+					    typename detail::remove_reference<X_>
 					      ::type>
 					    ::type>
     ::value;

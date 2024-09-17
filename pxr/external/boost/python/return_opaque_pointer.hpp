@@ -24,6 +24,7 @@
 # include "pxr/external/boost/python/opaque_pointer_converter.hpp"
 # include "pxr/external/boost/python/detail/force_instantiate.hpp"
 # include "pxr/external/boost/python/to_python_value.hpp"
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 # include "pxr/external/boost/python/detail/value_arg.hpp"
 # include <boost/mpl/assert.hpp>
 
@@ -43,7 +44,7 @@ struct return_opaque_pointer
     template <class R>
     struct apply
     {
-        BOOST_MPL_ASSERT_MSG( is_pointer<R>::value, RETURN_OPAQUE_POINTER_EXPECTS_A_POINTER_TYPE, (R));
+        BOOST_MPL_ASSERT_MSG( detail::is_pointer<R>::value, RETURN_OPAQUE_POINTER_EXPECTS_A_POINTER_TYPE, (R));
         
         struct type :  
           PXR_BOOST_NAMESPACE::python::to_python_value<
