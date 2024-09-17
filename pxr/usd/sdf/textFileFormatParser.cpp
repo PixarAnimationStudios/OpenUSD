@@ -299,18 +299,20 @@ struct TextParserAction<String>
         // obtain the text inside of the quotes
         // we have to first check for multi-line quotes
         // so we know what to pass to Sdf_EvalQuotedString
-        std::string inputString = in.string();
         std::string evaluatedString;
-        if (TfStringStartsWith(inputString, "'''") ||
-            TfStringStartsWith(inputString, "\"\"\""))
+        const std::string_view inputStrView = in.string_view();
+        // firstThree will be clipped to inputStrView's size so no bound checks
+        // are needed.
+        if(const auto firstThree = inputStrView.substr(0, 3);
+           firstThree == "\"\"\"" || firstThree == "'''")
         {
             evaluatedString = Sdf_EvalQuotedString(
-                inputString.c_str(), inputString.length(), 3, nullptr);
+                inputStrView.data(), inputStrView.length(), 3, nullptr);
         }
         else
         {
             evaluatedString = Sdf_EvalQuotedString(
-                inputString.c_str(), inputString.length(), 1, nullptr);
+                inputStrView.data(), inputStrView.length(), 1, nullptr);
         }
 
         if (context.parsingContext.back() ==
@@ -319,7 +321,7 @@ struct TextParserAction<String>
             context.data->Set(
                 context.path,
                 SdfFieldKeys->Documentation,
-                VtValue(evaluatedString));
+                VtValue::Take(evaluatedString));
         }
         else if (context.parsingContext.back() ==
             Sdf_TextParserCurrentParsingContext::Metadata)
@@ -327,7 +329,7 @@ struct TextParserAction<String>
             context.data->Set(
                 context.path,
                 SdfFieldKeys->Comment,
-                VtValue(evaluatedString));
+                VtValue::Take(evaluatedString));
         }
         else if (context.parsingContext.back() ==
             Sdf_TextParserCurrentParsingContext::PrimSpec)
@@ -353,7 +355,7 @@ struct TextParserAction<String>
             context.parsingContext.back() ==
             Sdf_TextParserCurrentParsingContext::VariantSetsMetadata)
         {
-            context.nameVector.emplace_back(evaluatedString);
+            context.nameVector.emplace_back(std::move(evaluatedString));
         }
         else if (context.parsingContext.back() ==
             Sdf_TextParserCurrentParsingContext::VariantSetStatement)
@@ -372,10 +374,11 @@ struct TextParserAction<String>
                 throw PEGTL_NS::parse_error(allow.GetWhyNot(), in);
             }
 
-            context.currentVariantSetNames.push_back(evaluatedString);
+            context.currentVariantSetNames.push_back(
+                    std::move(evaluatedString));
             context.currentVariantNames.emplace_back();
             context.path = context.path.AppendVariantSelection(
-                evaluatedString, "");
+                context.currentVariantSetNames.back(), "");
         }
         else if (context.parsingContext.back() ==
             Sdf_TextParserCurrentParsingContext::VariantStatementList)
@@ -1073,11 +1076,11 @@ struct TextParserAction<AssetRef>
             context.parsingContext.back() ==
             Sdf_TextParserCurrentParsingContext::PayloadListOpMetadata)
         {
-            std::string inputString = in.string();
-            bool isTripleDelimited = TfStringStartsWith(inputString, "@@@");
+            const std::string_view inputStrView = in.string_view();
+            const bool isTripleDelimited = (inputStrView.substr(0, 3) == "@@@");
             std::string evaluatedAssetPath = Sdf_EvalAssetPath(
-                inputString.c_str(),
-                inputString.length(),
+                inputStrView.data(),
+                inputStrView.length(),
                 isTripleDelimited);
 
             if (evaluatedAssetPath.empty())
@@ -1095,21 +1098,21 @@ struct TextParserAction<AssetRef>
                     throw PEGTL_NS::parse_error(errorMessage, in);
             }
 
-            context.layerRefPath = evaluatedAssetPath;
+            context.layerRefPath = std::move(evaluatedAssetPath);
             context.layerRefOffset = SdfLayerOffset();
             context.savedPath = SdfPath::EmptyPath();
         }
         else if(context.parsingContext.back() ==
             Sdf_TextParserCurrentParsingContext::SubLayerMetadata)
         {
-            std::string inputString = in.string();
-            bool isTripleDelimited = TfStringStartsWith(inputString, "@@@");
+            const std::string_view inputStrView = in.string_view();
+            const bool isTripleDelimited = (inputStrView.substr(0, 3) == "@@@");
             std::string evaluatedAssetPath = Sdf_EvalAssetPath(
-                inputString.c_str(),
-                inputString.length(),
+                inputStrView.data(),
+                inputStrView.length(),
                 isTripleDelimited);
 
-            context.layerRefPath = evaluatedAssetPath;
+            context.layerRefPath = std::move(evaluatedAssetPath);
             context.layerRefOffset = SdfLayerOffset();
         }
     }
@@ -1149,17 +1152,19 @@ struct TextParserAction<StringValue>
     template <class Input>
     static void apply(const Input& in, Sdf_TextParserContext& context)
     {
-        std::string inputString = in.string();
+        const std::string_view inputStrView = in.string_view();
         size_t numDelimeters = 1;
-        if(TfStringStartsWith(inputString, "\"\"\"") || 
-            TfStringStartsWith(inputString, "'''"))
+        // firstThree will be clipped to inputStrView's size so no bound checks
+        // are needed.
+        if(const auto firstThree = inputStrView.substr(0, 3);
+           firstThree == "\"\"\"" || firstThree == "'''")
         {
             numDelimeters = 3;
         }
 
         std::string evaluatedString = Sdf_EvalQuotedString(
-            inputString.c_str(),
-            inputString.length(),
+            inputStrView.data(),
+            inputStrView.length(),
             numDelimeters);
 
         TF_DEBUG(SDF_TEXT_FILE_FORMAT_CONTEXT).Msg(
@@ -1178,11 +1183,11 @@ struct TextParserAction<AssetRefValue>
         // the ParserValueContext needs asset paths to be stored
         // as SdfAssetPath instead of std::string to be able to
         // distinguish between them
-        std::string inputString = in.string();
-        bool isTripleDelimited = TfStringStartsWith(inputString, "@@@");
+        const std::string_view inputStrView = in.string_view();
+        const bool isTripleDelimited = (inputStrView.substr(0, 3) == "@@@");
         std::string evaluatedAssetPath = Sdf_EvalAssetPath(
-            inputString.c_str(),
-            inputString.length(),
+            inputStrView.data(),
+            inputStrView.length(),
             isTripleDelimited);
 
         context.values.AppendValue(SdfAssetPath(evaluatedAssetPath));
