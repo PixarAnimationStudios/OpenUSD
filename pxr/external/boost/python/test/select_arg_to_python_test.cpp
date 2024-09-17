@@ -30,7 +30,7 @@ int result;
 template <class T, class U>
 void assert_same(U* = 0, T* = 0)
 {
-    BOOST_STATIC_ASSERT((boost::is_same<T,U>::value));
+    static_assert((boost::is_same<T,U>::value));
     
 }
 

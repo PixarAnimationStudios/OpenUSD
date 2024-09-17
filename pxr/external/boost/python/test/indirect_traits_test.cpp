@@ -9,9 +9,7 @@
 //#include <stdio.h>
 #define BOOST_ENABLE_ASSERT_HANDLER
 #include <boost/assert.hpp>
-#include <boost/mpl/assert.hpp>
 #include "pxr/external/boost/python/detail/indirect_traits.hpp"
-#include <boost/mpl/assert.hpp>
 
 //#define print(expr) printf("%s ==> %s\n", #expr, expr)
 
@@ -22,100 +20,100 @@ using namespace PXR_BOOST_NAMESPACE::python::indirect_traits;
 
 typedef void (X::*pmf)();
 
-BOOST_MPL_ASSERT((is_reference_to_function<int (&)()>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_function<int (*)()>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_function<int&>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_function<pmf>));
+static_assert((is_reference_to_function<int (&)()>::value));
+static_assert(!(is_reference_to_function<int (*)()>::value));
+static_assert(!(is_reference_to_function<int&>::value));
+static_assert(!(is_reference_to_function<pmf>::value));
     
-BOOST_MPL_ASSERT_NOT((is_pointer_to_function<int (&)()>));
-BOOST_MPL_ASSERT((is_pointer_to_function<int (*)()>));
-BOOST_MPL_ASSERT_NOT((is_pointer_to_function<int (*&)()>));
-BOOST_MPL_ASSERT_NOT((is_pointer_to_function<int (*const&)()>));
-BOOST_MPL_ASSERT_NOT((is_pointer_to_function<pmf>));
+static_assert(!(is_pointer_to_function<int (&)()>::value));
+static_assert((is_pointer_to_function<int (*)()>::value));
+static_assert(!(is_pointer_to_function<int (*&)()>::value));
+static_assert(!(is_pointer_to_function<int (*const&)()>::value));
+static_assert(!(is_pointer_to_function<pmf>::value));
     
-BOOST_MPL_ASSERT_NOT((is_reference_to_function_pointer<int (&)()>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_function_pointer<int (*)()>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_function_pointer<int&>));
-BOOST_MPL_ASSERT((is_reference_to_function_pointer<int (*&)()>));
-BOOST_MPL_ASSERT((is_reference_to_function_pointer<int (*const&)()>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_function_pointer<pmf>));
+static_assert(!(is_reference_to_function_pointer<int (&)()>::value));
+static_assert(!(is_reference_to_function_pointer<int (*)()>::value));
+static_assert(!(is_reference_to_function_pointer<int&>::value));
+static_assert((is_reference_to_function_pointer<int (*&)()>::value));
+static_assert((is_reference_to_function_pointer<int (*const&)()>::value));
+static_assert(!(is_reference_to_function_pointer<pmf>::value));
 
-BOOST_MPL_ASSERT((is_reference_to_pointer<int*&>));
-BOOST_MPL_ASSERT((is_reference_to_pointer<int* const&>));
-BOOST_MPL_ASSERT((is_reference_to_pointer<int*volatile&>));
-BOOST_MPL_ASSERT((is_reference_to_pointer<int*const volatile&>));
-BOOST_MPL_ASSERT((is_reference_to_pointer<int const*&>));
-BOOST_MPL_ASSERT((is_reference_to_pointer<int const* const&>));
-BOOST_MPL_ASSERT((is_reference_to_pointer<int const*volatile&>));
-BOOST_MPL_ASSERT((is_reference_to_pointer<int const*const volatile&>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_pointer<pmf>));
+static_assert((is_reference_to_pointer<int*&>::value));
+static_assert((is_reference_to_pointer<int* const&>::value));
+static_assert((is_reference_to_pointer<int*volatile&>::value));
+static_assert((is_reference_to_pointer<int*const volatile&>::value));
+static_assert((is_reference_to_pointer<int const*&>::value));
+static_assert((is_reference_to_pointer<int const* const&>::value));
+static_assert((is_reference_to_pointer<int const*volatile&>::value));
+static_assert((is_reference_to_pointer<int const*const volatile&>::value));
+static_assert(!(is_reference_to_pointer<pmf>::value));
 
-BOOST_MPL_ASSERT_NOT((is_reference_to_pointer<int const volatile>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_pointer<int>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_pointer<int*>));
+static_assert(!(is_reference_to_pointer<int const volatile>::value));
+static_assert(!(is_reference_to_pointer<int>::value));
+static_assert(!(is_reference_to_pointer<int*>::value));
 
-BOOST_MPL_ASSERT_NOT((is_reference_to_const<int*&>));
-BOOST_MPL_ASSERT((is_reference_to_const<int* const&>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_const<int*volatile&>));
-BOOST_MPL_ASSERT((is_reference_to_const<int*const volatile&>));
+static_assert(!(is_reference_to_const<int*&>::value));
+static_assert((is_reference_to_const<int* const&>::value));
+static_assert(!(is_reference_to_const<int*volatile&>::value));
+static_assert((is_reference_to_const<int*const volatile&>::value));
     
-BOOST_MPL_ASSERT_NOT((is_reference_to_const<int const volatile>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_const<int>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_const<int*>));
+static_assert(!(is_reference_to_const<int const volatile>::value));
+static_assert(!(is_reference_to_const<int>::value));
+static_assert(!(is_reference_to_const<int*>::value));
 
-BOOST_MPL_ASSERT((is_reference_to_non_const<int*&>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_non_const<int* const&>));
-BOOST_MPL_ASSERT((is_reference_to_non_const<int*volatile&>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_non_const<int*const volatile&>));
+static_assert((is_reference_to_non_const<int*&>::value));
+static_assert(!(is_reference_to_non_const<int* const&>::value));
+static_assert((is_reference_to_non_const<int*volatile&>::value));
+static_assert(!(is_reference_to_non_const<int*const volatile&>::value));
     
-BOOST_MPL_ASSERT_NOT((is_reference_to_non_const<int const volatile>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_non_const<int>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_non_const<int*>));
+static_assert(!(is_reference_to_non_const<int const volatile>::value));
+static_assert(!(is_reference_to_non_const<int>::value));
+static_assert(!(is_reference_to_non_const<int*>::value));
     
-BOOST_MPL_ASSERT_NOT((is_reference_to_volatile<int*&>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_volatile<int* const&>));
-BOOST_MPL_ASSERT((is_reference_to_volatile<int*volatile&>));
-BOOST_MPL_ASSERT((is_reference_to_volatile<int*const volatile&>));
+static_assert(!(is_reference_to_volatile<int*&>::value));
+static_assert(!(is_reference_to_volatile<int* const&>::value));
+static_assert((is_reference_to_volatile<int*volatile&>::value));
+static_assert((is_reference_to_volatile<int*const volatile&>::value));
     
-BOOST_MPL_ASSERT_NOT((is_reference_to_volatile<int const volatile>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_volatile<int>));
-BOOST_MPL_ASSERT_NOT((is_reference_to_volatile<int*>));
+static_assert(!(is_reference_to_volatile<int const volatile>::value));
+static_assert(!(is_reference_to_volatile<int>::value));
+static_assert(!(is_reference_to_volatile<int*>::value));
 
 namespace tt = PXR_BOOST_NAMESPACE::python::indirect_traits;
 
-BOOST_MPL_ASSERT_NOT((tt::is_reference_to_class<int>));
-BOOST_MPL_ASSERT_NOT((tt::is_reference_to_class<int&>));
-BOOST_MPL_ASSERT_NOT((tt::is_reference_to_class<int*>));
+static_assert(!(tt::is_reference_to_class<int>::value));
+static_assert(!(tt::is_reference_to_class<int&>::value));
+static_assert(!(tt::is_reference_to_class<int*>::value));
     
 
-BOOST_MPL_ASSERT_NOT((tt::is_reference_to_class<pmf>));
-BOOST_MPL_ASSERT_NOT((tt::is_reference_to_class<pmf const&>));
+static_assert(!(tt::is_reference_to_class<pmf>::value));
+static_assert(!(tt::is_reference_to_class<pmf const&>::value));
     
-BOOST_MPL_ASSERT_NOT((tt::is_reference_to_class<X>));
+static_assert(!(tt::is_reference_to_class<X>::value));
 
-BOOST_MPL_ASSERT((tt::is_reference_to_class<X&>));
-BOOST_MPL_ASSERT((tt::is_reference_to_class<X const&>));
-BOOST_MPL_ASSERT((tt::is_reference_to_class<X volatile&>));
-BOOST_MPL_ASSERT((tt::is_reference_to_class<X const volatile&>));
+static_assert((tt::is_reference_to_class<X&>::value));
+static_assert((tt::is_reference_to_class<X const&>::value));
+static_assert((tt::is_reference_to_class<X volatile&>::value));
+static_assert((tt::is_reference_to_class<X const volatile&>::value));
     
-BOOST_MPL_ASSERT_NOT((is_pointer_to_class<int>));
-BOOST_MPL_ASSERT_NOT((is_pointer_to_class<int*>));
-BOOST_MPL_ASSERT_NOT((is_pointer_to_class<int&>));
+static_assert(!(is_pointer_to_class<int>::value));
+static_assert(!(is_pointer_to_class<int*>::value));
+static_assert(!(is_pointer_to_class<int&>::value));
     
-BOOST_MPL_ASSERT_NOT((is_pointer_to_class<X>));
-BOOST_MPL_ASSERT_NOT((is_pointer_to_class<X&>));
-BOOST_MPL_ASSERT_NOT((is_pointer_to_class<pmf>));
-BOOST_MPL_ASSERT_NOT((is_pointer_to_class<pmf const>));
-BOOST_MPL_ASSERT((is_pointer_to_class<X*>));
-BOOST_MPL_ASSERT((is_pointer_to_class<X const*>));
-BOOST_MPL_ASSERT((is_pointer_to_class<X volatile*>));
-BOOST_MPL_ASSERT((is_pointer_to_class<X const volatile*>));
+static_assert(!(is_pointer_to_class<X>::value));
+static_assert(!(is_pointer_to_class<X&>::value));
+static_assert(!(is_pointer_to_class<pmf>::value));
+static_assert(!(is_pointer_to_class<pmf const>::value));
+static_assert((is_pointer_to_class<X*>::value));
+static_assert((is_pointer_to_class<X const*>::value));
+static_assert((is_pointer_to_class<X volatile*>::value));
+static_assert((is_pointer_to_class<X const volatile*>::value));
 
-BOOST_MPL_ASSERT((tt::is_reference_to_member_function_pointer<pmf&>));
-BOOST_MPL_ASSERT((tt::is_reference_to_member_function_pointer<pmf const&>));
-BOOST_MPL_ASSERT((tt::is_reference_to_member_function_pointer<pmf volatile&>));
-BOOST_MPL_ASSERT((tt::is_reference_to_member_function_pointer<pmf const volatile&>));
-BOOST_MPL_ASSERT_NOT((tt::is_reference_to_member_function_pointer<pmf[2]>));
-BOOST_MPL_ASSERT_NOT((tt::is_reference_to_member_function_pointer<pmf(&)[2]>));
-BOOST_MPL_ASSERT_NOT((tt::is_reference_to_member_function_pointer<pmf>));
+static_assert((tt::is_reference_to_member_function_pointer<pmf&>::value));
+static_assert((tt::is_reference_to_member_function_pointer<pmf const&>::value));
+static_assert((tt::is_reference_to_member_function_pointer<pmf volatile&>::value));
+static_assert((tt::is_reference_to_member_function_pointer<pmf const volatile&>::value));
+static_assert(!(tt::is_reference_to_member_function_pointer<pmf[2]>::value));
+static_assert(!(tt::is_reference_to_member_function_pointer<pmf(&)[2]>::value));
+static_assert(!(tt::is_reference_to_member_function_pointer<pmf>::value));
     

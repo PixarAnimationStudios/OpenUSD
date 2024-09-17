@@ -54,9 +54,9 @@ template <
 >
 struct with_custodian_and_ward : BasePolicy_
 {
-    BOOST_STATIC_ASSERT(custodian != ward);
-    BOOST_STATIC_ASSERT(custodian > 0);
-    BOOST_STATIC_ASSERT(ward > 0);
+    static_assert(custodian != ward);
+    static_assert(custodian > 0);
+    static_assert(ward > 0);
 
     template <class ArgumentPackage>
     static bool precall(ArgumentPackage const& args_)
@@ -91,7 +91,7 @@ struct with_custodian_and_ward : BasePolicy_
 template <std::size_t custodian, std::size_t ward, class BasePolicy_ = default_call_policies>
 struct with_custodian_and_ward_postcall : BasePolicy_
 {
-    BOOST_STATIC_ASSERT(custodian != ward);
+    static_assert(custodian != ward);
     
     template <class ArgumentPackage>
     static PyObject* postcall(ArgumentPackage const& args_, PyObject* result)

@@ -17,7 +17,6 @@
 #include <boost/python/converter/to_python_function_type.hpp>
 #else
 # include "pxr/external/boost/python/detail/prefix.hpp"
-# include <boost/static_assert.hpp>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 

@@ -89,7 +89,7 @@ namespace detail
       void visit(C_& c, char const* name, Options& options) const
       {
           // This should probably be a nicer error message
-          BOOST_STATIC_ASSERT(!Options::has_default_implementation);
+          static_assert(!Options::has_default_implementation);
 
           // Add the virtual function dispatcher
           c.def(

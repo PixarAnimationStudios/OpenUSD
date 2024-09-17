@@ -43,8 +43,6 @@
 #include <boost/mpl/placeholders.hpp>
 #include <boost/mpl/single_view.hpp>
 
-#include <boost/mpl/assert.hpp>
-
 #include <boost/noncopyable.hpp>
 #include <boost/detail/workaround.hpp>
 
@@ -62,7 +60,7 @@ struct register_base_of
     template <class Base>
     inline void operator()(Base*) const
     {
-        BOOST_MPL_ASSERT_NOT((PXR_BOOST_NAMESPACE::python::detail::is_same<Base,Derived>));
+        static_assert(!(PXR_BOOST_NAMESPACE::python::detail::is_same<Base,Derived>::value));
         
         // Register the Base class
         register_dynamic_id<Base>();

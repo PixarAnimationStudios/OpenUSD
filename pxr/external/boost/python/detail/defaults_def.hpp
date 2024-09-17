@@ -26,7 +26,6 @@
 #include "pxr/external/boost/python/detail/type_traits.hpp"
 #include <boost/mpl/front.hpp>
 #include <boost/mpl/size.hpp>
-#include <boost/static_assert.hpp>
 #include <boost/preprocessor/iterate.hpp>
 #include "pxr/external/boost/python/class_fwd.hpp"
 #include "pxr/external/boost/python/scope.hpp"
@@ -254,7 +253,7 @@ namespace detail
           , non_void_return_type
       >::type stubs_type;
 
-      BOOST_STATIC_ASSERT(
+      static_assert(
           (stubs_type::max_args) <= mpl::size<SigT>::value);
 
       typedef typename stubs_type::template gen<SigT> gen_type;

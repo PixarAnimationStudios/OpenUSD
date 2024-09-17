@@ -178,7 +178,7 @@ namespace api
       {
           // It's too late to specify anything other than docstrings if
           // the callable object is already wrapped.
-          BOOST_STATIC_ASSERT(
+          static_assert(
               (detail::is_same<char const*,DocStringT>::value
                || detail::is_string_literal<DocStringT const>::value));
         

@@ -468,7 +468,7 @@ namespace
           // *code units* (surrogate pairs).
           // This is not a problem on Unix, since wchar_t is 32-bit.
 #if defined(_WIN32) && PY_VERSION_HEX >= 0x03030000
-          BOOST_STATIC_ASSERT(sizeof(wchar_t) == 2);
+          static_assert(sizeof(wchar_t) == 2);
 
           Py_ssize_t size = 0;
           wchar_t *buf = PyUnicode_AsWideCharString(intermediate, &size);

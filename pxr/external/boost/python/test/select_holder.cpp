@@ -10,7 +10,6 @@
 #include "pxr/external/boost/python/object/class_metadata.hpp"
 #include "pxr/external/boost/python/has_back_reference.hpp"
 #include "pxr/external/boost/python/detail/not_specified.hpp"
-#include <boost/static_assert.hpp>
 #include "pxr/external/boost/python/detail/type_traits.hpp"
 #include <boost/function/function0.hpp>
 #include <boost/mpl/bool.hpp>
@@ -34,7 +33,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python
 template <class T, class U>
 void assert_same(U* = 0, T* = 0)
 {
-    BOOST_STATIC_ASSERT((PXR_BOOST_NAMESPACE::python::detail::is_same<T,U>::value));
+    static_assert((PXR_BOOST_NAMESPACE::python::detail::is_same<T,U>::value));
     
 }
 

@@ -29,7 +29,6 @@
 # include <boost/mpl/int.hpp>
 # include <boost/mpl/at.hpp>
 
-# include <boost/static_assert.hpp>
 # include "pxr/external/boost/python/refcount.hpp"
 
 # include <cstddef>
@@ -93,7 +92,7 @@ struct return_arg : Base
     {
         // In case of arg_pos == 0 we could simply return Base::postcall,
         // but this is redundant
-        BOOST_STATIC_ASSERT(arg_pos > 0);
+        static_assert(arg_pos > 0);
 
         result = Base::postcall(args,result);
         if (!result)

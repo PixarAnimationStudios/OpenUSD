@@ -8,14 +8,13 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 #include "pxr/external/boost/python/detail/copy_ctor_mutates_rhs.hpp"
-#include <boost/static_assert.hpp>
 #include <memory>
 #include <string>
 
 int main()
 {
     using namespace PXR_BOOST_NAMESPACE::python::detail;
-    BOOST_STATIC_ASSERT(!copy_ctor_mutates_rhs<int>::value);
-    BOOST_STATIC_ASSERT(!copy_ctor_mutates_rhs<std::string>::value);
+    static_assert(!copy_ctor_mutates_rhs<int>::value);
+    static_assert(!copy_ctor_mutates_rhs<std::string>::value);
     return 0;
 }

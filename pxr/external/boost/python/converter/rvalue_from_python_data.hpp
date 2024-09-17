@@ -22,7 +22,6 @@
 # include "pxr/external/boost/python/detail/destroy.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <boost/align/align.hpp>
-# include <boost/static_assert.hpp>
 # include <cstddef>
 
 // Data management for potential rvalue conversions from Python to C++
@@ -108,7 +107,7 @@ struct rvalue_from_python_data : rvalue_from_python_storage<T>
         && (!defined(__DECCXX_VER) || __DECCXX_VER > 60590014) \
         && !defined(PXR_BOOST_PYTHON_SYNOPSIS) /* Synopsis' OpenCXX has trouble parsing this */
     // This must always be a POD struct with m_data its first member.
-    BOOST_STATIC_ASSERT(PXR_BOOST_PYTHON_OFFSETOF(rvalue_from_python_storage<T>,stage1) == 0);
+    static_assert(PXR_BOOST_PYTHON_OFFSETOF(rvalue_from_python_storage<T>,stage1) == 0);
 # endif
     
     // The usual constructor 

@@ -24,7 +24,6 @@
 # include <typeinfo>
 # include <cstring>
 # include <ostream>
-# include <boost/static_assert.hpp>
 # include <boost/detail/workaround.hpp>
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 

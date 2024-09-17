@@ -35,7 +35,6 @@
 # include <boost/mpl/int.hpp>
 # include <boost/mpl/push_front.hpp>
 # include <boost/mpl/pop_front.hpp>
-# include <boost/mpl/assert.hpp>
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
@@ -116,13 +115,12 @@ namespace detail
       
       // If the BasePolicy_ supplied a result converter it would be
       // ignored; issue an error if it's not the default.
-      BOOST_MPL_ASSERT_MSG(
+      static_assert(
          (is_same<
               typename BasePolicy_::result_converter
             , default_result_converter
           >::value)
-        , MAKE_CONSTRUCTOR_SUPPLIES_ITS_OWN_RESULT_CONVERTER_THAT_WOULD_OVERRIDE_YOURS
-        , (typename BasePolicy_::result_converter)
+        , "MAKE_CONSTRUCTOR_SUPPLIES_ITS_OWN_RESULT_CONVERTER_THAT_WOULD_OVERRIDE_YOURS"
       );
       typedef constructor_result_converter result_converter;
       typedef offset_args<typename BasePolicy_::argument_package, mpl::int_<1> > argument_package;
