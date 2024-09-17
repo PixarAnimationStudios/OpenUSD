@@ -107,13 +107,13 @@ namespace TfPyContainerConversions {
     static bool check_convertibility_per_element() { return false; }
 
     template <typename ContainerType>
-    static bool check_size(boost::type<ContainerType>, std::size_t sz)
+    static bool check_size(ContainerType*, std::size_t sz)
     {
       return true;
     }
 
     template <typename ContainerType>
-    static void assert_size(boost::type<ContainerType>, std::size_t sz) {}
+    static void assert_size(ContainerType*, std::size_t sz) {}
 
     template <typename ContainerType>
     static void reserve(ContainerType& a, std::size_t sz) {}
@@ -124,15 +124,15 @@ namespace TfPyContainerConversions {
     static bool check_convertibility_per_element() { return true; }
 
     template <typename ContainerType>
-    static bool check_size(boost::type<ContainerType>, std::size_t sz)
+    static bool check_size(ContainerType*, std::size_t sz)
     {
       return ContainerType::size() == sz;
     }
 
     template <typename ContainerType>
-    static void assert_size(boost::type<ContainerType>, std::size_t sz)
+    static void assert_size(ContainerType* c, std::size_t sz)
     {
-      if (!check_size(boost::type<ContainerType>(), sz)) {
+      if (!check_size(c, sz)) {
         PyErr_SetString(PyExc_RuntimeError,
           "Insufficient elements for fixed-size array.");
         pxr_boost::python::throw_error_already_set();
@@ -181,7 +181,7 @@ namespace TfPyContainerConversions {
   struct fixed_capacity_policy : variable_capacity_policy
   {
     template <typename ContainerType>
-    static bool check_size(boost::type<ContainerType>, std::size_t sz)
+    static bool check_size(ContainerType*, std::size_t sz)
     {
       return ContainerType::max_size() >= sz;
     }
@@ -249,7 +249,7 @@ namespace TfPyContainerConversions {
           return 0;
         }
         if (!ConversionPolicy::check_size(
-          boost::type<ContainerType>(), obj_size)) return 0;
+          (ContainerType*)nullptr, obj_size)) return 0;
         bool is_range = PyRange_Check(obj_ptr);
         std::size_t i=0;
         if (!all_elements_convertible(obj_iter, is_range, i)) return 0;
@@ -304,7 +304,7 @@ namespace TfPyContainerConversions {
         pxr_boost::python::extract<container_element_type> elem_proxy(py_elem_obj);
         ConversionPolicy::set_value(result, i, elem_proxy());
       }
-      ConversionPolicy::assert_size(boost::type<ContainerType>(), i);
+      ConversionPolicy::assert_size((ContainerType*)nullptr, i);
     }
   };
 
