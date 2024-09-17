@@ -305,7 +305,7 @@ struct ExponentPart : PEGTL_NS::opt_must<
     PEGTL_NS::plus<Digit>> {};
 struct NumberStandard : PEGTL_NS::seq<
     PEGTL_NS::plus<Digit>,
-    PEGTL_NS::opt_must<Sdf_PathParser::Dot, PEGTL_NS::star<Digit>>,
+    PEGTL_NS::opt<Sdf_PathParser::Dot, PEGTL_NS::star<Digit>>,
     ExponentPart> {};
 struct NumberLeadingDot : PEGTL_NS::seq<
     PEGTL_NS::if_must<Sdf_PathParser::Dot, PEGTL_NS::plus<Digit>>,
