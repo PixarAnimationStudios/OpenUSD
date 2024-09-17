@@ -137,14 +137,14 @@ HdMergingSceneIndex::RemoveInputScene(const HdSceneIndexBaseRefPtr &sceneIndex)
         return;
     }
 
+    std::vector<SdfPath> removalTestQueue = { it->sceneRoot };
+
     sceneIndex->RemoveObserver(HdSceneIndexObserverPtr(&_observer));
     _inputs.erase(it);
 
     if (!_IsObserved()) {
         return;
     }
-
-    std::vector<SdfPath> removalTestQueue = { it->sceneRoot };
 
     // prims unique to this input get removed
     HdSceneIndexObserver::RemovedPrimEntries removedEntries;
