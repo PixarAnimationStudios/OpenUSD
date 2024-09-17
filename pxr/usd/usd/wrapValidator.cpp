@@ -32,7 +32,8 @@ namespace
         const TfTokenVector &schemaTypes,
         bool isSuite)
     {
-        return new UsdValidatorMetadata{name, plugin, keywords, doc, schemaTypes, isSuite};
+        return new UsdValidatorMetadata{
+            name, plugin, keywords, doc, schemaTypes, isSuite };
     }
 
 } // anonymous namespace
@@ -50,11 +51,16 @@ void wrapUsdValidator()
         .add_property("name", make_getter(
             &UsdValidatorMetadata::name, return_value_policy<return_by_value>()))
         .add_property("plugin", make_getter(
-            &UsdValidatorMetadata::pluginPtr, return_value_policy<return_by_value>()))
-        .add_property("keywords", make_getter(
-            &UsdValidatorMetadata::keywords, return_value_policy<TfPySequenceToList>()))
+            &UsdValidatorMetadata::pluginPtr, 
+            return_value_policy<return_by_value>()))
         .def_readonly("doc", &UsdValidatorMetadata::doc)
-        .add_property("schemaTypes", make_getter(
-            &UsdValidatorMetadata::schemaTypes, return_value_policy<TfPySequenceToList>()))
-        .def_readonly("isSuite", &UsdValidatorMetadata::isSuite);
+        .def_readonly("isSuite", &UsdValidatorMetadata::isSuite)
+        .def("GetKeywords", 
+             +[](const UsdValidatorMetadata &self) {
+                 return self.keywords;
+             })
+        .def("GetSchemaTypes",
+             +[](const UsdValidatorMetadata &self) {
+                 return self.schemaTypes;
+             });
 }
