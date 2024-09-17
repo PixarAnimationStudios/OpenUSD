@@ -71,9 +71,6 @@ namespace PXR_BOOST_NAMESPACE_python_test
   };
 
   const Color3 Color3::black
-#if !BOOST_WORKAROUND(BOOST_MSVC, <= 1300)
-  = {}
-#endif 
       ;
 
   void compilability_test()

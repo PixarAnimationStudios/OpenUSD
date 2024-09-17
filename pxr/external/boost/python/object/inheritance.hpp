@@ -20,7 +20,6 @@
 # include "pxr/external/boost/python/type_id.hpp"
 # include <boost/shared_ptr.hpp>
 # include <boost/mpl/if.hpp>
-# include <boost/detail/workaround.hpp>
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {

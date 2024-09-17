@@ -73,11 +73,6 @@ struct iterator_range
                 stop_iteration_error();
             return *self.m_start++;
         }
-
-# if BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3003))
-        // CWPro8 has a codegen problem when this is an empty class
-        int garbage;
-# endif 
     };
     
     typedef next next_fn;

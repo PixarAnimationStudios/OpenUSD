@@ -25,7 +25,6 @@
 # include "pxr/external/boost/python/converter/constructor_function.hpp"
 # include "pxr/external/boost/python/converter/to_python_function_type.hpp"
 
-# include <boost/detail/workaround.hpp>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
@@ -81,11 +80,6 @@ struct PXR_BOOST_PYTHON_DECL registration
     // True iff this type is a shared_ptr.  Needed for special rvalue
     // from_python handling.
     const bool is_shared_ptr;
-
-# if BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3003))
- private:
-    void operator=(registration); // This is not defined, and just keeps MWCW happy.
-# endif 
 };
 
 //

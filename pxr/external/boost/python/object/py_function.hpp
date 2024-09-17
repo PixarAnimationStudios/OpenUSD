@@ -18,7 +18,6 @@
 #else
 
 # include "pxr/external/boost/python/detail/signature.hpp"
-# include <boost/detail/workaround.hpp>
 # include <boost/mpl/size.hpp>
 # include <memory>
 

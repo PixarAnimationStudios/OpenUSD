@@ -17,7 +17,6 @@
 #else
 
 # include "pxr/external/boost/python/detail/sfinae.hpp"
-# include <boost/detail/workaround.hpp>
 
 #  include <boost/utility/enable_if.hpp>
 

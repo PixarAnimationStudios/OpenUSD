@@ -15,10 +15,6 @@
 
 using namespace PXR_BOOST_NAMESPACE::python;
 
-#if BOOST_WORKAROUND(__SUNPRO_CC, BOOST_TESTED_AT(0x580)) || BOOST_WORKAROUND(BOOST_MSVC, BOOST_TESTED_AT(1500))
-# define make_tuple PXR_BOOST_NAMESPACE::python::make_tuple
-#endif 
-
 // These checks are only valid under Python 2.3
 // (rich slicing wasn't supported for builtins under Python 2.2)
 bool check_string_rich_slice()
@@ -60,14 +56,8 @@ else
 // Verify functions accepting a slice argument can be called
 bool accept_slice( slice) { return true; }
 
-#if BOOST_WORKAROUND( BOOST_MSVC, BOOST_TESTED_AT(1400)) \
-    || BOOST_WORKAROUND( BOOST_INTEL_WIN, == 710)
-int check_slice_get_indices(slice index);
-#endif
 int check_slice_get_indices(
-#if !BOOST_WORKAROUND(__SUNPRO_CC, BOOST_TESTED_AT(0x590))
     const
-#endif 
     slice index)
 {
     // A vector of integers from [-5, 5].

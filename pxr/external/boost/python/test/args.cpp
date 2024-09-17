@@ -26,9 +26,6 @@
 
 using namespace PXR_BOOST_NAMESPACE::python;
 
-#if BOOST_WORKAROUND(__SUNPRO_CC, BOOST_TESTED_AT(0x580)) || BOOST_WORKAROUND(BOOST_MSVC, BOOST_TESTED_AT(1500))
-# define make_tuple PXR_BOOST_NAMESPACE::python::make_tuple
-#endif 
 
 tuple f(int x = 1, double y = 4.25, char const* z = "wow")
 {

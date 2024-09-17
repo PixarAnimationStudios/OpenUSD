@@ -23,7 +23,6 @@
 #include "pxr/external/boost/python/converter/registry.hpp"
 #include "pxr/external/boost/python/converter/registrations.hpp"
 #include "pxr/external/boost/python/detail/type_traits.hpp"
-#include <boost/detail/workaround.hpp>
 #include <boost/type.hpp>
 #include <memory>
 #if defined(PXR_BOOST_PYTHON_TRACE_REGISTRY) \
@@ -65,7 +64,6 @@ struct registered
 {
 };
 
-# if !BOOST_WORKAROUND(BOOST_MSVC, BOOST_TESTED_AT(1310))
 // collapses a few more types to the same static instance.  MSVC7.1
 // fails to strip cv-qualification from array types in typeid.  For
 // some reason we can't use this collapse there or array converters
@@ -73,7 +71,6 @@ struct registered
 template <class T>
 struct registered<T&>
   : registered<T> {};
-# endif
 
 //
 // implementations

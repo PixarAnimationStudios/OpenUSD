@@ -58,17 +58,11 @@ namespace detail
           return converter(m_obj.release());
       }
 
-#  if BOOST_WORKAROUND(_MSC_FULL_VER, BOOST_TESTED_AT(140050215))
-      template <class T>
-      operator T*()
-      {
-          converter::return_from_python<T*> converter;
-          return converter(m_obj.release());
-      }
-#  endif 
-      
-#  if BOOST_WORKAROUND(BOOST_MSVC, BOOST_TESTED_AT(1400)) || BOOST_WORKAROUND(BOOST_INTEL_WIN, >= 900)
+#  if defined(BOOST_MSVC)
       // No operator T&
+      // This workaround was noted as required for VC 8 (_MSC_VER == 1400).
+      // It is still required as of Visual Studio 2019 (_MSC_VER == 1929).
+      // Without it, the unit test "exec" fails.
 #  else
       
       template <class T>
@@ -131,10 +125,7 @@ class override : public object
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OVERRIDE_HPP
 
 #else
-# if !(BOOST_WORKAROUND(__MWERKS__, > 0x3100)                      \
-        && BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3201)))
 #  line BOOST_PP_LINE(__LINE__, override.hpp)
-# endif 
 
 # define N BOOST_PP_ITERATION()
 

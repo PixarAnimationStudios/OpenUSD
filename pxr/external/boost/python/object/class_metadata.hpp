@@ -44,7 +44,6 @@
 #include <boost/mpl/single_view.hpp>
 
 #include <boost/noncopyable.hpp>
-#include <boost/detail/workaround.hpp>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 

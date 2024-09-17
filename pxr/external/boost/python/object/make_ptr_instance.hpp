@@ -21,7 +21,6 @@
 # include "pxr/external/boost/python/converter/registry.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <boost/get_pointer.hpp>
-# include <boost/detail/workaround.hpp>
 # include <typeinfo>
 
 namespace PXR_BOOST_NAMESPACE {

@@ -37,13 +37,7 @@ struct BaseWrap : Base, python::wrapper<Base>
 {
   virtual std::string hello() 
   {
-#if BOOST_WORKAROUND(BOOST_MSVC, <= 1300)
-    // workaround for VC++ 6.x or 7.0, see
-    // http://boost.org/libs/python/doc/tutorial/doc/html/python/exposing.html#python.class_virtual_functions
-    return python::call<std::string>(this->get_override("hello").ptr());
-#else
     return this->get_override("hello")();
-#endif
   }
 };
 
@@ -57,7 +51,7 @@ PXR_BOOST_PYTHON_MODULE(embedded_hello)
 void eval_test()
 {
   python::object result = python::eval("'abcdefg'.upper()");
-  std::string value = python::extract<std::string>(result) BOOST_EXTRACT_WORKAROUND;
+  std::string value = python::extract<std::string>(result);
   BOOST_TEST(value == "ABCDEFG");
 }
 
@@ -86,7 +80,7 @@ void exec_test()
   // But now creating and using instances of the Python class is almost
   // as easy!
   python::object py_base = PythonDerived();
-  Base& py = python::extract<Base&>(py_base) BOOST_EXTRACT_WORKAROUND;
+  Base& py = python::extract<Base&>(py_base);
 
   // Make sure the right 'hello' method is called.
   BOOST_TEST(py.hello() == "Hello from Python!");

@@ -21,7 +21,6 @@
 # include <boost/type.hpp>
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <boost/mpl/bool.hpp>
-# include <boost/detail/workaround.hpp>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
@@ -35,16 +34,6 @@ template <std::size_t n>
 struct is_string_literal<char const[n]> : mpl::true_
 {
 };
-
-#   if BOOST_WORKAROUND(__DECCXX_VER, BOOST_TESTED_AT(60590040)) \
-  || (defined(__sgi) && defined(_COMPILER_VERSION) && _COMPILER_VERSION <= 730)
-// This compiler mistakenly gets the type of string literals as char*
-// instead of char[NN].
-template <>
-struct is_string_literal<char* const> : mpl::true_
-{
-};
-#   endif
 
 #  else
 

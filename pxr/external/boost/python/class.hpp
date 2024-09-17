@@ -48,21 +48,7 @@
 # include <boost/mpl/for_each.hpp>
 # include <boost/mpl/bool.hpp>
 # include <boost/mpl/not.hpp>
-
-# include <boost/detail/workaround.hpp>
-
-# if BOOST_WORKAROUND(__MWERKS__, <= 0x3004)                        \
-    /* pro9 reintroduced the bug */                                 \
-    || (BOOST_WORKAROUND(__MWERKS__, > 0x3100)                      \
-        && BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3201)))
-
-#  define PXR_BOOST_PYTHON_NO_MEMBER_POINTER_ORDERING 1
-
-# endif
-
-# ifdef PXR_BOOST_PYTHON_NO_MEMBER_POINTER_ORDERING
-#  include <boost/mpl/and.hpp>
-# endif
+# include <boost/mpl/and.hpp>
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
@@ -96,16 +82,6 @@ namespace detail
           , mpl::not_<detail::is_member_function_pointer<T> >
         >
   {};
-  
-# ifdef PXR_BOOST_PYTHON_NO_MEMBER_POINTER_ORDERING
-#  define PXR_BOOST_PYTHON_DATA_MEMBER_HELPER(D) , detail::is_data_member_pointer<D>()
-#  define PXR_BOOST_PYTHON_YES_DATA_MEMBER , mpl::true_
-#  define PXR_BOOST_PYTHON_NO_DATA_MEMBER , mpl::false_
-# else 
-#  define PXR_BOOST_PYTHON_DATA_MEMBER_HELPER(D)
-#  define PXR_BOOST_PYTHON_YES_DATA_MEMBER
-#  define PXR_BOOST_PYTHON_NO_DATA_MEMBER
-# endif
   
   namespace error
   {
@@ -143,9 +119,6 @@ namespace detail
         {
             // https://svn.boost.org/trac/boost/ticket/5803
             //typedef typename assertion<mpl::not_<detail::is_same<Default,Fn> > >::failed test0;
-# if !BOOST_WORKAROUND(__MWERKS__, <= 0x2407)
-            typedef typename assertion<detail::is_polymorphic<T> >::failed test1 BOOST_ATTRIBUTE_UNUSED;
-# endif 
             typedef typename assertion<detail::is_member_function_pointer<Fn> >::failed test2 BOOST_ATTRIBUTE_UNUSED;
             not_a_derived_class_member<Default>(Fn());
         }
@@ -607,11 +580,6 @@ inline class_<W,X1,X2,X3>::class_(char const* name, char const* doc, no_init_t)
 }
 
 }} // namespace PXR_BOOST_NAMESPACE::python
-
-# undef PXR_BOOST_PYTHON_DATA_MEMBER_HELPER
-# undef PXR_BOOST_PYTHON_YES_DATA_MEMBER
-# undef PXR_BOOST_PYTHON_NO_DATA_MEMBER
-# undef PXR_BOOST_PYTHON_NO_MEMBER_POINTER_ORDERING
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CLASS_HPP

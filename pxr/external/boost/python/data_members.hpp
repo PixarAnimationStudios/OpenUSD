@@ -37,8 +37,6 @@
 # include <boost/mpl/if.hpp>
 # include <boost/mpl/vector/vector10.hpp>
 
-# include <boost/detail/workaround.hpp>
-
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 //
@@ -157,12 +155,6 @@ namespace detail
   // which don't support partial ordering at all and should always be
   // passed 0L.
 
-
-#if BOOST_WORKAROUND(__EDG_VERSION__, <= 238)
-  template <class D, class P>
-  inline object make_getter(D& d, P& p, detail::false_, ...);
-#endif
-
   // Handle non-member pointers with policies
   template <class D, class Policies>
   inline object make_getter(D* d, Policies const& policies, detail::false_, int)
@@ -184,11 +176,7 @@ namespace detail
   template <class C, class D, class Policies>
   inline object make_getter(D C::*pm, Policies const& policies, detail::true_, int)
   {
-#if BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3003))
-      typedef typename detail::remove_cv<C>::type Class;
-#else
       typedef C Class;
-#endif 
       return python::make_function(
           detail::member<D,Class>(pm)
         , policies
@@ -275,7 +263,6 @@ inline object make_getter(D& x)
     return detail::make_getter(x, policy, detail::is_member_pointer<D>(), 0L);
 }
 
-#  if !BOOST_WORKAROUND(__EDG_VERSION__, <= 238)
 template <class D>
 inline object make_getter(D const& d)
 {
@@ -283,7 +270,6 @@ inline object make_getter(D const& d)
         = detail::not_specified(); // Suppress a SunPro warning
     return detail::make_getter(d, policy, detail::is_member_pointer<D>(), 0L);
 }
-#  endif
 
 //
 // make_setter function family -- build a callable object which
@@ -310,13 +296,11 @@ inline object make_setter(D& x)
     return detail::make_setter(x, default_call_policies(), detail::is_member_pointer<D>(), 0);
 }
 
-# if !BOOST_WORKAROUND(__EDG_VERSION__, <= 238)
 template <class D>
 inline object make_setter(D const& x)
 {
     return detail::make_setter(x, default_call_policies(), detail::is_member_pointer<D>(), 0);
 }
-# endif
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 

@@ -46,8 +46,6 @@
 #  include <boost/preprocessor/enum_params.hpp>
 #  include <boost/preprocessor/repetition/enum_binary_params.hpp>
 
-#  include <boost/detail/workaround.hpp>
-
 namespace PXR_BOOST_NAMESPACE {
     using boost::get_pointer; // Enable ADL for boost types
 }
@@ -143,11 +141,7 @@ void* pointer_holder<Pointer, Value>::holds(type_info dst_t, bool null_ptr_only)
         return &this->m_p;
 
     Value* p0
-#  if BOOST_WORKAROUND(__SUNPRO_CC, BOOST_TESTED_AT(0x590))
-        = static_cast<Value*>( get_pointer(this->m_p) )
-#  else 
         = get_pointer(this->m_p)
-#  endif
         ;
     non_const_value* p = const_cast<non_const_value*>( p0 );
 
@@ -191,10 +185,7 @@ void* pointer_holder_back_reference<Pointer, Value>::holds(type_info dst_t, bool
 // BOOST_PP_ITERATION_DEPTH test inside an #else clause.
 #else // BOOST_PP_IS_ITERATING
 #if BOOST_PP_ITERATION_DEPTH() == 1 && BOOST_PP_ITERATION_FLAGS() == 1
-# if !(BOOST_WORKAROUND(__MWERKS__, > 0x3100)                      \
-        && BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3201)))
 #  line BOOST_PP_LINE(__LINE__, pointer_holder.hpp)
-# endif
 
 # define N BOOST_PP_ITERATION()
 
@@ -213,10 +204,7 @@ void* pointer_holder_back_reference<Pointer, Value>::holds(type_info dst_t, bool
 
 /* --------------- pointer_holder_back_reference --------------- */
 #elif BOOST_PP_ITERATION_DEPTH() == 1 && BOOST_PP_ITERATION_FLAGS() == 2
-# if !(BOOST_WORKAROUND(__MWERKS__, > 0x3100)                      \
-        && BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3201)))
 #  line BOOST_PP_LINE(__LINE__, pointer_holder.hpp(pointer_holder_back_reference))
-# endif 
 
 # define N BOOST_PP_ITERATION()
 

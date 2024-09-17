@@ -25,7 +25,6 @@
 #else
 
 # include <boost/config.hpp>
-# include <boost/detail/workaround.hpp>
 
 # if defined(BOOST_MSVC)
 
@@ -80,13 +79,7 @@
 #  define PXR_BOOST_PYTHON_DECL_EXCEPTION
 #endif
 
-#if BOOST_WORKAROUND(__DECCXX_VER, BOOST_TESTED_AT(60590042))
-// Replace broken Tru64/cxx offsetof macro
-# define PXR_BOOST_PYTHON_OFFSETOF(s_name, s_member) \
-        ((size_t)__INTADDR__(&(((s_name *)0)->s_member)))
-#else
 # define PXR_BOOST_PYTHON_OFFSETOF offsetof
-#endif
 
 //  enable automatic library variant selection  ------------------------------// 
 

@@ -18,7 +18,6 @@
 #else
 
 # include "pxr/external/boost/python/detail/type_traits.hpp"
-# include <boost/detail/workaround.hpp>
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 template <bool array> struct value_destroyer;

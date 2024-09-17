@@ -97,10 +97,6 @@ PXR_BOOST_PYTHON_MODULE(keywords)
     // signatures by default.
     docstring_options doc_options;
     doc_options.enable_py_signatures();
-
-#if BOOST_WORKAROUND(__GNUC__, == 2)
-    using PXR_BOOST_NAMESPACE::python::arg;
-#endif 
     
     class_<Foo>(
         "Foo"

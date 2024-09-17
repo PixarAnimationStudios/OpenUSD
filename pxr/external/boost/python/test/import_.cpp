@@ -37,7 +37,7 @@ void import_test(char const *py_file_path)
   
   // Retrieve the main module
   bpl::object import_ = bpl::import("import_");
-  int value = bpl::extract<int>(import_.attr("value")) BOOST_EXTRACT_WORKAROUND;
+  int value = bpl::extract<int>(import_.attr("value"));
   std::cout << value << std::endl;
   BOOST_TEST(value == 42);
 }
