@@ -60,6 +60,8 @@ struct RightBrace : PEGTL_NS::one<'}'> {};
 struct LeftAngleBracket : PEGTL_NS::one<'<'> {};
 struct RightAngleBracket : PEGTL_NS::one<'>'> {};
 struct At : PEGTL_NS::one<'@'> {};
+// // asset references
+struct AtAtAt : PEGTL_NS::three<'@'> {};
 struct Colon : PEGTL_NS::one<':'> {};
 struct Equals : PEGTL_NS::one<'='> {};
 struct Sign : PEGTL_NS::one<'+', '-'> {};
@@ -339,8 +341,6 @@ struct String : PEGTL_NS::sor<
     MultilineDoubleQuoteString,
     SinglelineDoubleQuoteString> {};
 
-// // asset references
-struct AtAtAt : PEGTL_NS::three<'@'> {};
 struct EscapeAtAtAt :
     PEGTL_NS::seq<PEGTL_NS::one<'\\'>, AtAtAt> {};
 
