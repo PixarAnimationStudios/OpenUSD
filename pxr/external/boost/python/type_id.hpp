@@ -182,13 +182,11 @@ inline type_info type_id<void>()
 {
     return type_info (typeid (void *));
 }
-#   ifndef BOOST_NO_CV_VOID_SPECIALIZATIONS
 template<>
 inline type_info type_id<const volatile void>()
 {
     return type_info (typeid (void *));
 }
-#  endif
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 

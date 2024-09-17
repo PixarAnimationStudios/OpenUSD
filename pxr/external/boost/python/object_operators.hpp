@@ -49,15 +49,11 @@ struct is_object_operators
     typedef mpl::bool_<value> type;
 };
 
-# if !defined(BOOST_NO_SFINAE) && !defined(BOOST_NO_IS_CONVERTIBLE)
 template <class L, class R, class T>
 struct enable_binary
   : boost::iterators::enable_if<is_object_operators<L,R>, T>
 {};
 #  define PXR_BOOST_PYTHON_BINARY_RETURN(T) typename enable_binary<L,R,T>::type
-# else
-#  define PXR_BOOST_PYTHON_BINARY_RETURN(T) T
-# endif
 
 template <class U>
 object object_operators<U>::operator()() const

@@ -236,34 +236,6 @@ namespace detail
                 N,n_args>::too_many_keywords assertion BOOST_ATTRIBUTE_UNUSED;              \
     }
 
-# if defined(BOOST_NO_VOID_RETURNS)
-
-#  define PXR_BOOST_PYTHON_GEN_FUNCTION_STUB(fname, fstubs_name, n_args, n_dflts)   \
-    struct fstubs_name                                                          \
-        : public ::PXR_BOOST_NAMESPACE::python::detail::overloads_common<fstubs_name>         \
-    {                                                                           \
-        PXR_BOOST_PYTHON_GEN_FUNCTION(                                              \
-            fname, non_void_return_type, n_args, n_dflts, return)               \
-        PXR_BOOST_PYTHON_GEN_FUNCTION(                                              \
-            fname, void_return_type, n_args, n_dflts, ;)                        \
-                                                                                \
-        PXR_BOOST_PYTHON_OVERLOAD_CONSTRUCTORS(fstubs_name, n_args, n_dflts)        \
-    };
-
-#  define PXR_BOOST_PYTHON_GEN_MEM_FUNCTION_STUB(fname, fstubs_name, n_args, n_dflts)       \
-    struct fstubs_name                                                                  \
-        : public ::PXR_BOOST_NAMESPACE::python::detail::overloads_common<fstubs_name>                 \
-    {                                                                                   \
-        PXR_BOOST_PYTHON_GEN_MEM_FUNCTION(                                                  \
-            fname, non_void_return_type, n_args, n_dflts, return)                       \
-        PXR_BOOST_PYTHON_GEN_MEM_FUNCTION(                                                  \
-            fname, void_return_type, n_args, n_dflts, ;)                                \
-                                                                                        \
-        PXR_BOOST_PYTHON_OVERLOAD_CONSTRUCTORS(fstubs_name, n_args + 1, n_dflts)            \
-    };
-
-# else // !defined(BOOST_NO_VOID_RETURNS)
-
 #  define PXR_BOOST_PYTHON_GEN_FUNCTION_STUB(fname, fstubs_name, n_args, n_dflts)   \
     struct fstubs_name                                                          \
         : public ::PXR_BOOST_NAMESPACE::python::detail::overloads_common<fstubs_name>         \
@@ -286,8 +258,6 @@ namespace detail
         typedef non_void_return_type void_return_type;                                  \
         PXR_BOOST_PYTHON_OVERLOAD_CONSTRUCTORS(fstubs_name, n_args + 1, n_dflts)            \
     };
-
-# endif // !defined(BOOST_NO_VOID_RETURNS)
 
 ///////////////////////////////////////////////////////////////////////////////
 //

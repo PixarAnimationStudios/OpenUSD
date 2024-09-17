@@ -387,7 +387,7 @@ namespace
   {
       bool operator()(char const* x, char const* y) const
       {
-          return BOOST_CSTD_::strcmp(x,y) < 0;
+          return std::strcmp(x,y) < 0;
       }
   };
   

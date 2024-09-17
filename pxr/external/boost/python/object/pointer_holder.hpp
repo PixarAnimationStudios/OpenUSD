@@ -122,21 +122,13 @@ struct pointer_holder_back_reference : instance_holder
 
 template <class Pointer, class Value>
 inline pointer_holder<Pointer,Value>::pointer_holder(Pointer p)
-#if defined(BOOST_NO_CXX11_SMART_PTR)
-    : m_p(p)
-#else
     : m_p(std::move(p))
-#endif
 {
 }
 
 template <class Pointer, class Value>
 inline pointer_holder_back_reference<Pointer,Value>::pointer_holder_back_reference(Pointer p)
-#if defined(BOOST_NO_CXX11_SMART_PTR)
-    : m_p(p)
-#else
     : m_p(std::move(p))
-#endif
 {
 }
 

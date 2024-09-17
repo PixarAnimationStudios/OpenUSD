@@ -41,7 +41,6 @@ PyObject* shared_ptr_to_python(shared_ptr<T> const& x)
         return converter::registered<shared_ptr<T> const&>::converters.to_python(&x);
 }
 
-#if !defined(BOOST_NO_CXX11_SMART_PTR)
 template <class T>
 PyObject* shared_ptr_to_python(std::shared_ptr<T> const& x)
 {
@@ -52,7 +51,6 @@ PyObject* shared_ptr_to_python(std::shared_ptr<T> const& x)
   else
     return converter::registered<std::shared_ptr<T> const&>::converters.to_python(&x);
 }
-#endif
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::converter
 

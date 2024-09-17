@@ -21,12 +21,11 @@ int main()
              PXR_BOOST_NAMESPACE::python::pointee<boost::shared_ptr<A> >::type
              , A>::value));
 
-#ifndef BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION
     static_assert(
         (PXR_BOOST_NAMESPACE::python::detail::is_same<
                 PXR_BOOST_NAMESPACE::python::pointee<char*>::type
                 , char
          >::value));
-#endif 
+
     return 0;
 }

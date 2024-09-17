@@ -111,9 +111,6 @@ struct return_from_python<void>
     result_type operator()(PyObject* x) const
     {
         (void_result_from_python)(x);
-# ifdef BOOST_NO_VOID_RETURNS
-        return result_type();
-# endif 
     }
 };
 

@@ -433,7 +433,7 @@ namespace
 #endif
   };
 
-#if defined(Py_USING_UNICODE) && !defined(BOOST_NO_STD_WSTRING)
+#if defined(Py_USING_UNICODE)
   // encode_string_unaryfunc/py_encode_string -- manufacture a unaryfunc
   // "slot" which encodes a Python string using the default encoding
   extern "C" PyObject* encode_string_unaryfunc(PyObject* x)
@@ -609,7 +609,7 @@ void initialize_builtin_converters()
 #endif
 
     // Register by-value converters to std::string, std::wstring
-#if defined(Py_USING_UNICODE) && !defined(BOOST_NO_STD_WSTRING)
+#if defined(Py_USING_UNICODE)
     slot_rvalue_from_python<std::wstring, wstring_rvalue_from_python>();
 # endif 
     slot_rvalue_from_python<std::string, string_rvalue_from_python>();

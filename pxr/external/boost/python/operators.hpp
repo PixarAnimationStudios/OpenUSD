@@ -249,37 +249,12 @@ PXR_BOOST_PYTHON_BINARY_OPERATION(pow, rpow, pow(l,r))
     
 namespace self_ns
 {
-# ifndef BOOST_NO_ARGUMENT_DEPENDENT_LOOKUP
   template <class L, class R>
   inline detail::operator_<detail::op_pow,L,R>
   pow(L const&, R const&)
   {
       return detail::operator_<detail::op_pow,L,R>();
   }
-# else
-  // When there's no argument-dependent lookup, we need these
-  // overloads to handle the case when everything is imported into the
-  // global namespace. Note that the plain overload below does /not/
-  // take const& arguments. This is needed by MSVC6 at least, or it
-  // complains of ambiguities, since there's no partial ordering.
-  inline detail::operator_<detail::op_pow,self_t,self_t>
-  pow(self_t, self_t)
-  {
-      return detail::operator_<detail::op_pow,self_t,self_t>();
-  }
-  template <class R>
-  inline detail::operator_<detail::op_pow,self_t,R>
-  pow(self_t const&, R const&)
-  {
-      return detail::operator_<detail::op_pow,self_t,R>();
-  }
-  template <class L>
-  inline detail::operator_<detail::op_pow,L,self_t>
-  pow(L const&, self_t const&)
-  {
-      return detail::operator_<detail::op_pow,L,self_t>();
-  }
-# endif 
 }
 
 
@@ -371,17 +346,6 @@ PXR_BOOST_PYTHON_UNARY_OPERATOR(repr, lexical_cast<std::string>, repr)
 # undef PXR_BOOST_PYTHON_UNARY_OPERATOR
 
 }} // namespace PXR_BOOST_NAMESPACE::python
-
-# ifdef BOOST_NO_ARGUMENT_DEPENDENT_LOOKUP
-using PXR_BOOST_NAMESPACE::python::self_ns::abs;
-using PXR_BOOST_NAMESPACE::python::self_ns::int_;
-using PXR_BOOST_NAMESPACE::python::self_ns::long_;
-using PXR_BOOST_NAMESPACE::python::self_ns::float_;
-using PXR_BOOST_NAMESPACE::python::self_ns::complex_;
-using PXR_BOOST_NAMESPACE::python::self_ns::str;
-using PXR_BOOST_NAMESPACE::python::self_ns::repr;
-using PXR_BOOST_NAMESPACE::python::self_ns::pow;
-# endif
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OPERATORS_HPP

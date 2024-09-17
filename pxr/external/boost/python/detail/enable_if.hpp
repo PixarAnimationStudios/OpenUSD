@@ -19,7 +19,6 @@
 # include "pxr/external/boost/python/detail/sfinae.hpp"
 # include <boost/detail/workaround.hpp>
 
-#if !defined(BOOST_NO_SFINAE)
 #  include <boost/utility/enable_if.hpp>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
@@ -45,8 +44,6 @@ struct disable_if_ret
 {};
              
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
-
-# endif
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_ENABLE_IF_HPP

@@ -101,10 +101,6 @@ namespace detail
 #  define PXR_BOOST_PYTHON_DATA_MEMBER_HELPER(D) , detail::is_data_member_pointer<D>()
 #  define PXR_BOOST_PYTHON_YES_DATA_MEMBER , mpl::true_
 #  define PXR_BOOST_PYTHON_NO_DATA_MEMBER , mpl::false_
-# elif defined(BOOST_NO_FUNCTION_TEMPLATE_ORDERING)
-#  define PXR_BOOST_PYTHON_DATA_MEMBER_HELPER(D) , 0
-#  define PXR_BOOST_PYTHON_YES_DATA_MEMBER , int
-#  define PXR_BOOST_PYTHON_NO_DATA_MEMBER , ...
 # else 
 #  define PXR_BOOST_PYTHON_DATA_MEMBER_HELPER(D)
 #  define PXR_BOOST_PYTHON_YES_DATA_MEMBER
@@ -287,25 +283,25 @@ class class_ : public objects::class_base
     template <class D>
     self& def_readonly(char const* name, D const& d, char const* doc=0)
     {
-        return this->def_readonly_impl(name, d, doc PXR_BOOST_PYTHON_DATA_MEMBER_HELPER(D));
+        return this->def_readonly_impl(name, d, doc);
     }
 
     template <class D>
     self& def_readwrite(char const* name, D const& d, char const* doc=0)
     {
-        return this->def_readwrite_impl(name, d, doc PXR_BOOST_PYTHON_DATA_MEMBER_HELPER(D));
+        return this->def_readwrite_impl(name, d, doc);
     }
     
     template <class D>
     self& def_readonly(char const* name, D& d, char const* doc=0)
     {
-        return this->def_readonly_impl(name, d, doc PXR_BOOST_PYTHON_DATA_MEMBER_HELPER(D));
+        return this->def_readonly_impl(name, d, doc);
     }
 
     template <class D>
     self& def_readwrite(char const* name, D& d, char const* doc=0)
     {
-        return this->def_readwrite_impl(name, d, doc PXR_BOOST_PYTHON_DATA_MEMBER_HELPER(D));
+        return this->def_readwrite_impl(name, d, doc);
     }
 
     // Property creation
@@ -430,28 +426,28 @@ class class_ : public objects::class_base
     
     template <class D, class B>
     self& def_readonly_impl(
-        char const* name, D B::*pm_, char const* doc PXR_BOOST_PYTHON_YES_DATA_MEMBER)
+        char const* name, D B::*pm_, char const* doc)
     {
         return this->add_property(name, pm_, doc);
     }
 
     template <class D, class B>
     self& def_readwrite_impl(
-        char const* name, D B::*pm_, char const* doc PXR_BOOST_PYTHON_YES_DATA_MEMBER)
+        char const* name, D B::*pm_, char const* doc)
     {
         return this->add_property(name, pm_, pm_, doc);
     }
 
     template <class D>
     self& def_readonly_impl(
-        char const* name, D& d, char const* PXR_BOOST_PYTHON_NO_DATA_MEMBER)
+        char const* name, D& d, char const*)
     {
         return this->add_static_property(name, python::make_getter(d));
     }
 
     template <class D>
     self& def_readwrite_impl(
-        char const* name, D& d, char const* PXR_BOOST_PYTHON_NO_DATA_MEMBER)
+        char const* name, D& d, char const*)
     {
         return this->add_static_property(name, python::make_getter(d), python::make_setter(d));
     }

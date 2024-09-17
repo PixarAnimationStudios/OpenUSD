@@ -92,14 +92,12 @@ namespace detail
       registry::lookup_shared_ptr(type_id<shared_ptr<T> >());
   }
 
-#if !defined(BOOST_NO_CXX11_SMART_PTR)
   template <class T>
   inline void
   register_shared_ptr0(std::shared_ptr<T>*)
   {
       registry::lookup_shared_ptr(type_id<std::shared_ptr<T> >());
   }
-#endif
 
   template <class T>
   inline void
