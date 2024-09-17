@@ -70,26 +70,10 @@ struct Ampersand : PEGTL_NS::one<'&'> {};
 
 // character classes
 struct Digit : PEGTL_NS::digit {};
-struct HexDigit : PEGTL_NS::xdigit {};
-struct OctDigit : PEGTL_NS::range<0, 7> {};
 struct Eol : PEGTL_NS::one<'\r', '\n'> {};
 struct Eolf : PEGTL_NS::eolf {};
 struct Utf8 : PEGTL_NS::utf8::any {};
 struct Utf8NoEolf : PEGTL_NS::minus<Utf8, Eol> {};
-
-// Escape character sets as defined by `TfEscapeStringReplaceChar` plus quotes
-struct EscapeSingleCharacter :
-    PEGTL_NS::seq<
-        PEGTL_NS::one<'\\', 'a', 'b', 'f', 'n', 'r', 't', 'v', '\'', '"'>> {};
-struct EscapeHex :
-    PEGTL_NS::seq<PEGTL_NS::one<'x'>,
-                  PEGTL_NS::rep_opt<2, HexDigit>> {};
-struct EscapeOct :
-    PEGTL_NS::seq<OctDigit,
-                  PEGTL_NS::rep_opt<2, OctDigit>> {};
-struct Escaped :
-    PEGTL_NS::seq<PEGTL_NS::one<'\\'>,
-                  PEGTL_NS::sor<EscapeSingleCharacter, EscapeHex, EscapeOct>> {};
 
 // keyword
 struct KeywordAdd : PXR_PEGTL_KEYWORD("add") {};
@@ -321,36 +305,42 @@ struct Number : PEGTL_NS::sor<
 //	 """ DoubleQuoteMultiLineStringChar* """ /
 //   ' SingleQuoteSingleLineStringChar* ' /
 //	''' SingleQuoteMultiLineStringChar* '
-struct MultilineContents : PEGTL_NS::sor<Escaped, Utf8> {};
-struct ThreeSingleQuotes :
-    PEGTL_NS::seq<SingleQuote, SingleQuote, SingleQuote> {};
-struct ThreeDoubleQuotes :
-    PEGTL_NS::seq<DoubleQuote, DoubleQuote, DoubleQuote> {};
-struct MultilineSingleQuoteString : PEGTL_NS::if_must<
-    ThreeSingleQuotes,
-    PEGTL_NS::until<ThreeSingleQuotes, MultilineContents>> {};
-struct MultilineDoubleQuoteString : PEGTL_NS::if_must<
-    ThreeDoubleQuotes,
-    PEGTL_NS::until<ThreeDoubleQuotes, MultilineContents>> {};
-struct SinglelineContents : PEGTL_NS::sor<Escaped, Utf8NoEolf> {};
-struct SinglelineSingleQuoteString : PEGTL_NS::if_must<
-    SingleQuote,
-    PEGTL_NS::until<SingleQuote, SinglelineContents>> {};
-struct SinglelineDoubleQuoteString : PEGTL_NS::if_must<
-    DoubleQuote,
-    PEGTL_NS::until<DoubleQuote, SinglelineContents>> {};
-struct SingleQuoteString : PEGTL_NS::sor<
+template <char QuoteCharacter>
+struct MultilineString : PEGTL_NS::if_must<
+    PEGTL_NS::three<QuoteCharacter>,
+    PEGTL_NS::until<
+        PEGTL_NS::three<QuoteCharacter>,
+        PEGTL_NS::sor<
+            PEGTL_NS::two<'\\'>,
+            PEGTL_NS::string<'\\', QuoteCharacter>,
+            Utf8>
+        >
+> {};
+template <char QuoteCharacter>
+struct SinglelineString : PEGTL_NS::if_must<
+    PEGTL_NS::one<QuoteCharacter>,
+    PEGTL_NS::until<
+        PEGTL_NS::one<QuoteCharacter>,
+        PEGTL_NS::sor<
+            PEGTL_NS::two<'\\'>,
+            PEGTL_NS::string<'\\', QuoteCharacter>,
+            Utf8NoEolf>
+        >
+> {};
+
+struct SinglelineSingleQuoteString : SinglelineString<'\''> {};
+struct SinglelineDoubleQuoteString : SinglelineString<'\"'> {};
+struct MultilineSingleQuoteString : MultilineString<'\''> {};
+struct MultilineDoubleQuoteString : MultilineString<'\"'> {};
+
+struct String : PEGTL_NS::sor<
     MultilineSingleQuoteString,
-    SinglelineSingleQuoteString> {};
-struct DoubleQuoteString : PEGTL_NS::sor<
+    SinglelineSingleQuoteString,
     MultilineDoubleQuoteString,
     SinglelineDoubleQuoteString> {};
-struct String : PEGTL_NS::sor<
-    SingleQuoteString,
-    DoubleQuoteString> {};
 
 // // asset references
-struct AtAtAt : PEGTL_NS::seq<At, At, At> {};
+struct AtAtAt : PEGTL_NS::three<'@'> {};
 struct EscapeAtAtAt :
     PEGTL_NS::seq<PEGTL_NS::one<'\\'>, AtAtAt> {};
 
