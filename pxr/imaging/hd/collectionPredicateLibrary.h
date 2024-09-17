@@ -34,16 +34,16 @@ using HdCollectionPredicateLibrary =
 ///
 /// The library returned provides the following predicate functions:
 ///
-/// type(string primType)
+/// hdType(string primType)
 ///     Returns true if the scene index prim's type is \p primType.
 ///
-/// visible(bool visibility = true)
+/// hdVisible(bool visibility = true)
 ///     Returns true if the scene index prim's visibility is \p visibility.
 ///
-/// purpose(string purpose)
+/// hdPurpose(string purpose)
 ///     Returns true if the scene index prim's purpose is \p purpose.
 ///
-/// hasDataSource(string locatorStr)
+/// hdHasDataSource(string locatorStr)
 ///     Returns true if the scene index prim's container has a valid data source
 ///     at data source locator \p locatorStr.
 ///     Multiple locator tokens may be provided by using '.' as the delimiter.
@@ -51,31 +51,46 @@ using HdCollectionPredicateLibrary =
 ///     A locator token may contain a namespace prefix.
 ///     e.g. "primvars.ri:baz" is parsed as two tokens, "primvars" and "ri:baz".
 ///
-/// hasPrimvar(string primvarName)
+/// hdHasPrimvar(string primvarName)
 ///     Returns true if the scene index prim has a primvar named \p primvarName.
 ///
-/// hasMaterialBinding(string materialPath)
+/// hdHasMaterialBinding(string materialPath)
 ///     Returns true if the scene index prim's resolved (allPurpose) material
 ///     binding path contains the substring \p materialPath.
+///
+/// \deprecated
+/// The following predicate functions are deprecated and will be removed in a
+/// future release:
+///
+/// \li type
+/// \li visible
+/// \li purpose
+/// \li hasDataSOurce
+/// \li hasPrimvar
+/// \li hasMaterialBinding
+///
+/// Any predicate functions in hd will use the 'hd' prefix henceforth to make
+/// it clear to the author/reader that it is a (core) hydra predicate.
 ///
 /// ----------------------------------------------------------------------------
 ///
 /// Usage examples:
 ///
-/// "/World//{type:basisCurves}" matches all descendant prims of /World that are
-/// basis curves.
+/// "/World//{hdType:basisCurves}" matches all descendant prims of /World that 
+/// are basis curves.
 ///
-/// "//{visible:false}" matches all scene index prims that are invisible.
+/// "//{hdVisible:false}" matches all scene index prims that are invisible.
 ///
-/// "//{purpose:guide}" matches all scene index prims whose purpose is 'guide'.
+/// "//{hdPurpose:guide}" matches all scene index prims whose purpose is 
+/// 'guide'.
 ///
-/// "//Foo/{hasDataSource:"bar.baz"}" matches children of any prim named Foo 
+/// "//Foo/{hdHasDataSource:"bar.baz"}" matches children of any prim named Foo 
 /// that have a valid data source at bar.baz .
 ///
-/// "/Foo//{hasPrimvar:baz}" matches all descendant prims of Foo that have a
+/// "/Foo//{hdHasPrimvar:baz}" matches all descendant prims of Foo that have a
 /// primvar named "baz".
 ///
-/// "//{hasMaterialBinding:"GlossyMat"}" matches all scene index prims
+/// "//{hdHasMaterialBinding:"GlossyMat"}" matches all scene index prims
 /// whose resolved (allPurpose) material binding path contains the string
 /// "GlossyMat".
 ///

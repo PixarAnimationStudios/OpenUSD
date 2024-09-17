@@ -338,7 +338,7 @@ bool TestHdPredicateLibrary()
     {
         // Match prims with type "scope".
         {
-            const SdfPathExpression expr("//{type:scope}");
+            const SdfPathExpression expr("//{hdType:scope}");
             HdCollectionExpressionEvaluator eval(si, expr);
             // ^ This will use the predicate library that ships with hd.
 
@@ -351,6 +351,7 @@ bool TestHdPredicateLibrary()
         }
 
         // Match children of any prim "B" whose type is "fruit".
+        // "type" is deprecated, but let's test it nonetheless.
         {
             const SdfPathExpression expr("//B/{type:fruit}");
             HdCollectionExpressionEvaluator eval(si, expr);
@@ -367,7 +368,7 @@ bool TestHdPredicateLibrary()
     {
         // Match prims whose prim container has a data source at "purpose"
         {
-            const SdfPathExpression expr("//{hasDataSource:purpose}");
+            const SdfPathExpression expr("//{hdHasDataSource:purpose}");
             HdCollectionExpressionEvaluator eval(si, expr);
 
             TF_AXIOM(eval.Match(SdfPath("/A/B/Carrot")));
@@ -381,7 +382,8 @@ bool TestHdPredicateLibrary()
         // Match prims that have a data source at "materialBindings.''".
         // i.e. match prims with an allPurpose (empty token) binding.
         {
-            const SdfPathExpression expr("//{hasDataSource:\"materialBindings.\"}");
+            const SdfPathExpression expr(
+                "//{hdHasDataSource:\"materialBindings.\"}");
             HdCollectionExpressionEvaluator eval(si, expr);
 
             TF_AXIOM(eval.Match(SdfPath("/A/B/Carrot")));
@@ -399,7 +401,7 @@ bool TestHdPredicateLibrary()
     {
         // Match prims that have a primvar "fresh".
         {
-            const SdfPathExpression expr("//{hasPrimvar:fresh}");
+            const SdfPathExpression expr("//{hdHasPrimvar:fresh}");
             HdCollectionExpressionEvaluator eval(si, expr);
 
             TF_AXIOM(eval.Match(SdfPath("/A/B/Carrot")));
@@ -412,6 +414,7 @@ bool TestHdPredicateLibrary()
         
         // Match prims that have a namespaced primvar "foo:glossy". 
         {
+            // "hasPrimvar" is deprecated, but let's test it nonetheless.
             const SdfPathExpression expr("//{hasPrimvar:'foo:glossy'}");
             HdCollectionExpressionEvaluator eval(si, expr);
 
@@ -428,7 +431,7 @@ bool TestHdPredicateLibrary()
     {
         // Match prims with purpose "food".
         {
-            const SdfPathExpression expr("//{purpose:food}");
+            const SdfPathExpression expr("//{hdPurpose:food}");
             HdCollectionExpressionEvaluator eval(si, expr);
 
             TF_AXIOM(eval.Match(SdfPath("/A/B/Carrot")));
@@ -441,7 +444,7 @@ bool TestHdPredicateLibrary()
 
         // Match prims with purpose "furniture".
         {
-            const SdfPathExpression expr("//{purpose:furniture}");
+            const SdfPathExpression expr("//{hdPurpose:furniture}");
             HdCollectionExpressionEvaluator eval(si, expr);
 
             TF_AXIOM(eval.Match(SdfPath("/A/C/Table")));
@@ -457,7 +460,7 @@ bool TestHdPredicateLibrary()
     {
         // Match all visible prims.
         {
-            const SdfPathExpression expr("//{visible:true}");
+            const SdfPathExpression expr("//{hdVisible:true}");
             HdCollectionExpressionEvaluator eval(si, expr);
 
             TF_AXIOM(eval.Match(SdfPath("/A/B/Carrot")));
@@ -472,7 +475,7 @@ bool TestHdPredicateLibrary()
 
         // Alias for the above query. This is equivalent to the test case above.
         {
-            const SdfPathExpression expr("//{visible}");
+            const SdfPathExpression expr("//{hdVisible}");
             HdCollectionExpressionEvaluator eval(si, expr);
 
             TF_AXIOM(eval.Match(SdfPath("/A/B/Carrot")));
@@ -492,7 +495,7 @@ bool TestHdPredicateLibrary()
         // We could improve the predicate to take the purpose as an additional
         // arg.
         {
-            const SdfPathExpression expr("//{hasMaterialBinding:\"Orange\"}");
+            const SdfPathExpression expr("//{hdHasMaterialBinding:\"Orange\"}");
             HdCollectionExpressionEvaluator eval(si, expr);
 
             TF_AXIOM(eval.Match(SdfPath("/A/B/Carrot")));
@@ -541,7 +544,7 @@ bool TestCustomPredicateLibrary()
     // Foundational predicates should continue to work.
     // Match prims with purpose "furniture".
     {
-        const SdfPathExpression expr("//{purpose:furniture}");
+        const SdfPathExpression expr("//{hdPurpose:furniture}");
         HdCollectionExpressionEvaluator eval(
             si, expr, _GetCustomPredicateLibrary());
         TF_AXIOM(eval.Match(SdfPath("/A/C/Table")));
@@ -560,7 +563,8 @@ bool TestEvaluatorUtilities()
 
     // Match all prims with purpose "food" and a primvar "fresh".
     {
-        const SdfPathExpression expr("//{purpose:food and hasPrimvar:fresh}");
+        const SdfPathExpression expr(
+            "//{hdPurpose:food and hdHasPrimvar:fresh}");
         HdCollectionExpressionEvaluator eval(si, expr);
 
         SdfPathVector resultVec;
@@ -580,7 +584,7 @@ bool TestEvaluatorUtilities()
     // behavior (to use a fallback for example), this test case should catch it.
     {
         const SdfPathExpression expr(
-            "//{hasDataSource:visibility and visible:false}");
+            "//{hdHasDataSource:visibility and hdVisible:false}");
         HdCollectionExpressionEvaluator eval(si, expr);
 
         SdfPathVector resultVec;
