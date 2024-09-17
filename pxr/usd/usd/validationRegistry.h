@@ -27,6 +27,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// UsdValidationRegistry is a singleton class, which serves as a central
 /// registry to hold / own all validators and validatorSuites by their names.
+/// UsdValidationRegistry is also immortal and its singleton instance is never
+/// destroyed. This is to ensure that all validators and suites registered with
+/// the registry are available throughout the lifetime of the application.
+///
 /// Both Core USD and client-provided validators are registered with the
 /// registry. Validators can be registered and retrieved dynamically, supporting
 /// complex validation scenarios across different modules or plugins.
@@ -577,6 +581,12 @@ private:
     // Mutex to protect access to all data members.
     mutable std::shared_mutex _mutex;
 };
+
+// Specialize and delete the DeleteInstance function to prevent destruction.
+// This will prevent the singleton instance for UsdValidationRegistry from
+// being destroyed and hence making it immortal.
+template <>
+void TfSingleton<UsdValidationRegistry>::DeleteInstance() = delete;
 
 USD_API_TEMPLATE_CLASS(TfSingleton<UsdValidationRegistry>);
 
