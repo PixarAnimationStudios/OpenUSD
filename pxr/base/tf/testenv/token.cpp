@@ -108,6 +108,14 @@ Test_TfToken()
     TF_AXIOM(TfToken(strVec2[1]) == tokVec[1]);
     TF_AXIOM(TfToken(strVec2[2]) == tokVec[2]);
 
+    // Test safe construction from nullptr
+    TF_AXIOM(TfToken(nullptr) == TfToken());
+
+    // Test Find via string_view
+    TF_AXIOM(TfToken::Find("a_string_that_is_very_unlikely_to_exist") ==
+             TfToken());
+    TF_AXIOM(TfToken("string1") == TfToken::Find("string1"));
+
     return true;
 }
 

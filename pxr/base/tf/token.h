@@ -23,6 +23,7 @@
 #include <atomic>
 #include <iosfwd>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <set>
 
@@ -132,11 +133,24 @@ public:
     // and release their memory.
     TF_API TfToken(char const* s, _ImmortalTag);
 
+    /// Acquire a token for the given string_view.
+    //
+    // This constructor involves a string hash and a lookup in the global
+    // table, and so should not be done more often than necessary.  When
+    // possible, create a token once and reuse it many times.
+    TF_API explicit TfToken(std::string_view sv);
+    /// \overload
+    // Create a token for \p sv, and make it immortal.  If \p sv exists in the
+    // token table already and is not immortal, make it immortal.  Immortal
+    // tokens are faster to copy than mortal tokens, but they will never expire
+    // and release their memory.
+    TF_API TfToken(std::string_view sv, _ImmortalTag);
+
     /// Find the token for the given string, if one exists.
     //
     // If a token has previous been created for the given string, this
     // will return it.  Otherwise, the empty token will be returned.
-    TF_API static TfToken Find(std::string const& s);
+    TF_API static TfToken Find(std::string_view sv);
 
     /// Return a size_t hash for this token.
     //
@@ -190,6 +204,12 @@ public:
     std::string const& GetString() const {
         _Rep const *rep = _rep.Get();
         return rep ? rep->_str : _GetEmptyString();
+    }
+
+    /// Return a string view of the underlying token
+    std::string_view GetStringView() const {
+        _Rep const *rep = _rep.Get();
+        return rep ? rep->_view : std::string_view{};
     }
 
     /// Swap this token with another.
@@ -351,21 +371,16 @@ private:
             : _setNum(setNum)
             , _compareCode(compareCode)
             , _str(std::move(str))
-            , _cstr(_str.c_str()) {}
+            , _view(std::string_view{_str}) {}
 
-        explicit _Rep(std::string const &str,
+        explicit _Rep(std::string_view str,
                       unsigned setNum,
                       uint64_t compareCode)
             : _Rep(std::string(str), setNum, compareCode) {}
 
-        explicit _Rep(char const *str,
-                      unsigned setNum,
-                      uint64_t compareCode)
-            : _Rep(std::string(str), setNum, compareCode) {}
-
-        // Make sure we reacquire _cstr from _str on copy and assignment
+        // Make sure we reacquire _view from _str on copy and assignment
         // to avoid holding on to a dangling pointer. However, if rhs'
-        // _cstr member doesn't come from its _str, just copy it directly
+        // _view member doesn't come from its _str, just copy it directly
         // over. This is to support lightweight _Rep objects used for 
         // internal lookups.
         _Rep(_Rep const &rhs)
@@ -373,14 +388,14 @@ private:
             , _setNum(rhs._setNum)
             , _compareCode(rhs._compareCode)
             , _str(rhs._str)
-            , _cstr(rhs._str.c_str() == rhs._cstr ? _str.c_str() : rhs._cstr) {}
+            , _view(std::string_view{rhs._str} == rhs._view ? std::string_view{_str} : rhs._view) {}
 
         _Rep &operator=(_Rep const &rhs) {
             _refCount = rhs._refCount.load(std::memory_order_relaxed);
             _setNum = rhs._setNum;
             _compareCode = rhs._compareCode;
             _str = rhs._str;
-            _cstr = (rhs._str.c_str() == rhs._cstr ? _str.c_str() : rhs._cstr);
+            _view = (std::string_view{rhs._str} == rhs._view ? std::string_view{_str} : rhs._view);
             return *this;
         }
 
@@ -400,7 +415,9 @@ private:
         unsigned _setNum;
         uint64_t _compareCode;
         std::string _str;
-        char const *_cstr;
+        // proxies transparent hashing until the token registry uses a set
+        // (like `std::unordered_set` in C++20) that supports it
+        std::string_view _view;
     };
 
     friend struct TfTokenFastArbitraryLessThan;
