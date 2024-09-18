@@ -24,10 +24,10 @@
 
 #include <atomic>
 #include <algorithm>
-#include <cstring>
 #include <new>
 #include <ostream>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -45,24 +45,25 @@ struct Tf_TokenRegistry
     struct _Eq { 
         inline size_t operator()(TfToken::_Rep const &rep1,
                                  TfToken::_Rep const &rep2) const {
-            return (*this)(rep1._cstr, rep2._cstr);
+            return (*this)(rep1._view, rep2._view);
         }
-        inline bool operator()(const char* s1, const char* s2) const {
-            return !strcmp(s1, s2);
+        inline bool operator()(std::string_view s1,
+                               std::string_view s2) const {
+            return s1 == s2;
         }
     };
 
     template <int Mul>
     struct _Hash {
         inline size_t operator()(TfToken::_Rep const &rep) const {
-            return (*this)(rep._cstr);
+            return (*this)(rep._view);
         }
-        inline size_t operator()(char const *s) const {
+        inline size_t operator()(std::string_view sv) const {
             // Matches STL original implementation for now.  Switch to something
             // better?
             unsigned int h = 0;
-            for (; *s; ++s)
-                h = Mul * h + *s;
+            for (const auto c : sv)
+                h = Mul * h + c;
             return h;
         }
     };
@@ -92,27 +93,17 @@ struct Tf_TokenRegistry
         return TfSingleton<Tf_TokenRegistry>::GetInstance();
     }
  
-    inline size_t _GetSetNum(char const *s) const {
+    inline size_t _GetSetNum(std::string_view sv) const {
         _OuterHash h;
-        return h(s) & _SetMask;
+        return h(sv) & _SetMask;
     }
 
-    inline _RepPtrAndBits _GetPtrChar(char const *s, bool makeImmortal) {
-        return _GetPtrImpl(s, makeImmortal);
-    }
-    inline _RepPtrAndBits _GetPtrStr(string const &s, bool makeImmortal) {
-        // Explicitly specify template arg -- if unspecified, it will deduce
-        // string by-value, which we don't want.
-        return _GetPtrImpl<string const &>(s, makeImmortal);
+    inline _RepPtrAndBits _GetPtr(std::string_view sv, bool makeImmortal) {
+        return _GetPtrImpl(sv, makeImmortal);
     }
 
-    inline _RepPtrAndBits _FindPtrChar(char const *s) const {
-        return _FindPtrImpl(s);
-    }
-    inline _RepPtrAndBits _FindPtrStr(string const &s) const {
-        // Explicitly specify template arg -- if unspecified, it will deduce
-        // string by-value, which we don't want.
-        return _FindPtrImpl<string const &>(s);
+    inline _RepPtrAndBits _FindPtr(std::string_view sv) const {
+        return _FindPtrImpl(sv);
     }
 
     void _DumpStats() const {
@@ -139,25 +130,21 @@ struct Tf_TokenRegistry
 
 private:
 
-    inline bool _IsEmpty(char const *s) const { return !s || !s[0]; }
-    inline bool _IsEmpty(string const &s) const { return s.empty(); }
-
-    inline char const *_CStr(char const *s) const { return s; }
-    inline char const *_CStr(string const &s) const { return s.c_str(); }
-
-    static TfToken::_Rep _LookupRep(char const *cstr) {
+    static TfToken::_Rep _LookupRep(std::string_view sv) {
         TfToken::_Rep ret;
-        ret._cstr = cstr;
+        ret._view = sv;
         return ret;
     }
 
-    static inline uint64_t _ComputeCompareCode(char const *p) {
+    static inline uint64_t _ComputeCompareCode(std::string_view sv) {
         uint64_t compCode = 0;
         int nchars = sizeof(compCode);
+        auto it = std::cbegin(sv);
         while (nchars--) {
-            compCode |= static_cast<uint64_t>(*p) << (8*nchars);
-            if (*p) {
-                ++p;
+            const bool atEnd = it == std::cend(sv);
+            compCode |= static_cast<uint64_t>(atEnd ? '\0' : *it) << (8*nchars);
+            if (!atEnd) {
+                ++it;
             }
         }
         return compCode;
@@ -167,19 +154,18 @@ private:
      * Either finds a key that is stringwise-equal to s,
      * or puts a new _Rep into the map for s.
      */
-    template <class Str>
-    inline _RepPtrAndBits _GetPtrImpl(Str s, bool makeImmortal) {
-        if (_IsEmpty(s)) {
+    inline _RepPtrAndBits _GetPtrImpl(std::string_view sv, bool makeImmortal) {
+        if (sv.empty()) {
             return _RepPtrAndBits();
         }
 
-        unsigned setNum = _GetSetNum(_CStr(s));
+        unsigned setNum = _GetSetNum(sv);
         _Set &set = _sets[setNum];
 
         tbb::spin_mutex::scoped_lock lock(set.mutex);
 
         // Insert or lookup an existing.
-        _RepSet::iterator iter = set.reps.find(_LookupRep(_CStr(s)));
+        _RepSet::iterator iter = set.reps.find(_LookupRep(sv));
         if (iter != set.reps.end()) {
             _RepPtr rep = &(*iter);
             bool isCounted = rep->_refCount.load(std::memory_order_relaxed) & 1;
@@ -243,9 +229,9 @@ private:
                 
             // Create the new entry.
             TfAutoMallocTag noname("TfToken");
-            uint64_t compareCode = _ComputeCompareCode(_CStr(s));
+            uint64_t compareCode = _ComputeCompareCode(sv);
             _RepPtr rep = &(*set.reps.insert(
-                                TfToken::_Rep(s, setNum, compareCode)).first);
+                                TfToken::_Rep(sv, setNum, compareCode)).first);
             // 3, because 1 for counted bit plus 2 for one refcount.  We can
             // store relaxed here since our lock on the set's mutex provides
             // synchronization.
@@ -255,18 +241,17 @@ private:
         }
     }
 
-    template <class Str>
-    _RepPtrAndBits _FindPtrImpl(Str s) const {
-        if (_IsEmpty(s)) {
+    _RepPtrAndBits _FindPtrImpl(std::string_view sv) const {
+        if (sv.empty()) {
             return _RepPtrAndBits();
         }
         
-        size_t setNum = _GetSetNum(_CStr(s));
+        size_t setNum = _GetSetNum(sv);
         _Set const &set = _sets[setNum];
 
         tbb::spin_mutex::scoped_lock lock(set.mutex);
 
-        _RepSet::const_iterator iter = set.reps.find(_LookupRep(_CStr(s)));
+        _RepSet::const_iterator iter = set.reps.find(_LookupRep(sv));
         if (iter == set.reps.end()) {
             return _RepPtrAndBits();
         }
@@ -297,35 +282,44 @@ TfToken::_GetEmptyString()
     return empty;
 }
 
-TfToken::TfToken(const string &s)
+TfToken::TfToken(std::string_view sv)
     : _rep(Tf_TokenRegistry::_GetInstance().
-           _GetPtrStr(s, /*makeImmortal*/false))
+           _GetPtr(sv, /*makeImmortal*/false))
+{
+}
+
+TfToken::TfToken(const string &s)
+    : TfToken(std::string_view{s})
 {
 }
 
 TfToken::TfToken(const char *s)
+    : TfToken(s ? std::string_view{s} : std::string_view{})
+{
+}
+
+
+TfToken::TfToken(std::string_view sv, _ImmortalTag)
     : _rep(Tf_TokenRegistry::_GetInstance().
-           _GetPtrChar(s, /*makeImmortal*/false))
+           _GetPtr(sv, /*makeImmortal*/true))
 {
 }
 
 TfToken::TfToken(const string &s, _ImmortalTag)
-    : _rep(Tf_TokenRegistry::_GetInstance().
-           _GetPtrStr(s, /*makeImmortal*/true))
+    : TfToken(std::string_view{s}, _ImmortalTag{})
 {
 }
 
 TfToken::TfToken(const char *s, _ImmortalTag)
-    : _rep(Tf_TokenRegistry::_GetInstance().
-           _GetPtrChar(s, /*makeImmortal*/true))
+    : TfToken(s ? std::string_view{s} : std::string_view{}, _ImmortalTag{})
 {
 }
 
 TfToken
-TfToken::Find(const string& s)
+TfToken::Find(std::string_view sv)
 {
     TfToken t;
-    t._rep = Tf_TokenRegistry::_GetInstance()._FindPtrStr(s);
+    t._rep = Tf_TokenRegistry::_GetInstance()._FindPtr(sv);
     return t;
 }
 

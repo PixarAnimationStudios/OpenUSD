@@ -13,6 +13,11 @@ using namespace PXR_PEGTL_NAMESPACE;
 
 namespace Sdf_PathParser {
 
+template <class Input>
+TfToken GetToken(Input const &in) {
+    return TfToken{in.string_view()};
+}
+
 template <>
 struct Action<ReflexiveRelative> {
     template <class Input>

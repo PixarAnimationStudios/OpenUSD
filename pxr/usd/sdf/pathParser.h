@@ -199,25 +199,6 @@ struct PPContext {
     std::string varName;
 };
 
-template <class Input>
-TfToken GetToken(Input const &in) {
-    constexpr int BufSz = 32;
-    char buf[BufSz];
-    size_t strSize = std::distance(in.begin(), in.end());
-    TfToken tok;
-    if (strSize < BufSz) {
-        // copy & null-terminate.
-        std::copy(in.begin(), in.end(), buf);
-        buf[strSize] = '\0';
-        tok = TfToken(buf);
-    }
-    else {
-        // fall back to string path.
-        tok = TfToken(in.string());
-    }
-    return tok;
-}
-
 template <class Rule>
 struct Action : PEGTL_NS::nothing<Rule> {};
 
