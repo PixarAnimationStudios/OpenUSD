@@ -1,5 +1,3 @@
-#if !defined(BOOST_PP_IS_ITERATING)
-
 //
 // Copyright 2024 Pixar
 // Licensed under the terms set forth in the LICENSE.txt file available at
@@ -22,12 +20,6 @@
 #  include "pxr/external/boost/python/detail/prefix.hpp"
 #  include "pxr/external/boost/python/detail/preprocessor.hpp"
 #  include "pxr/external/boost/python/detail/none.hpp"
-
-#  include <boost/preprocessor/iterate.hpp>
-#  include <boost/preprocessor/facilities/intercept.hpp>
-#  include <boost/preprocessor/repetition/enum_trailing_params.hpp>
-#  include <boost/preprocessor/repetition/enum_trailing_binary_params.hpp>
-#  include <boost/preprocessor/repetition/enum_binary_params.hpp>
 #  include "pxr/external/boost/python/to_python_value.hpp"
 
 // This file declares a series of overloaded invoke(...)  functions,
@@ -68,44 +60,33 @@ struct invoke_tag
 {
 };
 
-#  define BOOST_PP_ITERATION_PARAMS_1                                            \
-        (3, (0, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/detail/invoke.hpp"))
-#  include BOOST_PP_ITERATE()
+template <class RC, class F, class... AC>
+inline PyObject* invoke(invoke_tag_<false,false>, RC const& rc, F& f, AC&... ac)
+{
+    return rc(f( ac()... ));
+}
+
+template <class RC, class F, class... AC>
+inline PyObject* invoke(invoke_tag_<true,false>, RC const&, F& f, AC&... ac)
+{
+    f( ac()... );
+    return none();
+}
+
+template <class RC, class F, class TC, class... AC>
+inline PyObject* invoke(invoke_tag_<false,true>, RC const& rc, F& f, TC& tc, AC&... ac)
+{
+    return rc( (tc().*f)(ac()...) );
+}
+                 
+template <class RC, class F, class TC, class... AC>
+inline PyObject* invoke(invoke_tag_<true,true>, RC const&, F& f, TC& tc, AC&... ac)
+{
+    (tc().*f)(ac()...);
+    return none();
+}
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_INVOKE_HPP
-#else 
-
-# define N BOOST_PP_ITERATION()
-
-template <class RC, class F BOOST_PP_ENUM_TRAILING_PARAMS_Z(1, N, class AC)>
-inline PyObject* invoke(invoke_tag_<false,false>, RC const& rc, F& f BOOST_PP_ENUM_TRAILING_BINARY_PARAMS_Z(1, N, AC, & ac) )
-{
-    return rc(f( BOOST_PP_ENUM_BINARY_PARAMS_Z(1, N, ac, () BOOST_PP_INTERCEPT) ));
-}
-                 
-template <class RC, class F BOOST_PP_ENUM_TRAILING_PARAMS_Z(1, N, class AC)>
-inline PyObject* invoke(invoke_tag_<true,false>, RC const&, F& f BOOST_PP_ENUM_TRAILING_BINARY_PARAMS_Z(1, N, AC, & ac) )
-{
-    f( BOOST_PP_ENUM_BINARY_PARAMS_Z(1, N, ac, () BOOST_PP_INTERCEPT) );
-    return none();
-}
-
-template <class RC, class F, class TC BOOST_PP_ENUM_TRAILING_PARAMS_Z(1, N, class AC)>
-inline PyObject* invoke(invoke_tag_<false,true>, RC const& rc, F& f, TC& tc BOOST_PP_ENUM_TRAILING_BINARY_PARAMS_Z(1, N, AC, & ac) )
-{
-    return rc( (tc().*f)(BOOST_PP_ENUM_BINARY_PARAMS_Z(1, N, ac, () BOOST_PP_INTERCEPT)) );
-}
-                 
-template <class RC, class F, class TC BOOST_PP_ENUM_TRAILING_PARAMS_Z(1, N, class AC)>
-inline PyObject* invoke(invoke_tag_<true,true>, RC const&, F& f, TC& tc BOOST_PP_ENUM_TRAILING_BINARY_PARAMS_Z(1, N, AC, & ac) )
-{
-    (tc().*f)(BOOST_PP_ENUM_BINARY_PARAMS_Z(1, N, ac, () BOOST_PP_INTERCEPT));
-    return none();
-}
-
-# undef N
-
-#endif // BOOST_PP_IS_ITERATING 

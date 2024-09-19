@@ -37,18 +37,10 @@
 # include "pxr/external/boost/python/object/forward.hpp"
 # include "pxr/external/boost/python/object/add_to_namespace.hpp"
 
-# include <boost/preprocessor/iterate.hpp>
-# include <boost/preprocessor/debug/line.hpp>
-
 # include "pxr/external/boost/python/detail/is_xxx.hpp"
 # include "pxr/external/boost/python/detail/string_literal.hpp"
 # include "pxr/external/boost/python/detail/def_helper_fwd.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
-
-// XXX: Workaround for distcc issues with BOOST_PP_ITERATE
-# define PXR_BOOST_PYTHON_SYNOPSIS
-# include "pxr/external/boost/python/object_call.hpp"
-# undef PXR_BOOST_PYTHON_SYNOPSIS
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
@@ -112,8 +104,9 @@ namespace api
       //
       object operator()() const;
 
-# define BOOST_PP_ITERATION_PARAMS_1 (3, (1, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/object_call.hpp"))
-# include BOOST_PP_ITERATE()
+      template <class A0, class... A>
+      typename detail::dependent<object, A0>::type
+      operator()(A0 const& a0, A const&... a) const;
     
       detail::args_proxy operator* () const; 
       object operator()(detail::args_proxy const &args) const; 

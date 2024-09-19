@@ -10,8 +10,6 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //
 ///////////////////////////////////////////////////////////////////////////////
-#if !defined(BOOST_PP_IS_ITERATING)
-
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_DEF_HPP
 #define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_DEF_HPP
 
@@ -26,10 +24,8 @@
 #include "pxr/external/boost/python/detail/type_traits.hpp"
 #include <boost/mpl/front.hpp>
 #include <boost/mpl/size.hpp>
-#include <boost/preprocessor/iterate.hpp>
 #include "pxr/external/boost/python/class_fwd.hpp"
 #include "pxr/external/boost/python/scope.hpp"
-#include <boost/preprocessor/debug/line.hpp>
 #include "pxr/external/boost/python/detail/scope.hpp"
 #include "pxr/external/boost/python/detail/make_keyword_range_fn.hpp"
 #include "pxr/external/boost/python/object/add_to_namespace.hpp"
@@ -133,12 +129,29 @@ namespace detail
   //
   // @group define_stub_function<N> {
   template <int N>
-  struct define_stub_function {};
+  struct define_stub_function {
 
-#define BOOST_PP_ITERATION_PARAMS_1                                             \
-    (3, (0, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/detail/defaults_def.hpp"))
+      template <class StubsT, class CallPolicies, class NameSpaceT>
+      static void define(
+          char const* name
+          , StubsT const&
+          , keyword_range const& kw
+          , CallPolicies const& policies
+          , NameSpaceT& name_space
+          , char const* doc)
+      {
+          using FuncT = typename StubsT::template func<N>;
 
-#include BOOST_PP_ITERATE()
+          detail::name_space_def(
+              name_space
+              , name
+              , &FuncT::theFn
+              , kw
+              , policies
+              , doc
+              , &name_space);
+      }
+  };
   
   // }
   
@@ -272,31 +285,3 @@ namespace detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_DEF_HPP
-
-#else // defined(BOOST_PP_IS_ITERATING)
-// PP vertical iteration code
-
-
-template <>
-struct define_stub_function<BOOST_PP_ITERATION()> {
-    template <class StubsT, class CallPolicies, class NameSpaceT>
-    static void define(
-        char const* name
-        , StubsT const&
-        , keyword_range const& kw
-        , CallPolicies const& policies
-        , NameSpaceT& name_space
-        , char const* doc)
-    {
-        detail::name_space_def(
-            name_space
-            , name
-            , &StubsT::BOOST_PP_CAT(func_, BOOST_PP_ITERATION())
-            , kw
-            , policies
-            , doc
-            , &name_space);
-    }
-};
-
-#endif // !defined(BOOST_PP_IS_ITERATING)

@@ -62,6 +62,15 @@ object object_operators<U>::operator()() const
     return call<object>(f.ptr());
 }
 
+template <class U>
+template <class A0, class... A>
+typename detail::dependent<object, A0>::type
+object_operators<U>::operator()(A0 const& a0, A const&... a) const
+{
+    typedef typename detail::dependent<object, A0>::type obj;
+    U const& self = *static_cast<U const*>(this);
+    return call<obj>(get_managed_object(self, tag), a0, a...);
+}
 
 template <class U>
 inline

@@ -21,22 +21,9 @@
 #else
 
 #include "pxr/external/boost/python/detail/preprocessor.hpp"
-#include <boost/preprocessor/repeat.hpp>
-#include <boost/preprocessor/repeat_from_to.hpp>
-#include <boost/preprocessor/enum.hpp>
-#include <boost/preprocessor/enum_params.hpp>
-#include <boost/preprocessor/repetition/enum_binary_params.hpp>
-#include <boost/preprocessor/tuple.hpp>
-#include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/arithmetic/sub.hpp>
-#include <boost/preprocessor/stringize.hpp>
-#include <boost/preprocessor/inc.hpp>
-#include <boost/preprocessor/empty.hpp>
-#include <boost/preprocessor/comma_if.hpp>
 #include <boost/config.hpp>
-#include <boost/mpl/begin_end.hpp>
-#include <boost/mpl/next.hpp>
-#include <boost/mpl/deref.hpp>
+#include <boost/mpl/at.hpp>
+#include <boost/mpl/size.hpp>
 #include <cstddef>
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
@@ -127,92 +114,92 @@ namespace detail
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 
-#define PXR_BOOST_PYTHON_TYPEDEF_GEN(z, index, data)                                \
-    typedef typename ::boost::mpl::next<BOOST_PP_CAT(iter, index)>::type        \
-        BOOST_PP_CAT(iter, BOOST_PP_INC(index));                                \
-    typedef typename ::boost::mpl::deref<BOOST_PP_CAT(iter, index)>::type       \
-        BOOST_PP_CAT(T, index);
-
-#define PXR_BOOST_PYTHON_FUNC_WRAPPER_GEN(z, index, data)                   \
-    static RT BOOST_PP_CAT(func_,                                       \
-        BOOST_PP_SUB_D(1, index, BOOST_PP_TUPLE_ELEM(3, 1, data))) (    \
-        BOOST_PP_ENUM_BINARY_PARAMS_Z(                                  \
-            1, index, T, arg))                                          \
-    {                                                                   \
-        BOOST_PP_TUPLE_ELEM(3, 2, data)                                 \
-        BOOST_PP_TUPLE_ELEM(3, 0, data)(                                \
-            BOOST_PP_ENUM_PARAMS(                                       \
-                index,                                                  \
-                arg));                                                  \
-    }
-
 #define PXR_BOOST_PYTHON_GEN_FUNCTION(fname, fstubs_name, n_args, n_dflts, ret)     \
-    struct fstubs_name                                                          \
-    {                                                                           \
-        BOOST_STATIC_CONSTANT(int, n_funcs = BOOST_PP_INC(n_dflts));            \
-        BOOST_STATIC_CONSTANT(int, max_args = n_funcs);                         \
-                                                                                \
-        template <typename SigT>                                                \
-        struct gen                                                              \
-        {                                                                       \
-            typedef typename ::boost::mpl::begin<SigT>::type rt_iter;           \
-            typedef typename ::boost::mpl::deref<rt_iter>::type RT;             \
-            typedef typename ::boost::mpl::next<rt_iter>::type iter0;           \
-                                                                                \
-            BOOST_PP_REPEAT_2ND(                                                \
-                n_args,                                                         \
-                PXR_BOOST_PYTHON_TYPEDEF_GEN,                                       \
-                0)                                                              \
-                                                                                \
-            BOOST_PP_REPEAT_FROM_TO_2(                                          \
-                BOOST_PP_SUB_D(1, n_args, n_dflts),                             \
-                BOOST_PP_INC(n_args),                                           \
-                PXR_BOOST_PYTHON_FUNC_WRAPPER_GEN,                                  \
-                (fname, BOOST_PP_SUB_D(1, n_args, n_dflts), ret))               \
-        };                                                                      \
-    };                                                                          \
+struct fstubs_name                                                      \
+{                                                                       \
+    static constexpr int n_funcs = n_dflts + 1;                         \
+    static constexpr int n_req = n_args - n_dflts;                      \
+    static constexpr int max_args = n_funcs;                            \
+                                                                        \
+    template <typename SigT>                                            \
+    struct gen                                                          \
+    {                                                                   \
+        template <class Idxs> struct get_args;                          \
+        template <size_t I0, size_t... I>                               \
+        struct get_args<std::index_sequence<I0, I...>>                  \
+        {                                                               \
+            using type = std::tuple<                                    \
+                typename ::boost::mpl::at_c<SigT, I>::type...           \
+            >;                                                          \
+        };                                                              \
+                                                                        \
+        using RetT = typename ::boost::mpl::at_c<SigT, 0>::type;        \
+        using ArgT = typename get_args<                                 \
+            std::make_index_sequence<::boost::mpl::size<SigT>::value>   \
+        >::type;                                                        \
+                                                                        \
+        template <class Idxs> struct func_with_arity;                   \
+        template <size_t... I>                                          \
+        struct func_with_arity<std::index_sequence<I...>>               \
+        {                                                               \
+            /* XXX: Infinite recursion if name of this function and */  \
+            /* fname are the same */                                    \
+            static RetT theFn(                                          \
+                typename std::tuple_element<I, ArgT>::type... t)        \
+            { return fname(t...); }                                     \
+        };                                                              \
+                                                                        \
+        template <size_t N>                                             \
+        struct func :                                                   \
+            func_with_arity<std::make_index_sequence<N+n_req>>          \
+        {                                                               \
+        };                                                              \
+    };                                                                  \
+};
 
 ///////////////////////////////////////////////////////////////////////////////
-#define PXR_BOOST_PYTHON_MEM_FUNC_WRAPPER_GEN(z, index, data)                       \
-    static RT BOOST_PP_CAT(func_,                                               \
-        BOOST_PP_SUB_D(1, index, BOOST_PP_TUPLE_ELEM(3, 1, data))) (            \
-            ClassT obj BOOST_PP_COMMA_IF(index)                                 \
-            BOOST_PP_ENUM_BINARY_PARAMS_Z(1, index, T, arg)                     \
-        )                                                                       \
-    {                                                                           \
-        BOOST_PP_TUPLE_ELEM(3, 2, data) obj.BOOST_PP_TUPLE_ELEM(3, 0, data)(    \
-            BOOST_PP_ENUM_PARAMS(index, arg)                                    \
-        );                                                                      \
-    }
 
 #define PXR_BOOST_PYTHON_GEN_MEM_FUNCTION(fname, fstubs_name, n_args, n_dflts, ret) \
-    struct fstubs_name                                                          \
-    {                                                                           \
-        BOOST_STATIC_CONSTANT(int, n_funcs = BOOST_PP_INC(n_dflts));            \
-        BOOST_STATIC_CONSTANT(int, max_args = n_funcs + 1);                     \
-                                                                                \
-        template <typename SigT>                                                \
-        struct gen                                                              \
-        {                                                                       \
-            typedef typename ::boost::mpl::begin<SigT>::type rt_iter;           \
-            typedef typename ::boost::mpl::deref<rt_iter>::type RT;             \
-                                                                                \
-            typedef typename ::boost::mpl::next<rt_iter>::type class_iter;      \
-            typedef typename ::boost::mpl::deref<class_iter>::type ClassT;      \
-            typedef typename ::boost::mpl::next<class_iter>::type iter0;        \
-                                                                                \
-            BOOST_PP_REPEAT_2ND(                                                \
-                n_args,                                                         \
-                PXR_BOOST_PYTHON_TYPEDEF_GEN,                                       \
-                0)                                                              \
-                                                                                \
-            BOOST_PP_REPEAT_FROM_TO_2(                                          \
-                BOOST_PP_SUB_D(1, n_args, n_dflts),                             \
-                BOOST_PP_INC(n_args),                                           \
-                PXR_BOOST_PYTHON_MEM_FUNC_WRAPPER_GEN,                              \
-                (fname, BOOST_PP_SUB_D(1, n_args, n_dflts), ret))               \
-        };                                                                      \
-    };
+struct fstubs_name                                                      \
+{                                                                       \
+    static constexpr int n_funcs = n_dflts + 1;                         \
+    static constexpr int n_req = n_args - n_dflts;                      \
+    static constexpr int max_args = n_funcs + 1;                        \
+                                                                        \
+    template <typename SigT>                                            \
+    struct gen                                                          \
+    {                                                                   \
+        template <class Idxs> struct get_args;                          \
+        template <size_t I0, size_t I1, size_t... I>                    \
+        struct get_args<std::index_sequence<I0, I1, I...>>              \
+        {                                                               \
+            using type = std::tuple<                                    \
+                typename ::boost::mpl::at_c<SigT, I>::type...           \
+            >;                                                          \
+        };                                                              \
+                                                                        \
+        using RetT = typename ::boost::mpl::at_c<SigT, 0>::type;        \
+        using ClassT = typename ::boost::mpl::at_c<SigT, 1>::type;      \
+        using ArgT = typename get_args<                                 \
+            std::make_index_sequence<::boost::mpl::size<SigT>::value>   \
+        >::type;                                                        \
+                                                                        \
+        template <class Idxs> struct func_with_arity;                   \
+        template <size_t... I>                                          \
+        struct func_with_arity<std::index_sequence<I...>>               \
+        {                                                               \
+            static RetT theFn(                                          \
+                ClassT obj, typename std::tuple_element<I, ArgT>::type... t) \
+            { return obj.fname(t...); }                                 \
+        };                                                              \
+                                                                        \
+        template <size_t N>                                             \
+        struct func :                                                   \
+            func_with_arity<std::make_index_sequence<N+n_req>>          \
+        {                                                               \
+        };                                                              \
+    };                                                                  \
+};
 
 #define PXR_BOOST_PYTHON_OVERLOAD_CONSTRUCTORS(fstubs_name, n_args, n_dflts)                    \
     fstubs_name(char const* doc = 0)                                                        \
@@ -274,90 +261,20 @@ namespace detail
 //          1. PXR_BOOST_PYTHON_FUNCTION_OVERLOADS for free functions
 //          2. PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS for member functions.
 //
-//      For instance, given a function:
-//
-//      int
-//      foo(int a, char b = 1, unsigned c = 2, double d = 3)
-//      {
-//          return a + b + c + int(d);
-//      }
-//
-//      The macro invocation:
-//
-//          PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(foo_stubs, foo, 1, 4)
-//
-//      Generates this code:
-//
-//      struct foo_stubsNonVoid
-//      {
-//          static const int n_funcs = 4;
-//          static const int max_args = n_funcs;
-//
-//          template <typename SigT>
-//          struct gen
-//          {
-//              typedef typename ::boost::mpl::begin<SigT>::type    rt_iter;
-//              typedef typename rt_iter::type                      RT;
-//              typedef typename rt_iter::next                      iter0;
-//              typedef typename iter0::type                        T0;
-//              typedef typename iter0::next                        iter1;
-//              typedef typename iter1::type                        T1;
-//              typedef typename iter1::next                        iter2;
-//              typedef typename iter2::type                        T2;
-//              typedef typename iter2::next                        iter3;
-//              typedef typename iter3::type                        T3;
-//              typedef typename iter3::next                        iter4;
-//
-//              static RT func_0(T0 arg0)
-//              { return foo(arg0); }
-//
-//              static RT func_1(T0 arg0, T1 arg1)
-//              { return foo(arg0, arg1); }
-//
-//              static RT func_2(T0 arg0, T1 arg1, T2 arg2)
-//              { return foo(arg0, arg1, arg2); }
-//
-//              static RT func_3(T0 arg0, T1 arg1, T2 arg2, T3 arg3)
-//              { return foo(arg0, arg1, arg2, arg3); }
-//          };
-//      };
-//
-//      struct foo_overloads
-//          : public PXR_BOOST_NAMESPACE::python::detail::overloads_common<foo_overloads>
-//      {
-//          typedef foo_overloadsNonVoid    non_void_return_type;
-//          typedef foo_overloadsNonVoid    void_return_type;
-//
-//          foo_overloads(char const* doc = 0)
-//             : PXR_BOOST_NAMESPACE::python::detail::overloads_common<foo_overloads>(doc) {}
-//      };
-//
-//      The typedefs non_void_return_type and void_return_type are
-//      used to handle compilers that do not support void returns. The
-//      example above typedefs non_void_return_type and
-//      void_return_type to foo_overloadsNonVoid. On compilers that do
-//      not support void returns, there are two versions:
-//      foo_overloadsNonVoid and foo_overloadsVoid.  The "Void"
-//      version is almost identical to the "NonVoid" version except
-//      for the return type (void) and the lack of the return keyword.
-//
-//      See the overloads_common above for a description of the
-//      foo_overloads' base class.
-//
 ///////////////////////////////////////////////////////////////////////////////
 #define PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(generator_name, fname, min_args, max_args)          \
     PXR_BOOST_PYTHON_GEN_FUNCTION_STUB(                                                         \
         fname,                                                                              \
         generator_name,                                                                     \
         max_args,                                                                           \
-        BOOST_PP_SUB_D(1, max_args, min_args))
+        (max_args - min_args))
 
 #define PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(generator_name, fname, min_args, max_args)   \
     PXR_BOOST_PYTHON_GEN_MEM_FUNCTION_STUB(                                                     \
         fname,                                                                              \
         generator_name,                                                                     \
         max_args,                                                                           \
-        BOOST_PP_SUB_D(1, max_args, min_args))
+        (max_args - min_args))
 
 // deprecated macro names (to be removed)
 #define PXR_BOOST_PYTHON_FUNCTION_GENERATOR PXR_BOOST_PYTHON_FUNCTION_OVERLOADS

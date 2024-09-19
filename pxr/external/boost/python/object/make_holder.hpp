@@ -1,5 +1,3 @@
-#if !defined(BOOST_PP_IS_ITERATING)
-
 //
 // Copyright 2024 Pixar
 // Licensed under the terms set forth in the LICENSE.txt file available at
@@ -31,72 +29,28 @@
 #  include "pxr/external/boost/python/object/forward.hpp"
 #  include "pxr/external/boost/python/detail/preprocessor.hpp"
 
-#  include <boost/mpl/next.hpp>
-#  include <boost/mpl/begin_end.hpp>
-#  include <boost/mpl/deref.hpp>
-
-#  include <boost/preprocessor/iterate.hpp>
-#  include <boost/preprocessor/iteration/local.hpp>
-#  include <boost/preprocessor/repeat.hpp>
-#  include <boost/preprocessor/debug/line.hpp>
-#  include <boost/preprocessor/repetition/enum_trailing_binary_params.hpp>
+#  include <boost/mpl/at.hpp>
 
 #  include <cstddef>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
 
-template <int nargs> struct make_holder;
+template <class Idxs>
+struct make_holder_impl;
 
-#  define PXR_BOOST_PYTHON_DO_FORWARD_ARG(z, index, _) , f##index(a##index)
-
-// specializations...
-#  define BOOST_PP_ITERATION_PARAMS_1 (3, (0, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/object/make_holder.hpp"))
-#  include BOOST_PP_ITERATE()
-
-#  undef PXR_BOOST_PYTHON_DO_FORWARD_ARG
-
-}}} // namespace PXR_BOOST_NAMESPACE::python::objects
-
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
-# endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_HOLDER_HPP
-
-// For gcc 4.4 compatability, we must include the
-// BOOST_PP_ITERATION_DEPTH test inside an #else clause.
-#else // BOOST_PP_IS_ITERATING
-#if BOOST_PP_ITERATION_DEPTH() == 1
-#  line BOOST_PP_LINE(__LINE__, make_holder.hpp)
-
-# define N BOOST_PP_ITERATION()
-
-template <>
-struct make_holder<N>
+template <size_t... N>
+struct make_holder_impl<std::index_sequence<N...>>
 {
     template <class Holder, class ArgList>
     struct apply
     {
-# if N
-        // Unrolled iteration through each argument type in ArgList,
-        // choosing the type that will be forwarded on to the holder's
-        // templated constructor.
-        typedef typename mpl::begin<ArgList>::type iter0;
-        
-#  define BOOST_PP_LOCAL_MACRO(n)               \
-    typedef typename mpl::deref<iter##n>::type t##n;        \
-    typedef typename forward<t##n>::type f##n;  \
-    typedef typename mpl::next<iter##n>::type   \
-        BOOST_PP_CAT(iter,BOOST_PP_INC(n)); // Next iterator type
-        
-#  define BOOST_PP_LOCAL_LIMITS (0, N-1)
-#  include BOOST_PP_LOCAL_ITERATE()
-# endif 
-        
         static void execute(
 #if !defined( PXR_BOOST_PYTHON_NO_PY_SIGNATURES) && defined( PXR_BOOST_PYTHON_PY_SIGNATURES_PROPER_INIT_SELF_TYPE)
             PXR_BOOST_NAMESPACE::python::detail::python_class<BOOST_DEDUCED_TYPENAME Holder::value_type> *p
 #else
             PyObject *p
 #endif
-            BOOST_PP_ENUM_TRAILING_BINARY_PARAMS_Z(1, N, t, a))
+            , typename mpl::at_c<ArgList, N>::type... a)
         {
             typedef instance<Holder> instance_t;
 
@@ -104,7 +58,7 @@ struct make_holder<N>
                                             PXR_BOOST_NAMESPACE::python::detail::alignment_of<Holder>::value);
             try {
                 (new (memory) Holder(
-                    p BOOST_PP_REPEAT_1ST(N, PXR_BOOST_PYTHON_DO_FORWARD_ARG, nil)))->install(p);
+                    p, typename forward<decltype(a)>::type(a)...))->install(p);
             }
             catch(...) {
                 Holder::deallocate(p, memory);
@@ -114,7 +68,10 @@ struct make_holder<N>
     };
 };
 
-# undef N
+template <int N>
+using make_holder = make_holder_impl<std::make_index_sequence<N>>;
 
-#endif // BOOST_PP_ITERATION_DEPTH()
-#endif
+}}} // namespace PXR_BOOST_NAMESPACE::python::objects
+
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+# endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_MAKE_HOLDER_HPP

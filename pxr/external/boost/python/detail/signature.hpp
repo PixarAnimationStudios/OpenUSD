@@ -1,5 +1,3 @@
-#if !defined(BOOST_PP_IS_ITERATING)
-
 //
 // Copyright 2024 Pixar
 // Licensed under the terms set forth in the LICENSE.txt file available at
@@ -26,11 +24,10 @@
 #  include "pxr/external/boost/python/detail/indirect_traits.hpp"
 #  include "pxr/external/boost/python/converter/pytype_function.hpp"
 
-#  include <boost/preprocessor/iterate.hpp>
-#  include <boost/preprocessor/iteration/local.hpp>
-
 #  include <boost/mpl/at.hpp>
 #  include <boost/mpl/size.hpp>
+
+#  include <utility>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
@@ -47,11 +44,7 @@ struct py_func_sig_info
     signature_element const *ret;
 };
 
-template <unsigned> struct signature_arity;
-
-#  define BOOST_PP_ITERATION_PARAMS_1                                            \
-        (3, (0, PXR_BOOST_PYTHON_MAX_ARITY + 1, "pxr/external/boost/python/detail/signature.hpp"))
-#  include BOOST_PP_ITERATE()
+template <class Idxs> struct signature_arity;
 
 // A metafunction returning the base class used for
 //
@@ -61,7 +54,8 @@ template <class Sig>
 struct signature_base_select
 {
     enum { arity = mpl::size<Sig>::value - 1 };
-    typedef typename signature_arity<arity>::template impl<Sig> type;
+    typedef typename signature_arity<
+        std::make_index_sequence<arity+1>>::template impl<Sig> type;
 };
 
 template <class Sig>
@@ -70,43 +64,29 @@ struct signature
 {
 };
 
-}}} // namespace PXR_BOOST_NAMESPACE::python::detail
-
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
-# endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SIGNATURE_HPP
-
-#else
-
-# define N BOOST_PP_ITERATION()
-
-template <>
-struct signature_arity<N>
+template <size_t... N>
+struct signature_arity<std::index_sequence<N...>>
 {
     template <class Sig>
     struct impl
     {
         static signature_element const* elements()
         {
-            static signature_element const result[N+2] = {
+            static signature_element const result[sizeof...(N)+1] = {
                 
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
-# define BOOST_PP_LOCAL_MACRO(i)                                                            \
-                {                                                                           \
-                  type_id<BOOST_DEDUCED_TYPENAME mpl::at_c<Sig,i>::type>().name()           \
-                  , &converter::expected_pytype_for_arg<BOOST_DEDUCED_TYPENAME mpl::at_c<Sig,i>::type>::get_pytype   \
-                  , indirect_traits::is_reference_to_non_const<BOOST_DEDUCED_TYPENAME mpl::at_c<Sig,i>::type>::value \
-                },
+                {
+                  type_id<BOOST_DEDUCED_TYPENAME mpl::at_c<Sig,N>::type>().name()
+                  , &converter::expected_pytype_for_arg<BOOST_DEDUCED_TYPENAME mpl::at_c<Sig,N>::type>::get_pytype
+                  , indirect_traits::is_reference_to_non_const<BOOST_DEDUCED_TYPENAME mpl::at_c<Sig,N>::type>::value
+                }...,
 #else
-# define BOOST_PP_LOCAL_MACRO(i)                                                            \
-                {                                                                           \
-                  type_id<BOOST_DEDUCED_TYPENAME mpl::at_c<Sig,i>::type>().name()           \
-                  , 0 \
-                  , indirect_traits::is_reference_to_non_const<BOOST_DEDUCED_TYPENAME mpl::at_c<Sig,i>::type>::value \
+                {
+                  type_id<BOOST_DEDUCED_TYPENAME mpl::at_c<Sig,N>::type>().name()
+                  , 0
+                  , indirect_traits::is_reference_to_non_const<BOOST_DEDUCED_TYPENAME mpl::at_c<Sig,N>::type>::value
                 },
 #endif
-                
-# define BOOST_PP_LOCAL_LIMITS (0, N)
-# include BOOST_PP_LOCAL_ITERATE()
                 {0,0,0}
             };
             return result;
@@ -114,6 +94,7 @@ struct signature_arity<N>
     };
 };
 
-#endif // BOOST_PP_IS_ITERATING 
+}}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-
+#endif // PXR_USE_INTERNAL_BOOST_PYTHON
+# endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SIGNATURE_HPP
