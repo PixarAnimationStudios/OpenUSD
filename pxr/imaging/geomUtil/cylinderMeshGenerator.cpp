@@ -132,18 +132,20 @@ GeomUtilCylinderMeshGenerator::_GenerateNormalsImpl(
 
     // Determine the radius scalar and latitude for the normals
     // that are perpendicular to the sides of the cylinder.
-    ScalarType latAngle;
+    ScalarType radScale, latitude;
     if (height != 0) {
+        // Calculate the following directly, without using trig functions:
+        // radScale = cos(atan(slope)) =   1.0 / sqrt(1.0 + slope^2)
+        // latitude = sin(atan(slope)) = slope / sqrt(1.0 + slope^2)
         const ScalarType slope = (bottomRadius - topRadius) / height;
-        latAngle = atan(slope);
+        radScale = 1.0 / GfSqrt(1.0 + GfSqr(slope));
+        latitude = slope * radScale;
     }
     else {
         // Degenerate cylinder, just use something sensible.
-        latAngle = (bottomRadius >= topRadius) ? 0.5 * M_PI : -0.5 * M_PI;
+        radScale = 0.0;
+        latitude = (bottomRadius >= topRadius ? 1.0 : -1.0);
     }
-
-    const ScalarType radScale = cos(latAngle);
-    const ScalarType latitude = sin(latAngle);
 
     constexpr PointType baseNormal(0.0, 0.0, -1.0);
     constexpr PointType topNormal(0.0, 0.0, 1.0);

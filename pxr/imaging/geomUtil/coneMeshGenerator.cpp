@@ -132,18 +132,20 @@ GeomUtilConeMeshGenerator::_GenerateNormalsImpl(
 
     // Determine the radius scalar and latitude for the normals
     // that are perpendicular to the sides of the cone.
-    ScalarType latAngle;
+    ScalarType radScale, latitude;
     if (height != 0) {
+        // Calculate the following directly, without using trig functions:
+        // radScale = cos(atan(slope)) =   1.0 / sqrt(1.0 + slope^2)
+        // latitude = sin(atan(slope)) = slope / sqrt(1.0 + slope^2)
         const ScalarType slope = radius / height;
-        latAngle = atan(slope);
+        radScale = 1.0 / GfSqrt(1.0 + GfSqr(slope));
+        latitude = slope * radScale;
     }
     else {
         // Degenerate cone, just use something sensible.
-        latAngle = 0.5 * M_PI;
+        radScale = 0.0;
+        latitude = 1.0;
     }
-
-    const ScalarType radScale = cos(latAngle);
-    const ScalarType latitude = sin(latAngle);
 
     constexpr PointType baseNormal(0.0, 0.0, -1.0);
 
