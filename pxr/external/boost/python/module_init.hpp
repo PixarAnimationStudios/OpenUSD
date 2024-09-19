@@ -18,8 +18,6 @@
 #else
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
-# include <boost/preprocessor/cat.hpp>
-# include <boost/preprocessor/stringize.hpp>
 
 # ifndef PXR_BOOST_PYTHON_MODULE_INIT
 
@@ -37,10 +35,15 @@ PXR_BOOST_PYTHON_DECL PyObject* init_module(char const* name, void(*)());
 
 }}}
 
+#define PXR_BOOST_PYTHON_PP_CAT_IMPL(x, y) x ## y
+#define PXR_BOOST_PYTHON_PP_CAT(x, y) PXR_BOOST_PYTHON_PP_CAT_IMPL(x, y)
+#define PXR_BOOST_PYTHON_PP_STRINGIZE_IMPL(x) #x
+#define PXR_BOOST_PYTHON_PP_STRINGIZE(x) PXR_BOOST_PYTHON_PP_STRINGIZE_IMPL(x)
+
 #  if PY_VERSION_HEX >= 0x03000000
 
 #   define _PXR_BOOST_PYTHON_MODULE_INIT(name) \
-  PyObject* BOOST_PP_CAT(PyInit_, name)()  \
+  PyObject* PXR_BOOST_PYTHON_PP_CAT(PyInit_, name)()  \
   { \
     static PyModuleDef_Base initial_m_base = { \
         PyObject_HEAD_INIT(NULL) \
@@ -51,7 +54,7 @@ PXR_BOOST_PYTHON_DECL PyObject* init_module(char const* name, void(*)());
  \
     static struct PyModuleDef moduledef = { \
         initial_m_base, \
-        BOOST_PP_STRINGIZE(name), \
+        PXR_BOOST_PYTHON_PP_STRINGIZE(name), \
         0, /* m_doc */ \
         -1, /* m_size */ \
         initial_methods, \
@@ -62,24 +65,24 @@ PXR_BOOST_PYTHON_DECL PyObject* init_module(char const* name, void(*)());
     }; \
  \
     return PXR_BOOST_NAMESPACE::python::detail::init_module( \
-        moduledef, BOOST_PP_CAT(init_module_, name) ); \
+        moduledef, PXR_BOOST_PYTHON_PP_CAT(init_module_, name) ); \
   } \
-  void BOOST_PP_CAT(init_module_, name)()
+  void PXR_BOOST_PYTHON_PP_CAT(init_module_, name)()
 
 #  else
 
 #   define _PXR_BOOST_PYTHON_MODULE_INIT(name)              \
-  void BOOST_PP_CAT(init,name)()                        \
+  void PXR_BOOST_PYTHON_PP_CAT(init,name)()                        \
 {                                                       \
     PXR_BOOST_NAMESPACE::python::detail::init_module(                 \
-        BOOST_PP_STRINGIZE(name),&BOOST_PP_CAT(init_module_,name)); \
+        PXR_BOOST_PYTHON_PP_STRINGIZE(name),&PXR_BOOST_PYTHON_PP_CAT(init_module_,name)); \
 }                                                       \
-  void BOOST_PP_CAT(init_module_,name)()
+  void PXR_BOOST_PYTHON_PP_CAT(init_module_,name)()
 
 #  endif
 
 #  define PXR_BOOST_PYTHON_MODULE_INIT(name)                       \
-  void BOOST_PP_CAT(init_module_,name)();                      \
+  void PXR_BOOST_PYTHON_PP_CAT(init_module_,name)();                      \
 extern "C" BOOST_SYMBOL_EXPORT _PXR_BOOST_PYTHON_MODULE_INIT(name)
 
 # endif
