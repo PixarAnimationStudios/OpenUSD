@@ -40,6 +40,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 namespace { // begin anonymous namespace
 
+using TfTokenSet = std::unordered_set<TfToken, TfToken::HashFunctor>;
 using TfTokenMap = std::unordered_map<TfToken, TfToken, TfToken::HashFunctor>;
 using NestedTfTokenMap = 
     std::unordered_map<TfToken, TfTokenMap, TfToken::HashFunctor>;
@@ -122,42 +123,117 @@ public:
     // HdContainerDataSource overrides
     TfTokenVector GetNames() override
     {
-        return _parametersDsContainer->GetNames();
+        // Return all parameter names and material override names, since
+        // it's possible that the specific parameter name does not exist yet.
+        TfTokenVector names = _parametersDsContainer->GetNames();
+
+        const TfTokenSet overrideNames = _GetOverrideNames();
+
+        for (const TfToken& overrideName : overrideNames) {
+            if (std::find(names.begin(), names.end(), overrideName) 
+                == names.end()) 
+            {
+                names.emplace_back(overrideName);
+            }   
+        }
+
+        return names;
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
     {
+        // Don't return early if we don't have a ds for 'name' yet, because
+        // it's possible there was no value authored for this parameter so it
+        // doesn't have a ds, BUT we can still author a material override for
+        // this parameter, and then it will need to have a ds.
         const HdDataSourceBaseHandle result = _parametersDsContainer->Get(name);
 
-        const HdContainerDataSourceHandle resultContainer =
-            HdContainerDataSource::Cast(result);
-        if (!resultContainer) {
-            return result;
-        }
+        // Get the override ds if there is one.  If there is no override, this
+        // gets an empty container.
+        const HdContainerDataSourceHandle overrideContainerDs = 
+            _GetOverrideContainerDataSource(name);
 
-        // Any member of 'parameters' should be a MaterialNodeParameter
-        const HdMaterialNodeParameterSchema matNodeParamSchema(resultContainer);
-        if (!matNodeParamSchema) {
-            return result;
-        }
+        // Overlay the overridingDs onto the originalDs. If there is no
+        // originalDs, overlays on a default empty container.
+        return HdOverlayContainerDataSource::OverlayedContainerDataSources(
+            overrideContainerDs,
+            HdContainerDataSource::Cast(result)); 
+    }
 
-        // 1. Look up the MaterialNodeParameter from our 
-        // reverseInterfaceMappingsPtr to see if it has a publicUI name
-        // ie. _nodePath -> (name -> publicUIName)
+private:
+    // If the current _nodePath has any publicUI overrides, return the names
+    // of the material network parameters that have publicUI overrides.
+    TfTokenSet 
+    _GetOverrideNames()
+    {
+        TfTokenSet overrideNames;
+
+        // 1. Check if our nodePath has interface mappings. If there are
+        // no interface mappings, then there are no override names to
+        // consider.
         if (!_reverseInterfaceMappingsPtr) {
-            return result;
+            return overrideNames;
         }
 
         const auto searchParamsMap = 
             _reverseInterfaceMappingsPtr->find(_nodePath);
         if (searchParamsMap == _reverseInterfaceMappingsPtr->end()) {
-            return result;
+            return overrideNames;
+        }
+
+        // 2. From the MaterialOverrides, check if we have an overridingDs
+        // for the publicUI name
+        const HdMaterialOverrideSchema matOverSchema(
+            _materialOverrideDsContainer);
+        if (!matOverSchema) {
+            return overrideNames;
+        }
+
+        HdMaterialNodeParameterContainerSchema 
+            interfaceValuesContainerSchema = 
+            matOverSchema.GetInterfaceValues();
+        if (!interfaceValuesContainerSchema) {
+            return overrideNames;
+        }
+
+        const TfTokenMap& paramsMap = searchParamsMap->second;
+        for (const auto& [name, publicUIName] : paramsMap) {
+            HdMaterialNodeParameterSchema overrideNodeParameterSchema =
+                interfaceValuesContainerSchema.Get(publicUIName);
+            if (overrideNodeParameterSchema) {
+                // If we found an override , then we should add its name
+                // to GetNames()
+                overrideNames.emplace(name);
+            }
+        }
+        return overrideNames;
+    }
+
+    // Given 'name' of a material network parameter, return the overriding
+    // data source (ie. the publicUI data source) if there is one specified.
+    HdContainerDataSourceHandle
+    _GetOverrideContainerDataSource(const TfToken& name)
+    {
+        // Not using 'static' so we benefit from return value optimization
+        const HdContainerDataSourceHandle emptyOverrideDs;
+        
+        // 1. Look up the MaterialNodeParameter from our 
+        // reverseInterfaceMappingsPtr to see if it has a publicUI name
+        // ie. nodePath -> (name -> publicUIName)
+        if (!_reverseInterfaceMappingsPtr) {
+            return emptyOverrideDs;
+        }
+
+        const auto searchParamsMap = 
+            _reverseInterfaceMappingsPtr->find(_nodePath);
+        if (searchParamsMap == _reverseInterfaceMappingsPtr->end()) {
+            return emptyOverrideDs;
         }
 
         const TfTokenMap& paramsMap = searchParamsMap->second;
         const auto search = paramsMap.find(name);
         if (search == paramsMap.end()) {
-            return result;
+            return emptyOverrideDs;
         }
 
         const TfToken& publicUIName = search->second;
@@ -167,25 +243,23 @@ public:
         const HdMaterialOverrideSchema matOverSchema(
             _materialOverrideDsContainer);
         if (!matOverSchema) {
-            return result;
+            return emptyOverrideDs;
         }
 
         HdMaterialNodeParameterContainerSchema 
-            interfaceValuesContainerSchema = matOverSchema.GetInterfaceValues();
+            interfaceValuesContainerSchema = 
+                matOverSchema.GetInterfaceValues();
         if (!interfaceValuesContainerSchema) {
-            return result;
+            return emptyOverrideDs;
         }
 
         HdMaterialNodeParameterSchema overrideNodeParameterSchema =
             interfaceValuesContainerSchema.Get(publicUIName);
         if (!overrideNodeParameterSchema) {
-            return result;
+            return emptyOverrideDs;
         }
 
-        // 3. Overlay the overridingDs onto the originalDs
-        return HdOverlayContainerDataSource::New(
-            overrideNodeParameterSchema.GetContainer(),
-            resultContainer); 
+        return overrideNodeParameterSchema.GetContainer();    
     }
      
 private:
