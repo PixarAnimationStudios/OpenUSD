@@ -11,6 +11,8 @@
 #include "pxr/usd/usd/validationRegistry.h"
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/tokens.h"
+#include <pxr/usd/usdGeom/cube.h>
+#include <pxr/usd/usdGeom/subset.h>
 
 #include <iostream>
 
@@ -24,7 +26,8 @@ TestUsdGeomValidators()
     const std::set<TfToken> expectedUsdGeomValidatorNames = {
         UsdGeomValidatorNameTokens->subsetFamilies,
         UsdGeomValidatorNameTokens->subsetParentIsImageable,
-        UsdGeomValidatorNameTokens->stageMetadataChecker
+        UsdGeomValidatorNameTokens->stageMetadataChecker,
+        UsdGeomValidatorNameTokens->gPrimDescendantValidator
     };
 
     // This should be updated with every new validator added with the
@@ -350,7 +353,7 @@ void TestUsdStageMetadata()
     UsdValidationErrorVector errors = validator->Validate(usdStage);
 
     // Verify both metersPerUnit and upAxis errors are present
-    TF_AXIOM(errors.size() == 2);
+    TF_AXIOM(errors.size() == 2u);
     auto rootLayerIdentifier = rootLayer->GetIdentifier().c_str();
     const std::vector<std::string> expectedErrorMessages = {
         TfStringPrintf("Stage with root layer <%s> does not specify its linear "
@@ -383,6 +386,76 @@ void TestUsdStageMetadata()
     TF_AXIOM(errors.empty());
 }
 
+static
+void TestUsdGeomGPrimDescendantValidator()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const UsdValidator *validator = registry.GetOrLoadValidatorByName(
+            UsdGeomValidatorNameTokens->gPrimDescendantValidator);
+
+    TF_AXIOM(validator);
+
+    // Create a stage
+    const UsdStageRefPtr &stage = UsdStage::CreateInMemory();
+
+    // Add a cube to the stage
+    const UsdGeomCube &topCube = UsdGeomCube::Define(stage, SdfPath("/TopCube"));
+    const UsdPrim &topCubePrim = topCube.GetPrim();
+
+    // Verify this is valid
+    UsdValidationErrorVector errors = validator->Validate(topCubePrim);
+    TF_AXIOM(errors.empty());
+
+    // Parent the cube to another cube
+    const UsdGeomCube innerCube = UsdGeomCube::Define(stage, SdfPath("/TopCube/InnerCube"));
+    const UsdPrim innerCubePrim = innerCube.GetPrim();
+
+    // Verify the correct boundable error occurs
+    errors = validator->Validate(topCubePrim);
+    TF_AXIOM(errors.size() == 1u);
+    UsdValidationError error = errors[0u];
+    TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
+    TF_AXIOM(error.GetSites().size() == 1u);
+    UsdValidationErrorSite errorSite = error.GetSites()[0u];
+    TF_AXIOM(errorSite.IsValid());
+    TF_AXIOM(errorSite.IsPrim());
+    TF_AXIOM(errorSite.GetPrim().GetPath() == innerCubePrim.GetPath());
+    std::string expectedErrorMsg =
+            "Prim </TopCube> is a Gprim with an invalid descendant </TopCube/InnerCube> which is of type Cube. "
+            "Only prims of types (UsdGeomSubset) may be descendants of Gprims.";
+    std::string errorMessage = error.GetMessage();
+    TF_AXIOM(error.GetMessage() == expectedErrorMsg);
+
+    stage->RemovePrim(SdfPath("/TopCube/InnerCube"));
+
+    const UsdPrim& xformPrim = stage->DefinePrim(SdfPath("/TopCube/InnerXform"), TfToken("Xform"));
+
+    // Verify the correct Xformable error occurs
+    errors = validator->Validate(topCubePrim);
+    TF_AXIOM(errors.size() == 1u);
+    error = errors[0u];
+    TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
+    TF_AXIOM(error.GetSites().size() == 1u);
+    errorSite = error.GetSites()[0u];
+    TF_AXIOM(errorSite.IsValid());
+    TF_AXIOM(errorSite.IsPrim());
+    TF_AXIOM(errorSite.GetPrim().GetPath() == xformPrim.GetPath());
+    expectedErrorMsg =
+            "Prim </TopCube> is a Gprim with an invalid descendant </TopCube/InnerXform> which is of type Xform. "
+            "Only prims of types (UsdGeomSubset) may be descendants of Gprims.";
+    TF_AXIOM(error.GetMessage() == expectedErrorMsg);
+
+    stage->RemovePrim(SdfPath("/TopCube/InnerXform"));
+
+    // Create a geomsubset under the topCube
+    const UsdGeomSubset& geomSubset = UsdGeomSubset::Define(stage, SdfPath("/TopCube/GeomSubset"));
+
+    // Verify the geomsubset prim is valid
+    errors = validator->Validate(topCubePrim);
+    TF_AXIOM(errors.size() == 0u);
+
+}
+
 int
 main()
 {
@@ -390,7 +463,7 @@ main()
     TestUsdGeomSubsetFamilies();
     TestUsdGeomSubsetParentIsImageable();
     TestUsdStageMetadata();
+    TestUsdGeomGPrimDescendantValidator();
 
-    std::cout << "OK\n";
     return EXIT_SUCCESS;
 }

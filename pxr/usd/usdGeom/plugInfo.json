@@ -394,7 +394,10 @@
                 "Validators": {
                     "StageMetadataChecker": {
                         "doc": "All stages must declare their 'upAxis' and 'metersPerUnit'."
-                    }, 
+                    },
+                    "GPrimDescendantValidator": {
+                        "doc": "Gprims must only have GeomSubsets as descendants."
+                    },
                     "SubsetFamilies": {
                         "doc": "Validates all of the geom subset families authored beneath an Imageable prim.", 
                         "keywords": [

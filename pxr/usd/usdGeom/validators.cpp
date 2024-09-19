@@ -17,6 +17,7 @@
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/validatorTokens.h"
+#include <pxr/usd/sdf/path.h>
 
 #include <algorithm>
 #include <string>
@@ -155,6 +156,55 @@ _SubsetParentIsImageable(const UsdPrim& usdPrim)
     };
 }
 
+static
+UsdValidationErrorVector
+_GetGPrimDescendantErrors(const UsdPrim& usdPrim)
+{
+    UsdValidationErrorVector errors;
+
+    if (usdPrim.IsA<UsdGeomGprim>()){
+
+        const TfType geomSubsetType = TfType::Find<UsdGeomSubset>();
+        const std::string& validGprimDescendantTypeNames = geomSubsetType.GetTypeName();
+
+        const std::vector<TfType> validGprimDescendantTypes = {geomSubsetType};
+
+        const auto isValidGprimDescendant = [&validGprimDescendantTypes](const UsdPrim& prim) -> bool {
+            for (const TfType& validGprimDescendantType : validGprimDescendantTypes) {
+                if (prim.IsA(validGprimDescendantType)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        const UsdPrimSubtreeRange& children = usdPrim.GetAllDescendants();
+        for (UsdPrimSubtreeRange::iterator it = children.begin(); it != children.end(); ++it) {
+            const UsdPrim& currentPrim = *it;
+
+            if (isValidGprimDescendant(currentPrim)){
+                continue;
+            }
+
+            errors.emplace_back(
+                    UsdGeomValidationErrorNameTokens->invalidGPrimDescendant,
+                    UsdValidationErrorType::Error,
+                    UsdValidationErrorSites{
+                            UsdValidationErrorSite(usdPrim.GetStage(),
+                                                   currentPrim.GetPath())
+                    },
+                    TfStringPrintf("Prim <%s> is a Gprim with an invalid descendant <%s> which is of type %s. Only prims of types (%s) may be descendants of Gprims.",
+                                   usdPrim.GetPath().GetText(),
+                                   currentPrim.GetPath().GetText(),
+                                   currentPrim.GetTypeName().GetText(),
+                                   validGprimDescendantTypeNames.c_str())
+            );
+        }
+    }
+
+    return errors;
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
@@ -168,8 +218,12 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
         _SubsetFamilies);
 
     registry.RegisterPluginValidator(
-        UsdGeomValidatorNameTokens->subsetParentIsImageable,
-        _SubsetParentIsImageable);
+            UsdGeomValidatorNameTokens->subsetParentIsImageable,
+            _SubsetParentIsImageable);
+
+    registry.RegisterPluginValidator(
+            UsdGeomValidatorNameTokens->gPrimDescendantValidator,
+            _GetGPrimDescendantErrors);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
