@@ -23,8 +23,6 @@
 # include <boost/mpl/not.hpp>
 # include <boost/mpl/and.hpp>
 # include <boost/mpl/or.hpp>
-# include <boost/mpl/lambda.hpp>
-# include <boost/mpl/apply.hpp>
 # include <boost/tuple/tuple.hpp>
 # include "pxr/external/boost/python/detail/not_specified.hpp"
 # include "pxr/external/boost/python/detail/def_helper_fwd.hpp"
@@ -39,7 +37,7 @@ namespace detail
   // element of a Tuple whose type E satisfies the given Predicate
   // applied to add_reference<E>. The Predicate must be an MPL
   // metafunction class.
-  template <class Tuple, class Predicate>
+  template <class Tuple, template <typename> class Predicate>
   struct tuple_extract;
 
   // Implementation class for when the tuple's head type does not
@@ -47,7 +45,7 @@ namespace detail
   template <bool matched>
   struct tuple_extract_impl
   {
-      template <class Tuple, class Predicate>
+      template <class Tuple, template <typename> class Predicate>
       struct apply
       {
           typedef typename Tuple::head_type result_type;
@@ -64,7 +62,7 @@ namespace detail
   template <>
   struct tuple_extract_impl<false>
   {
-      template <class Tuple, class Predicate>
+      template <class Tuple, template <typename> class Predicate>
       struct apply
       {
           // recursive application of tuple_extract on the tail of the tuple
@@ -80,70 +78,70 @@ namespace detail
 
   // A metafunction which selects a version of tuple_extract_impl to
   // use for the implementation of tuple_extract
-  template <class Tuple, class Predicate>
+  template <class Tuple, template <typename> class Predicate>
   struct tuple_extract_base_select
   {
       typedef typename Tuple::head_type head_type;
-      typedef typename mpl::apply1<Predicate,
-              typename add_lvalue_reference<head_type>::type>::type match_t;
+      typedef Predicate<typename add_lvalue_reference<head_type>::type> match_t;
       BOOST_STATIC_CONSTANT(bool, match = match_t::value);
       typedef typename tuple_extract_impl<match>::template apply<Tuple,Predicate> type;
   };
-  
-  template <class Tuple, class Predicate>
+
+  template <class Tuple, template <typename> class Predicate>
   struct tuple_extract
-      : tuple_extract_base_select<
-         Tuple
-         , typename mpl::lambda<Predicate>::type
-      >::type
+      : tuple_extract_base_select<Tuple, Predicate>::type
   {
   };
-
 
   //
   // Specialized extractors for the docstring, keywords, CallPolicies,
   // and default implementation of virtual functions
   //
 
+  template <class T>
+  struct doc_extract_pred
+      : mpl::not_<
+          mpl::or_<
+              indirect_traits::is_reference_to_class<T>
+            , indirect_traits::is_reference_to_member_function_pointer<T>
+          >
+      >
+  {
+  };
+
   template <class Tuple>
   struct doc_extract
-      : tuple_extract<
-        Tuple
-        , mpl::not_<
-           mpl::or_<
-               indirect_traits::is_reference_to_class<mpl::_1>
-             , indirect_traits::is_reference_to_member_function_pointer<mpl::_1 >
-           >
-        >
-     >
+      : tuple_extract<Tuple, doc_extract_pred>
   {
   };
   
   template <class Tuple>
   struct keyword_extract
-      : tuple_extract<Tuple, is_reference_to_keywords<mpl::_1 > >
+      : tuple_extract<Tuple, is_reference_to_keywords>
+  {
+  };
+
+  template <class T>
+  struct policy_extract_pred
+      : mpl::and_<
+          mpl::not_<std::is_same<not_specified const&, T> >
+        , indirect_traits::is_reference_to_class<T>
+        , mpl::not_<is_reference_to_keywords<T> >
+      >
   {
   };
 
   template <class Tuple>
   struct policy_extract
-      : tuple_extract<
-          Tuple
-          , mpl::and_<
-             mpl::not_<is_same<not_specified const&,mpl::_1> >
-              , indirect_traits::is_reference_to_class<mpl::_1 >
-              , mpl::not_<is_reference_to_keywords<mpl::_1 > >
-          >
-        >
+      : tuple_extract<Tuple, policy_extract_pred>
   {
   };
 
   template <class Tuple>
   struct default_implementation_extract
       : tuple_extract<
-          Tuple
-          , indirect_traits::is_reference_to_member_function_pointer<mpl::_1 >
-          >
+          Tuple, indirect_traits::is_reference_to_member_function_pointer
+      >
   {
   };
 

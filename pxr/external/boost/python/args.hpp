@@ -30,7 +30,6 @@
 # include <boost/preprocessor/facilities/intercept.hpp>
 # include <boost/preprocessor/iteration/local.hpp>
 
-# include "pxr/external/boost/python/detail/mpl_lambda.hpp"
 # include "pxr/external/boost/python/object_core.hpp"
 
 # include <boost/mpl/bool.hpp>
@@ -132,7 +131,6 @@ namespace detail
       BOOST_STATIC_CONSTANT(bool, value = (is_ref & is_key));
       
       typedef mpl::bool_<value> type;
-      PXR_BOOST_PYTHON_MPL_LAMBDA_SUPPORT(1,is_reference_to_keywords,(T))
   };
 }
 

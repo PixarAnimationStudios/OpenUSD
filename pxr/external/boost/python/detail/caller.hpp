@@ -44,7 +44,6 @@
 
 #  include <boost/compressed_pair.hpp>
 
-#  include <boost/mpl/apply.hpp>
 #  include <boost/mpl/eval_if.hpp>
 #  include <boost/mpl/identity.hpp>
 #  include <boost/mpl/size.hpp>
@@ -78,7 +77,7 @@ struct select_result_converter
   : mpl::eval_if<
         is_same<Result,void>
       , mpl::identity<void_result_to_python>
-      , mpl::apply1<typename Policies::result_converter,Result>
+      , typename Policies::result_converter::template apply<Result>
     >
 {
 };

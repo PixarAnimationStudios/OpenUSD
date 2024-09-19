@@ -17,9 +17,7 @@
 #include <boost/python/detail/mpl_lambda.hpp>
 #else
 
-// this header should go away soon
-# include <boost/mpl/aux_/lambda_support.hpp>
-# define PXR_BOOST_PYTHON_MPL_LAMBDA_SUPPORT BOOST_MPL_AUX_LAMBDA_SUPPORT
+// Empty
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MPL_LAMBDA_HPP
