@@ -22,21 +22,6 @@
 # include <boost/preprocessor/repeat.hpp>
 # include <boost/preprocessor/tuple/elem.hpp>
 
-// stuff that should be in the preprocessor library
-
-# define PXR_BOOST_PYTHON_APPLY(x) BOOST_PP_CAT(PXR_BOOST_PYTHON_APPLY_, x)
-
-# define PXR_BOOST_PYTHON_APPLY_PXR_BOOST_PYTHON_ITEM(v) v
-# define PXR_BOOST_PYTHON_APPLY_PXR_BOOST_PYTHON_NIL
-
-// cv-qualifiers
-
-# if !defined(__MWERKS__) || __MWERKS__ > 0x2407
-#  define PXR_BOOST_PYTHON_CV_COUNT 4
-# else
-#  define PXR_BOOST_PYTHON_CV_COUNT 1
-# endif
-
 # ifndef PXR_BOOST_PYTHON_MAX_ARITY
 #  define PXR_BOOST_PYTHON_MAX_ARITY 15
 # endif
@@ -45,18 +30,13 @@
 #  define PXR_BOOST_PYTHON_MAX_BASES 10
 # endif 
 
-# define PXR_BOOST_PYTHON_CV_QUALIFIER(i)                          \
-    PXR_BOOST_PYTHON_APPLY(                                        \
-        BOOST_PP_TUPLE_ELEM(4, i, PXR_BOOST_PYTHON_CV_QUALIFIER_I) \
-    )
-
-# define PXR_BOOST_PYTHON_CV_QUALIFIER_I      \
-    (                                     \
-        PXR_BOOST_PYTHON_NIL,                 \
-        PXR_BOOST_PYTHON_ITEM(const),         \
-        PXR_BOOST_PYTHON_ITEM(volatile),      \
-        PXR_BOOST_PYTHON_ITEM(const volatile) \
-    )
+// cv-qualifiers
+# define PXR_BOOST_PYTHON_NIL
+# define PXR_BOOST_PYTHON_APPLY_QUALIFIERS(M, ...)      \
+    M(PXR_BOOST_PYTHON_NIL, __VA_ARGS__)                \
+    M(const, __VA_ARGS__)                               \
+    M(volatile, __VA_ARGS__)                            \
+    M(const volatile, __VA_ARGS__)
 
 // enumerators
 # define PXR_BOOST_PYTHON_UNARY_ENUM(c, text) BOOST_PP_REPEAT(c, PXR_BOOST_PYTHON_UNARY_ENUM_I, text)
@@ -70,10 +50,6 @@
 
 // fixed text (no commas)
 # define PXR_BOOST_PYTHON_FIXED(z, n, text) text
-
-// flags
-# define PXR_BOOST_PYTHON_FUNCTION_POINTER 0x0001
-# define PXR_BOOST_PYTHON_POINTER_TO_MEMBER 0x0002
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_PREPROCESSOR_HPP
