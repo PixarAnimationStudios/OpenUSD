@@ -37,8 +37,6 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(UsdMtlxTokens, USD_MTLX_TOKENS);
-
 namespace {
 
 using DocumentCache = std::map<std::string, mx::DocumentPtr>;

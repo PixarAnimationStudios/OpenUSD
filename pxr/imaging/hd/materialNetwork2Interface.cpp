@@ -56,6 +56,38 @@ HdMaterialNetwork2Interface::_GetOrCreateNode(const TfToken &nodeName)
     return  _lastAccessedNode;
 }
 
+TfTokenVector _GetKeysFromVtDictionary(const VtDictionary& dict, const std::string prefix = "") {
+    TfTokenVector keys;
+    for (const auto& it : dict) {
+        std::string key = it.first;
+        if (!prefix.empty()) {
+            key = prefix+":"+it.first;
+        }
+        keys.emplace_back(TfToken(key));
+        if (it.second.IsHolding<VtDictionary>()) {
+            auto subKeys = _GetKeysFromVtDictionary(it.second.UncheckedGet<VtDictionary>(), key);
+            keys.insert(keys.end(), subKeys.begin(), subKeys.end());
+        }
+    }
+    return keys;
+}
+
+TfTokenVector
+HdMaterialNetwork2Interface::GetMaterialConfigKeys() const
+{
+  return _GetKeysFromVtDictionary(_materialNetwork->config);
+}
+
+VtValue
+HdMaterialNetwork2Interface::GetMaterialConfigValue(
+    const TfToken& key) const
+{
+    if (auto result = _materialNetwork->config.GetValueAtPath(key.GetString())) {
+        return *result;
+    }
+    return VtValue();
+}
+
 TfTokenVector
 HdMaterialNetwork2Interface::GetNodeNames() const
 {

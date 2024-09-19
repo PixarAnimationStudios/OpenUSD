@@ -20,11 +20,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define USD_MTLX_TOKENS \
-    ((DefaultOutputName, "out"))
-
-TF_DECLARE_PUBLIC_TOKENS(UsdMtlxTokens, USDMTLX_API, USD_MTLX_TOKENS);
-
 /// Return the MaterialX standard library paths.  All standard library
 /// files (and only standard library files) should be found on these
 /// paths.

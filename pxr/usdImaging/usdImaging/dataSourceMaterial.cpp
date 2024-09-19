@@ -716,6 +716,8 @@ _BuildMaterial(
     std::vector<HdDataSourceBaseHandle> terminalsValues;
     TfTokenVector nodeNames;
     std::vector<HdDataSourceBaseHandle> nodeValues;
+    TfTokenVector configNames;
+    std::vector<HdDataSourceBaseHandle> configValues;
 
     // Strip the material path prefix from all node names.
     // This makes the network more concise to read, as well
@@ -797,16 +799,49 @@ _BuildMaterial(
     }
 
 
+
+    // finally collect any 'config' on the Material prim
+    // Collect in to a VtDictionary to take advantage of
+    // SetValueAtPath for nested namespaces in the attribute
+    // names.
+    VtDictionary configDict;
+    for (const auto& attr : usdMat.GetPrim().GetAuthoredAttributes()) {
+      const std::string name = attr.GetName().GetString();
+      const std::string substr = name.substr(0, 5);
+      if (substr.compare("config:") == 0) {
+        VtValue value;
+        attr.Get(&value);
+        configDict.SetValueAtPath(name.substr(5), value);
+      }
+    }
+
+    configNames.reserve(configDict.size());
+    configValues.reserve(configDict.size());
+    for (const auto& configEntry : configDict)
+    {
+      // from _dataSourceLegacyPrim.cpp - _ToContainerDS(VtDictionary)
+      configNames.push_back(TfToken(configEntry.first));
+      configValues.push_back(HdRetainedSampledDataSource::New(configEntry.second));
+    }
+
+
     HdContainerDataSourceHandle nodesDs = 
         HdRetainedContainerDataSource::New(
             nodeNames.size(),
             nodeNames.data(),
             nodeValues.data());
 
+    HdContainerDataSourceHandle configDefaultContext =
+        HdRetainedContainerDataSource::New(
+            configNames.size(),
+            configNames.data(),
+            configValues.data());
+
 
     return HdMaterialNetworkSchema::Builder()
         .SetNodes(nodesDs)
         .SetTerminals(terminalsDs)
+        .SetConfig(configDefaultContext)
         .SetInterfaceMappings(_UsdImagingDataSourceInterfaceMappings::New(
             UsdShadeMaterial(usdMat.GetPrim())))
         .Build();

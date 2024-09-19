@@ -5,12 +5,14 @@
 // https://openusd.org/license.
 //
 #include "pxr/imaging/hdMtlx/hdMtlx.h"
+#include "pxr/imaging/hdMtlx/debugCodes.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/materialNetwork2Interface.h"
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/matrix3d.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/tf/debug.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/schema.h"
@@ -36,6 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (index)
+    ((mtlx_version, "mtlx:version"))
 );
 
 static mx::FileSearchPath
@@ -562,6 +565,25 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
 
     // Initialize a MaterialX Document
     mx::DocumentPtr mxDoc = mx::createDocument();
+
+    // we're going to default to '1.38' if nothing is present.
+    // prior to the addition of the recording of the MaterialX document version
+    // in OpenUSD, the only version of MaterialX used was 1.38, so this seems like
+    // a reasonable default.
+    std::string materialXVersionString = "1.38";
+
+    VtValue materialXVersionValue = netInterface->GetMaterialConfigValue(_tokens->mtlx_version);
+    if (materialXVersionValue.IsHolding<std::string>()) {
+        materialXVersionString = materialXVersionValue.Get<std::string>();
+        TF_DEBUG(HDMTLX_VERSION_UPGRADE).Msg("[%s] : MaterialX document version : '%s'\n",
+                                             TF_FUNC_NAME().c_str(), materialXVersionString.c_str());
+    } else {
+        TF_DEBUG(HDMTLX_VERSION_UPGRADE).Msg("[%s] : MaterialX document version : '%s' (Using default)\n",
+                                             TF_FUNC_NAME().c_str(), materialXVersionString.c_str());
+    }
+
+    mxDoc->setVersionString(materialXVersionString);
+
     mxDoc->importLibrary(libraries);
     
     // Create a material that instantiates the shader
@@ -584,6 +606,26 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
         terminalNodeName,
         mxType,
         mxShaderNode);
+
+    if (TfDebug::IsEnabled(HDMTLX_VERSION_UPGRADE)) {
+      std::string filename = mxMaterial->getName()+"_before.mtlx";
+      TF_DEBUG(HDMTLX_VERSION_UPGRADE).Msg("[%s] : MaterialX document before upgrade: '%s'\n",
+                                           TF_FUNC_NAME().c_str(), filename.c_str());
+      writeToXmlFile(
+          mxDoc, mx::FilePath(filename));
+    }
+
+    // Potentially upgrade the MaterialX document to the "current" version using the
+    // MaterialX upgrade mechanism.
+    mxDoc->upgradeVersion();
+
+    if (TfDebug::IsEnabled(HDMTLX_VERSION_UPGRADE)) {
+      std::string filename = mxMaterial->getName()+"_after.mtlx";
+      TF_DEBUG(HDMTLX_VERSION_UPGRADE).Msg("[%s] : MaterialX document after upgrade: '%s'\n",
+                                           TF_FUNC_NAME().c_str(), filename.c_str());
+      writeToXmlFile(
+          mxDoc, mx::FilePath(filename));
+    }
 
     // Validate the MaterialX Document.
     {

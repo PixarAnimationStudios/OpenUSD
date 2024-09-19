@@ -12,6 +12,7 @@
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/usd/sdr/declare.h"
+#include "pxr/base/vt/dictionary.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -112,6 +113,7 @@ struct HdMaterialNetworkMap
 {
     std::map<TfToken, HdMaterialNetwork> map;
     std::vector<SdfPath> terminals;
+    VtDictionary config;
 };
 
 
@@ -162,11 +164,13 @@ struct HdMaterialNetwork2
     std::map<SdfPath, HdMaterialNode2> nodes;
     std::map<TfToken, HdMaterialConnection2> terminals;
     TfTokenVector primvars;
+    VtDictionary config;
 
     bool operator==(const HdMaterialNetwork2 & rhs) const {
         return nodes == rhs.nodes 
             && terminals == rhs.terminals
-            && primvars == rhs.primvars;
+            && primvars == rhs.primvars
+            && config == rhs.config;
     }
 };
 

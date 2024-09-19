@@ -144,6 +144,8 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
     std::vector<HdDataSourceBaseHandle> terminalsValues;
     std::vector<TfToken> nodeNames;
     std::vector<HdDataSourceBaseHandle> nodeValues;
+    TfTokenVector configNames;
+    std::vector<HdDataSourceBaseHandle> configValues;
 
     struct ParamData {
         VtValue value;
@@ -274,21 +276,37 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
                 .Build());
     }
 
+    configNames.reserve(hdNetworkMap.config.size());
+    configValues.reserve(hdNetworkMap.config.size());
+    for (const auto& configEntry : hdNetworkMap.config)
+    {
+      // from _dataSourceLegacyPrim.cpp - _ToContainerDS(VtDictionary)
+        configNames.push_back(TfToken(configEntry.first));
+        configValues.push_back(HdRetainedSampledDataSource::New(configEntry.second));
+    }
+
     HdContainerDataSourceHandle nodesDefaultContext = 
         HdRetainedContainerDataSource::New(
             nodeNames.size(),
             nodeNames.data(),
             nodeValues.data());
 
-    HdContainerDataSourceHandle terminalsDefaultContext = 
+    HdContainerDataSourceHandle terminalsDefaultContext =
         HdRetainedContainerDataSource::New(
             terminalsNames.size(),
             terminalsNames.data(),
             terminalsValues.data());
 
+    HdContainerDataSourceHandle configDefaultContext =
+        HdRetainedContainerDataSource::New(
+            configNames.size(),
+            configNames.data(),
+            configValues.data());
+
     return HdMaterialNetworkSchema::Builder()
         .SetNodes(nodesDefaultContext)
         .SetTerminals(terminalsDefaultContext)
+        .SetConfig(configDefaultContext)
         .Build();
 }
 
