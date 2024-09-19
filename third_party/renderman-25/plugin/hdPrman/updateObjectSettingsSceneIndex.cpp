@@ -6,6 +6,8 @@
 
 #include "hdPrman/updateObjectSettingsSceneIndex.h"
 
+#if PXR_VERSION >= 2308
+
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/tokens.h"
 
@@ -23,7 +25,11 @@
 #include "pxr/imaging/hd/schema.h" 
 #include "pxr/imaging/hd/tokens.h"
 
+#if PXR_VERSION >= 2311
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
+#elif PXR_VERSION == 2308
+#include "pxr/imaging/hd/modelSchema.h"
+#endif
 
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/trace/trace.h"
@@ -232,3 +238,5 @@ HdPrman_UpdateObjectSettingsSceneIndex::~HdPrman_UpdateObjectSettingsSceneIndex(
 = default;
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2308

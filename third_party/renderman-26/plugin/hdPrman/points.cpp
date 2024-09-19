@@ -14,14 +14,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#if PXR_VERSION > 2011
 HdPrman_Points::HdPrman_Points(SdfPath const& id)
     : BASE(id)
-#else
-HdPrman_Points::HdPrman_Points(SdfPath const& id,
-                               SdfPath const& instancerId)
-    : BASE(id, instancerId)
-#endif
 {
 }
 

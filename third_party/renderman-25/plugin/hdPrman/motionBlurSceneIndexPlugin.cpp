@@ -376,9 +376,9 @@ _MotionBlurHelper::_IsBlurablePrimvar() const
     static const TfTokenSet blurables = {
         HdPrimvarsSchemaTokens->points
 #if HD_API_VERSION < 67
-        , HdInstancerTokens->translate,
-        , HdInstancerTokens->rotate,
-        , HdInstancerTokens->scale,
+        , HdInstancerTokens->translate
+        , HdInstancerTokens->rotate
+        , HdInstancerTokens->scale
         , HdInstancerTokens->instanceTransform
 #endif
 #if HD_API_VERSION >= 56
@@ -902,7 +902,7 @@ public:
 
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
-#if PXR_VERSION < 2302
+#if PXR_VERSION <= 2211
     bool Has(const TfToken &name) override
     {
         const TfTokenVector names = GetNames();
@@ -1013,7 +1013,7 @@ public:
 
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
-#if PXR_VERSION < 2302
+#if PXR_VERSION <= 2211
     bool Has(const TfToken &name) override
     {
         const TfTokenVector names = GetNames();
@@ -1096,7 +1096,7 @@ public:
 
     HdDataSourceBaseHandle Get(const TfToken& name) override;
 
-#if PXR_VERSION < 2302
+#if PXR_VERSION <= 2211
     bool Has(const TfToken &name) override
     {
         const TfTokenVector names = GetNames();
@@ -1171,7 +1171,7 @@ public:
 
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
-#if PXR_VERSION < 2302
+#if PXR_VERSION <= 2211
     bool Has(const TfToken &name) override
     {
         const TfTokenVector names = GetNames();
@@ -1208,7 +1208,7 @@ _PrimDataSource::Get(const TfToken &name)
         if (const auto xformSource = HdContainerDataSource::Cast(result)) {
             if (const auto primvarsSource = HdContainerDataSource::Cast(
                 _primSource->Get(
-#if PXR_VERSION < 2308
+#if PXR_VERSION <= 2305
                     HdPrimvarsSchemaTokens->primvars
 #else
                     HdPrimvarsSchema::GetSchemaToken()

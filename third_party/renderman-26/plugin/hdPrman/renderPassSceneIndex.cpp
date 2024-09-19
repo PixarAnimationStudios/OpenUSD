@@ -4,6 +4,7 @@
 // https://openusd.org/license.
 
 #include "hdPrman/renderPassSceneIndex.h"
+#if PXR_VERSION >= 2405
 #include "hdPrman/tokens.h"
 
 #include "pxr/imaging/hd/version.h"
@@ -546,3 +547,4 @@ HdPrman_RenderPassSceneIndex::_UpdateActiveRenderPassState(
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+#endif //PXR_VERSION >= 2405

@@ -8,6 +8,8 @@
 #define PXR_IMAGING_HDPRMAN_COORD_SYS_PRIM_SCENE_INDEX_PLUGIN_H
 
 #include "pxr/pxr.h"
+#if PXR_VERSION >= 2308
+
 #include "pxr/imaging/hd/sceneIndexPlugin.h"
 #include "hdPrman/api.h"
 
@@ -29,5 +31,7 @@ protected:
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2308
 
 #endif // PXR_IMAGING_HDPRMAN_COORD_SYS_PRIM_SCENE_INDEX_PLUGIN_H

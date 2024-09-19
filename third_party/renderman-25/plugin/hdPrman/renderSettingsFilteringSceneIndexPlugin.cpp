@@ -6,6 +6,10 @@
 //
 #include "hdPrman/renderSettingsFilteringSceneIndexPlugin.h"
 
+#if PXR_VERSION >= 2308
+
+#include "hdPrman/tokens.h"
+
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/renderSettingsSchema.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
@@ -63,8 +67,6 @@ _BuildFallbackRenderSettingsPrimDataSource()
 // Plugin registrations
 ////////////////////////////////////////////////////////////////////////////////
 
-static const char * const _rendererDisplayName = "Prman";
-
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdSceneIndexPluginRegistry::Define<
@@ -87,16 +89,22 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
         HdRetainedContainerDataSource::New(
             HdsiRenderSettingsFilteringSceneIndexTokens->namespacePrefixes,
             HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
+#if PXR_VERSION >= 2311
                 {_namespaceTokens->ri, _namespaceTokens->outputsRi}),
             HdsiRenderSettingsFilteringSceneIndexTokens->fallbackPrimDs,
             _BuildFallbackRenderSettingsPrimDataSource() );
+#else
+                {_namespaceTokens->ri, _namespaceTokens->outputsRi}));
+#endif
 
-    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        _rendererDisplayName,
-        _tokens->sceneIndexPluginName,
-        inputArgs,
-        insertionPhase,
-        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    for( auto const& pluginDisplayName : HdPrman_GetPluginDisplayNames()) {
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            pluginDisplayName,
+            _tokens->sceneIndexPluginName,
+            inputArgs,
+            insertionPhase,
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -115,3 +123,5 @@ HdPrman_RenderSettingsFilteringSceneIndexPlugin::_AppendSceneIndex(
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2308
