@@ -18,14 +18,13 @@
 #else
 
 # include "pxr/external/boost/python/detail/config.hpp"
-# include <boost/function/function0.hpp>
-# include <boost/function/function2.hpp>
+#include <functional>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 struct exception_handler;
 
-typedef function2<bool, exception_handler const&, function0<void> const&> handler_function;
+typedef std::function<bool(exception_handler const&, std::function<void()> const&)> handler_function;
 
 struct PXR_BOOST_PYTHON_DECL exception_handler
 {
@@ -34,9 +33,9 @@ struct PXR_BOOST_PYTHON_DECL exception_handler
  public:
     explicit exception_handler(handler_function const& impl);
 
-    inline bool handle(function0<void> const& f) const;
+    inline bool handle(std::function<void()> const& f) const;
     
-    bool operator()(function0<void> const& f) const;
+    bool operator()(std::function<void()> const& f) const;
  
     static exception_handler* chain;
     
@@ -48,7 +47,7 @@ struct PXR_BOOST_PYTHON_DECL exception_handler
 };
 
 
-inline bool exception_handler::handle(function0<void> const& f) const
+inline bool exception_handler::handle(std::function<void()> const& f) const
 {
     return this->m_impl(*this, f);
 }

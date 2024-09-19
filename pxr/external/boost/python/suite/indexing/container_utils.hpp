@@ -20,7 +20,6 @@
 #else
 
 # include <utility>
-# include <boost/foreach.hpp>
 # include "pxr/external/boost/python/object.hpp"
 # include "pxr/external/boost/python/handle.hpp"
 # include "pxr/external/boost/python/extract.hpp"
@@ -35,12 +34,11 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace container_utils {
         typedef typename Container::value_type data_type;
         
         //  l must be iterable
-        BOOST_FOREACH(object elem,
-            std::make_pair(
-              PXR_BOOST_NAMESPACE::python::stl_input_iterator<object>(l),
-              PXR_BOOST_NAMESPACE::python::stl_input_iterator<object>()
-              ))
+        for (auto i = stl_input_iterator<object>(l), 
+                 e = stl_input_iterator<object>(); i != e; ++i)
         {
+            object elem(*i);
+
             extract<data_type const&> x(elem);
             //  try if elem is an exact data_type type
             if (x.check())

@@ -15,13 +15,16 @@
 #include "pxr/external/boost/python/errors.hpp"
 #include <boost/cast.hpp>
 #include "pxr/external/boost/python/detail/exception_handler.hpp"
+#include <exception>
+#include <new>
+#include <stdexcept>
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
 error_already_set::~error_already_set() {}
 
 // IMPORTANT: this function may only be called from within a catch block!
-PXR_BOOST_PYTHON_DECL bool handle_exception_impl(function0<void> f)
+PXR_BOOST_PYTHON_DECL bool handle_exception_impl(std::function<void()> f)
 {
     try
     {
@@ -68,7 +71,7 @@ void PXR_BOOST_PYTHON_DECL throw_error_already_set()
 
 namespace detail {
 
-bool exception_handler::operator()(function0<void> const& f) const
+bool exception_handler::operator()(std::function<void()> const& f) const
 {
     if (m_next)
     {

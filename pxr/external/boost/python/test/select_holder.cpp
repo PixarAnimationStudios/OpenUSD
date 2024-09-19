@@ -11,7 +11,6 @@
 #include "pxr/external/boost/python/has_back_reference.hpp"
 #include "pxr/external/boost/python/detail/not_specified.hpp"
 #include "pxr/external/boost/python/detail/type_traits.hpp"
-#include <boost/function/function0.hpp>
 #include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 #include <memory>
 

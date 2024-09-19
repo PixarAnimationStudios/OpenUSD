@@ -9,15 +9,11 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #include "pxr/external/boost/python/object/inheritance.hpp"
 #include "pxr/external/boost/python/type_id.hpp"
-#include <boost/bind/mem_fn.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/integer_traits.hpp>
-#include <boost/scoped_array.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
 #include <algorithm>
 #include <deque>
+#include <memory>
 #include <queue>
+#include <tuple>
 #include <vector>
 
 //
@@ -164,7 +160,7 @@ namespace
       
    public:
       all_pairs_distance_map()
-          : m_buckets(new node*[initial_bucket_count]())
+          : m_buckets(std::make_unique<node*[]>(initial_bucket_count))
           , m_size(0)
           , m_mask(initial_bucket_count-1)
       {
@@ -218,7 +214,7 @@ namespace
           std::size_t old_bucket_count = bucket_count();
           std::size_t new_bucket_count = 2*old_bucket_count;
           std::size_t new_mask = new_bucket_count - 1;
-          boost::scoped_array<node*> new_buckets(new node*[new_bucket_count]());
+          auto new_buckets = std::make_unique<node*[]>(new_bucket_count);
 
           for (std::size_t i=0; i<old_bucket_count; ++i) {
               node *nd = m_buckets[i];
@@ -238,12 +234,20 @@ namespace
 
       static std::size_t compute_hash(vertex_t source, vertex_t target)
       {
-          std::size_t h = boost::hash<vertex_t>()(source);
-          boost::hash_combine(h, target);
+          // This function previously used boost::hash and boost::hash_combine.
+          // The implementations of those functions have been recreated here
+          // to avoid depending on boost directly.
+          auto hash = [](vertex_t t) { return static_cast<std::size_t>(t); };
+          auto hash_combine = [](std::size_t& seed, std::size_t value) {
+              seed ^= value + 0x9e3779b9 + (seed<<6) + (seed>>2);
+          };
+
+          std::size_t h = hash(source);
+          hash_combine(h, hash(target));
           return h;
       }
 
-      boost::scoped_array<node*> m_buckets;
+      std::unique_ptr<node*[]> m_buckets;
       std::size_t m_size;
       std::size_t m_mask;
       std::deque<node> m_node_pool;
@@ -556,12 +560,12 @@ namespace
 
   struct cache_element
   {
-      typedef tuples::tuple<
+      typedef std::tuple<
           class_id              // source static type
           , class_id            // target type
           , std::ptrdiff_t      // offset within source object
           , class_id            // source dynamic type
-          >::inherited key_type;
+          > key_type;
 
       cache_element(key_type const& k)
           : key(k)
@@ -572,7 +576,7 @@ namespace
       std::ptrdiff_t offset;
 
       BOOST_STATIC_CONSTANT(
-          std::ptrdiff_t, not_found = integer_traits<std::ptrdiff_t>::const_min);
+          std::ptrdiff_t, not_found = std::numeric_limits<std::ptrdiff_t>::min());
       
       bool operator<(cache_element const& rhs) const
       {
@@ -613,7 +617,7 @@ namespace
       // Look in the cache first for a quickie address translation
       std::ptrdiff_t offset = (char*)p - (char*)dynamic_id.first;
 
-      cache_element seek(boost::make_tuple(src_t, dst_t, offset, dynamic_id.second));
+      cache_element seek(std::make_tuple(src_t, dst_t, offset, dynamic_id.second));
       cache_t& c = cache();
       cache_t::iterator const cache_pos
           = std::lower_bound(c.begin(), c.end(), seek);
@@ -663,7 +667,7 @@ PXR_BOOST_PYTHON_DECL void add_cast(
     {
         c.erase(std::remove_if(
                     c.begin(), c.end(),
-                    mem_fn(&cache_element::unreachable))
+                    [](cache_element const& e) { return e.unreachable(); })
                 , c.end());
 
         // If any new cache entries get added, we'll have to do this

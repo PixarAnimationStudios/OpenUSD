@@ -34,8 +34,7 @@ works correctly. */
 #  pragma warning(disable: 4180)
 # endif
 
-# include <boost/bind/bind.hpp>
-# include <boost/bind/protect.hpp>
+#include <functional>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
@@ -52,10 +51,20 @@ namespace detail
     , Target&(*)()
   )
   {
-      using namespace boost::placeholders;
+      // The functors passed to make_iterator_function previously looked like:
+      //   boost::protect(boost::bind(get_start, _1))
+      // 
+      // I believe the intent was to insure the functors were not detected
+      // as bind expressions and invoked immediately if they were passed to
+      // another bind expression. We replicate this by passing lambdas
+      // instead, which should also not be detected a bind expressions.
       return objects::make_iterator_function<Target>(
-          boost::protect(boost::bind(get_start, _1))
-        , boost::protect(boost::bind(get_finish, _1))
+          [get_start](auto&& x) { 
+              return std::invoke(get_start, std::forward<decltype(x)>(x)); 
+          }
+        , [get_finish](auto&& x) { 
+              return std::invoke(get_finish, std::forward<decltype(x)>(x)); 
+          }
         , next_policies
       );
   }

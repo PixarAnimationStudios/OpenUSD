@@ -38,6 +38,7 @@
 # include <boost/type.hpp>
 
 # include <iterator>
+#include <type_traits>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
 
@@ -205,7 +206,7 @@ inline object make_iterator_function(
   , boost::type<Target>* = 0
 )
 {
-    typedef typename Accessor1::result_type iterator;
+    typedef std::invoke_result_t<Accessor1, Target&> iterator;
     typedef typename PXR_BOOST_NAMESPACE::python::detail::add_const<iterator>::type iterator_const;
     typedef typename PXR_BOOST_NAMESPACE::python::detail::add_lvalue_reference<iterator_const>::type iterator_cref;
       

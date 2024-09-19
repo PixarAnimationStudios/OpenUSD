@@ -19,8 +19,6 @@
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/bind/bind.hpp>
-# include <boost/bind/placeholders.hpp>
 # include <boost/type.hpp>
 # include "pxr/external/boost/python/detail/translate_exception.hpp"
 # include "pxr/external/boost/python/detail/exception_handler.hpp"
@@ -30,9 +28,14 @@ namespace PXR_BOOST_NAMESPACE { namespace python {
 template <class ExceptionType, class Translate>
 void register_exception_translator(Translate translate, boost::type<ExceptionType>* = 0)
 {
-    using namespace boost::placeholders;
+    // XXX:
+    // Avoid ambiguity between std::placeholders and boost.
+    // Can be replaced with "using namespace std::placeholders" once
+    // boost dependency has been removed.
+    using std::placeholders::_1;
+    using std::placeholders::_2;
     detail::register_exception_handler(
-        boost::bind<bool>(detail::translate_exception<ExceptionType,Translate>(), _1, _2, translate)
+        std::bind<bool>(detail::translate_exception<ExceptionType,Translate>(), _1, _2, translate)
         );
 }
 

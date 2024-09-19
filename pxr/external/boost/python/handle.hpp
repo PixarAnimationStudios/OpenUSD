@@ -27,6 +27,8 @@
 # include "pxr/external/boost/python/tag.hpp"
 # include "pxr/external/boost/python/detail/raw_pyobject.hpp"
 
+#include <boost/get_pointer.hpp>
+
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 template <class T> struct null_ok;

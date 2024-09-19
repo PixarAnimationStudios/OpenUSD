@@ -22,7 +22,6 @@
 #include "pxr/external/boost/python/detail/map_entry.hpp"
 #include "pxr/external/boost/python/object.hpp"
 #include "pxr/external/boost/python/object_protocol.hpp"
-#include <boost/detail/binary_search.hpp>
 #include "pxr/external/boost/python/self.hpp"
 #include "pxr/external/boost/python/dict.hpp"
 #include "pxr/external/boost/python/str.hpp"

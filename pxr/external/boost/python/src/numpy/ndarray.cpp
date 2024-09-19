@@ -11,7 +11,7 @@
 
 #define PXR_BOOST_PYTHON_NUMPY_INTERNAL
 #include "pxr/external/boost/python/numpy/internal.hpp"
-#include <boost/scoped_array.hpp>
+#include <memory>
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 namespace converter 
@@ -242,7 +242,7 @@ python::object ndarray::scalarize() const
 ndarray zeros(python::tuple const & shape, dtype const & dt) 
 {
   int nd = len(shape);
-  boost::scoped_array<Py_intptr_t> dims(new Py_intptr_t[nd]);
+  auto dims = std::make_unique<Py_intptr_t[]>(nd);
   for (int n=0; n<nd; ++n) dims[n] = python::extract<Py_intptr_t>(shape[n]);
   return ndarray(python::detail::new_reference
                  (PyArray_Zeros(nd, dims.get(), detail::incref_dtype(dt), 0)));
@@ -257,7 +257,7 @@ ndarray zeros(int nd, Py_intptr_t const * shape, dtype const & dt)
 ndarray empty(python::tuple const & shape, dtype const & dt) 
 {
   int nd = len(shape);
-  boost::scoped_array<Py_intptr_t> dims(new Py_intptr_t[nd]);
+  auto dims = std::make_unique<Py_intptr_t[]>(nd);
   for (int n=0; n<nd; ++n) dims[n] = python::extract<Py_intptr_t>(shape[n]);
   return ndarray(python::detail::new_reference
                  (PyArray_Empty(nd, dims.get(), detail::incref_dtype(dt), 0)));    

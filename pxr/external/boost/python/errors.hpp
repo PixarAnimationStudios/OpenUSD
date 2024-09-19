@@ -22,7 +22,7 @@
 #else
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
-# include <boost/function/function0.hpp>
+#include <functional>
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
@@ -33,12 +33,12 @@ struct PXR_BOOST_PYTHON_DECL error_already_set
 
 // Handles exceptions caught just before returning to Python code.
 // Returns true iff an exception was caught.
-PXR_BOOST_PYTHON_DECL bool handle_exception_impl(function0<void>);
+PXR_BOOST_PYTHON_DECL bool handle_exception_impl(std::function<void()>);
 
 template <class T>
 bool handle_exception(T f)
 {
-    return handle_exception_impl(function0<void>(boost::ref(f)));
+    return handle_exception_impl(std::function<void()>(std::ref(f)));
 }
 
 namespace detail { inline void rethrow() { throw; } }

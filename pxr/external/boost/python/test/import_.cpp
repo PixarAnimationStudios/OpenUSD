@@ -11,7 +11,7 @@
 #include "pxr/external/boost/python.hpp"
 
 #include <boost/detail/lightweight_test.hpp>
-#include <boost/bind/bind.hpp>
+#include <functional>
 #include <iostream>
 #include <sstream>
 
@@ -49,7 +49,7 @@ int main(int argc, char **argv)
   // Initialize the interpreter
   Py_Initialize();
   
-  if (bpl::handle_exception(boost::bind(import_test,argv[1])))
+  if (bpl::handle_exception(std::bind(import_test,argv[1])))
   {
     if (PyErr_Occurred())
     {
