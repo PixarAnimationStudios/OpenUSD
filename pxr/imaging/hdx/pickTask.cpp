@@ -860,19 +860,14 @@ void HdxPickTask::_ResolveDeep()
 
             int primId = data[entryOffset];
             hit.objectId = _index->GetRprimPathFromPrimId(primId);
-
-            if (!hit.IsValid()) {
+            if (hit.objectId.IsEmpty()) {
                 continue;
             }
 
-            bool rprimValid = _index->GetSceneDelegateAndInstancerIds(
-                                hit.objectId,
-                                &(hit.delegateId),
-                                &(hit.instancerId));
-
-            if (!TF_VERIFY(rprimValid, "%s\n", hit.objectId.GetText())) {
-                continue;
-            }
+            _index->GetSceneDelegateAndInstancerIds(
+                    hit.objectId,
+                    &(hit.delegateId),
+                    &(hit.instancerId));
 
             int partIndex = data[entryOffset + 2];
             hit.instanceIndex = data[entryOffset + 1];
@@ -883,13 +878,19 @@ void HdxPickTask::_ResolveDeep()
                 _contextParams.pickTarget == HdxPickTokens->pickEdges ?
                 partIndex : -1;
             hit.pointIndex = 
-                _contextParams.pickTarget == HdxPickTokens->pickPoints ?
+                (_contextParams.pickTarget == HdxPickTokens->pickPoints ||
+                 _contextParams.pickTarget ==
+                    HdxPickTokens->pickPointsAndInstances) ?
                 partIndex : -1;
 
             // the following data is skipped in deep selection
             hit.worldSpaceHitPoint = GfVec3f(0.f, 0.f, 0.f);
             hit.worldSpaceHitNormal = GfVec3f(0.f, 0.f, 0.f);
             hit.normalizedDepth = 0.f;
+
+            if (TfDebug::IsEnabled(HDX_INTERSECT)) {
+                std::cout << hit << std::endl;
+            }
 
             _contextParams.outHits->push_back(hit);
         }
