@@ -114,7 +114,7 @@ struct implicit_cast_generator
 template <class Source, class Target>
 struct cast_generator
   : python::detail::mpl2::if_<
-        PXR_BOOST_NAMESPACE::python::detail::is_base_and_derived<Target,Source>
+        python::detail::is_base_and_derived<Target,Source>
       , implicit_cast_generator<Source,Target>
       , dynamic_cast_generator<Source,Target>
     >
@@ -123,7 +123,7 @@ struct cast_generator
 
 template <class Source, class Target>
 inline void register_conversion(
-    bool is_downcast = ::boost::is_base_and_derived<Source,Target>::value
+    bool is_downcast = python::detail::is_base_and_derived<Source,Target>::value
     // These parameters shouldn't be used; they're an MSVC bug workaround
     , Source* = 0, Target* = 0)
 {

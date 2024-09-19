@@ -9,6 +9,7 @@
 #include "pxr/external/boost/python/converter/arg_from_python.hpp"
 #include "pxr/external/boost/python/type_id.hpp"
 #include <iostream>
+#include <type_traits>
 
 // gcc 2.95.x, MIPSpro 7.3.1.3 and IBM XL for Linux linker seem to demand this definition
 #if (defined(__GNUC__) && (__GNUC__ < 3)) \
@@ -25,7 +26,7 @@ PXR_BOOST_PYTHON_DECL bool handle_exception_impl(function0<void>)
 int result;
 
 #define ASSERT_SAME(T1,T2) \
-       if (!is_same< T1, T2 >::value) { \
+       if (!std::is_same< T1, T2 >::value) { \
              std::cout << "*********************\n"; \
              std::cout << python::type_id< T1 >() << " != " << python::type_id< T2 >() << "\n"; \
              std::cout << "*********************\n"; \

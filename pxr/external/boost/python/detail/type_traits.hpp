@@ -19,10 +19,6 @@
 #else
 
 # include <type_traits>
-# include <boost/type_traits/is_base_and_derived.hpp>
-# include <boost/type_traits/alignment_traits.hpp>
-# include <boost/type_traits/has_trivial_copy.hpp>
-
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
@@ -59,9 +55,23 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
     typedef std::integral_constant<bool, true> true_;
     typedef std::integral_constant<bool, false> false_;
 
-    using boost::is_base_and_derived;
-    using boost::type_with_alignment;
-    using boost::has_trivial_copy;
+    // This was previously boost::is_base_and_derived, which was once
+    // user-facing but now appears to be an undocumented implementation
+    // detail in boost/type_traits.
+    //
+    // The boost trait is *not* equivalent to std::is_base_of. Most
+    // critically, boost::is_base_and_derived<T, T>::value is false,
+    // while std::is_base_of<T, T>::value is true. We accommodate that
+    // difference below.
+    //
+    // boost::is_base_and_derived also handles inaccessible
+    // or ambiguous base classes, whereas std::is_base_of does not.
+    // This does not appear to be relevant for this library.
+    template <class Base, class Derived>
+    using is_base_and_derived = std::bool_constant<
+        std::is_base_of_v<Base, Derived> && !std::is_same_v<Base, Derived>
+    >;
+
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 

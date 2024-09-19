@@ -132,7 +132,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python {
 
         typedef detail::mpl2::or_<
             detail::mpl2::bool_<NoProxy>
-          , detail::mpl2::not_<is_class<Data> >
+          , detail::mpl2::not_<std::is_class<Data> >
           , typename detail::mpl2::or_<
                 detail::is_same<Data, std::string>
               , detail::is_same<Data, std::complex<float> >

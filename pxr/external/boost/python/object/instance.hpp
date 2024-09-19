@@ -37,14 +37,9 @@ struct instance
     PyObject* weakrefs; 
     instance_holder* objects;
 
-    typedef typename PXR_BOOST_NAMESPACE::python::detail::type_with_alignment<
-        PXR_BOOST_NAMESPACE::python::detail::alignment_of<Data>::value
-    >::type align_t;
-
-    union
+    struct
     {
-        align_t align;
-        char bytes[sizeof(Data)];
+        alignas(Data) char bytes[sizeof(Data)];
     } storage;
 };
 

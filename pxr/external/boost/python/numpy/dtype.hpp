@@ -92,12 +92,12 @@ template <int bits> dtype get_float_dtype();
 
 template <int bits> dtype get_complex_dtype();
 
-template <typename T, bool isInt=boost::is_integral<T>::value>
+template <typename T, bool isInt=std::is_integral<T>::value>
 struct builtin_dtype;
 
 template <typename T>
 struct builtin_dtype<T,true> {
-  static dtype get() { return get_int_dtype< 8*sizeof(T), boost::is_unsigned<T>::value >(); }
+  static dtype get() { return get_int_dtype< 8*sizeof(T), std::is_unsigned<T>::value >(); }
 };
 
 template <>

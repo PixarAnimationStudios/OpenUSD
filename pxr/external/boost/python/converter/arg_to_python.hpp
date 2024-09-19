@@ -197,7 +197,7 @@ namespace detail
       reject_raw_object_helper<T,yes_convertible>::error(
           python::detail::convertible<PyObject const volatile*>::check((T*)0));
       
-      typedef typename remove_cv<T>::type value_type;
+      typedef typename std::remove_cv<T>::type value_type;
       
       reject_raw_object_helper<T,no_convertible>::error(
           python::detail::convertible<unspecialized*>::check(

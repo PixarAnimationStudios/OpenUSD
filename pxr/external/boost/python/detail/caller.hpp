@@ -21,8 +21,7 @@
 #  include "pxr/external/boost/python/type_id.hpp"
 #  include "pxr/external/boost/python/handle.hpp"
 
-#  include <boost/detail/indirect_traits.hpp>
-
+#  include "pxr/external/boost/python/detail/indirect_traits.hpp"
 #  include "pxr/external/boost/python/detail/invoke.hpp"
 #  include "pxr/external/boost/python/detail/signature.hpp"
 #  include "pxr/external/boost/python/detail/preprocessor.hpp"
@@ -120,7 +119,7 @@ template<class Policies, class Sig> const signature_element* get_ret()
     static const signature_element ret = {
         (detail::is_void<rtype>::value ? "void" : type_id<rtype>().name())
         , &detail::converter_target_type<result_converter>::get_pytype
-        , boost::detail::indirect_traits::is_reference_to_non_const<rtype>::value 
+        , indirect_traits::is_reference_to_non_const<rtype>::value 
     };
 
     return &ret;

@@ -187,7 +187,7 @@ struct class_metadata
         python::detail::mpl2::or_<
             has_back_reference<T>
           , PXR_BOOST_NAMESPACE::python::detail::is_same<held_type_arg,T>
-          , is_base_and_derived<T,wrapped>
+          , python::detail::is_base_and_derived<T,wrapped>
         >::value
     > use_back_reference;
 
@@ -221,8 +221,8 @@ struct class_metadata
 
     inline static void register_aux(void*) 
     {
-        typedef typename is_base_and_derived<T,wrapped>::type use_callback;
-        class_metadata::register_aux2((T*)0, python::detail::mpl2::bool_<use_callback::value>());
+        typedef typename python::detail::is_base_and_derived<T,wrapped>::type use_callback;
+        class_metadata::register_aux2((T*)0, use_callback());
     }
 
     template <class T2, class Callback>

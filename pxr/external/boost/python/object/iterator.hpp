@@ -60,7 +60,7 @@ struct iterator_range
     struct next
     {
         typedef typename python::detail::mpl2::if_<
-            is_reference<
+            std::is_reference<
                 typename traits_t::reference
             >
           , typename traits_t::reference

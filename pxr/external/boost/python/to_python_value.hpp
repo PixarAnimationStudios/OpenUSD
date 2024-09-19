@@ -74,7 +74,7 @@ struct object_manager_get_pytype<true>
       PyObject* operator()(argument_type) const;
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
       typedef detail::mpl2::bool_<is_handle<T>::value> is_t_handle;
-      typedef boost::detail::indirect_traits::is_reference_to_const<T> is_t_const;
+      typedef indirect_traits::is_reference_to_const<T> is_t_const;
       PyTypeObject const* get_pytype() const {
           return get_pytype_aux((is_t_handle*)0);
       }
