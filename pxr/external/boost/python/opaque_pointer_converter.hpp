@@ -32,7 +32,7 @@
 
 # include <boost/implicit_cast.hpp>
 
-# include <boost/mpl/eval_if.hpp>
+# include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
 # include <boost/mpl/identity.hpp>
 
 // opaque --

@@ -26,7 +26,7 @@
 #include <boost/assert.hpp>
 #include "pxr/external/boost/python/copy_const_reference.hpp"
 #include "pxr/external/boost/python/return_value_policy.hpp"
-#include <boost/mpl/bool.hpp>
+#include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 
 // This test shows that a class can be wrapped "as itself" but also
 // acquire a back-reference iff has_back_reference<> is appropriately
@@ -77,13 +77,13 @@ namespace PXR_BOOST_NAMESPACE { namespace python
 {
   template <>
   struct has_back_reference<Y>
-      : mpl::true_
+      : detail::mpl2::true_
   {
   };
 
   template <>
   struct has_back_reference<Z>
-      : mpl::true_
+      : detail::mpl2::true_
   {
   };
 }}

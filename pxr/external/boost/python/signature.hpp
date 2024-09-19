@@ -24,7 +24,7 @@
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/mpl/if.hpp>
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 
 #  include "pxr/external/boost/python/detail/preprocessor.hpp"
 #  include "pxr/external/boost/python/detail/type_traits.hpp"
@@ -52,7 +52,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 template <class C1, class C2>
 struct most_derived
 {
-    typedef typename mpl::if_<
+    typedef typename detail::mpl2::if_<
         detail::is_convertible<C1*,C2*>
       , C1
       , C2

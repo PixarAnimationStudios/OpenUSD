@@ -32,7 +32,7 @@
 
 # include "pxr/external/boost/python/object_core.hpp"
 
-# include <boost/mpl/bool.hpp>
+# include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 
 # include <cstddef>
 # include <algorithm>
@@ -130,7 +130,7 @@ namespace detail
       BOOST_STATIC_CONSTANT(bool, is_key = is_keywords<key_t>::value);
       BOOST_STATIC_CONSTANT(bool, value = (is_ref & is_key));
       
-      typedef mpl::bool_<value> type;
+      typedef detail::mpl2::bool_<value> type;
   };
 }
 

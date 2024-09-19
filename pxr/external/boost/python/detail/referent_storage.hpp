@@ -16,7 +16,7 @@
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/referent_storage.hpp>
 #else
-# include <boost/mpl/if.hpp>
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 # include <boost/type_traits/aligned_storage.hpp>
 # include <cstddef>
 

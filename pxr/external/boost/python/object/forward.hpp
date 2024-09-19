@@ -17,12 +17,12 @@
 #include <boost/python/object/forward.hpp>
 #else
 
-# include <boost/mpl/if.hpp>
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 # include <boost/ref.hpp>
 # include "pxr/external/boost/python/detail/value_arg.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include "pxr/external/boost/python/detail/copy_ctor_mutates_rhs.hpp"
-# include <boost/mpl/or.hpp>
+# include "pxr/external/boost/python/detail/mpl2/or.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
@@ -46,8 +46,8 @@ struct reference_to_value
 // is T.
 template <class T>
 struct forward
-    : mpl::if_<
-          mpl::or_<python::detail::copy_ctor_mutates_rhs<T>, PXR_BOOST_NAMESPACE::python::detail::is_scalar<T> >
+    : python::detail::mpl2::if_<
+          python::detail::mpl2::or_<python::detail::copy_ctor_mutates_rhs<T>, PXR_BOOST_NAMESPACE::python::detail::is_scalar<T> >
         , T
         , reference_to_value<T>
       >

@@ -25,6 +25,7 @@
 # include "pxr/external/boost/python/converter/pytype_function.hpp"
 #endif
 # include "pxr/external/boost/python/type_id.hpp"
+# include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
@@ -49,7 +50,7 @@ namespace detail
     };
 
     template<class T>
-    struct test_get_pytype : boost::mpl::bool_<test_get_pytype_base<T>::value> 
+    struct test_get_pytype : python::detail::mpl2::bool_<test_get_pytype_base<T>::value> 
     {
     };
 
@@ -60,14 +61,14 @@ template < class T, class Conversion, bool has_get_pytype=false >
 struct to_python_converter 
 {
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
-    typedef boost::mpl::bool_<has_get_pytype> HasGetPytype;
+    typedef python::detail::mpl2::bool_<has_get_pytype> HasGetPytype;
 
-    static PyTypeObject const* get_pytype_1(boost::mpl::true_ *)
+    static PyTypeObject const* get_pytype_1(PXR_BOOST_NAMESPACE::python::detail::mpl2::true_ *)
     {
         return Conversion::get_pytype();
     }
 
-    static PyTypeObject const* get_pytype_1(boost::mpl::false_ *)
+    static PyTypeObject const* get_pytype_1(PXR_BOOST_NAMESPACE::python::detail::mpl2::false_ *)
     {
         return 0;
     }

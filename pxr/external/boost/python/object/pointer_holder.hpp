@@ -36,7 +36,7 @@
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
 
-#  include <boost/mpl/if.hpp>
+#  include "pxr/external/boost/python/detail/mpl2/if.hpp"
 #  include <boost/mpl/apply.hpp>
 
 #  include <boost/preprocessor/comma_if.hpp>

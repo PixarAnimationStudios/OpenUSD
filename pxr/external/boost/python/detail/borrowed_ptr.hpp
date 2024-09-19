@@ -19,7 +19,7 @@
 
 # include <boost/config.hpp>
 # include <boost/type.hpp>
-# include <boost/mpl/if.hpp>
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include "pxr/external/boost/python/tag.hpp"
 

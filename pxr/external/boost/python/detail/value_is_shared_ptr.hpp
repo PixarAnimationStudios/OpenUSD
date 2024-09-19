@@ -32,7 +32,7 @@ struct value_is_shared_ptr
 					      ::type>
 					    ::type>
     ::value;
-  typedef mpl::bool_<value> type;
+  typedef mpl2::bool_<value> type;
 };
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail

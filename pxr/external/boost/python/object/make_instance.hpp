@@ -23,7 +23,7 @@
 # include "pxr/external/boost/python/detail/decref_guard.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include "pxr/external/boost/python/detail/none.hpp"
-# include <boost/mpl/or.hpp>
+# include "pxr/external/boost/python/detail/mpl2/or.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
@@ -35,7 +35,7 @@ struct make_instance_impl
     template <class Arg>
     static inline PyObject* execute(Arg& x)
     {
-        static_assert((mpl::or_<PXR_BOOST_NAMESPACE::python::detail::is_class<T>,
+        static_assert((python::detail::mpl2::or_<PXR_BOOST_NAMESPACE::python::detail::is_class<T>,
                 PXR_BOOST_NAMESPACE::python::detail::is_union<T> >::value));
 
         PyTypeObject* type = Derived::get_class_object(x);

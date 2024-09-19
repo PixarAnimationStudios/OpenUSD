@@ -247,7 +247,7 @@ namespace detail
       typedef typename OverloadsT::void_return_type void_return_type;
       typedef typename OverloadsT::non_void_return_type non_void_return_type;
 
-      typedef typename mpl::if_c<
+      typedef typename mpl2::if_c<
           is_same<void, return_type>::value
           , void_return_type
           , non_void_return_type

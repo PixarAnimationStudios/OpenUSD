@@ -73,7 +73,7 @@ namespace converter
   template <class T>
   struct extract_rvalue : private noncopyable
   {
-      typedef typename mpl::if_<
+      typedef typename python::detail::mpl2::if_<
           python::detail::copy_ctor_mutates_rhs<T>
         , T&
         , typename call_traits<T>::param_type
@@ -112,13 +112,13 @@ namespace converter
       BOOST_STATIC_CONSTANT(
           bool, ref = python::detail::is_reference<T>::value);
 
-      typedef typename mpl::if_c<
+      typedef typename python::detail::mpl2::if_c<
           obj_mgr
           , extract_object_manager<T>
-          , typename mpl::if_c<
+          , typename python::detail::mpl2::if_c<
               ptr
               , extract_pointer<T>
-              , typename mpl::if_c<
+              , typename python::detail::mpl2::if_c<
                   ref
                   , extract_reference<T>
                   , extract_rvalue<T>

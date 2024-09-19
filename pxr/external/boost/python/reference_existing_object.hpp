@@ -19,7 +19,7 @@
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/detail/indirect_traits.hpp"
-# include <boost/mpl/if.hpp>
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 # include "pxr/external/boost/python/to_python_indirect.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
@@ -45,7 +45,7 @@ struct reference_existing_object
         BOOST_STATIC_CONSTANT(
             bool, ok = detail::is_pointer<T>::value || detail::is_reference<T>::value);
         
-        typedef typename mpl::if_c<
+        typedef typename python::detail::mpl2::if_c<
             ok
             , to_python_indirect<T, detail::make_reference_holder>
             , detail::reference_existing_object_requires_a_pointer_or_reference_return_type<T>

@@ -22,7 +22,7 @@
 # include "pxr/external/boost/python/default_call_policies.hpp"
 # include "pxr/external/boost/python/reference_existing_object.hpp"
 # include "pxr/external/boost/python/with_custodian_and_ward.hpp"
-# include <boost/mpl/if.hpp>
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
@@ -43,7 +43,7 @@ struct return_internal_reference
  private:
     BOOST_STATIC_CONSTANT(bool, legal = owner_arg > 0);
  public:
-    typedef typename mpl::if_c<
+    typedef typename detail::mpl2::if_c<
         legal
         , reference_existing_object
         , detail::return_internal_reference_owner_arg_must_be_greater_than_zero<owner_arg>

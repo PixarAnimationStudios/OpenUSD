@@ -12,7 +12,7 @@
 #include "pxr/external/boost/python/detail/not_specified.hpp"
 #include "pxr/external/boost/python/detail/type_traits.hpp"
 #include <boost/function/function0.hpp>
-#include <boost/mpl/bool.hpp>
+#include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 #include <memory>
 
 struct BR {};
@@ -25,7 +25,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python
   // specialization
   template <>
   struct has_back_reference<BR>
-    : mpl::true_
+    : detail::mpl2::true_
   {
   };
 }} // namespace PXR_BOOST_NAMESPACE::python

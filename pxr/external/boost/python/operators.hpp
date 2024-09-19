@@ -24,8 +24,8 @@
 # include "pxr/external/boost/python/detail/operator_id.hpp"
 # include "pxr/external/boost/python/detail/not_specified.hpp"
 # include "pxr/external/boost/python/back_reference.hpp"
-# include <boost/mpl/if.hpp>
-# include <boost/mpl/eval_if.hpp>
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
+# include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
 # include "pxr/external/boost/python/self.hpp"
 # include "pxr/external/boost/python/other.hpp"
 # include <boost/lexical_cast.hpp>
@@ -141,9 +141,9 @@ namespace detail
       template <class ClassT>
       void visit(ClassT& cl) const
       {
-          typedef typename mpl::eval_if<
+          typedef typename detail::mpl2::eval_if<
               is_same<L,self_t>
-            , mpl::if_<
+            , detail::mpl2::if_<
                   is_same<R,self_t>
                 , binary_op<id>
                 , binary_op_l<
@@ -151,7 +151,7 @@ namespace detail
                     , BOOST_DEDUCED_TYPENAME unwrap_other<R>::type
                   >
               >
-            , mpl::if_<
+            , detail::mpl2::if_<
                   is_same<L,not_specified>
                 , unary_op<id>
                 , binary_op_r<

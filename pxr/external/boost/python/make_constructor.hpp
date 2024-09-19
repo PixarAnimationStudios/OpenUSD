@@ -208,7 +208,7 @@ namespace detail
   //   @group Helpers for make_constructor when called with 3 arguments. {
   //
   template <class F, class CallPolicies, class Keywords>
-  object make_constructor_dispatch(F f, CallPolicies const& policies, Keywords const& kw, mpl::true_)
+  object make_constructor_dispatch(F f, CallPolicies const& policies, Keywords const& kw, detail::mpl2::true_)
   {
       return detail::make_constructor_aux(
           f
@@ -220,7 +220,7 @@ namespace detail
   }
 
   template <class F, class CallPolicies, class Signature>
-  object make_constructor_dispatch(F f, CallPolicies const& policies, Signature const& sig, mpl::false_)
+  object make_constructor_dispatch(F f, CallPolicies const& policies, Signature const& sig, detail::mpl2::false_)
   {
       return detail::make_constructor_aux(
           f

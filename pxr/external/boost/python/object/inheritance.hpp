@@ -19,7 +19,7 @@
 
 # include "pxr/external/boost/python/type_id.hpp"
 # include <boost/shared_ptr.hpp>
-# include <boost/mpl/if.hpp>
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
@@ -67,7 +67,7 @@ struct non_polymorphic_id_generator
 // Now the generalized selector
 template <class T>
 struct dynamic_id_generator
-  : mpl::if_<
+  : python::detail::mpl2::if_<
         PXR_BOOST_NAMESPACE::python::detail::is_polymorphic<T>
         , PXR_BOOST_NAMESPACE::python::objects::polymorphic_id_generator<T>
         , PXR_BOOST_NAMESPACE::python::objects::non_polymorphic_id_generator<T>
@@ -113,7 +113,7 @@ struct implicit_cast_generator
 
 template <class Source, class Target>
 struct cast_generator
-  : mpl::if_<
+  : python::detail::mpl2::if_<
         PXR_BOOST_NAMESPACE::python::detail::is_base_and_derived<Target,Source>
       , implicit_cast_generator<Source,Target>
       , dynamic_cast_generator<Source,Target>

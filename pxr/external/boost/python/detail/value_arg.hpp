@@ -17,14 +17,14 @@
 #else
 
 # include "pxr/external/boost/python/detail/copy_ctor_mutates_rhs.hpp"
-# include <boost/mpl/if.hpp>
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 # include "pxr/external/boost/python/detail/indirect_traits.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 template <class T>
 struct value_arg
-  : mpl::if_<
+  : mpl2::if_<
         copy_ctor_mutates_rhs<T>
       , T
       , typename add_lvalue_reference<

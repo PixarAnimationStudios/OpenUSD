@@ -46,9 +46,9 @@
 
 # include <boost/mpl/size.hpp>
 # include <boost/mpl/for_each.hpp>
-# include <boost/mpl/bool.hpp>
-# include <boost/mpl/not.hpp>
-# include <boost/mpl/and.hpp>
+# include "pxr/external/boost/python/detail/mpl2/bool.hpp"
+# include "pxr/external/boost/python/detail/mpl2/not.hpp"
+# include "pxr/external/boost/python/detail/mpl2/and.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
@@ -77,9 +77,9 @@ namespace detail
 
   template <class T>
   struct is_data_member_pointer
-      : mpl::and_<
+      : detail::mpl2::and_<
             detail::is_member_pointer<T>
-          , mpl::not_<detail::is_member_function_pointer<T> >
+          , detail::mpl2::not_<detail::is_member_function_pointer<T> >
         >
   {};
   
@@ -99,7 +99,7 @@ namespace detail
 
     template <class C>
     struct assertion
-        : mpl::if_<C, assertion_ok<C>, assertion_failed<C> >::type
+        : detail::mpl2::if_<C, assertion_ok<C>, assertion_failed<C> >::type
     {};
 
     //
@@ -118,7 +118,7 @@ namespace detail
         must_be_derived_class_member(Default const&)
         {
             // https://svn.boost.org/trac/boost/ticket/5803
-            //typedef typename assertion<mpl::not_<detail::is_same<Default,Fn> > >::failed test0;
+            //typedef typename assertion<detail::mpl2::not_<detail::is_same<Default,Fn> > >::failed test0;
             typedef typename assertion<detail::is_member_function_pointer<Fn> >::failed test2 BOOST_ATTRIBUTE_UNUSED;
             not_a_derived_class_member<Default>(Fn());
         }
@@ -371,27 +371,27 @@ class class_ : public objects::class_base
     }
     
     template <class T, class F>
-    object make_fn_impl(T*, F const& f, mpl::false_, void*, mpl::false_)
+    object make_fn_impl(T*, F const& f, detail::mpl2::false_, void*, detail::mpl2::false_)
     {
         return python::make_function(f, default_call_policies(), detail::get_signature(f, (T*)0));
     }
 
     template <class T, class D, class B>
-    object make_fn_impl(T*, D B::*pm_, mpl::false_, char*, mpl::true_)
+    object make_fn_impl(T*, D B::*pm_, detail::mpl2::false_, char*, detail::mpl2::true_)
     {
         D T::*pm = pm_;
         return python::make_getter(pm);
     }
 
     template <class T, class D, class B>
-    object make_fn_impl(T*, D B::*pm_, mpl::false_, int*, mpl::true_)
+    object make_fn_impl(T*, D B::*pm_, detail::mpl2::false_, int*, detail::mpl2::true_)
     {
         D T::*pm = pm_;
         return python::make_setter(pm);
     }
 
     template <class T, class F>
-    object make_fn_impl(T*, F const& x, mpl::true_, void*, mpl::false_)
+    object make_fn_impl(T*, F const& x, detail::mpl2::true_, void*, detail::mpl2::false_)
     {
         return x;
     }
@@ -480,7 +480,7 @@ class class_ : public objects::class_base
           , helper.doc()
         );
 
-        this->def_default(name, fn, helper, mpl::bool_<Helper::has_default_implementation>());
+        this->def_default(name, fn, helper, detail::mpl2::bool_<Helper::has_default_implementation>());
     }
     // }
 
@@ -495,7 +495,7 @@ class class_ : public objects::class_base
         char const* name
         , Fn
         , Helper const& helper
-        , mpl::bool_<true>)
+        , detail::mpl2::bool_<true>)
     {
         detail::error::virtual_function_default<W,Fn>::must_be_derived_class_member(
             helper.default_implementation());
@@ -508,7 +508,7 @@ class class_ : public objects::class_base
     }
     
     template <class Fn, class Helper>
-    inline void def_default(char const*, Fn, Helper const&, mpl::bool_<false>)
+    inline void def_default(char const*, Fn, Helper const&, detail::mpl2::bool_<false>)
     { }
     // }
     

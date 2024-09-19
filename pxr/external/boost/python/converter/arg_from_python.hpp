@@ -22,12 +22,12 @@
 # include "pxr/external/boost/python/detail/indirect_traits.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
-# include <boost/mpl/eval_if.hpp>
-# include <boost/mpl/if.hpp>
+# include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 # include <boost/mpl/identity.hpp>
-# include <boost/mpl/and.hpp>
-# include <boost/mpl/or.hpp>
-# include <boost/mpl/not.hpp>
+# include "pxr/external/boost/python/detail/mpl2/and.hpp"
+# include "pxr/external/boost/python/detail/mpl2/or.hpp"
+# include "pxr/external/boost/python/detail/mpl2/not.hpp"
 # include "pxr/external/boost/python/converter/registry.hpp"
 # include "pxr/external/boost/python/converter/registered.hpp"
 # include "pxr/external/boost/python/converter/registered_pointee.hpp"
@@ -160,7 +160,7 @@ struct back_reference_arg_from_python
 template <class C, class T, class F>
 struct if_2
 {
-    typedef typename mpl::eval_if<C, mpl::identity<T>, F>::type type;
+    typedef typename python::detail::mpl2::eval_if<C, mpl::identity<T>, F>::type type;
 };
 
 // This metafunction selects the appropriate arg_from_python converter
@@ -178,19 +178,19 @@ struct select_arg_from_python
                 python::detail::is_pointer<T>
               , pointer_arg_from_python<T>
               , if_2<
-                    mpl::and_<
+                    python::detail::mpl2::and_<
                         indirect_traits::is_reference_to_pointer<T>
                       , indirect_traits::is_reference_to_const<T>
-                      , mpl::not_<indirect_traits::is_reference_to_volatile<T> >
+                      , python::detail::mpl2::not_<indirect_traits::is_reference_to_volatile<T> >
                         >
                   , pointer_cref_arg_from_python<T>
                   , if_2<
-                        mpl::or_<
+                        python::detail::mpl2::or_<
                             indirect_traits::is_reference_to_non_const<T>
                           , indirect_traits::is_reference_to_volatile<T>
                         >
                       , reference_arg_from_python<T>
-                      , mpl::if_<
+                      , python::detail::mpl2::if_<
                             PXR_BOOST_NAMESPACE::python::is_back_reference<T>
                           , back_reference_arg_from_python<T>
                           , arg_rvalue_from_python<T>

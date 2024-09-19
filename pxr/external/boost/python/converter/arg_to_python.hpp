@@ -38,7 +38,7 @@
 # include "pxr/external/boost/python/detail/value_is_shared_ptr.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-# include <boost/mpl/or.hpp>
+# include "pxr/external/boost/python/detail/mpl2/or.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
@@ -112,37 +112,37 @@ namespace detail
       typedef typename unwrap_reference<T>::type unwrapped_referent;
       typedef typename unwrap_pointer<T>::type unwrapped_ptr;
 
-      typedef typename mpl::if_<
+      typedef typename python::detail::mpl2::if_<
           // Special handling for char const[N]; interpret them as char
           // const* for the sake of conversion
           python::detail::is_string_literal<T const>
         , arg_to_python<char const*>
 
-        , typename mpl::if_<
+        , typename python::detail::mpl2::if_<
               python::detail::value_is_shared_ptr<T>
             , shared_ptr_arg_to_python<T>
       
-            , typename mpl::if_<
-                mpl::or_<
+            , typename python::detail::mpl2::if_<
+                python::detail::mpl2::or_<
                     PXR_BOOST_NAMESPACE::python::detail::is_function<T>
                   , indirect_traits::is_pointer_to_function<T>
                   , PXR_BOOST_NAMESPACE::python::detail::is_member_function_pointer<T>
                 >
                 , function_arg_to_python<T>
 
-                , typename mpl::if_<
+                , typename python::detail::mpl2::if_<
                       is_object_manager<T>
                     , object_manager_arg_to_python<T>
 
-                    , typename mpl::if_<
+                    , typename python::detail::mpl2::if_<
                           PXR_BOOST_NAMESPACE::python::detail::is_pointer<T>
                         , pointer_deep_arg_to_python<T>
 
-                        , typename mpl::if_<
+                        , typename python::detail::mpl2::if_<
                               is_pointer_wrapper<T>
                             , pointer_shallow_arg_to_python<unwrapped_ptr>
 
-                            , typename mpl::if_<
+                            , typename python::detail::mpl2::if_<
                                   is_reference_wrapper<T>
                                 , reference_arg_to_python<unwrapped_referent>
                                 , value_arg_to_python<T>

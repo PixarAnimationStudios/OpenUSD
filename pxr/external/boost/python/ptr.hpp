@@ -24,7 +24,7 @@
 //  Copyright (C) 2001 Peter Dimov
 
 # include <boost/config.hpp>
-# include <boost/mpl/bool.hpp>
+# include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
@@ -48,13 +48,13 @@ inline pointer_wrapper<T> ptr(T t)
 
 template<typename T>
 class is_pointer_wrapper
-    : public mpl::false_
+    : public detail::mpl2::false_
 {
 };
 
 template<typename T>
 class is_pointer_wrapper<pointer_wrapper<T> >
-    : public mpl::true_
+    : public detail::mpl2::true_
 {
 };
 

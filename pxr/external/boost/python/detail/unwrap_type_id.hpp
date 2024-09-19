@@ -18,7 +18,7 @@
 
 # include "pxr/external/boost/python/type_id.hpp"
 
-# include <boost/mpl/bool.hpp>
+# include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 

@@ -17,7 +17,7 @@
 #else
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
-# include <boost/mpl/bool.hpp>
+# include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
@@ -33,7 +33,7 @@ namespace detail
   // A metafunction returning true iff T is [derived from] wrapper<U> 
   template <class T>
   struct is_wrapper
-    : mpl::bool_<(sizeof(detail::is_wrapper_helper((T*)0)) == 1)>
+    : mpl2::bool_<(sizeof(detail::is_wrapper_helper((T*)0)) == 1)>
   {};
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail

@@ -33,8 +33,8 @@
 # include "pxr/external/boost/python/detail/value_arg.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-# include <boost/mpl/eval_if.hpp>
-# include <boost/mpl/if.hpp>
+# include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 # include <boost/mpl/vector/vector10.hpp>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
@@ -104,8 +104,8 @@ namespace detail
   // 
   template <class T>
   struct default_getter_by_ref
-      : mpl::and_<
-          mpl::bool_<
+      : detail::mpl2::and_<
+          detail::mpl2::bool_<
               to_python_value<
                   typename value_arg<T>::type
               >::uses_registry
@@ -127,7 +127,7 @@ namespace detail
   // and get the right result.
   template <class T>
   struct default_member_getter_policy
-    : mpl::if_<
+    : detail::mpl2::if_<
           default_getter_by_ref<T>
         , return_internal_reference<>
         , return_value_policy<return_by_value>
@@ -138,7 +138,7 @@ namespace detail
   // non-member data.
   template <class T>
   struct default_datum_getter_policy
-    : mpl::if_<
+    : detail::mpl2::if_<
           default_getter_by_ref<T>
         , return_value_policy<reference_existing_object>
         , return_value_policy<return_by_value>

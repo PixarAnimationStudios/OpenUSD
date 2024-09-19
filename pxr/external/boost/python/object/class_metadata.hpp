@@ -34,10 +34,10 @@
 #include "pxr/external/boost/python/has_back_reference.hpp"
 #include "pxr/external/boost/python/bases.hpp"
 
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/eval_if.hpp>
-#include <boost/mpl/bool.hpp>
-#include <boost/mpl/or.hpp>
+#include "pxr/external/boost/python/detail/mpl2/if.hpp"
+#include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
+#include "pxr/external/boost/python/detail/mpl2/bool.hpp"
+#include "pxr/external/boost/python/detail/mpl2/or.hpp"
 #include <boost/mpl/identity.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/placeholders.hpp>
@@ -107,8 +107,8 @@ inline void register_shared_ptr_from_python_and_casts(T*, Bases)
 //
 template <class T, class Prev>
 struct select_held_type
-  : mpl::if_<
-        mpl::or_<
+  : python::detail::mpl2::if_<
+        python::detail::mpl2::or_<
             python::detail::specifies_bases<T>
           , PXR_BOOST_NAMESPACE::python::detail::is_same<T,noncopyable>
         >
@@ -156,7 +156,7 @@ struct class_metadata
         >::type
     >::type bases;
 
-    typedef mpl::or_<
+    typedef python::detail::mpl2::or_<
         PXR_BOOST_NAMESPACE::python::detail::is_same<X1,noncopyable>
       , PXR_BOOST_NAMESPACE::python::detail::is_same<X2,noncopyable>
       , PXR_BOOST_NAMESPACE::python::detail::is_same<X3,noncopyable>
@@ -167,24 +167,24 @@ struct class_metadata
     //
     
     // Compute the actual type that will be held in the Holder.
-    typedef typename mpl::if_<
+    typedef typename python::detail::mpl2::if_<
         PXR_BOOST_NAMESPACE::python::detail::is_same<held_type_arg,python::detail::not_specified>, T, held_type_arg
     >::type held_type;
 
     // Determine if the object will be held by value
-    typedef mpl::bool_<PXR_BOOST_NAMESPACE::python::detail::is_convertible<held_type*,T*>::value> use_value_holder;
+    typedef python::detail::mpl2::bool_<PXR_BOOST_NAMESPACE::python::detail::is_convertible<held_type*,T*>::value> use_value_holder;
     
     // Compute the "wrapped type", that is, if held_type is a smart
     // pointer, we're talking about the pointee.
-    typedef typename mpl::eval_if<
+    typedef typename python::detail::mpl2::eval_if<
         use_value_holder
       , mpl::identity<held_type>
       , pointee<held_type>
     >::type wrapped;
 
     // Determine whether to use a "back-reference holder"
-    typedef mpl::bool_<
-        mpl::or_<
+    typedef python::detail::mpl2::bool_<
+        python::detail::mpl2::or_<
             has_back_reference<T>
           , PXR_BOOST_NAMESPACE::python::detail::is_same<held_type_arg,T>
           , is_base_and_derived<T,wrapped>
@@ -192,14 +192,14 @@ struct class_metadata
     > use_back_reference;
 
     // Select the holder.
-    typedef typename mpl::eval_if<
+    typedef typename python::detail::mpl2::eval_if<
         use_back_reference
-      , mpl::if_<
+      , python::detail::mpl2::if_<
             use_value_holder
           , value_holder_back_reference<T, wrapped>
           , pointer_holder_back_reference<held_type,T>
         >
-      , mpl::if_<
+      , python::detail::mpl2::if_<
             use_value_holder
           , value_holder<T>
           , pointer_holder<held_type,wrapped>
@@ -215,14 +215,14 @@ struct class_metadata
     template <class T2>
     inline static void register_aux(python::wrapper<T2>*) 
     {
-        typedef typename mpl::not_<PXR_BOOST_NAMESPACE::python::detail::is_same<T2,wrapped> >::type use_callback;
+        typedef typename python::detail::mpl2::not_<PXR_BOOST_NAMESPACE::python::detail::is_same<T2,wrapped> >::type use_callback;
         class_metadata::register_aux2((T2*)0, use_callback());
     }
 
     inline static void register_aux(void*) 
     {
         typedef typename is_base_and_derived<T,wrapped>::type use_callback;
-        class_metadata::register_aux2((T*)0, use_callback());
+        class_metadata::register_aux2((T*)0, python::detail::mpl2::bool_<use_callback::value>());
     }
 
     template <class T2, class Callback>
@@ -244,7 +244,7 @@ struct class_metadata
     inline static void maybe_register_pointer_to_python(...) {}
 
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
-    inline static void maybe_register_pointer_to_python(void*,void*,mpl::true_*)
+    inline static void maybe_register_pointer_to_python(void*,void*,python::detail::mpl2::true_*)
     {
         objects::copy_class_object(python::type_id<T>(), python::type_id<back_reference<T const &> >());
         objects::copy_class_object(python::type_id<T>(), python::type_id<back_reference<T &> >());
@@ -252,7 +252,7 @@ struct class_metadata
 #endif
 
     template <class T2>
-    inline static void maybe_register_pointer_to_python(T2*, mpl::false_*, mpl::false_*)
+    inline static void maybe_register_pointer_to_python(T2*, python::detail::mpl2::false_*, python::detail::mpl2::false_*)
     {
         python::detail::force_instantiate(
             objects::class_value_wrapper<
@@ -268,11 +268,11 @@ struct class_metadata
     //
     // Support for registering to-python converters
     //
-    inline static void maybe_register_class_to_python(void*, mpl::true_) {}
+    inline static void maybe_register_class_to_python(void*, python::detail::mpl2::true_) {}
     
 
     template <class T2>
-    inline static void maybe_register_class_to_python(T2*, mpl::false_)
+    inline static void maybe_register_class_to_python(T2*, python::detail::mpl2::false_)
     {
         python::detail::force_instantiate(class_cref_wrapper<T2, make_instance<T2, holder> >());
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
@@ -284,10 +284,10 @@ struct class_metadata
     //
     // Support for registering callback classes
     //
-    inline static void maybe_register_callback_class(void*, mpl::false_) {}
+    inline static void maybe_register_callback_class(void*, python::detail::mpl2::false_) {}
 
     template <class T2>
-    inline static void maybe_register_callback_class(T2*, mpl::true_)
+    inline static void maybe_register_callback_class(T2*, python::detail::mpl2::true_)
     {
 	objects::register_shared_ptr_from_python_and_casts(
             (wrapped*)0, mpl::single_view<T2>());

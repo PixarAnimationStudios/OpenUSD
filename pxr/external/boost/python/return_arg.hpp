@@ -77,7 +77,7 @@ struct return_arg : Base
     BOOST_STATIC_CONSTANT(bool, legal = arg_pos > 0);
 
  public:
-    typedef typename mpl::if_c<
+    typedef typename detail::mpl2::if_c<
         legal
         , detail::return_none
         , detail::return_arg_pos_argument_must_be_positive<arg_pos>

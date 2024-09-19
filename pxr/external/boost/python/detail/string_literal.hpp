@@ -20,18 +20,18 @@
 # include <cstddef>
 # include <boost/type.hpp>
 # include "pxr/external/boost/python/detail/type_traits.hpp"
-# include <boost/mpl/bool.hpp>
+# include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 template <class T>
-struct is_string_literal : mpl::false_
+struct is_string_literal : mpl2::false_
 {
 };
 
 #  if !defined(__MWERKS__) || __MWERKS__ > 0x2407
 template <std::size_t n>
-struct is_string_literal<char const[n]> : mpl::true_
+struct is_string_literal<char const[n]> : mpl2::true_
 {
 };
 

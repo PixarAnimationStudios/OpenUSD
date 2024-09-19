@@ -18,7 +18,7 @@
 #else
 
 # include <boost/config.hpp>
-# include <boost/mpl/bool.hpp>
+# include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 # include <boost/preprocessor/enum_params.hpp>
 
 # include "pxr/external/boost/python/detail/type_traits.hpp"
@@ -36,7 +36,7 @@ struct value_is_##name                                                  \
                                   typename remove_reference<X_>::type   \
                                >::type                                  \
                            >::value);                                   \
-    typedef mpl::bool_<value> type;                                     \
+    typedef mpl2::bool_<value> type;                                     \
                                                                         \
 };                                                              
 

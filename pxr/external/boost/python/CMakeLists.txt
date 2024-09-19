@@ -164,6 +164,12 @@ pxr_library(python
         detail/make_tuple.hpp
         detail/map_entry.hpp
         detail/mpl_lambda.hpp
+        detail/mpl2/and.hpp
+        detail/mpl2/bool.hpp
+        detail/mpl2/eval_if.hpp
+        detail/mpl2/if.hpp
+        detail/mpl2/not.hpp
+        detail/mpl2/or.hpp
         detail/msvc_typeinfo.hpp
         detail/none.hpp
         detail/not_specified.hpp

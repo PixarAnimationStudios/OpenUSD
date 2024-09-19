@@ -20,9 +20,9 @@
 # include "pxr/external/boost/python/args.hpp"
 # include "pxr/external/boost/python/detail/indirect_traits.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
-# include <boost/mpl/not.hpp>
-# include <boost/mpl/and.hpp>
-# include <boost/mpl/or.hpp>
+# include "pxr/external/boost/python/detail/mpl2/not.hpp"
+# include "pxr/external/boost/python/detail/mpl2/and.hpp"
+# include "pxr/external/boost/python/detail/mpl2/or.hpp"
 # include <boost/tuple/tuple.hpp>
 # include "pxr/external/boost/python/detail/not_specified.hpp"
 # include "pxr/external/boost/python/detail/def_helper_fwd.hpp"
@@ -100,8 +100,8 @@ namespace detail
 
   template <class T>
   struct doc_extract_pred
-      : mpl::not_<
-          mpl::or_<
+      : mpl2::not_<
+          mpl2::or_<
               indirect_traits::is_reference_to_class<T>
             , indirect_traits::is_reference_to_member_function_pointer<T>
           >
@@ -123,10 +123,10 @@ namespace detail
 
   template <class T>
   struct policy_extract_pred
-      : mpl::and_<
-          mpl::not_<std::is_same<not_specified const&, T> >
+      : mpl2::and_<
+          mpl2::not_<std::is_same<not_specified const&, T> >
         , indirect_traits::is_reference_to_class<T>
-        , mpl::not_<is_reference_to_keywords<T> >
+        , mpl2::not_<is_reference_to_keywords<T> >
       >
   {
   };

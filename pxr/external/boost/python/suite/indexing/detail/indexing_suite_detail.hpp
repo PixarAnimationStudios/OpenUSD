@@ -108,7 +108,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
         }
 
         void
-        erase(index_type i, mpl::false_)
+        erase(index_type i, detail::mpl2::false_)
         {
             PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
             // Erase the proxy with index i 
@@ -117,7 +117,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
         }
 
         void
-        erase(index_type i, mpl::true_)
+        erase(index_type i, detail::mpl2::true_)
         {
             PXR_BOOST_PYTHON_INDEXING_CHECK_INVARIANT;
             // Erase the proxy with index i 

@@ -18,7 +18,7 @@
 #else
 
 # if defined(__EDG_VERSION__) && __EDG_VERSION__ <= 241
-#  include <boost/mpl/if.hpp>
+#  include "pxr/external/boost/python/detail/mpl2/if.hpp"
 #  include "pxr/external/boost/python/detail/type_traits.hpp"
 # endif 
 
@@ -37,7 +37,7 @@ struct convertible
     static inline yes_convertible check(Target) { return 0; }
 # else
     template <class X>
-    static inline typename mpl::if_c<
+    static inline typename mpl2::if_c<
         is_convertible<X,Target>::value
         , yes_convertible
         , no_convertible

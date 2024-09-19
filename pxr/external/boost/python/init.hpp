@@ -27,13 +27,13 @@
 #include "pxr/external/boost/python/detail/make_keyword_range_fn.hpp"
 #include "pxr/external/boost/python/def_visitor.hpp"
 
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/eval_if.hpp>
+#include "pxr/external/boost/python/detail/mpl2/if.hpp"
+#include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
 #include <boost/mpl/size.hpp>
 #include <boost/mpl/iterator_range.hpp>
 #include <boost/mpl/empty.hpp>
 #include <boost/mpl/begin_end.hpp>
-#include <boost/mpl/bool.hpp>
+#include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 #include <boost/mpl/prior.hpp>
 #include <boost/mpl/joint_view.hpp>
 #include <boost/mpl/back.hpp>
@@ -90,12 +90,12 @@ namespace detail
 
     template <class T>
     struct is_optional
-      : mpl::false_
+      : detail::mpl2::false_
     {};
 
     template <PXR_BOOST_PYTHON_OVERLOAD_TYPES>
     struct is_optional<optional<PXR_BOOST_PYTHON_OVERLOAD_ARGS> >
-      : mpl::true_
+      : detail::mpl2::true_
     {};
   
 
@@ -258,22 +258,22 @@ class init : public init_base<init<PXR_BOOST_PYTHON_OVERLOAD_ARGS> >
     typedef detail::type_list<PXR_BOOST_PYTHON_OVERLOAD_ARGS> signature_;
 
     typedef detail::is_optional<
-        typename mpl::eval_if<
+        typename detail::mpl2::eval_if<
             mpl::empty<signature_>
-          , mpl::false_
+          , detail::mpl2::false_
           , mpl::back<signature_>
         >::type
     > back_is_optional;
     
-    typedef typename mpl::eval_if<
+    typedef typename detail::mpl2::eval_if<
         back_is_optional
       , mpl::back<signature_>
       , mpl::vector0<>
     >::type optional_args;
 
-    typedef typename mpl::eval_if<
+    typedef typename detail::mpl2::eval_if<
         back_is_optional
-      , mpl::if_<
+      , detail::mpl2::if_<
             mpl::empty<optional_args>
           , detail::drop1<signature_>
           , mpl::joint_view<

@@ -44,7 +44,7 @@
 
 #  include <boost/compressed_pair.hpp>
 
-#  include <boost/mpl/eval_if.hpp>
+#  include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
 #  include <boost/mpl/identity.hpp>
 #  include <boost/mpl/size.hpp>
 #  include <boost/mpl/at.hpp>
@@ -74,7 +74,7 @@ typedef int void_result_to_python;
 // converting the result to python.
 template <class Policies, class Result>
 struct select_result_converter
-  : mpl::eval_if<
+  : mpl2::eval_if<
         is_same<Result,void>
       , mpl::identity<void_result_to_python>
       , typename Policies::result_converter::template apply<Result>

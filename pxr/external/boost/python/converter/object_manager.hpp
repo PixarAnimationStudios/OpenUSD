@@ -21,9 +21,9 @@
 # include "pxr/external/boost/python/cast.hpp"
 # include "pxr/external/boost/python/converter/pyobject_traits.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
-# include <boost/mpl/if.hpp>
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 # include "pxr/external/boost/python/detail/indirect_traits.hpp"
-# include <boost/mpl/bool.hpp>
+# include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 
 // Facilities for dealing with types which always manage Python
 // objects. Some examples are object, list, str, et. al. Different
@@ -114,7 +114,7 @@ struct default_object_manager_traits
 
 template <class T>
 struct object_manager_traits
-    : mpl::if_c<
+    : python::detail::mpl2::if_c<
          is_handle<T>::value
        , handle_object_manager_traits<T>
        , default_object_manager_traits<T>
@@ -129,13 +129,13 @@ struct object_manager_traits
 
 template <class T>
 struct is_object_manager
-    : mpl::bool_<object_manager_traits<T>::is_specialized>
+    : python::detail::mpl2::bool_<object_manager_traits<T>::is_specialized>
 {
 };
 
 template <class T>
 struct is_reference_to_object_manager
-    : mpl::false_
+    : python::detail::mpl2::false_
 {
 };
 

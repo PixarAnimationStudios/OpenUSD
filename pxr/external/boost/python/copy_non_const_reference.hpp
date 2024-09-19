@@ -19,7 +19,7 @@
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/detail/indirect_traits.hpp"
-# include <boost/mpl/if.hpp>
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 # include "pxr/external/boost/python/to_python_value.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
@@ -41,7 +41,7 @@ struct copy_non_const_reference
     template <class T>
     struct apply
     {
-        typedef typename mpl::if_c<
+        typedef typename detail::mpl2::if_c<
             indirect_traits::is_reference_to_non_const<T>::value
             , to_python_value<T>
             , detail::copy_non_const_reference_expects_a_non_const_reference_return_type<T>

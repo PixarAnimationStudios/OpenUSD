@@ -25,7 +25,7 @@
 #  include "pxr/external/boost/python/detail/preprocessor.hpp"
 #  include "pxr/external/boost/python/detail/type_traits.hpp"
 
-#  include <boost/mpl/if.hpp>
+#  include "pxr/external/boost/python/detail/mpl2/if.hpp"
 
 #  include <boost/preprocessor/comma_if.hpp>
 #  include <boost/preprocessor/iterate.hpp>
@@ -71,7 +71,7 @@ struct void_type
 template <class T>
 struct result_result
 {
-    typedef typename mpl::if_c<
+    typedef typename mpl2::if_c<
         is_class<T>::value
         , get_result_type<T>
         , void_type

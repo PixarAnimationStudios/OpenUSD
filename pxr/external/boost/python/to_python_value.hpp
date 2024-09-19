@@ -35,8 +35,8 @@
 #include "pxr/external/boost/python/detail/value_is_shared_ptr.hpp"
 #include "pxr/external/boost/python/detail/value_arg.hpp"
 
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/or.hpp>
+#include "pxr/external/boost/python/detail/mpl2/if.hpp"
+#include "pxr/external/boost/python/detail/mpl2/or.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
@@ -73,15 +73,15 @@ struct object_manager_get_pytype<true>
     
       PyObject* operator()(argument_type) const;
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
-      typedef boost::mpl::bool_<is_handle<T>::value> is_t_handle;
+      typedef detail::mpl2::bool_<is_handle<T>::value> is_t_handle;
       typedef boost::detail::indirect_traits::is_reference_to_const<T> is_t_const;
       PyTypeObject const* get_pytype() const {
           return get_pytype_aux((is_t_handle*)0);
       }
 
-      inline static PyTypeObject const* get_pytype_aux(mpl::true_*) {return converter::object_manager_traits<T>::get_pytype();}
+      inline static PyTypeObject const* get_pytype_aux(detail::mpl2::true_*) {return converter::object_manager_traits<T>::get_pytype();}
       
-      inline static PyTypeObject const* get_pytype_aux(mpl::false_* ) 
+      inline static PyTypeObject const* get_pytype_aux(detail::mpl2::false_* ) 
       {
           return object_manager_get_pytype<is_t_const::value>::get((T(*)())0);
       }
@@ -140,11 +140,11 @@ struct object_manager_get_pytype<true>
 
 template <class T>
 struct to_python_value
-    : mpl::if_<
+    : detail::mpl2::if_<
           detail::value_is_shared_ptr<T>
         , detail::shared_ptr_to_python_value<T>
-        , typename mpl::if_<
-              mpl::or_<
+        , typename detail::mpl2::if_<
+              detail::mpl2::or_<
                   converter::is_object_manager<T>
                 , converter::is_reference_to_object_manager<T>
               >

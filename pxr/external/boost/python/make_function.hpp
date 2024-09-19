@@ -80,7 +80,7 @@ namespace detail
   //
   // @group {
   template <class F, class CallPolicies, class Keywords>
-  object make_function_dispatch(F f, CallPolicies const& policies, Keywords const& kw, mpl::true_)
+  object make_function_dispatch(F f, CallPolicies const& policies, Keywords const& kw, detail::mpl2::true_)
   {
       return detail::make_function_aux(
           f
@@ -92,7 +92,7 @@ namespace detail
   }
 
   template <class F, class CallPolicies, class Signature>
-  object make_function_dispatch(F f, CallPolicies const& policies, Signature const& sig, mpl::false_)
+  object make_function_dispatch(F f, CallPolicies const& policies, Signature const& sig, detail::mpl2::false_)
   {
       return detail::make_function_aux(
           f
