@@ -69,3 +69,45 @@ class MetadataTest "MetadataTest" (
     )
 }
 
+
+class IdentifierMatchesAlias "IdentifierMatchesAlias" (
+    doc = "Ensures identifier and alias can be the same"
+    hidden = true
+)
+{
+}
+
+class IdentifierDoesNotMatchAlias "IdentifierDoesNotMatchAlias" (
+    doc = "Ensures identifier is chosen if present"
+    hidden = true
+)
+{
+}
+
+class NoIdentifier "NoIdentifier" (
+    doc = "Ensures alias is used if schemaIdentifier is not present"
+    hidden = true
+)
+{
+}
+
+class NoAlias "NoAlias" (
+    doc = "Ensures identifier is chosen if present"
+    hidden = true
+)
+{
+}
+
+class NoIdentifierAndNoAlias "NoIdentifierAndNoAlias" (
+    doc = "Invalid case"
+    hidden = true
+)
+{
+}
+
+class IdentifierMatchesClassName "IdentifierMatchesClassName" (
+    doc = "Ensures schemaIdentifier can match class name"
+    hidden = true
+)
+{
+}

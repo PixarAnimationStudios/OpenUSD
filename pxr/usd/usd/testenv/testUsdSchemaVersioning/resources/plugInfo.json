@@ -14,6 +14,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestAPIWithAPIBuiltins1_API", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdSchemaVersioningTestAPIWithAPIBuiltins2_API": {
@@ -24,6 +25,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestAPIWithAPIBuiltins2_API", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdSchemaVersioningTestAPIWithAPIBuiltins3_API": {
@@ -34,6 +36,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestAPIWithAPIBuiltins3_API", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdSchemaVersioningTestBasicVersioned": {
@@ -44,6 +47,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "TestBasicVersioned", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdSchemaVersioningTestBasicVersioned_1": {
@@ -54,6 +58,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "TestBasicVersioned_1", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdSchemaVersioningTestBasicVersioned_2": {
@@ -64,6 +69,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "TestBasicVersioned_2", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdSchemaVersioningTestMultiApplyWithAPIVersionConflict_API": {
@@ -74,6 +80,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestMultiApplyWithAPIVersionConflict_API", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "TestUsdSchemaVersioningTestPrimWithAPIBuiltins": {
@@ -84,6 +91,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "TestPrimWithAPIBuiltins", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdSchemaVersioningTestPrimWithAPIVersionConflict1": {
@@ -94,6 +102,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "TestPrimWithAPIVersionConflict1", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdSchemaVersioningTestPrimWithAPIVersionConflict2": {
@@ -104,6 +113,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "TestPrimWithAPIVersionConflict2", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdSchemaVersioningTestSingleApplyWithAPIVersionConflict1_API": {
@@ -114,6 +124,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestSingleApplyWithAPIVersionConflict1_API", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdSchemaVersioningTestSingleApplyWithAPIVersionConflict2_API": {
@@ -124,6 +135,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestSingleApplyWithAPIVersionConflict2_API", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdSchemaVersioningTestSingleApplyWithAPIVersionConflict3_API": {
@@ -134,6 +146,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestSingleApplyWithAPIVersionConflict3_API", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdSchemaVersioningTestVersionedAutoApplyAPI": {
@@ -148,6 +161,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestVersionedAutoApplyAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdSchemaVersioningTestVersionedAutoApplyAPI_10": {
@@ -161,6 +175,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestVersionedAutoApplyAPI_10", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdSchemaVersioningTestVersionedAutoApplyAPI_2": {
@@ -174,6 +189,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestVersionedAutoApplyAPI_2", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdSchemaVersioningTestVersionedMultiApplyAPI": {
@@ -187,6 +203,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestVersionedMultiApplyAPI", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "TestUsdSchemaVersioningTestVersionedMultiApplyAPI_1": {
@@ -201,6 +218,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestVersionedMultiApplyAPI_1", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "TestUsdSchemaVersioningTestVersionedMultiApplyAPI_2": {
@@ -215,6 +233,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestVersionedMultiApplyAPI_2", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "TestUsdSchemaVersioningTestVersionedSingleApplyAPI": {
@@ -228,6 +247,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestVersionedSingleApplyAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdSchemaVersioningTestVersionedSingleApplyAPI_1": {
@@ -241,6 +261,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestVersionedSingleApplyAPI_1", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdSchemaVersioningTestVersionedSingleApplyAPI_2": {
@@ -254,6 +275,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestVersionedSingleApplyAPI_2", 
                         "schemaKind": "singleApplyAPI"
                     }
                 }

@@ -23,6 +23,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "HydraGenerativeProceduralAPI", 
                         "schemaKind": "singleApplyAPI"
                     }
                 }

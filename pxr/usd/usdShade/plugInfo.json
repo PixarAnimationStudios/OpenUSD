@@ -55,6 +55,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "ConnectableAPI", 
                         "schemaKind": "nonAppliedAPI"
                     }, 
                     "UsdShadeCoordSysAPI": {
@@ -65,6 +66,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "CoordSysAPI", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "UsdShadeMaterial": {
@@ -76,6 +78,7 @@
                             "UsdShadeNodeGraph"
                         ], 
                         "providesUsdShadeConnectableAPIBehavior": true, 
+                        "schemaIdentifier": "Material", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdShadeMaterialBindingAPI": {
@@ -86,6 +89,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "MaterialBindingAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdShadeNodeDefAPI": {
@@ -96,6 +100,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "NodeDefAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdShadeNodeGraph": {
@@ -107,6 +112,7 @@
                             "UsdTyped"
                         ], 
                         "providesUsdShadeConnectableAPIBehavior": true, 
+                        "schemaIdentifier": "NodeGraph", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdShadeShader": {
@@ -118,6 +124,7 @@
                             "UsdTyped"
                         ], 
                         "providesUsdShadeConnectableAPIBehavior": true, 
+                        "schemaIdentifier": "Shader", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdShadeShaderDefParserPlugin": {

@@ -1511,6 +1511,9 @@ def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env,
             # Write out alias/primdefs for all schemas
             clsDict['alias'] = {'UsdSchemaBase': cls.usdPrimTypeName}
 
+            # Write out schema identifier
+            clsDict['schemaIdentifier'] = cls.usdPrimTypeName
+
             types[cls.cppClassName] = clsDict
         # write plugInfo file back out.
         content = ((
