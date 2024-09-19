@@ -19,7 +19,6 @@
 
 # include <boost/config.hpp>
 # include "pxr/external/boost/python/detail/mpl2/bool.hpp"
-# include <boost/preprocessor/enum_params.hpp>
 
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 #  include "pxr/external/boost/python/detail/is_xxx.hpp"

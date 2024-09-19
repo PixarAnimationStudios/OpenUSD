@@ -40,36 +40,15 @@
 
 #include "pxr/external/boost/python/detail/type_traits.hpp"
 
-#include <boost/preprocessor/enum_params_with_a_default.hpp>
-#include <boost/preprocessor/enum_params.hpp>
-
 #include <utility>
 
-///////////////////////////////////////////////////////////////////////////////
-#define PXR_BOOST_PYTHON_OVERLOAD_TYPES_WITH_DEFAULT                                \
-    BOOST_PP_ENUM_PARAMS_WITH_A_DEFAULT(                                        \
-        PXR_BOOST_PYTHON_MAX_ARITY,                                                 \
-        class T,                                                                \
-        mpl::void_)                                                             \
-
-#define PXR_BOOST_PYTHON_OVERLOAD_TYPES                                             \
-    BOOST_PP_ENUM_PARAMS_Z(1,                                                   \
-        PXR_BOOST_PYTHON_MAX_ARITY,                                                 \
-        class T)                                                                \
-
-#define PXR_BOOST_PYTHON_OVERLOAD_ARGS                                              \
-    BOOST_PP_ENUM_PARAMS_Z(1,                                                   \
-        PXR_BOOST_PYTHON_MAX_ARITY,                                                 \
-        T)                                                                      \
-
-///////////////////////////////////////////////////////////////////////////////
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
-template <PXR_BOOST_PYTHON_OVERLOAD_TYPES_WITH_DEFAULT>
+template <class... T>
 class init; // forward declaration
 
 
-template <PXR_BOOST_PYTHON_OVERLOAD_TYPES_WITH_DEFAULT>
+template <class... T>
 struct optional; // forward declaration
 
 namespace detail
@@ -93,8 +72,8 @@ namespace detail
       : detail::mpl2::false_
     {};
 
-    template <PXR_BOOST_PYTHON_OVERLOAD_TYPES>
-    struct is_optional<optional<PXR_BOOST_PYTHON_OVERLOAD_ARGS> >
+    template <class... T>
+    struct is_optional<optional<T...> >
       : detail::mpl2::true_
     {};
   
@@ -217,12 +196,12 @@ namespace detail
   {};
 }
 
-template <PXR_BOOST_PYTHON_OVERLOAD_TYPES>
-class init : public init_base<init<PXR_BOOST_PYTHON_OVERLOAD_ARGS> >
+template <class... T>
+class init : public init_base<init<T...> >
 {
-    typedef init_base<init<PXR_BOOST_PYTHON_OVERLOAD_ARGS> > base;
+    typedef init_base<init<T...> > base;
  public:
-    typedef init<PXR_BOOST_PYTHON_OVERLOAD_ARGS> self_t;
+    typedef init<T...> self_t;
 
     init(char const* doc_ = 0)
         : base(doc_)
@@ -255,7 +234,7 @@ class init : public init_base<init<PXR_BOOST_PYTHON_OVERLOAD_ARGS> >
             policies, this->doc_string(), this->keywords());
     }
 
-    typedef detail::type_list<PXR_BOOST_PYTHON_OVERLOAD_ARGS> signature_;
+    typedef detail::type_list<T...> signature_;
 
     typedef detail::is_optional<
         typename detail::mpl2::eval_if<
@@ -298,9 +277,9 @@ class init : public init_base<init<PXR_BOOST_PYTHON_OVERLOAD_ARGS> >
 //      optional<T0...TN>::type returns a typelist.
 //
 ///////////////////////////////////////////////////////////////////////////////
-template <PXR_BOOST_PYTHON_OVERLOAD_TYPES>
+template <class... T>
 struct optional
-    : detail::type_list<PXR_BOOST_PYTHON_OVERLOAD_ARGS>
+    : detail::type_list<T...>
 {
 };
 
@@ -391,12 +370,6 @@ namespace detail
 }
 
 }} // namespace PXR_BOOST_NAMESPACE::python
-
-#undef PXR_BOOST_PYTHON_OVERLOAD_TYPES_WITH_DEFAULT
-#undef PXR_BOOST_PYTHON_OVERLOAD_TYPES
-#undef PXR_BOOST_PYTHON_OVERLOAD_ARGS
-#undef PXR_BOOST_PYTHON_IS_OPTIONAL_VALUE
-#undef PXR_BOOST_PYTHON_APPEND_TO_INIT
 
 ///////////////////////////////////////////////////////////////////////////////
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
