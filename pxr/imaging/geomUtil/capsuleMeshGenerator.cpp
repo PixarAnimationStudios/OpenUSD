@@ -58,6 +58,33 @@ GeomUtilCapsuleMeshGenerator::GenerateTopology(
 }
 
 // static
+template<typename ScalarType>
+size_t
+GeomUtilCapsuleMeshGenerator::_ComputeNumBottomCapAxial(
+    const size_t numCapAxial,
+    const ScalarType latitudeRange)
+{
+    // Calculate the number of rings for the bottom cap porportional to the
+    // portion of a sphere that the bottom cap uses.
+    const ScalarType result =
+        GfRound(2 * numCapAxial * (0.5 * M_PI + latitudeRange) / M_PI);
+
+    // Convert to size_t and clamp so that there will be enough rings left over
+    // for the top to have at least minNumCapAxial rings.
+    const size_t maxNumCapAxial = (2 * numCapAxial) - minNumCapAxial;
+    return GfMin(GfMax(size_t(result), minNumCapAxial), maxNumCapAxial);
+}
+
+// static
+size_t
+GeomUtilCapsuleMeshGenerator::_ComputeNumTopCapAxial(
+    const size_t numCapAxial,
+    const size_t numBottomCapAxial)
+{
+    return (2 * numCapAxial) - numBottomCapAxial;
+}
+
+// static
 template<typename PointType>
 void
 GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
@@ -152,14 +179,11 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
     offset0 -= 0.5 * height;
     offset1 += 0.5 * height;
 
-
-    // Calculate the number of axial points of the sphere caps so that the
-    // number used is relative to the size of the caps, which will lead to the
-    // the mesh of the caps having similar density.
-    const size_t numCapAxial0 = GfMin(GfMax(
-        size_t(GfRound(numCapAxial * 2 * (0.5 * M_PI + latitudeRange) / M_PI)),
-        minNumCapAxial), (2 * numCapAxial) - minNumCapAxial);
-    const size_t numCapAxial1 = (2 * numCapAxial) - numCapAxial0;
+    // Calculate the number of axial points of the sphere caps.
+    const size_t numCapAxial0 =
+        _ComputeNumBottomCapAxial(numCapAxial, latitudeRange);
+    const size_t numCapAxial1 =
+        _ComputeNumTopCapAxial(numCapAxial, numCapAxial0);
 
     // Bottom point:
     ptWriter.Write(PointType(0.0, 0.0, offset0 - radius0));
@@ -200,6 +224,96 @@ template GEOMUTIL_API void GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
     const float, const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3f>&);
 
 template GEOMUTIL_API void GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
+    const size_t, const size_t, const double, const double, const double,
+    const double, const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3d>&);
+
+
+// static
+template<typename PointType>
+void
+GeomUtilCapsuleMeshGenerator::_GenerateNormalsImpl(
+    const size_t numRadial,
+    const size_t numCapAxial,
+    const typename PointType::ScalarType bottomRadius,
+    const typename PointType::ScalarType topRadius,
+    const typename PointType::ScalarType height,
+    const typename PointType::ScalarType sweepDegrees,
+    const _PointWriter<PointType>& ptWriter)
+{
+    using ScalarType = typename PointType::ScalarType;
+
+    if ((numRadial < minNumRadial) || (numCapAxial < minNumCapAxial)) {
+        return;
+    }
+
+    // Construct a circular arc of unit radius in the XY plane.
+    const std::vector<std::array<ScalarType, 2>> ringXY =
+        _GenerateUnitArcXY<ScalarType>(numRadial, sweepDegrees);
+
+    // This angle represents the latitude where the bottom spherical cap will
+    // transition to the cylindrical portion of the capsule, as well as the
+    // angle where the top spherical cap begins after transitioning from the
+    // cylindrical portion.
+    ScalarType latitudeRange = 0.0;
+
+    if (bottomRadius != topRadius && height != 0) {
+        // See comments above in _GeneratePointsImpl for and explanation of the
+        // calculations in this section.
+
+        // Calculate the slope of segment AC, using |AB| / |BC|.
+        const ScalarType slope = (bottomRadius - topRadius) / height;
+
+        // Use the slope to determine the angle at A of triangle ADE to
+        // calculate the latitude for transitioning between the spherical caps
+        // and the cylindrical portion of the capsule.
+        latitudeRange = atan(slope);
+    }
+
+    // Calculate the number of axial points of the sphere caps.
+    const size_t numCapAxial0 =
+        _ComputeNumBottomCapAxial(numCapAxial, latitudeRange);
+    const size_t numCapAxial1 =
+        _ComputeNumTopCapAxial(numCapAxial, numCapAxial0);
+
+    // Bottom point:
+    ptWriter.WriteDir(PointType(0.0, 0.0, -1.0));
+
+    // Bottom hemisphere latitude rings:
+    for (size_t axIdx = 1; axIdx < (numCapAxial0 + 1); ++axIdx) {
+        // Latitude range: (-0.5pi, latitudeRange]
+        const ScalarType latAngle = GfLerp(double(axIdx) / double(numCapAxial0),
+            ScalarType(-0.5 * M_PI), latitudeRange);
+
+        const ScalarType radScale = cos(latAngle);
+        const ScalarType latitude = sin(latAngle);
+
+        ptWriter.WriteArcDir(radScale, ringXY, latitude);
+    }
+
+    // Top hemisphere latitude rings:
+    for (size_t axIdx = 0; axIdx < numCapAxial1; ++axIdx) {
+        // Latitude range: [latitudeRange, 0.5pi)
+        const ScalarType latAngle = GfLerp(double(axIdx) / double(numCapAxial1),
+            latitudeRange, ScalarType(0.5 * M_PI));
+
+        const ScalarType radScale = cos(latAngle);
+        const ScalarType latitude = sin(latAngle);
+
+        ptWriter.WriteArcDir(radScale, ringXY, latitude);
+    }
+
+    // Top point:
+    ptWriter.WriteDir(PointType(0.0, 0.0, 1.0));
+}
+
+// Force-instantiate _GenerateNormalsImpl for the supported point types.  Only
+// these instantiations will ever be needed due to the SFINAE machinery on the
+// calling method template (the public GeneratePoints, in the header).
+template GEOMUTIL_API void GeomUtilCapsuleMeshGenerator::_GenerateNormalsImpl(
+    const size_t, const size_t, const float, const float, const float,
+    const float, const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3f>&);
+
+template GEOMUTIL_API void GeomUtilCapsuleMeshGenerator::_GenerateNormalsImpl(
     const size_t, const size_t, const double, const double, const double,
     const double, const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3d>&);
 

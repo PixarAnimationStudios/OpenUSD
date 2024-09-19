@@ -18,6 +18,7 @@ pxr_library(geomUtil
         meshGeneratorBase
         planeMeshGenerator
         sphereMeshGenerator
+        tokens
 
     PYTHON_CPPFILES
         moduleDeps.cpp
@@ -34,6 +35,7 @@ pxr_library(geomUtil
         wrapDiskMeshGenerator.cpp
         wrapPlaneMeshGenerator.cpp
         wrapSphereMeshGenerator.cpp
+        wrapTokens.cpp
 
     PYMODULE_FILES
         __init__.py

@@ -91,12 +91,13 @@ protected:
     {};
 
     // Helper struct to provide iterator type erasure, allowing subclasses to
-    // implement their GeneratePoints methods privately.  Usage doesn't require
-    // any heap allocation or virtual dispatch/runtime typing.  In addition to
-    // erasing the iterator type, this also provides a convenient way to allow
-    // subclasses to offer GeneratePoints methods that can apply an additional
-    // frame transform without having to actually plumb that detail into the
-    // guts of their point generator code.
+    // implement their GeneratePoints and GenerateNormals methods privately.
+    //  Usage doesn't require any heap allocation or virtual dispatch/runtime
+    // typing.  In addition to erasing the iterator type, this also provides a
+    // convenient way to allow subclasses to offer GeneratePoints and
+    // GenerateNormals methods that can apply an additional frame transform
+    // without having to actually plumb that detail into the guts of their point
+    // generator code.
     //
     // Note: Ensuring the interoperability of the PointType with the IterType
     // used at construction is the responsibility of the client.  It's typically
@@ -110,6 +111,7 @@ protected:
         _PointWriter(
             IterType& iter)
             : _writeFnPtr(&_PointWriter<PointType>::_WritePoint<IterType>)
+            , _writeDirFnPtr(&_PointWriter<PointType>::_WriteDir<IterType>)
             , _untypedIterPtr(static_cast<void*>(&iter))
         {}
 
@@ -119,6 +121,8 @@ protected:
             const GfMatrix4d* const framePtr)
             : _writeFnPtr(
                 &_PointWriter<PointType>::_TransformAndWritePoint<IterType>)
+            , _writeDirFnPtr(
+                &_PointWriter<PointType>::_TransformAndWriteDir<IterType>)
             , _untypedIterPtr(static_cast<void*>(&iter))
             , _framePtr(framePtr)
         {}
@@ -137,6 +141,23 @@ protected:
         {
             for (const auto& xy : arcXY) {
                 Write(PointType(scaleXY * xy[0], scaleXY * xy[1], arcZ));
+            }
+        }
+
+        void WriteDir(
+            const PointType& dir) const
+        {
+            (this->*_writeDirFnPtr)(dir);
+        }
+
+        void WriteArcDir(
+            const typename PointType::ScalarType scaleXY,
+            const std::vector<std::array<
+                typename PointType::ScalarType, 2>>& arcXY,
+            const typename PointType::ScalarType arcZ) const
+        {
+            for (const auto& xy : arcXY) {
+                WriteDir(PointType(scaleXY * xy[0], scaleXY * xy[1], arcZ));
             }
         }
 
@@ -160,9 +181,29 @@ protected:
             ++iter;
         }
 
+        template<class IterType>
+        void _WriteDir(
+            const PointType& pt) const
+        {
+            IterType& iter = *static_cast<IterType*>(_untypedIterPtr);
+            *iter = pt;
+            ++iter;
+        }
+
+        template<class IterType>
+        void _TransformAndWriteDir(
+            const PointType& dir) const
+        {
+            IterType& iter = *static_cast<IterType*>(_untypedIterPtr);
+            using OutType = typename std::remove_reference_t<decltype(*iter)>;
+            *iter = static_cast<OutType>(_framePtr->TransformDir(dir));
+            ++iter;
+        }
+
         using _WriteFnPtr =
             void (_PointWriter<PointType>::*)(const PointType &) const;
         _WriteFnPtr _writeFnPtr;
+        _WriteFnPtr _writeDirFnPtr;
         void* _untypedIterPtr;
         const GfMatrix4d* _framePtr;
     };
@@ -265,6 +306,24 @@ public:
              typename Enabled =
                 typename _EnableIfNotGfVec3Iterator<PointIterType>::type>
     static void GeneratePoints(
+        PointIterType iter, ...)
+    {
+        static_assert(_IsGfVec3Iterator<PointIterType>::value,
+            "This function only supports iterators to GfVec3f or GfVec3d "
+            "objects.");
+    }
+
+    // This template provides a "fallback" for GenerateNormals(...) calls that
+    // do not meet the SFINAE requirement that the given point-container-
+    // iterator must dereference to a GfVec3f or GfVec3d.  This version
+    // generates a helpful compile time assertion in such a scenario.  As noted
+    // earlier, subclasses should explicitly add a "using" statement with
+    // this method to include it in overload resolution.
+    //
+    template<typename PointIterType,
+             typename Enabled =
+                typename _EnableIfNotGfVec3Iterator<PointIterType>::type>
+    static void GenerateNormals(
         PointIterType iter, ...)
     {
         static_assert(_IsGfVec3Iterator<PointIterType>::value,

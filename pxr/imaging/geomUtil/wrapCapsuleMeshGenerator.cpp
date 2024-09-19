@@ -36,6 +36,26 @@ _WrapGeneratePoints(
     return points;
 }
 
+static VtVec3fArray
+_WrapGenerateNormals(
+    const size_t numRadial,
+    const size_t numCapAxial,
+    const float radius,
+    const float height)
+{
+    const size_t numNormals =
+        GeomUtilCapsuleMeshGenerator::ComputeNumNormals(numRadial, numCapAxial);
+    if (numNormals == 0) {
+        return VtVec3fArray();
+    }
+
+    VtVec3fArray normals(numNormals);
+    GeomUtilCapsuleMeshGenerator::GenerateNormals(
+        normals.begin(), numRadial, numCapAxial, radius, height);
+
+    return normals;
+}
+
 void wrapCapsuleMeshGenerator()
 {
     using This = GeomUtilCapsuleMeshGenerator;
@@ -53,10 +73,19 @@ void wrapCapsuleMeshGenerator()
         .def("ComputeNumPoints", &This::ComputeNumPoints)
         .staticmethod("ComputeNumPoints")
 
+        .def("ComputeNumNormals", &This::ComputeNumNormals)
+        .staticmethod("ComputeNumNormals")
+
+        .def("GetNormalsInterpolation", &This::GetNormalsInterpolation)
+        .staticmethod("GetNormalsInterpolation")
+
         .def("GenerateTopology", &This::GenerateTopology)
         .staticmethod("GenerateTopology")
 
         .def("GeneratePoints", &_WrapGeneratePoints)
         .staticmethod("GeneratePoints")
+
+        .def("GenerateNormals", &_WrapGenerateNormals)
+        .staticmethod("GenerateNormals")
     ;
 }
