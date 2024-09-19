@@ -66,6 +66,7 @@ void wrapUsdValidationError()
         .def("GetMessage", &UsdValidationError::GetMessage, 
              return_value_policy<return_by_value>())
         .def("GetErrorAsString", &UsdValidationError::GetErrorAsString)
+        .def("GetValidator", &UsdValidationError::GetValidator, return_value_policy<reference_existing_object>())
         .def("HasNoError", &UsdValidationError::HasNoError)
         .def(self == self)
         .def(self != self);

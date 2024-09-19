@@ -320,10 +320,12 @@ public:
 
     /// Return true if a UsdValidator is registered with the name \p
     /// validatorName; false otherwise.
+    USD_API
     bool HasValidator(const TfToken &validatorName) const;
 
     /// Return true if a UsdValidatorSuite is registered with the name \p
     /// validatorSuiteName; false otherwise.
+    USD_API
     bool HasValidatorSuite(const TfToken &suiteName) const;
 
     /// Returns a vector of const pointer to UsdValidator corresponding to all

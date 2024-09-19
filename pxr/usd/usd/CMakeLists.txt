@@ -146,6 +146,7 @@ pxr_library(usd
         wrapUsdFileFormat.cpp
         wrapUtils.cpp
         wrapValidationError.cpp
+        wrapValidationRegistry.cpp
         wrapValidator.cpp
         wrapVariantSets.cpp
         wrapVersion.cpp 
@@ -260,6 +261,7 @@ pxr_test_scripts(
     testenv/testUsdTimeValueAuthoring.py
     testenv/testUsdUsdzFileFormat.py
     testenv/testUsdValidationError.py
+    testenv/testUsdValidationRegistryPy.py
     testenv/testUsdValidatorMetadata.py
     testenv/testUsdValueClips.py
     testenv/testUsdVariantEditing.py
@@ -288,6 +290,16 @@ pxr_build_test_shared_lib(TestUsdResolverChangedResolver
 
     CPPFILES
         testenv/TestUsdResolverChangedResolver.cpp
+)
+
+pxr_build_test_shared_lib(TestUsdValidationRegistryPy
+    INSTALL_PREFIX UsdPlugins
+    LIBRARIES
+        tf
+        usd
+
+    CPPFILES
+        testenv/testUsdValidationRegistryPy.cpp
 )
 
 pxr_build_test(testUsdCoreValidators
@@ -1337,5 +1349,11 @@ pxr_register_test(testUsdValidatorMetadata
 pxr_register_test(testUsdValidationError
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValidationError"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdValidationRegistryPy
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValidationRegistryPy"
     EXPECTED_RETURN_CODE 0
 )
