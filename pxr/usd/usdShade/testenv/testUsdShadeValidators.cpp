@@ -31,23 +31,20 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+TF_DEFINE_PRIVATE_TOKENS(_tokens,
+    ((usdShadePlugin, "usdShade"))
+);
+
 void
 TestUsdShadeValidators()
 {
     // This should be updated with every new validator added with the
     // UsdShadeValidators keyword.
     const std::set<TfToken> expectedUsdShadeValidatorNames = {
+        UsdShadeValidatorNameTokens->encapsulationValidator,
         UsdShadeValidatorNameTokens->materialBindingApiAppliedValidator,
         UsdShadeValidatorNameTokens->materialBindingRelationships,
         UsdShadeValidatorNameTokens->shaderSdrCompliance,
-        UsdShadeValidatorNameTokens->subsetMaterialBindFamilyName,
-        UsdShadeValidatorNameTokens->subsetsMaterialBindFamily,
-        UsdShadeValidatorNameTokens->encapsulationValidator
-    };
-
-    // This should be updated with every new validator added with the
-    // UsdGeomSubset keyword.
-    const std::set<TfToken> expectedUsdGeomSubsetNames = {
         UsdShadeValidatorNameTokens->subsetMaterialBindFamilyName,
         UsdShadeValidatorNameTokens->subsetsMaterialBindFamily
     };
@@ -61,30 +58,13 @@ TestUsdShadeValidators()
     std::set<TfToken> validatorMetadataNameSet;
 
     UsdValidatorMetadataVector metadata =
-        registry.GetValidatorMetadataForKeyword(
-            UsdShadeValidatorKeywordTokens->UsdShadeValidators);
+        registry.GetValidatorMetadataForPlugin(_tokens->usdShadePlugin);
+    TF_AXIOM(metadata.size() == 6);
     for (const UsdValidatorMetadata& metadata : metadata) {
         validatorMetadataNameSet.insert(metadata.name);
     }
 
-    TF_AXIOM(std::includes(validatorMetadataNameSet.begin(),
-                           validatorMetadataNameSet.end(),
-                           expectedUsdShadeValidatorNames.begin(),
-                           expectedUsdShadeValidatorNames.end()));
-
-    // Repeat the test using a different keyword.
-    validatorMetadataNameSet.clear();
-
-    metadata = registry.GetValidatorMetadataForKeyword(
-        UsdGeomValidatorKeywordTokens->UsdGeomSubset);
-    for (const UsdValidatorMetadata& metadata : metadata) {
-        validatorMetadataNameSet.insert(metadata.name);
-    }
-
-    TF_AXIOM(std::includes(validatorMetadataNameSet.begin(),
-                           validatorMetadataNameSet.end(),
-                           expectedUsdGeomSubsetNames.begin(),
-                           expectedUsdGeomSubsetNames.end()));
+    TF_AXIOM(validatorMetadataNameSet == expectedUsdShadeValidatorNames);
 }
 
 void

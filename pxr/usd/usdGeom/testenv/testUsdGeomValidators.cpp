@@ -16,6 +16,10 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+TF_DEFINE_PRIVATE_TOKENS(_tokens,
+    ((usdGeomPlugin, "usdGeom"))
+);
+
 void
 TestUsdGeomValidators()
 {
@@ -24,14 +28,7 @@ TestUsdGeomValidators()
     const std::set<TfToken> expectedUsdGeomValidatorNames = {
         UsdGeomValidatorNameTokens->subsetFamilies,
         UsdGeomValidatorNameTokens->subsetParentIsImageable,
-        UsdGeomValidatorNameTokens->stageMetadataChecker
-    };
-
-    // This should be updated with every new validator added with the
-    // UsdGeomSubset keyword.
-    const std::set<TfToken> expectedUsdGeomSubsetNames = {
-        UsdGeomValidatorNameTokens->subsetFamilies,
-        UsdGeomValidatorNameTokens->subsetParentIsImageable
+        UsdGeomValidatorNameTokens->stageMetadataChecker,
     };
 
     const UsdValidationRegistry& registry =
@@ -43,30 +40,13 @@ TestUsdGeomValidators()
     std::set<TfToken> validatorMetadataNameSet;
 
     UsdValidatorMetadataVector metadata =
-        registry.GetValidatorMetadataForKeyword(
-            UsdGeomValidatorKeywordTokens->UsdGeomValidators);
+        registry.GetValidatorMetadataForPlugin(_tokens->usdGeomPlugin);
+    TF_AXIOM(metadata.size() == 3);
     for (const UsdValidatorMetadata& metadata : metadata) {
         validatorMetadataNameSet.insert(metadata.name);
     }
 
-    TF_AXIOM(std::includes(validatorMetadataNameSet.begin(),
-                           validatorMetadataNameSet.end(),
-                           expectedUsdGeomValidatorNames.begin(),
-                           expectedUsdGeomValidatorNames.end()));
-
-    // Repeat the test using a different keyword.
-    validatorMetadataNameSet.clear();
-
-    metadata = registry.GetValidatorMetadataForKeyword(
-        UsdGeomValidatorKeywordTokens->UsdGeomSubset);
-    for (const UsdValidatorMetadata& metadata : metadata) {
-        validatorMetadataNameSet.insert(metadata.name);
-    }
-
-    TF_AXIOM(std::includes(validatorMetadataNameSet.begin(),
-                           validatorMetadataNameSet.end(),
-                           expectedUsdGeomSubsetNames.begin(),
-                           expectedUsdGeomSubsetNames.end()));
+    TF_AXIOM(validatorMetadataNameSet == expectedUsdGeomValidatorNames);
 }
 
 static const std::string subsetsLayerContents =

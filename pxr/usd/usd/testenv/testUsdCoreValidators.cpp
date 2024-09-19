@@ -14,6 +14,10 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+TF_DEFINE_PRIVATE_TOKENS(_tokens,
+    ((usdPlugin, "usd"))
+);
+
 static
 void
 TestUsdValidators()
@@ -24,8 +28,7 @@ TestUsdValidators()
     // UsdCoreValidators keyword, hence as new validators are added under
     // this keyword this unit test will have to be updated.
     const UsdValidatorMetadataVector coreValidatorMetadata =
-            registry.GetValidatorMetadataForKeyword(
-                    UsdValidatorKeywordTokens->UsdCoreValidators);
+            registry.GetValidatorMetadataForPlugin(_tokens->usdPlugin);
     TF_AXIOM(coreValidatorMetadata.size() == 2);
 
     std::set<TfToken> validatorMetadataNameSet;
@@ -37,10 +40,7 @@ TestUsdValidators()
             {UsdValidatorNameTokens->compositionErrorTest,
              UsdValidatorNameTokens->stageMetadataChecker};
 
-    TF_AXIOM(std::includes(validatorMetadataNameSet.begin(),
-                           validatorMetadataNameSet.end(),
-                           expectedValidatorNames.begin(),
-                           expectedValidatorNames.end()));
+    TF_AXIOM(validatorMetadataNameSet == expectedValidatorNames);
 }
 
 static

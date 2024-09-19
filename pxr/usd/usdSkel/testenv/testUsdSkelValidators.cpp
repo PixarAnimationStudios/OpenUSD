@@ -14,6 +14,10 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+TF_DEFINE_PRIVATE_TOKENS(_tokens,
+    ((usdSkelPlugin, "usdSkel"))
+);
+
 void
 TestUsdSkelValidators()
 {
@@ -21,8 +25,8 @@ TestUsdSkelValidators()
     // UsdSkelValidators keyword.
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
     UsdValidatorMetadataVector metadata =
-            registry.GetValidatorMetadataForKeyword(
-                    UsdSkelValidatorKeywordTokens->UsdSkelValidators);
+            registry.GetValidatorMetadataForPlugin(_tokens->usdSkelPlugin);
+    TF_AXIOM(metadata.size() == 2);
     // Since other validators can be registered with a UsdSkelValidators
     // keyword, our validators registered in usdSkel are a subset of the entire
     // set.
@@ -35,10 +39,7 @@ TestUsdSkelValidators()
             {UsdSkelValidatorNameTokens->skelBindingApiAppliedValidator,
              UsdSkelValidatorNameTokens->skelBindingApiValidator};
 
-    TF_AXIOM(std::includes(validatorMetadataNameSet.begin(),
-                           validatorMetadataNameSet.end(),
-                           expectedValidatorNames.begin(),
-                           expectedValidatorNames.end()));
+    TF_AXIOM(validatorMetadataNameSet == expectedValidatorNames);
 }
 
 void

@@ -1,3 +1,10 @@
+//
+// Copyright 2024 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
 #include "pxr/usd/usd/validator.h"
 #include "pxr/usd/usd/validationError.h"
 #include "pxr/usd/usdUtils/validatorTokens.h"
@@ -10,6 +17,10 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+TF_DEFINE_PRIVATE_TOKENS(_tokens,
+    ((usdUtilsPlugin, "usdUtils"))
+);
+
 static
 void
 TestUsdUsdzValidators()
@@ -18,8 +29,8 @@ TestUsdUsdzValidators()
     // UsdUtilsValidators keyword.
     UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
     UsdValidatorMetadataVector metadata =
-            registry.GetValidatorMetadataForKeyword(
-                    UsdUtilsValidatorKeywordTokens->UsdUtilsValidators);
+            registry.GetValidatorMetadataForPlugin(_tokens->usdUtilsPlugin);
+    TF_AXIOM(metadata.size() == 1);
     // Since other validators can be registered with a UsdUtilsValidators
     // keyword, our validators registered in usd are a subset of the entire
     // set.
@@ -31,10 +42,7 @@ TestUsdUsdzValidators()
     const std::set<TfToken> expectedValidatorNames =
             {UsdUtilsValidatorNameTokens->packageEncapsulationValidator};
 
-    TF_AXIOM(std::includes(validatorMetadataNameSet.begin(),
-                           validatorMetadataNameSet.end(),
-                           expectedValidatorNames.begin(),
-                           expectedValidatorNames.end()));
+    TF_AXIOM(validatorMetadataNameSet == expectedValidatorNames);
 }
 
 static
