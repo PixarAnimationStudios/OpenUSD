@@ -318,7 +318,8 @@ public:
     HdStBufferResourceSharedPtr RegisterBufferResource(
         TfToken const &role, 
         HdTupleType tupleType,
-        HgiBufferUsage bufferUsage);
+        HgiBufferUsage bufferUsage,
+        std::string debugName = "");
 
     /// Remove any entries associated with expired dispatch buffers.
     HDST_API

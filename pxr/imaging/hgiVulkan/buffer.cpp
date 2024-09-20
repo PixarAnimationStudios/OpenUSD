@@ -30,7 +30,7 @@ HgiVulkanBuffer::HgiVulkanBuffer(
     , _stagingBuffer(nullptr)
     , _cpuStagingAddress(nullptr)
 {
-    if (desc.byteSize == 0) {
+    if (_descriptor.byteSize == 0) {
         TF_CODING_ERROR("The size of buffer [%p] is zero.", this);
         return;
     }
@@ -38,8 +38,8 @@ HgiVulkanBuffer::HgiVulkanBuffer(
     VmaAllocator vma = device->GetVulkanMemoryAllocator();
 
     VkBufferCreateInfo bi = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-    bi.size = desc.byteSize;
-    bi.usage = HgiVulkanConversions::GetBufferUsage(desc.usage);
+    bi.size = _descriptor.byteSize;
+    bi.usage = HgiVulkanConversions::GetBufferUsage(_descriptor.usage);
     bi.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | 
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     bi.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // gfx queue only
@@ -66,10 +66,15 @@ HgiVulkanBuffer::HgiVulkanBuffer(
             debugLabel.c_str());
     }
 
-    if (desc.initialData) {
+    if (_descriptor.initialData) {
         // Use a 'staging buffer' to schedule uploading the 'initialData' to
         // the device-local GPU buffer.
-        HgiVulkanBuffer* stagingBuffer = CreateStagingBuffer(_device, desc);
+        HgiBufferDesc stagingDesc = _descriptor;
+        if (!stagingDesc.debugName.empty()) {
+            stagingDesc.debugName = "Staging Buffer for " + stagingDesc.debugName;
+        }
+
+        HgiVulkanBuffer* stagingBuffer = CreateStagingBuffer(_device, stagingDesc);
         VkBuffer vkStagingBuf = stagingBuffer->GetVulkanBuffer();
 
         HgiVulkanCommandQueue* queue = device->GetCommandQueue();
@@ -80,7 +85,7 @@ HgiVulkanBuffer::HgiVulkanBuffer(
         VkBufferCopy copyRegion = {};
         copyRegion.srcOffset = 0;
         copyRegion.dstOffset = 0;
-        copyRegion.size = desc.byteSize;
+        copyRegion.size = stagingDesc.byteSize;
         vkCmdCopyBuffer(vkCmdBuf, vkStagingBuf, _vkBuffer, 1, &copyRegion);
 
         // We don't know if this buffer is a static (immutable) or
@@ -144,9 +149,13 @@ void*
 HgiVulkanBuffer::GetCPUStagingAddress()
 {
     if (!_stagingBuffer) {
-        HgiBufferDesc desc = _descriptor;
-        desc.initialData = nullptr;
-        _stagingBuffer = CreateStagingBuffer(_device, desc);
+        HgiBufferDesc stagingDesc = _descriptor;
+        stagingDesc.initialData = nullptr;
+        if (!stagingDesc.debugName.empty()) {
+            stagingDesc.debugName = "Staging Buffer for " + stagingDesc.debugName;
+        }
+
+        _stagingBuffer = CreateStagingBuffer(_device, stagingDesc);
     }
 
     if (!_cpuStagingAddress) {

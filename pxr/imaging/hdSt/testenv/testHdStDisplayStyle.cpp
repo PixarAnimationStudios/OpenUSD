@@ -57,7 +57,7 @@ protected:
 private:
     TfToken _reprName;
     int _refineLevel;
-    HdSt_TestDriver* _driver;
+    HdSt_TestDriverUniquePtr _driver;
     std::string _outputFilePath;
 };
 
@@ -68,7 +68,7 @@ My_TestGLDrawing::InitTest()
 {
     std::cout << "My_TestGLDrawing::InitTest()\n";
 
-    _driver = new HdSt_TestDriver(_reprName);
+    _driver = std::make_unique<HdSt_TestDriver>(_reprName);
     HdUnitTestDelegate &delegate = _driver->GetDelegate();
     delegate.SetRefineLevel(_refineLevel);
 

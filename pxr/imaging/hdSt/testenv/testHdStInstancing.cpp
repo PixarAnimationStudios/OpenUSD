@@ -34,7 +34,7 @@ protected:
     void ParseArgs(int argc, char *argv[]) override;
 
 private:
-    HdSt_TestDriver* _driver;
+    HdSt_TestDriverUniquePtr _driver;
     bool _useInstancePrimvars;
 
     TfToken _reprName;
@@ -64,7 +64,7 @@ My_TestGLDrawing::My_TestGLDrawing()
 void
 My_TestGLDrawing::InitTest()
 {
-    _driver = new HdSt_TestDriver(_reprName);
+    _driver = std::make_unique<HdSt_TestDriver>(_reprName);
     HdUnitTestDelegate &delegate = _driver->GetDelegate();
     delegate.SetRefineLevel(_refineLevel);
 
