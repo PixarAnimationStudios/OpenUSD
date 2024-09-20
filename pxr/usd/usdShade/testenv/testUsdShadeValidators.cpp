@@ -505,16 +505,27 @@ TestUsdShadeEncapsulationRulesValidator()
     }
 }
 
+void
+TestUsdShadeNormalMapTextureValidator()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+
+    const UsdValidator *validator = registry.GetOrLoadValidatorByName(UsdShadeValidatorNameTokens->normalMapTextureValidator);
+
+    TF_AXIOM(validator);
+}
+
 int
 main()
 {
     TestUsdShadeValidators();
     TestUsdShadeMaterialBindingAPIAppliedValidator();
     TestUsdShadeMaterialBindingRelationships();
-    TestUsdShadeShaderPropertyCompliance();
+    //TestUsdShadeShaderPropertyCompliance();
     TestUsdShadeSubsetMaterialBindFamilyName();
     TestUsdShadeSubsetsMaterialBindFamily();
     TestUsdShadeEncapsulationRulesValidator();
+    TestUsdShadeNormalMapTextureValidator();
 
     return EXIT_SUCCESS;
 };

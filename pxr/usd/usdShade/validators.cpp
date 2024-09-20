@@ -28,9 +28,10 @@
 #include <unordered_map>
 #include <vector>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include "../ar/resolver.h"
 
-static
+PXR_NAMESPACE_OPEN_SCOPE
+    static
 UsdValidationErrorVector
 _EncapsulationValidator(const UsdPrim& usdPrim)
 {
@@ -478,6 +479,157 @@ _SubsetsMaterialBindFamily(const UsdPrim& usdPrim)
     return errors;
 }
 
+static
+UsdValidationErrorVector
+_NormalMapTextureValidator(const UsdPrim& usdPrim) {
+
+    if (!(usdPrim && usdPrim.IsInFamily<UsdShadeShader>(
+        UsdSchemaRegistry::VersionPolicy::All))) {
+        return {};
+    }
+
+    const UsdShadeShader shader(usdPrim);
+    if (!shader) {
+        return {};
+    }
+
+    TfToken shaderId;
+    TfToken UsdPreviewSurface("UsdPreviewSurface");
+    if (!shader.GetShaderId(&shaderId) || shaderId != UsdPreviewSurface) {
+        return {};
+    }
+
+    const UsdShadeInput normalInput = shader.GetInput(TfToken("normal"));
+    if (!normalInput) {
+        return {};
+    }
+
+    const UsdShadeAttributeVector valueProducingAttributes = UsdShadeUtils::GetValueProducingAttributes(normalInput);
+    if (valueProducingAttributes.empty() || valueProducingAttributes[0].GetPrim() == usdPrim) {
+        return {};
+    }
+
+    UsdValidationErrorVector errors;
+
+    const UsdPrim sourcePrim = valueProducingAttributes[0].GetPrim();
+    UsdShadeShader sourceShader(sourcePrim);
+    if (!sourceShader) {
+        // In theory, could be connected to an interface attribute of a
+        // parent connectable... not useful, but not an error
+        const UsdShadeConnectableAPI& connectable =
+            UsdShadeConnectableAPI(sourcePrim);
+
+        if (!connectable){
+            return {};
+        }
+
+        errors.emplace_back(
+            UsdShadeValidationErrorNameTokens->nonShaderConnection,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites{
+                    UsdValidationErrorSite(usdPrim.GetStage(),
+                                           usdPrim.GetPath())
+            },
+            TfStringPrintf("UsdPreviewSurface.normal on prim <%s> is connected to a"
+                                 " non-Shader prim.",
+                           usdPrim.GetPath().GetText()));
+    }
+
+    TfToken sourceShaderId;
+    TfToken UsdUVTexture("UsdUVTexture");
+    // We may have failed to fetch an identifier for asset/source-based
+    // nodes. OR, we could potentially be driven by a UsdPrimvarReader,
+    // in which case we'd have nothing to validate
+    if (!shader.GetShaderId(&shaderId) || shaderId != UsdUVTexture) {
+        return {};
+    }
+
+    const UsdShadeInput input = shader.GetInput(TfToken("file"));
+
+    if (!input) {
+        errors.emplace_back(
+            UsdShadeValidationErrorNameTokens->nonShaderConnection,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites{
+                    UsdValidationErrorSite(usdPrim.GetStage(),
+                                           usdPrim.GetPath())
+            },
+            TfStringPrintf("UsdPreviewSurface.normal on prim <%s> is connected to a"
+                                 " non-Shader prim.",
+                           usdPrim.GetPath().GetText()));
+    }
+
+    const auto getInputValue = [](UsdShadeShader shader, TfToken token, auto& outputValue) -> bool {
+
+        const UsdShadeInput input = shader.GetInput(token);
+        if (!input) {
+            return false;
+        }
+        const UsdShadeAttributeVector attributes =
+            UsdShadeUtils::GetValueProducingAttributes(input);
+
+        if (attributes.empty() || attributes.size() != 1 ||
+            !UsdShadeInput::IsInput(attributes[0])) {
+            return false;
+        }
+
+        return attributes[0].Get(&outputValue,
+            UsdTimeCode::EarliestTime());
+    };
+
+    SdfAssetPath textureAssetPath;
+    bool gotValue = getInputValue(shader, TfToken("file"), textureAssetPath);
+
+    if (!gotValue || textureAssetPath.GetResolvedPath().empty()) {
+        std::string assetPath = textureAssetPath.GetAssetPath().empty() ? "" : textureAssetPath.GetAssetPath();
+        errors.emplace_back(
+            UsdShadeValidationErrorNameTokens->invalidNormalMapTextureFile,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites{
+                    UsdValidationErrorSite(usdPrim.GetStage(),
+                                           sourcePrim.GetPath())
+            },
+            TfStringPrintf("UsdUVTexture prim <%s> has invalid or unresolvable "
+                                 "inputs:file of @%s@",
+                           sourcePrim.GetPath().GetText(), assetPath.c_str()));
+    }
+
+    auto textureIs8Bit = [](std::string resolvedPath) {
+
+        std::string extension = ArGetResolver().GetExtension(resolvedPath);
+
+        extension = TfStringToLower(extension);
+
+        static const std::unordered_set<std::string> eightBitExtensions =
+            {"bmp", "tga", "png", "jpg", "jpeg", "tif"};
+
+        return eightBitExtensions.find(extension) != eightBitExtensions.end();
+    };
+
+    if (!textureIs8Bit(textureAssetPath.GetResolvedPath())) {
+        return errors;
+    }
+
+    std::string colorSpace;
+    gotValue = getInputValue(shader, TfToken("sourceColorSpace"), colorSpace);
+    if (!gotValue || colorSpace != "raw") {
+        errors.emplace_back(
+            UsdShadeValidationErrorNameTokens->invalidNormalMapTextureColorSpace,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites{
+                    UsdValidationErrorSite(usdPrim.GetStage(),
+                                           sourcePrim.GetPath())
+            },
+            TfStringPrintf("UsdUVTexture prim <%s> that reads"
+                           " Normal Map @%s@ should set "
+                           "inputs:sourceColorSpace to 'raw'.",
+                           sourcePrim.GetPath().GetText(),
+                           textureAssetPath.GetAssetPath().c_str()));
+    }
+
+    return errors;
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
@@ -490,6 +642,10 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
         UsdShadeValidatorNameTokens->materialBindingRelationships,
         _MaterialBindingRelationships);
 
+
+    registry.RegisterPluginValidator(
+        UsdShadeValidatorNameTokens->normalMapTextureValidator,
+        _NormalMapTextureValidator);
     registry.RegisterPluginValidator(
         UsdShadeValidatorNameTokens->shaderSdrCompliance, 
         _ShaderPropertyTypeConformance);

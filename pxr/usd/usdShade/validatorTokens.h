@@ -20,6 +20,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((encapsulationValidator, "usdShade:EncapsulationRulesValidator")) \
     ((materialBindingApiAppliedValidator, "usdShade:MaterialBindingApiAppliedValidator")) \
     ((materialBindingRelationships, "usdShade:MaterialBindingRelationships")) \
+    ((normalMapTextureValidator, "usdShade:NormalMapTextureValidator")) \
     ((shaderSdrCompliance, "usdShade:ShaderSdrCompliance"))                   \
     ((subsetMaterialBindFamilyName, "usdShade:SubsetMaterialBindFamilyName")) \
     ((subsetsMaterialBindFamily, "usdShade:SubsetsMaterialBindFamily"))
@@ -27,19 +28,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define USD_SHADE_VALIDATOR_KEYWORD_TOKENS                                    \
     (UsdShadeValidators)
 
-#define USD_SHADE_VALIDATION_ERROR_NAME_TOKENS                          \
-    ((connectableInNonContainer, "ConnectableInNonContainer"))          \
-    ((invalidConnectableHierarchy, "InvalidConnectableHierarchy"))      \
-    ((missingMaterialBindingAPI,  "MissingMaterialBindingAPI"))         \
-    ((materialBindingPropNotARel, "MaterialBindingPropNotARel"))        \
-    ((invalidImplSource, "InvalidImplementationSrc"))                   \
-    ((missingSourceType, "MissingSourceType"))                          \
-    ((missingShaderIdInRegistry, "MissingShaderIdInRegistry"))          \
-    ((missingSourceTypeInRegistry, "MissingSourceTypeInRegistry"))      \
-    ((incompatShaderPropertyWarning, "IncompatShaderPropertyWarning"))  \
-    ((mismatchPropertyType, "MismatchedPropertyType"))                  \
-    ((missingFamilyNameOnGeomSubset, "MissingFamilyNameOnGeomSubset"))  \
-    ((invalidFamilyType, "InvalidFamilyType"))                          \
+#define USD_SHADE_VALIDATION_ERROR_NAME_TOKENS                                      \
+    ((connectableInNonContainer, "ConnectableInNonContainer"))                      \
+    ((invalidConnectableHierarchy, "InvalidConnectableHierarchy"))                  \
+    ((missingMaterialBindingAPI,  "MissingMaterialBindingAPI"))                     \
+    ((materialBindingPropNotARel, "MaterialBindingPropNotARel"))                    \
+    ((invalidImplSource, "InvalidImplementationSrc"))                               \
+    ((missingSourceType, "MissingSourceType"))                                      \
+    ((missingShaderIdInRegistry, "MissingShaderIdInRegistry"))                      \
+    ((missingSourceTypeInRegistry, "MissingSourceTypeInRegistry"))                  \
+    ((incompatShaderPropertyWarning, "IncompatShaderPropertyWarning"))              \
+    ((mismatchPropertyType, "MismatchedPropertyType"))                              \
+    ((missingFamilyNameOnGeomSubset, "MissingFamilyNameOnGeomSubset"))              \
+    ((invalidFamilyType, "InvalidFamilyType"))                                      \
+    ((nonShaderConnection, "NonShaderConnection"))                                  \
+    ((invalidNormalMapTextureFile, "InvalidNormalMapTextureFile"))                  \
+    ((invalidNormalMapTextureColorSpace, "InvalidNormalMapTextureColorSpace"))      \
 
 /// \def USD_SHADE_VALIDATOR_NAME_TOKENS
 /// Tokens representing validator names. Note that for plugin provided
