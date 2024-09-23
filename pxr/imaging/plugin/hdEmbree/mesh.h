@@ -20,8 +20,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdEmbreePrototypeContext;
-class HdEmbreeInstanceContext;
+struct HdEmbreePrototypeContext;
+struct HdEmbreeInstanceContext;
 
 /// \class HdEmbreeMesh
 ///
@@ -99,6 +99,11 @@ public:
     ///                      embree state.
     virtual void Finalize(HdRenderParam *renderParam) override;
 
+    bool EmbreeMeshIsDoubleSided() const
+    {
+        return _doubleSided;
+    }
+
 protected:
     // Initialize the given representation of this Rprim.
     // This is called prior to syncing the prim, the first time the repr
@@ -171,7 +176,7 @@ private:
 
 private:
     // Every HdEmbreeMesh is treated as instanced; if there's no instancer,
-    // the prototype has a single identity istance. The prototype is stored
+    // the prototype has a single identity instance. The prototype is stored
     // as _rtcMeshId, in _rtcMeshScene.
     unsigned _rtcMeshId;
     RTCScene _rtcMeshScene;
