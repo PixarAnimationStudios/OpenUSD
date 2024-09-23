@@ -20,8 +20,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdEmbreePrototypeContext;
-class HdEmbreeInstanceContext;
+struct HdEmbreePrototypeContext;
+struct HdEmbreeInstanceContext;
 
 /// \class HdEmbreeMesh
 ///
@@ -171,7 +171,7 @@ private:
 
 private:
     // Every HdEmbreeMesh is treated as instanced; if there's no instancer,
-    // the prototype has a single identity istance. The prototype is stored
+    // the prototype has a single identity instance. The prototype is stored
     // as _rtcMeshId, in _rtcMeshScene.
     unsigned _rtcMeshId;
     RTCScene _rtcMeshScene;
